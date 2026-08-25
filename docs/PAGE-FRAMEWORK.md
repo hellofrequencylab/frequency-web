@@ -722,7 +722,7 @@ return <IndexTemplate {...hero} title="Friends" … />
 | Rung | Source |
 |---|---|
 | 1 | the operator's Settings header image for the route (`getPageHeaderImage`) — **and only this rung carries the focal point**, since a focal point is picked against one specific upload |
-| 2 | the page-content hero the caller passes as `contentImage` (ADR-180) |
+| 2 | the page-content hero, **resolved by the copy cascade** (§8.6) — this route's row, else the nearest section's, else the site row. Pass `contentImage` only to override that read; an explicit `null` suppresses it |
 | 3 | an explicit `fallbackImage`, else the route's section default from `INDEX_HERO_DEFAULTS` |
 | 4 | `null` — the neutral gradient band, a **result** and not a failure |
 
@@ -734,6 +734,40 @@ page's `<h1>` in `font-display` uppercase at `clamp(1.75rem, 6vw, 3.75rem)` and 
 `/network/contacts`, `/network/friends`) where the member came to get something done. Those rows
 feed `resolveHeaderElement` as the *surface* default, so an operator height master still wins.
 Adding a page to the program is a row in that map plus `{...hero}` — never a new stanza.
+
+A row also carries **`inheritHero`** (default `true`). The utility rows set it `false`, so the copy
+cascade cannot hand `/journeys/mine` the Journeys section photo and quietly overturn the short/large
+split above. A hero set on the utility route *itself* still wins, because that is not inheritance.
+
+## 8.6 The copy cascade: site → section → page (ADR-1122)
+
+`page_content` (ADR-180/182) holds the operator-editable title, description, hero image and CTA for
+a route. It was read with `.eq('route', route)`, so only the exact route ever saw its own row.
+[`lib/layout/content-cascade.ts`](../lib/layout/content-cascade.ts) makes it inherit, in one query,
+with no schema change: the rows that already exist become the section rung by being where they are.
+
+```ts
+const c = await resolvePageContent('/events/calendar', CONTENT_FALLBACK) // inherits /events
+```
+
+| Rung | Scope | Key |
+|---|---|---|
+| 1 | the page | the exact route |
+| 2 | the section(s) | each ancestor route, nearest first (`/network/friends/x` reads `/network/friends`, then `/network`) |
+| 3 | the site | the reserved `'*'` key — never `'/'`, which is the home page's own row |
+| 4 | the code | the `fallback` the page passes, a **result** and not a failure |
+
+Three rules make it a cascade rather than a fallback chain:
+
+- **Inheritance is per FIELD.** A page that sets only its title still inherits its section's hero.
+- **Identity does NOT inherit.** `title` and `description` resolve at the page rung or fall through
+  to the coded copy. A section title inherited by a child renames it, and both feed
+  `pageContentMetadata`, so inheriting them would emit one meta description across a whole section.
+- **The CTA is ONE unit.** `ctaLabel` and `ctaHref` come from the nearest scope that sets either,
+  never spliced across rungs, and render only when both survive.
+
+`getPageContent` is deliberately unchanged and still exact-route: the operator editor has to show
+what THIS route stores, never what it borrows.
 
 ### The standard Detail cover: `coverImage`
 
@@ -865,6 +899,8 @@ how a published draft shadows a coded experience, or an in-app page loses its ch
   reaffirmed 2026-07-28). `FOCUS_NONE_PREFIXES`, `SCOPED_PREFIXES`, and
   `SCOPED_PATTERNS` are deliberately empty; only the zero-chrome takeovers,
   `/admin/*`, and the full-width editors drop it (§8.2).
+- **Operator page copy inherits down the route tree** (site → section → page → code), per field,
+  with identity fields and the CTA pair deliberately excepted (ADR-1122, §8.6).
 - **The editable index is a sanctioned composition** (`MarketHero` + `BlockRender` /
   `PageModules`) for a browse surface whose body an operator rearranges. Same
   canonical `PageHero`, same global rail — a body choice, not an exemption (§8.5).
