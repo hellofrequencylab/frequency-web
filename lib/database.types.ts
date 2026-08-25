@@ -13958,6 +13958,48 @@ export type Database = {
         }
         Relationships: []
       }
+      spotlight_guestbook: {
+        Row: {
+          created_at: string
+          hidden_at: string | null
+          id: string
+          message: string
+          owner_profile_id: string
+          signer_profile_id: string
+        }
+        Insert: {
+          created_at?: string
+          hidden_at?: string | null
+          id?: string
+          message: string
+          owner_profile_id: string
+          signer_profile_id: string
+        }
+        Update: {
+          created_at?: string
+          hidden_at?: string | null
+          id?: string
+          message?: string
+          owner_profile_id?: string
+          signer_profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "spotlight_guestbook_owner_profile_id_fkey"
+            columns: ["owner_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "spotlight_guestbook_signer_profile_id_fkey"
+            columns: ["signer_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       spotlight_top_friends: {
         Row: {
           created_at: string

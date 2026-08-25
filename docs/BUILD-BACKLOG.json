@@ -1630,11 +1630,11 @@
         "file": "docs/BUILD-LIST.md",
         "ref": "Spotlight socials"
       },
-      "detail": "Guestbook needs a spotlight_guestbook table (RLS: owner reads all, anyone-signed-in writes), moderation, rate-limiting and the read-side render. Stickers are an absolute-positioned decorative layer with validated coordinates and an allowlisted set. Plus three deferred embed providers and the earned-cosmetics lane.\n\n── UNPARKED 2026-08-20 (owner ruling): scheduled into the build-out; sequence in meta.slate.",
+      "detail": "Guestbook needs a spotlight_guestbook table (RLS: owner reads all, anyone-signed-in writes), moderation, rate-limiting and the read-side render. Stickers are an absolute-positioned decorative layer with validated coordinates and an allowlisted set. Plus three deferred embed providers and the earned-cosmetics lane.\n\n── UNPARKED 2026-08-20 (owner ruling): scheduled into the build-out; sequence in meta.slate.\n\n── INCREMENT 1 SHIPPED 2026-08-25 (ADR-1132): the Guestbook end to end — spotlight_guestbook table (migration 20270325000000, committed; APPLY PENDING — the session permission gate blocked production DDL, so a maintainer runs the two-step in supabase/migrations/README.md before merge, and check:migrations reads red until then per ADR-1111), RLS per the spec plus a hide seam that keeps the unique (owner, signer) slot so a hidden signer cannot re-sign, session-client writes (sign/remove/hide) with an hourly cap, admin-client page read following the Top Friends pattern, and the 'guestbook' member grid block with a viewer-aware form. REMAINING SEQUENCE, in order: (1) stickers/decals layer — LIVE-122; (2) deferred embed providers Bandcamp / Apple Music / Twitch (each = a host-allowlist entry in lib/spotlight/embeds.ts + frame-src in next.config.ts); (3) earned-cosmetics lane (extend PROFILE_SKINS gating on requiredItem, per the round-3 note in ADR record); (4) guestbook depth — report integration (reports.target_type), owner unhide surface, sign notification. Close this row when all four land.",
       "verify": {
         "kind": "manual",
-        "evidence": "Program phase.",
-        "checked": "2026-08-17"
+        "evidence": "Program phase. Increment 1 (Guestbook) proven by lib/spotlight/guestbook.test.ts + check:rls/check:grants over migration 20270325000000; remainder open — LIVE-122 probes the sticker layer.",
+        "checked": "2026-08-25"
       }
     },
     {
@@ -4140,6 +4140,61 @@
         "cmd": "node -e \"const fs=require('fs');const F='test/e2e/a11y-baselines.json';if(!fs.existsSync(F))process.exit(79);const j=JSON.parse(fs.readFileSync(F,'utf8'));const keys=Object.keys(j.surfaces||{}).filter(k=>k.startsWith('/admin'));if(keys.length===0){console.error('the a11y ratchet holds 0 operator rows, so the seven /admin surfaces the visual suite watches are still held to $defaultMax and cannot join the a11y matrix');process.exit(1)}process.exit(0)\""
       },
       "detail": "FILED 2026-08-25 by ADR-1128, which deliberately left both halves out of its own change.\n\nHALF ONE — THE A11Y RATCHET. ADR-1128 added seven /admin routes to the VISUAL suite only. a11y.spec.ts and overflow.spec.ts still read publicSurfaces()/appSurfaces(). A surface with no row in test/e2e/a11y-baselines.json is held to $defaultMax (0 serious+), so adding the operator routes there without first SEEDING the ratchet would fail pull requests on debt that predates them — exactly what update-a11y + capture_shell exists to prevent. The seed is a dispatch: e2e-manual.yml → base_url=<preview>, capture_shell ✔, update_a11y ✔. The probe measures the consequence: at least one '/admin' key in the ratchet.\n\nHALF TWO — THE ROLE FLOOR, AND IT WAS MEASURED RATHER THAN CALLED UNCHECKABLE. requireAdminFloor() (lib/admin/guard.ts) admits platform staff (web_role admin/janitor) or a team_members staff role that sees an admin group, and redirects everyone else to /feed. PW_MEMBER_EMAIL is an owner-held secret, but its CONSEQUENCE is readable: test/e2e/a11y-baselines.json carries '/spaces/danieltyack/manage' rows, so the e2e account manages that Space, and exactly two profiles do — danieltyack (web_role janitor, clears the floor) and awesomepossum (web_role none, does not). Repo-wide only danieltyack and moderation hold a staff web_role and team_members holds one row. So the outcome is one of two and the first capture run settles it in one line of the job summary: if the seven /admin rows appear under 'Still unphotographed', the account is the second one and the fix is a single grant (web_role='admin', or a team_members staff role that sees an admin group). Until then operatorDenialReason() skips those tests WITH THE CAUSE NAMED and shell-reporter.ts lists every one of them on every run — loud, never silent."
+    },
+    {
+      "id": "LIVE-122",
+      "title": "Spotlight stickers/decals: the decorative layer PROG-SPOT still owes",
+      "status": "open",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "docs/BUILD-LIST.md",
+        "ref": "Spotlight socials · Stickers / decals"
+      },
+      "detail": "The second PROG-SPOT increment (ADR-1132 shipped the first, the Guestbook). An absolute-positioned decorative layer over the Spotlight: emoji/earned stickers from a CLOSED allowlist, coordinates validated on read AND write (the fail-open validator idiom of lib/spotlight/blocks/validate.ts — clamp 0..100, drop unknown sticker ids whole), stored in meta.spotlight (no FK to other rows, so JSON is right where the Guestbook needed a table). Render as a member grid block or page chrome; owner-only writes, session-derived like saveMemberGridLayout. Earned stickers gate on the cosmetics inventory when that lane lands.",
+      "verify": {
+        "kind": "grep-present",
+        "pattern": "sticker",
+        "paths": [
+          "lib/entity-blocks/registry.ts",
+          "lib/spotlight/blocks/schema.ts"
+        ],
+        "note": "The consequence: a sticker layer must register in the unified block registry or the Spotlight schema to render at all. Absent today, so the row reads open; any real implementation passes it, and nothing else in these files says sticker."
+      }
+    },
+    {
+      "id": "LIVE-123",
+      "title": "Vercel builds intermittently stall at 'Collecting page data' for tens of minutes, and merging deploys to production",
+      "status": "open",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "scripts/check-cache-budget.mjs",
+        "ref": "the cold-compile path a trim leaves behind — NOT established as the cause"
+      },
+      "detail": "FOUND 2026-08-25 05:26-05:36 UTC while driving the merge queue. Preview build dpl_DYMk7sVcpW8n7xCfupmUmbtbnjqB (#2285, efad250) printed 'Collecting page data using 3 workers ...' at 05:26:05 and emitted NOTHING for the next 10 minutes, against a control that did the whole build in 2m10s. Three builds hung the same way earlier the same night. 🔴 WHY THIS IS LIVE AND NOT HYGIENE: main is protected and merging DEPLOYS, so the same stall on a production build is a production deploy that never lands. ── WHAT IS ESTABLISHED, from the two builds' own logs. They are the SAME BRANCH one docs-only commit apart, so the code is not the variable: (a) ca95b0a restored cache 8erA4jNs, compiled in 46s, finished 2m10s, green; (b) efad250 restored cache 92GM6pY7 — the build whose postbuild had just trimmed .next/cache/turbopack (1621 MiB) — compiled COLD in 113s, then stalled. The cold compile is expected and documented ('Next build: warm install, cold compile'); it costs CPU by design. The STALL is at a later stage and is NOT explained by it. ── 🔴 THREE HYPOTHESES TESTED AND RULED OUT, recorded so nobody re-runs them: (1) NOT the ADR-1064/ADR-1086 fetch-cache deletion. check-cache-budget.mjs protects it — NEVER_TRIM_DIRS = ['fetch-cache','images'], the trim walks only COMPILER_CACHE_DIRS = ['turbopack','rspack','webpack','swc'], an OVERLAP assertion refuses to trim if the lists ever meet, and check-cache-budget-trim.test.ts reconstructs the old bad trim. The gate's '.next/cache 0 MiB' line is not a deleted fetch cache: the 'holds:' line shows the directory contained only .previewinfo, config.json and .rscinfo, so there was no fetch-cache directory to lose. (2) NOT database saturation, which WAS the proven cause of the ~02:40 incident: measured mid-stall at 34/60 connections, 1 active, 0 blocked, no lock waits. (3) NOT build concurrency, the other proven cause: efad250 was the only build running. ── WHAT IS NOT KNOWN: the cause. The leading untested hypothesis is memory pressure — the builder is 4 cores / 8 GB, page data prerenders ~330 routes across 3 workers, and a cold compile denies them every warm module cache; a hung build never reaches the 'Build system report' line that would print 'No memory or disk space problems detected', so absence of that line is not evidence of health. NEXT STEP for whoever picks this up: correlate hung builds against whether their restored cache had been trimmed (the Vercel log's 'Restored build cache from previous deployment (<id>)' line gives the lineage for free), and if the correlation holds, test the memory hypothesis by raising the builder or lowering worker count before touching the trim. Do NOT 'fix' check:cache-budget on this row's suspicion alone: its trim is proven correct by mutation test, and breaking it re-opens the 1.50 GB ceiling that killed two builds.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Vercel dpl_DYMk7sVcpW8n7xCfupmUmbtbnjqB (theme/p5-adoption, efad250): 'Restored build cache from previous deployment (92GM6pY7KcpiE47fmp3AH3LRZ8tz)', 'Compiled successfully in 113s', then 'Collecting page data using 3 workers ...' at 05:26:05 with no further line for 10+ min. Control dpl_AEAZN7As5zEBLceQMDQmjjYo5Cgc (hyg/visual-coverage-surfaces, ca95b0a): 'Restored build cache from previous deployment (8erA4jNsESPA6Fnj3sjYXzr71EA7)', 'Compiled successfully in 46s', READY in 2m10s. Trim recorded in dpl_92GM6pY7KcpiE47fmp3AH3LRZ8tz postbuild: 'drops compiler caches instead: .next/cache/turbopack (1621 MiB)'. Live DB mid-stall: 34/60 conns, 1 active, 0 blocked.",
+        "checked": "2026-08-25"
+      }
+    },
+    {
+      "id": "HYG-031",
+      "title": "lib/database.types.ts carries a hand-added spotlight_guestbook block — regen from production to prove parity",
+      "status": "open",
+      "lane": "hygiene",
+      "size": "S",
+      "source": {
+        "file": "lib/database.types.ts",
+        "ref": "spotlight_guestbook"
+      },
+      "detail": "ADR-1132 added the spotlight_guestbook types by hand in the generated style (the same way spotlight_top_friends arrived) because a full regen against production folds in every drift from every in-flight sibling branch — a diff that does not belong in a feature PR. The debt: nothing has machine-checked that the hand-written block matches what supabase gen types would emit. Next integrator regen (the standing 'regen + drop the untyped admin-handle casts' step BUILD-LIST already names) closes this: run the regen, diff, and mark this row done with the commit as evidence.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Hand-add verified by eye against migration 20270325000000 (columns/nullability) on 2026-08-25. Not yet proven by a regen; regen after the migration is applied.",
+        "checked": "2026-08-25"
+      }
     }
   ]
 }

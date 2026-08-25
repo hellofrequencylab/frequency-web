@@ -41,6 +41,7 @@ function puckOnlyMember(): SpotlightData {
     theme: {} as SpotlightData['theme'],
     totalZaps: 42,
     topFriends: [],
+    guestbook: [],
     grid: null, // the crux: no saved grid — the Puck-only member
   } as unknown as SpotlightData
 }
