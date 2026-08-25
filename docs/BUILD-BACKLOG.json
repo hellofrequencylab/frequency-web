@@ -3883,6 +3883,22 @@
         "cmd": "node -e \"const fs=require('fs');const F='lib/site.ts';if(!fs.existsSync(F))process.exit(79);if(/export const DISCOVER_NAV/.test(fs.readFileSync(F,'utf8'))){console.error('lib/site.ts still exports DISCOVER_NAV, a second hand-maintained nav list beside the one registry');process.exit(1)}process.exit(0)\"",
         "note": "Probes for the export that must be GONE, which is the consequence itself: while it exists there are two declarations of the same five destinations and either can drift. Not a grep for the row's title words."
       }
+    },
+    {
+      "id": "HYG-026",
+      "title": "The visual suite's surfaces are inherited from the page editor, so most of the tree is unwatched and reads as covered",
+      "status": "open",
+      "lane": "hygiene",
+      "size": "M",
+      "source": {
+        "file": "test/e2e/surfaces.ts",
+        "ref": "EDITABLE_PAGES_FALLBACK"
+      },
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const S='test/e2e/surfaces.ts';if(!fs.existsSync(S))process.exit(79);const src=fs.readFileSync(S,'utf8');const admin=new Set((src.match(/'\\\\/admin[^']*'/g)||[]));if(admin.size<6){console.error('the visual suite watches '+admin.size+' operator route(s); its surfaces still come from EDITABLE_PAGES, which is the page editor\\\\'s list, not a coverage list');process.exit(1)}process.exit(0)\""
+      },
+      "detail": "FOUND 2026-08-25 by PROG-DAWN3 slice 1 (ADR-1119), and found the only way it could be — by a sweep moving pixels and CI mostly not noticing. Slice 1 changed 37 sites; EXACTLY ONE of them renders on a surface the visual suite watches (the event approval controls, mounted by the space console), and that one produced 4 real failures. The other 36 moved with nothing looking at them. So the run's '140 passed' was never evidence the sweep held still — it was evidence that 36 of 37 sites are unobserved.\n\n🔴 THE CAUSE IS STRUCTURAL, NOT AN OVERSIGHT. test/e2e/visual.spec.ts takes its surfaces from test/e2e/surfaces.ts, which parses EDITABLE_PAGES out of lib/page-editor/data.ts at run time and adds one hand-maintained extra ('/discover'). EDITABLE_PAGES exists to say WHICH PAGES THE PAGE EDITOR MAY EDIT. It was never chosen for visual coverage, so what the suite watches is a by-product of an unrelated product decision, and it grows only when a marketing page is converted to a template. MEASURED 2026-08-25: the file contains ZERO '/admin' paths, so no operator surface in the product is visually watched at all — which is where the bulk of PROG-DAWN3's remaining ~1,960 sites live.\n\nThis is ADR-970's failure mode INSIDE the guard meant to prevent it: a gate that cannot fire over most of the tree still reads as coverage, and a green pr-compare gets quoted as 'no visual change'. The parse-at-run-time design is right and stays; what is wrong is the LIST it parses being someone else's.\n\nTHE FIX (owner ruling 2026-08-25, asked and answered while slice 1 was red): give the visual suite its own surface list, chosen for coverage rather than inherited — keeping the EDITABLE_PAGES parse as one INPUT so Lift 5c conversions still join automatically, and adding the operator/admin routes explicitly. Costs runner time per PR and a one-off baseline capture, which is why it is not folded into a DAWN slice: widening the list requires a capture on a runner (e2e-manual.yml → workflow_dispatch → update_baselines) and that is its own change with its own green run to read.\n\nTHE PROBE measures the consequence, not the title: it counts distinct '/admin' route literals in test/e2e/surfaces.ts and fails while that is under 6. Today it is 0. It cannot be satisfied by renaming anything, only by actually watching operator surfaces."
     }
   ]
 }
