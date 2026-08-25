@@ -29942,3 +29942,158 @@ which had also expired by the time anyone read it: two of its four sub-figures (
 row's own closing sentence warned about, in the paragraph directly beneath the numbers. The
 re-census is 2,004. **Measure through the instrument the gate uses, or the census expires faster
 than the sweep it is meant to plan.**
+
+---
+
+## ADR-1126: A gate that cannot resolve a shape gets taught the shape, not an exception list (2026-08-25)
+
+**Status:** accepted · closes `HYG-018` · enforced by `pnpm check:a11y-names`
+(`scripts/check-a11y-names.mjs`, in the `guards=( )` array of `.github/workflows/ci.yml`) +
+`scripts/check-a11y-names.test.ts` · extends [ADR-1069](#adr-1069), applies
+[ADR-970](#adr-970--an-orphan-help-key-is-a-broken-link-not-a-backlog-item-2026-08-10)
+
+`check:a11y-names` reported exactly one finding on `main`, and the finding was correct code.
+`discoverForwarders` now resolves the shape it could not see, the control re-tallies from
+`placeholder (weak)` to `htmlFor`, and `MAX_PLACEHOLDER_ONLY` goes to **0** — a measured zero, not
+a declared one.
+
+| | before | after |
+|---|---|---|
+| controls judged | 3,575 | 3,575 |
+| accessible-name violations | 0 | 0 |
+| **weak (placeholder-only) findings** | **1** | **0** |
+| of those, false | **1 (all of them)** | — |
+| of those, real | **0** | — |
+| named by `htmlFor` | 338 | **339** |
+| resolver components | 6 wrapping | 6 wrapping + **11 forwarding** |
+
+Exactly one classification moved on the whole tree. That is the evidence, not the summary: a
+resolver that only ever ADDS to `fors` can move a control out of the finding population and can
+never invent a name, and a tally that shifts by one control in one column is what that looks like
+from outside.
+
+### 1. The premise was re-tested before the work, and it held
+
+[ADR-1082](#adr-1082) says a blocker phrased as a limitation is a claim with an expiry date, and
+five of five re-measured premises had expired. This one had not. `pnpm check:a11y-names` on
+`origin/main` printed `0 violations · 1 placeholder (weak)`, and the 1 was the row's own example:
+`app/(main)/spaces/new/business/business-quickstart-form.tsx:50`, a `<Textarea id="biz-what">`
+whose `<Label htmlFor={id}>` is rendered by `components/spaces/space-form.tsx`'s `Field`. So the
+gate's **entire finding population was false**. Fixing it surfaced nothing that had been hiding
+behind the noise, and there was nothing to file — which is worth stating plainly, because
+"we fixed the instrument and found no bodies" is a result, not an anticlimax.
+
+### 2. The interesting question: why not just excuse the one file
+
+Three fixes were available. Two of them keep the number and lose the thing the number is for.
+
+| Option | What it costs | Verdict |
+|---|---|---|
+| `aria-label` at the render site | a control that already has a real `<label>` gets a **second** name, to satisfy an instrument | 🔴 rejected |
+| an allowlist entry for the one file | the gate's report is now "0 findings, 1 waived" — coverage in name only | 🔴 rejected |
+| teach the checker the shape | ~130 lines and a floor to notice if it breaks | ✅ taken |
+
+The rejected pair is the same trade in two sizes. A gate that reports a finding everyone knows is
+false gets routed around within a day, and then it reads as coverage while providing none
+(ADR-970) — and an allowlist is the *institutional* version of routing around it, complete with a
+paper trail that makes the routing look like diligence. The render-site fix is worse than that: it
+edits **correct application code** to please a checker, which is the shape-not-truth trade this
+gate's own history is made of. `check:a11y-names` has already been wrong in exactly this direction
+twice — 126 of 143 false at LIVE-033, then 347 of 429 false at LIVE-103 — and both times the honest
+answer was the same one: a naming path the walk could not see is a naming path it has to be taught.
+
+**The rule this generalises to:** a checker that cannot resolve a shape gets taught the shape, or
+says out loud that it cannot and downgrades what it claims. It does not get an exception list. The
+third option is legitimate and was live here — the file header already carries a
+§`WHAT IT STILL CANNOT SEE`, and "the forwarding shape is beyond this walk" could honestly have
+gone in it. It was not taken because the shape turned out to be cheap to resolve, not because
+downgrading is a lesser answer. **What is never an answer is keeping the claim and hiding the
+counter-example.**
+
+### 3. What `discoverForwarders` resolves, and why the second shape is load-bearing
+
+It is symmetric with the existing `discoverWrappers` — the pass that is the only reason this gate
+runs at 17 findings instead of 143 — and publishes `path::Component -> the prop carrying the id`,
+to a fixpoint:
+
+| Shape | Example | Resolves to |
+|---|---|---|
+| (a) **bound** | `export function Field({ id }) { … <Label htmlFor={id}> … }` | `Field -> id` |
+| (b) **spread** | `export function Label({ ...props }) { return <label {...props} /> }` | `Label -> htmlFor` |
+
+⚠️ **Without (b) the chain never starts.** `components/ui/field.tsx`'s own `Label` never writes
+`htmlFor`; it spreads the rest of its props onto a `<label>`. Miss that one seed and `Field` is
+never discovered either, and `TextField` after it: **11 forwarders resolve today, 2 without it.**
+That is why `MIN_FORWARDERS = 6` exists as the twin of `MIN_WRAPPERS` — forwarder discovery is a
+*chain*, so one broken link silently un-names a whole family of correctly labelled controls and the
+gate would report them as findings rather than notice it had stopped resolving.
+
+### 4. The error this could make is the opposite one, so it is fenced
+
+Everything the pass finds only ever adds a literal to `fors`, and `fors` only moves controls **out**
+of the finding populations. So a forwarder discovered *wrongly* costs a missed finding rather than a
+false one — the same conservative trade `hasSpread` and the unknowable-children rule already make.
+That trade is only acceptable while it stays rare, so `propBehindIdentifier` refuses an identifier a
+nested scope **shadows**:
+
+```tsx
+export function Rows({ id, rows }) {                      // Rows does NOT forward `id`
+  return <fieldset id={id}>{rows.map((r) => {
+    const id = r.key                                      // …this one is a local
+    return <Label htmlFor={id}>{r.label}</Label>
+  })}</fieldset>
+}
+```
+
+Published as a forwarder, `Rows` would hand every `<Rows id="x">` call site a phantom `x` and could
+silently name a genuinely unnamed control. Scanning the function body for a shadowing declaration
+*before* its parameters is what tells a prop from a local.
+
+### 5. Three mutations, because a gate that passes its own tests can still be wrong
+
+`check:cache-budget` passed its unit tests, ran clean locally, and killed two production builds
+(ADR-1064, ADR-1086). Each arm of this change was therefore broken on purpose and the break was
+watched:
+
+| Mutation | Tests | The gate itself |
+|---|---|---|
+| kill rule (b), the spread seed | 6 red | exits 1 |
+| unwire the call-site collection | 3 red | exits 1 |
+| drop the shadow check | 1 red | passes (as designed — this arm costs findings, it does not create them) |
+
+🔴 **The third test failed its own mutation on the first attempt and had to be rewritten.** Its
+fixture used a plain `const id = useId()` in a component with no `id` prop at all — so
+`propBehindIdentifier` returned `null` for want of a matching parameter, with or without the shadow
+check, and the test passed green over a disabled guard. The only shape in which that check can
+matter is the one in §4: an inner `const id` *beside* an outer `id` prop. **A test that cannot fail
+is indistinguishable from one that passes**, which is the same fact this ADR is about, one layer
+down.
+
+### 6. What the gate now claims, and what it still does not
+
+✅ A name threaded through a **component** is resolved in both of its shapes — wrapping
+(`discoverWrappers`) and forwarding (`discoverForwarders`). The §`WHAT COUNTS AS A NAME` header
+says so, and the green line prints both resolver counts.
+
+🔴 It does **not** claim a forwarded id actually *reaches* a control. `<Field id="biz-wat">` beside
+`<Textarea id="biz-what">` passes here, because "does this control have a name" and "does this
+label name something" are different questions; the second is `scripts/check-labels.mjs`'s contract
+(ADR-966, ADR-1057) and it runs at zero. Both caveats are now written into the file header rather
+than left implied.
+
+⚠️ **The ratchet is still a ratchet.** 0 is where the population sits today, not a zero by
+construction. axe-core accepts a non-empty placeholder, so a gate that FAILED on one would be
+stricter than the axe pass already running in e2e, disagree with it, and get routed around — the
+argument that made this a ceiling has not changed. A new placeholder-only control fails as a
+ceiling breach, not as an accessible-name violation, and the failure text still says how to give it
+a real name.
+
+### 7. The probe measures the consequence, and carries its own positive control
+
+`HYG-018`'s probe does not re-run the guard: that parses 1,865 files, and pointing a probe at it
+took `check:backlog` from 6.0s to 16.8s the last time a row tried (ADR-1063). It imports the module
+and drives `discoverForwarders` + `auditNames` over a two-component fixture in **0.5s**, asserting
+the seed resolves, the fixpoint resolves, and the forwarded control is named by `htmlFor`. It then
+audits the *same fixture blind* and requires that one to still read as placeholder-only — so a probe
+that has lost the ability to see the defect **fails rather than passes**, which is the failure mode
+a probe is least able to notice about itself.
