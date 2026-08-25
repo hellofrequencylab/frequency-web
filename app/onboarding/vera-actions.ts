@@ -58,6 +58,9 @@ export interface ConciergeTurnResult {
   done: boolean
 }
 
+// authz-ok: intentionally PUBLIC — the onboarding concierge serves signed-out visitors. The
+// callerIdentity() call inside the AI branch is optional personalization (null for anonymous,
+// and the turn proceeds either way), not a gate; write proposals are returned, never executed.
 /** One concierge turn. Live Claude when the kernel is on (grounded in memory, with
  *  the bounded tools); the deterministic concierge otherwise. Either way, write
  *  proposals are returned, never executed. */

@@ -7,7 +7,7 @@ import { join } from 'node:path'
 // guard itself has a regression test, alongside the runtime scoping tests in this folder.
 import {
   isUnguardedLibMutation,
-  isUnguardedAction,
+  classifyActionFile,
   scanFiles,
 } from '../../scripts/check-authz-guards.mjs'
 
@@ -54,16 +54,17 @@ describe('check:authz lib scan — scanFiles over the fixtures dir', () => {
   })
 })
 
-describe('check:authz action scan — regression for the original app/ heuristic', () => {
-  it('FLAGS a use-server admin-client action with no guard', () => {
+describe('check:authz action scan — regression for the original app/ heuristic (per-export since HYG-020)', () => {
+  it('FLAGS a use-server admin-client action with no guard, naming the export', () => {
     const src = "'use server'\nimport { createAdminClient } from '@/lib/supabase/admin'\n" +
       'export async function act() { await createAdminClient().from("t").delete() }\n'
-    expect(isUnguardedAction('app/x/actions.ts', src)).toBe(true)
+    const v = classifyActionFile('app/x/actions.ts', src)
+    expect(v?.problems.map((p) => `${p.method}:${p.kind}`)).toEqual(['act:ungated-export'])
   })
 
   it('PASSES the same action once it self-guards', () => {
     const src = "'use server'\nimport { createAdminClient } from '@/lib/supabase/admin'\n" +
       'export async function act() { await requireAdmin(); await createAdminClient().from("t").delete() }\n'
-    expect(isUnguardedAction('app/x/actions.ts', src)).toBe(false)
+    expect(classifyActionFile('app/x/actions.ts', src)).toBeNull()
   })
 })

@@ -1151,6 +1151,10 @@ async function journeysForSeason(client: SupabaseClient, season: number): Promis
 }
 
 export async function activeSeasonJourneys(): Promise<ExpressionJourneyOption[]> {
+  // Same floor as the challenges page that calls this (requireAdmin('host', { staff: 'community' })):
+  // this was the one export in the file with no gate of its own (HYG-020), a public endpoint
+  // listing the season's official Journeys through the admin client. Throws for non-curators.
+  await requireCurator()
   const client = ub()
   const season = await activeSeasonNumber(client)
   if (season == null) return []

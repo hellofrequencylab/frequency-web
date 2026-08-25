@@ -31151,6 +31151,114 @@ program phase — and the three pages it was extracted from never called it. A s
 own exemplars behind reads as done from the ledger and is not, which is the same failure mode
 [ADR-1082](#adr-1082) names for backlog rows, applied to code. **Convert the pages that motivated
 the extraction in the extraction's own PR**, or the "one copy" claim starts life false.
+
+## ADR-1135: The action scan is per-export, and its false positives were lexer bugs, not vocabulary (2026-08-25)
+
+**Status:** accepted · closes `HYG-020` · rests on [ADR-970](#adr-970) and the route scan's
+per-export model ([ADR-274](#adr-274)/[ADR-275](#adr-275), LIVE-031) · enforced by
+`pnpm check:authz` + `scripts/check-authz-guards.test.ts`
+
+### What changed
+
+`check:authz`'s ACTION scan judged a `'use server'` admin-client file by a gate token ANYWHERE
+in the file — an action module with five exports and one guard read green exactly the way route
+handlers did before LIVE-031. Every export of a `'use server'` file is its own public HTTP
+endpoint, so the unit of verdict is now the EXPORT: `gateSoundness` (R1 per-export / R2
+dominance / R3 precedence) is parametrised over the gate regex and the export lister and runs
+for both scans — one soundness model, as the HYG-020 row demanded. Mutation-proven end to end: a
+synthetic file with a gated sibling and a fresh ungated export fails the new gate (exit 1,
+naming the export) and passes the origin/main gate (exit 0).
+
+### The premise held, and the row's diagnosis was one layer off
+
+Re-measured before working (ADR-1082): the scan was still whole-file, and a naive per-body scan
+reported **112 ungated exports of 699** (the row said 119 — main had moved). The row attributed
+the false positives to guard VOCABULARY (`resolveModerator()` and friends). Vocabulary turned
+out to be ≈19 of them (`contactsOwnerId`, now in the new `ACTION_GATE`). The other ~90 were a
+LEXER boundary: `bodyAfterParams` took the first `{` after the parameter list as the body, so a
+guard helper with a braced return type — `requireMarketer(): Promise<{ id: string } | string>`,
+the corpus's standard gate shape — had its TYPE read as its body, and the gate inside was never
+seen. Fixing that one boundary took 112 to 23. Two more lexer holes surfaced on the way, both
+of which could hide a real export from BOTH scans, found because per-export analysis finally
+read every body: regex literals (a backtick inside `/[#*_`[\]]/` in `nearby/actions.ts` opened a
+phantom template that swallowed every export below it) and template interpolations (a nested
+template inside `${…}` ended the outer template early and spilled HTML into "code" —
+`app/api/cron/event-reminders/route.ts`). `maskLiterals` now lexes both.
+
+### R3 sharpened once, for both scans, instead of 16 annotations
+
+The honest per-export scan found 21 exports, 16 of them the same lookup-then-gate shape:
+resolve a slug to an id through the admin client, `if (!row) return null`, then gate on
+capabilities OF THAT ID. The shape is structurally forced (the gate needs the id) and nothing
+read can escape pre-gate. Annotating 16 sound exports is the ADR-970 failure with the roles
+reversed — noise dressed as verdicts — so R3's proxy was sharpened in the ONE shared rule: a
+pre-gate admin query fires when the pre-gate region can MUTATE (`.rpc`/`.insert`/`.update`/
+`.delete`/`.upsert`), or when any pre-gate `return` is not denial-shaped (bare/`null`/
+`undefined`/`false`/`fail(…)`/`[]`). The early-answer fixture still fails; the pre-gate-mutation
+fixture still fails; route verdicts did not move (49 gated / 23 ledgered, before and after).
+
+### The final yield, dispositioned
+
+Five findings survived, none an allowlist: **`activeSeasonJourneys`** (admin/content) was a real
+gap — an ungated admin-client read now gated with `requireCurator()`; **`stopActingAsMember`**
+(the export the row predicted) is gated by the httpOnly impersonation stash and carries a
+per-export `// authz-ok:`; **`stashPendingInduction`** and **`conciergeTurn`** are public by
+design (cookie-only write; anonymous onboarding concierge) and say so the same way; and
+**`startBuild`** gates every branch in a shape R2's first-token rule cannot see. The annotation
+is per-export now — one above an export exempts only that export; an unattached one keeps its
+historical file-level meaning for the two files that predate this. Floors added
+(`MIN_ACTION_FILES`/`MIN_ACTION_EXPORTS`) so the corpus — 137 files, 707 exports — cannot go
+invisible the way LIVE-022's routes did.
+## ADR-1134: Menu drift faces the operator — one comparison serves the weekly job AND the Menu manager (2026-08-25)
+
+**Status:** accepted · closes `LIVE-111` (filed on #2267) · builds on ADR-860, ADR-390's gate
+contract, and LIVE-107's `scripts/maintenance/menu-drift.mjs` · proven by `lib/menus/drift.test.ts`
+
+### The decision
+
+Per-item drift is now rendered inside the Menu manager, and the derivation behind it is the SAME
+comparison the weekly maintenance sweep runs. Three pieces:
+
+- **`lib/menus/drift-core.mjs`** — the four-finding comparison (mislabelled / unreachable /
+  pending / staleBaseline) MOVED here verbatim from `scripts/maintenance/menu-drift.mjs`, which now
+  imports and re-exports it. A dependency-free `.mjs` rather than a `.ts` module because the weekly
+  script runs under plain `node` (Node 22, no TypeScript loader), while TypeScript imports a `.mjs`
+  without ceremony — so ONE file serves both callers instead of two copies that can disagree, which
+  is the failure LIVE-111 names.
+- **`lib/menus/drift.ts`** — `deriveMenuDrift(menu, defaultMenu(surfaceKey), synced_default_keys)`,
+  a pure function of exactly those three inputs, testable without a browser or a database. Per live
+  row: `synced` / `edited` (with the diverged fields named) / `custom`. Per absent code default:
+  `retired` (its href is in the `synced_default_keys` baseline, so the inserts-only sync will never
+  resurrect it) or `missing` (new; the next sync injects it) — consumed directly from the shared
+  comparison's `unreachable` / `pending` buckets, not re-derived. A mislabelled default (LIVE-107's
+  member-facing defect) surfaces as BOTH halves of what it is: the live row reads `edited` on its
+  label, and the orphaned default appears in the absent list naming the href the label actually
+  points at.
+- **The thread from the server.** `synced_default_keys` is DB state the client editor never
+  received, so `MenuGroupsBlock` reads it (`getSyncedDefaultKeys`, `lib/menus/read.ts`) and passes
+  it as a prop; `syncMenuFromDefaults` now returns the baseline it just settled so the badges never
+  classify against the pre-sync copy. The editor recomputes the derivation from its LOCAL working
+  state, so "Edited" appears the moment a label leaves its default — at the keystroke, not in next
+  week's report.
+
+### Why the editor, when the weekly job already looks
+
+A weekly CI job is not a substitute for telling the author, and LIVE-107 is the proof rather than
+the refutation: the mislabelled "Spaces directory" row was created BY AN OPERATOR IN THIS EDITOR,
+and nothing on the screen said the row had left its default behind. The weekly job told a
+maintainer a week later. Both instruments now read one comparison, so they cannot tell two stories.
+
+### What is deliberately NOT compared
+
+- **Access gates.** Since the gate contract (2026-08-06, `lib/menus/gates.ts`) the registry
+  overwrites every known href's gate at read time, so a resolved menu's gates structurally cannot
+  drift from code; comparing them would always read equal and would imply the field can drift.
+  The `edited` diff covers what the operator actually owns: label, subheading, shown/hidden.
+- **Operator-added links.** A row with no code counterpart is `custom`, never a finding — the same
+  refusal the weekly comparison already makes, for the same reason: calling additions drift trains
+  people to ignore the report.
+- **The pinned Profile rail row.** Runtime-injected, never a DB row, never synced; skipped on both
+  sides of the derivation.
 ## ADR-1128: The visual suite gets its own surface list, and the operator routes are chosen by census (2026-08-25)
 
 **Status:** accepted · closes `HYG-026`, filed by [ADR-1119](#adr-1119) (PROG-DAWN3 slice 1) ·
