@@ -43,6 +43,7 @@ import {
   reorderEpisodeAction,
   setEpisodePublishAction,
 } from './actions'
+import { Button } from '@/components/ui/button'
 
 // Apple Podcasts' top-level categories — the value Apple and Spotify read from the feed. Kept to the
 // primary tier so the owner picks one clean label; the lib defaults to Society & Culture.
@@ -329,14 +330,14 @@ export function ShowManager({
         title="Shows"
         count={shows.length}
         action={
-          <button
+          <Button
+            size="sm"
             type="button"
             onClick={openNew}
             disabled={pending}
-            className="inline-flex items-center gap-1.5 rounded-control bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
           >
             <Plus className="h-3.5 w-3.5" aria-hidden /> New show
-          </button>
+          </Button>
         }
       />
 
@@ -803,14 +804,13 @@ function ShowFormDialog({
           >
             Cancel
           </button>
-          <button
+          <Button
             type="button"
             onClick={onSave}
             disabled={pending || !draft.title.trim()}
-            className="rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
           >
             {pending ? 'Saving' : isNew ? 'Create show' : 'Save changes'}
-          </button>
+          </Button>
         </div>
       </div>
     </Dialog>

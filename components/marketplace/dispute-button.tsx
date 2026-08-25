@@ -6,6 +6,7 @@ import { openDisputeAction, cancelDisputeAction } from '@/app/(main)/orders/disp
 import { isError } from '@/lib/action-result'
 import type { DisputeStatus } from '@/lib/commerce/disputes'
 import { Textarea } from '@/components/ui/field'
+import { Button } from '@/components/ui/button'
 
 const REASONS = ['Item not received', 'Not as described', 'Damaged or faulty', 'Billing problem', 'Other'] as const
 
@@ -108,7 +109,8 @@ export function DisputeButton({
         <button type="button" onClick={() => setOpen(false)} className="text-meta text-subtle hover:text-text">
           Cancel
         </button>
-        <button
+        <Button
+          size="sm"
           type="button"
           disabled={pending}
           onClick={() =>
@@ -119,10 +121,9 @@ export function DisputeButton({
               else setState({ id: 'pending', status: 'open' })
             })
           }
-          className="rounded-control bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
         >
           {pending ? 'Filing' : 'Submit dispute'}
-        </button>
+        </Button>
       </div>
     </div>
   )

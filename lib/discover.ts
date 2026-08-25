@@ -137,6 +137,13 @@ export type ListRead<T> = { rows: T[]; ok: boolean }
 // So the retry decision reads the ERROR'S SHAPE, never just the code path:
 //   · network-ish (fetch failed / ECONNRESET / ETIMEDOUT / EAI_AGAIN / socket …) → transient,
 //     retry with backoff — the next packet usually lands;
+//   · a BOUNDED-READ ABORT (TimeoutError / AbortError, LIVE-105) → transient. The build-time
+//     fetch bound in lib/supabase/public.ts aborts a read that exceeds 20s and undici reports it
+//     as `TimeoutError: The operation was aborted due to timeout` with an EMPTY code — none of
+//     the errno tokens below. 🔴 This class was invented AFTER this regex was written, and the
+//     gap took down a production deploy on 2026-08-25 (ADR-1133): a burst of slow reads hit the
+//     bound, the classifier called each one deterministic, detailRead threw on the FIRST abort
+//     with both retry delays unused, and the /discover/events/[slug] prerender failed the build.
 //   · a Postgres/PostgREST error (a `code` like PGRST116 or 42501) → deterministic, retrying
 //     re-asks a question the database already answered. Never retried.
 // Empty data is NEVER retried anywhere: on a detail route an empty result is a believed 404
@@ -145,7 +152,7 @@ export type ListRead<T> = { rows: T[]; ok: boolean }
 // Callers now pass a THUNK so every attempt builds a fresh PostgrestBuilder — re-awaiting one
 // builder re-uses its settled promise, which would make a "retry" a no-op that re-reads the
 // same failure.
-const TRANSIENT_RE = /fetch failed|ECONNRESET|ECONNREFUSED|ETIMEDOUT|EAI_AGAIN|ENOTFOUND|socket|network|UND_ERR/i
+const TRANSIENT_RE = /fetch failed|ECONNRESET|ECONNREFUSED|ETIMEDOUT|EAI_AGAIN|ENOTFOUND|socket|network|UND_ERR|TimeoutError|AbortError|aborted/i
 
 export function isTransientDiscoverError(err: unknown): boolean {
   if (!err || typeof err !== 'object') return false

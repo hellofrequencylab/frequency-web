@@ -7,6 +7,7 @@ import { suggestPracticeAction, claimPracticeAction } from '@/app/(main)/practic
 import { isError } from '@/lib/action-result'
 import { Input, Textarea } from '@/components/ui/field'
 import { Dialog } from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
 
 // Claim a starter TEMPLATE → your own practice, via a short Vera-guided wizard
 // (ADR-116). Mirrors the demo-circle claim (components/circles/claim-circle.tsx):
@@ -114,12 +115,11 @@ export function ClaimPractice({ templateId, fallback }: { templateId: string; fa
 
   return (
     <>
-      <button
+      <Button
         onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary lift-1 transition-colors hover:bg-primary-hover"
       >
         <Sparkles className="h-4 w-4" /> Claim &amp; make it yours
-      </button>
+      </Button>
 
       <Dialog
         open={open}
@@ -178,14 +178,13 @@ export function ClaimPractice({ templateId, fallback }: { templateId: string; fa
                   >
                     Skip, I&apos;ll do it myself
                   </button>
-                  <button
+                  <Button
                     onClick={askVera}
                     disabled={thinking || !goal.trim()}
-                    className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary lift-1 transition-colors hover:bg-primary-hover disabled:opacity-50"
                   >
                     {thinking ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
                     {thinking ? 'Vera is shaping it…' : 'Ask Vera'}
-                  </button>
+                  </Button>
                 </div>
               </div>
             ) : (
