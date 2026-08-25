@@ -2,6 +2,7 @@ import 'server-only'
 
 import { getPageHeaderImage, getPageHeaderFocus } from '@/lib/page-settings/store'
 import { resolveHeaderElement } from '@/lib/elements/header'
+import { longestPrefixRow, resolveContentCascade } from '@/lib/layout/content-cascade'
 import type { HeaderSize } from '@/lib/layout/header-sizes'
 import type { PageHeroVariant } from '@/components/templates/page-hero'
 
@@ -33,6 +34,13 @@ export interface IndexHeroDefault {
   image: string | null
   /** The band height. See the short/large note below — this is a product decision, not page taste. */
   size: HeaderSize
+  /** Whether this surface ACCEPTS a hero inherited from its section's `page_content` row
+   *  (PROG-P6, ADR-1122). Defaults to true. Set false on a UTILITY surface, for the same reason it
+   *  takes `short` + the gradient: `/journeys/mine` is a management space, and the copy cascade
+   *  handing it the Journeys section photo would silently overturn the product decision the
+   *  short/large note below spells out. The flag is what makes that decision survive the cascade
+   *  instead of being quietly reversed by it. */
+  inheritHero?: boolean
 }
 
 // ── SHORT vs LARGE IS A PRODUCT DECISION, HELD HERE SO IT CANNOT BECOME PER-PAGE TASTE ──────────
@@ -56,30 +64,36 @@ export const INDEX_HERO_DEFAULTS: readonly IndexHeroDefault[] = [
   { prefix: '/journeys', image: '/images/site/nature-viewing-sunset.jpg', size: 'large' },
   { prefix: '/library', image: '/images/site/community-1.jpg', size: 'large' },
   { prefix: '/network', image: null, size: 'large' },
-  // Utility — the member came here to do something.
-  { prefix: '/journeys/mine', image: null, size: 'short' },
-  { prefix: '/network/contacts', image: null, size: 'short' },
-  { prefix: '/network/friends', image: null, size: 'short' },
+  // Utility — the member came here to do something. `inheritHero: false` keeps the gradient band
+  // even though '/journeys' and '/network' both carry an operator hero in production.
+  { prefix: '/journeys/mine', image: null, size: 'short', inheritHero: false },
+  { prefix: '/network/contacts', image: null, size: 'short', inheritHero: false },
+  { prefix: '/network/friends', image: null, size: 'short', inheritHero: false },
 ] as const
 
 /** The fallback for a route no row covers: gradient band at the shipped directory height. */
-export const INDEX_HERO_FALLBACK: Omit<IndexHeroDefault, 'prefix'> = { image: null, size: 'large' }
+export const INDEX_HERO_FALLBACK: Omit<IndexHeroDefault, 'prefix'> = { image: null, size: 'large', inheritHero: true }
 
 /** PURE: the section default for a route, longest prefix wins. Exported for the unit test and for
  *  any caller that wants the section cover without resolving the whole band. */
 export function indexHeroDefaultsFor(route: string): Omit<IndexHeroDefault, 'prefix'> {
-  let best: IndexHeroDefault | null = null
-  for (const row of INDEX_HERO_DEFAULTS) {
-    if (route !== row.prefix && !route.startsWith(`${row.prefix}/`)) continue
-    if (!best || row.prefix.length > best.prefix.length) best = row
-  }
-  return best ? { image: best.image, size: best.size } : INDEX_HERO_FALLBACK
+  // `longestPrefixRow` is the shared primitive (lib/layout/content-cascade.ts) — this loop was
+  // written by hand here, again in detail-hero.ts, and was about to be written a third time.
+  const best = longestPrefixRow(route, INDEX_HERO_DEFAULTS)
+  return best
+    ? { image: best.image, size: best.size, inheritHero: best.inheritHero ?? true }
+    : INDEX_HERO_FALLBACK
 }
 
 /** What a page can say about its own hero, over and above the route defaults. */
 export interface IndexHeroOptions {
-  /** The older page-content hero (ADR-180) — `resolvePageContent(route).heroImage`. Sits BELOW the
-   *  operator's Settings header image and ABOVE the section default. */
+  /** The page-content hero (ADR-180) — sits BELOW the operator's Settings header image and ABOVE
+   *  the section default.
+   *
+   *  🔴 YOU NO LONGER NEED TO PASS THIS. `resolveIndexHero` reads the copy cascade itself
+   *  (PROG-P6, ADR-1122), so a route beneath a section with a hero gets one without the page
+   *  saying anything. Pass it only to OVERRIDE that read; `undefined` means "resolve it", and an
+   *  explicit `null` means "there is none", which is why the check below is `!== undefined`. */
   contentImage?: string | null
   /** An explicit section default for this call, winning over the route map's `image`. Pass it when
    *  a page's cover genuinely is page-specific; prefer adding a row to INDEX_HERO_DEFAULTS. */
@@ -103,7 +117,9 @@ export interface IndexHeroProps {
 /** PURE: fold the resolved inputs into the prop bag. The IMAGE ladder, top to bottom:
  *
  *    1. the operator's Settings header image for this route (page_settings)
- *    2. the page-content hero the caller passed (ADR-180)
+ *    2. the page-content hero (ADR-180), which `resolveIndexHero` now resolves through the copy
+ *       cascade — this route's own row, else the nearest section's, else the site row
+ *       (PROG-P6, ADR-1122)
  *    3. an explicit `fallbackImage`, else the route's section default
  *    4. null — the neutral gradient band, which is a RESULT and not a failure
  *
@@ -146,12 +162,27 @@ export async function resolveIndexHero(
     // The header element resolves the operator's layout / height / scrim masters over this
     // surface's defaults (ADR-793). The focal point is only read when there IS an operator image,
     // so a route with none costs one page_settings read, not two (both are request-cached anyway).
-    const [operatorImage, header] = await Promise.all([
+    // The copy cascade is read here too, so rung 2 fills itself in (see below).
+    const [operatorImage, header, cascade] = await Promise.all([
       getPageHeaderImage(route),
       resolveHeaderElement({ defaults }),
+      opts.contentImage !== undefined ? Promise.resolve(null) : resolveContentCascade(route, {}),
     ])
     const operatorFocus = operatorImage ? await getPageHeaderFocus(route) : null
-    return pickIndexHero(route, { operatorImage, operatorFocus, header }, opts)
+    // RUNG 2, RESOLVED RATHER THAN PASSED. Every adopter that wanted the page-content hero had to
+    // hand it in, and `/network` is the proof that this fails silently: it resolves the very same
+    // content for its title and description, drops `heroImage` on the floor, and its operator's
+    // uploaded directory cover has been invisible in production since it was set. An INHERITED hero
+    // additionally has to clear the surface's `inheritHero` gate; a hero set on the route itself
+    // never does, because that is not inheritance.
+    const inherited = cascade && cascade.origin.hero !== 'page'
+    const contentImage =
+      opts.contentImage !== undefined
+        ? opts.contentImage
+        : inherited && section.inheritHero === false
+          ? null
+          : (cascade?.heroImage ?? null)
+    return pickIndexHero(route, { operatorImage, operatorFocus, header }, { ...opts, contentImage })
   } catch {
     // Nothing above throws today (both readers swallow their own errors), so this is the belt to
     // the braces: a browse page never loses its header to a settings read.

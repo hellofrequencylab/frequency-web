@@ -8,6 +8,7 @@ import { isError } from '@/lib/action-result'
 import { StudioWindow } from '@/components/studio/studio-window'
 import { StudioFooter } from '@/components/studio/kit/studio-footer'
 import { Field, Input, Textarea, labelClasses } from '@/components/ui/field'
+import { Button } from '@/components/ui/button'
 
 type Visibility = 'public' | 'private'
 
@@ -82,14 +83,13 @@ export function NewRoomCompose({
               >
                 Cancel
               </button>
-              <button
+              <Button
                 type="button"
                 onClick={submit}
                 disabled={!name.trim() || isPending}
-                className="rounded-xl bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
               >
                 {isPending ? 'Creating…' : 'Create board'}
-              </button>
+              </Button>
             </StudioFooter>
           }
         >

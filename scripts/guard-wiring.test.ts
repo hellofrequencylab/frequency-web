@@ -132,6 +132,13 @@ const VITEST_ENFORCED: Record<string, string> = {
   // the real census with its quarantine stripped, which must still name all five orphans) as well
   // as against the real tree, so neither half can go quietly vacuous.
   'check:stored-blocks': 'scripts/check-stored-blocks.test.ts',
+  // Added 2026-08-25 (PROG-E0, ADR-1129). The entity-block twin of check:stored-blocks and the
+  // same split for the same reason: the CLI half is pure node and cannot import the TSX entity
+  // registry, so the ENFORCING arm — every stored EntityLayout type resolves against the live
+  // registry, kind legality included — runs under vitest, where the registry is importable. The
+  // sibling test drives both halves against broken fixtures AND the frozen structural corpus of
+  // the 37 production documents, with non-vacuity proofs on each arm.
+  'check:entity-layouts': 'scripts/check-entity-layouts.test.ts',
   // Added 2026-08-17 (LIVE-023, ADR-1058). Reads test/e2e/a11y-baselines.json and asserts the
   // ratchet's numbers are what they claim to be: a bare integer is a READING checked with
   // equality, and anything weaker is a declared ceiling carrying a written reason and provenance.

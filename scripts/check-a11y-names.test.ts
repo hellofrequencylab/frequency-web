@@ -1,12 +1,16 @@
 import { describe, it, expect } from 'vitest'
+import { readFileSync } from 'node:fs'
 import {
   auditNames,
+  discoverForwarders,
   discoverWrappers,
   placeholderCeiling,
+  propBehindIdentifier,
   runAudit,
   KIT_CONTROLS,
   MAX_PLACEHOLDER_ONLY,
   MIN_FILES,
+  MIN_FORWARDERS,
   MIN_JUDGED,
   MIN_WRAPPERS,
 } from './check-a11y-names.mjs'
@@ -287,5 +291,166 @@ describe('check:a11y-names — placeholder is the LAST naming path, not the firs
 
   it('and a placeholder ALONE is still counted as the weak name it is', () => {
     expect(via('<Input placeholder="Street address" />')).toEqual(['placeholder (weak)'])
+  })
+})
+
+describe('check:a11y-names — forwarder discovery (HYG-018, ADR-1126)', () => {
+  // The symmetric half of wrapper discovery. `discoverWrappers` handles the component that puts
+  // its children INSIDE a <label>; this handles the one that renders `<Label htmlFor={id}>` as a
+  // SIBLING and takes the id from its caller. Before it existed the caller's literal never reached
+  // `fors`, and one correctly labelled control on the live tree read as placeholder-only.
+
+  const labelSrc = `
+    export function Label({ className, ...props }: LabelHTMLAttributes<HTMLLabelElement>) {
+      return <label className={cn(labelClasses, className)} {...props} />
+    }`
+  const fieldSrc =
+    "import { Label } from '@/components/ui/label'\n" +
+    'export function Field({ id, label, children }: Props) {\n' +
+    '  return <div><Label htmlFor={id}>{label}</Label>{children}</div>\n' +
+    '}'
+
+  it('finds the SPREAD shape, which is the seed the whole chain hangs off', () => {
+    // `components/ui/field.tsx`'s own Label never writes `htmlFor`: it spreads the rest of its
+    // props onto a <label>. Miss this and nothing downstream is ever discovered.
+    const found = discoverForwarders(new Map([['components/ui/label.tsx', labelSrc]]), () => false)
+    expect([...found]).toEqual([['components/ui/label.tsx::Label', 'htmlFor']])
+  })
+
+  it('🔴 MUTATION — take the spread away and the seed is gone, so the chain finds nothing', () => {
+    // The positive control for rule (b). This is the mutation that matters: a Label that renders a
+    // <label> but does not pass anything through is NOT a forwarder, and publishing it as one would
+    // hand every caller a name it does not have.
+    const inert = labelSrc.replace('{...props}', 'children={children}')
+    expect(discoverForwarders(new Map([['components/ui/label.tsx', inert]]), () => false).size).toBe(0)
+  })
+
+  it('follows the chain through an import to a fixpoint: label -> Label -> Field -> TextField', () => {
+    const files = new Map([
+      ['components/ui/label.tsx', labelSrc],
+      ['components/spaces/space-form.tsx', fieldSrc],
+      [
+        'components/spaces/text-field.tsx',
+        "import { Field } from '@/components/spaces/space-form'\n" +
+          'export function TextField({ id, label }: Props) { return <Field id={id} label={label}><input id={id} /></Field> }',
+      ],
+    ])
+    const found = discoverForwarders(files, (f) => files.has(String(f)))
+    expect(found.get('components/ui/label.tsx::Label')).toBe('htmlFor')
+    expect(found.get('components/spaces/space-form.tsx::Field')).toBe('id')
+    expect(found.get('components/spaces/text-field.tsx::TextField')).toBe('id')
+  })
+
+  it('reads the prop through a RENAMED destructure, so the caller-side name is the right one', () => {
+    const files = new Map([
+      ['components/ui/label.tsx', labelSrc],
+      [
+        'components/r.tsx',
+        "import { Label } from '@/components/ui/label'\n" +
+          'export function Row({ htmlFor: forId, label }: Props) { return <div><Label htmlFor={forId}>{label}</Label></div> }',
+      ],
+    ])
+    const found = discoverForwarders(files, (f) => files.has(String(f)))
+    expect(found.get('components/r.tsx::Row')).toBe('htmlFor')
+  })
+
+  it('🔴 MUTATION — a LOCAL that SHADOWS a prop of the same name is not a forwarded prop', () => {
+    // The direction of error that COSTS findings instead of creating them, and the only shape in
+    // which it can happen: an inner scope declares `const id` while the component also HAS a prop
+    // called `id`. Walk up naively and the row below reports "Rows forwards `id`", so every
+    // `<Rows id="x">` call site contributes a phantom `x` to `fors` and can silently name an
+    // unnamed control. Scanning the body for a shadowing declaration BEFORE the parameters is what
+    // stops it. Delete that check and this test is the one that goes red.
+    const files = new Map([
+      ['components/ui/label.tsx', labelSrc],
+      [
+        'components/rows.tsx',
+        "import { Label } from '@/components/ui/label'\n" +
+          'export function Rows({ id, rows }: Props) {\n' +
+          '  return <fieldset id={id}>{rows.map((r) => { const id = r.key; return <Label htmlFor={id}>{r.label}</Label> })}</fieldset>\n' +
+          '}',
+      ],
+    ])
+    const found = discoverForwarders(files, (f) => files.has(String(f)))
+    expect(found.has('components/rows.tsx::Rows')).toBe(false)
+  })
+
+  it('resolves a prop, a rest and a whole props object, and nothing else', () => {
+    const one = (src: string) => {
+      const found = discoverForwarders(new Map([['c.tsx', src]]), () => false)
+      return found.get('c.tsx::C') ?? null
+    }
+    expect(one('export function C({ id }) { return <label htmlFor={id} /> }')).toBe('id')
+    expect(one('export function C({ label, ...rest }) { return <label {...rest}>{label}</label> }')).toBe('htmlFor')
+    expect(one('export function C(props) { return <label {...props} /> }')).toBe('htmlFor')
+    // A computed value is not a prop and is not forwarded.
+    expect(one('export function C() { return <label htmlFor={`row-${n}`} /> }')).toBe(null)
+  })
+})
+
+describe('check:a11y-names — the forwarded label reaches the caller (HYG-018, ADR-1126)', () => {
+  // NB `Field` here is components/spaces/space-form.tsx's Field, which does NOT wrap its children
+  // in a <label> — it renders `<Label htmlFor={id}>` beside them. So no wrapperNames: the whole
+  // question is whether the FORWARDED htmlFor is resolved, and a stray wrapper entry would answer
+  // it by accident.
+  const CTX = { kitKinds: KIT.kitKinds, wrapperNames: new Set<string>() }
+  const FWD = { ...CTX, forwarderProps: new Map([['Field', 'id']]) }
+
+  it('names a control whose <label htmlFor> lives one component away', () => {
+    const src =
+      '<Field id="biz-what" label="What do you do?"><Textarea id="biz-what" placeholder="I teach yoga." /></Field>'
+    expect(auditNames(src, FWD).violations).toHaveLength(0)
+    expect([...auditNames(src, FWD).named.keys()]).toEqual(['htmlFor'])
+  })
+
+  it('🔴 MUTATION — WITHOUT the forwarder map the same control scores placeholder-only', () => {
+    // The exact defect, reconstructed. This is what the live tree printed on 2026-08-24: one
+    // finding, and the finding was correct code. If forwarder resolution regresses, this fixture
+    // is what it regresses to — and at MAX_PLACEHOLDER_ONLY = 0 the ratchet fires on it.
+    const src =
+      '<Field id="biz-what" label="What do you do?"><Textarea id="biz-what" placeholder="I teach yoga." /></Field>'
+    const blind = auditNames(src, { ...CTX, forwarderProps: new Map() })
+    expect(blind.weak).toHaveLength(1)
+    expect(placeholderCeiling(blind.weak.length).over).toBe(true)
+  })
+
+  it('a forwarder cannot name a control the caller never gave an id to', () => {
+    // `fors` only ever grows by the LITERAL the caller wrote. A Field with no id contributes
+    // nothing, so an unnamed sibling stays a finding rather than being absorbed by the resolver.
+    const src = '<Field label="Notes"><span className={lbl}>Notes</span><Input value={v} onChange={f} /></Field>'
+    expect(auditNames(src, { ...FWD }).violations)
+      .toHaveLength(1)
+  })
+
+  it('propBehindIdentifier is exported so the resolution can be argued about directly', () => {
+    expect(typeof propBehindIdentifier).toBe('function')
+  })
+})
+
+describe('check:a11y-names — forwarding, against the REAL tree', () => {
+  const result = runAudit()
+
+  it('resolves the forwarder chain it claims to, seed included', () => {
+    expect(result.forwarders.size).toBeGreaterThanOrEqual(MIN_FORWARDERS)
+    // The seed. Lose the `{...props}` spread rule and this one goes, taking the chain with it.
+    expect(result.forwarders.get('components/ui/field.tsx::Label')).toBe('htmlFor')
+    expect(result.forwarders.get('components/spaces/space-form.tsx::Field')).toBe('id')
+  })
+
+  it('🔴 MUTATION — the live call site is really named this way, not by luck', () => {
+    // Audit the real business-quickstart file twice: once with the forwarder map the run builds,
+    // once blind. Blind, it is the single placeholder-only control that held the ceiling at 1.
+    const file = 'app/(main)/spaces/new/business/business-quickstart-form.tsx'
+    const src = readFileSync(file, 'utf8')
+    const kitKinds = new Map([
+      ['Input', 'input'],
+      ['Textarea', 'textarea'],
+    ])
+    const blind = auditNames(src, { kitKinds, forwarderProps: new Map() }, file)
+    expect(blind.weak.map((w: { line: number }) => w.line)).toEqual([50])
+
+    const seeing = auditNames(src, { kitKinds, forwarderProps: new Map([['Field', 'id']]) }, file)
+    expect(seeing.weak).toHaveLength(0)
+    expect(seeing.judged).toBe(blind.judged)
   })
 })

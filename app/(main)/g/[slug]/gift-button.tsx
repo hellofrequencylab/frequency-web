@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react'
 import { Zap, Check } from 'lucide-react'
 import { giftZap } from './actions'
+import { Button } from '@/components/ui/button'
 
 export function GiftButton({ slug }: { slug: string }) {
   const [pending, start] = useTransition()
@@ -27,14 +28,13 @@ export function GiftButton({ slug }: { slug: string }) {
 
   return (
     <div className="space-y-2">
-      <button
+      <Button
         onClick={send}
         disabled={pending}
-        className="inline-flex items-center gap-1.5 rounded-control bg-primary text-on-primary px-4 py-2 text-body-sm font-semibold hover:bg-primary-hover transition-colors disabled:opacity-60"
       >
         <Zap className="w-4 h-4" />
         {pending ? 'Sending…' : 'Give a zap'}
-      </button>
+      </Button>
       {state !== 'idle' && <p className="text-meta text-danger">{state}</p>}
     </div>
   )
