@@ -27,14 +27,19 @@ function svgUrlToPngBlob(svgUrl: string, fallbackSize: number): Promise<Blob> {
   })
 }
 
-function triggerDownload(blob: Blob, filename: string) {
-  const url = URL.createObjectURL(blob)
+/** Click a synthetic <a download> at `url`. Same-origin only, which every caller here is. */
+function clickDownload(url: string, filename: string) {
   const a = document.createElement('a')
   a.href = url
   a.download = filename
   document.body.appendChild(a)
   a.click()
   a.remove()
+}
+
+function triggerDownload(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob)
+  clickDownload(url, filename)
   setTimeout(() => URL.revokeObjectURL(url), 1000)
 }
 
@@ -53,7 +58,15 @@ export async function downloadStyledQrPng(apiBase: string, name: string, size = 
       URL.revokeObjectURL(blobUrl)
     }
   } catch {
-    window.location.href = `${apiBase}&format=png&download=${encodeURIComponent(safe)}`
+    // FALL BACK TO THE SERVER-RENDERED PNG VIA AN <a download>, NOT `window.location.href`.
+    // This is a file fetch, not a navigation, so the lint rule that flagged the old line
+    // (@next/next/no-location-assign-relative-destination) was right to flag it and wrong in its
+    // remedy: `router.push()` at an /api route client-navigates, and downloads nothing. An anchor
+    // is what this always wanted. It is also strictly safer — assigning `location` unloads the
+    // page and depends on the server setting Content-Disposition to bring the member back, so a
+    // missing header would have dropped them on a raw PNG instead of on the code they were
+    // downloading. The `download` attribute names the file same-origin whatever the header says.
+    clickDownload(`${apiBase}&format=png&download=${encodeURIComponent(safe)}`, `${safe}.png`)
   }
 }
 

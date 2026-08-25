@@ -31974,3 +31974,54 @@ The same file caught two more probes the same day: one carrying a double quote i
 body (the shell eats it, the probe throws, and a `SyntaxError` exit 1 reads as an honest *"not
 done"* forever), and one whose `\\s` was eaten the same way. **A probe is code that runs unattended
 and reports on itself; the gate that checks the checker earned its place three times in one session.**
+
+---
+
+## ADR-1142: eslint warnings were never ratcheted, and the guard that checks the checkers rejected the style it recommends (2026-08-25)
+
+**Status:** Accepted · `package.json` (`"lint": "eslint --max-warnings=0"`), `scripts/check-backlog.mjs`,
+`scripts/backlog-contract.test.ts`, SCAN-509
+
+**Context.** Verifying merged `main` after the MS25 program turned up two eslint warnings, and behind
+them the reason there were exactly two: `pnpm lint` was bare `eslint`, with **no `--max-warnings`**.
+The `lint` job is a required context (ruleset 17640795), so it has always run — and a warning has
+**never** failed it. Zero warnings was a state nobody was holding, not a floor. This is the shape
+[ADR-970](#adr-970) keeps naming from the other side: not a gate routed around, but a gate that was never
+armed, reading as coverage because it was green.
+
+**Both warnings were real defects, not noise.**
+
+| | Finding | Why it mattered |
+| :-- | :-- | :-- |
+| 1 | `app/(main)/events/admin-actions.ts` declared `PlaceTimeRow`, referenced nowhere, under a heading claiming when/where lived in its own admin module `event-place-time-module` | **No such module exists and none ever did for events.** `place` is a spine slot only `circle.placeAndTime` fills (`lib/admin/modules/registry.ts`); an event edits its when/where in `event-settings-module.tsx` against `lib/studio/entities/event.ts`. The type was a strict subset of `EventAdminRow` kept in step with it by nobody — a second declaration of one row shape, which is the drift the Studio contract exists to prevent |
+| 2 | `lib/qr/client-download.ts` fell back to `window.location.href = <relative /api/qr URL>` when client-side rasterisation failed | The rule that flagged it was right to flag it and **wrong in its remedy**: it suggests `router.push()`, which at an `/api` route client-navigates and downloads nothing. A code download is a file fetch, so it wanted an `<a download>` all along — and the anchor is strictly safer, because assigning `location` unloads the page and depends on the server's `Content-Disposition` to bring the member back, so a missing header dropped them on a raw PNG instead of on the code they were downloading |
+
+**Decision.** Fix both, then **ratchet**: `--max-warnings=0` on the lint script CI already runs.
+Proven green on the merged tree *before* wiring (0 errors, 0 warnings), and proven to **fire** by a
+mutation — a re-added unused `DeadShape` type turned it red at exit 1. ⚠️ The first mutation attempt
+used `_Unused` and did **not** fire, because the rule exempts `/^_/`. Recorded because a control that
+cannot fail reads as coverage, and this one nearly shipped as exactly that.
+
+**And the guard that checks the checkers had the same bug, pointed inward.** SCAN-509's probe was
+written in the safer style — `node -e '…'` under single quotes, so the body needs no backslashes at
+all — and `check:backlog` **refused it**, because the quote rule counted double quotes
+*unconditionally*. It was therefore blind to a bare single quote inside a single-quoted body, and it
+rejected the very style its own failure message recommends. The rule now derives the hazard from the
+quote that **opened** the body and complains about that character only. All four cases are pinned in
+`backlog-contract.test.ts`: bare-double-in-double fires, escaped-double-in-double passes,
+bare-single-in-single fires, double-in-single passes.
+
+**Consequences.**
+- A warning now fails the required `lint` job. Fix it, or disable the rule inline with a reason —
+  the point is that the choice becomes visible in a diff instead of accumulating.
+- SCAN-509's probe measures the **ratchet** (`--max-warnings=0` present, `ci.yml` still running
+  `pnpm lint` under a job named exactly `lint`), not the tree. The ratchet is what holds the tree at
+  zero on every future PR; re-running eslint in a probe would cost minutes and prove only today.
+- ⚠️ That probe **strips comment lines before searching**, and must: the fix's own comments name
+  `PlaceTimeRow` and `location.href` verbatim to explain why they are gone, so a naive grep would
+  flag its own explanation.
+- 🔴 The probe's first version used double quotes with escaped regex classes, the escaping mangled
+  the `-e` argument, node fell through to **reading stdin, and the probe hung** — which
+  `check-backlog` scored `unprovable` rather than passing. It sat in the unprovable bucket looking
+  like coverage until the count was read: `179 probes agree` had not moved, and `unprovable here`
+  had gone 3 → 4. **That two-number tell is the reason the guard prints both.**
