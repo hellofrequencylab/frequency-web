@@ -9,6 +9,7 @@ import { SITE_URL } from '@/lib/site'
 import { EventCalendar, type CalendarEvent } from '@/components/events/event-calendar'
 import { CalendarSubscribeMenu } from '@/components/events/calendar-subscribe-menu'
 import { pageContentMetadata } from '@/lib/page-content'
+import { resolveIndexHero } from '@/lib/layout/index-hero'
 
 // THE MASTER FREQUENCY CALENDAR (Events EC3). A month grid of every upcoming PUBLIC event across the
 // network; clicking one opens a truncated popup with a "Go to Event" link. A guest can subscribe the
@@ -79,8 +80,16 @@ export default async function EventsCalendarPage() {
   const httpsUrl = `${SITE_URL}/events/calendar.ics`
   const webcalUrl = httpsUrl.replace(/^https?:\/\//, 'webcal://')
 
+  // The hero band through the ONE browse-hero ladder (lib/layout/index-hero, PROG-P4). The calendar
+  // sets no cover of its own, so it INHERITS the Events section hero through the copy cascade
+  // (PROG-P6, ADR-1122) — the photo an operator uploaded for /events in June, which this page has
+  // never shown. Its INDEX_HERO_DEFAULTS row takes `short`: a month grid is a work surface, and a
+  // 24rem band would push the first week below the fold on a phone.
+  const hero = await resolveIndexHero('/events/calendar')
+
   return (
     <IndexTemplate
+      {...hero}
       trail={[
         { href: '/events', label: 'Events' },
         { href: '/events/calendar', label: 'Calendar' },

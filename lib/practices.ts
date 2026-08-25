@@ -31,6 +31,7 @@ import { loadRootSpaceId } from '@/lib/spaces/store'
 import { resolveMemberDay, memberDay } from '@/lib/member-day'
 import { attributedLogDay } from '@/lib/practices/log-day'
 import { clampTierToDuration, achievedTier, type PracticeTier } from '@/lib/practices/tiers'
+import { normalizePrimaryPct, type PillarSplit } from '@/lib/practices/attribution'
 import { coerceTermWeeks, cleanCue, termWindow, withinActiveCap } from '@/lib/practices/adoption'
 import { BREATH_PATTERNS } from '@/lib/on-air'
 import {
@@ -2713,16 +2714,31 @@ export async function logPractice(input: {
   let weightClass: string | null = null
   let rewardZaps: number | null = null
   let createdBy: string | null = null
+  // The Pillar split, read in the same trip so the attribution snapshot below costs no extra
+  // query (Phase 4 ledger, ADR-1131).
+  let pillarSplit: PillarSplit = { pillarId: null, secondaryPillarId: null, primaryPct: null }
   try {
     const { data } = await db()
       .from('practices')
-      .select('weight_class, reward_zaps, created_by')
+      .select('weight_class, reward_zaps, created_by, domain_id, secondary_domain_id, primary_pct')
       .eq('id', practiceId)
       .maybeSingle()
-    const row = data as { weight_class: string | null; reward_zaps: number | null; created_by: string | null } | null
+    const row = data as {
+      weight_class: string | null
+      reward_zaps: number | null
+      created_by: string | null
+      domain_id: string | null
+      secondary_domain_id: string | null
+      primary_pct: number | null
+    } | null
     weightClass = row?.weight_class ?? null
     rewardZaps = row?.reward_zaps ?? null
     createdBy = row?.created_by ?? null
+    pillarSplit = {
+      pillarId: row?.domain_id ?? null,
+      secondaryPillarId: row?.secondary_domain_id ?? null,
+      primaryPct: row?.primary_pct ?? null,
+    }
   } catch {
     // fall back to the standard class
   }
@@ -2771,15 +2787,39 @@ export async function logPractice(input: {
   // log and un-log, so the row carries the true grant. Best-effort + reached through the
   // untyped handle (the `zaps_awarded` column is newer than the generated types; ADR-246):
   // a failed write just leaves NULL, which the un-log treats as 0 (never over-debits).
-  try {
-    await db()
-      .from('practice_logs')
-      .update({ zaps_awarded: zapsAwarded })
-      .eq('profile_id', profileId)
-      .eq('practice_id', practiceId)
-      .eq('logged_for', day)
-  } catch {
-    // never let the un-log bookkeeping write break the log
+  //
+  // The Pillar-split SNAPSHOT (Phase 4 attribution ledger, ADR-1131) freezes beside the
+  // amount for the same drift reason: a curator can re-balance the practice long after this
+  // log, and per-Pillar progress must not re-attribute history. If the combined write fails
+  // (e.g. this code deploys before migration 20270324000000 lands the snapshot columns —
+  // stated deploy posture in ADR-1131), retry with zaps_awarded alone so the un-log
+  // exactness NEVER regresses; a null snapshot is then covered by the reader's documented
+  // current-split fallback (lib/practices/attribution.ts).
+  {
+    const stampLog = (patch: Record<string, unknown>) =>
+      db()
+        .from('practice_logs')
+        .update(patch)
+        .eq('profile_id', profileId)
+        .eq('practice_id', practiceId)
+        .eq('logged_for', day)
+    try {
+      const { error } = await stampLog({
+        zaps_awarded: zapsAwarded,
+        pillar_id: pillarSplit.pillarId,
+        secondary_pillar_id:
+          pillarSplit.secondaryPillarId === pillarSplit.pillarId ? null : pillarSplit.secondaryPillarId,
+        primary_pct: pillarSplit.pillarId ? normalizePrimaryPct(pillarSplit) : null,
+      })
+      if (error) await stampLog({ zaps_awarded: zapsAwarded })
+    } catch {
+      // never let the un-log bookkeeping write break the log
+      try {
+        await stampLog({ zaps_awarded: zapsAwarded })
+      } catch {
+        // a failed write just leaves NULL, which the un-log treats as 0
+      }
+    }
   }
 
   await recordStreakActivity(profileId, 'attendance').catch(() => {})

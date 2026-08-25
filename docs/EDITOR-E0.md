@@ -6,7 +6,10 @@
 >
 > Parent spec: [`EDITOR-ARCHITECTURE.md`](EDITOR-ARCHITECTURE.md) · Decisions:
 > [ADR-974](DECISIONS.md) · [ADR-975](DECISIONS.md) · [ADR-976](DECISIONS.md).
-> **Verified against the live tree and the production database on 2026-08-10.**
+> **Verified against the live tree and the production database on 2026-08-10, and RE-VERIFIED
+> 2026-08-25** ([ADR-1129](DECISIONS.md)) — §0's table, §1.2's fold, §4.1's blocker and four rows
+> of §8 all moved. This document explains the work; **it does not track whether it is done** —
+> `docs/BUILD-BACKLOG.json` is the only record of that.
 > `tsc --noEmit` exits 0; `rows-ops` + `layout` + `templates` suites are 128/128 green.
 >
 > Legend: ✅ built · ⏳ partial · 📋 specced · 🔴 blocked / wrong today.
@@ -16,22 +19,31 @@
 
 ## 0. The measurement that should shape everyone's expectations
 
-| Store | Rows | Note |
-|---|---:|---|
-| `spaces.preferences.profileLayout` | **17** | all already in `rows` shape; **0** legacy `slots`; 17 carry `content`, 15 carry `style` |
-| `spaces.preferences.profileLayoutDraft` | **0** | no in-flight drafts to reconcile |
-| `profiles.meta.entityGrid` | **0** | 🎉 the member grid has **zero** stored documents |
-| `pages` | **5** (2 published) | all root-Space marketing |
-| `campaigns.block_json` | **12** | `EntityLayout`, email kind |
-| `email_templates.block_json` | **7** | `EntityLayout`, email kind |
-| `nurture_steps.block_json` | **0** | — |
-| `app_instances` | **0** | confirms "zero writers, zero readers" |
-| `page_settings` | 36 | untouched by node-id keying; relevant to §4 |
+✅ **Re-measured against the live database 2026-08-25 ([ADR-1129](DECISIONS.md)).** Four figures
+moved and one row's subject no longer exists. The 2026-08-10 reading is kept in the right-hand
+column, because a figure that moved is worth more than a figure that was silently overwritten.
 
-**41 documents total.** The scary-sounding storage-shape migration is a fixture file. The genuine
-risk is concentrated in **19 email documents on two cron send paths with no visual gate** (and email
-is actively sending — 297 in the last 30 days, most recent today), and in
-the ~40 code files that assume one block per type.
+| Store | Rows (2026-08-25) | Was (2026-08-10) | Note |
+|---|---:|---:|---|
+| `spaces.preferences.profileLayout` | **18** | 17 | all in `rows` shape; **0** legacy `slots`; 18 carry `content`, 15 carry `style`, 1 carries `hidden` |
+| `spaces.preferences.profileLayoutDraft` | **0** | 0 | no in-flight drafts to reconcile |
+| `profiles.meta.entityGrid` | **0** | 0 | 🎉 the member grid has **zero** stored documents |
+| `pages` | **4** (1 published) | 5 (2) | all root-Space marketing. Puck-shaped, NOT `EntityLayout` |
+| `campaigns.block_json` | **12** | 12 | `EntityLayout`, email kind |
+| `email_templates.block_json` | **7** | 7 | `EntityLayout`, email kind |
+| `nurture_steps.block_json` | **0** | 0 | — |
+| 🔴 `app_instances` | **the table is gone** | 0 | dropped 2026-08-19 by `20270316000000` (OWN-031). See §4.1 |
+| `page_settings` | 36 | 36 | untouched by node-id keying; relevant to §4 |
+
+**41 documents total — the same number, differently composed** (one `pages` row fewer, one Space
+layout more). Of those, **37 are `EntityLayout`** and are frozen structurally in
+`scripts/entity-layout-corpus.json`; the 4 `pages` rows are Puck-shaped and belong to
+`scripts/stored-block-types.json`.
+
+The scary-sounding storage-shape migration is a fixture file. The genuine risk is concentrated in
+**19 email documents on two cron send paths with no visual gate** (and email is actively sending —
+297 in the last 30 days, most recent today), in the ~40 code files that assume one block per type,
+and — newly measured — in **35 authored content bags that no cell references**, §1.2.
 
 ---
 
@@ -97,6 +109,19 @@ interface RowDef { id, columns, cells: BlockNode[][], ratio?, title?, headerOn?,
 ```
 
 `EntityLayout.content` and `.style` are **deleted, not re-keyed.**
+
+🔴 **CORRECTED 2026-08-25 ([ADR-1129](DECISIONS.md)): deleting them is a PARTITION, not a
+projection, and the literal reading loses author work.** The sibling map is the only storage a
+**benched** block's content has — `rows-ops.ts:13-15` says so outright: *"benching a block removes
+it from its column so it falls back to the derived bench tray **with its config intact**."* Intact
+in `content[id]`, which after benching no cell references. Measured live: **35 such bags (34
+`content`, 1 `style`) across 18 of 18 Space documents** — `about` on 17, `story` on 16, `cardGrid`
+on 1, a `heading` style bag on 1. A fold that walks only `cells` deletes every one.
+
+So `upgradeLayout` matches every `content` / `style` / `hidden` key to a placed node **or mints a
+bench node for it**, and `NodeLayout.bench` is *stored* — which §1.3 already wanted, arrived at
+there from design and here from data. ✅ Shipped and proven over the frozen corpus
+(`lib/entity-blocks/node-tree.ts`, `benchLoss()` asserts the partition held on all 37 documents).
 
 ### 1.3 What replaces the dedupe
 
@@ -309,7 +334,29 @@ fails CI.
 
 ## 4. `app_instances` writers
 
-### 4.1 🔴 A vocabulary collision that blocks the first writer
+### 4.1 🔴 SUPERSEDED 2026-08-25 — there is no constraint, because there is no table
+
+**`app_instances` was dropped on 2026-08-19** by `20270316000000_drop_app_instances_until_e0.sql`
+(OWN-031, *"do best practice"*), whose own text names E0 as the owner that will **re-create it with
+its writers**. Verified absent in the live database 2026-08-25 ([ADR-1129](DECISIONS.md)).
+
+That deletes the blocker rather than solving it, and it makes task 16 **cheaper, not harder**:
+
+| The plan said | The tree says |
+|---|---|
+| Widen the `surface_type` CHECK from 6 values | There is no CHECK. There is no column. There is no table |
+| **NOT ADDITIVE** — drop-and-add, deliberate-apply per `WORKFLOW.md` | A `create table` is **additive**. No ceremony |
+| Pre-flight is trivial: 0 rows | Still trivial: 0 rows, because there is no table |
+| Task 16 (widen) precedes task 17 (writer) | **16 and 17 are one PR**: create the table WITH its first writer, which is the whole lesson OWN-031 drew |
+
+The vocabulary question below is still live and still the right answer — the new table takes the
+architecture's four values, not the old six. The migration version for that work is assigned
+centrally; do not derive it from the ledger head.
+
+<details>
+<summary>The superseded §4.1, kept because its reasoning about the vocabulary is what task 16 still needs</summary>
+
+### 4.1 (superseded) A vocabulary collision that blocks the first writer
 
 `surface_type` carries `check (surface_type in ('page','space','email','spotlight','rail','other'))`.
 [`EDITOR-ARCHITECTURE`](EDITOR-ARCHITECTURE.md) §3 declares a **different** vocabulary:
@@ -322,6 +369,8 @@ fails CI.
 migration, or the enum is widened first. **Widen it first.** A CHECK change is drop-and-add, so it is
 **NOT ADDITIVE** under `docs/WORKFLOW.md` and needs the deliberate-apply treatment. Pre-flight is
 trivial — 0 rows.
+
+</details>
 
 ### 4.2 The first writer
 
@@ -454,27 +503,26 @@ Sequenced by hard dependency, not by size. One PR per row unless noted.
 
 | # | Task | Depends on | Lift | Gate to land it |
 |---:|---|---|:---:|---|
-| **1** | Correct the `bindings.tsx` claim in the docs; tidy the three header comments | — | XS | — |
-| **2** | `render_path` flags — 5 seeded-**false** rows, reader, `/admin/page-layout` toggle | — | S | Readable + auditable in `platform_flag_events` |
-| **3** | **`isWellFormed`/`isFullyKnown`/`unknownTypes`**; stop discarding documents at all 10 call sites; `UnknownBlock` placeholder | — | M | `check:render-path` green, ledger untouched |
-| **4** | `check:doc-safety` + the frozen corpus (41 real documents + synthetic unknown-type cases) | 3 | S | New gate green, wired into `ci.yml` |
-| **5** | `page_versions` migration + both ledger rows + regenerate types | — | S | `check:migrations` · `check:rls` · `check:grants` |
+| **1** | ✅ **DONE.** Correct the `bindings.tsx` claim in the docs; tidy the three header comments | — | XS | — |
+| **2** | `render_path` flags — 5 seeded-**false** rows, reader, `/admin/page-layout` toggle | — | S | Readable + auditable in `platform_flag_events`. ⚠️ Verified 2026-08-25: **0 of the 5 keys exist** in `platform_flags` (25 rows, none `render_path_*`) |
+| **3** | ✅ **DONE — [ADR-978](DECISIONS.md).** `isWellFormed`/`isFullyKnown`/`unknownTypes` ship in `lib/page-editor/templates/index.ts`; `isRenderable` is a deprecated alias; the Space twin is `templates/space.ts` | — | M | `check:render-path` green, ledger untouched |
+| **4** | ⏳ **HALF DONE.** `check:stored-blocks` + `scripts/stored-block-types.json` ([ADR-1055](DECISIONS.md)) cover the **Puck** catalog; `check:entity-layouts` + `scripts/entity-layout-corpus.json` ([ADR-1129](DECISIONS.md)) cover the **entity** catalog's 37 documents. The round-trip half (`check:doc-safety`, D1–D6 of [`EDITOR-GATES.md`](EDITOR-GATES.md)) is still open | 3 | S | New gate green, wired into `ci.yml` |
+| **5** | `page_versions` migration + both ledger rows + regenerate types | — | S | `check:migrations` · `check:rls` · `check:grants`. ⚠️ **Do not land it without task 6** — a table with a perfect schema and no writer is what OWN-031 dropped `app_instances` for |
 | **6** | Publish as pointer swap; dual-write; `revertToVersion`; version-history **Focus** panel (one line in `page-chrome.ts`) | 5 | M | publish → revert → publish round-trips |
 | **7** | Drop `published_data` from the read path, then the schema | 6, +1 release | S | Zero readers remain |
-| **8** | `BlockNode` + `upgradeLayout()` — pure, total, idempotent, deterministic ids | 4 | M | `upgrade(upgrade(x)) === upgrade(x)` for all 41 |
-| **9** | Call `upgradeLayout` in `parseEntityLayout` — readers node-shaped, nothing written | 8 | S | Full suite green; visual diff zero |
+| **8** | ✅ **DONE — [ADR-1129](DECISIONS.md).** `BlockNode` + `upgradeLayout()` in `lib/entity-blocks/node-tree.ts` — pure, total, idempotent, deterministic ids, and the bench partition §1.2 was missing. NOT in any read path | 4 | M | `upgrade(upgrade(x)) === upgrade(x)` over the 37 frozen `EntityLayout` shapes; `benchLoss()` empty on every one |
+| **9** | Call `upgradeLayout` in `parseEntityLayout` — readers node-shaped, nothing written | 8 | S | Full suite green; visual diff zero. Backlog `LIVE-119` |
 | **10** | Delete the five dedupe sets; per-type limits; `bench` becomes stored | 9 | M | Two `text` blocks coexist; two `offerings` refused |
 | **11** | `rows-ops.ts` → node ops; content/style fold in; per-node sanitize | 10 | M | CodeQL clean; no user-originated write key anywhere |
 | **12** | Renderers + editor — `renderNode`, the 13 files, `selectedNid` | 11 | M | old ⇄ new `renderToStaticMarkup` equal per block |
 | **13** | 🔴 **Email path** — `render.ts` + 6 siblings | 12 | M | **Email golden strings land first.** 19 live documents on 3 crons |
 | **14** | Actions, routes, importer, AI — 12 route/action + 8 lib files | 12 | M | `check:doc-safety` green on the corpus |
 | **15** | Backfill `scripts/upgrade-entity-layouts.mjs` — dry-run, per-row diff, snapshot first | 14 | S | 41 rows normalized; re-run is a no-op |
-| **16** | `app_instances` surface-vocabulary widening (**NOT ADDITIVE**, deliberate apply) | 11 | S | 0 rows, so no validation risk |
-| **17** | `lib/apps/instances.ts` + first writer on `saveSpaceGridLayout`'s publish path | 16, 11 | M | Publishing writes N rows whose `id` = the node ids |
+| **16+17** | 🔴 **RE-SCOPED 2026-08-25 (§4.1).** The table was DROPPED on 2026-08-19, so this is one **additive** `create table` carrying the four-value surface vocabulary, shipped in the SAME PR as `lib/apps/instances.ts` and the first writer on `saveSpaceGridLayout`'s publish path | 11 | M | Publishing writes N rows whose `id` = the node ids. Migration version assigned centrally |
 | **18** | **CRDT** (§7) — schema, mapping, channel + authz, awareness, snapshot, undo, reconnect | 11 | L | Round-trip exact; two clients converge; **zero editor bytes public** |
 
-**Critical path: 8 → 9 → 10 → 11 → 12 → 13**, with **18** branching off 11. Items 1–7 and 16 are
-fully parallel.
+**Critical path: 8 → 9 → 10 → 11 → 12 → 13**, with **18** branching off 11. Items 1–7 and 16+17 are
+fully parallel. ✅ **8 is done, so the head of the critical path is now 9** ([ADR-1129](DECISIONS.md)).
 
 ⚠️ **Item 3 should land first regardless of everything else.** It is the only item on this list that
 is *currently destroying author work* every time a block type is renamed.
@@ -483,7 +531,11 @@ is *currently destroying author work* every time a block type is renamed.
 
 ## 9. Two prerequisites from outside E0
 
-- ⏳ **`FINALIZE-PLAN` 1.2/1.3** (recapture the 72 stale visual baselines) **gate E0's START**
+- ⏳ **`FINALIZE-PLAN` 1.2/1.3** (recapture the 72 stale visual baselines) **gate E0's START** —
+  re-read 2026-08-25: **1.2 is ✅ done** (62 of 72 recaptured on run `31422100196`); **1.3 is still
+  open** (`/feed` and `/settings` have no `a11y-baselines.json` entry, so seeding them is a
+  deliberate `--force`). Items that touch no rendered surface — task 8 and this pass — are not held
+  by it; anything that moves pixels is.
   ([ADR-976](DECISIONS.md) D-8); the *rest* of FINALIZE Phase 1 gates E1. An earlier draft of this
   bullet said 1.2 gates "E1, not E0" and then cited D-8 saying the opposite in the same sentence.
   Items 8–14 are additionally covered by `renderToStaticMarkup` equivalence, which works even while

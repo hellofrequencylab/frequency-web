@@ -10,6 +10,7 @@ import type {
 import { createRule, editRule, type RuleResult } from './actions'
 import { Input, Textarea } from '@/components/ui/field'
 import { Select } from '@/components/ui/select'
+import { Button } from '@/components/ui/button'
 
 const CHANNELS: { value: AutomationActionType; label: string }[] = [
   { value: 'email_actor', label: 'Email' },
@@ -215,14 +216,13 @@ export function RuleForm({
       )}
 
       <div className="flex items-center gap-3">
-        <button
+        <Button
           onClick={submit}
           disabled={pending || !name.trim()}
-          className="inline-flex items-center gap-2 rounded-lg bg-primary hover:bg-primary-hover text-on-primary text-body-sm font-semibold px-4 py-2 lift-1 transition-colors disabled:opacity-60"
         >
           <Plus className="w-4 h-4" />
           {pending ? 'Saving…' : editing ? 'Save changes' : 'Create automation'}
-        </button>
+        </Button>
         {editing && onDone && (
           <button onClick={onDone} className="text-body-sm text-subtle hover:text-text">Cancel</button>
         )}

@@ -6,6 +6,7 @@ import { Sparkles, Wand2, ChevronDown } from 'lucide-react'
 import { buildPracticeWithVeraAction, applyVeraPracticeChangeAction } from '@/app/(main)/practices/actions'
 import { isError } from '@/lib/action-result'
 import { Textarea } from '@/components/ui/field'
+import { Button } from '@/components/ui/button'
 
 // The Vera composer in the Practice editor (ADR-358), the atom-level twin of the Journey composer
 // (components/journey/v2/journey-composer.tsx). Two modes, by whether the Practice has a guide yet:
@@ -81,9 +82,9 @@ export function PracticeComposer({ id, isEmpty }: { id: string; isEmpty: boolean
           {error && <p className="mt-1 text-meta text-danger">{error}</p>}
           {note && <p className="mt-1 text-meta text-muted">{note}</p>}
           <div className="mt-3">
-            <button type="button" disabled={pending || !build.trim()} onClick={runBuild} className="inline-flex items-center gap-1.5 rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary hover:bg-primary-hover disabled:opacity-60">
+            <Button type="button" disabled={pending || !build.trim()} onClick={runBuild}>
               <Wand2 className="h-4 w-4" /> {pending ? 'Building…' : 'Build with Vera'}
-            </button>
+            </Button>
           </div>
           <div className="mt-4">
             <p className="text-2xs font-semibold uppercase tracking-wide text-muted">What you&apos;ll get</p>
@@ -113,9 +114,9 @@ export function PracticeComposer({ id, isEmpty }: { id: string; isEmpty: boolean
           {error && <p className="mt-1 text-meta text-danger">{error}</p>}
           {note && <p className="mt-1 text-meta text-muted">{note}</p>}
           <div className="mt-3">
-            <button type="button" disabled={pending || !change.trim()} onClick={apply} className="inline-flex items-center gap-1.5 rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary hover:bg-primary-hover disabled:opacity-60">
+            <Button type="button" disabled={pending || !change.trim()} onClick={apply}>
               <Wand2 className="h-4 w-4" /> {pending ? 'Applying…' : 'Apply with Vera'}
-            </button>
+            </Button>
           </div>
         </>
       )}

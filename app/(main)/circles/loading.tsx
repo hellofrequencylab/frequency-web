@@ -1,5 +1,14 @@
 import { Skeleton } from '@/components/ui/skeleton'
 
+// Route-level loading UI for the Circles index (PAGE-FRAMEWORK §5).
+//
+// It used to open with `px-4 py-8 max-w-2xl mx-auto` — the RETIRED page shell. The app shell's
+// <main> already supplies the outer padding (px-4 sm:px-6 lg:px-8 on the content column, py-6 on
+// <main>), so that wrapper double-padded, and `max-w-2xl` painted a narrow column the destination
+// has not used since the index moved onto MarketHero. Opening /circles flashed a narrow left-ish
+// list and then reflowed into a full-width hero. The skeleton now paints what page.tsx renders:
+// the shared PageHero band (its `large` tier, lib/layout/header-sizes.ts), the divider rule under
+// it, then the card list at the column's own width.
 function CircleCardSkeleton() {
   return (
     <div className="rounded-card border border-border bg-surface p-4">
@@ -25,11 +34,9 @@ function CircleCardSkeleton() {
 
 export default function CirclesLoading() {
   return (
-    <div className="px-4 py-8 max-w-2xl mx-auto">
-      <div className="mb-6 space-y-2">
-        <Skeleton className="h-6 w-24" />
-        <Skeleton className="h-4 w-80" />
-      </div>
+    <div>
+      <Skeleton className="min-h-[15rem] w-full rounded-3xl sm:min-h-[24rem]" />
+      <div className="mb-5 mt-4 border-b border-border sm:mb-6" />
       <div className="space-y-2">
         {Array.from({ length: 4 }).map((_, i) => (
           <CircleCardSkeleton key={i} />

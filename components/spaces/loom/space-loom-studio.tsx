@@ -14,6 +14,7 @@ import { useCallback, useEffect, useRef, useState, useTransition } from 'react'
 import { Upload, Loader2, Search, Trash2, ImageIcon, X } from 'lucide-react'
 import { loomImages, uploadLoomImage, deleteSpaceLoomImage } from '@/lib/loom/picker-actions'
 import { prepareImageForUpload, SERVER_MAX_BYTES } from '@/lib/library/image-shrink'
+import { appendImageDescriptor, describeImage } from '@/lib/library/image-describe'
 import { looksLikeImage } from '@/lib/library/upload-kinds'
 import type { LoomPickAsset } from '@/lib/library/store'
 import { Input } from '@/components/ui/field'
@@ -83,6 +84,8 @@ export function SpaceLoomStudio({
           if (file.size > SERVER_MAX_BYTES) { skipped++; continue }
           const fd = new FormData()
           fd.append('file', file)
+          // The browser half of ingest — blurhash, palette, true dimensions (PROG-D1). Best-effort.
+          appendImageDescriptor(fd, await describeImage(raw))
           let res: Awaited<ReturnType<typeof uploadLoomImage>>
           try {
             res = await uploadLoomImage(spaceId, fd)
@@ -92,7 +95,7 @@ export function SpaceLoomStudio({
           }
           if ('error' in res) { setError(res.error); continue }
           setAssets((prev) => [
-            { id: res.id, title: file.name, url: res.url, alt: null, kind: 'image', generated: false, tags: [] },
+            { id: res.id, title: file.name, url: res.url, alt: null, kind: 'image', generated: false, tags: [], category: null },
             ...prev.filter((a) => a.id !== res.id),
           ])
         }

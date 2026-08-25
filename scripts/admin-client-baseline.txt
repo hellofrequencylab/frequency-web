@@ -611,10 +611,12 @@ lib/journeys/publish-gate.ts
 lib/journeys/run-gate.ts
 lib/journeys/runs.ts
 lib/keystone/store.ts
+lib/layout/content-cascade.ts
 lib/layout/page-chrome.ts
 lib/library.ts
 lib/library/embeddings.ts
 lib/library/event-loom.ts
+lib/library/resolve-refs.ts
 lib/library/splash-registry.ts
 lib/library/store.ts
 lib/library/styles.ts
@@ -685,6 +687,7 @@ lib/playbooks/seed.ts
 lib/practice-activity.ts
 lib/practice-streak.ts
 lib/practices.ts
+lib/practices/attribution.ts
 lib/practices/clean.ts
 lib/practices/embeddings.ts
 lib/practices/health.ts
