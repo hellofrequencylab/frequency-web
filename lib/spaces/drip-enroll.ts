@@ -21,7 +21,7 @@
 // member still joins). The caller fires-and-forgets (`void fireSpaceTrigger(...)`).
 
 import { createAdminClient } from '@/lib/supabase/admin'
-import { log } from '@/lib/log'
+import { log, briefError } from '@/lib/log'
 import { normalizeDelayHours, type SpaceAutomationTrigger } from '@/lib/spaces/automation'
 
 // ── Types ─────────────────────────────────────────────────────────────────────────────────────────
@@ -120,12 +120,12 @@ export async function enrollContactInSequence(
       { onConflict: 'sequence_id,contact_id', ignoreDuplicates: true },
     )
     if (error) {
-      log.error('spaces.drip.enroll_failed', { spaceId, sequenceId, contactId, error: String(error) })
+      log.error('spaces.drip.enroll_failed', { spaceId, sequenceId, contactId, error: briefError(error) })
       return { enrolled: false }
     }
     return { enrolled: true }
   } catch (err) {
-    log.error('spaces.drip.enroll_threw', { spaceId, sequenceId, contactId, error: String(err) })
+    log.error('spaces.drip.enroll_threw', { spaceId, sequenceId, contactId, error: briefError(err) })
     return { enrolled: false }
   }
 }
@@ -234,6 +234,6 @@ export async function fireSpaceTrigger(
     }
   } catch (err) {
     // FIRE-SAFE: swallow. A rule/DB error must never surface into the CRM event that fired the trigger.
-    log.error('spaces.drip.fire_trigger_threw', { spaceId, event, error: String(err) })
+    log.error('spaces.drip.fire_trigger_threw', { spaceId, event, error: briefError(err) })
   }
 }

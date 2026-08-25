@@ -32934,3 +32934,81 @@ the weaker instrument, and it is the one that would have caught those two.
 hamburger button. Desktop is untouched (`md:hidden`), and so is the member shell — `AppShell`,
 not `SiteHeader`, carries the authenticated app — so this is a public-surface recapture:
 `update_baselines` alone, never `capture_shell`.
+
+## ADR-1159: one outage, twenty error groups, and a probe that passed on a button that is not there (2026-08-25)
+
+**Context.** A read of the project's grouped runtime errors — the same read that found
+[LIVE-053](BUILD-BACKLOG.json), and not a gate — returned 327 KB across 42 groups for a 7-day
+window. Three separate things came out of it, and they are recorded together because reading them
+apart is what would have made each one look small.
+
+### 1. The incident, and the fail-safe that worked
+
+Between **02:18 and 02:53 UTC on 2026-08-25**, Supabase was unreachable from the runtime:
+Cloudflare **521**, **522** and **525** against the project host, plus `Timed out acquiring
+connection from connection pool` and `upstream request timeout`. Thirty-five of the 42 groups both
+begin and end inside that 35-minute window.
+
+✅ **The site stayed up, and the reason is a fail-safe that also reports.** `getMenu` /
+`getMenuSettings` fall back to the code defaults on any miss, so roughly 340 menu-read failures
+produced a rendered site rather than an error page — and every one of them logged. That is the
+AGENTS.md rule (*every fail-safe needs a gate that notices it fired*) working as written.
+
+### 2. The two logging defects the incident exposed — fixed here
+
+🔴 **`String(err)` on a PostgrestError is the string `"[object Object]"`.** Two cron sites did
+exactly that, so the one field that says what went wrong said nothing, and the fields that would
+have said it (`code`, `details`, `hint`) were discarded on the way.
+
+🔴 **A raw `.message` from an edge 5xx is the entire Cloudflare HTML page** — roughly 15 KB of
+markup. Vercel groups runtime errors **by message**, and each of those pages carries a unique Ray
+ID and timestamp, so every occurrence hashed to its own group. **One 35-minute outage came back as
+~20 groups and 327 KB**, with the actual diagnosis — `522: Connection timed out` — buried in a
+`<title>` partway down each one.
+
+`lib/log.ts` exists, by its own header, to standardise the *shape* so logs are queryable by field.
+A 15 KB message and an `"[object Object]"` defeat that from opposite directions. `briefError()`
+lands there and is applied at 21 call sites: prefer a real `message`, never stringify an object
+into nothing (fall back to `JSON.stringify`, and only then to `String`), replace an HTML error page
+with its `<title>`, collapse whitespace, and bound the length while saying how much was dropped.
+Nine tests, every case taken from this incident — including the one that matters most: two requests
+from one outage differing only by Ray ID must produce the **same** line, or the incident splits
+across groups again.
+
+### 3. The stall hypothesis, tested and refuted
+
+[LIVE-105](BUILD-BACKLOG.json) and [LIVE-123](BUILD-BACKLOG.json) are both builds hanging at
+*Collecting page data*, and LIVE-105 has already excluded the build cache. "Collecting page data"
+executes every page's data fetching, so "the database was unreachable" is the obvious next
+hypothesis, and this incident looked like the evidence for it.
+
+**It is not.** Runtime errors were queried for both recorded stall windows —
+2026-08-24T19:30–21:30Z (LIVE-105) and 2026-08-25T05:00–06:30Z (LIVE-123) — and both returned
+**zero errors**. Meanwhile the one genuine outage window contains **no recorded build stall**. In
+every window measured the two are **anti-correlated**. One caveat stated rather than glossed: build
+containers are not the serving runtime, so a null result here excludes a broad project-wide outage
+at those moments, not every possible build-side DB problem.
+
+The residue is [LIVE-124](BUILD-BACKLOG.json): `Vercel Runtime Timeout Error: Task timed out after
+300 seconds`, **count 572, users 48, across 30 routes, spanning six weeks** — which no single
+outage explains, and which no row named until now.
+
+### 4. 🔴 The one I got wrong: a probe that passes by existing
+
+LIVE-110 (phone navigation on `/discover`) was implemented, typechecked, linted, tested and
+**closed on its probe** — a grep of `site-header.tsx` for `MobileMenu` and `headerMenu={headerMenu}`.
+Both strings are present. The probe passed. **The button does not render.**
+
+A baseline capture against the branch preview — whose `/api/status` reports the very commit
+carrying the change — photographed 128 surfaces and committed nothing: the `/discover` mobile PNG
+is byte-identical to the pre-change baseline, and its header shows wordmark, search, *Sign in*,
+*Start a Circle* and no hamburger. The positive control from the same run and viewport,
+`about--dawn-light-mobile.png`, **does** show one.
+
+This is the shape-not-truth failure four ADRs already name, committed in its cleanest form. The
+mechanism is still unexplained and is recorded as unexplained on the row rather than guessed. Two
+consequences: the row reopens, and its probe becomes `manual` with the measurement attached,
+because the consequence — a control visible at 390px on a deployed build — is not reachable from a
+`pnpm test` that has no browser, and a gate that already produced one false close does not get a
+second try. **`check:backlog` fails both ways and it fired on the reopen**, insisting the probe was
+right and the status wrong; it was the other way round, and that inversion is the thing to remember.

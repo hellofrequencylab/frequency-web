@@ -26,7 +26,7 @@ import { normalizeEmailTopic } from '@/lib/spaces/email-topics'
 import { sendCampaignNow } from '@/lib/email-studio/send'
 import { loadRootSpaceId } from '@/lib/spaces/store'
 import { isError } from '@/lib/action-result'
-import { log } from '@/lib/log'
+import { log, briefError } from '@/lib/log'
 
 /** What one scheduled-send pass reports. */
 export interface SendDueResult {
@@ -89,7 +89,7 @@ export async function sendDueCampaigns(limit = 100): Promise<SendDueResult> {
     .limit(limit)
 
   if (dueErr) {
-    log.error('cron.space_campaigns.fetch_failed', { error: String(dueErr) })
+    log.error('cron.space_campaigns.fetch_failed', { error: briefError(dueErr) })
     return { due: 0, claimed: 0, sent: 0, failed: 0 }
   }
   const due: DueCampaignRow[] = dueRows ?? []
@@ -126,7 +126,7 @@ export async function sendDueCampaigns(limit = 100): Promise<SendDueResult> {
         }
       } catch (err) {
         failed++
-        log.error('cron.space_campaigns.global_send_threw', { id: row.id, error: String(err) })
+        log.error('cron.space_campaigns.global_send_threw', { id: row.id, error: briefError(err) })
       }
       continue
     }
@@ -144,7 +144,7 @@ export async function sendDueCampaigns(limit = 100): Promise<SendDueResult> {
         .select('id')
         .maybeSingle()
     } catch (err) {
-      log.error('cron.space_campaigns.claim_threw', { id: row.id, error: String(err) })
+      log.error('cron.space_campaigns.claim_threw', { id: row.id, error: briefError(err) })
       continue
     }
     if (claimResult.error || !claimResult.data) continue // lost the race, or a transient claim error.
@@ -179,7 +179,7 @@ export async function sendDueCampaigns(limit = 100): Promise<SendDueResult> {
     } catch (err) {
       await stampStatus(db, row.id, 'failed')
       failed++
-      log.error('cron.space_campaigns.send_threw', { id: row.id, error: String(err) })
+      log.error('cron.space_campaigns.send_threw', { id: row.id, error: briefError(err) })
     }
   }
 

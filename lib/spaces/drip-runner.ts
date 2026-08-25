@@ -20,7 +20,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { sendSpaceCampaignSystem, SPACE_UNSUBSCRIBE_PLACEHOLDER } from '@/lib/spaces/email'
 import { normalizeDelayHours } from '@/lib/spaces/automation'
 import { isError } from '@/lib/action-result'
-import { log } from '@/lib/log'
+import { log, briefError } from '@/lib/log'
 
 /** What one drip-fire pass reports. */
 export interface DripRunResult {
@@ -108,12 +108,12 @@ export async function runDueSpaceDrips(limit = 200): Promise<DripRunResult> {
       .order('next_run_at', { ascending: true })
       .limit(limit)
     if (error) {
-      log.error('cron.space_drips.fetch_failed', { error: String(error) })
+      log.error('cron.space_drips.fetch_failed', { error: briefError(error) })
       return empty
     }
     dueRows = data ?? []
   } catch (err) {
-    log.error('cron.space_drips.fetch_threw', { error: String(err) })
+    log.error('cron.space_drips.fetch_threw', { error: briefError(err) })
     return empty
   }
   if (dueRows.length === 0) return empty
@@ -137,7 +137,7 @@ export async function runDueSpaceDrips(limit = 200): Promise<DripRunResult> {
     try {
       won = await claimEnrollment(db, row.id)
     } catch (err) {
-      log.error('cron.space_drips.claim_threw', { id: row.id, error: String(err) })
+      log.error('cron.space_drips.claim_threw', { id: row.id, error: briefError(err) })
       continue
     }
     if (!won) continue // lost the race, or a transient claim miss.
@@ -189,7 +189,7 @@ export async function runDueSpaceDrips(limit = 200): Promise<DripRunResult> {
       // move on. The pass never throws.
       await markStatus(db, row.id, 'stopped')
       stopped++
-      log.error('cron.space_drips.enrollment_threw', { id: row.id, error: String(err) })
+      log.error('cron.space_drips.enrollment_threw', { id: row.id, error: briefError(err) })
     }
   }
 

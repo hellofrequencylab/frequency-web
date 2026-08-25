@@ -41,6 +41,7 @@ import { recordContactInteraction } from '@/lib/crm/interactions'
 import { mapResendEventToInteraction, resendIdempotencyKey, type ResendTimelineEventType } from './email-timeline'
 import { encodeSendToken, injectTracking } from './email-tracking'
 import { randomUUID } from 'crypto'
+import { briefError } from '@/lib/log'
 
 // ── Tunables (documented v1 values) ─────────────────────────────────────────────────────────────
 
@@ -665,7 +666,7 @@ async function deliverSpaceCampaign(
         contactId: rec.contactId,
         email: rec.email,
         status: 'failed',
-        error: err instanceof Error ? err.message : String(err),
+        error: briefError(err),
       })
     }
   }

@@ -26,8 +26,8 @@ export const SITE_DESCRIPTION =
 export type NavLink = { label: string; href: string; desc?: string }
 
 // ── DISCOVER_NAV was retired here on 2026-08-25 (HYG-019). ───────────────────
-// It was a hand-maintained list of the five /discover destinations, and three ADRs
-// (the ADR-190 and ADR-352 areas, plus the OPEN-THREADS B4 note) name it as a CONCEPT:
+// It was a hand-maintained list of the five /discover destinations, and the record
+// (ADR-352 on the shared mega menu, plus the OPEN-THREADS B4 note) name it as a CONCEPT:
 // "the shared community core", the surfaces the public menu and the in-app nav were
 // meant to keep in sync.
 //
