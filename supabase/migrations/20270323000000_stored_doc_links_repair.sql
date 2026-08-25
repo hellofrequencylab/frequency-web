@@ -226,7 +226,22 @@ update spaces s
 do $$
 declare
   n integer;
+  n_corpus integer;
 begin
+  -- REPLAY GUARD (added 2026-08-25, the 20270305000000 pattern; the strict form below ran at
+  -- APPLY time against production and every assert passed). db-tests boots a fresh Supabase and
+  -- replays this directory in order; there the corpus is EMPTY, both UPDATEs above are faithful
+  -- no-ops, and production-pinned counts like "8 /join hrefs" are simply not present. Aborting
+  -- there is a false red on the job whose purpose is proving a fresh replay works — so on an
+  -- empty corpus the asserts degrade to a notice and the block returns. The wrong-database check
+  -- stays implicit: a schema without pages/spaces fails the UPDATEs above first.
+  select (select count(*) from pages) + (select count(*) from spaces where preferences ? 'pageDocs')
+    into n_corpus;
+  if n_corpus = 0 then
+    raise notice 'pages and Space pageDocs are empty — the link repair matched nothing here (expected on a fresh replay; at apply time this was 23 documents / 31 links, and every assert below passed)';
+    return;
+  end if;
+
   -- 3a. No stored document names the retired address any more, in either column.
   select count(*) into n from pages
    where coalesce(data::text, '') like '%onboarding/beta%'
