@@ -412,11 +412,12 @@ describe('circleSchema', () => {
 // ── eventListSchema ───────────────────────────────────────────────────────────
 
 describe('eventListSchema', () => {
-  it('returns an ItemList keyed by event slug', () => {
+  it('returns an ItemList keyed by event slug, pointing at the CANONICAL /events page', () => {
     const events = [makeEvent({ slug: 'evt-a', title: 'A' }), makeEvent({ slug: 'evt-b', title: 'B' })]
     const result = eventListSchema(events, 'Upcoming Events')
     expect(result.numberOfItems).toBe(2)
-    expect(result.itemListElement[0].url).toBe(`${SITE_URL}/discover/events/evt-a`)
+    // /discover/events/<slug> canonicalizes to /events/<slug>; the ItemList must cite the canonical.
+    expect(result.itemListElement[0].url).toBe(`${SITE_URL}/events/evt-a`)
     expect(result.itemListElement[1].name).toBe('B')
   })
 })

@@ -40,7 +40,7 @@ Events are the gatherings that make Frequency real: the in-person and online mee
 
 ## Recurring events & your calendar
 
-- Many Circles run **recurring** gatherings (a weekly sit, a monthly walk), and each occurrence is its own event you can RSVP to.
+- Many Circles run **recurring** gatherings (a weekly sit, a monthly walk), and each date is its own event you can RSVP to.
 - **Browsing shows the next few dates, not all of them.** A weekly sit would otherwise fill the whole events library with itself. Open any date and look for **Upcoming dates**: the next five are listed there, each with its own page and its own RSVP.
 - Nothing is hidden. Your calendar, a Space's calendar, and the calendar file you subscribe to all still carry every date.
 - **Add to calendar in one tap.** Right where you RSVP, you can drop the event into Google Calendar or any app (it exports a standard calendar file). Putting it on your calendar is the single best way to actually make it.
