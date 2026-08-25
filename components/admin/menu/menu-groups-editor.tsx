@@ -21,7 +21,9 @@ import { GateControls, type GatePatch } from './gate-controls'
 import { MenuMoveField } from './menu-move-field'
 import { isGridSurface } from './known-routes'
 import type { MenuSurfaceKey } from '@/lib/menus/types'
-import { isPinnedRailItem, PINNED_PROFILE_ID } from '@/lib/menus/defaults'
+import { defaultMenu, isPinnedRailItem, PINNED_PROFILE_ID } from '@/lib/menus/defaults'
+import { deriveMenuDrift, type ItemDrift } from '@/lib/menus/drift'
+import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/field'
 
 // The Menu groups + links editor — the `menu-groups` template block, and the BULK of the
@@ -45,11 +47,19 @@ type DragRef = { itemId: string; from: string } | null
 export function MenuGroupsEditor({
   initialMenu,
   surfaceKey,
+  syncedDefaultKeys,
 }: {
   initialMenu: ResolvedMenu
   surfaceKey: ResolvedMenu['surfaceKey']
+  /** The menus row's `synced_default_keys` baseline, threaded from the server page (it is DB
+   *  state this client editor cannot read itself). Drives the per-item drift badges
+   *  (lib/menus/drift.ts, ADR-1134). */
+  syncedDefaultKeys?: string[]
 }) {
   const [menu, setMenu] = useState<ResolvedMenu>(initialMenu)
+  // The drift baseline. Starts from the server-read copy; the on-open sync below returns the
+  // baseline it just settled, which replaces this so badges never classify against stale keys.
+  const [baseline, setBaseline] = useState<string[]>(syncedDefaultKeys ?? [])
   const [error, setError] = useState<string | null>(null)
   const [status, setStatus] = useState<string>('')
   const [isPending, startTransition] = useTransition()
@@ -114,6 +124,7 @@ export function MenuGroupsEditor({
       const res = await syncMenuFromDefaults(surfaceKey)
       if (res.ok) {
         setMenu(res.menu)
+        setBaseline(res.syncedDefaultKeys)
         onStatus('Loaded. New pages are added automatically.')
       } else {
         syncedRef.current = false
@@ -126,6 +137,15 @@ export function MenuGroupsEditor({
 
   // ── Flatten the nested category tree to a render list (depth for indentation) ──
   const flatCategories = useMemo(() => flatten(menu.categories), [menu.categories])
+
+  // ── Per-item drift against the code defaults (LIVE-111, ADR-1134) ──────────
+  // Recomputed from the LOCAL working state on every edit, so a renamed row shows its Edited
+  // badge the moment the label leaves the default — not in next week's maintenance report.
+  // The derivation is the same comparison that report runs (lib/menus/drift-core.mjs).
+  const drift = useMemo(
+    () => deriveMenuDrift(menu, defaultMenu(surfaceKey), baseline),
+    [menu, surfaceKey, baseline],
+  )
 
   // ── Add a category (requirement 3) ─────────────────────────────────────────
   function addCategory(parentId: string | null) {
@@ -429,12 +449,43 @@ export function MenuGroupsEditor({
         </div>
       )}
 
+      {/* Site defaults with no link in this menu (LIVE-111): removed ones stay removed on
+          purpose, new ones arrive with the automatic sync. Shown here so the person editing
+          can see it, not just the weekly maintenance report. */}
+      {drift.absentDefaults.length > 0 && (
+        <div className="mb-4 rounded-2xl border border-border bg-surface p-4">
+          <p className="text-body-sm font-semibold text-text">Site defaults not in this menu</p>
+          <ul className="mt-2 space-y-1.5">
+            {drift.absentDefaults.map((d) => (
+              <li key={d.href} className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-body-sm">
+                <Badge size="sm" tone={d.state === 'retired' ? 'warning' : 'neutral'}>
+                  {d.state === 'retired' ? 'Removed' : 'New'}
+                </Badge>
+                <span className="font-medium text-text">{d.label}</span>
+                <span className="truncate text-meta text-subtle">{d.href}</span>
+                <span className="text-meta text-subtle">
+                  {d.state === 'retired'
+                    ? 'Removed here earlier. It will not come back on its own; add it as a link if you want it.'
+                    : 'Added automatically the next time this menu loads.'}
+                </span>
+                {d.mislabelledAs && (
+                  <span className="text-meta text-warning">
+                    A link named &quot;{d.label}&quot; points at {d.mislabelledAs} instead.
+                  </span>
+                )}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       {/* Menu-level (root) links */}
       <Bucket
         title="Menu-level links"
         hint="Links that sit directly on the menu, outside any group."
         items={draggableRootItems}
         pinnedLead={pinnedLead}
+        itemDrift={drift.items}
         isGrid={isGrid}
         bucket={ROOT}
         dragId={dragId}
@@ -486,6 +537,7 @@ export function MenuGroupsEditor({
               />
               <Bucket
                 items={cat.items}
+                itemDrift={drift.items}
                 isGrid={isGrid}
                 bucket={cat.id}
                 dragId={dragId}
@@ -526,6 +578,7 @@ function Bucket({
   hint,
   items,
   pinnedLead,
+  itemDrift,
   isGrid,
   bucket,
   dragId,
@@ -543,6 +596,8 @@ function Bucket({
   hint?: string
   items: ResolvedItem[]
   pinnedLead?: ResolvedItem | null
+  /** Live item id -> drift state (lib/menus/drift.ts); each row renders its own badge. */
+  itemDrift: Record<string, ItemDrift>
   isGrid: boolean
   bucket: string
   dragId: string | null
@@ -605,6 +660,7 @@ function Bucket({
           <ItemEditor
             key={item.id}
             item={item}
+            drift={itemDrift[item.id]}
             isGrid={isGrid}
             isDragging={dragId === item.id}
             dragHandlers={dragHandlersFor(item.id, bucket)}

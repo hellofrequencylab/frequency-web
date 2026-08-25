@@ -1,6 +1,6 @@
 import { getCallerProfile } from '@/lib/auth'
 import { isJanitor } from '@/lib/core/roles'
-import { getAdminMenu } from '@/lib/menus/read'
+import { getAdminMenu, getSyncedDefaultKeys } from '@/lib/menus/read'
 import { activeMenuSurface } from '@/lib/menus/active-surface'
 import { MenuGroupsEditor } from '@/components/admin/menu/menu-groups-editor'
 
@@ -21,9 +21,22 @@ export async function MenuGroupsBlock() {
   if (!profile || !isJanitor(profile.webRole)) return null
 
   const surface = await activeMenuSurface()
-  const menu = await getAdminMenu(surface)
+  // `synced_default_keys` is DB state the client editor cannot reach on its own — it is the
+  // third input to the per-item drift derivation (lib/menus/drift.ts, ADR-1134), so the server
+  // page threads it down as a prop beside the menu it belongs to.
+  const [menu, syncedDefaultKeys] = await Promise.all([
+    getAdminMenu(surface),
+    getSyncedDefaultKeys(surface),
+  ])
 
   // Key by surface so a re-scope remounts the client editor with fresh state + its one-time
   // materialize effect.
-  return <MenuGroupsEditor key={surface} initialMenu={menu} surfaceKey={surface} />
+  return (
+    <MenuGroupsEditor
+      key={surface}
+      initialMenu={menu}
+      surfaceKey={surface}
+      syncedDefaultKeys={syncedDefaultKeys}
+    />
+  )
 }
