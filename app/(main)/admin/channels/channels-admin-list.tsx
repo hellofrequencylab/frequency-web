@@ -9,6 +9,7 @@ import { DangerModal } from '@/components/admin/danger-modal'
 import { EmptyState } from '@/components/ui/empty-state'
 import type { ChannelRow } from './load-channels'
 import { Input, Textarea } from '@/components/ui/field'
+import { Button } from '@/components/ui/button'
 
 // Channel list shared by the /admin/channels page and the in-place Spaces·Channels module
 // (ADR-138). Each public channel now edits in place (name + description) and can be hidden;
@@ -66,9 +67,9 @@ function ChannelItem({ ch }: { ch: ChannelRow }) {
         <Input aria-label="Channel name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Channel name" disabled={pending} className="px-2.5 py-1.5" />
         <Textarea aria-label="Channel description" value={description} onChange={(e) => setDescription(e.target.value)} rows={2} placeholder="Description (optional)" disabled={pending} className="px-2.5 py-1.5 resize-none" />
         <div className="flex items-center gap-2">
-          <button type="button" onClick={save} disabled={pending || !name.trim()} className="inline-flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50">
+          <Button size="sm" type="button" onClick={save} disabled={pending || !name.trim()}>
             <Check className="h-3.5 w-3.5" /> {pending ? 'Saving…' : 'Save'}
-          </button>
+          </Button>
           <button type="button" onClick={() => setEditing(false)} disabled={pending} className="inline-flex items-center gap-1 rounded-lg border border-border px-3 py-1.5 text-meta font-medium text-text transition-colors hover:bg-surface">
             <X className="h-3.5 w-3.5" /> Cancel
           </button>

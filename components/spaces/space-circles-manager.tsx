@@ -19,6 +19,7 @@ import { isError } from '@/lib/action-result'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Select } from '@/components/ui/select'
 import { Input } from '@/components/ui/field'
+import { Button } from '@/components/ui/button'
 
 // The Space's Circles, each with the Journey it is running (ADR-842). Two jobs: make a new Circle
 // under this Space, and start a Run of one of the Space's Journeys for a Circle that is not
@@ -262,14 +263,14 @@ export function SpaceCirclesManager({
                 disabled={pending}
                 className="min-w-0 flex-1 py-1.5"
               />
-              <button
+              <Button
+                size="sm"
                 type="button"
                 onClick={create}
                 disabled={pending || !newName.trim()}
-                className="rounded-control bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
               >
                 Create
-              </button>
+              </Button>
               <button
                 type="button"
                 onClick={() => {
@@ -314,14 +315,14 @@ export function SpaceCirclesManager({
                     </option>
                   ))}
                 </Select>
-                <button
+                <Button
+                  size="sm"
                   type="button"
                   onClick={attach}
                   disabled={pending || !pickedCircle}
-                  className="rounded-control bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
                 >
                   Attach
-                </button>
+                </Button>
               </div>
             )}
             <div className="flex items-center justify-between gap-2">
@@ -477,14 +478,14 @@ export function SpaceCirclesManager({
                     ))}
                   </Select>
                   <div className="flex flex-wrap items-center gap-2">
-                    <button
+                    <Button
+                      size="sm"
                       type="button"
                       onClick={() => move(c.id, c.name)}
                       disabled={pending || !pickedTarget}
-                      className="rounded-control bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
                     >
                       Move it
-                    </button>
+                    </Button>
                     <button
                       type="button"
                       onClick={() => setMoveFor(null)}
@@ -560,14 +561,14 @@ export function SpaceCirclesManager({
                     ))}
                   </Select>
                   <div className="flex flex-wrap items-center gap-2">
-                    <button
+                    <Button
+                      size="sm"
                       type="button"
                       onClick={() => startRun(c.id)}
                       disabled={pending || !pickedPlan}
-                      className="rounded-control bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
                     >
                       Start the Run
-                    </button>
+                    </Button>
                     <Link
                       href={`/spaces/${spaceSlug}/journeys`}
                       className="inline-flex items-center gap-1 text-2xs text-muted underline-offset-2 hover:text-text hover:underline"

@@ -12,6 +12,7 @@ import { createMarketingCode, updateMarketingCode, deleteMarketingCode } from '.
 import { DEFAULT_STYLE, type QrStyle } from '@/lib/qr/style'
 import { shortLinkUrl } from '@/lib/qr/links'
 import type { MarketingTarget } from '@/lib/qr/marketing'
+import { Button } from '@/components/ui/button'
 
 export interface MarketingCard {
   id: string
@@ -58,12 +59,12 @@ export function MarketingCodes({
           </p>
         </div>
         {!creating && !atLimit && (
-          <button
+          <Button
+            size="sm"
             onClick={() => setCreating(true)}
-            className="inline-flex items-center gap-1.5 rounded-control bg-primary text-on-primary px-3 py-1.5 text-meta font-semibold hover:bg-primary-hover transition-colors"
           >
             <Plus className="w-3.5 h-3.5" /> New code
-          </button>
+          </Button>
         )}
       </div>
 
@@ -264,14 +265,14 @@ function MarketingForm({
       {error && <p className="text-meta text-danger">{error}</p>}
 
       <div className="flex items-center gap-2">
-        <button
+        <Button
+          size="sm"
           onClick={submit}
           disabled={pending || targets.length === 0}
-          className="inline-flex items-center gap-1.5 rounded-control bg-primary text-on-primary px-3 py-1.5 text-meta font-semibold hover:bg-primary-hover transition-colors disabled:opacity-60"
         >
           <Megaphone className="w-3.5 h-3.5" />
           {pending ? 'Saving…' : card ? 'Save changes' : 'Create code'}
-        </button>
+        </Button>
         <button
           onClick={onCancel}
           className="rounded-control px-3 py-1.5 text-meta font-semibold text-muted hover:text-text transition-colors"

@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react'
 import { approveEventShare, declineEventShare } from '@/app/(main)/events/share-actions'
 import { isError } from '@/lib/action-result'
+import { Button } from '@/components/ui/button'
 
 // Approve / decline buttons for one pending event↔space share request (Events EC3). The steward's
 // decision runs a server action that flips the share status (atomically) and notifies the requester.
@@ -40,14 +41,14 @@ export function ShareApprovalControls({ shareId }: { shareId: string }) {
       >
         Decline
       </button>
-      <button
+      <Button
+        size="sm"
         type="button"
         onClick={() => act('approve')}
         disabled={pending}
-        className="rounded-control bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
       >
         {pending ? 'Saving…' : 'Add to calendar'}
-      </button>
+      </Button>
     </div>
   )
 }

@@ -14,6 +14,7 @@ import {
   type HostTransferView,
 } from '@/app/(main)/events/host-transfer-actions'
 import { Input } from '@/components/ui/field'
+import { Button } from '@/components/ui/button'
 
 // ── "Hand hosting to another Space" (ADR-911) ──────────────────────────────────────────────
 //
@@ -102,14 +103,14 @@ export function EventHostOfferField({ eventId, slug }: { eventId: string; slug: 
                 are yours to issue.
               </p>
               <div className="mt-2 flex gap-2">
-                <button
+                <Button
+                  size="sm"
                   type="button"
                   disabled={pending}
                   onClick={() => void run(() => acceptEventHostTransfer(offer.id), 'This Space now hosts the event.')}
-                  className="inline-flex items-center gap-1.5 rounded-control bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
                 >
                   {pending && <Loader2 className="h-3 w-3 animate-spin" aria-hidden />} Accept hosting
-                </button>
+                </Button>
                 <button
                   type="button"
                   disabled={pending}
