@@ -29758,6 +29758,79 @@ note and a ledger comment without ever being a decision. A committed order is a 
 back is a decision, and decisions live here. Same shape as [ADR-1112](#adr-1112): the thing to
 distrust is not the finding, it is a finding that never got recorded where it would be read.
 
+## ADR-1117: The detail cover gets one resolver, and its ladder is deliberately inverted from the index's (2026-08-24)
+
+**Status:** accepted · advances `PROG-P5` · the detail-side twin of
+[`lib/layout/index-hero.ts`](../lib/layout/index-hero.ts) (PROG-P4) · extends
+[ADR-793](#adr-793), [ADR-411](#adr-411)
+
+`PROG-P5` asks for the entity headers to fold onto the one `PageHero` grammar. The component half
+of that has been shipped for a while: `DetailTemplate` carries `coverImage` / `coverFocus` /
+`coverSize` / `coverOverlayStyle`, and setting any of the last three routes the cover through
+`PageHero` `variant="minimal"` — the same component the index band renders. What was missing was
+the same thing PROG-P4 found missing on the index side: **a place to put the stanza every adopter
+re-types**. `/channels/[id]` and `/circles/[slug]` each carry a near-identical copy of it today
+(resolve the header element, read the entity's focal point, take the host's stored height only when
+they actually chose one, otherwise defer to the element).
+
+[`lib/layout/detail-hero.ts`](../lib/layout/detail-hero.ts) is that place: `resolveDetailHero(route,
+opts)` returns a spreadable `DetailTemplate` prop bag. Three decisions in it are worth recording.
+
+### 1. The ladder is inverted from `index-hero`, and the reason is whose surface it is
+
+| Rung | `resolveIndexHero` (browse) | `resolveDetailHero` (entity) |
+|---|---|---|
+| 1 | the operator's Settings image for the route | **the entity's own cover** |
+| 2 | the page-content hero (ADR-180) | the operator's Settings image for the **section** |
+| 3 | explicit `fallbackImage`, else the section default | explicit `fallbackImage`, else the section default |
+| 4 | `null` — the gradient band | the section's **tail** (see 2) |
+
+On a browse page the operator owns the surface, so their choice is rung 1. On an entity page the
+entity's own owner does: a host who uploads a cover for **their** Circle, Practice or Channel must
+not be outranked by a site-wide setting. The symmetry people expect between the two resolvers is
+the *shape* — four rungs, a spreadable bag, a fail-safe wrapper — not the order, and getting the
+order right is the entire point of having a second resolver rather than one with a flag.
+
+### 2. The tail is `undefined` (no cover), not `null` (gradient band) — and that is not an oversight
+
+On an index the band **carries the page's `<h1>`** (`heroOverlay`), so it must always exist; `null`
+there is the band still doing its job. On a detail page the `<h1>` lives in the context header
+*below* the cover, so the cover is decoration — and a grey rectangle with an icon in it over every
+Hub, help article and public profile is chrome nobody asked for.
+
+So the tail is per-section data, not per-page taste: `'placeholder'` paints the gradient band,
+`'none'` renders no cover at all. **The placeholder is an affordance, so it belongs where someone
+can act on it.** A section whose cover is editable in place (the admin-settings scope kit,
+PAGE-FRAMEWORK §8.5) shows the empty slot to the host who can fill it; its public twin, where the
+viewer can do nothing about it, does not. That is why `/practices` and `/discover/practices` — the
+same entity, the same `header_image` — take different tails.
+
+### 3. An unmapped route resolves to NO cover, which makes adoption safe by construction
+
+`DETAIL_HERO_DEFAULTS` is a section-prefix map (longest prefix wins). A route no row covers falls to
+`DETAIL_HERO_FALLBACK` = no cover, so spreading `{...hero}` onto a page whose section nobody mapped,
+whose entity carries no image, is a **visual no-op**. This matters because the remaining adoption is
+~25 more pages across a surface `check:one-list`-sized PRs cannot take in one go: an adopter can land
+the call site in one change and the section's design in another, and neither step can accidentally
+paint a band on a page nobody looked at. A section joins the program by adding a row — never by a
+page inventing a stanza, which is exactly the shape PROG-P4 was filed to stop.
+
+### The focal point travels with its image
+
+A focal point is picked against one specific photo, so applying it to a different one crops
+someone else's picture by coordinates nobody chose. Rung 1 carries `entityFocus`, rung 2 carries the
+operator's focal point for the section image, and rungs 3–4 carry none because nobody has ever
+framed a shipped section default. `index-hero` states the narrower version of this rule ("focus
+rides rung 1 only") because it has exactly one focus-bearing rung; this is the same rule with two.
+
+### What this does not do
+
+It does not touch `DetailTemplate` — no new props, no changed rendering. It does not fold the seven
+pages that hand-roll `hero={<PageHero variant="identity" …>}` with an eyebrow, a leading badge and
+on-cover actions (`/channels/[id]`, `/circles/[slug]`, `/journeys/[slug]`, `/journeys/[slug]/learn`,
+`/people/[handle]`, `/spaces/[slug]`, `/circles/starter/[slug]`); those carry a lockup the minimal
+cover has no slot for, and folding them is a behaviour change that belongs in its own PR with its
+own screenshots. Both remainders are counted on `PROG-P5`.
 ---
 
 ## ADR-1122: Operator page copy inherits down the route tree, and the six rows that already existed were the section rung all along (2026-08-25)
