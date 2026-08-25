@@ -10,6 +10,7 @@ import { updateMyCodeStyle } from './actions'
 import type { QrStyle } from '@/lib/qr/style'
 import type { MemberCodePurpose } from '@/lib/qr/member-codes'
 import type { QrStudioConfig } from '@/lib/elements/qr-studio-config'
+import { Button } from '@/components/ui/button'
 
 export interface MemberCodeCard {
   id: string
@@ -175,13 +176,13 @@ function CodeCard({
         <div className="mt-3">
           <StyleEditor value={style} onChange={setStyle} previewUrl={card.url} config={qrConfig} />
           <div className="mt-2 flex items-center gap-2">
-            <button
+            <Button
+              size="sm"
               onClick={save}
               disabled={pending}
-              className="rounded-control bg-primary text-on-primary px-3 py-1.5 text-meta font-semibold hover:bg-primary-hover transition-colors disabled:opacity-60"
             >
               {pending ? 'Saving…' : 'Save design'}
-            </button>
+            </Button>
             {saved && <span className="text-meta text-success">Saved.</span>}
           </div>
         </div>

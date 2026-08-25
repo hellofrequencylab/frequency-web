@@ -61,14 +61,14 @@
       "exclude": [
         "**/*.{test,spec}.{ts,tsx}"
       ],
-      "baseline": 2291,
+      "baseline": 2228,
       "frozen": {
-        "at": "2026-08-18",
-        "value": 2291,
+        "at": "2026-08-25",
+        "value": 2228,
         "direction": "lowered",
         "basis": "db695768f455",
-        "reason": "The beta-price-grant panel's three literal radii (one rounded-2xl card, two rounded-full pills) moved onto rounded-card / rounded-pill: identical pixels at the base skin and skin-responsive everywhere else. Pays off the +2 that arrived with the panel in #2143 rather than banking it.",
-        "from": 2292
+        "reason": "Carried by DAWN Phase 3, slice 1 (PROG-DAWN3): retiring 43 hand-rolled primary buttons onto the Button primitive deleted the literal rounded-lg / rounded-xl each of them carried, because the primitive takes the rounded-control ROLE radius instead. 2291 -> 2228. DISCLOSURE: 17 of the 63 are this sweep's - the class already read 2245 against its 2291 floor on origin/main at 71eb4066c, 46 sites having been retired by merged work that never re-froze. Those 46 are banked here rather than left floating.",
+        "from": 2291
       },
       "history": [
         {
@@ -210,6 +210,13 @@
           "to": 2291,
           "direction": "lowered",
           "reason": "The beta-price-grant panel's three literal radii (one rounded-2xl card, two rounded-full pills) moved onto rounded-card / rounded-pill: identical pixels at the base skin and skin-responsive everywhere else. Pays off the +2 that arrived with the panel in #2143 rather than banking it."
+        },
+        {
+          "at": "2026-08-25",
+          "from": 2291,
+          "to": 2228,
+          "direction": "lowered",
+          "reason": "Carried by DAWN Phase 3, slice 1 (PROG-DAWN3): retiring 43 hand-rolled primary buttons onto the Button primitive deleted the literal rounded-lg / rounded-xl each of them carried, because the primitive takes the rounded-control ROLE radius instead. 2291 -> 2228. DISCLOSURE: 17 of the 63 are this sweep's - the class already read 2245 against its 2291 floor on origin/main at 71eb4066c, 46 sites having been retired by merged work that never re-froze. Those 46 are banked here rather than left floating."
         }
       ]
     },
@@ -518,14 +525,14 @@
         "components/ui/button.tsx",
         "components/ui/icon-button.tsx"
       ],
-      "baseline": 513,
+      "baseline": 463,
       "frozen": {
-        "at": "2026-08-19",
-        "value": 513,
+        "at": "2026-08-25",
+        "value": 463,
         "direction": "lowered",
         "basis": "c478ed64ec1e",
-        "reason": "Banking a real shrink, not a raise: 514 to 513. One raw button background left the tree when #2167 moved the record-payment confirm dialog onto the kit button.",
-        "from": 514
+        "reason": "DAWN Phase 3, slice 1 (PROG-DAWN3): the exact primary-small shape. 43 raw <button>s across 33 files whose className token set was EXACTLY the Button primitive's primary x sm string plus base-absorbed noise (rounded-*, inline-flex/items-center/gap, transition-colors, disabled:opacity-*) now compose <Button size=\"sm\"> with no className at all, so each one also gains tap-target, press and the focus ring it had been re-deriving. 513 -> 463. DISCLOSURE: only 43 of the 50 are this sweep's - the class already read 506 against its 513 floor on origin/main at 71eb4066c, 7 sites having been retired by merged work that never re-froze. Those 7 are banked here rather than left floating.",
+        "from": 513
       },
       "history": [
         {
@@ -632,6 +639,13 @@
           "to": 513,
           "direction": "lowered",
           "reason": "Banking a real shrink, not a raise: 514 to 513. One raw button background left the tree when #2167 moved the record-payment confirm dialog onto the kit button."
+        },
+        {
+          "at": "2026-08-25",
+          "from": 513,
+          "to": 463,
+          "direction": "lowered",
+          "reason": "DAWN Phase 3, slice 1 (PROG-DAWN3): the exact primary-small shape. 43 raw <button>s across 33 files whose className token set was EXACTLY the Button primitive's primary x sm string plus base-absorbed noise (rounded-*, inline-flex/items-center/gap, transition-colors, disabled:opacity-*) now compose <Button size=\"sm\"> with no className at all, so each one also gains tap-target, press and the focus ring it had been re-deriving. 513 -> 463. DISCLOSURE: only 43 of the 50 are this sweep's - the class already read 506 against its 513 floor on origin/main at 71eb4066c, 7 sites having been retired by merged work that never re-froze. Those 7 are banked here rather than left floating."
         }
       ]
     },

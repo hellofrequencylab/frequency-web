@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react'
 import { Check, Hourglass, TriangleAlert, HeartHandshake } from 'lucide-react'
 import { acceptResonanceIntro } from '@/app/(main)/settings/connections/resonance-actions'
+import { Button } from '@/components/ui/button'
 
 // The member-side "yes, introduce us" tap for one resonance match. Records ONLY consent (the
 // bilateral opt-in) — it never sends a message. When the OTHER person has also said yes, the
@@ -42,15 +43,15 @@ export function AcceptIntroButton({ otherProfileId }: { otherProfileId: string }
 
   return (
     <span className="inline-flex flex-col items-end gap-1">
-      <button
+      <Button
+        size="sm"
         type="button"
         onClick={accept}
         disabled={pending}
-        className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
       >
         {pending ? <Hourglass className="h-3.5 w-3.5 animate-pulse" aria-hidden /> : <Check className="h-3.5 w-3.5" aria-hidden />}
         Introduce us
-      </button>
+      </Button>
       {error && (
         <span className="inline-flex items-center gap-1 text-2xs text-danger">
           <TriangleAlert className="h-3 w-3" aria-hidden /> {error}

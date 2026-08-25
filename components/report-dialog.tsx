@@ -5,6 +5,7 @@ import { reportContent } from '@/app/(main)/feed/report-actions'
 import { isError } from '@/lib/action-result'
 import { Dialog } from '@/components/ui/dialog'
 import { Textarea } from '@/components/ui/field'
+import { Button } from '@/components/ui/button'
 
 type ReportDialogProps = {
   targetType: 'post' | 'dispatch' | 'comment' | 'member' | 'event'
@@ -71,12 +72,12 @@ export function ContentReportDialog({ targetType, targetId, open, onClose }: Rep
               Report submitted. Our team will review it.
             </p>
             <div className="flex justify-end">
-              <button
+              <Button
+                size="sm"
                 onClick={handleClose}
-                className="rounded-lg bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary hover:bg-primary-hover transition-colors"
               >
                 Done
-              </button>
+              </Button>
             </div>
           </>
         ) : (

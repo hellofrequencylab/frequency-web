@@ -12,6 +12,7 @@ import {
   resetSpotlightToDefault,
   forceUnpublishSpotlight,
 } from '@/app/(main)/admin/members/spotlight-actions'
+import { Button } from '@/components/ui/button'
 
 // The one staff/operator control on a member's profile. Replaces the old "Edit (mod)"
 // popup + "Manage account" link with a single Settings button that opens a side drawer:
@@ -116,15 +117,15 @@ export function ProfileSettingsDrawer({
                     rows={3}
                     className="resize-y"
                   />
-                  <button
+                  <Button
+                    size="sm"
                     type="button"
                     onClick={saveProfile}
                     disabled={pending}
-                    className="inline-flex items-center gap-1.5 rounded-control bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary hover:bg-primary-hover disabled:opacity-50"
                   >
                     {pending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
                     Save profile
-                  </button>
+                  </Button>
                 </section>
               )}
 

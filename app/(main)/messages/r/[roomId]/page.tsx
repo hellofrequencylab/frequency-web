@@ -18,6 +18,7 @@ import { RoomSearch } from '@/components/rooms/room-search'
 import { InviteToRoomButton } from '@/components/rooms/invite-to-room-button'
 import { MemberRowActions } from '@/components/rooms/member-row-actions'
 import { RoomSettings } from '@/components/rooms/room-settings'
+import { Button } from '@/components/ui/button'
 
 export default async function RoomPage({
   params,
@@ -254,12 +255,12 @@ export default async function RoomPage({
                   </form>
                 ) : (
                   <form action={joinRoom.bind(null, roomId)}>
-                    <button
+                    <Button
+                      size="sm"
                       type="submit"
-                      className="flex items-center gap-1.5 rounded-control bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover"
                     >
                       <LogIn className="h-3 w-3" /> Join
-                    </button>
+                    </Button>
                   </form>
                 ))}
               </div>
