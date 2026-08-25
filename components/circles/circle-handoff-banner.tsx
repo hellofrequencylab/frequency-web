@@ -9,6 +9,7 @@ import {
 } from '@/app/(main)/circles/handoff-actions'
 import { isError } from '@/lib/action-result'
 import type { CircleOffer } from '@/lib/circles/handoff'
+import { Button } from '@/components/ui/button'
 
 // "Someone wants to hand you this circle" (ADR-845). Renders ONLY for the person an open offer was
 // made to, on the circle it concerns, so nobody else learns an offer exists. Self-fetching so the
@@ -64,14 +65,14 @@ export function CircleHandoffBanner({ circleId }: { circleId: string }) {
           </p>
           {error && <p className="mt-2 text-meta text-danger">{error}</p>}
           <div className="mt-3 flex flex-wrap items-center gap-2">
-            <button
+            <Button
+              size="sm"
               type="button"
               onClick={() => respond('accept')}
               disabled={pending}
-              className="rounded-control bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
             >
               Accept
-            </button>
+            </Button>
             <button
               type="button"
               onClick={() => respond('decline')}

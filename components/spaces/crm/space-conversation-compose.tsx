@@ -11,6 +11,7 @@ import { Loader2, PenLine, Send } from 'lucide-react'
 import { Dialog } from '@/components/ui/dialog'
 import { isError, type ActionResult } from '@/lib/action-result'
 import { Input, Textarea } from '@/components/ui/field'
+import { Button } from '@/components/ui/button'
 
 type StartAction = (input: { email: string; subject: string; body: string }) => Promise<ActionResult<{ ref: string }>>
 
@@ -112,15 +113,15 @@ export function SpaceConversationCompose({
                 >
                   Cancel
                 </button>
-                <button
+                <Button
+                  size="sm"
                   type="button"
                   onClick={submit}
                   disabled={pending || !email.trim() || !subject.trim() || !body.trim()}
-                  className="inline-flex items-center gap-1.5 rounded-control bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary hover:bg-primary-hover disabled:opacity-50"
                 >
                   {pending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
                   Send
-                </button>
+                </Button>
               </div>
             </>
           )}

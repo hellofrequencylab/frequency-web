@@ -29757,3 +29757,74 @@ The exclusion was true, the reasoning was sound, and it had been written three t
 note and a ledger comment without ever being a decision. A committed order is a promise; walking one
 back is a decision, and decisions live here. Same shape as [ADR-1112](#adr-1112): the thing to
 distrust is not the finding, it is a finding that never got recorded where it would be read.
+
+---
+
+## ADR-1119: An XL sweep is sliced by SHAPE, not by directory — and a re-freeze discloses the part it did not buy (2026-08-25)
+
+**Status:** accepted · advances `PROG-DAWN3` · rests on [ADR-928](#adr-928) and
+[ADR-1082](#adr-1082) · enforced by `pnpm check:adoption` + the re-measured bucket
+
+### The two questions this settles
+
+`PROG-DAWN3` is 2,004 sites and CI fails a PR over 40 changed files, so the sweep ships in slices.
+Two things had to be decided before the first one: **how to cut a slice**, and **what a re-freeze
+is allowed to claim** when the ratchet's current reading already sits below its frozen floor.
+
+### Cut by shape, not by address
+
+The obvious cut is by directory — `app/(main)/admin` holds 66 of the 463 remaining
+`raw-button-bg` sites, and a directory is easy to name in a PR title. It is the wrong cut. A
+directory is an arbitrary bag of button shapes, so a 33-file diff cut that way contains 33
+different judgements, each needing its own before/after reasoning, and a reviewer has no way to
+check the set except by reading every one.
+
+The cut that works is an **equivalence class over the class string**: every site whose className
+token set is exactly the primitive's own `variant × size` string, plus the tokens the primitive's
+`BASE` already absorbs (`rounded-*`, `inline-flex`/`items-center`/`gap-*`, `transition-colors`,
+`disabled:opacity-*`). Membership is decided by set equality against `components/ui/button.tsx`,
+not by eye. Every member takes the identical edit, the result carries **no `className` at all**,
+and one reading of one site is a reading of all 43.
+
+Slice 1 was the `primary × sm` class: 43 sites, 33 files, one edit shape, `raw-button-bg`
+513 → 463 and `literal-radius` 2291 → 2228 (the literal `rounded-lg`/`rounded-xl` each site
+carried, replaced by the `rounded-control` role). Each converted control also gains `tap-target`,
+`press` and the focus ring it had been re-deriving, which is the whole reason the primitive exists.
+
+**A slice must prove it is exhaustive for its class**, by re-measuring the bucket after the sweep
+and getting 0 — otherwise "the primary-small shape" names an intent rather than a set, and the next
+agent has to re-derive which members were left behind. Slice 1's bucket reads 0. Slice 2 is already
+sized by the same query: `primary × md`, 49 sites in 37 files.
+
+### A re-freeze discloses the part it did not buy
+
+[ADR-928](#adr-928) refuses a RISE unless it is forced and explained. It has nothing to say about
+the case that actually turned up here, which is quieter: **the class already read below its floor
+before the sweep started.** `raw-button-bg` was frozen at 513 and measured 506 on `origin/main`;
+`literal-radius` was frozen at 2291 and measured 2245. Merged work had retired 7 and 46 sites and
+never re-froze.
+
+A `--update` after the sweep writes 463 and 2228 and stamps this sweep's sentence on both. The
+numbers are correct and the mechanism is working exactly as designed — but the *reason* would then
+claim 50 and 63 retired sites for a change that retired 43 and 17. That is not a laundered rise;
+it is a laundered **credit**, and it is the same defect one level down, because `frozen.reason` is
+the only account anyone can audit later.
+
+**So a re-freeze that banks a pre-existing fall names the split in its own sentence** — how many
+sites this change retired, how many were already there, and the commit they were measured against.
+Both entries frozen on 2026-08-25 carry that disclosure.
+
+### What is NOT claimed
+
+Not a new gate. `--update` still writes what it measures; nothing here changes what passes or
+fails. The rule is about the sentence, which is the half of the record a machine cannot check —
+the same reason [ADR-1082](#adr-1082) had to be written by hand.
+
+### The wider point
+
+The row's own header said `~3,124 sites`, expired, and was replaced on 2026-08-19 by `2,072`,
+which had also expired by the time anyone read it: two of its four sub-figures (15 `<select>`,
+4 `<textarea>`) were bare-grep drift on a day the frozen baselines already read 4 and 2 — drift the
+row's own closing sentence warned about, in the paragraph directly beneath the numbers. The
+re-census is 2,004. **Measure through the instrument the gate uses, or the census expires faster
+than the sweep it is meant to plan.**
