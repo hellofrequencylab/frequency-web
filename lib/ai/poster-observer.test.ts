@@ -69,6 +69,17 @@ function qbuilder(table: string) {
     filters.push((r) => !(col in r) || vals.includes(r[col]))
     return self
   }
+  // HONORS the filter rather than passing through, so an arm that asserts a pending RSVP is not
+  // counted actually proves it. A `neq` stubbed as a no-op would make every such arm pass whether
+  // or not the query carries the filter, which is the shape of a control that cannot fail.
+  self.neq = (col: string, val: unknown) => {
+    filters.push((r) => !(col in r) || r[col] !== val)
+    return self
+  }
+  self.is = (col: string, val: unknown) => {
+    if (val === null) filters.push((r) => !(col in r) || r[col] == null)
+    return self
+  }
   self.not = (col: string, op: string, val: unknown) => {
     if (op === 'is' && val === null) filters.push((r) => r[col] != null)
     return self

@@ -195,6 +195,13 @@ async function processLead(lead: ReminderLead): Promise<{ events: number; sent: 
         .select('id', { count: 'exact', head: true })
         .eq('event_id', ev.id)
         .eq('status', 'going')
+        // Same filter the RECIPIENT read above already carries, for the same reason: a request is
+        // not an admission (SCAN-105). It was missing here, so this email printed a number the rest
+        // of the product had stopped believing (SCAN-512, ADR-1152). It also gates the Law 1 rule
+        // two lines down — pending rows could push a genuinely 1-person event over the >= 2
+        // threshold, which is precisely the "you're the only one going" case that rule exists to
+        // avoid stating wrongly.
+        .neq('approval_status', 'pending')
       goingCount = count ?? 0
     }
     const warmProof = goingCount >= 2 ? `${goingCount} going` : null

@@ -67,6 +67,9 @@ export async function suggestConnectorsForEvents(
     .select('event_id, profile_id')
     .in('event_id', eventIds)
     .eq('status', 'going')
+    // Suggesting a connection on the strength of a request the host may still decline would claim
+    // shared ground that does not exist yet (SCAN-105 / SCAN-512).
+    .neq('approval_status', 'pending')
   // profile_id is nullable since 20270303000000: a signed-out guest seat carries an address
   // instead of a member. A guest has no profile to suggest, no Channels to share and no page to
   // link to, so they are dropped here rather than downstream. The `!== viewerProfileId` test on

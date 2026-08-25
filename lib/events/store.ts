@@ -488,11 +488,21 @@ export interface CalendarEngagement {
   coverFocus: string
 }
 
-/** PURE: tally confirmed 'going' RSVP rows into a per-event count (ignores maybe/waitlist/cancelled). */
-export function tallyGoingByEvent(rows: Array<{ event_id: string; status?: string | null }>): Map<string, number> {
+/** PURE: tally CONFIRMED 'going' RSVP rows into a per-event count (ignores maybe/waitlist/cancelled,
+ *  and ignores a request still awaiting the host).
+ *
+ *  ⚠️ `approval_status === 'pending'` is excluded here as well as in the query, and that redundancy is
+ *  deliberate: this function is exported and the count it returns is the SAME social-proof number
+ *  lib/events/going-counts.ts renders on the /events cards. If the two disagree, one event shows two
+ *  different "N going" figures depending on which surface you opened (SCAN-512, ADR-1152). Filtering
+ *  in only one place would leave the other caller free to pass unfiltered rows. */
+export function tallyGoingByEvent(
+  rows: Array<{ event_id: string; status?: string | null; approval_status?: string | null }>,
+): Map<string, number> {
   const out = new Map<string, number>()
   for (const r of rows) {
     if ((r.status ?? '') !== 'going' || !r.event_id) continue
+    if ((r.approval_status ?? '') === 'pending') continue
     out.set(r.event_id, (out.get(r.event_id) ?? 0) + 1)
   }
   return out
@@ -510,10 +520,19 @@ export async function listCalendarEngagement(eventIds: string[]): Promise<Map<st
   try {
     const admin = createAdminClient()
     const [rsvpRes, coverRes] = await Promise.all([
-      admin.from('event_rsvps').select('event_id, status').in('event_id', ids).eq('status', 'going'),
+      // `approval_status` is SELECTED as well as filtered, so tallyGoingByEvent can re-check it. A
+      // request awaiting the host is not a seat (SCAN-105), so it is not social proof either.
+      admin
+        .from('event_rsvps')
+        .select('event_id, status, approval_status')
+        .in('event_id', ids)
+        .eq('status', 'going')
+        .neq('approval_status', 'pending'),
       admin.from('events').select('id, cover_image_path, theme').in('id', ids),
     ])
-    const going = tallyGoingByEvent((rsvpRes.data as Array<{ event_id: string; status?: string | null }> | null) ?? [])
+    const going = tallyGoingByEvent(
+      (rsvpRes.data as Array<{ event_id: string; status?: string | null; approval_status?: string | null }> | null) ?? [],
+    )
     const coverPath = new Map<string, string | null>()
     const coverFocusById = new Map<string, string>()
     for (const r of (coverRes.data ?? [])) {

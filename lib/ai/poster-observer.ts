@@ -147,6 +147,11 @@ async function recentPostedEvents(posterId: string): Promise<RecentPostedEvent[]
       // The self-skip below is no defence either — String(null) is the string "null", which
       // never equals a poster id, so every guest row sailed straight past it as engagement.
       .is('guest_email', null)
+      // AND the seat must be admitted, by the same argument (SCAN-512). A self-submitted request
+      // on the poster's own approval-gated event is exactly as cheap as the guest seat the rule
+      // above excludes: the poster creates it and never has to approve it for it to count.
+      // "Expensive to move" is the standard, and a pending row costs nothing.
+      .neq('approval_status', 'pending')
     // profile_id is non-null for every row that survives the guest filter above.
     for (const r of (rsvps ?? []) as { event_id: string; profile_id: string }[]) {
       if (String(r.profile_id) === posterId) continue

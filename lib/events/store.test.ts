@@ -231,6 +231,33 @@ describe('tallyGoingByEvent (calendar social proof: count only confirmed going)'
   it('is empty for no rows', () => {
     expect(tallyGoingByEvent([]).size).toBe(0)
   })
+
+  // SCAN-512 / ADR-1152. This is the SAME social-proof number lib/events/going-counts.ts renders on
+  // the /events cards, and that one learned in SCAN-105 that a request awaiting the host is not a
+  // seat. If this one had not, a single event would show two different "N going" figures depending
+  // on whether you opened /events or the calendar popup.
+  it('does not count a request still awaiting the host', () => {
+    const tally = tallyGoingByEvent([
+      { event_id: 'a', status: 'going', approval_status: 'approved' },
+      { event_id: 'a', status: 'going', approval_status: 'pending' },
+      { event_id: 'a', status: 'going', approval_status: 'none' },
+      { event_id: 'b', status: 'going', approval_status: 'pending' },
+    ])
+    // approved + none, never the pending one.
+    expect(tally.get('a')).toBe(2)
+    // An event whose ONLY rows are requests has no social proof at all, rather than a count of 1.
+    expect(tally.has('b')).toBe(false)
+  })
+
+  // A row with no `approval_status` at all is an ungated event, which is every event today. It must
+  // still count, or the fix would silently zero the number it was meant to correct.
+  it('still counts a row that carries no approval_status (an ungated event)', () => {
+    const tally = tallyGoingByEvent([
+      { event_id: 'a', status: 'going' },
+      { event_id: 'a', status: 'going', approval_status: null },
+    ])
+    expect(tally.get('a')).toBe(2)
+  })
 })
 
 describe('filterSharedByHomeSpace (EC3 leak gate: a share cannot out-live its home space walling)', () => {

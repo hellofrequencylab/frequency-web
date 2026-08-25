@@ -624,7 +624,20 @@ export default async function EventDetailPage({
   // identity-blind so it agrees with lib/events/capacity.ts — the capacity trigger counts guests
   // because they occupy the room, so a "going" number that skipped them would contradict the
   // waitlist the same page renders.
-  const goingRsvps = rsvps.filter((r) => r.status === 'going')
+  //
+  // ⚠️ AND FOR THE SAME REASON IT SKIPS PENDING REQUESTS (SCAN-512, ADR-1152). That sentence above
+  // states the invariant, and SCAN-105 broke it from the other side: `getCapacityInfo` learned that
+  // a request awaiting the host is not a seat, and this line did not. The two numbers render
+  // TOGETHER — `spotsLeft={capacityInfo.spotsLeft}` sits beside this count — so the page could say
+  // "20 going · 1 spot left" about the same room. Identity-blind, approval-aware: both dimensions
+  // are the same question, which is whether the person is actually in the room.
+  //
+  // It also decides who appears in public: `goingMembers` below feeds the avatar pile and the guest
+  // facts, and an unapproved requester's face and handle do not belong there before the host has
+  // said yes.
+  const goingRsvps = rsvps.filter(
+    (r) => r.status === 'going' && r.approval_status !== 'pending',
+  )
   // The subset with an account. Anything that needs a profile — a face, a handle, a shared-circle
   // lookup — reads THIS list, never `goingRsvps`. A guest has no avatar to show and no circles to
   // overlap with, so they are absent here by definition rather than by oversight.

@@ -303,10 +303,14 @@ async function getUserStats(admin: AdminClient, profileId: string): Promise<User
         .select('id')
         .eq('profile_id', profileId)
         .eq('status', 'active'),
+      // A badge is earned by SHOWING UP, not by asking to. A request still awaiting the host is
+      // not attendance (SCAN-105), and this read mints durable rewards state — an achievement
+      // unlocked from a pending request cannot be taken back once the host declines (SCAN-512).
       admin.from('event_rsvps')
         .select('id')
         .eq('profile_id', profileId)
-        .eq('status', 'going'),
+        .eq('status', 'going')
+        .neq('approval_status', 'pending'),
       admin.from('events')
         .select('id')
         .eq('host_id', profileId),
