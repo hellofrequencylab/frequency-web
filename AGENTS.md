@@ -30,15 +30,6 @@ ARTIFACT. Full rules and the incident: [`docs/DEPLOY-SAFETY.md`](docs/DEPLOY-SAF
     in a single day**, the largest move in the series above, while the function count held at 496.
     The trend, not the headroom, is still the thing to watch; at **82%** of its ceiling this is
     still not the gate closest to firing.
-  - 🔴 **`check:cache-budget` is closest, and closer than this file used to say.** Measured
-    2026-08-25: **1.39 GB packed against a 1.40 GB trim point** — 99% of the line it trims at, and
-    93% of the 1.50 GB hard ceiling. The trim is therefore NOT a rare event: the cache oscillates
-    across that line, and every trim costs the NEXT build a cold compile (113s against a 46s warm
-    control, both measured that day). ⚠️ **And one paired reading says the estimate runs LOW, not
-    high**: on #2280 the gate predicted 1.39 GB packed and Vercel's own `Uploading build cache`
-    line reported **1.42 GB**. The file elsewhere claims the ratio is "rounded toward firing
-    early"; on this mix it is not — it fires slightly late. Re-derive `PACKED_PER_RAW` from paired
-    readings before trusting the margin, and see `LIVE-123` for the build-stall timings.
   - `check:og-trace` — sharp reaching 67 functions of a 100 budget (unchanged, 2026-08-24).
   - `check:cache-budget` ([ADR-1064](docs/DECISIONS.md), [ADR-1086](docs/DECISIONS.md)) — the build
     cache under Vercel's packed 1.50 GB ceiling, trimming only a named compiler-cache list when over.
@@ -55,13 +46,28 @@ ARTIFACT. Full rules and the incident: [`docs/DEPLOY-SAFETY.md`](docs/DEPLOY-SAF
     the same composition — put the implied ratio at **0.524–0.526 against a constant of 0.53**, i.e.
     accurate to 1% and rounded toward firing the trim early. The 2× gap is genuine for the OTHER mix:
     with `.next/cache` trimmed to nothing, node_modules alone packs near 0.264. It changes nothing,
-    and the reason is structural rather than lucky — **the ratio only alters behaviour near the 1.38 GB
-    trim point, and 0.52 GB sits 62% below it.** Near the threshold the cache is compiler-heavy by
+    and the reason is structural rather than lucky — near the threshold the cache is compiler-heavy by
     definition, because being compiler-heavy is what makes it big enough to approach the threshold at
     all, and that is the mix 0.53 was derived on. So one constant is adequate by construction.
     🔴 **Do not lower it toward 0.264**: that measures on one mix and applies to another, which is the
     error this row exists to prevent, performed in reverse. The probe holds it in a two-sided
     0.52–0.54 band.
+    🔴 **RE-MEASURED 2026-08-25, AND TWO SENTENCES ABOVE ARE NOW WRONG. THIS IS THE GATE CLOSEST TO
+    FIRING.** The reading is **1.39 GB packed against a 1.40 GB trim point** — 99% of the line it
+    trims at, and 93% of the 1.50 GB hard ceiling.
+    - The paragraph above used to close with "the ratio only alters behaviour near the 1.38 GB trim
+      point, and 0.52 GB sits 62% below it." That headroom is **gone**: the cache is now AT the trim
+      point, not 62% below it, so the ratio's accuracy is load-bearing again rather than immaterial.
+      The sentence has been removed rather than left to be re-read as reassurance.
+    - The trim is therefore **not a rare event**. The cache oscillates across that line, and every
+      trim costs the NEXT build a cold compile — 113s against a 46s warm control, both measured the
+      same day.
+    - ⚠️ **And one paired reading says the estimate runs LOW, not high.** On #2280 the gate predicted
+      1.39 GB packed and Vercel's own `Uploading build cache` line reported **1.42 GB**. The
+      "rounded toward firing early" claim above held on the 2026-08-24 mix; on this one it fires
+      slightly **late**, which is the direction that costs a build rather than a cold compile.
+    Re-derive `PACKED_PER_RAW` from paired readings before trusting the margin, and read `LIVE-123`
+    for the page-data build failures measured in the same window.
   - `check:shell-weight` ([ADR-1066](docs/DECISIONS.md)) — the CLIENT half: the app shell's eager
     first-load JS (**1010 KB across 21 chunks on two production artifacts, 2026-08-18**, ceiling
     1,400 KB) plus named fingerprints for admin module bodies that must stay behind `next/dynamic`
