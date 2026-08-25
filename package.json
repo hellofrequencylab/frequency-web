@@ -50,6 +50,7 @@
     "check:cache-budget": "node scripts/check-cache-budget.mjs",
     "check:shell-weight": "node scripts/check-shell-weight.mjs",
     "check:stored-blocks": "node scripts/check-stored-blocks.mjs",
+    "check:entity-layouts": "node scripts/check-entity-layouts.mjs",
     "check:cosmetic-renders": "node scripts/check-cosmetic-renders.mjs",
     "check:studio": "node scripts/check-studio.mjs",
     "check:creates": "node scripts/check-creates.mjs",

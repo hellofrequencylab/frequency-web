@@ -9,6 +9,7 @@ import { Input, Textarea, Field, labelClasses } from '@/components/ui/field'
 import { DangerModal } from '@/components/admin/danger-modal'
 import { isError } from '@/lib/action-result'
 import { updateRoom, deleteRoom } from '@/app/(main)/messages/rooms/actions'
+import { Button } from '@/components/ui/button'
 
 // Room (message board) settings — the room-admin's edit + delete, in the shared Studio popup.
 // Edit name / description / visibility (updateRoom), and a type-to-confirm delete (deleteRoom,
@@ -88,14 +89,13 @@ export function RoomSettings({
               >
                 Cancel
               </button>
-              <button
+              <Button
                 type="button"
                 onClick={save}
                 disabled={pending || !n.trim()}
-                className="rounded-xl bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
               >
                 {pending ? 'Saving…' : 'Save changes'}
-              </button>
+              </Button>
             </StudioFooter>
           }
         >

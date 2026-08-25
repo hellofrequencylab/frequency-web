@@ -30,6 +30,7 @@ import { WARMUP_MESSAGE_MAX } from '@/lib/on-air'
 import type { CheckConfig } from '@/lib/journeys/store'
 import { PillarChip } from './pillar-chip'
 import { Input, Textarea } from '@/components/ui/field'
+import { Button } from '@/components/ui/button'
 
 export interface EditorBlock {
   id: string
@@ -783,14 +784,13 @@ export function JourneyEditor({
         )
       })}
 
-      <button
+      <Button
         type="button"
         disabled={pending}
         onClick={() => run(() => addPhaseAction(slug))}
-        className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary hover:bg-primary-hover disabled:opacity-60"
       >
         <Plus className="h-4 w-4" /> Add phase
-      </button>
+      </Button>
     </div>
   )
 }

@@ -534,13 +534,12 @@ export function ChallengeCreateLauncher({ journeys }: { journeys: ExpressionJour
   const [open, setOpen] = useState(false)
   return (
     <>
-      <button
+      <Button
         type="button"
         onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
       >
         <Plus className="h-4 w-4" /> Add challenge
-      </button>
+      </Button>
       {open && (
         <StudioWindow open onClose={() => setOpen(false)} eyebrow="Studio · Challenge">
           <ChallengeCreateForm journeys={journeys} onCreated={() => setOpen(false)} />

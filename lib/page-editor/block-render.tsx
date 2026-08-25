@@ -1,5 +1,6 @@
 import { Fragment, type CSSProperties, type ReactNode } from 'react'
 import type { Config, Data, Metadata } from '@/lib/page-editor/types'
+import { deepResolveAssetRefs, isAssetRef } from '@/lib/library/asset-ref'
 
 // A block the current config cannot resolve — a type that was renamed or retired while
 // stored documents still name it. The document ALWAYS keeps it (the loader no longer
@@ -61,6 +62,15 @@ function UnknownBlock({ type, isEditing }: { type: string; isEditing?: boolean }
 // No hooks are used (Puck's rsc render leans on useMemo via useSlots; the memo is
 // pure so we inline it), which keeps BlockRender safe as a Server Component AND
 // inside client trees.
+//
+// A SECOND DELIBERATE DIVERGENCE (PROG-D2, ADR-1130): AssetRef unwrapping. A stored
+// image prop may be `{ assetId, url }` — the Loom reference plus its cached URL
+// (lib/library/asset-ref.ts) — instead of a bare string. Puck would hand that object
+// to the renderer untouched; this walk replaces it with its URL string, at any depth
+// (including inside gallery arrays a `custom` field stores), so every block renderer
+// keeps receiving the plain strings it has always received and NO renderer knows refs
+// exist. The unwrap is identity-preserving on ref-free values, so the byte-parity
+// contract with Puck's rsc <Render> holds on every document Puck itself could render.
 // ─────────────────────────────────────────────────────────────────────────────
 
 // Zone/area constants — mirror Puck's lib/root-droppable-id.ts.
@@ -136,10 +146,16 @@ function walkField(
     const content = (value ?? []) as Item[]
     return makeSlot(content, ctx)
   }
+  // AssetRef → cached URL string (divergence #2 above). Checked before the object
+  // branch so a ref is unwrapped whole, never walked key-by-key.
+  if (isAssetRef(value)) return value.url
   if (value && typeof value === 'object') {
     if (Array.isArray(value)) {
       const arrayFields = fields[propKey]?.type === 'array' ? fields[propKey]?.arrayFields : undefined
-      if (!arrayFields) return value
+      // A non-`array`-typed field can still HOLD an array (a `custom` gallery field
+      // stores `{ src }[]`). There is no field metadata to walk it with, so refs are
+      // unwrapped shape-wise; identity-preserved when the array carries none.
+      if (!arrayFields) return deepResolveAssetRefs(value)
       return value.map((el, idx) => walkField(el, arrayFields, propKey, `${propPath}[${idx}]`, ctx))
     }
     if ('$$typeof' in (value as object)) return value // React element — leave intact

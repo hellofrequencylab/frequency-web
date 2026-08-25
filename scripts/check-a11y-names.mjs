@@ -24,7 +24,9 @@
 //   1. `aria-label`                      5. an `<svg><title>` inside the control
 //   2. `aria-labelledby`                 6. a wrapping <label> (implicit association), including
 //   3. `title`                              the WRAPPER COMPONENTS discovered below
-//   4. visible text content              7. `htmlFor` on a <label> pointing at this control's id
+//   4. visible text content              7. `htmlFor` on a <label> pointing at this control's id,
+//                                           including one FORWARDED through a component
+//                                           (discoverForwarders — HYG-018, ADR-1126)
 //   8. `placeholder` / `alt` / `value`, which is what axe-core's own `label` rule accepts:
 //      its `any:` list is aria-label · aria-labelledby · non-empty-title · non-empty-placeholder ·
 //      implicit-label · explicit-label · presentational-role (verified in axe-core 4.13.0, the
@@ -68,8 +70,13 @@
 //   · whether the name is any GOOD. "Button", "Click here" and a name that duplicates a nearby
 //     heading all pass. docs/CONTENT-VOICE.md owns that, and the axe pass in test/e2e owns the
 //     rendered tree, where a name assembled at runtime is finally real.
-//   · a name that only exists at runtime (threaded through three components, or set by an effect).
-//     Those read as `spread`/unknowable here and pass.
+//   · a name that only exists at runtime (set by an effect, or assembled from data). Those read as
+//     `spread`/unknowable here and pass. A name threaded through a COMPONENT is no longer in that
+//     bucket in either of its two shapes — wrapping (discoverWrappers) and forwarding
+//     (discoverForwarders) both resolve to the call site's literal.
+//   · whether a forwarded id actually REACHES a control (`<Field id="biz-wat">` beside
+//     `<Textarea id="biz-what">`). This gate asks whether the control has a name; that the label
+//     reaches something is scripts/check-labels.mjs's contract, and it runs at zero.
 //
 // Usage: `node scripts/check-a11y-names.mjs` (or `pnpm check:a11y-names`). Exits 1 on violation.
 
@@ -95,6 +102,14 @@ export const MIN_JUDGED = 2500
  *  discovering must fail loudly rather than turn 283 correctly-wrapped controls into violations.
  *  6 wrapper components naming 283 controls on 2026-08-17. */
 export const MIN_WRAPPERS = 4
+
+/** Nor to a handful of resolved FORWARDERS, for the same reason and with the same failure mode
+ *  reversed. `discoverForwarders` is a chain — `<label {...props}>` seeds `Label`, `Label` seeds
+ *  `Field`, `Field` seeds `TextField` — so ONE broken link silently un-names a whole family of
+ *  correctly labelled controls, and the gate would report them as findings rather than notice it
+ *  had stopped resolving. 11 forwarder components on 2026-08-25, of which the `Label` seed is
+ *  load-bearing: lose it and the count falls to 2. */
+export const MIN_FORWARDERS = 6
 
 /**
  * ⚠️ THE WEAK-NAME RATCHET — how many controls may be named ONLY by their placeholder.
@@ -128,16 +143,31 @@ export const MIN_WRAPPERS = 4
  * No placeholder was deleted to move this number: the ones that only repeated their new label
  * went, the ones carrying a real example stayed.
  *
- * 🔴 THE 1 THAT IS LEFT IS A FALSE POSITIVE, AND IT IS LEFT ON PURPOSE.
- * `app/(main)/spaces/new/business/business-quickstart-form.tsx:50` is `<Field id="biz-what"
- * label="What do you do?">` from `components/spaces/space-form.tsx`, which renders
- * `<Label htmlFor={id}>` beside the control. That IS a real, permanent name; this walk cannot see
- * it because the `htmlFor` is a forwarded prop in ANOTHER file, so the literal never lands in
- * `fors`. `discoverWrappers` already solves the sibling problem for label-WRAPPING components;
- * the forwarding shape has no equivalent yet. Fixing the render site instead would put a second,
- * duplicate name on a correctly-labelled control to satisfy an instrument — the shape-not-truth
- * trade this gate's own 429 was built out of. It is booked as HYG-018 and the ceiling carries it
- * honestly at 1 rather than pretending to a 0 it has not earned.
+ * ✅ LOWERED TO 0 on 2026-08-25 (HYG-018, ADR-1126), and NOT by retiring a placeholder. The last
+ * remaining 1 was a FALSE POSITIVE and was booked as one: `business-quickstart-form.tsx:50` is
+ * `<Field id="biz-what" label="What do you do?">` from `components/spaces/space-form.tsx`, which
+ * renders `<Label htmlFor={id}>` beside the control. That is a real, permanent name; the walk could
+ * not see it because the `htmlFor` was a forwarded prop in ANOTHER file, so the caller's literal
+ * never landed in `fors`. `discoverForwarders` above now resolves that shape, symmetric with
+ * `discoverWrappers`, and the control re-tallied from `placeholder (weak)` to `htmlFor` — the ONLY
+ * classification that moved on the whole tree (338 htmlFor -> 339, 1 weak -> 0, 3,575 judged
+ * unchanged). So the population this ratchet guards is now genuinely empty, and the 0 is measured
+ * rather than declared.
+ *
+ * 🔴 WHY THE FIX WAS THE GATE AND NOT THE RENDER SITE. Putting an `aria-label` on a control that
+ * already has a `<label>` would have given it two names to satisfy an instrument, and an allowlist
+ * entry for the one file would have been the same trade in smaller print: the gate keeps its number
+ * and loses the thing the number was FOR. A gate that reports a finding everyone knows is false is
+ * routed around within a day and then reads as coverage (ADR-970) — and this gate has been wrong
+ * twice already in exactly that direction (126 of 143, then 347 of 429). A checker that cannot
+ * resolve a shape gets taught the shape, or says out loud that it cannot; it does not get an
+ * exception list.
+ *
+ * 🔴 AND IT IS STILL A RATCHET, NOT A ZERO-BY-CONSTRUCTION. 0 is where the population happens to
+ * sit today; the ARGUMENT above (axe accepts a placeholder, so failing on one would be stricter
+ * than the e2e pass and get routed around) has not changed. A new placeholder-only control fails
+ * this gate as a ceiling breach, not as an accessible-name violation, and the failure text still
+ * says how to give it a real name.
  *
  * A COUNT, NOT A SET — and check-templates.mjs's §"A COUNT IS NOT A SET" is the argument against
  * that, so it is answered rather than ignored. There, one page adopting a template and one new
@@ -151,7 +181,7 @@ export const MIN_WRAPPERS = 4
  * TO LOWER IT: give the fields real names, then set this to what the run prints, in the SAME
  * change. Never raise it.
  */
-export const MAX_PLACEHOLDER_ONLY = 1
+export const MAX_PLACEHOLDER_ONLY = 0
 
 /**
  * The ceiling verdict, as a pure function of the count.
@@ -276,6 +306,143 @@ export function discoverWrappers(files, exists = existsSync) {
     if (wrappers.size === before) break
   }
   return wrappers
+}
+
+// ───────────────────────────────────────────────────────────────────────────────────────────────
+// Forwarder-component discovery — the symmetric half (HYG-018, ADR-1126)
+// ───────────────────────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Which prop of the enclosing component an identifier is bound to — or null when it is a local.
+ *
+ * This is the whole difference between resolving a forwarded label and inventing one. In
+ * `<Label htmlFor={id}>`, `id` is either a PROP (the caller chose the value, so the caller's
+ * literal is the one that must land in `fors`) or a LOCAL (`const id = useId()`, in which case
+ * nothing is forwarded and the same-file text match already handles it). Walking up and checking
+ * the function body for a shadowing declaration BEFORE its parameters is what tells them apart;
+ * without that order a `useId()` component would be published as a forwarder and every call site
+ * would get a name it does not have.
+ *
+ * Returns `{ kind: 'prop', name }` for a named prop, `{ kind: 'rest' | 'props' }` for `...rest` /
+ * a whole `props` object (which pass every prop through, including `htmlFor`), or null.
+ */
+export function propBehindIdentifier(node, ident) {
+  let p = node.parent
+  while (p) {
+    if (ts.isFunctionDeclaration(p) || ts.isFunctionExpression(p) || ts.isArrowFunction(p)) {
+      let shadowed = false
+      const scan = (n) => {
+        if (shadowed) return
+        if (ts.isVariableDeclaration(n) && ts.isIdentifier(n.name) && n.name.text === ident) { shadowed = true; return }
+        ts.forEachChild(n, scan)
+      }
+      if (p.body) scan(p.body)
+      if (shadowed) return null
+      for (const param of p.parameters) {
+        const nm = param.name
+        if (ts.isIdentifier(nm)) {
+          if (nm.text === ident) return { kind: 'props' }
+        } else if (ts.isObjectBindingPattern(nm)) {
+          for (const el of nm.elements) {
+            if (!ts.isIdentifier(el.name) || el.name.text !== ident) continue
+            if (el.dotDotDotToken) return { kind: 'rest' }
+            const key = el.propertyName && ts.isIdentifier(el.propertyName) ? el.propertyName.text : el.name.text
+            return { kind: 'prop', name: key }
+          }
+        }
+      }
+    }
+    p = p.parent
+  }
+  return null
+}
+
+/**
+ * Every component that FORWARDS a label to a control it does not contain, as
+ * `path::ComponentName -> the prop carrying the id`.
+ *
+ * 🔴 WHY THIS EXISTS (HYG-018, ADR-1126). `discoverWrappers` above solves the label-WRAPPING
+ * shape — `<Field label="Title"><Input /></Field>` — and solving it is the only reason this gate
+ * runs at 17 findings instead of 143. The other shape had no equivalent: a component that takes an
+ * `id` prop and renders `<Label htmlFor={id}>` as a SIBLING of its children. `fors` is collected
+ * per file from literal `htmlFor` attributes, and a forwarded one is an identifier in someone
+ * else's file, so the caller's literal never landed there and a correctly labelled control read as
+ * unnamed. That was the entire remaining weak-name population on 2026-08-24 — a gate reporting one
+ * finding, all of it false, which is the state ADR-970 says gets routed around and then reads as
+ * coverage. An exception for the one file would have been that same trade in smaller print.
+ *
+ * TWO SHAPES, and the second is not optional:
+ *   (a) BOUND — `<label htmlFor={id}>` / `<Label htmlFor={id}>` / `<Field id={id}>`, where the
+ *       identifier resolves to one of the enclosing component's own props.
+ *   (b) SPREAD — `<label {...props} />`, which is exactly how `components/ui/field.tsx`'s own
+ *       `Label` carries `htmlFor`. Without (b) the seed never reaches `Label`, `Field` never
+ *       reaches `Label`, and the fixpoint below discovers nothing at all.
+ *
+ * Run to a FIXPOINT, like `discoverWrappers`, so a forwarder built out of another forwarder is one
+ * too: `Label` forwards `htmlFor` -> `Field` renders `<Label htmlFor={id}>` so it forwards `id` ->
+ * `TextField` renders `<Field id={id}>` so it forwards `id`.
+ *
+ * DIRECTION OF ERROR. Everything this finds can only ADD to `fors`, and `fors` can only move a
+ * control OUT of the violation and weak populations, never into them. So a forwarder discovered
+ * wrongly costs a missed finding, never a false one — the same trade `hasSpread` and the unknowable
+ * children already make, and the one this gate must keep making to stay believed. What it does NOT
+ * check is that the forwarded label actually REACHES the control (an id typo at the call site):
+ * that is scripts/check-labels.mjs's contract, and it resolves `Label` itself.
+ */
+export function discoverForwarders(files, exists = existsSync) {
+  const forwarders = new Map()
+  const cache = new Map()
+  const sourceOf = (file, src) => {
+    let sf = cache.get(file)
+    if (!sf) { sf = parse(file, src); cache.set(file, sf) }
+    return sf
+  }
+  for (let pass = 0; pass < 5; pass++) {
+    const before = forwarders.size
+    for (const [file, src] of files) {
+      if (!src.includes('<')) continue
+      const sf = sourceOf(file, src)
+      /** The forwarder tags visible in THIS file, plus the intrinsic seed. */
+      const local = new Map([['label', 'htmlFor']])
+      for (const [key, prop] of forwarders) {
+        const [ff, fn] = key.split('::')
+        if (ff === file) local.set(fn, prop)
+      }
+      for (const [name, info] of importMap(sf, file, exists)) {
+        const prop = info.file && forwarders.get(`${info.file}::${info.orig}`)
+        if (prop) local.set(name, prop)
+      }
+      const visit = (node) => {
+        if (ts.isJsxElement(node) || ts.isJsxSelfClosingElement(node)) {
+          const open = opening(node)
+          const targetProp = local.get(tagOf(open))
+          if (targetProp) {
+            let bound = null
+            const a = attr(open, targetProp)
+            const init = a?.initializer
+            if (init && ts.isJsxExpression(init) && init.expression && ts.isIdentifier(init.expression)) {
+              bound = propBehindIdentifier(node, init.expression.text)
+            }
+            if (!bound) {
+              for (const sp of propsOf(open)) {
+                if (!ts.isJsxSpreadAttribute(sp) || !ts.isIdentifier(sp.expression)) continue
+                const b = propBehindIdentifier(node, sp.expression.text)
+                if (b && (b.kind === 'rest' || b.kind === 'props')) { bound = { kind: 'prop', name: targetProp }; break }
+              }
+            }
+            if (bound && bound.kind === 'prop') {
+              const name = enclosingComponentName(node)
+              if (name) forwarders.set(`${file}::${name}`, bound.name)
+            }
+          }
+        }
+        ts.forEachChild(node, visit)
+      }
+      visit(sf)
+    }
+    if (forwarders.size === before) break
+  }
+  return forwarders
 }
 
 // ───────────────────────────────────────────────────────────────────────────────────────────────
@@ -413,10 +580,24 @@ export function auditNames(src, ctx, file = 'fixture.tsx') {
   // Every htmlFor in the file, for explicit association. check-labels.mjs already proves each one
   // REACHES a labelable element, so matching on the value alone is sound here.
   const fors = new Set()
+  const forwarderProps = ctx.forwarderProps ?? new Map()
   const collectFors = (n) => {
     if (ts.isJsxAttribute(n) && (n.name.getText() === 'htmlFor' || n.name.getText() === 'for') && n.initializer) {
       const i = n.initializer
       fors.add((ts.isStringLiteral(i) ? i.text : i.getText()).replace(/\s+/g, ''))
+    }
+    // …and every id handed to a FORWARDER, which is a literal <label htmlFor> one component away
+    // (HYG-018, ADR-1126). `<Field id="biz-what" label="What do you do?">` renders
+    // `<Label htmlFor="biz-what">` in components/spaces/space-form.tsx, so the caller's literal is
+    // the association even though the `htmlFor` lives in another file. Without this the walk sees
+    // only the identifier there, the literal never lands in `fors`, and a correctly labelled
+    // control reads as unnamed — one finding, entirely false, on the live tree.
+    if (ts.isJsxOpeningElement(n) || ts.isJsxSelfClosingElement(n)) {
+      const prop = forwarderProps.get(tagOf(n))
+      if (prop) {
+        const t = attrText(n, prop)
+        if (t) fors.add(t.replace(/\s+/g, ''))
+      }
     }
     ts.forEachChild(n, collectFors)
   }
@@ -529,6 +710,7 @@ export function runAudit(roots = ROOTS) {
   const paths = roots.flatMap(tsxFiles)
   const files = new Map(paths.map((p) => [p, readFileSync(p, 'utf8')]))
   const wrappers = discoverWrappers(files)
+  const forwarders = discoverForwarders(files)
 
   const violations = []
   const named = new Map()
@@ -538,27 +720,34 @@ export function runAudit(roots = ROOTS) {
     const sf = parse(file, src)
     const wrapperNames = new Set()
     const kitKinds = new Map()
+    const forwarderProps = new Map()
     for (const key of wrappers) {
       const [wf, wn] = key.split('::')
       if (wf === file) wrapperNames.add(wn)
     }
+    for (const [key, prop] of forwarders) {
+      const [ff, fn] = key.split('::')
+      if (ff === file) forwarderProps.set(fn, prop)
+    }
     for (const [local, info] of importMap(sf, file)) {
       if (!info.file) continue
       if (wrappers.has(`${info.file}::${info.orig}`)) wrapperNames.add(local)
+      const fwd = forwarders.get(`${info.file}::${info.orig}`)
+      if (fwd) forwarderProps.set(local, fwd)
       const kit = KIT_CONTROLS.get(`${info.file}::${info.orig}`)
       if (kit) kitKinds.set(local, kit)
     }
-    const res = auditNames(src, { wrapperNames, kitKinds }, file)
+    const res = auditNames(src, { wrapperNames, kitKinds, forwarderProps }, file)
     judged += res.judged
     for (const [k, v] of res.named) named.set(k, (named.get(k) ?? 0) + v)
     for (const v of res.violations) violations.push({ file, ...v })
     for (const w of res.weak) weak.push({ file, ...w })
   }
-  return { files: paths.length, wrappers, violations, judged, named, weak }
+  return { files: paths.length, wrappers, forwarders, violations, judged, named, weak }
 }
 
 function main() {
-  const { files, wrappers, violations, judged, named, weak } = runAudit()
+  const { files, wrappers, forwarders, violations, judged, named, weak } = runAudit()
 
   if (files < MIN_FILES) {
     console.error(`✗ check:a11y-names — found ${files} .tsx file(s) under ${ROOTS.join(' + ')}, expected at least ${MIN_FILES}.`)
@@ -574,6 +763,14 @@ function main() {
     console.error(`✗ check:a11y-names — resolved only ${wrappers.size} label-wrapping component(s), expected at least ${MIN_WRAPPERS}.`)
     console.error('    Wrapper discovery has broken. Every <Field>-wrapped control would now read as')
     console.error('    unnamed, which is the 143-false-positive failure this gate was built to avoid.')
+    process.exit(1)
+  }
+  if (forwarders.size < MIN_FORWARDERS) {
+    console.error(`✗ check:a11y-names — resolved only ${forwarders.size} label-forwarding component(s), expected at least ${MIN_FORWARDERS}.`)
+    console.error('    Forwarder discovery has broken (HYG-018, ADR-1126). Every control named by a')
+    console.error('    <Field id="…"> whose <Label htmlFor> lives one component away would now read as')
+    console.error('    unnamed. Fix the chain — it is seeded by the `{...props}` spread in')
+    console.error('    components/ui/field.tsx::Label — do not lower the floor.')
     process.exit(1)
   }
 
@@ -637,7 +834,8 @@ function main() {
 
   console.log(
     `✓ Accessible names: all ${judged} control(s) across ${files} file(s) have one ` +
-      `(${wrappers.size} label-wrapping components resolved).\n    named by: ${tally}` +
+      `(${wrappers.size} label-wrapping + ${forwarders.size} label-forwarding components resolved).` +
+      `\n    named by: ${tally}` +
       `\n    weak names: ${ceiling.count} control(s) named only by a placeholder ` +
       `(ceiling ${ceiling.max}, may only shrink)` +
       (ceiling.delta < 0
