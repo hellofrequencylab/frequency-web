@@ -4627,6 +4627,168 @@
         "evidence": "Grep 2026-08-25: zero instagram/facebook/x.com/youtube/linkedin URLs in site chrome or lib/site.ts; organizationSchema's sameAs parameter unused.",
         "checked": "2026-08-25"
       }
+    },
+    {
+      "id": "SCAN-003",
+      "title": "content-cascade's key-count comment counts a '/' ancestor the code never inserts",
+      "status": "done",
+      "lane": "hygiene",
+      "size": "XS",
+      "source": {
+        "file": "docs/META-SCAN-STATUS.md",
+        "ref": "meta-scan 2026-08-25, delta audit"
+      },
+      "detail": "MS25 Phase 0. loadCascadeRows' doc says a 3-deep route is 5 keys including '/', but routeScopeChain never inserts '/' as an ancestor, by the module's own SITE_SCOPE design note; the real count is 4. Comment-only, but it sits on the operator copy cascade where prose is load-bearing. Was train-claimed at scan time.",
+      "verify": {
+        "kind": "grep-absent",
+        "pattern": "5 keys",
+        "paths": [
+          "lib/layout/content-cascade.ts"
+        ],
+        "note": "Passes when the comment stops counting a key the chain never mints."
+      }
+    },
+    {
+      "id": "SCAN-004",
+      "title": "@types/papaparse rides in dependencies, not devDependencies",
+      "status": "open",
+      "lane": "hygiene",
+      "size": "XS",
+      "source": {
+        "file": "docs/META-SCAN-STATUS.md",
+        "ref": "meta-scan 2026-08-25, orphan sweep"
+      },
+      "detail": "MS25 Phase 0. A types-only package in the production dependency set. One-line move; package.json is train-claimed today. BLOCKED 2026-08-25: package.json is claimed by open PR #2283 (housing/natal-matching), which adds astronomy-engine two lines from this entry. Editing it here would conflict directly. Do this the moment #2283 merges.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const p=require('./package.json');process.exit(p.dependencies&&p.dependencies['@types/papaparse']?1:0)\"",
+        "note": "Passes when the types package leaves the runtime dependency set."
+      }
+    },
+    {
+      "id": "SCAN-501",
+      "title": "Rule on the eight verified orphans in one sitting",
+      "status": "done",
+      "lane": "hygiene",
+      "size": "S",
+      "source": {
+        "file": "docs/META-SCAN-STATUS.md",
+        "ref": "meta-scan 2026-08-25, orphan sweep"
+      },
+      "detail": "MS25 Phase 5. Verified dead with full reference searches: lib/theme/index.ts (barrel, 0 importers, 13 files bypass it - theme train may adopt, rule after it lands), createSpacePlanCheckout (ADR-880 adapter, test-only), sendBookingReminderEmail + sendListingClaimInviteEmail (superseded/never-wired), lib/founding/status.ts residue (reserveFounding, foundingBusinessTakenInCity), EditModeButton, SpotlightBlocks export + the 6-export spotlight draft/theme layer (guestbook train may adopt first). Each gets delete-or-adopt, one sitting, so it stops dribbling. CLOSED 2026-08-25: seven rulings, all DELETE, each re-verified tonight with four fresh searches over the whole tree (static importers, dynamic import, bare name across app/components/lib/ scripts/supabase/test/docs/.github/content, own-test-only) rather than trusting the archived scan. lib/theme/index.ts (barrel, 30 files import submodules directly), createSpacePlanCheckout (+ its two now-dead imports; ADR-880 becomes STRUCTURAL — one door, so the two prices cannot diverge), sendBookingReminderEmail (buildBookingReminderEmail is shared and stays), sendListingClaimInviteEmail (+ its three module-private renderers, which had it as their only caller), reserveFounding + foundingBusinessTakenInCity (premise re-tested: no /founders route exists and lib/founding/business-checkout.ts is already retired), EditModeButton, SpotlightBlocks and SITE_NAV_MEMBER. Two test files were rewritten rather than dropped — every unique assertion was re-pointed at the surviving door. TWO FOLLOW-UPS this created, both on SCAN-502: useEditMode().toggle now has no caller, and offersPeriod lost its last external consumer (still used internally, so it is an unexport, never a delete).",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const path=require('path');const D=['app','components','lib','scripts','supabase','test'];const EXT=new Set(['.ts','.tsx','.js','.jsx','.mjs','.cjs','.mts','.cts','.sql']);const DEAD=['createSpacePlanCheckout','sendBookingReminderEmail','sendListingClaimInviteEmail','reserveFounding','foundingBusinessTakenInCity','EditModeButton','SITE_NAV_MEMBER'];const CONTROL='StartEditingLink';const strip=s=>s.replace(/\\/\\*[\\s\\S]*?\\*\\//g,'').replace(/([^:])\\/\\/.*$/gm,(m,a)=>a).replace(/^\\s*\\/\\/.*$/gm,'');const files=[];const walk=d=>{let ents;try{ents=fs.readdirSync(d,{withFileTypes:true})}catch{return}for(const e of ents){if(e.name==='node_modules'||e.name==='.next'||e.name.startsWith('.'))continue;const p=path.join(d,e.name);if(e.isDirectory())walk(p);else if(EXT.has(path.extname(e.name)))files.push(p)}};for(const d of D)walk(d);if(files.length<2000){console.error('probe cannot run: walked only '+files.length+' source files, so a clean verdict would be about the WALK');process.exit(1)}const bad=[];let control=0;for(const f of files){const raw=fs.readFileSync(f,'utf8');let code=null;if(raw.includes(CONTROL)){code=strip(raw);if(code.includes(CONTROL))control++}for(const n of DEAD){if(!raw.includes(n))continue;if(code===null)code=strip(raw);if(code.includes(n))bad.push(f+' :: '+n)}}if(control===0){console.error('probe control failed: '+CONTROL+' is live in an edited file and was not found, so this search proves nothing');process.exit(1)}if(bad.length){console.error('orphan still in executable code:\\n'+bad.join('\\n'));process.exit(1)}\"",
+        "note": "Measures EXECUTABLE code, not text: every deleted symbol deliberately survives in a comment saying what was removed and why, and a probe that forbade those would push a future session to erase the record to go green. Carries its own control — the same search must still find StartEditingLink, a live sibling in one of the edited files — so it cannot pass by having been broken."
+      }
+    },
+    {
+      "id": "SCAN-502",
+      "title": "One trim sweep over the ~154 lib modules carrying dead exports",
+      "status": "open",
+      "lane": "hygiene",
+      "size": "S",
+      "source": {
+        "file": "docs/META-SCAN-STATUS.md",
+        "ref": "meta-scan 2026-08-25, orphan sweep"
+      },
+      "detail": "MS25 Phase 5. RE-SCOPED 2026-08-25 by an exact-identifier index over the whole tree (the original number came from a token-presence scan, which under-reports by construction). Two findings changed the row. (1) THE ORIGINAL SCAN MISSES .mts: lib/help/drift.ts and lib/ai/autodoc.ts scored fully dead and are both LIVE, consumed by scripts/help-drift.mts and scripts/help-autodoc.mts. Any sweep that skips .mts/.cts/.cjs/.yml deletes live code — this is the load-bearing correction. (2) ~85% of the row is not deletable: of 860 dead value exports across 707 lib modules, 734 are used INSIDE their own file, so the sweep for those is dropping the `export` keyword, not deleting. Only 126 are declaration-only. Exactly one module is fully dead — lib/help/drift.ts — and that one is the false positive above. So this is an API-surface trim plus a small delete list, not the M-sized code sweep the row described. A ranked 15 is scoped (each with all four searches clean), with three flagged for a ruling before touching, not a sweep: lib/verticals/registry.ts, lib/nav/admin-rail.ts and lib/admin/modules/spine.ts are registry/menu-adjacent — a parallel rail registry with no consumer is a MENU-CONTRACT finding in its own right. Two items carried over from SCAN-501: useEditMode().toggle (no caller since EditModeButton went) and offersPeriod (internal-only now; unexport, and its own test updates with it). Excluded on purpose: lib/profile/spotlight-flags.ts belongs to SCAN-501.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Exact-identifier index re-run 2026-08-25 over the whole tree INCLUDING .mts/.cts/.cjs: 860 dead value exports / 707 lib modules, of which 126 are declaration-only. Ranked 15 hand-verified with four searches each. The archived 2026-08-25 token-presence output is superseded and must not be the basis of a sweep.",
+        "checked": "2026-08-25"
+      }
+    },
+    {
+      "id": "SCAN-503",
+      "title": "The three world-dashboard Manage widgets hand-declare ~35 rows the catalog already owns",
+      "status": "done",
+      "lane": "hygiene",
+      "size": "S",
+      "source": {
+        "file": "components/widgets/growth/manage.tsx",
+        "ref": "lines 71-90 (+community/operations siblings)"
+      },
+      "detail": "MS25 Phase 5. The growth/community/operations Manage widgets type ~35 {label,desc,href,Icon} cards duplicating STUDIO_LEAVES - exactly the class MENU-CONTRACT admits check:menu cannot see, and it has already drifted twice (copy vs the leaf desc; gates: the host+marketing Growth dashboard shows janitor-gated destinations that bounce to /feed). Render from studioLeaf(id) (exported for this at lib/nav/studio.ts:468) and filter by the leaf's gate.",
+      "verify": {
+        "kind": "grep-present",
+        "pattern": "studioLeaf",
+        "paths": [
+          "components/widgets/growth/manage.tsx"
+        ],
+        "note": "Passes when the growth widget derives its cards; the two siblings ride the same change."
+      }
+    },
+    {
+      "id": "SCAN-504",
+      "title": "Housing has no Studio manifest and the listing-seeder hand-rolls its review model",
+      "status": "open",
+      "lane": "hygiene",
+      "size": "M",
+      "source": {
+        "file": "app/(main)/admin/listing-seeder/review-model.ts",
+        "ref": "lines 1-20"
+      },
+      "detail": "MS25 Phase 5. Both sibling seeders derive their review boards from manifests + the review kernel; the listing-seeder declares its own field list with no lib/studio import - partly because LISTING_MANIFEST covers classifieds only and housing sits outside Studio entirely (its member form is acknowledged as bespoke). Write the housing manifest (or widen listing's), then point the seeder's field list at the manifests like its siblings.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const has=fs.readdirSync('lib/studio/entities').some(f=>/housing/i.test(f));if(!has){console.error('housing still has no Studio manifest');process.exit(1)}\"",
+        "note": "Passes when a housing manifest exists; the seeder derive is the same change's second half."
+      }
+    },
+    {
+      "id": "SCAN-505",
+      "title": "ListingDetailTemplate is a ninth shell living outside the registered kit",
+      "status": "done",
+      "lane": "hygiene",
+      "size": "XS",
+      "source": {
+        "file": "components/templates/listing-detail-template.tsx",
+        "ref": "whole file"
+      },
+      "detail": "MS25 Phase 5. Used by classifieds/housing/market detail pages but neither exported from components/templates/index.ts nor named in PAGE-FRAMEWORK §8's shell census. Register it (export + doc row) so the kit's own inventory stays true.",
+      "verify": {
+        "kind": "grep-present",
+        "pattern": "ListingDetailTemplate",
+        "paths": [
+          "components/templates/index.ts"
+        ],
+        "note": "Passes when the kit's index exports the shell its three verticals already compose."
+      }
+    },
+    {
+      "id": "SCAN-506",
+      "title": "Route chunks have no weight gate: the shell gate's documented blind spot",
+      "status": "done",
+      "lane": "hygiene",
+      "size": "S",
+      "source": {
+        "file": "docs/META-SCAN-STATUS.md",
+        "ref": "meta-scan 2026-08-25, perf sweep"
+      },
+      "detail": "MS25 Phase 5. check:shell-weight watches the app shell's eager JS and named admin fingerprints, but a heavy library statically imported by a route-level client component (SCAN-302's react-markdown) is invisible to it. A small fingerprint gate over the member hot-route chunks (feed/events/circles/messages) closes the class, not just the instance. CLOSED 2026-08-25 as ARM C of check:shell-weight, and it is a FINGERPRINT arm, never a budget: from each member hot route page.tsx (feed/events/circles/messages — page, not layout, because the layout IS the shell Arms A/B already measure) it walks the static import graph, marks everything below the first `use client` boundary as client code, and fails if a NAMED heavy module is statically imported inside that subtree. What it can prove without a build is the half a build cannot prove cheaply: a static import below a client boundary is not code-split by any bundler setting, so \"statically reachable\" IS \"in that route first-load JS\". dynamic() and bare import() are not static edges and are correctly invisible. It CANNOT see bytes or a chunking change — only Arms A/B can, and only on the artifact. Reading on the real tree: 0 leaks, 668 client modules walked across the four routes, 2 detector controls firing. IT LIVES IN THE CI HALF (scripts/check-shell-weight.test.ts), NOT in postbuild, for two reasons: main() only runs on Vercel, i.e. after the merge, and a filesystem-only arm has no reason to wait for a build; and in postbuild it broke the artifact arms own mutation fixtures, which run the script from a cwd that is deliberately not this repo, where its controls do not exist. Teaching it to skip when the source tree is absent would have given it a way to pass without looking (ADR-970). Two controls keep it honest: two REAL client files that genuinely import a heavy library today, and a 150-module walk floor against 668 measured. Proven by mutation: a static react-markdown import added to components/feed/post-replies.tsx turns it red and names the chain feed/page.tsx -> feed-list.tsx -> post-card.tsx -> post-replies.tsx.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"import('./scripts/check-shell-weight.mjs').then(m=>{const fs=require('fs');for(const c of m.ROUTE_HEAVY_CONTROLS){if(!fs.existsSync(c.file)){console.error('Arm C detector control is gone: '+c.file+' — repoint it, never delete it');process.exit(1)}const s=fs.readFileSync(c.file,'utf8');if(!m.declaresUseClient(s)||!m.heavyModulesIn(s).includes(c.heavy)){console.error('Arm C detector control no longer fires: '+c.file+' — the detector broke, or the file was fixed and the row needs repointing');process.exit(1)}}let t=0;const leaks=[];for(const e of m.HOT_ROUTE_ENTRIES){if(!fs.existsSync(e)){console.error('Arm C hot route is gone: '+e);process.exit(1)}const w=m.walkRouteClientGraph(process.cwd(),e);t+=w.clientFiles.size;for(const l of w.leaks)leaks.push(e+'  <-  '+l.heavy+'  imported by  '+l.file)}if(t<m.CLIENT_GRAPH_FLOOR){console.error('Arm C walked only '+t+' client modules, under the floor of '+m.CLIENT_GRAPH_FLOOR+' — the walk is not descending');process.exit(1)}if(leaks.length){console.error('a heavy library is statically imported by client code on a member hot route:\\n'+leaks.join('\\n'));process.exit(1)}}).catch(e=>{console.error('Arm C could not run: '+e.message);process.exit(1)})\"",
+        "note": "Runs Arm C itself — both controls included — so it fails when the ARM stops firing as well as when a route regresses. Not `vitest run`: LIVE-034 forbids a probe that spawns a test runner, and this way costs 0.2s instead of 1.9s. A grep for the words in the title would pass by existing."
+      }
+    },
+    {
+      "id": "SCAN-507",
+      "title": "The app-space-console visual baseline is 21px stale, so pr-compare is red on every PR that reaches it",
+      "status": "open",
+      "lane": "owner",
+      "size": "XS",
+      "source": {
+        "file": "test/e2e/__screenshots__/visual.spec.ts/app-space-console--dawn-dark-mobile.png",
+        "ref": "meta-scan 2026-08-25, CI forensics"
+      },
+      "detail": "MS25 Phase 0. The @visual suite's four app-space-console checks (/spaces/<slug>/manage, dawn-light + dawn-dark, desktop + mobile) fail on EVERY branch that runs them, with the baseline 21px shorter than what the app now renders. Proven not-branch-specific by identical pixel arithmetic across two unrelated branches: editor/e0-foundations (run 32806462760, merged as #2281) and claude/frequency-codebase-audit-vii214 (run 32810507921) both report 'Expected an image 390px by 3133px, received 390px by 3154px. 25507 pixels (ratio 0.03)' on app-space-console--dawn-dark.png, with 140 other checks passing in both. Main drifted past the baseline (the loading-skeleton and hero work) and nothing recaptured it. THREE PRs have since merged with this red (#2275, #2277, #2281), which is the failure mode this repo names directly: a check that is red for a reason nobody owns trains everyone to ignore it, and then it reads as coverage (ADR-970, and the e2e workflow's own header on why a meaningless red X is worse than no gate). No code change unblocks it - the baselines are recaptured by the maintainer-triggered job in .github/workflows/e2e-manual.yml, so this is an owner action.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Two CI runs read 2026-08-25: job 97677438550 (editor/e0-foundations, merged) and job 97688833852 (this audit branch) fail the same 4 checks with byte-identical dimensions and pixel counts. Neither branch touches the Space manage console: it renders no STUDIO_LEAVES rows (grep 0 hits in the manage route and entity-manage-console) and nothing mutates the getViewerHats result that the cache() change could share.",
+        "checked": "2026-08-25"
+      }
     }
   ]
 }
