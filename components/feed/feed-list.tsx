@@ -19,6 +19,7 @@ import { getMyOrbit } from '@/lib/connections/resonance'
 import { buildScopeContextResolver } from '@/lib/feed/post-origin'
 import { PostCard, type FeedPost, type RawPost } from './post-card'
 import { upcomingEventFloor } from '@/lib/events/upcoming-floor'
+import { EmptyState } from '@/components/ui/empty-state'
 
 // Day bucketing for the Story lens (matches /journal's grouping voice).
 function dayLabel(iso: string): string {
@@ -335,7 +336,7 @@ export async function FeedList({
   })()
 
   if (!latestDispatch && !nearestEvent && pinned.length === 0 && items.length === 0) {
-    return <EmptyState message={emptyMessage} />
+    return <FeedEmpty message={emptyMessage} />
   }
 
   // Story lens: the community's record — everything in time order, grouped by day,
@@ -493,11 +494,19 @@ function EventFeedCard({ event: e }: { event: { id: string; title: string; start
   )
 }
 
-function EmptyState({ message }: { message: string }) {
+// The feed's empty pane composes the KIT EmptyState (components/ui/empty-state) rather than
+// re-drawing a dashed card, so "nothing here" reads the same in the feed as everywhere else
+// (PAGE-FRAMEWORK: compose, don't author). `emptyMessage` stays one string in the caller's hands
+// — every one of them is already written as "Statement. Next step." — so it is split on the first
+// sentence boundary into the kit's title + description. A message with no boundary is used whole
+// as the title, which is what the old single-paragraph card did.
+function FeedEmpty({ message }: { message: string }) {
+  const split = message.match(/^(.+?[.!?])\s+(.+)$/)
   return (
-    <div className="rounded-card border border-dashed border-border bg-surface/50 dark:bg-canvas/50 p-12 text-center">
-      <MessageSquare className="w-8 h-8 text-subtle/60 mx-auto mb-3" />
-      <p className="text-body-sm text-muted">{message}</p>
-    </div>
+    <EmptyState
+      icon={MessageSquare}
+      title={split ? split[1] : message}
+      description={split ? split[2] : undefined}
+    />
   )
 }
