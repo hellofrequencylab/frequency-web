@@ -30,7 +30,7 @@
 // Exit codes: 0 folded (or nothing to fold) · 1 needs a human (names the ids) · 2 usage/read error.
 
 import { execFileSync } from 'node:child_process'
-import { existsSync, readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, writeFileSync } from 'node:fs'
 
 const BACKLOG = 'docs/BUILD-BACKLOG.json'
 const DECISIONS = 'docs/DECISIONS.md'

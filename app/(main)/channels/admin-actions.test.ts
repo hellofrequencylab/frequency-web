@@ -409,7 +409,10 @@ describe('saveChannelEdits writes the whole record in one commit', () => {
   it('returns a write failure as a sentence rather than throwing a 500 at the operator', async () => {
     updateError.mockReturnValue({ message: 'permission denied for table topical_channels' })
     const res = await saveChannelEdits(CHANNEL, 'meld-community-cowork', full())
-    expect(res).toEqual({ error: 'permission denied for table topical_channels' })
+    // A sentence, per this test's own name. An RLS denial names a table and a privilege, which
+    // is a fact about our schema and not something an operator can act on (SCAN-404).
+    expect(res).toEqual({ error: 'This Channel did not save. Try again in a moment.' })
+    expect(res.error).not.toContain('permission denied')
     expect(revalidatePath).not.toHaveBeenCalled()
   })
 })
@@ -433,9 +436,11 @@ describe('deleteChannel', () => {
 
   it('surfaces a failed delete as a sentence and does not revalidate as if it worked', async () => {
     deleteError.mockReturnValue({ message: 'update or delete violates foreign key constraint' })
-    expect(await deleteChannel(CHANNEL, 'meld')).toEqual({
-      error: 'update or delete violates foreign key constraint',
-    })
+    const res = await deleteChannel(CHANNEL, 'meld')
+    // A sentence, which is what this test's name always asked for: the pg constraint text is
+    // logged server-side and never handed to the operator (SCAN-404).
+    expect(res).toEqual({ error: 'This Channel could not be deleted. Try again in a moment.' })
+    expect(res.error).not.toContain('foreign key')
     expect(revalidatePath).not.toHaveBeenCalled()
   })
 })
