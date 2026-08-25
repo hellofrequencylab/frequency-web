@@ -38,7 +38,14 @@ export async function updateNexusSettings(id: string, slug: string, fd: FormData
       status: fd.get('status') as Database['public']['Enums']['group_status'],
     })
     .eq('id', id)
-  if (error) throw new Error(error.message)
+  if (error) {
+    console.error('[updateNexusSettings] nexuses update failed', {
+      code: error.code,
+      message: error.message,
+      nexusId: id,
+    })
+    throw new Error('Those Nexus settings did not save. Try again in a moment.')
+  }
 
   revalidatePath(`/nexuses/${slug}`)
   revalidatePath('/nexuses')
@@ -60,7 +67,15 @@ export async function updateNexusField(id: string, slug: string, field: InlineFi
 
   const admin = createAdminClient()
   const { error } = await admin.from('nexuses').update({ name: trimmed }).eq('id', id)
-  if (error) throw new Error(error.message)
+  if (error) {
+    console.error('[updateNexusField] nexuses name update failed', {
+      code: error.code,
+      message: error.message,
+      nexusId: id,
+      field,
+    })
+    throw new Error('That Nexus name did not save. Try again in a moment.')
+  }
 
   revalidatePath(`/nexuses/${slug}`)
   revalidatePath('/nexuses')
@@ -187,7 +202,14 @@ export async function archiveNexus(id: string, slug: string): Promise<{ ok: true
 
   const admin = createAdminClient()
   const { error } = await admin.from('nexuses').update({ status: 'archived' }).eq('id', id)
-  if (error) return { error: error.message }
+  if (error) {
+    console.error('[archiveNexus] nexuses archive failed', {
+      code: error.code,
+      message: error.message,
+      nexusId: id,
+    })
+    return { error: 'This Nexus could not be archived. Try again in a moment.' }
+  }
 
   revalidatePath(`/nexuses/${slug}`)
   revalidatePath('/nexuses')

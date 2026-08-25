@@ -223,18 +223,25 @@ export async function updateListing(
 // ── Saves (favorites) — listing_saves, (profile_id, listing_id) PK, self RLS ─────────
 
 /** Save (heart) a listing for the member. Idempotent: the upsert lands on the
- *  (profile_id, listing_id) primary key, so a double-tap never errors. */
+ *  (profile_id, listing_id) primary key, so a double-tap never errors. THROWS on a real
+ *  write failure so the heart's optimistic flip reverts — a discarded error here is how a
+ *  dropped table (20260925 → restored 20270327) no-opped every save invisibly for months. */
 export async function saveListing(profileId: string, listingId: string): Promise<void> {
-  await db().from('listing_saves').upsert({ profile_id: profileId, listing_id: listingId })
+  const { error } = await db()
+    .from('listing_saves')
+    .upsert({ profile_id: profileId, listing_id: listingId })
+  if (error) throw new Error(`saveListing failed: ${error.message}`)
 }
 
-/** Remove a saved listing. A no-op when it was never saved. */
+/** Remove a saved listing. A no-op when it was never saved; THROWS on a real write failure
+ *  (same contract as saveListing — the button reverts its optimistic flip). */
 export async function unsaveListing(profileId: string, listingId: string): Promise<void> {
-  await db()
+  const { error } = await db()
     .from('listing_saves')
     .delete()
     .eq('profile_id', profileId)
     .eq('listing_id', listingId)
+  if (error) throw new Error(`unsaveListing failed: ${error.message}`)
 }
 
 /** Which of `listingIds` the member has saved — ONE batched read for a whole browse
