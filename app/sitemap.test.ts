@@ -17,6 +17,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 // The route builds every URL from SITE_URL, which is resolved at module load — so the test reads the
 // same constant rather than stubbing the env after the import has already been hoisted.
+import { readFileSync } from 'node:fs'
 import { SITE_URL as SITE } from '@/lib/site'
 
 // ── Fixture ──────────────────────────────────────────────────────────────────────────────────────
@@ -104,9 +105,30 @@ vi.mock('@/lib/practices', () => ({
     { id: '2e8b062e-62e5-4bcb-80e9-d6432bb42ae2', slug: null },
   ],
 }))
-vi.mock('@/lib/commerce/products', () => ({ listShopProducts: async () => [], listMarketListings: async () => [] }))
-vi.mock('@/lib/listings/housing', () => ({ listHousingListings: async () => [] }))
-vi.mock('@/lib/marketplace', () => ({ listListings: async () => [] }))
+// The four commerce verticals are the ONE section with a row cap and no page behind it (SCAN-203),
+// so their readers are pointed at a mutable fixture: a test sets `commerce.<vertical>` to however
+// many rows it needs and the sitemap reads exactly that. Every reader defaults to [] (reset in
+// beforeEach), so every OTHER test in this file sees the same empty verticals it always did. The
+// `limit` each reader is handed is recorded, because "the sitemap asks for exactly what the reader
+// will honour" is half of the cap contract pinned below.
+const commerce = vi.hoisted(() => ({
+  shop: [] as { id: string; images: string[]; updatedAt?: string }[],
+  market: [] as { id: string; updatedAt?: string }[],
+  housing: [] as { id: string; updatedAt?: string }[],
+  classifieds: [] as { id: string; updated_at?: string }[],
+  limits: {} as Record<string, unknown>,
+}))
+
+vi.mock('@/lib/commerce/products', () => ({
+  listShopProducts: async (o: { limit?: number } = {}) => ((commerce.limits.shop = o.limit), commerce.shop),
+  listMarketListings: async (o: { limit?: number } = {}) => ((commerce.limits.market = o.limit), commerce.market),
+}))
+vi.mock('@/lib/listings/housing', () => ({
+  listHousingListings: async (o: { limit?: number } = {}) => ((commerce.limits.housing = o.limit), commerce.housing),
+}))
+vi.mock('@/lib/marketplace', () => ({
+  listListings: async (o: { limit?: number } = {}) => ((commerce.limits.classifieds = o.limit), commerce.classifieds),
+}))
 vi.mock('@/lib/help/content', () => ({ getAllArticles: async () => [], getAllCategories: async () => [] }))
 vi.mock('@/app/discover/events/_data', () => ({ getCityCategoryHubs: async () => [] }))
 vi.mock('@/app/discover/places/_data', () => ({ listDiscoverCities: async () => [] }))
@@ -129,6 +151,11 @@ import sitemap from './sitemap'
 
 beforeEach(() => {
   showsBatch.mockClear()
+  commerce.shop = []
+  commerce.market = []
+  commerce.housing = []
+  commerce.classifieds = []
+  commerce.limits = {}
 })
 
 /** Just the podcast entries, in emission order. */
@@ -243,5 +270,95 @@ describe('app/sitemap emitted URL set', () => {
     expect(urls.every((u) => u.startsWith(`${SITE}/`))).toBe(true)
     // /sign-in is noindex; advertising it would trip "Submitted URL marked noindex".
     expect(urls).not.toContain(`${SITE}/sign-in`)
+  })
+})
+
+// ── The commerce row caps, and the fail-safe that says when one is being hit (SCAN-203) ─────────
+//
+// store / market / housing / classifieds are read with a flat `limit` and no page behind it: their
+// readers clamp server-side and expose no offset, range or cursor, so a network past 100 active
+// listings in a vertical silently stops advertising whatever sorts past the cap. #2289 chose to
+// state the cap rather than page it, and made it LOUD with `atCap` — a console.warn naming the
+// section and the reader to page.
+//
+// That warning WAS the whole remedy, and nothing measured it. AGENTS.md: every fail-safe needs a
+// gate that notices it fired, because a fail-safe nobody can see fire is an invisible regression.
+// These tests are that gate. They fire the real route, not a helper: the warning has to survive
+// the wiring, not just exist in a function.
+const CAP = 100
+
+function rows(n: number) {
+  return Array.from({ length: n }, (_, i) => ({ id: `row-${i}`, images: [] as string[] }))
+}
+
+describe('app/sitemap commerce row caps', () => {
+  it('says WHICH vertical is at its cap and WHICH reader to page, once per section', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    commerce.shop = rows(CAP)
+
+    const entries = await sitemap()
+
+    // Every row it did read is still emitted — the fail-safe reports, it never drops.
+    expect(entries.filter((e) => e.url.startsWith(`${SITE}/store/`))).toHaveLength(CAP)
+
+    const lines = warn.mock.calls.map((c) => String(c[0]))
+    const hit = lines.filter((l) => l.includes('store products'))
+    expect(hit).toHaveLength(1)
+    // The message has to carry the two things a reader of the log cannot otherwise get: how many
+    // rows came back against what cap, and the name of the function that has to learn to page.
+    expect(hit[0]).toContain(`cap of ${CAP}`)
+    expect(hit[0]).toContain('listShopProducts')
+    // The other three verticals were empty, so they must be silent — a warning that fires for
+    // everything is a warning nobody reads.
+    expect(lines.filter((l) => l.includes('market listings'))).toHaveLength(0)
+    expect(lines.filter((l) => l.includes('classifieds'))).toHaveLength(0)
+    warn.mockRestore()
+  })
+
+  it('covers the classifieds read too, which is the one whose reader does NOT clamp', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    commerce.classifieds = rows(CAP)
+
+    await sitemap()
+
+    const hit = warn.mock.calls.map((c) => String(c[0])).filter((l) => l.includes('classifieds'))
+    expect(hit).toHaveLength(1)
+    expect(hit[0]).toContain('listListings')
+    warn.mockRestore()
+  })
+
+  it('stays silent one row below the cap', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    commerce.shop = rows(CAP - 1)
+    commerce.market = rows(CAP - 1)
+    commerce.housing = rows(CAP - 1)
+    commerce.classifieds = rows(CAP - 1)
+
+    await sitemap()
+
+    // The positive control above proves this silence means "not at cap", not "never warns".
+    expect(warn.mock.calls.map((c) => String(c[0])).filter((l) => l.includes('at its cap'))).toHaveLength(0)
+    warn.mockRestore()
+  })
+
+  it('asks each reader for exactly the number that reader will honour', async () => {
+    await sitemap()
+
+    // Half one of the contract: the sitemap passes the cap it documents.
+    expect(commerce.limits).toEqual({ shop: CAP, market: CAP, housing: CAP, classifieds: CAP })
+
+    // Half two: that number IS the clamp the readers enforce. This is what makes raising the
+    // shared constant fail here instead of failing silently in production — the three clamping
+    // readers would keep returning 100 while `atCap` compared against the bigger number and never
+    // fired again, which is the exact silence this section exists to prevent.
+    const clamp = /Math\.min\(Math\.max\([\w.]+\s*\?\?\s*\d+,\s*1\),\s*(\d+)\)/g
+    const clamps = [
+      ...readFileSync('lib/commerce/products.ts', 'utf8').matchAll(clamp),
+      ...readFileSync('lib/listings/housing.ts', 'utf8').matchAll(clamp),
+    ].map((m) => Number(m[1]))
+
+    // listShopProducts, listMarketListings, listHousingListings.
+    expect(clamps.length).toBeGreaterThanOrEqual(3)
+    expect(clamps.every((c) => c === CAP)).toBe(true)
   })
 })

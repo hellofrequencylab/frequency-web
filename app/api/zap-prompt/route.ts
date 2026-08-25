@@ -7,6 +7,8 @@
 import { NextResponse } from 'next/server'
 import { getMyProfileId } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { dispatchDay } from '@/lib/on-air/dispatch-day'
+import { HOME_TZ, zoneOffsetMinutes } from '@/lib/time/zone'
 
 export const dynamic = 'force-dynamic'
 
@@ -24,7 +26,11 @@ export async function GET() {
   if (!profileId) return NextResponse.json({ line: null }, { status: 401 })
 
   const admin = createAdminClient()
-  const day = new Date().toISOString().slice(0, 10)
+  // The SAME key vera_dispatches is minted under — imported, never re-derived (SCAN-106). This was
+  // its own `toISOString().slice(0, 10)`, i.e. the server's UTC day, so once vera-dispatch.ts moved
+  // to the community's day a re-derived key here would have missed today's cached Dispatch on every
+  // request after ~5pm Pacific and silently fallen back to the template line.
+  const day = dispatchDay()
 
   // Reuse today's Dispatch verbatim when it exists — never generate from here.
   const { data: dispatch } = await admin
@@ -41,7 +47,12 @@ export async function GET() {
       .eq('id', profileId)
       .maybeSingle()
     const streak = Number((prof as { current_streak: number | null } | null)?.current_streak ?? 0)
-    const hour = new Date().getUTCHours() // close enough for a nudge line
+    // The COMMUNITY's hour, not the server's. `getUTCHours()` put the "tonight" line on screen
+    // from 5pm-midnight UTC — 9am to 4pm Pacific — i.e. it read "One log tonight" over lunch and
+    // never once in the evening. Same 5pm-Pacific rollover as the day key above. Shifting the
+    // instant by the zone offset and reading UTC parts is this repo's wall-clock convention.
+    const now = new Date()
+    const hour = new Date(now.getTime() + zoneOffsetMinutes(now, HOME_TZ) * 60_000).getUTCHours()
     line = templateLine(streak, hour)
   }
 

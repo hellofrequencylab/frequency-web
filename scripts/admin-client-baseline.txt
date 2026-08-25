@@ -55,6 +55,7 @@
 # lets it read RSVP rows by email, which is precisely the address oracle capture_guest_rsvp was
 # lib/billing/bundle-invites.ts (added 2026-08-12, ADR-370): the post-purchase seat invites for the
 # lib/billing/bundle-seats.ts (added 2026-08-12, ADR-370): the Stripe webhook seating branch for the
+# lib/events/going-counts.ts (added 2026-08-25, SCAN-303): NOT a new RLS bypass. It is the going-count read lifted verbatim out of app/(main)/events/index-data.ts, which already ran it on the service-role client, so the surface is unchanged and the file count moved by one. The bypass is load-bearing: the /events catalog shows social proof for events across every circle a viewer is not a member of, and event_rsvps is readable under RLS only to the RSVPing profile and the host, so a session-client count returns 0 for exactly the rows the listing exists to merchandise. It reads ONE column (event_id) for ids the loader already assembled, returns only integers, and never surfaces who is going. Its .test.ts sits here too because it mocks the same module.
 # lib/events/guest-rsvp-email.ts (added 2026-08-13): composes the confirmation email for a
 # not a matter of effort: it would mean giving those tables client-readable policies.
 # on the session client: capture_guest_rsvp is granted to anon and reachable over PostgREST, so the
@@ -576,6 +577,8 @@ lib/events/event-share.ts
 lib/events/event-stats.ts
 lib/events/follower-reminders.ts
 lib/events/geocode.ts
+lib/events/going-counts.test.ts
+lib/events/going-counts.ts
 lib/events/guest-rsvp-email.ts
 lib/events/guests.ts
 lib/events/host-gate.ts

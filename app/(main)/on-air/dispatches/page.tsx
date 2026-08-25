@@ -8,6 +8,7 @@ import { redirect } from 'next/navigation'
 import { Radio, ChevronRight } from 'lucide-react'
 import { getMyProfileId } from '@/lib/auth'
 import { listDispatches } from '@/lib/vera-dispatch'
+import { dispatchDay } from '@/lib/on-air/dispatch-day'
 import { FocusTemplate } from '@/components/templates'
 import { EmptyState } from '@/components/ui/empty-state'
 
@@ -16,23 +17,29 @@ export const metadata: Metadata = {
   description: 'Your past assignments, saved.',
 }
 
-// 🔴 `d.day` IS A UTC CALENDAR DAY, because that is the key the Dispatch is minted and
-// de-duplicated under: `todayUTC()` in lib/vera-dispatch.ts, one row per (profile, UTC day). So
-// Today / Yesterday are compared in UTC ON PURPOSE. Re-keying them to the community's zone here
-// while the row's key stays UTC would be the same bug pointed the other way: a Dispatch generated
-// at 6pm Pacific is stored under TOMORROW's UTC date, and would stop reading "Today" the moment it
-// was written. Moving this to HOME_TZ means moving `todayUTC()` with it, in one change.
+// `d.day` IS THE COMMUNITY'S CALENDAR DAY (HOME_TZ), because that is the key the Dispatch is
+// minted and de-duplicated under — `dispatchDay()` in lib/on-air/dispatch-day.ts, one row per
+// (profile, community day). Today / Yesterday are compared in that SAME zone, by importing the
+// same function rather than re-deriving the string here.
 //
-// What IS pinned: the date label. It used to read the AMBIENT server zone, which is UTC on Vercel
-// and something else everywhere it is developed. The anchor is noon UTC, so an explicit zone names
-// the same calendar date it always did, and can no longer drift with where the render happens.
+// This comment used to say the opposite, and it was honest at the time: the key really was the
+// server's UTC day, so labelling in HOME_TZ while the key stayed UTC would have been the bug
+// pointed the other way (a Dispatch written at 6pm Pacific stops reading "Today" the instant it is
+// saved). SCAN-106 moved the key and this label together, in one change, which is what that note
+// asked for.
+//
+// The full-date fallback still anchors at NOON UTC and formats in UTC. That is not a zone claim —
+// `day` is already a plain YYYY-MM-DD, and a noon anchor is the safe way to render exactly that
+// calendar date without a DST shift dragging it across a boundary.
 function dayLabel(day: string): string {
-  const today = new Date().toISOString().slice(0, 10)
-  if (day === today) return 'Today'
-  const d = new Date(`${day}T12:00:00Z`)
-  const yesterday = new Date(Date.parse(`${today}T12:00:00Z`) - 86_400_000).toISOString().slice(0, 10)
-  if (day === yesterday) return 'Yesterday'
-  return d.toLocaleDateString('en-US', { timeZone: 'UTC', weekday: 'short', month: 'short', day: 'numeric' })
+  if (day === dispatchDay()) return 'Today'
+  if (day === dispatchDay(new Date(Date.now() - 86_400_000))) return 'Yesterday'
+  return new Date(`${day}T12:00:00Z`).toLocaleDateString('en-US', {
+    timeZone: 'UTC',
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+  })
 }
 
 export default async function DispatchesPage() {
