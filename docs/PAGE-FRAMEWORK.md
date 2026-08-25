@@ -746,6 +746,41 @@ Adding a page to the program is a row in that map plus `{...hero}` — never a n
 | `coverImage` | omitted | no cover (existing pages unchanged) |
 | `hero` | `React.ReactNode` | the **escape hatch**: a fully custom cover node. When set, `coverImage` is **ignored** (e.g. the event detail page's date-based fallback) |
 
+Setting any of `coverFocus` / `coverSize` / `coverOverlayStyle` routes the cover through the
+canonical [`PageHero`](../components/templates/page-hero.tsx) (`variant="minimal"`,
+`heading={false}` — the context band below owns the page's single `<h1>`). That is what makes
+entity and index **one** cover component rather than two.
+
+**Don't re-type that resolution either — call `resolveDetailHero`.**
+[`lib/layout/detail-hero.ts`](../lib/layout/detail-hero.ts) (PROG-P5, ADR-1117) is the DETAIL-side
+twin of `resolveIndexHero` and returns a **spreadable prop bag**:
+
+```tsx
+const hero = await resolveDetailHero(`/practices/${id}`, { entityImage: practice.header_image })
+return <DetailTemplate {...hero} title={practice.title} …>
+```
+
+| Rung | Source |
+|---|---|
+| 1 | the **entity's own cover** (`entityImage`) — `practices.header_image`, `topical_channels.cover_image`, `circles.image_url` |
+| 2 | the operator's Settings header image for the **section** route (`getPageHeaderImage`) |
+| 3 | an explicit `fallbackImage`, else the section default from `DETAIL_HERO_DEFAULTS` |
+| 4 | the section's **tail** — `null` (the gradient placeholder) or `undefined` (no cover at all) |
+
+**The ladder is inverted from the index side on purpose.** On a browse page the operator owns the
+surface, so `resolveIndexHero` puts the operator's image first. On an entity page the entity's own
+owner does, so a host's upload outranks a site-wide setting. Same four rungs, opposite order, and
+the reason is whose surface it is. The **focal point travels with its image** — rung 1 carries
+`entityFocus`, rung 2 carries the operator's, rungs 3–4 carry none.
+
+`DETAIL_HERO_DEFAULTS` is a section-prefix map (longest prefix wins) holding the section cover, the
+band height, and the **tail**. An **unmapped route resolves to no cover**, which is the safety
+property: spreading `{...hero}` onto a page nobody has mapped, whose entity has no image, is a
+visual no-op. A section joins the program by adding a row — never by a page inventing a stanza.
+The tail's `placeholder` / `none` split is a product decision held as data: the grey slot is an
+**affordance**, so it paints where a host can fill it in place (`/practices`) and not on the public
+twin where a visitor cannot (`/discover/practices`).
+
 ### The admin-settings scope kit (9 touch-points)
 
 The repeatable recipe to give a new entity an in-place **Settings** module with cover-image
