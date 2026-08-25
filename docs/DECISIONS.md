@@ -30760,3 +30760,85 @@ building. Both documents are corrected in this pass.
 that is a separate increment with its own proof (backlog `LIVE-119`), because it is the change that
 makes every reader node-shaped and every `layout-equal` comparison read dirty exactly once. Nothing
 about the stored shape changed; no migration ships here.
+## ADR-1130: Blocks reference the Loom through one seam, and the backfill turned out to be already done (2026-08-25)
+
+**Status:** Accepted
+**Advances:** `PROG-D2` — "Loom D2: the AssetField seam + backfill" (the seam half; the row stays
+open for adoption breadth, re-sequenced below)
+**Extends:** [ADR-1121](#adr-1121) (D1's ingest chokepoint this stacks on), [ADR-478](#adr-478) /
+[ADR-480](#adr-480) (the catalog), [ADR-975](#adr-975) (`block_usage` is derived, which this shape
+feeds), [ADR-1082](#adr-1082) (re-test the premise first)
+
+### The row said three things. Measured against the live database, one was real.
+
+`PROG-D2` promised (1) *"One Upload / Pick from library / Paste URL control replacing ImageField
+everywhere"*, (2) *"blocks store an asset REFERENCE plus a URL cache; render resolves reference →
+CDN url"*, and (3) *"backfill existing site-media URLs into the catalog and rewrite references"*.
+Census first (ADR-1082), live database, 2026-08-25:
+
+- **The one control already exists and is already everywhere.** `components/loom/loom-picker.tsx`
+  is the universal picker with **16 consumers** across the page editor, entity blocks, the Studio
+  spark, branding, events, QR and email surfaces. The row's *"Paste URL"* leg was overruled by an
+  owner directive recorded in three code headers ("the Loom is the only image picker — no file
+  dialog, no paste-a-URL box"), and Upload lives INSIDE the picker. Nothing to build; the row's
+  control was shipped incrementally under other rows and nobody re-read this one.
+- **The reference half was genuinely unbuilt** — every pick threw the asset id away at the last
+  step (`onSelect(url)`) and every block document memorised a bare URL string.
+- **The backfill's premise is dead, in the good direction.** The live `pages` documents contain
+  **zero** site-media URLs (2 URL occurrences total, 1 distinct, external). All 6
+  `page_content.hero_image` site-media references already have catalog rows. Of 23 objects in the
+  `site-media` bucket, 15 are catalogued; the 8 that are not are `importer/<intakeId>/…` intake
+  STAGING files referenced only by 7 `business_intake` staging rows — and since ADR-1121 the
+  importer files publish-time media into the Loom itself. Spaces branding already points at
+  `library-media` (the picker's bucket). **There is nothing to backfill and nothing to rewrite**;
+  a backfill script would have been apparatus without a patient. Struck from the row with these
+  numbers, not deleted from memory: the orphaned staging files became `LIVE-120`.
+
+### The decision: one stored shape, one read, one unwrap, one refresh
+
+A block image value is now `string | AssetRef`, where `AssetRef = { assetId, url }`
+(`lib/library/asset-ref.ts`, pure): the **reference** that survives a D3 edit re-pointing the live
+asset, plus the **cached CDN URL** that renders when nothing re-resolves. Four rules make it a seam
+instead of a migration:
+
+1. **Legacy strings stay legal forever.** Every reader goes through `assetRefUrl`, which passes a
+   string through and reads a ref's cache. No stored document is rewritten — the census is what
+   proves no rewrite is needed.
+2. **Renderers never learn refs exist.** The `BlockRender` walk unwraps every ref to its URL string
+   before a block's `render` sees props — at any depth, including gallery arrays a `custom` field
+   stores with no field metadata. This is the render path's second deliberate divergence from
+   Puck's rsc `<Render>` (after `isEditing`), and it is identity-preserving on ref-free values, so
+   the byte-parity contract holds on every document Puck itself could render (proven: the same doc
+   stored as refs and as strings renders byte-identical markup).
+3. **Fields store refs; the picker offers them.** `LoomPicker` gains `onSelectAsset` /
+   `onSelectManyAssets` (the URL plus the library row's id; a house site icon has no row and stays
+   reference-less). The page-editor fields (`imgField`, `loomImageField`, the gallery field) store
+   `{ assetId, url }` on a library pick.
+4. **The render path refreshes the cache, fail-open.** `refreshAssetRefUrls`
+   (`lib/library/resolve-refs.ts`) runs inside `getPublishedData` — the one chokepoint every
+   public block page reads through — collecting ref ids (UUID-filtered, so one malformed id cannot
+   fail the batch) and re-pointing stale caches with a single `select id,url`. A ref-free document
+   costs **no query**; a failed query, a deleted asset, or a credential-less static build leaves
+   every cache standing. **Measured fan-out: zero** — no sharp, no next/og, no new dependency
+   (`check:og-trace` holds at 67/100).
+
+### What is NOT claimed
+
+- **Column-backed surfaces still store URLs** (`spaces.brand_logo_url`, `page_content.hero_image`,
+  profile headers, `page_settings.og_image_url`): a text column cannot hold a ref, and deciding
+  whether they get companion id columns or stay URL-cached is schema design, not this seam. That
+  and the non-Puck picker consumers (entity blocks, Studio spark, email studio) are `HYG-029`.
+- **Space documents refresh nothing yet.** They render refs correctly via the cache (the unwrap is
+  in the shared `BlockRender`), but their read path (`spaces.preferences` → `readPageDoc`) does not
+  yet call `refreshAssetRefUrls`. It matters only once D3 edits can re-point a live asset's URL;
+  sequenced in the row.
+- **The usage index is not this.** Refs make "which documents use this asset" a cheap JSONB scan,
+  which is exactly the `block_usage` derivation ADR-975 names — but that is D4's build, and this
+  ADR only makes it possible.
+
+### What would reopen this
+
+A surface that must render a ref whose cache was never primed (an API-written document, say) —
+at which point the unwrap needs a resolve-on-miss, and `refreshAssetRefUrls` is the seam it slots
+into. Or a measured case of the editor needing the CURRENT url mid-session, which would move the
+refresh from `getPublishedData` into `getPage`.

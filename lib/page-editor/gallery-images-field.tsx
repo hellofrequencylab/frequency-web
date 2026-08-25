@@ -2,14 +2,16 @@
 
 import { useRef, useState } from 'react'
 import { ImagePlus, X, GripVertical } from 'lucide-react'
-import { LoomPicker } from '@/components/loom/loom-picker'
+import { LoomPicker, type LoomAssetPick } from '@/components/loom/loom-picker'
+import { assetRefUrl, type AssetValue } from '@/lib/library/asset-ref'
 
 // A Puck custom field for the Image block's GALLERY mode: an ORDERED list of images. Images are added from
 // the Loom (browse your library, or upload into it there, via the shared picker), removed, and reordered by
 // drag. The Loom is the only way in (owner directive): no file dialog, no paste-a-URL box. The stored value
-// is `{ src: string }[]`, so the block renders the images in the operator's chosen order.
+// is `{ src }[]` where each src is an AssetRef ({ assetId, url }) for a library pick or a legacy URL string
+// (ADR-1130); the block's renderer still receives plain strings via the BlockRender unwrap.
 
-export type GalleryImage = { src: string }
+export type GalleryImage = { src: AssetValue }
 
 function GalleryImagesField({
   value,
@@ -22,9 +24,12 @@ function GalleryImagesField({
   const [loomOpen, setLoomOpen] = useState(false)
   const dragIndex = useRef<number | null>(null)
 
-  function addUrls(srcs: string[]) {
-    if (srcs.length === 0) return
-    onChange([...images, ...srcs.map((src) => ({ src }))])
+  function addPicks(picks: LoomAssetPick[]) {
+    if (picks.length === 0) return
+    onChange([
+      ...images,
+      ...picks.map((p) => ({ src: p.assetId ? { assetId: p.assetId, url: p.url } : p.url })),
+    ])
   }
 
   function remove(i: number) {
@@ -45,7 +50,7 @@ function GalleryImagesField({
         <ul className="grid grid-cols-3 gap-1.5">
           {images.map((img, i) => (
             <li
-              key={`${img.src}-${i}`}
+              key={`${assetRefUrl(img.src)}-${i}`}
               draggable
               onDragStart={() => (dragIndex.current = i)}
               onDragOver={(e) => e.preventDefault()}
@@ -56,7 +61,7 @@ function GalleryImagesField({
               className="group relative aspect-square overflow-hidden rounded-lg border border-border"
             >
               {/* eslint-disable-next-line @next/next/no-img-element -- gallery thumbnail in the editor, not a build-time asset */}
-              <img src={img.src} alt="" className="h-full w-full cursor-grab object-cover" />
+              <img src={assetRefUrl(img.src)} alt="" className="h-full w-full cursor-grab object-cover" />
               <button
                 type="button"
                 onClick={() => remove(i)}
@@ -86,7 +91,7 @@ function GalleryImagesField({
         open={loomOpen}
         onClose={() => setLoomOpen(false)}
         multiple
-        onSelectMany={addUrls}
+        onSelectManyAssets={addPicks}
         title="Add images"
         kinds={['image']}
       />
