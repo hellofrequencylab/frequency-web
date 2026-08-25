@@ -36,6 +36,14 @@ export const FIELD_KINDS = [
   'slug',
   'select',
   'tags',
+  // A CLOSED multi-select: pick any number from a fixed vocabulary. Distinct from `tags`, whose
+  // whole point is that a member invents the values. The difference is not cosmetic — a Housing
+  // listing's amenities and accessibility tags are backed by DB CHECK constraints
+  // (housing_listings_amenities_vocab, housing_listings_accessibility_vocab), so a free-text tag
+  // control would happily collect a value the database then rejects at write. Added when the
+  // Housing manifest hit exactly that; `tags` was the only multi-value kind and it was the wrong
+  // one. Like `select` and `reference`, it MUST declare where its choices come from.
+  'multiselect',
   // A pointer to another row (a Circle, a Space, a booking calendar), stored as an id and shown
   // as a name. Distinct from `select`, whose options are a closed set known up front: a reference
   // must be LOADED, so its control fetches. Three manifests reached for this independently.
@@ -80,12 +88,12 @@ export function isFieldKind(v: string): v is FieldKind {
 }
 
 /**
- * Kinds that MUST say what they are choosing between. Deliberately just these two: `cadence` also
+ * Kinds that MUST say what they are choosing between. Deliberately just these three: `cadence` also
  * has closed sets in some entities ("none / daily / weekly / monthly") but is genuinely free text
  * in others ("Wednesdays, coffee after"), so forcing options on it would make the honest case
  * unrepresentable. A closed recurrence is a `select`.
  */
-const CHOICE_KINDS: readonly FieldKind[] = ['select', 'reference']
+const CHOICE_KINDS: readonly FieldKind[] = ['select', 'reference', 'multiselect']
 
 /** One choice for a `select`. Value is what persists; label is what a human reads. */
 export interface FieldOption {

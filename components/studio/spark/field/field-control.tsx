@@ -294,6 +294,21 @@ function renderControl({
     case 'tags':
       return <TagsControl {...common} label={def.label} value={asList(value)} onChange={onChange} />
 
+    // A CLOSED multi-select. It gets its own arm rather than falling through, because the `default`
+    // below renders a text Input — so a kind with no arm here does not fail, it renders a plausible
+    // text box that writes a string where a list belongs. That is the silent fail-safe AGENTS.md
+    // warns about, and the reason a new FIELD_KIND is never a one-line kernel change.
+    case 'multiselect':
+      return (
+        <MultiSelectControl
+          {...common}
+          label={def.label}
+          options={optionsFor(def, loaded)}
+          value={asList(value)}
+          onChange={onChange}
+        />
+      )
+
     // A design token name or a hex. The native swatch cannot express a token, so the text box is
     // authoritative and the swatch is an assist beside it.
     case 'color':
@@ -579,6 +594,65 @@ function DateRangeControl({
           onChange={(e) => onChange([start, e.target.value])}
         />
       </label>
+    </div>
+  )
+}
+
+/**
+ * A closed multi-select: every choice in the vocabulary is visible, and picking is a checkbox.
+ *
+ * DELIBERATELY NOT A `<select multiple>`. That control is close to unusable on a phone, gives no
+ * indication that more options exist below the fold, and requires a modifier key to deselect on a
+ * desktop. A visible grid is what the surfaces this replaces already render by hand (the Housing
+ * form's amenity and accessibility fieldsets), so it is also the shape members already know.
+ *
+ * Order follows the DECLARED vocabulary, never the pick order, so the same listing renders its
+ * amenities identically on every surface and a diff between two drafts is readable.
+ */
+function MultiSelectControl({
+  options,
+  value,
+  onChange,
+  label,
+  disabled,
+  id,
+  ...aria
+}: {
+  options: readonly FieldOption[]
+  value: string[]
+  onChange: (next: string[]) => void
+  label: string
+  disabled?: boolean
+  id?: string
+  'aria-describedby'?: string
+  'aria-invalid'?: boolean
+}) {
+  const picked = new Set(value)
+  const toggle = (v: string) => {
+    // Rebuild from the vocabulary rather than pushing onto `value`, so the result is always in
+    // declaration order and can never accumulate a duplicate.
+    const next = new Set(picked)
+    if (next.has(v)) next.delete(v)
+    else next.add(v)
+    onChange(options.map((o) => o.value).filter((o) => next.has(o)))
+  }
+
+  return (
+    // `group` rather than `fieldset`, because this control renders INSIDE the kit's own field
+    // wrapper, which already supplies the label and the description a fieldset legend would repeat.
+    <div role="group" aria-label={label} id={id} {...aria} className="grid grid-cols-2 gap-x-4 gap-y-2 sm:grid-cols-3">
+      {options.map((o) => (
+        <label key={o.value} className="flex items-center gap-2 text-body-sm text-text">
+          <input
+            type="checkbox"
+            checked={picked.has(o.value)}
+            disabled={disabled}
+            onChange={() => toggle(o.value)}
+            className="h-4 w-4 rounded border-border accent-primary"
+          />
+          <span>{o.label}</span>
+        </label>
+      ))}
     </div>
   )
 }

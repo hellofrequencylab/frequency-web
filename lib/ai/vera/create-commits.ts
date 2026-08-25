@@ -120,6 +120,7 @@ export const NO_COMMIT_REASON: Readonly<Record<string, string>> = {
   space: 'How many Spaces you can run is decided by your plan, and that gate lives in the Space builder.',
   business: 'A researched Space carries a provenance ledger the Seeder holds. Finish it there.',
   listing: 'Where a listing can be posted is decided by the board it goes on. Finish it in the listing builder.',
+  housing: 'A place to live carries a privacy choice about how much of the address to show, and that is yours to make. Finish it in the housing form.',
   product: 'Whether you can sell in a Space is decided by that Space. Finish it in the shop.',
   service: 'Whether you can sell in a Space is decided by that Space. Finish it in the shop.',
 }

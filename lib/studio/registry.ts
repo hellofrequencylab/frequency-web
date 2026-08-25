@@ -23,6 +23,7 @@ import type { EntityManifest } from './kernel/manifest'
 import { BUSINESS_MANIFEST } from './entities/business'
 import { CIRCLE_MANIFEST } from './entities/circle'
 import { EVENT_MANIFEST } from './entities/event'
+import { HOUSING_MANIFEST } from './entities/housing'
 import { JOURNEY_MANIFEST } from './entities/journey'
 import { LISTING_MANIFEST } from './entities/listing'
 import { PRACTICE_MANIFEST } from './entities/practice'
@@ -49,8 +50,12 @@ export const STUDIO_ENTITIES: readonly EntityManifest[] = [
   // no research pipeline behind it.
   SPACE_MANIFEST,
   BUSINESS_MANIFEST,
-  // Commerce.
+  // Commerce. Both listing verticals are CONNECT-ONLY (no checkout); `product` and `service` are
+  // the ones that take payment. Housing is its own entity rather than a widening of `listing`:
+  // they share five field paths and diverge on twenty-six, including a privacy model a classifieds
+  // post has no use for. See entities/housing.ts.
   LISTING_MANIFEST,
+  HOUSING_MANIFEST,
   PRODUCT_MANIFEST,
   SERVICE_MANIFEST,
   // Catalog-only (owner decision, 2026-08-11): declared so the catalog is COMPLETE and the universal

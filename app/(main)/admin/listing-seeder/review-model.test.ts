@@ -5,7 +5,16 @@
 import { describe, it, expect } from 'vitest'
 import type { ProvenanceLedger } from '@/lib/importer/schema'
 import type { ClassifiedsDraft, HousingDraft } from '@/lib/listing-seeder/types'
-import { buildListingReviewModel, listingDraftTitle } from './review-model'
+import {
+  buildListingReviewModel,
+  listingDraftTitle,
+  CLASSIFIEDS_SPECS,
+  HOUSING_SPECS,
+  CLASSIFIEDS_DRAFT_KEYS,
+  HOUSING_DRAFT_KEYS,
+} from './review-model'
+import { HOUSING_MANIFEST } from '@/lib/studio/entities/housing'
+import { LISTING_MANIFEST } from '@/lib/studio/entities/listing'
 
 function classifiedsDraft(over: Partial<ClassifiedsDraft> = {}): ClassifiedsDraft {
   return {
@@ -167,5 +176,100 @@ describe('listingDraftTitle', () => {
     expect(listingDraftTitle({ title: '' })).toBe('Untitled listing')
     expect(listingDraftTitle(null)).toBe('Untitled listing')
     expect(listingDraftTitle({ title: '  Desk  ' })).toBe('Desk')
+  })
+})
+
+// ── The JOIN between the Studio manifests and this board (ADR-1151) ────────────────────────────
+//
+// The field lists are DERIVED from the manifests now, so the failure this suite has to catch is no
+// longer "someone edited one list and not the other" — it is the subtler one the derivation makes
+// possible: a manifest field, a draft key, or a mapping table drifting so that a field silently
+// STOPS being reviewable. A field that vanishes from the board does not error. It just quietly
+// stops being checked by a human before it publishes, which is the whole job of this screen.
+//
+// So these assert the CONSEQUENCE — what an operator can actually see and edit — never the shape of
+// the derivation that produced it.
+describe('the manifest -> board join', () => {
+  const SEEDER_ONLY = new Set(['contact', 'details'])
+  // Draft keys the board deliberately does not review, each with the reason it is absent.
+  const NOT_REVIEWED: Record<string, string> = {
+    // Reviewed in the board's own gallery, not as a text row.
+    images: 'photos have their own editor',
+    // Always 'area' for a seeded listing; the operator is never offered a scraped exact address.
+    pickupPrecision: 'fixed at area for every seeded listing',
+  }
+
+  it('reviews every classifieds draft key that is not explicitly exempt', () => {
+    const shown = new Set(CLASSIFIEDS_SPECS.map((s) => s.path))
+    for (const key of CLASSIFIEDS_DRAFT_KEYS) {
+      if (NOT_REVIEWED[key]) continue
+      expect(shown, `classifieds draft key "${key}" is not reviewable on the board`).toContain(key)
+    }
+  })
+
+  it('reviews every housing draft key that is not explicitly exempt', () => {
+    const shown = new Set(HOUSING_SPECS.map((s) => s.path))
+    for (const key of HOUSING_DRAFT_KEYS) {
+      if (NOT_REVIEWED[key]) continue
+      expect(shown, `housing draft key "${key}" is not reviewable on the board`).toContain(key)
+    }
+  })
+
+  it('shows no field the draft cannot carry (an always-empty row reads as a gap in the paste)', () => {
+    for (const s of CLASSIFIEDS_SPECS) expect(CLASSIFIEDS_DRAFT_KEYS).toContain(s.path)
+    for (const s of HOUSING_SPECS) expect(HOUSING_DRAFT_KEYS).toContain(s.path)
+  })
+
+  it('sources every non-seeder field from a manifest field (nothing is hand-declared any more)', () => {
+    const manifestPaths = (m: typeof HOUSING_MANIFEST, alias: Record<string, string> = {}) =>
+      new Set(m.fields.map((f) => alias[f.path] ?? f.path))
+    const listing = manifestPaths(LISTING_MANIFEST, { kind: 'listingKind' })
+    const housing = manifestPaths(HOUSING_MANIFEST)
+    for (const s of CLASSIFIEDS_SPECS) {
+      if (SEEDER_ONLY.has(s.path)) continue
+      expect(listing, `"${s.path}" is on the board but in no manifest`).toContain(s.path)
+    }
+    for (const s of HOUSING_SPECS) {
+      if (SEEDER_ONLY.has(s.path)) continue
+      expect(housing, `"${s.path}" is on the board but in no manifest`).toContain(s.path)
+    }
+  })
+
+  it('gives every select a non-empty option set (an empty dropdown can never be set)', () => {
+    for (const s of [...CLASSIFIEDS_SPECS, ...HOUSING_SPECS]) {
+      if (s.input !== 'select' && s.input !== 'amenities') continue
+      expect(s.options?.length, `"${s.path}" renders a picker with no choices`).toBeGreaterThan(0)
+    }
+  })
+
+  it('keeps the deposit ledger remap, which the coercer depends on', () => {
+    expect(HOUSING_SPECS.find((s) => s.path === 'depositDollars')?.ledgerKey).toBe('deposit')
+  })
+
+  // The exact field SET both boards shipped with before the derivation landed. Pinned so the
+  // refactor is provably behaviour-preserving: same paths, same sections, same editors. Order
+  // within a section now follows the manifest, which is the one intended difference.
+  it('derives exactly the field set the board shipped with', () => {
+    const sig = (xs: readonly { path: string; section: string; input: string }[]) =>
+      xs.map((s) => `${s.path}|${s.section}|${s.input}`).sort()
+
+    expect(sig(CLASSIFIEDS_SPECS)).toEqual(
+      [
+        'title|basics|text', 'description|basics|textarea', 'listingKind|basics|select',
+        'category|basics|text', 'details|details|details', 'priceNote|price|text',
+        'neighborhood|location|text', 'city|location|text', 'contact|contact|text',
+      ].sort(),
+    )
+
+    expect(sig(HOUSING_SPECS)).toEqual(
+      [
+        'title|basics|text', 'description|basics|textarea', 'propertyType|basics|select',
+        'bedrooms|details|number', 'bathrooms|details|number', 'sqft|details|number',
+        'availableFrom|details|text', 'furnished|details|bool', 'petsOk|details|bool',
+        'utilitiesIncluded|details|bool', 'smokingOk|details|bool', 'cannabisOk|details|bool',
+        'amenities|details|amenities', 'rentDollars|price|number', 'depositDollars|price|number',
+        'neighborhood|location|text', 'city|location|text', 'contact|contact|text',
+      ].sort(),
+    )
   })
 })

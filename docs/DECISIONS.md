@@ -32483,3 +32483,69 @@ commit in the same motion, or expect a spurious red.
 **Ledger.** 643 ⇄ 643, verified as an exact bijection **by hash**:
 `md5 = 0ffdd8328b00d33504cb3261d106b548` on both sides. Not by count — equal counts are what hid the
 2026-08-12 drift.
+
+## ADR-1151: Housing is its own Studio entity, and a closed multi-select is a kernel capability (2026-08-25)
+
+**Context.** Housing sat outside the Studio entirely. Its member form
+(`app/(main)/housing/new/housing-form.tsx`) hand-rolls 31 controls, and the listing-seeder's review
+board (`app/(main)/admin/listing-seeder/review-model.ts`) hand-declared a second field list beside
+it — while BOTH sibling seeders derive theirs from a manifest. Two independent descriptions of one
+entity, and they had already drifted.
+
+**Decision 1 — a dedicated `housing` entity, not a widening of `listing`.** `LISTING_MANIFEST` is the
+Classifieds board: eleven fields, a free-text price note, no address model. Housing shares **five**
+of those paths and diverges on **twenty-six**, including a whole address-privacy model
+(`addressPrecision` / `addressLine`) that a couch has no use for. Merging them would give every
+classifieds post a bedroom count and every housing post a price note that means nothing. Two
+entities, one kernel — which is what the kernel is for.
+
+Field paths mirror `HousingFormInitial` exactly, so the form, the edit rail and the review board
+share one spelling of every field.
+
+**Decision 2 — `verify: 'none'`, and rent is the reason to say why.** Rent, deposit and move-in costs
+*look* like the commercial facts the kernel gates. They are not. `commercial` means "a fact asserted
+about a THIRD PARTY that must be cited before it publishes" (the Business Seeder claiming a
+restaurant's hours). Here a member states their own asking price for their own home: a negotiating
+position, with no research pipeline or provenance ledger behind it to cite. Nothing is flagged
+`commercial`, exactly as in `LISTING_MANIFEST`.
+
+**Decision 3 — `multiselect` joins `FIELD_KINDS`.** Amenities and accessibility are **closed
+vocabularies enforced by DB CHECK constraints** (`housing_listings_amenities_vocab`,
+`housing_listings_accessibility_vocab`). The only multi-value kind was `tags`, whose entire point is
+that a member invents the values — so declaring amenities as `tags` would have shipped a control that
+collects a value the database rejects at write. That is a defect, not a cosmetic mismatch. Per
+AGENTS.md ("a new control means a new FIELD_KIND, which every entity then gets"), `multiselect` was
+added to `FIELD_KINDS` **and** to `CHOICE_KINDS`, so it must declare where its choices come from.
+
+⚠️ **A new kind is never a one-line kernel change.** `FieldControl`'s `switch` ends in a `default:`
+that renders a text `Input`. A kind with no arm does not fail — it renders a plausible text box that
+writes a string where a list belongs. So the kind ships **with** its renderer
+(`MultiSelectControl`, a visible checkbox grid rather than a `<select multiple>` no one can operate
+on a phone). This is the same rule as the deploy-gate one: *a fail-safe with nothing watching it fire
+is an invisible regression.*
+
+**Decision 4 — the seeder derives, via an explicit join.** The two spec arrays are now built from the
+manifests. The join is stated rather than implied, because an implied one is how this drifted the
+first time:
+
+| Rule | Meaning |
+| --- | --- |
+| manifest field ∩ draft key | a row appears only when the seeder draft can actually carry it |
+| `SEEDER_ONLY` | real board fields with no manifest counterpart (`contact`, `details`), each with its reason |
+| `EXCLUDED` | manifest fields the draft carries that the board deliberately omits (`images`), with its reason |
+
+It does **not** use `buildFieldModel` like the business seeder: that returns the kernel's
+`FieldState`, and this board renders its own shape with a seeder-specific aggregate provenance badge
+and two editors the kernel has no notion of. Rewriting the board is a bigger change than this row —
+and the board's *shape* is not what drifted. The **field list** is, so the field list is what now has
+one source.
+
+**Proof.** The derivation is **set-identical** to what shipped — same 9 and 18 paths, same sections,
+same editors, same `deposit` ledger remap; only within-section order changed, now following the
+manifest. That set is pinned in `review-model.test.ts`, alongside a join guard asserting every draft
+key is reviewable. Both were mutation-tested: dropping `bathrooms` from the manifest, and switching
+`amenities` to `tags`, each fail by name. The Spark cap also did its job — the manifest was first
+written asking eleven questions and the kernel's eight-question limit rejected it, so
+`propertyType`, `amenities` and `neighborhood` moved to the rail. Nothing was dropped: `placement` is
+the one seam between creating and editing (ADR-450 §2), which is what makes that a placement change
+rather than a scope cut.
