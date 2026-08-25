@@ -18,6 +18,7 @@ import { resolvePageContent } from '@/lib/page-content'
 import { HOME_TZ, dayInZone } from '@/lib/time/zone'
 import { CATEGORY_OPTIONS } from '@/lib/events/options'
 import { collapseSeriesRows, SERIES_WIDE_READ } from '@/lib/events/series'
+import { goingCountsByEvent } from '@/lib/events/going-counts'
 import { getSeriesDisplayConfig } from '@/lib/events/series-config'
 import type { CatalogFacet } from './events-filter-bar'
 import type { SortOption } from './events-sort'
@@ -556,9 +557,27 @@ export async function getEventsIndexData(params: EventsIndexParams): Promise<Eve
   }
   const hasAnyScope = myCircleIds.length > 0 || !!myGeocell || hostedEvents.length > 0
 
-  // Everything below reads only the assembled `events` list (and myProfileId), so the four
-  // remaining reads — circle names+coords, poster signed-URLs, going-counts, and the viewer's
-  // own RSVPs — are mutually independent and run in ONE wave instead of serially.
+  // Everything below reads only the assembled `events` list (and myProfileId), so the five
+  // remaining reads — circle names+coords, poster signed-URLs, going-counts, the viewer's own
+  // RSVPs, and the ticket tiers — are mutually independent and run in ONE wave instead of serially.
+  //
+  // ⚠️ EVERY `.in(…)` READ BELOW SHARES ONE HAZARD: PostgREST caps a response at `max_rows`
+  // (1,000 — supabase/config.toml) SERVER-SIDE, and neither service_role nor a `.limit()` raises
+  // it. `eventIds` can reach 3 × SERIES_WIDE_READ = 1,500 (three sources, deduped), so a read
+  // returning MORE THAN ONE ROW PER EVENT is the one that truncates first, silently. Measured
+  // against that ceiling:
+  //   · going-counts — WAS the exposed one (unbounded rows per event). Now grouped in the DB and
+  //     chunked/paged in lib/events/going-counts.ts, so it cannot truncate on either path.
+  //   · `myRsvpRows` — SAFE by constraint: `event_rsvps_event_profile_uniq` (20270303000000) makes
+  //     it at most one row per event for one profile, so it can only reach 1,000 if this viewer is
+  //     'going' to 1,000+ of the listed events. Not reachable in practice, and it fails toward
+  //     "your RSVP badge is missing", not toward a wrong count.
+  //   · `tierRows` — 🔴 STILL EXPOSED, and not fixed here (out of SCAN-303's scope): a listing can
+  //     hold several ACTIVE tiers per event, so rows scale as events × tiers with no bound. Past
+  //     1,000 the trailing events silently lose their "From $X" price stat. Needs the same
+  //     treatment (group in SQL, or page) — tracked separately.
+  //   · `circlesRows` — bounded by DISTINCT hosting circles, so it needs 1,000+ circles hosting
+  //     listed events to truncate. Theoretical.
   const circleScopeIds = [...new Set(events.filter((e) => e.scope_type === 'circle').map((e) => e.scope_id))]
   const eventIds = events.map((e) => e.id)
   // Header-image priority mirrors the detail page: uploaded cover (public event-media URL) leads,
@@ -568,16 +587,20 @@ export async function getEventsIndexData(params: EventsIndexParams): Promise<Eve
     .filter((e) => !e.cover_image_path && e.poster_path)
     .map((e) => e.poster_path as string)
 
-  const [circlesRows, posterUrlByPath, rsvpRows, myRsvpRows, tierRows] = await Promise.all([
+  const [circlesRows, posterUrlByPath, rsvpCounts, myRsvpRows, tierRows] = await Promise.all([
     circleScopeIds.length > 0
       ? admin.from('circles').select('id, name, latitude, longitude').in('id', circleScopeIds)
           .then(({ data }) => (data ?? []) as { id: string; name: string; latitude: number | null; longitude: number | null }[])
       : Promise.resolve([] as { id: string; name: string; latitude: number | null; longitude: number | null }[]),
     posterPaths.length > 0 ? posterSignedUrlMap(posterPaths) : Promise.resolve(new Map<string, string>()),
-    eventIds.length > 0
-      ? admin.from('event_rsvps').select('event_id').in('event_id', eventIds).eq('status', 'going')
-          .then(({ data }) => (data ?? []) as { event_id: string }[])
-      : Promise.resolve([] as { event_id: string }[]),
+    // Going-counts, GROUPED IN THE DATABASE (lib/events/going-counts.ts). This used to read every
+    // 'going' row for the whole listing and tally them in JS — a read that scaled with total
+    // attendance across the catalog to produce one integer per event, and that silently TRUNCATED
+    // at PostgREST's server-side `max_rows` (1,000) past which the counts under-reported with no
+    // error, flipping "Has open spots" on for a full event and mis-ordering Popularity. The helper
+    // prefers the `event_going_counts` RPC and falls back to a PAGED tally when that function is
+    // absent, so it is correct both before and after that migration is applied. Fail-safe to {}.
+    goingCountsByEvent(eventIds),
     eventIds.length > 0 && myProfileId
       ? admin.from('event_rsvps').select('event_id').in('event_id', eventIds).eq('profile_id', myProfileId).eq('status', 'going')
           .then(({ data }) => (data ?? []) as { event_id: string }[])
@@ -618,8 +641,6 @@ export async function getEventsIndexData(params: EventsIndexParams): Promise<Eve
     if (coverUrls[e.id]) coverFocus[e.id] = readEventCoverFocus(e.theme)
   }
 
-  const rsvpCounts: Record<string, number> = {}
-  for (const r of rsvpRows) rsvpCounts[r.event_id] = (rsvpCounts[r.event_id] ?? 0) + 1
   const myRsvps = new Set<string>(myRsvpRows.map((r) => r.event_id))
 
   // Group the batched tiers by event, then resolve each card's price stat once.

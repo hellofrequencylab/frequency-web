@@ -138,9 +138,9 @@
     },
     "app/events/[slug]/event.ics/route.ts": {
       "verdict": "model-gated",
-      "reason": "Unauthenticated .ics export by design (SEC-9): the link is the share. It cannot leak more than the public event page because a draft / private / circle_only / cancelled event is MASKED in-handler — generic title, no venue, no description, STATUS only.",
-      "checked": "2026-08-17",
-      "digest": "eb2402ec957cb9ce"
+      "reason": "Unauthenticated .ics export by design (SEC-9): the link is the share. It cannot leak more than the public event page because a draft / private / circle_only / cancelled event is MASKED in-handler — generic title, no venue, no description, STATUS only. 🔴 RE-READ 2026-08-25 AND THE VERDICT NEEDED A FIX TO KEEP HOLDING: masking covered draft/private/cancelled and said nothing about hide_address, so a PUBLISHED PUBLIC event whose host had switched the address off was exporting its full street here — 18 such events on production, and an .ics carries the venue in its own LOCATION field where no page-level redaction reaches it (SCAN-209). The handler now routes the venue through publicVisibleLocation(), which returns the city line for a hidden address. The claim above is true again, and now says less than it used to promise: this route publishes no more than the public page, INCLUDING the address the host chose to hide.",
+      "checked": "2026-08-25",
+      "digest": "fb66616630309a91"
     },
     "app/events/calendar.ics/route.ts": {
       "verdict": "model-gated",

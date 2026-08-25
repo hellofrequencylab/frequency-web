@@ -121,6 +121,51 @@ export function zoneAbbrev(storedIso: string | null | undefined, timezone: strin
   }
 }
 
+/** A stored event timestamp + its zone -> the ISO 8601 string to PUBLISH: the wall clock the
+ *  host chose, carrying that zone's UTC offset at that moment. `2026-08-27T18:30:00-07:00`.
+ *
+ *  🔴 THIS IS THE ONLY CORRECT FORM FOR AN EVENT TIME LEAVING THIS SYSTEM, and the reason is the
+ *  storage convention every function above is built around: `events.starts_at` holds the WALL CLOCK
+ *  as UTC parts, so the raw stored string (`2026-08-27T18:30:00Z`) is not an instant — it is a local
+ *  time wearing a `Z`. Anything that reads it as an instant lands seven or eight hours early in North
+ *  America. That has already been shipped twice: once in SQL, where the guest RSVP door closed before
+ *  lunch (SCAN-101, 20270328000000), and once in the Event JSON-LD, where every public event's rich
+ *  result advertised the wrong time to Google (SCAN-207) — measured on production 2026-08-25, e.g. a
+ *  6:30pm Pacific event published as 11:30am.
+ *
+ *  Both halves matter. The OFFSET makes it a true instant, so a calendar or an answer engine resolves
+ *  it correctly. Keeping the WALL CLOCK (rather than converting to UTC) means the string still reads
+ *  as the local time a human was told, which is what schema.org's own Event examples do and what a
+ *  reader comparing the page to its markup expects.
+ *
+ *  Returns null on empty/invalid input, so a caller can omit the field rather than publish a guess. */
+export function eventIsoWithOffset(
+  storedIso: string | null | undefined,
+  timezone: string | null | undefined,
+): string | null {
+  if (!storedIso) return null
+  const stored = new Date(storedIso)
+  if (Number.isNaN(stored.getTime())) return null
+  const tz = resolveZone(timezone)
+  const instant = eventInstant(storedIso, tz)
+  if (!instant) return null
+  // ⚠️ THE OFFSET IS DERIVED FROM `eventInstant`'S OWN ANSWER, not read independently with
+  // `zoneOffsetMinutes`. Wall-clock minus instant is exact by construction, so this string can never
+  // disagree with the function that decides whether an event has started — and the first version of
+  // this line, which read the offset at the instant, did disagree by an hour. Its own test caught it:
+  // a wall clock inside the spring-forward gap (02:30 on a US DST morning) does not exist, and
+  // `zonedWallClockToInstant` resolves it forward while a fresh offset read resolved it back. Both
+  // answers are defensible; two different answers from one system are not.
+  const offset = Math.round((stored.getTime() - instant.getTime()) / 60000)
+  const sign = offset < 0 ? '-' : '+'
+  const abs = Math.abs(offset)
+  const pad = (n: number) => String(n).padStart(2, '0')
+  const wall =
+    `${stored.getUTCFullYear()}-${pad(stored.getUTCMonth() + 1)}-${pad(stored.getUTCDate())}` +
+    `T${pad(stored.getUTCHours())}:${pad(stored.getUTCMinutes())}:${pad(stored.getUTCSeconds())}`
+  return `${wall}${sign}${pad(Math.floor(abs / 60))}:${pad(abs % 60)}`
+}
+
 /** Calendar day (YYYY-MM-DD) for `at` as seen in `timezone`. Listing "today" boundary. */
 export function dayInZone(at: Date = new Date(), timezone: string | null | undefined = HOME_TZ): string {
   const tz = resolveZone(timezone)

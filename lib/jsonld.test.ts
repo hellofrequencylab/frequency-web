@@ -20,7 +20,11 @@ import type { PublicEvent, PublicCircle } from './discover'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-function makeEvent(overrides: Partial<PublicEvent> = {}): PublicEvent {
+// `time_zone` is an EventSchemaEnrichment field rather than a PublicEvent one (the public RPCs do
+// not return it yet), so the helper accepts it alongside the row — see the SCAN-207 block below.
+function makeEvent(
+  overrides: Partial<PublicEvent> & { time_zone?: string | null } = {},
+): PublicEvent & { time_zone?: string | null } {
   return {
     id: 'evt-1',
     slug: 'test-event',
@@ -105,7 +109,12 @@ describe('eventSchema', () => {
     const event = makeEvent()
     const result = eventSchema(event)
     expect(result.name).toBe(event.title)
-    expect(result.startDate).toBe(event.starts_at)
+    // 🔴 THIS ASSERTION USED TO READ `toBe(event.starts_at)`, AND THAT WAS THE BUG IT PINNED.
+    // `events.starts_at` stores the WALL CLOCK as UTC parts, so publishing it raw tells Google the
+    // local time is a UTC instant. Measured on production 2026-08-25: a 6:30pm Pacific event was
+    // published as `2026-08-27T18:30:00Z`, which every consumer reads as 11:30am (SCAN-207). The
+    // correct form keeps the wall clock and carries the zone's offset at that instant.
+    expect(result.startDate).toBe('2026-07-01T18:00:00-07:00')
     expect(result.eventStatus).toBe('https://schema.org/EventScheduled')
     expect(result.eventAttendanceMode).toBe('https://schema.org/OfflineEventAttendanceMode')
     expect(result.isAccessibleForFree).toBe(true)
@@ -202,7 +211,7 @@ describe('eventSchema', () => {
 
   it('includes endDate when ends_at is provided', () => {
     const result = eventSchema(makeEvent({ ends_at: '2026-07-01T21:00:00Z' }))
-    expect(result).toHaveProperty('endDate', '2026-07-01T21:00:00Z')
+    expect(result).toHaveProperty('endDate', '2026-07-01T21:00:00-07:00')
   })
 
   it('omits endDate when ends_at is null', () => {
@@ -446,7 +455,7 @@ describe('eventsListingSchema', () => {
     const event = first.item as Record<string, unknown>
     expect(event['@type']).toBe('Event')
     expect(event.name).toBe('Sunrise Sit')
-    expect(event.startDate).toBe('2026-08-01T15:00:00Z')
+    expect(event.startDate).toBe('2026-08-01T15:00:00-07:00') // same rule as eventSchema — SCAN-207
     expect(event.url).toBe(`${SITE_URL}/events/evt-a`)
     // Nested Event carries no redundant @context (the parent ItemList holds it).
     expect(event).not.toHaveProperty('@context')
@@ -677,5 +686,70 @@ describe('parseOpeningHours', () => {
     expect(parseOpeningHours('Mon-Fri 9-5\nClosed Sundays\nBy appointment')).toEqual(['Mo-Fr 09:00-17:00'])
     expect(parseOpeningHours('')).toEqual([])
     expect(parseOpeningHours(null)).toEqual([])
+  })
+})
+
+// ── SCAN-207 · the published event time ───────────────────────────────────────────────────────
+// `events.starts_at` stores the WALL CLOCK as UTC parts (lib/time/zone.ts). Publishing it raw told
+// every search and answer engine that the local time was a UTC instant — seven or eight hours early
+// in North America. Measured on production 2026-08-25, before the fix: five upcoming public events,
+// all of them wrong; e.g. `breathe-connect-expand-2026-08-27` starts 6:30pm Pacific and its Event
+// node said `2026-08-27T18:30:00Z`, which reads as 11:30am.
+//
+// This is the SEO twin of SCAN-101, where the same convention read as an instant closed the guest
+// RSVP door before lunch. Both now go through lib/time/zone; neither hand-rolls a comparison.
+describe('SCAN-207 · Event startDate carries the event zone, not a bare Z', () => {
+  it('publishes the wall clock with the zone offset, and it resolves to the true instant', () => {
+    const r = eventSchema(makeEvent({ starts_at: '2026-08-27T18:30:00Z', time_zone: 'America/Los_Angeles' }))
+    expect(r.startDate).toBe('2026-08-27T18:30:00-07:00')
+    // The load-bearing assertion: parsed, it IS the moment the event happens (01:30Z the next day),
+    // and NOT the moment the raw string used to claim.
+    expect(new Date(r.startDate).toISOString()).toBe('2026-08-28T01:30:00.000Z')
+    expect(new Date(r.startDate).toISOString()).not.toBe('2026-08-27T18:30:00.000Z')
+  })
+
+  it('reads the offset AT THE EVENT, so winter and summer differ', () => {
+    // Using "today's" offset would be wrong for half the year in any DST zone.
+    const summer = eventSchema(makeEvent({ starts_at: '2026-07-04T19:00:00Z', time_zone: 'America/Los_Angeles' }))
+    const winter = eventSchema(makeEvent({ starts_at: '2026-12-24T19:00:00Z', time_zone: 'America/Los_Angeles' }))
+    expect(summer.startDate).toBe('2026-07-04T19:00:00-07:00')
+    expect(winter.startDate).toBe('2026-12-24T19:00:00-08:00')
+  })
+
+  it('honours a non-Pacific zone rather than assuming the community one', () => {
+    const r = eventSchema(makeEvent({ starts_at: '2026-08-27T18:30:00Z', time_zone: 'America/New_York' }))
+    expect(r.startDate).toBe('2026-08-27T18:30:00-04:00')
+  })
+
+  it('falls back to the community zone when the zone is absent or unknown', () => {
+    // The /discover pages read events through public_events / public_event_by_slug, and those RPCs
+    // do not return time_zone yet, so they arrive here without one. Falling back the way resolveZone
+    // does is correct for every event on the platform today (production 2026-08-25: 61 of 61 are
+    // America/Los_Angeles) and is the same direction the rest of the codebase fails in.
+    for (const tz of [undefined, null, 'Not/AZone']) {
+      const r = eventSchema(makeEvent({ starts_at: '2026-08-27T18:30:00Z', time_zone: tz as string | null }))
+      expect(r.startDate, `zone=${String(tz)}`).toBe('2026-08-27T18:30:00-07:00')
+    }
+  })
+
+  it('keeps the offer opening at the same moment the event starts', () => {
+    // startDate and offers.validFrom are resolved once and shared, so the two cannot drift into a
+    // page-vs-schema contradiction about when the event is.
+    const r = eventSchema(makeEvent({ starts_at: '2026-08-27T18:30:00Z', time_zone: 'America/Los_Angeles' }))
+    expect((r.offers as Record<string, unknown>).validFrom).toBe(r.startDate)
+  })
+
+  it('degrades to the raw stored value on a malformed timestamp rather than dropping the field', () => {
+    // Google requires startDate. A row we cannot convert should still publish something.
+    const r = eventSchema(makeEvent({ starts_at: 'not-a-date', time_zone: 'America/Los_Angeles' }))
+    expect(r.startDate).toBe('not-a-date')
+  })
+
+  it('applies the same rule to the listing, which had the same defect', () => {
+    const items = eventsListingSchema(
+      [{ slug: 's', title: 'T', starts_at: '2026-08-27T18:30:00Z', time_zone: 'America/Los_Angeles' }],
+      'x',
+    ).itemListElement
+    expect((items[0].item as Record<string, unknown>).startDate).toBe('2026-08-27T18:30:00-07:00')
   })
 })

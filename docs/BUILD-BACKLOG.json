@@ -4310,18 +4310,18 @@
     {
       "id": "SCAN-106",
       "title": "Vera's dispatch is keyed on the UTC day, so it rolls over at 5pm Pacific",
-      "status": "open",
+      "status": "done",
       "lane": "live",
       "size": "S",
       "source": {
-        "file": "lib/vera-dispatch.ts",
-        "ref": "todayUTC(), line 43; used at line 230"
+        "file": "lib/on-air/dispatch-day.ts",
+        "ref": "dispatchDay(); read by lib/vera-dispatch.ts, app/api/zap-prompt/route.ts, app/(main)/on-air/dispatches/page.tsx"
       },
-      "detail": "MS25 Phase 1, split out of SCAN-102 on 2026-08-25 after the display fix exposed the real root. vera_dispatches holds one row per (profile, day) and the day is minted by todayUTC() = new Date().toISOString().slice(0,10) - the SERVER's UTC calendar day. For a Pacific community that rolls over at 5pm local, so a Dispatch generated at 6pm Pacific is stored under TOMORROW's key and stops reading as today's the moment it is written. This is why the /on-air/dispatches page could NOT simply be re-keyed to HOME_TZ like its three sibling surfaces (feed story lens, Journal widget, Vault ledger, all fixed): re-labelling against a key that is still UTC would inverth the bug rather than fix it. The page's label was pinned to UTC in the same change, which is honest about what the value currently is. THE FIX is to mint the key with dayInZone(new Date(), HOME_TZ) and label the page in the same zone. THE COST, which is why this is its own row: flipping the key mid-day can mint one extra Dispatch for any member in the 5pm-midnight Pacific window on the day it ships, because their UTC-keyed row for 'tomorrow' will not match the new zone-keyed 'today'. That is a one-time, per-member duplicate rather than a correctness risk, but it is a member-visible side effect and wants shipping deliberately - ideally with a note, or timed for a low-traffic hour.",
+      "detail": "DONE 2026-08-25. PREMISE RE-TESTED AND IT HELD: todayUTC() was still at line 43 and still used at line 230. The key now comes from dispatchDay() = dayInZone(new Date(), HOME_TZ), exported from the leaf module lib/on-air/dispatch-day.ts so there is exactly ONE mint. IT IS A LEAF DELIBERATELY: defining it in lib/vera-dispatch.ts (where it started) would have dragged lib/ai/complete.ts -> lib/ai/client.ts, which VALUE-imports the Anthropic SDK, into the Zap route bundle - the AGENTS.md fan-out rule, and a contradiction of that routes own header saying it has no AI dependency. THE ROW UNDER-COUNTED THE READERS: two other surfaces derived the same key with their own toISOString().slice(0,10) and would have silently disagreed with the new one. app/api/zap-prompt/route.ts backs the most-tapped button in the app and looks up todays cached Dispatch by day - left as it was it would have missed every Dispatch after ~5pm Pacific and fallen back to the template line; it now imports dispatchDay. Its nudge-line hour had the same 5pm bug (getUTCHours put the tonight copy on screen 9am-4pm Pacific and never in the evening) and now reads the community hour via zoneOffsetMinutes. app/(main)/on-air/dispatches/page.tsx labels Today/Yesterday against the same imported function, and its 5-paragraph comment explaining why the label had to stay UTC is replaced (it was honest when written; SCAN-106 moved the key and the label together, which is what it asked for). COMMUNITY DAY, NOT MEMBER DAY, deliberately: lib/member-day.ts exists and is right for practice_logs.logged_for, which MEASURES a members own behaviour. This is a DELIVERY key under UNIQUE (profile_id, day) with no zone column stored beside it, so it must mean the same thing on every read forever. profiles.home_timezone is NULLABLE and MUTABLE (written from the browser by app/(main)/timezone-actions.ts), so a member-keyed day changes meaning between two reads minutes apart - unset zone mints under UTC (leaving this bug unfixed for exactly those members), the client then persists America/Los_Angeles, and the next session that evening finds no row and mints a SECOND Dispatch; travel does it in reverse and SKIPS a day. dayInZone(now, HOME_TZ) is a pure function of the instant. SHIPPING NOTE, unchanged from the original row and deliberately NOT papered over: members served in the 5pm-midnight Pacific window before the deploy can be minted one extra Dispatch, and (second-order, not in the original row) that orphaned tomorrow-keyed row will replay as tomorrows instead of a fresh one. Both one-time, copy valid either way. A dual-key read was rejected as permanent code for a one-day transition.",
       "verify": {
         "kind": "cmd",
-        "cmd": "node -e \"const s=require('fs').readFileSync('lib/vera-dispatch.ts','utf8');if(/toISOString\\(\\)\\.slice\\(0,\\s*10\\)/.test(s)){console.error('the dispatch day key is still minted from the server UTC calendar day');process.exit(1)}\"",
-        "note": "Measures the CONSEQUENCE: the day key stops coming from the server's UTC calendar. Passes when the key is minted in the community zone."
+        "cmd": "node -e \"const fs=require('fs');const Q=String.fromCharCode(39);const K='lib/on-air/dispatch-day.ts';const F=['lib/vera-dispatch.ts','app/api/zap-prompt/route.ts','app/(main)/on-air/dispatches/page.tsx'];if(F.some(f=>!fs.existsSync(f)))process.exit(79);const strip=s=>s.replace(/\\/\\*[\\s\\S]*?\\*\\//g,'').replace(/^\\s*\\/\\/.*$/gm,'');const C={};for(const f of F)C[f]=strip(fs.readFileSync(f,'utf8'));const bad=[];if(!fs.existsSync(K))bad.push(K+' is missing, so there is no single place the dispatch day key is minted');else{const k=strip(fs.readFileSync(K,'utf8'));if(!/export\\s+function\\s+dispatchDay\\s*\\(/.test(k))bad.push(K+' exports no dispatchDay(), so there is no ONE key every reader can share');if(!/dayInZone\\s*\\([^)]*HOME_TZ/.test(k))bad.push('the dispatch day key is not minted with dayInZone(..., HOME_TZ), so it is not the community calendar day');if(/toISOString\\(\\)\\s*\\.slice\\(\\s*0\\s*,\\s*10\\s*\\)/.test(k))bad.push(K+' still mints a day key from the server UTC calendar day');if(k.indexOf('lib/ai/')>=0)bad.push(K+' is no longer a leaf, so importing the key drags AI deps into the hot Zap route');}for(const f of F){if(/toISOString\\(\\)\\s*\\.slice\\(\\s*0\\s*,\\s*10\\s*\\)/.test(C[f]))bad.push(f+' still mints a dispatch day key from the server UTC calendar day');if(!/\\bdispatchDay\\b/.test(C[f]))bad.push(f+' reads the dispatch day without importing dispatchDay, so its key can drift from the one rows are minted under');}if(C['lib/vera-dispatch.ts'].indexOf('eq('+Q+'day'+Q+', day)')<0)bad.push('lib/vera-dispatch.ts no longer filters vera_dispatches on the minted day, so nothing ties the key it mints to the rows it reads');if(bad.length){console.error(bad.join('; '));process.exit(1)}process.exit(0)\"",
+        "note": "Measures the CONSEQUENCE across ALL THREE readers of vera_dispatches.day plus the module that mints it: the key comes from one exported dispatchDay() built on dayInZone(..., HOME_TZ), nobody re-derives it from the server UTC calendar day, and the minting module stays a LEAF (no lib/ai import) so the hot Zap route can share the key without the AI SDK. Comments are stripped first so a note quoting the old expression cannot pass or fail it. Verified to FAIL on the pre-fix tree."
       }
     },
     {
@@ -4398,18 +4398,18 @@
     {
       "id": "SCAN-303",
       "title": "/events loader: serial settings cluster + counting RSVPs by fetching every row",
-      "status": "open",
+      "status": "done",
       "lane": "live",
       "size": "S",
       "source": {
         "file": "app/(main)/events/index-data.ts",
-        "ref": "lines ~350-388, ~549-556"
+        "ref": "the settings Promise.all ~:369-387; goingCountsByEvent at ~:585"
       },
-      "detail": "MS25 Phase 3. Four independent settings/flags reads run serially before the 5-query event wave (resolvePageContent, eventsListingHorizonDays, demo checks, series config) - one Promise.all. And rsvpCounts pulls every 'going' row for up to ~500 events to count in JS; a grouped count RPC (room_unread_counts' shape) reads one row per event. The RPC half needs a migration - frozen until the freeze lifts.",
+      "detail": "DONE 2026-08-25. HALF THE ROW HAD ALREADY EXPIRED. (a) THE SERIAL SETTINGS CLUSTER WAS FIXED BEFORE THIS ROW WAS WORKED, by #2290 (922febc66, Meta-scan phase 3) - the four awaits the row cites at :350/:370/:382/:388 are real, but they are the PRE-#2290 file; the current loader already gathers all five reads (resolvePageContent, eventsListingHorizonDays, demoModeEnabled, viewerHidesDemo, getSeriesDisplayConfig) into one Promise.all. Confirmed by running the new probe against 922febc66^, where all five arms fire, and against HEAD, where none do. Nothing to do; the probe now guards it against regression. (b) THE RSVP COUNT WAS REAL AND WAS WORSE THAN A PERF ROW. The loader pulled every going row for up to 3 x SERIES_WIDE_READ = 1,500 events to tally integers in JS, and PostgREST caps a response at max_rows (1,000) SERVER-SIDE, which neither service_role nor .limit() escapes - so past 1,000 going rows in one listing the counts silently under-reported with no error, flipping the Has open spots facet ON for a full event and mis-ordering the Most going sort. Now lib/events/going-counts.ts: prefers a grouped-count RPC, chunks ids 500 at a time so a full response can never be a truncated one, and FAILS SAFE to the original tally - now PAGED with .range() over the PK - whenever the RPC is absent or errors. A partial RPC result is discarded rather than merged, so it can never double-count. 13 unit tests in lib/events/going-counts.test.ts, including a fake client that reproduces the max_rows cap. THE MIGRATION IS WRITTEN AND UNAPPLIED: supabase/migrations/20270329000000_event_going_counts_rpc.sql (owner applies). The fallback is what makes merging it before the apply safe. OTHER .in() READS IN THE SAME WAVE, MEASURED: myRsvpRows is safe by the event_rsvps_event_profile_uniq constraint (<=1 row per event per profile); circlesRows is bounded by distinct hosting circles (theoretical only); tierRows is STILL EXPOSED - active ticket tiers scale as events x tiers with no bound, so past 1,000 the trailing events silently lose their From  price stat. That last one is out of this rows scope and is documented in the loader, needing its own row.",
       "verify": {
-        "kind": "manual",
-        "evidence": "Read 2026-08-25: awaits at :350/:370/:382/:388 mutually independent; the :549 select fetches event_id rows with no limit and counts client-side at :593. RPC blocked on migration freeze.",
-        "checked": "2026-08-25"
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs'),path=require('path');const Q=String.fromCharCode(39);const D='app/(main)/events/index-data.ts',H='lib/events/going-counts.ts',M='supabase/migrations';if(!fs.existsSync(D)||!fs.existsSync(M))process.exit(79);const strip=s=>s.replace(/\\/\\*[\\s\\S]*?\\*\\//g,'').replace(/^\\s*\\/\\/.*$/gm,'');const d=strip(fs.readFileSync(D,'utf8'));const bad=[];const CLUSTER=['resolvePageContent','eventsListingHorizonDays','demoModeEnabled','viewerHidesDemo','getSeriesDisplayConfig'];for(const fn of CLUSTER)if(d.indexOf('await '+fn+'(')>=0)bad.push(fn+'() is awaited on its own again, so the settings cluster costs a serial round trip');const blocks=d.match(/Promise\\.all\\(\\[[\\s\\S]*?\\n\\s*\\]\\)/g)||[];if(!blocks.some(b=>CLUSTER.every(fn=>b.indexOf(fn)>=0)))bad.push('the settings/flags reads are no longer gathered into ONE Promise.all');const needle='from('+Q+'event_rsvps'+Q+')';for(let i=d.indexOf(needle);i>=0;i=d.indexOf(needle,i+1)){if(d.slice(i,i+320).indexOf('profile_id')<0)bad.push('the loader still reads event_rsvps un-scoped to one profile, i.e. it is pulling every going row to count in JS');}if(d.indexOf('goingCountsByEvent')<0)bad.push('the loader does not call goingCountsByEvent, so the counts are not grouped in the database');if(!fs.existsSync(H)){bad.push(H+' is missing, so there is no chunked/paged counter behind the loader');}else{const h=strip(fs.readFileSync(H,'utf8'));const m=/GOING_ID_CHUNK\\s*=\\s*(\\d+)/.exec(h);if(!m)bad.push('going-counts.ts declares no GOING_ID_CHUNK, so nothing bounds a call below PostgREST max_rows');else if(Number(m[1])>=1000)bad.push('GOING_ID_CHUNK is '+m[1]+', at or above max_rows (1000), so a full response is indistinguishable from a truncated one');if(h.indexOf('.range(')<0)bad.push('the fallback counter does not page with .range(), so it truncates at max_rows exactly like the read it replaced');if(!/rpc\\s*\\(\\s*.event_going_counts/.test(h))bad.push('going-counts.ts never calls the event_going_counts RPC');if(h.indexOf('event_rsvps')<0)bad.push('going-counts.ts has no row-counting fallback, so the loader breaks if the RPC migration is not applied');}const mig=fs.readdirSync(M).filter(f=>/\\.sql$/.test(f)&&fs.readFileSync(path.join(M,f),'utf8').indexOf('function public.event_going_counts')>=0);if(!mig.length)bad.push('no migration creates public.event_going_counts, so the grouped-count path can never come alive');else if(!mig.some(f=>f.slice(0,14)>'20270328000000'))bad.push('the event_going_counts migration does not sort after 20270328000000');if(bad.length){console.error(bad.join('; '));process.exit(1)}process.exit(0)\"",
+        "note": "Measures the CONSEQUENCE, both halves. (a) none of the five settings/flags reads is awaited alone and all five sit in one Promise.all. (b) no event_rsvps read in the loader is un-scoped to a profile (i.e. nothing pulls every going row to count), the loader calls goingCountsByEvent, and the helper behind it is truncation-proof on BOTH paths: a chunk constant strictly below max_rows, a .range() pager, an event_going_counts RPC call, and a row-counting fallback so an unapplied migration cannot break it. Verified to FAIL on the pre-fix tree and, for the (a) arm, on 922febc66^."
       }
     },
     {
@@ -4506,18 +4506,18 @@
     {
       "id": "SCAN-405",
       "title": "Verify-then-add loading.tsx on the hot child routes that block above the shell",
-      "status": "open",
+      "status": "done",
       "lane": "hygiene",
       "size": "XS",
       "source": {
         "file": "docs/META-SCAN-STATUS.md",
         "ref": "meta-scan 2026-08-25, a11y/UX sweep"
       },
-      "detail": "MS25 Phase 4. channels/[id], messages/r/[roomId], spaces + spaces/[slug], journeys/[slug] and drafts have no route-level loading.tsx. PAGE-FRAMEWORK §5 prefers per-section Suspense, so this is verify-FIRST: add a skeleton only where the page genuinely blocks above the shell; record the ones that already stream as fine.",
+      "detail": "MS25 Phase 4. Verify-first, and the verify was most of the answer. The inventory looked for a loading.tsx IN each folder; Next 16 puts the boundary at the SEGMENT — loading.js wraps page.js and every NESTED layout.js below it, never the layout in its own folder. So three of the six named routes were already covered by an ancestor: channels/[id] by app/(main)/channels/loading.tsx, messages/r/[roomId] by messages/loading.tsx, journeys/[slug] by journeys/loading.tsx. A fourth, bare \"spaces\", is not a route at all — there is no app/(main)/spaces/page.tsx; the index is /spaces/directory. drafts and spaces/directory have no ancestor boundary and need none: both open their own <Suspense> around everything expensive, with only the request-cached caller above it, and no awaiting layout in between. ONE route genuinely blocked: spaces/[slug]. Its (profile) layout resolves the caller, the manage grant, tagline, visibility, follow state, founding badge, capabilities, reviews and the profile nav before rendering a node, with no boundary anywhere between it and app/(main)/layout.tsx {children} — the page own <Suspense> sits UNDER that layout, so it never gets to paint. Added app/(main)/spaces/[slug]/loading.tsx, at [slug] rather than inside (profile) for the same reason circles/[slug]/loading.tsx sits where it does (a file in the layout own folder renders inside it), which also covers the Space owner routes. Role radii and the layout own themable cover token only: check:adoption reads identical on all 18 classes before and after, so literal-radius is NOT raised the way the #2267 route skeletons raised it. No other skeleton added.",
       "verify": {
-        "kind": "manual",
-        "evidence": "find inventory 2026-08-25: the six routes lack loading.tsx; per-section Suspense coverage not yet audited per-route (that audit is the work).",
-        "checked": "2026-08-25"
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs'),B='app/(main)',CHEAP=3;const R=['channels/[id]','messages/r/[roomId]','journeys/[slug]','drafts','spaces/directory','spaces/[slug]/(profile)'];const bad=[];for(const r of R){const parts=r.split('/');const page=B+'/'+r+'/page.tsx';if(!fs.existsSync(page)){bad.push(r);continue}let covered=false,blocking=false;for(let i=parts.length;i>0;i--){const dd=B+'/'+parts.slice(0,i).join('/');if(fs.existsSync(dd+'/loading.tsx')){covered=true;break}const l=dd+'/layout.tsx';if(fs.existsSync(l)&&/[^\\w]await /.test(fs.readFileSync(l,'utf8')))blocking=true}if(!covered&&!blocking){const s=fs.readFileSync(page,'utf8');const body=s.slice(s.search(/export default/));const k=body.indexOf('<Suspense');covered=k>=0&&(body.slice(0,k).match(/[^\\w]await /g)||[]).length<=CHEAP}if(!covered)bad.push(r)}if(bad.length){console.error(bad.join(String.fromCharCode(44)));process.exit(1)}process.exit(0)\"",
+        "note": "Walks each named route bottom-up to app/(main) and applies the Next 16 rule the row itself got wrong: a segment is covered when a loading.tsx sits at or above it, because that boundary wraps page.js and every NESTED layout.js below it (it does NOT wrap the layout in its own folder). Failing that, no layout on the path may await, and the page must open its own <Suspense> with at most 3 awaits ahead of it. That ceiling is the measured state, and it is what makes the probe measure blocking rather than the mere presence of the word Suspense: the streaming pages read 1 / 2 / 3 awaits before their boundary, while channels/[id] reads 7 before the Suspense buried in its rail, so deleting ANY of the four load-bearing loading.tsx files fails this."
       }
     },
     {
@@ -4580,18 +4580,18 @@
     {
       "id": "SCAN-203",
       "title": "The four commerce sitemap reads cap at 100 rows with no paging",
-      "status": "open",
+      "status": "done",
       "lane": "hygiene",
       "size": "XS",
       "source": {
         "file": "app/sitemap.ts",
         "ref": "lines 246-253"
       },
-      "detail": "MS25 Phase 2. store/market/housing/classifieds sitemap sections read limit:100 (circles 200) with no follow-up paging - fine today, silent overflow at scale. Either page like listPublicShowsBySpace (documented at sitemap.ts:385-390) or record the cap as deliberate with a threshold that reopens it.",
+      "detail": "MS25 Phase 2. store/market/housing/classifieds read limit:100 (circles 200) with no follow-up paging. PREMISE EXPIRED THE DAY IT WAS WRITTEN: the row offered two remedies (page it, or record the cap with a threshold that reopens it) and #2289 shipped the second one hours later in the same file — the cap note at sitemap.ts:60-105, named COMMERCE_SITEMAP_CAP / CIRCLE_SITEMAP_CAP constants, and atCap(), which warns per section naming the reader to page. That PR then filed this row as open anyway. Paging is genuinely out of reach from here and the note proves it per reader (three clamp server-side, classifieds takes no offset, circles is an RPC SQL ceiling), so the ONLY thing missing was a gate that notices the fail-safe fired. Added: four tests in app/sitemap.test.ts that drive the real route. They pin the warning at the cap, the silence one row below it (a positive control, so silence means not-at-cap rather than never-warns), and the invariant that makes a silent regression possible — the shared constant must equal the clamp the readers enforce, because raising it would leave the three clamped verticals returning 100 while atCap compared against the bigger number and never fired again. Mutation-checked: silencing the warn, raising the constant to 500, and dropping one atCap wrap each fail the suite.",
       "verify": {
-        "kind": "manual",
-        "evidence": "Read 2026-08-25: the four .limit(100) reads and circles .limit(200) have no pagination; current active-listing counts are far below the caps (production read: 0 orders, single-digit listings).",
-        "checked": "2026-08-25"
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const s=fs.readFileSync('app/sitemap.ts','utf8');const m=s.match(/COMMERCE_SITEMAP_CAP = (\\d+)/);if(!m)process.exit(1);const cap=Number(m[1]);if(!/CIRCLE_SITEMAP_CAP = \\d+/.test(s))process.exit(1);if(!/function atCap[^]{0,400}rows.length >= cap[^]{0,300}console.warn/.test(s))process.exit(1);if((s.match(/atCap\\(/g)||[]).length<5)process.exit(1);const src=fs.readFileSync('lib/commerce/products.ts','utf8')+fs.readFileSync('lib/listings/housing.ts','utf8');const c=[...src.matchAll(/Math.min\\(Math.max\\([\\w.]+ \\?\\? \\d+, 1\\), (\\d+)\\)/g)].map(x=>Number(x[1]));if(c.length<3)process.exit(1);if(!c.every(n=>n===cap))process.exit(1);process.exit(0)\"",
+        "note": "Measures the fail-safe, not the words: atCap must exist, warn on >= cap, be wired into all five capped sections, and COMMERCE_SITEMAP_CAP must still equal the clamp the three commerce readers enforce. Raising the constant without teaching a reader to page fails here."
       }
     },
     {
@@ -4651,18 +4651,18 @@
     {
       "id": "SCAN-004",
       "title": "@types/papaparse rides in dependencies, not devDependencies",
-      "status": "open",
+      "status": "done",
       "lane": "hygiene",
       "size": "XS",
       "source": {
         "file": "docs/META-SCAN-STATUS.md",
         "ref": "meta-scan 2026-08-25, orphan sweep"
       },
-      "detail": "MS25 Phase 0. A types-only package in the production dependency set. One-line move; package.json is train-claimed today. BLOCKED 2026-08-25: package.json is claimed by open PR #2283 (housing/natal-matching), which adds astronomy-engine two lines from this entry. Editing it here would conflict directly. Do this the moment #2283 merges.",
+      "detail": "MS25 Phase 0. A types-only package in the production dependency set. The 2026-08-25 BLOCKER EXPIRED: it said package.json was train-claimed by open PR #2283 (housing/natal-matching), which adds astronomy-engine two lines away. #2283 has merged — astronomy-engine is in dependencies on this tree — so the conflict it named cannot happen. Moved to devDependencies. papaparse itself stays in dependencies (lib/crm/import/parse.ts imports it at runtime); only the @types package moved, and it is now the only @types entry outside devDependencies, which is where the other six already live. pnpm-lock.yaml records the dep/devDep split per importer, so it moved too: pnpm install --lockfile-only produced a 3-line move of the SAME resolution (5.5.2), no version churn and no touch to node_modules or the store.",
       "verify": {
         "kind": "cmd",
-        "cmd": "node -e \"const p=require('./package.json');process.exit(p.dependencies&&p.dependencies['@types/papaparse']?1:0)\"",
-        "note": "Passes when the types package leaves the runtime dependency set."
+        "cmd": "node -e \"const p=require('./package.json');const d=p.dependencies||{},v=p.devDependencies||{};if(d['@types/papaparse'])process.exit(1);if(!v['@types/papaparse'])process.exit(1);if(!d['papaparse'])process.exit(1);process.exit(0)\"",
+        "note": "Fails three ways: the types package still in dependencies, the types package deleted outright rather than moved, or the runtime papaparse dropped with it."
       }
     },
     {
@@ -4787,6 +4787,91 @@
       "verify": {
         "kind": "manual",
         "evidence": "Two CI runs read 2026-08-25: job 97677438550 (editor/e0-foundations, merged) and job 97688833852 (this audit branch) fail the same 4 checks with byte-identical dimensions and pixel counts. Neither branch touches the Space manage console: it renders no STUDIO_LEAVES rows (grep 0 hits in the manage route and entity-manage-console) and nothing mutates the getViewerHats result that the cache() change could share.",
+        "checked": "2026-08-25"
+      }
+    },
+    {
+      "id": "SCAN-207",
+      "title": "Every public event advertised a start time seven hours early to search and answer engines",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/jsonld.ts",
+        "ref": "eventSchema startDate / eventsListingSchema"
+      },
+      "detail": "FOUND 2026-08-25 by driving the real builders and reading their OUTPUT rather than their source. `events.starts_at` stores the WALL CLOCK as UTC parts (lib/time/zone.ts), and eventSchema published it raw. Measured against production: `breathe-connect-expand-2026-08-27` starts 6:30pm Pacific and its Event node said `2026-08-27T18:30:00Z`, which every consumer reads as 11:30am. All five upcoming public events were wrong, and so was the /events ItemList. This is SCAN-101 on the SEO surface — the same convention read as an instant, which in SQL closed the guest RSVP door before lunch. CLOSED: lib/time/zone.ts gains eventIsoWithOffset, which keeps the host wall clock and attaches the zone offset AT THAT INSTANT, and both builders use it. Its own test found a defect while being written — reading the offset independently disagreed with eventInstant by an hour inside the spring-forward gap — so the offset is now derived from eventInstant own answer and the two cannot disagree by construction. THREE ASSERTIONS IN lib/jsonld.test.ts WERE PINNING THE BUG and were updated. ⏳ FOLLOW-UP: public_events / public_event_by_slug do not return time_zone, so the /discover pages fall back to the community zone. Correct for 61 of 61 events today; widening those RPCs is the durable fix.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const s=require('fs').readFileSync('lib/jsonld.ts','utf8');if(/startDate: event\\.starts_at/.test(s)){console.error('eventSchema publishes the raw stored wall clock again');process.exit(1)};if(!s.includes('eventIsoWithOffset')){console.error('the zone-aware publisher is gone');process.exit(1)};const z=require('fs').readFileSync('lib/time/zone.ts','utf8');if(!z.includes('export function eventIsoWithOffset')){console.error('eventIsoWithOffset is gone');process.exit(1)}\"",
+        "note": "Fails if either builder goes back to the raw value, or if the publisher is removed. The behaviour itself is pinned by seven cases in lib/jsonld.test.ts (DST both ways, a non-Pacific zone, the fallback, offers.validFrom, and a malformed row) plus six in lib/time/zone.test.ts."
+      }
+    },
+    {
+      "id": "SCAN-209",
+      "title": "hide_address was a render-layer control: the address leaked through grants, two feeds and the .ics",
+      "status": "done",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "lib/events/visible-location.ts",
+        "ref": "the rule, now with one copy"
+      },
+      "detail": "FOUND 2026-08-25 in the final security pass, reproduced AS ROLE ANON on production before anything changed: 59 event rows readable, 18 of them with hide_address = true and every one still returning `street`, and 24 returning `organizer_contact` — host phone numbers and personal email addresses. public.events carried no table-wide SELECT for anon (claim_token and rsvp_requires_approval were correctly withheld) but COLUMN-level SELECT on nearly everything else. The ADR-964 shape verbatim, and scripts/table-grants.txt warns about it in its own header: check:grants cannot see column grants at all. 🔴 THE FIRST PROPOSED FIX WAS WRONG AND CHECKING CAUGHT IT — \"revoke select on events from anon, every reader uses the admin client\" is true of 244 of 245 sites; app/discover/events/_data.ts reads it with the anon key and a blanket revoke would have dark-screened the public events hub. CLOSED by three changes: a COLUMN-level revoke (20270330000000, proving both directions in its own transaction), a redaction inside the two UNCREDENTIALED calendar feeds (20270331000000 — in SQL, not the routes, because three routes read them), and publicVisibleLocation() in the per-event .ics, whose `masked` flag covered draft/private/cancelled and said nothing about hide_address. ✅ event_calendar_feed(_token) is deliberately untouched: every row is a going RSVP and the rule hides the address only from readers who are NOT attending. THE RULE ALREADY EXISTED AND PREDICTED THIS, module-private in guest-rsvp-email.ts: \"Calendar links go too, wholesale — an .ics carries the address in its own LOCATION field, so redacting the visible line alone would leak it straight back.\"",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const ics=fs.readFileSync('app/events/[slug]/event.ics/route.ts','utf8');if(!ics.includes('publicVisibleLocation(ev)')){console.error('the per-event .ics no longer redacts a hidden address');process.exit(1)};if(!/\\\\.select\\\\('[^']*hide_address[^']*'\\\\)/.test(ics)){console.error('the .ics does not select hide_address, so the rule reads undefined');process.exit(1)};const g=fs.readFileSync('lib/events/guest-rsvp-email.ts','utf8');if(!g.includes('publicVisibleLocation(ev)')){console.error('the guest email grew its own copy of the rule again');process.exit(1)};for(const m of ['20270330000000_events_pii_column_revoke.sql','20270331000000_calendar_feeds_redact_hidden_address.sql'])if(!fs.existsSync('supabase/migrations/'+m)){console.error('missing '+m);process.exit(1)}\"",
+        "note": "Probes the three consequences, not the title: the .ics redacts AND selects the input it needs, the guest email delegates rather than copying, and both migrations are in the tree. The behaviour is pinned by lib/events/visible-location.test.ts, which also records why the token feed is deliberately NOT redacted."
+      }
+    },
+    {
+      "id": "SCAN-210",
+      "title": "A host could pin an announcement into any circle: the scope check named only `group`",
+      "status": "done",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "app/(main)/feed/actions.ts",
+        "ref": "createPost, the visibility gate"
+      },
+      "detail": "FOUND 2026-08-25 in the final security pass. createPost coerces an announcement to `cluster` visibility, then checked membership only for `group` — so the scope check never ran on the one post type that pins itself to the top of a feed and broadcasts beyond the circle. The host+ check above it answers a different question: it proves the author may announce, not where. THE DATABASE WAS NOT SILENT — `posts: insert (crew+ in scope)` requires, for cluster, `scope_id = ANY (private.get_my_circle_ids()) OR EXISTS (select 1 from circles c where c.id = posts.scope_id and c.host_id = private.get_my_profile_id())`. The action accepted exactly what the policy would refuse, and because it inserts through createAdminClient() the policy never ran to say so. Six of 56 profiles hold host+. CLOSED: the check now mirrors the predicate — active membership, or hosting that circle, with the host arm admitted only for cluster.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const s=require('fs').readFileSync('app/(main)/feed/actions.ts','utf8');if(!/visibility === .group. [|][|] visibility === .cluster./.test(s)){console.error('the scope check names only group again, so announcements fall past it');process.exit(1)};if(!/if [(]!membership && !hosted[)]/.test(s)){console.error('the policy mirror is gone');process.exit(1)}\"",
+        "note": "Probes the branch that was missing. app/(main)/feed/actions.test.ts pins the same shape plus the host+ check it must not absorb, because the failure is a missing branch and nothing observable changes when it disappears — the post still saves."
+      }
+    },
+    {
+      "id": "SCAN-211",
+      "title": "The /events ticket-tier read truncates at max_rows, so trailing events silently lose their from-price",
+      "status": "open",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "app/(main)/events/index-data.ts",
+        "ref": "the tierRows .in() read"
+      },
+      "detail": "FOUND 2026-08-25 while closing SCAN-303, by measuring the OTHER .in() reads in the same loader rather than stopping at the one the row named. PostgREST caps a response at max_rows (1000, supabase/config.toml) SERVER-SIDE: service_role does not escape it and .limit() does not raise it. Active ticket tiers scale as events x tiers and are bounded by neither, so past 1,000 rows the trailing events silently lose \"From $X\" — the same truncation class as ADR-962 (CRM import dedupe), ADR-969 (QR capture counts) and SCAN-303 itself, which is now the FOURTH occurrence. The other two reads in that loader were measured and are safe: myRsvpRows is bounded by event_rsvps_event_profile_uniq (at most one row per event per profile) and circlesRows by the number of distinct hosting circles. FIX: the same shape SCAN-303 used — chunk the input well under the cap, or aggregate in the database, and fail safe.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const s=require('fs').readFileSync('app/(main)/events/index-data.ts','utf8');const i=s.indexOf('event_ticket_types');if(i<0){console.error('the tier read moved; re-point this row');process.exit(1)};const w=s.slice(i,i+900);if(!/chunk|range\\\\(|_counts|rpc\\\\(/.test(w)){console.error('the tier read is still one unbounded .in() and can truncate at max_rows');process.exit(1)}\"",
+        "note": "Fails while the read is a single unbounded .in(). Passes when it is chunked, paged, or replaced by an aggregate — the three shapes that cannot silently truncate."
+      }
+    },
+    {
+      "id": "SCAN-212",
+      "title": "Scoped rooms and three USING(true) tables admit anon with no identity check",
+      "status": "open",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "scripts/table-grants.txt",
+        "ref": "the authenticated verdicts the gate cannot verify"
+      },
+      "detail": "FOUND 2026-08-25 in the final security pass, and filed rather than fixed because both need a policy decision rather than a patch. (1) `rooms_read_public_or_member` admits `visibility IN (circle, hub, nexus, outpost, channel)` with NO identity check at all, and room_messages / room_members carry the same channel branch. Live: anon reads the one channel room metadata; messages and members return 200 [] rather than 42501, so only EMPTINESS is withholding them today — and room_messages is in the realtime publication. (2) dispatch_poll_votes, spotlight_top_friends and listing_comments have `USING (true)` with the anon grant intact; poll votes carry (profile_id, option_id) on member-only dispatches. Latent at 0 rows, which is exactly when it is cheap to fix. ⚠️ THE MEASUREMENT THAT MATTERS: of the tables verdicted `authenticated`, 65 were PROVEN to filter anon against real data, and 72 more are empty and therefore prove nothing. These findings live in that second group, which is the group table-grants.txt says the gate cannot verify. The other side is clean: 79 of 79 `internal` tables fail closed with 42501.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Reproduced 2026-08-25 as role anon on production. rooms: 1 channel room readable. room_messages / room_members: 200 with an empty body rather than 42501. dispatch_poll_votes, spotlight_top_friends, listing_comments: USING (true), anon grant present, 0 rows. 79/79 internal tables refused. 65 authenticated tables proven to filter against real rows (profiles, contacts 1093, member_traits 1211, interaction_events 57k, messages, event_rsvps, space_billing_agreements).",
         "checked": "2026-08-25"
       }
     },
