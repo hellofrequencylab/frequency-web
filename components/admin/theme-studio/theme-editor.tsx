@@ -3,11 +3,12 @@
 import { useMemo, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Loader2, Palette, Calendar } from 'lucide-react'
+import { Loader2, Palette, Calendar } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/field'
 import { Select } from '@/components/ui/select'
 import { SectionHeader } from '@/components/ui/section-header'
+import { AdminTemplate } from '@/components/templates'
 import { isError, type ActionResult } from '@/lib/action-result'
 import type { ThemeInput, ThemeKind, ThemeRow, ThemeTokens } from '@/lib/theme/admin-types'
 import {
@@ -144,26 +145,21 @@ export function ThemeEditor({ initial, mode }: { initial: ThemeRow | null; mode:
     })
   }
 
+  // The header COMPOSES AdminTemplate (PAGE-FRAMEWORK §3/§8.1) instead of hand-rolling its own
+  // back-link + <h1> + description band. It was one of the last hand-rolled page headers left in
+  // the shared component tree — invisible to `check:headers`, which deliberately stops at
+  // `components/**` (scripts/check-headers.mjs:25-33) because following in would turn the gate
+  // into a component census. `width="wide"` is the same max-w-7xl this surface already used.
   return (
-    <div className="mx-auto w-full max-w-7xl">
-      {/* Header band */}
-      <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0">
-          <Link
-            href="/admin/appearance"
-            className="inline-flex items-center gap-1.5 text-meta font-semibold text-muted transition-colors hover:text-text"
-          >
-            <ArrowLeft className="h-3.5 w-3.5" aria-hidden /> Back to Theme Studio
-          </Link>
-          <h1 className="mt-1 inline-flex items-center gap-2 text-lead font-bold text-text">
-            <Palette className="h-5 w-5 text-primary-strong" aria-hidden />
-            {mode === 'new' ? 'New theme' : draft.name || 'Edit theme'}
-          </h1>
-          <p className="mt-0.5 text-body-sm text-muted">
-            A theme is a set of token overrides. Leave a field blank to inherit the base look.
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
+    <AdminTemplate
+      title={mode === 'new' ? 'New theme' : draft.name || 'Edit theme'}
+      icon={Palette}
+      back={{ href: '/admin/appearance', label: 'Back to Theme Studio' }}
+      description="A theme is a set of token overrides. Leave a field blank to inherit the base look."
+      adminBar={false}
+      width="wide"
+      actions={
+        <>
           <Button asChild variant="ghost" size="sm">
             <Link href="/admin/appearance">Cancel</Link>
           </Button>
@@ -171,9 +167,9 @@ export function ThemeEditor({ initial, mode }: { initial: ThemeRow | null; mode:
             {pending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null}
             {pending ? 'Saving…' : mode === 'new' ? 'Create theme' : 'Save theme'}
           </Button>
-        </div>
-      </div>
-
+        </>
+      }
+    >
       {error && (
         <div
           role="alert"
@@ -316,7 +312,7 @@ export function ThemeEditor({ initial, mode }: { initial: ThemeRow | null; mode:
           </div>
         </div>
       </div>
-    </div>
+    </AdminTemplate>
   )
 }
 
