@@ -109,7 +109,7 @@ export default async function PracticeDetailPage({ params }: Params) {
     getPracticeCreator(practice.created_by),
     getPracticeCapabilities(practice.id),
     depthPromise,
-    // The standard entity cover (PROG-P5, ADR-1115). It joins this batch rather than sitting in
+    // The standard entity cover (PROG-P5, ADR-1117). It joins this batch rather than sitting in
     // front of the JSX: the cover cannot paint without it and a serial await here is
     // PAGE-FRAMEWORK §5.3's anti-pattern. The practice's own `header_image` is rung 1; a practice
     // with none falls to the operator's /practices Settings image, then to the section's

@@ -67,7 +67,7 @@ export default async function CirclePage({
   const circle = await getPublicCircleById(id)
   if (!circle) notFound()
 
-  // The standard entity cover (PROG-P5, ADR-1115). This is the RUNG-3 case in production: the
+  // The standard entity cover (PROG-P5, ADR-1117). This is the RUNG-3 case in production: the
   // public Circle read (`public_circle_by_id`) exposes no image at all, so the section default in
   // DETAIL_HERO_DEFAULTS is the only thing that can give this page a band. An operator who sets a
   // header image on /discover/circles in Settings replaces it for every public Circle at once.

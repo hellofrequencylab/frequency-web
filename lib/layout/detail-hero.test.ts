@@ -43,7 +43,7 @@ beforeEach(() => {
 describe('the image precedence ladder', () => {
   it('rung 1 — the ENTITY’s own cover beats everything below it', () => {
     // The inversion from index-hero: on an entity page the host who uploaded THIS cover outranks
-    // the site-wide operator setting, which is the whole design decision (ADR-1115).
+    // the site-wide operator setting, which is the whole design decision (ADR-1117).
     const hero = pick(
       '/practices/abc',
       { operatorImage: '/uploads/operator.jpg' },

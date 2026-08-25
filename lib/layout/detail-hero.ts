@@ -4,7 +4,7 @@ import { getPageHeaderImage, getPageHeaderFocus } from '@/lib/page-settings/stor
 import { resolveHeaderElement } from '@/lib/elements/header'
 import type { PageHeroSize, HeroOverlayStyle } from '@/components/templates/page-hero'
 
-// DETAIL HERO — the ONE resolver for a single-entity page's cover band (PROG-P5, ADR-1115,
+// DETAIL HERO — the ONE resolver for a single-entity page's cover band (PROG-P5, ADR-1117,
 // PAGE-FRAMEWORK §8.5). The DETAIL-side twin of `lib/layout/index-hero.ts` (PROG-P4).
 //
 // `DetailTemplate` has carried `coverImage` / `coverFocus` / `coverSize` / `coverOverlayStyle`

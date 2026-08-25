@@ -66,7 +66,7 @@ export default async function TopicPage({
   const channel = await getTopicalChannelBySlug(slug)
   if (!channel) notFound()
 
-  // The standard entity cover (PROG-P5, ADR-1115). The Topic's own `cover_image` is rung 1; the
+  // The standard entity cover (PROG-P5, ADR-1117). The Topic's own `cover_image` is rung 1; the
   // section's `none` tail means a Topic with no artwork renders exactly as it did before.
   const [circles, hero] = await Promise.all([
     getPublicCirclesByChannel(channel.slug),

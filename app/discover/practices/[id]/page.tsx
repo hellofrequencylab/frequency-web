@@ -48,7 +48,7 @@ export default async function PublicPracticePage({
   const practice = await getPublicPractice(id)
   if (!practice) notFound()
 
-  // The standard entity cover (PROG-P5, ADR-1115). The public twin of /practices/<id>: the SAME
+  // The standard entity cover (PROG-P5, ADR-1117). The public twin of /practices/<id>: the SAME
   // ladder and the SAME `header_image`, so a practice whose photo already showed in-app now shows
   // it here too. The section's tail differs on purpose — a signed-out visitor cannot fill an empty
   // cover slot, so a practice with no photo gets no band rather than a grey placeholder.

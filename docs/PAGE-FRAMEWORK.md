@@ -752,7 +752,7 @@ canonical [`PageHero`](../components/templates/page-hero.tsx) (`variant="minimal
 entity and index **one** cover component rather than two.
 
 **Don't re-type that resolution either — call `resolveDetailHero`.**
-[`lib/layout/detail-hero.ts`](../lib/layout/detail-hero.ts) (PROG-P5, ADR-1115) is the DETAIL-side
+[`lib/layout/detail-hero.ts`](../lib/layout/detail-hero.ts) (PROG-P5, ADR-1117) is the DETAIL-side
 twin of `resolveIndexHero` and returns a **spreadable prop bag**:
 
 ```tsx

@@ -29343,9 +29343,124 @@ wrong to exist — the gap it named is real — but it had drawn a conclusion th
 support, and that conclusion was sitting in the file every agent reads first. Same shape as
 [ADR-1082](#adr-1082) and [ADR-1112](#adr-1112): re-test a premise before you build on it.
 
+## ADR-1114: The 46-minute hang was not the cache trim — the control was already in the logs (2026-08-24)
+
+**Status:** Accepted · **Corrects:** `LIVE-105` · **Re-frames:** `HYG-015` ·
+**Bounds:** [ADR-1064](DECISIONS.md), [ADR-1086](DECISIONS.md) ·
+**Extends:** [`DEPLOY-SAFETY`](DEPLOY-SAFETY.md) §3 (run the control) and §9 (the control was already
+sitting in the logs) · **Files:** the unbounded build-time read, below — **proposed, not armed**
+
+### The claim
+
+`LIVE-105` read the production failure of `c02dc96` (#2248, `dpl_H5zLPERKne5KGNxF7UU9HEbU5spx`,
+`BUILD_EXCEEDED_MAXIMUM_TIME` at 46m11s) as *"the ADR-1064 / ADR-1086 signature, verbatim"* — the
+cache trim deleting the incremental fetch cache and hanging *Collecting page data*. It said so on
+three matches: same phase, same silence, same 46 minutes. **All three are refuted or worthless.**
+
+### The control, which nobody had to run
+
+The very next production deployment reproduced every input except the outcome:
+
+| | `dpl_H5zLPERK…` (c02dc96, #2248) | `dpl_D6VundWw…` (db0d186, #2249) |
+|:--|:--|:--|
+| Tree | `c02dc96` | **contains `c02dc96` as an ancestor**, +28 files |
+| Region / machine | cle1, 4 cores / 8 GB | cle1, 4 cores / 8 GB |
+| Restored build cache from | **`DB58PSeFrbK5DP2PpBamUcfktcQj`** | **`DB58PSeFrbK5DP2PpBamUcfktcQj`** |
+| Install | `Already up to date`, 779 ms | `Already up to date`, 807 ms |
+| Compile | ✓ 84 s | ✓ 83 s |
+| **Collecting page data** | 20:03:22 → **nothing, ever** | 20:21:36 → 20:23:05, **89 s** |
+
+Same cache blob, from the same source deployment, thirteen minutes apart, on a **superset** of the
+failing tree. One finished the phase in a minute and a half; the other produced zero bytes for
+forty-four minutes. **A cache state that a superset tree survives cannot be what killed the subset.**
+
+### The 46 minutes is a ceiling, not a fingerprint
+
+`BUILD_EXCEEDED_MAXIMUM_TIME` fires at the same wall clock whatever the build is stuck on. **Every**
+hang in this project dies at ~46 minutes, so the number carries no diagnostic information at all —
+matching it is matching the timeout, not the cause. The row treated a constant as evidence.
+
+### And there was no fetch cache to lose
+
+`check:cache-budget` prints the whole composition of `.next/cache`, by design, so that it reconciles
+with its own total. On the cache the failing build restored it printed:
+
+```
+.next/cache holds: .previewinfo 0 MiB, config.json 0 MiB, .rscinfo 0 MiB
+```
+
+and on an **untrimmed** production build the same day (`dpl_9TDCk4Pgz9AYZAfnswSZuxbPRMQA`):
+
+```
+.next/cache holds: turbopack 1362 MiB, .previewinfo 0 MiB, config.json 0 MiB, .rscinfo 0 MiB
+```
+
+**No `fetch-cache` term appears in either.** These builds do not write one — consistent with an app
+that reads Supabase through `supabase-js`, which never populates Next's `fetch` cache. ⚠️ This
+bounds ADR-1064/ADR-1086 rather than contradicting them: it is a reading of 2026-08-24 artifacts and
+says nothing about what a 2026-08-18 build held. But it does mean **the mechanism those ADRs describe
+cannot be reached from today's cache composition**, and `NEVER_TRIM_DIRS` naming `fetch-cache` is
+belt on braces rather than the live guard it reads as.
+
+### What the log does not settle, said plainly
+
+The failing build emitted **not one byte** after the spinner line. Nothing distinguishes a stalled
+network read from a deadlocked worker from a lost `cle1` container. What is real, and visible:
+clone times in that region degraded across the window — 16.8s (19:45), 69s (19:48), 40.5s (19:50),
+37.9s (20:01, the failing build), ~3m20s (20:02), **3m48.7s (20:16)**. Suggestive, and **not** a
+cause: the 3m48 clone belongs to the build that then succeeded in 89 seconds.
+
+### The finding that survives regardless of the trigger
+
+**Nine routes' `generateStaticParams` do a Supabase read at build time, and not one of them is bounded
+in time.** `createPublicClient()` (`lib/supabase/public.ts`) sets no `AbortSignal` and no fetch
+timeout. Every one of the nine guards with `.catch(() => [])` or `try/catch` — the LIVE-011 / LIVE-084
+degradation to on-demand rendering — and **a socket that never settles never rejects, so that
+fail-safe cannot fire.** It covers failure; it does not cover latency.
+
+Next does not cover it either. `next build`'s collect phase (`build/index.js:1184–1578`) awaits its
+workers with **no timeout** — the identifier does not occur in that file. `staticPageGenerationTimeout`
+(default 60s) reaches the work store, but its only consumer is the `'use cache'` fill-stall path
+(`use-cache/use-cache-wrapper.js:538`), whose own comment says it exists to catch *"hanging I/O inside
+of it"* — and this repo contains **zero** `'use cache'` directives. The one guard Next ships for a
+hanging build-time read has nothing routed through it here.
+
+So: whatever stalled that build, **the repo had no bound that would have stopped it and no instrument
+that would have named it.** That is the durable defect, and it is true whether or not the trigger ever
+recurs.
+
+### The one experiment — and why it is no longer a redeploy
+
+`LIVE-105` proposed redeploying `c02dc96` as the control. **That experiment is spent.** A superset of
+that tree already ran on the identical cache and passed; a redeploy today would use a different cache,
+a different day and a different Next, so a green result would exclude nothing new. The failure leaves
+no artifact, which means the instrument has to be in place *before* the next occurrence:
+
+> Give the build-time reader a bound that speaks. In `lib/supabase/public.ts`, pass a `global.fetch`
+> that wraps each request in `AbortSignal.timeout(N)` and `console.warn`s the RPC or table on abort.
+> The existing `.catch(() => [])` then fires, the route degrades to on-demand rendering exactly as
+> intended, and the log names the read that stalled instead of printing nothing for 44 minutes.
+
+⚠️ **Weigh the blast radius before doing it.** `createPublicClient()` is also the *runtime* reader for
+public and ISR pages, so a naive timeout changes what visitors get, not only what builds do. Bound it
+to the build (`NEXT_PHASE === 'phase-production-build'`) or give the params path its own factory.
+
+🔴 **Deliberately not armed here, and not as a gate.** AGENTS.md: a build-blocking gate that has never
+seen a real artifact is the 2026-08-11 incident with the roles reversed, and `check:cache-budget` has
+already killed two builds by being reasoned about carefully and still being wrong. This ADR records a
+refutation and a proposal. The proposal ships with the build that proves it, or not at all.
+
+### The rule this adds
+
+**A signature is only evidence if a non-occurrence could have failed to match it.** Phase, silence and
+timeout are what *every* hang looks like. Before reading a failure as a known one, name the thing that
+would be different if it were not — here, the restored cache — and go look at whether it was.
+
 ---
 
-## ADR-1115: The detail cover gets one resolver, and its ladder is deliberately inverted from the index's (2026-08-24)
+---
+
+## ADR-1117: The detail cover gets one resolver, and its ladder is deliberately inverted from the index's (2026-08-24)
 
 **Status:** accepted · advances `PROG-P5` · the detail-side twin of
 [`lib/layout/index-hero.ts`](../lib/layout/index-hero.ts) (PROG-P4) · extends
