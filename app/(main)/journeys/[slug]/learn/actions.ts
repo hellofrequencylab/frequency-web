@@ -8,7 +8,7 @@
 import { revalidatePath } from 'next/cache'
 import { getCallerProfile } from '@/lib/auth'
 import { ok, fail, type ActionResult } from '@/lib/action-result'
-import { getPlan, completeLesson } from '@/lib/journey-plans'
+import { getPlan, completeLesson, uncompleteLesson } from '@/lib/journey-plans'
 import { getJourneyTree } from '@/lib/journeys/store'
 import { rewardEventsForTransition, type JourneyRewardEvent } from '@/lib/journeys/rewards'
 import { grantJourneyRewards, grantExtraCreditIfAny, type GrantedJourneyReward } from '@/lib/journeys/grants'
@@ -55,4 +55,36 @@ export async function completeJourneyLessonAction(
 
   revalidatePath(`/journeys/${slug}/learn`)
   return ok({ events, granted, bonusZaps })
+}
+
+/**
+ * Undo a lesson check-off. The complete path above has existed since ADR-252 and this one has
+ * not, so a member could tick a lesson and never untick it — a mis-tap was permanent, and the
+ * progress bar it moved could not be moved back. `uncompleteLesson` was written at the same time
+ * as `completeLesson` and simply never wired to a surface (SCAN-502 group a).
+ *
+ * 🔴 IT DELIBERATELY DOES NOT CLAW ANYTHING BACK. Completing can grant milestone Gems, a trophy
+ * and extra-credit Zaps, and every one of those grants is once-ever and idempotent by design.
+ * Reversing them on an undo would mean a member who mis-tapped, corrected it, and then genuinely
+ * finished the lesson would end up with LESS than a member who never mis-tapped — the correction
+ * would cost them. So this removes the progress row and nothing else: the syllabus tick and the
+ * progress bar go back, anything already earned stays earned. Re-completing later is a no-op on
+ * the grant side precisely because those paths are once-ever.
+ *
+ * No reward events are computed or returned, because none fire: rewardEventsForTransition reads a
+ * FORWARD transition, and there is no "phase un-completed" event in the model.
+ */
+export async function uncompleteJourneyLessonAction(
+  slug: string,
+  itemId: string,
+): Promise<ActionResult<null>> {
+  const caller = await getCallerProfile()
+  if (!caller) return fail('Sign in to track your progress.')
+  const loaded = await getPlan(slug)
+  if (!loaded) return fail('Journey not found.')
+
+  await uncompleteLesson(caller.id, itemId)
+
+  revalidatePath(`/journeys/${slug}/learn`)
+  return ok(null)
 }

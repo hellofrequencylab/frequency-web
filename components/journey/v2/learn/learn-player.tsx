@@ -16,7 +16,7 @@ import { useMindless } from '@/components/on-air/mindless'
 import { parseVideoEmbed } from '@/lib/video-embed'
 import { isError } from '@/lib/action-result'
 import { phaseUnlockAt, isPhaseUnlocked } from '@/lib/journeys/schedule'
-import { completeJourneyLessonAction } from '@/app/(main)/journeys/[slug]/learn/actions'
+import { completeJourneyLessonAction, uncompleteJourneyLessonAction } from '@/app/(main)/journeys/[slug]/learn/actions'
 import { TrophyCelebration, type TrophyMilestone } from '@/components/journey/v2/trophy-celebration'
 import { PracticeActions } from '@/components/journey/v2/learn/practice-actions'
 import type { JourneyTree } from '@/lib/journeys/tree'
@@ -75,6 +75,22 @@ function unlockLabel(d: Date | null): string {
   if (days <= 0) return 'Unlocking now'
   if (days === 1) return 'Unlocks tomorrow'
   return `Unlocks in ${days} days`
+}
+
+// The undo affordance for a checked-off lesson. Deliberately QUIET: a link-weight control beside
+// the primary action, never a button competing with "Continue". Undoing is a correction, not a
+// thing the player should invite — the loud control stays the one that moves a member forward.
+function UndoCheckOff({ onUndo, pending }: { onUndo: () => void; pending: boolean }) {
+  return (
+    <button
+      type="button"
+      onClick={onUndo}
+      disabled={pending}
+      className="text-body-sm font-medium text-muted underline-offset-2 transition-colors hover:text-text hover:underline disabled:opacity-60"
+    >
+      {pending ? 'Saving…' : 'Mark not done'}
+    </button>
+  )
 }
 
 // An interactive knowledge-check: pick an option → instant feedback + retry. Low-stakes by design
@@ -251,6 +267,17 @@ export function LearnPlayer({
     setMobileToc(false)
     const ph = phaseOfLesson.get(id)
     if (ph) setOpenPhases((prev) => (prev.has(ph) ? prev : new Set(prev).add(ph)))
+  }
+
+  // Undo a check-off (SCAN-502). Nothing is clawed back — see the action's header: milestone Gems,
+  // trophies and extra credit are once-ever, so reversing them would make correcting a mis-tap cost
+  // a member more than never mis-tapping. This puts the tick and the progress bar back, no more.
+  function undoComplete() {
+    if (!selectedId) return
+    start(async () => {
+      const res = await uncompleteJourneyLessonAction(slug, selectedId)
+      if (!isError(res)) router.refresh()
+    })
   }
 
   function complete() {
@@ -560,11 +587,17 @@ export function LearnPlayer({
                         <Lock className="h-4 w-4" /> {unlockLabel(phaseLock.get(phaseOfLesson.get(nextId) ?? '')?.unlockAt ?? null)}
                       </span>
                     ) : nextId ? (
-                      <Button type="button" onClick={() => goTo(nextId)}>
-                        Continue <ChevronRight className="h-4 w-4" />
-                      </Button>
+                      <div className="flex items-center gap-3">
+                        <UndoCheckOff onUndo={undoComplete} pending={pending} />
+                        <Button type="button" onClick={() => goTo(nextId)}>
+                          Continue <ChevronRight className="h-4 w-4" />
+                        </Button>
+                      </div>
                     ) : (
-                      <span className="inline-flex items-center gap-1 text-body-sm font-semibold text-success"><Check className="h-4 w-4" /> Completed</span>
+                      <div className="flex items-center gap-3">
+                        <UndoCheckOff onUndo={undoComplete} pending={pending} />
+                        <span className="inline-flex items-center gap-1 text-body-sm font-semibold text-success"><Check className="h-4 w-4" /> Completed</span>
+                      </div>
                     )
                   ) : gateOnLog && !forceContinue ? (
                     // Grey until the practice is logged (#7). A first click reveals the escape hatch.
