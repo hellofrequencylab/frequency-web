@@ -161,7 +161,7 @@ export function EventCohostChooser({ eventId, slug }: { eventId: string; slug: s
                 {c.handle && <p className="truncate text-2xs text-muted">@{c.handle}</p>}
               </div>
               <span className="shrink-0 rounded-pill bg-surface-elevated px-1.5 py-0.5 text-2xs font-medium text-muted">
-                {c.status === 'accepted' ? 'Cohost' : 'Invited'}
+                {c.status === 'accepted' ? 'Co Host' : 'Invited'}
               </span>
               <button
                 type="button"

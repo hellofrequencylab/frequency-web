@@ -50,8 +50,10 @@
 // before every build, and repairing it is what that step is FOR. So the worst case of a wrong
 // deletion here is a slower install on the next build, not a build that does not finish.
 //
-// This module only FINDS. Deleting is the caller's decision, and check-cache-budget.mjs takes it
-// only when the floor arm is already over budget and about to fail the build anyway.
+// This module only FINDS. Deleting is the caller's decision: check-cache-budget.mjs prunes
+// found orphans unconditionally on every non---warn-only run (see its orphansPruned block —
+// "it runs unconditionally rather than only when over the floor"), because a store orphan is
+// pure dead weight whichever side of the budget the cache is on.
 // ─────────────────────────────────────────────────────────────────────────────
 import { readdirSync, readlinkSync, existsSync } from 'node:fs'
 import path from 'node:path'

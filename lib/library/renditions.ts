@@ -1,6 +1,8 @@
-// The Loom — rendition + crop-frame presets. Pure config (no IO), shared by the ingest
-// pipeline, the on-the-fly transform resolver, and the Filerobot editor. Defining these in
-// one place keeps "one master, many renditions" consistent everywhere. See docs/LIBRARY.md.
+// The Loom — rendition + crop-frame presets. Pure config (no IO). STAGED, not yet consumed:
+// the ingest pipeline, transform resolver, and editor that will read these land with Loom
+// D2/D3 (PROG-D2/PROG-D3); today the only importer is the types test, which pins the preset
+// shape so those phases inherit it unchanged. Defining these in one place keeps "one master,
+// many renditions" consistent everywhere. See docs/LIBRARY.md.
 
 import type { LibraryRenditionKind } from './types'
 

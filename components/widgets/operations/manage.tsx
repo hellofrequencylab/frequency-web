@@ -58,7 +58,7 @@ export async function OperationsManage() {
 
   const cards: ManageCard[] = [
     { label: 'Menu manager', desc: 'Order and hide the one shared nav menu; set who reaches each item.', stat: '', statLabel: 'Manage', href: '/admin/menu', Icon: Menu },
-    { label: 'Pages', desc: 'The page library: open any page to edit it in place. Marketing + beta induction too.', stat: `${c.pages}`, statLabel: 'pages', href: '/pages', Icon: FileText },
+    { label: 'Pages', desc: 'The page library: open any page to edit it in place. Marketing + Funnels too.', stat: `${c.pages}`, statLabel: 'pages', href: '/pages', Icon: FileText },
     { label: 'Payments', desc: 'Turn host payouts (tips, tickets, sales) on or off.', stat: '', statLabel: 'Manage', href: '/admin/payments', Icon: CreditCard },
     { label: 'Theme Studio', desc: 'Brand themes, palettes, and seasonal looks. Edit and assign without code.', stat: `${c.themes}`, statLabel: 'themes', href: '/admin/appearance', Icon: Palette },
     { label: 'Spaces', desc: 'White-label tenants: each Space its theme, brand name, accent, and logo.', stat: `${c.spaces}`, statLabel: 'spaces', href: '/admin/spaces', Icon: Building2 },

@@ -225,5 +225,6 @@ export function MyFrequencyMenu({
   )
 }
 
-// Re-exported so the rail can draw the same glyphs without a second import list.
+// Exported for reuse alongside the menu rows (nothing imports it today — the rail draws its
+// own glyphs — but the set stays beside the rows it describes so the two can't drift).
 export const MY_FREQUENCY_ICONS = { UserRound, Building2, Users, NotebookPen, ContactRound }

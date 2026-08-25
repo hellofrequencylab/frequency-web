@@ -82,9 +82,10 @@ const SurfaceSummaryCard = dynamic(() =>
 
 // The SETTINGS CONTENT — the registry-selected manager modules (Page settings, Circle Quest, page
 // content) plus the operator "Page" group (Layout / SEO / Status), resolved from the pathname.
-// Extracted from SettingsDrawer so BOTH the desktop slide-over (SettingsDrawer) and the mobile
-// full-screen sheet (MobileSettingsSheet) render the SAME content from one source. Each surface
-// owns only its own chrome (header / positioning); the body is this hook.
+// Originally extracted so the desktop drawer and mobile sheet could share one body; those two
+// surfaces were unified into the AdminBar (ADMIN-RAIL Phase 2), whose body
+// (components/layout/admin-bar/admin-bar-body.tsx) is now the consumer. The surface owns only
+// its chrome (header / positioning); the content model is this hook.
 //
 // Inline-first rail (ADR-514): this hook returns a STRUCTURED model — the modules grouped into the
 // 9-category spine (lib/admin/modules/spine) as a single FLAT list of `sections` the AdminBar body
@@ -156,9 +157,10 @@ function layoutBlock(noun: 'circle' | 'event' | 'practice'): ReactNode {
   )
 }
 
-/** True at the lg breakpoint (>= 1024px). Lets the desktop SettingsDrawer and the
- *  MobileSettingsSheet each render at only ONE breakpoint, so the settings modules never
- *  double-mount in a hidden twin. SSR-safe: starts false, resolves on mount. */
+/** True at the lg breakpoint (>= 1024px). Lets a caller render breakpoint-specific chrome
+ *  exactly once (the old drawer/sheet pair this guarded is now the unified AdminBar), so
+ *  settings modules never double-mount in a hidden twin. SSR-safe: starts false, resolves
+ *  on mount. */
 export function useIsDesktop(): boolean {
   const [isDesktop, setIsDesktop] = useState(false)
   useEffect(() => {
