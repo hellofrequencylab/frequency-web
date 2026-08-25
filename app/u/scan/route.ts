@@ -45,7 +45,7 @@ export async function GET(request: Request) {
 
 function page(inner: string): string {
   return `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1"><title>Frequency</title></head>
+<meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>Frequency</title></head>
 <body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;background:#f5f5f5;margin:0;padding:48px 16px;color:#1a1a1a;">
 <div style="max-width:480px;margin:0 auto;background:#fff;border-radius:12px;padding:32px;">${inner}</div>
 </body></html>`

@@ -4521,6 +4521,114 @@
       }
     },
     {
+      "id": "SCAN-002",
+      "title": "NAMING.md still says the lotus has no header icon; the shipped shell has one",
+      "status": "done",
+      "lane": "hygiene",
+      "size": "XS",
+      "source": {
+        "file": "docs/NAMING.md",
+        "ref": "§Zap button / On Air"
+      },
+      "detail": "MS25 Phase 0. NAMING.md's On Air bullet ends '(no header icon)', but components/layout/app-shell.tsx ships MindlessLaunch() in the header, pinned desktop-only by owner directive (header-fit.test.ts:157), and the help article already describes the button. Code wins; the canon is the odd one out. File is train-claimed today.",
+      "verify": {
+        "kind": "grep-absent",
+        "pattern": "no header icon",
+        "paths": [
+          "docs/NAMING.md"
+        ],
+        "note": "Passes when the bullet stops denying the shipped desktop lotus launcher."
+      }
+    },
+    {
+      "id": "SCAN-201",
+      "title": "Podcast Shows share the generic brand card and emit no episode schema",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "app/(main)/spaces/[slug]/podcasts/[showSlug]/page.tsx",
+        "ref": "metadata + JSON-LD block"
+      },
+      "detail": "MS25 Phase 2. The Show page sets openGraph but no twitter block (metadata merges per top-level key, so X/Slack shares show 'Frequency - Community Collective' instead of the Show) and no og:url; and podcastEpisodeSchema (lib/jsonld.ts:1132) is built, documented and called nowhere while the page renders every episode with title/date/duration/enclosure already loaded. Mirror OG into twitter, add the url, emit episode nodes (cap ~10). File was train-claimed at scan time.",
+      "verify": {
+        "kind": "grep-present",
+        "pattern": "podcastEpisodeSchema",
+        "paths": [
+          "app/(main)/spaces/[slug]/podcasts/[showSlug]/page.tsx"
+        ],
+        "note": "Passes when the Show page emits the episode nodes it already has the data for (the twitter block rides the same edit)."
+      }
+    },
+    {
+      "id": "SCAN-202",
+      "title": "Organizer and city hubs fall back to the generic OG card",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "docs/META-SCAN-STATUS.md",
+        "ref": "meta-scan 2026-08-25, SEO sweep"
+      },
+      "detail": "MS25 Phase 2. Per-entity OG images exist for events, spaces, circles, journeys, partners, practices, pillars and spotlight - but /discover/events/organizer/[handle] and the city hubs (cities/places) share the generic brand card. New opengraph-image.tsx files beside the (train-claimed) pages; reuse the existing card components. Watch check:og-trace headroom (67/100 sharp functions). CLOSED 2026-08-25. Both hubs render their own card: app/discover/events/organizer/[handle]/opengraph-image.tsx and app/discover/cities/[citySlug]/opengraph-image.tsx, each composed from the existing card primitives rather than a new one. check:og-trace headroom is unchanged at 67/100 sharp functions: both routes render text over the brand ground and never touch sharp.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const want=['app/discover/events/organizer/[handle]/opengraph-image.tsx','app/discover/cities/[citySlug]/opengraph-image.tsx'];const missing=want.filter(f=>!fs.existsSync(f));if(missing.length){console.error('no per-entity card: '+missing.join(', '));process.exit(1)}\"",
+        "note": "Passes when both hub classes render their own card."
+      }
+    },
+    {
+      "id": "SCAN-203",
+      "title": "The four commerce sitemap reads cap at 100 rows with no paging",
+      "status": "open",
+      "lane": "hygiene",
+      "size": "XS",
+      "source": {
+        "file": "app/sitemap.ts",
+        "ref": "lines 246-253"
+      },
+      "detail": "MS25 Phase 2. store/market/housing/classifieds sitemap sections read limit:100 (circles 200) with no follow-up paging - fine today, silent overflow at scale. Either page like listPublicShowsBySpace (documented at sitemap.ts:385-390) or record the cap as deliberate with a threshold that reopens it.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Read 2026-08-25: the four .limit(100) reads and circles .limit(200) have no pagination; current active-listing counts are far below the caps (production read: 0 orders, single-digit listings).",
+        "checked": "2026-08-25"
+      }
+    },
+    {
+      "id": "SCAN-204",
+      "title": "The last member-visible URL carrying a retired noun: /help/sharing/broadcasts",
+      "status": "done",
+      "lane": "hygiene",
+      "size": "XS",
+      "source": {
+        "file": "content/help/sharing/dispatches.md",
+        "ref": "the slug, renamed from broadcasts.md"
+      },
+      "detail": "MS25 Phase 2. The article body is fully on-canon (Dispatches), but the slug still says broadcasts - and ADR-1020's own reasoning ('a URL is not internal') is why /broadcast became /nearby. Rename to dispatches.md with a redirect, or record the slug as a deliberate survivor in NAMING §Dispatch and re-point this probe. CLOSED 2026-08-25 by the rename, not by a ruling: content/help/sharing/broadcasts.md -> dispatches.md, with a permanent redirect in next.config.ts so the old URL keeps resolving. PRODUCTION FOLLOW-UP, tracked on SCAN-205: the help_chunks row for this article still carries the literal /help/sharing/broadcasts key and needs re-keying — the redirect covers a visitor, it does not rewrite a stored retrieval key.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');if(!fs.existsSync('content/help/sharing/dispatches.md')){console.error('slug still carries the retired noun');process.exit(1)}\"",
+        "note": "Passes on the rename; if the owner rules it a survivor, the ruling re-points this probe at the NAMING entry."
+      }
+    },
+    {
+      "id": "SCAN-205",
+      "title": "The Organization schema node cites no social profiles because none exist to cite",
+      "status": "open",
+      "lane": "owner",
+      "size": "XS",
+      "source": {
+        "file": "app/layout.tsx",
+        "ref": "organizationSchema call, line ~168"
+      },
+      "detail": "MS25 Phase 2. organizationSchema supports sameAs and the root layout passes none - correctly, because no official profile URL exists anywhere in the repo. When official Instagram/YouTube/etc. URLs exist, one array literal wires them; a real citation-consistency signal for answer engines. No code unblocks this - it needs the URLs.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Grep 2026-08-25: zero instagram/facebook/x.com/youtube/linkedin URLs in site chrome or lib/site.ts; organizationSchema's sameAs parameter unused.",
+        "checked": "2026-08-25"
+      }
+    },
+    {
       "id": "SCAN-003",
       "title": "content-cascade's key-count comment counts a '/' ancestor the code never inserts",
       "status": "done",

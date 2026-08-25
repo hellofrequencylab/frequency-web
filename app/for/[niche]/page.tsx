@@ -60,6 +60,9 @@ export default async function FunnelDoorPage({ params }: { params: Promise<{ nic
             description: config.hero.subhead,
             priceCents,
             currency: 'usd',
+            // A founding MONTHLY rate: without the period code the Offer reads as a one-off
+            // purchase — the exact lie productSchema's own doc warns about. /pricing passes it.
+            billingPeriodCode: 'MON',
             path,
             sellerName: 'Frequency',
           }),
