@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react'
 import { approveEventPlacement, declineEventPlacement } from '@/app/(main)/events/placement-actions'
 import { isError } from '@/lib/action-result'
+import { Button } from '@/components/ui/button'
 
 // Approve / decline buttons for one pending event-placement request. The steward's decision runs a
 // server action that sets (or leaves) the event's placement and notifies the requester.
@@ -39,14 +40,14 @@ export function PlacementApprovalControls({ requestId }: { requestId: string }) 
       >
         Decline
       </button>
-      <button
+      <Button
+        size="sm"
         type="button"
         onClick={() => act('approve')}
         disabled={pending}
-        className="rounded-control bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
       >
         {pending ? 'Saving…' : 'Approve'}
-      </button>
+      </Button>
     </div>
   )
 }

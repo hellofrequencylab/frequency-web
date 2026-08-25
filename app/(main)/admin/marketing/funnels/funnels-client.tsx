@@ -14,6 +14,7 @@ import { StatusChip, type StatusTone } from '@/components/admin/status'
 import { DangerModal } from '@/components/admin/danger-modal'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Input } from '@/components/ui/field'
+import { Button } from '@/components/ui/button'
 
 const STATUS_TONE: Record<string, StatusTone> = {
   active: 'success',
@@ -30,12 +31,12 @@ export function FunnelsManager({ campaigns }: { campaigns: Campaign[] }) {
         <div className="flex items-center justify-between border-b border-border px-4 py-3">
           <h2 className="text-body-sm font-bold text-text">New campaign</h2>
           {!creating && (
-            <button
+            <Button
+              size="sm"
               onClick={() => setCreating(true)}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover"
             >
               <Plus className="h-3.5 w-3.5" /> New campaign
-            </button>
+            </Button>
           )}
         </div>
         {creating && (
@@ -159,13 +160,13 @@ function CampaignForm({ onDone, onCancel }: { onDone: () => void; onCancel: () =
       </div>
       {error && <p className="text-meta text-danger">{error}</p>}
       <div className="flex items-center gap-2">
-        <button
+        <Button
+          size="sm"
           onClick={submit}
           disabled={pending}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
         >
           {pending ? 'Creating…' : 'Create campaign'}
-        </button>
+        </Button>
         <button onClick={onCancel} className="rounded-lg px-3 py-1.5 text-meta font-semibold text-muted hover:text-text">
           Cancel
         </button>

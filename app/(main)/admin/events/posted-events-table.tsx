@@ -12,7 +12,7 @@
 //     clawback + poster notification fire in the lib.
 // All mutations re-verify janitor on the server; `canManage` only hides chrome.
 
-import { buttonClasses } from '@/components/ui/button'
+import { buttonClasses, Button } from '@/components/ui/button'
 import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -317,14 +317,14 @@ function AssignHostPanel({
       )}
       {selected && (
         <div className="flex flex-wrap items-center gap-2">
-          <button
+          <Button
+            size="sm"
             type="button"
             onClick={handleAssign}
             disabled={pending}
-            className="rounded-lg bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
           >
             {pending ? 'Assigning…' : `Make ${selected.displayName ?? 'this member'} the host`}
-          </button>
+          </Button>
           <button type="button" onClick={() => setSelected(null)} className={actionBtn}>
             Pick someone else
           </button>
