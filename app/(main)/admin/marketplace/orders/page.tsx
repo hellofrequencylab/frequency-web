@@ -59,7 +59,7 @@ export default async function MarketplaceOrdersPage() {
     <AdminTemplate
       title="Orders"
       eyebrow="Marketplace"
-      description="Every commerce order across the Shop, makers, and Space storefronts. Refund a paid order from here."
+      description="Every commerce order across the Frequency Store, the Market, and Space storefronts. Refund a paid order from here."
       back={{ href: '/admin/marketplace', label: 'Marketplace' }}
       width="wide"
     >

@@ -19,15 +19,28 @@ import { getMyOrbit } from '@/lib/connections/resonance'
 import { buildScopeContextResolver } from '@/lib/feed/post-origin'
 import { PostCard, type FeedPost, type RawPost } from './post-card'
 import { upcomingEventFloor } from '@/lib/events/upcoming-floor'
+import { dayInZone, HOME_TZ } from '@/lib/time/zone'
 import { EmptyState } from '@/components/ui/empty-state'
 
 // Day bucketing for the Story lens (matches /journal's grouping voice).
+//
+// The bucket is the COMMUNITY's calendar day (HOME_TZ), never the server's. This renders in a
+// Server Component, and on Vercel the server clock is UTC — so keying off the server's day filed
+// everything posted after ~5pm Pacific under "Yesterday", and shifted every weekday label with it.
 function dayLabel(iso: string): string {
-  const startOfDay = (x: Date) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime()
-  const diff = Math.round((startOfDay(new Date()) - startOfDay(new Date(iso))) / 86_400_000)
-  if (diff === 0) return 'Today'
-  if (diff === 1) return 'Yesterday'
-  return new Date(iso).toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })
+  const day = dayInZone(new Date(iso), HOME_TZ)
+  const today = dayInZone(new Date(), HOME_TZ)
+  // Yesterday derived from today's own day string via noon-anchored UTC arithmetic, so a DST
+  // change can never make "24 hours ago" land on the wrong calendar day.
+  const yesterday = new Date(Date.parse(`${today}T12:00:00Z`) - 86_400_000).toISOString().slice(0, 10)
+  if (day === today) return 'Today'
+  if (day === yesterday) return 'Yesterday'
+  return new Date(iso).toLocaleDateString(undefined, {
+    timeZone: HOME_TZ,
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+  })
 }
 
 interface DispatchItem {

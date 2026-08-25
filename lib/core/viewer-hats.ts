@@ -10,6 +10,7 @@
 // matching controls. When the entitlement tier (P2) and personas (P3) tables land, ONLY
 // this function changes — every wired surface flips automatically.
 
+import { cache } from 'react'
 import { getCallerProfile, getMyProfileId } from '@/lib/auth'
 import { getStaffMember } from '@/lib/staff'
 import { getActivePersonas } from '@/lib/personas'
@@ -48,8 +49,14 @@ function scopeLevel(type: SurfaceScope['type']): CommunityLevel {
 
 /** Resolve the live caller's hats. Logged-out ⇒ a visitor. The matrix's community
  *  standing is sourced from the derived `community_level` (ADR-218/221) via
- *  `communityStanding`, which never lowers it below the legacy `community_role`. */
-export async function getViewerHats(): Promise<Hats> {
+ *  `communityStanding`, which never lowers it below the legacy `community_role`.
+ *
+ *  Request-cached (React cache, same as resolveCaller / load-capabilities' viewers): a
+ *  member page resolves hats 3-4 times per request — the (main) layout, a scope layout,
+ *  surfaceAccess and isPaidViewer — and each uncached call re-ran the team_members +
+ *  profile_personas reads. The result is viewer-scoped and stable within a request, so
+ *  one resolution serves them all. */
+export const getViewerHats = cache(async (): Promise<Hats> => {
   const profile = await getCallerProfile()
   if (!profile) return { loggedIn: false }
 
@@ -68,7 +75,7 @@ export async function getViewerHats(): Promise<Hats> {
     personas,
     staff: staff?.role ?? null,
   }
-}
+})
 
 /**
  * The caller's access level on a surface — the matrix, resolved for the live viewer.

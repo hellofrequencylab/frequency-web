@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { ClaimButton } from '@/app/events/claim/[token]/claim-button'
 import { ClaimRequestCta } from './claim-request-cta'
 import { HostRequestCta } from './host-request-cta'
-import { listSpacesThatCanAskToHost } from '../host-transfer-actions'
+import { listSpacesThatCanAskToHost, type HostAskSpace } from '../host-transfer-actions'
 import { CalendarDays, MapPin, Check, Ticket, Clock, Zap, Video, Globe, LayoutDashboard, Settings } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { loadSeriesDates } from '@/lib/events/series-dates'
@@ -574,12 +574,12 @@ export default async function EventDetailPage({
     }
   }
 
-  // The RSVP roster, capacity/waitlist info, the hosting circle's public area, and
-  // the auth user are mutually independent (each depends only on event fields or the
-  // already-built supabase client) — resolve them concurrently.
+  // The RSVP roster, capacity/waitlist info, the hosting circle's public area, the
+  // auth user, and the active ticket tiers are mutually independent (each depends only on
+  // event fields or the already-built supabase client) — resolve them concurrently.
   const [{ data: rawRsvps }, capacityInfo, circleRow, {
     data: { user },
-  }] = await Promise.all([
+  }, { data: rawTiers }] = await Promise.all([
     admin
       .from('event_rsvps')
       .select('id, status, plus_ones, guest_name, approval_status, profile:profiles!profile_id ( id, display_name, handle, avatar_url )')
@@ -599,6 +599,19 @@ export default async function EventDetailPage({
           .then(({ data }) => data as { name: string; slug: string; latitude: number | null; longitude: number | null } | null)
       : Promise.resolve(null),
     supabase.auth.getUser(),
+    // ACTIVE TICKET TIERS (ADR-177 + tiers, EVENTS-SYSTEM §2.2). Keyed on `event.id` alone,
+    // which has been resolved since the first read — so it rides this wave instead of costing
+    // its own serial round trip after it. Nothing between here and the ticketing block below
+    // feeds this query; the rows are shaped and typed there, where they are read.
+    admin
+      .from('event_ticket_types')
+      .select(
+        'id, name, description, pricing_mode, price_cents, min_cents, suggested_cents, quantity, sold, member_only, space_members_only, space_tier_id, active, sort_order, created_at',
+      )
+      .eq('event_id', event.id)
+      .eq('active', true)
+      .order('sort_order', { ascending: true })
+      .order('created_at', { ascending: true }),
   ])
 
   const rsvps = (rawRsvps ?? []) as unknown as RSVPRow[]
@@ -717,15 +730,8 @@ export default async function EventDetailPage({
     space_members_only: boolean
     space_tier_id: string | null
   }
-  const { data: rawTiers } = await admin
-    .from('event_ticket_types')
-    .select(
-      'id, name, description, pricing_mode, price_cents, min_cents, suggested_cents, quantity, sold, member_only, space_members_only, space_tier_id, active, sort_order, created_at',
-    )
-    .eq('event_id', event.id)
-    .eq('active', true)
-    .order('sort_order', { ascending: true })
-    .order('created_at', { ascending: true })
+  // `rawTiers` was fetched in the RSVP wave above (it needs only `event.id`), so this block
+  // spends no round trip of its own.
   const tierRows = ((rawTiers ?? []) as unknown as (TierRow & { active: boolean })[]).filter(
     (t) => t.active,
   )
@@ -894,22 +900,9 @@ export default async function EventDetailPage({
   // For a recurring anchor whose start has passed, compute the next upcoming date so the
   // page surfaces "Next: ..." instead of looking like a one-off that already happened
   // (pure helper, lib/events/recurrence). Null when not recurring or the series has ended.
-  // The next real dates of this series, for the date rail under the header (ADR-897). Every
-  // occurrence keeps its own live page; the rail is how a member reaches the dates the browse index
-  // no longer lists separately. Fail-safe: [] on any error, and the rail renders nothing.
-  //
-  // How many dates it offers is the operator knob (/admin/events > Repeating events), read HERE and
-  // passed in rather than resolved inside loadSeriesDates: the surface owns the number, so it is
-  // read once per page and the fetch helper stays a helper. Zero configuration is
-  // DEFAULT_RAIL_DATES = 5, which is also what a failed settings read returns. The read is
-  // sequential because the limit sizes the query, and it is one request-cached settings row.
-  const { railDates } = await getSeriesDisplayConfig()
-  const seriesRailDates = await loadSeriesDates({
-    eventId: event.id,
-    parentEventId: event.parent_event_id,
-    recurrenceType: event.recurrence_type,
-    limit: railDates,
-  })
+  // (The series-date rail moved into the social wave below — see `seriesRailDates` there. It
+  // depends only on the event's own recurrence columns, which have been in hand since the first
+  // read, so it had no reason to hold the page open on its own.)
 
   const nextRecurrence =
     event.recurrence_type !== 'none' && isPast
@@ -994,6 +987,8 @@ export default async function EventDetailPage({
     { data: rawActivity },
     { data: rawDispatches },
     rawMediaRes,
+    seriesRailDates,
+    hostAskSpaces,
   ] =
     await Promise.all([
       canCheckIn && myProfileId
@@ -1027,6 +1022,38 @@ export default async function EventDetailPage({
             .order('created_at', { ascending: false })
             .limit(200)
         : Promise.resolve(null),
+      // The next real dates of this series, for the date rail under the header (ADR-897). Every
+      // occurrence keeps its own live page; the rail is how a member reaches the dates the browse
+      // index no longer lists separately. Fail-safe: [] on any error, and the rail renders nothing.
+      //
+      // How many dates it offers is the operator knob (/admin/events > Repeating events), read HERE
+      // and passed in rather than resolved inside loadSeriesDates: the surface owns the number, so
+      // it is read once per page and the fetch helper stays a helper. Zero configuration is
+      // DEFAULT_RAIL_DATES = 5, which is also what a failed settings read returns. The settings
+      // read still sizes the query, so the pair stays sequential WITH RESPECT TO EACH OTHER — but
+      // inside this wave, not in front of it, and getSeriesDisplayConfig is React-cache()d and
+      // already resolved by generateMetadata, so in practice only loadSeriesDates costs a trip.
+      (async () => {
+        const { railDates } = await getSeriesDisplayConfig()
+        return loadSeriesDates({
+          eventId: event.id,
+          parentEventId: event.parent_event_id,
+          recurrenceType: event.recurrence_type,
+          limit: railDates,
+        })
+      })(),
+      // The SPACE side of the ADR-911 host handshake: the Spaces this viewer could ask to host
+      // from. Resolved only for a signed-in viewer who does NOT manage the event — a manager has
+      // the rail's "Hand hosting to another Space" control (event-host-offer-field), and offering
+      // both would put the two sides of one handshake in one pair of hands. The loader mirrors
+      // `requestEventHost`'s own gate (runs the Space, active Business / Non Profit, not already
+      // the host, no money block, nothing pending), so the CTA below never offers an ask the
+      // action would refuse. Both gate inputs (`myProfileId`, `canManage`) were resolved well
+      // above this wave, and the loader needs nothing else — so it rides here instead of holding
+      // the page open on its own just before the return.
+      myProfileId && !canManage
+        ? listSpacesThatCanAskToHost(event.id)
+        : Promise.resolve([] as HostAskSpace[]),
     ])
 
   const alreadyCheckedIn = !!ciRes?.data
@@ -1690,13 +1717,8 @@ export default async function EventDetailPage({
     is_sold_out: capacityInfo.isFull || allTiersSoldOut,
   })
 
-  // The SPACE side of the ADR-911 host handshake: the Spaces this viewer could ask to host from.
-  // Resolved only for a signed-in viewer who does NOT manage the event — a manager has the rail's
-  // "Hand hosting to another Space" control (event-host-offer-field), and offering both would put
-  // the two sides of one handshake in one pair of hands. The loader mirrors `requestEventHost`'s
-  // own gate (runs the Space, active Business / Non Profit, not already the host, no money block,
-  // nothing pending), so the CTA below never offers an ask the action would refuse.
-  const hostAskSpaces = myProfileId && !canManage ? await listSpacesThatCanAskToHost(event.id) : []
+  // (`hostAskSpaces` — the ADR-911 host handshake's Space side — is resolved in the social wave
+  // above, under the same `myProfileId && !canManage` gate. See the comment there.)
 
   return (
     <EventDetailTemplate

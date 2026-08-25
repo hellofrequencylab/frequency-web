@@ -4198,6 +4198,185 @@
         "evidence": "Hand-add verified by eye against migration 20270325000000 (columns/nullability) on 2026-08-25. Not yet proven by a regen; regen after the migration is applied.",
         "checked": "2026-08-25"
       }
+    },
+    {
+      "id": "SCAN-102",
+      "title": "Four member surfaces bucket Today/Yesterday on the server's UTC day",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "docs/META-SCAN-STATUS.md",
+        "ref": "meta-scan 2026-08-25, correctness sweep"
+      },
+      "detail": "MS25 Phase 1. The feed Story lens (components/feed/feed-list.tsx), the Journal widget, the Vault ledger page and Vera's dispatches page all build their day buckets from startOfDay(new Date()) / toISOString().slice(0,10) in Server Components - from ~5pm PT everything logged that community day groups under Yesterday, with UTC-shifted weekday labels. Same LIVE-079 class; that row swept starts_at floors only, not day-label bucketing. Fix: bucket by dayInZone(date, HOME_TZ) equality and format labels with timeZone: HOME_TZ. SPLIT 2026-08-25: three of the four surfaces (feed story lens, Journal widget, Vault ledger) are pure display bugs and are fixed here. The fourth, /on-air/dispatches, reads a row KEY that is itself UTC-minted, so its real fix is SCAN-106; its label was pinned to UTC meanwhile.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const files=['components/feed/feed-list.tsx','components/widgets/journal/journal-entries.tsx','app/(main)/crew/store/ledger/page.tsx'];const missing=files.filter(f=>!fs.readFileSync(f,'utf8').includes('dayInZone'));if(missing.length){console.error('still on the server day: '+missing.join(', '));process.exit(1)}\"",
+        "note": "The three display-only surfaces derive their day buckets from the community zone. /on-air/dispatches is deliberately NOT in this probe: its key is UTC-minted upstream and is tracked by SCAN-106."
+      }
+    },
+    {
+      "id": "SCAN-301",
+      "title": "Event detail carries 3-6 avoidable serial round trips after its batched waves",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "app/(main)/events/[slug]/page.tsx",
+        "ref": "lines ~720, ~906, ~1699"
+      },
+      "detail": "MS25 Phase 3. On the highest-traffic entity page: the ticket-tiers read depends only on event.id but runs serially after the RSVP wave; loadSeriesDates is a serial query that could ride the social wave; listSpacesThatCanAskToHost runs serially for every signed-in non-manager and is itself 3-4 sequential stages. Fold (a) into the RSVP wave and (b)+(c) into the social wave. Theme-P5 touched this page's header region - re-verify line positions after the train. CLOSED 2026-08-25. All three fold into waves that already existed: the ticket-tiers read joins the RSVP wave (it depends only on event.id), and loadSeriesDates + listSpacesThatCanAskToHost join the social wave. Neither move changes WHO anything runs for — the host-ask loader keeps its `myProfileId && !canManage` gate, now as the ternary inside the wave.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const s=require('fs').readFileSync('app/(main)/events/[slug]/page.tsx','utf8');const serial=['loadSeriesDates','listSpacesThatCanAskToHost'].filter(n=>new RegExp('await\\\\\\\\s+'+n+'\\\\\\\\(').test(s));if(serial.length){console.error('back on its own await: '+serial.join(', '));process.exit(1)};if(!/data: rawTiers \\\\}\\\\] = await Promise.all\\\\(/.test(s)){console.error('ticket tiers no longer ride the RSVP wave');process.exit(1)}\"",
+        "note": "Fails if either read goes back on its own await, or if the tiers read leaves the RSVP wave. Measures the round trips, not the words in the title."
+      }
+    },
+    {
+      "id": "SCAN-302",
+      "title": "react-markdown ships in the client chunk of every feed-bearing route",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "components/feed/post-replies.tsx",
+        "ref": "line 1 -> post-body.tsx"
+      },
+      "detail": "MS25 Phase 3. post-card (RSC) renders PostReplies for every post; post-replies is 'use client' and statically imports PostBody -> react-markdown (+remark, ~35-45KB gz), so the chunk downloads on /feed and every circle/channel feed. The shell-weight gate measures the app shell, not route chunks - its documented blind spot. next/dynamic the markdown body inside replies, or pre-render reply bodies server-side. CLOSED 2026-08-25, and the re-test found the premise had already half-expired: post-card.tsx and post-body.tsx are Server Components, so react-markdown ships no client bytes through them, and post-replies.tsx — the one client module on the path — already mounts the body through next/dynamic. The CLASS is what stayed open, and SCAN-506 closes it.",
+      "verify": {
+        "kind": "grep-present",
+        "pattern": "next/dynamic",
+        "paths": [
+          "components/feed/post-replies.tsx"
+        ],
+        "note": "Passes when the markdown body loads lazily from the client seam (re-point if the fix instead server-renders reply bodies)."
+      }
+    },
+    {
+      "id": "SCAN-303",
+      "title": "/events loader: serial settings cluster + counting RSVPs by fetching every row",
+      "status": "open",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "app/(main)/events/index-data.ts",
+        "ref": "lines ~350-388, ~549-556"
+      },
+      "detail": "MS25 Phase 3. Four independent settings/flags reads run serially before the 5-query event wave (resolvePageContent, eventsListingHorizonDays, demo checks, series config) - one Promise.all. And rsvpCounts pulls every 'going' row for up to ~500 events to count in JS; a grouped count RPC (room_unread_counts' shape) reads one row per event. The RPC half needs a migration - frozen until the freeze lifts.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Read 2026-08-25: awaits at :350/:370/:382/:388 mutually independent; the :549 select fetches event_id rows with no limit and counts client-side at :593. RPC blocked on migration freeze.",
+        "checked": "2026-08-25"
+      }
+    },
+    {
+      "id": "SCAN-304",
+      "title": "The leaderboard Consistency widget fans out ~36 queries for 12 mates",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "components/widgets/leaderboard/leaderboard-consistency.tsx",
+        "ref": "lines 79-88"
+      },
+      "detail": "MS25 Phase 3. mateIds.map(getPracticeStreak) - each call resolves the member day (serial profiles read) then a 2-query wave, so 12 mates cost ~36 queries plus a follow-up profiles read per render. Batch: one profiles .in() for zones, one practice_logs .in() for the window, then derive per-mate in memory - derivePracticeStreak is already pure. CLOSED 2026-08-25. Two batched reads (one profiles .in() for zone + meta + name, one windowed practice_logs .in()) replace ~36 round trips, and the per-mate streak is DERIVED through the same pure functions the reader uses — memberDay, frozenDaysFrom, derivePracticeStreak, isResting — so the rules are called, not restated. The logs read is chunked (MATE_LOG_CHUNK) because PostgREST truncates at max_rows=1000 and practice_logs is unique on (profile_id, practice_id, logged_for), not on the day: one .in() over twelve mates x a 400-day window is not guaranteed to fit, and a truncated response drops the OLDEST rows, which is exactly where a streak walk ends. components/widgets/leaderboard/streak-nudge-wiring.test.ts pins both halves.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const strip=s=>s.replace(/\\/\\*[\\s\\S]*?\\*\\//g,'').replace(/([^:])\\/\\/.*$/gm,(m,a)=>a).replace(/^\\s*\\/\\/.*$/gm,'');const c=strip(fs.readFileSync('components/widgets/leaderboard/leaderboard-consistency.tsx','utf8'));const n=(c.match(/getPracticeStreak\\(/g)||[]).length;if(n!==1){console.error('expected exactly one getPracticeStreak call in code (the viewer own streak); found '+n);process.exit(1)}if(!c.includes('derivePracticeStreak(')){console.error('the mates are no longer derived from batched reads');process.exit(1)}if(!/\\.limit\\(MATE_LOG_ROW_BUDGET\\)/.test(c)){console.error('the batched practice_logs read lost its row budget, so it can truncate a mate window silently');process.exit(1)}\"",
+        "note": "Counts in CODE, after comments are stripped — the file explains at length what it replaced, and a probe that counted those sentences would fail on its own fix. The ORIGINAL probe forbade the string outright and was wrong in the direction that matters: the viewer own streak is a correct single read. Exactly one call is the honest count; derivePracticeStreak proves the mates went the batched way; the row budget proves the window cannot truncate into a shortened streak."
+      }
+    },
+    {
+      "id": "SCAN-305",
+      "title": "Opening a DM thread blocks its render on the mark-as-read write",
+      "status": "done",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "app/(main)/messages/[id]/page.tsx",
+        "ref": "lines 118-122"
+      },
+      "detail": "MS25 Phase 3. The conversation_participants last_read_at UPDATE sits between data assembly and JSX on every thread open. Move it behind next/server's after() (verify the exact API in node_modules/next/dist/docs first - this Next differs from training data). The sibling serial-await nits on /circles and /channels pages are folded here; both pages are train-claimed today, re-check after the merge window. CLOSED 2026-08-25. The last_read_at write moves behind after() from next/server (stable since v15.1.0 — verified in node_modules/next/dist/docs before use, per AGENTS.md), so the thread renders without waiting on it.",
+      "verify": {
+        "kind": "grep-present",
+        "pattern": "after\\(",
+        "paths": [
+          "app/(main)/messages/[id]/page.tsx"
+        ],
+        "note": "Passes when the write leaves the render's critical path."
+      }
+    },
+    {
+      "id": "SCAN-401",
+      "title": "Field errors are visual-only across both form systems",
+      "status": "done",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "components/studio/spark/field/field-control.tsx",
+        "ref": "line 119 (+ spark-shell, spark-offers, sampled hand forms)"
+      },
+      "detail": "MS25 Phase 4. The Studio kernel's describedBy carries the HINT only; errors render as bare styled text with no id association, no aria-invalid, no role='alert' - zero aria-invalid hits across components/studio. The sampled hand forms (event-form, new-room-compose, circle-settings) share the gap. One shared FieldError seam in the field primitive fixes both lanes at once: error id appended to describedBy, aria-invalid on the control, role='alert' on submit-level errors.",
+      "verify": {
+        "kind": "grep-present",
+        "pattern": "aria-invalid",
+        "paths": [
+          "components/studio/spark/field/field-control.tsx"
+        ],
+        "note": "Passes when the kernel's field control associates its error; the hand-form sweep rides the same seam."
+      }
+    },
+    {
+      "id": "SCAN-402",
+      "title": "Two hand-rolled overlays have no keyboard contract at all",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "app/(main)/admin/library/loom-grid.tsx",
+        "ref": "line ~691 (+ components/entity-blocks/controls/field-controls.tsx ~571)"
+      },
+      "detail": "MS25 Phase 4. The Loom asset drawer sets aria-modal with zero Escape handling and zero focus management; the icon-picker popover declares role='dialog' with backdrop-click-close only. Convert both to the Dialog primitive (the LIVE-089 pattern) or add Escape + initial focus + restore. The overlay-conversion lane on the train owns adjacent files - coordinate, don't duplicate.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const bad=['app/(main)/admin/library/loom-grid.tsx','components/entity-blocks/controls/field-controls.tsx'].filter(f=>{const s=fs.readFileSync(f,'utf8');return !(s.includes('Escape')||s.includes('@/components/ui/dialog'))});if(bad.length){console.error('no keyboard contract: '+bad.join(', '));process.exit(1)}\"",
+        "note": "Passes when both overlays either ride the Dialog primitive or handle Escape themselves."
+      }
+    },
+    {
+      "id": "SCAN-403",
+      "title": "Three member overlays handle Escape but never move focus in",
+      "status": "done",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "docs/META-SCAN-STATUS.md",
+        "ref": "meta-scan 2026-08-25, a11y sweep"
+      },
+      "detail": "MS25 Phase 4. trophy-celebration, event-gallery and the on-air session overlay each handle Escape but contain zero .focus()/autoFocus/inert - keyboard and screen-reader users stay focused behind the modal. Focus the dialog (or its close control) on open; restore on close.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const bad=['components/journey/v2/trophy-celebration.tsx','components/events/event-gallery.tsx','components/on-air/session.tsx'].filter(f=>{const s=fs.readFileSync(f,'utf8');return !(s.includes('useDialogFocusTrap')||s.includes('.focus(')||s.includes('autoFocus'))});if(bad.length){console.error('focus never moves in: '+bad.join(', '));process.exit(1)}\"",
+        "note": "Re-pointed 2026-08-25: the original probe grepped for a literal .focus( call, but the fix routes through the shared useDialogFocusTrap hook (the same one Dialog uses), which moves focus in and restores it on close. Grepping for the hand-rolled shape would have read a correct fix as unfixed."
+      }
+    },
+    {
+      "id": "SCAN-405",
+      "title": "Verify-then-add loading.tsx on the hot child routes that block above the shell",
+      "status": "open",
+      "lane": "hygiene",
+      "size": "XS",
+      "source": {
+        "file": "docs/META-SCAN-STATUS.md",
+        "ref": "meta-scan 2026-08-25, a11y/UX sweep"
+      },
+      "detail": "MS25 Phase 4. channels/[id], messages/r/[roomId], spaces + spaces/[slug], journeys/[slug] and drafts have no route-level loading.tsx. PAGE-FRAMEWORK §5 prefers per-section Suspense, so this is verify-FIRST: add a skeleton only where the page genuinely blocks above the shell; record the ones that already stream as fine.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "find inventory 2026-08-25: the six routes lack loading.tsx; per-section Suspense coverage not yet audited per-route (that audit is the work).",
+        "checked": "2026-08-25"
+      }
     }
   ]
 }
