@@ -1877,8 +1877,9 @@ export default function AppShell({
     setRailFolds({ ...folds, [side]: nextRailFold(folds[side], autoStrip) })
 
   // The shell-level admin bar (ADR-128, rebuilt; owner revision 2026-06-21; unified in ADMIN-RAIL
-  // Phase 2). The AdminBar owns open/persistence + the grab-handle resize + the `open-admin-bar` /
-  // `open-settings` events, and reports its live { open, width, resizing } up here. The shell sizes
+  // Phase 2). The AdminBar owns open/persistence + the grab-handle resize + the `open-admin-bar`
+  // event (the old `open-settings` event retired with the SettingsDrawer), and reports its live
+  // { open, width, resizing } up here. The shell sizes
   // the RAIL COLUMN to that width, so the bar slides over the rail at rest (covering it, nothing reflows) and,
   // as the grab handle widens it, the rail column grows and the CENTER CONTENT COMPRESSES to
   // match. It never spills past the content's right column (it is its own pushing column).
@@ -2525,8 +2526,8 @@ export default function AppShell({
                     <div id={RAIL_END_SENTINEL_ID} aria-hidden className="h-0" />
                   </aside>
                 )}
-                {/* The settings drawer slides over THIS column (absolute, full height) on the
-                    `open-settings` event, reporting its width up so the column sizes to match. */}
+                {/* The AdminBar slides over THIS column (absolute, full height) on the
+                    `open-admin-bar` event, reporting its width up so the column sizes to match. */}
                 <AdminBar onStateChange={setSettings} />
               </div>
             )}

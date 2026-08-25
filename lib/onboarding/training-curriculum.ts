@@ -57,7 +57,7 @@ export const TRAINING: Partial<Record<CommunityRole, TrainingDef>> = {
     steps: [
       { label: 'Run events', href: '/help/groups/events' },
       { label: 'Use channels', href: '/help/groups/channels' },
-      { label: 'Send a Dispatch', href: '/help/sharing/broadcasts' },
+      { label: 'Send a Dispatch', href: '/help/sharing/dispatches' },
       { label: 'Hubs & scope', href: '/help/groups/hubs' },
     ],
     reward: 25,
@@ -70,7 +70,7 @@ export const TRAINING: Partial<Record<CommunityRole, TrainingDef>> = {
       { label: 'Steward a hub', href: '/help/groups/hubs' },
       { label: 'Support your hosts', href: '/help/groups/events' },
       { label: 'Curate channels across circles', href: '/help/groups/channels' },
-      { label: 'Dispatch to the Hub', href: '/help/sharing/broadcasts' },
+      { label: 'Dispatch to the Hub', href: '/help/sharing/dispatches' },
     ],
     reward: 40,
   },
@@ -81,7 +81,7 @@ export const TRAINING: Partial<Record<CommunityRole, TrainingDef>> = {
     steps: [
       { label: 'Hold a nexus', href: '/help/groups/hubs' },
       { label: 'Grow and back your guides', href: '/help/groups/events' },
-      { label: 'Set the regional rhythm', href: '/help/sharing/broadcasts' },
+      { label: 'Set the regional rhythm', href: '/help/sharing/dispatches' },
       { label: 'Keep the standard', href: '/help/safety/reporting' },
     ],
     reward: 60,

@@ -209,20 +209,9 @@ export function BlockView({
   }
 }
 
-export function SpotlightBlocks({
-  blocks, stats, topFriends, cardStyle, headingFont,
-}: {
-  blocks: SpotlightBlock[]
-  stats: SpotlightStatsContext
-  topFriends: TopFriend[]
-  cardStyle?: CSSProperties
-  headingFont?: string
-}) {
-  return (
-    <div className="mt-6 space-y-4">
-      {blocks.map((block) => (
-        <BlockView key={block.id} block={block} stats={stats} topFriends={topFriends} cardStyle={cardStyle} headingFont={headingFont} />
-      ))}
-    </div>
-  )
-}
+// This file also exported `SpotlightBlocks`, a map() wrapper that rendered a whole block list in
+// one <div>. Nothing imported it (verified 2026-08-25, after the Spotlight Guestbook merge —
+// SCAN-501). Every consumer is a widget that renders exactly ONE block: the five member-profile
+// widgets (about, links, stats, topfriends, authored-group) each call `BlockView` directly so the
+// module grid owns the spacing, which is why the list wrapper never found a caller. Deleted, so
+// there stays ONE way to render a Spotlight block.

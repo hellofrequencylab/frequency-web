@@ -16,9 +16,7 @@ import {
   asCatalogItemKey,
   asSpacePlanKey,
   catalogPriceKey,
-  offersPeriod,
   type BillingInterval,
-  type BillingPeriod,
   type CatalogItemKey,
   type SpacePlanKey,
 } from './pricing-keys'
@@ -104,38 +102,17 @@ export async function createSpaceBillingPortal(spaceId: string): Promise<string 
   return session.url
 }
 
-/**
- * Create a subscription Checkout session for a Space owner to buy a plan; returns the URL, or null when
- * the plan isn't sellable / not synced / the space has no owner.
- *
- * ONE PLAN, ONE PRICE (ADR-880). This used to be its OWN checkout, billing the legacy
- * `<plan>_<period>` product that syncPricingProductsToStripe mints from `pricing_settings.plan.*`. That
- * map carries the BETA amount ($19 business monthly), and it has no cutover: after 2026-09-01 the
- * loadout checkout would charge $29 for Business while this path still charged $19 forever. Two live
- * prices for one plan is not a pricing policy, it is a bug with a URL.
- *
- * So this is now a thin ADAPTER over createSpaceLoadoutCheckout: the same catalog item, the same beta
- * auto-revert, the same grandfathered locked price for an existing founding subscriber, the same
- * metadata the webhook reconciles. The legacy `<plan>_<period>` Stripe prices stay synced and resolvable
- * (a grandfathered subscription still renews on its own price id); nothing NEW is ever sold at them.
- *
- * authz-delegated: caller-trusted operator/owner action authorizes the space; the delegate binds the
- * customer to the resolved space OWNER and stamps the space_id in metadata so the webhook reconciles.
- */
-export async function createSpacePlanCheckout(
-  spaceId: string,
-  plan: SpacePlan | string,
-  billingPeriod: BillingPeriod = 'monthly',
-): Promise<string | null> {
-  const planKey = asSpacePlanKey(plan)
-  if (!planKey) return null
-  if (!offersPeriod(planKey, billingPeriod)) return null // both business + nonprofit offer monthly + annual
-  // The legacy axis is monthly|annual; the catalog axis is month|year. One translation, here.
-  const interval: BillingInterval = billingPeriod === 'annual' ? 'year' : 'month'
-  return createSpaceLoadoutCheckout(spaceId, { plan: planKey, interval })
-}
-
 // ── PHASE B: the MULTI-ITEM loadout checkout (ADR-460, docs/PRICING-LADDER-PLAN.md §4/§5) ──────────
+// ONE PLAN, ONE PRICE (ADR-880), now structural. There used to be a second door here:
+// `createSpacePlanCheckout(spaceId, plan, 'monthly'|'annual')`, which billed the legacy
+// `<plan>_<period>` product syncPricingProductsToStripe mints from `pricing_settings.plan.*` — the
+// BETA amount, with no cutover, so after 2026-09-01 the same Business plan cost $19 through one
+// button and $29 through the other. ADR-880 made it a thin adapter over this function; nothing ever
+// called the adapter, so it is gone. This is the ONLY Space-plan checkout, which is a stronger
+// guarantee than a test that the two doors agree. The legacy `<plan>_<period>` Stripe prices stay
+// synced and resolvable (a grandfathered subscription still renews on its own price id); nothing NEW
+// is sold at them.
+//
 // A Space owner buys Pro as ONE subscription with MULTIPLE items: the Pro base plus one price item per
 // active add-on, with quantity items for Team + Nonprofit seats. Monthly or yearly is chosen by the
 // caller. The FOUNDING price is charged (the grandfathered rate); if the Space already holds a locked

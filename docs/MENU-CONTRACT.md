@@ -66,8 +66,9 @@ so a sixth lane or a repointed lane fails the build until it is registered:
   (`lib/admin/entity-console.ts`) → the same `appsForScope` the rail uses, rendered by the shared
   `EntityManageConsole` (`components/admin/modules/entity-manage-console.tsx`).
 - **HOW a body loads is a different axis from WHAT is in the menu** (ADR‑1066, ADR‑1074). The rail
-  resolves ids from the catalog and then mounts each inline body through `next/dynamic` — the 42
-  catalog modules in `components/admin/modules/module-map.tsx`, the registry itself via
+  resolves ids from the catalog and then mounts each inline body through `next/dynamic` — the
+  catalog modules in `components/admin/modules/module-map.tsx` (a count that grows with the catalog;
+  some ids compose several editors, so loaders outnumber map keys), the registry itself via
   `module-body.tsx`, and the five hand‑mounted `allExtraItems` bodies in `settings-panel.tsx`.
   `settings-panel.tsx` consults `module-ids.ts` (a `Set<string>`, no imports) to decide whether an id
   has a body at all, because that decision feeds the section count. None of that is a menu edit: no
