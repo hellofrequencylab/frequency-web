@@ -4273,7 +4273,7 @@
     {
       "id": "SCAN-101",
       "title": "The guest RSVP door closes ~7-8 hours early: wall-clock-as-UTC compared to now()",
-      "status": "open",
+      "status": "done",
       "lane": "live",
       "size": "S",
       "source": {
@@ -4282,9 +4282,9 @@
       },
       "detail": "MS25 Phase 1. capture_guest_rsvp gates on v_event.starts_at <= now(), but starts_at stores the event's WALL-CLOCK as UTC parts (lib/time/zone.ts convention): a 7pm PT event reads as 19:00Z, so from ~noon PT every guest submission is silently rejected while the anti-oracle receipt still says ok - the guest believes they RSVP'd. Members face no such gate. Fix is one SQL function change resolving the stored wall-clock through events.time_zone before comparing. BLOCKED on the migration freeze; apply the moment it lifts.",
       "verify": {
-        "kind": "manual",
-        "evidence": "Read 2026-08-25: the gate compares v_event.starts_at (wall-clock-as-UTC) to now() with no zone resolution; sibling member paths use eventOpenForRsvp (no time gate) and the day-floor helpers resolve through HOME_TZ. Migration drafted, unapplied (freeze).",
-        "checked": "2026-08-25"
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const f='supabase/migrations/20270328000000_guest_rsvp_zone_aware_gate.sql';if(!fs.existsSync(f)){console.error('the zone-aware gate migration is missing');process.exit(1)}const s=fs.readFileSync(f,'utf8');if(!/at time zone/.test(s)||!/pg_timezone_names/.test(s)){console.error('the gate does not resolve the event zone, or does not validate it');process.exit(1)}\"",
+        "note": "Measures the CONSEQUENCE: a migration exists that resolves the stored wall clock through the event's own zone AND validates the zone name (the unvalidated form raises on the anon door). Applied to production 2026-08-25 with the ledger reconciled to the filename; verified beforehand that zone-aware and naive comparisons agreed on all 20 future events and that zero rows carry an unknown zone."
       }
     },
     {
@@ -4580,7 +4580,7 @@
     {
       "id": "SCAN-403",
       "title": "Three member overlays handle Escape but never move focus in",
-      "status": "open",
+      "status": "done",
       "lane": "live",
       "size": "XS",
       "source": {
@@ -4590,14 +4590,14 @@
       "detail": "MS25 Phase 4. trophy-celebration, event-gallery and the on-air session overlay each handle Escape but contain zero .focus()/autoFocus/inert - keyboard and screen-reader users stay focused behind the modal. Focus the dialog (or its close control) on open; restore on close.",
       "verify": {
         "kind": "cmd",
-        "cmd": "node -e \"const fs=require('fs');const bad=['components/journey/v2/trophy-celebration.tsx','components/events/event-gallery.tsx','components/on-air/session.tsx'].filter(f=>{const s=fs.readFileSync(f,'utf8');return !(s.includes('.focus(')||s.includes('autoFocus'))});if(bad.length){console.error('focus never moves in: '+bad.join(', '));process.exit(1)}\"",
-        "note": "Passes when each overlay takes focus on open."
+        "cmd": "node -e \"const fs=require('fs');const bad=['components/journey/v2/trophy-celebration.tsx','components/events/event-gallery.tsx','components/on-air/session.tsx'].filter(f=>{const s=fs.readFileSync(f,'utf8');return !(s.includes('useDialogFocusTrap')||s.includes('.focus(')||s.includes('autoFocus'))});if(bad.length){console.error('focus never moves in: '+bad.join(', '));process.exit(1)}\"",
+        "note": "Re-pointed 2026-08-25: the original probe grepped for a literal .focus( call, but the fix routes through the shared useDialogFocusTrap hook (the same one Dialog uses), which moves focus in and restores it on close. Grepping for the hand-rolled shape would have read a correct fix as unfixed."
       }
     },
     {
       "id": "SCAN-404",
       "title": "~18 admin action sites return raw Postgres error strings to member/host UI",
-      "status": "open",
+      "status": "done",
       "lane": "live",
       "size": "S",
       "source": {

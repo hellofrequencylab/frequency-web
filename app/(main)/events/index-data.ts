@@ -354,11 +354,38 @@ export async function getEventsIndexData(params: EventsIndexParams): Promise<Eve
     }
   }
 
-  // Operator-editable page header (ADR-180) — falls back to the coded defaults.
-  const { title: pageTitle, description: pageDescription, heroImage, ctaLabel, ctaHref } =
-    await resolvePageContent('/events', CONTENT_FALLBACK)
-
   const nowDate = new Date()
+
+  // ── Settings + flags, fetched in ONE wave ──────────────────────────────────
+  // Four reads that between them cost four serial round trips in front of the event queries,
+  // and NOT ONE of them depends on another (or on anything above): the operator-editable header
+  // content, the listing horizon, the demo-mode pair, and the series display config. They are
+  // keyed on constants and on the viewer's cookie, so they resolve concurrently.
+  //
+  // `hideDemo` was `!(await demoModeEnabled()) || (await viewerHidesDemo())`, whose `||`
+  // short-circuited the second read away when demo mode was OFF. Evaluating both is free:
+  // viewerHidesDemo is a cookie read with no I/O and no side effects, and the boolean it feeds
+  // is identical either way.
+  const [
+    { title: pageTitle, description: pageDescription, heroImage, ctaLabel, ctaHref },
+    horizonDays,
+    demoOn,
+    viewerHidesDemoContent,
+    { cardsPerSeries },
+  ] = await Promise.all([
+    // Operator-editable page header (ADR-180) — falls back to the coded defaults.
+    resolvePageContent('/events', CONTENT_FALLBACK),
+    eventsListingHorizonDays(),
+    demoModeEnabled(),
+    viewerHidesDemo(),
+    // How many cards one repeating series may occupy here (ADR-897). Operator-tunable with no
+    // deploy (/admin/events > Repeating events); zero configuration is DEFAULT_CARDS_PER_SERIES = 3,
+    // and a failed settings read returns the same 3, so the knob can only ever show fewer
+    // duplicates, never an empty index. Read ONCE per surface, at the top of the loader, never
+    // per row.
+    getSeriesDisplayConfig(),
+  ])
+
   // THE LISTING HORIZON — operator-set, and UNCAPPED by default (owner ruling 2026-08-20).
   //
   // This was a hardcoded 60 days. A host published a gathering 64 days out, it never appeared here,
@@ -375,7 +402,6 @@ export async function getEventsIndexData(params: EventsIndexParams): Promise<Eve
   // set ever grows past that budget, the rows dropped are the FURTHEST out (each query is ordered
   // by starts_at ascending), which is the right tail to lose — raise SERIES_WIDE_READ deliberately
   // rather than reaching for a date ceiling again.
-  const horizonDays = await eventsListingHorizonDays()
   const listUntil =
     horizonDays > 0
       ? new Date(nowDate.getTime() + horizonDays * 24 * 60 * 60 * 1000).toISOString()
@@ -387,13 +413,7 @@ export async function getEventsIndexData(params: EventsIndexParams): Promise<Eve
   // not-yet-started events from every listing.
   const listableFrom = `${dayInZone(nowDate, HOME_TZ)}T00:00:00.000Z`
 
-  const hideDemo = !(await demoModeEnabled()) || (await viewerHidesDemo())
-
-  // How many cards one repeating series may occupy here (ADR-897). Operator-tunable with no deploy
-  // (/admin/events > Repeating events); zero configuration is DEFAULT_CARDS_PER_SERIES = 3, and a
-  // failed settings read returns the same 3, so the knob can only ever show fewer duplicates, never
-  // an empty index. Read ONCE per surface, at the top of the loader, never per row.
-  const { cardsPerSeries } = await getSeriesDisplayConfig()
+  const hideDemo = !demoOn || viewerHidesDemoContent
 
   // The columns we read for the card + facets. category / attendance_mode /
   // capacity / price_cents / cover_image_path are newer than the generated DB
