@@ -11,6 +11,9 @@ import { getPeopleSuggestions, type PersonSuggestion } from '@/lib/people-sugges
 import { getHiddenSuggestionIds } from '@/lib/feed/viewer-resonance'
 import { getMyMatchPrefs, getMatchPrefsFor } from './prefs'
 import { sunSign, signCompatibility } from '@/lib/astrology/signs'
+// Pure synastry over STORED charts (ADR-1138) — no ephemeris import; charts were
+// computed at save time by the settings action, never here.
+import { chartCompatibility } from '@/lib/astrology/synastry'
 
 export interface RomanceMatch extends PersonSuggestion {
   verified: boolean
@@ -70,18 +73,30 @@ export async function getRomanceMatches(viewerProfileId: string, limit = 4): Pro
   const verifiedMutual = mutual.filter((c) => verified.get(c.id) === true)
   if (verifiedMutual.length === 0) return { enabled: true, viewerVerified, people: [] }
 
-  const viewerSign = viewerPrefs.astrologyOptIn ? sunSign(viewerPrefs.birthData?.date) : null
+  const viewerAstro = viewerPrefs.astrologyOptIn
+  const viewerChart = viewerAstro ? viewerPrefs.natalChart : null
+  const viewerSign = viewerAstro ? sunSign(viewerPrefs.birthData?.date) : null
 
   const scored = verifiedMutual.map((c) => {
     let astroReason: string | null = null
     let astroScore = 0
-    if (viewerSign) {
+    if (viewerAstro) {
       const cp = prefs.get(c.id)
-      const candSign = cp?.astrologyOptIn ? sunSign(cp.birthData?.date) : null
-      if (candSign) {
-        const r = signCompatibility(viewerSign, candSign)
-        astroReason = r.reason
-        astroScore = r.score
+      if (cp?.astrologyOptIn) {
+        // Natal-first (ADR-1138): stored-chart synastry when both sides have a chart,
+        // else the shipped sun-sign compat. Both-sides opt-in gate unchanged.
+        if (viewerChart && cp.natalChart) {
+          const r = chartCompatibility(viewerChart, cp.natalChart)
+          astroReason = r.reason
+          astroScore = r.score
+        } else {
+          const candSign = sunSign(cp.birthData?.date)
+          if (viewerSign && candSign) {
+            const r = signCompatibility(viewerSign, candSign)
+            astroReason = r.reason
+            astroScore = r.score
+          }
+        }
       }
     }
     return { c, astroReason, astroScore, verified: verified.get(c.id) ?? false }

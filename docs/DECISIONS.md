@@ -29942,3 +29942,74 @@ which had also expired by the time anyone read it: two of its four sub-figures (
 row's own closing sentence warned about, in the paragraph directly beneath the numbers. The
 re-census is 2,004. **Measure through the instrument the gate uses, or the census expires faster
 than the sweep it is meant to plan.**
+
+## ADR-1138: Natal charts come from an in-process ephemeris, at save time, stored — never an API, never per-request (2026-08-25)
+
+**Status:** Accepted (owner ruling 2026-08-25) · **Touches:** `lib/astrology/*`, `lib/match/*`,
+`app/(main)/settings/connections/match-actions.ts`, migration `20270326000000` · **Extends:**
+[ADR-419](#adr-419) (sun-sign quiet signal), [ADR-861](#adr-861)/[ADR-863](#adr-863) (housing
+match RPCs), [ADR-414](#adr-414) (member_match_prefs reserves birth data)
+
+### The ruling and the census
+
+DEF-HOUS needed an ephemeris/compute decision before build. The owner ruled 2026-08-25: **charts
+are computed by an in-process JS ephemeris library, server-side at profile save, stored as chart
+data.** No external astrology API — no third party ever sees birth data, no network dependency in
+a save path, no per-request compute.
+
+The row's premises were re-tested first (ADR-1082) and both held: the sun-sign quiet-5% is shipped
+(`lib/astrology/signs.ts` + its SQL mirror `housing_astro_compat`, already gated on BOTH sides'
+`astrology_opt_in`), and both matching RPCs exist in production (`housing_match_candidates`,
+`housing_roommate_matches`, verified in the live catalog). `member_match_prefs.birth_data` was
+reserved by Phase 0 exactly for this.
+
+### The library, weighed before it was admitted
+
+**astronomy-engine 2.1.19** — MIT, pure JS, **zero dependencies, no native module, no WASM, no
+data files; 1.8 MB installed** (measured: 1,838,627 bytes, main bundle 421 KB). Accuracy ±1
+arcminute against JPL ephemerides, orders of magnitude beyond what a matching signal needs.
+Fixture tests pin it to known J2000 values (`chart.test.ts`); a wrong upgrade fails loudly.
+
+The weight is real risk only if it spreads (check:build-budget multiplies anything reachable from
+a shared module by every route). So the seam is narrow and MACHINE-PINNED: `lib/astrology/chart.ts`
+is the only module allowed to import the ephemeris, and chart.ts may only be imported by the
+profile-save action. `chart.test.ts` greps the tree for both directions and fails on a leak.
+Readers of stored charts import `chart-data.ts` (types + fail-safe parse) and `synastry.ts`
+(pure pairwise math) — neither touches the ephemeris.
+
+### Compute at save, read at match
+
+The save action computes a **date-only chart** (12:00 UTC; Sun/Moon/Mercury/Venus/Mars/Jupiter/
+Saturn, tropical longitudes + signs, versioned `{ v: 1, precision: 'date-only' }`) and stores it
+on `member_match_prefs.natal_chart`. Deterministic per date, so re-saving is idempotent. The
+precision is stamped on the chart and stated honestly in the code: the Moon is a midpoint estimate
+until a future timed chart (birth_data reserves time + place). Matching — the two housing RPCs and
+the romance lane — reads ONLY the stored chart: `housing_natal_compat` (SQL, mirroring
+`synastry.ts` exactly, the same discipline signs.ts already keeps) scores chart-to-chart synastry
+when both sides stored one, falling back to the shipped sun-sign compat. Blend weights unchanged:
+astrology stays the quiet 5%, and the fixture vectors are shared between the TS and SQL sides
+(9/9 reproduced by the SQL expression against production Postgres before authoring the migration).
+
+### Privacy posture
+
+Both-sides opt-in is unchanged and enforced where it always was — inside the RPCs
+(`me.astro_in is true and omp.astrology_opt_in is true`) and in the JS lanes. `natal_chart` is
+DERIVED data on a SENSITIVE-class owner-RLS table (read/write own row only, 20260821000000); no
+policy changes were needed and none were made. No RPC returns a chart, a birth date, or any
+per-body value — only the blended astro term inside a 0..1 match score, itself only a 5% factor.
+The fit-privacy rules of ADR-863 are untouched.
+
+### Ordering (ADR-1111)
+
+The save action writes the new column, so migration `20270326000000` must be **applied before the
+code merges** (a merge is a deploy). The migration header says so. Version 20270326000000 was
+assigned centrally (20270323–25 are taken by in-flight branches). Reads are fail-safe either way:
+missing column → `select *` returns no key → parse yields null → sun-sign fallback. No backfill:
+existing birth dates keep the sun-sign signal until their next save.
+
+### Sequenced, not shipped
+
+The alerts half of DEF-HOUS (Resonance match alerts — a notification-registry row + a job over the
+existing RPCs) is its own increment; the DEF-HOUS row now carries a probe that measures it (a
+`housing.match` event in `lib/notifications/registry.ts`) instead of a manual verdict. The feed's
+platonic strip deliberately keeps the sun-sign note (it decorates, it does not rank).

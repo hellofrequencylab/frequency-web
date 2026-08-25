@@ -1643,11 +1643,14 @@
         "file": "docs/MASTER-TODO.md",
         "ref": "Housing"
       },
-      "detail": "Natal-chart compatibility beyond the shipped sun-sign quiet-5%, as an opt-in both-sides factor — NEEDS AN EPHEMERIS/COMPUTE DECISION BEFORE BUILD. Alerts are the notification layer on matching RPCs that already exist.\n\n── UNPARKED 2026-08-20 (owner ruling): scheduled into the build-out; sequence in meta.slate. ── LANE CORRECTED 2026-08-24: this row was printing under the DEFERRED heading of `pnpm backlog` while meta.slate scheduled it, which is the working view contradicting the owner ruling it is meant to carry. The ids never moved; only the lane label was wrong.",
+      "detail": "Natal-chart compatibility beyond the shipped sun-sign quiet-5%, as an opt-in both-sides factor — NEEDS AN EPHEMERIS/COMPUTE DECISION BEFORE BUILD. Alerts are the notification layer on matching RPCs that already exist.\n\n── UNPARKED 2026-08-20 (owner ruling): scheduled into the build-out; sequence in meta.slate. ── LANE CORRECTED 2026-08-24: this row was printing under the DEFERRED heading of `pnpm backlog` while meta.slate scheduled it, which is the working view contradicting the owner ruling it is meant to carry. The ids never moved; only the lane label was wrong.\n\n── NATAL HALF SHIPPED 2026-08-25 (ADR-1138): the ephemeris/compute decision is RULED (in-process JS ephemeris astronomy-engine, computed server-side at profile save, stored on member_match_prefs.natal_chart; no external API, never per-request). Charts are date-only v1; both housing match RPCs and the romance lane score stored-chart synastry natal-first with the shipped sun-sign compat as fallback; both-sides opt-in and the quiet 5% weight unchanged. Migration 20270326000000 (apply before its code merges, ADR-1111). REMAINING SCOPE = the alerts half only: the notification layer on the existing match RPCs. The probe below measures that consequence (a housing.match event in the notification registry, ADR-627's one-row-per-type catalog); make it pass to close the row.",
       "verify": {
-        "kind": "manual",
-        "evidence": "Owner-deferred.",
-        "checked": "2026-08-17"
+        "kind": "grep-present",
+        "pattern": "'housing\\.match'",
+        "paths": [
+          "lib/notifications/registry.ts"
+        ],
+        "note": "The alerts half: alerts ship as a registry row (ADR-627) keyed housing.match, which the router then gates + sends. Passes only when that catalog row exists; the shipped natal half is proven by lib/astrology/chart.test.ts + synastry.test.ts in pnpm test, not by this probe."
       }
     },
     {
