@@ -138,8 +138,15 @@ $function$;
 
 -- PROVE IT, ON REAL ROWS, BOTH WAYS. A redaction that also blanked the visible events would be a
 -- regression rather than a fix, so both halves are asserted here rather than assumed.
+--
+-- ⚠️ AND THE POSITIVE HALF IS CONDITIONAL ON THERE BEING SUCH A ROW, which the first version was not.
+-- It required at least one non-hidden event to still publish its venue, so it aborted on an EMPTY
+-- database and `db-tests` — which replays every migration on a fresh one — went red. That is this
+-- file's own subject wearing the other hat: an assertion that cannot tell "there is nothing to see"
+-- from "it is broken". The NEGATIVE half needs no such guard: zero leaked rows is the correct verdict
+-- on an empty table and on a healthy one alike.
 do $$
-declare v_leaked int; v_shown int;
+declare v_leaked int; v_shown int; v_candidates int;
 begin
   select count(*) into v_leaked
     from public.public_calendar_feed() f
@@ -149,11 +156,17 @@ begin
     raise exception 'the public feed still publishes the venue for % hidden-address event(s)', v_leaked;
   end if;
 
+  select count(*) into v_candidates
+    from public.public_calendar_feed() f
+    join public.events e on e.id = f.id
+   where not e.hide_address and e.location is not null;
+
   select count(*) into v_shown
     from public.public_calendar_feed() f
     join public.events e on e.id = f.id
    where not e.hide_address and e.location is not null and f.location = e.location;
-  if v_shown = 0 then
+
+  if v_candidates > 0 and v_shown = 0 then
     raise exception 'the public feed stopped publishing the venue for events that never hid it, aborting';
   end if;
 end $$;

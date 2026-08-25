@@ -73,10 +73,22 @@ revoke select (
 
 -- PROVE IT, IN THE SAME TRANSACTION, BOTH WAYS. A revoke that silently broke the public events hub
 -- would be a worse outcome than the leak, so the positive control runs first.
+--
+-- ⚠️ AND THE CONTROL IS CONDITIONAL ON THERE BEING ROWS TO FIND, which the first version was not —
+-- it required the read to return at least one row, so it aborted on an EMPTY database and `db-tests`
+-- (which replays every migration on a fresh one) went red. That is the same defect this whole file
+-- is about, wearing the other hat: an assertion that cannot tell "nothing is there" from "I am not
+-- allowed to look". The privilege half is exercised either way and needs no rows — if `title` or
+-- `visibility` had been revoked by mistake, the SELECT below raises 42501 and takes the transaction
+-- with it. Only the "and it still returns something" half needs a populated table.
 do $$
-declare v_rows int;
+declare v_total int; v_rows int;
 begin
-  -- POSITIVE: the real /discover query, as anon, must still return rows.
+  select count(*) into v_total
+    from public.events
+   where visibility = 'public' and status = 'published' and is_cancelled = false;
+
+  -- POSITIVE: the real /discover projection, AS ANON. Running at all is the privilege proof.
   set local role anon;
   select count(*) into v_rows
     from (
@@ -86,10 +98,11 @@ begin
         from public.events
        where visibility = 'public' and status = 'published' and is_cancelled = false
     ) q;
-  if v_rows = 0 then
+  reset role;
+
+  if v_total > 0 and v_rows = 0 then
     raise exception 'the public events read returned nothing after the revoke, aborting';
   end if;
-  reset role;
 end $$;
 
 do $$
