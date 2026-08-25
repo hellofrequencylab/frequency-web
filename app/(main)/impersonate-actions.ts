@@ -83,6 +83,9 @@ export async function actAsMember(targetProfileId: string): Promise<void> {
   redirect('/feed')
 }
 
+// authz-ok: gated by the httpOnly IMPERSONATION_COOKIE stash (readImpersonation) — only a browser
+// in which a verified janitor started act-as can hold it, and without it this redirects straight
+// out. The only writes are restoring the janitor's OWN stashed session and the audit row.
 /** Stop acting as a member: restore the janitor's stashed session and clear the cookie. */
 export async function stopActingAsMember(): Promise<void> {
   const stash = await readImpersonation()

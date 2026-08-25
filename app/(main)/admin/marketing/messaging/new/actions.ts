@@ -113,6 +113,10 @@ async function insertManualCampaignDraft(
   return (data as { id: string }).id
 }
 
+// authz-ok: every branch gates, which the branch-position rule (R2) cannot see — the Vera path
+// and the manual campaign path both open with writerGate() (enforced via `if (!gate.ok) return`),
+// and the manual funnel path delegates to createFunnel, which self-gates with requireMarketer
+// inside app/(main)/admin/growth/funnels/actions.ts. No path touches the admin client ungated.
 /** Build the object for a goal and return where to send the operator next. */
 export async function startBuild(input: StartBuildInput): Promise<ActionResult<StartBuildResult>> {
   const goal = getMessagingGoal(input.goalKey)
