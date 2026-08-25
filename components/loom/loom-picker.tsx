@@ -24,6 +24,7 @@ import { loomScopes, loomScope as loomScopeAction, loomImages, uploadLoomImage, 
 import { fetchSiteIcons, type SiteIcon } from '@/lib/loom/site-icons-client'
 import { looksLikeImage } from '@/lib/library/upload-kinds'
 import { prepareImageForUpload, SERVER_MAX_BYTES } from '@/lib/library/image-shrink'
+import { appendImageDescriptor, describeImage } from '@/lib/library/image-describe'
 import type { LoomPickAsset } from '@/lib/library/store'
 import { Input } from '@/components/ui/field'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -224,6 +225,12 @@ export function LoomPicker({
           if (file.size > SERVER_MAX_BYTES) { skipped++; continue }
           const fd = new FormData()
           fd.append('file', file)
+          // The BROWSER half of ingest (PROG-D1): a blurhash placeholder, the dominant colours and the
+          // true pre-downscale dimensions. Computed here because it needs decoded pixels, and this
+          // browser has already decoded the file — doing it server-side would mean `sharp` in a seam
+          // that fans out across the route table. Best-effort: `describeImage` returns null rather than
+          // throwing, and `appendImageDescriptor` then adds nothing.
+          appendImageDescriptor(fd, await describeImage(raw))
           // WRAP the server action: a rejection (framework body-limit, transient network error) must show
           // an inline message and let the loop continue — never escape and hang the "Uploading…" spinner.
           let res: Awaited<ReturnType<typeof uploadLoomImage>>
@@ -236,7 +243,7 @@ export function LoomPicker({
           if ('error' in res) { setError(res.error); continue }
           if (!firstUrl) firstUrl = res.url
           setAssets((prev) => [
-            { id: res.id, title: file.name, url: res.url, alt: null, kind: 'image', generated: false, tags: [] },
+            { id: res.id, title: file.name, url: res.url, alt: null, kind: 'image', generated: false, tags: [], category: null },
             ...prev.filter((a) => a.id !== res.id),
           ])
         }

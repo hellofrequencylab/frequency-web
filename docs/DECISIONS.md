@@ -30553,3 +30553,96 @@ in the same change, rather than silently re-defining every past slice's membersh
 is what makes a 31-file diff one reviewable judgement instead of 31. What it left in the agent's
 head was the half a machine can hold. **A sweep's slicing query is not working notes; it is the
 definition of what shipped, and it belongs in the repo beside the gate whose number it moves.**
+## ADR-1121: Loom ingest decodes no pixels on the server, and search ranks without a migration (2026-08-25)
+
+**Status:** Accepted
+**Closes:** `PROG-D1` — "Loom D1: finish Studio ingest + search"
+**Extends:** [ADR-478](#adr-478) / [ADR-480](#adr-480) (the Loom catalog + DAM spine),
+[ADR-1002](#adr-1002) (the ENOSPC fan-out), [ADR-1116](#adr-1116) (`HYG-017`, the renditions ruling)
+
+### The row said five things were pending. One was already settled, and it was still in the row.
+
+`PROG-D1` listed five ingest extras: checksum dedupe, EXIF strip, dims/colours/blurhash, **the
+rendition set**, and FTS-ranked/trigram search. Four were real. The fifth had been answered five days
+earlier by `HYG-017`, which established against the live database that `library_renditions` has no
+table and no index — created at `20260920000000_library_dam.sql:47`, dropped at
+`20260925000000_retire_orphaned_tables_and_functions.sql:16`. Four places in the tree say transforms
+are **on-the-fly** (the D3 scope line, `lib/library/renditions.ts`, ADR-480's migration header, the
+Loom owner-decision line in `BUILD-LIST`); none says materialised. **D1's rendition line was the one
+sentence in the repo reading the other way, and it was stale.** It is struck from the row rather
+than built. A rendition is a *request* — a width and a format against the master — and
+`RENDITION_PRESETS` belongs to D3's resolver.
+
+That is the fourth time in eight days a row has been wrong about itself ([ADR-1082](#adr-1082),
+[ADR-1112](#adr-1112)). The pattern is stable enough to state plainly: **a backlog row's scope list
+ages faster than its status**, because a probe checks whether the work is done and nothing checks
+whether the work is still wanted.
+
+### The decision, in two halves
+
+**1. The server half of ingest never decodes a pixel.**
+
+Ingest is one function, `ingestImageBytes` (`lib/library/ingest.ts`), called by every upload site
+with the bytes it is about to store. It strips private metadata, checksums the RESULT, and reads the
+dimensions off the container header — PNG, JPEG, GIF and all three WebP chunk flavours. It is
+`node:crypto` plus byte arithmetic and nothing else.
+
+Blurhash and the colour palette genuinely need decoded pixels, and the obvious implementation is
+`sharp`. It is refused. `check:og-trace` measures sharp at **67 functions of a 100 budget**, and this
+seam is reachable from the Loom picker, the page editor, the importer and the email studio — four
+surfaces that fan out across most of the route table. That is the 2026-08-11 ENOSPC incident one
+directory over. So the pixel work runs in the **browser**, in `lib/library/image-describe.ts`, next
+to the downscale that has already decoded the file, and arrives as three form fields that the server
+validates and never computes. Measured fan-out of this change: **zero new traced bytes** — no
+runtime dependency added, no `next/og`, no native module, and the probe asserts all four new modules
+stay free of both.
+
+**2. Search is ranked in process, and that is deliberately the FIRST implementation, not a shortcut.**
+
+The schema has carried both indexes since the first Loom migration: a generated `search_tsv` with a
+GIN index and `gin_trgm_ops` on `title` (`20260919000000_library_assets.sql:61-88`). What PostgREST
+cannot do is `order by ts_rank`, because a rank is not a column. The two ways out are an RPC — a
+migration, and therefore [ADR-1111](#adr-1111) ordering risk on every other open branch — or ranking
+the matched page in process.
+
+In process wins the first round, and **this PR carries no migration at all**. Both arms run and
+merge: FTS is stemmed and word-oriented and cannot match a fragment or a typo; trigram matches
+fragments and survives a misspelling and ranks nothing. Neither is a superset of the other.
+`lib/library/search-rank.ts` says how they combine, and `rankLibraryMatches` is the single seam an
+RPC would replace if a Loom ever outgrew the 400-row candidate cap.
+
+### The hazard the row never named, and it is the expensive one
+
+**EXIF orientation is not metadata to be discarded.** A phone camera writes the sensor's pixels
+unrotated and records "turn this 90°" in the same APP1 block that holds the GPS coordinates, the
+serial number and the capture time. The obvious strip — drop APP1 — is privacy-correct and renders
+every portrait photo in the Loom **sideways**. So the strip removes APP1/APP13/XMP and re-emits a
+32-byte APP1 carrying Orientation and nothing else, proven by a test on a rotation-6 JPEG that keeps
+the rotation and loses the coordinates. `ICC_PROFILE` (APP2) and `Adobe` (APP14) are kept for the
+same class of reason: neither is personal, and both change how the file DECODES.
+
+A second property falls out of hashing after the strip rather than before it, and it is what makes
+checksum dedupe useful rather than theatrical: **two exports of one photograph that differ only in
+their metadata block now hash the same.** Dedupe is scoped to `(space_id, sha256)` — the pair the
+unused `library_assets_sha256_idx` has been indexing since the DAM migration. Scoped on purpose: a
+global match would hand one space another space's asset.
+
+### What is NOT claimed
+
+- **Generated assets carry a checksum and dimensions, but no blurhash.** Recraft renders, Vera
+  covers and importer seeds are produced server-side where no browser exists to decode them. That is
+  a real remainder, not a silent gap; it is `HYG-021`, and the only honest fix is a decode, so it
+  waits for a reason better than a placeholder.
+- **`bytes` is now nullable, and two callers pass null.** The importer and the event-photo path file
+  objects that are already in storage and never read them. They used to claim a size of zero, which
+  is not "unknown" — it renders as a real "0 B" asset and sorts to the bottom of the size facet.
+- **Ranked paging reports a capped total.** With a query, `total` is the size of the merged candidate
+  set (400 per arm), not an exact count. Without one, and for an explicit title/oldest/size sort, the
+  database still does the ordering and the count is exact.
+
+### What would reopen this
+
+One measurement: a space whose Loom exceeds the candidate cap on an ordinary query, at which point
+the ranked page stops being the whole truth. The replacement is already scoped — a
+`search_library_assets` RPC mirroring the existing `match_library_assets` — and it swaps in behind
+`rankLibraryMatches` alone.
