@@ -35,7 +35,7 @@ export function EventManageConsole({ eventId, slug }: { eventId: string; slug: s
         <div className="rounded-card border border-border bg-surface p-5 lift-1">
           <DangerDelete
             entity="event"
-            warning="Permanently removes this event. RSVPs and check-ins are cleared. If this event is part of a recurring series, only this occurrence is deleted. Once deleted it cannot be recovered."
+            warning="Permanently removes this event. RSVPs and check-ins are cleared. If this event is part of a series, only this date is deleted. Once deleted it cannot be recovered."
             onDelete={() => deleteEvent(eventId, slug)}
             redirectTo="/events"
           />

@@ -10,9 +10,12 @@ import { loadEventCrmAccess, eventCrmLockedError } from '@/lib/events/crm-access
 import {
   setRsvp,
   approveRsvp,
+  eventRequiresApproval,
   type RsvpStatus,
+  type ApprovalStatus,
 } from '@/lib/events/rsvp-depth'
 import { composeEventDispatch } from '@/lib/events/dispatch'
+import { sendRsvpApprovedNotice } from '@/lib/events/guest-rsvp-email'
 import { findOrCreateDirectConversation } from '@/lib/messages/direct-conversation'
 import { isBlockedBetween } from '@/lib/blocking'
 import { rateLimitOk } from '@/lib/rate-limit'
@@ -122,6 +125,29 @@ export async function messageHost(
 
 // ── Activity feed ─────────────────────────────────────────────────────────────
 
+// The two image sources the composer offers, enforced SERVER-side too (an action is a POST
+// endpoint, so the composer's own checks don't bind a direct invocation): an upload into OUR
+// event-media bucket, or a direct https GIF/WebP link (the lightweight picker's contract,
+// same regex shape as applyGif). Anything else is refused — previously any string landed in
+// image_url and was rendered `unoptimized` (bypassing the next/image host allowlist) to every
+// viewer of the event page. Returns the parser's serialisation, never the caller's string.
+function safeEventPostImage(raw: string | null): { ok: true; url: string | null } | { ok: false } {
+  if (!raw) return { ok: true, url: null }
+  let u: URL
+  try {
+    u = new URL(raw)
+  } catch {
+    return { ok: false }
+  }
+  if (u.protocol !== 'https:') return { ok: false }
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  if (supabaseUrl && u.toString().startsWith(`${supabaseUrl}/storage/v1/object/public/event-media/`)) {
+    return { ok: true, url: u.toString() }
+  }
+  if (/\.(gif|webp)$/i.test(u.pathname)) return { ok: true, url: u.toString() }
+  return { ok: false }
+}
+
 export async function createEventPost(
   eventId: string,
   slug: string,
@@ -132,8 +158,16 @@ export async function createEventPost(
   if (!profileId) return fail('Sign in to comment.')
 
   const trimmed = (body ?? '').trim().slice(0, MAX_BODY)
-  const image = imageUrl?.trim() || null
+  const imageCheck = safeEventPostImage(imageUrl?.trim() || null)
+  if (!imageCheck.ok) return fail('That image link is not supported. Upload a photo or paste a direct GIF link.')
+  const image = imageCheck.url
   if (!trimmed && !image) return fail('Add a message or a photo first.')
+
+  // Flood guard: the wall is open to any signed-in member (see below), and unlike
+  // messageHost (5/h) it had no limiter at all. Generous enough for a lively thread.
+  if (!(await rateLimitOk('event_post', profileId, 30, '1 h'))) {
+    return fail('You are posting fast. Give it a few minutes.')
+  }
 
   const admin = createAdminClient()
   // ANY signed-in member may comment on an event they can see (the RSVP/guest
@@ -593,8 +627,9 @@ export async function transferEventHost(
 // the frozen rsvp-depth data layer. Self-authorized: every call only ever touches
 // the caller's own RSVP row (the lib upserts on (event_id, profile_id)). The DB
 // capacity trigger still has the final say on going vs waitlist, so we never
-// pre-check capacity here. `approvalStatus` is set by the page: invited guests
-// skip the queue ('approved'); approval-required events open at 'pending'.
+// pre-check capacity here. Approval routing is derived server-side inside the
+// action (existing row keeps its status; a first RSVP opens 'pending' iff the
+// event requires approval) — the client's approvalStatus field is ignored.
 
 const RSVP_DEPTH_STATUSES: RsvpStatus[] = ['going', 'not_going', 'maybe', 'waitlist']
 
@@ -612,10 +647,26 @@ export async function setEventRsvpDepth(
   if (!profileId) return { ok: false }
   if (!RSVP_DEPTH_STATUSES.includes(args.status)) return { ok: false }
 
-  // A guest sets only their own RSVP and may request 'pending' (on approval-required events)
-  // or 'none'. 'approved' is host-only (approveEventRsvp); never trust the client with it or a
-  // guest self-approves past the queue (ADR-274).
-  const approvalStatus = args.approvalStatus === 'approved' ? 'pending' : args.approvalStatus
+  // Approval routing is SERVER-derived; args.approvalStatus is deliberately ignored. The old
+  // mapping only defended 'approved' (self-approval past the queue, ADR-274) but passed 'none'
+  // through — so on an approval-required event a caller could skip the host's queue outright,
+  // and a guest already 'pending' could re-call with 'none' and self-admit. Derivation matches
+  // the sibling flows (events/actions.ts derives via eventRequiresApproval; the signed-out
+  // guest RPC derives in SQL): an EXISTING row keeps its status (an approved guest editing
+  // their +1s is not re-queued; a pending guest cannot shed the queue), and a FIRST RSVP opens
+  // 'pending' exactly when the event requires approval. Invited-guest queue-skip stays a
+  // host-side act (approveEventRsvp) — the client-supplied 'approved' never worked anyway.
+  const admin = createAdminClient()
+  const { data: existingRsvp } = await admin
+    .from('event_rsvps')
+    .select('approval_status')
+    .eq('event_id', eventId)
+    .eq('profile_id', profileId)
+    .maybeSingle()
+  const existingApproval =
+    (existingRsvp as { approval_status: ApprovalStatus | null } | null)?.approval_status ?? null
+  const approvalStatus: ApprovalStatus =
+    existingApproval ?? ((await eventRequiresApproval(eventId)) ? 'pending' : 'none')
 
   // setRsvp returns null when the upsert failed. That result used to be discarded, so a failed
   // write still fell through to revalidate + a silent success: the member watched the control
@@ -645,6 +696,21 @@ export async function approveEventRsvp(eventId: string, slug: string, guestProfi
     return
 
   await approveRsvp(eventId, guestProfileId)
+  // Tell them — same reason the manage-console path does (its comment: without the notice the
+  // gate is a trap). This path approves by profile, and the notice helper wants the ROW id, so
+  // resolve it; best-effort, the approval itself already landed.
+  try {
+    const admin = createAdminClient()
+    const { data: row } = await admin
+      .from('event_rsvps')
+      .select('id')
+      .eq('event_id', eventId)
+      .eq('profile_id', guestProfileId)
+      .maybeSingle()
+    if (row?.id) await sendRsvpApprovedNotice(eventId, row.id)
+  } catch {
+    // swallow — the notice is best-effort.
+  }
   revalidateEvent(slug)
 }
 

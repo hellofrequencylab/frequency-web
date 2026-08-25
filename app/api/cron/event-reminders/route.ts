@@ -155,6 +155,10 @@ async function processLead(lead: ReminderLead): Promise<{ events: number; sent: 
       .select('id, event_id, profile_id, guest_email, guest_name')
       .eq('event_id', ev.id)
       .eq('status', 'going')
+      // A pending-approval seat holds status 'going' with approval_status 'pending' — a
+      // REQUEST, not an admission. Everything that "means you are in" is held while pending
+      // (events/actions.ts), and a reminder is the loudest of those; the host may still say no.
+      .neq('approval_status', 'pending')
       .is(sentColumn, null)
 
     const rsvpRows = (rsvps ?? []) as unknown as RsvpRow[]

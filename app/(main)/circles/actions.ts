@@ -190,8 +190,36 @@ export async function joinCircle(
     status: 'active',
   })
   if (error) {
-    console.error('[joinCircle]', error.message)
-    return fail('Could not join this circle. Please try again.')
+    // The DB is the HARD capacity guarantee (enforce_circle_member_cap, migration
+    // 20260726000000); the member_count check above is only fast-fail UX, so a join race arrives
+    // here as a typed raise. Name it, the way the pre-check already does.
+    if (error.code === 'P0001' && (error.message ?? '').includes('circle_full')) {
+      return fail('This circle is full.')
+    }
+
+    // UNIQUE(profile_id, circle_id): a row for this pair ALREADY EXISTS, so "please try again" was
+    // advice that could never work — every retry hits the same constraint, forever. The commonest
+    // way in is the plainest one: an active member taps Join on a page that had not caught up yet,
+    // and gets told the circle they are standing in refused them. Read the row that beat the
+    // insert and finish the job instead (the grantCircleRow shape, lib/spaces/tier-circle.ts).
+    if (error.code !== '23505') {
+      console.error('[joinCircle] membership insert failed', {
+        code: error.code, message: error.message, circleId, profileId: myProfileId,
+      })
+      return fail('Could not join this circle. Please try again.')
+    }
+
+    const settled = await settleExistingMembership(admin, circleId, myProfileId)
+    if (settled === 'full') return fail('This circle is full.')
+    if (settled === 'error') return fail('Could not join this circle. Please try again.')
+    if (settled === 'already_active') {
+      // They are already in. Send them where they asked to go, exactly as the happy path does.
+      // Nothing was joined, so nothing is awarded, tracked, or credited a second time.
+      revalidatePath('/circles')
+      revalidatePath('/feed')
+      redirect(`/circles/${circleSlug}`)
+    }
+    // 'reactivated' — a dormant row waking up IS a join. Falls through to the rewards below.
   }
 
   processGamificationEvent({ type: 'circle_join', profileId: myProfileId }).catch(() => {})
@@ -207,6 +235,68 @@ export async function joinCircle(
   revalidatePath('/circles')
   revalidatePath('/feed')
   redirect(`/circles/${circleSlug}`)
+}
+
+/** What the row that beat joinCircle's insert turned out to be, once it was read. */
+type MembershipConflict = 'already_active' | 'reactivated' | 'full' | 'error'
+
+/**
+ * Settle a UNIQUE(profile_id, circle_id) conflict on the join path. Mirrors grantCircleRow
+ * (lib/spaces/tier-circle.ts): an ACTIVE row means the member is already in and there is nothing
+ * to do; a dormant row (pending / inactive) is woken up.
+ *
+ * 🔴 THE CAP IS RE-CHECKED ON THE REACTIVATING UPDATE, and it has to be counted rather than read
+ * off circles.member_count (ADR-863). enforce_circle_member_cap is BEFORE INSERT only and counts
+ * ACTIVE rows, so flipping a status walks straight past it — while member_count is maintained by
+ * an insert/delete trigger and therefore ALREADY counts the dormant row, which is exactly why the
+ * pre-check above waved this join through. Two different numbers; the active count is the one the
+ * cap means.
+ *
+ * The access gate ran before the insert and does not run again here: it reads active membership
+ * (`isMember`), so a dormant row was never a key to a closed circle. Nothing below can widen it.
+ */
+async function settleExistingMembership(
+  admin: ReturnType<typeof createAdminClient>,
+  circleId: string,
+  profileId: string,
+): Promise<MembershipConflict> {
+  const { data: existing, error: readError } = await admin
+    .from('memberships')
+    .select('id, status')
+    .eq('circle_id', circleId)
+    .eq('profile_id', profileId)
+    .maybeSingle()
+
+  if (readError || !existing) {
+    console.error('[joinCircle] conflicting membership unreadable', {
+      circleId, profileId, message: readError?.message,
+    })
+    return 'error'
+  }
+  if (existing.status === 'active') return 'already_active'
+
+  const [{ count }, { data: circle }] = await Promise.all([
+    admin
+      .from('memberships')
+      .select('id', { count: 'exact', head: true })
+      .eq('circle_id', circleId)
+      .eq('status', 'active'),
+    admin.from('circles').select('member_cap').eq('id', circleId).maybeSingle(),
+  ])
+  const cap = circle?.member_cap ?? null
+  if (cap != null && typeof count === 'number' && count >= cap) return 'full'
+
+  const { error: updateError } = await admin
+    .from('memberships')
+    .update({ status: 'active' })
+    .eq('id', existing.id)
+  if (updateError) {
+    console.error('[joinCircle] membership reactivate failed', {
+      code: updateError.code, message: updateError.message, circleId, profileId,
+    })
+    return 'error'
+  }
+  return 'reactivated'
 }
 
 // ── Host invite link ──────────────────────────────────────────────────────────
@@ -300,7 +390,15 @@ export async function inviteByEmail(
   const { error } = await admin
     .from('invite_links')
     .insert({ token, circle_id: circleId, created_by: myProfileId })
-  if (error) return { ok: false, error: error.message }
+  if (error) {
+    // The detail belongs in the log, where it can be acted on. The host gets a sentence they can
+    // read (matching createHostInviteLink above), not a PostgREST string about a table they have
+    // never heard of.
+    console.error('[inviteByEmail] invite link insert failed', {
+      code: error.code, message: error.message, circleId, profileId: myProfileId,
+    })
+    return { ok: false, error: 'Could not send that invite. Try again in a moment.' }
+  }
 
   // Enqueue the invite email best-effort: the link is already created, so a mail hiccup
   // (a queue blip) must never fail the invite. A re-invite mints a fresh link + resends,
