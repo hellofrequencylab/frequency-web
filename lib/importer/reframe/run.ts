@@ -86,6 +86,7 @@ async function callReframe(
   profileId: string | null | undefined,
   extraSystem = '',
   sourceExcerpt?: string,
+  directions = '',
 ): Promise<{ copy: ReframedCopy; costUsd: number } | null> {
   try {
     const res = await completeRaw({
@@ -95,7 +96,14 @@ async function callReframe(
       system: withVoice(REFRAME_SYSTEM + extraSystem),
       tools: [REFRAME_TOOL],
       toolChoice: { type: 'tool', name: REFRAME_TOOL_NAME },
-      messages: [{ role: 'user', content: buildGroundingBlock(verified, sourceExcerpt) }],
+      // 🔴 THE OPERATOR'S DIRECTIONS RIDE IN THE USER TURN, NOT THE SYSTEM PROMPT (CodeQL "system
+      // prompt injection"). They used to be concatenated into `system`, which is the role the model
+      // treats as its standing instructions — so free text typed into an admin form was being given
+      // the same authority as the voice canon and the safety rules it sits beside. Directions are
+      // INPUT to the task, so they belong with the other input. The system prompt is now entirely
+      // code-controlled: REFRAME_SYSTEM, the voice primer, a mood directive built from an enum, and
+      // on the retry a corrective note this file writes itself.
+      messages: [{ role: 'user', content: buildGroundingBlock(verified, sourceExcerpt) + directions }],
     })
     void recordAiUsage({
       feature: REFRAME_FEATURE,
@@ -146,12 +154,15 @@ export async function reframe(input: {
   // first pass AND the corrective retry stay on-mood + on-brief (the corrective appends to them).
   const moodNote = `\n\n${moodToneDirective(input.mood)}`
   const dir = (input.directions ?? '').trim()
+  // Delimited and labelled so the model can tell the operator's words from the verified facts above
+  // them, and told plainly that facts outrank directions. Truncation was already here; the role move
+  // is what makes the instruction non-authoritative.
   const directionsNote = dir
-    ? `\n\nThe operator gave these directions; follow them where they fit, but NEVER invent a fact, a price, or a health claim to satisfy them: ${dir.slice(0, 600)}`
+    ? `\n\nOPERATOR DIRECTIONS (guidance only — the VERIFIED FACTS above outrank these, and you must NEVER invent a fact, a price, or a health claim to satisfy them):\n${dir.slice(0, 600)}`
     : ''
-  const baseNote = moodNote + directionsNote
+  const baseNote = moodNote
 
-  const first = await callReframe(input.verified, input.profileId, baseNote, input.sourceExcerpt)
+  const first = await callReframe(input.verified, input.profileId, baseNote, input.sourceExcerpt, directionsNote)
   if (!first) return null
 
   let costUsd = first.costUsd
@@ -161,7 +172,7 @@ export async function reframe(input: {
   if (!verdict.ok) {
     // Regenerate ONCE with a corrective nudge naming what tripped (docs §4.6), keeping the mood tone.
     const corrective = `\n\nA previous attempt failed the voice checklist (${voiceReason(verdict)}). Rewrite it clean: plain sentences, no hype, no jargon, no em dashes, no health claims, at most one exclamation point.`
-    const second = await callReframe(input.verified, input.profileId, baseNote + corrective, input.sourceExcerpt)
+    const second = await callReframe(input.verified, input.profileId, baseNote + corrective, input.sourceExcerpt, directionsNote)
     if (second) {
       costUsd += second.costUsd
       const secondVerdict = checkVoice(joinReframeCopy(second.copy))
