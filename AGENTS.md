@@ -72,6 +72,11 @@ ARTIFACT. Full rules and the incident: [`docs/DEPLOY-SAFETY.md`](docs/DEPLOY-SAF
       + `.next/cache` 1359 MiB), **85% of the 1.50 GB ceiling and comfortably under the trim point**.
       And the paired reading is **EXACT**: the gate predicted 1.27 GB and `Uploading build cache`
       reported **1.27 GB**.
+    - **`main` at 1386abe6c, production, 12:35Z: 1.28 GB predicted, 1.27 GB uploaded** (2.24 GiB raw —
+      node_modules 934 MiB + `.next/cache` 1362 MiB), again **85%** of the ceiling. A THIRD paired
+      reading on the same mix, accurate to 1%. The other three gates read IDENTICALLY to c8b5ee97 on
+      this build — build-budget 6.67 GB / 498 fns, og-trace 69/100, shell-weight 1011 KB / 21 chunks —
+      so the series is flat across two consecutive production deploys rather than still climbing.
     ✅ **Both are real, and the disagreement is the mix-dependence this paragraph already describes —
     not a defect in either measurement.** So the honest statement is the range, not a single figure:
     this gate sits between 85% and 99% of its trim point depending on what the cache is holding, it is
