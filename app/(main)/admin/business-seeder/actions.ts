@@ -992,6 +992,23 @@ function offeringPath(path: string): { index: number; key: string } | null {
   return { index: Number(m[1]), key: m[2] }
 }
 
+// ── Prototype pollution, and why an admin-only surface still gets the guard (CodeQL, 5 alerts) ──
+//
+// These paths come off the wire and are used as object KEYS: `c[key] = value`, `d[path] = value`,
+// `ledger[path] = [entry]`. A path of `contact.__proto__` or `constructor` therefore writes onto
+// Object.prototype, and from there onto every object in the process for the rest of that request.
+//
+// The actor here is an operator, not a stranger, which is why this reads as low severity — but
+// "only an admin can trigger it" is an argument about WHO, not about WHAT it does, and the blast
+// radius of a polluted prototype is the whole process rather than this one draft. The guard is two
+// lines and costs nothing, so the trade is not close.
+const FORBIDDEN_KEYS = new Set(['__proto__', 'constructor', 'prototype'])
+
+/** Is this path segment safe to use as an object key? */
+function safeKey(k: string): boolean {
+  return !FORBIDDEN_KEYS.has(k)
+}
+
 /** Read the current string value at a draft path (mirrors review-model.extractFields). */
 function readDraftValue(draft: BusinessProfile, path: string): string {
   const off = offeringPath(path)
@@ -1020,6 +1037,7 @@ function setDraftValue(draft: BusinessProfile, path: string, value: string): voi
   if (off) {
     if (!draft.offerings || !draft.offerings[off.index]) throw new Error('no offering')
     const o = draft.offerings[off.index] as unknown as Record<string, unknown>
+    if (!safeKey(off.key)) throw new Error('bad path')
     if (off.key === 'price') {
       const n = Number(value)
       if (value === '') delete o.price
@@ -1032,6 +1050,7 @@ function setDraftValue(draft: BusinessProfile, path: string, value: string): voi
   }
   if (path.startsWith('contact.')) {
     const key = path.slice('contact.'.length)
+    if (!safeKey(key)) throw new Error('bad path')
     draft.contact = draft.contact ?? {}
     const c = draft.contact as unknown as Record<string, unknown>
     if (value === '') delete c[key]
@@ -1056,6 +1075,7 @@ function setDraftValue(draft: BusinessProfile, path: string, value: string): voi
   ])
   if (!allowedScalars.has(path)) throw new Error('unknown path')
   const d = draft as unknown as Record<string, unknown>
+  if (!safeKey(path)) throw new Error('bad path')
   if (value === '' && path !== 'name' && path !== 'type') delete d[path]
   else d[path] = value
 }
@@ -1073,5 +1093,6 @@ function confirmLedger(ledger: ProvenanceLedger, path: string, value: string): v
     // Keep the original snippet if it still supports the value; else record the operator's value.
     ...(prior?.snippet ? { snippet: prior.snippet } : { snippet: value }),
   }
+  if (!safeKey(path)) throw new Error('bad path')
   ledger[path] = [entry]
 }

@@ -158,6 +158,17 @@ function replaceUntilStable(input: string, re: RegExp, replacement: string, maxP
  * that could backtrack catastrophically). Output feeds the LLM, not a DOM, so the goal is complete
  * stripping without ReDoS, not HTML-spec-perfect parsing. PURE + total.
  */
+/** The handful of entities worth decoding for LLM input, resolved in a single pass. */
+const HTML_ENTITIES: Record<string, string> = {
+  nbsp: ' ',
+  amp: '&',
+  lt: '<',
+  gt: '>',
+  quot: '"',
+  apos: "'",
+  '#39': "'",
+}
+
 export function htmlToText(html: string, maxChars = MAX_TEXT_CHARS): string {
   // Remove whole script/style/noscript elements + comments, looping to a fixed point.
   let stripped = html
@@ -172,12 +183,11 @@ export function htmlToText(html: string, maxChars = MAX_TEXT_CHARS): string {
   // Any leftover lone angle brackets (from malformed / truncated markup) are neutralized.
   stripped = stripped.replace(/[<>]/g, ' ')
   const text = stripped
-    .replace(/&nbsp;/gi, ' ')
-    .replace(/&amp;/gi, '&')
-    .replace(/&lt;/gi, '<')
-    .replace(/&gt;/gi, '>')
-    .replace(/&#39;|&apos;/gi, "'")
-    .replace(/&quot;/gi, '"')
+    // ONE PASS, not six (CodeQL "double escaping or unescaping"). Chained replaces re-read their own
+    // output, so `&amp;lt;` decoded to `&lt;` on the first call and then to a literal `<` on the
+    // third — text the source had deliberately escaped, silently un-escaped into the model's input.
+    // A single regex with a lookup table cannot re-enter what it just wrote.
+    .replace(/&(nbsp|amp|lt|gt|quot|apos|#39);/gi, (m, name: string) => HTML_ENTITIES[name.toLowerCase()] ?? m)
     .replace(/[ \t\f\v]+/g, ' ')
     .replace(/\n[ \t]*\n[ \t]*\n+/g, '\n\n')
     .trim()
