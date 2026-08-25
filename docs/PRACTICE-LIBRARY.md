@@ -52,25 +52,24 @@ Notes: `secondary_pct` is derived (`100 - primary_pct`), never stored. Null `sec
 = 100% single-Pillar. `remixed_from` = direct parent; `root_practice_id` = lineage root (so a
 remix tree is one indexed walk). Embeddings get a one-time backfill + on-write generation.
 
-## 3. Auto-valuation — `computePracticeReward(practice)`
+## 3. Auto-valuation — delivered at log time, not create time (ADR-442/443, [ADR-1131](DECISIONS.md))
 
-Pure, server-side, runs on every create/update. **Creators never set point values.**
+**Creators never set point values.** This spec originally planned a create-time
+`computePracticeReward(practice)` that derives `weight_class`/`reward_zaps` from structure.
+**ADR-442/443 superseded it the next day with a stronger mechanism, which is what ships**
+(ADR-1131 retired the function as a build item):
 
-```
-computePracticeReward(p): { weight_class, reward_zaps | null }
-  intensity = deriveIntensity(p.timer_kind, p.duration_min, p.modality)
-    light    ← timer_kind = 'none' (log-it) OR duration_min < 5      → 8 zaps
-    standard ← timed 5–14 min                                        → 12 zaps
-    heavy    ← timed ≥ 15 min OR high-demand movement                → 15 zaps
-  weight_class = intensity
-  reward_zaps  = cadence-bound (Quest/Journey) ? cadenceValue(p.cadence) : null
-                 // cadenceValue: Daily 10 · 3x-week 15 · Weekly 25 (ADR-303 balance)
-```
+- **Create time (ADR-442):** the creator picks a tier; `setPractice` clamps it to what
+  `duration_min` earns (`clampTierToDuration`, `lib/practices/tiers.ts`) — a 2-minute practice
+  can never claim Heavy.
+- **Log time (ADR-443):** a TIMED practice pays the tier its REAL engaged minutes reach
+  (`achievedTier`: Light ≥ 3 / Standard ≥ 5 / Heavy ≥ 15; under Light is a 1-Zap partial). The
+  creator's pick is only the recommendation and the quick-log fallback.
+- The manual `reward_zaps` override remains a **staff-only, audited break-glass**
+  (cadence-bound Quest/Journey values: Daily 10 · 3x-week 15 · Weekly 25, ADR-303 balance).
 
-The log-time chokepoint (`logPractice`, `lib/practices.ts:1546–1595`) is **unchanged** — it reads
-`reward_zaps` then `weight_class` and freezes the grant onto `practice_logs.zaps_awarded`. We only
-turn those two fields from inputs into computed outputs. The free-form `weight_class` pick and the
-manual `reward_zaps` override remain as a **staff-only, audited break-glass**. Constants tune via
+The log-time chokepoint (`logPractice`) freezes the grant onto `practice_logs.zaps_awarded`, and
+since Phase 4 it freezes the Pillar-split snapshot beside it (§4). Constants tune via
 `zap_config` (data, not code).
 
 **Anti-farm closure.** Value is bound to required engaged time; the timer gate (log counts only at
@@ -85,8 +84,13 @@ end), validated-creation requiring a distinct established validator.
 split. One slider, snaps to 75/25; the floor keeps the primary dominant ("one primary Pillar"
 holds). **Function:** the split **attributes a log's earned Zaps across Pillars** for per-Pillar
 progress (12 zaps at 75/25 → 9 primary, 3 secondary). It **never changes the wallet total** — so it
-is not an inflation or farming lever. The per-Pillar attribution ledger is **Phase 4**; the columns
-ship Phase 1 so data is correct from day one.
+is not an inflation or farming lever. The columns shipped Phase 1; the **attribution ledger's
+server half shipped in Phase 4** ([ADR-1131](DECISIONS.md)): `logPractice` freezes the split onto
+the log row beside `zaps_awarded` (`practice_logs.pillar_id` / `secondary_pillar_id` /
+`primary_pct`, migration `20270323000000`) so per-Pillar progress survives later re-categorization,
+and `lib/practices/attribution.ts` owns the math (conservation: primary + secondary =
+`zaps_awarded`, exactly; pre-freeze rows fall back to the practice's current split) plus the
+`getMemberPillarZaps` read. Still to come: the authoring slider and the progress surfaces.
 
 ## 4a. Adoption is a commitment with a shape (ADR-920, 2026-08-03)
 
@@ -135,7 +139,7 @@ The rules, each enforced in code and covered by tests (`lib/practices/adoption*.
 | **1 Scale** | Library lists/searches/filters/sorts/paginates server-side past 200 rows; bulk acts on the whole filtered set; `archived` works; split + lineage + `search_vector` columns live; embeddings backfilled + generated on write. |
 | **2 Clean** | **Server + foundation shipped ([ADR-446](DECISIONS.md), migration `20260828000000` applied to prod):** `merge_practices` RPC re-points adoptions+logs onto the canonical (re-point, never delete) and `practice_slug_redirects` + a 301 fallback keep the old slug working; `listReviewQueue` (bulk approve/reject, near-dup flag; trust order inert until Phase 3); `computeQualityScore`/`needsAttention` over the `updated_at` freshness signal; `listAllTags`/`promoteTagToCanonical`/`mergeTags`; advisory Vera pre-screen. **In flight on the branch (⏳):** the operator UI for all four (review queue v2, "Needs attention" panel, merge, tag governance) plus the page-body conversion to block areas. |
 | **3 Grow** | Remix trees + "most remixed" render from lineage; "Make it yours" prompts; operator remix levers; contributor recognition. |
-| **4 Autopilot** | `computePracticeReward()` is the valuation authority; per-Pillar attribution ledger live; Vera auto-tags/categorizes/voice-checks; library-health dashboard (coverage gaps by Pillar/subcategory). |
+| **4 Autopilot** | Valuation authority ✅ via ADR-442/443 (log-time achieved tier + server clamp; the create-time `computePracticeReward()` was retired, [ADR-1131](DECISIONS.md)); per-Pillar attribution ledger frozen at log time (server half shipped; slider + surfaces next); Vera curation (auto-tag/categorize/summarize/remix prompts) still open beyond the ADR-446 pre-screen; library-health dashboard ✅ (`/admin/content/practices/health`). |
 
 ## 7. Admin surface
 

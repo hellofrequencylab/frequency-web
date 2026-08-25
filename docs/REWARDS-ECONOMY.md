@@ -92,23 +92,25 @@ window that is 280 Zaps per Pillar, balanced across the four. As of [ADR-438](DE
 but the per-log value is **computed, never creator-set** (see §3a), and cadence still bounds the
 expected weekly yield so the balance above holds.
 
-### 3a. Auto-valuation from intensity (ADR-438) — creators never set point values
+### 3a. Auto-valuation from intensity (ADR-438, delivered by ADR-442/443) — creators never set point values
 
-Point values are computed server-side by `computePracticeReward(practice)` on every create/update.
-Creators and members **cannot set their own payout**; the free-form `weight_class` pick and the
-manual `reward_zaps` override survive only as a **staff-only, audited break-glass**.
+Creators and members **cannot set their own payout**. ADR-438 first sketched this as a create-time
+`computePracticeReward(practice)`; **ADR-442/443 delivered the same lock by a stronger mechanism,
+and that is what the code does** ([ADR-1131](DECISIONS.md) records the retirement of the
+create-time function): the creator PICKS an intensity tier, but the pick is clamped server-side to
+what `duration_min` earns (`clampTierToDuration`, ADR-442), and a TIMED practice pays the tier its
+**real engaged minutes** reach at log time (`achievedTier`, ADR-443) — the pick is only the
+recommendation and the quick-log fallback. The manual `reward_zaps` override survives only as a
+**staff-only, audited break-glass**.
 
-**Intensity** is derived from structural signals a creator cannot fake for free, then bucketed:
-
-| Computed intensity | Triggers | Per-log Zaps |
+| Intensity tier | Earned by | Per-log Zaps |
 | --- | --- | --: |
-| **Light** | no-timer "log-it", or timed < 5 min | **8** |
-| **Standard** | timed sit / movement 5–14 min | **12** |
-| **Heavy** | timed ≥ 15 min, or high-demand movement | **15** |
+| **Light** | any length (timed sits: ≥ 3 real minutes; under that is a 1-Zap partial) | **8** |
+| **Standard** | 5–14 required (quick-log) or real (timed) minutes | **12** |
+| **Heavy** | ≥ 15 required or real minutes | **15** |
 
-The function writes `weight_class` (and `reward_zaps` for cadence-bound Quest/Journey practices); the
-log-time chokepoint (`logPractice`, `lib/practices.ts:1546–1595`) is unchanged and still freezes the
-grant onto `practice_logs.zaps_awarded`. Constants are tuned via `zap_config` (data, not code).
+The log-time chokepoint (`logPractice`, `lib/practices.ts`) freezes the grant onto
+`practice_logs.zaps_awarded`. Constants are tuned via `zap_config` (data, not code).
 
 **The anti-farm closure.** Value is bound to *required engaged time*, and the timer gate (a log counts
 only at ≥ 95% of target) forces that time to actually be spent — so a 2-minute practice can never be
