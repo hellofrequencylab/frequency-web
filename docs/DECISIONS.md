@@ -33168,3 +33168,63 @@ unreferenced. It is not evidence that the thing it does is unbuilt — someone m
 the seam instead of through it, which leaves the export looking dead and the duplicate looking
 finished. Before deleting an export whose comments describe a *product behaviour*, look for that
 behaviour on the surface, not just for the identifier in the tree.
+
+---
+
+## ADR-1163: a green guard over a stale photocopy, and the sheet that asked DAWN to redo three-week-old work (2026-08-25)
+
+**Context.** `design_handoff/dawn/` is a hand-copied snapshot of DAWN, an external Claude Design
+project. `design_handoff/CHANGES.md` is DAWN's prose reply for a round. The two are copied across
+**separately**, by hand, in the same direction but not necessarily at the same time. Nothing measured
+whether they were the same round.
+
+On 2026-08-25 the reply arrived and the bundle did not. Every marker CHANGES.md says it wrote is
+absent from the file it names: `tokens/effects.css` has no `hero-zone`, `sections.jsx` has no
+`data-hero-zone`, `colors.css` has no `on-media` family and still holds `--color-focus-ring #E2912F`,
+the pre-correction brand amber. `guidelines/on-media.card.html` was never copied at all. The bundle
+is the **2026-08-03** export, three weeks and one round behind its own changelog.
+
+**What made it invisible is the part worth keeping.** `lib/theme/dawn-divergence.test.ts` reads that
+`colors.css` on every `pnpm test` and was **green**. It asserts that the divergences it FINDS equal
+the divergences it DECLARES; both sets are eight rows. Green means "the two stylesheets disagree in
+exactly the ways written down". It is a correct and valuable assertion, and it says nothing whatever
+about whether DAWN's file is current — but it was read as freshness, including by me, and read that
+way it asserts the opposite of the truth.
+
+The cost was already banked before anyone looked. `design_handoff/PROD-AHEAD.md` is the sheet the
+next outbound handoff copies verbatim. It was still asking DAWN to apply five corrections DAWN had
+applied and reported in CHANGES.md §2. This is the same stale-row failure the divergence test's own
+header was written about — `--color-text-on-primary`, stale in prose for eleven days — recurring one
+level up: not a stale row inside the sheet, a stale **file underneath** it.
+
+**Decision.** Measure the freshness, since no existing guard could, and make the guard fail in the
+direction that costs something.
+
+`scripts/check-dawn-bundle.mjs` declares which round the bundle is (`BUNDLE_ROUND`), which round the
+reply is (`CHANGES_ROUND`), the markers that distinguish them, and the paths CHANGES.md names that
+have not arrived. It fails both ways:
+
+1. Declared **fresh**, a marker **missing** → the export was partial.
+2. Declared **stale**, a marker **appears** → someone re-exported the bundle and left the ledger
+   behind. **This is the dangerous one.** A refreshed `colors.css` silently closes five declared
+   divergences; a sheet that still lists them either re-sends applied work, or gets "reconciled" by
+   moving DAWN's values into `app/globals.css` — un-fixing three AA failures production measured
+   (`--color-focus-ring` 1.75:1 → 3.87:1, `--color-text-on-broadcast`, `--color-text-subtle`). The
+   failure text names the three files that must move in one change.
+
+It **never** asserts the bundle is up to date, because it is not, and a gate that cannot fire
+honestly gets routed around and then reads as coverage (ADR-970). The staleness is `LIVE-127`, an
+owner row whose probe reads the bundle directly rather than our declaration about it.
+
+**Consequences.**
+
+- `PROD-AHEAD.md` gains a §0 that says the §2 and §3 corrections are applied and must not be re-sent,
+  and the tables stay exactly as they were, because they are what the divergence guard derives.
+- The divergence test's header now states, in full, what a green run there does not mean.
+- `LIVE-027` closes: the send happened and DAWN applied all of it, which is what its own closing
+  condition asked for. `OWN-019` closes on the `/the-community` reference frame landing, and its
+  probe stops being `manual` — it was always a file in a named directory, which a script can read.
+- **The general shape, which is not about DAWN.** Two artifacts that describe each other and travel
+  separately will desynchronise, and a guard that reads only one of them cannot see it. The guard was
+  not wrong; it was answering a narrower question than the one being asked of it. Before trusting a
+  green run as evidence of a claim, check that the claim is the one the assertion actually makes.

@@ -9,19 +9,32 @@
 1. **Read the change set.** Open `design_handoff/CHANGES.md`. It lists this
    round's changes as old→new values / asset swaps / icon or rank mappings. If
    `CHANGES.md` is missing or unchanged since the last sync, stop and tell the user.
-2. **Create a branch.** `design-sync/<short-summary>` off the default branch
+2. **Check the bundle came with it.** Run **`pnpm check:dawn-bundle`**. `CHANGES.md` is prose and
+   `design_handoff/dawn/` is a file export; they are copied across **separately** and on 2026-08-25
+   only the prose arrived, leaving the bundle three weeks behind its own changelog (ADR-1163). The
+   guard declares which round the bundle is and fails when the two move apart — read its output
+   before applying anything, because a "value diff" against a stale file is a diff against the
+   wrong file.
+
+   🔴 **If the bundle HAS been re-exported, three files move in one change** and the guard names
+   them: `BUNDLE_ROUND` in `scripts/check-dawn-bundle.mjs`, the ledger in
+   `lib/theme/dawn-divergence.test.ts`, and `design_handoff/PROD-AHEAD.md`. Never reconcile a fresh
+   bundle by moving DAWN's values into `app/globals.css` — where the two disagree on a colour,
+   production measured it and DAWN did not.
+
+3. **Create a branch.** `design-sync/<short-summary>` off the default branch
    (`main`). Never commit directly to `main`.
-3. **Apply each change using the mapping below.** Confine raw hex to
+4. **Apply each change using the mapping below.** Confine raw hex to
    `app/globals.css`. Do not paste DAWN's inline-style JSX into the app; recreate
    any component/layout change in the repo's Tailwind v4 + TSX conventions.
-4. **Build + sanity check.** Run the project build (and `npm run dev` to eyeball
+5. **Build + sanity check.** Run the project build (and `npm run dev` to eyeball
    the affected surfaces if a visual change). Fix anything that breaks.
-5. **Open a PR.** Title `DAWN sync: <summary>`. Body = the changelog from
+6. **Open a PR.** Title `DAWN sync: <summary>`. Body = the changelog from
    CHANGES.md, plus the three standing-rule lines below: which "what users tripped on"
    rows this round answered (and which it did not), the mobile behavior per screen
    touched, and confirmation that no ratchet count rose. **Do not deploy and do not
    merge** — the user reviews and merges.
-6. **Report back** the PR link and a one-line summary of what changed.
+7. **Report back** the PR link and a one-line summary of what changed.
 
 ## Mapping (DAWN file → this repo)
 
