@@ -31259,3 +31259,345 @@ maintainer a week later. Both instruments now read one comparison, so they canno
   people to ignore the report.
 - **The pinned Profile rail row.** Runtime-injected, never a DB row, never synced; skipped on both
   sides of the derivation.
+## ADR-1128: The visual suite gets its own surface list, and the operator routes are chosen by census (2026-08-25)
+
+**Status:** accepted · closes `HYG-026`, filed by [ADR-1119](#adr-1119) (PROG-DAWN3 slice 1) ·
+amends [ADR-948](#adr-948) / [ADR-950](#adr-950) (the member shell) · files `HYG-027`
+
+**The finding, in one line:** `test/e2e/visual.spec.ts` took its surfaces from a list that
+answers a different question, so most of the product was unwatched and the board still read
+green.
+
+`test/e2e/surfaces.ts` parsed `EDITABLE_PAGES` out of `lib/page-editor/data.ts` at run time and
+added one hand-maintained extra (`/discover`). `EDITABLE_PAGES` exists to say **which pages the
+page editor may edit**. It was never chosen for visual coverage, so what the camera watched was
+a by-product of an unrelated product decision, and it grew only when a marketing page was
+converted to a template.
+
+Measured 2026-08-25: the file contained **zero** `'/admin'` route literals. No operator surface
+in the product was visually watched at all.
+
+It was found the only way a gap like this can be found — by something moving and nothing
+noticing. PROG-DAWN3 slice 1 changed 37 sites; exactly **one** of them rendered on a watched
+surface (the event approval controls, mounted by the Space console) and that one produced 4 real
+failures. The other 36 moved unobserved, and the run's `140 passed` was never evidence the sweep
+held still. It was evidence that 36 of 37 sites are unobserved.
+
+This is [ADR-970](#adr-970)'s failure mode *inside the guard meant to prevent it*: a gate that
+cannot fire over most of the tree still reads as coverage, and a green `pr-compare` gets quoted
+as "no visual change".
+
+### The decision
+
+The visual suite gets **its own list**, `coverageSurfaces()`, chosen for coverage rather than
+inherited. Three inputs:
+
+| Input | Source | Why it is an input rather than the list |
+| :--- | :--- | :--- |
+| the `EDITABLE_PAGES` routes | parsed from `lib/page-editor/data.ts` at run time | **the parse was never the bug.** A Lift 5c template conversion must keep joining the matrix the day it lands, with no edit to the registry — that part of the design is right and stays |
+| the public extras | `EXTRA_PUBLIC_PATHS` | routes with no editor row (`/discover`) |
+| the operator console | `OPERATOR_PATHS` — seven `/admin` routes | measured, below |
+
+`appSurfaces()` (the member shell) was already its own list and is unchanged.
+
+### What was measured, and why those seven routes
+
+`scripts/visual-surface-census.mjs` is committed so the argument re-runs rather than being taken
+on trust. It counts two populations per file — the frozen `raw-button-bg` class, read **through
+`check-adoption.mjs`'s own corpus** so it cannot drift from the ratchet (AGENTS.md: quote the
+frozen baselines, not a fresh grep), and raw `<button>` opening tags, which is PROG-DAWN3's own
+basis for its ~2,070 figure.
+
+**The population, by directory — no graph, no assumptions.** Measured on the tree *after*
+PROG-DAWN3 slice 1 landed (#2266), so these are the live numbers and not the pre-sweep ones:
+
+| Where | `raw-button-bg` | raw `<button>` | files |
+| :--- | ---: | ---: | ---: |
+| repo-wide | 463 | 1,799 | — |
+| `app/(main)/admin/**` + `components/admin/**` | **99 (21.4%)** | **518 (28.8%)** | 165 |
+| reachable from every surface watched *before* this change | 117 (25.3%) | 480 (26.7%) | — |
+
+Better than a fifth of the remaining DAWN population sits in code an operator surface is the only
+way to photograph, and none of it was watched. **The share is also stable under a sweep**: slice 1
+retired 43 sites repo-wide and the operator share of raw `<button>` did not move off 28.8%, which
+is what makes this a structural gap rather than a snapshot.
+
+**🔴 The attribution, and the trap in it.** The obvious method — follow a route's imports
+transitively and sum the debt you reach — is wrong, and wrong in the flattering direction. Run
+that way, a full closure from `/admin/gamification` reaches 71 debt-bearing files worth 51
+`raw-button-bg`, and **fourteen unrelated admin routes reach the same 71**, because a registry
+deep in the graph imports most of the product. Under that measure `/admin/moderation` "covers"
+`components/events/event-activity.tsx`, which it does not render and no camera pointed at it would
+ever see. An import is not a render; a coverage number built on imports is exactly the
+shape-not-truth failure this repo names in four ADRs, performed by the fix rather than the bug.
+
+So the census basis is deliberately shallow and **stated rather than assumed**: a route owns the
+files in its own directory (minus nested directories that are routes of their own), plus **two
+import hops**. Two hops reaches the page, its co-located client components, and the components
+those mount, and stops before the registries. It still over-counts — a component behind a tab or
+a dialog is reachable and unphotographed — so every number below is an **upper bound** on what a
+screenshot watches, never a promise.
+
+| Route | `raw-button-bg` | raw `<button>` | why it is on the list |
+| :--- | ---: | ---: | :--- |
+| `/admin` | 6 | 28 | the console index, and the **only** surface that photographs the shared admin chrome — sub-nav band, Ask-Vera search bar, info rail, page dock, footer |
+| `/admin/library` | 12 | 73 | highest measured |
+| `/admin/marketing/nurture` | 9 | 65 | second; the entry to the email-studio cluster |
+| `/admin/crew-tasks` | 7 | 17 | densest ratio in the tree — 7 sites in two files |
+| `/admin/crm` | 5 | 18 | the Resonance CRM head, in front of the `components/crm` + `components/admin/crm` cluster |
+| `/admin/content/practices` | 4 | 43 | the biggest single button population in the admin tree — a dense table plus its controls |
+| `/admin/qr` | 4 | 37 | the QR studio is button-heavy and composes none of the kit |
+| **union (deduped)** | **47** | **256** | 59 files |
+
+Against all 92 static admin routes (98 / 481 on the same basis), seven routes hold **48% of the
+admin-attributable `raw-button-bg` and 53% of the buttons, for 7.5% of the routes**. The set is a
+greedy cover run on both axes and then filtered: `/admin/business-seeder` places fifth on the
+button axis and is dropped as a development fixture rather than missed, and `/admin` is kept
+despite ranking fourth because whichever operator route comes first is the one that buys the
+chrome.
+
+### The cost, and what was cut
+
+28 new captures per pixel-moving PR (7 routes × 2 modes × 2 viewports — the shell renders
+`[data-skin]` server-side, so the skin axis is not the harness's here and the midnight variants
+would be duplicate PNGs). At the suite's own measured ~11.5s/test over 4 workers, that is
+**~1.5 minutes** added to the `pr-compare` visual step, against 144 existing baselines.
+
+**Cut, and named rather than performed silently — a silent truncation reads as coverage, which is
+the failure this ADR exists to close:**
+
+- **the other 85 static admin routes.** All 92 would be 368 captures, ~18 minutes per PR, to buy
+  the remaining 51 `raw-button-bg`. The tail is genuinely flat: after the first seven the greedy
+  marginal gain is 3 sites or fewer per route.
+- **every dynamic route** (`/admin/crm/deals/[...slug]`, `/admin/appearance/[id]`, …). They need a
+  seeded id that survives a new preview hostname; without one the surface bounces and photographs
+  the wrong page under an operator's name — the `app-room` failure ([ADR-948](#adr-948)) with a
+  different route.
+- **the seeder and demo consoles** (`/admin/business-seeder` 3/27, `/admin/demo` 3/16): development
+  fixtures with generated content, not operator product.
+- **the `@a11y` and overflow suites.** Both still read `publicSurfaces()` / `appSurfaces()`. An
+  operator surface with no row in `a11y-baselines.json` is held to `$defaultMax` (0 serious+), so
+  adding it there without a seeded ratchet capture would fail PRs on debt that predates them.
+  Filed as `HYG-027`.
+
+### The role floor is a skip, not a throw — and it is a *loud* skip
+
+The operator routes ride the **same** `PW_STORAGE_STATE` as the member shell. There is no second
+auth path and there must not be one. What they need on top of a session is a role:
+`requireAdminFloor()` admits platform staff or a `team_members` staff role that sees an admin
+group, and redirects everyone else to `/feed`.
+
+So a bounce to `/feed` from an `/admin` path means exactly one thing: the account behind
+`PW_MEMBER_EMAIL` is a member and not an operator. That is an owner-held account fact, not a
+defect in the pull request under test, and a red X meaning *"nobody has promoted the e2e account
+yet"* is precisely the check-training failure `e2e.yml`'s own header argues against. So
+`operatorDenialReason()` returns a sentence and the test skips.
+
+**Which branch this actually lands on was measured, not assumed** — a blocker phrased as *"an
+agent cannot see it"* is a claim with an expiry date (AGENTS.md), and this one took three queries.
+`PW_MEMBER_EMAIL` is an owner-held secret and unreadable, but its *consequence* is not:
+`test/e2e/a11y-baselines.json` carries `/spaces/danieltyack/manage` rows, so the e2e account can
+manage that Space, and exactly two profiles can — `danieltyack` (`web_role` janitor) and
+`awesomepossum` (`web_role` none). Across the whole database only `danieltyack` and `moderation`
+hold a staff `web_role`, and `team_members` holds one row (`danieltyack`, owner). So:
+
+| If `PW_MEMBER_EMAIL` is… | `requireAdminFloor()` | the 28 operator captures |
+| :--- | :--- | :--- |
+| `danieltyack` | admitted (`isJanitor`) | run on the first capture |
+| `awesomepossum` | redirected to `/feed` | skip, and are named in the job summary |
+
+Both branches are live, and neither is guessed at in code. The capture run settles it in one line of
+the job summary, and if it is the second the fix is one grant — filed as `HYG-027`.
+
+**⚠️ The skip is the part that has to be got right, because a silent skip is the disease.** The
+describe carries `@shell`, so `shell-reporter.ts` counts these tests and names every unphotographed
+`/admin` route in `$GITHUB_STEP_SUMMARY` on every run — the same treatment `/nearby` gets, for the
+same reason. The reporter's surface union is conditional on the run having *collected* an operator
+test (a skipped test is a collected one): `a11y.spec.ts` and `overflow.spec.ts` carry the member
+shell and not the operator console, and an unconditional union would make every a11y run announce
+seven routes as unphotographed — true of that run, useless as a signal, and the fastest way to
+teach a reader to skip the banner.
+
+### This PR is not mergeable on its own
+
+Baselines are captured on a runner, never in an agent sandbox. Until
+`e2e-manual.yml → workflow_dispatch → base_url=<preview>, capture_shell ✔, update_baselines ✔`
+lands its 28 `admin*` PNGs on the branch, the seven surfaces fail with *"snapshot doesn't exist"* —
+which the shell reporter already renders as a capture step rather than a regression. Read the job
+summary's shell-coverage table before believing a capture was complete: if the account is not
+staff, the capture commits the member-shell PNGs and **no** operator ones.
+
+### One thing to expect on the first green run
+
+`baseline-distinctness.test.ts` fails the committed tree when two surfaces are near-identical, and
+its `ALLOWED_TWINS` list is empty on purpose. Seven admin consoles share a chrome band and a lot of
+table furniture. If two operator baselines come back near-identical, that is the file doing its job
+and the answer is one of two, with the measurement attached: the pair is a defensible twin and gets
+an `ALLOWED_TWINS` row, or one of the two surfaces is redundant and comes off `OPERATOR_PATHS`.
+Never widen the similarity threshold.
+
+## ADR-1132: The Spotlight Guestbook is a real table rendered as a grid block — session-client writes, admin-client page reads, and a hide that keeps its slot (2026-08-25)
+
+**Status:** accepted · advances `PROG-SPOT` (first increment of the "Spotlight socials"
+program row, unparked 2026-08-20) · rests on the Top Friends precedent
+([ADR pattern in `supabase/migrations/20260903000000_spotlight_top_friends.sql`]) and the
+grid engine (ADR-508/516/522) · enforced by `pnpm check:rls`, `pnpm check:grants`,
+`pnpm check:admin-client`, and `lib/spotlight/guestbook.test.ts`
+
+### Context
+
+`PROG-SPOT` names three remaining MySpace-era socials for the Spotlight mini-site:
+Guestbook, stickers/decals, and the deferred embed providers. The premise was re-tested
+before building (ADR-1082 discipline): no `spotlight_guestbook` or sticker table exists in
+production, no guestbook/sticker code exists in the tree, and no later ADR re-scoped the
+row — the census matched the row exactly, so the work stood. The Guestbook ships first
+because it is the storage + moderation lift the BUILD-LIST spec called out, and it slots
+into the block architecture Top Friends already proved.
+
+### The decision
+
+1. **A real table, not JSON.** `spotlight_guestbook` (migration `20270325000000`) holds
+   `owner_profile_id` / `signer_profile_id` FKs to `profiles` (cascade), the note text, and
+   `hidden_at`. Like Top Friends, the row references OTHER profiles, so it gets referential
+   integrity a `meta` blob cannot; the signer's displayed identity resolves from their own
+   public profile at read time, so only the note text is member-supplied — normalized
+   (`normalizeGuestbookMessage`, pure + unit-tested) and bounded twice (action + a schema
+   `char_length` check, 1..500).
+2. **Anti-spam is structural.** `unique (owner, signer)` = one note per person per
+   guestbook; a not-self check constraint; and an hourly per-signer cap
+   (`GUESTBOOK_SIGNS_PER_HOUR = 8`) counted in the sign action over the signer's OWN rows.
+   **A hidden note keeps its unique slot**, so hiding a nuisance signer also blocks their
+   re-sign — moderation and rate-limiting share one mechanism.
+3. **Writes under the session client; RLS is the boundary.** Sign / remove / hide
+   (`app/spotlight/[handle]/guestbook-actions.ts`) run under `lib/supabase/server.ts`.
+   Policies: insert only as yourself and un-hidden; update (the hide seam) only owner or
+   staff — deliberately NOT the signer, who could otherwise null their own `hidden_at`;
+   delete for owner, signer, or staff; select for owner (all, hidden included), signer
+   (own rows — what the rate-limit count reads), staff. Grant verdict: `authenticated`.
+4. **Page reads follow the Top Friends pattern.** The public `/spotlight/[handle]` page
+   renders to anonymous visitors with zero RLS, so `lib/spotlight/guestbook.ts` reads
+   through the admin client (added to `scripts/admin-client-baseline.txt` — the visible
+   act the ratchet requires), filters `hidden_at` itself, and drops entries whose signer
+   is missing/inactive/system. Entries ride `SpotlightData.guestbook` from the ONE reader
+   (`loadMemberSpotlight`), resolved in parallel with Top Friends.
+5. **One grid block, no legacy schema change.** `guestbook` is a `data`-category member
+   block in the unified registry (`lib/entity-blocks/registry.ts`), rendered by
+   `components/widgets/member-profile/guestbook.tsx` — a viewer-aware RSC (one session
+   read picks the tail: sign form / "you signed" / owner moderation controls / sign-in
+   line) with client islands composing the kit primitives (Textarea/Button/IconButton).
+   The legacy `meta.spotlight.layout` `BlockType` union is untouched: the guestbook has
+   no authored config, so it needs no Puck-era schema/validator case. It is NOT a Studio
+   entity — signing is a single-field inline form on someone else's page, not a creation
+   wizard, so the Studio contract (ADR-986) does not apply.
+6. **Migration ordering (ADR-1111 posture, stated explicitly).** The file is committed at
+   version `20270325000000` (next after the ledger head `20270322000000`, verified live on
+   2026-08-25) and is **not yet applied**: this session's permission gate blocks production
+   DDL, and the strict file⇄apply pairing means `check:migrations --require-ledger` reads
+   RED on this branch — a repo file with no ledger row — until a maintainer runs the
+   two-step in `supabase/migrations/README.md` (apply, then repair the ledger row to this
+   exact version). That red is the gate reporting the true state, not a defect (ADR-1111's
+   own diagnostic). Apply BEFORE merge: the code in this same change reads the table. The
+   table is additive and inert until this code deploys (nothing else reads it). Any sibling
+   branch that also claims `20270325000000` must renumber; whichever lands second takes
+   `main` first, per ADR-1111 rule 2.
+
+### Deferred, recorded where status lives
+
+The remaining `PROG-SPOT` sequence is in the row itself: stickers/decals (`LIVE-122`),
+the three deferred embed providers (Bandcamp / Apple Music / Twitch), earned cosmetics,
+and guestbook depth (report integration via `reports.target_type`, an owner unhide
+surface, notification on sign). `HYG-031` tracks re-generating `lib/database.types.ts`
+from production (the `spotlight_guestbook` types were hand-added in the generated style).
+
+### Consequences
+
+New: `supabase/migrations/20270325000000_spotlight_guestbook.sql`,
+`lib/spotlight/guestbook.ts` (admin read, baselined), `lib/spotlight/guestbook.shared.ts`
+(+ `guestbook.test.ts`, 7 cases), `app/spotlight/[handle]/guestbook-actions.ts`,
+`components/widgets/member-profile/guestbook.tsx`, `components/spotlight/guestbook-form.tsx`.
+Changed: `lib/spotlight/data.ts` (guestbook in `SpotlightData`), `lib/entity-blocks/{registry,member-adapter}.ts`,
+`components/widgets/member-profile/member-profile-modules.tsx`, `lib/database.types.ts`,
+`scripts/{table-grants.txt,admin-client-baseline.txt}`, `docs/{NAMING.md,BUILD-LIST.md}`,
+`docs/BUILD-BACKLOG.json` (PROG-SPOT re-checked; +LIVE-122, +HYG-031). Reversible: the
+block renders nothing until a member places it, and dropping the table + the block row
+retracts the feature with no other surface touched.
+---
+
+## ADR-1136: The 26 adoptable bands adopt, and "9 bespoke stanzas" turns out to be 5 stanzas plus 4 compositions (2026-08-25)
+
+**Status:** accepted · advances `PROG-P5` · builds on [ADR-1117](#adr-1117) (the resolver) ·
+the detail-side echo of PROG-P4's `resolveMarketHero` (branch `theme/p4-browse-hero`; its ADR lands
+with that branch) · extends [ADR-793](#adr-793), [ADR-411](#adr-411)
+
+### The premise, re-tested first (AGENTS.md, [ADR-1082](#adr-1082))
+
+The census held: re-counted by render site on 2026-08-25 against `main` (fcb5348c4) there are still
+**30 live `DetailTemplate` surfaces** — 28 direct, 2 through `EventDetailTemplate`, skeletons and
+templates excluded — with 4 already on `resolveDetailHero` and 26 remaining, exactly as the row
+recorded them a day earlier.
+
+What did NOT survive contact is the row's split of the remainder. It said 17 straightforward + "9
+bespoke-lockup surfaces" — implying nine pages carrying the same hand-rolled resolution stanza.
+Read one by one, the nine are **two different things**:
+
+- **5 carry the stanza** the resolver was extracted from — `resolveHeaderElement` with identity
+  defaults, an entity cover + focal point, a stored height honoured only when the host chose one:
+  `/channels/<id>`, `/circles/<slug>`, `/journeys/<slug>`, `/journeys/<slug>/learn`,
+  `/people/<handle>`. Retiring those five stanzas is an adoption: the lockup (eyebrow, leading
+  chip, on-cover actions) stays exactly where it was; only the resolution moves.
+- **4 hand-roll a bespoke cover NODE, not the stanza**: `/circles/starter/<slug>` renders a
+  generated `TemplateCover`; the Space profile layout has its own Header/Hero size vocabulary that
+  never consults the header element; the two event pages compose a multi-source event-media ladder
+  (uploaded cover → scanned poster → crop) with no element resolve at all. There is nothing there
+  for the resolver to retire — folding each one is the behaviour change ADR-1117 already said needs
+  its own PR with screenshots.
+
+### What shipped
+
+**1. `resolveIdentityHero` — the identity twin, in the same module.** The five stanza pages share
+the ladder but not the composition: their `<h1>` rides the band, so they need `PageHero` props
+(`variant · size · overlayStyle · coverImage · coverFocus`), not `DetailTemplate` cover props.
+`lib/layout/detail-hero.ts` gains `asIdentityHero` (pure) + `resolveIdentityHero` (async) — the
+same four rungs through the same `pickDetailHero`, the element asked as an `identity` surface with
+the caller's own defaults (a profile's scrim-off, a Journey author's picked overlay), and ONE
+semantic difference: the empty ladder yields `null` (the gradient), never "no band", because a band
+that carries the `<h1>` must exist — the index side's rule, inherited for the index side's reason.
+The section `tail` does not apply. This is PROG-P4's move ("one ladder over both browse
+compositions") replayed on the detail side: one ladder over both entity compositions.
+
+**2. All five stanza pages adopted it**, each deleting its hand-rolled copy. The Circle's TOTAL
+None/Shade/Blend overlay rides as `entityOverlayStyle` (still beating the element, as its comment
+demands); the Channel's and Circle's null-unless-chosen stored heights ride as `entitySize`; the
+Journey's and profile's author-picked overlays ride as element *defaults* (still beaten by operator
+masters). Zero pixels move: every input reaches `PageHero` through the same precedence it had.
+
+**3. The 17 straightforward sites adopted `resolveDetailHero`** — including the two client islands
+(`/connections/<id>`, `/admin/crm/pipeline/<id>`), whose SERVER pages resolve the bag and hand it
+down as a prop, and `VeraProfile`, which became an async server component. One page gains a real
+rung 1: `/discover/journeys/<slug>` passes `journey_plans.cover_image` + `cover_focus`, so a
+published Journey's photo now shows on its public twin (the same win ADR-1117 shipped for
+practices).
+
+**4. Fourteen new `DETAIL_HERO_DEFAULTS` rows, every one `image: null` + `tail: 'none'`** — pinned
+by a unit test. No section cover was invented (the task's own rule: a null tail is a result). What
+a row buys is rung 2: the operator's Settings header image for `/channels`, `/circles`,
+`/journeys`, `/people`, `/hubs`, `/nexuses`, `/partners`, `/store`, `/nearby`, `/help`,
+`/lead/training-library`, `/discover/journeys`, `/discover/partners`, `/discover/events` stops
+being dropped on the floor — the detail-side echo of the PROG-P4 finding, at detail scale. Four
+surfaces stay deliberately unmapped as private/operator work surfaces (`/support`, `/connections`,
+`/admin/crm/pipeline`, the Space podcast show, whose square artwork is identity, not a cover);
+their adoptions are visual no-ops by the map's own safety property.
+
+### What this changes on screen
+
+Today, almost nothing — by construction. `page_settings` holds one header image in production
+(`/crew`, a Dashboard). The one visible movement is `/discover/journeys/<slug>` for Journeys whose
+`cover_image` is set: they gain the standard 16:6 cover band above the context header. Everything
+else renders byte-identical until an operator uploads a section image — at which point 26 entity
+surfaces honour it instead of ignoring it.
+
+### The count going forward
+
+26 of 30 render sites resolve through the one module (21 standard + 5 identity). The remaining 4
+are not stragglers of THIS grammar but candidates for their own: each is a bespoke cover
+composition whose folding changes behaviour, counted on `PROG-P5` as such.

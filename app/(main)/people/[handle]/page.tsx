@@ -50,7 +50,7 @@ import { loadRootSpaceId } from '@/lib/spaces/store'
 // takes its colour from the hero ZONE's --color-on-media (ADR-894), and the fixed white-on-glass
 // original cannot do that. It stays exported and untouched for the seven non-adaptive heroes.
 import { DetailTemplate, PageHero, HERO_ACTION_CLASS_ADAPTIVE } from '@/components/templates'
-import { resolveHeaderElement } from '@/lib/elements/header'
+import { resolveIdentityHero } from '@/lib/layout/detail-hero'
 import { ProfileAvatar } from '@/components/profile/profile-avatar'
 // The bought cosmetics, finally rendered (backlog LIVE-013). The store has charged Gems for
 // borders, flairs and titles since the gem-store migration; until these three components landed,
@@ -479,7 +479,15 @@ export default async function ProfilePage({
   // /admin/elements can still override it site-wide (resolveHeaderElement precedence).
   const overlayStyle = readProfileOverlayStyle((profile as { meta?: unknown }).meta)
   const overlayColor = readProfileOverlayColor((profile as { meta?: unknown }).meta)
-  const header = await resolveHeaderElement({ defaults: { layout: 'identity', height: 'standard', scrim: false, overlayStyle } })
+  // The identity band's chrome through the ONE resolver (PROG-P5, ADR-1136): the member's own
+  // header photo + focal point is rung 1, the operator's /people Settings image stands behind it,
+  // and variant/height/scrim/overlay still resolve through the header element exactly as before
+  // (scrim-off surface default, the owner's picked overlay as the surface default under it).
+  const hero = await resolveIdentityHero(`/people/${profile.handle as string}`, {
+    entityImage: headerImageUrl,
+    entityFocus: headerFocus,
+    defaults: { scrim: false, overlayStyle },
+  })
   return (
     <>
       {tippedCents !== null && (
@@ -497,12 +505,8 @@ export default async function ProfilePage({
       <DetailTemplate
         hero={
           <PageHero
-            variant={header.layout}
-            size={header.height}
-            overlayStyle={header.overlayStyle}
+            {...hero}
             overlayColor={overlayColor ?? undefined}
-            coverImage={headerImageUrl}
-            coverFocus={headerFocus}
             dimmed={isDemo}
             // Content-aware overlaid text (ADR-830): no glow — the name/@handle pick light or
             // dark copy from the pixels behind them (and the overlay setting), live as the rail

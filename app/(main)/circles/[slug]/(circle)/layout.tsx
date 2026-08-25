@@ -16,7 +16,7 @@ import { DetailTemplate, PageHero } from '@/components/templates'
 import { buttonClasses } from '@/components/ui/button'
 import { UnderlineTabs } from '@/components/ui/underline-tabs'
 import { QrShareDropdown } from '@/components/qr/qr-share-dropdown'
-import { resolveHeaderElement } from '@/lib/elements/header'
+import { resolveIdentityHero } from '@/lib/layout/detail-hero'
 import { loadCircleShell } from '@/lib/circles/store'
 import { circleTabs } from '@/lib/circles/tabs'
 import {
@@ -73,7 +73,8 @@ import { circleEventInsider, loadCircleContentFacts } from './tab-facts'
 //   1. COVER    — ONE immersive PageHero as DetailTemplate's `hero` slot: rounded, bordered, height
 //                 off the header element's size ladder. No cover photo = the neutral token gradient.
 //                 Never a bare cover card with the title stranded underneath it.
-//   2. TUNABLE  — layout / height / overlay resolve through `resolveHeaderElement`, so /admin/elements
+//   2. TUNABLE  — variant / height / overlay + the cover ladder resolve through `resolveIdentityHero`
+//                 (ADR-1136, one resolver for every entity band), so /admin/elements
 //                 retunes the band with no deploy, and the operator's saved hero height wins over it.
 //   3. TITLE    — the single page <h1> rides the cover, bottom-left, over the ink scrim, with the
 //                 uppercase "CIRCLE" eyebrow above it. This is the ONLY h1 on the page: the body
@@ -174,7 +175,7 @@ export default async function CircleDetailLayout({
   // Round 2. Four independent reads in one batch. `user` gates the signed-in-only banners, caps
   // drives the manager rules, isPaidViewer feeds the Crew gate on Join, and the content facts
   // decide which tabs exist at all.
-  const [user, caps, isCrew, content, header] = await Promise.all([
+  const [user, caps, isCrew, content, hero] = await Promise.all([
     getCachedUser(),
     // Request-memoized, so the tab page under `children` asking the same question is a memo hit
     // rather than a second capability resolution (lib/circles/detail-access.ts).
@@ -183,10 +184,19 @@ export default async function CircleDetailLayout({
     // `insider` keys the memoized events read, and it is derived from the roster (not from caps)
     // so the Events tab can derive the SAME key and hit the memo. See circleEventInsider.
     loadCircleContentFacts(circle.id, circleEventInsider({ isMember, isHost })),
-    // The tunable header band (ADR-793). Identity layout, standard height, unless /admin/elements
-    // says otherwise. It joins this batch rather than sitting in front of the JSX, because the
-    // cover cannot paint without it and a serial await here is PAGE-FRAMEWORK §5.3's anti-pattern.
-    resolveHeaderElement({ defaults: { layout: 'identity', height: 'standard' } }),
+    // The identity band's chrome through the ONE resolver (PROG-P5, ADR-1136): the same ladder as
+    // every entity cover — the Circle's own image_url on rung 1, the operator's /circles Settings
+    // image behind it — plus the element-resolved variant/height (ADR-793) this layout used to
+    // hand-roll. It joins this batch rather than sitting in front of the JSX, because the cover
+    // cannot paint without it and a serial await here is PAGE-FRAMEWORK §5.3's anti-pattern.
+    // The host's stored height and their TOTAL None/Shade/Blend overlay choice (added to the
+    // Circle admin rail 2026-08-12) ride in as entity values, so both keep beating the element.
+    resolveIdentityHero(`/circles/${slug}`, {
+      entityImage: circle.image_url,
+      entityFocus: readCircleCoverFocus(theme),
+      entitySize: hasCircleHeroHeight(theme) ? readCircleHeroHeight(theme) : null,
+      entityOverlayStyle: circleHeroOverlayStyle(theme),
+    }),
   ])
 
   const canManage = caps.has('circle.editSettings')
@@ -201,12 +211,6 @@ export default async function CircleDetailLayout({
   const full = circle.member_count >= circle.member_cap
   const nearCap = circle.member_count >= circle.member_cap * 0.9
   const pct = Math.min(100, Math.round((circle.member_count / circle.member_cap) * 100))
-
-  // The operator's saved hero height, when they have set one on THIS Circle, wins over the header
-  // element default resolved in round 2 above. Null-unless-chosen is the whole point: a host who
-  // picks "Standard" on a Circle whose element says "Tall" must see the height change, so an
-  // explicit choice is stored and only an unset key defers to the element (lib/circles/hero.ts).
-  const savedHeroHeight = hasCircleHeroHeight(theme) ? readCircleHeroHeight(theme) : undefined
 
   // Header status pill: draft → muted, forming → green, active → blue, full/closed → red.
   const statusPill = isDraft
@@ -272,15 +276,7 @@ export default async function CircleDetailLayout({
         title={circle.name}
         hero={
           <PageHero
-            variant={header.layout}
-            size={savedHeroHeight ?? header.height}
-            // The operator's own None / Shade / Blend choice, added to the Circle admin rail on
-            // 2026-08-12. It is TOTAL — an untuned Circle reads 'shade', the treatment that stays
-            // legible on any photo — so it needs no fallback to the element default and must not
-            // have one, or a deliberate "None" would be overridden by the element.
-            overlayStyle={circleHeroOverlayStyle(theme)}
-            coverImage={circle.image_url}
-            coverFocus={readCircleCoverFocus(theme)}
+            {...hero}
             eyebrow="Circle"
             title={circle.name}
             subtitle={[circle.neighborhood, circle.city].filter(Boolean).join(', ') || undefined}

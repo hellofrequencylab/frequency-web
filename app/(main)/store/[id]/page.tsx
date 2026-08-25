@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import { getProduct } from '@/lib/commerce/products'
 import { getProductReviews } from '@/lib/commerce/reviews'
 import { DetailTemplate } from '@/components/templates'
+import { resolveDetailHero } from '@/lib/layout/detail-hero'
 import { JsonLd } from '@/components/json-ld'
 import { productSchema } from '@/lib/jsonld'
 import { SITE_NAME } from '@/lib/site'
@@ -58,7 +59,13 @@ export default async function ShopProductPage({ params }: { params: Promise<{ id
   // Store products are commerce_products under the same review model as Market, so the Store's Product
   // JSON-LD gets rating parity: the visible-review aggregate feeds AggregateRating and a handful of
   // Review nodes. Gated downstream on reviewCount > 0, so an unreviewed item carries no rating node.
-  const reviews = await getProductReviews(product.id)
+  // Reviews + the standard entity cover (PROG-P5, ADR-1136) in one batch. Product photos stay in
+  // the gallery below — a square product shot is not a 16:6 cover — so the ladder here is the
+  // operator's /store Settings image or nothing.
+  const [reviews, hero] = await Promise.all([
+    getProductReviews(product.id),
+    resolveDetailHero(`/store/${id}`),
+  ])
 
   return (
     <div className="mx-auto w-full max-w-2xl">
@@ -85,6 +92,7 @@ export default async function ShopProductPage({ params }: { params: Promise<{ id
         })}
       />
       <DetailTemplate
+        {...hero}
         back={{ href: '/store', label: 'Frequency Store' }}
         title={product.title}
         subtitle={<span className="font-semibold text-text">{usd(product.priceCents, product.currency)}</span>}

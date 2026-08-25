@@ -24,7 +24,7 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import sharp from 'sharp'
 import { describe, expect, it } from 'vitest'
-import { appSurfaces, publicSurfaces } from './surfaces'
+import { coverageSurfaces } from './surfaces'
 
 const DIR = join('test', 'e2e', '__screenshots__', 'visual.spec.ts')
 
@@ -34,7 +34,9 @@ const VIEWPORT = { desktop: { width: 1280, height: 800 }, mobile: { width: 390, 
 /** Slugs captured at viewport height, read off the surface registry rather than re-listed.
  *  The stub env is what makes the two env-gated rows visible here; see appSurfaces().
  *
- *  🔴 BOTH REGISTRIES, and keep it that way even though only `/feed` opts in today. This read
+ *  🔴 EVERY REGISTRY, and keep it that way even though only `/feed` opts in today. It reads
+ *  `coverageSurfaces()` — the visual suite's own union (ADR-1128), so a registry added there is
+ *  covered here the day it lands rather than the day someone remembers. This read
  *  `appSurfaces()` alone, on the fair assumption that only the member shell would ever need a
  *  first-screen capture. `/discover` broke that in #2139: an ANON surface opted in, its eight
  *  baselines came back viewport-tall, and this file called every one of them a Vercel protection
@@ -44,7 +46,7 @@ const VIEWPORT = { desktop: { width: 1280, height: 800 }, mobile: { width: 390, 
  *  compromised capture rather than as an unknown, and the next anon opt-in must not have to
  *  rediscover that. */
 const VIEWPORT_ONLY = new Set(
-  [...appSurfaces({ roomPath: '/room', spaceSlug: 'space' }), ...publicSurfaces()]
+  coverageSurfaces({ roomPath: '/room', spaceSlug: 'space' })
     .filter((s) => s.viewportOnly)
     .map((s) => s.slug),
 )

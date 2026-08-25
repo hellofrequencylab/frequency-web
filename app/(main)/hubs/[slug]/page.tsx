@@ -5,6 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { HierarchyBreadcrumb } from '@/components/hierarchy/breadcrumb'
 import { StatusBadge } from '@/components/groups/status-badge'
 import { DetailTemplate } from '@/components/templates/detail-template'
+import { resolveDetailHero } from '@/lib/layout/detail-hero'
 import { InlineText } from '@/components/admin/inline/inline-text'
 import { OpenAdminBarButton } from '@/components/admin/open-admin-bar-button'
 import { getHubCapabilities } from '@/lib/core/load-capabilities'
@@ -75,7 +76,7 @@ export default async function HubPage({
   // Scoped Insight surface (P1.6 adoption, ADR-225): the IN-SCOPE matrix question, so a Guide who
   // leads THIS hub by stewardship edge — even a global member — gets the hub's Insight summary (a hub
   // confers guide level ⇒ `full`). Additive: a non-leader resolves `none` and the section stays hidden.
-  const [caps, insightAccess, rawCirclesRes] = await Promise.all([
+  const [caps, insightAccess, rawCirclesRes, hero] = await Promise.all([
     getHubCapabilities(hub.id),
     surfaceAccess('insight', { type: 'hub', id: hub.id }),
     admin
@@ -87,6 +88,10 @@ export default async function HubPage({
       .eq('hub_id', hub.id)
       .neq('status', 'archived')
       .order('name', { ascending: true }),
+    // The standard entity cover (PROG-P5, ADR-1136). A Hub carries no cover column, so the ladder
+    // is the operator's /hubs Settings image or nothing — adopting is a visual no-op until an
+    // operator uploads one, and then every Hub page wears it.
+    resolveDetailHero(`/hubs/${slug}`),
   ])
   const canManage = caps.has('hub.manage')
   const showsInsight = showsScopedInsight(insightAccess)
@@ -113,6 +118,7 @@ export default async function HubPage({
 
       {/* ── Header (DetailTemplate) ─────────────────── */}
       <DetailTemplate
+        {...hero}
         title={
           canManage ? (
             <InlineText

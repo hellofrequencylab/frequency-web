@@ -25,7 +25,7 @@ import { NewCircleCompose } from '@/components/compose/new-circle-compose'
 import { OpenAdminBarButton } from '@/components/admin/open-admin-bar-button'
 import { canCreate, getChannelCapabilities } from '@/lib/core/load-capabilities'
 import { DetailTemplate, PageHero, HERO_ACTION_CLASS, type DetailTab } from '@/components/templates'
-import { resolveHeaderElement } from '@/lib/elements/header'
+import { resolveIdentityHero } from '@/lib/layout/detail-hero'
 import { buttonClasses } from '@/components/ui/button'
 import { ModuleCard } from '@/components/modules/module-card'
 import { SectionHeader } from '@/components/ui/section-header'
@@ -251,7 +251,7 @@ export default async function ChannelPage({
     chapters,
     pillarRow,
     channelCaps,
-    header,
+    hero,
   ] = await Promise.all([
     admin
       .from('topical_channel_memberships')
@@ -289,7 +289,15 @@ export default async function ChannelPage({
           .then(({ data }) => data as { name: string } | null)
       : Promise.resolve(null),
     getChannelCapabilities(channel.id),
-    resolveHeaderElement({ defaults: { layout: 'identity', height: 'standard' } }),
+    // The identity band's chrome through the ONE resolver (PROG-P5, ADR-1136): the same ladder as
+    // every entity cover — the Channel's own cover_image on rung 1, the operator's /channels
+    // Settings image behind it — plus the element-resolved variant/height/overlay this page used
+    // to hand-roll. The stored per-Channel height/focus ride in as entity values below.
+    resolveIdentityHero(`/channels/${channel.id}`, {
+      entityImage: channel.cover_image,
+      entityFocus: readChannelCoverFocus(channel.theme) ?? null,
+      entitySize: hasChannelHeroHeight(channel.theme) ? readChannelHeroHeight(channel.theme) : null,
+    }),
   ])
 
   const channelRoomId = (channelRoom as { id: string } | null)?.id ?? null
@@ -314,16 +322,6 @@ export default async function ChannelPage({
   // When held, the header carries the standardized admin-bar trigger PLUS the link into
   // the /channels/[id]/manage console — mirroring the event header's Edit + Manage pair.
   const canManageChannel = channelCaps.has('channel.manage')
-
-  // The saved header settings (topical_channels.theme, ADR-886). An untouched Channel resolves to
-  // the centered default and NO explicit height, which is exactly today's render.
-  //
-  // savedHeroHeight is deliberately null-unless-chosen rather than always a value: the header
-  // ELEMENT config (resolveHeaderElement, ADR-793) also has an opinion about height, and it should
-  // keep deciding for every Channel no operator has tuned. Once an operator picks one, theirs wins.
-  const channelCoverFocus = readChannelCoverFocus(channel.theme)
-  const storedHeight = readChannelHeroHeight(channel.theme)
-  const savedHeroHeight = hasChannelHeroHeight(channel.theme) ? storedHeight : null
 
   const Icon = CHANNEL_CATEGORY_ICON[channel.category] ?? FALLBACK_CHANNEL_CATEGORY_ICON
   const accent = channelCategoryAccent(channel.category)
@@ -399,8 +397,8 @@ export default async function ChannelPage({
             1. COVER: one immersive PageHero band as DetailTemplate's `hero` slot (rounded-3xl,
                border, min-height off the header element's size ladder), never a standalone cover
                card with the title stranded below it. No cover = the neutral token gradient.
-            2. TUNABLE: layout/height/overlay resolve through resolveHeaderElement (identity/
-               standard defaults, the entity-page idiom), so /admin/elements retunes it, no deploy.
+            2. TUNABLE: variant/height/overlay + the cover ladder resolve through
+               resolveIdentityHero (ADR-1136), so /admin/elements retunes it, no deploy.
             3. TITLE: the single h1 rides the cover, bottom-left, over the ink scrim (on-ink copy),
                with a leading chip (the category icon) and the uppercase accent eyebrow above it —
                the Space-page lockup.
@@ -418,11 +416,7 @@ export default async function ChannelPage({
         title={channel.name}
         hero={
           <PageHero
-            variant={header.layout}
-            size={savedHeroHeight ?? header.height}
-            overlayStyle={header.overlayStyle}
-            coverImage={channel.cover_image}
-            coverFocus={channelCoverFocus}
+            {...hero}
             leading={
               <span className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl shadow ring-1 ring-on-ink/10 backdrop-blur ${accent}`}>
                 <Icon className="h-6 w-6" />

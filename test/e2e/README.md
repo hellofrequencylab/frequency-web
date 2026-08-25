@@ -58,13 +58,34 @@ when that happens rather than letting it pass quietly.
 
 `test/e2e/surfaces.ts` is the single registry both suites read.
 
-**Surfaces.** Every `EDITABLE_PAGES` route, *parsed from `lib/page-editor/data.ts`
-at run time* (not hardcoded), plus `/discover`. A route converted to a template
-under Lift 5c therefore joins the suite automatically and shows up as a missing
-baseline — never as silent non-coverage. Member-shell surfaces (`/feed`, a room,
-`/settings`, and the Space console) join when `PW_STORAGE_STATE` points at a live
-member session; without one they skip, and the run says so in words rather than
-as a skip count — see [The member shell](#the-member-shell).
+**Surfaces.** The **visual** suite reads `coverageSurfaces()` — its own list,
+chosen for coverage (ADR-1128). Three inputs:
+
+| Input | Where from | Why |
+| :--- | :--- | :--- |
+| the `EDITABLE_PAGES` routes | *parsed from `lib/page-editor/data.ts` at run time*, not hardcoded | a route converted to a template under Lift 5c joins automatically, and shows up as a missing baseline rather than as silent non-coverage |
+| the public extras | `EXTRA_PUBLIC_PATHS` (`/discover`) | routes with no editor row |
+| the operator console | `OPERATOR_PATHS`, seven `/admin` routes | measured, not chosen by taste — run `node scripts/visual-surface-census.mjs` |
+
+Member-shell surfaces (`/feed`, `/nearby`, a room, `/settings`, and the Space
+console) join when `PW_STORAGE_STATE` points at a live member session; the
+operator routes ride that **same** session. Without one they skip, and the run
+says so in words rather than as a skip count — see
+[The member shell](#the-member-shell).
+
+> 🔴 **Until 2026-08-25 this list was `EDITABLE_PAGES` plus `/discover`, full stop**,
+> and `EDITABLE_PAGES` answers a different question: *which pages may the page editor
+> edit?* So the file held **zero** `/admin` paths and no operator surface in the
+> product was visually watched. It was found the only way it could be — a DAWN sweep
+> moved 37 sites, exactly **one** sat on a watched surface (it produced 4 real
+> failures), and the run reported "140 passed" (backlog `HYG-026`). The parse stays,
+> because it is right; it is now one **input** rather than the list.
+
+**The @a11y and overflow suites still read `publicSurfaces()` / `appSurfaces()`**
+and do *not* include the operator routes. An operator surface with no row in
+`a11y-baselines.json` is held to `$defaultMax` (0 serious+), so adding it there
+without a seeded ratchet capture would fail PRs on debt that predates them
+(`HYG-027`).
 
 **Render states.** Four, from the two orthogonal axes in `app/globals.css`:
 
@@ -204,6 +225,44 @@ is how a check gets ignored. The exit code stays honest; the *words* change.
 Once the credential and the shell baselines exist, set the repo variable
 `PW_REQUIRE_SHELL=1` and the same situation becomes a hard failure — so a
 credential that later expires cannot quietly re-open the blind spot.
+
+### The operator console (ADR-1128)
+
+Seven `/admin` routes ride the **same** `PW_STORAGE_STATE` — there is no second
+auth path, and there must not be one. What they need on top of a session is a
+**role**: `requireAdminFloor()` admits platform staff (`web_role` admin/janitor)
+or a `team_members` staff role that sees at least one admin group, and redirects
+everyone else to `/feed`.
+
+So an operator capture has exactly one extra failure mode, and it is handled
+differently from the member shell's:
+
+| What happened | Where the landing goes | What the suite does |
+| :--- | :--- | :--- |
+| No session at all | `/sign-in` | skip — the whole `@shell` half skips, PARTIAL banner |
+| Session, **not staff** | `/feed` | **skip, with the cause named** (`operatorDenialReason`) and every route listed as unphotographed |
+| Session, dead credential | `/sign-in` | **throw** — `assertMemberSession`, unchanged |
+| Session, staff, wrong route | anywhere else | **throw** — the `app-room` failure mode |
+
+The middle row is the one worth understanding. A red X meaning *"nobody has
+promoted the e2e account yet"* is precisely the check-training failure
+`e2e.yml`'s own header argues against, so it is a skip. It is **not** a silent
+one: the describe carries `@shell`, so `shell-reporter.ts` counts these tests and
+names each unphotographed `/admin` route in `$GITHUB_STEP_SUMMARY` on every run.
+
+**To turn them on:** give the `PW_MEMBER_EMAIL` account `web_role = 'admin'`.
+That is the whole change; the surfaces start capturing on the next run. Tracked
+as `HYG-027`.
+
+**Which seven, and why those.** `node scripts/visual-surface-census.mjs` prints
+the measurement and re-runs it. Short version, 2026-08-25: 99 of the repo's 463
+frozen `raw-button-bg` sites (21.4%) and 518 of its 1,799 raw `<button>` tags
+(28.8%) live in `app/(main)/admin/**` + `components/admin/**`, and these seven
+routes hold 48% of the `raw-button-bg` and 53% of the buttons that all 92 static
+admin routes can be credited with. Capturing all 92 would be 368 captures on every
+pixel-moving PR (~18 minutes); seven is 28 captures (~1.5 minutes). That cut is
+stated rather than performed silently — a silent truncation reads as coverage,
+which is what `HYG-026` was filed about.
 
 ### Minting a session
 

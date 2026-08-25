@@ -7,6 +7,7 @@ import { ShowSubscribe } from '@/components/airwaves/show-subscribe'
 import { ShowEpisodes, type ShowEpisodeItem } from '@/components/airwaves/show-episodes'
 import { EmptyState } from '@/components/ui/empty-state'
 import { DetailTemplate } from '@/components/templates'
+import { resolveDetailHero } from '@/lib/layout/detail-hero'
 import { JsonLd } from '@/components/json-ld'
 import { podcastSchema, podcastEpisodeSchema } from '@/lib/jsonld'
 import { SITE_URL } from '@/lib/site'
@@ -150,6 +151,10 @@ export default async function ShowPage({
       series: { title: show.title, path: `/spaces/${slug}/podcasts/${showSlug}` },
     }),
   )
+  // The standard entity cover (PROG-P5, ADR-1136). The show's SQUARE artwork is identity, not a
+  // 16:6 cover — it stays in the `band` lockup below — so the route is deliberately UNMAPPED and
+  // this resolves to no cover until a section row (or a real wide cover column) exists.
+  const hero = await resolveDetailHero(`/spaces/${slug}/podcasts/${showSlug}`)
 
   return (
     <div className="mx-auto max-w-3xl">
@@ -158,6 +163,7 @@ export default async function ShowPage({
         <JsonLd key={items[i].id} data={node} />
       ))}
       <DetailTemplate
+        {...hero}
         title={show.title}
         band={
           <div className="flex flex-col gap-5 sm:flex-row sm:items-start">

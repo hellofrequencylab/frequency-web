@@ -268,6 +268,7 @@ space_ticket_tiers                   authenticated
 space_updates                        authenticated
 space_venue_holds                    internal
 spaces                               authenticated
+spotlight_guestbook                  authenticated
 spotlight_top_friends                public
 stewardships                         authenticated
 store_items                          public
