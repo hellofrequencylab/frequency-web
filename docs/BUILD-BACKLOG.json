@@ -3822,23 +3822,6 @@
       }
     },
     {
-      "id": "HYG-021",
-      "title": "Server-generated Loom assets carry no blurhash, and only a decode can fix it",
-      "status": "open",
-      "lane": "hygiene",
-      "size": "S",
-      "source": {
-        "file": "docs/LIBRARY.md",
-        "ref": "Every upload ingests"
-      },
-      "detail": "Split out of PROG-D1 on 2026-08-25 (ADR-1121) rather than left as a silent gap. Ingest computes blurhash + palette in the BROWSER (lib/library/image-describe.ts) because a server decode means sharp, and check:og-trace has sharp at 67 of a 100 budget in a seam the picker, page editor, importer and email studio all reach. Every path where a person picks a file therefore gets both. FOUR PATHS DO NOT, because no browser exists on them: Recraft generation (app/(main)/admin/library/recraft-actions.ts), Vera covers (lib/loom/cover-actions.ts), importer seeds (lib/importer/materialize.ts) and event-photo copies (lib/library/event-loom.ts). They get a checksum and dimensions; blurhash and colors stay NULL, so those cards paint a flat placeholder.\n\n🔴 DO NOT CLOSE THIS BY IMPORTING sharp INTO THE INGEST SEAM. That is the 2026-08-11 ENOSPC fan-out and the whole reason the pixel work is in the browser. Three approaches that do not widen the fan-out, cheapest first: (a) DECIDE IT DOES NOT MATTER and close the row — a generated asset is usually already on screen when it is created, so the placeholder buys a fraction of a second; (b) compute it in the STUDIO CLIENT after the generation returns, one extra round-trip, which is the same browser trick one step later; (c) a single isolated route or edge function that owns the decode, so sharp reaches ONE function instead of the seam — and that only pays for itself if D7's auto-tag and colour extraction want the same decode anyway. MEASURE check:og-trace before and after whichever is chosen, and read what it prints (DEPLOY-SAFETY.md).\n\n⚠️ RE-TEST THE PREMISE FIRST. If D7 has shipped AI colour extraction by the time anyone picks this up, the colours half is already solved and only the blurhash remains.",
-      "verify": {
-        "kind": "manual",
-        "evidence": "Measured 2026-08-25: grep for `blurhash` across the four server-side write paths returns nothing, while lib/loom/picker-actions.ts, lib/page-editor/loom-field-actions.ts, lib/email-studio/loom-actions.ts and app/(main)/admin/library/actions.ts all read it via readImageDescriptor. Manual rather than cmd because the row's resolution may legitimately be 'decided not worth it' (option a), and a probe cannot tell that apart from 'not done' — ADR-970: a gate that cannot fire honestly gets routed around, and then it reads as coverage.",
-        "checked": "2026-08-25"
-      }
-    },
-    {
       "id": "LIVE-120",
       "title": "Eight orphaned importer staging files sit in site-media with no catalog row and no lifecycle",
       "status": "open",
