@@ -12,6 +12,7 @@ import { validateSpotlightTheme, type SpotlightTheme } from '@/lib/spotlight/the
 import { readMemberGridLayout } from '@/lib/entity-blocks/member-grid-meta'
 import type { EntityLayout } from '@/lib/entity-blocks/layout'
 import { getTopFriendsForOwner, type TopFriend } from './top-friends'
+import { getGuestbookForOwner, type GuestbookEntry } from './guestbook'
 import { SPOTLIGHT_SELECT, type SpotlightRow } from './privacy'
 import { upcomingEventFloor } from '@/lib/events/upcoming-floor'
 
@@ -42,6 +43,9 @@ export interface SpotlightData {
   /** The member's ordered Top Friends (the "Top 8"), resolved server-side from the
    *  spotlight_top_friends table joined to each friend's public profile. Empty when none. */
   topFriends: TopFriend[]
+  /** The newest visible Guestbook notes (spotlight_guestbook), signer identity resolved
+   *  server-side from each signer's public profile. Hidden entries never appear. */
+  guestbook: GuestbookEntry[]
   /** The member's saved unified GRID layout (ADR-508 U2b), read fail-safe off meta.entityGrid. Null when
    *  absent / malformed so the module render falls back to the fresh member default. DELIBERATELY
    *  separate from the live Puck nodes (meta.spotlight.*): reading it never affects the Puck render. */
@@ -131,8 +135,12 @@ async function loadMemberSpotlight(
   // reactions, joins, etc., so the stat never appeared.)
   const totalZaps = Number(g.lifetime_zaps ?? 0)
 
-  // The ordered Top Friends grid (resolved to each friend's public profile fields).
-  const topFriends = await getTopFriendsForOwner(g.id)
+  // The ordered Top Friends grid + the visible Guestbook notes, resolved in parallel
+  // (both are per-owner reads joined to public profile fields).
+  const [topFriends, guestbook] = await Promise.all([
+    getTopFriendsForOwner(g.id),
+    getGuestbookForOwner(g.id),
+  ])
 
   // The member's saved unified grid layout (U3 module render), read fail-safe off the SAME meta blob the
   // publish/layout gate already loaded — no extra query. Never returned raw; only the parsed layout.
@@ -146,6 +154,7 @@ async function loadMemberSpotlight(
     theme,
     totalZaps,
     topFriends,
+    guestbook,
     grid,
   }
 }

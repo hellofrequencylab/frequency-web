@@ -447,6 +447,12 @@ cleanly by audience and this section pins which is which.
   audit action `spotlight.toggle`. OFF for everyone by default; turned on per member.
   **Not "Studio"** (locked for the creation tool + the future Calm/Studio *mode* axis)
   and **not "Signal"** (a retired rank, below). Locked June 2026 (ADR-423).
+- **Guestbook** = the notes visitors leave on a Spotlight (ADR-1132). Member-facing
+  copy: "guestbook", lowercase mid-sentence ("sign the guestbook", "leave a note");
+  an entry is a **note**, never a "comment" or "post" (those belong to the feed).
+  Signing is "sign", not "write in" or "submit". Internal: table
+  `spotlight_guestbook`, block id `guestbook`. **Not "wall"** (retired MySpace
+  framing; a wall implies a feed, and this is a one-note-per-person book).
 
 ## Business pages (Spaces): two designators
 

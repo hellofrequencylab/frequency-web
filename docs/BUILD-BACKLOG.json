@@ -138,6 +138,7 @@
           "ids": [
             "PROG-PRAC4",
             "PROG-SPOT",
+            "LIVE-122",
             "PROG-A4",
             "DEF-DOMAIN",
             "LIVE-067"
@@ -1592,11 +1593,11 @@
         "file": "docs/BUILD-LIST.md",
         "ref": "Spotlight socials"
       },
-      "detail": "Guestbook needs a spotlight_guestbook table (RLS: owner reads all, anyone-signed-in writes), moderation, rate-limiting and the read-side render. Stickers are an absolute-positioned decorative layer with validated coordinates and an allowlisted set. Plus three deferred embed providers and the earned-cosmetics lane.\n\n── UNPARKED 2026-08-20 (owner ruling): scheduled into the build-out; sequence in meta.slate.",
+      "detail": "Guestbook needs a spotlight_guestbook table (RLS: owner reads all, anyone-signed-in writes), moderation, rate-limiting and the read-side render. Stickers are an absolute-positioned decorative layer with validated coordinates and an allowlisted set. Plus three deferred embed providers and the earned-cosmetics lane.\n\n── UNPARKED 2026-08-20 (owner ruling): scheduled into the build-out; sequence in meta.slate.\n\n── INCREMENT 1 SHIPPED 2026-08-25 (ADR-1132): the Guestbook end to end — spotlight_guestbook table (migration 20270323000000, committed; APPLY PENDING — the session permission gate blocked production DDL, so a maintainer runs the two-step in supabase/migrations/README.md before merge, and check:migrations reads red until then per ADR-1111), RLS per the spec plus a hide seam that keeps the unique (owner, signer) slot so a hidden signer cannot re-sign, session-client writes (sign/remove/hide) with an hourly cap, admin-client page read following the Top Friends pattern, and the 'guestbook' member grid block with a viewer-aware form. REMAINING SEQUENCE, in order: (1) stickers/decals layer — LIVE-122; (2) deferred embed providers Bandcamp / Apple Music / Twitch (each = a host-allowlist entry in lib/spotlight/embeds.ts + frame-src in next.config.ts); (3) earned-cosmetics lane (extend PROFILE_SKINS gating on requiredItem, per the round-3 note in ADR record); (4) guestbook depth — report integration (reports.target_type), owner unhide surface, sign notification. Close this row when all four land.",
       "verify": {
         "kind": "manual",
-        "evidence": "Program phase.",
-        "checked": "2026-08-17"
+        "evidence": "Program phase. Increment 1 (Guestbook) proven by lib/spotlight/guestbook.test.ts + check:rls/check:grants over migration 20270323000000; remainder open — LIVE-122 probes the sticker layer.",
+        "checked": "2026-08-25"
       }
     },
     {
@@ -3899,6 +3900,44 @@
         "cmd": "node -e \"const fs=require('fs');const S='test/e2e/surfaces.ts';if(!fs.existsSync(S))process.exit(79);const src=fs.readFileSync(S,'utf8');const admin=new Set((src.match(/'\\\\/admin[^']*'/g)||[]));if(admin.size<6){console.error('the visual suite watches '+admin.size+' operator route(s); its surfaces still come from EDITABLE_PAGES, which is the page editor\\\\'s list, not a coverage list');process.exit(1)}process.exit(0)\""
       },
       "detail": "FOUND 2026-08-25 by PROG-DAWN3 slice 1 (ADR-1119), and found the only way it could be — by a sweep moving pixels and CI mostly not noticing. Slice 1 changed 37 sites; EXACTLY ONE of them renders on a surface the visual suite watches (the event approval controls, mounted by the space console), and that one produced 4 real failures. The other 36 moved with nothing looking at them. So the run's '140 passed' was never evidence the sweep held still — it was evidence that 36 of 37 sites are unobserved.\n\n🔴 THE CAUSE IS STRUCTURAL, NOT AN OVERSIGHT. test/e2e/visual.spec.ts takes its surfaces from test/e2e/surfaces.ts, which parses EDITABLE_PAGES out of lib/page-editor/data.ts at run time and adds one hand-maintained extra ('/discover'). EDITABLE_PAGES exists to say WHICH PAGES THE PAGE EDITOR MAY EDIT. It was never chosen for visual coverage, so what the suite watches is a by-product of an unrelated product decision, and it grows only when a marketing page is converted to a template. MEASURED 2026-08-25: the file contains ZERO '/admin' paths, so no operator surface in the product is visually watched at all — which is where the bulk of PROG-DAWN3's remaining ~1,960 sites live.\n\nThis is ADR-970's failure mode INSIDE the guard meant to prevent it: a gate that cannot fire over most of the tree still reads as coverage, and a green pr-compare gets quoted as 'no visual change'. The parse-at-run-time design is right and stays; what is wrong is the LIST it parses being someone else's.\n\nTHE FIX (owner ruling 2026-08-25, asked and answered while slice 1 was red): give the visual suite its own surface list, chosen for coverage rather than inherited — keeping the EDITABLE_PAGES parse as one INPUT so Lift 5c conversions still join automatically, and adding the operator/admin routes explicitly. Costs runner time per PR and a one-off baseline capture, which is why it is not folded into a DAWN slice: widening the list requires a capture on a runner (e2e-manual.yml → workflow_dispatch → update_baselines) and that is its own change with its own green run to read.\n\nTHE PROBE measures the consequence, not the title: it counts distinct '/admin' route literals in test/e2e/surfaces.ts and fails while that is under 6. Today it is 0. It cannot be satisfied by renaming anything, only by actually watching operator surfaces."
+    },
+    {
+      "id": "LIVE-122",
+      "title": "Spotlight stickers/decals: the decorative layer PROG-SPOT still owes",
+      "status": "open",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "docs/BUILD-LIST.md",
+        "ref": "Spotlight socials · Stickers / decals"
+      },
+      "detail": "The second PROG-SPOT increment (ADR-1132 shipped the first, the Guestbook). An absolute-positioned decorative layer over the Spotlight: emoji/earned stickers from a CLOSED allowlist, coordinates validated on read AND write (the fail-open validator idiom of lib/spotlight/blocks/validate.ts — clamp 0..100, drop unknown sticker ids whole), stored in meta.spotlight (no FK to other rows, so JSON is right where the Guestbook needed a table). Render as a member grid block or page chrome; owner-only writes, session-derived like saveMemberGridLayout. Earned stickers gate on the cosmetics inventory when that lane lands.",
+      "verify": {
+        "kind": "grep-present",
+        "pattern": "sticker",
+        "paths": [
+          "lib/entity-blocks/registry.ts",
+          "lib/spotlight/blocks/schema.ts"
+        ],
+        "note": "The consequence: a sticker layer must register in the unified block registry or the Spotlight schema to render at all. Absent today, so the row reads open; any real implementation passes it, and nothing else in these files says sticker."
+      }
+    },
+    {
+      "id": "HYG-031",
+      "title": "lib/database.types.ts carries a hand-added spotlight_guestbook block — regen from production to prove parity",
+      "status": "open",
+      "lane": "hygiene",
+      "size": "S",
+      "source": {
+        "file": "lib/database.types.ts",
+        "ref": "spotlight_guestbook"
+      },
+      "detail": "ADR-1132 added the spotlight_guestbook types by hand in the generated style (the same way spotlight_top_friends arrived) because a full regen against production folds in every drift from every in-flight sibling branch — a diff that does not belong in a feature PR. The debt: nothing has machine-checked that the hand-written block matches what supabase gen types would emit. Next integrator regen (the standing 'regen + drop the untyped admin-handle casts' step BUILD-LIST already names) closes this: run the regen, diff, and mark this row done with the commit as evidence.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Hand-add verified by eye against migration 20270323000000 (columns/nullability) on 2026-08-25. Not yet proven by a regen; regen after the migration is applied.",
+        "checked": "2026-08-25"
+      }
     }
   ]
 }

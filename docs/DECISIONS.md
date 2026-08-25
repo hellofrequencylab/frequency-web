@@ -29942,3 +29942,89 @@ which had also expired by the time anyone read it: two of its four sub-figures (
 row's own closing sentence warned about, in the paragraph directly beneath the numbers. The
 re-census is 2,004. **Measure through the instrument the gate uses, or the census expires faster
 than the sweep it is meant to plan.**
+
+## ADR-1132: The Spotlight Guestbook is a real table rendered as a grid block — session-client writes, admin-client page reads, and a hide that keeps its slot (2026-08-25)
+
+**Status:** accepted · advances `PROG-SPOT` (first increment of the "Spotlight socials"
+program row, unparked 2026-08-20) · rests on the Top Friends precedent
+([ADR pattern in `supabase/migrations/20260903000000_spotlight_top_friends.sql`]) and the
+grid engine (ADR-508/516/522) · enforced by `pnpm check:rls`, `pnpm check:grants`,
+`pnpm check:admin-client`, and `lib/spotlight/guestbook.test.ts`
+
+### Context
+
+`PROG-SPOT` names three remaining MySpace-era socials for the Spotlight mini-site:
+Guestbook, stickers/decals, and the deferred embed providers. The premise was re-tested
+before building (ADR-1082 discipline): no `spotlight_guestbook` or sticker table exists in
+production, no guestbook/sticker code exists in the tree, and no later ADR re-scoped the
+row — the census matched the row exactly, so the work stood. The Guestbook ships first
+because it is the storage + moderation lift the BUILD-LIST spec called out, and it slots
+into the block architecture Top Friends already proved.
+
+### The decision
+
+1. **A real table, not JSON.** `spotlight_guestbook` (migration `20270323000000`) holds
+   `owner_profile_id` / `signer_profile_id` FKs to `profiles` (cascade), the note text, and
+   `hidden_at`. Like Top Friends, the row references OTHER profiles, so it gets referential
+   integrity a `meta` blob cannot; the signer's displayed identity resolves from their own
+   public profile at read time, so only the note text is member-supplied — normalized
+   (`normalizeGuestbookMessage`, pure + unit-tested) and bounded twice (action + a schema
+   `char_length` check, 1..500).
+2. **Anti-spam is structural.** `unique (owner, signer)` = one note per person per
+   guestbook; a not-self check constraint; and an hourly per-signer cap
+   (`GUESTBOOK_SIGNS_PER_HOUR = 8`) counted in the sign action over the signer's OWN rows.
+   **A hidden note keeps its unique slot**, so hiding a nuisance signer also blocks their
+   re-sign — moderation and rate-limiting share one mechanism.
+3. **Writes under the session client; RLS is the boundary.** Sign / remove / hide
+   (`app/spotlight/[handle]/guestbook-actions.ts`) run under `lib/supabase/server.ts`.
+   Policies: insert only as yourself and un-hidden; update (the hide seam) only owner or
+   staff — deliberately NOT the signer, who could otherwise null their own `hidden_at`;
+   delete for owner, signer, or staff; select for owner (all, hidden included), signer
+   (own rows — what the rate-limit count reads), staff. Grant verdict: `authenticated`.
+4. **Page reads follow the Top Friends pattern.** The public `/spotlight/[handle]` page
+   renders to anonymous visitors with zero RLS, so `lib/spotlight/guestbook.ts` reads
+   through the admin client (added to `scripts/admin-client-baseline.txt` — the visible
+   act the ratchet requires), filters `hidden_at` itself, and drops entries whose signer
+   is missing/inactive/system. Entries ride `SpotlightData.guestbook` from the ONE reader
+   (`loadMemberSpotlight`), resolved in parallel with Top Friends.
+5. **One grid block, no legacy schema change.** `guestbook` is a `data`-category member
+   block in the unified registry (`lib/entity-blocks/registry.ts`), rendered by
+   `components/widgets/member-profile/guestbook.tsx` — a viewer-aware RSC (one session
+   read picks the tail: sign form / "you signed" / owner moderation controls / sign-in
+   line) with client islands composing the kit primitives (Textarea/Button/IconButton).
+   The legacy `meta.spotlight.layout` `BlockType` union is untouched: the guestbook has
+   no authored config, so it needs no Puck-era schema/validator case. It is NOT a Studio
+   entity — signing is a single-field inline form on someone else's page, not a creation
+   wizard, so the Studio contract (ADR-986) does not apply.
+6. **Migration ordering (ADR-1111 posture, stated explicitly).** The file is committed at
+   version `20270323000000` (next after the ledger head `20270322000000`, verified live on
+   2026-08-25) and is **not yet applied**: this session's permission gate blocks production
+   DDL, and the strict file⇄apply pairing means `check:migrations --require-ledger` reads
+   RED on this branch — a repo file with no ledger row — until a maintainer runs the
+   two-step in `supabase/migrations/README.md` (apply, then repair the ledger row to this
+   exact version). That red is the gate reporting the true state, not a defect (ADR-1111's
+   own diagnostic). Apply BEFORE merge: the code in this same change reads the table. The
+   table is additive and inert until this code deploys (nothing else reads it). Any sibling
+   branch that also claims `20270323000000` must renumber; whichever lands second takes
+   `main` first, per ADR-1111 rule 2.
+
+### Deferred, recorded where status lives
+
+The remaining `PROG-SPOT` sequence is in the row itself: stickers/decals (`LIVE-122`),
+the three deferred embed providers (Bandcamp / Apple Music / Twitch), earned cosmetics,
+and guestbook depth (report integration via `reports.target_type`, an owner unhide
+surface, notification on sign). `HYG-031` tracks re-generating `lib/database.types.ts`
+from production (the `spotlight_guestbook` types were hand-added in the generated style).
+
+### Consequences
+
+New: `supabase/migrations/20270323000000_spotlight_guestbook.sql`,
+`lib/spotlight/guestbook.ts` (admin read, baselined), `lib/spotlight/guestbook.shared.ts`
+(+ `guestbook.test.ts`, 7 cases), `app/spotlight/[handle]/guestbook-actions.ts`,
+`components/widgets/member-profile/guestbook.tsx`, `components/spotlight/guestbook-form.tsx`.
+Changed: `lib/spotlight/data.ts` (guestbook in `SpotlightData`), `lib/entity-blocks/{registry,member-adapter}.ts`,
+`components/widgets/member-profile/member-profile-modules.tsx`, `lib/database.types.ts`,
+`scripts/{table-grants.txt,admin-client-baseline.txt}`, `docs/{NAMING.md,BUILD-LIST.md}`,
+`docs/BUILD-BACKLOG.json` (PROG-SPOT re-checked; +LIVE-122, +HYG-031). Reversible: the
+block renders nothing until a member places it, and dropping the table + the block row
+retracts the feature with no other surface touched.
