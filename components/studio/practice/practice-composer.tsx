@@ -71,6 +71,7 @@ export function PracticeComposer({ id, isEmpty }: { id: string; isEmpty: boolean
         <>
           <p className="mt-1 text-body-sm text-muted">Describe the practice in plain words. Vera drafts the name, the hook, the guide, the Pillar, and a cadence. Edit anything after.</p>
           <Textarea
+            aria-label="Describe the practice"
             value={build}
             disabled={pending}
             onChange={(e) => setBuild(e.target.value)}
@@ -102,6 +103,7 @@ export function PracticeComposer({ id, isEmpty }: { id: string; isEmpty: boolean
         <>
           <p className="mt-1 text-body-sm text-muted">Tell Vera what to change in plain words. She reads the whole practice and applies it. You can undo by editing any field by hand.</p>
           <Textarea
+            aria-label="What Vera should change"
             value={change}
             disabled={pending}
             onChange={(e) => setChange(e.target.value)}

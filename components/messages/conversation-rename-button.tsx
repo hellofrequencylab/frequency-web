@@ -31,6 +31,7 @@ export function ConversationRenameButton({
       <div className="flex items-center gap-1">
         <input
           type="text"
+          aria-label="Group name"
           value={value}
           onChange={e => setValue(e.target.value)}
           onKeyDown={e => {

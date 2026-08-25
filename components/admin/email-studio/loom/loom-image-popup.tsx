@@ -213,6 +213,7 @@ export function LoomImagePopup({
                   <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-subtle" aria-hidden />
                   <Input
                     type="search"
+                    aria-label="Search your photos"
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
                     placeholder="Search your photos"

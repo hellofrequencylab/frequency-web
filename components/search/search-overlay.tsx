@@ -138,6 +138,7 @@ export function SearchOverlay({ onClose, viewer }: { onClose: () => void; viewer
           <Input
             variant="seamless"
             ref={inputRef}
+            aria-label="Search people, posts and events"
             value={q}
             onChange={handleChange}
             placeholder="Search people, posts, events…"

@@ -588,6 +588,7 @@ export function IconPicker({
 
             <Input
               type="text"
+              aria-label={source === 'icon' ? 'Search icons' : 'Search emoji'}
               value={query}
               placeholder={source === 'icon' ? 'Search icons' : 'Search emoji'}
               onChange={(e) => setQuery(e.target.value)}

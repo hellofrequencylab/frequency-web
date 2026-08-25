@@ -312,6 +312,7 @@ function TransferHostControl({ eventId, slug }: { eventId: string; slug: string 
         <div className="mt-2">
           <Input
             type="text"
+            aria-label="New host"
             value={query}
             onChange={(e) => {
               setQuery(e.target.value)
@@ -439,6 +440,7 @@ function ScopeSearch({
         <Input
           variant="seamless"
           type="text"
+          aria-label="Search Spaces and Circles by name"
           value={query}
           onChange={(e) => {
             setQuery(e.target.value)

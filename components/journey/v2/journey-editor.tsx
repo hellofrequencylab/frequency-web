@@ -388,6 +388,7 @@ export function JourneyEditor({
         <Input
           variant="seamless"
           autoFocus
+          aria-label="Search practices"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search practices…"

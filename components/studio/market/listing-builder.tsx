@@ -113,6 +113,7 @@ export function ListingBuilder(props: ListingBuilderProps) {
         <div className="min-w-0 flex-1">
           <Input
             variant="seamless"
+            aria-label="Listing title"
             value={title}
             onChange={(e) => { setTitle(e.target.value); queueSave({ title: e.target.value }) }}
             maxLength={120}
@@ -121,6 +122,7 @@ export function ListingBuilder(props: ListingBuilderProps) {
           />
           <Input
             variant="seamless"
+            aria-label="Category (optional)"
             value={category}
             onChange={(e) => { setCategory(e.target.value); queueSave({ category: e.target.value || null }) }}
             maxLength={40}
