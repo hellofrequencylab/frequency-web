@@ -641,12 +641,16 @@ banner. Exemplars **that really compose `IndexTemplate` today** (verified 2026-0
 they moved to the **editable index** below. Same hero, different body.)*
 
 **Overlay Hero Header (`heroOverlay`):** the uniform Business-Spaces hero band — a cover image
-with the title, subtitle, and the page's own action buttons overlaid on an ink scrim. Adopters:
+with the title, subtitle, and the page's own action buttons overlaid on an ink scrim. Adopters
+(all of them now spread `{...await resolveIndexHero(route)}` rather than passing the props by hand):
 [`practices/page.tsx`](<../app/(main)/practices/page.tsx>),
 [`library/page.tsx`](<../app/(main)/library/page.tsx>),
-[`journeys/page.tsx`](<../app/(main)/journeys/page.tsx>), plus the surfaces that take the band
-with no cover image (the gradient placeholder): `journeys/mine`, `network`,
-`network/contacts`, `network/friends`. Each keeps its own title/description +
+[`journeys/page.tsx`](<../app/(main)/journeys/page.tsx>),
+[`events/calendar/page.tsx`](<../app/(main)/events/calendar/page.tsx>), plus the surfaces that take
+the band with no cover image (the gradient placeholder): `journeys/mine`, `network`,
+`network/contacts`, `network/friends`. **8 of the 32 `IndexTemplate` render sites; the other 24 are
+still plain** (`LIVE-117` — adopting there is a real layout change, not a dropped rung, so it
+carries its own PR and its own visual-baseline pass). Each keeps its own title/description +
 buttons; a section default image (under `public/images/site/`) keeps the band present when the
 operator has set none. Secondary buttons that ride the scrim use on-ink styling
 (`border-white/30 bg-white/10 text-on-ink`); primary create buttons stay `bg-primary`.
@@ -722,7 +726,7 @@ return <IndexTemplate {...hero} title="Friends" … />
 | Rung | Source |
 |---|---|
 | 1 | the operator's Settings header image for the route (`getPageHeaderImage`) — **and only this rung carries the focal point**, since a focal point is picked against one specific upload |
-| 2 | the page-content hero the caller passes as `contentImage` (ADR-180) |
+| 2 | the page-content hero, **resolved by the copy cascade** (§8.6) — this route's row, else the nearest section's, else the site row. Pass `contentImage` only to override that read; an explicit `null` suppresses it |
 | 3 | an explicit `fallbackImage`, else the route's section default from `INDEX_HERO_DEFAULTS` |
 | 4 | `null` — the neutral gradient band, a **result** and not a failure |
 
@@ -734,6 +738,63 @@ page's `<h1>` in `font-display` uppercase at `clamp(1.75rem, 6vw, 3.75rem)` and 
 `/network/contacts`, `/network/friends`) where the member came to get something done. Those rows
 feed `resolveHeaderElement` as the *surface* default, so an operator height master still wins.
 Adding a page to the program is a row in that map plus `{...hero}` — never a new stanza.
+
+A row also carries **`inheritHero`** (default `true`). The utility rows set it `false`, so the copy
+cascade cannot hand `/journeys/mine` the Journeys section photo and quietly overturn the short/large
+split above. A hero set on the utility route *itself* still wins, because that is not inheritance.
+
+**The two flags are separate on purpose: `size` is about the BAND, `inheritHero` is about the
+IMAGE.** `/events/calendar` is the row that shows the difference — it takes `short` (a month grid is
+a work surface) while keeping `inheritHero: true`, because the calendar *is* the Events section
+wearing a different body, so the photo an operator uploaded for `/events` belongs on it.
+
+**The editable index uses the SAME ladder — call `resolveMarketHero`** (PROG-P4,
+[ADR-1127](DECISIONS.md)). The nine `MarketHero` surfaces below already render the same `PageHero`,
+so the band was never the problem; the ladder was. Measured 2026-08-25: `getPageHeaderImage` — rung
+1, the operator's Settings › Basics uploader — appeared in **3 of the 41 browse render sites**, and
+`savePageSeo` offers that uploader on any safe route, so on the rest an operator could upload a
+header image and watch nothing happen. `resolveMarketHero` returns the same four rungs shaped for
+`MarketHero`'s prop names:
+
+```tsx
+const hero = await resolveMarketHero('/store', { cover: HERO_IMAGE })
+return <MarketHero {...hero} title="Wear it, gift it, show up" search={…} action={…} />
+```
+
+`cover` is **required**, unlike `resolveIndexHero`'s optional `fallbackImage`: `MarketHero` types
+`image` as non-null, because the neutral gradient band is a legitimate result on a utility index and
+a broken header on a hero-led commerce one. The requirement puts that guarantee in the type instead
+of nine `?? SOMETHING` expressions.
+
+## 8.6 The copy cascade: site → section → page (ADR-1122)
+
+`page_content` (ADR-180/182) holds the operator-editable title, description, hero image and CTA for
+a route. It was read with `.eq('route', route)`, so only the exact route ever saw its own row.
+[`lib/layout/content-cascade.ts`](../lib/layout/content-cascade.ts) makes it inherit, in one query,
+with no schema change: the rows that already exist become the section rung by being where they are.
+
+```ts
+const c = await resolvePageContent('/events/calendar', CONTENT_FALLBACK) // inherits /events
+```
+
+| Rung | Scope | Key |
+|---|---|---|
+| 1 | the page | the exact route |
+| 2 | the section(s) | each ancestor route, nearest first (`/network/friends/x` reads `/network/friends`, then `/network`) |
+| 3 | the site | the reserved `'*'` key — never `'/'`, which is the home page's own row |
+| 4 | the code | the `fallback` the page passes, a **result** and not a failure |
+
+Three rules make it a cascade rather than a fallback chain:
+
+- **Inheritance is per FIELD.** A page that sets only its title still inherits its section's hero.
+- **Identity does NOT inherit.** `title` and `description` resolve at the page rung or fall through
+  to the coded copy. A section title inherited by a child renames it, and both feed
+  `pageContentMetadata`, so inheriting them would emit one meta description across a whole section.
+- **The CTA is ONE unit.** `ctaLabel` and `ctaHref` come from the nearest scope that sets either,
+  never spliced across rungs, and render only when both survive.
+
+`getPageContent` is deliberately unchanged and still exact-route: the operator editor has to show
+what THIS route stores, never what it borrows.
 
 ### The standard Detail cover: `coverImage`
 
@@ -780,6 +841,25 @@ visual no-op. A section joins the program by adding a row — never by a page in
 The tail's `placeholder` / `none` split is a product decision held as data: the grey slot is an
 **affordance**, so it paints where a host can fill it in place (`/practices`) and not on the public
 twin where a visitor cannot (`/discover/practices`).
+
+**The identity-lockup pages call the same module — `resolveIdentityHero`** (ADR-1136, the detail
+echo of PROG-P4's `resolveMarketHero`). `/channels/<id>`, `/circles/<slug>`, `/journeys/<slug>`
+(+ `/learn`) and `/people/<handle>` do not take the standard cover: their `<h1>` rides an
+identity-variant `PageHero` in `DetailTemplate`'s `hero` slot, with an eyebrow, a leading chip and
+on-cover actions the minimal cover has no slot for. What they share with every other entity page is
+the resolution: `resolveIdentityHero(route, opts)` runs the SAME four-rung ladder and the header
+element (asked as an `identity` surface) and returns a spreadable `PageHero` bag
+(`variant · size · overlayStyle · coverImage · coverFocus`). One semantic difference, inherited
+from the index side for the index side's reason: the identity band carries the `<h1>`, so its
+empty-ladder result is `null` (the gradient) — never "no band" — and the section `tail` does not
+apply. The page keeps its own lockup; only the stanza moved.
+
+As of the ADR-1136 adoption, 26 of the 30 live `DetailTemplate` render sites resolve their band
+through this module (21 standard + 5 identity). The four that do not — `/circles/starter/<slug>`
+(a generated `TemplateCover`), the Space profile layout (its own Header/Hero size vocabulary), and
+the two event pages via `EventDetailTemplate` (a multi-source event-media ladder) — hand-roll a
+bespoke cover NODE, not the stanza, and folding each is a behaviour change with its own PR
+(counted on `PROG-P5`).
 
 ### The admin-settings scope kit (9 touch-points)
 
@@ -865,6 +945,8 @@ how a published draft shadows a coded experience, or an in-app page loses its ch
   reaffirmed 2026-07-28). `FOCUS_NONE_PREFIXES`, `SCOPED_PREFIXES`, and
   `SCOPED_PATTERNS` are deliberately empty; only the zero-chrome takeovers,
   `/admin/*`, and the full-width editors drop it (§8.2).
+- **Operator page copy inherits down the route tree** (site → section → page → code), per field,
+  with identity fields and the CTA pair deliberately excepted (ADR-1122, §8.6).
 - **The editable index is a sanctioned composition** (`MarketHero` + `BlockRender` /
   `PageModules`) for a browse surface whose body an operator rearranges. Same
   canonical `PageHero`, same global rail — a body choice, not an exemption (§8.5).

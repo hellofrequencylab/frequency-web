@@ -8,6 +8,7 @@ import {
   Loader2, Trash2, Check, Save, StickyNote, Phone, Mail, Users, CheckSquare, Plus,
 } from 'lucide-react'
 import { DetailTemplate } from '@/components/templates'
+import type { PageHeroSize, HeroOverlayStyle } from '@/components/templates/page-hero'
 import { Button } from '@/components/ui/button'
 import { Input, Textarea } from '@/components/ui/field'
 import { Select } from '@/components/ui/select'
@@ -32,10 +33,19 @@ export function DealDetail({
   deal,
   stages,
   activities,
+  hero,
 }: {
   deal: CrmDeal
   stages: CrmStage[]
   activities: CrmActivity[]
+  /** The standard entity cover (PROG-P5, ADR-1136), resolved by the SERVER page — this client
+   *  island cannot call the server-only resolver, so the page hands it the spreadable bag. */
+  hero?: {
+    coverImage?: string | null
+    coverFocus?: string | null
+    coverSize?: PageHeroSize
+    coverOverlayStyle?: HeroOverlayStyle
+  }
 }) {
   const router = useRouter()
   const [pending, start] = useTransition()
@@ -85,6 +95,7 @@ export function DealDetail({
   return (
     <div className="mx-auto w-full max-w-3xl">
       <DetailTemplate
+        {...hero}
         back={{ href: '/admin/crm/pipeline', label: 'Pipeline' }}
         title={
           <Input

@@ -34,6 +34,7 @@ import {
   downscaleForScan, fileToImage, cropBoxToJpeg, deskewPoster, canvasToJpeg,
   mapBoxThroughHomography, type DeskewResult,
 } from './image-tools'
+import { Button } from '@/components/ui/button'
 
 const BUCKET = 'network-contacts'
 
@@ -473,13 +474,12 @@ export function Creator({ userId, canSeed = false }: { userId: string; canSeed?:
           ) : (
             <span />
           )}
-          <button
+          <Button
             type="button"
             onClick={buildDraft}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
           >
             {unreadable ? 'Use it anyway' : 'Continue to the draft'} <ArrowRight className="h-4 w-4" />
-          </button>
+          </Button>
         </div>
       </div>
     )
@@ -531,13 +531,12 @@ export function Creator({ userId, canSeed = false }: { userId: string; canSeed?:
           One straight-on shot usually does it. Add a close-up if the fine print matters.
         </p>
         <div className="mt-4 flex flex-wrap justify-center gap-2">
-          <button
+          <Button
             type="button"
             onClick={() => cameraRef.current?.click()}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
           >
             <Camera className="h-4 w-4" /> Take a photo
-          </button>
+          </Button>
           <button
             type="button"
             onClick={() => galleryRef.current?.click()}
@@ -579,15 +578,14 @@ export function Creator({ userId, canSeed = false }: { userId: string; canSeed?:
             <ClipboardList className="h-4 w-4" /> Send to the review board
           </button>
         )}
-        <button
+        <Button
           type="button"
           onClick={runScan}
           disabled={files.length === 0}
-          className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
         >
           <Sparkles className="h-4 w-4" />
           {files.length <= 1 ? 'Read the poster' : `Read ${files.length} shots`}
-        </button>
+        </Button>
       </div>
 
       <input ref={cameraRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => void addFiles(e.target.files)} />

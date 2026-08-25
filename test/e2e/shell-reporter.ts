@@ -31,11 +31,28 @@ import {
   summarizeShellCoverage,
   type ShellObservation,
 } from './shell-coverage'
-import { STORAGE_STATE, appSurfaces } from './surfaces'
+import { STORAGE_STATE, appSurfaces, operatorSurfaces } from './surfaces'
 
-/** The tag that marks a test as covering the member shell. Applied to the `member shell`
- *  describes in visual.spec.ts and a11y.spec.ts. */
+/** The tag that marks a test as covering an AUTHED surface. Applied to the `member shell`
+ *  describes in visual.spec.ts and a11y.spec.ts, and to the `operator console` describe in
+ *  visual.spec.ts (ADR-1128). */
 const SHELL_TAG = '@shell'
+
+/** Every authed surface path this reporter can attribute an observation to.
+ *
+ *  ⚠️ THE OPERATOR HALF IS INCLUDED ONLY WHEN THE RUN COLLECTED IT, and that condition is the
+ *  whole design. `a11y.spec.ts` and `overflow.spec.ts` carry the member shell and NOT the
+ *  operator console, so an unconditional union would make every a11y run announce seven
+ *  operator routes as "still unphotographed" — true of that run, useless as a signal, and the
+ *  fastest way to teach a reader to skip the banner. A SKIPPED test is still a collected one,
+ *  so a visual run whose operator surfaces all skip does report them, which is the case that
+ *  matters. */
+function authedSurfaces(collectedOperator: boolean): string[] {
+  return [
+    ...appSurfaces().map((s) => s.path),
+    ...(collectedOperator ? operatorSurfaces().map((s) => s.path) : []),
+  ]
+}
 
 /** Playwright's message when a baseline PNG has never been captured. */
 const MISSING_SNAPSHOT = /snapshot doesn't exist|snapshot does not exist|is missing in snapshots/i
@@ -44,17 +61,25 @@ export default class ShellCoverageReporter implements Reporter {
   /** Keyed by test id so retries collapse to their final attempt. */
   private readonly seen = new Map<string, ShellObservation>()
   private readonly specs = new Set<string>()
+  /** Did this run collect any operator-console test at all (ran OR skipped)? */
+  private operatorCollected = false
 
   onTestEnd(test: TestCase, result: TestResult): void {
     if (!test.tags.includes(SHELL_TAG)) return
 
-    const surfaces = appSurfaces().map((s) => s.path)
+    // Attribution reads the FULL union: a run that collected an operator test must be able to
+    // name which route it was, and `this.operatorCollected` is set from exactly that match.
+    const surfaces = authedSurfaces(true)
     // Longest first: `/spaces/x/manage` must not be attributed to `/spaces`.
     const surface =
       [...surfaces].sort((a, b) => b.length - a.length).find((path) => test.title.startsWith(path)) ??
       ''
 
     const errors = [result.error?.message ?? '', ...result.errors.map((e) => e.message ?? '')].join('\n')
+
+    if (surface !== '' && operatorSurfaces().some((s) => s.path === surface)) {
+      this.operatorCollected = true
+    }
 
     this.specs.add(basename(test.location.file))
     this.seen.set(test.id, {
@@ -70,7 +95,7 @@ export default class ShellCoverageReporter implements Reporter {
       baseURL: process.env.PW_BASE_URL,
       storageStateVar: process.env.PW_STORAGE_STATE,
       storageState: STORAGE_STATE,
-      surfaces: appSurfaces().map((s) => s.path),
+      surfaces: authedSurfaces(this.operatorCollected),
       observations: [...this.seen.values()],
       specs: [...this.specs].sort(),
       spaceSlug: process.env.PW_SPACE_SLUG,

@@ -9,6 +9,7 @@ import {
 import { getInitials } from '@/lib/utils'
 import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { DetailTemplate } from '@/components/templates'
+import type { PageHeroSize, HeroOverlayStyle } from '@/components/templates/page-hero'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input, Textarea } from '@/components/ui/field'
 import { Select } from '@/components/ui/select'
@@ -59,6 +60,7 @@ export function Detail({
   back,
   crmTease,
   operatedSpaces = [],
+  hero,
 }: {
   initial: ContactDetail
   reminders?: ContactReminder[]
@@ -71,6 +73,14 @@ export function Detail({
   crmTease?: TeaseGate
   /** The Spaces the owner operates (ADR-778) — enables the 'Shared with a Space team' tier. */
   operatedSpaces?: OperatedSpaceOption[]
+  /** The standard entity cover (PROG-P5, ADR-1136), resolved by the SERVER page — this client
+   *  island cannot call the server-only resolver, so the page hands it the spreadable bag. */
+  hero?: {
+    coverImage?: string | null
+    coverFocus?: string | null
+    coverSize?: PageHeroSize
+    coverOverlayStyle?: HeroOverlayStyle
+  }
 }) {
   const router = useRouter()
   const { contact, notes, tags, avatarUrl, cardFrontUrl, cardBackUrl, logoUrl } = initial
@@ -126,6 +136,7 @@ export function Detail({
 
   return (
     <DetailTemplate
+      {...hero}
       back={back}
       title={
         <span className="inline-flex items-center gap-3 align-middle">

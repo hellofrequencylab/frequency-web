@@ -20,6 +20,8 @@ const {
   detailHeroDefaultsFor,
   pickDetailHero,
   resolveDetailHero,
+  asIdentityHero,
+  resolveIdentityHero,
 } = await import('./detail-hero')
 
 const SHIPPED_HEADER = { height: 'standard' as const, overlayStyle: 'shadow' as const }
@@ -91,12 +93,12 @@ describe('the image precedence ladder', () => {
   it('rung 4 — an UNMAPPED route lands on no-cover, so adopting there is a visual no-op', () => {
     // The safety property: the map is the opt-in. A page whose section nobody mapped and whose
     // entity has no image renders exactly as it did before `{...hero}` was spread onto it.
-    expect(pick('/hubs/something').coverImage).toBeUndefined()
+    expect(pick('/support/ticket-1').coverImage).toBeUndefined()
     expect(pick('/somewhere/nobody/mapped').coverImage).toBeUndefined()
   })
 
   it('an unmapped route still shows an entity that HAS a cover of its own', () => {
-    expect(pick('/hubs/something', {}, { entityImage: '/uploads/mine.jpg' }).coverImage).toBe('/uploads/mine.jpg')
+    expect(pick('/support/ticket-1', {}, { entityImage: '/uploads/mine.jpg' }).coverImage).toBe('/uploads/mine.jpg')
   })
 
   it('an explicit `tail` option overrides the section’s', () => {
@@ -174,7 +176,7 @@ describe('the section map is data, not page taste', () => {
   })
 
   it('an unmapped route resolves to the no-cover fallback with no section key', () => {
-    expect(detailHeroDefaultsFor('/nexuses/abc')).toEqual({ section: null, image: null, size: 'standard', tail: 'none' })
+    expect(detailHeroDefaultsFor('/support/abc')).toEqual({ section: null, image: null, size: 'standard', tail: 'none' })
   })
 
   it('every row points at a real size tier, a real tail, and an absolute image path', () => {
@@ -194,7 +196,7 @@ describe('the section map is data, not page taste', () => {
 
 describe('resolveDetailHero (the async wrapper)', () => {
   it('reproduces the no-cover result for an unmapped route', async () => {
-    const hero = await resolveDetailHero('/hubs/anything')
+    const hero = await resolveDetailHero('/support/anything')
     expect(hero).toEqual({
       coverImage: undefined,
       coverFocus: null,
@@ -284,5 +286,110 @@ describe('resolveDetailHero (the async wrapper)', () => {
       coverSize: 'standard',
       coverOverlayStyle: 'shadow',
     })
+  })
+})
+
+// ── The identity twin (ADR-1136) — the same ladder in PageHero's vocabulary ────────────────────
+
+const IDENTITY_HEADER = { layout: 'identity' as const, height: 'standard' as const, overlayStyle: 'shadow' as const }
+
+/** The pure identity fold with only the rungs a case cares about supplied. */
+function pickIdentity(route: string, over: Partial<Parameters<typeof asIdentityHero>[1]> = {}, opts = {}) {
+  return asIdentityHero(
+    route,
+    { operatorImage: null, operatorFocus: null, header: IDENTITY_HEADER, ...over },
+    opts,
+  )
+}
+
+describe('asIdentityHero (the pure identity fold)', () => {
+  it('runs the SAME four-rung image ladder as the standard cover', () => {
+    // Rung 1 beats rung 2 beats rung 3 — one ladder, two vocabularies.
+    expect(
+      pickIdentity('/circles/abc', { operatorImage: '/uploads/op.jpg' }, { entityImage: '/uploads/mine.jpg' }).coverImage,
+    ).toBe('/uploads/mine.jpg')
+    expect(pickIdentity('/circles/abc', { operatorImage: '/uploads/op.jpg' }).coverImage).toBe('/uploads/op.jpg')
+  })
+
+  it('empties to NULL (the gradient), never undefined — an identity band always exists', () => {
+    // The index side's reason, inherited: the h1 RIDES this band, so "no band" is not a result.
+    // The section tail does not apply to the identity composition.
+    expect(pickIdentity('/circles/abc').coverImage).toBeNull()
+    expect(pickIdentity('/somewhere/nobody/mapped').coverImage).toBeNull()
+  })
+
+  it('hands back the element-resolved variant, so /admin/elements still retunes the lockup', () => {
+    expect(pickIdentity('/channels/abc', { header: { ...IDENTITY_HEADER, layout: 'overlay' } }).variant).toBe('overlay')
+  })
+
+  it('lets the entity’s stored height and TOTAL overlay beat the element', () => {
+    // The Circle contract: circleHeroOverlayStyle(theme) is total, so a deliberate "None" must
+    // never be overridden by the element default.
+    const hero = pickIdentity(
+      '/circles/abc',
+      { header: { ...IDENTITY_HEADER, height: 'tall', overlayStyle: 'fade' } },
+      { entitySize: 'standard', entityOverlayStyle: 'none' },
+    )
+    expect(hero).toMatchObject({ size: 'standard', overlayStyle: 'none' })
+  })
+
+  it('the focal point still travels with its image', () => {
+    expect(pickIdentity('/circles/abc', {}, { entityImage: '/m.jpg', entityFocus: '20% 80%' }).coverFocus).toBe('20% 80%')
+    expect(pickIdentity('/circles/abc', { operatorImage: '/op.jpg', operatorFocus: '10% 90%' }, { entityFocus: '20% 80%' }).coverFocus).toBe('10% 90%')
+  })
+})
+
+describe('resolveIdentityHero (the async identity wrapper)', () => {
+  it('asks the header element for the IDENTITY layout, with the surface’s own defaults under it', async () => {
+    resolveHeaderElement.mockResolvedValue(IDENTITY_HEADER)
+    await resolveIdentityHero('/people/vera', { defaults: { scrim: false, overlayStyle: 'fade' } })
+    expect(resolveHeaderElement).toHaveBeenCalledWith({
+      defaults: { layout: 'identity', height: 'standard', scrim: false, overlayStyle: 'fade' },
+    })
+  })
+
+  it('reads the operator image against the SECTION route, exactly like the standard cover', async () => {
+    resolveHeaderElement.mockResolvedValue(IDENTITY_HEADER)
+    await resolveIdentityHero('/channels/abc-123')
+    expect(getPageHeaderImage).toHaveBeenCalledWith('/channels', undefined)
+  })
+
+  it('skips the settings read when the entity brought its own cover', async () => {
+    resolveHeaderElement.mockResolvedValue(IDENTITY_HEADER)
+    const hero = await resolveIdentityHero('/channels/abc', { entityImage: '/uploads/mine.jpg' })
+    expect(getPageHeaderImage).not.toHaveBeenCalled()
+    expect(hero.coverImage).toBe('/uploads/mine.jpg')
+  })
+
+  it('FAIL-SAFE: a throwing element read never costs the entity its own cover or its lockup', async () => {
+    resolveHeaderElement.mockRejectedValue(new Error('element_settings is down'))
+    const hero = await resolveIdentityHero('/circles/abc', {
+      entityImage: '/uploads/mine.jpg',
+      entityOverlayStyle: 'none',
+    })
+    expect(hero).toEqual({
+      variant: 'identity',
+      size: 'standard',
+      overlayStyle: 'none',
+      coverImage: '/uploads/mine.jpg',
+      coverFocus: null,
+    })
+  })
+})
+
+describe('the ADR-1136 adoption rows change zero pixels by construction', () => {
+  it('every row added for the 2026-08-25 adoption is image-null + tail-none', () => {
+    // The rows exist to arm rung 2 (the operator’s section image stops being dropped on the
+    // floor), NOT to invent covers: with no operator upload and no entity image they resolve to
+    // exactly what an unmapped route resolves to. A row that gains a real `image` or flips its
+    // `tail` is a deliberate visual change and belongs in its own PR.
+    const adopted = ['/channels', '/circles', '/journeys', '/people', '/hubs', '/nexuses', '/partners',
+      '/store', '/nearby', '/help', '/lead/training-library', '/discover/journeys', '/discover/partners',
+      '/discover/events']
+    for (const prefix of adopted) {
+      const row = DETAIL_HERO_DEFAULTS.find((r) => r.prefix === prefix)
+      expect(row, prefix).toBeDefined()
+      expect(row).toMatchObject({ image: null, tail: 'none' })
+    }
   })
 })

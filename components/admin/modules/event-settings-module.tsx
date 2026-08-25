@@ -266,8 +266,12 @@ export function EventSettingsModule() {
     // The FIRST photo is the header/cover — keep the focus-control preview in sync with gallery[0].
     setCoverUrl(next[0] ? eventMediaUrl(next[0]) : null)
     if (!data) return
+    setImgErr(null)
     startTransition(async () => {
-      await setEventGalleryImages(data!.id, data!.slug, next)
+      // The result used to be dropped, so a rejected reorder/removal left the new arrangement on
+      // screen and the old one in the database: the gallery lied until the next load.
+      const res = await setEventGalleryImages(data!.id, data!.slug, next)
+      if ('error' in res) setImgErr(res.error)
     })
   }
 

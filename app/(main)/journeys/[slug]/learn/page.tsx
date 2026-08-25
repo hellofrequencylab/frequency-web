@@ -20,7 +20,7 @@ import { CohortMeter } from '@/components/journey/v2/cohort-meter'
 import { DetailTemplate, PageHero, HERO_ACTION_CLASS } from '@/components/templates'
 import { ShareImageProvider } from '@/components/qr/share-image-context'
 import { QrShareDropdown } from '@/components/qr/qr-share-dropdown'
-import { resolveHeaderElement } from '@/lib/elements/header'
+import { resolveIdentityHero } from '@/lib/layout/detail-hero'
 import { accentColor } from '@/lib/studio/accents'
 import { JOURNEY_ICON_MAP, DefaultJourneyIcon } from '@/lib/studio/journey-icons'
 import type { CohortProgress } from '@/lib/journeys/cohort'
@@ -166,9 +166,13 @@ export default async function JourneyLearnPage({ params }: { params: Promise<{ s
   // The standardized `header` element (ADR-793), identity layout — the space-page treatment: the cover +
   // a background-aware icon chip + title + summary, with the Manage / author actions riding the image
   // (bottom-right). No breadcrumb under the cover. The "About this Journey" stats live in the body below.
+  // The identity band's chrome through the ONE resolver (PROG-P5, ADR-1136) — the same call the
+  // Journey overview page makes, so the two surfaces can never drift.
   const oStyle = plan.header_overlay_style
-  const header = await resolveHeaderElement({
-    defaults: { layout: 'identity', height: 'standard', ...(oStyle === 'none' || oStyle === 'shadow' || oStyle === 'fade' ? { overlayStyle: oStyle } : {}) },
+  const hero = await resolveIdentityHero(`/journeys/${slug}/learn`, {
+    entityImage: plan.cover_image,
+    entityFocus: plan.cover_focus,
+    defaults: oStyle === 'none' || oStyle === 'shadow' || oStyle === 'fade' ? { overlayStyle: oStyle } : {},
   })
 
   return (
@@ -178,11 +182,7 @@ export default async function JourneyLearnPage({ params }: { params: Promise<{ s
     <DetailTemplate
       hero={
         <PageHero
-          variant={header.layout}
-          size={header.height}
-          overlayStyle={header.overlayStyle}
-          coverImage={plan.cover_image ?? null}
-          coverFocus={plan.cover_focus ?? undefined}
+          {...hero}
           eyebrow="Journey"
           leading={
             plan.logo_image ? (

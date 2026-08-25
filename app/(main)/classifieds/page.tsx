@@ -12,7 +12,7 @@ import { MarketplaceBar } from '@/components/marketplace/marketplace-bar'
 import { MarketplaceGuide } from '@/components/marketplace/marketplace-guide'
 import { MarketplaceHiddenBanner } from '@/components/marketplace/hidden-banner'
 import { resolvePageContent, pageContentMetadata } from '@/lib/page-content'
-import { resolveHeaderElement } from '@/lib/elements/header'
+import { resolveMarketHero } from '@/lib/layout/index-hero'
 
 // Classifieds (ADR-596) — the peer trade board (offer / free / lend / request), connect-only, no fees.
 // Hero-led (the site PhotoHero grammar) + a stats band. Operator-editable header content (ADR-180).
@@ -68,20 +68,21 @@ export default async function ClassifiedsPage({ searchParams }: { searchParams: 
     seededUnclaimed: l.seededUnclaimed,
   }))
 
-  // The operator-tunable header element (ADR-793): resolves to today's overlay/large/scrim-on look.
-  const header = await resolveHeaderElement({ defaults: { layout: 'overlay', height: 'large' } })
+  // The whole hero band through the ONE browse-hero ladder (lib/layout/index-hero, PROG-P4):
+  // the operator's Settings header image, then the page_content hero via the copy cascade, then
+  // this page's coded cover, plus the operator-tunable header element (ADR-793) for
+  // layout / height / scrim. It used to read the element alone, so an operator who uploaded a
+  // header image for this route got nothing.
+  const hero = await resolveMarketHero('/classifieds', { cover: HERO_IMAGE })
 
   return (
     <MarketSearchProvider>
     <div className="space-y-6">
       <MarketHero
-        image={HERO_IMAGE}
+        {...hero}
         eyebrow="Classifieds"
         title="Swap, share, and find it local"
         subtitle={description}
-        variant={header.layout}
-        size={header.height}
-        overlay={header.scrim}
         search={<MarketSearchBar placeholder="Search listings" />}
         action={
           profileId || (ctaLabel && ctaHref) ? (

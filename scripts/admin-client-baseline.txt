@@ -1,62 +1,81 @@
-# check:admin-client baseline — every file allowed to import the RLS-bypassing service-role
-# client (lib/supabase/admin.ts). Frozen by the tenancy-walls ratchet (ADR-923): a new
-# importer fails CI unless added here in the same PR; converge files onto the session
-# client and regenerate with `node scripts/check-admin-client.mjs --update` so this list
-# only shrinks. Do not add entries by hand without a reason the reviewer can see.
 #
-# Added 2026-08-11 (ADR-986..999). Four files, each the ONLY path to a table that is
-# deliberately unreachable any other way:
-#   lib/events/seed/store.ts   event_intake — RLS enabled, ZERO policies, service-role only
-#   lib/studio/steer-store.ts  studio_steer — same posture; holds an author private note to Vera
-#   lib/ai/vera/create-entity.ts  writes the agent_actions audit trail the autonomy ladder is
-#                                 earned against; a caller must not be able to edit its own audit
-#   lib/loom/cover-actions.ts     files a generated cover into library_assets, re-gating
 #                                 canEditProfile itself before it writes
-# The session client cannot reach a zero-policy table by construction, so converging these is
-# not a matter of effort: it would mean giving those tables client-readable policies.
-# lib/billing/bundle-seats.ts (added 2026-08-12, ADR-370): the Stripe webhook seating branch for the
-# Household / Circle bundle. There is no session to run under — the caller is Stripe, and the write is
-# apply_bundle_seating_atomic, a SECURITY DEFINER function granted to service_role ONLY (migration
-# 20270225000000 revokes anon + authenticated). Converging it onto the session client is not possible
-# by construction. Same posture as lib/billing/bundle-checkout.ts directly above.
-# lib/billing/bundle-invites.ts (added 2026-08-12, ADR-370): the post-purchase seat invites for the
-# Household / Circle bundle. household_bundle_invites is RLS-on with ZERO policies (deny-all, see
-# scripts/rls-deny-all.txt) and the two seat writes are SECURITY DEFINER functions granted to
-# service_role ONLY (migration 20270226000100 revokes anon + authenticated on both the table and the
-# functions), so the session client cannot reach any of it by construction. Every read and write here
-# is bound to the caller's own profile id, re-resolved from the session by the action layer.
-# studio_draft is RLS-on-no-policy (zero policies, grants revoked from anon/authenticated), so the
-# session client cannot reach it at all: staged wizard answers are unfinished writing and the table
-# is deliberately unreachable except through this one owner-scoped file. Every query filters on a
-# session-derived profile_id, which IS the access control (ADR-1001, mirrors lib/studio/steer-store.ts).
-#
-# Added 2026-08-12 (ADR-1014, ADR-1016). Two files, each re-gating authorisation ITSELF
-# before it acts, which is why the bypass is the safe shape rather than the lazy one:
-#   app/(main)/circles/[slug]/(circle)/members/actions.ts
-#       setCircleMemberRole re-resolves the caller's capabilities against the LIVE circle on
-#       every request and refuses without circle.manageRoles. It must read circles.host_id to
-#       enforce the last-owner guard — the row a non-member cannot see under RLS, which is
-#       exactly the row the guard depends on. Fails closed on any role outside the three
-#       assignable rungs, so a client asking to mint an owner is rejected before the read.
-#   lib/circles/effort-board.ts
-#       Reads zap_transactions for members of one circle, behind the CALLER's gate: the page
-#       renders rows only for circle members. The effort index is deliberately a WHOLE-LIFE
-#       denominator per member, so it cannot be scoped by the circle's own RLS without
-#       changing the number the member is measured against.
-#
-# Added 2026-08-12 (the Circle five-tab restructure). Two files, both in the circle detail
-# path that already runs on the service-role client (loadCircleShell), and both applying the
-# visibility rules BY HAND because the bypass makes RLS invisible to them:
-#   app/(main)/circles/[slug]/(circle)/tab-facts.ts
+#                                 earned against; a caller must not be able to edit its own audit
 #       Decides which tabs exist, so it must answer "is there anything here for THIS viewer"
+#       Re-resolves getCircleCapabilities against the live circle and returns null without
+#       Reads zap_transactions for members of one circle, behind the CALLER's gate: the page
+#       assignable rungs, so a client asking to mint an owner is rejected before the read.
 #       before the shell renders. Its event read carries the full predicate — status=published,
+#       changing the number the member is measured against.
+#       circle.editSettings, before any journey data is read. The gate is the first thing it
+#       denominator per member, so it cannot be scoped by the circle's own RLS without
+#       does, not a filter on the way out.
+#       enforce the last-owner guard — the row a non-member cannot see under RLS, which is
+#       every request and refuses without circle.manageRoles. It must read circles.host_id to
+#       exactly the row the guard depends on. Fails closed on any role outside the three
 #       is_cancelled=false, removed_at is null — plus an insider-aware `visibility` list, so a
 #       members-only event grows the Events tab only for someone on the roster. Getting this
+#       renders rows only for circle members. The effort index is deliberately a WHOLE-LIFE
+#       setCircleMemberRole re-resolves the caller's capabilities against the LIVE circle on
 #       wrong leaks by TAB COUNT rather than by row, which is why it is stated here.
+#   app/(main)/circles/[slug]/(circle)/members/actions.ts
+#   app/(main)/circles/[slug]/(circle)/tab-facts.ts
 #   components/admin/modules/circle-journey-run-actions.ts
-#       Re-resolves getCircleCapabilities against the live circle and returns null without
-#       circle.editSettings, before any journey data is read. The gate is the first thing it
-#       does, not a filter on the way out.
+#   lib/ai/vera/create-entity.ts  writes the agent_actions audit trail the autonomy ladder is
+#   lib/circles/effort-board.ts
+#   lib/events/seed/store.ts   event_intake — RLS enabled, ZERO policies, service-role only
+#   lib/loom/cover-actions.ts     files a generated cover into library_assets, re-gating
+#   lib/studio/steer-store.ts  studio_steer — same posture; holds an author private note to Vera
+# 20270225000000 revokes anon + authenticated). Converging it onto the session client is not possible
+# Added 2026-08-11 (ADR-986..999). Four files, each the ONLY path to a table that is
+# Added 2026-08-12 (ADR-1014, ADR-1016). Two files, each re-gating authorisation ITSELF
+# Added 2026-08-12 (the Circle five-tab restructure). Two files, both in the circle detail
+# Added 2026-08-17 (ADR-1061, the private per-Space beta price grant). Reads spaces.beta_price_grant
+# Added 2026-08-17 (LIVE-022). NOT a real service-role import: the string the ratchet matches sits
+# Household / Circle bundle. There is no session to run under — the caller is Stripe, and the write is
+# Household / Circle bundle. household_bundle_invites is RLS-on with ZERO policies (deny-all, see
+# RLS bypass or it would not exercise the arm it exists for. The ratchet reads text, so it cannot see
+# SIGNED-OUT guest RSVP (20270303000000). The bypass is the reason the module exists: it must read
+# Space's billing state regardless of who is holding the session. A session-client read here would make
+# The session client cannot reach a zero-policy table by construction, so converging these is
+# action is not a security boundary and must hold no power the SQL is not already assuming. The
+# apply_bundle_seating_atomic, a SECURITY DEFINER function granted to service_role ONLY (migration
+# before it acts, which is why the bypass is the safe shape rather than the lazy one:
+# by construction. Same posture as lib/billing/bundle-checkout.ts directly above.
+# check:admin-client baseline — every file allowed to import the RLS-bypassing service-role
+# client (lib/supabase/admin.ts). Frozen by the tenancy-walls ratchet (ADR-923): a new
+# client and regenerate with `node scripts/check-admin-client.mjs --update` so this list
+# deliberately unreachable any other way:
+# during checkout price resolution, on the same code path and for the same reason as its sibling
+# functions), so the session client cannot reach any of it by construction. Every read and write here
+# importer fails CI unless added here in the same PR; converge files onto the session
+# inside a template literal — BARE_ROUTE, the fixture route handler this test feeds to the classifier
+# is bound to the caller's own profile id, re-resolved from the session by the action layer.
+# is deliberately unreachable except through this one owner-scoped file. Every query filters on a
+# lets it read RSVP rows by email, which is precisely the address oracle capture_guest_rsvp was
+# lib/billing/bundle-invites.ts (added 2026-08-12, ADR-370): the post-purchase seat invites for the
+# lib/billing/bundle-seats.ts (added 2026-08-12, ADR-370): the Stripe webhook seating branch for the
+# lib/events/guest-rsvp-email.ts (added 2026-08-13): composes the confirmation email for a
+# not a matter of effort: it would mean giving those tables client-readable policies.
+# on the session client: capture_guest_rsvp is granted to anon and reachable over PostgREST, so the
+# only shrinks. Do not add entries by hand without a reason the reviewer can see.
+# path that already runs on the service-role client (loadCircleShell), and both applying the
+# policy grants a row to its own profile or to a host, and a guest is neither, so under RLS this
+# read returns nothing. Converging it onto the session client would mean giving anon a policy that
+# readLockedPriceId in lib/billing/space-subscription-items.ts:259, which also takes the service role:
+# resolveLoadoutPriceId runs before a Stripe session exists, deciding what to CHARGE, and must read the
+# scripts/rls-deny-all.txt) and the two seat writes are SECURITY DEFINER functions granted to
+# service_role ONLY (migration 20270226000100 revokes anon + authenticated on both the table and the
+# session client cannot reach it at all: staged wizard answers are unfinished writing and the table
+# session-derived profile_id, which IS the access control (ADR-1001, mirrors lib/studio/steer-store.ts).
+# shaped to avoid. Quarantined here rather than left in the server action so the action itself stays
+# status reaches the email body only, never the HTTP response.
+# studio_draft is RLS-on-no-policy (zero policies, grants revoked from anon/authenticated), so the
+# the backticks; declaring it here is the sanctioned path the guard's own message points at.
+# the price depend on the viewer, which is the one thing a price must never do.
+# to prove check:authz says NO to an ungated privileged endpoint. The fixture has to depict a real
+# visibility rules BY HAND because the bypass makes RLS invisible to them:
+# whether the seat landed as `going` or `waitlist`, and the reader is anon — event_rsvps' SELECT
 app/(main)/admin/actions.ts
 app/(main)/admin/ai/load-ai.ts
 app/(main)/admin/appearance/actions.ts
@@ -302,11 +321,11 @@ app/events/calendar.ics/route.ts
 app/events/calendar/[token]/route.ts
 app/events/claim/[token]/opengraph-image.tsx
 app/events/claim/[token]/page.tsx
+app/join/(induction)/actions.ts
+app/join/(induction)/feature-actions.ts
 app/join/[slug]/page.tsx
 app/llms.txt/route.ts
 app/manage-emails/actions.ts
-app/join/(induction)/actions.ts
-app/join/(induction)/feature-actions.ts
 app/onboarding/vera-actions.ts
 app/print/qr/page.tsx
 app/q/[slug]/route.ts
@@ -436,6 +455,7 @@ lib/billing/connect.ts
 lib/billing/manual-agreements.ts
 lib/billing/operator-seats.ts
 lib/billing/pricing-prices.ts
+lib/billing/space-beta-grant.ts
 lib/billing/space-membership-checkout.ts
 lib/billing/space-plan-checkout.ts
 lib/billing/space-subscription-items.ts
@@ -556,16 +576,6 @@ lib/events/event-share.ts
 lib/events/event-stats.ts
 lib/events/follower-reminders.ts
 lib/events/geocode.ts
-# lib/events/guest-rsvp-email.ts (added 2026-08-13): composes the confirmation email for a
-# SIGNED-OUT guest RSVP (20270303000000). The bypass is the reason the module exists: it must read
-# whether the seat landed as `going` or `waitlist`, and the reader is anon — event_rsvps' SELECT
-# policy grants a row to its own profile or to a host, and a guest is neither, so under RLS this
-# read returns nothing. Converging it onto the session client would mean giving anon a policy that
-# lets it read RSVP rows by email, which is precisely the address oracle capture_guest_rsvp was
-# shaped to avoid. Quarantined here rather than left in the server action so the action itself stays
-# on the session client: capture_guest_rsvp is granted to anon and reachable over PostgREST, so the
-# action is not a security boundary and must hold no power the SQL is not already assuming. The
-# status reaches the email body only, never the HTTP response.
 lib/events/guest-rsvp-email.ts
 lib/events/guests.ts
 lib/events/host-gate.ts
@@ -592,6 +602,7 @@ lib/finance/dashboard.ts
 lib/finance/record.ts
 lib/founding/status.ts
 lib/frequency-signature-data.ts
+lib/funnels/overrides.ts
 lib/funnels/store.ts
 lib/gems.ts
 lib/growth/host-prompts.ts
@@ -611,10 +622,12 @@ lib/journeys/publish-gate.ts
 lib/journeys/run-gate.ts
 lib/journeys/runs.ts
 lib/keystone/store.ts
+lib/layout/content-cascade.ts
 lib/layout/page-chrome.ts
 lib/library.ts
 lib/library/embeddings.ts
 lib/library/event-loom.ts
+lib/library/resolve-refs.ts
 lib/library/splash-registry.ts
 lib/library/store.ts
 lib/library/styles.ts
@@ -654,7 +667,6 @@ lib/onboarding/flags.ts
 lib/onboarding/founder-tasks.ts
 lib/onboarding/profile-chores.ts
 lib/onboarding/resolve-onboarding-sequence.ts
-lib/funnels/overrides.ts
 lib/onboarding/status.ts
 lib/onboarding/training.ts
 lib/onboarding/welcome.ts
@@ -685,6 +697,7 @@ lib/playbooks/seed.ts
 lib/practice-activity.ts
 lib/practice-streak.ts
 lib/practices.ts
+lib/practices/attribution.ts
 lib/practices/clean.ts
 lib/practices/embeddings.ts
 lib/practices/health.ts
@@ -775,6 +788,7 @@ lib/spaces/tier-circle.ts
 lib/spaces/type-defaults.ts
 lib/spaces/venue-holds.ts
 lib/spotlight/data.ts
+lib/spotlight/guestbook.ts
 lib/spotlight/top-friends.ts
 lib/staff.ts
 lib/stewardships.ts
@@ -800,17 +814,5 @@ lib/verification/attendance.ts
 lib/walkthroughs.ts
 lib/walkthroughs/progress.ts
 lib/zaps.ts
-test/authz/check-authz-lib.test.ts
-# Added 2026-08-17 (LIVE-022). NOT a real service-role import: the string the ratchet matches sits
-# inside a template literal — BARE_ROUTE, the fixture route handler this test feeds to the classifier
-# to prove check:authz says NO to an ungated privileged endpoint. The fixture has to depict a real
-# RLS bypass or it would not exercise the arm it exists for. The ratchet reads text, so it cannot see
-# the backticks; declaring it here is the sanctioned path the guard's own message points at.
 scripts/check-authz-guards.test.ts
-# Added 2026-08-17 (ADR-1061, the private per-Space beta price grant). Reads spaces.beta_price_grant
-# during checkout price resolution, on the same code path and for the same reason as its sibling
-# readLockedPriceId in lib/billing/space-subscription-items.ts:259, which also takes the service role:
-# resolveLoadoutPriceId runs before a Stripe session exists, deciding what to CHARGE, and must read the
-# Space's billing state regardless of who is holding the session. A session-client read here would make
-# the price depend on the viewer, which is the one thing a price must never do.
-lib/billing/space-beta-grant.ts
+test/authz/check-authz-lib.test.ts

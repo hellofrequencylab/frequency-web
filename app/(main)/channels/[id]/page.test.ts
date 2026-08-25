@@ -7,9 +7,9 @@ import { join } from 'node:path'
 // programs.test.ts idiom), so a refactor cannot quietly regress the page back
 // into its old single-scroll, circle-flavored form:
 //   1. It composes the kit: DetailTemplate opening on the standardized header
-//      element (resolveHeaderElement -> PageHero identity, ADR-793 — the same
-//      grammar as the Space profile / Journey / person profile), never a
-//      hand-rolled header or a parallel cover band.
+//      element (resolveIdentityHero -> PageHero, ADR-793/ADR-1136 — the ONE
+//      identity-band resolver shared with the Space profile / Journey / person
+//      profile), never a hand-rolled header or a parallel cover band.
 //   2. The segmented body exists: Home (default) / Feed / Chapters-or-Circles /
 //      About via ?tab=, server-rendered and shareable.
 //   3. The tune-in gate is intact: composer only for tuned-in members, the
@@ -33,15 +33,15 @@ describe('channel page (source shape): a Channel renders as a focus-area home', 
     // The hero is the ONE canonical header band (ADR-793): PageHero fed by the
     // operator-tunable header element at the entity-page defaults.
     expect(src).toContain('<PageHero')
-    expect(src).toContain('resolveHeaderElement(')
-    expect(src).toMatch(/defaults: \{ layout: 'identity', height: 'standard' \}/)
-    expect(src).toContain('variant={header.layout}')
-    // The header ELEMENT still owns the height, but an operator who explicitly picks one in the
-    // Channel admin now wins over it (ADR-886). What this guard protects is unchanged: the height
-    // is never a hardcoded literal, and with nothing stored the element decides.
-    expect(src).toContain('size={savedHeroHeight ?? header.height}')
-    expect(src).toContain('hasChannelHeroHeight(')
-    expect(src).toContain('overlayStyle={header.overlayStyle}')
+    // The band's chrome comes from the ONE identity resolver (ADR-1136): variant/height/overlay
+    // are the resolver's answer (its own suite pins the layout:'identity' defaults and the
+    // operator-element override order), and this page only feeds the entity rungs of the ladder.
+    expect(src).toContain('resolveIdentityHero(')
+    expect(src).toContain('{...hero}')
+    expect(src).toContain('entityImage: channel.cover_image')
+    // The stored per-Channel height still wins when the operator set one (ADR-886), now by
+    // entering the resolver as the entity size — never as a hardcoded literal in the JSX.
+    expect(src).toMatch(/entitySize: hasChannelHeroHeight\(channel\.theme\)/)
     // On-cover secondary actions use the ONE glassy on-ink header-button style.
     expect(src).toContain('HERO_ACTION_CLASS')
     // The retired parallel cover band stays gone.

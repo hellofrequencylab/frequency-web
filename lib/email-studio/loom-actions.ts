@@ -3,7 +3,14 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { writerGate } from '@/lib/outbound/guard'
 import { getCallerProfile } from '@/lib/auth'
-import { getRootSpaceId, searchSpaceLibraryImages, insertSpaceLibraryImage } from '@/lib/library/store'
+import {
+  getRootSpaceId,
+  searchSpaceLibraryImages,
+  insertSpaceLibraryImage,
+  findLibraryAssetBySha256,
+} from '@/lib/library/store'
+import { ingestImageBytes } from '@/lib/library/ingest'
+import { readImageDescriptor } from '@/lib/library/image-describe'
 
 // Server actions behind the Email Studio canvas's on-canvas image editor. A 'use server' module exports
 // ONLY async functions, so the (client) editor imports THESE, never a server-only module — the editor
@@ -71,11 +78,15 @@ export async function uploadEmailLoomImage(
     const stamp = `${Date.now()}-${Math.round(Math.random() * 1e6).toString(36)}`
     // Namespace the object under the owning (root) space, so uploads live in the shared library's storage prefix.
     const path = `${rootSpaceId}/${stamp}.${ext}`
-    const bytes = new Uint8Array(await file.arrayBuffer())
+
+    // INGEST (PROG-D1): strip → checksum → measure, then dedupe against the shared library.
+    const ingested = ingestImageBytes(new Uint8Array(await file.arrayBuffer()), file.type)
+    const duplicate = await findLibraryAssetBySha256(rootSpaceId, ingested.sha256)
+    if (duplicate?.url) return { url: duplicate.url, id: duplicate.id }
 
     const { error: upErr } = await admin.storage
       .from('library-media')
-      .upload(path, bytes, { contentType: file.type || 'image/jpeg', upsert: false })
+      .upload(path, ingested.bytes, { contentType: file.type || 'image/jpeg', upsert: false })
     if (upErr) return { error: upErr.message }
 
     const { data: pub } = admin.storage.from('library-media').getPublicUrl(path)
@@ -94,10 +105,14 @@ export async function uploadEmailLoomImage(
       storagePath: path,
       url: pub.publicUrl,
       mime: file.type || 'image/jpeg',
-      bytes: file.size,
+      bytes: ingested.bytes.byteLength,
       // Stamp the uploader so this asset shows in their personal Loom ("My uploads").
       createdBy: (await getCallerProfile())?.id ?? null,
       source: 'upload',
+      sha256: ingested.sha256,
+      width: ingested.width,
+      height: ingested.height,
+      ...readImageDescriptor(formData),
     })
     if (!id) {
       // Roll back the orphaned file so a failed insert doesn't leave litter in storage.

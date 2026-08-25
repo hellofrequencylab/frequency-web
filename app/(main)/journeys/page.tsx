@@ -5,8 +5,7 @@ import { NewJourneyButton } from '@/components/studio/journey/new-journey-button
 import { canCreate } from '@/lib/core/load-capabilities'
 import { PageModules } from '@/components/widgets/page-modules'
 import { resolvePageContent, pageContentMetadata } from '@/lib/page-content'
-import { getPageHeaderImage, getPageHeaderFocus } from '@/lib/page-settings/store'
-import { resolveHeaderElement } from '@/lib/elements/header'
+import { resolveIndexHero } from '@/lib/layout/index-hero'
 
 // The Journeys browse + build page. Module-driven (ADR-270/294): the page resolves its
 // operator-editable header (ADR-180) and composes the IndexTemplate chrome, then renders
@@ -37,37 +36,24 @@ export default async function JourneysPage() {
   // Operator-editable page header (ADR-180) — falls back to the coded defaults.
   const { title, description, heroImage, ctaLabel, ctaHref } =
     await resolvePageContent('/journeys', CONTENT_FALLBACK)
-  // The wide banner can be set from EITHER system: the new Settings → SEO & meta →
-  // Header image (page_settings, ADR-268/309) OR the older page-content hero (ADR-180).
-  // Prefer the new uploader so a header set there actually shows here (it was being
-  // dropped — the page only read the old field). Same source crew/practices use.
-  // The uniform overlay Hero Header (the Business Spaces grammar): operator image wins, else a calm
-  // section default so the hero band always renders.
-  const operatorHero = await getPageHeaderImage('/journeys')
-  const bannerImage = operatorHero ?? heroImage ?? '/images/site/nature-viewing-sunset.jpg'
-  // The focal point applies only to the operator's own header image (the fallbacks crop centered).
-  const bannerFocus = operatorHero ? await getPageHeaderFocus('/journeys') : null
+  // The uniform overlay Hero Header, resolved by the ONE browse-hero ladder (lib/layout/index-hero,
+  // PROG-P4): operator Settings image, then the page-content hero, then the '/journeys' row of
+  // INDEX_HERO_DEFAULTS ('/images/site/nature-viewing-sunset.jpg'), then the gradient band. The
+  // focal point rides the operator's own upload only. The page-content hero is passed explicitly
+  // because this page has already resolved it for its title and description.
+  const hero = await resolveIndexHero('/journeys', { contentImage: heroImage })
   // Any signed-in member may build (FIRST ONE FREE, ADR-920); signed-out gets a sign-in door.
   const canBuildJourney = await canCreate('journey.create')
-  // The operator-tunable header element (ADR-793): layout/height/scrim resolve to today's
-  // overlay/large/scrim-on look unless a master value is set in /admin/elements.
-  const header = await resolveHeaderElement({ defaults: { layout: 'overlay', height: 'large' } })
 
   return (
     <IndexTemplate
-      // Standardized header (PAGE-FRAMEWORK): breadcrumb -> cropped hero -> title, all from the
-      // template's first-class props. The hero can be set from either the Settings header image
-      // (page_settings) or the older page-content hero; both resolve into `bannerImage`.
+      // Standardized header (PAGE-FRAMEWORK): breadcrumb -> hero band -> title, all from the
+      // template's first-class props, with the band's whole prop bag spread from the resolver.
       trail={[
         { href: '/network', label: 'Community' },
         { href: '/journeys', label: 'Journeys' },
       ]}
-      heroImage={bannerImage}
-      heroFocus={bannerFocus}
-      heroOverlay
-      heroLayout={header.layout}
-      heroSize={header.height}
-      heroScrim={header.scrim}
+      {...hero}
       title={title}
       description={description}
       action={

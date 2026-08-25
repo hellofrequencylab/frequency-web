@@ -22,6 +22,7 @@ import {
   hostUpdateTicketTier,
   hostSetTicketTierActive,
 } from '../ticket-tier-actions'
+import { Button } from '@/components/ui/button'
 
 // Host-facing ticket-tier manager (audit finding #9). Create / edit / retire named
 // tiers with the full range of pricing modes right from the Manage dashboard, so a
@@ -345,13 +346,12 @@ function TierForm({
         ))}
 
       <div className="flex items-center gap-2 pt-1">
-        <button
+        <Button
           type="submit"
           disabled={disabled}
-          className="inline-flex items-center gap-1.5 rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
         >
           {initial ? 'Save tier' : 'Add tier'}
-        </button>
+        </Button>
         <button
           type="button"
           onClick={onCancel}

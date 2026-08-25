@@ -42,6 +42,7 @@
 import { readFileSync } from 'node:fs'
 import { pathToFileURL } from 'node:url'
 import ts from 'typescript'
+import { compare } from '../../lib/menus/drift-core.mjs'
 
 const SURFACE = 'header'
 const REGISTRY = 'lib/nav/registry.ts'
@@ -152,63 +153,13 @@ export function parseMenu(payload) {
 }
 
 // ── The comparison ──────────────────────────────────────────────────────────────────────────
-
-/**
- * Compare the code leaves with the live rows. Four findings, in descending severity:
- *
- *   mislabelled  — a DB row whose LABEL matches a code default but whose HREF differs. The link
- *                  says one thing and lands somewhere else. Member-facing; nothing else sees it.
- *   unreachable  — a code default absent from the DB **and** already in `synced_default_keys`, so
- *                  the inserts-only sync will never bring it back. Silent, permanent.
- *   pending      — a code default absent from the DB and NOT in the baseline: the next sync adds
- *                  it. Informational, and the one finding that resolves itself.
- *   staleBaseline— a baseline key naming a default that no longer exists. Harmless to a renderer,
- *                  and it makes every future audit of this table misread.
- *
- * A DB row with no code counterpart is NOT a finding: operators are allowed to add links, and
- * calling that drift would train people to ignore this report.
- */
-export function compare(code, live) {
-  const byHref = new Map(live.items.map((i) => [i.href, i]))
-  const byLabel = new Map()
-  for (const i of live.items) if (!byLabel.has(i.label)) byLabel.set(i.label, i)
-  const baseline = new Set(live.syncedDefaultKeys)
-  const codeHrefs = new Set(code.map((l) => l.href))
-
-  const mislabelled = []
-  const unreachable = []
-  const pending = []
-
-  for (const leaf of code) {
-    // The destination is live: nothing to say, whatever else carries this label.
-    if (byHref.has(leaf.href)) continue
-    // The destination is NOT live but its label is, on some other href. That row is the defect:
-    // it wears the name of a page it does not go to.
-    //
-    // ⚠️ The `actual` href is deliberately NOT excused for being a real code default elsewhere.
-    // The live 2026-08-24 row was exactly that — "Spaces directory" pointing at `/spaces`, which
-    // IS the Spaces trigger's own landing — and an earlier draft of this function skipped it for
-    // that reason and reported a clean sweep. Whether the wrong destination happens to be a page
-    // we also link somewhere else has nothing to do with whether this link lies.
-    const sameLabel = byLabel.get(leaf.label)
-    if (sameLabel) {
-      mislabelled.push({ label: leaf.label, expected: leaf.href, actual: sameLabel.href })
-      continue
-    }
-    ;(baseline.has(leaf.href) ? unreachable : pending).push(leaf)
-  }
-
-  const staleBaseline = live.syncedDefaultKeys.filter((k) => !codeHrefs.has(k))
-
-  // ⚠️ `ok` deliberately IGNORES staleBaseline and pending. Only `mislabelled` and `unreachable`
-  // are member-facing: one sends a visitor to the wrong page, the other means a destination has
-  // no path at all. A stale key names a default that no longer exists — it changes nothing a
-  // renderer does, and it resolves itself the moment the surface is re-synced. Failing on it
-  // would have made this instrument RED on the day it shipped, for five keys nobody can act on
-  // usefully, and a report that is red for a harmless reason is a report people stop reading.
-  const ok = mislabelled.length === 0 && unreachable.length === 0
-  return { mislabelled, unreachable, pending, staleBaseline, ok, counts: { code: code.length, live: live.items.length } }
-}
+// It MOVED (ADR-1134). The four-finding comparison (mislabelled / unreachable / pending /
+// staleBaseline) now lives in lib/menus/drift-core.mjs, because it grew a second consumer: the
+// Menu manager's per-item drift derivation (lib/menus/drift.ts) classifies absent defaults as
+// RETIRED / MISSING using exactly `unreachable` / `pending`. One source, two instruments — a
+// second copy here is precisely the disagreement LIVE-111 forbids. Re-exported so this script's
+// own test (menu-drift.test.ts) keeps proving the script consumes the shared comparison.
+export { compare }
 
 /** Markdown report. Silence means "checked and identical", so a clean run still says so. */
 export function formatReport(r) {

@@ -9,6 +9,7 @@ import { EventRow, SignInCta } from '@/components/discover/cards'
 import { FrequencyArcs } from '@/components/marketing/vector-art'
 import { SectionHeading } from '@/components/marketing/marketing-ui'
 import { DetailTemplate } from '@/components/templates'
+import { resolveDetailHero } from '@/lib/layout/detail-hero'
 import { JsonLd } from '@/components/json-ld'
 import { breadcrumbSchema, eventListSchema, personSchema } from '@/lib/jsonld'
 import { SITE_NAME } from '@/lib/site'
@@ -159,6 +160,10 @@ export default async function OrganizerPage({
 
   const { displayName, handle: hostHandle, avatarUrl, upcoming, past } = organizer
 
+  // The standard entity cover (PROG-P5, ADR-1136): the operator's /discover/events Settings image,
+  // or nothing. An organizer's avatar is identity, not a cover — it stays in the title lockup.
+  const hero = await resolveDetailHero(`/discover/events/organizer/${hostHandle}`)
+
   return (
     <div className="relative overflow-hidden max-w-3xl mx-auto px-6 py-20 sm:py-24">
       <FrequencyArcs
@@ -191,6 +196,7 @@ export default async function OrganizerPage({
       </Link>
 
       <DetailTemplate
+        {...hero}
         title={
           <span className="inline-flex items-center gap-3">
             {avatarUrl ? (

@@ -61,6 +61,7 @@ const DATA_BLOCKS: readonly EntityBlockDef[] = [
   { id: 'contact', label: 'Contact and hours', description: 'How and when to reach this space.', category: 'data', kinds: ['space'], order: 120 },
   { id: 'business', label: 'Business presence', description: 'Find this space online.', category: 'data', kinds: ['space'], order: 130 },
   { id: 'topfriends', label: 'Top friends', description: 'The people this member is closest to.', category: 'data', kinds: ['member'], order: 140 },
+  { id: 'guestbook', label: 'Guestbook', description: 'Notes from people who stopped by.', category: 'data', kinds: ['member'], order: 150 },
 ]
 
 // ── CONTENT blocks the operator authors (shared by both kinds) ─────────────────────────────────────
@@ -173,8 +174,9 @@ export const CORE_PROFILE_BLOCK_IDS: ReadonlySet<string> = new Set([
   'reviews',
   'contact',
   'business', // "Find us online" — the social + business links from Info & Connect (SPACE).
-  // Member-only data section (kept for the member profile).
+  // Member-only data sections (kept for the member profile).
   'topfriends',
+  'guestbook',
   // SPACE free-form blocks (ADR-542): Callout, Image Gallery, Features section, Music-and-video embed.
   'callout',
   'gallery',

@@ -262,7 +262,7 @@ ADR-828 pill convention.
 | P6 | **Copy cascade.** Generalize `page_content` into `site → section → page` inherit-cascade; widen editable fields to body copy + images; extend `check:canon` to `.tsx`. | L | 📋 |
 | P7 | **Per-Space / white-label depth.** Widen the child-theme override surface (surfaces + type), operator theme controls, a theme-contract compile check. | L | 📋 |
 | P8 | **Dark-mode + a11y + visual regression.** ✅ Substantially shipped: `check:contrast` (blocking, five render states incl. the light-lock, and it now models use-site alpha), the axe ratchet `test/e2e/a11y-baselines.json`, and `test/e2e/visual.spec.ts` × four render states. ⚠️ The visual gate is only as good as its baselines — see the recapture note in UX-MATURITY-PLAN §Sequencing. | M–L | ⏳ |
-| P9 | **Marketing ↔ in-app reconciliation** (optional). Align the marketing brand system with the app tokens where they diverge. | M | 📋 |
+| P9 | **Marketing ↔ in-app reconciliation.** ✅ Re-measured 2026-08-25 ([ADR-1123](DECISIONS.md)) and the premise was wrong: there is ONE token system, not two. Marketing carries **0 raw hex / 0 arbitrary type across 61 files** and uses a strict subset of the same `@theme` map; what diverged was the **gates**. `check:tokens` exempted the whole marketing tree (measured: the exemption caught nothing) and `check:contrast` modelled the cream ground with **1 pair against the app canvas's 5**. Both closed. The Anton display face, the `.mk-*` rhythm and `--color-marketing-canvas` are deliberate and were NOT flattened. | ~~M~~ S | ✅ |
 
 ## 🧭 Practice library at scale — 2026-06-28 ([ADR-438](DECISIONS.md), full spec [PRACTICE-LIBRARY.md](PRACTICE-LIBRARY.md), economy detail [REWARDS-ECONOMY §3a](REWARDS-ECONOMY.md))
 
@@ -282,12 +282,13 @@ Verified on prod (`azsqfeonabsbmemvddqd`): embeddings unpopulated (0/21), no lin
   `100 - primary_pct`; null secondary = 100%). One slider, snaps 75/25, floor 50 keeps the primary
   dominant. The split **attributes earned Zaps across Pillars** (per-Pillar progress) and **never
   changes the wallet total** — no inflation lever. Columns ship Phase 1; attribution ledger Phase 4.
-- **Auto-valued, creator-proof points.** `computePracticeReward(practice)` derives **intensity** from
-  structure (`timer_kind`, required `duration_min`, modality → light/standard/heavy = 8/12/15 Zaps),
-  with **cadence as the frequency-normalizer** (ADR-303 balance preserved). Writes `weight_class` /
-  `reward_zaps`; log-time chokepoint unchanged. Free-form pick + manual override become a **staff-only
-  audited break-glass**. Anti-farm: value is bound to required engaged time and the timer gate forces
-  it to be spent (no 2-minute "heavy"), so Zaps-per-real-minute stays flat. Stacks on the existing
+- **Auto-valued, creator-proof points.** ✅ **Delivered by ADR-442/443, not by the create-time
+  `computePracticeReward(practice)` this bullet originally named** ([ADR-1131](DECISIONS.md) retired
+  it): the creator's tier pick is clamped server-side to what `duration_min` earns
+  (`clampTierToDuration`), and a TIMED practice pays the tier its REAL engaged minutes reach at log
+  time (`achievedTier`) — the pick is only the recommendation + quick-log fallback. Manual
+  `reward_zaps` override is a **staff-only audited break-glass**. Anti-farm: value is bound to real
+  engaged time, so Zaps-per-real-minute stays flat (no 2-minute "heavy"). Stacks on the existing
   one-log/practice/day, 25-distinct/day cap, partial=1, Zaps-non-spendable, validated-creation gates.
 
 ### Phase 1 — Scale it (the operator workspace)
@@ -324,9 +325,9 @@ Verified on prod (`azsqfeonabsbmemvddqd`): embeddings unpopulated (0/21), no lin
 ### Phase 4 — Run it on autopilot (AI curation + analytics)
 | # | Scope | Status |
 |---|---|---|
-| 4.1 | **`computePracticeReward()`** wired as the valuation authority + **per-Pillar Zap attribution ledger** (the split's payoff). | 📋 |
-| 4.2 | **Vera curation.** Auto-suggest Pillar/subcategory from the embedding, auto-tag, auto-summary, voice-check, generate remix prompts. | 📋 |
-| 4.3 | **Library health dashboard.** Growth, **coverage gaps by Pillar/subcategory**, adoption funnel, top/bottom performers, review SLA, contributor leaderboard. | 📋 |
+| 4.1 | **Valuation authority + per-Pillar Zap attribution ledger** (the split's payoff). The `computePracticeReward()` half was RETIRED — ADR-442/443 already deliver creator-proof valuation at log time ([ADR-1131](DECISIONS.md)). The ledger's server half shipped: log-time split snapshot on `practice_logs` (migration `20270324000000`) + `lib/practices/attribution.ts` (conservation-proved math, `getMemberPillarZaps`). | ⏳ slider + surfaces next |
+| 4.2 | **Vera curation.** Auto-suggest Pillar/subcategory from the embedding, auto-tag, auto-summary, voice-check, generate remix prompts. (The ADR-446 publish pre-screen covers voice/completeness/safety already.) | 📋 |
+| 4.3 | **Library health dashboard.** Growth, **coverage gaps by Pillar/subcategory**, adoption funnel, top/bottom performers, review SLA, contributor leaderboard. | ✅ `lib/practices/health.ts` + `/admin/content/practices/health` (#2193) |
 
 **Cross-cutting (every phase):** naming + voice canon (no em dashes, "Make it yours") · page-framework kit (compose, don't author) · docs protocol (ADR in git, operator how-to in Notion) · audit log · RLS · `space_id` scoping · tuning via `zap_config`/`gem_config` (data, not code).
 
@@ -340,7 +341,7 @@ bigger lift (storage + moderation), captured here as the build queue:
 | Item | Scope | Status |
 |---|---|---|
 | **Top Friends** | The MySpace "Top 8": pick N friends to feature in a grid on your Spotlight. Reuses the existing friends/friendships data, no moderation needed. ~~**Build first.**~~ | ✅ **SHIPPED** (row said 📋 "specced, not built"). Verified 2026-08-11: `lib/spotlight/top-friends.ts` + `top-friends.types.ts` + `top-friends.test.ts`, migration `supabase/migrations/20260903000000_spotlight_top_friends.sql`, block type `'topfriends'` in the Spotlight `BlockType` union, renderer `components/widgets/member-profile/topfriends.tsx` |
-| **Guestbook** | Visitors leave a note on your Spotlight. Needs a `spotlight_guestbook` table (RLS: owner reads all, anyone-signed-in writes), moderation (hide/report, owner delete), rate-limit + anti-spam, and the read-side render. | 📋 specced, not built |
+| **Guestbook** | Visitors leave a note on your Spotlight. Needs a `spotlight_guestbook` table (RLS: owner reads all, anyone-signed-in writes), moderation (hide/report, owner delete), rate-limit + anti-spam, and the read-side render. | ✅ **SHIPPED** 2026-08-25 ([ADR-1132](DECISIONS.md)): migration `20270325000000_spotlight_guestbook.sql` (one note per signer per book; hide keeps the slot), `lib/spotlight/guestbook{.shared,}.ts`, session-client actions in `app/spotlight/[handle]/guestbook-actions.ts` (hourly cap), `guestbook` member grid block. Report integration + owner unhide are in the `PROG-SPOT` row's remaining sequence |
 | **Stickers / decals** | A playful decorative layer — place emoji/earned stickers on the page (absolute-positioned, validated coordinates + an allowlisted sticker set). | 📋 specced, not built |
 
 Deferred embed providers: Bandcamp, Apple Music, Twitch (each needs a host-allowlist entry +
@@ -1243,7 +1244,7 @@ edits, every upload ingests, a usage index for safe delete + global swap.
 | # | Scope | Status |
 |---|---|---|
 | S0 | **DAM spine.** The surviving three entities (assets + versions + collections(+items)), metadata/protection hooks, root-space-as-shared, typed contract + presets. ⚠️ ~~renditions~~ and ~~usages~~ were created in `20260920000000` and dropped in `20260925000000` — see the two 🔴 notes above. | ✅ ADR-478/480, migrations `20260919000000` + `20260920000000` |
-| D1 | **Loom Studio + gallery** (the standard site image gallery). `/admin/library` = **Loom Studio**: janitor-gated upload, search + type filter + sort, a stat row, and a per-asset **detail drawer** (view / edit title·alt·tags·category / copy URL / open / archive / delete). Role-aware scope seam (`lib/library/scope.ts`) — staff manage the Frequency master today. | ⏳ shipped; ingest extras (checksum dedupe · EXIF strip · dims/colors/blurhash · ⚠️ rendition set, which `HYG-017` may remove from this list entirely) + FTS-ranked/trigram search still pending |
+| D1 | **Loom Studio + gallery + ingest + ranked search.** `/admin/library` = **Loom Studio**: janitor-gated upload, search + type filter + sort, a stat row, and a per-asset **detail drawer** (view / edit title·alt·tags·category / copy URL / open / archive / delete). Role-aware scope seam (`lib/library/scope.ts`). **Ingest** (`lib/library/ingest.ts` + `lib/library/image-describe.ts`, [ADR-1121](DECISIONS.md)): checksum dedupe on the existing `(space_id, sha256)` index · EXIF/XMP/IPTC strip with orientation preserved · dimensions from the file header · blurhash + palette computed in the BROWSER, because a server decode would put `sharp` in a seam four surfaces reach. **Search** is ranked over both indexes the schema already carries (`search_tsv` FTS ∪ title trigram), ranked in process by `lib/library/search-rank.ts`. ⚠️ The **rendition set** was struck from this row by `HYG-017`: transforms are on-the-fly, so a rendition is a request and never a row. | ✅ ADR-1121 |
 | D2 | **AssetField seam.** One `Upload / Pick from library / Paste URL` control replacing `ImageField` everywhere; blocks store an **asset reference** (+ URL cache); render resolves reference → CDN url; **backfill** existing `site-media` URLs into the catalog + rewrite references. | 📋 |
 | D3 | **Editor + versions.** Filerobot image editor (crop frames, rotate, adjust, compress); **edit saves a new `library_versions` row** (non-destructive); rollback via `is_current`; on-the-fly rendition resolver (the consumer `RENDITION_PRESETS` has been waiting for; `HYG-017`). | 📋 |
 | D4 | **Organization at scale.** Collections ("sales funnel" sets), saved views, tag governance; the **usage index** ~~wired~~ **built from zero** (scan Puck data) → "used on N pages", archive-not-destroy, **global swap**. ⚠️ **Re-scoped 2026-08-11:** "wired" assumed `library_usages` existed. It does not (created `20260920000000:101`, dropped `20260925000000:17`, all readers deleted by [ADR-979](DECISIONS.md)), so D4 must build the **write path** as `block_usage` per [ADR-975](DECISIONS.md). Size grows accordingly. | 📋 |

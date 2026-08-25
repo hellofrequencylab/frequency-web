@@ -8,7 +8,7 @@ import { MarketplaceStats } from '@/components/marketplace/marketplace-bar'
 import { PageAdminBar } from '@/components/layout/page-admin-bar'
 import { PageModules } from '@/components/widgets/page-modules'
 import { resolvePageContent, pageContentMetadata } from '@/lib/page-content'
-import { resolveHeaderElement } from '@/lib/elements/header'
+import { resolveMarketHero } from '@/lib/layout/index-hero'
 
 // Channels (ADR-270/294). The page now opens on the SHARED MarketHero header (the same hero band
 // Events / Classifieds / Business Spaces / Circles use) so every browse surface reads as one
@@ -55,12 +55,14 @@ export default async function ChannelsPage() {
     canCreate = role === 'host' || role === 'guide' || role === 'mentor' || role === 'admin' || role === 'janitor'
   }
 
-  // The header's independent reads in one batch: the operator-tunable header element (ADR-793),
-  // the Pillar options for the create dialog, and the stats band's three head-counts (Channels,
-  // tuned-in total, Circles practicing one) — all cheap count-only queries.
-  const [header, { data: pillarsData }, { count: channelCount }, { count: tunedInCount }, { count: circleCount }] =
+  // The header's independent reads in one batch: the whole hero band through the ONE browse-hero
+  // ladder (lib/layout/index-hero, PROG-P4 — operator Settings image, then the page_content hero
+  // already resolved above, then the coded cover, plus the operator-tunable header element,
+  // ADR-793), the Pillar options for the create dialog, and the stats band's three head-counts
+  // (Channels, tuned-in total, Circles practicing one) — all cheap count-only queries.
+  const [hero, { data: pillarsData }, { count: channelCount }, { count: tunedInCount }, { count: circleCount }] =
     await Promise.all([
-      resolveHeaderElement({ defaults: { layout: 'overlay', height: 'large' } }),
+      resolveMarketHero('/channels', { cover: HERO_FALLBACK, contentImage: heroImage }),
       admin
         .from('pillars').select('id, name')
         .eq('is_active', true)
@@ -100,13 +102,10 @@ export default async function ChannelsPage() {
   return (
     <div className="space-y-6">
       <MarketHero
-        image={heroImage ?? HERO_FALLBACK}
+        {...hero}
         eyebrow="Community"
         title={pageTitle}
         subtitle={pageDescription}
-        variant={header.layout}
-        size={header.height}
-        overlay={header.scrim}
         action={actions}
       />
 
