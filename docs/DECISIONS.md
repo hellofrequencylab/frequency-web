@@ -29832,7 +29832,7 @@ on-cover actions (`/channels/[id]`, `/circles/[slug]`, `/journeys/[slug]`, `/jou
 cover has no slot for, and folding them is a behaviour change that belongs in its own PR with its
 own screenshots. Both remainders are counted on `PROG-P5`.
 
-## ADR-1121: The marketing surface was already on the app tokens — what diverged was the gates watching it (2026-08-25)
+## ADR-1123: The marketing surface was already on the app tokens — what diverged was the gates watching it (2026-08-25)
 
 **Status:** accepted · closes `PROG-P9` · narrows the marketing exemptions in `check:tokens` ·
 extends [ADR-1064](#adr-1064)-era gate practice · enforced by `pnpm check:tokens` +

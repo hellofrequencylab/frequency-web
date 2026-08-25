@@ -163,7 +163,7 @@ export const PAIRS = [
   { fg: '--color-text-subtle', bg: '--color-surface-elevated', role: 'body', note: 'meta/labels on an elevated surface' },
   { fg: '--color-text-subtle', bg: '--color-chrome', role: 'body', note: 'meta/labels in the chrome band' },
 
-  // ── The MARKETING CANVAS, at parity with the app canvas (PROG-P9, 2026-08-25, ADR-1121) ──
+  // ── The MARKETING CANVAS, at parity with the app canvas (PROG-P9, 2026-08-25, ADR-1123) ──
   // The cream ground had exactly ONE row in this table — `--color-text` above — while the app
   // canvas beside it carried five foregrounds. That asymmetry was not a design position; it was
   // the marketing surface never having been walked. It paints the same secondary inks the app
@@ -401,7 +401,7 @@ export const WAIVERS = [
     floors: { 'Light-lock on a dark device': 1.49, 'DAWN light': 1.49, 'DAWN dark': 1.79, 'Midnight light': 1.74, 'Midnight dark': 1.79 },
     why: 'Same hairline, on a card. See above.',
   },
-  // ── The marketing canvas (PROG-P9, measured 2026-08-25, ADR-1121) ────────────────────────
+  // ── The marketing canvas (PROG-P9, measured 2026-08-25, ADR-1123) ────────────────────────
   {
     fg: '--color-border-strong',
     bg: '--color-marketing-canvas',

@@ -63,7 +63,7 @@ const ALLOWLIST = [
   (p) => p.startsWith('components/admin/theme-studio/'),
   (p) => p.startsWith('components/admin/email-studio/'),
   (p) => p.startsWith('components/spaces/email/'),
-  // ── THE MARKETING EXEMPTION IS GONE (PROG-P9, 2026-08-25, ADR-1121) ──────────────────────
+  // ── THE MARKETING EXEMPTION IS GONE (PROG-P9, 2026-08-25, ADR-1123) ──────────────────────
   // Two whole-file waivers used to live here — `app/(marketing)/` and `components/marketing/` —
   // on the reasoning that "the PUBLIC MARKETING site + its UI primitives are a separate brand
   // design system, not the in-app DAWN surface the guard governs".
