@@ -15,6 +15,7 @@ import {
   type EntityLayout,
   type RowDef,
 } from './layout'
+import { upgradeLayout } from './node-tree'
 import type { TemplateId } from '@/lib/widgets/templates'
 
 describe('slot-key injection guard (CodeQL remote property injection)', () => {
@@ -60,7 +61,9 @@ describe('parseEntityLayout', () => {
       slots: { main: ['about', 'stats'], side: ['links'], junk: [] },
       hidden: ['topfriends'],
     })
-    expect(parsed).toEqual({
+    // toMatchObject, not toEqual: E0 task 9 added a read-path-only `nodes` projection to every
+    // successful parse. The named fields are what this test is about.
+    expect(parsed).toMatchObject({
       template: 'main-side',
       slots: { main: ['about', 'stats'], side: ['links'] },
       hidden: ['topfriends'],
@@ -72,11 +75,53 @@ describe('parseEntityLayout', () => {
       template: 'nope',
       slots: { main: ['about', 7, null, 'stats'] },
     })
-    expect(parsed).toEqual({ slots: { main: ['about', 'stats'] } })
+    expect(parsed).toMatchObject({ slots: { main: ['about', 'stats'] } })
   })
 
   it('reads the flat back-compat order shape', () => {
-    expect(parseEntityLayout({ order: ['about', 'links'] })).toEqual({ order: ['about', 'links'] })
+    expect(parseEntityLayout({ order: ['about', 'links'] })).toMatchObject({ order: ['about', 'links'] })
+  })
+
+  // ── E0 task 9: upgradeLayout in the read path (EDITOR-E0 §1.5 step 3, ADR-1129) ───────────────
+  //
+  // "Every reader is now node-shaped and NOTHING HAS BEEN WRITTEN." Both halves are asserted here,
+  // because the second one is the half a careless edit breaks silently.
+
+  it('projects the node tree onto every successful parse', () => {
+    const raw = { rows: [{ id: 'r1', columns: 1, cells: [['about']] }] }
+    expect(parseEntityLayout(raw)?.nodes).toEqual(upgradeLayout(raw))
+  })
+
+  it('🔴 keeps the null contract, which is what the send paths depend on', () => {
+    // upgradeLayout returns NON-NULL for every object — upgradeLayout({}) is {rows:[],bench:[]}.
+    // So if `nodes` were attached before the emptiness gate, parseEntityLayout would never return
+    // null for an object and `parseEntityLayout(x) ?? starterEmailLayout()` would stop falling
+    // back — on two live email send paths, compiling an empty body. These two lines are that gate.
+    expect(upgradeLayout({})).not.toBeNull()
+    expect(parseEntityLayout({})).toBeNull()
+    expect(parseEntityLayout({ foo: 'bar' })).toBeNull()
+  })
+
+  it('🔴 never lets `nodes` reach storage, because sanitize is the WRITE path', () => {
+    // sanitizeEntityLayout rebuilds a fresh object from the named fields. If a future edit copies
+    // `nodes` through, the projection starts being persisted and task 9 stops being "nothing has
+    // been written". This caught exactly that mistake once already.
+    const parsed = parseEntityLayout({ rows: [{ id: 'r1', columns: 1, cells: [['about']] }] })
+    expect(parsed?.nodes).toBeDefined()
+    const written = sanitizeEntityLayout(parsed, 'space')
+    expect(written && Object.hasOwn(written, 'nodes')).toBe(false)
+  })
+
+  it('preserves in `nodes` a block type that `rows` drops (ADR-978)', () => {
+    // The two are DELIBERATELY not the same content: parseRows drops a placement whose id left the
+    // registry, upgradeLayout keeps it and leaves legality to sanitizeRows / resolveRows. Pinned so
+    // a later refactor cannot quietly reconcile them by filtering the upgrade.
+    const raw = { rows: [{ id: 'r1', columns: 1, cells: [['retiredBlock']] }] }
+    const parsed = parseEntityLayout(raw)
+    const cells = parsed?.rows?.flatMap((r) => r.cells.flat()) ?? []
+    expect(cells).not.toContain('retiredBlock')
+    const nodeTypes = (parsed?.nodes?.rows ?? []).flatMap((r) => r.cells.flat().map((n) => n.type))
+    expect(nodeTypes).toContain('retiredBlock')
   })
 })
 

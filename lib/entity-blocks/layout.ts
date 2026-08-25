@@ -1,4 +1,5 @@
 import { entityBlockById, blockSupportsKind, blocksForKind, type EntityKind } from './registry'
+import { upgradeLayout, type NodeLayout } from './node-tree'
 import { sanitizeContentMap, sanitizeStyleMap, type BlockStyle, type MarginStep } from './block-content'
 import {
   isTemplateId,
@@ -169,6 +170,22 @@ export interface EntityLayout {
   content?: Record<string, Record<string, unknown>>
   /** Per-block style (ADR-528), keyed by block id. Validated on parse + sanitize. */
   style?: Record<string, BlockStyle>
+  /**
+   * E0 task 9 (EDITOR-E0 §1.5 step 3, ADR-1129): the SAME document, node-shaped.
+   *
+   * READ PATH ONLY, AND NEVER PERSISTED. `sanitizeEntityLayout` rebuilds a fresh object from the
+   * named fields above and does not copy this one, so it cannot reach storage. That is the whole
+   * point of the halfway step: every reader can see the node tree and nothing has been written.
+   *
+   * ⚠️ IT IS DELIBERATELY NOT THE SAME CONTENT AS `rows`. `parseRows` drops a placement whose id
+   * left the registry; `upgradeLayout` PRESERVES it, because ADR-978 settled that a loader must
+   * never discard an author's document over an unknown type. Legality stays with `sanitizeRows` /
+   * `resolveRows`, which run after. Do not reconcile the two by adding a registry filter to the
+   * upgrade — that re-arms the bug ADR-978 exists to prevent.
+   *
+   * The sibling `content` / `style` maps retire at task 11, not here.
+   */
+  nodes?: NodeLayout
 }
 
 // Rows-shape validation bounds. A layout is user-originated, so every bound is enforced on parse.
@@ -294,6 +311,11 @@ function strArr(value: unknown): string[] {
  */
 export function parseEntityLayout(raw: unknown): EntityLayout | null {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null
+  // ⚠️ ON `raw`, AND AT THE TOP. The nid seed is `rowId:col:index:type` and `index` is the position
+  // in the RAW stack, so upgrading a parsed value would shift every index past a dropped unknown
+  // type and mint different ids than the frozen corpus and the task-15 backfill. node-tree.ts says
+  // it plainly: a re-minted id is a lost row, not a cosmetic change.
+  const nodes = upgradeLayout(raw)
   const o = raw as {
     rows?: unknown
     template?: unknown
@@ -332,7 +354,16 @@ export function parseEntityLayout(raw: unknown): EntityLayout | null {
   const style = sanitizeStyleMap(o.style)
   if (style) out.style = style
 
-  return Object.keys(out).length ? out : null
+  // 🔴 THE NULL GATE RUNS BEFORE `nodes` IS ATTACHED, AND THE ORDER IS LOAD-BEARING.
+  // `upgradeLayout` returns non-null for EVERY object — `upgradeLayout({})` is `{rows:[],bench:[]}`.
+  // So attaching it first would make this function never return null for any object, and
+  // `parseEntityLayout({ foo: 'bar' })` would become truthy. Six call sites read
+  // `parseEntityLayout(x) ?? starter…`, two of them on live email send paths
+  // (lib/spaces/email-drafts.ts and the nurture cron): a garbage document would stop falling back
+  // to the starter and compile to an EMPTY BODY. Keep the gate first.
+  if (!Object.keys(out).length) return null
+  if (nodes) out.nodes = nodes
+  return out
 }
 
 /**
@@ -461,6 +492,10 @@ export function sanitizeEntityLayout(raw: unknown, kind: EntityKind): EntityLayo
     }
     if (Object.keys(style).length) out.style = style
   }
+  // 🔴 NO `nodes` HERE, EVER. This is the WRITE path: whatever it returns is what gets stored.
+  // `nodes` is a read-path projection (see EntityLayout.nodes) and rebuilding without it is what
+  // makes "nothing has been written" true at E0 task 9. A test asserts this object has no `nodes`
+  // key precisely so a future edit cannot quietly start persisting it.
   return Object.keys(out).length ? out : null
 }
 
