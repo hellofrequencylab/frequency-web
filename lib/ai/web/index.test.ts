@@ -271,3 +271,33 @@ describe('parseBraveResults', () => {
     expect(parseBraveResults({})).toEqual([])
   })
 })
+
+// ── Entity decoding is ONE pass (CodeQL "double escaping or unescaping") ──────────────────────────
+//
+// The old chain of six .replace() calls re-read its own output: `&amp;lt;` became `&lt;` on the amp
+// pass and then a literal `<` on the lt pass. Text the source had deliberately escaped arrived at
+// the model un-escaped. These cases fail against that chain and pass against the single-pass table.
+describe('htmlToText entity decoding', () => {
+  it('🔴 does NOT re-decode its own output', () => {
+    // A page that literally wants to show the characters "&lt;" must not have them become "<".
+    expect(htmlToText('<p>&amp;lt;</p>')).toBe('&lt;')
+    expect(htmlToText('<p>&amp;amp;</p>')).toBe('&amp;')
+    expect(htmlToText('<p>&amp;gt;</p>')).toBe('&gt;')
+  })
+
+  it('decodes each supported entity exactly once', () => {
+    expect(htmlToText('<p>a&nbsp;b</p>')).toBe('a b')
+    expect(htmlToText('<p>Ben &amp; Jerry</p>')).toBe('Ben & Jerry')
+    expect(htmlToText('<p>&quot;quoted&quot;</p>')).toBe('"quoted"')
+    expect(htmlToText('<p>it&#39;s</p>')).toBe("it's")
+    expect(htmlToText('<p>it&apos;s</p>')).toBe("it's")
+  })
+
+  it('leaves an entity it does not know alone rather than mangling it', () => {
+    expect(htmlToText('<p>&copy;</p>')).toBe('&copy;')
+  })
+
+  it('still strips scripts and tags around the decoded text', () => {
+    expect(htmlToText('<script>evil()</script><p>Ben &amp; Jerry</p>')).toBe('Ben & Jerry')
+  })
+})

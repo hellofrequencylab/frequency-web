@@ -21,7 +21,12 @@ Deno.serve(async (req: Request) => {
       headers: { "Content-Type": "application/json" },
     });
   } catch (e) {
-    return new Response(JSON.stringify({ error: String(e) }), {
+    // The real error goes to the function log, where an operator can read it. The RESPONSE says
+    // only that it failed (CodeQL "information exposure through a stack trace"): String(e) on a
+    // thrown Error carries its message, and a model-runtime message names paths, versions and
+    // internals that a caller has no business seeing and an attacker can fingerprint.
+    console.error("[embed]", e);
+    return new Response(JSON.stringify({ error: "Embedding failed." }), {
       status: 500,
       headers: { "Content-Type": "application/json" },
     });
