@@ -82,7 +82,18 @@ ARTIFACT. Full rules and the incident: [`docs/DEPLOY-SAFETY.md`](docs/DEPLOY-SAF
       At **89% of the 1.50 GB ceiling** and roughly **96% of the trim point**, this gate is now much
       the closest of the four to firing, and the next build on this trajectory trims — which costs the
       build after it a cold compile (113s against a 46s warm control). The other three gates moved by
-      0.01 GB, zero, and 1 KB across the same window; this one is the series to watch.
+      0.01 GB, zero, and 1 KB across the same window.
+      🔵 **AND THEN IT WENT BACK DOWN TWELVE MINUTES LATER: 1.27 GB on the 21:55Z preview** (turbopack
+      1370 MiB against the 1476 MiB above), so read this column as a BAND, not a trend line. The
+      sentence that stood here — "this one is the series to watch" — was written off two readings in
+      one direction and is retired; a third reading in the other direction is what a band looks like,
+      and drawing a trend through two points is how a normal oscillation gets mistaken for a climb.
+      The honest statement is the range: this gate moves within roughly 1.27–1.39 GB on the current
+      mix, its trim point is near 1.40, and it is still the closest of the four to firing — but it is
+      not climbing toward it. ⚠️ A REFUTATION RIDES ON THIS: the growth here was proposed as a cause
+      for the `Collecting page data` stalls (LIVE-123) and TESTED the same night. The build one minute
+      before a captured 41-minute stall logged no trim at all. The mechanism does not operate; the
+      cache is off that suspect list.
     - **`main` at 1386abe6c, production, 12:35Z: 1.28 GB predicted, 1.27 GB uploaded** (2.24 GiB raw —
       node_modules 934 MiB + `.next/cache` 1362 MiB), again **85%** of the ceiling. A THIRD paired
       reading on the same mix, accurate to 1%. The other three gates read IDENTICALLY to c8b5ee97 on
