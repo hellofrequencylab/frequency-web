@@ -29456,6 +29456,111 @@ refutation and a proposal. The proposal ships with the build that proves it, or 
 timeout are what *every* hang looks like. Before reading a failure as a known one, name the thing that
 would be different if it were not — here, the restored cache — and go look at whether it was.
 
+## ADR-1118: The phone sheet becomes a projection of the header menu, and the header's own landings stop being unreachable (2026-08-24)
+
+**Status:** Accepted · **Closes:** `LIVE-106`, `LIVE-107` · **Files:** `LIVE-110`, `HYG-019` ·
+**Corrects:** `docs/FINALIZE-PLAN.md` row 4.3 · **Extends:** [ADR-1082](DECISIONS.md) (re-test the
+premise), [ADR-860](DECISIONS.md) (the inserts-only menu sync), [ADR-970](DECISIONS.md) (a gate that
+cannot fire honestly) · **Files:** `components/layout/marketing-mobile-menu.tsx`,
+`components/layout/marketing-header.tsx`, `components/layout/mega-menu.tsx`,
+`lib/menus/project.ts`, `lib/nav/registry.ts`, `scripts/maintenance/menu-drift.mjs`,
+`scripts/adr-1118-header-spaces-directory.sql`
+
+### Both rows were re-measured first, and both were wrong about themselves
+
+| Row | Claimed | Measured 2026-08-24 |
+|:--|:--|:--|
+| `LIVE-106` | "twenty destinations are unreachable", then itemised **fifteen** | **13** — and not the fifteen it named. The sheet also rendered a hand-kept `DISCOVER_NAV` block, so four of the six `/discover/*` surfaces it listed (circles, events, journeys, topics) **were** reachable; it missed `/spaces/directory` and `/what-is-frequency`, which were not |
+| `LIVE-107` | "23 DB items against 26 code nodes" | Both numbers are right and the comparison is not: 26 counts **registry nodes** (6 triggers + 20 children), the DB stores **items**. The comparable code figure was **22**, so the drift was ONE extra row and ONE changed href, not three missing pages |
+| `LIVE-106` | an unmerged `claude/mobile-menu-popover-fixes` branch may overlap | It does not touch either file, and it is behind `main` |
+
+`LIVE-107`'s two member-facing claims both held exactly: `/spaces/directory` sat in
+`synced_default_keys` with no live row, and a live row labelled "Spaces directory" pointed at
+`/spaces`.
+
+### The cause of the mislabel, which nobody had connected
+
+A dropdown trigger carries **no href of its own** — a category with a panel is a disclosure, and its
+landing page is reachable only as a row *inside* that panel. Two triggers did not contain their own
+landing, so `/spaces` and `/the-community` had no path from the public header at all.
+`docs/MENU-AUDIT-2026-08-06.md` row 3 found the Spaces half, called it 🔴, and routed the repair to
+**the DB**. The repair that landed relabelled the directory row instead of adding a landing row —
+which is precisely how the header came to offer "Spaces directory" and land on the marketing page.
+**A code-shaped defect repaired in data produces a lie in the UI**, and the code defect survives.
+
+So the landing rows go in `HEADER_TRIGGER_SEEDS`, where every surface projecting the header gets
+them, and `registry.source.test.ts` holds the invariant by name.
+
+### `/discover/spaces`, not `/spaces/directory`
+
+The directory row now points at the **public** twin. `/spaces/directory` is the app-shell twin:
+`app/robots.ts` disallows it so it cannot cannibalise the canonical, and the `(main)` layout already
+redirects a signed-out visitor from it to `/discover/spaces`. A public header linking it sends every
+visitor and every crawler through a noindex bounce to reach a page we publish directly. The same
+test refuses all three known twins.
+
+### The sheet is a projection now, not a parallel list
+
+`MarketingMobileMenu` mapped `headerTriggers()` flat, and `MarketingHeader` passed it only `light`.
+Two defects, one shape: the sheet was **its own nav**, so it could neither show a trigger's children
+nor ever see an operator's edit. It now takes the same `headerMenu` prop `PrimaryNav` takes and
+renders it through `categoryTriggers` — the panel-or-link decision **extracted from
+`mega-menu.tsx`'s `buildTriggers`** into `lib/menus/project.ts` so the bar and the sheet cannot
+disagree about a destination. A dropdown becomes a collapsible group holding everything the desktop
+panel holds (child columns folded in via `flattenCategoryTree`); a single-link category stays a
+plain link. The hand-kept `DISCOVER_NAV` block is gone: all five of its links are rows of the menu.
+
+`sheetGroups` is exported, and that is deliberate. The sheet mounts only on a tap and this repo has
+no browser in `pnpm test`, so a source assertion would have been the only thing left to hold — and
+source assertions are exactly what stayed green while this defect shipped. The test drives the
+content model and compares the phone's destination set to the bar's, which is the property that
+matters.
+
+### The drift check exists, is scoped where the subject is, and was proven on both states
+
+`LIVE-107` asked for the weekly check `HYG-010` wanted, retargeted. `HYG-010` aimed it at
+`admin_header`, which has **zero DB rows** — it would have guarded an empty set forever and read as
+coverage (ADR-970). `scripts/maintenance/menu-drift.mjs` reads the **`header`** surface, on the
+`ledger-parity.mjs` pattern exactly: a token-gated fetch in the workflow feeds the script JSON, so
+the script never touches a database and is testable without one.
+
+Its headline finding is the one no count could make: **a live row whose LABEL matches a code default
+but whose HREF does not.** The 2026-08-24 row was present, its href was a real page, and the totals
+agreed — every instrument the repo had said green while the link lied. An earlier draft of the
+comparison excused that row because `/spaces` is itself a code default elsewhere, and reported a
+clean sweep; the guard is gone and a test reconstructs the exact row.
+
+**Proven on real production payloads in the same change, both directions:** it exits 1 on the
+pre-correction read (naming the mislabel) and 0 on the post-correction read. Stale baseline keys and
+pending injections are **advisory and never fail**: five stale keys were live, none of them changes
+what a renderer does, and a report that is red on arrival for something nobody can act on is a
+report people stop reading.
+
+### The data correction, and why it was applied rather than described
+
+`scripts/adr-1118-header-spaces-directory.sql` (idempotent, the ADR-868 precedent) renames the live
+row to "Spaces", adds "Spaces directory" → `/discover/spaces`, and drops the dead
+`/spaces/directory` key from the baseline. It was **run against production on 2026-08-24** and
+re-read: the correction is complete on the code that is live today, with no dependency on this PR
+merging, because the DB menu is what the header renders either way.
+
+One detail worth the line: the two rows get **distinct** positions (`-2`, `-1`). Reading order is
+`position` alone, and a tie is not ordered at all — a naive "landing + 1" collided with "For coaches
+and healers" at 0 and would have left the panel's first two rows in whatever order the planner felt
+like.
+
+### What was deliberately not done
+
+- **`SiteHeader` has no phone nav at all** ("mobile relies on the prominent CTA + footer nav until a
+  drawer ships"), so on `/discover/*` and `/help` a phone visitor has no header nav whatsoever. That
+  is a larger surface than either row named and a different component. Filed as `LIVE-110`.
+- **`DISCOVER_NAV` is now an orphan** — nothing renders it. Three ADRs name it as a concept, so
+  retiring it deserves its own reasoning rather than a drive-by deletion. Filed as `HYG-019`.
+- **The Home⇄Feed toggle** the desktop bar applies for a signed-in viewer is not mirrored in the
+  sheet. It is not an operator edit and not a reachability defect.
+- **The five stale baseline keys** were left in place. Removing a key restores the sync's willingness
+  to re-inject that href, which would quietly overwrite a past operator delete; they are inert.
+
 ---
 
 ---
@@ -29576,6 +29681,82 @@ nobody links, or a page nobody needs — and deciding between them is a product 
 measurement. It is named in `LIVE-104`'s detail so the next reader does not have to re-measure it.
 
 ---
+
+## ADR-1116: `/pricing` leaves the Lift 5c series, because its coded body is the DERIVED page and there is no template rung behind it (2026-08-24)
+
+**Status:** accepted · closes `LIVE-006` · narrows [ADR-1068](#adr-1068) · rests on
+[ADR-916](#adr-916) and [ADR-918](#adr-918) · enforced by `pnpm check:render-path` +
+`LIVE-006`'s probe
+
+### The question this settles
+
+Lift 5c retired the coded marketing bodies one slug per PR. [ADR-1068](#adr-1068) wrote the
+committed order down as `circles → about → spaces → the-lab → the-quest → the-community →
+pricing`, and `scripts/render-path-bodies.txt` carries the same line with `home` added and
+`pricing` last, annotated "partial only". Seven of the eight are retired; `check:render-path`
+reads **16 gated slugs, 15 template-only, 1 still carrying a coded body** (`pricing`, 7
+components, 2,526 route lines) as of 2026-08-24.
+
+Recent notes on `LIVE-006` said `pricing` "stays out of the series entirely". **That is a
+narrowing of a committed order, and a narrowing that lives only in a backlog note is exactly the
+drift the one list exists to stop.** So it is recorded here instead.
+
+### What was measured
+
+`app/(marketing)/pricing/page.tsx` does not resolve `published → template → legacy` the way every
+other gated route does. Its own header says so, and the code agrees: there are **two rungs, not
+three** — an operator-published document, then the coded page. `getTemplate('pricing')` is *not* a
+middle rung, even though `lib/page-editor/templates/pricing.ts` exists and is registered in
+`EDITABLE_PAGES`.
+
+That inversion is [ADR-916](#adr-916)'s and [ADR-918](#adr-918)'s consequence, not an oversight.
+On every other slug the coded body is a **relic** that duplicates a static document. Here the
+coded body is the **derived** one: it reads live prices, the live take-rate vector, the beta-window
+resolution the checkout asks, and the operator's live feature-gate overrides, and it contains no
+dollar figure and no percentage anywhere in the file. The Puck template is the static snapshot.
+
+Each of the seven components was read, and **all seven consume the derived model** — `Offering`
+(`PlanCard`, `PlanPrice`, `PlanCta`, `IndependentStrip`), `PlanExtra` (`ExtraCard`), the resolved
+rate string (`RateLine`), and `FeatureGrid` (`ComparisonBlock`). None of them is a copy-only block
+that could be lifted into the template while the figures stayed live.
+
+### The decision
+
+**`pricing` is removed from the Lift 5c retirement series. Its coded body stays.** The "partial"
+qualifier the order carried is retired with it: partial retirement had nothing to retire, because
+every component in the body exists to render a derived figure.
+
+Two consequences follow, and both are the point:
+
+- **Retiring any part of that body would freeze a take rate into a jsonb document.** That is the
+  failure [ADR-916](#adr-916) was written to end and [ADR-918](#adr-918) locked with a test — nine
+  structures enumerating a tier, six of them able to disagree, and `/pricing` quoting $19 while the
+  app quoted $29.
+- **Slotting the template in as a middle rung is worse than leaving it out.** Any deploy where
+  nobody has published would silently downgrade `/pricing` from live figures to a snapshot, with
+  no signal that it had.
+
+### What is NOT claimed
+
+The ledger's `pricing 7` row stays, and `check:render-path` keeps gating it exact-match. This is
+not an exemption from the scoreboard: a rise is still refused, and if the body genuinely shrinks
+the number still comes down in the PR that earned it. What ends is the expectation that the number
+reaches 0.
+
+### What would reopen this
+
+One thing, and it is a schema change rather than a judgement: **a block kind that binds a live
+pricing key the way `lib/page-editor/templates/pricing.ts` already binds `livePriceKey` per
+[ADR-918](#adr-918), for every figure the body renders — rates, gates and the comparison grid
+included.** Until a document can carry a *binding* rather than a *number* for all of them, moving
+this page into the editor means quoting figures the product has stopped charging.
+
+### The wider point
+
+The exclusion was true, the reasoning was sound, and it had been written three times in a backlog
+note and a ledger comment without ever being a decision. A committed order is a promise; walking one
+back is a decision, and decisions live here. Same shape as [ADR-1112](#adr-1112): the thing to
+distrust is not the finding, it is a finding that never got recorded where it would be read.
 
 ## ADR-1117: The detail cover gets one resolver, and its ladder is deliberately inverted from the index's (2026-08-24)
 

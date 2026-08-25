@@ -46,6 +46,34 @@ describe('nav single-source invariant — the registry feeds every surface', () 
     }
   })
 
+  it('every DROPDOWN trigger leads with its own landing, or that page has no path from the header', () => {
+    // 🔴 THE DEFECT THIS PINS (LIVE-107). A trigger that opens a panel gets NO href of its own
+    // (lib/menus/project.ts::categoryTriggers), so its landing page is reachable only as a row
+    // INSIDE the panel. Spaces and The Community both opened panels that did not contain their
+    // own landing, so /spaces and /the-community had no path from the public header at all.
+    // docs/MENU-AUDIT-2026-08-06.md row 3 found the Spaces half and routed the repair to the DB,
+    // where an operator patched it by RELABELLING the directory row — which is how the live
+    // header came to offer "Spaces directory" and land on the marketing page.
+    for (const t of headerTriggers()) {
+      if (t.items.length === 0) continue // a plain link: the trigger IS the destination
+      expect(
+        t.items.map((i) => i.href),
+        `the "${t.node.label}" dropdown does not contain its own landing ${t.node.href}, so that page is unreachable from the header`,
+      ).toContain(t.node.href)
+    }
+  })
+
+  it('the public header never links an app-shell twin that robots.txt disallows', () => {
+    // A `/discover` canonical and its app-shell twin render the same body, but app/robots.ts
+    // disallows the twins so they cannot cannibalise the canonical, and the (main) layout
+    // redirects a signed-out visitor off them. A PUBLIC header linking one sends every visitor
+    // and every crawler through a noindex bounce to reach a page we publish directly.
+    const TWINS = ['/spaces/directory', '/partners', '/journeys']
+    for (const node of nodesForSurface('header')) {
+      expect(TWINS, `the public header links the app-shell twin ${node.href}`).not.toContain(node.href)
+    }
+  })
+
   it('lib/site marketing nav is DERIVED from the registry, not hand-maintained', () => {
     const triggers = headerTriggers()
     // PUBLIC_MEGA_NAV mirrors the header trigger projection (one panel per trigger, same label).

@@ -1208,7 +1208,7 @@ Filerobot in-browser editor · on-the-fly transforms · **editing saves a new ve
 space-scoped · **backfill everything** · full privacy system but built later.
 
 **Spine shipped (S0):** the catalog (`library_assets`, ADR-478, migration `20260919000000`) + the
-DAM tables: `library_renditions` / `library_versions` / `library_collections(+items)` /
+DAM tables: ~~`library_renditions`~~ / `library_versions` / `library_collections(+items)` /
 ~~`library_usages`~~ + richer asset metadata + `space_id` NOT NULL (root = shared), (ADR-480,
 migration `20260920000000`).
 
@@ -1219,6 +1219,19 @@ migration `20260920000000`).
 > `<Field label="Used in">` blocks, and `splashUsageHref` with its six tests) after finding the
 > read discarded its error and silently returned `[]`. [`LOOM-PLATFORM.md`](LOOM-PLATFORM.md)
 > already carries this correction in four places; this line did not.
+
+> 🔴 **`library_renditions` is NOT part of the shipped spine either, for the same reason and in the
+> same migration.** Corrected 2026-08-24. Created at
+> `supabase/migrations/20260920000000_library_dam.sql:47`, **dropped at
+> `supabase/migrations/20260925000000_retire_orphaned_tables_and_functions.sql:16`**, and measured
+> absent from the live database on 2026-08-24. Unlike usages it has **no named replacement**, and
+> that is an open question rather than an omission: the Loom's own owner decision above says
+> transforms are **on-the-fly**, which makes a rendition a *request* (a width + format against the
+> master) rather than a row — in which case `RENDITION_PRESETS` (`lib/library/renditions.ts`)
+> belongs to D3's resolver and no table comes back. Nothing in the tree consumes those presets
+> today. Tracked as `HYG-017` in [`BUILD-BACKLOG.json`](BUILD-BACKLOG.json); **do not build
+> rendition writers before it is answered** — that is the expensive way to settle a question a
+> one-word ruling settles.
 >
 > **Consequence for D4 below: the usage index is a build from zero, not a wiring.** The
 > replacement is `block_usage` per [ADR-975](DECISIONS.md), derived from an `app_instances`
@@ -1229,10 +1242,10 @@ edits, every upload ingests, a usage index for safe delete + global swap.
 
 | # | Scope | Status |
 |---|---|---|
-| S0 | **DAM spine.** The five entities (assets + renditions + versions + collections + usages), metadata/protection hooks, root-space-as-shared, typed contract + presets. | ✅ ADR-478/480, migrations `20260919000000` + `20260920000000` |
-| D1 | **Loom Studio + gallery** (the standard site image gallery). `/admin/library` = **Loom Studio**: janitor-gated upload, search + type filter + sort, a stat row, and a per-asset **detail drawer** (view / edit title·alt·tags·category / copy URL / open / archive / delete). Role-aware scope seam (`lib/library/scope.ts`) — staff manage the Frequency master today. | ⏳ shipped; ingest extras (checksum dedupe · EXIF strip · dims/colors/blurhash · rendition set) + FTS-ranked/trigram search still pending |
+| S0 | **DAM spine.** The surviving three entities (assets + versions + collections(+items)), metadata/protection hooks, root-space-as-shared, typed contract + presets. ⚠️ ~~renditions~~ and ~~usages~~ were created in `20260920000000` and dropped in `20260925000000` — see the two 🔴 notes above. | ✅ ADR-478/480, migrations `20260919000000` + `20260920000000` |
+| D1 | **Loom Studio + gallery** (the standard site image gallery). `/admin/library` = **Loom Studio**: janitor-gated upload, search + type filter + sort, a stat row, and a per-asset **detail drawer** (view / edit title·alt·tags·category / copy URL / open / archive / delete). Role-aware scope seam (`lib/library/scope.ts`) — staff manage the Frequency master today. | ⏳ shipped; ingest extras (checksum dedupe · EXIF strip · dims/colors/blurhash · ⚠️ rendition set, which `HYG-017` may remove from this list entirely) + FTS-ranked/trigram search still pending |
 | D2 | **AssetField seam.** One `Upload / Pick from library / Paste URL` control replacing `ImageField` everywhere; blocks store an **asset reference** (+ URL cache); render resolves reference → CDN url; **backfill** existing `site-media` URLs into the catalog + rewrite references. | 📋 |
-| D3 | **Editor + versions.** Filerobot image editor (crop frames, rotate, adjust, compress); **edit saves a new `library_versions` row** (non-destructive); rollback via `is_current`; on-the-fly rendition resolver. | 📋 |
+| D3 | **Editor + versions.** Filerobot image editor (crop frames, rotate, adjust, compress); **edit saves a new `library_versions` row** (non-destructive); rollback via `is_current`; on-the-fly rendition resolver (the consumer `RENDITION_PRESETS` has been waiting for; `HYG-017`). | 📋 |
 | D4 | **Organization at scale.** Collections ("sales funnel" sets), saved views, tag governance; the **usage index** ~~wired~~ **built from zero** (scan Puck data) → "used on N pages", archive-not-destroy, **global swap**. ⚠️ **Re-scoped 2026-08-11:** "wired" assumed `library_usages` existed. It does not (created `20260920000000:101`, dropped `20260925000000:17`, all readers deleted by [ADR-979](DECISIONS.md)), so D4 must build the **write path** as `block_usage` per [ADR-975](DECISIONS.md). Size grows accordingly. | 📋 |
 | D5 | **Per-space Looms.** Space-scoped libraries + upload-to-library, fork-on-edit, quotas, per-space `/spaces/[slug]/manage/library` console, client-facing RLS, capability keys (`library.view`/`library.manage`), entitlements `library.*`, feature flags. | 📋 |
 | D6 | **Privacy system** (full build, later). `library-private` bucket, signed URLs, storage RLS, download gating + audit, EXIF strip enforced, optional watermark/proofing. Hooks (`is_protected` / `download_policy` / `expires_at`) already in the schema. | 📋 |
