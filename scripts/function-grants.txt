@@ -114,6 +114,7 @@ engagement_prop_counts               public
 ensure_calendar_token                authenticated
 event_calendar_feed                  internal
 event_going_counts                   internal
+event_tier_price_summary             internal
 feed_for_viewer                      authenticated
 find_contact_matches                 internal
 friendships_freeze_identity          internal

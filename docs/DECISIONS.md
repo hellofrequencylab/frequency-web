@@ -32025,3 +32025,67 @@ bare-single-in-single fires, double-in-single passes.
   `check-backlog` scored `unprovable` rather than passing. It sat in the unprovable bucket looking
   like coverage until the count was read: `179 probes agree` had not moved, and `unprovable here`
   had gone 3 → 4. **That two-number tell is the reason the guard prints both.**
+
+---
+
+## ADR-1143: the fifth truncation was caught before it fired, and chunking would not have fixed it (2026-08-25)
+
+**Status:** Accepted · `supabase/migrations/20270332000000_event_tier_price_summary_rpc.sql` (applied),
+`lib/events/tier-prices.ts`, `app/(main)/events/index-data.ts`, `lib/spaces/content-data.ts`, SCAN-211
+
+**Context.** `app/(main)/events/index-data.ts` read every ACTIVE ticket tier for the whole listing in
+one unbounded `.in('event_id', eventIds)`, purely to resolve one short string per card — *"Free"* /
+*"$20"* / *"From $20"*. PostgREST caps every response at `max_rows` (1,000) **server-side**;
+`service_role` does not escape it and `.limit()` does not raise it. The listing carries up to
+`3 × SERIES_WIDE_READ` = 1,500 events and tiers scale as events × tiers, so the read was bounded by
+neither. Past 1,000 rows the trailing events lose their label with no error, and **a ticketed event
+renders "Free"**.
+
+Fifth of its class, after [ADR-962](#adr-962) (CRM import dedupe), [ADR-969](#adr-969) (QR capture
+counts) and SCAN-303 (the going tally).
+
+**✅ And the first caught before it fired.** Premise re-tested before the work ([ADR-1082](#adr-1082)):
+production on 2026-08-25 carried **2 active tiers, on 1 event, against 60 published events**. The
+other four were all found by their consequence. This one was found by measuring the neighbours of a
+read that had just been fixed.
+
+**🔴 The decision that matters: chunking the input would NOT have fixed it.** SCAN-303 chunked ids at
+500 and that sufficed *because its RPC returns at most one row per id*. Tiers are **many-per-event**,
+so chunking the input leaves the RESPONSE unbounded — 500 ids at 5 tiers each is 2,500 rows and
+truncates identically. The response has to be bounded **at the source**, so the fix is an
+**aggregate**: `event_tier_price_summary(p_event_ids)` returns exactly one row per event carrying the
+three things the label needs — `tier_count`, `min_priced_cents`, `has_flexible`.
+
+| | |
+| :-- | :-- |
+| **Path 1** | the RPC, one row per event |
+| **Path 2** | a **paged** raw read folded locally, used when the function is absent — which is what made the migration safe to merge unapplied |
+| **Anti-drift** | both paths end in `priceLabelFromSummary`, and an 8-case test pins it against the retired `eventPriceLabel` preserved verbatim as an oracle |
+
+**A second instance of the same shape turned up while wiring it.** `lib/spaces/content-data.ts` ran
+its own raw `.in()` for the Space card. It *was* bounded — `listEventsForSpace` caps at 24 — but only
+loosely: 24 events at 42 tiers each still reaches 1,000, and **a bound that depends on nobody building
+a long ticket ladder is not a bound.** Both surfaces now share the helper, and `eventPriceLabel` was
+**retired** rather than left standing as a second definition of the same label.
+
+**⚠️ The migration's own probe caught two of my errors before anything landed**, both applies failing
+atomically with no function, no ledger row and no probe rows left behind:
+
+1. A fixture built on `pricing_mode = 'sliding'`. The schema allows `fixed · free · pwyc ·
+   sliding_scale · donation`. A fixture on a mode the schema rejects is a fixture that tests nothing.
+2. A grant that revoked from `PUBLIC` only. Supabase's `ALTER DEFAULT PRIVILEGES IN SCHEMA public`
+   ([ADR-959](#adr-959)) grants EXECUTE to `anon` and `authenticated` as **named roles**, so revoking
+   from `PUBLIC` leaves both untouched. This is the [ADR-964](#adr-964) shape one level over: there it
+   was column grants nobody narrowed, here a **function** grant that arrives pre-opened.
+   `check:function-grants` then refused the row until the verdict was declared — the guard doing
+   exactly the job LIVE-020 built it for.
+
+**Consequences.**
+- `lib/events/tier-prices.ts` is the only module allowed to touch `event_ticket_types` for pricing.
+  SCAN-211's probe fails if either surface reads it raw again, if the fallback stops paging, if it
+  loses its primary-key ordering (an unordered page can double-count across a boundary), if the RPC
+  stops aggregating, or if its revoke stops naming `anon`/`authenticated`.
+- Four mutations were run against the test file and each fired.
+- The remaining `.in()` reads in that loader were measured, not assumed, when SCAN-303 closed:
+  `myRsvpRows` is bounded by `event_rsvps_event_profile_uniq` and `circlesRows` by the count of
+  hosting circles. **With this row closed, no read in the listing is unbounded.**

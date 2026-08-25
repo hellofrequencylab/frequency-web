@@ -27,7 +27,7 @@ import type { LayoutPreset } from '@/lib/spaces/layout-presets'
 import { spaceTypeLabel } from '@/components/spaces/space-type'
 import { listEventsForSpace, listCalendarEngagement } from '@/lib/events/store'
 import { TICKETING_ENABLED } from '@/lib/events/ticketing'
-import { eventPriceLabel } from '@/app/(main)/events/index-data'
+import { tierSummariesByEvent, priceLabelFromSummary } from '@/lib/events/tier-prices'
 import { listPracticesForSpace } from '@/lib/practices'
 import { listJourneyPlansForSpace } from '@/lib/journey-plans'
 import { listPublicSpaceCircles } from '@/lib/circles/store'
@@ -557,16 +557,6 @@ export async function getSpaceStats(spaceId: string): Promise<SpaceStat[]> {
   }
 }
 
-/** One active ticket tier's price fields, for the card's price stat (mirrors the /events index
- *  loader's TierPriceRow — structural, so eventPriceLabel accepts it). */
-type SpaceTierPriceRow = {
-  event_id: string
-  pricing_mode: string
-  price_cents: number | null
-  min_cents: number | null
-  suggested_cents: number | null
-}
-
 /** The Space's UPCOMING events (soonest first, cancelled dropped), for the SpaceEvents block. Reuses
  *  listEventsForSpace (never re-queries events raw), then enriches in TWO batched reads (never N+1):
  *  going counts + cover URLs via listCalendarEngagement, and active ticket tiers for the price stat
@@ -577,23 +567,19 @@ export async function getSpaceUpcomingEvents(spaceId: string): Promise<SpaceEven
     const live = events.filter((e) => !e.is_cancelled)
     if (live.length === 0) return []
     const ids = live.map((e) => e.id)
-    const [engagement, tierRows] = await Promise.all([
+    // SCAN-211: tier prices come from lib/events/tier-prices.ts, the same aggregate the /events
+    // listing uses, rather than a second raw `.in()` on event_ticket_types. This read WAS bounded
+    // — listEventsForSpace caps at 24 — but only loosely: 24 events at 42 active tiers each would
+    // still reach PostgREST's server-side `max_rows` of 1,000 and silently drop the tail, and a
+    // bound that depends on nobody making a long ticket ladder is not a bound. Sharing the helper
+    // also means one definition of the label instead of two that must be kept in step by hand.
+    const [engagement, tierSummaries] = await Promise.all([
       listCalendarEngagement(ids),
-      createAdminClient()
-        .from('event_ticket_types')
-        .select('event_id, pricing_mode, price_cents, min_cents, suggested_cents')
-        .in('event_id', ids)
-        .eq('active', true)
-        .then(
-          ({ data }) => (data ?? []) as SpaceTierPriceRow[],
-          () => [] as SpaceTierPriceRow[],
-        ),
+      tierSummariesByEvent(ids),
     ])
-    const tiersByEvent: Record<string, SpaceTierPriceRow[]> = {}
-    for (const t of tierRows) (tiersByEvent[t.event_id] ??= []).push(t)
     return live.map((e) => {
       const eng = engagement.get(e.id)
-      const priceLabel = eventPriceLabel(e.price_cents ?? null, tiersByEvent[e.id] ?? [])
+      const priceLabel = priceLabelFromSummary(e.price_cents ?? null, tierSummaries[e.id])
       // ADR-826: 'auto'/'tickets' + a real price + ticketing on = buying is attending. 'rsvp' keeps
       // the answer switch for everyone (prices are informational), and a free event always RSVPs.
       const paid = priceLabel !== 'Free'
