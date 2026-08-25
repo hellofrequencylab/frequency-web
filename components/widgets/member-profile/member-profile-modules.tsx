@@ -16,6 +16,7 @@ import { AboutBlock } from './about'
 import { StatsBlock } from './stats'
 import { LinksBlock } from './links'
 import { TopFriendsBlock } from './topfriends'
+import { GuestbookBlock } from './guestbook'
 import { HeadingBlock } from './heading'
 import { TextBlock } from './text'
 import { ImageBlock } from './image'
@@ -45,6 +46,7 @@ export const MEMBER_PROFILE_BLOCKS: Record<string, MemberBlockComponent> = {
   stats: StatsBlock,
   links: LinksBlock,
   topfriends: TopFriendsBlock,
+  guestbook: GuestbookBlock,
   heading: HeadingBlock,
   text: TextBlock,
   image: ImageBlock,

@@ -22,6 +22,7 @@ function fixture(over: Partial<SpotlightData> = {}): SpotlightData {
     theme: {},
     totalZaps: 1234,
     topFriends: [],
+    guestbook: [],
     ...over,
   } as unknown as SpotlightData
 }

@@ -2,6 +2,7 @@ import type { EntityIdentity } from './context'
 import type { SpotlightData } from '@/lib/spotlight/data'
 import type { SpotlightStatsContext } from '@/components/spotlight/blocks/render'
 import type { TopFriend } from '@/lib/spotlight/top-friends.types'
+import type { GuestbookEntry } from '@/lib/spotlight/guestbook.shared'
 import {
   SPOTLIGHT_STAT_KEYS,
   type BlockType,
@@ -40,6 +41,8 @@ export interface MemberBlockData {
   topFriends: TopFriend[]
   /** The optional Top Friends grid heading (first authored `topfriends` block's title), or undefined. */
   topFriendsTitle?: string
+  /** The newest visible Guestbook notes, resolved server-side (never member-supplied). */
+  guestbook: GuestbookEntry[]
   /** Every authored block grouped by its type, in layout order. Content blocks (heading/text/image/
    *  gallery/quote/embed/divider) render from their slice; the data-block slices are unused (their
    *  values come from the fields above), but present so the map is total. */
@@ -83,7 +86,7 @@ function emptyBlocksByType(): Record<BlockType, SpotlightBlock[]> {
  * already resolved. Never carries a member-supplied stat number or friend identity.
  */
 export function resolveMemberBlockData(data: SpotlightData): MemberBlockData {
-  const { profile, totalZaps, topFriends } = data
+  const { profile, totalZaps, topFriends, guestbook } = data
 
   const blocksByType = emptyBlocksByType()
   for (const block of data.layout.blocks) {
@@ -125,6 +128,7 @@ export function resolveMemberBlockData(data: SpotlightData): MemberBlockData {
     links,
     topFriends,
     topFriendsTitle,
+    guestbook,
     blocksByType,
   }
 }
