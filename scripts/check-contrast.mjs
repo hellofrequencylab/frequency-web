@@ -163,6 +163,32 @@ export const PAIRS = [
   { fg: '--color-text-subtle', bg: '--color-surface-elevated', role: 'body', note: 'meta/labels on an elevated surface' },
   { fg: '--color-text-subtle', bg: '--color-chrome', role: 'body', note: 'meta/labels in the chrome band' },
 
+  // ── The MARKETING CANVAS, at parity with the app canvas (PROG-P9, 2026-08-25, ADR-1123) ──
+  // The cream ground had exactly ONE row in this table — `--color-text` above — while the app
+  // canvas beside it carried five foregrounds. That asymmetry was not a design position; it was
+  // the marketing surface never having been walked. It paints the same secondary inks the app
+  // does (`text-muted` 69 sites, `text-subtle` 51, `text-primary-strong` 73 across
+  // `app/(marketing)` + `components/marketing`), on a ground that is 5/255 DARKER than the app
+  // canvas in light mode — so every ratio here is a little tighter than its app twin, and none
+  // of them was measured.
+  //
+  // Measured 2026-08-25 across all five render states. The four below CLEAR their role minimum
+  // in every state; the three that do not are in WAIVERS with their floors, for the same reason
+  // every other waiver is there — a fact that stays printed cannot drift silently.
+  //
+  // `--color-primary-strong` is not a twin of anything on the app canvas: it is the accent-word
+  // rule the marketing components document at their call sites ("`text-primary` on an INK band,
+  // `text-primary-strong` on a LIGHT one"). It is the marketing surface's most-painted brand ink
+  // and it was outside the contract entirely. Worst state 4.75:1 — it passes, with 0.25 of room.
+  { fg: '--color-text-muted', bg: '--color-marketing-canvas', role: 'body', note: 'secondary copy on the marketing canvas' },
+  { fg: '--color-text-subtle', bg: '--color-marketing-canvas', role: 'body', note: 'meta/labels on the marketing canvas' },
+  { fg: '--color-primary-strong', bg: '--color-marketing-canvas', role: 'body', note: 'accent word / link on the marketing canvas — the light-band half of the accent rule' },
+  { fg: '--color-focus-ring', bg: '--color-marketing-canvas', role: 'edge', note: 'focus ring on the marketing canvas' },
+  // The three that miss, each waived at its measured floor (see WAIVERS for the reasoning):
+  { fg: '--color-border-strong', bg: '--color-marketing-canvas', role: 'edge', note: 'control edge on the marketing canvas — a tone step, same as on the app canvas' },
+  { fg: '--color-primary', bg: '--color-marketing-canvas', role: 'edge', note: 'primary graphic/fill on the marketing canvas (the vector art)' },
+  { fg: '--color-success', bg: '--color-marketing-canvas', role: 'body', note: 'success text on the marketing canvas — the pairing to avoid' },
+
   // ── The ink bands (marketing dark bands, in both modes) ──────────────────────────────────
   { fg: '--color-on-ink', bg: '--color-ink', role: 'body', note: 'copy on an ink band' },
   { fg: '--color-on-ink', bg: '--color-ink-elevated', role: 'body', note: 'copy on an elevated ink surface' },
@@ -374,6 +400,34 @@ export const WAIVERS = [
     bg: '--color-surface',
     floors: { 'Light-lock on a dark device': 1.49, 'DAWN light': 1.49, 'DAWN dark': 1.79, 'Midnight light': 1.74, 'Midnight dark': 1.79 },
     why: 'Same hairline, on a card. See above.',
+  },
+  // ── The marketing canvas (PROG-P9, measured 2026-08-25, ADR-1123) ────────────────────────
+  {
+    fg: '--color-border-strong',
+    bg: '--color-marketing-canvas',
+    floors: { 'Light-lock on a dark device': 1.29, 'DAWN light': 1.29, 'DAWN dark': 2.0, 'Midnight light': 1.41, 'Midnight dark': 2.06 },
+    why: 'The same hairline as on the app canvas, one notch tighter because the cream ground is darker (1.29 vs 1.40 in DAWN light). Same call, for the same reason: a tone step is not a control outline, and 1.4.11 identifies a control by fill + label + focus ring. Frozen so the tone step cannot be flattened away.',
+  },
+  {
+    fg: '--color-primary',
+    bg: '--color-marketing-canvas',
+    floors: { 'Light-lock on a dark device': 2.19, 'DAWN light': 2.19, 'Midnight light': 2.33 },
+    why: 'The amber brand fill on the cream ground is 2.19:1 — the marketing twin of the already-waived 2.52:1 on white, and darker ground means a WORSE number, not a better one. Decorative fill only: this is the vector art (fill-primary / stroke-primary), never an indicator that identifies a control. Anything on this ground that has to be READ takes --color-primary-strong (4.75:1, in the table above and passing). Frozen so the amber cannot drift lighter.',
+  },
+  {
+    fg: '--color-success',
+    bg: '--color-marketing-canvas',
+    floors: { 'Light-lock on a dark device': 4.05, 'DAWN light': 4.05, 'Midnight light': 3.8 },
+    why:
+      'THE PAIRING TO AVOID, and the reason this whole marketing-canvas family exists. Success text ' +
+      'clears 4.5:1 on a card (4.67:1) and misses it on the cream ground (4.05 / 3.80). That fact ' +
+      'was already known and already routed around by hand: components/marketing/comparison-table.tsx ' +
+      'pins its ledger cards to `bg-surface` and says so in a comment, "a `yes` cell’s `text-success` ' +
+      'clears 4.5:1 on the surface tone and misses it on the canvas tone". Nothing paints it today, so ' +
+      'this is not shipped debt — it is the rank-gold treatment: kept at its measured floor so the ' +
+      'fact is printed on every run instead of surviving only as a code comment one refactor away ' +
+      'from being deleted, and so the next component that reaches for a green check on a cream ' +
+      'section is told the number rather than discovering it in an axe report.',
   },
 ]
 
