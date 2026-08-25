@@ -6,77 +6,156 @@
   "capturedAt": "2026-08-25",
   "recaptureLog": [
     "2026-08-24 — first capture (ADR-1115).",
-    "2026-08-25 — RE-CAPTURED before working LIVE-104/108/109, because ADR-1082 requires a row's premise to be re-tested rather than believed. `recaptureQuery` was re-run against production and the result is IDENTICAL to the 2026-08-24 reading on every axis: same three stores, same 4/1/18 document counts, same 8/5/18 hrefs set, same 20/3/36 empty, same three targets at the same 7+1 / 4+1 / 18 hit counts. No premise had expired. The date moves; not one number does. ⚠️ The reading still describes production BEFORE supabase/migrations/20270323000000_stored_doc_links_repair.sql is applied — the file is deliberately unapplied (ADR-1125), so this census stays red on purpose and MUST be re-captured after the owner applies it. Re-capturing before the apply would record a fix that has not happened."
+    "2026-08-25 — RE-CAPTURED before working LIVE-104/108/109, because ADR-1082 requires a row's premise to be re-tested rather than believed. `recaptureQuery` was re-run against production and the result is IDENTICAL to the 2026-08-24 reading on every axis: same three stores, same 4/1/18 document counts, same 8/5/18 hrefs set, same 20/3/36 empty, same three targets at the same 7+1 / 4+1 / 18 hit counts. No premise had expired. The date moves; not one number does. ⚠️ The reading still describes production BEFORE supabase/migrations/20270323000000_stored_doc_links_repair.sql is applied — the file is deliberately unapplied (ADR-1125), so this census stays red on purpose and MUST be re-captured after the owner applies it. Re-capturing before the apply would record a fix that has not happened.",
+    "2026-08-25 (second recapture, LIVE-115 pass): 🔴 THE PREVIOUS ENTRY STAMPED capturedAt 2026-08-25 WHILE THE BODY STILL HELD THE 2026-08-24 READING. That is exactly the failure HYG-023 predicts — the census has no checker and no freshness rule, so a date can move without the data moving with it, and three probes (LIVE-104/108/109) went on agreeing with 'open' from a snapshot that no longer described production. Re-read live and the corpus is almost entirely clean: /onboarding/beta is GONE from every store, no navigation link hardcodes the site origin, and the 18 Space documents now point at #contact rather than '#'. What remains is the home page's ONE destination."
   ],
   "project": "Frequency Community (azsqfeonabsbmemvddqd)",
   "recaptureQuery": "with docs as (select 'pages.data' as store, slug as doc_key, data as doc from pages where data is not null union all select 'pages.published_data', slug, published_data from pages where published_data is not null union all select 'spaces.preferences.puck', slug, preferences->'puck' from spaces where preferences ? 'puck' union all select 'spaces.preferences.pageDocs', s.slug||'#'||d.key, d.value from spaces s, lateral jsonb_each(coalesce(s.preferences->'pageDocs','{}'::jsonb)) d), items as (select store, doc_key, e as blk from docs, lateral jsonb_array_elements(doc->'content') e where jsonb_typeof(doc->'content')='array'), hrefs as (select store, doc_key, blk->>'type' as type, k as prop, v #>> '{}' as href from items, lateral jsonb_each(blk->'props') as p(k,v) where jsonb_typeof(v)='string' and (k ilike '%href%' or k ilike '%url%' or k ilike '%link%')) select store, doc_key, href, count(*) as n from hrefs where href <> '' group by store, doc_key, href order by store, doc_key, href;",
-
   "origin": "https://frequencylocal.com",
-
   "stores": [
     {
       "store": "pages.data",
-      "note": "The marketing DRAFT documents. Four carry a link prop that is set, and every one of them points at /onboarding/beta, which next.config.ts 308s to /join.",
-      "documents": 4,
-      "hrefsSet": 8,
-      "hrefsEmpty": 20,
+      "note": "The marketing DRAFT documents. ✅ WAS the worst store — four documents, every set href at /onboarding/beta. Now three documents carry a set href and all three are /join.",
+      "documents": 3,
+      "hrefsSet": 3,
+      "hrefsEmpty": 17,
       "targets": {
-        "/onboarding/beta": { "hits": 7, "docs": 4 },
-        "https://frequencylocal.com/onboarding/beta": { "hits": 1, "docs": 1 }
+        "/join": {
+          "hits": 3,
+          "docs": 3
+        }
       }
     },
     {
       "store": "pages.published_data",
-      "note": "The marketing PUBLISHED documents. `home` is the only page that has ever been published (published_at 2026-07-13), and by OWN-043 it IS the home page: app/page.tsx renders it and nothing else.",
+      "note": "The marketing PUBLISHED documents. `home` is the only page ever published and by OWN-043 it IS the home page: app/page.tsx renders it and nothing else. All five set hrefs are /join.",
       "documents": 1,
       "hrefsSet": 5,
       "hrefsEmpty": 3,
       "targets": {
-        "/onboarding/beta": { "hits": 4, "docs": 1 },
-        "https://frequencylocal.com/onboarding/beta": { "hits": 1, "docs": 1 }
+        "/join": {
+          "hits": 5,
+          "docs": 1
+        }
       }
     },
     {
       "store": "spaces.preferences.pageDocs",
-      "note": "The Space micro-site documents. All 18 carry exactly one link and it is the same one: the `SpaceCallout` 'Get in touch' button, href '#'. Seeded rather than authored \u2014 lib/page-editor/templates/space-default.ts ships ctaHref: '#'. \u2500\u2500 MEASURED FURTHER 2026-08-25 (ADR-1125), three things the 2026-08-24 note did not say. (1) 18 is every Space that HAS a page document, not every Space: there are 20 spaces, and 2 carry no `pageDocs` key at all, so they hold no stored link and will seed from the corrected template when they first get one. (2) The seed is not the only source of '#': the block registry\u2019s own `defaultProps` seed it too, for BOTH `SpaceCallout` and its twin `SpaceCTA` (components/page-editor/blocks/profile.tsx), so a block dragged in from the palette shipped the same dead button. Three seeding sites, not one. (3) The repair target is `#contact` \u2014 every one of the 18 documents contains a `SpaceContact` block and it renders inside `<section id=\"contact\">` \u2014 but only for the 16 Spaces that have contact details to show. `SpaceContact` returns null with no rows and its section carries `empty:hidden`, so for `danny-kenduck` and `templeofaset` (zero of address/hours/phone/email/website) `#contact` would be a second dead button; those two get no button instead.",
+      "note": "The Space micro-site documents, at preferences.pageDocs.home.content. ✅ ALL 18 NOW POINT AT #contact, the in-page SpaceContact section (which renders inside <section id=\"contact\">, the anchor lib/spaces/section-anchors.ts names canonically). Zero carry '#'. The template seeds ctaHref empty and SpaceCalloutBlock now requires BOTH a label and a destination, so a new Space draws no button until its operator points it somewhere.",
       "documents": 18,
-      "hrefsSet": 18,
-      "hrefsEmpty": 36,
+      "hrefsSet": 16,
+      "hrefsEmpty": 20,
       "targets": {
-        "#": { "hits": 18, "docs": 18 }
+        "#contact": {
+          "hits": 16,
+          "docs": 18
+        }
       }
     }
   ],
-
   "home": {
-    "note": "The five link props the published home document sets, block by block, read from production 2026-08-24. Cross-checked against the live HTML of https://frequencylocal.com/ the same day: <main> holds exactly 5 anchors and 2 distinct hrefs, both of them this one destination. ⚠️ The four counts below are DERIVED, not authored: LIVE-104's probe recomputes every one of them from `links` + the redirect table in next.config.ts and fails when a recorded number disagrees, so a wrong figure here goes red instead of passing.",
+    "note": "The link props the published home document sets, block by block, read from production 2026-08-25. ⚠️ The counts below are DERIVED, not authored: LIVE-104's probe recomputes every one from `links` plus the redirect table in next.config.ts and fails when a recorded number disagrees, so a wrong figure here goes red instead of passing. ✅ THE RETIRED-ADDRESS HALF IS FIXED: every set href is now /join, the live address, so retiredHrefs and absoluteSelfHrefs are both 0 where they were 5 and 1. 🔴 THE OTHER HALF STANDS AND IS THE REASON LIVE-104 IS STILL OPEN: five anchors, ONE destination. A visitor who is not ready to join has nowhere else to go from the site's strongest page.",
     "slug": "home",
     "publishedAt": "2026-07-13",
     "blocks": 13,
     "anchorsInMain": 5,
     "distinctDestinations": 1,
-    "destinations": ["/join"],
-    "retiredHrefs": 5,
-    "absoluteSelfHrefs": 1,
-    "links": [
-      { "block": 1, "id": "home-hero", "type": "Hero", "prop": "ctaPrimaryHref", "label": "JOIN THE BETA", "href": "https://frequencylocal.com/onboarding/beta" },
-      { "block": 10, "id": "home-cta-mid", "type": "CallToAction", "prop": "ctaPrimaryHref", "label": "Start a Circle", "href": "/onboarding/beta" },
-      { "block": 10, "id": "home-cta-mid", "type": "CallToAction", "prop": "ctaSecondaryHref", "label": "or just join as a member", "href": "/onboarding/beta" },
-      { "block": 13, "id": "home-cta", "type": "CallToAction", "prop": "ctaPrimaryHref", "label": "Start a Circle", "href": "/onboarding/beta" },
-      { "block": 13, "id": "home-cta", "type": "CallToAction", "prop": "ctaSecondaryHref", "label": "or just join as a member", "href": "/onboarding/beta" }
+    "destinations": [
+      "/join"
     ],
-    "emptyCtaSlots": [
-      { "block": 1, "id": "home-hero", "type": "Hero", "heading": "Frequency exists to create and support healthy community", "props": ["ctaSecondaryLabel", "ctaSecondaryHref"] },
-      { "block": 7, "id": "home-structure", "type": "MediaText", "heading": "A community that builds Circles, not walls", "props": ["ctaLabel", "ctaHref"] },
-      { "block": 11, "id": "home-builders", "type": "MediaText", "heading": "The people who start things.", "props": ["ctaLabel", "ctaHref"] }
+    "retiredHrefs": 0,
+    "absoluteSelfHrefs": 0,
+    "links": [
+      {
+        "block": 1,
+        "id": "home-hero",
+        "type": "Hero",
+        "prop": "ctaPrimaryHref",
+        "label": "JOIN THE BETA",
+        "href": "/join"
+      },
+      {
+        "block": 1,
+        "id": "home-hero",
+        "type": "Hero",
+        "prop": "ctaSecondaryHref",
+        "label": "",
+        "href": ""
+      },
+      {
+        "block": 7,
+        "id": "home-structure",
+        "type": "MediaText",
+        "prop": "ctaHref",
+        "label": "",
+        "href": ""
+      },
+      {
+        "block": 10,
+        "id": "home-cta-mid",
+        "type": "CallToAction",
+        "prop": "ctaPrimaryHref",
+        "label": "Start a Circle",
+        "href": "/join"
+      },
+      {
+        "block": 10,
+        "id": "home-cta-mid",
+        "type": "CallToAction",
+        "prop": "ctaSecondaryHref",
+        "label": "or just join as a member",
+        "href": "/join"
+      },
+      {
+        "block": 11,
+        "id": "home-builders",
+        "type": "MediaText",
+        "prop": "ctaHref",
+        "label": "",
+        "href": ""
+      },
+      {
+        "block": 13,
+        "id": "home-cta",
+        "type": "CallToAction",
+        "prop": "ctaPrimaryHref",
+        "label": "Start a Circle",
+        "href": "/join"
+      },
+      {
+        "block": 13,
+        "id": "home-cta",
+        "type": "CallToAction",
+        "prop": "ctaSecondaryHref",
+        "label": "or just join as a member",
+        "href": "/join"
+      }
     ]
   },
-
   "chromeForReference": {
     "note": "NOT part of the guarded corpus. Recorded because 'how many destinations does / offer?' is a question about the PAGE and LIVE-104 answered it from the DOCUMENT, which is the correction ADR-1114 makes. Read from the live HTML of https://frequencylocal.com/ on 2026-08-24.",
-    "serverRenderedAnchors": { "header": 6, "main": 5, "footer": 9 },
-    "headerServerRendered": ["/", "/join", "/sign-in", "/the-lab"],
+    "serverRenderedAnchors": {
+      "header": 6,
+      "main": 5,
+      "footer": 9
+    },
+    "headerServerRendered": [
+      "/",
+      "/join",
+      "/sign-in",
+      "/the-lab"
+    ],
     "headerBehindJs": "The Community / The Quest / Spaces / About are <button> mega triggers, not links. Their 19 panel items (menus.surface_key='header') exist only after hydration, so a crawler and a no-JS visitor never reach /discover, /pricing, /the-community, /the-quest, /spaces, /help or /what-is-frequency from `/`.",
-    "footerServerRendered": ["/", "/about", "/privacy", "/spaces", "/terms", "/the-community", "/the-lab", "/the-quest", "mailto:hello@frequencylocal.com"]
+    "footerServerRendered": [
+      "/",
+      "/about",
+      "/privacy",
+      "/spaces",
+      "/terms",
+      "/the-community",
+      "/the-lab",
+      "/the-quest",
+      "mailto:hello@frequencylocal.com"
+    ]
   }
 }
