@@ -29942,3 +29942,61 @@ which had also expired by the time anyone read it: two of its four sub-figures (
 row's own closing sentence warned about, in the paragraph directly beneath the numbers. The
 re-census is 2,004. **Measure through the instrument the gate uses, or the census expires faster
 than the sweep it is meant to plan.**
+
+## ADR-1135: The action scan is per-export, and its false positives were lexer bugs, not vocabulary (2026-08-25)
+
+**Status:** accepted · closes `HYG-020` · rests on [ADR-970](#adr-970) and the route scan's
+per-export model ([ADR-274](#adr-274)/[ADR-275](#adr-275), LIVE-031) · enforced by
+`pnpm check:authz` + `scripts/check-authz-guards.test.ts`
+
+### What changed
+
+`check:authz`'s ACTION scan judged a `'use server'` admin-client file by a gate token ANYWHERE
+in the file — an action module with five exports and one guard read green exactly the way route
+handlers did before LIVE-031. Every export of a `'use server'` file is its own public HTTP
+endpoint, so the unit of verdict is now the EXPORT: `gateSoundness` (R1 per-export / R2
+dominance / R3 precedence) is parametrised over the gate regex and the export lister and runs
+for both scans — one soundness model, as the HYG-020 row demanded. Mutation-proven end to end: a
+synthetic file with a gated sibling and a fresh ungated export fails the new gate (exit 1,
+naming the export) and passes the origin/main gate (exit 0).
+
+### The premise held, and the row's diagnosis was one layer off
+
+Re-measured before working (ADR-1082): the scan was still whole-file, and a naive per-body scan
+reported **112 ungated exports of 699** (the row said 119 — main had moved). The row attributed
+the false positives to guard VOCABULARY (`resolveModerator()` and friends). Vocabulary turned
+out to be ≈19 of them (`contactsOwnerId`, now in the new `ACTION_GATE`). The other ~90 were a
+LEXER boundary: `bodyAfterParams` took the first `{` after the parameter list as the body, so a
+guard helper with a braced return type — `requireMarketer(): Promise<{ id: string } | string>`,
+the corpus's standard gate shape — had its TYPE read as its body, and the gate inside was never
+seen. Fixing that one boundary took 112 to 23. Two more lexer holes surfaced on the way, both
+of which could hide a real export from BOTH scans, found because per-export analysis finally
+read every body: regex literals (a backtick inside `/[#*_`[\]]/` in `nearby/actions.ts` opened a
+phantom template that swallowed every export below it) and template interpolations (a nested
+template inside `${…}` ended the outer template early and spilled HTML into "code" —
+`app/api/cron/event-reminders/route.ts`). `maskLiterals` now lexes both.
+
+### R3 sharpened once, for both scans, instead of 16 annotations
+
+The honest per-export scan found 21 exports, 16 of them the same lookup-then-gate shape:
+resolve a slug to an id through the admin client, `if (!row) return null`, then gate on
+capabilities OF THAT ID. The shape is structurally forced (the gate needs the id) and nothing
+read can escape pre-gate. Annotating 16 sound exports is the ADR-970 failure with the roles
+reversed — noise dressed as verdicts — so R3's proxy was sharpened in the ONE shared rule: a
+pre-gate admin query fires when the pre-gate region can MUTATE (`.rpc`/`.insert`/`.update`/
+`.delete`/`.upsert`), or when any pre-gate `return` is not denial-shaped (bare/`null`/
+`undefined`/`false`/`fail(…)`/`[]`). The early-answer fixture still fails; the pre-gate-mutation
+fixture still fails; route verdicts did not move (49 gated / 23 ledgered, before and after).
+
+### The final yield, dispositioned
+
+Five findings survived, none an allowlist: **`activeSeasonJourneys`** (admin/content) was a real
+gap — an ungated admin-client read now gated with `requireCurator()`; **`stopActingAsMember`**
+(the export the row predicted) is gated by the httpOnly impersonation stash and carries a
+per-export `// authz-ok:`; **`stashPendingInduction`** and **`conciergeTurn`** are public by
+design (cookie-only write; anonymous onboarding concierge) and say so the same way; and
+**`startBuild`** gates every branch in a shape R2's first-token rule cannot see. The annotation
+is per-export now — one above an export exempts only that export; an unattached one keeps its
+historical file-level meaning for the two files that predate this. Floors added
+(`MIN_ACTION_FILES`/`MIN_ACTION_EXPORTS`) so the corpus — 137 files, 707 exports — cannot go
+invisible the way LIVE-022's routes did.
