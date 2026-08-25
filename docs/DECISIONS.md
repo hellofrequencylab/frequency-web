@@ -33012,3 +33012,36 @@ because the consequence — a control visible at 390px on a deployed build — i
 `pnpm test` that has no browser, and a gate that already produced one false close does not get a
 second try. **`check:backlog` fails both ways and it fired on the reopen**, insisting the probe was
 right and the status wrong; it was the other way round, and that inversion is the thing to remember.
+
+## ADR-1160: pages.space_id takes its NOT NULL step, and the comment stops contradicting it (2026-08-25)
+
+**Context.** `public.pages.space_id` has been nullable since before [ADR-927](DECISIONS.md) gave
+the table its `(space_id, slug)` unique key. The backlog row carried a stated blocker — *"needs the
+untenanted-rows ruling"* — and the blocker **has no subject**: the table holds 4 rows and **0** of
+them are untenanted. That is [ADR-1082](DECISIONS.md)'s pattern in its purest form, a blocker
+phrased as a pending decision where the thing to be decided does not exist. Nothing needed ruling
+on; the column could simply take the constraint.
+
+**Decision.** `set not null`, shipped **alone**. Merging deploys to production, and a NOT NULL that
+meets an unexpected row fails the migration and the deploy carrying it. Inside a sweep that is
+somebody else's work rolled back too; alone it is one revert. The count was re-taken immediately
+before writing the migration rather than trusted from the row, because a count taken a week ago is
+a guess.
+
+It is safe by construction as well as by count: every read and write goes through
+`lib/page-editor/data.ts`, which defaults `spaceId` to `loadRootSpaceId()`, so the application
+cannot produce an untenanted row. `on delete cascade` was already there, so no delete behaviour
+changes.
+
+**The column comment ships in the same change,** and this matters more than it sounds. It read
+*"Still NULLABLE (no NOT NULL contract step yet)"*. A comment that asserts the opposite of what is
+true is worse than no comment, because it is documentation that gets believed. It now records the
+constraint, why the application cannot write a null, and that the unique key's `NULLS NOT DISTINCT`
+clause is henceforth **inert rather than wrong**.
+
+**Consequences.** Two controls, and the first is deliberately not a safety device — `set not null`
+fails on a null by itself. The before-arm exists to make that failure **legible**: a bare *"column
+contains null values"* names neither the offending count nor the table's size, and whoever reads a
+failed production deploy at 2am should not have to go and query for both. The after-arm catches the
+subtler case: an `ALTER` on an already-NOT-NULL column *also* succeeds, so without it this
+migration could pass while doing nothing, and read in the ledger as if it had done work.
