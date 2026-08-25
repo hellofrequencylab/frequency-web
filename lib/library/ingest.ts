@@ -234,7 +234,6 @@ export function stripJpegMetadata(bytes: Uint8Array): {
       // Start-of-scan / end-of-image: entropy-coded data to the end. Copy the remainder verbatim.
       if (marker === 0xda || marker === 0xd9) {
         pieces.push(bytes.subarray(i))
-        i = bytes.length
         break
       }
       if (marker === 0x01 || (marker >= 0xd0 && marker <= 0xd7)) {
