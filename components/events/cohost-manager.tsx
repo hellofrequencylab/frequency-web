@@ -119,16 +119,31 @@ function RemoveCohostButton({
   label: string
 }) {
   const [pending, startTransition] = useTransition()
+  // removeCohost now answers with an ActionResult (it used to return void on every refusal), so a
+  // removal the server declined stops looking like one it accepted.
+  const [error, setError] = useState<string | null>(null)
   return (
-    <button
-      type="button"
-      onClick={() => startTransition(() => removeCohost(eventId, slug, cohostProfileId))}
-      disabled={pending}
-      aria-label={label}
-      className="shrink-0 rounded-control p-1.5 text-subtle transition-colors hover:text-danger disabled:opacity-40"
-    >
-      <X className="h-4 w-4" />
-    </button>
+    <span className="flex shrink-0 items-center gap-1.5">
+      {error && (
+        <span role="alert" className="text-meta font-medium text-danger">
+          {error}
+        </span>
+      )}
+      <button
+        type="button"
+        onClick={() =>
+          startTransition(async () => {
+            const res = await removeCohost(eventId, slug, cohostProfileId)
+            setError(isError(res) ? res.error : null)
+          })
+        }
+        disabled={pending}
+        aria-label={label}
+        className="shrink-0 rounded-control p-1.5 text-subtle transition-colors hover:text-danger disabled:opacity-40"
+      >
+        <X className="h-4 w-4" />
+      </button>
+    </span>
   )
 }
 

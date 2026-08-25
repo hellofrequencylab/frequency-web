@@ -445,7 +445,12 @@ Also closed in the same pass, both flagged above as the highest user impact:
   (injects only genuinely-new defaults, preserves edits, never deletes, never resurrects —
   `lib/menus/actions.ts:454-470`), identity rides `synced_default_keys`
   (`20260801140000_menu_synced_default_keys.sql`). Still true: no per-item drift badges in the Menu
-  manager (`components/admin/menu/` has none).
+  manager (`components/admin/menu/` has none). **Re-tested 2026-08-25 and PROMOTED OUT of the HYG-010
+  sweep into its own row, `LIVE-111`:** it needs a derivation over (resolved menu, `defaultMenu`,
+  `synced_default_keys`) plus a prop threaded into a 900-line client editor, which is a feature and
+  not a badge. `LIVE-107` shipped the WEEKLY half (`scripts/maintenance/menu-drift.mjs`); the
+  operator standing in the editor still sees nothing, and the mislabelled row LIVE-107 fixed was
+  created in that editor.
 - The marketing MOBILE menu renders registry triggers only: submenu items are unreachable on
   phones and operator menu edits never appear there (`marketing-mobile-menu.tsx:96-105`).
   **Re-verified still true 2026-08-20:** `components/layout/marketing-mobile-menu.tsx:14-18,105`
@@ -455,7 +460,9 @@ Also closed in the same pass, both flagged above as the highest user impact:
   **Re-verified 2026-08-20, narrowed:** child-group ITEMS are no longer dropped
   (`admin-sub-nav.tsx:57-60` folds `section.children` in), but headings are still flattened to one
   row by declared design ("No dropdown: everything is a link"), so Menu-manager grouping still has
-  no visible effect.
+  no visible effect. **🔴 Re-tested 2026-08-25 and RETRACTED: the stated harm cannot occur.**
+  `admin_header` has **0 `menu_items` rows** in the live database, so there is no Menu-manager
+  sub-organization of it for `AdminSubNav` to flatten away. Closed with `HYG-010` ([ADR-1119](DECISIONS.md)).
 - ~~The two account-menu renderers gate the same items differently (`user-menu.tsx:73` vs
   `app-shell.tsx:427`); unify on one gate.~~ **Re-verified fixed 2026-08-20:** both resolve through
   the shared `canSeeMenuItem` two-axis gate from `components/layout/menu-role`
@@ -481,8 +488,8 @@ Also closed in the same pass, both flagged above as the highest user impact:
 
 **UI consistency**
 - ~~Five "Spark" wizards hand-roll the WizardShell lockup, a header violation `check:headers` structurally cannot see.~~ **Re-verified superseded 2026-08-20:** the Studio contract (ADR-986, `docs/STUDIO.md`) replaced per-entity wizards — circle/journey/commerce/practice Sparks all render through the one `components/studio/spark/spark-shell.tsx`, enforced by `check:studio` + `lib/studio/registry.test.ts` in CI.
-- Two hand-rolled `EmptyState` components shadow the kit's variant taxonomy on the two main post feeds. **Re-verified 2026-08-20, one left:** `profile-posts.tsx` now imports the kit `EmptyState`; `components/feed/feed-list.tsx:495` still defines a local `function EmptyState`.
-- Six route skeletons use the retired `px-4 py-8 max-w-2xl mx-auto` shell, double-padding inside the shell. **Re-verified still true 2026-08-20, one fewer:** 5 `loading.tsx` files still carry it (`circles`, `channels`, `search`, `events`, `messages`).
+- ~~Two hand-rolled `EmptyState` components shadow the kit's variant taxonomy on the two main post feeds.~~ **Re-verified fixed 2026-08-25 (HYG-010, [ADR-1119](DECISIONS.md)):** `feed-list.tsx` was the last one and now composes the kit `EmptyState`, splitting the caller's one-string `emptyMessage` on its first sentence boundary into title + description.
+- ~~Six route skeletons use the retired `px-4 py-8 max-w-2xl mx-auto` shell, double-padding inside the shell.~~ **Re-verified fixed 2026-08-25 (HYG-010, [ADR-1119](DECISIONS.md)):** the last 5 (`circles`, `channels`, `search`, `events`, `messages`) are converted. Each now paints its own destination's shape rather than a narrow 2xl column: the full-width `PageHero` band for the three that open on `MarketHero`, the `PageHeading` title block + divider for the two on `IndexTemplate`.
 
 ### 🧑 Needs your call — ALL FOUR CLOSED (database best-practice pass, 2026-07-27, ADR-856)
 
@@ -757,14 +764,27 @@ the unit suite.
   (`app/(marketing)/layout.tsx:12`, Phase D) and every `/discover` page is ISR (`revalidate = 3600`);
   events/messages waves shipped (D2/D3 above); the sidebar/GameStats dock streams behind its own
   `<Suspense>` (`app/(main)/layout.tsx:523-530`); the help index is `cache()`-memoized per request
-  (`lib/help/content.ts:28-35`). Still open: raw `<img>` — 113 sites remain.
+  (`lib/help/content.ts:28-35`). ~~Still open: raw `<img>` — 113 sites remain.~~ **🔴 Re-measured
+  2026-08-25 and RETRACTED:** 134 `<img` lines, and **zero take a static local asset** — every `src`
+  is a runtime expression (an operator URL on a non-whitelisted host, a signed URL, a picked asset),
+  which is the one case `next/image` cannot serve; 101 carry a written eslint justification. The
+  "non-LCP" qualifier was backwards too: `templates/page-hero.tsx`'s raw img is a documented escape
+  hatch **on the LCP hero itself**. Closed with `HYG-010` ([ADR-1119](DECISIONS.md)).
 - **a11y**: ~~missing `error.tsx`/`not-found.tsx` for some route groups~~ (9 top-level route groups
   carry both; the 2026-08-20 finder D pass read error boundaries as sound); ~~icon-only buttons
   missing `aria-label`~~ (now gated: `check:a11y-names` in CI's blocking array, `ci.yml:262`);
   ~~dialog focus-trap soundness~~ (`useDialogFocusTrap` shared + `test/a11y/*` suites); client
-  mutations without error feedback (some admin row-actions) — **still open as a class**, no per-row
-  audit exists. ✅ notifications toggle now reverts + shows an error on save failure.
-  **Re-verified 2026-08-20:** 3 of 4 sub-items closed as noted inline.
+  ~~mutations without error feedback (some admin row-actions)~~ ✅ notifications toggle now reverts +
+  shows an error on save failure.
+  **Re-verified 2026-08-20:** 3 of 4 sub-items closed as noted inline. **The fourth closed 2026-08-25
+  (HYG-010, [ADR-1119](DECISIONS.md)): the audit that "does not exist" took one script.** 98
+  transition blocks under `components/admin` await something; 6 read nothing back; 2 of those are a
+  READ or already handled internally. The 4 real silent MUTATIONS are fixed: `ReorderControls`
+  (dropped `reorderTemplate`'s `ActionResult`), `removeCohost` (returned `void` on both refusals and
+  on a failed delete; now `ActionResult`, both call sites read it), `InlineCover.onRemove` (the cover
+  actions THROW, and a throw inside a transition callback is an unhandled rejection, so a refused
+  delete cleared the preview anyway), and the event gallery's `handleGalleryChange` (a rejected
+  reorder left the new order on screen and the old one in the database).
 - ~~**`@measured/puck` migration execution** — per `PUCK-MIGRATION-PLAN.md` (pin exact → in-house
   renderer → in-house editor → drop dep). Also: publishing a Puck page drops FAQ/Article
   JSON-LD (emit schema from the block render path).~~ **Re-verified fixed 2026-08-20:** the dep is

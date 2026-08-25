@@ -29831,3 +29831,92 @@ on-cover actions (`/channels/[id]`, `/circles/[slug]`, `/journeys/[slug]`, `/jou
 `/people/[handle]`, `/spaces/[slug]`, `/circles/starter/[slug]`); those carry a lockup the minimal
 cover has no slot for, and folding them is a behaviour change that belongs in its own PR with its
 own screenshots. Both remainders are counted on `PROG-P5`.
+---
+
+## ADR-1119: The residue sweep, measured item by item — eight of fifteen were about nothing (2026-08-25)
+
+**Status:** accepted · closes `HYG-010` · opens `LIVE-111`, `LIVE-112`, `HYG-020` · continues
+[ADR-1082](#adr-1082) and [ADR-1112](#adr-1112) · rests on [ADR-970](#adr-970)
+
+### The question this settles
+
+`HYG-010` was the bag the 2026-08-20 sweep swept into: fifteen carry-forwards "too small for their
+own rows, gathered so none lives only in prose". It had already been triaged once, on 2026-08-24,
+which pulled `LIVE-106` and `LIVE-107` out of it and left a warning in the row itself: **do not work
+this as written.** This is what happened when every remaining item was measured rather than read.
+
+### What was measured
+
+| # | Item as written | Verdict |
+|---|---|---|
+| 1 | `feed-list.tsx:495` local `EmptyState` | ✅ true — fixed |
+| 2 | five retired-shell `loading.tsx` files | ✅ true — fixed |
+| 3 | `theme-editor.tsx:158` hand-rolled `h1` | ✅ true — fixed |
+| 4 | operator/admin em dashes | 🔴 **zero, tree-wide** |
+| 5 | 113 raw `<img>` on non-LCP surfaces | 🔴 **none actionable** |
+| 6 | Menu-manager drift badges | ⤴ true, but a feature → `LIVE-111` |
+| 7 | marketing mobile menu | ⤴ `LIVE-106`, shipped ([ADR-1118](#adr-1118)) |
+| 8 | `AdminSubNav` heading separators | 🔴 **harm cannot occur** |
+| 9 | `pages.space_id` NOT NULL | ⤴ blocker empty → `LIVE-112` |
+| 10 | the `as unknown as` burn-down | 🔴 **not work** |
+| 11 | `check:authz` per-export for actions | ⤴ true, yield is one false positive → `HYG-020` |
+| 12 | axe `incomplete`-class note | ✅ true — written down |
+| 13 | `embed-events` cron cadence | 🔴 **nothing measured against it** |
+| 14 | admin row-action error-feedback audit | ✅ true — audit done, 4 fixed |
+| 15 | weekly `admin_header` drift check | 🔴 **empty set** → `LIVE-107` shipped it against `header` |
+
+Three of the retractions are worth stating precisely, because in each case the row's number was real
+and measured the wrong population.
+
+**Em dashes.** The item survived four sweeps on a grep. Running `check-canon.mjs`'s own seam walker —
+the AST pass that knows what a copy POSITION is — over 3,405 files finds **21,758 strings a human can
+read and zero em dashes among them**, member and operator alike. The 429 the grep had been counting
+were code comments, JSX comments, empty-cell placeholders, and 30 `lib/traits/registry.ts`
+`description` fields that no renderer projects.
+
+**Raw `<img>`.** 134 `<img` lines, and **zero take a static local asset**: every `src` is a runtime
+expression (`{image}`, `{signedUrls[…]}`, an operator URL on a non-whitelisted host), which is the
+one case `next/image` cannot serve. 101 carry a written eslint justification. The clause "on non-LCP
+surfaces" was also backwards: `templates/page-hero.tsx`'s raw img is a documented escape hatch **on
+the LCP hero itself**.
+
+**Both blockers, against the live database.** `public.pages` holds **4 rows, 0 untenanted**, so the
+"untenanted-rows ruling" item 9 waited on has no subject. `admin_header` holds **0 `menu_items`**, so
+item 15's weekly drift check would have guarded an empty set — which also moots item 8, whose stated
+harm is that Menu-manager grouping of `admin_header` has no visible effect. `LIVE-107` had already
+retargeted that check at the PUBLIC `header` menu and shipped it as
+`scripts/maintenance/menu-drift.mjs`; what item 6 still asks for is the half that faces a person, and
+that is now `LIVE-111`.
+
+### The decision
+
+**`HYG-010` closes, and it closes with a `cmd` probe rather than the `manual` block it carried.** Four
+consequences, none of them the row's own words: `feed-list.tsx` no longer declares an `EmptyState`,
+no `loading.tsx` under `app/` carries `px-4 py-8 max-w-2xl mx-auto`, `theme-editor.tsx` contains no
+`<h1>`, and `removeCohost` returns an `ActionResult` at all.
+
+**The three items that were not polish become rows** (`LIVE-111`, `LIVE-112`, `HYG-020`), each
+carrying the measurement that sizes it, so nobody re-derives it. `HYG-020` in particular records its
+expected yield up front: **one export, and it is not a defect** — the value is regression coverage,
+and a naive implementation reports 119 of which 118 are false.
+
+**Items 10 and 13 are dropped rather than carried.** The `as unknown as` count is **654 non-test
+casts, exactly the number the row recorded** — flat, not burning down — with no stated consequence
+and no owner; and the `embed-events` cadence is an owner taste call with nothing measured against it.
+A row that will never be worked and can never fail is residue, and residue in the one list is what
+the one list is for preventing.
+
+### The part that generalises
+
+**The audit that "does not exist" is usually the cheapest thing in the row.** Item 14 had sat since
+2026-07-27 as *"client mutations without error feedback (some admin row-actions) — still open as a
+class, no per-row audit exists"*. The audit took one script: **98 transition blocks under
+`components/admin` await something, 6 read nothing back, 2 of those are a read or already handled,
+and the 4 real silent mutations were fixed in the same pass.** Four sweeps had re-recorded "still
+open as a class" instead of spending the ten minutes that turned a class into four line changes.
+Same shape as [ADR-1112](#adr-1112): a blocker phrased as an absence is a claim with an expiry date.
+
+And the sweep's own probe caught the failure this repo names most often, in its first draft. Written
+without stripping comments, it read the sentences that EXPLAIN the fix — `// It used to open with
+px-4 py-8 max-w-2xl mx-auto` — and reported the work undone. A probe that can match prose is not
+measuring the tree. Both probes here strip line comments before they look.

@@ -495,20 +495,30 @@ export async function listEventCohostsForEditor(eventId: string): Promise<Editor
   })
 }
 
-export async function removeCohost(eventId: string, slug: string, cohostProfileId: string) {
+// Returns an ActionResult rather than void. It used to return silently on BOTH refusals (not
+// signed in, not the host) and on a failed delete, so a cohost row that could not be removed
+// looked exactly like one that had been: the caller awaited nothing it could read. Both call
+// sites now surface the reason (HYG-010's admin row-action error-feedback audit).
+export async function removeCohost(
+  eventId: string,
+  slug: string,
+  cohostProfileId: string,
+): Promise<ActionResult> {
   const profileId = await getMyProfileId()
-  if (!profileId) return
+  if (!profileId) return fail('Sign in to manage cohosts.')
 
   const admin = createAdminClient()
-  if (!(await isEventHost(eventId, profileId))) return
+  if (!(await isEventHost(eventId, profileId))) return fail('Only the host can remove a cohost.')
 
-  await admin
+  const { error } = await admin
     .from('event_cohosts')
     .delete()
     .eq('event_id', eventId)
     .eq('profile_id', cohostProfileId)
+  if (error) return fail(error.message)
 
   revalidateEvent(slug)
+  return ok()
 }
 
 // ── Transfer host ───────────────────────────────────────────────────────────────
