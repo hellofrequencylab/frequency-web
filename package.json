@@ -23,6 +23,7 @@
     "check:canon": "node scripts/check-canon.mjs",
     "check:headers": "node scripts/check-headers.mjs",
     "check:menu": "node scripts/check-menu.mjs",
+    "check:mail-dns": "node scripts/check-mail-dns.mjs",
     "check:module-reachability": "node scripts/check-module-reachability.mjs",
     "check:gate-parity": "node scripts/check-gate-parity.mjs",
     "check:workflows": "node scripts/check-workflows.mjs",
