@@ -130,7 +130,7 @@ under the table before building against either.
 > - **Renditions has no replacement, and does not need one.** The owner decision above says
 >   transforms are **on-the-fly**, which means a rendition is a *request* (a width + format against
 >   the master) and never a row, so `RENDITION_PRESETS` belongs to the D3 resolver and no table
->   returns. `HYG-017` settled it; [ADR-1119](DECISIONS.md) struck "the rendition set" from D1's
+>   returns. `HYG-017` settled it; [ADR-1121](DECISIONS.md) struck "the rendition set" from D1's
 >   scope, which was the last line in the tree still reading the other way. Do not add rendition
 >   writers.
 
@@ -149,7 +149,7 @@ resolver, not a table schema): `lib/library/renditions.ts`. Access is **service-
   **snapshots** the asset's current state into a new `library_versions` row (`lib/library/versions.ts`
   `recordVersion`) and flips `is_current`, then overwrites the live row. Rollback restores a snapshot
   (and snapshots current first, so it's reversible). The prior states are never lost.
-- **Every upload ingests** ([ADR-1119](DECISIONS.md)). Validate → **strip EXIF/XMP/IPTC** →
+- **Every upload ingests** ([ADR-1121](DECISIONS.md)). Validate → **strip EXIF/XMP/IPTC** →
   **checksum + dedupe** → read dimensions → write the catalog row. One function does the server half:
   `ingestImageBytes` in `lib/library/ingest.ts`, called by every upload site with the bytes it is
   about to store.
@@ -169,9 +169,9 @@ resolver, not a table schema): `lib/library/renditions.ts`. Access is **service-
   - **Not everything can ingest.** A path that files an object already in storage (the importer, an
     event photo) never holds the bytes: it writes `bytes: null` — "unknown", not the `0` it used to
     claim — and no checksum. A server-side generator gets a checksum and dimensions but no blurhash
-    (`HYG-019`).
+    (`HYG-021`).
 
-- **Search is ranked over two indexes** ([ADR-1119](DECISIONS.md)). A query runs BOTH arms the schema
+- **Search is ranked over two indexes** ([ADR-1121](DECISIONS.md)). A query runs BOTH arms the schema
   already carries and merges them: full text (`search_tsv @@ websearch_to_tsquery`, stemmed and
   word-oriented) and trigram (`ilike '%q%'`, served by the title `gin_trgm_ops` index, which is what
   survives a typo). Neither is a superset of the other. Ordering is computed in process by
@@ -196,7 +196,7 @@ See [BUILD-LIST.md → The Loom](BUILD-LIST.md) for the ranked, statused list:
 
 1. **D1 — Ingest + gallery + ranked search** (the standard site image gallery: the ingest pipeline
    above, `/admin/library` browser, view/edit-meta/download, FTS+trigram ranked search). Shipped;
-   see [ADR-1119](DECISIONS.md).
+   see [ADR-1121](DECISIONS.md).
 2. **D2 — AssetField seam** (unified picker; store references; render resolution; backfill
    `site-media`).
 3. **D3 — Editor + versions** (Filerobot crop-frames + adjustments; version-on-edit; rollback).

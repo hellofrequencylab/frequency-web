@@ -29653,7 +29653,7 @@ note and a ledger comment without ever being a decision. A committed order is a 
 back is a decision, and decisions live here. Same shape as [ADR-1112](#adr-1112): the thing to
 distrust is not the finding, it is a finding that never got recorded where it would be read.
 
-## ADR-1119: Loom ingest decodes no pixels on the server, and search ranks without a migration (2026-08-25)
+## ADR-1121: Loom ingest decodes no pixels on the server, and search ranks without a migration (2026-08-25)
 
 **Status:** Accepted
 **Closes:** `PROG-D1` — "Loom D1: finish Studio ingest + search"
@@ -29731,7 +29731,7 @@ global match would hand one space another space's asset.
 
 - **Generated assets carry a checksum and dimensions, but no blurhash.** Recraft renders, Vera
   covers and importer seeds are produced server-side where no browser exists to decode them. That is
-  a real remainder, not a silent gap; it is `HYG-019`, and the only honest fix is a decode, so it
+  a real remainder, not a silent gap; it is `HYG-021`, and the only honest fix is a decode, so it
   waits for a reason better than a placeholder.
 - **`bytes` is now nullable, and two callers pass null.** The importer and the event-photo path file
   objects that are already in storage and never read them. They used to claim a size of zero, which
