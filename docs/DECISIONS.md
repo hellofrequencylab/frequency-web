@@ -29833,7 +29833,7 @@ cover has no slot for, and folding them is a behaviour change that belongs in it
 own screenshots. Both remainders are counted on `PROG-P5`.
 ---
 
-## ADR-1119: The residue sweep, measured item by item — eight of fifteen were about nothing (2026-08-25)
+## ADR-1120: The residue sweep, measured item by item — eight of fifteen were about nothing (2026-08-25)
 
 **Status:** accepted · closes `HYG-010` · opens `LIVE-111`, `LIVE-112`, `HYG-020` · continues
 [ADR-1082](#adr-1082) and [ADR-1112](#adr-1112) · rests on [ADR-970](#adr-970)
