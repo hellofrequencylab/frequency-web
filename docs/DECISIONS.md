@@ -32305,3 +32305,59 @@ pointing at the **same** url. The fix is content, not code — the document need
 - A snapshot a probe reads is **an input, not evidence**. Re-derive it before trusting a verdict built
   on it, and give it a freshness rule — HYG-023 is now the row that matters most in the hygiene lane,
   because two others were hiding behind it.
+
+---
+
+## ADR-1148: approval gates the seat (2026-08-25)
+
+**Status:** Accepted · owner ruling 2026-08-25 · `lib/events/capacity.ts`,
+`lib/events/going-counts.ts`, `20270333000000_going_counts_exclude_pending.sql` · SCAN-105 (closed),
+SCAN-512 (filed)
+
+**Context.** On an approval-gated event an unapproved answer is written as `status = 'going'` with
+`approval_status = 'pending'`. Every capacity read counted `status` alone, so **twenty unapproved
+requests could fill a twenty-seat event the host had not said yes to** — and the host could then not
+approve anyone, because their own event read as full.
+
+It also contradicted a promise already published to hosts. `content/help/groups/events.md`:
+
+> A full event still sends approved people to the waitlist. **Approving says "yes, you are welcome",
+> not "there is room".**
+
+That sentence is only true if approval, not the request, is what consumes the seat.
+
+**Decision.** **Approval gates the seat.** A pending request does not consume capacity; only an
+approved or ungated `going` seat counts. On approval, a full event sends the person to the waitlist.
+
+**Three places answer the same question and are kept in lockstep**, because a disagreement between
+them would make the `/events` listing depend on whether a migration had been applied:
+
+| where | what it drives |
+| :-- | :-- |
+| `getCapacityInfo` | the seat count, `spotsLeft`, `isFull` |
+| `going-counts.ts` paged fallback | the "Has open spots" facet, the Popularity sort |
+| `event_going_counts` RPC | the same, server-side, for the whole listing |
+
+**And promotion no longer bypasses the gate.** `promoteFromWaitlist` took the oldest waitlist row
+whatever its approval state, so a still-pending request could be lifted into a confirmed seat by
+someone else's cancellation — **approval granted by timing rather than by the host.**
+
+**✅ `approval_status` is `NOT NULL DEFAULT 'none'`** (verified on production), so a plain
+`<> 'pending'` is **complete**, not merely careful: every ungated RSVP carries `'none'` and is
+counted. A null-tolerant filter would be wrong rather than redundant — it would imply a state the
+column cannot hold.
+
+**⚠️ Measured before changing:** 0 events with `rsvp_requires_approval`, 0 rows at `'pending'`, and
+`'none'` the only value present. This changes **no current count**. It closes the rule before the
+first gated event exists — the opposite of how the truncation class in ADR-962/ADR-969 was always
+found.
+
+**Consequences.**
+- `lib/events/capacity.test.ts` asserts **the filter is sent**, not that a number came back: the bug
+  was never in the arithmetic, it was in which rows the query asked for.
+- The migration's probe **failed atomically first**, on `events.scope_id` being NOT NULL — the same
+  lesson `20270332000000`'s probe had already taught, which I had not carried forward. Nothing landed
+  until it passed: no function, no ledger row, no probe rows.
+- 🔴 **Twenty other reads still count a pending request as an attendee**, filed as **SCAN-512** rather
+  than swept in. They are not all the same bug: a cancellation notice probably *should* reach a
+  pending requester, while an achievement probably should not. Each group needs its own ruling.

@@ -4293,17 +4293,34 @@
     {
       "id": "SCAN-105",
       "title": "Rule how pending-approval seats interact with capacity and the waitlist",
-      "status": "open",
+      "status": "done",
       "lane": "owner",
       "size": "XS",
       "source": {
         "file": "docs/META-SCAN-STATUS.md",
         "ref": "meta-scan 2026-08-25, correctness sweep"
       },
-      "detail": "MS25 Phase 1. The approval-gate fixes exposed a design tension nothing has ruled on: a pending (unapproved) seat holds status 'going' and consumes capacity (lib/events/capacity.ts:27-38), and promoteFromWaitlist promotes a still-pending waitlist row into a confirmed seat. Either behavior may be intended; neither is recorded. One ruling, then a small code follow-through if it changes.",
+      "detail": "MS25 Phase 1. The approval-gate fixes exposed a design tension nothing has ruled on: a pending (unapproved) seat holds status 'going' and consumes capacity (lib/events/capacity.ts:27-38), and promoteFromWaitlist promotes a still-pending waitlist row into a confirmed seat. Either behavior may be intended; neither is recorded. One ruling, then a small code follow-through if it changes. ── ✅ RULED AND CLOSED 2026-08-25 (ADR-1148). OWNER RULING: APPROVAL GATES THE SEAT. A pending request does NOT consume capacity; only an approved (or ungated) 'going' seat counts, and on approval a full event sends the person to the waitlist. That matches content/help/groups/events.md verbatim — 'A full event still sends approved people to the waitlist. Approving says yes, you are welcome, not there is room' — which was only true if approval, not the request, consumes the seat. THE DEFECT IT REMOVES: twenty unapproved REQUESTS could fill a twenty-seat event the host had not said yes to, and the host could then not approve anyone, because their own event read as full. THREE PLACES, kept in lockstep because they answer the same question: getCapacityInfo (lib/events/capacity.ts), the paged fallback in lib/events/going-counts.ts, and the event_going_counts RPC (20270333000000_going_counts_exclude_pending.sql, applied; ledger repaired to the repo version, 641 ⇄ 641). AND PROMOTION NO LONGER BYPASSES THE GATE: promoteFromWaitlist took the oldest waitlist row whatever its approval state, so a still-pending request could be lifted into a confirmed seat by someone else's cancellation — approval granted by timing rather than by the host. ✅ approval_status is NOT NULL DEFAULT 'none' (verified on production), so a plain <> 'pending' is COMPLETE rather than merely careful, and a null branch would suggest a state the column cannot hold. ⚠️ MEASURED BEFORE CHANGING: 0 gated events, 0 pending rows, 'none' the only value present — so this changes no current count and closes the rule before the first gated event exists. lib/events/capacity.test.ts adds 5 arms that assert THE FILTER IS SENT rather than that a number came back, because the bug was never in the arithmetic; mutation-proven both ways.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const cap=fs.readFileSync(\"lib/events/capacity.ts\",\"utf8\");const strip=function(t){return t.split(\"\\n\").filter(function(l){return l.trim().indexOf(\"//\")!==0}).join(\"\\n\")};const c=strip(cap);const n=(c.match(/neq\\(.approval_status., .pending.\\)/g)||[]).length;if(n<2){console.error(\"lib/events/capacity.ts applies the pending filter \"+n+\" time(s), expected 2 - the going count AND the waitlist pick both need it, or an unapproved request holds a seat or is promoted past the host\");process.exit(1)}const gc=strip(fs.readFileSync(\"lib/events/going-counts.ts\",\"utf8\"));if(!/neq\\(.approval_status., .pending.\\)/.test(gc)){console.error(\"lib/events/going-counts.ts lost the pending filter, so the paged fallback disagrees with the RPC and the Has-open-spots facet depends on whether a migration was applied\");process.exit(1)}const mig=fs.readdirSync(\"supabase/migrations\").filter(function(f){return /exclude_pending/.test(f)});if(!mig.length){console.error(\"no migration excludes pending from event_going_counts; the server-side count still lets an unapproved request fill an event\");process.exit(1)}const sql=fs.readFileSync(\"supabase/migrations/\"+mig[0],\"utf8\");if(!/approval_status\\s*<>\\s*.pending./.test(sql)){console.error(\"the migration exists but its function body no longer excludes pending\");process.exit(1)}'",
+        "note": "Measures the CONSEQUENCE in all three places that answer 'how many seats are taken': both filters in capacity.ts (the count AND the waitlist pick), the paged fallback, and the RPC's own body. Comment lines are stripped first, so the prose explaining the rule cannot satisfy the probe that enforces it."
+      }
+    },
+    {
+      "id": "SCAN-512",
+      "title": "Twenty other reads still count a pending request as an attendee",
+      "status": "open",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "docs/META-SCAN-STATUS.md",
+        "ref": "meta-scan 2026-08-25, SCAN-105 neighbour measurement"
+      },
+      "detail": "FOUND 2026-08-25 while closing SCAN-105, by measuring the NEIGHBOURS of the read being fixed rather than stopping at it — the habit that found SCAN-211. SCAN-105 settled the CAPACITY question: a pending request does not hold a seat. It deliberately did NOT touch the other ~20 sites that filter `.eq('status','going')`, because they answer a different question and each needs its own answer. THE LIST, grouped by what they drive: NOTIFICATIONS — app/api/cron/event-reminders (x2), lib/events/cancellation.ts, lib/digest.ts, app/api/zap-prompt. Should someone the host has not approved get a reminder for an event they may not be attending, or a cancellation notice? ATTENDANCE + REWARDS — lib/achievements.ts, lib/onboarding/founder-tasks.ts, lib/events/connectors.ts, lib/events/matching.ts. Does an unapproved request count toward an achievement or a connection suggestion? OPERATOR/AI READS — lib/ai/poster-observer.ts, lib/ai/event-blurb.ts, lib/events/poster-quality.ts, app/(main)/admin/events/load-posted.ts, lib/spaces/tickets.ts (x3), lib/events/store.ts. ⚠️ THE HONEST POSITION IS THAT THESE ARE NOT ALL THE SAME BUG, which is why this is a triage row rather than a sweep and why it was not smuggled into SCAN-105: a cancellation notice probably SHOULD reach a pending requester (their request is moot either way), while an achievement probably should not. Latent today at 0 gated events. Rule each group, then apply.",
       "verify": {
         "kind": "manual",
-        "evidence": "Read 2026-08-25: getCapacityInfo counts status='going' regardless of approval_status; promoteFromWaitlist does not consult approval_status. No ADR or comment records the choice.",
+        "evidence": "Enumerated 2026-08-25 with `grep -rn \"eq('status', 'going')\" app lib components` excluding tests: 20 sites outside lib/events/capacity.ts and lib/events/going-counts.ts, which SCAN-105 fixed. Production carries 0 events with rsvp_requires_approval and 0 rows at approval_status 'pending', so every one of these is latent. Re-run that grep and re-check those two counts.",
         "checked": "2026-08-25"
       }
     },

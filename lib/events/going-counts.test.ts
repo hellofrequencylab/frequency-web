@@ -15,7 +15,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 // at 1,000 rows regardless of the window asked for, and an absent RPC returns the PGRST202 error
 // shape rather than throwing.
 
-type Rsvp = { id: string; event_id: string; status: string }
+type Rsvp = { id: string; event_id: string; status: string; approval_status?: string }
 
 const state: {
   rsvps: Rsvp[]
@@ -28,7 +28,7 @@ const state: {
 const MAX_ROWS = 1000
 
 function builder() {
-  const f: { ids?: string[]; status?: string } = {}
+  const f: { ids?: string[]; status?: string; excludeApproval?: string } = {}
   let lo = 0
   let hi = Number.MAX_SAFE_INTEGER
   const api = {
@@ -43,6 +43,13 @@ function builder() {
       if (col === 'status') f.status = val
       return api
     },
+    // SCAN-105: the fallback excludes approval_status 'pending', so the stub HONOURS the filter
+    // rather than merely tolerating it — otherwise adding `neq` would only unblock the chain and
+    // prove nothing about which rows the reader asked for.
+    neq(col: string, val: string) {
+      if (col === 'approval_status') f.excludeApproval = val
+      return api
+    },
     order() {
       return api
     },
@@ -55,7 +62,14 @@ function builder() {
     then(resolve: (r: { data: { event_id: string }[] | null; error: unknown }) => unknown) {
       const idSet = new Set(f.ids ?? [])
       const rows = state.rsvps
-        .filter((r) => idSet.has(r.event_id) && (!f.status || r.status === f.status))
+        .filter(
+          (r) =>
+            idSet.has(r.event_id) &&
+            (!f.status || r.status === f.status) &&
+            // Ungated rows carry 'none' (the column is NOT NULL DEFAULT 'none' in production), so
+            // an undefined approval_status in a fixture reads as 'none' and is counted.
+            (!f.excludeApproval || (r.approval_status ?? 'none') !== f.excludeApproval),
+        )
         // A stable total order, the same one the reader asks PostgREST for.
         .sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
       // PostgREST applies max_rows to the WINDOW, server-side — this is the whole bug.
@@ -158,6 +172,22 @@ describe('goingCountsByEvent — the RPC path', () => {
   it('ignores non-going statuses', async () => {
     state.rsvps = [...seed({ e1: 2 }), ...seed({ e1: 5 }, 'maybe'), ...seed({ e1: 4 }, 'cancelled')]
     expect(await goingCountsByEvent(['e1'])).toEqual({ e1: 2 })
+  })
+
+  // ── SCAN-105 / ADR-1148: a pending request is not a going seat ──────────────────────────────
+  // The RPC applies this predicate server-side; the FALLBACK has to agree, or the "Has open spots"
+  // facet and the Popularity sort would depend on whether the migration had been applied.
+  it('the FALLBACK excludes approval_status pending, matching the RPC', async () => {
+    state.rpcExists = false
+    state.rsvps = [
+      ...seed({ e1: 2 }), // ungated: approval_status defaults to 'none'
+      { id: 'zz-approved', event_id: 'e1', status: 'going', approval_status: 'approved' },
+      { id: 'zz-pending1', event_id: 'e1', status: 'going', approval_status: 'pending' },
+      { id: 'zz-pending2', event_id: 'e1', status: 'going', approval_status: 'pending' },
+    ]
+    // Three real seats: two ungated + one approved. The two pending requests hold nothing.
+    expect(await goingCountsByEvent(['e1'])).toEqual({ e1: 3 })
+    expect(state.rangeCalls.length).toBeGreaterThan(0) // it really did take the fallback
   })
 
   it('chunks a listing wider than one call and merges the parts', async () => {
