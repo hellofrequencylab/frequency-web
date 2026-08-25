@@ -22,13 +22,23 @@ ARTIFACT. Full rules and the incident: [`docs/DEPLOY-SAFETY.md`](docs/DEPLOY-SAF
   `buildCommand: pnpm build` so a dashboard edit cannot silently take the lifecycle away. **Four
   gates run there and fail the build** (all wired and proven on real artifacts as of #2194,
   2026-08-19 — LIVE-035/LIVE-048/LIVE-029 closed):
-  - `check:build-budget` — total per-function output under 8 GB; **measured 6.02 GB across 496
-    functions, 2026-08-24** (production build of #2245), after 6.03 GB / 497 fns (#2243, same day),
-    6.04 GB / 499 fns (2026-08-18), 5.81 GB (2026-08-13) and 5.59 GB before that. This sentence used
-    to read "it has risen every time it has been read"; **two consecutive readings have now fallen**,
-    on both axes. The trend, not the headroom, is still the thing to watch — but note that at **75%**
-    of its ceiling this is NOT the gate closest to firing. `check:cache-budget` is, at **84%**, and it
-    is also the one with a history of killing builds.
+  - `check:build-budget` — total per-function output under 8 GB; **measured 6.55 GB across 496
+    functions, 2026-08-25** (the same figure on two independent preview builds, #2280 and #2285),
+    after 6.02 GB / 496 fns (#2245, 2026-08-24), 6.03 GB / 497 fns (#2243, same day), 6.04 GB /
+    499 fns (2026-08-18), 5.81 GB (2026-08-13) and 5.59 GB before that. This sentence briefly read
+    "two consecutive readings have now fallen"; ⚠️ **that is retired — the next reading ROSE 0.53 GB
+    in a single day**, the largest move in the series above, while the function count held at 496.
+    The trend, not the headroom, is still the thing to watch; at **82%** of its ceiling this is
+    still not the gate closest to firing.
+  - 🔴 **`check:cache-budget` is closest, and closer than this file used to say.** Measured
+    2026-08-25: **1.39 GB packed against a 1.40 GB trim point** — 99% of the line it trims at, and
+    93% of the 1.50 GB hard ceiling. The trim is therefore NOT a rare event: the cache oscillates
+    across that line, and every trim costs the NEXT build a cold compile (113s against a 46s warm
+    control, both measured that day). ⚠️ **And one paired reading says the estimate runs LOW, not
+    high**: on #2280 the gate predicted 1.39 GB packed and Vercel's own `Uploading build cache`
+    line reported **1.42 GB**. The file elsewhere claims the ratio is "rounded toward firing
+    early"; on this mix it is not — it fires slightly late. Re-derive `PACKED_PER_RAW` from paired
+    readings before trusting the margin, and see `LIVE-123` for the build-stall timings.
   - `check:og-trace` — sharp reaching 67 functions of a 100 budget (unchanged, 2026-08-24).
   - `check:cache-budget` ([ADR-1064](docs/DECISIONS.md), [ADR-1086](docs/DECISIONS.md)) — the build
     cache under Vercel's packed 1.50 GB ceiling, trimming only a named compiler-cache list when over.
