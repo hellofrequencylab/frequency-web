@@ -687,6 +687,7 @@ lib/playbooks/seed.ts
 lib/practice-activity.ts
 lib/practice-streak.ts
 lib/practices.ts
+lib/practices/attribution.ts
 lib/practices/clean.ts
 lib/practices/embeddings.ts
 lib/practices/health.ts

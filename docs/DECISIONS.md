@@ -30979,6 +30979,96 @@ underneath it produces a loud rollback rather than a silent corruption.
   editor field that offers the page's live anchors instead of a free-text box, which is `PROG-E`
   work; it is recorded on `LIVE-115`.
 
+---
+## ADR-1131: Phase 4's valuation authority already shipped under other names — the surviving deliverable is the ledger, and its freeze is the slice (2026-08-25)
+
+**Status:** Accepted · **Program:** `PROG-PRAC4` (Practice Library Phase 4) · **Retracts:**
+`computePracticeReward()` as a build item · **Ships:** the per-Pillar Zap attribution ledger's
+log-time freeze · **Extends:** [ADR-438](DECISIONS.md) (the two locked variables),
+[ADR-442](DECISIONS.md)/[ADR-443](DECISIONS.md) (which superseded one of them),
+[ADR-1082](DECISIONS.md) (re-test the premise) · **Migration:** `20270324000000`
+
+### The census (premise re-test, ADR-1082)
+
+`PROG-PRAC4` names three deliverables. Measured against the tree and production
+(`azsqfeonabsbmemvddqd`: 20 practices, 209 logs / 191 paid, 4 Pillars) on 2026-08-25:
+
+| Deliverable | Found |
+|---|---|
+| 4.1a `computePracticeReward()` as valuation authority | 🔴 **Superseded, retracted.** See below. Zero references in code; five stale prose claims in docs. |
+| 4.1b Per-Pillar Zap attribution ledger | 📋 **Genuinely missing.** `secondary_domain_id`/`primary_pct` (Phase-1 columns, live in prod) were referenced by NOTHING but `database.types.ts`; 0/20 practices carry a split — nothing writes one. **This slice ships the ledger's server half.** |
+| 4.2 Vera curation | ⏳ **Partial.** The publish pre-screen (voice/completeness/safety, ADR-446) and the drafting primers exist; embedding-driven auto-suggest Pillar/subcategory, auto-tag, auto-summary and remix-prompt generation do not. |
+| 4.3 Library health dashboard | ✅ **Already shipped** (#2193): `lib/practices/health.ts` + tests + `app/(main)/admin/content/practices/health/page.tsx` on the Dashboard template. `BUILD-LIST` §4.3 still said 📋 — fixed in this pass. |
+
+### The retraction, with evidence
+
+ADR-438 (06-28) locked "auto-valued, creator-proof points" as a create-time
+`computePracticeReward(practice)` that derives intensity from structure and turns
+`weight_class`/`reward_zaps` into computed outputs. **One day later ADR-442, then ADR-443,
+delivered the same lock by a stronger mechanism at the other end of the pipeline**, and the tree
+implements them:
+
+- **Create time:** the creator picks a tier but `setPractice` clamps it to what `duration_min`
+  earns (`clampTierToDuration`, `lib/practices.ts` — a 2-minute practice can never claim Heavy).
+- **Log time:** a TIMED practice pays the tier its REAL engaged minutes reach
+  (`achievedTier`, ADR-443) — the creator's pick is only the recommendation and quick-log
+  fallback. Zaps-per-real-minute is flat by construction, which is the whole anti-farm goal.
+- **The break-glass:** `reward_zaps` is already admin-only (`lib/practices.ts` reward patch path).
+
+A create-time computation would now be a THIRD authority ruling on a question the log path
+already answers better (it cannot see real engaged time; the log can). ADR-443 says so in its
+own consequences: "`weight_class`/`reward_zaps` remain the recommendation + quick-log fallback +
+the staff break-glass; ADR-442's floors/amounts are reused, not replaced."
+**`computePracticeReward()` is retired as a build item.** The prose that stated it as fact
+(`PRACTICE-LIBRARY.md` §3, `REWARDS-ECONOMY.md`, `BUILD-LIST` §two-locked-variables) is corrected
+in this pass — code wins, docs fix in the same change.
+
+### The ledger, and why it freezes
+
+The split's payoff (ADR-438: attribution "never changes the wallet total") ships as an
+append-only ledger frozen at log time, for exactly the reason `zaps_awarded` itself is frozen:
+the practice can be re-categorized or re-balanced after the fact, and a ledger that
+re-attributes history on every curator edit is not a ledger.
+
+- **Migration `20270324000000`** — three nullable snapshot columns on `practice_logs`
+  (`pillar_id`, `secondary_pillar_id`, `primary_pct`), constraints mirroring the practices side
+  (NOT `is distinct from`, which violates on the all-null legacy rows), partial FK indexes.
+- **`logPractice`** snapshots the split in the SAME write as `zaps_awarded` (the split columns
+  ride the existing practice read — zero extra queries). If that combined write errors, it
+  retries with `zaps_awarded` alone, so un-log exactness never regresses.
+- **`lib/practices/attribution.ts`** — pure math + the read. The invariant is CONSERVATION:
+  `primary + secondary === zaps_awarded` exactly, integers, with the remainder riding the
+  primary (floor keeps the primary dominant at 50/50 on odd totals, matching the ADR-438
+  floor's intent). `getMemberPillarZaps` reads the frozen ledger and covers pre-freeze rows by
+  the practice's CURRENT split — a documented fallback, not a backfill guess.
+
+### Migration posture (ADR-1111)
+
+`apply_migration` was attempted from the authoring session: the first call failed on a
+connection timeout and every retry was denied by the session's permission layer. So this PR
+carries the file **with the apply still pending** — the one window ADR-1111 warns about, held
+open deliberately rather than silently. Mitigations, stated so they can be checked: the code is
+correct on BOTH sides of the apply (the snapshot write falls back to the plain `zaps_awarded`
+write; the reader treats null snapshots by fallback), the columns are additive and nullable so
+none of the six in-flight sibling branches is affected, and `check:migrations` with ledger
+credentials will name `20270324000000` as repo-not-applied until the two-step apply + ledger
+repair (`supabase/migrations/README.md`) is run — which should happen at merge time.
+
+### What was deliberately NOT done (the remaining sequence, also in the row)
+
+1. **Split authoring** — the one 75/25 slider (Studio manifest field on the Practice, rail
+   placement) writing `secondary_domain_id`/`primary_pct`; until it exists every snapshot is
+   single-Pillar, which is true data, not a gap in the ledger.
+2. **The surface** — per-Pillar progress read (`getMemberPillarZaps`) composed into the member
+   progress view and the health dashboard's coverage section.
+3. **Vera curation (4.2 remainder)** — auto-suggest Pillar/subcategory from the embedding,
+   auto-tag, auto-summary, remix prompts; all through `lib/ai/voice.ts` and budget-gated like
+   the ADR-446 pre-screen.
+4. **Phase-1 leftovers** carried by the row — server-backed saved views (still localStorage,
+   verified), `DataTable` selection slot, residual facet counts, `database.types.ts` regen.
+
+Reserved backlog ids `LIVE-121`/`HYG-030` were NOT consumed: the census produced no finding
+independent of `PROG-PRAC4`, and the sequence lives in that row's detail per the one-list rule.
 ## ADR-1134: Menu drift faces the operator — one comparison serves the weekly job AND the Menu manager (2026-08-25)
 
 **Status:** accepted · closes `LIVE-111` (filed on #2267) · builds on ADR-860, ADR-390's gate
