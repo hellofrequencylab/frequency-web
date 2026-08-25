@@ -477,3 +477,55 @@ describe('accent words resolve their amber from the band, not from a default', (
     expect(render('ink')).toContain('<span class="text-primary">Real</span>')
   })
 })
+
+describe('AssetRef unwrapping (divergence #2, ADR-1130): renderers only ever see URL strings', () => {
+  // A minimal config so the assertion is about the WALK, not about any one block's markup.
+  // `image` is a `custom` field (like imgField); `gallery` has NO field entry at all, the
+  // worst case: an array a custom field stored, walked shape-wise with no metadata.
+  const miniConfig = {
+    components: {
+      Pic: {
+        fields: { image: { type: 'custom' } },
+        render: ({ image, gallery }: { image?: unknown; gallery?: { src: unknown }[] }) => (
+          <figure data-image={image === undefined || typeof image === 'string' ? image : `NOT-A-STRING:${typeof image}`}>
+            {(gallery ?? []).map((g, i) => (
+              <span key={i} data-src={typeof g.src === 'string' ? g.src : `NOT-A-STRING:${typeof g.src}`} />
+            ))}
+          </figure>
+        ),
+      },
+    },
+  } as unknown as typeof config
+
+  const REF = { assetId: '11111111-2222-4333-8444-555555555555', url: 'https://cdn.example/one.jpg' }
+  const mini = (props: Record<string, unknown>) =>
+    renderToStaticMarkup(
+      <BlockRender config={miniConfig} data={{ root: {}, content: [{ type: 'Pic', props: { id: 'p1', ...props } }] } as Data} metadata={{}} />,
+    )
+
+  it('unwraps a ref-valued image prop to its cached URL', () => {
+    const html = mini({ image: REF })
+    expect(html).toContain('data-image="https://cdn.example/one.jpg"')
+    expect(html).not.toContain('NOT-A-STRING')
+    expect(html).not.toContain('assetId')
+  })
+
+  it('unwraps refs INSIDE a gallery array that has no field metadata', () => {
+    const html = mini({ gallery: [{ src: REF }, { src: 'https://legacy/two.jpg' }] })
+    expect(html).toContain('data-src="https://cdn.example/one.jpg"')
+    expect(html).toContain('data-src="https://legacy/two.jpg"')
+    expect(html).not.toContain('NOT-A-STRING')
+  })
+
+  it('renders a ref document byte-identical to the same document stored with bare strings', () => {
+    const asRefs = mini({ image: REF, gallery: [{ src: REF }] })
+    const asStrings = mini({ image: REF.url, gallery: [{ src: REF.url }] })
+    expect(asRefs).toBe(asStrings)
+  })
+
+  it('leaves a legacy string document alone — the parity contract with Puck holds', () => {
+    const html = mini({ image: 'https://legacy/a.jpg', gallery: [{ src: 'https://legacy/b.jpg' }] })
+    expect(html).toContain('data-image="https://legacy/a.jpg"')
+    expect(html).toContain('data-src="https://legacy/b.jpg"')
+  })
+})

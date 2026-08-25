@@ -16,7 +16,7 @@ import { EventsMapToggle } from '@/components/events/events-map-client'
 import { EventsForYou } from '@/components/events/events-for-you'
 import { EventConnectors } from '@/components/events/event-connectors'
 import type { EventsIndexData } from '@/app/(main)/events/index-data'
-import { resolveHeaderElement } from '@/lib/elements/header'
+import { resolveMarketHero } from '@/lib/layout/index-hero'
 
 // EVENTS SURFACE — the ONE events composition, rendered at /events (the member's events home and
 // the commerce hub's Events tab in one; the duplicate /marketplace/events twin was retired by
@@ -92,18 +92,19 @@ export async function EventsSurface({
     ? `${basePath}?category=${encodeURIComponent(activeCategory)}`
     : basePath
 
-  // The operator-tunable header element (ADR-793): resolves to today's overlay/large/scrim-on look.
-  const header = await resolveHeaderElement({ defaults: { layout: 'overlay', height: 'large' } })
+  // The whole hero band through the ONE browse-hero ladder (lib/layout/index-hero, PROG-P4): the
+  // operator's Settings header image for `basePath`, then the page_content hero the index data
+  // already resolved, then the coded cover, plus the operator-tunable header element (ADR-793) for
+  // layout / height / scrim. It used to read the element alone, so an operator who uploaded a
+  // header image for /events got nothing. `basePath` is typed to the one canonical events route.
+  const heroBand = await resolveMarketHero(basePath, { cover: HERO_FALLBACK, contentImage: content.heroImage })
 
   const hero = (
     <MarketHero
-      image={content.heroImage ?? HERO_FALLBACK}
+      {...heroBand}
       eyebrow={heroEyebrow}
       title={heroTitle}
       subtitle={heroSubtitle}
-      variant={header.layout}
-      size={header.height}
-      overlay={header.scrim}
       search={<MarketSearchBar placeholder="Search events" />}
       action={actions}
     />

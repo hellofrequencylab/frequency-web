@@ -13,12 +13,26 @@ vi.mock('@/lib/page-settings/store', () => ({
 vi.mock('@/lib/elements/header', () => ({
   resolveHeaderElement: (opts: unknown) => resolveHeaderElement(opts),
 }))
+// The copy cascade is rung 2 now (PROG-P6). Only its READ is stubbed — `longestPrefixRow` stays the
+// real implementation, since it is the loop `indexHeroDefaultsFor` delegates to.
+const resolveContentCascade = vi.fn()
+vi.mock('@/lib/layout/content-cascade', async (orig) => ({
+  ...(await orig<typeof import('./content-cascade')>()),
+  resolveContentCascade: (route: string, fb: unknown) => resolveContentCascade(route, fb),
+}))
+/** A cascade answer with a hero resolved at the given scope. */
+const cascaded = (heroImage: string | null, hero: 'page' | 'section' | 'site' | 'fallback') => ({
+  title: '', description: '', heroImage, ctaLabel: null, ctaHref: null,
+  origin: { title: 'fallback', description: 'fallback', hero, cta: 'fallback' },
+})
 
 const {
   INDEX_HERO_DEFAULTS,
   indexHeroDefaultsFor,
   pickIndexHero,
   resolveIndexHero,
+  asMarketHero,
+  resolveMarketHero,
 } = await import('./index-hero')
 
 const SHIPPED_HEADER = { layout: 'overlay' as const, height: 'large' as const, scrim: true }
@@ -33,6 +47,7 @@ beforeEach(() => {
   getPageHeaderImage.mockResolvedValue(null)
   getPageHeaderFocus.mockResolvedValue(null)
   resolveHeaderElement.mockResolvedValue(SHIPPED_HEADER)
+  resolveContentCascade.mockResolvedValue(cascaded(null, 'fallback'))
 })
 
 describe('the image precedence ladder', () => {
@@ -107,13 +122,13 @@ describe('the short / large split is data, not page taste', () => {
   it('resolves the LONGEST matching prefix, so a nested utility row beats its section', () => {
     // '/journeys/mine' matches both rows; the specific one must win or the management space
     // silently inherits the 24rem discovery billboard.
-    expect(indexHeroDefaultsFor('/journeys/mine')).toEqual({ image: null, size: 'short' })
-    expect(indexHeroDefaultsFor('/journeys/mine/anything')).toEqual({ image: null, size: 'short' })
+    expect(indexHeroDefaultsFor('/journeys/mine')).toEqual({ image: null, size: 'short', inheritHero: false })
+    expect(indexHeroDefaultsFor('/journeys/mine/anything')).toEqual({ image: null, size: 'short', inheritHero: false })
   })
 
   it('never prefix-matches a sibling route that merely starts with the same letters', () => {
     // '/networking' is not under '/network'.
-    expect(indexHeroDefaultsFor('/networking')).toEqual({ image: null, size: 'large' })
+    expect(indexHeroDefaultsFor('/networking')).toEqual({ image: null, size: 'large', inheritHero: true })
   })
 
   it('every default points at a real size tier and an absolute image path', () => {
@@ -174,5 +189,126 @@ describe('resolveIndexHero (the async wrapper)', () => {
       heroSize: 'large',
       heroScrim: true,
     })
+  })
+})
+
+describe('rung 2 resolves itself from the copy cascade (PROG-P6, ADR-1122)', () => {
+  it("a section's operator hero now reaches the browse page that reads it", async () => {
+    // THE BUG THIS CLOSES: '/network' has carried a `page_content.hero_image` in production since
+    // June, resolves the same row for its title and description, and dropped the image on the floor
+    // because nothing handed it to `resolveIndexHero`.
+    resolveContentCascade.mockResolvedValue(cascaded('/uploads/network.jpg', 'page'))
+    const hero = await resolveIndexHero('/network')
+    expect(hero.heroImage).toBe('/uploads/network.jpg')
+  })
+
+  it('an INHERITED hero paints on a discovery surface', async () => {
+    resolveContentCascade.mockResolvedValue(cascaded('/uploads/practices.jpg', 'section'))
+    expect((await resolveIndexHero('/practices')).heroImage).toBe('/uploads/practices.jpg')
+  })
+
+  it('an INHERITED hero is refused by a utility surface, which keeps the gradient band', async () => {
+    // '/journeys' carries a hero in production; '/journeys/mine' is a management space and the
+    // short/large split says it gets the band without the billboard. `inheritHero: false` is what
+    // stops the cascade from quietly overturning that.
+    resolveContentCascade.mockResolvedValue(cascaded('/uploads/journeys.jpg', 'section'))
+    expect((await resolveIndexHero('/journeys/mine')).heroImage).toBeNull()
+  })
+
+  it('a hero set on the utility route ITSELF still wins — that is not inheritance', async () => {
+    resolveContentCascade.mockResolvedValue(cascaded('/uploads/mine.jpg', 'page'))
+    expect((await resolveIndexHero('/journeys/mine')).heroImage).toBe('/uploads/mine.jpg')
+  })
+
+  it('the operator Settings image still outranks the cascade', async () => {
+    getPageHeaderImage.mockResolvedValue('/uploads/op.jpg')
+    resolveContentCascade.mockResolvedValue(cascaded('/uploads/section.jpg', 'section'))
+    expect((await resolveIndexHero('/practices')).heroImage).toBe('/uploads/op.jpg')
+  })
+
+  it('an explicit contentImage overrides the read, and an explicit null suppresses it', async () => {
+    resolveContentCascade.mockResolvedValue(cascaded('/uploads/section.jpg', 'section'))
+    expect((await resolveIndexHero('/practices', { contentImage: '/caller.jpg' })).heroImage).toBe('/caller.jpg')
+    // null is a decision, not an absence: fall through to the section default, do not read.
+    expect((await resolveIndexHero('/practices', { contentImage: null })).heroImage).toBe(
+      '/images/site/meditation-circle.jpg',
+    )
+    expect(resolveContentCascade).not.toHaveBeenCalled()
+  })
+
+  it('FAIL-SAFE: a throwing cascade read still yields a renderable band', async () => {
+    resolveContentCascade.mockRejectedValue(new Error('page_content is down'))
+    expect((await resolveIndexHero('/practices')).heroImage).toBe('/images/site/meditation-circle.jpg')
+  })
+})
+
+
+describe('the editable-index twin: resolveMarketHero (PROG-P4, ADR-1127)', () => {
+  // Nine browse render sites head an operator-rearrangeable body with `MarketHero` instead of
+  // `IndexTemplate` (PAGE-FRAMEWORK §8.5). Same PageHero underneath, different prop names — and
+  // every one of them resolved its image by hand and stopped short of rung 1, so an operator who
+  // uploaded a Settings header image for /events or /market watched nothing happen.
+
+  it('re-shapes the resolved band into MarketHero prop names', () => {
+    const bag = asMarketHero(
+      { heroImage: '/op.jpg', heroFocus: '50% 10%', heroOverlay: true, heroLayout: 'identity', heroSize: 'tall', heroScrim: false },
+      '/coded.jpg',
+    )
+    expect(bag).toEqual({ image: '/op.jpg', focal: '50% 10%', variant: 'identity', size: 'tall', overlay: false })
+  })
+
+  it('falls through to the coded cover rather than emitting a null image', () => {
+    // `MarketHero` types `image` as a non-null string: the gradient band is a legitimate RESULT on a
+    // utility index and a broken header on a hero-led commerce one, so `cover` carries the guarantee.
+    const bag = asMarketHero(
+      { heroImage: null, heroFocus: null, heroOverlay: true, heroLayout: 'overlay', heroSize: 'large', heroScrim: true },
+      '/coded.jpg',
+    )
+    expect(bag.image).toBe('/coded.jpg')
+  })
+
+  it('RUNG 1 NOW REACHES THESE PAGES — the operator Settings image beats the coded cover', async () => {
+    // The regression this whole export exists to stop. Before it, /store read `resolveHeaderElement`
+    // alone and passed a module constant as `image`, so `page_settings.header_image_url` was dead.
+    getPageHeaderImage.mockResolvedValue('/uploads/store.jpg')
+    getPageHeaderFocus.mockResolvedValue('20% 80%')
+    const bag = await resolveMarketHero('/store', { cover: '/coded.jpg' })
+    expect(bag).toMatchObject({ image: '/uploads/store.jpg', focal: '20% 80%' })
+  })
+
+  it('rung 2 reaches them too — the page_content hero, via the copy cascade', async () => {
+    resolveContentCascade.mockResolvedValue(cascaded('/uploads/section.jpg', 'section'))
+    expect((await resolveMarketHero('/market', { cover: '/coded.jpg' })).image).toBe('/uploads/section.jpg')
+  })
+
+  it('with nothing set, the coded cover paints — today\'s look, unchanged', async () => {
+    expect((await resolveMarketHero('/store', { cover: '/coded.jpg' })).image).toBe('/coded.jpg')
+  })
+
+  it('carries the operator header element through for layout / height / scrim', async () => {
+    resolveHeaderElement.mockResolvedValue({ layout: 'identity', height: 'tall', scrim: false })
+    expect(await resolveMarketHero('/market', { cover: '/coded.jpg' })).toMatchObject({
+      variant: 'identity', size: 'tall', overlay: false,
+    })
+  })
+
+  it('FAIL-SAFE: a throwing settings read still yields a renderable band', async () => {
+    getPageHeaderImage.mockRejectedValue(new Error('page_settings is down'))
+    expect((await resolveMarketHero('/classifieds', { cover: '/coded.jpg' })).image).toBe('/coded.jpg')
+  })
+})
+
+describe('the /events/calendar row', () => {
+  it('takes the SHORT band — a month grid is a work surface', () => {
+    expect(indexHeroDefaultsFor('/events/calendar').size).toBe('short')
+  })
+
+  it('still INHERITS the Events section hero, unlike the utility rows', async () => {
+    // The two flags are separate on purpose: short is about the BAND, inheritHero is about the
+    // IMAGE. The calendar is the Events section wearing a different body, so the operator photo
+    // uploaded for /events belongs on it.
+    expect(indexHeroDefaultsFor('/events/calendar').inheritHero).toBe(true)
+    resolveContentCascade.mockResolvedValue(cascaded('/uploads/events.jpg', 'section'))
+    expect((await resolveIndexHero('/events/calendar')).heroImage).toBe('/uploads/events.jpg')
   })
 })

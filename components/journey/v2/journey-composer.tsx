@@ -7,6 +7,7 @@ import { composeJourneyAction, scaffoldJourneyAction, applyVeraChangeAction } fr
 import { createMasterFrameworkAction } from '@/app/(main)/journeys/create-actions'
 import { isError } from '@/lib/action-result'
 import { Input, Textarea } from '@/components/ui/field'
+import { Button } from '@/components/ui/button'
 
 // The Vera composer in the editor (ADR-302). It has two modes, by whether the Journey has content:
 //   • EMPTY  — a few SPECIFIC questions (who / about / outcome); Vera fills a balanced opening week.
@@ -112,9 +113,9 @@ export function JourneyComposer({ slug, isEmpty }: { slug: string; isEmpty: bool
           {error && <p className="mt-1 text-meta text-danger">{error}</p>}
           {note && <p className="mt-1 text-meta text-muted">{note}</p>}
           <div className="mt-3 flex flex-wrap items-center gap-2">
-            <button type="button" disabled={pending || !topic.trim()} onClick={build} className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary hover:bg-primary-hover disabled:opacity-60">
+            <Button type="button" disabled={pending || !topic.trim()} onClick={build}>
               <Wand2 className="h-4 w-4" /> {pending ? 'Building…' : 'Build with Vera'}
-            </button>
+            </Button>
             <button type="button" disabled={pending} onClick={framework} className="inline-flex items-center gap-1.5 rounded-lg border border-primary/40 bg-primary-bg/40 px-3 py-2 text-body-sm font-medium text-primary-strong hover:bg-primary-bg disabled:opacity-60">
               <Compass className="h-4 w-4" /> Start from the recommended framework
             </button>
@@ -151,9 +152,9 @@ export function JourneyComposer({ slug, isEmpty }: { slug: string; isEmpty: bool
           {error && <p className="mt-1 text-meta text-danger">{error}</p>}
           {note && <p className="mt-1 text-meta text-muted">{note}</p>}
           <div className="mt-3">
-            <button type="button" disabled={pending || !change.trim()} onClick={apply} className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary hover:bg-primary-hover disabled:opacity-60">
+            <Button type="button" disabled={pending || !change.trim()} onClick={apply}>
               <Wand2 className="h-4 w-4" /> {pending ? 'Applying…' : 'Apply with Vera'}
-            </button>
+            </Button>
           </div>
         </>
       )}

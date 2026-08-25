@@ -18,7 +18,7 @@ import { MarketplaceBar } from '@/components/marketplace/marketplace-bar'
 import { HousingCategoryNav } from '@/components/marketplace/housing-category-nav'
 import { MarketplaceGuide } from '@/components/marketplace/marketplace-guide'
 import { MarketplaceHiddenBanner } from '@/components/marketplace/hidden-banner'
-import { resolveHeaderElement } from '@/lib/elements/header'
+import { resolveMarketHero } from '@/lib/layout/index-hero'
 
 // Housing — rentals + roommates (connect-only, member-only). Hero-led (the site PhotoHero grammar) to
 // match Classifieds / Market / Frequency Store. The facet band is a plain GET form, so it stays
@@ -69,18 +69,19 @@ export default async function HousingPage({
 }) {
   const viewerProfileId = await getMyProfileId()
   const sp = await searchParams
-  // The operator-tunable header element (ADR-793): resolves to today's overlay/large/scrim-on look.
-  const header = await resolveHeaderElement({ defaults: { layout: 'overlay', height: 'large' } })
+  // The whole hero band through the ONE browse-hero ladder (lib/layout/index-hero, PROG-P4):
+  // the operator's Settings header image, then the page_content hero via the copy cascade, then
+  // this page's coded cover, plus the operator-tunable header element (ADR-793) for
+  // layout / height / scrim. It used to read the element alone, so an operator who uploaded a
+  // header image for this route got nothing.
+  const heroBand = await resolveMarketHero('/housing', { cover: HERO_IMAGE })
 
   const hero = (
     <MarketHero
-      image={HERO_IMAGE}
+      {...heroBand}
       eyebrow="Housing"
       title="Find your place, and your people"
       subtitle="Rentals, sublets, and roommates who actually fit. Listings stay local, and contact is a message away."
-      variant={header.layout}
-      size={header.height}
-      overlay={header.scrim}
       search={<MarketSearchBar placeholder="Search housing" />}
       action={
         viewerProfileId ? (
