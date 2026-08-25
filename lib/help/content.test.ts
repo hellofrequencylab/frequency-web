@@ -17,7 +17,9 @@ describe('help loader — role front-matter tag', () => {
     // Tagged on ship (the host advancement path source).
     expect(byKey('groups', 'events')?.role).toBe('host')
     expect(byKey('groups', 'channels')?.role).toBe('host')
-    expect(byKey('sharing', 'broadcasts')?.role).toBe('host')
+    // Renamed broadcasts -> dispatches (SCAN-204): the article body was always on-canon, and the
+    // slug is member-visible, so it had to follow. next.config.ts keeps the old URL alive.
+    expect(byKey('sharing', 'dispatches')?.role).toBe('host')
     // Tagged for the guide tier.
     expect(byKey('groups', 'hubs')?.role).toBe('guide')
   })

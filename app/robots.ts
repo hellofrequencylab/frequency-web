@@ -64,6 +64,12 @@ const DISALLOW = [
   "/spaces/claim/",
   "/listings/claim/",
   "/events/claim/",
+  // QR splash landings (/q/<token>) and the QR lead scan/unsubscribe surface (/u/). Same
+  // shape as the capture funnel: token-attributed, single-purpose 200s that would pollute
+  // the index and the scan attribution if crawled. The splash HTML also carries its own
+  // noindex meta (lib/qr/splash-render.ts), matching the belt-and-suspenders pattern above.
+  "/q/",
+  "/u/",
 ];
 
 // AI answer engines and their crawlers. We name each one explicitly (allow "/",
@@ -71,20 +77,29 @@ const DISALLOW = [
 // on public pages. AI citation is a primary acquisition channel (CONTENT-VOICE
 // §8), so we opt in rather than rely on the "*" default: GPTBot (OpenAI training),
 // OAI-SearchBot + ChatGPT-User (ChatGPT search / browsing), ClaudeBot + Claude-Web
-// + anthropic-ai (Anthropic), PerplexityBot, Applebot + Applebot-Extended (Apple /
-// Apple Intelligence), Google-Extended (Gemini / Vertex), and CCBot (Common Crawl,
-// which many models train on).
+// + Claude-User + Claude-SearchBot + anthropic-ai (Anthropic crawl / on-demand /
+// search), PerplexityBot + Perplexity-User, Applebot + Applebot-Extended (Apple /
+// Apple Intelligence), Google-Extended (Gemini / Vertex), Meta-ExternalAgent +
+// Meta-ExternalFetcher (Meta AI), Amazonbot (Alexa/Rufus), DuckAssistBot
+// (DuckDuckGo AI), and CCBot (Common Crawl, which many models train on).
 const AI_BOTS = [
   "GPTBot",
   "OAI-SearchBot",
   "ChatGPT-User",
   "ClaudeBot",
   "Claude-Web",
+  "Claude-User",
+  "Claude-SearchBot",
   "anthropic-ai",
   "PerplexityBot",
+  "Perplexity-User",
   "Applebot",
   "Applebot-Extended",
   "Google-Extended",
+  "Meta-ExternalAgent",
+  "Meta-ExternalFetcher",
+  "Amazonbot",
+  "DuckAssistBot",
   "CCBot",
 ];
 

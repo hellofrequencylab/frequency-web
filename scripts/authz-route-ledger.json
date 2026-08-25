@@ -162,9 +162,9 @@
     },
     "app/llms.txt/route.ts": {
       "verdict": "public",
-      "reason": "Curated AIO brand summary (ADR-916). Reads through the admin client for live public counts and the operator's pricing config, all of which /pricing and the public pages already show. No caller identity anywhere.",
-      "checked": "2026-08-17",
-      "digest": "372fb0a695788236"
+      "reason": "Curated AIO brand summary (ADR-916). Reads through the admin client for live public counts and the operator's pricing config, all of which /pricing and the public pages already show. No caller identity anywhere. 2026-08-25 re-read: added a Live-directories section and derived the COMPARE list from the COMPARISONS registry — still static public copy plus the same public reads.",
+      "checked": "2026-08-25",
+      "digest": "66bf0e54141fd817"
     },
     "app/podcasts/[spaceSlug]/[showSlug]/rss.xml/route.ts": {
       "verdict": "model-gated",

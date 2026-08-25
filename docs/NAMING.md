@@ -110,7 +110,7 @@
   subtitle "Tune out", lotus art) sits in the menu as a full-width row
   BETWEEN the live and coming-soon rows: a door to the timer app, not a
   capture tile. On Air's other entries are the home JourneyBoard, practice
-  pages, /on-air and the PWA shortcut (no header icon).
+  pages, /on-air, the PWA shortcut, and a desktop-only header lotus (MindlessLaunch in app-shell; off on phone by owner directive, pinned in header-fit.test.ts).
 - **Dispatch / Dispatches** = the host-and-above wider announcement (`dispatches`, route
   `/nearby`). **This is the sole member-facing name; every visible label, help article,
   notification topic, and admin heading says Dispatch.** "Broadcast" is **retired from member
