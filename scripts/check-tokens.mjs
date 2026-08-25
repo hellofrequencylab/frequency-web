@@ -63,10 +63,23 @@ const ALLOWLIST = [
   (p) => p.startsWith('components/admin/theme-studio/'),
   (p) => p.startsWith('components/admin/email-studio/'),
   (p) => p.startsWith('components/spaces/email/'),
-  // the PUBLIC MARKETING site + its UI primitives are a separate brand design system (PhotoHero,
-  // brand demos), not the in-app DAWN surface the guard governs — mirrors check-headers' marketing skip.
-  (p) => p.startsWith('app/(marketing)/'),
-  (p) => p.startsWith('components/marketing/'),
+  // ── THE MARKETING EXEMPTION IS GONE (PROG-P9, 2026-08-25, ADR-1121) ──────────────────────
+  // Two whole-file waivers used to live here — `app/(marketing)/` and `components/marketing/` —
+  // on the reasoning that "the PUBLIC MARKETING site + its UI primitives are a separate brand
+  // design system, not the in-app DAWN surface the guard governs".
+  //
+  // Re-measured before removal, which is the only reason this is a deletion and not a debate:
+  // the classifier was run over both trees with the two entries lifted, and it reported
+  // **0 violations across 61 files** — no raw hex, no `text-[Npx]`, no inline `rgb()`. Marketing
+  // consumes the SAME `@theme inline` vocabulary the app does (a strict subset of it: 3 utility
+  // names appear on marketing and nowhere in-app, and all three are app tokens). There was no
+  // second brand system to protect. The waiver was protecting nothing and hiding that fact.
+  //
+  // What IS a separate system on the marketing surface is real and stays separate: the Anton
+  // display face, the `.mk-band/.mk-beat/.mk-cont/.mk-tight` vertical rhythm, and the
+  // `--color-marketing-canvas` ground. None of those is a hardcoded literal, so none of them
+  // needed this exemption either. `check-headers` and `check-templates` keep their marketing
+  // skips — those govern PAGE STRUCTURE, which genuinely does differ.
   // third-party OAuth PROVIDER brand palettes (the Google "G" is a fixed 4-color mark, not a token).
   // Scoped to 'hex color': the reason is a brand palette, so it must not also waive the type scale.
   // It used to, and induction.tsx's `text-[10px]` rode along on an exemption granted for four hexes.
