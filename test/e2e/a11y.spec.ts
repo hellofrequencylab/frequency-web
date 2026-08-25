@@ -36,6 +36,26 @@
 // that only surfaces in an opt-in suite is an a11y regression nobody sees. Run it alone
 // with `pnpm exec playwright test --grep @a11y`.
 //
+// ── WHAT THIS NUMBER IS NOT: axe's `incomplete` class is never counted ────────
+// `results.violations` is the only bucket read here (and in `test/a11y/axe.ts`, which asks for
+// `resultTypes: ['violations']` outright). axe has a THIRD bucket beside passes and violations:
+// `incomplete` — checks it ran and could not decide. `color-contrast` moves a node there instead
+// of failing it whenever the engine cannot resolve what is actually painted behind the text:
+//   • the background is a `background-image` (every ink band and every cover-photo hero);
+//   • a pseudo-element covers more than 25% of the node;
+//   • the node is `opacity: 0` or otherwise not currently rendered — which is everything below
+//     the fold inside a `Reveal`, because it enters the DOM transparent.
+// None of those are wiring gaps this repo can close: they are an engine limit, and axe is right
+// to refuse to guess. The consequence has to be said out loud anyway, because a green run here
+// reads like a census and is not one: EVERY contrast reading in `a11y-baselines.json` is a FLOOR.
+// The debt on the ink bands and inside collapsed sections is unmeasured, not absent, and it is
+// closed by manual/visual review (the same review `test/a11y/axe.ts` defers `color-contrast` to),
+// never by this file going green.
+//
+// Do NOT "fix" this by failing on `incomplete`. Every hero on the site would fail on day one for
+// a question nobody answered, which is the ADR-970 shape: a gate that cannot fire honestly gets
+// routed around, and then it reads as coverage.
+//
 // ── Why the state matrix is shaped the way it is ──────────────────────────────
 // A full axe pass is state-INSENSITIVE for almost every rule (roles, names, order,
 // labels): re-running the whole rule set in four states would quadruple the wall time to

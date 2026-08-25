@@ -49,21 +49,37 @@ export function InlineCover({
 
   if (!url && !showEdit) return null
 
+  // Both writers can FAIL TWO WAYS and only one of them was read. `setUrl` returns `{ error }`
+  // for a rejected value, but the cover actions (removeCircleCover, removeChannelCover,
+  // removePageHero, removePracticeCover) signal an unauthorized caller or a failed write by
+  // THROWING — and a throw inside a transition callback is an unhandled rejection, not a message.
+  // `onRemove` in particular awaited a `Promise<void>` and then cleared the preview regardless, so
+  // a refused delete looked like a successful one until the next load. Both paths now catch.
   function onPick(picked: string) {
     if (!setUrl) return
     setErr(null)
     startTransition(async () => {
-      const res = await setUrl(picked)
-      if (res && 'error' in res) { setErr(res.error); return }
-      setLocalUrl(picked)
-      onChange?.(picked)
+      try {
+        const res = await setUrl(picked)
+        if (res && 'error' in res) { setErr(res.error); return }
+        setLocalUrl(picked)
+        onChange?.(picked)
+      } catch {
+        setErr('Could not save that image. Try again.')
+      }
     })
   }
 
   function onRemove() {
     if (!remove) return
+    setErr(null)
     startTransition(async () => {
-      await remove()
+      try {
+        await remove()
+      } catch {
+        setErr('Could not remove the cover. Try again.')
+        return
+      }
       setLocalUrl(null)
       onChange?.(null)
     })
