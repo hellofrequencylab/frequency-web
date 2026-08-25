@@ -471,48 +471,6 @@ export type Database = {
           },
         ]
       }
-      beta_referrals: {
-        Row: {
-          activated_at: string
-          created_at: string
-          id: string
-          invitee_profile_id: string
-          referrer_profile_id: string
-          source: string
-        }
-        Insert: {
-          activated_at?: string
-          created_at?: string
-          id?: string
-          invitee_profile_id: string
-          referrer_profile_id: string
-          source?: string
-        }
-        Update: {
-          activated_at?: string
-          created_at?: string
-          id?: string
-          invitee_profile_id?: string
-          referrer_profile_id?: string
-          source?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "beta_referrals_invitee_profile_id_fkey"
-            columns: ["invitee_profile_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "beta_referrals_referrer_profile_id_fkey"
-            columns: ["referrer_profile_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       blocked_users: {
         Row: {
           blocked_id: string

@@ -1,0 +1,174 @@
+# Posts the `db-tests` context for the pull requests db-tests.yml deliberately skips.
+#
+# WHY IT EXISTS (OWN-038). `db-tests` is the only gate in CI that applies EVERY migration to an
+# empty database, so it is the only one that can see a fresh-apply defect. On 2026-08-25 it caught
+# one that `checks`, `lint`, `test` and `analyze` all passed (ADR-1150). That is the argument for
+# making it REQUIRED — and making it required is what creates the deadlock this file closes.
+#
+# THE DEADLOCK. db-tests.yml is path-filtered to supabase/**. A pull request touching none of those
+# paths never triggers it, so the context is never posted. GitHub renders a required-but-never-posted
+# context as "Expected — Waiting for status to be reported" and blocks the merge FOREVER. PR #2107
+# hit this exact shape with `pr-compare` on 2026-08-12 and could not be merged by ANY means:
+# `bypass_actors` is null on ruleset 17640795, so rulesets do not exempt repo admins either. The only
+# exits were to pollute a clean PR with an unrelated touch, or to un-require the gate for everybody.
+# This workflow is the third exit, and it is why requiring `db-tests` is a one-checkbox change.
+#
+# ⚠️ WHY THIS IS NOT A VACUOUS GREEN. The claim is narrow and true: a pull request that changes no
+# migration, no pgTAP test and not the workflow itself cannot change what a fresh apply produces. The
+# status description says exactly that, so nobody reads it as "the migration suite passed".
+#
+# ⚠️ WHY A COMMIT STATUS AND NOT A JOB NAMED `db-tests`. The obvious implementation is a second
+# workflow with `paths-ignore:` and a job named `db-tests`. It is wrong, and dangerously so.
+# GitHub's `paths-ignore` fires when ANY changed file falls outside the list — so a PR touching BOTH
+# `supabase/migrations/x.sql` AND `docs/y.md` matches `paths` AND `paths-ignore`. Both workflows run,
+# two check runs share the name `db-tests`, the latest one wins, and a RED migration gate can be
+# overwritten by a stub that applied nothing. This job instead runs on every PR, decides for itself
+# whether db-tests ran, and posts ONLY when it did not — so the two can never both speak.
+#
+# The path list is READ OUT OF db-tests.yml by scripts/db-paths.mjs, never restated here.
+#
+# Modelled on .github/workflows/pr-compare-fallback.yml, which closed the same deadlock for
+# `pr-compare`. Read that file's header for the two incidents that shaped this shape.
+name: db-tests-fallback
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+  statuses: write
+
+concurrency:
+  group: db-tests-fallback-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Deliberately NOT named `db-tests` — see the header. The naming rule is what makes requiring
+  # `db-tests` safe rather than a way to overwrite a red migration gate.
+  fallback:
+    name: db-tests fallback (no-migration PRs)
+    runs-on: ubuntu-latest
+    steps:
+      # Depth 1: the only repo files this job reads are db-tests.yml and the two scripts. The
+      # changed-file list comes from the API below rather than a `git diff`, so no history is needed.
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+
+      - name: Decide whether db-tests already owns this PR
+        id: decide
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          # The PR's own changed files — exactly the set GitHub applies `paths:` to. Paginated,
+          # because a large PR exceeds one page and a truncated list would silently look
+          # migration-free and post a green status over a schema change.
+          page=1
+          : > /tmp/changed.txt
+          while : ; do
+            body=$(curl -sS --fail-with-body \
+              -H "Authorization: Bearer ${GH_TOKEN}" \
+              -H "Accept: application/vnd.github+json" \
+              "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/pulls/${{ github.event.pull_request.number }}/files?per_page=100&page=${page}")
+            count=$(printf '%s' "$body" | python3 -c 'import json,sys; d=json.load(sys.stdin); print(len(d)); [print(f["filename"]) for f in d]' | tee /tmp/page.txt | head -1)
+            tail -n +2 /tmp/page.txt >> /tmp/changed.txt
+            [ "$count" -lt 100 ] && break
+            page=$((page + 1))
+          done
+
+          echo "Changed files in this pull request:"
+          sed 's/^/  /' /tmp/changed.txt
+
+          # Exit 0 = at least one file can change the database, so db-tests ran and posts its own
+          # check. Exit 1 = none can, so db-tests was skipped and this job must post it.
+          #
+          # 🔴 THE SCRIPT READS THE FILE. DO NOT PUT `xargs` BACK. xargs reports 123 for any command
+          # that exits 1–125, so the exit-1 arm below would be unreachable and this job would fail on
+          # every no-migration PR — the only PRs it exists for. That shipped once already, in the
+          # pr-compare fallback, and nothing noticed until PR #2116.
+          if node scripts/db-paths.mjs --files /tmp/changed.txt; then
+            echo "db=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::A changed file can change the database. db-tests.yml owns this PR; posting nothing."
+          else
+            rc=$?
+            if [ "$rc" -ne 1 ]; then
+              echo "::error::db-paths.mjs failed with ${rc}. Refusing to post a status on a guess."
+              exit "$rc"
+            fi
+            echo "db=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::No changed file can change the database. Posting db-tests on its behalf."
+          fi
+
+      # 🔴 THIS POST MUST RETRY, AND IT MUST BE READ BACK. A single un-retried call here reproduces
+      # the forever-deadlock the header describes, because the deadlock is caused by the context
+      # being ABSENT and a failed POST leaves it absent. The pr-compare fallback learned this from a
+      # real 503 on PR #2142: the decide step worked perfectly, the statuses API blipped, and a clean
+      # docs PR was left with no exit — the deadlock-breaker itself became the single point of
+      # failure. Retry only on transient codes; a 403 or 422 is a real defect and retrying it five
+      # times just delays the honest failure. Then READ IT BACK, because a 201 is the API's word that
+      # it accepted the write, while what the merge depends on is the context EXISTING on this SHA.
+      - name: Post db-tests
+        if: steps.decide.outputs.db == 'false'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          # NOT `-e`: curl's exit code is inspected per attempt rather than aborting the step.
+          set -uo pipefail
+
+          api="${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}"
+          attempt=1
+          max=5
+          delay=2
+
+          while : ; do
+            code=$(curl -sS -o /tmp/post.out -w '%{http_code}' -X POST \
+              -H "Authorization: Bearer ${GH_TOKEN}" \
+              -H "Accept: application/vnd.github+json" \
+              "${api}/statuses/${HEAD_SHA}" \
+              -d '{
+                "state": "success",
+                "context": "db-tests",
+                "description": "No migration or pgTAP test changed, so the fresh-apply suite was not run.",
+                "target_url": "'"${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"'"
+              }') || code=000
+
+            [ "$code" = "201" ] && break
+
+            case "$code" in
+              000|429|500|502|503|504) ;;
+              *)
+                echo "::error::statuses API returned ${code}, which is not transient. Not retrying."
+                cat /tmp/post.out || true
+                exit 1
+                ;;
+            esac
+
+            if [ "$attempt" -ge "$max" ]; then
+              echo "::error::statuses API still returning ${code} after ${max} attempts. db-tests is NOT posted, so this PR is blocked until this job is re-run."
+              cat /tmp/post.out || true
+              exit 1
+            fi
+
+            echo "::warning::statuses API returned ${code} (attempt ${attempt}/${max}). Retrying in ${delay}s."
+            sleep "$delay"
+            delay=$((delay * 2))
+            attempt=$((attempt + 1))
+          done
+
+          # The read-back. Without this the step asserts "the API accepted my write", when what the
+          # merge actually depends on is "the context exists on this SHA".
+          if ! curl -sS --fail-with-body \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            "${api}/commits/${HEAD_SHA}/status" \
+            | python3 -c 'import json,sys; sys.exit(0 if any(s["context"] == "db-tests" for s in json.load(sys.stdin)["statuses"]) else 1)'
+          then
+            echo "::error::Posted db-tests and got 201, but the context is absent when read back on ${HEAD_SHA}. Do not trust the write; investigate before merging."
+            exit 1
+          fi
+
+          echo "::notice::Posted db-tests=success and verified it on ${HEAD_SHA}. This asserts only that no migration input changed."

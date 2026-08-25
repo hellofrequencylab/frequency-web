@@ -65,9 +65,21 @@
 # requireAdminFloor() redirects a signed-in non-staff viewer to /feed, and the suite SKIPS
 # with the cause named rather than photographing /feed seven times under seven admin names.
 # A capture run in that state commits the member-shell PNGs and silently no operator ones —
-# so before dispatching update_baselines for these, confirm PW_MEMBER_EMAIL's account has
-# web_role = 'admin'. The job summary's shell-coverage table names every /admin route it
-# could not photograph; read it before believing the capture was complete (backlog HYG-027).
+# so before dispatching update_baselines for these, confirm PW_MEMBER_EMAIL's account clears
+# the floor. The job summary's shell-coverage table names every /admin route it could not
+# photograph; read it before believing the capture was complete (backlog HYG-027).
+#
+# ⚠️ THIS PARAGRAPH USED TO SAY "confirm ... has web_role = 'admin'", AND THAT WAS WRONG TWICE
+# OVER — measured against production 2026-08-25 while working SCAN-507:
+#   1. The floor is `isStaff(profile.webRole)` (lib/core/roles.ts:77), which admits 'admin'
+#      OR 'janitor'. A janitor clears it.
+#   2. Production holds ZERO accounts at web_role = 'admin'. The whole staff axis is:
+#      janitor × 2 — `danieltyack` (the owner) and `moderation` (Vera, who has no auth_user_id
+#      and cannot sign in) — and web_role 'none' × 54.
+# So read literally, the old instruction was unfollowable: it named a role nobody holds. The
+# real precondition is that PW_MEMBER_EMAIL is the ONE human account on the staff axis. A
+# comment that tells you to check a thing that cannot be true is worse than no comment, because
+# you check it, find nothing, and cannot tell whether that means "not set up" or "doc is wrong".
 #
 # FIRST CAPTURE OF THE OPERATOR BASELINES (28 PNGs — 7 routes x 2 modes x 2 viewports):
 #     base_url = <the PR's preview URL>, capture_shell ✔, update_baselines ✔
