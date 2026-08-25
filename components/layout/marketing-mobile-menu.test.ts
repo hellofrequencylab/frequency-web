@@ -160,3 +160,85 @@ describe('the sheet gates like the bar, and takes the menu the bar takes', () =>
     expect(sheet).not.toContain('DISCOVER_NAV')
   })
 })
+
+// ── LIVE-110: the same sheet now also rides SiteHeader ─────────────────────────────────
+// SiteHeader renders on every /discover/* and /help page — the public browse surface the
+// sitemap advertises — and its PrimaryNav is `hidden md:block`, so below md a visitor had a
+// wordmark, a search glyph and a CTA, and no header navigation at all.
+//
+// These are source-shape assertions on purpose, and the reason is the same one stated above
+// sheetGroups: the sheet only mounts on a tap and `pnpm test` has no browser. What CAN be
+// measured as behaviour is measured that way (the gate, below); what cannot is pinned at the
+// wiring, because the two defects LIVE-106 found were both wiring — a prop that was never
+// passed, and a projection that dropped children.
+describe('SiteHeader carries the same sheet, gated for the viewer looking at it', () => {
+  const header = () => readFileSync(new URL('./site-header.tsx', import.meta.url), 'utf8')
+
+  it('mounts a phone sheet on BOTH auth paths', () => {
+    const t = header()
+    // The server path (routes that are dynamic anyway) and the client path (the statically
+    // rendered /discover tree, where the viewer arrives after hydration from /api/viewer).
+    expect(t).toContain('<MarketingMobileMenu')
+    expect(t).toContain('<ViewerMobileMenu')
+  })
+
+  it('hands each path the DB-backed headerMenu, not the code default', () => {
+    // The operator-edit half, exactly as MarketingHeader owes it: without the prop the sheet
+    // falls back to defaultMenu('header') while the bar beside it renders the DB menu, so an
+    // edit in the Menu manager reaches the desktop and never a phone.
+    const t = header()
+    expect(t.match(/headerMenu=\{headerMenu\}/g)?.length ?? 0).toBeGreaterThanOrEqual(4)
+  })
+
+  it('passes the REAL viewer, which is the whole difference from the marketing sheet', () => {
+    // MarketingHeader is always logged-out for menu purposes and passes no viewer, so the
+    // sheet's 'visitor' default is correct there. SiteHeader is not: a signed-in member on
+    // /discover is ordinary, and a sheet defaulted to 'visitor' would hide from that member
+    // exactly the rows the desktop bar beside them shows.
+    const t = header()
+    expect(t).toContain('viewer={{ viewerRole }}')
+    expect(t).toContain('isAuth={isAuth}')
+  })
+
+  it('keeps the mobile search glyph — a nav sheet does not replace a search field', () => {
+    const t = header()
+    expect(t).toContain('aria-label="Search"')
+    expect(t).toContain('sm:hidden shrink-0 p-2')
+  })
+})
+
+describe('the sheet footer follows the viewer, not the surface', () => {
+  it('does not offer an unconditional "Sign in" + join pair', () => {
+    // A member who is already here being invited to sign in, and then to join a beta they are
+    // in, is copy that tells them the product does not know them. The pair must sit behind the
+    // isAuth branch rather than at the top level of the footer.
+    const sheet = readFileSync(new URL('./marketing-mobile-menu.tsx', import.meta.url), 'utf8')
+    expect(sheet).toContain('{isAuth ? (')
+    // Positive control for that branch: the signed-in arm has somewhere to go.
+    expect(sheet).toContain('Your feed')
+  })
+
+  it('a signed-in viewer and a visitor gate to different rows', () => {
+    // The behavioural half — sheetGroups is pure, so this one is measured rather than pinned.
+    const memberOnly: ResolvedMenu = {
+      ...defaultMenu('header'),
+      isDefault: false,
+      categories: [
+        {
+          id: 'c-gate',
+          label: 'Community',
+          position: 0,
+          colSpan: 1,
+          children: [],
+          items: [
+            { id: 'i-pub', label: 'Public', href: '/pub', position: 0, colSpan: 1, mode: 'active', roleModes: {}, minAccess: 'visitor' },
+            { id: 'i-mem', label: 'Members', href: '/mem', position: 1, colSpan: 1, mode: 'active', roleModes: {}, minAccess: 'member' },
+          ],
+        },
+      ],
+    }
+    const seen = (v: MenuViewer) => sheetGroups(memberOnly, v).flatMap((g) => g.items.map((i) => i.href))
+    expect(seen({ viewerRole: 'visitor' })).toEqual(['/pub'])
+    expect(seen({ viewerRole: 'member' })).toEqual(['/pub', '/mem'])
+  })
+})

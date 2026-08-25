@@ -7,6 +7,7 @@ import { UserMenu, AuthButtons, type UserMenuProfile } from './user-menu'
 import { PrimaryNav } from './primary-nav'
 import { viewerRoleFor } from './menu-role'
 import type { MenuSettings, ResolvedMenu } from '@/lib/menus/types'
+import { MarketingMobileMenu } from '@/components/layout/marketing-mobile-menu'
 
 // CLIENT-HYDRATED HEADER CHROME.
 //
@@ -92,6 +93,24 @@ export function ViewerAuthSlot({ dark, profileMenu }: { dark: boolean; profileMe
  *  access token (the indexable view); a member's per-role item modes resolve after hydration.
  *  `viewerRoleFor` is deliberately framework-independent so the server layouts and this client
  *  path collapse the viewer's axes with the exact same rule. */
+/** The phone sheet, viewer-aware. Mirrors ViewerPrimaryNav exactly: same hook, same
+ *  viewerRoleFor collapse, so on a statically-rendered /discover page the sheet and the bar
+ *  agree about who is looking once /api/viewer answers. Before that they agree too — both
+ *  render the anonymous view, which is the HTML a crawler gets. */
+export function ViewerMobileMenu({
+  light,
+  headerMenu,
+}: {
+  light: boolean
+  headerMenu: ResolvedMenu
+}) {
+  const { signedIn, communityRole, webRole } = useViewer()
+  const viewerRole = viewerRoleFor({ loggedIn: signedIn, communityRole, webRole: asWebRole(webRole) })
+  return (
+    <MarketingMobileMenu light={light} headerMenu={headerMenu} viewer={{ viewerRole }} isAuth={signedIn} />
+  )
+}
+
 export function ViewerPrimaryNav({
   variant,
   className,

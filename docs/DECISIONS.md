@@ -32880,3 +32880,57 @@ question is whether the throttle can reach that site at all.* Five of these eigh
 throttled — three by a stronger gate, one by a lifetime cap, one by having no code path — and the
 only way to know that was to read each writer. A ruling to "cap them all" applied literally would
 have shipped five switches that gate nothing and read as coverage.
+
+## ADR-1158: the phone sheet moves to the browse surface, and follows the viewer there (2026-08-25)
+
+**Context.** `SiteHeader` renders on every `/discover/*` and `/help` page — the public browse
+surface the sitemap advertises — and its `PrimaryNav` is `hidden md:block`. Its own comment said
+so plainly: *"Desktop only; mobile relies on the prominent CTA + footer nav until a drawer
+ships."* So below `md`, a visitor to any of those pages had a wordmark, a search glyph and a CTA,
+and no header navigation whatsoever. [ADR-1118](DECISIONS.md) fixed the same shape one component
+over, on `MarketingHeader`, and deliberately did not bundle this: a different component with its
+own header-fit contract and its own visual baselines.
+
+**Decision.** Reuse the sheet rather than build a second one. `MarketingMobileMenu` is already a
+pure projection of a `ResolvedMenu`, and `SiteHeader` already fetches the same `headerMenu`, so
+the change is a mount plus two optional props. `ViewerMobileMenu` joins `viewer-chrome.tsx` for
+the client-auth path, mirroring `ViewerPrimaryNav` exactly — same `useViewer` hook, same
+`viewerRoleFor` collapse — so on a statically-rendered `/discover` page the sheet and the bar
+agree about who is looking once `/api/viewer` answers, and agree before it too, both rendering
+the anonymous view that a crawler gets.
+
+**The viewer-aware half is two props, and they stay separate on purpose.** `viewer` gates the nav
+rows; `isAuth` decides only the footer. That mirrors `PrimaryNav`, which already keeps
+`viewerRole` apart from `isAuth`, and the reason is a real case rather than symmetry: a janitor
+previewing as a visitor carries `viewerRole: 'visitor'` **and** `isAuth: true`, and both readings
+are correct at once — hide what a visitor cannot see, and do not offer to sign in someone who
+already is. Collapsing them into one flag makes one of those two wrong.
+
+**A second defect the row did not name.** The sheet's footer was an unconditional *"Sign in"* +
+join-the-beta pair. On `MarketingHeader` that is right — the marketing chrome is always
+logged-out for menu purposes. On `SiteHeader` it is not: `/discover` is an ordinary destination
+for a signed-in member, and the pair would have invited that member to sign in, and then to join
+a beta they are already in. That is copy that tells a member the product does not know them. The
+footer now branches on `isAuth`; the signed-in arm is one *"Your feed"* link.
+
+**Consequences.** `MarketingHeader`'s call site is byte-for-byte unchanged — both new props are
+optional and default to the visitor reading it always had — and its existing test pins that call
+by exact string. **That test passing unmodified is the proof this change is additive**, which is
+worth more than a new assertion would have been.
+
+The mobile search glyph stays, deliberately: search is the other half of a browse surface, and a
+nav sheet is not a search field. Both controls are `shrink-0` and the wordmark is this header's
+one flexible child, which is the same fit contract `MarketingHeader` states and what keeps the
+added button off the right edge below ~500px.
+
+Twelve cases in `marketing-mobile-menu.test.ts`. The behavioural arm drives `sheetGroups` with a
+member-gated menu and asserts a visitor sees `['/pub']` where a member sees `['/pub','/mem']`.
+The wiring arms are source-shape, for the reason already written above `sheetGroups`: the sheet
+only mounts on a tap and `pnpm test` has no browser — and **both defects ADR-1118 found were
+wiring**, a prop that was never passed and a projection that dropped children. Source-shape is
+the weaker instrument, and it is the one that would have caught those two.
+
+`/discover` is a photographed `@visual` route, so its four mobile baselines move by exactly one
+hamburger button. Desktop is untouched (`md:hidden`), and so is the member shell — `AppShell`,
+not `SiteHeader`, carries the authenticated app — so this is a public-surface recapture:
+`update_baselines` alone, never `capture_shell`.

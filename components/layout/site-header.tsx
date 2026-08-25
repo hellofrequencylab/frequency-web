@@ -3,11 +3,12 @@ import { Search } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { UserMenu, AuthButtons, type UserMenuProfile } from './user-menu'
 import { PrimaryNav } from './primary-nav'
-import { ViewerAuthSlot, ViewerLink, ViewerPrimaryNav } from './viewer-chrome'
+import { ViewerAuthSlot, ViewerLink, ViewerMobileMenu, ViewerPrimaryNav } from './viewer-chrome'
 import { getMenu, getMenuSettings } from '@/lib/menus/read'
 import { viewerRoleFor } from '@/components/layout/menu-role'
 import { asWebRole, type CommunityRole } from '@/lib/core/roles'
 import { Wordmark } from '@/components/layout/wordmark'
+import { MarketingMobileMenu } from '@/components/layout/marketing-mobile-menu'
 
 // ── Public site header ────────────────────────────────────────────────────────
 // Used on the landing page and any future public-facing pages.
@@ -141,8 +142,8 @@ export async function SiteHeader({ profile: profileProp, variant = 'light', auth
         </Link>
       )}
 
-      {/* Header mega-menu (from the `header` surface). Desktop only; mobile relies on
-          the prominent CTA + footer nav until a drawer ships. */}
+      {/* Header mega-menu (from the `header` surface). Desktop only — `hidden md:block`;
+          the phone sheet at the end of this header carries the same menu below md. */}
       {clientAuth ? (
         <ViewerPrimaryNav
           variant={isDark ? 'dark' : 'light'}
@@ -206,6 +207,28 @@ export async function SiteHeader({ profile: profileProp, variant = 'light', auth
         <UserMenu profile={profile} menu={profileMenu} />
       ) : (
         <AuthButtons dark={isDark} />
+      )}
+
+      {/* Phone navigation (LIVE-110). PrimaryNav above is `hidden md:block`, so until this
+          landed a visitor on ANY /discover/* or /help page — the public browse surface the
+          sitemap advertises — had a wordmark, a search glyph and a CTA below md, and no header
+          navigation whatsoever. This is the SAME sheet MarketingHeader renders, taking the SAME
+          `headerMenu` PrimaryNav takes, so an operator's edit in the Menu manager reaches the
+          bar and the phone together; the parallel-list version of that mistake is what ADR-1118
+          fixed one component over.
+          The mobile search glyph deliberately STAYS: search is the other half of a browse
+          surface, and the sheet is a nav list, not a search field. Both are `shrink-0`, and the
+          wordmark is this header's one flexible child — the same fit contract MarketingHeader
+          states, which is what keeps the added button from riding off the right edge. */}
+      {clientAuth ? (
+        <ViewerMobileMenu light={!isDark} headerMenu={headerMenu} />
+      ) : (
+        <MarketingMobileMenu
+          light={!isDark}
+          headerMenu={headerMenu}
+          viewer={{ viewerRole }}
+          isAuth={isAuth}
+        />
       )}
     </header>
   )
