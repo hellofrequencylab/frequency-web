@@ -12,6 +12,7 @@ import {
   Button,
 } from '@/components/marketing/marketing-ui'
 import { DetailTemplate } from '@/components/templates'
+import { resolveDetailHero } from '@/lib/layout/detail-hero'
 import { JsonLd } from '@/components/json-ld'
 import { breadcrumbSchema, eventListSchema } from '@/lib/jsonld'
 import { SITE_NAME, BETA_CTA_HREF, BETA_CTA_LABEL } from '@/lib/site'
@@ -85,6 +86,10 @@ export default async function CityCategoryHubPage({ params }: Params) {
     (h) => h.citySlug === hub.citySlug && h.category.slug !== cat.slug,
   )
 
+  // The standard entity cover (PROG-P5, ADR-1136): the operator's /discover/events Settings
+  // image stands behind every city-category hub; a hub has no cover of its own.
+  const hero = await resolveDetailHero(path)
+
   return (
     <div className="relative overflow-hidden max-w-3xl mx-auto px-6 py-20 sm:py-24">
       <FrequencyArcs
@@ -104,6 +109,7 @@ export default async function CityCategoryHubPage({ params }: Params) {
       />
 
       <DetailTemplate
+        {...hero}
         back={{ href: '/discover/events', label: 'Events' }}
         title={
           <>

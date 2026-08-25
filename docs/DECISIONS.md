@@ -30039,3 +30039,84 @@ in the tree said so, because the artifact that would have said so — a gate cov
 surface — was the missing thing. **An exemption is a claim, and an unmeasured exemption is a claim
 nobody has checked.** This one had been true once and had quietly stopped being true, and the only
 way to find out was to lift it and look.
+
+---
+
+## ADR-1136: The 26 adoptable bands adopt, and "9 bespoke stanzas" turns out to be 5 stanzas plus 4 compositions (2026-08-25)
+
+**Status:** accepted · advances `PROG-P5` · builds on [ADR-1117](#adr-1117) (the resolver) ·
+the detail-side echo of PROG-P4's `resolveMarketHero` (branch `theme/p4-browse-hero`; its ADR lands
+with that branch) · extends [ADR-793](#adr-793), [ADR-411](#adr-411)
+
+### The premise, re-tested first (AGENTS.md, [ADR-1082](#adr-1082))
+
+The census held: re-counted by render site on 2026-08-25 against `main` (fcb5348c4) there are still
+**30 live `DetailTemplate` surfaces** — 28 direct, 2 through `EventDetailTemplate`, skeletons and
+templates excluded — with 4 already on `resolveDetailHero` and 26 remaining, exactly as the row
+recorded them a day earlier.
+
+What did NOT survive contact is the row's split of the remainder. It said 17 straightforward + "9
+bespoke-lockup surfaces" — implying nine pages carrying the same hand-rolled resolution stanza.
+Read one by one, the nine are **two different things**:
+
+- **5 carry the stanza** the resolver was extracted from — `resolveHeaderElement` with identity
+  defaults, an entity cover + focal point, a stored height honoured only when the host chose one:
+  `/channels/<id>`, `/circles/<slug>`, `/journeys/<slug>`, `/journeys/<slug>/learn`,
+  `/people/<handle>`. Retiring those five stanzas is an adoption: the lockup (eyebrow, leading
+  chip, on-cover actions) stays exactly where it was; only the resolution moves.
+- **4 hand-roll a bespoke cover NODE, not the stanza**: `/circles/starter/<slug>` renders a
+  generated `TemplateCover`; the Space profile layout has its own Header/Hero size vocabulary that
+  never consults the header element; the two event pages compose a multi-source event-media ladder
+  (uploaded cover → scanned poster → crop) with no element resolve at all. There is nothing there
+  for the resolver to retire — folding each one is the behaviour change ADR-1117 already said needs
+  its own PR with screenshots.
+
+### What shipped
+
+**1. `resolveIdentityHero` — the identity twin, in the same module.** The five stanza pages share
+the ladder but not the composition: their `<h1>` rides the band, so they need `PageHero` props
+(`variant · size · overlayStyle · coverImage · coverFocus`), not `DetailTemplate` cover props.
+`lib/layout/detail-hero.ts` gains `asIdentityHero` (pure) + `resolveIdentityHero` (async) — the
+same four rungs through the same `pickDetailHero`, the element asked as an `identity` surface with
+the caller's own defaults (a profile's scrim-off, a Journey author's picked overlay), and ONE
+semantic difference: the empty ladder yields `null` (the gradient), never "no band", because a band
+that carries the `<h1>` must exist — the index side's rule, inherited for the index side's reason.
+The section `tail` does not apply. This is PROG-P4's move ("one ladder over both browse
+compositions") replayed on the detail side: one ladder over both entity compositions.
+
+**2. All five stanza pages adopted it**, each deleting its hand-rolled copy. The Circle's TOTAL
+None/Shade/Blend overlay rides as `entityOverlayStyle` (still beating the element, as its comment
+demands); the Channel's and Circle's null-unless-chosen stored heights ride as `entitySize`; the
+Journey's and profile's author-picked overlays ride as element *defaults* (still beaten by operator
+masters). Zero pixels move: every input reaches `PageHero` through the same precedence it had.
+
+**3. The 17 straightforward sites adopted `resolveDetailHero`** — including the two client islands
+(`/connections/<id>`, `/admin/crm/pipeline/<id>`), whose SERVER pages resolve the bag and hand it
+down as a prop, and `VeraProfile`, which became an async server component. One page gains a real
+rung 1: `/discover/journeys/<slug>` passes `journey_plans.cover_image` + `cover_focus`, so a
+published Journey's photo now shows on its public twin (the same win ADR-1117 shipped for
+practices).
+
+**4. Fourteen new `DETAIL_HERO_DEFAULTS` rows, every one `image: null` + `tail: 'none'`** — pinned
+by a unit test. No section cover was invented (the task's own rule: a null tail is a result). What
+a row buys is rung 2: the operator's Settings header image for `/channels`, `/circles`,
+`/journeys`, `/people`, `/hubs`, `/nexuses`, `/partners`, `/store`, `/nearby`, `/help`,
+`/lead/training-library`, `/discover/journeys`, `/discover/partners`, `/discover/events` stops
+being dropped on the floor — the detail-side echo of the PROG-P4 finding, at detail scale. Four
+surfaces stay deliberately unmapped as private/operator work surfaces (`/support`, `/connections`,
+`/admin/crm/pipeline`, the Space podcast show, whose square artwork is identity, not a cover);
+their adoptions are visual no-ops by the map's own safety property.
+
+### What this changes on screen
+
+Today, almost nothing — by construction. `page_settings` holds one header image in production
+(`/crew`, a Dashboard). The one visible movement is `/discover/journeys/<slug>` for Journeys whose
+`cover_image` is set: they gain the standard 16:6 cover band above the context header. Everything
+else renders byte-identical until an operator uploads a section image — at which point 26 entity
+surfaces honour it instead of ignoring it.
+
+### The count going forward
+
+26 of 30 render sites resolve through the one module (21 standard + 5 identity). The remaining 4
+are not stragglers of THIS grammar but candidates for their own: each is a bespoke cover
+composition whose folding changes behaviour, counted on `PROG-P5` as such.

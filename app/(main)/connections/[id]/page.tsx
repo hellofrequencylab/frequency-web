@@ -11,6 +11,7 @@ import { getProfileSummaries } from '@/lib/connections/matching'
 import { resolveTierTeaseGate } from '@/lib/pricing/tease-gate'
 import { listOperatedSpaces } from '@/lib/spaces/operated'
 import { Detail } from './detail'
+import { resolveDetailHero } from '@/lib/layout/detail-hero'
 
 export const dynamic = 'force-dynamic'
 
@@ -38,11 +39,15 @@ export default async function ProfileDetailPage({ params }: { params: Promise<{ 
   // If this captured person became a member, show the caller's private shared
   // history with them (gated behind resonance, like the rest of P3). A non-member
   // contact has no Frequency event history, so we skip it entirely.
-  const [settings, linkedId, reminders, interactions] = await Promise.all([
+  const [settings, linkedId, reminders, interactions, hero] = await Promise.all([
     getConnectionSettings(),
     linkedProfileId(ownerId, id),
     listRemindersForContact(ownerId, id),
     listContactInteractions({ ownerProfileId: ownerId, subjectKind: 'network_contact', subjectId: id }),
+    // The standard entity cover (PROG-P5, ADR-1136), resolved here because Detail is a client
+    // island. /connections is deliberately UNMAPPED (a private work surface), so this is a no-op
+    // until a section row exists.
+    resolveDetailHero(`/connections/${id}`),
   ])
   // The unified CRM timeline for this contact (ADR-372): logged touches (follow-ups today,
   // email/sms/calls as later phases wire their adapters). Notes keep their own section, so they
@@ -68,7 +73,7 @@ export default async function ProfileDetailPage({ params }: { params: Promise<{ 
     // Focus surface (page-chrome.ts → 'none'): centered, no rail. The Detail shell owns the
     // header band + the single back-link; the page never hand-rolls chrome (PAGE-FRAMEWORK §8).
     <div className="mx-auto max-w-2xl">
-      <Detail initial={data} reminders={reminders} timeline={timeline} timelineEntries={timelineEntries} back={{ href: '/connections', label: 'Profiles' }} crmTease={crmTease} operatedSpaces={operatedSpaces} />
+      <Detail hero={hero} initial={data} reminders={reminders} timeline={timeline} timelineEntries={timelineEntries} back={{ href: '/connections', label: 'Profiles' }} crmTease={crmTease} operatedSpaces={operatedSpaces} />
       {/* Manual contact ↔ member link — the path for when the auto detector can't
           fire (card email differs from signup email, no phone on the profile). */}
       <LinkMemberCard contactId={id} contactName={data.contact.displayName} linked={linked} />

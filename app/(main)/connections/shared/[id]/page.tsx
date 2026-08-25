@@ -7,6 +7,7 @@ import { canViewLead } from '@/lib/crm/visibility'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getInitials } from '@/lib/utils'
 import { DetailTemplate } from '@/components/templates'
+import { resolveDetailHero } from '@/lib/layout/detail-hero'
 
 export const dynamic = 'force-dynamic'
 
@@ -36,6 +37,10 @@ export default async function SharedContactPage({ params }: { params: Promise<{ 
   )
   if (!decision.visible) notFound()
 
+  // The standard entity cover (PROG-P5, ADR-1136). /connections is deliberately UNMAPPED — a
+  // shared contact is a private work surface — so this resolves to no cover until a row exists.
+  const hero = await resolveDetailHero(`/connections/shared/${id}`)
+
   const name = c.displayName ?? 'Unnamed contact'
   const website = c.website ? (c.website.startsWith('http') ? c.website : `https://${c.website}`) : null
   const hasLinks = website || c.socials.instagram || c.socials.linkedin || c.socials.x
@@ -45,6 +50,7 @@ export default async function SharedContactPage({ params }: { params: Promise<{ 
   return (
     <div className="mx-auto max-w-2xl">
       <DetailTemplate
+        {...hero}
         title={
           <span className="inline-flex items-center gap-3 align-middle">
             <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-pill bg-surface-elevated text-body font-semibold text-muted">

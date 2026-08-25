@@ -3,6 +3,7 @@ import { getCallerProfile } from '@/lib/auth'
 import { getTicketForViewer } from '@/lib/support/store'
 import { relativeTime } from '@/lib/utils'
 import { DetailTemplate } from '@/components/templates'
+import { resolveDetailHero } from '@/lib/layout/detail-hero'
 import { TicketMessages } from '@/components/support/ticket-messages'
 import { TicketContext } from '@/components/support/ticket-context'
 import { TicketReply } from '@/components/support/ticket-reply'
@@ -19,9 +20,15 @@ export default async function SupportTicketPage({ params }: { params: Promise<{ 
   const ticket = await getTicketForViewer(id, me.id)
   if (!ticket) notFound()
 
+  // The standard entity cover (PROG-P5, ADR-1136). /support is deliberately UNMAPPED in
+  // DETAIL_HERO_DEFAULTS — a support ticket is a private work surface, not a section an operator
+  // decorates — so this resolves to no cover and stays byte-identical until a row says otherwise.
+  const hero = await resolveDetailHero(`/support/${id}`)
+
   return (
     <div className="mx-auto w-full max-w-3xl">
       <DetailTemplate
+        {...hero}
         title={ticket.subject}
         subtitle={`${TYPE_LABELS[ticket.type]} · #${ticket.ref} · opened ${relativeTime(ticket.createdAt)}`}
         badges={

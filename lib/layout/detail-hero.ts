@@ -2,7 +2,7 @@ import 'server-only'
 
 import { getPageHeaderImage, getPageHeaderFocus } from '@/lib/page-settings/store'
 import { resolveHeaderElement } from '@/lib/elements/header'
-import type { PageHeroSize, HeroOverlayStyle } from '@/components/templates/page-hero'
+import type { PageHeroSize, PageHeroVariant, HeroOverlayStyle } from '@/components/templates/page-hero'
 
 // DETAIL HERO — the ONE resolver for a single-entity page's cover band (PROG-P5, ADR-1117,
 // PAGE-FRAMEWORK §8.5). The DETAIL-side twin of `lib/layout/index-hero.ts` (PROG-P4).
@@ -84,6 +84,27 @@ export const DETAIL_HERO_DEFAULTS: readonly DetailHeroDefault[] = [
   // Circles, public: the public Circle read exposes no image at all, so the SECTION cover is what
   // gives every public Circle page a band — this is the rung-3 row, in production, on purpose.
   { prefix: '/discover/circles', image: '/images/site/group-of-friends.jpg', size: 'standard', tail: 'none' },
+  // ── THE 2026-08-25 ADOPTION (ADR-1136) ───────────────────────────────────────────────────────
+  // Every row below carries `image: null` + `tail: 'none'` ON PURPOSE: no shipped section cover is
+  // invented for these surfaces, so joining the map changes ZERO pixels today. What a row buys is
+  // rung 2 — the operator's Settings › Basics header image for the section stops being dropped on
+  // the floor (the detail-side echo of PROG-P4's `resolveMarketHero` finding, on branch
+  // theme/p4-browse-hero: an upload that saves and never shows is a bug, not a default). A section that later earns a real default cover edits its row's `image`;
+  // a section that earns in-place cover editing flips its `tail`.
+  { prefix: '/channels', image: null, size: 'standard', tail: 'none' },
+  { prefix: '/circles', image: null, size: 'standard', tail: 'none' },
+  { prefix: '/journeys', image: null, size: 'standard', tail: 'none' },
+  { prefix: '/people', image: null, size: 'standard', tail: 'none' },
+  { prefix: '/hubs', image: null, size: 'standard', tail: 'none' },
+  { prefix: '/nexuses', image: null, size: 'standard', tail: 'none' },
+  { prefix: '/partners', image: null, size: 'standard', tail: 'none' },
+  { prefix: '/store', image: null, size: 'standard', tail: 'none' },
+  { prefix: '/nearby', image: null, size: 'standard', tail: 'none' },
+  { prefix: '/help', image: null, size: 'standard', tail: 'none' },
+  { prefix: '/lead/training-library', image: null, size: 'standard', tail: 'none' },
+  { prefix: '/discover/journeys', image: null, size: 'standard', tail: 'none' },
+  { prefix: '/discover/partners', image: null, size: 'standard', tail: 'none' },
+  { prefix: '/discover/events', image: null, size: 'standard', tail: 'none' },
 ] as const
 
 /** The fallback for a route no row covers: NO cover, at the shipped standard height. */
@@ -223,6 +244,118 @@ export async function resolveDetailHero(
         operatorImage: null,
         operatorFocus: null,
         header: { height: defaults.height, overlayStyle: 'shadow' },
+      },
+      opts,
+    )
+  }
+}
+
+// ── THE IDENTITY TWIN (ADR-1136) ───────────────────────────────────────────────────────────────
+// The identity-lockup pages — /channels/<id>, /circles/<slug>, /journeys/<slug>(+ /learn),
+// /people/<handle> — do not take the standard cover: their <h1> RIDES the band inside an
+// identity-variant `PageHero` passed through `DetailTemplate`'s `hero` escape hatch, with an
+// eyebrow, a leading chip and (on some) on-cover actions the minimal cover has no slot for. What
+// they DO share with every other entity page is the resolution stanza this module exists to hold:
+// resolve the header element for layout/height/overlay, read the entity's cover + focal point,
+// honour a stored height only when the host actually chose one. Each of those pages carried its
+// own copy of that stanza; `resolveIdentityHero` is the one copy, exactly as PROG-P4's
+// `resolveMarketHero` is for the editable index. Same ladder, `PageHero` prop names.
+//
+// ONE SEMANTIC DIFFERENCE from the standard cover, and it is the index side's reason: the identity
+// band CARRIES the page's `<h1>`, so it must always exist. Its empty-ladder result is therefore
+// `null` — PageHero's neutral gradient — never "no band", and the section `tail` does not apply.
+
+/** What an identity-lockup page can say about its entity. The four `entity*` fields mean exactly
+ *  what they mean on `DetailHeroOptions`; `defaults` carries the SURFACE's own element defaults
+ *  (a profile ships scrim-off; a Journey offers its author's picked overlay), which an operator
+ *  master value still overrides — as distinct from `entityOverlayStyle`, which is the entity's own
+ *  TOTAL choice and beats the element (the Circle None/Shade/Blend control). */
+export interface IdentityHeroOptions {
+  entityImage?: string | null
+  entityFocus?: string | null
+  entitySize?: PageHeroSize | null
+  entityOverlayStyle?: HeroOverlayStyle | null
+  fallbackImage?: string | null
+  /** Override the map's band height as this surface's element default. */
+  size?: PageHeroSize
+  /** Surface defaults offered to the header element (still beaten by operator masters). */
+  defaults?: { scrim?: boolean; overlayStyle?: HeroOverlayStyle }
+  spaceId?: string | null
+}
+
+/** The spreadable `PageHero` prop bag for an identity-lockup band. The page keeps its own lockup
+ *  (eyebrow / leading / title / subtitle / actions) — this bag is only the resolved chrome. */
+export interface IdentityHeroProps {
+  variant: PageHeroVariant
+  size: PageHeroSize
+  overlayStyle: HeroOverlayStyle
+  coverImage: string | null
+  coverFocus: string | null
+}
+
+/** PURE: the same four-rung image ladder as `pickDetailHero`, folded into `PageHero` prop names,
+ *  with the empty-ladder result forced to `null` (the gradient — an identity band always exists).
+ *  Exported for the unit test. */
+export function asIdentityHero(
+  route: string,
+  inputs: {
+    operatorImage: string | null
+    operatorFocus: string | null
+    header: { layout: PageHeroVariant; height: PageHeroSize; overlayStyle: HeroOverlayStyle }
+  },
+  opts: IdentityHeroOptions = {},
+): IdentityHeroProps {
+  const bag = pickDetailHero(route, inputs, {
+    entityImage: opts.entityImage,
+    entityFocus: opts.entityFocus,
+    entitySize: opts.entitySize,
+    entityOverlayStyle: opts.entityOverlayStyle,
+    fallbackImage: opts.fallbackImage,
+  })
+  return {
+    variant: inputs.header.layout,
+    size: bag.coverSize,
+    overlayStyle: bag.coverOverlayStyle,
+    coverImage: bag.coverImage ?? null,
+    coverFocus: bag.coverFocus,
+  }
+}
+
+/** Resolve the band for an identity-lockup entity page: the same reads as `resolveDetailHero`,
+ *  but the element is asked as an IDENTITY surface (and may carry the surface's own scrim /
+ *  overlay defaults), and the answer comes back in `PageHero`'s vocabulary. FAIL-SAFE. */
+export async function resolveIdentityHero(
+  route: string,
+  opts: IdentityHeroOptions = {},
+): Promise<IdentityHeroProps> {
+  const section = detailHeroDefaultsFor(route)
+  const defaults = {
+    layout: 'identity' as const,
+    height: opts.size ?? section.size,
+    ...(opts.defaults?.scrim !== undefined ? { scrim: opts.defaults.scrim } : {}),
+    ...(opts.defaults?.overlayStyle ? { overlayStyle: opts.defaults.overlayStyle } : {}),
+  }
+  try {
+    const wantsOperator = section.section !== null && !opts.entityImage
+    const [operatorImage, header] = await Promise.all([
+      wantsOperator ? getPageHeaderImage(section.section as string, opts.spaceId) : Promise.resolve(null),
+      resolveHeaderElement({ defaults, ...(opts.spaceId ? { spaceId: opts.spaceId } : {}) }),
+    ])
+    const operatorFocus = operatorImage
+      ? await getPageHeaderFocus(section.section as string, opts.spaceId)
+      : null
+    return asIdentityHero(route, { operatorImage, operatorFocus, header }, opts)
+  } catch {
+    return asIdentityHero(
+      route,
+      {
+        operatorImage: null,
+        operatorFocus: null,
+        header: {
+          layout: defaults.layout,
+          height: defaults.height,
+          overlayStyle: opts.defaults?.overlayStyle ?? (opts.defaults?.scrim === false ? 'none' : 'shadow'),
+        },
       },
       opts,
     )

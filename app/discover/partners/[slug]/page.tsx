@@ -6,6 +6,7 @@ import { getPartnerView, listActivePartners } from '@/lib/partners/read'
 import { SignInCta } from '@/components/discover/cards'
 import { ShareButton } from '@/components/discover/share-button'
 import { DetailTemplate } from '@/components/templates'
+import { resolveDetailHero } from '@/lib/layout/detail-hero'
 import { SITE_NAME } from '@/lib/site'
 import { JsonLd } from '@/components/json-ld'
 import { localBusinessSchema, breadcrumbSchema } from '@/lib/jsonld'
@@ -50,6 +51,10 @@ export default async function PublicPartnerPage({
   const partner = await getPartnerView(slug)
   if (!partner) notFound()
 
+  // The standard entity cover (PROG-P5, ADR-1136): the public twin of /partners/<slug>, so the
+  // same ladder — the operator's /discover/partners Settings image stands behind every partner.
+  const hero = await resolveDetailHero(`/discover/partners/${slug}`)
+
   return (
     <div className="mx-auto max-w-3xl px-6 py-20 sm:py-24">
       <JsonLd
@@ -72,6 +77,7 @@ export default async function PublicPartnerPage({
       </Link>
 
       <DetailTemplate
+        {...hero}
         title={partner.name}
         actions={
           <ShareButton

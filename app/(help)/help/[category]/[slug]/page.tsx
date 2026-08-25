@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation'
 import { getAllArticles, getArticle, helpHref } from '@/lib/help/content'
 import { HelpMarkdown } from '@/components/help/help-markdown'
 import { DetailTemplate } from '@/components/templates'
+import { resolveDetailHero } from '@/lib/layout/detail-hero'
 import { JsonLd } from '@/components/json-ld'
 import { articleSchema, breadcrumbSchema } from '@/lib/jsonld'
 
@@ -48,6 +49,10 @@ export default async function HelpArticlePage({ params }: Params) {
   const prev = idx > 0 ? cat.articles[idx - 1] : null
   const next = idx < cat.articles.length - 1 ? cat.articles[idx + 1] : null
 
+  // The standard entity cover (PROG-P5, ADR-1136): the operator's /help Settings image, or
+  // nothing. Help articles carry no cover of their own.
+  const hero = await resolveDetailHero(helpHref(cat.slug, article.slug))
+
   return (
     <>
     <JsonLd
@@ -66,6 +71,7 @@ export default async function HelpArticlePage({ params }: Params) {
       ]}
     />
     <DetailTemplate
+      {...hero}
       title={article.title}
       subtitle={
         <>

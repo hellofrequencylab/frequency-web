@@ -5,6 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { HierarchyBreadcrumb } from '@/components/hierarchy/breadcrumb'
 import { StatusBadge } from '@/components/groups/status-badge'
 import { DetailTemplate } from '@/components/templates/detail-template'
+import { resolveDetailHero } from '@/lib/layout/detail-hero'
 import { InlineText } from '@/components/admin/inline/inline-text'
 import { OpenAdminBarButton } from '@/components/admin/open-admin-bar-button'
 import { getNexusCapabilities } from '@/lib/core/load-capabilities'
@@ -63,7 +64,12 @@ export default async function NexusPage({
   if (!rawNexus) notFound()
   const nexus = rawNexus as unknown as NexusDetail
 
-  const caps = await getNexusCapabilities(nexus.id)
+  // Caps + the standard entity cover (PROG-P5, ADR-1136) in one round-trip. A Nexus carries no
+  // cover column, so the ladder is the operator's /nexuses Settings image or nothing.
+  const [caps, hero] = await Promise.all([
+    getNexusCapabilities(nexus.id),
+    resolveDetailHero(`/nexuses/${slug}`),
+  ])
   const canManage = caps.has('nexus.manage')
 
   // Scoped Insight surface (P1.6 adoption, ADR-225): the IN-SCOPE matrix question, so a
@@ -110,6 +116,7 @@ export default async function NexusPage({
 
       {/* ── Header (DetailTemplate) ─────────────────── */}
       <DetailTemplate
+        {...hero}
         title={
           canManage ? (
             <InlineText
