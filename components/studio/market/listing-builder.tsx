@@ -16,6 +16,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { MultiImageUpload } from '@/components/ui/multi-image-upload'
 import { ListingOwnerControls } from '@/components/market/listing-owner-controls'
 import { ListingShareButton } from '@/components/marketplace/listing-share-button'
+import { Button } from '@/components/ui/button'
 
 
 // Best-practice detail fields a seller can add with one tap. A field with `options` edits its value
@@ -98,9 +99,9 @@ export function ListingBuilder(props: ListingBuilderProps) {
       <a href={`/classifieds/${props.id}`} className="inline-flex items-center gap-1.5 rounded-control border border-border px-3 py-2 text-body-sm font-medium text-text transition-colors hover:bg-surface-elevated">
         <Eye className="h-4 w-4" /> View
       </a>
-      <button type="button" onClick={close} className="inline-flex items-center gap-1.5 rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover">
+      <Button type="button" onClick={close}>
         Done
-      </button>
+      </Button>
     </StudioFooter>
   )
 

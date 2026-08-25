@@ -9,6 +9,7 @@
 
 import type { CSSProperties } from 'react'
 import { ImageField } from './image-field'
+import type { AssetValue } from '@/lib/library/asset-ref'
 import { SPOTLIGHT_FONTS, type SpotlightFontId } from '@/lib/spotlight/theme'
 
 // ── Header font (per-header display face) ─────────────────────────────────────
@@ -88,10 +89,12 @@ export const alignField = {
   ],
 }
 
-// Image picker (upload / pick / paste URL) — the project's custom control.
+// Image picker (the Loom is the only way in — no file dialog, no paste-URL box; owner
+// directive). Stores an AssetRef ({ assetId, url }) for a library pick, a bare string for
+// legacy values (ADR-1130); renderers always receive the URL string via the BlockRender walk.
 export const imgField = {
   type: 'custom' as const,
-  render: ({ value, onChange }: { value?: string; onChange: (v: string) => void }) => (
+  render: ({ value, onChange }: { value?: AssetValue; onChange: (v: AssetValue) => void }) => (
     <ImageField value={value} onChange={onChange} />
   ),
 }

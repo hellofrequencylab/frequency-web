@@ -7,6 +7,7 @@ import { setPersona } from './actions'
 import { isError } from '@/lib/action-result'
 import type { PartnerPersona } from '@/lib/core/access-matrix'
 import type { PersonaState } from '@/lib/personas'
+import { Button } from '@/components/ui/button'
 
 // The member's claim/release control. Reflects the verification ladder:
 //   none/suspended → "Claim"; claimed → "Pending review" (+ release); verified/active
@@ -25,14 +26,13 @@ export function PersonaToggle({ persona, state }: { persona: PartnerPersona; sta
 
   if (!held) {
     return (
-      <button
+      <Button
         onClick={() => act(true)}
         disabled={isPending}
-        className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
       >
         {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
         Claim
-      </button>
+      </Button>
     )
   }
 

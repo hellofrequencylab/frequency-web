@@ -24,6 +24,7 @@ import { loomScopes, loomScope as loomScopeAction, loomImages, uploadLoomImage, 
 import { fetchSiteIcons, type SiteIcon } from '@/lib/loom/site-icons-client'
 import { looksLikeImage } from '@/lib/library/upload-kinds'
 import { prepareImageForUpload, SERVER_MAX_BYTES } from '@/lib/library/image-shrink'
+import { appendImageDescriptor, describeImage } from '@/lib/library/image-describe'
 import type { LoomPickAsset } from '@/lib/library/store'
 import { Input } from '@/components/ui/field'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -46,11 +47,16 @@ const KINDS_FOR_VIEW: Record<'images' | 'icons' | 'elements', string[]> = {
   elements: ['image', 'element'],
 }
 
+/** What an asset-aware pick hands the caller: the URL plus its library reference when one exists. */
+export type LoomAssetPick = { url: string; assetId?: string; alt?: string | null }
+
 export function LoomPicker({
   open,
   onClose,
   onSelect,
   onSelectMany,
+  onSelectAsset,
+  onSelectManyAssets,
   multiple = false,
   title = 'Choose an image',
   scopeKey,
@@ -62,6 +68,12 @@ export function LoomPicker({
   onSelect?: (url: string) => void
   /** Multi-select (with `multiple`): called with all chosen URLs when the user confirms. */
   onSelectMany?: (urls: string[]) => void
+  /** Single-select WITH the reference (ADR-1130): the URL plus, for a real library row, its
+   *  `assetId` — so the caller can store an AssetRef ({ assetId, url }) instead of a bare URL.
+   *  Fires alongside `onSelect`; a house site icon (no catalog row) arrives without an id. */
+  onSelectAsset?: (pick: LoomAssetPick) => void
+  /** Multi-select twin of `onSelectAsset`; fires alongside `onSelectMany` on confirm. */
+  onSelectManyAssets?: (picks: LoomAssetPick[]) => void
   /** Let the user pick several images at once (a confirm bar replaces click-to-close). For galleries. */
   multiple?: boolean
   title?: string
@@ -174,8 +186,10 @@ export function LoomPicker({
   // The grid's tiles, normalized across sources. The Icons view appends the house SITE icons (SVG data
   // URLs) after any uploaded icons; every other view is just its assets. `contain` = pad + object-contain
   // (glyphs), else object-cover (photos). Value is what gets picked/stored (a URL or a data URL).
-  const tiles: { key: string; value: string; label: string; src: string; contain: boolean; generated: boolean }[] = [
-    ...assets.map((a) => ({ key: a.id, value: a.url, label: a.title, src: a.url, contain: a.kind === 'icon', generated: a.generated })),
+  // `assetId` rides only on real library rows (an AssetRef the caller can store, ADR-1130);
+  // a house SITE icon is a data URL with no catalog row, so it stays reference-less.
+  const tiles: { key: string; value: string; label: string; src: string; contain: boolean; generated: boolean; assetId?: string; alt?: string | null }[] = [
+    ...assets.map((a) => ({ key: a.id, value: a.url, label: a.title, src: a.url, contain: a.kind === 'icon', generated: a.generated, assetId: a.id, alt: a.alt })),
     ...(activeView === 'icons'
       ? siteIcons.map((s) => ({ key: `site:${s.name}`, value: s.dataUrl, label: s.label, src: s.dataUrl, contain: true, generated: false }))
       : []),
@@ -224,6 +238,12 @@ export function LoomPicker({
           if (file.size > SERVER_MAX_BYTES) { skipped++; continue }
           const fd = new FormData()
           fd.append('file', file)
+          // The BROWSER half of ingest (PROG-D1): a blurhash placeholder, the dominant colours and the
+          // true pre-downscale dimensions. Computed here because it needs decoded pixels, and this
+          // browser has already decoded the file — doing it server-side would mean `sharp` in a seam
+          // that fans out across the route table. Best-effort: `describeImage` returns null rather than
+          // throwing, and `appendImageDescriptor` then adds nothing.
+          appendImageDescriptor(fd, await describeImage(raw))
           // WRAP the server action: a rejection (framework body-limit, transient network error) must show
           // an inline message and let the loop continue — never escape and hang the "Uploading…" spinner.
           let res: Awaited<ReturnType<typeof uploadLoomImage>>
@@ -236,7 +256,7 @@ export function LoomPicker({
           if ('error' in res) { setError(res.error); continue }
           if (!firstUrl) firstUrl = res.url
           setAssets((prev) => [
-            { id: res.id, title: file.name, url: res.url, alt: null, kind: 'image', generated: false, tags: [] },
+            { id: res.id, title: file.name, url: res.url, alt: null, kind: 'image', generated: false, tags: [], category: null },
             ...prev.filter((a) => a.id !== res.id),
           ])
         }
@@ -255,15 +275,34 @@ export function LoomPicker({
 
   if (!open) return null
 
-  const pick = (url: string) => {
+  const pick = (url: string, assetId?: string, alt?: string | null) => {
     if (multiple) {
       setSelected((prev) => (prev.includes(url) ? prev.filter((u) => u !== url) : [...prev, url]))
       return
     }
     onSelect?.(url)
+    // The ASSET pick (ADR-1130): the same choice with its reference attached, so a caller
+    // can store { assetId, url } instead of memorising the URL. A site icon has no row and
+    // arrives reference-less; the caller's assetRefUrl read treats both alike.
+    onSelectAsset?.(assetId ? { url, assetId, alt: alt ?? null } : { url, alt: alt ?? null })
     close()
   }
-  const confirmMany = () => { if (selected.length) onSelectMany?.(selected); close() }
+  const confirmMany = () => {
+    if (selected.length) {
+      onSelectMany?.(selected)
+      if (onSelectManyAssets) {
+        // Selection state is url-keyed (stable across reloads of the grid); map each back to
+        // its tile to recover the reference. A url whose tile scrolled out of the current page
+        // still confirms — it just confirms reference-less, which every reader accepts.
+        const byUrl = new Map(tiles.map((t) => [t.value, t]))
+        onSelectManyAssets(selected.map((url) => {
+          const t = byUrl.get(url)
+          return t?.assetId ? { url, assetId: t.assetId, alt: t.alt ?? null } : { url, alt: null }
+        }))
+      }
+    }
+    close()
+  }
   // Auto width + no-shrink on mobile (the rail is a horizontal scroll strip there); full-width vertical
   // buttons on sm+ (the rail is a left column).
   const rail = 'flex w-auto shrink-0 items-center gap-2 whitespace-nowrap rounded-lg px-2.5 py-2 text-left text-body-sm transition-colors sm:w-full'
@@ -450,7 +489,7 @@ export function LoomPicker({
                           <li key={t.key}>
                             <button
                               type="button"
-                              onClick={() => pick(t.value)}
+                              onClick={() => pick(t.value, t.assetId, t.alt)}
                               title={t.label}
                               aria-pressed={multiple ? on : undefined}
                               className={`group relative block aspect-square w-full overflow-hidden rounded-control border outline-none transition-colors focus-visible:ring-2 focus-visible:ring-primary/50 ${t.contain ? 'bg-surface' : 'bg-canvas'} ${on ? 'border-primary ring-2 ring-primary' : 'border-border hover:border-primary'}`}

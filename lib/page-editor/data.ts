@@ -1,4 +1,5 @@
 import type { Data } from '@/lib/page-editor/types'
+import { refreshAssetRefUrls } from '@/lib/library/resolve-refs'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { loadRootSpaceId } from '@/lib/spaces/store'
 
@@ -121,9 +122,13 @@ export async function getPage(slug: string, spaceId?: string | null): Promise<Pa
 
 // The live document the public site renders, or null (→ legacy fallback).
 // Catches missing-credentials errors at build time so static pages degrade cleanly.
+// AssetRefs are refreshed here (reference → current CDN url, ADR-1130) so a Loom edit
+// that re-points an asset reaches every published page without re-saving documents;
+// the refresh fails open to each ref's cached url, and a ref-free document costs no query.
 export async function getPublishedData(slug: string, spaceId?: string | null): Promise<Data | null> {
   const page = await getPage(slug, spaceId).catch(() => null)
-  return (page?.published_data as Data | null) ?? null
+  const doc = (page?.published_data as Data | null) ?? null
+  return doc ? refreshAssetRefUrls(doc) : null
 }
 
 export async function listPages(spaceId?: string | null): Promise<Record<string, PageRow>> {

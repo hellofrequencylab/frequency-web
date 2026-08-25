@@ -10,8 +10,7 @@ import { UnderlineTabs } from '@/components/ui/underline-tabs'
 import { EmptyState } from '@/components/ui/empty-state'
 import { getLibrary, getMyRatings, typeLabel, hrefFor, type ContentType, type LibraryItem } from '@/lib/library'
 import { resolvePageContent, pageContentMetadata } from '@/lib/page-content'
-import { getPageHeaderImage, getPageHeaderFocus } from '@/lib/page-settings/store'
-import { resolveHeaderElement } from '@/lib/elements/header'
+import { resolveIndexHero } from '@/lib/layout/index-hero'
 import { RateButton, CreateMenu } from './interactive'
 
 export const dynamic = 'force-dynamic'
@@ -63,14 +62,11 @@ export default async function LibraryPage({
 
   // Operator-editable page header (ADR-180) — falls back to the coded defaults.
   const { title, description, heroImage: contentHero, ctaLabel, ctaHref } = await resolvePageContent('/library', CONTENT_FALLBACK)
-  // The uniform overlay Hero Header (the Business Spaces grammar): operator image wins, else a calm
-  // section default so the hero band always renders.
-  const operatorHero = await getPageHeaderImage('/library')
-  const heroImage = operatorHero ?? contentHero ?? '/images/site/community-1.jpg'
-  // The focal point applies only to the operator's own header image (the fallbacks crop centered).
-  const heroFocus = operatorHero ? await getPageHeaderFocus('/library') : null
-  // The operator-tunable header element (ADR-793): resolves to today's overlay/large/scrim-on look.
-  const header = await resolveHeaderElement({ defaults: { layout: 'overlay', height: 'large' } })
+  // The uniform overlay Hero Header, resolved by the ONE browse-hero ladder (lib/layout/index-hero,
+  // PROG-P4): operator Settings image, then the page-content hero, then the '/library' row of
+  // INDEX_HERO_DEFAULTS ('/images/site/community-1.jpg'), then the gradient band. The page-content
+  // hero is passed explicitly because this page has already resolved it for its copy.
+  const hero = await resolveIndexHero('/library', { contentImage: contentHero })
 
   return (
     <IndexTemplate
@@ -80,12 +76,7 @@ export default async function LibraryPage({
         { href: '/network', label: 'Community' },
         { href: '/library', label: 'Library' },
       ]}
-      heroImage={heroImage}
-      heroFocus={heroFocus}
-      heroOverlay
-      heroLayout={header.layout}
-      heroSize={header.height}
-      heroScrim={header.scrim}
+      {...hero}
       action={
         <div className="flex items-center gap-2">
           {/* The two guided create flows (each route carries its own canCreate gate). */}

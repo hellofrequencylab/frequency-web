@@ -36,6 +36,7 @@ import {
   clampSeconds, clampRounds, timerPreview,
   type MovementConfig, type MovementMode, type StrengthPresetKind, type YogaPresetKind,
 } from '@/lib/movement'
+import { Button } from '@/components/ui/button'
 
 // Practice on the Studio shell — entity #2 (ADR-143). Composes the kit (autosave,
 // fields, footer) against the existing practice actions; mirrors the old
@@ -306,13 +307,12 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
       >
         <Eye className="h-4 w-4" /> View
       </a>
-      <button
+      <Button
         type="button"
         onClick={close}
-        className="inline-flex items-center gap-1.5 rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
       >
         Done
-      </button>
+      </Button>
     </StudioFooter>
   )
 
