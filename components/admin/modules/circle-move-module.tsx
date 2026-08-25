@@ -13,6 +13,7 @@ import {
   cancelCircleOfferAction,
   type CircleMoveData,
 } from '@/app/(main)/circles/[slug]/transfer-actions'
+import { Button } from '@/components/ui/button'
 
 // The circle-side "Move this circle" control, mounted in the circle admin rail's Danger section.
 //
@@ -212,14 +213,14 @@ export function CircleMoveModule() {
             <li>The {destination.name} team can manage this circle from then on.</li>
           </ul>
           <div className="flex flex-wrap items-center gap-2 pt-1">
-            <button
+            <Button
+              size="sm"
               type="button"
               onClick={move}
               disabled={pending}
-              className="rounded-control bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
             >
               {pending ? 'Moving…' : 'Move it'}
-            </button>
+            </Button>
             <button
               type="button"
               onClick={() => setConfirming(false)}
@@ -244,14 +245,14 @@ export function CircleMoveModule() {
             <li>You can take the offer back any time before they answer.</li>
           </ul>
           <div className="flex flex-wrap items-center gap-2 pt-1">
-            <button
+            <Button
+              size="sm"
               type="button"
               onClick={sendOffer}
               disabled={pending}
-              className="rounded-control bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
             >
               {pending ? 'Sending…' : 'Send the offer'}
-            </button>
+            </Button>
             <button
               type="button"
               onClick={() => setOfferTo(null)}

@@ -10,6 +10,7 @@ import {
   TICKET_STATUSES, TICKET_PRIORITIES, STATUS_LABELS, PRIORITY_LABELS,
   type TicketStatus, type TicketPriority, type TicketParty,
 } from '@/lib/support/types'
+import { Button } from '@/components/ui/button'
 
 // Staff triage controls for one ticket: status / priority / assignee selects, plus a
 // reply composer that can send a public reply OR file an internal note.
@@ -143,10 +144,10 @@ export function AdminTicketControls({
             {drafting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
             AI draft
           </button>
-          <button type="button" onClick={reply} disabled={pending || !body.trim()} className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50">
+          <Button size="sm" type="button" onClick={reply} disabled={pending || !body.trim()}>
             {pending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
             {internal ? 'Add note' : 'Send reply'}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

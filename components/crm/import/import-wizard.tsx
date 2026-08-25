@@ -28,6 +28,7 @@ import {
 import { isError } from '@/lib/action-result'
 import { TARGET_FIELDS, type ColumnMapping, type MappingChoice, type MergeStrategy, type ParsedSource, type ValidationResult, type PreviewRow, type CommitResult, type ImportTargetKind } from '@/lib/crm/import/types'
 import type { ManagedSpace } from '@/lib/spaces/managed'
+import { Button } from '@/components/ui/button'
 
 const input =
   'w-full rounded-lg border border-border-strong bg-surface px-3 py-2 text-body-sm text-text focus:border-border-strong focus:outline-none focus:ring-1 focus:ring-border-strong/30 disabled:opacity-50'
@@ -565,15 +566,15 @@ export function ImportWizard({
                   placeholder={'Paste names, emails, phone numbers, or a few signature blocks. Vera pulls the contacts out.'}
                   className="resize-y"
                 />
-                <button
+                <Button
+                  size="sm"
                   type="button"
                   onClick={() => void ingest([], pasted)}
                   disabled={busy || !pasted.trim()}
-                  className="inline-flex items-center gap-2 rounded-lg bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
                 >
                   {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
                   {busy ? 'Reading…' : 'Pull out the contacts'}
-                </button>
+                </Button>
               </div>
             )}
           </div>

@@ -7,6 +7,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/field'
 import type { VcardConfig } from '@/lib/vcard'
 import type { ActionResult } from '@/lib/action-result'
+import { Button } from '@/components/ui/button'
 
 // Contact card editor. Reused for self-edit (/codes) and admin edit (QR Studio) via
 // the `onSave` action. Toggle "Save contact" on, fill only the fields to share
@@ -75,14 +76,14 @@ export function VcardEditor({
       )}
 
       <div className="mt-3 flex flex-wrap items-center gap-2">
-        <button
+        <Button
+          size="sm"
           onClick={save}
           disabled={pending}
-          className="inline-flex items-center gap-1.5 rounded-control bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
         >
           {saved ? <Check className="h-3.5 w-3.5" /> : null}
           {pending ? 'Saving…' : saved ? 'Saved' : 'Save card'}
-        </button>
+        </Button>
         {config.enabled && (
           <a
             href={`/people/${handle}/vcard`}
