@@ -1,8 +1,11 @@
 # The Loom — the built-in asset library (DAM)
 
-> **Status: spine shipping.** Catalog ([ADR-478](DECISIONS.md)) + DAM tables
-> ([ADR-480](DECISIONS.md)) are the foundation; the functional phases (D1–D7) are sequenced in
-> [BUILD-LIST.md → The Loom](BUILD-LIST.md). No UI/editor built yet.
+> **This doc explains the Loom; it does not track whether the Loom is done.** Status lives only in
+> [`BUILD-BACKLOG.json`](BUILD-BACKLOG.json) (the `PROG-D*` rows) and, for the phase runway, in
+> [BUILD-LIST.md → The Loom](BUILD-LIST.md). Catalog ([ADR-478](DECISIONS.md)) + DAM tables
+> ([ADR-480](DECISIONS.md)) are the foundation the phases D1–D7 build on. The line this replaced —
+> "No UI/editor built yet" — was contradicted by the Loom Studio section three paragraphs below it,
+> which is exactly why prose does not get to hold status.
 
 ## What it is
 
@@ -124,12 +127,12 @@ under the table before building against either.
 > - **Usages** has a named replacement: `block_usage`, derived rather than written directly
 >   ([ADR-975](DECISIONS.md)), after [ADR-979](DECISIONS.md) deleted every reader of the old table.
 >   D4 below builds that write path from zero.
-> - **Renditions has no replacement yet, and that is an open question rather than an omission.**
->   The owner decision above says transforms are **on-the-fly**, which means a rendition is a
->   *request* (a width + format against the master) and never a row — in which case
->   `RENDITION_PRESETS` belongs to the D3 resolver and no table returns. Nothing in the tree
->   consumes those presets today. Tracked as `HYG-017` in
->   [`BUILD-BACKLOG.json`](BUILD-BACKLOG.json); do not add rendition writers before it is answered.
+> - **Renditions has no replacement, and does not need one.** The owner decision above says
+>   transforms are **on-the-fly**, which means a rendition is a *request* (a width + format against
+>   the master) and never a row, so `RENDITION_PRESETS` belongs to the D3 resolver and no table
+>   returns. `HYG-017` settled it; [ADR-1119](DECISIONS.md) struck "the rendition set" from D1's
+>   scope, which was the last line in the tree still reading the other way. Do not add rendition
+>   writers.
 
 Typed contract: `lib/library/types.ts`; rendition + crop-frame presets (targets for the on-the-fly
 resolver, not a table schema): `lib/library/renditions.ts`. Access is **service-role only** for now
@@ -146,9 +149,35 @@ resolver, not a table schema): `lib/library/renditions.ts`. Access is **service-
   **snapshots** the asset's current state into a new `library_versions` row (`lib/library/versions.ts`
   `recordVersion`) and flips `is_current`, then overwrites the live row. Rollback restores a snapshot
   (and snapshots current first, so it's reversible). The prior states are never lost.
-- **Every upload ingests.** Validate → checksum + **dedupe** → strip EXIF → extract
-  dimensions/colors/blurhash → generate the standard rendition set → write the catalog row. Heavy
-  work runs in a background/edge job so uploads feel instant.
+- **Every upload ingests** ([ADR-1119](DECISIONS.md)). Validate → **strip EXIF/XMP/IPTC** →
+  **checksum + dedupe** → read dimensions → write the catalog row. One function does the server half:
+  `ingestImageBytes` in `lib/library/ingest.ts`, called by every upload site with the bytes it is
+  about to store.
+  - **Order matters.** The checksum is taken AFTER the strip, so it describes the object that is
+    really on disk — and two exports of one photo that differ only in metadata dedupe to one asset.
+    Dedupe reads `(space_id, sha256)`, the pair `library_assets_sha256_idx` indexes; it is
+    space-scoped, because a global match would hand one space another space's asset.
+  - **The strip keeps orientation.** EXIF's rotation tag lives in the same APP1 block as the GPS
+    coordinates, so the strip re-emits a 32-byte APP1 carrying Orientation alone. Dropping APP1
+    wholesale renders every portrait phone photo sideways. `ICC_PROFILE` and the `Adobe` marker are
+    kept too: neither is personal and both change how the file decodes.
+  - **🔴 The server decodes no pixels, and it must stay that way.** Blurhash and the colour palette
+    need a decode, and server-side that means `sharp` — already at 67 functions of `check:og-trace`'s
+    100 budget, in a seam the picker, page editor, importer and email studio all reach. They are
+    computed in the BROWSER (`lib/library/image-describe.ts`) and posted as three validated fields.
+    See `docs/DEPLOY-SAFETY.md`.
+  - **Not everything can ingest.** A path that files an object already in storage (the importer, an
+    event photo) never holds the bytes: it writes `bytes: null` — "unknown", not the `0` it used to
+    claim — and no checksum. A server-side generator gets a checksum and dimensions but no blurhash
+    (`HYG-019`).
+
+- **Search is ranked over two indexes** ([ADR-1119](DECISIONS.md)). A query runs BOTH arms the schema
+  already carries and merges them: full text (`search_tsv @@ websearch_to_tsquery`, stemmed and
+  word-oriented) and trigram (`ilike '%q%'`, served by the title `gin_trgm_ops` index, which is what
+  survives a typo). Neither is a superset of the other. Ordering is computed in process by
+  `lib/library/search-rank.ts`, because PostgREST can filter on a tsvector but cannot `order by
+  ts_rank` — no migration, and `rankLibraryMatches` is the one seam a `search_library_assets` RPC
+  would replace if a Loom outgrew the candidate cap.
 - **Usage index** powers "used on N pages," archive-not-destroy, and global swap.
 - **One `AssetField`** (Upload / Pick from library / Paste URL) replaces `ImageField` at every
   upload point (Puck first, then branding / Spotlight / OG / email).
@@ -165,8 +194,9 @@ resolver, not a table schema): `lib/library/renditions.ts`. Access is **service-
 
 See [BUILD-LIST.md → The Loom](BUILD-LIST.md) for the ranked, statused list:
 
-1. **D1 — Ingest + gallery** (the standard site image gallery: ingest pipeline, `/admin/library`
-   browser, view/edit-meta/download).
+1. **D1 — Ingest + gallery + ranked search** (the standard site image gallery: the ingest pipeline
+   above, `/admin/library` browser, view/edit-meta/download, FTS+trigram ranked search). Shipped;
+   see [ADR-1119](DECISIONS.md).
 2. **D2 — AssetField seam** (unified picker; store references; render resolution; backfill
    `site-media`).
 3. **D3 — Editor + versions** (Filerobot crop-frames + adjustments; version-on-edit; rollback).

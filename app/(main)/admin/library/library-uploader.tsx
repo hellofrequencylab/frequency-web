@@ -4,12 +4,14 @@ import { useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Upload } from 'lucide-react'
 import { prepareImageForUpload, SERVER_MAX_BYTES } from '@/lib/library/image-shrink'
+import { appendImageDescriptor, describeImage } from '@/lib/library/image-describe'
 import { uploadLibraryImage } from './actions'
 
 // The upload control for the Library gallery. Picks a file, posts it to the
 // janitor-gated server action, and refreshes the grid on success.
 export function LibraryUploader() {
   const [err, setErr] = useState<string | null>(null)
+  const [note, setNote] = useState<string | null>(null)
   const [pending, start] = useTransition()
   const inputRef = useRef<HTMLInputElement>(null)
   const router = useRouter()
@@ -18,6 +20,7 @@ export function LibraryUploader() {
     const raw = e.target.files?.[0]
     if (!raw) return
     setErr(null)
+    setNote(null)
     start(async () => {
       // Prep in the browser first (the shared seam): an iPhone HEIC is converted to JPEG (a raw HEIC
       // stores fine but renders broken in every browser but Safari), then a big photo is downscaled
@@ -37,8 +40,13 @@ export function LibraryUploader() {
       }
       const fd = new FormData()
       fd.set('file', file)
+      // The browser half of ingest — blurhash, palette, true dimensions (PROG-D1). Best-effort.
+      appendImageDescriptor(fd, await describeImage(raw))
       const res = await uploadLibraryImage(fd)
       if ('error' in res) setErr(res.error)
+      // Checksum dedupe: identical bytes already in this Loom, so nothing was stored. Say so rather
+      // than refreshing to a grid that looks unchanged for no visible reason.
+      else if (res.duplicateOf) setNote(`Already in the Loom as \u201c${res.duplicateOf}\u201d, so nothing was added.`)
       else router.refresh()
       if (inputRef.current) inputRef.current.value = ''
     })
@@ -63,6 +71,7 @@ export function LibraryUploader() {
         />
       </label>
       {err && <p className="text-meta text-danger">{err}</p>}
+      {note && <p className="text-meta text-muted">{note}</p>}
     </div>
   )
 }

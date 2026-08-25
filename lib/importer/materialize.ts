@@ -769,7 +769,12 @@ export async function fileSeedImagesIntoLoom(
         storagePath: path ?? url,
         url,
         mime,
-        bytes: 0,
+        // The seeder files an image that is ALREADY in storage, so it never holds the bytes and
+        // cannot checksum or measure them. It used to claim a size of zero, which is not "unknown" —
+        // it is a lie that renders as "0 B" in the Studio and sorts to the bottom of the size facet.
+        // NULL is the honest value, and it is what the size sort's `nullsFirst: false` was already
+        // written to expect.
+        bytes: null,
         createdBy: opts.createdBy ?? null,
         // Importer/seed content: keep it OUT of the operator's personal "My uploads" (it still belongs
         // to the seeded Space's own folder).

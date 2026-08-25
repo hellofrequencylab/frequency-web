@@ -4,7 +4,9 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
-import { insertSpaceLibraryImage } from '@/lib/library/store'
+import { insertSpaceLibraryImage, findLibraryAssetBySha256 } from '@/lib/library/store'
+import { ingestImageBytes } from '@/lib/library/ingest'
+import { readImageDescriptor } from '@/lib/library/image-describe'
 import { classifyLoomUpload, fallbackExtFor, fallbackMimeFor } from '@/lib/library/upload-kinds'
 
 // Server actions behind the Loom-backed image field (lib/page-editor/loom-image-field.tsx). A
@@ -76,11 +78,16 @@ export async function uploadToLoom(
   const stamp = `${Date.now()}-${Math.round(Math.random() * 1e6).toString(36)}`
   // Namespace the object under the owning space, so a space's uploads live in its own storage prefix.
   const path = `${spaceId}/${stamp}.${ext}`
-  const bytes = new Uint8Array(await file.arrayBuffer())
+
+  // INGEST (PROG-D1). Images are stripped + checksummed + measured; audio/video pass through
+  // `ingestImageBytes` too, where the strip is a no-op and the checksum still earns its dedupe.
+  const ingested = ingestImageBytes(new Uint8Array(await file.arrayBuffer()), file.type)
+  const duplicate = await findLibraryAssetBySha256(spaceId, ingested.sha256)
+  if (duplicate?.url) return { url: duplicate.url, id: duplicate.id }
 
   const { error: upErr } = await admin.storage
     .from(target.bucket)
-    .upload(path, bytes, { contentType: file.type || fallbackMimeFor(target.kind), upsert: false })
+    .upload(path, ingested.bytes, { contentType: file.type || fallbackMimeFor(target.kind), upsert: false })
   if (upErr) return { error: upErr.message }
 
   const { data: pub } = admin.storage.from(target.bucket).getPublicUrl(path)
@@ -99,11 +106,15 @@ export async function uploadToLoom(
     storagePath: path,
     url: pub.publicUrl,
     mime: file.type || fallbackMimeFor(target.kind),
-    bytes: file.size,
+    bytes: ingested.bytes.byteLength,
     kind: target.kind,
     // Stamp the uploader so this asset shows in their personal Loom ("My uploads"), like the picker does.
     createdBy: (await getCallerProfile())?.id ?? null,
     source: 'upload',
+    sha256: ingested.sha256,
+    width: ingested.width,
+    height: ingested.height,
+    ...readImageDescriptor(formData),
   })
   if (!id) {
     // Roll back the orphaned file so a failed insert doesn't leave litter in storage.
