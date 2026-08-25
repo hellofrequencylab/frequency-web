@@ -17,7 +17,7 @@ import { MarketplaceBar } from '@/components/marketplace/marketplace-bar'
 import { UnderlineTabs } from '@/components/ui/underline-tabs'
 import { MarketplaceGuide } from '@/components/marketplace/marketplace-guide'
 import { MarketplaceHiddenBanner } from '@/components/marketplace/hidden-banner'
-import { resolveHeaderElement } from '@/lib/elements/header'
+import { resolveMarketHero } from '@/lib/layout/index-hero'
 
 // Market — the community commerce umbrella (ADR-596). Hero-led (the site PhotoHero grammar), a stats
 // band, then Products / Services / Tickets rails aggregating market-published listings across makers and
@@ -80,20 +80,21 @@ export default async function MarketPage({
   const shown = group ? byGroup(group) : null
   const sections = MARKET_GROUPS.map((g) => ({ group: g, items: byGroup(g) })).filter((s) => s.items.length > 0)
 
-  // The operator-tunable header element (ADR-793): resolves to today's overlay/large/scrim-on look.
-  const header = await resolveHeaderElement({ defaults: { layout: 'overlay', height: 'large' } })
+  // The whole hero band through the ONE browse-hero ladder (lib/layout/index-hero, PROG-P4):
+  // the operator's Settings header image, then the page_content hero via the copy cascade, then
+  // this page's coded cover, plus the operator-tunable header element (ADR-793) for
+  // layout / height / scrim. It used to read the element alone, so an operator who uploaded a
+  // header image for this route got nothing.
+  const hero = await resolveMarketHero('/market', { cover: HERO_IMAGE })
 
   return (
     <MarketSearchProvider>
     <div className="space-y-6">
       <MarketHero
-        image={HERO_IMAGE}
+        {...hero}
         eyebrow="The Market"
         title="Buy from your community"
         subtitle="Products, services, and tickets from the people and businesses around you. Buy direct, the seller gets paid, the fee stays low."
-        variant={header.layout}
-        size={header.height}
-        overlay={header.scrim}
         search={<MarketSearchBar placeholder="Search the Market" />}
         action={
           viewerProfileId ? (

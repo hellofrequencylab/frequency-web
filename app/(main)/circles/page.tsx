@@ -12,7 +12,7 @@ import { DirectorySearch } from '@/components/ui/directory-search'
 import { NewCircleCompose } from '@/components/compose/new-circle-compose'
 import { pageContentMetadata } from '@/lib/page-content'
 import { getCirclesIndexData, CONTENT_FALLBACK } from '@/lib/circles/index-data'
-import { resolveHeaderElement } from '@/lib/elements/header'
+import { resolveMarketHero } from '@/lib/layout/index-hero'
 
 // The Circles index — a TEMPLATE + BLOCKS surface (PAGE-FRAMEWORK). It now opens on the SHARED
 // MarketHero header (the same hero band Events / Marketplace Events / Business Spaces use) so every
@@ -43,8 +43,11 @@ export default async function CirclesPage({
   const published = await getPublishedData('circles')
   const data: Data = isWellFormed(published) ? published : getTemplate('circles') ?? EMPTY
 
-  // The operator-tunable header element (ADR-793): resolves to today's overlay/large/scrim-on look.
-  const header = await resolveHeaderElement({ defaults: { layout: 'overlay', height: 'large' } })
+  // The whole hero band through the ONE browse-hero ladder (lib/layout/index-hero, PROG-P4):
+  // the operator's Settings header image, then the page_content hero, then this page's coded
+  // cover, plus the operator-tunable header element (ADR-793) for layout / height / scrim. It
+  // used to read the element alone, so an operator who uploaded a header image got nothing.
+  const hero = await resolveMarketHero('/circles', { cover: '/images/site/group-of-friends.jpg', contentImage: content.heroImage })
 
   // The action cluster, matching the Events header grammar:
   //   • Start a Circle — the full-page builder, gated behind the Crew popup (NewCircleCompose owns the
@@ -80,13 +83,10 @@ export default async function CirclesPage({
   return (
     <div className="space-y-6">
       <MarketHero
-        image={content.heroImage ?? '/images/site/group-of-friends.jpg'}
+        {...hero}
         eyebrow="Community"
         title={content.title}
         subtitle={content.description}
-        variant={header.layout}
-        size={header.height}
-        overlay={header.scrim}
         search={<DirectorySearch placeholder="Search circles by name or place" />}
         action={actions}
       />

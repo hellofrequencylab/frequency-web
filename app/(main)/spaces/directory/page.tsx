@@ -18,7 +18,7 @@ import {
   normalizePerPage,
   normalizePage,
 } from '@/components/spaces/directory-view'
-import { resolveHeaderElement } from '@/lib/elements/header'
+import { resolveMarketHero } from '@/lib/layout/index-hero'
 
 // The Spaces DIRECTORY — the in-app surface where a member browses the networked entity Spaces
 // (practitioners, businesses, organizations, coaching academies, event spaces) and opens one's
@@ -79,19 +79,20 @@ export default async function SpacesDirectoryPage({
   // The shared base for every pager/size link — the current filters, so paging preserves them.
   const urlBase = { q, subject, category, following: followingParam, sort: sortParam, per, page }
 
-  // The operator-tunable header element (ADR-793): resolves to today's overlay/large/scrim-on look.
-  const header = await resolveHeaderElement({ defaults: { layout: 'overlay', height: 'large' } })
+  // The whole hero band through the ONE browse-hero ladder (lib/layout/index-hero, PROG-P4):
+  // the operator's Settings header image, then the page_content hero via the copy cascade, then
+  // this page's coded cover, plus the operator-tunable header element (ADR-793) for
+  // layout / height / scrim. It used to read the element alone, so an operator who uploaded a
+  // header image for this route got nothing.
+  const hero = await resolveMarketHero('/spaces/directory', { cover: '/images/site/business-directory-hero.jpg' })
 
   return (
     <div className="space-y-6">
       <MarketHero
-        image="/images/site/business-directory-hero.jpg"
+        {...hero}
         eyebrow="Directory"
         title="Business Spaces"
         subtitle="Find a business or nonprofit near you. See what they offer, from classes to services to events, then follow or reach out."
-        variant={header.layout}
-        size={header.height}
-        overlay={header.scrim}
         search={<DirectorySearch placeholder="Search Spaces by name" />}
         action={
           viewerProfileId ? (
