@@ -22,14 +22,22 @@ ARTIFACT. Full rules and the incident: [`docs/DEPLOY-SAFETY.md`](docs/DEPLOY-SAF
   `buildCommand: pnpm build` so a dashboard edit cannot silently take the lifecycle away. **Four
   gates run there and fail the build** (all wired and proven on real artifacts as of #2194,
   2026-08-19 — LIVE-035/LIVE-048/LIVE-029 closed):
-  - `check:build-budget` — total per-function output under 8 GB; **measured 6.02 GB across 496
-    functions, 2026-08-24** (production build of #2245), after 6.03 GB / 497 fns (#2243, same day),
-    6.04 GB / 499 fns (2026-08-18), 5.81 GB (2026-08-13) and 5.59 GB before that. This sentence used
-    to read "it has risen every time it has been read"; **two consecutive readings have now fallen**,
-    on both axes. The trend, not the headroom, is still the thing to watch — but note that at **75%**
-    of its ceiling this is NOT the gate closest to firing. `check:cache-budget` is, at **84%**, and it
-    is also the one with a history of killing builds.
-  - `check:og-trace` — sharp reaching 67 functions of a 100 budget (unchanged, 2026-08-24).
+  - `check:build-budget` — total per-function output under 8 GB; **measured 6.67 GB across 498
+    functions on the PRODUCTION build of `main` at c8b5ee97, 2026-08-25 09:50Z** (the deploy carrying
+    all four meta-scan phases), after 6.55 GB / 496 fns the same day (#2280 and #2285, two independent
+    previews), 6.02 GB / 496 fns (#2245, 2026-08-24), 6.03 GB / 497 fns (#2243, same day), 6.04 GB /
+    499 fns (2026-08-18), 5.81 GB (2026-08-13) and 5.59 GB before that. This sentence once read "two
+    consecutive readings have now fallen"; ⚠️ **that is long retired — the series has now risen twice
+    in one day, +0.53 GB and then +0.12 GB.** At **83%** of its ceiling the headroom is still real,
+    and the trend is still the thing to watch rather than the number. Largest single cost, named by
+    the gate itself: **1510 MB of libvips (17.4 MB × 87 functions)** — which is `sharp`, so this gate
+    and `check:og-trace` below are measuring two faces of one thing.
+  - `check:og-trace` — **69 incidental functions of a 100 budget, production 2026-08-25**, up from 67
+    on 2026-08-24. ⚠️ Read the number carefully: the budget counts the functions that carry `sharp`
+    WITHOUT rasterising a card (69), not the total that carry it (18 rasterisers + 69 = 87). The +2
+    is the two per-entity OG routes added by meta-scan phase 2 (#2289) — that PR's own body said
+    "headroom is unchanged at 67/100", which was wrong by exactly the routes it added. Two more cards
+    cost two more; the budget is a fan-out ceiling, not a card ceiling.
   - `check:cache-budget` ([ADR-1064](docs/DECISIONS.md), [ADR-1086](docs/DECISIONS.md)) — the build
     cache under Vercel's packed 1.50 GB ceiling, trimming only a named compiler-cache list when over.
     It earned its wiring the hard way: the first version **killed two builds** (raw-vs-packed
@@ -45,18 +53,43 @@ ARTIFACT. Full rules and the incident: [`docs/DEPLOY-SAFETY.md`](docs/DEPLOY-SAF
     the same composition — put the implied ratio at **0.524–0.526 against a constant of 0.53**, i.e.
     accurate to 1% and rounded toward firing the trim early. The 2× gap is genuine for the OTHER mix:
     with `.next/cache` trimmed to nothing, node_modules alone packs near 0.264. It changes nothing,
-    and the reason is structural rather than lucky — **the ratio only alters behaviour near the 1.38 GB
-    trim point, and 0.52 GB sits 62% below it.** Near the threshold the cache is compiler-heavy by
+    and the reason is structural rather than lucky — near the threshold the cache is compiler-heavy by
     definition, because being compiler-heavy is what makes it big enough to approach the threshold at
     all, and that is the mix 0.53 was derived on. So one constant is adequate by construction.
     🔴 **Do not lower it toward 0.264**: that measures on one mix and applies to another, which is the
     error this row exists to prevent, performed in reverse. The probe holds it in a two-sided
     0.52–0.54 band.
+    🔴 **RE-MEASURED TWICE ON 2026-08-25, AND THE TWO READINGS DISAGREE — WHICH IS THE POINT.** The
+    sentence above that used to close this paragraph ("the ratio only alters behaviour near the
+    1.38 GB trim point, and 0.52 GB sits 62% below it") has been **removed**, because on one of those
+    readings it was false, and reassurance that is only sometimes true is worse than none.
+    - **#2280, mid-merge-run: 1.39 GB packed against a 1.40 GB trim point** — 99% of the line it
+      trims at. On that mix the trim is **not a rare event**: the cache oscillates across the line and
+      every trim costs the NEXT build a cold compile (113s against a 46s warm control, same day). The
+      paired reading also had the estimate running **LOW** — 1.39 predicted, **1.42** uploaded — i.e.
+      firing slightly *late*, the direction that costs a build rather than a CPU minute.
+    - **`main` at c8b5ee97, production, 09:51Z: 1.27 GB packed** (2.24 GiB raw — node_modules 934 MiB
+      + `.next/cache` 1359 MiB), **85% of the 1.50 GB ceiling and comfortably under the trim point**.
+      And the paired reading is **EXACT**: the gate predicted 1.27 GB and `Uploading build cache`
+      reported **1.27 GB**.
+    ✅ **Both are real, and the disagreement is the mix-dependence this paragraph already describes —
+    not a defect in either measurement.** So the honest statement is the range, not a single figure:
+    this gate sits between 85% and 99% of its trim point depending on what the cache is holding, it is
+    the gate closest to firing at both ends, and `PACKED_PER_RAW` is accurate to within 2% on both.
+    Re-derive it from paired readings before trusting a margin, and read `LIVE-123`
+    for the page-data build failures measured in the same window.
   - `check:shell-weight` ([ADR-1066](docs/DECISIONS.md)) — the CLIENT half: the app shell's eager
-    first-load JS (**1010 KB across 21 chunks on two production artifacts, 2026-08-18**, ceiling
-    1,400 KB) plus named fingerprints for admin module bodies that must stay behind `next/dynamic`
-    (all 8 lazy, positive control present). Promoted from `--warn-only` in #2188 after two green
-    production readings; the source-shape test pins the promoted state.
+    first-load JS (**1011 KB across 21 chunks, production 2026-08-25**, one kilobyte above the 1010 KB
+    it read on two artifacts a week earlier, ceiling 1,400 KB — **72%**, the most headroom of the
+    four) plus named fingerprints for admin module bodies that must stay behind `next/dynamic` (all 8
+    lazy, positive control present, 493 client-reference manifests read). Promoted from `--warn-only`
+    in #2188 after two green production readings; the source-shape test pins the promoted state.
+    ✅ **ARM C joined it on 2026-08-25 ([ADR-1140](docs/DECISIONS.md), `SCAN-506`) and does NOT run
+    here.** Arms A/B measure the artifact, so `postbuild` is their only possible home; Arm C reads
+    SOURCE — it walks each member hot route's static import graph and fails if a named heavy library
+    is statically imported below a `use client` boundary — so it runs in
+    `scripts/check-shell-weight.test.ts`, on every PR, which is earlier and equally strong. Reading:
+    0 leaks, 668 client modules walked across four routes, 2 detector controls firing.
 
   **The rule that keeps being right:** a build-blocking gate that has never seen a real artifact is
   the 2026-08-11 incident with the roles reversed. `check:cache-budget` passed its own unit tests,
