@@ -1180,14 +1180,19 @@ export function SpaceCTABlock({
   ink?: boolean
   accent?: boolean
 }) {
-  if (!heading && !ctaLabel) return null
+  // A button needs BOTH a label and a destination (ADR-1125). The old gate was `ctaLabel` alone with
+  // `href={ctaHref || '#'}`, which drew a button that went nowhere whenever the link field was blank —
+  // the defect that shipped '#' to all 18 Space micro-sites. MediaText already gates on both
+  // (blocks/media.tsx `ctaLabel && ctaHref`); this is the same rule.
+  const hasCta = Boolean(ctaLabel && ctaHref)
+  if (!heading && !hasCta) return null
   return (
     <InfoCard ink={ink} className={`text-center${accent ? ' border-primary/30 bg-primary-bg/30' : ''}`}>
       {heading && <h2 className={`font-section text-lead font-bold ${ink ? 'text-on-ink' : 'text-text'}`}>{heading}</h2>}
       {body && <p className={`mx-auto mt-2 max-w-xl text-body-sm leading-relaxed ${ink ? 'text-on-ink-muted' : 'text-muted'}`}>{body}</p>}
-      {ctaLabel && (
+      {hasCta && (
         <div className="mt-5 flex justify-center">
-          <CtaButton href={ctaHref || '#'} label={ctaLabel} variant="primary" onInk={ink} withArrow />
+          <CtaButton href={ctaHref as string} label={ctaLabel as string} variant="primary" onInk={ink} withArrow />
         </div>
       )}
     </InfoCard>
@@ -1311,7 +1316,12 @@ export function SpaceCalloutBlock({
   /** Editor canvas only: keep an unfilled section visible + draggable there. */
   editing?: boolean
 }) {
-  if (!heading && !ctaLabel) {
+  // A button needs BOTH a label and a destination (ADR-1125). See SpaceCTABlock above: the old gate
+  // was `ctaLabel` alone with `href={ctaHref || '#'}`, so a blank link field still drew a button and
+  // silently substituted '#'. That is why every one of the 18 seeded Space micro-sites shipped a
+  // "Get in touch" button that did nothing, and why seeding an EMPTY ctaHref would not have removed it.
+  const hasCta = Boolean(ctaLabel && ctaHref)
+  if (!heading && !hasCta) {
     if (!editing) return null
     return <EditorStub label="Callout" hint="Add a bold banner with a heading and a button" />
   }
@@ -1339,9 +1349,9 @@ export function SpaceCalloutBlock({
           {body}
         </p>
       )}
-      {ctaLabel && (
+      {hasCta && (
         <div className={`mt-6 flex ${centered ? 'justify-center' : ''}`}>
-          <CtaButton href={ctaHref || '#'} label={ctaLabel} variant="primary" onInk={ink} withArrow />
+          <CtaButton href={ctaHref as string} label={ctaLabel as string} variant="primary" onInk={ink} withArrow />
         </div>
       )}
     </div>
@@ -2274,7 +2284,9 @@ export const profileComponents: Record<string, ComponentConfig> = {
       heading: 'Ready when you are',
       body: '',
       ctaLabel: 'Get started',
-      ctaHref: '#',
+      // Seeds EMPTY, never '#' (ADR-1125): the block draws no button until the operator gives it a
+      // real destination, so a dragged-in card can never ship a button that goes nowhere.
+      ctaHref: '',
       accent: 'no',
     },
     render: ({ heading, body, ctaLabel, ctaHref, accent }) => (
@@ -2399,7 +2411,8 @@ export const profileComponents: Record<string, ComponentConfig> = {
       heading: 'Ready to begin?',
       body: '',
       ctaLabel: 'Get started',
-      ctaHref: '#',
+      // Seeds EMPTY, never '#' (ADR-1125). Same rule as SpaceCTA above.
+      ctaHref: '',
       align: 'center',
     },
     render: ({ eyebrow, heading, body, ctaLabel, ctaHref, align, puck }) => (

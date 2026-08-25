@@ -1,0 +1,3490 @@
+{
+  "what": "A STRUCTURAL census of every entity-block layout document stored in production: the row skeleton, the block TYPE in each cell, and the FIELD NAMES of each authored content/style bag. Shape only — no tenant copy, no field values, no ids, no slugs. Same discipline as scripts/stored-block-types.json, and for the same reason.",
+  "why": "E0 (docs/EDITOR-E0.md §1) re-keys these documents from block id to node id. §1.5 step 2 requires upgradeLayout to be proven \"against all 41 real production documents in a frozen fixture\" — this is that fixture, for the 37 of them that are EntityLayout. It is also the only place the BENCH is visible: 34 authored content bags in 18 of 18 Space documents belong to blocks that no cell references, and a fold that only walks `cells` deletes every one (ADR-1129).",
+  "scope": "The ENTITY-BLOCK catalog only (lib/entity-blocks/registry.ts) and its four EntityLayout stores. The Puck-shaped registry (lib/page-editor/config.tsx) and its `pages` documents are covered by scripts/stored-block-types.json; the Spotlight union (lib/spotlight/blocks/schema.ts) is covered by neither and is named in LIVE-119.",
+  "howToRecapture": "Run recaptureQuery (read-only) per store against production, rewrite `documents`, and set capturedAt. Recapture after a document migration; the guard reads the registry live, so a REGISTRY change never needs one.",
+  "capturedAt": "2026-08-25",
+  "project": "Frequency Community (azsqfeonabsbmemvddqd)",
+  "stores": {
+    "spaces.preferences.profileLayout": {
+      "kind": "space",
+      "documents": 18
+    },
+    "campaigns.block_json": {
+      "kind": "email",
+      "documents": 12
+    },
+    "email_templates.block_json": {
+      "kind": "email",
+      "documents": 7
+    },
+    "profiles.meta.entityGrid": {
+      "kind": "member",
+      "documents": 0,
+      "note": "Zero stored member grids, measured 2026-08-25 and on 2026-08-10 before that. Listed so a future non-zero reading is visible as a change rather than a gap."
+    },
+    "nurture_steps.block_json": {
+      "kind": "email",
+      "documents": 0,
+      "note": "Zero stored documents. Same reason as above."
+    }
+  },
+  "recaptureQuery": "-- per store; `n` replaces the slug/id so nothing tenant-identifying is frozen.\nwith s as (select preferences->'profileLayout' as doc, row_number() over (order by slug) as n from public.spaces where preferences ? 'profileLayout')\nselect s.n,\n  (select jsonb_agg(jsonb_strip_nulls(jsonb_build_object('id',r->>'id','columns',(r->>'columns')::int,'ratio',r->>'ratio','title',case when r ? 'title' then 'x' end,'headerOn',r->'headerOn','mt',r->>'mt','mb',r->>'mb','cells',r->'cells')) order by ord) from jsonb_array_elements(coalesce(s.doc->'rows','[]'::jsonb)) with ordinality e(r,ord)) as rows,\n  (select string_agg(k||'['||coalesce((select string_agg(ik,'+' order by ik) from jsonb_object_keys(s.doc->'content'->k) ik),'')||']', ',' order by k) from jsonb_object_keys(coalesce(s.doc->'content','{}'::jsonb)) k) as content,\n  (select string_agg(k||'['||coalesce((select string_agg(ik,'+' order by ik) from jsonb_object_keys(s.doc->'style'->k) ik),'')||']', ',' order by k) from jsonb_object_keys(coalesce(s.doc->'style','{}'::jsonb)) k) as style,\n  coalesce(s.doc->'hidden','[]'::jsonb) as hidden\nfrom s;",
+  "note": "A row's `title` is recorded as the literal 'x' — its PRESENCE is structural (it changes `rowShowsHeader`), its text is tenant copy.",
+  "documents": [
+    {
+      "id": "space-01",
+      "store": "spaces.preferences.profileLayout",
+      "kind": "space",
+      "rows": [
+        {
+          "id": "r0",
+          "cells": [
+            [
+              "editorial"
+            ]
+          ],
+          "columns": 1
+        },
+        {
+          "id": "r1",
+          "cells": [
+            [
+              "zigzag",
+              "features"
+            ]
+          ],
+          "title": "x",
+          "columns": 1,
+          "headerOn": true
+        },
+        {
+          "id": "r2",
+          "cells": [
+            [
+              "photoHero"
+            ]
+          ],
+          "columns": 1
+        },
+        {
+          "id": "r4",
+          "cells": [
+            [
+              "contact"
+            ],
+            [
+              "business"
+            ]
+          ],
+          "title": "x",
+          "columns": 2,
+          "headerOn": true
+        }
+      ],
+      "contentKeys": {
+        "about": [
+          "body",
+          "eyebrow",
+          "title"
+        ],
+        "story": [
+          "body",
+          "eyebrow",
+          "title"
+        ],
+        "zigzag": [
+          "aspect",
+          "body",
+          "eyebrow",
+          "image",
+          "title"
+        ],
+        "cardGrid": [
+          "cards",
+          "title"
+        ],
+        "features": [
+          "columns",
+          "items",
+          "layout"
+        ],
+        "editorial": [
+          "body",
+          "eyebrow",
+          "title"
+        ],
+        "photoHero": [
+          "buttonLabel",
+          "eyebrow",
+          "height",
+          "image",
+          "subtitle",
+          "title"
+        ]
+      },
+      "styleKeys": {
+        "zigzag": [
+          "mb"
+        ],
+        "contact": [
+          "background"
+        ],
+        "business": [
+          "background"
+        ],
+        "features": [
+          "mb"
+        ]
+      },
+      "hidden": []
+    },
+    {
+      "id": "space-02",
+      "store": "spaces.preferences.profileLayout",
+      "kind": "space",
+      "rows": [
+        {
+          "id": "r0",
+          "cells": [
+            [
+              "editorial"
+            ]
+          ],
+          "columns": 1
+        },
+        {
+          "id": "r1",
+          "cells": [
+            [
+              "features"
+            ]
+          ],
+          "title": "x",
+          "columns": 1,
+          "headerOn": true
+        },
+        {
+          "id": "r2",
+          "cells": [
+            [
+              "cardGrid"
+            ]
+          ],
+          "title": "x",
+          "columns": 1,
+          "headerOn": true
+        },
+        {
+          "id": "r3",
+          "cells": [
+            [
+              "zigzag"
+            ]
+          ],
+          "title": "x",
+          "columns": 1,
+          "headerOn": true
+        },
+        {
+          "id": "r4",
+          "cells": [
+            [
+              "gallery"
+            ]
+          ],
+          "title": "x",
+          "columns": 1,
+          "headerOn": true
+        },
+        {
+          "id": "r5",
+          "cells": [
+            [
+              "contact"
+            ],
+            [
+              "business"
+            ]
+          ],
+          "title": "x",
+          "columns": 2,
+          "headerOn": true
+        }
+      ],
+      "contentKeys": {
+        "about": [
+          "body",
+          "eyebrow",
+          "title"
+        ],
+        "story": [
+          "body",
+          "eyebrow",
+          "title"
+        ],
+        "zigzag": [
+          "aspect",
+          "body",
+          "image",
+          "title"
+        ],
+        "gallery": [
+          "gap",
+          "images",
+          "view"
+        ],
+        "cardGrid": [
+          "cards",
+          "title"
+        ],
+        "features": [
+          "columns",
+          "items",
+          "layout"
+        ],
+        "editorial": [
+          "body",
+          "title"
+        ]
+      },
+      "styleKeys": {
+        "cardGrid": [
+          "mb",
+          "mt"
+        ],
+        "features": [
+          "mb"
+        ],
+        "editorial": [
+          "mb"
+        ]
+      },
+      "hidden": []
+    },
+    {
+      "id": "space-03",
+      "store": "spaces.preferences.profileLayout",
+      "kind": "space",
+      "rows": [
+        {
+          "id": "r0",
+          "cells": [
+            [
+              "editorial"
+            ]
+          ],
+          "columns": 1
+        },
+        {
+          "id": "r1",
+          "cells": [
+            [
+              "zigzag"
+            ]
+          ],
+          "title": "x",
+          "columns": 1,
+          "headerOn": true
+        },
+        {
+          "id": "r2",
+          "cells": [
+            [
+              "cardGrid"
+            ]
+          ],
+          "title": "x",
+          "columns": 1,
+          "headerOn": true
+        },
+        {
+          "id": "r3",
+          "cells": [
+            [
+              "features"
+            ]
+          ],
+          "title": "x",
+          "columns": 1,
+          "headerOn": true
+        },
+        {
+          "id": "r4",
+          "cells": [
+            [
+              "gallery"
+            ]
+          ],
+          "columns": 1
+        },
+        {
+          "id": "r5",
+          "cells": [
+            [
+              "contact"
+            ],
+            [
+              "business"
+            ]
+          ],
+          "title": "x",
+          "columns": 2,
+          "headerOn": true
+        }
+      ],
+      "contentKeys": {
+        "about": [
+          "body",
+          "eyebrow",
+          "title"
+        ],
+        "story": [
+          "body",
+          "eyebrow",
+          "title"
+        ],
+        "zigzag": [
+          "aspect",
+          "body",
+          "image",
+          "title"
+        ],
+        "gallery": [
+          "images"
+        ],
+        "cardGrid": [
+          "buttonOn",
+          "cards",
+          "title"
+        ],
+        "features": [
+          "items"
+        ],
+        "editorial": [
+          "body",
+          "title"
+        ]
+      },
+      "styleKeys": {},
+      "hidden": []
+    },
+    {
+      "id": "space-04",
+      "store": "spaces.preferences.profileLayout",
+      "kind": "space",
+      "rows": [
+        {
+          "id": "r0",
+          "cells": [
+            [
+              "editorial"
+            ]
+          ],
+          "columns": 1
+        },
+        {
+          "id": "r1",
+          "cells": [
+            [
+              "features",
+              "events"
+            ]
+          ],
+          "columns": 1
+        },
+        {
+          "id": "r2",
+          "cells": [
+            [
+              "cardGrid"
+            ]
+          ],
+          "columns": 1
+        },
+        {
+          "id": "r4",
+          "cells": [
+            [
+              "faq"
+            ]
+          ],
+          "columns": 1
+        },
+        {
+          "id": "r3",
+          "cells": [
+            [
+              "contact"
+            ],
+            [
+              "business"
+            ]
+          ],
+          "title": "x",
+          "columns": 2,
+          "headerOn": true
+        }
+      ],
+      "contentKeys": {
+        "about": [
+          "body",
+          "eyebrow",
+          "title"
+        ],
+        "story": [
+          "body",
+          "eyebrow",
+          "title"
+        ],
+        "events": [
+          "columns",
+          "view"
+        ],
+        "cardGrid": [
+          "cards",
+          "subtitle",
+          "title"
+        ],
+        "features": [
+          "columns",
+          "eyebrow",
+          "items",
+          "layout",
+          "title"
+        ],
+        "editorial": [
+          "body",
+          "title"
+        ]
+      },
+      "styleKeys": {
+        "contact": [
+          "background"
+        ],
+        "business": [
+          "background"
+        ]
+      },
+      "hidden": []
+    },
+    {
+      "id": "space-05",
+      "store": "spaces.preferences.profileLayout",
+      "kind": "space",
+      "rows": [
+        {
+          "id": "r0",
+          "cells": [
+            [
+              "editorial",
+              "zigzag",
+              "cardGrid"
+            ]
+          ],
+          "columns": 1
+        },
+        {
+          "id": "r10",
+          "cells": [
+            [
+              "features"
+            ]
+          ],
+          "columns": 1
+        },
+        {
+          "id": "r7",
+          "cells": [
+            [
+              "gallery"
+            ]
+          ],
+          "columns": 1
+        },
+        {
+          "id": "r5",
+          "cells": [
+            [
+              "offerings",
+              "booking"
+            ]
+          ],
+          "columns": 1
+        },
+        {
+          "id": "r6",
+          "cells": [
+            [
+              "faq"
+            ]
+          ],
+          "columns": 1
+        },
+        {
+          "id": "r8",
+          "cells": [
+            [
+              "accentBeat"
+            ]
+          ],
+          "columns": 1
+        },
+        {
+          "id": "r9",
+          "cells": [
+            [
+              "contact"
+            ],
+            [
+              "business"
+            ]
+          ],
+          "title": "x",
+          "columns": 2,
+          "headerOn": true
+        }
+      ],
+      "contentKeys": {
+        "faq": [
+          "eyebrow",
+          "title"
+        ],
+        "about": [
+          "body",
+          "eyebrow",
+          "title"
+        ],
+        "story": [
+          "body",
+          "eyebrow",
+          "title"
+        ],
+        "zigzag": [
+          "alt",
+          "aspect",
+          "body",
+          "eyebrow",
+          "image",
+          "title"
+        ],
+        "contact": [
+          "eyebrow"
+        ],
+        "gallery": [
+          "gap",
+          "images",
+          "view"
+        ],
+        "business": [
+          "eyebrow"
+        ],
+        "cardGrid": [
+          "cards",
+          "title"
+        ],
+        "features": [
+          "eyebrow",
+          "items",
+          "layout",
+          "title"
+        ],
+        "editorial": [
+          "body",
+          "eyebrow",
+          "title"
+        ],
+        "offerings": [
+          "eyebrow",
+          "title"
+        ],
+        "accentBeat": [
+          "body",
+          "buttonLabel",
+          "buttonUrl",
+          "eyebrow",
+          "title"
+        ]
+      },
+      "styleKeys": {
+        "zigzag": [
+          "mb",
+          "mt"
+        ],
+        "booking": [
+          "background"
+        ],
+        "contact": [
+          "background"
+        ],
+        "heading": [
+          "mt"
+        ],
+        "business": [
+          "background"
+        ],
+        "features": [
+          "mb",
+          "mt"
+        ]
+      },
+      "hidden": []
+    },
+    {
+      "id": "space-06",
+      "store": "spaces.preferences.profileLayout",
+      "kind": "space",
+      "rows": [
+        {
+          "id": "r0",
+          "cells": [
+            [
+              "editorial"
+            ]
+          ],
+          "columns": 1
+        },
+        {
+          "id": "r1",
+          "cells": [
+            [
+              "zigzag"
+            ]
+          ],
+          "columns": 1
+        },
+        {
+          "id": "r2",
+          "cells": [
+            [
+              "features"
+            ]
+          ],
+          "columns": 1
+        },
+        {
+          "id": "r3",
+          "cells": [
+            [
+              "gallery"
+            ]
+          ],
+          "columns": 1
+        },
+        {
+          "id": "r4",
+          "cells": [
+            [
+              "about"
+            ],
+            [
+              "business"
+            ]
+          ],
+          "title": "x",
+          "columns": 2,
+          "headerOn": true
+        }
+      ],
+      "contentKeys": {
+        "about": [
+          "body",
+          "eyebrow",
+          "title"
+        ],
+        "story": [
+          "body",
+          "eyebrow",
+          "title"
+        ],
+        "zigzag": [
+          "aspect",
+          "body",
+          "eyebrow",
+          "image",
+          "title"
+        ],
+        "gallery": [
+          "gap",
+          "images",
+          "view"
+        ],
+        "features": [
+          "eyebrow",
+          "items",
+          "layout",
+          "title"
+        ],
+        "editorial": [
+          "body",
+          "eyebrow",
+          "title"
+        ]
+      },
+      "styleKeys": {
+        "about": [
+          "background"
+        ],
+        "zigzag": [
+          "mb"
+        ],
+        "business": [
+          "background"
+        ],
+        "features": [
+          "mb"
+        ],
+        "editorial": [
+          "mb"
+        ]
+      },
+      "hidden": []
+    },
+    {
+      "id": "space-07",
+      "store": "spaces.preferences.profileLayout",
+      "kind": "space",
+      "rows": [
+        {
+          "id": "r0",
+          "cells": [
+            [
+              "editorial"
+            ]
+          ],
+          "columns": 1
+        },
+        {
+          "id": "r1",
+          "cells": [
+            [
+              "cardGrid"
+            ]
+          ],
+          "title": "x",
+          "columns": 1,
+          "headerOn": true
+        },
+        {
+          "id": "r2",
+          "cells": [
+            [
+              "zigzag",
+              "accentBeat"
+            ]
+          ],
+          "title": "x",
+          "columns": 1,
+          "headerOn": true
+        },
+        {
+          "id": "r3",
+          "cells": [
+            [
+              "contact"
+            ],
+            [
+              "business"
+            ]
+          ],
+          "title": "x",
+          "columns": 2,
+          "headerOn": true
+        },
+        {
+          "id": "r4",
+          "cells": [
+            [
+              "faq"
+            ]
+          ],
+          "columns": 1
+        }
+      ],
+      "contentKeys": {
+        "about": [
+          "body",
+          "eyebrow",
+          "title"
+        ],
+        "story": [
+          "body",
+          "eyebrow",
+          "title"
+        ],
+        "zigzag": [
+          "aspect",
+          "body",
+          "eyebrow",
+          "image",
+          "title"
+        ],
+        "cardGrid": [
+          "cards",
+          "subtitle",
+          "title"
+        ],
+        "editorial": [
+          "body",
+          "eyebrow",
+          "title"
+        ],
+        "accentBeat": [
+          "body",
+          "buttonLabel",
+          "buttonUrl",
+          "eyebrow",
+          "title"
+        ]
+      },
+      "styleKeys": {},
+      "hidden": []
+    },
+    {
+      "id": "space-08",
+      "store": "spaces.preferences.profileLayout",
+      "kind": "space",
+      "rows": [
+        {
+          "id": "r0",
+          "cells": [
+            [
+              "editorial",
+              "zigzag"
+            ]
+          ],
+          "columns": 1
+        },
+        {
+          "id": "r1",
+          "cells": [
+            [
+              "story"
+            ],
+            [
+              "events"
+            ]
+          ],
+          "columns": 2
+        },
+        {
+          "id": "r2",
+          "cells": [
+            [
+              "gallery"
+            ]
+          ],
+          "title": "x",
+          "columns": 1,
+          "headerOn": true
+        },
+        {
+          "id": "rj7irrf",
+          "cells": [
+            [
+              "cardGrid"
+            ]
+          ],
+          "columns": 1
+        },
+        {
+          "id": "r3",
+          "cells": [
+            [
+              "contact"
+            ],
+            [
+              "business"
+            ]
+          ],
+          "title": "x",
+          "columns": 2,
+          "headerOn": true
+        },
+        {
+          "id": "r4",
+          "cells": [
+            [
+              "faq"
+            ]
+          ],
+          "columns": 1
+        }
+      ],
+      "contentKeys": {
+        "about": [
+          "body",
+          "eyebrow",
+          "title"
+        ],
+        "story": [
+          "body",
+          "eyebrow",
+          "title"
+        ],
+        "zigzag": [
+          "aspect",
+          "body",
+          "eyebrow",
+          "image",
+          "title"
+        ],
+        "gallery": [
+          "gap",
+          "images",
+          "view"
+        ],
+        "cardGrid": [
+          "cards",
+          "title"
+        ],
+        "editorial": [
+          "body",
+          "eyebrow",
+          "title"
+        ]
+      },
+      "styleKeys": {
+        "story": [
+          "background"
+        ],
+        "events": [
+          "background",
+          "mb"
+        ],
+        "gallery": [
+          "mb",
+          "mt"
+        ],
+        "editorial": [
+          "mb"
+        ]
+      },
+      "hidden": []
+    },
+    {
+      "id": "space-09",
+      "store": "spaces.preferences.profileLayout",
+      "kind": "space",
+      "rows": [
+        {
+          "id": "r0",
+          "cells": [
+            [
+              "editorial"
+            ]
+          ],
+          "columns": 1
+        },
+        {
+          "id": "r1",
+          "cells": [
+            [
+              "features",
+              "accentBeat"
+            ]
+          ],
+          "columns": 1
+        },
+        {
+          "id": "r2",
+          "cells": [
+            [
+              "cardGrid"
+            ]
+          ],
+          "columns": 1
+        },
+        {
+          "id": "r3",
+          "cells": [
+            [
+              "contact"
+            ],
+            [
+              "business"
+            ]
+          ],
+          "title": "x",
+          "columns": 2,
+          "headerOn": true
+        },
+        {
+          "id": "rx70y81",
+          "cells": [
+            [
+              "booking",
+              "faq"
+            ]
+          ],
+          "columns": 1
+        }
+      ],
+      "contentKeys": {
+        "about": [
+          "body",
+          "eyebrow",
+          "title"
+        ],
+        "story": [
+          "body",
+          "eyebrow",
+          "title"
+        ],
+        "cardGrid": [
+          "cards",
+          "subtitle",
+          "title"
+        ],
+        "features": [
+          "eyebrow",
+          "items",
+          "layout",
+          "title"
+        ],
+        "editorial": [
+          "body",
+          "eyebrow",
+          "title"
+        ],
+        "accentBeat": [
+          "body",
+          "buttonLabel",
+          "eyebrow",
+          "title"
+        ]
+      },
+      "styleKeys": {
+        "contact": [
+          "background"
+        ],
+        "business": [
+          "background"
+        ],
+        "cardGrid": [
+          "background"
+        ],
+        "accentBeat": [
+          "mb"
+        ]
+      },
+      "hidden": []
+    },
+    {
+      "id": "space-10",
+      "store": "spaces.preferences.profileLayout",
+      "kind": "space",
+      "rows": [
+        {
+          "id": "r0",
+          "cells": [
+            [
+              "editorial"
+            ]
+          ],
+          "columns": 1
+        },
+        {
+          "id": "r1",
+          "cells": [
+            [
+              "zigzag"
+            ]
+          ],
+          "columns": 1
+        },
+        {
+          "id": "r2",
+          "cells": [
+            [
+              "cardGrid"
+            ]
+          ],
+          "columns": 1
+        },
+        {
+          "id": "r3",
+          "cells": [
+            [
+              "features"
+            ]
+          ],
+          "columns": 1
+        },
+        {
+          "id": "r4",
+          "cells": [
+            [
+              "gallery",
+              "faq"
+            ]
+          ],
+          "title": "x",
+          "columns": 1,
+          "headerOn": true
+        },
+        {
+          "id": "r5",
+          "cells": [
+            [
+              "contact"
+            ],
+            [
+              "business"
+            ]
+          ],
+          "title": "x",
+          "columns": 2,
+          "headerOn": true
+        }
+      ],
+      "contentKeys": {
+        "about": [
+          "body",
+          "eyebrow",
+          "title"
+        ],
+        "story": [
+          "body",
+          "eyebrow",
+          "title"
+        ],
+        "zigzag": [
+          "aspect",
+          "body",
+          "image",
+          "title"
+        ],
+        "gallery": [
+          "gap",
+          "images",
+          "view"
+        ],
+        "cardGrid": [
+          "cards",
+          "title"
+        ],
+        "features": [
+          "items"
+        ],
+        "editorial": [
+          "body",
+          "title"
+        ]
+      },
+      "styleKeys": {
+        "contact": [
+          "background"
+        ],
+        "business": [
+          "background"
+        ]
+      },
+      "hidden": []
+    },
+    {
+      "id": "space-11",
+      "store": "spaces.preferences.profileLayout",
+      "kind": "space",
+      "rows": [
+        {
+          "id": "r0",
+          "cells": [
+            [
+              "editorial"
+            ]
+          ],
+          "columns": 1
+        },
+        {
+          "id": "r1",
+          "cells": [
+            [
+              "zigzag"
+            ]
+          ],
+          "columns": 1
+        },
+        {
+          "id": "r2",
+          "cells": [
+            [
+              "features"
+            ]
+          ],
+          "columns": 1
+        },
+        {
+          "id": "r3",
+          "cells": [
+            [
+              "cardGrid"
+            ]
+          ],
+          "columns": 1
+        },
+        {
+          "id": "r4",
+          "cells": [
+            [
+              "booking"
+            ],
+            [
+              "contact"
+            ]
+          ],
+          "title": "x",
+          "columns": 2,
+          "headerOn": true
+        },
+        {
+          "id": "r5",
+          "cells": [
+            [
+              "business"
+            ]
+          ],
+          "title": "x",
+          "columns": 1,
+          "headerOn": true
+        }
+      ],
+      "contentKeys": {
+        "about": [
+          "body",
+          "eyebrow",
+          "title"
+        ],
+        "story": [
+          "body",
+          "eyebrow",
+          "title"
+        ],
+        "zigzag": [
+          "alt",
+          "aspect",
+          "body",
+          "eyebrow",
+          "image",
+          "title"
+        ],
+        "cardGrid": [
+          "cards",
+          "title"
+        ],
+        "features": [
+          "items"
+        ],
+        "editorial": [
+          "body",
+          "title"
+        ]
+      },
+      "styleKeys": {},
+      "hidden": []
+    },
+    {
+      "id": "space-12",
+      "store": "spaces.preferences.profileLayout",
+      "kind": "space",
+      "rows": [
+        {
+          "id": "r0",
+          "cells": [
+            [
+              "editorial"
+            ]
+          ],
+          "columns": 1
+        },
+        {
+          "id": "r1",
+          "cells": [
+            [
+              "zigzag"
+            ]
+          ],
+          "title": "x",
+          "columns": 1,
+          "headerOn": true
+        },
+        {
+          "id": "r2",
+          "cells": [
+            [
+              "cardGrid"
+            ]
+          ],
+          "title": "x",
+          "columns": 1,
+          "headerOn": true
+        },
+        {
+          "id": "r3",
+          "cells": [
+            [
+              "contact"
+            ],
+            [
+              "business"
+            ]
+          ],
+          "title": "x",
+          "columns": 2,
+          "headerOn": true
+        },
+        {
+          "id": "r4",
+          "cells": [
+            [
+              "faq"
+            ]
+          ],
+          "columns": 1
+        }
+      ],
+      "contentKeys": {
+        "about": [
+          "body",
+          "eyebrow",
+          "title"
+        ],
+        "story": [
+          "body",
+          "eyebrow",
+          "title"
+        ],
+        "zigzag": [
+          "aspect",
+          "body",
+          "image",
+          "title"
+        ],
+        "cardGrid": [
+          "buttonOn",
+          "cards"
+        ],
+        "editorial": [
+          "body",
+          "title"
+        ]
+      },
+      "styleKeys": {
+        "contact": [
+          "background"
+        ],
+        "business": [
+          "background"
+        ]
+      },
+      "hidden": []
+    },
+    {
+      "id": "space-13",
+      "store": "spaces.preferences.profileLayout",
+      "kind": "space",
+      "rows": [
+        {
+          "id": "r0",
+          "cells": [
+            [
+              "editorial"
+            ]
+          ],
+          "columns": 1
+        },
+        {
+          "id": "r1",
+          "cells": [
+            [
+              "features"
+            ]
+          ],
+          "columns": 1
+        },
+        {
+          "id": "r2",
+          "cells": [
+            [
+              "callout"
+            ]
+          ],
+          "columns": 1
+        },
+        {
+          "id": "r3",
+          "cells": [
+            [
+              "faq"
+            ]
+          ],
+          "columns": 1
+        },
+        {
+          "id": "r4",
+          "cells": [
+            [
+              "accentBeat"
+            ]
+          ],
+          "columns": 1
+        },
+        {
+          "id": "r5",
+          "cells": [
+            [
+              "contact"
+            ],
+            [
+              "business"
+            ]
+          ],
+          "title": "x",
+          "columns": 2,
+          "headerOn": true
+        }
+      ],
+      "contentKeys": {
+        "about": [
+          "body",
+          "eyebrow",
+          "title"
+        ],
+        "story": [
+          "body",
+          "eyebrow",
+          "title"
+        ],
+        "callout": [
+          "body",
+          "buttonLabel",
+          "image",
+          "title"
+        ],
+        "features": [
+          "columns",
+          "items",
+          "layout"
+        ],
+        "editorial": [
+          "body",
+          "title"
+        ],
+        "accentBeat": [
+          "body",
+          "buttonLabel",
+          "buttonOn",
+          "title"
+        ]
+      },
+      "styleKeys": {
+        "contact": [
+          "background"
+        ],
+        "business": [
+          "background"
+        ]
+      },
+      "hidden": []
+    },
+    {
+      "id": "space-14",
+      "store": "spaces.preferences.profileLayout",
+      "kind": "space",
+      "rows": [
+        {
+          "id": "r0",
+          "cells": [
+            [
+              "editorial"
+            ]
+          ],
+          "title": "x",
+          "columns": 1
+        },
+        {
+          "id": "r1",
+          "cells": [
+            [
+              "zigzag"
+            ]
+          ],
+          "title": "x",
+          "columns": 1,
+          "headerOn": true
+        },
+        {
+          "id": "r2",
+          "cells": [
+            [
+              "features",
+              "callout",
+              "gallery"
+            ]
+          ],
+          "title": "x",
+          "columns": 1,
+          "headerOn": true
+        },
+        {
+          "id": "r3",
+          "cells": [
+            [
+              "cardGrid"
+            ]
+          ],
+          "title": "x",
+          "columns": 1,
+          "headerOn": true
+        },
+        {
+          "id": "r4",
+          "cells": [
+            [
+              "faq"
+            ],
+            [
+              "business"
+            ]
+          ],
+          "columns": 2
+        },
+        {
+          "id": "r5",
+          "cells": [
+            [
+              "contact"
+            ]
+          ],
+          "title": "x",
+          "columns": 1,
+          "headerOn": true
+        }
+      ],
+      "contentKeys": {
+        "faq": [
+          "title"
+        ],
+        "about": [
+          "body",
+          "eyebrow",
+          "title"
+        ],
+        "story": [
+          "body",
+          "eyebrow",
+          "title"
+        ],
+        "zigzag": [
+          "aspect",
+          "body",
+          "image",
+          "title"
+        ],
+        "callout": [
+          "body",
+          "title"
+        ],
+        "gallery": [
+          "images",
+          "view"
+        ],
+        "business": [
+          "title"
+        ],
+        "cardGrid": [
+          "buttonOn",
+          "cards",
+          "eyebrow",
+          "title"
+        ],
+        "features": [
+          "items"
+        ],
+        "editorial": [
+          "body",
+          "title"
+        ]
+      },
+      "styleKeys": {
+        "faq": [
+          "background"
+        ],
+        "zigzag": [
+          "mb"
+        ],
+        "callout": [
+          "mb"
+        ],
+        "business": [
+          "background"
+        ],
+        "cardGrid": [
+          "mb"
+        ],
+        "features": [
+          "mb",
+          "mt"
+        ],
+        "editorial": [
+          "mb"
+        ]
+      },
+      "hidden": []
+    },
+    {
+      "id": "space-15",
+      "store": "spaces.preferences.profileLayout",
+      "kind": "space",
+      "rows": [
+        {
+          "id": "r0",
+          "cells": [
+            [
+              "editorial"
+            ]
+          ],
+          "columns": 1
+        },
+        {
+          "id": "r1",
+          "cells": [
+            [
+              "zigzag"
+            ]
+          ],
+          "title": "x",
+          "columns": 1,
+          "headerOn": true
+        },
+        {
+          "id": "r2",
+          "cells": [
+            [
+              "cardGrid"
+            ]
+          ],
+          "title": "x",
+          "columns": 1,
+          "headerOn": true
+        },
+        {
+          "id": "r3",
+          "cells": [
+            [
+              "gallery"
+            ]
+          ],
+          "title": "x",
+          "columns": 1,
+          "headerOn": true
+        },
+        {
+          "id": "r4",
+          "cells": [
+            [
+              "accentBeat"
+            ]
+          ],
+          "columns": 1
+        },
+        {
+          "id": "r5",
+          "cells": [
+            [
+              "contact"
+            ],
+            [
+              "business"
+            ]
+          ],
+          "title": "x",
+          "columns": 2,
+          "headerOn": true
+        }
+      ],
+      "contentKeys": {
+        "about": [
+          "body",
+          "eyebrow",
+          "title"
+        ],
+        "story": [
+          "body",
+          "eyebrow",
+          "title"
+        ],
+        "zigzag": [
+          "aspect",
+          "body",
+          "image",
+          "title"
+        ],
+        "gallery": [
+          "images",
+          "view"
+        ],
+        "cardGrid": [
+          "cards"
+        ],
+        "editorial": [
+          "body",
+          "title"
+        ],
+        "accentBeat": [
+          "body",
+          "buttonOn",
+          "buttonUrl",
+          "title"
+        ]
+      },
+      "styleKeys": {
+        "contact": [
+          "background"
+        ],
+        "business": [
+          "background"
+        ]
+      },
+      "hidden": []
+    },
+    {
+      "id": "space-16",
+      "store": "spaces.preferences.profileLayout",
+      "kind": "space",
+      "rows": [
+        {
+          "id": "r0",
+          "cells": [
+            [
+              "editorial"
+            ]
+          ],
+          "columns": 1
+        },
+        {
+          "id": "r1",
+          "cells": [
+            [
+              "features"
+            ]
+          ],
+          "columns": 1
+        },
+        {
+          "id": "r2",
+          "cells": [
+            [
+              "cardGrid"
+            ]
+          ],
+          "columns": 1
+        },
+        {
+          "id": "r3",
+          "cells": [
+            [
+              "events",
+              "gallery"
+            ]
+          ],
+          "columns": 1
+        },
+        {
+          "id": "r4",
+          "cells": [
+            [
+              "zigzag"
+            ]
+          ],
+          "columns": 1
+        },
+        {
+          "id": "r5",
+          "cells": [
+            [
+              "faq"
+            ]
+          ],
+          "columns": 1
+        },
+        {
+          "id": "r6",
+          "cells": [
+            [
+              "accentBeat"
+            ]
+          ],
+          "columns": 1
+        },
+        {
+          "id": "r7",
+          "cells": [
+            [
+              "contact"
+            ],
+            [
+              "business"
+            ]
+          ],
+          "columns": 2
+        }
+      ],
+      "contentKeys": {
+        "about": [
+          "eyebrow",
+          "title"
+        ],
+        "story": [
+          "body",
+          "eyebrow",
+          "title"
+        ],
+        "events": [
+          "columns",
+          "view"
+        ],
+        "zigzag": [
+          "aspect",
+          "body",
+          "eyebrow",
+          "image",
+          "title"
+        ],
+        "gallery": [
+          "gap",
+          "images",
+          "view"
+        ],
+        "cardGrid": [
+          "cards",
+          "title"
+        ],
+        "features": [
+          "items"
+        ],
+        "editorial": [
+          "body",
+          "title"
+        ],
+        "accentBeat": [
+          "body",
+          "buttonLabel",
+          "title"
+        ]
+      },
+      "styleKeys": {
+        "events": [
+          "mb",
+          "mt"
+        ],
+        "zigzag": [
+          "mb",
+          "mt"
+        ],
+        "gallery": [
+          "mb",
+          "mt"
+        ],
+        "accentBeat": [
+          "text"
+        ]
+      },
+      "hidden": []
+    },
+    {
+      "id": "space-17",
+      "store": "spaces.preferences.profileLayout",
+      "kind": "space",
+      "rows": [
+        {
+          "id": "r0",
+          "cells": [
+            [
+              "editorial"
+            ]
+          ],
+          "columns": 1
+        },
+        {
+          "id": "r1",
+          "cells": [
+            [
+              "cardGrid"
+            ]
+          ],
+          "title": "x",
+          "columns": 1,
+          "headerOn": true
+        },
+        {
+          "id": "r2",
+          "cells": [
+            [
+              "features",
+              "team"
+            ]
+          ],
+          "title": "x",
+          "columns": 1,
+          "headerOn": true
+        },
+        {
+          "id": "r3",
+          "cells": [
+            [
+              "business",
+              "offerings"
+            ]
+          ],
+          "title": "x",
+          "columns": 1,
+          "headerOn": true
+        }
+      ],
+      "contentKeys": {
+        "about": [
+          "body",
+          "eyebrow",
+          "title"
+        ],
+        "story": [
+          "body",
+          "eyebrow",
+          "title"
+        ],
+        "cardGrid": [
+          "cards",
+          "columns",
+          "subtitle",
+          "title"
+        ],
+        "features": [
+          "items",
+          "title"
+        ],
+        "editorial": [
+          "body",
+          "title"
+        ],
+        "offerings": [
+          "items"
+        ]
+      },
+      "styleKeys": {
+        "features": [
+          "mb",
+          "mt"
+        ],
+        "editorial": [
+          "mb",
+          "textByRole"
+        ]
+      },
+      "hidden": [
+        "offerings"
+      ]
+    },
+    {
+      "id": "space-18",
+      "store": "spaces.preferences.profileLayout",
+      "kind": "space",
+      "rows": [
+        {
+          "id": "r0",
+          "cells": [
+            [
+              "editorial"
+            ]
+          ],
+          "columns": 1
+        },
+        {
+          "id": "r1",
+          "cells": [
+            [
+              "features"
+            ]
+          ],
+          "title": "x",
+          "columns": 1,
+          "headerOn": true
+        },
+        {
+          "id": "r3",
+          "cells": [
+            [
+              "zigzag"
+            ]
+          ],
+          "title": "x",
+          "columns": 1,
+          "headerOn": true
+        },
+        {
+          "id": "r2",
+          "cells": [
+            [
+              "cardGrid",
+              "story",
+              "gallery"
+            ]
+          ],
+          "title": "x",
+          "columns": 1,
+          "headerOn": true
+        },
+        {
+          "id": "r4",
+          "cells": [
+            [
+              "faq"
+            ]
+          ],
+          "title": "x",
+          "columns": 1,
+          "headerOn": true
+        },
+        {
+          "id": "r5",
+          "cells": [
+            [
+              "contact"
+            ],
+            [
+              "business"
+            ]
+          ],
+          "title": "x",
+          "columns": 2,
+          "headerOn": true
+        }
+      ],
+      "contentKeys": {
+        "about": [
+          "body",
+          "eyebrow",
+          "title"
+        ],
+        "story": [
+          "body",
+          "eyebrow",
+          "title"
+        ],
+        "zigzag": [
+          "aspect",
+          "body",
+          "image",
+          "title"
+        ],
+        "gallery": [
+          "gap",
+          "images",
+          "view"
+        ],
+        "cardGrid": [
+          "buttonOn",
+          "cards",
+          "title"
+        ],
+        "features": [
+          "items"
+        ],
+        "editorial": [
+          "body",
+          "title"
+        ]
+      },
+      "styleKeys": {
+        "cardGrid": [
+          "mb"
+        ]
+      },
+      "hidden": []
+    },
+    {
+      "id": "campaign-01",
+      "store": "campaigns.block_json",
+      "kind": "email",
+      "rows": [
+        {
+          "id": "r0",
+          "cells": [
+            [
+              "heading"
+            ]
+          ],
+          "columns": 1
+        },
+        {
+          "id": "r1",
+          "cells": [
+            [
+              "prose"
+            ]
+          ],
+          "columns": 1
+        },
+        {
+          "id": "r2",
+          "cells": [
+            [
+              "divider"
+            ]
+          ],
+          "columns": 1
+        },
+        {
+          "id": "r3",
+          "cells": [
+            [
+              "button"
+            ]
+          ],
+          "columns": 1
+        },
+        {
+          "id": "r4",
+          "cells": [
+            [
+              "text"
+            ]
+          ],
+          "columns": 1
+        }
+      ],
+      "contentKeys": {
+        "text": [
+          "text"
+        ],
+        "prose": [
+          "text"
+        ],
+        "button": [
+          "align",
+          "label",
+          "url"
+        ],
+        "divider": [],
+        "heading": [
+          "text"
+        ]
+      },
+      "styleKeys": {},
+      "hidden": []
+    },
+    {
+      "id": "campaign-02",
+      "store": "campaigns.block_json",
+      "kind": "email",
+      "rows": [
+        {
+          "id": "r0",
+          "cells": [
+            [
+              "displayHeading"
+            ]
+          ],
+          "columns": 1
+        },
+        {
+          "id": "r1",
+          "cells": [
+            [
+              "prose"
+            ]
+          ],
+          "columns": 1
+        },
+        {
+          "id": "r2",
+          "cells": [
+            [
+              "heading"
+            ]
+          ],
+          "columns": 1
+        },
+        {
+          "id": "r3",
+          "cells": [
+            [
+              "features"
+            ]
+          ],
+          "columns": 1
+        },
+        {
+          "id": "r4",
+          "cells": [
+            [
+              "text"
+            ]
+          ],
+          "columns": 1
+        },
+        {
+          "id": "r5",
+          "cells": [
+            [
+              "divider"
+            ]
+          ],
+          "columns": 1
+        },
+        {
+          "id": "r6",
+          "cells": [
+            [
+              "callout"
+            ]
+          ],
+          "columns": 1
+        }
+      ],
+      "contentKeys": {
+        "text": [
+          "text"
+        ],
+        "prose": [
+          "text"
+        ],
+        "callout": [
+          "body",
+          "buttonLabel",
+          "buttonUrl",
+          "title"
+        ],
+        "divider": [],
+        "heading": [
+          "text"
+        ],
+        "features": [
+          "items"
+        ],
+        "displayHeading": [
+          "font",
+          "text"
+        ]
+      },
+      "styleKeys": {},
+      "hidden": []
+    },
+    {
+      "id": "campaign-03",
+      "store": "campaigns.block_json",
+      "kind": "email",
+      "rows": [
+        {
+          "id": "r0",
+          "cells": [
+            []
+          ],
+          "columns": 1
+        },
+        {
+          "id": "r1",
+          "cells": [
+            [
+              "text"
+            ]
+          ],
+          "columns": 1
+        }
+      ],
+      "contentKeys": {
+        "text": [
+          "text"
+        ]
+      },
+      "styleKeys": {},
+      "hidden": []
+    },
+    {
+      "id": "campaign-04",
+      "store": "campaigns.block_json",
+      "kind": "email",
+      "rows": [
+        {
+          "id": "r0",
+          "cells": [
+            [
+              "displayHeading"
+            ]
+          ],
+          "columns": 1
+        },
+        {
+          "id": "r1",
+          "cells": [
+            [
+              "prose"
+            ]
+          ],
+          "columns": 1
+        },
+        {
+          "id": "r2",
+          "cells": [
+            [
+              "text"
+            ]
+          ],
+          "columns": 1
+        },
+        {
+          "id": "r3",
+          "cells": [
+            [
+              "divider"
+            ]
+          ],
+          "columns": 1
+        },
+        {
+          "id": "r4",
+          "cells": [
+            [
+              "button"
+            ]
+          ],
+          "columns": 1
+        },
+        {
+          "id": "r5",
+          "cells": [
+            [
+              "quote"
+            ]
+          ],
+          "columns": 1
+        }
+      ],
+      "contentKeys": {
+        "text": [
+          "text"
+        ],
+        "prose": [
+          "text"
+        ],
+        "quote": [
+          "by",
+          "text"
+        ],
+        "button": [
+          "align",
+          "label",
+          "url"
+        ],
+        "divider": [],
+        "displayHeading": [
+          "font",
+          "text"
+        ]
+      },
+      "styleKeys": {},
+      "hidden": []
+    },
+    {
+      "id": "campaign-05",
+      "store": "campaigns.block_json",
+      "kind": "email",
+      "rows": [
+        {
+          "id": "r0",
+          "cells": [
+            [
+              "heading"
+            ]
+          ],
+          "columns": 1
+        },
+        {
+          "id": "r1",
+          "cells": [
+            [
+              "text"
+            ]
+          ],
+          "columns": 1
+        }
+      ],
+      "contentKeys": {
+        "text": [
+          "text"
+        ],
+        "heading": [
+          "text"
+        ]
+      },
+      "styleKeys": {},
+      "hidden": []
+    },
+    {
+      "id": "campaign-06",
+      "store": "campaigns.block_json",
+      "kind": "email",
+      "rows": [
+        {
+          "id": "r0",
+          "cells": [
+            [
+              "heading"
+            ]
+          ],
+          "columns": 1
+        },
+        {
+          "id": "r1",
+          "cells": [
+            [
+              "prose"
+            ]
+          ],
+          "columns": 1
+        },
+        {
+          "id": "r2",
+          "cells": [
+            [
+              "text"
+            ]
+          ],
+          "columns": 1
+        }
+      ],
+      "contentKeys": {
+        "text": [
+          "text"
+        ],
+        "prose": [
+          "text"
+        ],
+        "heading": [
+          "text"
+        ]
+      },
+      "styleKeys": {},
+      "hidden": []
+    },
+    {
+      "id": "campaign-07",
+      "store": "campaigns.block_json",
+      "kind": "email",
+      "rows": [
+        {
+          "id": "r0",
+          "cells": [
+            [
+              "heading"
+            ]
+          ],
+          "columns": 1
+        },
+        {
+          "id": "r1",
+          "cells": [
+            [
+              "text"
+            ]
+          ],
+          "columns": 1
+        },
+        {
+          "id": "rv3hrmv",
+          "cells": [
+            [
+              "features"
+            ]
+          ],
+          "columns": 1
+        },
+        {
+          "id": "rlshb28",
+          "cells": [
+            [
+              "prose"
+            ]
+          ],
+          "columns": 1
+        },
+        {
+          "id": "r2",
+          "cells": [
+            [
+              "button"
+            ]
+          ],
+          "columns": 1
+        },
+        {
+          "id": "rrnlvep",
+          "cells": [
+            []
+          ],
+          "columns": 1
+        },
+        {
+          "id": "rxd2rgc",
+          "cells": [
+            []
+          ],
+          "columns": 1
+        },
+        {
+          "id": "rrsffro",
+          "cells": [
+            []
+          ],
+          "columns": 1
+        },
+        {
+          "id": "riava7l",
+          "cells": [
+            [
+              "divider"
+            ]
+          ],
+          "columns": 1
+        },
+        {
+          "id": "rth62dm",
+          "cells": [
+            [
+              "quote"
+            ]
+          ],
+          "columns": 1
+        }
+      ],
+      "contentKeys": {
+        "text": [
+          "text"
+        ],
+        "prose": [
+          "text"
+        ],
+        "quote": [
+          "by",
+          "text"
+        ],
+        "button": [
+          "label",
+          "url"
+        ],
+        "heading": [
+          "text"
+        ],
+        "features": [
+          "eyebrow",
+          "items",
+          "layout",
+          "title"
+        ]
+      },
+      "styleKeys": {},
+      "hidden": []
+    },
+    {
+      "id": "campaign-08",
+      "store": "campaigns.block_json",
+      "kind": "email",
+      "rows": [
+        {
+          "id": "r0",
+          "cells": [
+            [
+              "photoHero"
+            ]
+          ],
+          "columns": 1
+        },
+        {
+          "id": "r1",
+          "cells": [
+            [
+              "prose"
+            ]
+          ],
+          "columns": 1
+        },
+        {
+          "id": "r2",
+          "cells": [
+            [
+              "editorial"
+            ]
+          ],
+          "columns": 1
+        },
+        {
+          "id": "r3",
+          "cells": [
+            [
+              "divider"
+            ]
+          ],
+          "columns": 1
+        },
+        {
+          "id": "r4",
+          "cells": [
+            [
+              "callout"
+            ]
+          ],
+          "columns": 1
+        },
+        {
+          "id": "r5",
+          "cells": [
+            [
+              "text"
+            ]
+          ],
+          "columns": 1
+        }
+      ],
+      "contentKeys": {
+        "text": [
+          "text"
+        ],
+        "prose": [
+          "text"
+        ],
+        "callout": [
+          "body",
+          "buttonLabel",
+          "buttonUrl",
+          "title"
+        ],
+        "divider": [],
+        "editorial": [
+          "body",
+          "eyebrow",
+          "title"
+        ],
+        "photoHero": [
+          "alt",
+          "buttonLabel",
+          "buttonUrl",
+          "eyebrow",
+          "image",
+          "subtitle",
+          "title"
+        ]
+      },
+      "styleKeys": {},
+      "hidden": []
+    },
+    {
+      "id": "campaign-09",
+      "store": "campaigns.block_json",
+      "kind": "email",
+      "rows": [
+        {
+          "id": "r0",
+          "cells": [
+            []
+          ],
+          "columns": 1
+        },
+        {
+          "id": "r1",
+          "cells": [
+            [
+              "text"
+            ]
+          ],
+          "columns": 1
+        },
+        {
+          "id": "r2",
+          "cells": [
+            [
+              "button"
+            ]
+          ],
+          "columns": 1
+        }
+      ],
+      "contentKeys": {
+        "text": [
+          "text"
+        ],
+        "button": [
+          "label",
+          "url"
+        ]
+      },
+      "styleKeys": {},
+      "hidden": []
+    },
+    {
+      "id": "campaign-10",
+      "store": "campaigns.block_json",
+      "kind": "email",
+      "rows": [
+        {
+          "id": "r0",
+          "cells": [
+            [
+              "photoHero"
+            ]
+          ],
+          "columns": 1
+        },
+        {
+          "id": "r1",
+          "cells": [
+            [
+              "prose"
+            ]
+          ],
+          "columns": 1
+        },
+        {
+          "id": "r2",
+          "cells": [
+            [
+              "editorial"
+            ]
+          ],
+          "columns": 1
+        },
+        {
+          "id": "r3",
+          "cells": [
+            [
+              "divider"
+            ]
+          ],
+          "columns": 1
+        },
+        {
+          "id": "r4",
+          "cells": [
+            [
+              "callout"
+            ]
+          ],
+          "columns": 1
+        },
+        {
+          "id": "r5",
+          "cells": [
+            [
+              "text"
+            ]
+          ],
+          "columns": 1
+        }
+      ],
+      "contentKeys": {
+        "text": [
+          "text"
+        ],
+        "prose": [
+          "text"
+        ],
+        "callout": [
+          "body",
+          "buttonLabel",
+          "buttonUrl",
+          "title"
+        ],
+        "divider": [],
+        "editorial": [
+          "body",
+          "eyebrow",
+          "title"
+        ],
+        "photoHero": [
+          "alt",
+          "buttonLabel",
+          "buttonUrl",
+          "eyebrow",
+          "image",
+          "subtitle",
+          "title"
+        ]
+      },
+      "styleKeys": {},
+      "hidden": []
+    },
+    {
+      "id": "campaign-11",
+      "store": "campaigns.block_json",
+      "kind": "email",
+      "rows": [
+        {
+          "id": "r0",
+          "cells": [
+            []
+          ],
+          "columns": 1
+        },
+        {
+          "id": "r1",
+          "cells": [
+            [
+              "text"
+            ]
+          ],
+          "columns": 1
+        }
+      ],
+      "contentKeys": {
+        "text": [
+          "text"
+        ]
+      },
+      "styleKeys": {},
+      "hidden": []
+    },
+    {
+      "id": "campaign-12",
+      "store": "campaigns.block_json",
+      "kind": "email",
+      "rows": [
+        {
+          "id": "r0",
+          "cells": [
+            [
+              "photoHero"
+            ]
+          ],
+          "columns": 1
+        },
+        {
+          "id": "r1",
+          "cells": [
+            [
+              "heading"
+            ]
+          ],
+          "columns": 1
+        },
+        {
+          "id": "r2",
+          "cells": [
+            [
+              "features"
+            ]
+          ],
+          "columns": 1
+        },
+        {
+          "id": "r3",
+          "cells": [
+            [
+              "text"
+            ]
+          ],
+          "columns": 1
+        }
+      ],
+      "contentKeys": {
+        "text": [
+          "text"
+        ],
+        "heading": [
+          "text"
+        ],
+        "features": [
+          "items"
+        ],
+        "photoHero": [
+          "alt",
+          "buttonLabel",
+          "buttonUrl",
+          "eyebrow",
+          "image",
+          "subtitle",
+          "title"
+        ]
+      },
+      "styleKeys": {},
+      "hidden": []
+    },
+    {
+      "id": "template-01",
+      "store": "email_templates.block_json",
+      "kind": "email",
+      "rows": [
+        {
+          "id": "r0",
+          "columns": 1,
+          "cells": [
+            [
+              "photoHero"
+            ]
+          ]
+        },
+        {
+          "id": "r1",
+          "columns": 1,
+          "cells": [
+            [
+              "editorial"
+            ]
+          ]
+        },
+        {
+          "id": "r2",
+          "columns": 1,
+          "cells": [
+            [
+              "features"
+            ]
+          ]
+        },
+        {
+          "id": "r3",
+          "columns": 1,
+          "cells": [
+            [
+              "quote"
+            ]
+          ]
+        },
+        {
+          "id": "r4",
+          "columns": 1,
+          "cells": [
+            [
+              "button"
+            ]
+          ]
+        }
+      ],
+      "contentKeys": {
+        "button": [
+          "align",
+          "label",
+          "url"
+        ],
+        "editorial": [
+          "body",
+          "eyebrow",
+          "title"
+        ],
+        "features": [
+          "items"
+        ],
+        "photoHero": [
+          "alt",
+          "buttonLabel",
+          "buttonUrl",
+          "eyebrow",
+          "image",
+          "subtitle",
+          "title"
+        ],
+        "quote": [
+          "by",
+          "text"
+        ]
+      },
+      "styleKeys": {},
+      "hidden": []
+    },
+    {
+      "id": "template-02",
+      "store": "email_templates.block_json",
+      "kind": "email",
+      "rows": [
+        {
+          "id": "r0",
+          "columns": 1,
+          "cells": [
+            [
+              "photoHero"
+            ]
+          ]
+        },
+        {
+          "id": "r1",
+          "columns": 1,
+          "cells": [
+            [
+              "editorial"
+            ]
+          ]
+        },
+        {
+          "id": "r2",
+          "columns": 1,
+          "cells": [
+            [
+              "cardGrid"
+            ]
+          ]
+        },
+        {
+          "id": "r3",
+          "columns": 1,
+          "cells": [
+            [
+              "quote"
+            ]
+          ]
+        },
+        {
+          "id": "r4",
+          "columns": 1,
+          "cells": [
+            [
+              "button"
+            ]
+          ]
+        }
+      ],
+      "contentKeys": {
+        "button": [
+          "align",
+          "label",
+          "url"
+        ],
+        "cardGrid": [
+          "browseLabel",
+          "browseUrl",
+          "cards",
+          "eyebrow",
+          "title"
+        ],
+        "editorial": [
+          "body",
+          "eyebrow",
+          "title"
+        ],
+        "photoHero": [
+          "alt",
+          "buttonLabel",
+          "buttonUrl",
+          "eyebrow",
+          "image",
+          "subtitle",
+          "title"
+        ],
+        "quote": [
+          "by",
+          "text"
+        ]
+      },
+      "styleKeys": {},
+      "hidden": []
+    },
+    {
+      "id": "template-03",
+      "store": "email_templates.block_json",
+      "kind": "email",
+      "rows": [
+        {
+          "id": "r0",
+          "columns": 1,
+          "cells": [
+            [
+              "heading"
+            ]
+          ]
+        },
+        {
+          "id": "r1",
+          "columns": 1,
+          "cells": [
+            [
+              "prose"
+            ]
+          ]
+        },
+        {
+          "id": "r2",
+          "columns": 1,
+          "cells": [
+            [
+              "features"
+            ]
+          ]
+        },
+        {
+          "id": "r3",
+          "columns": 1,
+          "cells": [
+            [
+              "divider"
+            ]
+          ]
+        },
+        {
+          "id": "r4",
+          "columns": 1,
+          "cells": [
+            [
+              "callout"
+            ]
+          ]
+        },
+        {
+          "id": "r5",
+          "columns": 1,
+          "cells": [
+            [
+              "text"
+            ]
+          ]
+        }
+      ],
+      "contentKeys": {
+        "callout": [
+          "body",
+          "buttonLabel",
+          "buttonUrl",
+          "title"
+        ],
+        "features": [
+          "items"
+        ],
+        "heading": [
+          "text"
+        ],
+        "prose": [
+          "text"
+        ],
+        "text": [
+          "text"
+        ]
+      },
+      "styleKeys": {},
+      "hidden": []
+    },
+    {
+      "id": "template-04",
+      "store": "email_templates.block_json",
+      "kind": "email",
+      "rows": [
+        {
+          "id": "r0",
+          "columns": 1,
+          "cells": [
+            [
+              "heading"
+            ]
+          ]
+        },
+        {
+          "id": "r1",
+          "columns": 1,
+          "cells": [
+            [
+              "text"
+            ]
+          ]
+        },
+        {
+          "id": "r2",
+          "columns": 1,
+          "cells": [
+            [
+              "prose"
+            ]
+          ]
+        },
+        {
+          "id": "r3",
+          "columns": 1,
+          "cells": [
+            [
+              "divider"
+            ]
+          ]
+        },
+        {
+          "id": "r4",
+          "columns": 1,
+          "cells": [
+            [
+              "button"
+            ]
+          ]
+        }
+      ],
+      "contentKeys": {
+        "button": [
+          "align",
+          "label",
+          "url"
+        ],
+        "heading": [
+          "text"
+        ],
+        "prose": [
+          "text"
+        ],
+        "text": [
+          "text"
+        ]
+      },
+      "styleKeys": {},
+      "hidden": []
+    },
+    {
+      "id": "template-05",
+      "store": "email_templates.block_json",
+      "kind": "email",
+      "rows": [
+        {
+          "id": "r0",
+          "columns": 1,
+          "cells": [
+            [
+              "displayHeading"
+            ]
+          ]
+        },
+        {
+          "id": "r1",
+          "columns": 1,
+          "cells": [
+            [
+              "prose"
+            ]
+          ]
+        },
+        {
+          "id": "r2",
+          "columns": 1,
+          "cells": [
+            [
+              "features"
+            ]
+          ]
+        },
+        {
+          "id": "r3",
+          "columns": 1,
+          "cells": [
+            [
+              "divider"
+            ]
+          ]
+        },
+        {
+          "id": "r4",
+          "columns": 1,
+          "cells": [
+            [
+              "callout"
+            ]
+          ]
+        },
+        {
+          "id": "r5",
+          "columns": 1,
+          "cells": [
+            [
+              "text"
+            ]
+          ]
+        }
+      ],
+      "contentKeys": {
+        "callout": [
+          "body",
+          "buttonLabel",
+          "buttonUrl",
+          "title"
+        ],
+        "displayHeading": [
+          "text"
+        ],
+        "features": [
+          "items"
+        ],
+        "prose": [
+          "text"
+        ],
+        "text": [
+          "text"
+        ]
+      },
+      "styleKeys": {},
+      "hidden": []
+    },
+    {
+      "id": "template-06",
+      "store": "email_templates.block_json",
+      "kind": "email",
+      "rows": [
+        {
+          "id": "r0",
+          "columns": 1,
+          "cells": [
+            [
+              "heading"
+            ]
+          ]
+        },
+        {
+          "id": "r1",
+          "columns": 1,
+          "cells": [
+            [
+              "prose"
+            ]
+          ]
+        },
+        {
+          "id": "r2",
+          "columns": 1,
+          "cells": [
+            [
+              "cardGrid"
+            ]
+          ]
+        },
+        {
+          "id": "r3",
+          "columns": 1,
+          "cells": [
+            [
+              "divider"
+            ]
+          ]
+        },
+        {
+          "id": "r4",
+          "columns": 1,
+          "cells": [
+            [
+              "callout"
+            ]
+          ]
+        },
+        {
+          "id": "r5",
+          "columns": 1,
+          "cells": [
+            [
+              "text"
+            ]
+          ]
+        }
+      ],
+      "contentKeys": {
+        "callout": [
+          "body",
+          "buttonLabel",
+          "buttonUrl",
+          "title"
+        ],
+        "cardGrid": [
+          "buttonOn",
+          "cards",
+          "eyebrow",
+          "title"
+        ],
+        "heading": [
+          "text"
+        ],
+        "prose": [
+          "text"
+        ],
+        "text": [
+          "text"
+        ]
+      },
+      "styleKeys": {},
+      "hidden": []
+    },
+    {
+      "id": "template-07",
+      "store": "email_templates.block_json",
+      "kind": "email",
+      "rows": [
+        {
+          "id": "r0",
+          "columns": 1,
+          "cells": [
+            [
+              "displayHeading"
+            ]
+          ]
+        },
+        {
+          "id": "r1",
+          "columns": 1,
+          "cells": [
+            [
+              "prose"
+            ]
+          ]
+        },
+        {
+          "id": "r2",
+          "columns": 1,
+          "cells": [
+            [
+              "image"
+            ]
+          ]
+        },
+        {
+          "id": "r3",
+          "columns": 1,
+          "cells": [
+            [
+              "callout"
+            ]
+          ]
+        },
+        {
+          "id": "r4",
+          "columns": 1,
+          "cells": [
+            [
+              "divider"
+            ]
+          ]
+        },
+        {
+          "id": "r5",
+          "columns": 1,
+          "cells": [
+            [
+              "text"
+            ]
+          ]
+        }
+      ],
+      "contentKeys": {
+        "callout": [
+          "body",
+          "buttonLabel",
+          "buttonUrl",
+          "title"
+        ],
+        "displayHeading": [
+          "text"
+        ],
+        "image": [
+          "alt",
+          "aspect",
+          "src"
+        ],
+        "prose": [
+          "text"
+        ],
+        "text": [
+          "text"
+        ]
+      },
+      "styleKeys": {
+        "displayHeading": [
+          "align"
+        ]
+      },
+      "hidden": []
+    }
+  ]
+}

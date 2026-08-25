@@ -14,6 +14,7 @@
 
 import { JsonLd } from '@/components/json-ld'
 import { articleSchema } from '@/lib/jsonld'
+import { assetRefUrl } from '@/lib/library/asset-ref'
 import { richPlainText } from '@/lib/page-editor/richtext'
 import type { Data } from '@/lib/page-editor/types'
 
@@ -26,6 +27,20 @@ function firstProp(data: Data, keys: string[]): string {
     for (const k of keys) {
       const v = props[k]
       if (typeof v === 'string' && v.trim()) return richPlainText(v).trim()
+    }
+  }
+  return ''
+}
+
+// The image twin of firstProp: an image prop may store an AssetRef ({ assetId, url },
+// ADR-1130) instead of a bare URL, so read through assetRefUrl and skip the markdown
+// strip (a URL is not prose).
+function firstImageProp(data: Data, keys: string[]): string {
+  for (const item of data.content ?? []) {
+    const props = item.props as Record<string, unknown>
+    for (const k of keys) {
+      const url = assetRefUrl(props[k])
+      if (url.trim()) return url.trim()
     }
   }
   return ''
@@ -65,7 +80,7 @@ export function BlockDocJsonLd({
   const headline = (title ?? firstProp(data, ['title', 'heading', 'text'])).trim()
   const desc = (description ?? firstProp(data, ['subtitle', 'lead', 'body', 'text'])).trim().slice(0, 300)
   if (!headline || !desc) return null
-  const resolved = image ?? firstProp(data, ['image', 'photo', 'cover', 'src']).trim() ?? ''
+  const resolved = image ?? firstImageProp(data, ['image', 'photo', 'cover', 'src']).trim() ?? ''
   const img = Array.isArray(resolved) ? resolved : resolved ? [resolved] : undefined
   return (
     <JsonLd

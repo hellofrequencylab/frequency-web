@@ -30647,6 +30647,428 @@ the ranked page stops being the whole truth. The replacement is already scoped �
 `search_library_assets` RPC mirroring the existing `match_library_assets` — and it swaps in behind
 `rankLibraryMatches` alone.
 
+---
+
+## ADR-1129: The bench is storage, not a view — so E0's fold is a partition, and the entity registry gets the gate it never had (2026-08-25)
+
+**Status:** accepted · advances `PROG-E0` (E0 task 8, half of task 4) · corrects
+[`EDITOR-E0.md`](EDITOR-E0.md) §1.2 and §4 · enforced by `pnpm check:entity-layouts` +
+`scripts/check-entity-layouts.test.ts` + `lib/entity-blocks/node-tree.test.ts`
+
+### The answer, first
+
+[`EDITOR-E0.md`](EDITOR-E0.md) §1.2 says of the node-tree migration: *"`EntityLayout.content` and
+`.style` are **deleted, not re-keyed**."* Implemented literally — walk `cells`, fold each block's
+bag onto its node, drop the sibling maps — **that deletes 35 authored bags across 18 of 18 live
+Space profile documents**, because the sibling map is the only place a BENCHED block's content
+lives.
+
+`rows-ops.ts:13-15` states the mechanic in its own header: *"benching a block removes it from its
+column so it falls back to the derived bench tray **with its config intact**."* Intact **where**?
+In `content[id]`, which after benching no cell references. The bench is derived; its *content* is
+not, and nothing in the plan said so.
+
+**So the fold is a PARTITION, not a projection.** Every key of `content` / `style` / `hidden` is
+matched to a placed node **or becomes a bench node**. `NodeLayout.bench` is therefore *stored*,
+which §1.3 already wanted for a different reason ("benching moves the node out of `cells` with its
+content intact"), arrived at here from data rather than from design.
+
+### What was measured, 2026-08-25
+
+| | |
+|---|---:|
+| EntityLayout documents in production | **37** (18 Space · 12 campaign · 7 email template) |
+| Placements across them | **226** |
+| Authored content bags | **204** |
+| 🔴 Bags belonging to a block **no cell references** | **35** (34 `content`, 1 `style`) |
+| Space documents carrying at least one | **18 of 18** |
+
+The benched types are `about` (17 documents), `story` (16), `cardGrid` (1) and `heading` (1, a
+style bag). Both email stores are clean — the bench UI is Space-only — which is why walking one
+store and generalising would have missed it.
+
+### The gate this earned
+
+The entity-block catalog had **no** stored-data guard. `check:stored-blocks` (ADR-1055) says so in
+its own scope line: it covers the Puck registry and the `pages` documents, and names the
+entity-block registry as out of scope. So retiring an entity block that live data still names was
+unguarded on 37 documents, 19 of which two crons send as email.
+
+`check:entity-layouts` closes it, on the `check:stored-blocks` model down to the exit codes: a pure
+`.mjs` half owning the corpus's integrity floors, and a `.test.ts` half that can import the TS
+registry and owns the two questions that need it — does every stored type still **resolve**, and is
+it **legal for the kind** of the store it was found in (a narrowed `kinds[]` under stored data
+fails).
+
+⚠️ **The bench arm is stated as latent, not as firing.** Corpus-wide today every benched type is
+also placed in *some* document, so that arm changes no verdict on the current tree. What it changes
+is the distance to a silent failure: `about` is authored on 17 documents and placed on **1**,
+`story` authored on 16 and placed on **2**. Three operator edits and 33 live bags are named by no
+cell anywhere, at which point a placements-only guard is green while the retirement erases them.
+The guard's header says exactly this. The overstated version — "it catches a live bug today" —
+would be the shape-not-truth failure this repo names in four ADRs, performed by the gate written to
+prevent it.
+
+### The corpus is structural, and that is a rule, not a shortcut
+
+`scripts/entity-layout-corpus.json` freezes the row skeleton, the block type in each cell, and the
+**field names** of every bag. No values, no slugs, no ids. That is `scripts/stored-block-types.json`'s
+own discipline (*"Types only — no tenant copy, no props, no ids"*), and it is sufficient: node ids
+are minted from `rowId:col:index:type`, so determinism and idempotence are decidable from shape
+alone. §1.5 step 2 asks for a fixture of "all 41 real production documents"; **a fixture of
+production *documents* would put tenant copy in git, and the answer is a fixture of production
+*shapes*.**
+
+### The node id
+
+`n` + two 32-bit FNV-1a hashes of the placement's own coordinates, base36, always 10 characters.
+Deterministic because step 9 keeps `upgradeLayout` in the read path forever: a re-mint on every read
+would make `layout-equal.ts` report every document dirty, permanently. Collisions salt the seed and
+re-hash, which is still deterministic. A node id arriving over the wire is only ever *reused* when
+it matches `NODE_ID_RE`; it is never a write key, because `cells` is an array of objects — the
+property-injection surface `layout.ts:443-447` guards is not narrowed here, it is removed.
+
+### Three deviations from the plan, each deliberate
+
+1. **No `v:` on a node.** §1.2 sketches one. Block versions arrive with E1's `defineBlock`; minting
+   `v: 1` on 226 nodes today is a constant nobody can verify.
+2. **No per-type limits.** That is task 10. `upgradeLayout` re-expresses what is stored; it does not
+   re-decide what is legal. Two blocks of one type become *expressible* here and stay illegal to
+   *create* until 10.
+3. **Unknown types are preserved, not dropped.** `parseRows` drops a placement whose id left the
+   registry. [ADR-978](#adr-978) settled that a loader must never discard an author's document over
+   an unknown type, so the upgrade keeps it and leaves legality to `sanitizeRows` / `resolveRows`,
+   which run after and are unchanged.
+
+### 🔴 And a premise that expired: `app_instances` no longer exists
+
+[`EDITOR-E0.md`](EDITOR-E0.md) §4.1 opens *"a vocabulary collision that blocks the first writer"* and
+prescribes widening `surface_type`'s CHECK constraint as a **non-additive, deliberate-apply**
+migration (task 16). **There is no constraint and no table.** `20270316000000_drop_app_instances_until_e0.sql`
+dropped it on 2026-08-19 under OWN-031, naming E0 as the owner that would *re-create it with its
+writers*. Verified against the live database on 2026-08-25: `app_instances` is absent.
+
+So task 16 is not a widening, it is part of the CREATE — additive, no deliberate-apply ceremony, and
+the table lands with the four-value architecture vocabulary
+(`profile-inapp | spotlight-public | space-profile | space-site`) rather than the six-value one it
+had. That is strictly cheaper than the plan, and it is only cheaper if someone checks before
+building. Both documents are corrected in this pass.
+
+### What is NOT claimed
+
+`upgradeLayout` is **not in any read path**. Task 9 puts it at the top of `parseEntityLayout`, and
+that is a separate increment with its own proof (backlog `LIVE-119`), because it is the change that
+makes every reader node-shaped and every `layout-equal` comparison read dirty exactly once. Nothing
+about the stored shape changed; no migration ships here.
+## ADR-1130: Blocks reference the Loom through one seam, and the backfill turned out to be already done (2026-08-25)
+
+**Status:** Accepted
+**Advances:** `PROG-D2` — "Loom D2: the AssetField seam + backfill" (the seam half; the row stays
+open for adoption breadth, re-sequenced below)
+**Extends:** [ADR-1121](#adr-1121) (D1's ingest chokepoint this stacks on), [ADR-478](#adr-478) /
+[ADR-480](#adr-480) (the catalog), [ADR-975](#adr-975) (`block_usage` is derived, which this shape
+feeds), [ADR-1082](#adr-1082) (re-test the premise first)
+
+### The row said three things. Measured against the live database, one was real.
+
+`PROG-D2` promised (1) *"One Upload / Pick from library / Paste URL control replacing ImageField
+everywhere"*, (2) *"blocks store an asset REFERENCE plus a URL cache; render resolves reference →
+CDN url"*, and (3) *"backfill existing site-media URLs into the catalog and rewrite references"*.
+Census first (ADR-1082), live database, 2026-08-25:
+
+- **The one control already exists and is already everywhere.** `components/loom/loom-picker.tsx`
+  is the universal picker with **16 consumers** across the page editor, entity blocks, the Studio
+  spark, branding, events, QR and email surfaces. The row's *"Paste URL"* leg was overruled by an
+  owner directive recorded in three code headers ("the Loom is the only image picker — no file
+  dialog, no paste-a-URL box"), and Upload lives INSIDE the picker. Nothing to build; the row's
+  control was shipped incrementally under other rows and nobody re-read this one.
+- **The reference half was genuinely unbuilt** — every pick threw the asset id away at the last
+  step (`onSelect(url)`) and every block document memorised a bare URL string.
+- **The backfill's premise is dead, in the good direction.** The live `pages` documents contain
+  **zero** site-media URLs (2 URL occurrences total, 1 distinct, external). All 6
+  `page_content.hero_image` site-media references already have catalog rows. Of 23 objects in the
+  `site-media` bucket, 15 are catalogued; the 8 that are not are `importer/<intakeId>/…` intake
+  STAGING files referenced only by 7 `business_intake` staging rows — and since ADR-1121 the
+  importer files publish-time media into the Loom itself. Spaces branding already points at
+  `library-media` (the picker's bucket). **There is nothing to backfill and nothing to rewrite**;
+  a backfill script would have been apparatus without a patient. Struck from the row with these
+  numbers, not deleted from memory: the orphaned staging files became `LIVE-120`.
+
+### The decision: one stored shape, one read, one unwrap, one refresh
+
+A block image value is now `string | AssetRef`, where `AssetRef = { assetId, url }`
+(`lib/library/asset-ref.ts`, pure): the **reference** that survives a D3 edit re-pointing the live
+asset, plus the **cached CDN URL** that renders when nothing re-resolves. Four rules make it a seam
+instead of a migration:
+
+1. **Legacy strings stay legal forever.** Every reader goes through `assetRefUrl`, which passes a
+   string through and reads a ref's cache. No stored document is rewritten — the census is what
+   proves no rewrite is needed.
+2. **Renderers never learn refs exist.** The `BlockRender` walk unwraps every ref to its URL string
+   before a block's `render` sees props — at any depth, including gallery arrays a `custom` field
+   stores with no field metadata. This is the render path's second deliberate divergence from
+   Puck's rsc `<Render>` (after `isEditing`), and it is identity-preserving on ref-free values, so
+   the byte-parity contract holds on every document Puck itself could render (proven: the same doc
+   stored as refs and as strings renders byte-identical markup).
+3. **Fields store refs; the picker offers them.** `LoomPicker` gains `onSelectAsset` /
+   `onSelectManyAssets` (the URL plus the library row's id; a house site icon has no row and stays
+   reference-less). The page-editor fields (`imgField`, `loomImageField`, the gallery field) store
+   `{ assetId, url }` on a library pick.
+4. **The render path refreshes the cache, fail-open.** `refreshAssetRefUrls`
+   (`lib/library/resolve-refs.ts`) runs inside `getPublishedData` — the one chokepoint every
+   public block page reads through — collecting ref ids (UUID-filtered, so one malformed id cannot
+   fail the batch) and re-pointing stale caches with a single `select id,url`. A ref-free document
+   costs **no query**; a failed query, a deleted asset, or a credential-less static build leaves
+   every cache standing. **Measured fan-out: zero** — no sharp, no next/og, no new dependency
+   (`check:og-trace` holds at 67/100).
+
+### What is NOT claimed
+
+- **Column-backed surfaces still store URLs** (`spaces.brand_logo_url`, `page_content.hero_image`,
+  profile headers, `page_settings.og_image_url`): a text column cannot hold a ref, and deciding
+  whether they get companion id columns or stay URL-cached is schema design, not this seam. That
+  and the non-Puck picker consumers (entity blocks, Studio spark, email studio) are `HYG-029`.
+- **Space documents refresh nothing yet.** They render refs correctly via the cache (the unwrap is
+  in the shared `BlockRender`), but their read path (`spaces.preferences` → `readPageDoc`) does not
+  yet call `refreshAssetRefUrls`. It matters only once D3 edits can re-point a live asset's URL;
+  sequenced in the row.
+- **The usage index is not this.** Refs make "which documents use this asset" a cheap JSONB scan,
+  which is exactly the `block_usage` derivation ADR-975 names — but that is D4's build, and this
+  ADR only makes it possible.
+
+### What would reopen this
+
+A surface that must render a ref whose cache was never primed (an API-written document, say) —
+at which point the unwrap needs a resolve-on-miss, and `refreshAssetRefUrls` is the seam it slots
+into. Or a measured case of the editor needing the CURRENT url mid-session, which would move the
+refresh from `getPublishedData` into `getPage`.
+## ADR-1125: Repairing a dead address is not authoring a page, and the seed was never the whole bug (2026-08-25)
+
+**Status:** Accepted · **Works:** `LIVE-104`, `LIVE-108`, `LIVE-109` · **Corrects:** `LIVE-109` ·
+**Files:** `LIVE-115`, `HYG-023` · **Adds:**
+`supabase/migrations/20270323000000_stored_doc_links_repair.sql`,
+`components/page-editor/blocks/profile.cta-href.test.tsx` ·
+**Upholds:** [ADR-1115](#adr-1115) §4 and `OWN-043` (the published home document is the owner's
+surface) · **Extends:** [ADR-1082](#adr-1082) (re-test the premise), [ADR-1090](#adr-1090)
+(`/onboarding/beta` → `/join`), [ADR-1111](#adr-1111) (migration ordering across branches)
+
+### What was re-measured, before anything was written
+
+[ADR-1082](#adr-1082) is unambiguous: a probe measures whether the work is done, and **nothing
+measures whether the row is still true**. So `recaptureQuery` from `scripts/stored-links.json` was
+re-run against production first. The 2026-08-24 census and the 2026-08-25 reading are **identical on
+every axis** — same three stores, same 4 / 1 / 18 documents, same 8 / 5 / 18 hrefs set, same
+20 / 3 / 36 empty, same three targets at the same hit counts.
+
+| Row | Claim | Verdict on 2026-08-25 |
+|:--|:--|:--|
+| `LIVE-104` | the published home document offers ONE destination and it is retired | ✅ holds — 13 blocks, 5 link props, all `/onboarding/beta`, one of them absolute |
+| `LIVE-108` | every link in every stored marketing document is broken | ✅ holds — 13 hrefs over 5 documents, zero pointing anywhere live |
+| `LIVE-109` | all 18 Space micro-sites ship one link and it is `href="#"` | ✅ holds on the count, ⚠️ **wrong on the remedy** (below) |
+
+**Nothing was retracted, and that is a result rather than a non-result.** Five rows re-measured on
+2026-08-18 had five expired premises; three re-measured here had none. The check costs one query.
+
+### The correction that mattered: the seed was not the whole bug
+
+`LIVE-109` proposed seeding an empty `ctaHref` "so the block draws no button at all (SpaceCallout,
+like MediaText, renders its CTA only when label and href are both set)". That is true of `MediaText`
+and it was **false of `SpaceCallout`**, which gated its button on `ctaLabel` alone and rendered:
+
+```tsx
+<CtaButton href={ctaHref || '#'} label={ctaLabel} … />
+```
+
+An empty href fell straight back to `'#'`. **Shipping the row exactly as written would have left all
+eighteen buttons as dead as they started, behind a diff that read as a fix** — and behind a probe
+that would have gone green, because the old probe grepped the seed file for `ctaHref: '#'` and the
+seed would indeed have changed.
+
+Two more things the row did not have:
+
+- **Three seeding sites, not one.** Besides `templates/space-default.ts:143`, the block registry's
+  own `defaultProps` seed `'#'` for **both** `SpaceCallout` and its twin `SpaceCTA`, so a Callout
+  dragged in from the palette shipped the same dead button. The probe now reads both files.
+- **`#contact` is only a destination for 16 of the 18.** Every one of the documents carries a
+  `SpaceContact` block rendering inside `<section id="contact">`, so the anchor is real — but
+  `SpaceContactBlock` returns `null` with no rows and its section carries `empty:hidden`. Measured:
+  `danny-kenduck` and `templeofaset` have none of address / hours / phone / email / website, so
+  sending them to `#contact` would be **the same lie in a new costume**. Those two get no button.
+
+The fix is therefore in the renderer, not only the seed: `SpaceCallout` and `SpaceCTA` now require
+a label **and** a destination, which is the rule `MediaText` already had.
+
+### The decision: repair is not authorship
+
+`LIVE-108` routes the two `home` documents to the editor, because `OWN-043` makes the published home
+document the owner's surface and [ADR-1115](#adr-1115) §4 declined to write it. Both are right, and
+taken literally they would mean **no agent can ever fix a broken link on the home page**. So the line
+gets drawn one notch finer, where `OWN-043`'s own evidence already put it — *"an agent cannot decide
+which words the homepage should carry."*
+
+| | Example here | Whose |
+|:--|:--|:--|
+| **Repair** — an address that no longer exists | `/onboarding/beta` → `/join`; dropping the hardcoded origin; `'#'` → `#contact` | the agent's |
+| **Authorship** — which words, and where they newly point | filling `home-structure` / `home-builders` with a label and a destination | the **owner's** |
+
+Rewriting the 13 marketing hrefs changes **no word, no label and no destination**: every one of those
+clicks already lands on `/join` via a 308. It removes a redirect hop and stops a preview deployment's
+front door throwing the reviewer out to production. That is repair.
+
+Giving the home page a **second** destination is not, and it is **deliberately not done here**.
+[ADR-1115](#adr-1115) §4 reserved it to the owner one day before these rows were picked up; an agent
+overriding that inside a pull request titled as a link fix is exactly the drift the one list exists
+to stop. `LIVE-104` therefore stays open, and after the migration its probe fails on **exactly one
+line** — `1 destination` — which is the row correctly reporting an owner action, not a gap in this
+change. The recommended, voice-checked copy is already in [ADR-1115](#adr-1115); the edit is two
+fields at `/pages/home`.
+
+### The migration ships UNAPPLIED, and the reason is other people's branches
+
+[ADR-1111](#adr-1111) decision 1 keeps apply-before-merge, and scopes it: it is required **when code
+in the same change reads the new schema**. Nothing here does — there is no schema change at all. Set
+against that, [ADR-1111](#adr-1111)'s own finding is that an applied migration turns **every open
+branch whose tree lacks the file red**, and five branches were in flight. Applying would have gone
+red across all five for a change none of them touch.
+
+So it merges first and is applied after, following `20270305000000` (the `LIVE-028` block rewrite),
+which shipped the same way. **The price is stated rather than discovered:** CI arms the ledger half
+of `check:migrations` with real credentials, so while the file sits unapplied that one guard is
+**red**, reporting it as `unpairedRepo`. That is the expected signature of "not applied yet" — and
+it means `check:migrations` red with everything else green is the state to merge from, while any
+*other* red is a real problem. The consequence is stated rather than glossed: **`LIVE-108` and
+`LIVE-109` stay open until the owner applies it and the census is re-captured.** That is the reading
+`scripts/check-stored-blocks.mjs` already settled for its own probe — *"a probe that went green on
+the declared state would close a row whose work has not happened."* Re-capturing the census now would
+record a fix that has not happened, so it is deliberately left red.
+
+The migration is **idempotent and a true no-op on a second run** (both statements are guarded, and
+neither `pages` nor `spaces` carries a trigger); it is applicable **before or after any sibling** in
+either order, since it creates nothing and depends on nothing; and it is **pinned to the corpus as
+measured** — its post-asserts hard-code 36 / 13 / 207 / 18 / 16 / 2, so a corpus that has moved
+underneath it produces a loud rollback rather than a silent corruption.
+
+### Nothing was shipped that had not been run
+
+- **The migration was dry-run against production as SELECTs**, the identical expressions, writing
+  nothing: 0 occurrences of the retired address left, block counts unchanged (36 / 13 / 207),
+  8 + 5 hrefs on `/join`, 16 → `#contact`, 2 → `''`, and — the strongest of them — the full
+  (space, page, ordinal, type, prop, value) multiset diffed before against after with
+  `SpaceCallout.ctaHref` excluded: **954 props compared, 0 lost, 0 gained.**
+- **The text substitution's safety was measured, not assumed.** Per document the count of the bare
+  substring `onboarding/beta` equals the count of complete quoted link values in every row, so there
+  is no prose mention, partial path or query string to damage.
+- **The renderer tests are negative-controlled**: 7 of 9 fail against `origin/main` and pass here;
+  the other 2 are positive controls asserting a real href still renders.
+- **The rewritten `LIVE-109` probe was controlled four ways**: `origin/main` code → 3 seeding sites;
+  this tree → code arm silent, census arm still red; census with the `'#'` target removed → 0;
+  census absent → 79.
+
+### What this leaves behind, filed rather than mentioned
+
+- **`LIVE-115`** — the same `href={… || '#'}` shape survives in **seven** renderers in
+  `blocks/design.tsx`. Latent rather than live (no stored marketing document carries `'#'`), and
+  deliberately a triage row: three of the seven sit behind `safeHref()`, where `'#'` is also the
+  stored-XSS degradation path and must be separated from the empty-field case, not deleted.
+- **`HYG-023`** — [ADR-1115](#adr-1115) copied the `stored-block-types.json` census but not the
+  instrument around it. There is no `check-stored-links.mjs`, so both row probes re-implement the
+  census walk and the `next.config.ts` redirect parse inline, and nothing reads `capturedAt`.
+- **A caveat this change cannot close.** `#contact` is right for the 16 *as measured today*. A Space
+  that later clears its contact details keeps a button pointing at a section that no longer renders,
+  and the block cannot know — it has no access to the Space's profile data. The durable answer is an
+  editor field that offers the page's live anchors instead of a free-text box, which is `PROG-E`
+  work; it is recorded on `LIVE-115`.
+
+---
+## ADR-1131: Phase 4's valuation authority already shipped under other names — the surviving deliverable is the ledger, and its freeze is the slice (2026-08-25)
+
+**Status:** Accepted · **Program:** `PROG-PRAC4` (Practice Library Phase 4) · **Retracts:**
+`computePracticeReward()` as a build item · **Ships:** the per-Pillar Zap attribution ledger's
+log-time freeze · **Extends:** [ADR-438](DECISIONS.md) (the two locked variables),
+[ADR-442](DECISIONS.md)/[ADR-443](DECISIONS.md) (which superseded one of them),
+[ADR-1082](DECISIONS.md) (re-test the premise) · **Migration:** `20270324000000`
+
+### The census (premise re-test, ADR-1082)
+
+`PROG-PRAC4` names three deliverables. Measured against the tree and production
+(`azsqfeonabsbmemvddqd`: 20 practices, 209 logs / 191 paid, 4 Pillars) on 2026-08-25:
+
+| Deliverable | Found |
+|---|---|
+| 4.1a `computePracticeReward()` as valuation authority | 🔴 **Superseded, retracted.** See below. Zero references in code; five stale prose claims in docs. |
+| 4.1b Per-Pillar Zap attribution ledger | 📋 **Genuinely missing.** `secondary_domain_id`/`primary_pct` (Phase-1 columns, live in prod) were referenced by NOTHING but `database.types.ts`; 0/20 practices carry a split — nothing writes one. **This slice ships the ledger's server half.** |
+| 4.2 Vera curation | ⏳ **Partial.** The publish pre-screen (voice/completeness/safety, ADR-446) and the drafting primers exist; embedding-driven auto-suggest Pillar/subcategory, auto-tag, auto-summary and remix-prompt generation do not. |
+| 4.3 Library health dashboard | ✅ **Already shipped** (#2193): `lib/practices/health.ts` + tests + `app/(main)/admin/content/practices/health/page.tsx` on the Dashboard template. `BUILD-LIST` §4.3 still said 📋 — fixed in this pass. |
+
+### The retraction, with evidence
+
+ADR-438 (06-28) locked "auto-valued, creator-proof points" as a create-time
+`computePracticeReward(practice)` that derives intensity from structure and turns
+`weight_class`/`reward_zaps` into computed outputs. **One day later ADR-442, then ADR-443,
+delivered the same lock by a stronger mechanism at the other end of the pipeline**, and the tree
+implements them:
+
+- **Create time:** the creator picks a tier but `setPractice` clamps it to what `duration_min`
+  earns (`clampTierToDuration`, `lib/practices.ts` — a 2-minute practice can never claim Heavy).
+- **Log time:** a TIMED practice pays the tier its REAL engaged minutes reach
+  (`achievedTier`, ADR-443) — the creator's pick is only the recommendation and quick-log
+  fallback. Zaps-per-real-minute is flat by construction, which is the whole anti-farm goal.
+- **The break-glass:** `reward_zaps` is already admin-only (`lib/practices.ts` reward patch path).
+
+A create-time computation would now be a THIRD authority ruling on a question the log path
+already answers better (it cannot see real engaged time; the log can). ADR-443 says so in its
+own consequences: "`weight_class`/`reward_zaps` remain the recommendation + quick-log fallback +
+the staff break-glass; ADR-442's floors/amounts are reused, not replaced."
+**`computePracticeReward()` is retired as a build item.** The prose that stated it as fact
+(`PRACTICE-LIBRARY.md` §3, `REWARDS-ECONOMY.md`, `BUILD-LIST` §two-locked-variables) is corrected
+in this pass — code wins, docs fix in the same change.
+
+### The ledger, and why it freezes
+
+The split's payoff (ADR-438: attribution "never changes the wallet total") ships as an
+append-only ledger frozen at log time, for exactly the reason `zaps_awarded` itself is frozen:
+the practice can be re-categorized or re-balanced after the fact, and a ledger that
+re-attributes history on every curator edit is not a ledger.
+
+- **Migration `20270324000000`** — three nullable snapshot columns on `practice_logs`
+  (`pillar_id`, `secondary_pillar_id`, `primary_pct`), constraints mirroring the practices side
+  (NOT `is distinct from`, which violates on the all-null legacy rows), partial FK indexes.
+- **`logPractice`** snapshots the split in the SAME write as `zaps_awarded` (the split columns
+  ride the existing practice read — zero extra queries). If that combined write errors, it
+  retries with `zaps_awarded` alone, so un-log exactness never regresses.
+- **`lib/practices/attribution.ts`** — pure math + the read. The invariant is CONSERVATION:
+  `primary + secondary === zaps_awarded` exactly, integers, with the remainder riding the
+  primary (floor keeps the primary dominant at 50/50 on odd totals, matching the ADR-438
+  floor's intent). `getMemberPillarZaps` reads the frozen ledger and covers pre-freeze rows by
+  the practice's CURRENT split — a documented fallback, not a backfill guess.
+
+### Migration posture (ADR-1111)
+
+`apply_migration` was attempted from the authoring session: the first call failed on a
+connection timeout and every retry was denied by the session's permission layer. So this PR
+carries the file **with the apply still pending** — the one window ADR-1111 warns about, held
+open deliberately rather than silently. Mitigations, stated so they can be checked: the code is
+correct on BOTH sides of the apply (the snapshot write falls back to the plain `zaps_awarded`
+write; the reader treats null snapshots by fallback), the columns are additive and nullable so
+none of the six in-flight sibling branches is affected, and `check:migrations` with ledger
+credentials will name `20270324000000` as repo-not-applied until the two-step apply + ledger
+repair (`supabase/migrations/README.md`) is run — which should happen at merge time.
+
+### What was deliberately NOT done (the remaining sequence, also in the row)
+
+1. **Split authoring** — the one 75/25 slider (Studio manifest field on the Practice, rail
+   placement) writing `secondary_domain_id`/`primary_pct`; until it exists every snapshot is
+   single-Pillar, which is true data, not a gap in the ledger.
+2. **The surface** — per-Pillar progress read (`getMemberPillarZaps`) composed into the member
+   progress view and the health dashboard's coverage section.
+3. **Vera curation (4.2 remainder)** — auto-suggest Pillar/subcategory from the embedding,
+   auto-tag, auto-summary, remix prompts; all through `lib/ai/voice.ts` and budget-gated like
+   the ADR-446 pre-screen.
+4. **Phase-1 leftovers** carried by the row — server-backed saved views (still localStorage,
+   verified), `DataTable` selection slot, residual facet counts, `database.types.ts` regen.
+
+Reserved backlog ids `LIVE-121`/`HYG-030` were NOT consumed: the census produced no finding
+independent of `PROG-PRAC4`, and the sequence lives in that row's detail per the one-list rule.
 ## ADR-1127: The browse hero's missing rung, not its missing template — 34 of 41 render sites threw the operator's upload away (2026-08-25)
 
 **Status:** accepted · advances `PROG-P4` · builds on [ADR-1122](#adr-1122) (the copy cascade) and
