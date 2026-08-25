@@ -143,13 +143,30 @@ function validate(entries) {
       // where a literal single quote is needed inside them.
       // A BACKSLASH-ESCAPED quote survives the shell and is fine; only a BARE one is eaten. So the
       // escaped pairs come out first, and what is left must be exactly the two delimiters.
-      const bareQuotes = p.cmd ? (p.cmd.replace(/\\"/g, '').match(/"/g) ?? []).length : 0
-      if (p.cmd && bareQuotes > 2) {
-        problems.push(
-          `${at}: verify.cmd carries a double quote inside its \`node -e "…"\` body. The shell eats it, ` +
-            'so the probe throws a SyntaxError, exits 1, and reads as an honest "not done" forever. ' +
-            'Use single quotes (or String.fromCharCode(39)) inside the body.',
-        )
+      //
+      // ⚠️ THE HAZARD IS WHICHEVER QUOTE OPENED THE BODY, not always the double quote. This check
+      // used to count double quotes unconditionally, and so it FAILED THE VERY STYLE ITS OWN
+      // MESSAGE RECOMMENDS: `node -e '…'` wrapped in single quotes may carry as many double quotes
+      // inside as it likes — the shell passes a single-quoted word through untouched — and that is
+      // the safer form, because it needs no backslashes at all. SCAN-509's probe was written that
+      // way, ran clean, mutation-fired on all five arms, and was still rejected here. Derive the
+      // delimiter from the `-e ` that opens the body and complain about THAT character only.
+      if (p.cmd) {
+        const opener = /(?:^|\s)-e\s+(['"])/.exec(p.cmd)
+        // No `-e '…'`/`-e "…"` at all (a plain shell one-liner) — nothing to say about delimiters.
+        if (opener) {
+          const q = opener[1]
+          const bare = (p.cmd.split('\\' + q).join('').match(new RegExp(q, 'g')) ?? []).length
+          if (bare > 2) {
+            const alt = q === '"' ? 'single' : 'double'
+            problems.push(
+              `${at}: verify.cmd opens its node -e body with ${q === '"' ? 'a double' : 'a single'} quote ` +
+                `and then carries another one inside it. The shell ends the word there, so the probe throws a ` +
+                `SyntaxError, exits 1, and reads as an honest "not done" forever. Wrap the body in ${alt} ` +
+                `quotes instead, or use String.fromCharCode(${q === '"' ? 34 : 39}) where the literal is needed.`,
+            )
+          }
+        }
       }
     } else {
       if (!p.pattern) problems.push(`${at}: verify.kind "${p.kind}" needs "pattern"`)

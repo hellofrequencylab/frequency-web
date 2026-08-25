@@ -201,7 +201,48 @@ describe('check:backlog — the probe/status contract', () => {
     ])
     const { code, out } = run(BACKLOG_GUARD, dir)
     expect(code).toBe(1)
-    expect(out).toContain('carries a double quote inside')
+    expect(out).toContain('opens its node -e body with a double quote')
+  })
+
+  // ⚠️ THE HAZARD IS WHICHEVER QUOTE OPENED THE BODY. The first version of the rule counted double
+  // quotes unconditionally, so it was blind to this case AND it refused the safe style below —
+  // the style its own failure message recommends. SCAN-509's probe was written that way, ran
+  // clean, mutation-fired on all five of its arms, and was still rejected. Both directions are
+  // pinned here so neither half can be lost again.
+  it('FAILS a cmd probe carrying a bare single quote inside a single-quoted body', () => {
+    const sq = String.fromCharCode(39)
+    writeBacklog(dir, [
+      ...ballast(),
+      {
+        id: 'EATENSQ',
+        title: 'a single-quoted probe whose inner apostrophe ends the word',
+        status: 'open',
+        lane: 'live',
+        verify: { kind: 'cmd', cmd: `node -e ${sq}const s=${sq}x${sq};process.exit(0)${sq}` },
+      },
+    ])
+    const { code, out } = run(BACKLOG_GUARD, dir)
+    expect(code).toBe(1)
+    expect(out).toContain('opens its node -e body with a single quote')
+  })
+
+  // The style the rule tells authors to use must not be the style it rejects. A single-quoted
+  // body may carry as many double quotes as it likes — the shell passes the word through
+  // untouched — and needs no backslashes, which is exactly why it is the safer form.
+  it('does NOT fail a cmd probe using double quotes inside a single-quoted body', () => {
+    const sq = String.fromCharCode(39)
+    writeBacklog(dir, [
+      ...ballast(),
+      {
+        id: 'SAFESQ',
+        title: 'the recommended style',
+        status: 'open',
+        lane: 'live',
+        verify: { kind: 'cmd', cmd: `node -e ${sq}const need=["a","b"];process.exit(1)${sq}` },
+      },
+    ])
+    const { out } = run(BACKLOG_GUARD, dir)
+    expect(out).not.toContain('opens its node -e body')
   })
 
   // The positive control: a BACKSLASH-escaped quote survives the shell and must NOT be refused,

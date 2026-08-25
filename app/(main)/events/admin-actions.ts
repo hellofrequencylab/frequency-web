@@ -882,33 +882,17 @@ export async function deleteEvent(eventId: string, slug: string): Promise<{ erro
   return {}
 }
 
-// ─── Place & Time (the 'place' spine module) ───────────────────────────────────
-// When/where lives in its own admin module (event-place-time-module). Read + write both
-// re-resolve event.editSettings server-side (the admin client bypasses RLS). The booking
-// window has no dedicated column, so it rides in events.details.rsvpWindow (a read-merge-write
-// that preserves the poster-harvest keys). time_zone / recurrence_* are on the events table.
-
-type PlaceTimeRow = {
-  id: string
-  slug: string
-  starts_at: string | null
-  ends_at: string | null
-  location: string | null
-  attendance_mode: string | null
-  online_url: string | null
-  venue_name: string | null
-  street: string | null
-  city: string | null
-  region: string | null
-  country: string | null
-  postal_code: string | null
-  geog: unknown
-  time_zone: string | null
-  recurrence_type: string | null
-  recurrence_until: string | null
-  details: Record<string, unknown> | null
-}
-
+// ─── The booking window ────────────────────────────────────────────────────────
+// It has no dedicated column, so it rides in events.details.rsvpWindow as a read-merge-write
+// that preserves the poster-harvest keys. Read by getEventAdminData above.
+//
+// ⚠️ THIS SECTION USED TO BE HEADED "Place & Time (the 'place' spine module)" and to say that
+// when/where lived in its own admin module, event-place-time-module. No such module exists, and
+// none ever did for events: `place` is a spine slot that only `circle.placeAndTime` fills
+// (lib/admin/modules/registry.ts), and an event edits its when/where in event-settings-module.tsx
+// against lib/studio/entities/event.ts's `when` / `where` sections. The heading also introduced a
+// `PlaceTimeRow` type that nothing referenced — a strict subset of EventAdminRow above, kept in
+// step with it by nobody. Both are gone; the one live thing under the heading was this helper.
 
 /** The booking window persisted in events.details.rsvpWindow, or a blank pair. */
 function readRsvpWindow(details: Record<string, unknown> | null): {
