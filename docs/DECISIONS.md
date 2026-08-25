@@ -29760,7 +29760,7 @@ distrust is not the finding, it is a finding that never got recorded where it wo
 
 ---
 
-## ADR-1120: Operator page copy inherits down the route tree, and the six rows that already existed were the section rung all along (2026-08-25)
+## ADR-1122: Operator page copy inherits down the route tree, and the six rows that already existed were the section rung all along (2026-08-25)
 
 **Status:** accepted · advances `PROG-P6` (Re-theme P6, the copy cascade) · generalizes
 [ADR-180](#adr-180) / [ADR-182](#adr-182) · feeds PROG-P4's `resolveIndexHero` (and PROG-P5's

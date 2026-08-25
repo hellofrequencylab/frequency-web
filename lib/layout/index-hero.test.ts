@@ -190,7 +190,7 @@ describe('resolveIndexHero (the async wrapper)', () => {
   })
 })
 
-describe('rung 2 resolves itself from the copy cascade (PROG-P6, ADR-1120)', () => {
+describe('rung 2 resolves itself from the copy cascade (PROG-P6, ADR-1122)', () => {
   it("a section's operator hero now reaches the browse page that reads it", async () => {
     // THE BUG THIS CLOSES: '/network' has carried a `page_content.hero_image` in production since
     // June, resolves the same row for its title and description, and dropped the image on the floor

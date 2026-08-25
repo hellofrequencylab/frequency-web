@@ -35,7 +35,7 @@ export interface IndexHeroDefault {
   /** The band height. See the short/large note below — this is a product decision, not page taste. */
   size: HeaderSize
   /** Whether this surface ACCEPTS a hero inherited from its section's `page_content` row
-   *  (PROG-P6, ADR-1120). Defaults to true. Set false on a UTILITY surface, for the same reason it
+   *  (PROG-P6, ADR-1122). Defaults to true. Set false on a UTILITY surface, for the same reason it
    *  takes `short` + the gradient: `/journeys/mine` is a management space, and the copy cascade
    *  handing it the Journeys section photo would silently overturn the product decision the
    *  short/large note below spells out. The flag is what makes that decision survive the cascade
@@ -91,7 +91,7 @@ export interface IndexHeroOptions {
    *  the section default.
    *
    *  🔴 YOU NO LONGER NEED TO PASS THIS. `resolveIndexHero` reads the copy cascade itself
-   *  (PROG-P6, ADR-1120), so a route beneath a section with a hero gets one without the page
+   *  (PROG-P6, ADR-1122), so a route beneath a section with a hero gets one without the page
    *  saying anything. Pass it only to OVERRIDE that read; `undefined` means "resolve it", and an
    *  explicit `null` means "there is none", which is why the check below is `!== undefined`. */
   contentImage?: string | null
@@ -119,7 +119,7 @@ export interface IndexHeroProps {
  *    1. the operator's Settings header image for this route (page_settings)
  *    2. the page-content hero (ADR-180), which `resolveIndexHero` now resolves through the copy
  *       cascade — this route's own row, else the nearest section's, else the site row
- *       (PROG-P6, ADR-1120)
+ *       (PROG-P6, ADR-1122)
  *    3. an explicit `fallbackImage`, else the route's section default
  *    4. null — the neutral gradient band, which is a RESULT and not a failure
  *

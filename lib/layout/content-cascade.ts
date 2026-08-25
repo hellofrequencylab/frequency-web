@@ -4,7 +4,7 @@ import { cache } from 'react'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 // THE COPY CASCADE — the ONE resolver for operator-editable page copy, inherited down the route
-// tree (PROG-P6, ADR-1120, PAGE-FRAMEWORK §8.6).
+// tree (PROG-P6, ADR-1122, PAGE-FRAMEWORK §8.6).
 //
 // `page_content` (ADR-180/182) has always been keyed by the EXACT route string and read with
 // `.eq('route', route)`. That is the whole of what this module changes: a route now resolves

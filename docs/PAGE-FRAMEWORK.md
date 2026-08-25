@@ -739,7 +739,7 @@ A row also carries **`inheritHero`** (default `true`). The utility rows set it `
 cascade cannot hand `/journeys/mine` the Journeys section photo and quietly overturn the short/large
 split above. A hero set on the utility route *itself* still wins, because that is not inheritance.
 
-## 8.6 The copy cascade: site → section → page (ADR-1120)
+## 8.6 The copy cascade: site → section → page (ADR-1122)
 
 `page_content` (ADR-180/182) holds the operator-editable title, description, hero image and CTA for
 a route. It was read with `.eq('route', route)`, so only the exact route ever saw its own row.
@@ -865,7 +865,7 @@ how a published draft shadows a coded experience, or an in-app page loses its ch
   `SCOPED_PATTERNS` are deliberately empty; only the zero-chrome takeovers,
   `/admin/*`, and the full-width editors drop it (§8.2).
 - **Operator page copy inherits down the route tree** (site → section → page → code), per field,
-  with identity fields and the CTA pair deliberately excepted (ADR-1120, §8.6).
+  with identity fields and the CTA pair deliberately excepted (ADR-1122, §8.6).
 - **The editable index is a sanctioned composition** (`MarketHero` + `BlockRender` /
   `PageModules`) for a browse surface whose body an operator rearranges. Same
   canonical `PageHero`, same global rail — a body choice, not an exemption (§8.5).

@@ -18,7 +18,7 @@ import { resolveContentCascade } from '@/lib/layout/content-cascade'
 //
 // Cached per request so the header, metadata, and hero/CTA all share one read.
 //
-// ── THE READ IS A CASCADE NOW (PROG-P6, ADR-1120) ────────────────────────────
+// ── THE READ IS A CASCADE NOW (PROG-P6, ADR-1122) ────────────────────────────
 // `resolvePageContent` resolves site -> section -> page -> coded fallback via
 // lib/layout/content-cascade.ts, so a route beneath a section inherits that
 // section's hero and CTA instead of resolving to nothing. `getPageContent` below
@@ -70,7 +70,7 @@ export const getPageContent = cache(async (route: string): Promise<PageContent |
 })
 
 /** Resolve a page's editable content through the site → section → page CASCADE (PROG-P6,
- *  ADR-1120), with the page's coded copy as the last rung.
+ *  ADR-1122), with the page's coded copy as the last rung.
  *
  *  This used to be `getPageContent(route)` — one `.eq('route', route)` read — and the difference is
  *  only visible on a route BENEATH a section that has a row. `/events/calendar` now inherits
