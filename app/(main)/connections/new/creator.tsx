@@ -14,6 +14,7 @@ import { Select } from '@/components/ui/select'
 import type { ExtractedContact, ContactDetails, ContactSource, Visibility } from '@/lib/connections/types'
 import { scanCard, veraAssist, createProfile } from '../actions'
 import { safeUploadPreviewSrc } from '@/lib/safe-image-src'
+import { Button } from '@/components/ui/button'
 
 const BUCKET = 'network-contacts'
 const lbl = 'block text-meta font-medium text-muted mb-1'
@@ -559,13 +560,13 @@ export function Creator({ userId }: { userId: string }) {
                 {pendingScan.quality.note || 'That capture looks hard to read.'}
               </p>
               <div className="mt-2 flex flex-wrap gap-2">
-                <button
+                <Button
+                  size="sm"
                   type="button"
                   onClick={() => { setPendingScan(null); clearScanFiles() }}
-                  className="inline-flex items-center gap-1.5 rounded-control bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover"
                 >
                   <Camera className="h-3.5 w-3.5" /> Retake
-                </button>
+                </Button>
                 <button
                   type="button"
                   onClick={useAnyway}
@@ -583,15 +584,14 @@ export function Creator({ userId }: { userId: string }) {
             <button type="button" className="text-meta font-medium text-primary-strong hover:underline" onClick={() => setTab('manual')}>
               Enter manually
             </button>
-            <button
+            <Button
               type="button"
               onClick={runScan}
               disabled={scanning || !frontFile}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
             >
               {scanning ? <Loader2 className="h-4 w-4 animate-spin" /> : pendingScan ? <RefreshCcw className="h-4 w-4" /> : <Sparkles className="h-4 w-4" />}
               {scanning ? 'Reading…' : pendingScan ? 'Scan again' : 'Scan'}
-            </button>
+            </Button>
           </div>
 
           {/* Two inputs per side: a CAMERA input (capture='environment' force-opens

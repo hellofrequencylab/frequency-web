@@ -18,6 +18,7 @@ import {
   CIRCLE_ACCESS_MODES,
   type CircleAccess,
 } from '@/lib/circles/visibility'
+import { Button } from '@/components/ui/button'
 
 export interface CircleSettingsInitial {
   name: string
@@ -219,13 +220,12 @@ export function CircleSettingsForm({
       )}
 
       <div className="flex items-center gap-3 pt-1 sm:col-span-2">
-        <button
+        <Button
           type="submit"
           disabled={pending || !name.trim()}
-          className="inline-flex items-center gap-1.5 rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
         >
           <Check className="h-4 w-4" /> {pending ? 'Saving…' : 'Save changes'}
-        </button>
+        </Button>
         <Link href={`/circles/${slug}`} className="text-body-sm text-muted transition-colors hover:text-text">
           Cancel
         </Link>

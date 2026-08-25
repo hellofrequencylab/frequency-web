@@ -1,5 +1,9 @@
 import { Skeleton } from '@/components/ui/skeleton'
 
+// Route-level loading UI for the Channels index (PAGE-FRAMEWORK §5). See the note in
+// app/(main)/circles/loading.tsx: the retired `px-4 py-8 max-w-2xl mx-auto` shell double-padded
+// inside the app shell and painted a narrow column, while page.tsx opens on the full-width
+// MarketHero band. The skeleton now matches the destination.
 function ChannelCardSkeleton() {
   return (
     <div className="flex items-start gap-3 rounded-card border border-border bg-surface px-4 py-3">
@@ -21,11 +25,9 @@ function ChannelCardSkeleton() {
 
 export default function ChannelsLoading() {
   return (
-    <div className="px-4 py-8 max-w-2xl mx-auto">
-      <div className="mb-6 space-y-2">
-        <Skeleton className="h-6 w-24" />
-        <Skeleton className="h-4 w-80" />
-      </div>
+    <div>
+      <Skeleton className="min-h-[15rem] w-full rounded-3xl sm:min-h-[24rem]" />
+      <div className="mb-5 mt-4 border-b border-border sm:mb-6" />
       <div className="space-y-2">
         {Array.from({ length: 5 }).map((_, i) => (
           <ChannelCardSkeleton key={i} />

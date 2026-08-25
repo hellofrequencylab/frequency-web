@@ -13,6 +13,7 @@ import type { EventQuestion } from '@/lib/events/questions'
 import { IconButton } from '@/components/ui/icon-button'
 import { Select } from '@/components/ui/select'
 import { Input, Textarea } from '@/components/ui/field'
+import { Button } from '@/components/ui/button'
 
 // Detail-page RSVP controls (event Detail template). Three warm states a member
 // can move between — Going · Interested (maybe) · (Join waitlist when full) —
@@ -208,15 +209,14 @@ export function RsvpControls({
   if (requiresApproval && !isGoing && !isWaitlisted && !isMaybe && !isPending) {
     return (
       <div className="space-y-2">
-        <button
+        <Button
           type="button"
           onClick={requestToJoin}
           disabled={pending}
-          className="inline-flex items-center gap-1.5 rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
         >
           <UserPlus className="h-4 w-4" />
           Request to join
-        </button>
+        </Button>
         <p className="text-2xs text-muted">The host approves who joins this one.</p>
       </div>
     )
@@ -416,15 +416,15 @@ function RsvpNote({
         className="resize-none"
       />
       <div className="flex items-center gap-2">
-        <button
+        <Button
+          size="sm"
           type="button"
           onClick={save}
           disabled={pending || !note.trim()}
-          className="inline-flex items-center gap-1.5 rounded-control bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
         >
           <Check className="h-3.5 w-3.5" />
           {pending ? 'Saving…' : 'Add note'}
-        </button>
+        </Button>
         {saved && !pending && (
           <span className="inline-flex items-center gap-1 text-2xs text-success">
             <Check className="h-3 w-3" />

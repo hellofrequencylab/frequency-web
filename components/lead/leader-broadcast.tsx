@@ -13,6 +13,7 @@ import { Dialog } from '@/components/ui/dialog'
 import { isError } from '@/lib/action-result'
 import { sendLeaderBroadcast } from '@/app/(main)/lead/inbox/actions'
 import { Input, Textarea } from '@/components/ui/field'
+import { Button } from '@/components/ui/button'
 
 export function LeaderBroadcast({ reach }: { reach: number }) {
   const router = useRouter()
@@ -115,15 +116,15 @@ export function LeaderBroadcast({ reach }: { reach: number }) {
                   >
                     Cancel
                   </button>
-                  <button
+                  <Button
+                    size="sm"
                     type="button"
                     onClick={submit}
                     disabled={pending || !subject.trim() || !body.trim()}
-                    className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary hover:bg-primary-hover disabled:opacity-50"
                   >
                     {pending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
                     Send to {reach}
-                  </button>
+                  </Button>
                 </div>
               </div>
             </>

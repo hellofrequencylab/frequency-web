@@ -8,6 +8,7 @@ import { hideProductReviewAction } from '@/app/(main)/admin/marketplace/actions'
 import { isError } from '@/lib/action-result'
 import type { ProductReviewsData } from '@/lib/commerce/reviews'
 import { Textarea } from '@/components/ui/field'
+import { Button } from '@/components/ui/button'
 
 // The reviews block on a Market listing / Space Shop item (Phase 8). Public read: the rating summary
 // + the review wall. A signed-in member (not the seller) leaves ONE review they can revise
@@ -170,15 +171,14 @@ function ReviewForm({ productId, initial }: { productId: string; initial: { rati
         </p>
       )}
       <div className="flex justify-end">
-        <button
+        <Button
           type="button"
           onClick={submit}
           disabled={pending}
-          className="inline-flex items-center gap-1.5 rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
         >
           {pending && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
           {initial ? 'Update review' : 'Post review'}
-        </button>
+        </Button>
       </div>
     </div>
   )

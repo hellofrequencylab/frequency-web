@@ -6,6 +6,7 @@ import type { EmailColors } from '@/lib/email-studio/render'
 import type { SpaceEmailStyle } from '@/lib/spaces/email-colors'
 import { setSpaceEmailStyle } from '@/lib/spaces/email-style-actions'
 import { isError } from '@/lib/action-result'
+import { Button } from '@/components/ui/button'
 
 // EMAIL STYLE EDITOR (Email in the Business CRM, P1 · deliverable 3). Tunes the brand-derived email palette a
 // Space's emails default to. A short, plain list of the colors that matter, each a swatch + hex you can reset to
@@ -140,15 +141,14 @@ export function EmailStyleEditor({
         </ul>
 
         <div className="flex flex-wrap items-center gap-2">
-          <button
+          <Button
             type="button"
             onClick={onSave}
             disabled={readOnly || pending}
-            className="inline-flex items-center gap-1.5 rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
           >
             {pending && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
             Save style
-          </button>
+          </Button>
           <button
             type="button"
             onClick={resetAll}

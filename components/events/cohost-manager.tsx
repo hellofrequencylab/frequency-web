@@ -9,6 +9,7 @@ import { isError } from '@/lib/action-result'
 import { getInitials } from '@/lib/utils'
 import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { Input } from '@/components/ui/field'
+import { Button } from '@/components/ui/button'
 
 export type CohostView = {
   id: string
@@ -119,16 +120,31 @@ function RemoveCohostButton({
   label: string
 }) {
   const [pending, startTransition] = useTransition()
+  // removeCohost now answers with an ActionResult (it used to return void on every refusal), so a
+  // removal the server declined stops looking like one it accepted.
+  const [error, setError] = useState<string | null>(null)
   return (
-    <button
-      type="button"
-      onClick={() => startTransition(() => removeCohost(eventId, slug, cohostProfileId))}
-      disabled={pending}
-      aria-label={label}
-      className="shrink-0 rounded-control p-1.5 text-subtle transition-colors hover:text-danger disabled:opacity-40"
-    >
-      <X className="h-4 w-4" />
-    </button>
+    <span className="flex shrink-0 items-center gap-1.5">
+      {error && (
+        <span role="alert" className="text-meta font-medium text-danger">
+          {error}
+        </span>
+      )}
+      <button
+        type="button"
+        onClick={() =>
+          startTransition(async () => {
+            const res = await removeCohost(eventId, slug, cohostProfileId)
+            setError(isError(res) ? res.error : null)
+          })
+        }
+        disabled={pending}
+        aria-label={label}
+        className="shrink-0 rounded-control p-1.5 text-subtle transition-colors hover:text-danger disabled:opacity-40"
+      >
+        <X className="h-4 w-4" />
+      </button>
+    </span>
   )
 }
 
@@ -308,14 +324,14 @@ function TransferHost({ eventId, slug }: { eventId: string; slug: string }) {
             stay on as a Co Host.
           </p>
           <div className="mt-2 flex items-center gap-2">
-            <button
+            <Button
+              size="sm"
               type="button"
               onClick={confirm}
               disabled={pending}
-              className="rounded-control bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
             >
               {pending ? 'Transferring…' : 'Confirm transfer'}
-            </button>
+            </Button>
             <button
               type="button"
               onClick={() => setPick(null)}

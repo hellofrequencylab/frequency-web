@@ -19,6 +19,7 @@ import { getInitials } from '@/lib/utils'
 import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import type { PlacementView, PlacementTargetType } from '@/lib/events/placement'
 import { EventHostOfferField } from '@/components/events/event-host-offer-field'
+import { Button } from '@/components/ui/button'
 
 type HandleHit = { id: string; handle: string; display_name: string; avatar_url: string | null }
 
@@ -290,14 +291,14 @@ function TransferHostControl({ eventId, slug }: { eventId: string; slug: string 
             stay on as a cohost.
           </p>
           <div className="mt-2 flex items-center gap-2">
-            <button
+            <Button
+              size="sm"
               type="button"
               onClick={confirm}
               disabled={pending}
-              className="rounded-control bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
             >
               {pending ? 'Transferring…' : 'Confirm transfer'}
-            </button>
+            </Button>
             <button
               type="button"
               onClick={() => setChoice(null)}
