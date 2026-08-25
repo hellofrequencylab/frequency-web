@@ -304,6 +304,16 @@ creates the account) · the Space console. Component-level: a Ladle/story pass i
 DEFERRED (a second render harness is real maintenance; page-level covers the kit
 transitively for now — revisit if per-component drift bites).
 
+> 🔴 **AMENDED 2026-08-25 ([ADR-1128](DECISIONS.md)): "all EDITABLE_PAGES routes" was the
+> wrong frame, and it cost coverage.** `EDITABLE_PAGES` answers *which pages may the page
+> editor edit?*, so defining the matrix by it made the camera a by-product of an unrelated
+> product decision — the registry held **zero** `/admin` routes and no operator surface was
+> visually watched. The suite now reads `coverageSurfaces()`, its **own** list, of which the
+> EDITABLE_PAGES parse is one input (kept, so 5c conversions still join automatically)
+> alongside an explicit operator set chosen by `node scripts/visual-surface-census.mjs`.
+> **The rule this leaves behind:** a coverage list is a coverage decision. Deriving one from a
+> list that exists to answer a different question reads as coverage without being it.
+
 **6b. Four render states (S).** Parameterize the suite over `.dark` × `data-skin`
 (default/midnight) by stamping class/attribute pre-navigation; 4 snapshot sets per
 surface. This is also Lift 3's dark-contrast audit made permanent.
