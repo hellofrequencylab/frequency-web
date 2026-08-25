@@ -262,7 +262,7 @@ ADR-828 pill convention.
 | P6 | **Copy cascade.** Generalize `page_content` into `site → section → page` inherit-cascade; widen editable fields to body copy + images; extend `check:canon` to `.tsx`. | L | 📋 |
 | P7 | **Per-Space / white-label depth.** Widen the child-theme override surface (surfaces + type), operator theme controls, a theme-contract compile check. | L | 📋 |
 | P8 | **Dark-mode + a11y + visual regression.** ✅ Substantially shipped: `check:contrast` (blocking, five render states incl. the light-lock, and it now models use-site alpha), the axe ratchet `test/e2e/a11y-baselines.json`, and `test/e2e/visual.spec.ts` × four render states. ⚠️ The visual gate is only as good as its baselines — see the recapture note in UX-MATURITY-PLAN §Sequencing. | M–L | ⏳ |
-| P9 | **Marketing ↔ in-app reconciliation** (optional). Align the marketing brand system with the app tokens where they diverge. | M | 📋 |
+| P9 | **Marketing ↔ in-app reconciliation.** ✅ Re-measured 2026-08-25 ([ADR-1123](DECISIONS.md)) and the premise was wrong: there is ONE token system, not two. Marketing carries **0 raw hex / 0 arbitrary type across 61 files** and uses a strict subset of the same `@theme` map; what diverged was the **gates**. `check:tokens` exempted the whole marketing tree (measured: the exemption caught nothing) and `check:contrast` modelled the cream ground with **1 pair against the app canvas's 5**. Both closed. The Anton display face, the `.mk-*` rhythm and `--color-marketing-canvas` are deliberate and were NOT flattened. | ~~M~~ S | ✅ |
 
 ## 🧭 Practice library at scale — 2026-06-28 ([ADR-438](DECISIONS.md), full spec [PRACTICE-LIBRARY.md](PRACTICE-LIBRARY.md), economy detail [REWARDS-ECONOMY §3a](REWARDS-ECONOMY.md))
 
