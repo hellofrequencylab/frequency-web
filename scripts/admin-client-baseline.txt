@@ -616,6 +616,7 @@ lib/layout/page-chrome.ts
 lib/library.ts
 lib/library/embeddings.ts
 lib/library/event-loom.ts
+lib/library/resolve-refs.ts
 lib/library/splash-registry.ts
 lib/library/store.ts
 lib/library/styles.ts
