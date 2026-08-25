@@ -245,7 +245,7 @@ two-band pricing layout; blocks own their JSON-LD, per the Accordion precedent).
 **5b. Template regeneration, in the mapped order (M per page).** about → the-lab →
 the-quest → spaces → the-community (needs its missing DAWN reference first — flagged in
 the reverse-sync) → home. ⚠️ `pricing` used to close this line too ("partial only, live bindings,
-never frozen figures"); it left the series on 2026-08-24 ([ADR-1115](DECISIONS.md)) — see the note
+never frozen figures"); it left the series on 2026-08-24 ([ADR-1116](DECISIONS.md)) — see the note
 under 5c.
 
 **5c. Retire the coded bodies (S per page, the actual de-dualing).** Once a route's
@@ -255,7 +255,7 @@ grows to match. ✅ **The `check:render-path` guard now exists** ([ADR-967](DECI
 23rd guard) and asserts both halves: every gated slug's route actually renders `<BlockRender>`,
 and the per-slug coded-component count in `scripts/render-path-bodies.txt` **matches exactly**.
 
-> 🔴 **`pricing` left this series on 2026-08-24 ([ADR-1115](DECISIONS.md)), and the exclusion is a
+> 🔴 **`pricing` left this series on 2026-08-24 ([ADR-1116](DECISIONS.md)), and the exclusion is a
 > decision rather than a note.** The committed order ended `… → the-community → home → pricing
 > (partial)`. Seven slugs retired; `pricing` was removed, because it is the one gated route whose
 > coded body is the **derived** page rather than a relic: `/pricing` resolves `published → coded`
@@ -425,7 +425,7 @@ The lifts are not a new track; they mount onto the waves already running.
 | ✅ **Shipped** (was Wave +1) | Template regeneration · **radius codemod sweep** (`ecd8f52`) · **axe in e2e** (`test/e2e/a11y-baselines.json`, `pnpm test:e2e:a11y`) · **visual suite ×4 states** (`test/e2e/surfaces.ts` `RENDER_STATES`) · vitals readout panel · **mobile brief to DAWN** (`design_handoff/BRIEF-07-MOBILE-GRAMMAR.md`) | 5b · 2b · 3b · 6b · 7b · 4a |
 | ✅ **Shipped, unplanned** — the whole type-role program | **ADR-941/942/943 + pass 2a**: 7,578 type literals onto the roles, paired display line-heights, `literal-type` to 0. This was three of six consecutive merges and appeared in NO row of this table until now. | (new) |
 | ✅ **Shipped, unplanned** — gate correctness | **ADR-944** the lockup · **ADR-945** Engine 3 retired · four gates corrected + three added (`literal-display-type`, `raw-palette`, `handrolled-icon-button`) · `check:bridge` · the focus ring at full strength | (new) |
-| **Now** | 🔴 **Corrected 2026-08-11 — this row and the one below had gone stale in three separate ways.** Baselines: RECAPTURED (PR #2071, `pr-compare` 62 failures → 1). Display literals: **96**, not 301 — 204 were bought across `6056d0a82`, `959ddb678`, `77bb066e5`. What was actually now: **5c coded-body retirement**, in the order already committed to `scripts/render-path-bodies.txt` — `about` → `spaces` → `the-lab` → `the-quest` → `the-community` → `home`, one slug per PR, with `pricing` removed from the series on 2026-08-24 ([ADR-1115](DECISIONS.md)). Status for the lift lives in [`BUILD-BACKLOG.json`](BUILD-BACKLOG.json) (`LIVE-006`), not here. | 5c |
+| **Now** | 🔴 **Corrected 2026-08-11 — this row and the one below had gone stale in three separate ways.** Baselines: RECAPTURED (PR #2071, `pr-compare` 62 failures → 1). Display literals: **96**, not 301 — 204 were bought across `6056d0a82`, `959ddb678`, `77bb066e5`. What was actually now: **5c coded-body retirement**, in the order already committed to `scripts/render-path-bodies.txt` — `about` → `spaces` → `the-lab` → `the-quest` → `the-community` → `home`, one slug per PR, with `pricing` removed from the series on 2026-08-24 ([ADR-1116](DECISIONS.md)). Status for the lift lives in [`BUILD-BACKLOG.json`](BUILD-BACKLOG.json) (`LIVE-006`), not here. | 5c |
 | **Next** | **8b kit state sweep, re-scoped 2026-08-12 to four controls** — RowCard's surface (no ring, no `.press`), a `loading` prop on IconButton, a visible busy state on ConfirmSubmitButton, an in-flight cue on DirectorySearch · **the contrast residue**: amber used as *display text* (2.18–2.86:1) and the `.text-text/10` watermark numerals in the dark skins, which is what the `/spaces` (2) and `/the-community` (3) dark baselines count · first moderated test round (🔴 recruiting). ⚠️ Four items removed from this row because they were DONE while it still asked for them: `check:render-path` exists (`scripts/check-render-path.mjs`, in CI, and §5c of this same document says so); UnderlineTabs moved to `components/ui/` under ADR-971 — `handrolled-tabs` went 3 → 0; **8b's "0 of 10" was 7 of 10 by the time this row was read** (PR #2084, `ec80e693c`, shipped five of INTERACTION-STATES §5's six sweep items); and **ADR-980's 16 dark-mode contrast failures are closed** — the palette pair carries the owner's 2026-08-06 waiver in `test/e2e/a11y-waivers.ts`, ADR-1000 closed the last dawn-dark shell failure, and `node scripts/check-contrast.mjs` exits 0. | 8b · 3a · 1b |
 | **After** | Seeker articles (HowTo block) · home + pricing-partial conversion · RowCard/EntityCard sweeps · mobile implementation wave (gated on DAWN's mobile round) · focus/reduced-motion audit | 5d · 2b · 4c · 3c/3d |
 | **Standing, every DAWN round** | Vitals table + research findings in the outbound handoff; mobile behavior stated per screen pass; ratchet counts only shrink | 7c · 1c · 4-rule · 2 |

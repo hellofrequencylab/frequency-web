@@ -17,10 +17,10 @@
 # ~~the-quest~~ -> ~~the-community~~ -> ~~home~~ -> ~~pricing~~. Each retirement was gated on the visual
 # suite proving the template equivalent, one slug per PR.
 #
-# ✅ THE SERIES IS CLOSED (2026-08-24, ADR-1115). Seven slugs retired; `pricing` was REMOVED from
+# ✅ THE SERIES IS CLOSED (2026-08-24, ADR-1116). Seven slugs retired; `pricing` was REMOVED from
 # the series rather than retired, and that removal is a DECISION with an ADR rather than a note.
 # The order used to call `pricing` "partial only" because it carries LIVE take-rate bindings. The
-# measurement behind ADR-1115 is that partial retirement had nothing to retire: `/pricing` resolves
+# measurement behind ADR-1116 is that partial retirement had nothing to retire: `/pricing` resolves
 # published -> coded (TWO rungs, not three — `getTemplate('pricing')` is not a middle rung), the
 # coded body is the DERIVED page rather than a relic, and all seven of its components consume the
 # derived model (Offering / PlanExtra / FeatureGrid / the resolved rate string). So its 7 never
@@ -128,7 +128,7 @@ the-quest       0   # ✅ RETIRED 2026-08-19 (Lift 5c, ADR-1068). LegacyTheQuest
                     #    /discover link, the /pricing link) were recovered into existing template
                     #    blocks in the same change. Template-only from here.
 pricing         7   # PlanCard + RateLine + PlanPrice + PlanCta + IndependentStrip + ExtraCard + ComparisonBlock (860 lines)
-                    #    🔴 NOT A PENDING RETIREMENT — OUT OF THE SERIES BY DECISION (ADR-1115).
+                    #    🔴 NOT A PENDING RETIREMENT — OUT OF THE SERIES BY DECISION (ADR-1116).
                     #    This body is the page that reads live prices, the live take-rate vector,
                     #    the beta-window resolution the checkout asks, and the operator's live gate
                     #    overrides; there is no dollar figure or percentage typed in the file
