@@ -74,6 +74,55 @@ async function getOrganizerRoutes(): Promise<MetadataRoute.Sitemap> {
   }
 }
 
+// ── The row caps below are DELIBERATE, and these are the numbers that reopen them (SCAN-203) ──
+//
+// The commerce verticals and the circles read are the only sections here that take a bare row
+// limit with no follow-up page, so at scale they drop entries SILENTLY: the sitemap still
+// validates, still gets submitted, and simply stops advertising whatever sorted past the cap
+// (every one of these readers orders created_at DESC, so it is the OLDEST listings that vanish).
+//
+// PAGING WAS CONSIDERED AND IS NOT A CHANGE THIS FILE CAN MAKE. The podcast section a few hundred
+// lines down pages exactly the way this would want to (`listPublicShowsBySpace` walks `.range()`
+// until it gets a short page), but it could do that because the reader itself was rewritten to
+// page. These five cannot be paged from here:
+//
+//   · listShopProducts / listMarketListings / listHousingListings each CLAMP the caller's limit
+//     server-side — `Math.min(Math.max(opts.limit ?? …, 1), 100)` — and expose no offset, range or
+//     cursor, so passing a bigger number is silently ignored and there is no second page to ask for.
+//   · listListings (classifieds) does not clamp, but likewise takes no offset.
+//   · getPublicCircles rides the `public_circles` RPC, whose SQL ends
+//     `LIMIT GREATEST(1, LEAST(_limit, 200))` — the ceiling is in the database, so raising it is a
+//     migration, not an argument.
+//
+// So paging is a reader + RPC change (lib/commerce/products.ts, lib/listings/housing.ts,
+// lib/marketplace.ts, and a migration for public_circles), deliberately not smuggled into the
+// sitemap. Until then the cap is stated rather than implied, and `atCap` below makes it LOUD
+// instead of silent — a fail-safe nobody can see fire is an invisible regression.
+//
+// 🔴 THE THRESHOLD THAT REOPENS THIS: the moment any one of these sections comes back holding its
+// full cap, that vertical is already dropping URLs. `atCap` logs exactly that, once per section per
+// render, with the reader to page. Do not raise a number here to make the warning stop; the number
+// is the cap the READER enforces, and a bigger one changes nothing.
+
+/** Row cap on each commerce vertical (store / market / housing / classifieds). Matches the hard
+ *  clamp inside those readers — the largest limit they will honour. */
+const COMMERCE_SITEMAP_CAP = 100;
+
+/** Row cap on the public circles read. Matches the `public_circles` RPC's own SQL ceiling. */
+const CIRCLE_SITEMAP_CAP = 200;
+
+/** Pass a section's rows through on the way to the map, and say so in the log when it came back
+ *  full. Never throws and never alters the rows: the sitemap's job is to emit what it read. */
+function atCap<T>(rows: T[], cap: number, section: string, reader: string): T[] {
+  if (rows.length >= cap) {
+    console.warn(
+      `sitemap: ${section} returned ${rows.length} row(s) at its cap of ${cap} — URLs past the cap ` +
+        `are being dropped silently. Page ${reader} (see the cap note in app/sitemap.ts).`,
+    );
+  }
+  return rows;
+}
+
 // Dynamic sitemap. Static marketing routes plus every public, redaction-safe
 // /discover URL (topics, circles, events) pulled through the same column-safe
 // RPCs the pages use. Authed app surfaces are excluded — they're robots-
@@ -215,7 +264,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const { indexedOccurrences } = await getSeriesDisplayConfig();
     const [channels, circles, events, journeys, organizers, spotlights, hubs, partners, practices, spaces, cities, shopProducts, marketListings, housingListings, classifieds] = await Promise.all([
       getTopicalChannels(),
-      getPublicCircles(200),
+      // Capped, not paged — see the cap note above this function. The RPC's own SQL ceiling.
+      getPublicCircles(CIRCLE_SITEMAP_CAP),
       // Event URLs, FOLDED per series (ADR-897). Before this, one weekly cowork series advertised
       // ~9 URLs and ~9 image entries and a daily one ~61, all with the same title and description,
       // out of a GLOBAL 200-row cap — so a single daily series could crowd real one-offs out of the
@@ -241,16 +291,19 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       // Browse-by-place city hubs — only cities with ≥1 public circle or upcoming event
       // (empty places never get a URL, so low-value facets stay out of crawl).
       listDiscoverCities().catch(() => []),
+      // The four commerce verticals are CAPPED, not paged (see the cap note above this function).
+      // Each is fail-safe to [] on any error, so a hiccup in one costs that vertical and nothing else.
+      //
       // Frequency Store products — platform-owned, ACTIVE only (the same gate /store/[id] renders on),
-      // so a draft/archived item never enters the crawl. Fail-safe to [] on any error.
-      listShopProducts({ limit: 100 }).catch(() => []),
+      // so a draft/archived item never enters the crawl.
+      listShopProducts({ limit: COMMERCE_SITEMAP_CAP }).catch(() => []),
       // Global Market listings (/market/[id]) — active + market-published maker/Space products only
-      // (listMarketListings gates on both), so an unpublished item stays out. Fail-safe to [].
-      listMarketListings({ limit: 100 }).catch(() => []),
-      // Housing listings (/housing/[id]) — active only. Fail-safe to [].
-      listHousingListings({ limit: 100 }).catch(() => []),
-      // Classifieds (/classifieds/[id]) — active market_listings only. Fail-safe to [].
-      listClassifieds({ limit: 100 }).catch(() => []),
+      // (listMarketListings gates on both), so an unpublished item stays out.
+      listMarketListings({ limit: COMMERCE_SITEMAP_CAP }).catch(() => []),
+      // Housing listings (/housing/[id]) — active only.
+      listHousingListings({ limit: COMMERCE_SITEMAP_CAP }).catch(() => []),
+      // Classifieds (/classifieds/[id]) — active market_listings only.
+      listClassifieds({ limit: COMMERCE_SITEMAP_CAP }).catch(() => []),
     ]);
 
     // Density-gated city landing pages (GE11-2) — ONLY cities above the density
@@ -315,7 +368,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.7,
     }));
 
-    const circleRoutes: MetadataRoute.Sitemap = circles.map((c) => ({
+    const circleRoutes: MetadataRoute.Sitemap = atCap(
+      circles,
+      CIRCLE_SITEMAP_CAP,
+      "circles",
+      "the public_circles RPC",
+    ).map((c) => ({
       url: `${SITE_URL}/discover/circles/${c.id}`,
       changeFrequency: "weekly",
       priority: 0.6,
@@ -344,7 +402,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
     // Frequency Store product detail pages (/store/[id]) — mirrors the spaceRoutes pattern; each
     // carries its first photo for the image sitemap when set.
-    const storeRoutes: MetadataRoute.Sitemap = shopProducts.map((p) => ({
+    const storeRoutes: MetadataRoute.Sitemap = atCap(
+      shopProducts,
+      COMMERCE_SITEMAP_CAP,
+      "store products",
+      "listShopProducts",
+    ).map((p) => ({
       url: `${SITE_URL}/store/${p.id}`,
       ...((p.updatedAt) ? { lastModified: new Date(p.updatedAt) } : {}),
       changeFrequency: "weekly" as const,
@@ -354,21 +417,36 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
     // Marketplace listing detail pages — the active-only readers each page uses, so a
     // sold/closed/draft listing is isolated OUT of the sitemap by construction.
-    const marketRoutes: MetadataRoute.Sitemap = marketListings.map((p) => ({
+    const marketRoutes: MetadataRoute.Sitemap = atCap(
+      marketListings,
+      COMMERCE_SITEMAP_CAP,
+      "market listings",
+      "listMarketListings",
+    ).map((p) => ({
       url: `${SITE_URL}/market/${p.id}`,
       ...((p.updatedAt) ? { lastModified: new Date(p.updatedAt) } : {}),
       changeFrequency: "weekly" as const,
       priority: 0.5,
     }));
 
-    const housingRoutes: MetadataRoute.Sitemap = housingListings.map((l) => ({
+    const housingRoutes: MetadataRoute.Sitemap = atCap(
+      housingListings,
+      COMMERCE_SITEMAP_CAP,
+      "housing listings",
+      "listHousingListings",
+    ).map((l) => ({
       url: `${SITE_URL}/housing/${l.id}`,
       ...((l.updatedAt) ? { lastModified: new Date(l.updatedAt) } : {}),
       changeFrequency: "weekly" as const,
       priority: 0.5,
     }));
 
-    const classifiedRoutes: MetadataRoute.Sitemap = classifieds.map((l) => ({
+    const classifiedRoutes: MetadataRoute.Sitemap = atCap(
+      classifieds,
+      COMMERCE_SITEMAP_CAP,
+      "classifieds",
+      "listListings",
+    ).map((l) => ({
       url: `${SITE_URL}/classifieds/${l.id}`,
       ...((l.updated_at) ? { lastModified: new Date(l.updated_at) } : {}),
       changeFrequency: "weekly" as const,

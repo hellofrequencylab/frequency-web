@@ -47,7 +47,7 @@ describe('helpCurriculumSteps — deriving a path from role-tagged help articles
   const articles: RoleTaggedArticle[] = [
     { category: 'groups', slug: 'events', title: 'Events & RSVPs', order: 3, role: 'host' },
     { category: 'groups', slug: 'channels', title: 'Channels', order: 2, role: 'host' },
-    { category: 'sharing', slug: 'broadcasts', title: 'Broadcasts', order: 1, role: 'host' },
+    { category: 'sharing', slug: 'dispatches', title: 'Dispatches', order: 1, role: 'host' },
     { category: 'groups', slug: 'hubs', title: 'Hubs', order: 1, role: 'guide' },
     { category: 'getting-started', slug: 'welcome', title: 'Welcome', order: 1 }, // untagged
     { category: 'groups', slug: 'draft', title: 'Draft', order: 0, role: 'host', status: 'draft' },
@@ -55,8 +55,8 @@ describe('helpCurriculumSteps — deriving a path from role-tagged help articles
 
   it('selects only published articles tagged for the role, ordered by `order`', () => {
     const steps = helpCurriculumSteps(articles, 'host')
-    expect(steps.map((s) => s.label)).toEqual(['Broadcasts', 'Channels', 'Events & RSVPs'])
-    expect(steps[0].href).toBe('/help/sharing/broadcasts')
+    expect(steps.map((s) => s.label)).toEqual(['Dispatches', 'Channels', 'Events & RSVPs'])
+    expect(steps[0].href).toBe('/help/sharing/dispatches')
   })
 
   it('excludes untagged articles (behavior-preserving for the help center)', () => {

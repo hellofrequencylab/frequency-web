@@ -7,6 +7,7 @@ import {
 } from '@/lib/site'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { funnelSlugs, getFunnelConfig } from '@/lib/marketing/funnel-config'
+import { COMPARISONS, comparisonCopy, comparisonPath } from '@/lib/marketing/comparisons'
 import { pricingLadderSummary, offeringLadderLabel } from '@/lib/pricing/pricing-page'
 import { getPricingValues } from '@/lib/pricing/settings'
 import { catalogConfigByKey, loadCatalogConfig } from '@/lib/pricing/catalog-config'
@@ -71,15 +72,33 @@ const pages = (offerings: Offering[]): { path: string; label: string; desc: stri
   { path: '/help', label: 'Help center', desc: 'Answers, guides, and support for members and visitors.' },
 ]
 
+// The live public directories — every indexable entity surface the sitemap advertises,
+// so an engine citing "what is on Frequency" can walk the real catalog instead of only
+// the brand pages. Same voice rules as `pages`.
+const DIRECTORIES: { path: string; label: string; desc: string }[] = [
+  { path: '/events', label: 'Events', desc: 'Upcoming public events: what is happening, when, and in which city.' },
+  { path: '/discover/events', label: 'Events by Channel', desc: 'Public events browsed by Channel and city.' },
+  { path: '/discover/circles', label: 'Circles', desc: 'Live Circles you can visit: the small groups that meet on a standing day.' },
+  { path: '/discover/spaces', label: 'Spaces directory', desc: 'The venues, studios, and organizations that host community on Frequency.' },
+  { path: '/discover/partners', label: 'Partners', desc: 'Partner venues and organizations working with Frequency.' },
+  { path: '/discover/practices', label: 'Practice library', desc: 'The public practice library: small real-world practices from the community.' },
+  { path: '/discover/journeys', label: 'Journeys', desc: 'Guided multi-week Journeys you can take with a group.' },
+  { path: '/discover/places', label: 'Places', desc: 'Third places worth knowing about, city by city.' },
+  { path: '/discover/topics', label: 'Channels', desc: 'The Channels (Movement, Spirituality, and more), each with its Circles and events.' },
+]
+
 // Comparison pages: how Frequency differs from the tools people use to gather
-// others. Honest framing, so an engine can cite them for "alternative to X".
+// others. DERIVED from the COMPARISONS registry (the same source the /vs routes and
+// sitemap read), so a sixth competitor ships cited here on its own — the hand-written
+// version of this list is exactly the kind that drifts. Each desc is the page's own
+// meta description, which is already what the live page tells an engine.
 const COMPARE: { path: string; label: string; desc: string }[] = [
   { path: '/vs', label: 'Frequency compared', desc: 'How Frequency compares to the tools people use to gather others.' },
-  { path: '/vs/partiful', label: 'Frequency vs Partiful', desc: 'Partiful makes one party easy; Frequency is the standing Circle that keeps meeting after it.' },
-  { path: '/vs/linktree', label: 'Frequency vs Linktree', desc: 'A link page sends people out; a Spotlight page brings them into real Circles near you.' },
-  { path: '/vs/calendly', label: 'Frequency vs Calendly', desc: 'Calendly books one meeting; Frequency holds a standing group time that repeats.' },
-  { path: '/vs/eventbrite', label: 'Frequency vs Eventbrite', desc: 'Eventbrite sells tickets to a one-off; a Circle is a free room that keeps meeting.' },
-  { path: '/vs/mighty-networks', label: 'Frequency vs Mighty Networks', desc: 'Mighty Networks hosts an online community; Frequency points off the screen, into a room.' },
+  ...COMPARISONS.map((c) => ({
+    path: comparisonPath(c.slug),
+    label: `Frequency vs ${c.name}`,
+    desc: comparisonCopy(c).description,
+  })),
 ]
 
 // Problem-aware guides (the SEO pillar pages). Answer-first, so an engine can cite them.
@@ -183,6 +202,9 @@ export async function GET() {
     ...stats,
     '## Key pages',
     ...pages(offerings).map((p) => `- [${p.label}](${abs(p.path)}): ${p.desc}`),
+    '',
+    '## Live directories',
+    ...DIRECTORIES.map((p) => `- [${p.label}](${abs(p.path)}): ${p.desc}`),
     '',
     '## Problem-aware guides',
     ...GUIDES.map((p) => `- [${p.label}](${abs(p.path)}): ${p.desc}`),

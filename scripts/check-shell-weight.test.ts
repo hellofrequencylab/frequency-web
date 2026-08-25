@@ -8,6 +8,13 @@ import {
   BUDGET_KB,
   SYNCHRONOUS_ADMIN_IMPORTS,
   staticAdminImports,
+  HOT_ROUTE_ENTRIES,
+  HEAVY_CLIENT_MODULES,
+  ROUTE_HEAVY_CONTROLS,
+  CLIENT_GRAPH_FLOOR,
+  walkRouteClientGraph,
+  declaresUseClient,
+  heavyModulesIn,
 } from './check-shell-weight.mjs'
 
 // ─────────────────────────────────────────────────────────────────────────────────────────────
@@ -167,5 +174,97 @@ describe('the artifact gate is wired where it can run', () => {
       read('scripts/guard-wiring.test.ts').includes("'check:shell-weight':"),
       'wired now, but guard-wiring.test.ts still declares it UNWIRED — remove that entry',
     ).toBe(false)
+  })
+})
+
+// ─────────────────────────────────────────────────────────────────────────────────────────────
+// ARM C · THE ROUTE CHUNK (SCAN-506).
+//
+// Arms A and B watch ONE manifest entry, the shell layout. A heavy library pulled in by a ROUTE's
+// own client component is invisible to both: it never enters the shell entry, it lands in that
+// route's chunk, and every member who opens that route pays for it. SCAN-302 found react-markdown
+// on the feed path by hand, which is how this arm came to exist.
+//
+// WHY IT LIVES HERE AND NOT IN THE .mjs. Arm C is filesystem-only, so `postbuild` — which runs on
+// Vercel, after the merge — is the latest possible place to fire it and the least useful. It also
+// cannot coexist with the artifact arms' mutation fixtures, which run the script from a cwd that is
+// deliberately not this repo (check-shell-weight-chunk-root.test.ts, check-shell-weight-warn-only
+// .test.ts); there, Arm C's controls do not exist and it failed over that instead of exercising the
+// arm under test. Here the cwd is always the repo root and it runs on every PR. Same rule, earlier.
+//
+// WHAT IT PROVES, AND WHAT IT DOES NOT. A static import below a `use client` boundary is not
+// code-split by any bundler setting, so "statically imported inside this route's client subtree" IS
+// "in this route's first-load JS" — provable without a build. It is a FINGERPRINT arm, the
+// route-level twin of Arm B, never a budget: an unnamed heavy dependency is not caught, and there
+// is no route byte ceiling, because an honest one needs the artifact. `dynamic()` and bare
+// `import()` are not static edges and are correctly invisible to it.
+// ─────────────────────────────────────────────────────────────────────────────────────────────
+
+const heavy = HEAVY_CLIENT_MODULES as string[]
+const hotRoutes = HOT_ROUTE_ENTRIES as string[]
+const routeControls = ROUTE_HEAVY_CONTROLS as { file: string; heavy: string }[]
+
+describe('Arm C · the detector can see a heavy import at all', () => {
+  it('names real heavy packages, every one a real dependency', () => {
+    // A row naming a package this repo does not install can never fire, and a list of rows that
+    // cannot fire reads as coverage (ADR-970). The list may GROW; a row leaves only when the
+    // dependency does.
+    const pkg = JSON.parse(read('package.json')) as { dependencies?: Record<string, string> }
+    const deps = pkg.dependencies ?? {}
+    expect(heavy.length).toBeGreaterThanOrEqual(3)
+    for (const name of heavy) {
+      expect(deps[name], `HEAVY_CLIENT_MODULES names ${name}, which is not a dependency`).toBeTruthy()
+    }
+  })
+
+  it.each(routeControls)('$file still reports $heavy in a client module', (ctl) => {
+    // 🔴 IF THIS BREAKS BECAUSE SOMEONE FIXED THE FILE, THAT IS GOOD NEWS AND THE FIX IS TO REPOINT
+    // THE ROW, never to delete the control. Without it, every "no heavy module on this route"
+    // verdict below is "I never looked" dressed as "I looked and it was clean".
+    expect(
+      existsSync(path.join(ROOT, ctl.file)),
+      `${ctl.file} does not exist — repoint ROUTE_HEAVY_CONTROLS at another real instance.`,
+    ).toBe(true)
+    const src = read(ctl.file)
+    expect(declaresUseClient(src), `${ctl.file} is no longer a client module`).toBe(true)
+    expect(heavyModulesIn(src)).toContain(ctl.heavy)
+  })
+
+  it('does NOT flag a dynamic import, a type-only import, or a server component', () => {
+    // The paired negative. Without it the assertions above pass for a detector that flags every
+    // mention of the string, which would make Arm C unusable and then routed around.
+    expect(heavyModulesIn("const M = dynamic(() => import('react-markdown'))")).toEqual([])
+    expect(heavyModulesIn("import type { Options } from 'react-markdown'")).toEqual([])
+    expect(declaresUseClient("// a banner\n/* and a block */\nimport x from 'y'")).toBe(false)
+    // ...and the paired positive for each, so the negatives are not passing by being blind.
+    expect(heavyModulesIn("import ReactMarkdown from 'react-markdown'")).toEqual(['react-markdown'])
+    expect(heavyModulesIn("export { default } from 'maplibre-gl/dist/x'")).toEqual(['maplibre-gl'])
+    expect(declaresUseClient("// a banner\n/* and a block */\n'use client'\nimport x from 'y'")).toBe(true)
+  })
+})
+
+describe('Arm C · no heavy library reaches a member hot route as client code', () => {
+  // Deliberately `page.tsx` and NOT the layout: the layout IS the shell, and Arms A/B already
+  // measure it to the byte. What this adds is the delta a route contributes ON TOP of the shell.
+  const walked = hotRoutes.map((entry) => ({ entry, ...walkRouteClientGraph(ROOT, entry) }))
+
+  it('walks a real graph rather than four entry files', () => {
+    // The non-triviality control. A resolver or alias change that stops the walk descending would
+    // report "0 leaks" from having visited one file each. 668 client modules on 2026-08-25.
+    expect(hotRoutes.length).toBeGreaterThanOrEqual(4)
+    for (const entry of hotRoutes) {
+      expect(existsSync(path.join(ROOT, entry)), `${entry} moved — update HOT_ROUTE_ENTRIES.`).toBe(true)
+    }
+    const total = walked.reduce((n, w) => n + w.clientFiles.size, 0)
+    expect(total, 'the import walk is not descending; a clean verdict would be about the WALK').
+      toBeGreaterThanOrEqual(CLIENT_GRAPH_FLOOR as number)
+  })
+
+  it.each(walked)('$entry ships no named heavy library in its client subtree', (w) => {
+    // Fix a red here by mounting the component through `next/dynamic`, or by keeping the render on
+    // the SERVER (a server component may import react-markdown freely — it ships no client bytes).
+    // Do NOT remove the row from HEAVY_CLIENT_MODULES.
+    const shown = w.leaks.map((l) => `${l.heavy} imported by ${l.file}\n       via: ${l.chain.slice(-4).join(' -> ')}`)
+    expect(shown, `${w.entry} — a static import below a 'use client' boundary is NOT code-split`).toEqual([])
   })
 })

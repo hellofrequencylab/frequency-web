@@ -68,8 +68,10 @@ single decision point in `settings-panel`'s `nodesForAppIds`:
   regression. The **personal config** surfaces were `inline` under ADR-514 Phase C+D — but **ADR-515 Phase 2
   (§5.6) REVERSED that**: only **Profile** (plus a condensed Spotlight + a Layout link) stays inline; **Appearance ·
   Notifications · Connections and location** moved to the bottom bank, so their inline wrappers +
-  `getNotificationsRailData` / `getConnectionsRailData` were retired (only `getProfileRailData` remains in
-  `app/(main)/settings/rail-getters.ts`). A Space's **config**
+  `getNotificationsRailData` / `getConnectionsRailData` were retired. (`app/(main)/settings/rail-getters.ts`
+  has since regrown deliberately — `getProfileRailData` plus completeness / member-hub / member-layout /
+  appearance getters, each re-gating on the authed viewer; the retirement was of the two NAMED getters,
+  not a one-getter freeze.) A Space's **config**
   surfaces — **Basics · Mode and focus · Page** — are `inline` via `space-{basics,mode,page}-module` over
   `manage/rail-getters.ts`. **Every getter re-gates server-side** (the Space getters via
   `resolveSpaceManageAccess` + the surface's function check; the personal getters on the AUTHED viewer) and
@@ -121,7 +123,7 @@ strip above the inline sections in the **non-search** branch only, so search res
 - **Content** is `appsForScope(scope, viewer)` — the same catalog that feeds the Loom Apps lane. Personal Apps are `scope: global`, member-gated; management Apps are entity-scoped, capability-gated.
 - **One component** renders it as a right-rail slide-over (lg+) and a bottom sheet (<lg).
 
-**Entities on the rail (all of them).** `circle · event · hub · nexus · practice · profile` open the rail via `OpenAdminBarButton` with a Capability-gated scope. **Space** joined them (ADR-513): a Space profile's owner "Customize" trigger opens the SAME rail pointed at a `space` scope, whose editor Apps come from `SPACE_SURFACES` keyed by `{ on:'spaceType' }` + a `spaceFunction`/`none` gate (Space authority is SpaceRole + `spaceFunctionAccess`, never a `Capability`, so it carries `spaceFns` on the trigger detail instead of caps). Its **config** surfaces (Basics / Mode / Page) render **inline** and its **feature workflows** render as **link-rows** into the existing `/spaces/<slug>/settings/*` sub-pages, per each surface's `render` classification (§2.1, ADR-514); the full-page `/manage` console is NOT converged (they share sub-pages via the one `hrefForSurface` map, not chrome). Basics / Page / Mode / Services / Danger are gate `none`, so an owner always sees a non-empty rail. This retired the bespoke `SpaceCustomizeButton`/`SpaceCustomizeDrawer` + `OPEN_SPACE_CUSTOMIZE`.
+**Entities on the rail (all of them).** `circle · event · hub · nexus · practice · profile` open the rail via `OpenAdminBarButton` with a Capability-gated scope. **Space** joined them (ADR-513): a Space profile's owner "Customize" trigger opens the SAME rail pointed at a `space` scope, whose editor Apps come from the `SPACE_MODULES` catalog (`lib/admin/modules/space-modules.ts` — the duplicate `SPACE_SURFACES` registry it replaced was retired in P4, ADR-547, and `check:menu` fails the build if it returns) gated per-module by a `spaceFunction`/`always` rule (Space authority is SpaceRole + `spaceFunctionAccess`, never a `Capability`, so it carries `spaceFns` on the trigger detail instead of caps). Its **config** surfaces (Basics / Mode / Page) render **inline** and its **feature workflows** render as **link-rows** into the existing `/spaces/<slug>/settings/*` sub-pages, per each surface's `render` classification (§2.1, ADR-514); the full-page `/manage` console is NOT converged (they share sub-pages via the one `hrefForSurface` map, not chrome). Basics / Page / Mode / Services / Danger are gate `none`, so an owner always sees a non-empty rail. This retired the bespoke `SpaceCustomizeButton`/`SpaceCustomizeDrawer` + `OPEN_SPACE_CUSTOMIZE`.
 
 ### 2.2 Three tiers — standard · primary · extra (ADR-514 three-tier reorg)
 
@@ -287,7 +289,7 @@ ADR-514 Phase C+D**, which had inlined Appearance, Notifications, and Connection
 |---|---|---|---|
 | Profile | `account.profile` | inline (standard) | `PersonalProfileModule` → `ProfileForm` with `hideSpotlight` |
 | Spotlight | `account.spotlight` | inline (standard) | `PersonalSpotlightModule` — condensed status pill + Publish/Unpublish + "Build your page" |
-| Layout | `account.layout` | inline (primary) | `PersonalLayoutModule` — a link-row to `/people/<handle>/profile-preview/edit` |
+| Layout | `account.layout` | inline (primary) | `PersonalLayoutModule` — the full inline `ProfilePageBuilder` on the member's own `/people/<handle>` (ADR-516 Phase C; was a link-row in ADR-515 Phase 2) |
 | Appearance | `account.appearance` | **bank** | bank button → `/settings/appearance` |
 | Notifications | `account.notifications` | **bank** | bank button → `/settings/notifications` |
 | Connections and location | `account.connections` | **bank** | bank button → `/settings/connections` |
@@ -297,8 +299,10 @@ ADR-514 Phase C+D**, which had inlined Appearance, Notifications, and Connection
 So the personal rail reads: **sticky search → Profile → Spotlight → Layout → bottom bank** (Appearance ·
 Notifications · Connections and location · Account and privacy · Billing · All settings). The retired inline
 wrappers (`personal-{appearance,notifications,connections}-module.tsx`) and their getters
-(`getNotificationsRailData` / `getConnectionsRailData`) are gone; only `getProfileRailData` remains, feeding
-all three inline surfaces (it already carries the spotlight flags + the handle). The condensed Spotlight and
+(`getNotificationsRailData` / `getConnectionsRailData`) are gone; `getProfileRailData` feeds
+all three inline surfaces (it already carries the spotlight flags + the handle), and the file has
+since grown sibling getters (completeness / member hub / member layout / appearance) for newer rail
+modules — each self-gating the same way. The condensed Spotlight and
 Layout modules self-fetch it and re-gate on the authed viewer, so a signed-out viewer (or, for Spotlight, a
 member who cannot enable it) renders nothing (fail-safe). `ProfileForm` gained a `hideSpotlight` prop so the
 rail suppresses the big Spotlight block (the condensed section stands in); the full `/settings/profile` page

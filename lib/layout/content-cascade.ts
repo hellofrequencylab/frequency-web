@@ -210,7 +210,7 @@ export function pickCascade(
 
 /** Read every scope in a route's chain in ONE query, keyed by scope. REQUEST-CACHED and FAIL-SAFE:
  *  any error resolves to an empty map, so a page falls back to its coded copy rather than to an
- *  error boundary. The chain is short (a 3-deep route is 5 keys including `'/'` and `'*'`), so this
+ *  error boundary. The chain is short (a 3-deep route is 4 keys: the route, its two ancestors, and `'*'` — `'/'` is never inserted as an ancestor, see the SITE_SCOPE note above), so this
  *  is the same single round trip the exact-route read was, with a wider `WHERE`. */
 export const loadCascadeRows = cache(
   async (route: string): Promise<Record<string, CascadeRow>> => {

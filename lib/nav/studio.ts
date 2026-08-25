@@ -260,6 +260,12 @@ export const STUDIO_LEAVES: readonly StudioLeaf[] = [
     adminGroups: [{ domain: 'acquisition', section: 'Entry points' }], adminNav: { section: 'qr' } },
   { id: 'qr-stats', href: '/admin/qr/stats', label: 'Scan stats', desc: 'QR scan analytics.', icon: 'QrCode', min: 'admin', staffDomain: 'qr',
     adminNav: { section: 'qr' } },
+  // The Link Generator (BUILD-LIST P5) shipped without a row, so a working, gated tool was
+  // unreachable from every derived menu and invisible to check:gate-parity — the same "a tool
+  // its authorized users can never find" shape the automations/nurture rows above record.
+  // min/staffDomain mirror the page's own gate: requireAdmin('host', { staff: 'qr' }).
+  { id: 'growth-links', href: '/admin/growth/links', label: 'Link Generator', desc: 'Compose a trackable link with campaign tags, then generate a short link and QR to share.', icon: 'QrCode', min: 'host', staffDomain: 'qr',
+    adminGroups: [{ domain: 'acquisition', section: 'Entry points' }] },
   { id: 'referrals', href: '/admin/referrals', label: 'Referrals', desc: 'The personal-code referral funnel: signups, activations, and top referrers.', icon: 'Share2', min: 'host', staffDomain: 'marketing',
     world: 'growth', worldLabel: 'Referrals', worldOrder: 2,
     adminGroups: [{ domain: 'acquisition', section: 'Entry points' }], adminNav: { section: 'growth', heading: 'Acquisition' } },
@@ -449,7 +455,9 @@ export const STUDIO_LEAVES: readonly StudioLeaf[] = [
 
 // ── Overview world sub-pages that are not admin leaves (Dashboard is the /admin root) ──
 // Dashboard is the exec read; it is the Overview world root (STUDIO_WORLDS overview.href).
-// Today rides the CRM Today leaf (id 'crm-today', world:'overview'). No extra leaf needed.
+// Today rides the Intelligence leaf (id 'crm-intelligence', world:'overview') — /admin/crm/today
+// redirects there, and the old 'crm-today' LEAF was merged away (the 'crm-today' ids that remain
+// are widget ids in lib/widgets/modules.ts, not catalog rows). No extra leaf needed.
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // LEGACY DERIVATION LAYER

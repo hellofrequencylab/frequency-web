@@ -56,10 +56,11 @@ export const PRIMARY_NAV: NavLink[] = headerTriggers().map(({ node }) => ({
 // feed nav isn't cluttered with splash.
 export const SITE_NAV: NavLink[] = PRIMARY_NAV;
 
-// Members in-app get NO splash tabs — only the shared community core (the Discover
-// dropdown). Splash stays on the public site; the left rail owns in-app nav. This
-// is what keeps the "main menu" and the "feed menu" in sync, minus splash.
-export const SITE_NAV_MEMBER: NavLink[] = PRIMARY_NAV;
+// `SITE_NAV_MEMBER` was here: a bare `= PRIMARY_NAV` alias, left over from ADR-076, which set out to
+// keep the "main menu" and the "feed menu" in sync minus splash. It ended up with zero importers —
+// the left rail owns in-app nav, so members never read a top nav at all — and a second exported name
+// for the same array is how two menus start to drift. Deleted 2026-08-25 (SCAN-501); the rule it
+// encoded still holds and now has exactly one spelling, above.
 
 // ── The public mega menu (the header nav) ─────────────────────────────────────
 // The header is a MEGA MENU: the six primary pages are the top-level triggers, and

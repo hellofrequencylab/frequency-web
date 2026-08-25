@@ -274,7 +274,10 @@ export function eventListSchema(events: PublicEvent[], listName: string) {
     itemListElement: events.map((e, i) => ({
       '@type': 'ListItem',
       position: i + 1,
-      url: abs(`/discover/events/${e.slug}`),
+      // The CANONICAL event page — /discover/events/<slug> canonicalizes there, and
+      // structured data must reference the URL the page itself declares canonical, or
+      // the ItemList leaks ranking signal onto the mirror.
+      url: abs(`/events/${e.slug}`),
       name: e.title,
     })),
   }
@@ -282,9 +285,9 @@ export function eventListSchema(events: PublicEvent[], listName: string) {
 
 // ── ItemList of upcoming events (the /events listing) ───────────────────────────
 // The AEO signal for the member's own events home + the marketplace Events tab's
-// canonical target (/events). Unlike eventListSchema (which points at the /discover
-// mirror), each entry here is a nested Event node pointing at the CANONICAL public
-// event page /events/<slug>, so the listing consolidates ranking there.
+// canonical target (/events). Unlike eventListSchema (bare ListItems), each entry
+// here is a nested Event node pointing at the same CANONICAL public event page
+// /events/<slug>, so the listing consolidates ranking there.
 //
 // PRIVACY (ADR-186): this listing is built from the free-text venue `location` on the
 // browse row, which is NOT a city-redacted field, so we deliberately emit NO location

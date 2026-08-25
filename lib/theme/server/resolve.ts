@@ -9,8 +9,11 @@ import { THEME_COOKIE, parseThemeCookie } from '../cookie'
 // request, applying the precedence the layout agent sets onto the shell as
 // [data-generation] / [data-skin] / [data-occasion]. Server-only (it reads the request
 // cookie jar via next/headers, which is async in this Next version), so it is imported
-// from the layout, NOT from lib/theme/index.ts (which stays client-safe and re-exports
-// only the ResolvedTheme TYPE).
+// from the layout and never from a client module. It used to say "NOT from lib/theme/index.ts,
+// which stays client-safe and re-exports only the ResolvedTheme TYPE" — that barrel is gone
+// (SCAN-501, 2026-08-25: zero importers while 30 files reached for the submodules directly), and
+// `ResolvedTheme` is declared right here, a few lines down. The server/client seam is unchanged:
+// it is the `server/` directory, which is the boundary check:client-boundary already enforces.
 //
 // Precedence (docs/SPACES.md adaptive-theming ADR):
 //   1. The member's `fxtheme` cookie  — an explicit personal override wins.

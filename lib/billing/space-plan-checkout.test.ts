@@ -6,8 +6,12 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 // billed the `<plan>_<period>` product syncPricingProductsToStripe mints from `pricing_settings.plan.*`
 // (Business monthly = 1900, the BETA amount, with no cutover), while the loadout checkout bills the
 // catalog item and switches to the LIST price key on 2026-09-01. After the cutover the same Business
-// plan cost $19 through one button and $29 through the other. The legacy path is now a thin adapter
-// over the loadout checkout, so there is exactly one price for a plan at any instant.
+// plan cost $19 through one button and $29 through the other. ADR-880 made the legacy path a thin
+// adapter over the loadout checkout; SCAN-501 then found the adapter had no caller anywhere in the
+// repo and deleted it, so ONE PLAN, ONE PRICE is now structural: there is exactly one door. What these
+// tests still hold is the half that a single door cannot guarantee on its own — that the surviving
+// checkout charges the CATALOG key on both sides of the 2026-09-01 cutover, never the legacy
+// `<plan>_<period>` product, and stamps the metadata the webhook reconciles on.
 
 const { created, beta, flags, grant, lock } = vi.hoisted(() => ({
   created: [] as { line_items: { price: string; quantity: number }[]; metadata: Record<string, string> }[],
@@ -82,7 +86,7 @@ vi.mock('@/lib/pricing/beta', async (importOriginal) => ({
 
 vi.mock('@/lib/profiles/account-email', () => ({ profileAccountEmail: () => Promise.resolve('owner@example.com') }))
 
-import { createSpacePlanCheckout, createSpaceLoadoutCheckout } from './space-plan-checkout'
+import { createSpaceLoadoutCheckout } from './space-plan-checkout'
 
 const prices = () => created.at(-1)!.line_items.map((l) => l.price)
 
@@ -93,43 +97,28 @@ beforeEach(() => {
   lock.priceId = null
 })
 
-describe('the legacy plan checkout charges the SAME price as the loadout checkout', () => {
+describe('the Space plan checkout charges the CATALOG key, never the legacy plan product', () => {
   it('Business monthly, during beta: the catalog founding price, not the legacy business_monthly product', async () => {
-    await createSpacePlanCheckout('space-1', 'business', 'monthly')
+    await createSpaceLoadoutCheckout('space-1', { plan: 'business', interval: 'month' })
     expect(prices()).toEqual(['price_business_base_month'])
     expect(prices().join()).not.toContain('business_monthly')
   })
 
-  it('Business monthly, AFTER the cutover: the LIST price key, exactly like the loadout path', async () => {
-    beta.active = false
-    await createSpacePlanCheckout('space-1', 'business', 'monthly')
-    const legacy = prices()
-    await createSpaceLoadoutCheckout('space-1', { plan: 'business', interval: 'month' })
-    expect(legacy).toEqual(['price_business_base_month_list'])
-    expect(legacy).toEqual(prices())
-  })
-
-  it('annual maps to the year interval on both sides of the cutover', async () => {
-    await createSpacePlanCheckout('space-1', 'nonprofit', 'annual')
+  it('the year interval bills the yearly catalog key on both sides of the cutover', async () => {
+    await createSpaceLoadoutCheckout('space-1', { plan: 'nonprofit', interval: 'year' })
     expect(prices()).toEqual(['price_nonprofit_seat_year'])
     beta.active = false
-    await createSpacePlanCheckout('space-1', 'nonprofit', 'annual')
+    await createSpaceLoadoutCheckout('space-1', { plan: 'nonprofit', interval: 'year' })
     expect(prices()).toEqual(['price_nonprofit_seat_year_list'])
   })
 
   it('stamps the metadata the webhook reconciles on', async () => {
-    await createSpacePlanCheckout('space-1', 'business', 'monthly')
+    await createSpaceLoadoutCheckout('space-1', { plan: 'business', interval: 'month' })
     expect(created.at(-1)!.metadata).toMatchObject({ kind: 'space_plan', space_id: 'space-1', plan: 'business' })
   })
 
-  it('an unknown or unsold plan is a clean no-op, never a checkout', async () => {
-    expect(await createSpacePlanCheckout('space-1', 'whitelabel', 'monthly')).toBeNull()
-    expect(created).toEqual([])
-  })
-
-  it('a plan whose switch is OFF does not sell, through either door', async () => {
+  it('a plan whose switch is OFF does not sell, and creates no session', async () => {
     flags.plan_business_enabled = false
-    expect(await createSpacePlanCheckout('space-1', 'business', 'monthly')).toBeNull()
     expect(await createSpaceLoadoutCheckout('space-1', { plan: 'business', interval: 'month' })).toBeNull()
     expect(created).toEqual([])
     flags.plan_business_enabled = true
@@ -168,9 +157,9 @@ describe('a granted Space checks out at the founding rate while everyone else pa
     expect(prices()).toEqual(['price_collective_base_month', 'price_addon_ai_month'])
   })
 
-  it('the legacy plan checkout goes through the same door, so there is still ONE price per plan', async () => {
+  it('the grant reaches the YEARLY key too, not only the monthly one', async () => {
     grant.granted = true
-    await createSpacePlanCheckout('space-1', 'business', 'annual')
+    await createSpaceLoadoutCheckout('space-1', { plan: 'business', interval: 'year' })
     expect(prices()).toEqual(['price_business_base_year'])
   })
 

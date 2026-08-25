@@ -20,8 +20,9 @@ You earn **Zaps** for getting out into the world: going to gatherings, inviting
 someone new, hosting, outreach, and logging your practices. Zaps are your seasonal
 score. They convert into Gems when the season ends and they feed your lifetime
 Amplitude. Your **rank** is a separate thing, earned by finishing
-[Journeys](/help/the-quest/your-journey), not by piling up Zaps. There is no daily
-cap on Zaps.
+[Journeys](/help/the-quest/your-journey), not by piling up Zaps. Logging a practice
+never hits a cap; a few other actions have a sensible daily limit so the day stays
+about showing up, not farming.
 
 Roughly what things are worth (the biggest rewards live off the screen):
 

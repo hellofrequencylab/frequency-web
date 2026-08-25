@@ -1,12 +1,13 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 
-// FOUNDING STATUS grant + reserve. Locked invariants (ADR-599):
-//   1. reserve writes status='reserved', charged_at UNSET, card_on_file=false. NO charge.
-//   2. grantFoundingStatus (targeted, member) creates an ACTIVE row applying the locked rate AND
+// FOUNDING STATUS grant. Locked invariants (ADR-599):
+//   1. grantFoundingStatus (targeted, member) creates an ACTIVE row applying the locked rate AND
 //      sets profiles.is_founding_member=true.
-//   3. THE NO-CHARGE INVARIANT: grant NEVER writes charged_at (money moves only via the gated
-//      billing path). Locked here across reserve + grant.
-//   4. IDEMPOTENT: granting an already-active founder is a no-op (granted 0), not a re-charge.
+//   2. THE NO-CHARGE INVARIANT: grant NEVER writes charged_at (money moves only via the gated
+//      billing path).
+//   3. IDEMPOTENT: granting an already-active founder is a no-op (granted 0), not a re-charge.
+// The reserve arm and its test went with the retired Founding Business cohort (SCAN-501): both
+// reserveFounding and foundingBusinessTakenInCity had no caller outside this file.
 // The DB + the founding config are mocked; the loose service-role handle is captured per table.
 
 const { inserts, updates, maybeSingle } = vi.hoisted(() => ({
@@ -44,7 +45,7 @@ vi.mock('@/lib/pricing/settings', () => ({
   })),
 }))
 
-import { grantFoundingStatus, lapseFoundingStatus, reserveFounding } from './status'
+import { grantFoundingStatus, lapseFoundingStatus } from './status'
 import { asFoundingConfig, foundingBusinessSpotsRemaining, FOUNDING_DEFAULT } from '@/lib/pricing/founding'
 
 beforeEach(() => {
@@ -63,20 +64,6 @@ describe('founding config (pure)', () => {
     expect(foundingBusinessSpotsRemaining(FOUNDING_DEFAULT, 0)).toBe(25)
     expect(foundingBusinessSpotsRemaining(FOUNDING_DEFAULT, 25)).toBe(0)
     expect(foundingBusinessSpotsRemaining(FOUNDING_DEFAULT, 99)).toBe(0)
-  })
-})
-
-describe('reserveFounding - no-charge reserve', () => {
-  it('writes a reserved row with card_on_file false and NO charged_at', async () => {
-    maybeSingle.mockResolvedValue({ data: null, error: null }) // no existing row
-    const res = await reserveFounding({ kind: 'business', spaceId: 'space-1', cohortCity: 'Austin' })
-    expect('data' in res).toBe(true)
-    const row = inserts.find((i) => i.table === 'founding_members')?.row as Record<string, unknown>
-    expect(row.status).toBe('reserved')
-    expect(row.card_on_file).toBe(false)
-    expect(row.locked_rate_cents).toBe(3900)
-    expect(row.locked_take_bps).toBe(300)
-    expect('charged_at' in row).toBe(false)
   })
 })
 

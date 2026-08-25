@@ -1,24 +1,85 @@
 import Link from 'next/link'
 import {
   ArrowUpRight, QrCode, Share2, GraduationCap, ToggleRight, Contact, PieChart,
-  Telescope, Bot, Link2,
+  Telescope, Bot, LayoutDashboard,
   Send, type LucideIcon,
 } from 'lucide-react'
 import { AdminSection } from '@/components/templates'
+import { canUseLink, type AdminLink } from '@/app/(main)/admin/sections'
+import { studioLeaf } from '@/lib/nav/studio'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { getCallerProfile } from '@/lib/auth'
+import { getStaffMember } from '@/lib/staff'
+import type { CommunityRole, WebRole } from '@/lib/core/roles'
+import type { StaffRole } from '@/lib/core/staff-roles'
 
 // Growth layout module (LP7): "Manage" — one card per working sub-page across Acquisition, CRM, and
 // Marketing, each a live stat (where cheap) plus a link straight to the surface that edits it. Self-
 // fetching RSC; the page owns the gate and every linked area keeps its own. Fail-safe: any read error
 // degrades to honest zeros. The grids are container queries so they size to the slot they land in.
+//
+// THE DESTINATIONS ARE DERIVED, NOT TYPED (SCAN-503). Label, description, href, icon and GATE all
+// come from the one nav catalog (lib/nav/studio.ts::STUDIO_LEAVES) via `studioLeaf(id)`. This file
+// declares only what the catalog cannot know: which leaves belong in which group here, and the live
+// stat under each. While the cards were hand-declared the copy drifted from the leaf `desc` and the
+// cards carried NO gate, so a host+marketing viewer was offered janitor-gated destinations that
+// bounce on click — and `check:menu` is structurally blind to a list rendered by a page
+// (docs/MENU-CONTRACT.md §"What is NOT enforced").
 
-interface ManageCard {
-  label: string
-  desc: string
-  stat: string
-  statLabel: string
-  href: string
-  Icon: LucideIcon
+/** A destination card: the catalog's link, plus the live stat this dashboard reads for it. */
+type ManageCard = AdminLink & { stat: string; statLabel: string }
+
+/** What this dashboard adds to a leaf: which one, and the stat beneath it. */
+type CardSpec = { leaf: string; stat: string; statLabel: string }
+
+/** lucide icon NAME → component, for the leaves listed below. The catalog stores names
+ *  (framework-free); app/(main)/admin/sections.ts keeps the same map for its own consumers but
+ *  does not export the resolver, so the widget resolves the handful of names it renders. */
+const ICONS: Record<string, LucideIcon> = {
+  QrCode, Share2, GraduationCap, ToggleRight, Contact, PieChart, Telescope, Bot, Send,
+}
+
+interface ViewerRoles {
+  role: CommunityRole
+  webRole: WebRole
+  staffRole: StaffRole | null
+}
+
+/** The viewer's three role axes, read the same way the sibling "Related areas" module reads them
+ *  (components/widgets/growth/related.tsx). Null on a signed-out or failed read, which hides the
+ *  section rather than showing destinations we cannot prove the viewer may enter. */
+async function loadRoles(): Promise<ViewerRoles | null> {
+  try {
+    const [profile, staff] = await Promise.all([
+      getCallerProfile(),
+      getStaffMember().catch(() => null),
+    ])
+    if (!profile) return null
+    return { role: profile.community_role, webRole: profile.webRole, staffRole: staff?.role ?? null }
+  } catch {
+    return null
+  }
+}
+
+/** Resolve each spec against the catalog and drop what this viewer may not use. `canUseLink` is the
+ *  SAME gate the admin rail and both consoles apply, so a card can never offer a destination that
+ *  bounces. A spec naming a leaf that no longer exists drops out rather than rendering a dead card. */
+function cardsFor(specs: readonly CardSpec[], viewer: ViewerRoles): ManageCard[] {
+  return specs.flatMap((spec) => {
+    const leaf = studioLeaf(spec.leaf)
+    if (!leaf) return []
+    const link: AdminLink = {
+      href: leaf.href,
+      label: leaf.label,
+      desc: leaf.desc,
+      Icon: ICONS[leaf.icon] ?? LayoutDashboard,
+      min: leaf.min,
+    }
+    if (leaf.staffDomain) link.staffDomain = leaf.staffDomain
+    if (leaf.staffLevel) link.staffLevel = leaf.staffLevel
+    if (!canUseLink(link, viewer.role, viewer.webRole, viewer.staffRole)) return []
+    return [{ ...link, stat: spec.stat, statLabel: spec.statLabel }]
+  })
 }
 
 interface ManageCounts {
@@ -66,28 +127,38 @@ async function load(): Promise<ManageCounts> {
 }
 
 export async function GrowthManage() {
-  const c = await load()
+  const [c, viewer] = await Promise.all([load(), loadRoles()])
+  if (!viewer) return null
 
-  const acquisition: ManageCard[] = [
-    { label: 'Link Generator', desc: 'Compose a trackable link with campaign tags, then generate a short link and QR to share.', stat: '', statLabel: 'Open', href: '/admin/growth/links', Icon: Link2 },
-    { label: 'QR Studio', desc: 'Generate, design, and manage all QR codes.', stat: `${c.qr}`, statLabel: 'codes', href: '/admin/qr', Icon: QrCode },
-    { label: 'Referrals', desc: 'The personal-code referral funnel: signups, activations, and top referrers.', stat: '', statLabel: 'Manage', href: '/admin/referrals', Icon: Share2 },
-    { label: 'Walkthroughs', desc: 'Instructional walkthroughs by role and trigger.', stat: '', statLabel: 'Manage', href: '/admin/walkthroughs', Icon: GraduationCap },
-    { label: 'Onboarding controls', desc: 'Turn Next Steps prompts, popups, and referrals on or off.', stat: '', statLabel: 'Manage', href: '/admin/onboarding-controls', Icon: ToggleRight },
-  ]
+  const acquisition = cardsFor(
+    [
+      { leaf: 'growth-links', stat: '', statLabel: 'Open' },
+      { leaf: 'qr', stat: `${c.qr}`, statLabel: 'codes' },
+      { leaf: 'referrals', stat: '', statLabel: 'Manage' },
+      { leaf: 'walkthroughs', stat: '', statLabel: 'Manage' },
+      { leaf: 'onboarding-controls', stat: '', statLabel: 'Manage' },
+    ],
+    viewer,
+  )
 
-  const crm: ManageCard[] = [
-    { label: 'Contacts', desc: 'Leads, customers, and members as one record.', stat: `${c.contacts}`, statLabel: 'contacts', href: '/admin/crm/contacts', Icon: Contact },
-    { label: 'Segments', desc: 'Saved audiences by tag and trait.', stat: `${c.segments}`, statLabel: 'segments', href: '/admin/segments', Icon: PieChart },
-  ]
+  const crm = cardsFor(
+    [
+      { leaf: 'crm-contacts', stat: `${c.contacts}`, statLabel: 'contacts' },
+      { leaf: 'segments', stat: `${c.segments}`, statLabel: 'segments' },
+    ],
+    viewer,
+  )
 
-  const marketing: ManageCard[] = [
-    // Composing (campaigns, funnels, automations, nurture) now lives in the Resonance CRM Marketing tab.
-    { label: 'Marketing', desc: 'Compose and send email to the whole community or a section, with campaigns and funnels in one place. In the Resonance CRM.', stat: `${c.campaigns + c.funnels}`, statLabel: 'in flight', href: '/admin/crm/marketing', Icon: Send },
-    { label: 'Marketing analytics', desc: 'Sends, opens, clicks, and bounces by type.', stat: '', statLabel: 'Manage', href: '/admin/marketing/analytics', Icon: PieChart },
-    { label: 'Market read', desc: 'Demand, geography, and content performance.', stat: '', statLabel: 'Manage', href: '/admin/marketing/market-read', Icon: Telescope },
-    { label: 'Marketing agent', desc: 'Ask the AI operator to draft, segment, and run the busywork.', stat: '', statLabel: 'Manage', href: '/admin/marketing/agent', Icon: Bot },
-  ]
+  // Composing (campaigns, funnels, automations, nurture) now lives in the Resonance CRM Marketing tab.
+  const marketing = cardsFor(
+    [
+      { leaf: 'crm-marketing', stat: `${c.campaigns + c.funnels}`, statLabel: 'in flight' },
+      { leaf: 'marketing-analytics', stat: '', statLabel: 'Manage' },
+      { leaf: 'marketing-market-read', stat: '', statLabel: 'Manage' },
+      { leaf: 'marketing-agent', stat: '', statLabel: 'Manage' },
+    ],
+    viewer,
+  )
 
   return (
     <>
@@ -111,6 +182,8 @@ export async function GrowthManage() {
 }
 
 function ManageGroup({ title, description, cards }: { title: string; description: string; cards: ManageCard[] }) {
+  // A group the viewer's gates emptied renders nothing rather than an empty titled section.
+  if (cards.length === 0) return null
   return (
     <AdminSection title={title} description={description}>
       <div className="grid gap-3 @2xl:grid-cols-2 @4xl:grid-cols-3">

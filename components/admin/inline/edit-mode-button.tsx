@@ -1,36 +1,13 @@
 'use client'
 
-import { Pencil, Check } from 'lucide-react'
 import { useEditMode } from '@/lib/admin/use-edit-mode'
 
-// The discoverable Edit trigger for the inline tuning layer (ADR-138). Render it
-// only for operators who can manage the page (the caller gates on capability).
-// Toggles page-level Edit Mode; inline editors light up while it's on.
-export function EditModeButton() {
-  const { editing, toggle } = useEditMode()
-  return (
-    <button
-      type="button"
-      onClick={toggle}
-      aria-pressed={editing}
-      className={`shrink-0 inline-flex items-center justify-center gap-1.5 rounded-lg px-4 py-2 text-body-sm font-medium transition-colors ${
-        editing
-          ? 'bg-primary text-on-primary hover:bg-primary-hover'
-          : 'border border-border bg-surface text-text hover:border-border-strong'
-      }`}
-    >
-      {editing ? (
-        <>
-          <Check className="h-4 w-4" /> Done
-        </>
-      ) : (
-        <>
-          <Pencil className="h-4 w-4" /> Edit
-        </>
-      )}
-    </button>
-  )
-}
+// The inline tuning layer's in-page entry point (ADR-138). This file used to also export
+// `EditModeButton`, the Pencil/Check toggle pill docs/EMBEDDED-ADMIN.md still describes. It had
+// no caller anywhere in the tree (verified 2026-08-25, SCAN-501) and is deleted. Edit Mode is
+// URL state (`?edit=1`, lib/admin/use-edit-mode.ts), so it is entered by any link carrying the
+// param and by the StartEditingLink below; nothing needed the pill to turn it on. NOTE for a
+// later sweep: with the pill gone, `useEditMode().toggle` has no caller either.
 
 // A lightweight text link that *enters* Edit Mode — for empty-state prompts like
 // "+ Add a description" that should drop the operator straight into editing.

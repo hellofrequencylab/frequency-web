@@ -5,10 +5,11 @@ import { getAllTrainingCategories, trainingHref, TRAINING_BASE } from '@/lib/lea
 import { TrainingNav } from '@/components/training/training-nav'
 
 // Leader Training docs library — a two-pane documentation shell (left category index, right
-// content), the leader-gated twin of the public help center. The route is registered as a
-// no-right-rail (Focus) surface in lib/layout/page-chrome.ts so the index + content get the
-// full width; this layout adds the left index in-body. Gate is re-asserted fail-closed even
-// though the parent /lead layout already runs requireLeadFloor().
+// content), the leader-gated twin of the public help center. The route rides the default
+// Member chrome (lib/layout/page-chrome.ts MANAGED_ROUTES registers it as a Member surface,
+// global rail — it is NOT in any Focus/no-rail list), so the two panes render beside the
+// community rail; this layout adds the left index in-body. Gate is re-asserted fail-closed
+// even though the parent /lead layout already runs requireLeadFloor().
 export default async function TrainingLibraryLayout({ children }: { children: React.ReactNode }) {
   await requireLeadFloor()
   const categories = await getAllTrainingCategories()

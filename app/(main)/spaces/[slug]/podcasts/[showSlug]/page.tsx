@@ -9,7 +9,7 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { DetailTemplate } from '@/components/templates'
 import { resolveDetailHero } from '@/lib/layout/detail-hero'
 import { JsonLd } from '@/components/json-ld'
-import { podcastSchema } from '@/lib/jsonld'
+import { podcastSchema, podcastEpisodeSchema } from '@/lib/jsonld'
 import { SITE_URL } from '@/lib/site'
 
 // Airwaves P3 — the PUBLIC Show page (ADR-608). The in-app, shell-framed listening surface: cover +
@@ -17,6 +17,10 @@ import { SITE_URL } from '@/lib/site'
 // with the real <AirwavesPlayer>. It reads the SAME `assembleShowFeed` the RSS route does, so the page
 // and the feed never drift — both show only published, public Episodes with a playable enclosure, and
 // both 404 on a missing / draft / private-feed Show (no gating needed on this listing).
+
+/** How many episodes get a PodcastEpisode node. Answer engines want the recent catalogue, not
+ *  every episode ever; the RSS feed is the complete enumeration. */
+const EPISODE_SCHEMA_CAP = 10
 
 const UTC_DATE = new Intl.DateTimeFormat('en-US', {
   month: 'short',
@@ -65,7 +69,17 @@ export async function generateMetadata({
       title: show.title,
       description,
       type: 'website',
+      url: `/spaces/${slug}/podcasts/${showSlug}`,
       images: coverUrl ? [{ url: coverUrl }] : undefined,
+    },
+    // Metadata merges per TOP-LEVEL key, so a page that sets only `openGraph` still inherits the
+    // ROOT twitter block: every share of a Show read "Frequency, the Community Collective" with the
+    // generic card. Mirroring the OG values here is what makes an X or Slack unfurl name the Show.
+    twitter: {
+      card: 'summary_large_image',
+      title: show.title,
+      description,
+      images: coverUrl ? [coverUrl] : undefined,
     },
   }
 }
@@ -119,6 +133,24 @@ export default async function ShowPage({
     publisherName: spaceName,
   })
 
+  // One PodcastEpisode node per listed episode, from the SAME `items` the page renders, so the
+  // structured data and the visible list can never disagree. Each is anchored to this Show page
+  // (episodes have no detail route of their own) and carries partOfSeries back to the series node.
+  // Capped: the schema is a citation surface for answer engines, not a full catalog dump, and the
+  // RSS feed remains the complete enumeration.
+  const episodeJsonLd = items.slice(0, EPISODE_SCHEMA_CAP).map((ep) =>
+    podcastEpisodeSchema({
+      title: ep.title,
+      description: ep.description,
+      path: `/spaces/${slug}/podcasts/${showSlug}#${ep.anchor}`,
+      datePublished: episodes.find((e) => e.recording.id === ep.id)?.recording.publishedAt ?? null,
+      durationSeconds: ep.durationSec ?? null,
+      mediaUrl: ep.src,
+      mediaKind: ep.kind,
+      imageUrl: ep.artworkUrl ?? null,
+      series: { title: show.title, path: `/spaces/${slug}/podcasts/${showSlug}` },
+    }),
+  )
   // The standard entity cover (PROG-P5, ADR-1136). The show's SQUARE artwork is identity, not a
   // 16:6 cover — it stays in the `band` lockup below — so the route is deliberately UNMAPPED and
   // this resolves to no cover until a section row (or a real wide cover column) exists.
@@ -127,6 +159,9 @@ export default async function ShowPage({
   return (
     <div className="mx-auto max-w-3xl">
       <JsonLd data={seriesJsonLd} />
+      {episodeJsonLd.map((node, i) => (
+        <JsonLd key={items[i].id} data={node} />
+      ))}
       <DetailTemplate
         {...hero}
         title={show.title}

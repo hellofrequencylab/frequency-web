@@ -1,25 +1,88 @@
 import Link from 'next/link'
 import {
   Users, ArrowUpRight, CircleDot, Building2, Network, Radio, Shield,
-  BadgeCheck, CalendarDays, Megaphone, ShieldAlert, LifeBuoy, type LucideIcon,
+  BadgeCheck, CalendarDays, Megaphone, ShieldAlert, LifeBuoy, LayoutDashboard,
+  type LucideIcon,
 } from 'lucide-react'
 import { AdminSection } from '@/components/templates'
+import { canUseLink, type AdminLink } from '@/app/(main)/admin/sections'
+import { studioLeaf } from '@/lib/nav/studio'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { getCallerProfile } from '@/lib/auth'
+import { getStaffMember } from '@/lib/staff'
 import { ticketStatusCounts } from '@/lib/support/store'
 import { isOpenStatus } from '@/lib/support/types'
+import type { CommunityRole, WebRole } from '@/lib/core/roles'
+import type { StaffRole } from '@/lib/core/staff-roles'
 
 // Community layout module (LP7): "Manage" — one card per working sub-page, each a live stat plus a
 // link straight to the surface that edits it. Self-fetching RSC; the page owns the gate and every
 // linked area keeps its own. Fail-safe: any read error degrades to honest zeros. The grid is a
 // container query so it sizes to whatever slot it lands in. Semantic tokens only; no hex, no fixed px.
+//
+// THE DESTINATIONS ARE DERIVED, NOT TYPED (SCAN-503). Label, description, href, icon and GATE all
+// come from the one nav catalog (lib/nav/studio.ts::STUDIO_LEAVES) via `studioLeaf(id)`. This file
+// declares only what the catalog cannot know: which leaves belong on this dashboard, and the live
+// stat under each. Two things were wrong while the cards were hand-declared, and `check:menu` is
+// structurally blind to a list rendered by a page (docs/MENU-CONTRACT.md §"What is NOT enforced"):
+// the copy drifted from the leaf `desc`, and the cards carried NO gate, so a host+marketing viewer
+// was shown janitor-gated destinations (Members, Roles, Partner verification) that bounce on click.
 
-interface ManageCard {
-  label: string
-  desc: string
-  stat: string
-  statLabel: string
-  href: string
-  Icon: LucideIcon
+/** A destination card: the catalog's link, plus the live stat this dashboard reads for it. */
+type ManageCard = AdminLink & { stat: string; statLabel: string }
+
+/** What this dashboard adds to a leaf: which one, and the stat beneath it. */
+type CardSpec = { leaf: string; stat: string; statLabel: string }
+
+/** lucide icon NAME → component, for the leaves listed below. The catalog stores names
+ *  (framework-free); app/(main)/admin/sections.ts keeps the same map for its own consumers but
+ *  does not export the resolver, so the widget resolves the handful of names it renders. */
+const ICONS: Record<string, LucideIcon> = {
+  CircleDot, Building2, Network, Radio, Users, Shield, BadgeCheck, CalendarDays,
+  Megaphone, ShieldAlert, LifeBuoy,
+}
+
+interface ViewerRoles {
+  role: CommunityRole
+  webRole: WebRole
+  staffRole: StaffRole | null
+}
+
+/** The viewer's three role axes, read the same way the sibling "Related areas" module reads them
+ *  (components/widgets/community/related.tsx). Null on a signed-out or failed read, which hides the
+ *  section rather than showing destinations we cannot prove the viewer may enter. */
+async function loadRoles(): Promise<ViewerRoles | null> {
+  try {
+    const [profile, staff] = await Promise.all([
+      getCallerProfile(),
+      getStaffMember().catch(() => null),
+    ])
+    if (!profile) return null
+    return { role: profile.community_role, webRole: profile.webRole, staffRole: staff?.role ?? null }
+  } catch {
+    return null
+  }
+}
+
+/** Resolve each spec against the catalog and drop what this viewer may not use. `canUseLink` is the
+ *  SAME gate the admin rail and both consoles apply, so a card can never offer a destination that
+ *  bounces. A spec naming a leaf that no longer exists drops out rather than rendering a dead card. */
+function cardsFor(specs: readonly CardSpec[], viewer: ViewerRoles): ManageCard[] {
+  return specs.flatMap((spec) => {
+    const leaf = studioLeaf(spec.leaf)
+    if (!leaf) return []
+    const link: AdminLink = {
+      href: leaf.href,
+      label: leaf.label,
+      desc: leaf.desc,
+      Icon: ICONS[leaf.icon] ?? LayoutDashboard,
+      min: leaf.min,
+    }
+    if (leaf.staffDomain) link.staffDomain = leaf.staffDomain
+    if (leaf.staffLevel) link.staffLevel = leaf.staffLevel
+    if (!canUseLink(link, viewer.role, viewer.webRole, viewer.staffRole)) return []
+    return [{ ...link, stat: spec.stat, statLabel: spec.statLabel }]
+  })
 }
 
 interface ManageCounts {
@@ -94,21 +157,25 @@ async function load(): Promise<ManageCounts> {
 }
 
 export async function CommunityManage() {
-  const c = await load()
+  const [c, viewer] = await Promise.all([load(), loadRoles()])
+  if (!viewer) return null
 
-  const cards: ManageCard[] = [
-    { label: 'Circles', desc: 'Create, edit, and archive circles.', stat: `${c.circles}`, statLabel: 'active circles', href: '/admin/circles', Icon: CircleDot },
-    { label: 'Hubs', desc: 'Clusters of circles in an area.', stat: `${c.hubs}`, statLabel: 'hubs', href: '/admin/hubs', Icon: Building2 },
-    { label: 'Nexuses', desc: 'Regions that hold hubs.', stat: `${c.nexuses}`, statLabel: 'nexuses', href: '/admin/nexuses', Icon: Network },
-    { label: 'Channels', desc: 'Topical and event channels.', stat: `${c.channels}`, statLabel: 'channels', href: '/admin/channels', Icon: Radio },
-    { label: 'Members', desc: 'Roster, subscribers, and accounts.', stat: `${c.members}`, statLabel: 'members', href: '/admin/members', Icon: Users },
-    { label: 'Roles & permissions', desc: 'Assign roles and the permission grid.', stat: `${c.team}`, statLabel: 'team members', href: '/admin/roles', Icon: Shield },
-    { label: 'Partner verification', desc: 'Vet and verify partner persona claims.', stat: `${c.verifyQueue}`, statLabel: c.verifyQueue === 1 ? 'claim to verify' : 'claims to verify', href: '/admin/personas', Icon: BadgeCheck },
-    { label: 'Events', desc: 'Gatherings across your circles, plus posted events and claims.', stat: `${c.events}`, statLabel: 'upcoming events', href: '/admin/events', Icon: CalendarDays },
-    { label: 'Dispatches', desc: 'Posts and polls to your people.', stat: `${c.dispatches}`, statLabel: 'dispatches', href: '/admin/dispatches', Icon: Megaphone },
-    { label: 'Moderation', desc: 'Review and resolve reports.', stat: `${c.reportsOpen}`, statLabel: c.reportsOpen === 1 ? 'open report' : 'open reports', href: '/admin/moderation', Icon: ShieldAlert },
-    { label: 'Support', desc: 'Member support tickets and help requests.', stat: `${c.openTickets}`, statLabel: c.openTickets === 1 ? 'open ticket' : 'open tickets', href: '/admin/support', Icon: LifeBuoy },
+  const specs: CardSpec[] = [
+    { leaf: 'circles', stat: `${c.circles}`, statLabel: 'active circles' },
+    { leaf: 'hubs', stat: `${c.hubs}`, statLabel: 'hubs' },
+    { leaf: 'nexuses', stat: `${c.nexuses}`, statLabel: 'nexuses' },
+    { leaf: 'channels', stat: `${c.channels}`, statLabel: 'channels' },
+    { leaf: 'members', stat: `${c.members}`, statLabel: 'members' },
+    { leaf: 'roles', stat: `${c.team}`, statLabel: 'team members' },
+    { leaf: 'personas', stat: `${c.verifyQueue}`, statLabel: c.verifyQueue === 1 ? 'claim to verify' : 'claims to verify' },
+    { leaf: 'events', stat: `${c.events}`, statLabel: 'upcoming events' },
+    { leaf: 'dispatches', stat: `${c.dispatches}`, statLabel: 'dispatches' },
+    { leaf: 'moderation', stat: `${c.reportsOpen}`, statLabel: c.reportsOpen === 1 ? 'open report' : 'open reports' },
+    { leaf: 'support', stat: `${c.openTickets}`, statLabel: c.openTickets === 1 ? 'open ticket' : 'open tickets' },
   ]
+
+  const cards = cardsFor(specs, viewer)
+  if (cards.length === 0) return null
 
   return (
     <AdminSection title="Manage" description="Every working surface in Community. Open one to edit it.">

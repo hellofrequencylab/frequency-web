@@ -1,16 +1,24 @@
-// FOUNDING STATUS — the durable Founder record (founding_members) + the reserve/grant/read
+// FOUNDING STATUS — the durable Founder record (founding_members) + the grant/read/lapse
 // helpers for the Founders Round (members) and the Founding Businesses cohort. Server-only
 // (service-role admin client behind app-layer authz).
 //
-// THE NO-CHARGE INVARIANT (reserve-now, charge-at-graduation):
-//   • RESERVE writes a founding_members row with status='reserved' and charged_at=NULL.
-//     NOTHING is charged (card_on_file stays false; a card is optional). This is the only
-//     write the public Founding Business offer performs for a signed-in owner.
+// THE NO-CHARGE INVARIANT (charge-at-graduation):
 //   • grantFoundingStatus() flips reserved -> active and applies the LOCKED rate. It NEVER
 //     charges: it does not set charged_at and does not call Stripe. The money flip lives
 //     behind billingLive() / payoutsLive() and is owned by the billing path, not this module.
 //     Its LIVE callers are beta onboarding (app/join/(induction)/actions.ts) and the Stripe
 //     webhook reconciler (lib/billing/beta-founding.ts).
+//
+// NO RESERVE ARM LIVES HERE ANY MORE (SCAN-501). The Founding Business cohort was retired by
+// owner directive on 2026-07-31 — lib/founding/business-checkout.ts went with it (see the
+// CHARGING_SEAMS note in lib/pricing/gates-live.test.ts), and no /founders route is left in the
+// tree, so the public offer that was reserveFounding()'s only intended caller is gone too.
+// `reserveFounding` and `foundingBusinessTakenInCity` were the residue: verified 2026-08-25 to
+// have no caller anywhere outside this file's own tests. Rows already carrying status='reserved' are
+// still read and still graduate — grantFoundingStatus's sweep arm is untouched, and it upserts
+// an ACTIVE row directly for a subject that never reserved, which is every subject now. The
+// pure per-city cap math (foundingBusinessSpotsRemaining, lib/pricing/founding.ts) is likewise
+// test-only and is tracked separately; deleting it is not this row's call.
 //
 // The founding_members table is not in the generated lib/database.types.ts yet (regen after
 // apply, ADR-246), so it is reached through ONE loose service-role handle, the repo idiom
@@ -137,24 +145,6 @@ export async function foundingActiveFor(subjects: {
   return { profiles, spaces }
 }
 
-/** How many Founding BUSINESS spots are TAKEN (reserved or active, not lapsed) in a city. Powers the
- *  per-city spots-remaining display (pair with foundingBusinessSpotsRemaining in lib/pricing/founding).
- *  FAIL-SAFE to 0 so the cap always renders as "open" rather than blocking on a read error. */
-export async function foundingBusinessTakenInCity(city: string): Promise<number> {
-  const c = (city || '').trim()
-  if (!c) return 0
-  try {
-    const { data } = await foundingDb()
-      .from('founding_members')
-      .select('id, kind, cohort_city, status')
-      .eq('kind', 'business')
-      .eq('cohort_city', c)
-    return (data ?? []).filter((r) => (r as Row).status !== 'lapsed').length
-  } catch {
-    return 0
-  }
-}
-
 /** A seller reference (a marketplace listing's owner), the subset the charter-badge resolver needs.
  *  Mirrors the SellerRef shape in lib/commerce/seller-verification.ts so a card grid can resolve both
  *  the verified and the Founding mark in parallel. */
@@ -254,56 +244,6 @@ export async function foundingBadgeForSpace(
   const id = (spaceId ?? '').trim()
   if (!id) return null
   return (await foundingBadgesForSpaces([id])).get(id) ?? null
-}
-
-// ── RESERVE (durable, no charge) ────────────────────────────────────────────────────────────
-
-/** Reserve a durable founding spot for a SIGNED-IN subject (a member or a Space owner with a Space),
- *  idempotently. Writes/updates one founding_members row with status='reserved', charged_at=NULL, and
- *  the LOCKED rate from config. NEVER charges: card_on_file stays false and no Stripe is touched.
- *
- *  The public /founders/business offer uses this only when it already knows the owner's Space; an
- *  anonymous visitor reserves via the contacts-lead waitlist (app/(marketing)/founders/business/
- *  actions.ts), exactly like the member /founders flow. Re-reserving is a harmless no-op (the row is
- *  kept in whatever state it is already in; an already-active founder is not demoted). */
-export async function reserveFounding(input: {
-  kind: FoundingKind
-  profileId?: string | null
-  spaceId?: string | null
-  cohortCity?: string | null
-}): Promise<ActionResult<{ reserved: boolean }>> {
-  const { kind } = input
-  const profileId = input.profileId ?? null
-  const spaceId = input.spaceId ?? null
-  if (!profileId && !spaceId) return fail('We could not tell who is reserving.')
-
-  const config = await getFoundingConfig()
-  const lockedRateCents = kind === 'business' ? config.business_monthly_cents : config.member_one_time_cents
-  const lockedTakeBps = kind === 'business' ? config.business_take_bps : null
-
-  try {
-    const existing = await getFoundingStatus({ profileId, spaceId })
-    if (existing) {
-      // Idempotent: a spot is already held. Never demote an active founder back to reserved.
-      return ok({ reserved: existing.status === 'reserved' })
-    }
-    await foundingDb()
-      .from('founding_members')
-      .insert({
-        profile_id: profileId,
-        space_id: spaceId,
-        kind,
-        locked_rate_cents: lockedRateCents,
-        locked_take_bps: lockedTakeBps,
-        cohort_city: (input.cohortCity ?? '').trim() || null,
-        status: 'reserved',
-        card_on_file: false,
-      })
-    return ok({ reserved: true })
-  } catch (err) {
-    console.error('[founding] reserve failed:', err)
-    return fail('Something went wrong holding your founding spot. Please try again.')
-  }
 }
 
 // ── GRANT (the founding hook) ───────────────────────────────────────────────────────────────
