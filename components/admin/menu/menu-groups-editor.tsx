@@ -453,7 +453,7 @@ export function MenuGroupsEditor({
           purpose, new ones arrive with the automatic sync. Shown here so the person editing
           can see it, not just the weekly maintenance report. */}
       {drift.absentDefaults.length > 0 && (
-        <div className="mb-4 rounded-2xl border border-border bg-surface p-4">
+        <div className="mb-4 rounded-card border border-border bg-surface p-4">
           <p className="text-body-sm font-semibold text-text">Site defaults not in this menu</p>
           <ul className="mt-2 space-y-1.5">
             {drift.absentDefaults.map((d) => (
