@@ -4,6 +4,9 @@
 // reached untyped until the generated types regenerate (ADR-246). Fail-safe defaults.
 
 import { createAdminClient } from '@/lib/supabase/admin'
+// chart-data is pure (types + a fail-safe parser); the ephemeris itself stays behind
+// lib/astrology/chart.ts, which only the save action imports (ADR-1138).
+import { parseStoredChart, type NatalChart } from '@/lib/astrology/chart-data'
 
 export interface BirthData {
   /** 'YYYY-MM-DD'. The only field the sun-sign engine needs. */
@@ -22,6 +25,9 @@ export interface MatchPrefs {
   astrologyOptIn: boolean
   /** Birth data, when provided. null until the member enters it. */
   birthData: BirthData | null
+  /** The stored date-only natal chart (ADR-1138), computed at save time. null until the
+   *  member (re)saves a birth date, or when the stored value fails the shape check. */
+  natalChart: NatalChart | null
 }
 
 export const DEFAULT_MATCH_PREFS: MatchPrefs = {
@@ -29,6 +35,7 @@ export const DEFAULT_MATCH_PREFS: MatchPrefs = {
   romanceMode: false,
   astrologyOptIn: false,
   birthData: null,
+  natalChart: null,
 }
 
 interface RawPrefRow {
@@ -37,6 +44,7 @@ interface RawPrefRow {
   romance_mode: boolean | null
   astrology_opt_in: boolean | null
   birth_data: BirthData | null
+  natal_chart?: unknown
 }
 
 function toPrefs(r: RawPrefRow | null): MatchPrefs {
@@ -46,6 +54,7 @@ function toPrefs(r: RawPrefRow | null): MatchPrefs {
     romanceMode: r.romance_mode === true,
     astrologyOptIn: r.astrology_opt_in === true,
     birthData: r.birth_data ?? null,
+    natalChart: parseStoredChart(r.natal_chart),
   }
 }
 

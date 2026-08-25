@@ -15,7 +15,7 @@ Frequency suggests people you'd genuinely click with, built from real signals: t
 
 Turn this on and add your birth date, and we'll add a quiet note like *your signs click* to suggestions, but only for people who also opted in. It's a soft touch, never a verdict, and it never reorders your feed on its own.
 
-- **Only your sign is used.** We work out your sun sign from your birth date and use that. Your birth date itself is never shown to anyone.
+- **Your chart is worked out, never shown.** We build a birth chart from your birth date and use it to spot quiet overlaps. Nobody sees your birth date or your chart, and nobody gets a breakdown of the score.
 - **Both sides choose it.** You only ever see the astrology note next to someone who also turned it on.
 
 ## Romance mode
