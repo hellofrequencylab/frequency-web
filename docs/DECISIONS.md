@@ -30646,3 +30646,117 @@ One measurement: a space whose Loom exceeds the candidate cap on an ordinary que
 the ranked page stops being the whole truth. The replacement is already scoped — a
 `search_library_assets` RPC mirroring the existing `match_library_assets` — and it swaps in behind
 `rankLibraryMatches` alone.
+
+---
+
+## ADR-1129: The bench is storage, not a view — so E0's fold is a partition, and the entity registry gets the gate it never had (2026-08-25)
+
+**Status:** accepted · advances `PROG-E0` (E0 task 8, half of task 4) · corrects
+[`EDITOR-E0.md`](EDITOR-E0.md) §1.2 and §4 · enforced by `pnpm check:entity-layouts` +
+`scripts/check-entity-layouts.test.ts` + `lib/entity-blocks/node-tree.test.ts`
+
+### The answer, first
+
+[`EDITOR-E0.md`](EDITOR-E0.md) §1.2 says of the node-tree migration: *"`EntityLayout.content` and
+`.style` are **deleted, not re-keyed**."* Implemented literally — walk `cells`, fold each block's
+bag onto its node, drop the sibling maps — **that deletes 35 authored bags across 18 of 18 live
+Space profile documents**, because the sibling map is the only place a BENCHED block's content
+lives.
+
+`rows-ops.ts:13-15` states the mechanic in its own header: *"benching a block removes it from its
+column so it falls back to the derived bench tray **with its config intact**."* Intact **where**?
+In `content[id]`, which after benching no cell references. The bench is derived; its *content* is
+not, and nothing in the plan said so.
+
+**So the fold is a PARTITION, not a projection.** Every key of `content` / `style` / `hidden` is
+matched to a placed node **or becomes a bench node**. `NodeLayout.bench` is therefore *stored*,
+which §1.3 already wanted for a different reason ("benching moves the node out of `cells` with its
+content intact"), arrived at here from data rather than from design.
+
+### What was measured, 2026-08-25
+
+| | |
+|---|---:|
+| EntityLayout documents in production | **37** (18 Space · 12 campaign · 7 email template) |
+| Placements across them | **226** |
+| Authored content bags | **204** |
+| 🔴 Bags belonging to a block **no cell references** | **35** (34 `content`, 1 `style`) |
+| Space documents carrying at least one | **18 of 18** |
+
+The benched types are `about` (17 documents), `story` (16), `cardGrid` (1) and `heading` (1, a
+style bag). Both email stores are clean — the bench UI is Space-only — which is why walking one
+store and generalising would have missed it.
+
+### The gate this earned
+
+The entity-block catalog had **no** stored-data guard. `check:stored-blocks` (ADR-1055) says so in
+its own scope line: it covers the Puck registry and the `pages` documents, and names the
+entity-block registry as out of scope. So retiring an entity block that live data still names was
+unguarded on 37 documents, 19 of which two crons send as email.
+
+`check:entity-layouts` closes it, on the `check:stored-blocks` model down to the exit codes: a pure
+`.mjs` half owning the corpus's integrity floors, and a `.test.ts` half that can import the TS
+registry and owns the two questions that need it — does every stored type still **resolve**, and is
+it **legal for the kind** of the store it was found in (a narrowed `kinds[]` under stored data
+fails).
+
+⚠️ **The bench arm is stated as latent, not as firing.** Corpus-wide today every benched type is
+also placed in *some* document, so that arm changes no verdict on the current tree. What it changes
+is the distance to a silent failure: `about` is authored on 17 documents and placed on **1**,
+`story` authored on 16 and placed on **2**. Three operator edits and 33 live bags are named by no
+cell anywhere, at which point a placements-only guard is green while the retirement erases them.
+The guard's header says exactly this. The overstated version — "it catches a live bug today" —
+would be the shape-not-truth failure this repo names in four ADRs, performed by the gate written to
+prevent it.
+
+### The corpus is structural, and that is a rule, not a shortcut
+
+`scripts/entity-layout-corpus.json` freezes the row skeleton, the block type in each cell, and the
+**field names** of every bag. No values, no slugs, no ids. That is `scripts/stored-block-types.json`'s
+own discipline (*"Types only — no tenant copy, no props, no ids"*), and it is sufficient: node ids
+are minted from `rowId:col:index:type`, so determinism and idempotence are decidable from shape
+alone. §1.5 step 2 asks for a fixture of "all 41 real production documents"; **a fixture of
+production *documents* would put tenant copy in git, and the answer is a fixture of production
+*shapes*.**
+
+### The node id
+
+`n` + two 32-bit FNV-1a hashes of the placement's own coordinates, base36, always 10 characters.
+Deterministic because step 9 keeps `upgradeLayout` in the read path forever: a re-mint on every read
+would make `layout-equal.ts` report every document dirty, permanently. Collisions salt the seed and
+re-hash, which is still deterministic. A node id arriving over the wire is only ever *reused* when
+it matches `NODE_ID_RE`; it is never a write key, because `cells` is an array of objects — the
+property-injection surface `layout.ts:443-447` guards is not narrowed here, it is removed.
+
+### Three deviations from the plan, each deliberate
+
+1. **No `v:` on a node.** §1.2 sketches one. Block versions arrive with E1's `defineBlock`; minting
+   `v: 1` on 226 nodes today is a constant nobody can verify.
+2. **No per-type limits.** That is task 10. `upgradeLayout` re-expresses what is stored; it does not
+   re-decide what is legal. Two blocks of one type become *expressible* here and stay illegal to
+   *create* until 10.
+3. **Unknown types are preserved, not dropped.** `parseRows` drops a placement whose id left the
+   registry. [ADR-978](#adr-978) settled that a loader must never discard an author's document over
+   an unknown type, so the upgrade keeps it and leaves legality to `sanitizeRows` / `resolveRows`,
+   which run after and are unchanged.
+
+### 🔴 And a premise that expired: `app_instances` no longer exists
+
+[`EDITOR-E0.md`](EDITOR-E0.md) §4.1 opens *"a vocabulary collision that blocks the first writer"* and
+prescribes widening `surface_type`'s CHECK constraint as a **non-additive, deliberate-apply**
+migration (task 16). **There is no constraint and no table.** `20270316000000_drop_app_instances_until_e0.sql`
+dropped it on 2026-08-19 under OWN-031, naming E0 as the owner that would *re-create it with its
+writers*. Verified against the live database on 2026-08-25: `app_instances` is absent.
+
+So task 16 is not a widening, it is part of the CREATE — additive, no deliberate-apply ceremony, and
+the table lands with the four-value architecture vocabulary
+(`profile-inapp | spotlight-public | space-profile | space-site`) rather than the six-value one it
+had. That is strictly cheaper than the plan, and it is only cheaper if someone checks before
+building. Both documents are corrected in this pass.
+
+### What is NOT claimed
+
+`upgradeLayout` is **not in any read path**. Task 9 puts it at the top of `parseEntityLayout`, and
+that is a separate increment with its own proof (backlog `LIVE-119`), because it is the change that
+makes every reader node-shaped and every `layout-equal` comparison read dirty exactly once. Nothing
+about the stored shape changed; no migration ships here.
