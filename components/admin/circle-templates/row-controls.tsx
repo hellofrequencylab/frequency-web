@@ -53,10 +53,20 @@ export function ReorderControls({
 }) {
   const router = useRouter()
   const [pending, start] = useTransition()
+  // A failed reorder used to be SILENT: the action's ActionResult was awaited and dropped, so a
+  // rejected move looked exactly like an accepted one that had not re-rendered yet. The sibling
+  // ActiveToggle above already reads `isError`; this row now does too, and says so where the
+  // operator is looking (HYG-010's admin row-action error-feedback audit).
+  const [error, setError] = useState<string | null>(null)
 
   function move(direction: 'up' | 'down') {
+    setError(null)
     start(async () => {
-      await reorderTemplate(id, direction)
+      const res = await reorderTemplate(id, direction)
+      if (isError(res)) {
+        setError(res.error)
+        return
+      }
       router.refresh()
     })
   }
@@ -81,6 +91,11 @@ export function ReorderControls({
       >
         <ChevronDown className="h-4 w-4" aria-hidden />
       </button>
+      {error && (
+        <span role="alert" className="ml-1 text-meta font-medium text-danger">
+          {error}
+        </span>
+      )}
     </div>
   )
 }
