@@ -29942,6 +29942,103 @@ which had also expired by the time anyone read it: two of its four sub-figures (
 row's own closing sentence warned about, in the paragraph directly beneath the numbers. The
 re-census is 2,004. **Measure through the instrument the gate uses, or the census expires faster
 than the sweep it is meant to plan.**
+## ADR-1123: The marketing surface was already on the app tokens — what diverged was the gates watching it (2026-08-25)
+
+**Status:** accepted · closes `PROG-P9` · narrows the marketing exemptions in `check:tokens` ·
+extends [ADR-1064](#adr-1064)-era gate practice · enforced by `pnpm check:tokens` +
+`pnpm check:contrast` + `PROG-P9`'s probe
+
+### The question this settles
+
+`PROG-P9` has read the same way since it was written: *"Align the marketing brand system with the
+app tokens where they diverge."* It is the phase that assumes there are **two** systems. The row
+was marked `(optional)` because nobody was sure how much of the gap was deliberate.
+
+Both halves of that assumption were re-measured before any code moved, and both were wrong in the
+same direction: there is **one** token system, and the divergence is not in the brand at all.
+
+### What was measured, 2026-08-25
+
+Marketing = `app/(marketing)/**` + `components/marketing/**` (61 `.ts`/`.tsx` files) plus the
+marketing header/footer. In-app = `app/(main)/**` + `components/**` (1,996 files).
+
+| Axis | Marketing | In-app | Verdict |
+| :--- | :--- | :--- | :--- |
+| Raw hex / `text-[Npx]` / inline `rgb()` | **0** across 61 files | 0 | ✅ no divergence |
+| Colour utility vocabulary | a strict SUBSET of the one `@theme inline` map | the same map | ✅ no divergence |
+| Utilities used ONLY on marketing | 3 (`border-ink-border`, `text-ink-border`, `text-surface-elevated`) | — | ✅ all three are app tokens |
+| Ground token | `--color-marketing-canvas` | `--color-canvas` | ⚠️ **deliberate**, and skinned in all 5 states |
+| Display face | `font-display` (Anton) at 22× the in-app rate | type roles | ⚠️ **deliberate** brand choice |
+| Vertical rhythm | `.mk-band/.mk-beat/.mk-cont/.mk-tight` | the five templates | ⚠️ **deliberate** (DAWN 2026-08-03) |
+| Hand-rolled eyebrows | 8 sites (0.13/file) | 463 sites (0.23/file) | 🔴 **NOT a marketing divergence** — in-app is worse |
+| Literal `rounded-2xl` over `rounded-card` | 34 (0.53/file) | 717 (0.36/file) | 🔴 repo-wide `literal-radius` debt (P1), not P9 |
+| `check:tokens` coverage | **exempt, whole-tree** | governed | 🔴 the real gap |
+| `check:contrast` coverage of the ground | **1 pair** | 5 pairs on the app canvas | 🔴 the real gap |
+
+The two rows that matter are the last two, and neither is about colour values. **The brand systems
+agree. The instruments watching them did not.**
+
+### The decision
+
+**`PROG-P9` is not a re-theme. It is two gate corrections, and then it closes.**
+
+**1. The `check:tokens` marketing exemption is deleted.** Two whole-file waivers covered
+`app/(marketing)/` and `components/marketing/` on the reasoning that marketing "is a separate brand
+design system, not the in-app DAWN surface the guard governs". Run the classifier with them lifted
+and it reports **0 violations across 61 files**. The exemption was protecting nothing — and by
+existing, it was the only artifact in the repo still asserting that a second brand system was
+there. Deleting it is the whole of "reconcile marketing with the app tokens", because the
+reconciliation had already happened in the code and only the gate had not noticed.
+
+**2. The marketing canvas joins the contrast contract at parity with the app canvas.** The cream
+ground carried exactly one row (`--color-text`) while the app canvas beside it carried five
+foregrounds. It is 5/255 darker than the app canvas in light mode, so every twin ratio is
+*tighter*, and none of them had been measured. Seven pairs are added: the four app-canvas twins
+plus `--color-primary-strong`, and three that miss and are waived at their measured floors.
+
+### What is deliberate, and stays
+
+Three differences are real brand positions and were **not** flattened:
+
+- **`--color-marketing-canvas`.** A warm sand ground so the public site reads as brand while the
+  member surface reads as light and airy — stated in `globals.css` since the DAWN port, and
+  overridden in every block that overrides `--color-canvas` (`:root`, `.theme-light-lock`,
+  `[data-skin="midnight"]`, `.dark`, `.dark [data-skin="midnight"]`). There is no skin gap to fix.
+- **The Anton display face** and its `text-[clamp(…)]` sizing on headlines.
+- **The `.mk-*` four-role rhythm**, and with it the `check:headers` / `check:templates` marketing
+  skips. Those two gates govern PAGE STRUCTURE, which genuinely does differ: a marketing page is a
+  sequence of tonal beats, not one of the five interior templates. They keep their skips.
+
+### The one thing a person already knew and no gate did
+
+`components/marketing/comparison-table.tsx` pins its mobile ledger cards to `bg-surface` and says
+why in a comment: *"a `yes` cell's `text-success` clears 4.5:1 on the surface tone and misses it on
+the canvas tone."* That is exactly right — 4.67:1 on a card, **4.05:1 / 3.80:1** on the cream — and
+it was true for as long as the comment has existed, with the gate green the entire time, because
+the gate did not model that ground.
+
+So the pair is entered and waived at its measured floor rather than left out. It gets the rank-gold
+treatment ([ADR-1064](#adr-1064)-era practice, stated in `WAIVERS`): nothing paints it today, the
+floor is frozen, and the fact is printed on every run. A measured fact that lives only in a code
+comment is one refactor from being deleted, and the next author to want a green check on a cream
+section should be told the number rather than discover it in an axe report.
+
+### What this does not claim
+
+It does not claim marketing is now clean of every literal. It carries 34 literal `rounded-2xl` (vs
+10 `rounded-card`) and 8 hand-rolled eyebrows — but those are held by the repo-wide `literal-radius`
+ratchet and belong to P1/P3, and **in-app is worse than marketing on both when normalised per
+file**. Folding them into P9 would have made a large invented row out of a small true one. The
+measurement is what shrank the row, and it is recorded here so the next reader does not re-derive it.
+
+### The wider point
+
+Same shape as [ADR-1112](#adr-1112) and [ADR-1082](#adr-1082): the row was not wrong about the
+work, it was wrong about the *premise*. "Align two systems" had one system underneath it. Nothing
+in the tree said so, because the artifact that would have said so — a gate covering the marketing
+surface — was the missing thing. **An exemption is a claim, and an unmeasured exemption is a claim
+nobody has checked.** This one had been true once and had quietly stopped being true, and the only
+way to find out was to lift it and look.
 
 ## ADR-1133: The LIVE-105 bound and the discover retry had never met — and the gap failed a production deploy (2026-08-25)
 
