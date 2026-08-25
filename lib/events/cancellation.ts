@@ -2,6 +2,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { refundTicket } from '@/lib/billing/tickets'
 import { sendEventCancelledEmail, sendGuestEventCancelledEmail } from '@/lib/email'
 import { shouldSend } from '@/lib/notification-preferences'
+import { formatEventWhen } from '@/lib/time/zone'
 
 interface CancelTicketRow {
   id: string
@@ -12,20 +13,7 @@ interface CancelEventMeta {
   title: string
   slug: string
   starts_at: string
-}
-
-/** When `formatAbsolute` lands in a shared util we can swap this — kept local to
- *  avoid a cross-module import for one date string. Renders in UTC (no per-profile
- *  timezone yet), e.g. "Wed, Jul 22 · 7:00 AM UTC". */
-function formatEventWhen(iso: string): string {
-  return new Date(iso)
-    .toLocaleString('en-US', {
-      weekday: 'short', month: 'short', day: 'numeric',
-      hour: 'numeric', minute: '2-digit',
-      timeZone: 'UTC', timeZoneName: 'short',
-    })
-    .replace(',', '')
-    .replace(' at ', ' · ')
+  time_zone: string | null
 }
 
 /** Resolve a profile's email + display name (email lives on the auth user, not the
@@ -63,13 +51,18 @@ export async function refundAndNotifyForCancelledEvent(eventId: string): Promise
 
   const { data: eventData } = await admin
     .from('events')
-    .select('title, slug, starts_at')
+    .select('title, slug, starts_at, time_zone')
     .eq('id', eventId)
     .maybeSingle()
   const event = eventData as CancelEventMeta | null
   if (!event) return
   const eventUrl = `${appUrl}/events/${event.slug}`
-  const whenAbsolute = formatEventWhen(event.starts_at)
+  // The when-line goes into an email, so the LABEL has to be true, not just the digits.
+  // starts_at holds the host's wall clock as UTC parts (lib/time/zone.ts), and the old local
+  // formatter labelled those parts "UTC" — a 7pm Pacific event read "7:00 PM UTC", so anyone who
+  // converted it landed seven hours out. The shared formatter renders the same wall clock and
+  // labels it with the event's OWN zone abbrev.
+  const whenAbsolute = formatEventWhen(event.starts_at, event.time_zone)
 
   // ── 1. Refund every succeeded ticket (idempotent + frees inventory) ──────────
   // `event_tickets` isn't in the generated DB types yet → untyped-client cast

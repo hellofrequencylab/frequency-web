@@ -37,7 +37,14 @@ export async function updateHubSettings(id: string, slug: string, fd: FormData) 
       status: fd.get('status') as Database['public']['Enums']['group_status'],
     })
     .eq('id', id)
-  if (error) throw new Error(error.message)
+  if (error) {
+    console.error('[updateHubSettings] hubs update failed', {
+      code: error.code,
+      message: error.message,
+      hubId: id,
+    })
+    throw new Error('Those Hub settings did not save. Try again in a moment.')
+  }
 
   revalidatePath(`/hubs/${slug}`)
   revalidatePath('/hubs')
@@ -59,7 +66,15 @@ export async function updateHubField(id: string, slug: string, field: InlineFiel
 
   const admin = createAdminClient()
   const { error } = await admin.from('hubs').update({ name: trimmed }).eq('id', id)
-  if (error) throw new Error(error.message)
+  if (error) {
+    console.error('[updateHubField] hubs name update failed', {
+      code: error.code,
+      message: error.message,
+      hubId: id,
+      field,
+    })
+    throw new Error('That Hub name did not save. Try again in a moment.')
+  }
 
   revalidatePath(`/hubs/${slug}`)
   revalidatePath('/hubs')
@@ -190,7 +205,14 @@ export async function archiveHub(id: string, slug: string): Promise<{ ok: true }
 
   const admin = createAdminClient()
   const { error } = await admin.from('hubs').update({ status: 'archived' }).eq('id', id)
-  if (error) return { error: error.message }
+  if (error) {
+    console.error('[archiveHub] hubs archive failed', {
+      code: error.code,
+      message: error.message,
+      hubId: id,
+    })
+    return { error: 'This Hub could not be archived. Try again in a moment.' }
+  }
 
   revalidatePath(`/hubs/${slug}`)
   revalidatePath('/hubs')

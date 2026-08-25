@@ -166,7 +166,14 @@ export async function updateChannelSettings(id: string, slug: string, fd: FormDa
     .from('topical_channels')
     .update(patch)
     .eq('id', id)
-  if (error) throw new Error(error.message)
+  if (error) {
+    console.error('[updateChannelSettings] topical_channels update failed', {
+      message: error.message,
+      channelId: id,
+      fields: Object.keys(patch),
+    })
+    throw new Error('Those Channel settings did not save. Try again in a moment.')
+  }
 
   revalidateChannel(id, slug)
 }
@@ -201,7 +208,14 @@ export async function updateChannelSlug(
     .from('topical_channels')
     .update({ slug: next })
     .eq('id', id)
-  if (error) return { error: error.message }
+  if (error) {
+    console.error('[updateChannelSlug] topical_channels slug update failed', {
+      message: error.message,
+      channelId: id,
+      nextSlug: next,
+    })
+    return { error: 'That URL did not save. Try again in a moment.' }
+  }
 
   revalidateChannel(id, currentSlug, next)
   return { slug: next }
@@ -270,7 +284,14 @@ export async function saveChannelEdits(
     .from('topical_channels')
     .update(patch)
     .eq('id', id)
-  if (error) return { error: error.message }
+  if (error) {
+    console.error('[saveChannelEdits] topical_channels update failed', {
+      message: error.message,
+      channelId: id,
+      nextSlug,
+    })
+    return { error: 'This Channel did not save. Try again in a moment.' }
+  }
 
   // Revalidate BOTH handles: a rename leaves a cached page on the abandoned URL otherwise.
   revalidateChannel(id, currentSlug, nextSlug)
@@ -299,7 +320,13 @@ export async function deleteChannel(id: string, slug: string): Promise<{ error?:
   const { error } = await (admin as unknown as UntypedRpc).rpc('delete_topical_channel', {
     p_channel_id: id,
   })
-  if (error) return { error: error.message }
+  if (error) {
+    console.error('[deleteChannel] delete_topical_channel RPC failed', {
+      message: error.message,
+      channelId: id,
+    })
+    return { error: 'This Channel could not be deleted. Try again in a moment.' }
+  }
 
   revalidateChannel(id, slug)
   return {}
@@ -320,7 +347,13 @@ export async function setChannelCoverUrl(
     .from('topical_channels')
     .update({ cover_image: url })
     .eq('id', id)
-  if (error) return { error: error.message }
+  if (error) {
+    console.error('[setChannelCoverUrl] cover_image update failed', {
+      message: error.message,
+      channelId: id,
+    })
+    return { error: 'That cover image did not save. Try again in a moment.' }
+  }
 
   revalidateChannel(id, slug)
 }
@@ -353,7 +386,14 @@ export async function updateChannelCoverFocus(
     .from('topical_channels')
     .update({ theme: next })
     .eq('id', id)
-  if (error) return { error: error.message }
+  if (error) {
+    console.error('[updateChannelCoverFocus] theme update failed', {
+      message: error.message,
+      channelId: id,
+      focus,
+    })
+    return { error: 'That cover position did not save. Try again in a moment.' }
+  }
 
   revalidateChannel(id, slug)
 }
@@ -383,7 +423,14 @@ export async function updateChannelHeroHeight(
     .from('topical_channels')
     .update({ theme: next })
     .eq('id', id)
-  if (error) return { error: error.message }
+  if (error) {
+    console.error('[updateChannelHeroHeight] theme update failed', {
+      message: error.message,
+      channelId: id,
+      height,
+    })
+    return { error: 'That header height did not save. Try again in a moment.' }
+  }
 
   revalidateChannel(id, slug)
 }
@@ -397,7 +444,13 @@ export async function removeChannelCover(id: string, slug: string) {
     .from('topical_channels')
     .update({ cover_image: null })
     .eq('id', id)
-  if (error) throw new Error(error.message)
+  if (error) {
+    console.error('[removeChannelCover] cover_image clear failed', {
+      message: error.message,
+      channelId: id,
+    })
+    throw new Error('That cover image did not clear. Try again in a moment.')
+  }
 
   revalidateChannel(id, slug)
 }

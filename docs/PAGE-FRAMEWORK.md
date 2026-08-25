@@ -392,6 +392,7 @@ shell has no opinion about. It is **not** a ninth shell; the count above stays e
 | Composition | Import | Wraps | Locks |
 |---|---|---|---|
 | **EventDetail** | `EventDetailTemplate` | `DetailTemplate` | ✅ the standard block layout for every page-like **event** surface (owner directive 2026-07-28) |
+| **ListingDetail** | `ListingDetailTemplate` | `ListingHero` (hero-mode header, it owns the `<h1>`) + the main/side grid | ✅ the standard block layout for every marketplace **listing** surface: Classifieds, Housing, and Market all render THIS |
 
 `EventDetailTemplate` owns the page frame (`structuredData` · `notices` · `hasActionBar`), the
 header lockup it hands to Detail (`cover` · `back` · `title` · `badges` · `actions`), the **ordered**
@@ -409,6 +410,14 @@ skeleton composes the template, so it cannot drift from the destination's shape 
 `components/templates/event-standard-layout.test.ts`; the extraction's byte-identity is pinned by
 `event-detail-template.equivalence.test.tsx`. Operator consoles (`/events/[slug]/manage`, `/crm`,
 `/settings`, `/edit`) are a different archetype and stay on Dashboard / Studio.
+
+`ListingDetailTemplate` is the same idea one vertical over: it owns the listing frame (hero cover ·
+info line · full-width gallery · the `main-side` body of Q&A + pickup map beside Contact / Item
+details / Manage · the marketing CTA) and differs per vertical by an ABSENT SLOT, never a fork —
+`children` leads the description card (housing facts, market terms), `footer` follows it (the market
+purchase block), `ownerControls` and `claimToken` appear only when they apply. Consumers:
+`app/(main)/classifieds/[id]/page.tsx`, `app/(main)/housing/[id]/page.tsx`, and
+`app/(main)/market/[id]/page.tsx`.
 
 **Form + control primitives (2026-06-06, ADR-147):** `Input`/`Textarea`/`Label` (+
 `fieldClasses`/`labelClasses` for a native `<select>`), `Button` (variant × size),

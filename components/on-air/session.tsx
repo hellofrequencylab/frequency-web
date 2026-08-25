@@ -24,6 +24,7 @@ import {
 } from 'lucide-react'
 import { LotusIcon, BreatheIcon, BoltIcon, BellCueIcon, VibrationIcon, OnAirIcon } from './icons'
 import { IconButton } from '@/components/ui/icon-button'
+import { useDialogFocusTrap } from '@/components/ui/use-dialog-focus-trap'
 import { completeSession } from '@/app/(main)/on-air/actions'
 import { isError } from '@/lib/action-result'
 import { requestAppFullscreen, exitAppFullscreen } from '@/lib/fullscreen'
@@ -2145,6 +2146,13 @@ function InstructionsPopup({
   pattern: BreathPattern
   onClose: () => void
 }) {
+  // Escape was here; focus was not. This popup sits ABOVE the session takeover, so without it a
+  // keyboard user pressed "How to do this" and was left tabbing through the timer behind a card
+  // claiming `aria-modal`. Focus lands on the popup's Close, stays inside it, and goes back to the
+  // how-to button on dismissal, so the session is exactly where they left it.
+  const panelRef = useRef<HTMLDivElement>(null)
+  useDialogFocusTrap(true, panelRef)
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose()
@@ -2166,7 +2174,11 @@ function InstructionsPopup({
         onClick={onClose}
         className="absolute inset-0 bg-canvas/80 backdrop-blur-sm"
       />
-      <div className="relative w-full max-w-sm rounded-2xl border border-border bg-surface px-6 py-6 lift-3">
+      <div
+        ref={panelRef}
+        tabIndex={-1}
+        className="relative w-full max-w-sm rounded-2xl border border-border bg-surface px-6 py-6 outline-none lift-3"
+      >
         <button
           type="button"
           onClick={onClose}

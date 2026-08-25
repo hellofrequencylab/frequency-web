@@ -1,8 +1,9 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
 import { ChevronLeft, ChevronRight, X } from 'lucide-react'
+import { useDialogFocusTrap } from '@/components/ui/use-dialog-focus-trap'
 
 // Event gallery — a clickable thumbnail strip that opens a full-screen lightbox.
 // The event's header/cover is the FIRST gallery image and is already rendered full-width above
@@ -19,6 +20,15 @@ export function EventGallery({ images }: { images: string[] }) {
   const count = images.length
   const show = useCallback((i: number) => setOpen(((i % count) + count) % count), [count])
   const close = useCallback(() => setOpen(null), [])
+
+  // Esc and the arrow keys only ever worked for someone whose focus happened to still be on the
+  // thumbnail behind the lightbox — nothing moved focus INTO the overlay, so a screen-reader user
+  // opened a photo viewer and stayed in the thumbnail strip underneath an `aria-modal` overlay.
+  // Focus goes to Close (the first control in the overlay), Tab cycles Close/Previous/Next, and it
+  // returns to the thumbnail that opened the photo. The dependency is the BOOLEAN, so paging
+  // between photos with the arrows does not re-seed focus mid-browse.
+  const overlayRef = useRef<HTMLDivElement>(null)
+  useDialogFocusTrap(open !== null, overlayRef)
 
   // Keyboard: Esc closes, arrows page. Bound only while the lightbox is open.
   useEffect(() => {
@@ -68,11 +78,13 @@ export function EventGallery({ images }: { images: string[] }) {
 
       {open !== null && (
         <div
+          ref={overlayRef}
           role="dialog"
           aria-modal="true"
           aria-label="Event photo viewer"
+          tabIndex={-1}
           onClick={close}
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-ink/90 p-4 backdrop-blur-sm"
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-ink/90 p-4 outline-none backdrop-blur-sm"
         >
           <button
             type="button"

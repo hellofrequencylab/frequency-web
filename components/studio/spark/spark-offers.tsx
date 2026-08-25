@@ -28,6 +28,7 @@
 
 import { ImageIcon, ShieldQuestion, Sparkles, X } from 'lucide-react'
 import { safeImageSrc } from '@/lib/safe-image-src'
+import { FieldError } from './field/field-control'
 
 /** The "Vera can draw one" offer, when the entity declares a cover field and the draft has none.
  *  Omit it and no offer renders. It is an OFFER: publishing with no image stays a real outcome. */
@@ -131,11 +132,13 @@ function CoverCard({ cover, disabled }: { cover: SparkCoverOffer; disabled?: boo
         </div>
       )}
 
-      {cover.error && (
-        <p className="mt-2 border-t border-border pt-2 text-meta text-danger" role="status">
-          {cover.error}
-        </p>
-      )}
+      {/* An offer that did not land is POLITE, not assertive: the author asked for the drawing and
+          is already watching this card, so interrupting them adds nothing. `role="status"` was
+          here from the start and stays — what changes is that the region is now mounted BEFORE the
+          message arrives, which is what makes it reach a listener at all. */}
+      <FieldError urgent={false} className="mt-2 border-t border-border pt-2 text-meta text-danger">
+        {cover.error}
+      </FieldError>
     </div>
   )
 }
@@ -181,11 +184,10 @@ function QualityCard({ quality, disabled }: { quality: SparkQualityCheck; disabl
         </div>
       )}
 
-      {quality.error && (
-        <p className="mt-2 border-t border-border pt-2 text-meta text-danger" role="status">
-          {quality.error}
-        </p>
-      )}
+      {/* Polite, for the same reason the cover card is: see the note there. */}
+      <FieldError urgent={false} className="mt-2 border-t border-border pt-2 text-meta text-danger">
+        {quality.error}
+      </FieldError>
     </div>
   )
 }

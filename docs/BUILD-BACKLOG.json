@@ -4219,24 +4219,24 @@
     {
       "id": "SCAN-102",
       "title": "Four member surfaces bucket Today/Yesterday on the server's UTC day",
-      "status": "open",
+      "status": "done",
       "lane": "live",
       "size": "S",
       "source": {
         "file": "docs/META-SCAN-STATUS.md",
         "ref": "meta-scan 2026-08-25, correctness sweep"
       },
-      "detail": "MS25 Phase 1. The feed Story lens (components/feed/feed-list.tsx), the Journal widget, the Vault ledger page and Vera's dispatches page all build their day buckets from startOfDay(new Date()) / toISOString().slice(0,10) in Server Components - from ~5pm PT everything logged that community day groups under Yesterday, with UTC-shifted weekday labels. Same LIVE-079 class; that row swept starts_at floors only, not day-label bucketing. Fix: bucket by dayInZone(date, HOME_TZ) equality and format labels with timeZone: HOME_TZ.",
+      "detail": "MS25 Phase 1. The feed Story lens (components/feed/feed-list.tsx), the Journal widget, the Vault ledger page and Vera's dispatches page all build their day buckets from startOfDay(new Date()) / toISOString().slice(0,10) in Server Components - from ~5pm PT everything logged that community day groups under Yesterday, with UTC-shifted weekday labels. Same LIVE-079 class; that row swept starts_at floors only, not day-label bucketing. Fix: bucket by dayInZone(date, HOME_TZ) equality and format labels with timeZone: HOME_TZ. SPLIT 2026-08-25: three of the four surfaces (feed story lens, Journal widget, Vault ledger) are pure display bugs and are fixed here. The fourth, /on-air/dispatches, reads a row KEY that is itself UTC-minted, so its real fix is SCAN-106; its label was pinned to UTC meanwhile.",
       "verify": {
         "kind": "cmd",
-        "cmd": "node -e \"const fs=require('fs');const files=['components/feed/feed-list.tsx','components/widgets/journal/journal-entries.tsx','app/(main)/crew/store/ledger/page.tsx','app/(main)/on-air/dispatches/page.tsx'];const missing=files.filter(f=>{try{return !fs.readFileSync(f,'utf8').includes('dayInZone')}catch{return true}});if(missing.length){console.error('still on the server day: '+missing.join(', '));process.exit(1)}\"",
-        "note": "Passes when all four surfaces derive their day buckets from the community zone."
+        "cmd": "node -e \"const fs=require('fs');const files=['components/feed/feed-list.tsx','components/widgets/journal/journal-entries.tsx','app/(main)/crew/store/ledger/page.tsx'];const missing=files.filter(f=>!fs.readFileSync(f,'utf8').includes('dayInZone'));if(missing.length){console.error('still on the server day: '+missing.join(', '));process.exit(1)}\"",
+        "note": "The three display-only surfaces derive their day buckets from the community zone. /on-air/dispatches is deliberately NOT in this probe: its key is UTC-minted upstream and is tracked by SCAN-106."
       }
     },
     {
       "id": "SCAN-103",
       "title": "A pre-existing membership row makes Join a permanent 'try again'",
-      "status": "open",
+      "status": "done",
       "lane": "live",
       "size": "XS",
       "source": {
@@ -4256,7 +4256,7 @@
     {
       "id": "SCAN-104",
       "title": "Cancellation and refund emails assert UTC for a wall-clock that isn't",
-      "status": "open",
+      "status": "done",
       "lane": "live",
       "size": "XS",
       "source": {
@@ -4293,7 +4293,7 @@
     {
       "id": "SCAN-201",
       "title": "Podcast Shows share the generic brand card and emit no episode schema",
-      "status": "open",
+      "status": "done",
       "lane": "live",
       "size": "S",
       "source": {
@@ -4472,7 +4472,7 @@
     {
       "id": "SCAN-401",
       "title": "Field errors are visual-only across both form systems",
-      "status": "open",
+      "status": "done",
       "lane": "live",
       "size": "M",
       "source": {
@@ -4492,7 +4492,7 @@
     {
       "id": "SCAN-402",
       "title": "Two hand-rolled overlays have no keyboard contract at all",
-      "status": "open",
+      "status": "done",
       "lane": "live",
       "size": "S",
       "source": {
@@ -4594,7 +4594,7 @@
     {
       "id": "SCAN-503",
       "title": "The three world-dashboard Manage widgets hand-declare ~35 rows the catalog already owns",
-      "status": "open",
+      "status": "done",
       "lane": "hygiene",
       "size": "S",
       "source": {
@@ -4631,7 +4631,7 @@
     {
       "id": "SCAN-505",
       "title": "ListingDetailTemplate is a ninth shell living outside the registered kit",
-      "status": "open",
+      "status": "done",
       "lane": "hygiene",
       "size": "XS",
       "source": {
@@ -4697,6 +4697,23 @@
         "kind": "cmd",
         "cmd": "node -e \"const fs=require('fs');const F='supabase/migrations/20260925000000_retire_orphaned_tables_and_functions.sql';if(!fs.existsSync(F))process.exit(79);const s=fs.readFileSync(F,'utf8');if(!/listing_saves/.test(s))process.exit(79);if(!/AMENDED|restored|false|ADR-861/i.test(s)){console.error('the retirement migration still asserts listing_saves was orphaned, with no note that production contradicted it');process.exit(1)}\"",
         "note": "Measures the CONSEQUENCE: the 2026-09 retirement migration carries an in-file amendment saying its listing_saves orphan claim was false (ADR-861 had already wired the heart). A grep for the table name in DECISIONS.md passes on ADR-861's ORIGINAL mention, which is shape rather than truth."
+      }
+    },
+    {
+      "id": "SCAN-106",
+      "title": "Vera's dispatch is keyed on the UTC day, so it rolls over at 5pm Pacific",
+      "status": "open",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/vera-dispatch.ts",
+        "ref": "todayUTC(), line 43; used at line 230"
+      },
+      "detail": "MS25 Phase 1, split out of SCAN-102 on 2026-08-25 after the display fix exposed the real root. vera_dispatches holds one row per (profile, day) and the day is minted by todayUTC() = new Date().toISOString().slice(0,10) - the SERVER's UTC calendar day. For a Pacific community that rolls over at 5pm local, so a Dispatch generated at 6pm Pacific is stored under TOMORROW's key and stops reading as today's the moment it is written. This is why the /on-air/dispatches page could NOT simply be re-keyed to HOME_TZ like its three sibling surfaces (feed story lens, Journal widget, Vault ledger, all fixed): re-labelling against a key that is still UTC would inverth the bug rather than fix it. The page's label was pinned to UTC in the same change, which is honest about what the value currently is. THE FIX is to mint the key with dayInZone(new Date(), HOME_TZ) and label the page in the same zone. THE COST, which is why this is its own row: flipping the key mid-day can mint one extra Dispatch for any member in the 5pm-midnight Pacific window on the day it ships, because their UTC-keyed row for 'tomorrow' will not match the new zone-keyed 'today'. That is a one-time, per-member duplicate rather than a correctness risk, but it is a member-visible side effect and wants shipping deliberately - ideally with a note, or timed for a low-traffic hour.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const s=require('fs').readFileSync('lib/vera-dispatch.ts','utf8');if(/toISOString\\(\\)\\.slice\\(0,\\s*10\\)/.test(s)){console.error('the dispatch day key is still minted from the server UTC calendar day');process.exit(1)}\"",
+        "note": "Measures the CONSEQUENCE: the day key stops coming from the server's UTC calendar. Passes when the key is minted in the community zone."
       }
     }
   ]
