@@ -12,7 +12,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 // `primary + secondary === zaps_awarded`, exactly, in integers (no inflation lever).
 //
 // The ledger is FROZEN at log time: `logPractice` snapshots the split onto the log row
-// (practice_logs.pillar_id / secondary_pillar_id / primary_pct, migration `20270323000000`)
+// (practice_logs.pillar_id / secondary_pillar_id / primary_pct, migration `20270324000000`)
 // in the same write as `zaps_awarded`, for the same reason `zaps_awarded` itself is frozen —
 // the practice can be re-categorized or re-balanced long after the log, and a ledger that
 // re-attributes history on every curator edit is not a ledger. Rows that predate the freeze

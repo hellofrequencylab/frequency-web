@@ -87,7 +87,7 @@ progress (12 zaps at 75/25 → 9 primary, 3 secondary). It **never changes the w
 is not an inflation or farming lever. The columns shipped Phase 1; the **attribution ledger's
 server half shipped in Phase 4** ([ADR-1131](DECISIONS.md)): `logPractice` freezes the split onto
 the log row beside `zaps_awarded` (`practice_logs.pillar_id` / `secondary_pillar_id` /
-`primary_pct`, migration `20270323000000`) so per-Pillar progress survives later re-categorization,
+`primary_pct`, migration `20270324000000`) so per-Pillar progress survives later re-categorization,
 and `lib/practices/attribution.ts` owns the math (conservation: primary + secondary =
 `zaps_awarded`, exactly; pre-freeze rows fall back to the practice's current split) plus the
 `getMemberPillarZaps` read. Still to come: the authoring slider and the progress surfaces.

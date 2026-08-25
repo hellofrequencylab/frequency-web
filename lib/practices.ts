@@ -2791,7 +2791,7 @@ export async function logPractice(input: {
   // The Pillar-split SNAPSHOT (Phase 4 attribution ledger, ADR-1131) freezes beside the
   // amount for the same drift reason: a curator can re-balance the practice long after this
   // log, and per-Pillar progress must not re-attribute history. If the combined write fails
-  // (e.g. this code deploys before migration 20270323000000 lands the snapshot columns —
+  // (e.g. this code deploys before migration 20270324000000 lands the snapshot columns —
   // stated deploy posture in ADR-1131), retry with zaps_awarded alone so the un-log
   // exactness NEVER regresses; a null snapshot is then covered by the reader's documented
   // current-split fallback (lib/practices/attribution.ts).

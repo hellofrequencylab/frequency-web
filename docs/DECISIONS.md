@@ -29950,7 +29950,7 @@ than the sweep it is meant to plan.**
 `computePracticeReward()` as a build item · **Ships:** the per-Pillar Zap attribution ledger's
 log-time freeze · **Extends:** [ADR-438](DECISIONS.md) (the two locked variables),
 [ADR-442](DECISIONS.md)/[ADR-443](DECISIONS.md) (which superseded one of them),
-[ADR-1082](DECISIONS.md) (re-test the premise) · **Migration:** `20270323000000`
+[ADR-1082](DECISIONS.md) (re-test the premise) · **Migration:** `20270324000000`
 
 ### The census (premise re-test, ADR-1082)
 
@@ -29994,7 +29994,7 @@ append-only ledger frozen at log time, for exactly the reason `zaps_awarded` its
 the practice can be re-categorized or re-balanced after the fact, and a ledger that
 re-attributes history on every curator edit is not a ledger.
 
-- **Migration `20270323000000`** — three nullable snapshot columns on `practice_logs`
+- **Migration `20270324000000`** — three nullable snapshot columns on `practice_logs`
   (`pillar_id`, `secondary_pillar_id`, `primary_pct`), constraints mirroring the practices side
   (NOT `is distinct from`, which violates on the all-null legacy rows), partial FK indexes.
 - **`logPractice`** snapshots the split in the SAME write as `zaps_awarded` (the split columns
@@ -30015,7 +30015,7 @@ open deliberately rather than silently. Mitigations, stated so they can be check
 correct on BOTH sides of the apply (the snapshot write falls back to the plain `zaps_awarded`
 write; the reader treats null snapshots by fallback), the columns are additive and nullable so
 none of the six in-flight sibling branches is affected, and `check:migrations` with ledger
-credentials will name `20270323000000` as repo-not-applied until the two-step apply + ledger
+credentials will name `20270324000000` as repo-not-applied until the two-step apply + ledger
 repair (`supabase/migrations/README.md`) is run — which should happen at merge time.
 
 ### What was deliberately NOT done (the remaining sequence, also in the row)

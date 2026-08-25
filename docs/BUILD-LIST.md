@@ -325,7 +325,7 @@ Verified on prod (`azsqfeonabsbmemvddqd`): embeddings unpopulated (0/21), no lin
 ### Phase 4 — Run it on autopilot (AI curation + analytics)
 | # | Scope | Status |
 |---|---|---|
-| 4.1 | **Valuation authority + per-Pillar Zap attribution ledger** (the split's payoff). The `computePracticeReward()` half was RETIRED — ADR-442/443 already deliver creator-proof valuation at log time ([ADR-1131](DECISIONS.md)). The ledger's server half shipped: log-time split snapshot on `practice_logs` (migration `20270323000000`) + `lib/practices/attribution.ts` (conservation-proved math, `getMemberPillarZaps`). | ⏳ slider + surfaces next |
+| 4.1 | **Valuation authority + per-Pillar Zap attribution ledger** (the split's payoff). The `computePracticeReward()` half was RETIRED — ADR-442/443 already deliver creator-proof valuation at log time ([ADR-1131](DECISIONS.md)). The ledger's server half shipped: log-time split snapshot on `practice_logs` (migration `20270324000000`) + `lib/practices/attribution.ts` (conservation-proved math, `getMemberPillarZaps`). | ⏳ slider + surfaces next |
 | 4.2 | **Vera curation.** Auto-suggest Pillar/subcategory from the embedding, auto-tag, auto-summary, voice-check, generate remix prompts. (The ADR-446 publish pre-screen covers voice/completeness/safety already.) | 📋 |
 | 4.3 | **Library health dashboard.** Growth, **coverage gaps by Pillar/subcategory**, adoption funnel, top/bottom performers, review SLA, contributor leaderboard. | ✅ `lib/practices/health.ts` + `/admin/content/practices/health` (#2193) |
 
