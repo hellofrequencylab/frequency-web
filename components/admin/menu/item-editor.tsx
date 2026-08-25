@@ -3,13 +3,36 @@
 import { useState, useTransition } from 'react'
 import { ChevronDown, ChevronRight, GripVertical, Lock, Trash2 } from 'lucide-react'
 import type { ResolvedItem, MenuSurfaceKey } from '@/lib/menus/types'
+import type { ItemDrift } from '@/lib/menus/drift'
 import { updateItem, deleteItem, type UpdateItemPatch } from '@/lib/menus/actions'
+import { Badge } from '@/components/ui/badge'
 import { LinkTargetField } from './link-target-field'
 import { RoleModeMatrix } from './role-mode-matrix'
 import { OnOffToggle } from './on-off-toggle'
 import { GateControls } from './gate-controls'
 import { MenuMoveField } from './menu-move-field'
 import { Input } from '@/components/ui/field'
+
+// Per-row drift badge copy (LIVE-111): the collapsed row says how it relates to the site
+// default sharing its href. The person editing sees "Edited" the moment a row leaves its
+// default behind, which is exactly what the author of the LIVE-107 mislabel could not.
+const DRIFT_LABEL: Record<ItemDrift['state'], string> = {
+  synced: 'Default',
+  edited: 'Edited',
+  custom: 'Custom',
+}
+
+const FIELD_WORD = {
+  label: 'label',
+  subheading: 'subheading',
+  visibility: 'shown or hidden',
+} as const
+
+function driftTitle(drift: ItemDrift): string {
+  if (drift.state === 'synced') return 'Matches the site default.'
+  if (drift.state === 'custom') return 'Added here. Not a site default.'
+  return `Changed from the site default: ${drift.changed.map((f) => FIELD_WORD[f]).join(', ')}.`
+}
 
 // One editable menu link. Collapsed it shows the label + an on/off toggle + drag handle;
 // expanded it edits the subheading, link target, grid placement (grid surfaces only),
@@ -21,6 +44,7 @@ import { Input } from '@/components/ui/field'
 // onStatus.
 export function ItemEditor({
   item,
+  drift,
   onChanged,
   onDeleted,
   onStatus,
@@ -32,6 +56,9 @@ export function ItemEditor({
   onMove,
 }: {
   item: ResolvedItem
+  /** How this row relates to the code default sharing its href (lib/menus/drift.ts,
+   *  ADR-1134). Omitted for the pinned Profile row, which has no DB row and never syncs. */
+  drift?: ItemDrift
   /** Patch the local copy after a successful save so the parent stays in sync. */
   onChanged: (patch: Partial<ResolvedItem>) => void
   onDeleted: () => void
@@ -144,6 +171,11 @@ export function ItemEditor({
             {item.label || 'Untitled link'}
           </span>
           <span className="truncate text-meta text-subtle">{item.href}</span>
+          {drift && (
+            <Badge size="sm" tone={drift.state === 'edited' ? 'warning' : 'neutral'} title={driftTitle(drift)}>
+              {DRIFT_LABEL[drift.state]}
+            </Badge>
+          )}
         </button>
         <OnOffToggle
           mode={item.mode}

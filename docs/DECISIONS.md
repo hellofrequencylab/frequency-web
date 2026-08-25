@@ -31209,3 +31209,53 @@ is per-export now — one above an export exempts only that export; an unattache
 historical file-level meaning for the two files that predate this. Floors added
 (`MIN_ACTION_FILES`/`MIN_ACTION_EXPORTS`) so the corpus — 137 files, 707 exports — cannot go
 invisible the way LIVE-022's routes did.
+## ADR-1134: Menu drift faces the operator — one comparison serves the weekly job AND the Menu manager (2026-08-25)
+
+**Status:** accepted · closes `LIVE-111` (filed on #2267) · builds on ADR-860, ADR-390's gate
+contract, and LIVE-107's `scripts/maintenance/menu-drift.mjs` · proven by `lib/menus/drift.test.ts`
+
+### The decision
+
+Per-item drift is now rendered inside the Menu manager, and the derivation behind it is the SAME
+comparison the weekly maintenance sweep runs. Three pieces:
+
+- **`lib/menus/drift-core.mjs`** — the four-finding comparison (mislabelled / unreachable /
+  pending / staleBaseline) MOVED here verbatim from `scripts/maintenance/menu-drift.mjs`, which now
+  imports and re-exports it. A dependency-free `.mjs` rather than a `.ts` module because the weekly
+  script runs under plain `node` (Node 22, no TypeScript loader), while TypeScript imports a `.mjs`
+  without ceremony — so ONE file serves both callers instead of two copies that can disagree, which
+  is the failure LIVE-111 names.
+- **`lib/menus/drift.ts`** — `deriveMenuDrift(menu, defaultMenu(surfaceKey), synced_default_keys)`,
+  a pure function of exactly those three inputs, testable without a browser or a database. Per live
+  row: `synced` / `edited` (with the diverged fields named) / `custom`. Per absent code default:
+  `retired` (its href is in the `synced_default_keys` baseline, so the inserts-only sync will never
+  resurrect it) or `missing` (new; the next sync injects it) — consumed directly from the shared
+  comparison's `unreachable` / `pending` buckets, not re-derived. A mislabelled default (LIVE-107's
+  member-facing defect) surfaces as BOTH halves of what it is: the live row reads `edited` on its
+  label, and the orphaned default appears in the absent list naming the href the label actually
+  points at.
+- **The thread from the server.** `synced_default_keys` is DB state the client editor never
+  received, so `MenuGroupsBlock` reads it (`getSyncedDefaultKeys`, `lib/menus/read.ts`) and passes
+  it as a prop; `syncMenuFromDefaults` now returns the baseline it just settled so the badges never
+  classify against the pre-sync copy. The editor recomputes the derivation from its LOCAL working
+  state, so "Edited" appears the moment a label leaves its default — at the keystroke, not in next
+  week's report.
+
+### Why the editor, when the weekly job already looks
+
+A weekly CI job is not a substitute for telling the author, and LIVE-107 is the proof rather than
+the refutation: the mislabelled "Spaces directory" row was created BY AN OPERATOR IN THIS EDITOR,
+and nothing on the screen said the row had left its default behind. The weekly job told a
+maintainer a week later. Both instruments now read one comparison, so they cannot tell two stories.
+
+### What is deliberately NOT compared
+
+- **Access gates.** Since the gate contract (2026-08-06, `lib/menus/gates.ts`) the registry
+  overwrites every known href's gate at read time, so a resolved menu's gates structurally cannot
+  drift from code; comparing them would always read equal and would imply the field can drift.
+  The `edited` diff covers what the operator actually owns: label, subheading, shown/hidden.
+- **Operator-added links.** A row with no code counterpart is `custom`, never a finding — the same
+  refusal the weekly comparison already makes, for the same reason: calling additions drift trains
+  people to ignore the report.
+- **The pinned Profile rail row.** Runtime-injected, never a DB row, never synced; skipped on both
+  sides of the derivation.

@@ -321,6 +321,37 @@ export async function getAdminMenu(
   return getMenu(surfaceKey, opts)
 }
 
+/** Read a surface's `synced_default_keys` baseline — every default href this menu has ever
+ *  synced, the third input to the per-item drift derivation (lib/menus/drift.ts, ADR-1134):
+ *  it is what tells a RETIRED default (removed on purpose, never resurrected) from a MISSING
+ *  one (new, injected by the next sync). Best-effort like every read here: an error or a
+ *  missing row returns [] — which the derivation reads as "nothing baselined yet", so every
+ *  absence shows as missing rather than the page failing. */
+export async function getSyncedDefaultKeys(
+  surfaceKey: MenuSurfaceKey,
+  opts?: { spaceId?: string | null },
+): Promise<string[]> {
+  try {
+    const db = menuDb()
+    const spaceId = opts?.spaceId ?? null
+    let query = db
+      .from<{ synced_default_keys: string[] | null }>('menus')
+      .select('synced_default_keys')
+      .eq('surface_key', surfaceKey)
+    query = spaceId == null ? query.is('space_id', null) : query.eq('space_id', spaceId)
+    const { data, error } = await query.limit(1)
+    if (error) {
+      console.error('[menus] getSyncedDefaultKeys failed', surfaceKey, error.message)
+      return []
+    }
+    const raw = (data ?? [])[0]?.synced_default_keys
+    return Array.isArray(raw) ? raw.map(String) : []
+  } catch (err) {
+    console.error('[menus] getSyncedDefaultKeys threw', surfaceKey, err)
+    return []
+  }
+}
+
 /** Read the singleton menu_settings row. Falls back to DEFAULT_MENU_SETTINGS on a
  *  missing row or any error. */
 export async function getMenuSettings(): Promise<MenuSettings> {
