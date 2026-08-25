@@ -32656,3 +32656,53 @@ client. A calendar app fetching the `.ics` talks to the Next route, not to Postg
 **The rule:** *carrying a function body forward carries its grants forward too, and the grants are the
 half most likely to have changed underneath you since the body was written.* Re-derive them from
 `scripts/function-grants.txt`; never copy them from the definition you are replacing.
+
+## ADR-1154: the detached-client guard could not see three shapes, and all three were empty (2026-08-25)
+
+**Context.** [ADR-1150](#adr-1150)'s re-investigation of `LIVE-053` confirmed the `this`-loss defect is
+fixed at every one of its ten sites and that `check-detached-client-methods` is green. It also
+surfaced three shapes the guard **structurally cannot see**. All three were swept and found empty, so
+none of this fixes a bug. It fixes the gate — which is the same argument the guard's own
+`FACTORY_ASSIGN` widening was made on, and the reason ADR-970 exists.
+
+| Blind spot | What was invisible | Closed by |
+| --- | --- | --- |
+| Only `= receiver.rpc` | a bare method passed as a **callback arg**, **returned**, set as an **object property**, an **arrow body**, or an **array element** — every one loses `this` identically | widened prefix set |
+| Line-by-line scan | a **formatter-wrapped** assignment: `const rpcAll =\n  admin.rpc as unknown as Fn` — the production defect's exact shape, one prettier wrap from invisible | whole-source scan with offset→line mapping |
+| `ROOTS` omitted `scripts/`, `supabase/` | a client in an edge function or a build script | two roots added |
+
+**The honest note on the third one:** it finds nothing and will keep finding nothing until someone
+writes a query there. `supabase/functions/embed/index.ts` is the only non-test `.ts` under either root
+and holds no client; the two `scripts/*.mjs` files that mention `createAdminClient` are **guards
+matching their own regex text**, and `.mjs` is not scanned at all. It is added for the next edge
+function, not for a current defect — a root nobody adds until something breaks in it is the
+2026-08-11 incident's shape.
+
+**Two things the widening broke, and how.** Widening the prefix to catch an argument-position detach
+pulled in the codebase's deliberate **inline-invoke idiom**:
+
+```ts
+const { data } = await (supabase.rpc as unknown as Fn)('x')
+```
+
+`this` survives that — tsc emits `supabase.rpc('x')`. So `(` plus a following `as` is excused and
+nothing else is. 🔴 **And the first version of that excuse silently stopped working on the wrapped
+form**, because the receiver character class contains `(` (it must, so `createAdminClient().from`
+resolves), which let the receiver *swallow* the cast's opening paren and leave the matched prefix as
+the `,` before it. The leading parens are now stripped before the excuse is applied. That defect
+would have flagged a real, correct call site — and a guard that cries wolf is a guard that gets
+routed around.
+
+The whole-source scan also needed **comment blanking**, or the guard reads its own documentation as
+code: this file's header and the `ALIAS` doc comment both contain literal detach examples. Blanking
+preserves length so every offset still maps to its original line.
+
+**Proof.** Four mutations, each failing a distinct arm: revert the prefix → *"sees a detach that is
+NOT an assignment"* fails; revert to per-line → the wrapped arm fails; stop blanking comments → the
+self-documentation arm **and the tree scan** fail; drop the cast excuse → three arms fail including
+the tree. Control green at 9/9.
+
+**The residue, stated rather than hidden:** `doThing(db.from as Fn)` — a cast passed as a genuine
+callback — still goes unseen, because it is indistinguishable from the excused idiom without a real
+parser. That direction is the safe one: the guard misses a rare shape rather than flagging a common
+correct one.
