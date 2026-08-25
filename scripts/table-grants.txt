@@ -151,6 +151,7 @@ library_versions                     internal
 listing_comments                     public
 listing_intake                       internal
 listing_offers                       authenticated
+listing_saves                        authenticated
 listings                             authenticated
 market_listings                      authenticated
 marketplace_reports                  authenticated

@@ -121,15 +121,12 @@ get_my_group_ids                     internal
 gift_gems_atomic                     internal
 handle_is_available                  public
 handle_new_auth_user                 internal
-housing_aspect_score                 internal
 housing_astro_compat                 public
 housing_element_pair                 public
 housing_lifestyle_agreement          public
 housing_match_candidates             authenticated
-housing_natal_compat                 internal
 housing_roommate_matches             authenticated
 housing_safe_date                    public
-housing_safe_float                   internal
 housing_safe_int                     public
 housing_sign_element                 public
 housing_sign_modality                public
