@@ -460,6 +460,9 @@ export async function completeInduction(data: InductionData, destination?: Funne
   redirect(funnelLanding(destination, '/feed?welcome=vera'))
 }
 
+// authz-ok: intentionally PUBLIC + anonymous — the deferred-induction stash runs signed-out by
+// definition. The only write is the fq_pending_induction cookie on the caller's OWN browser,
+// length-clamped field by field; no database touch, no cross-user read.
 /**
  * Deferred path, step 1 (signed-out): park the induction answers in a short-lived
  * cookie so they survive the sign-in round-trip. No auth required. The avatar is
