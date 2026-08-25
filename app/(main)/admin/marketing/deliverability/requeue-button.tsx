@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { RefreshCw, Check, AlertCircle, Trash2, Send } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import {
   requeueDeadLetters,
   discardDeadLetters,
@@ -13,25 +14,29 @@ import {
 
 // Revive dead-lettered jobs (all, or one kind). The action re-gates server-side; this
 // just confirms, calls it, and reports how many were put back on the queue.
+//
+// The two PRIMARY buttons in this file use <Button size="sm"> (HYG-022). The DISCARD button
+// below is still hand-rolled on purpose: it is a secondary/outline control, and no bucket row
+// tracks that pair, so converting it here would be a change nothing measures and nothing asked
+// for. It comes with whatever pass claims it.
 export function RequeueButton({ kind, label }: { kind?: string; label: string }) {
   const [result, setResult] = useState<RequeueResult | null>(null)
   const [pending, start] = useTransition()
 
   return (
     <span className="inline-flex items-center gap-2">
-      <button
-        type="button"
+      <Button
+        size="sm"
         disabled={pending}
         onClick={() => {
           const scope = kind ? `all "${kind}" jobs` : 'every dead-lettered job'
           if (!confirm(`Requeue ${scope}? They will retry on the next drain.`)) return
           start(async () => setResult(await requeueDeadLetters(kind)))
         }}
-        className="inline-flex items-center gap-1.5 rounded-lg bg-primary hover:bg-primary-hover text-on-primary text-meta font-semibold px-3 py-1.5 lift-1 transition-colors disabled:opacity-60"
       >
         <RefreshCw className={`h-3.5 w-3.5 ${pending ? 'animate-spin' : ''}`} />
         {pending ? 'Requeuing…' : label}
-      </button>
+      </Button>
       {result?.ok && (
         <span className="inline-flex items-center gap-1 text-meta text-success font-medium">
           <Check className="h-3.5 w-3.5" /> Requeued {result.revived}
@@ -92,18 +97,17 @@ export function DrainQueueButton() {
 
   return (
     <span className="inline-flex items-center gap-2">
-      <button
-        type="button"
+      <Button
+        size="sm"
         disabled={pending}
         onClick={() => {
           if (!confirm('Send every queued email and push now? This does the same work as the cron.')) return
           start(async () => setResult(await drainQueueNow()))
         }}
-        className="inline-flex items-center gap-1.5 rounded-lg bg-primary hover:bg-primary-hover text-on-primary text-meta font-semibold px-3 py-1.5 lift-1 transition-colors disabled:opacity-60"
       >
         <Send className={`h-3.5 w-3.5 ${pending ? 'animate-pulse' : ''}`} />
         {pending ? 'Sending…' : 'Send queued now'}
-      </button>
+      </Button>
       {result?.ok && (
         <span className="inline-flex items-center gap-1 text-meta text-success font-medium">
           <Check className="h-3.5 w-3.5" />
