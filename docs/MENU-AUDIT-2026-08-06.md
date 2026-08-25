@@ -8,7 +8,7 @@
 record of what was wrong); **ADR-953 to ADR-957** are the answers, shipped in the same PR.
 
 **The last open item, mobile header sub-links (§2.3 #6), was taken up as `LIVE-106` and shipped
-([ADR-1114](DECISIONS.md)).** The count quoted here was wrong in the same way the backlog row's
+([ADR-1118](DECISIONS.md)).** The count quoted here was wrong in the same way the backlog row's
 was: the marketing sheet also rendered a hand-kept `DISCOVER_NAV` block, so the destinations with
 no path from a phone header numbered **13**, not 22. The sheet is now a projection of the same
 `header` menu the desktop bar draws.
@@ -167,7 +167,7 @@ Live `header` surface: 6 groups, 22 items, 0 rail cards.
 | --- | --- | --- |
 | 1 | **"Interests"** is the live label for `/discover/topics`. `docs/NAMING.md` locks this: *"The SEVEN topics are Channels, never 'Interests'"* and *"'Interests' is RETIRED as a member-facing word."* The code default says "Channels". The DB overrode the canon. | 🔴 canon |
 | 2 | **`Partners` is `mode='hidden'`** — the Community dropdown silently lost `/discover/partners` in production. | ⚠️ intended? |
-| 3 | **The `Spaces` trigger has no landing item.** Code default leads with "Spaces directory"; the DB starts at "For coaches and healers". Since a trigger with a panel gets no `href`, **`/spaces` is unreachable from the header.** 🔴 **This finding was correct and its ROUTING was not** (see fix 5 below): sending a code-shaped defect to the DB produced a lie in the UI. The repair that landed relabelled the directory row to "Spaces directory" → `/spaces`, so the header then offered the directory and delivered the marketing page, and the code defect survived until [ADR-1114](DECISIONS.md) put the landing row in `HEADER_TRIGGER_SEEDS`. | 🔴 |
+| 3 | **The `Spaces` trigger has no landing item.** Code default leads with "Spaces directory"; the DB starts at "For coaches and healers". Since a trigger with a panel gets no `href`, **`/spaces` is unreachable from the header.** 🔴 **This finding was correct and its ROUTING was not** (see fix 5 below): sending a code-shaped defect to the DB produced a lie in the UI. The repair that landed relabelled the directory row to "Spaces directory" → `/spaces`, so the header then offered the directory and delivered the marketing page, and the code defect survived until [ADR-1118](DECISIONS.md) put the landing row in `HEADER_TRIGGER_SEEDS`. | 🔴 |
 | 4 | **"Business Pricing"** is title-cased among sentence-cased siblings ("For coaches and healers", "Help center"). | ⏳ voice |
 | 5 | Trigger reads **"Community"** but lands on `/the-community`, and its first row is "The Community". Code default names the trigger "The Community". | ⏳ |
 | 6 | Position gaps: category positions run `0,1,2,3,5,6` (4 deleted); Spaces item positions run `0,1,2,3,4,6`. Harmless, but it is the fingerprint of hand edits. | ✅ cosmetic |

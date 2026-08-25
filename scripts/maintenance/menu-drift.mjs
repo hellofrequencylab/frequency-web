@@ -229,7 +229,7 @@ export function formatReport(r) {
     out.push('✅ Every code default is live and correctly labelled.')
     out.push('')
   } else {
-    out.push('Repair in the Menu manager, or with a one-off script (model: `scripts/adr-1114-header-spaces-directory.sql`).')
+    out.push('Repair in the Menu manager, or with a one-off script (model: `scripts/adr-1118-header-spaces-directory.sql`).')
     out.push('')
   }
   // Advisory, below the verdict, because neither of these changes what a visitor sees.

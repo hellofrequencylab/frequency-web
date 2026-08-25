@@ -1,4 +1,4 @@
--- ADR-1114: the public header's "Spaces directory" row lands on the Spaces directory (LIVE-107).
+-- ADR-1118: the public header's "Spaces directory" row lands on the Spaces directory (LIVE-107).
 -- Run ONCE against production by an operator. Idempotent: safe to re-run.
 --
 -- ── WHAT WAS WRONG, AND HOW IT GOT THAT WAY ─────────────────────────────────────────────
@@ -40,7 +40,7 @@ begin
    where surface_key = 'header' and space_id is null
    limit 1;
   if v_menu is null then
-    raise notice 'ADR-1114: header menu not materialized in DB; code defaults already carry the fix. Nothing to do.';
+    raise notice 'ADR-1118: header menu not materialized in DB; code defaults already carry the fix. Nothing to do.';
     return;
   end if;
 
@@ -104,7 +104,7 @@ begin
    where id = v_menu
      and synced_default_keys <> '[]'::jsonb;
 
-  raise notice 'ADR-1114: header Spaces rows corrected.';
+  raise notice 'ADR-1118: header Spaces rows corrected.';
 end $$;
 
 -- Verify after (expect: 'Spaces' -> '/spaces' then 'Spaces directory' -> '/discover/spaces';

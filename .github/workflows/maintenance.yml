@@ -16,7 +16,7 @@
 #     has none, so the ci.yml guard array cannot host them.
 #   - public header menu drift: the `header` menu rows a visitor actually reads, against the code
 #     defaults they were seeded from. Fails on a link whose LABEL names one page and whose HREF
-#     goes to another, and on a default the inserts-only sync can never restore (ADR-1114).
+#     goes to another, and on a default the inserts-only sync can never restore (ADR-1118).
 #
 # On any new WARN/ERROR it creates-or-updates one issue titled "🔧 Weekly maintenance sweep";
 # a clean run adds nothing (quiet-by-default). Phase 4 layers an AI triage step on top.
@@ -133,7 +133,7 @@ jobs:
       # moves it. Read-only; every finding names the repair and none is applied.
       #
       # Scoped to `header` and NOT `admin_header` on purpose: admin_header has zero DB rows, so
-      # that check would guard an empty set forever and read as coverage (ADR-1114).
+      # that check would guard an empty set forever and read as coverage (ADR-1118).
       - name: Public header menu drift
         id: menudrift
         env:
