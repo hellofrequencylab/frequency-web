@@ -11,6 +11,7 @@ import { StatusChip } from '@/components/admin/status'
 import { Input, Textarea } from '@/components/ui/field'
 import { starterRows, type EntityLayout } from '@/lib/entity-blocks/layout'
 import { StepBlockEditor } from './step-block-editor'
+import { Button } from '@/components/ui/button'
 
 export interface StepRowData {
   id: string
@@ -108,13 +109,13 @@ function PersonaCard({ row }: { row: PersonaRow }) {
             </button>
           </>
         ) : (
-          <button
+          <Button
+            size="sm"
             onClick={create}
             disabled={pending}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
           >
             <Plus className="h-3.5 w-3.5" /> Create sequence
-          </button>
+          </Button>
         )}
       </div>
 
@@ -185,7 +186,7 @@ function StepEditor({ step, index }: { step: StepRowData; index: number }) {
         <Textarea aria-label="Email body" value={body} onChange={(e) => setBody(e.target.value)} rows={4} placeholder="Email body" className="resize-y" />
         {error && <p className="text-meta text-danger">{error}</p>}
         <div className="flex items-center gap-2">
-          <button onClick={save} disabled={pending} className="rounded-lg bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary hover:bg-primary-hover disabled:opacity-60">Save</button>
+          <Button size="sm" onClick={save} disabled={pending}>Save</Button>
           <button onClick={() => { setEditing(false); setError(null) }} className="px-2 py-1.5 text-meta font-semibold text-muted hover:text-text">Cancel</button>
         </div>
       </div>
@@ -268,7 +269,7 @@ function AddStep({ sequenceId }: { sequenceId: string }) {
       <Textarea aria-label="Email body" value={body} onChange={(e) => setBody(e.target.value)} rows={4} placeholder="Email body" className="resize-y" />
       {error && <p className="text-meta text-danger">{error}</p>}
       <div className="flex items-center gap-2">
-        <button onClick={submit} disabled={pending} className="rounded-lg bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary hover:bg-primary-hover disabled:opacity-60">Add step</button>
+        <Button size="sm" onClick={submit} disabled={pending}>Add step</Button>
         <button onClick={() => { setOpen(false); setError(null) }} className="px-2 py-1.5 text-meta font-semibold text-muted hover:text-text">Cancel</button>
       </div>
     </div>

@@ -7,6 +7,7 @@ import { isError } from '@/lib/action-result'
 import { relativeTime } from '@/lib/utils'
 import type { RoomSearchHit } from '@/lib/ai/room-search'
 import { Input } from '@/components/ui/field'
+import { Button } from '@/components/ui/button'
 
 // Phase C: in-room search. A header button opens a panel; typing runs a semantic
 // search over the room's history (substring fallback when AI is off). Results are
@@ -76,13 +77,13 @@ export function RoomSearch({ roomId }: { roomId: string }) {
                 </button>
               )}
             </div>
-            <button
+            <Button
+              size="sm"
               type="submit"
               disabled={pending || !q.trim()}
-              className="rounded-lg bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
             >
               {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Go'}
-            </button>
+            </Button>
           </form>
 
           {searched && (

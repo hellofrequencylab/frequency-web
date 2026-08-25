@@ -10,20 +10,21 @@ import {
   cancelFriendRequest,
   unfriend,
 } from '../../people/friend-actions'
+import { Button } from '@/components/ui/button'
 
 export function AcceptDeclineButtons({ requesterId }: { requesterId: string }) {
   const [isPending, startTransition] = useTransition()
   return (
     <div className="flex items-center gap-1.5 shrink-0">
-      <button
+      <Button
+        size="sm"
         type="button"
         disabled={isPending}
         onClick={() => startTransition(() => acceptFriendRequest(requesterId).then(() => {}))}
-        className="flex items-center gap-1.5 rounded-control bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary hover:bg-primary-hover disabled:opacity-50 transition-colors"
       >
         <Check className="w-3.5 h-3.5" />
         Accept
-      </button>
+      </Button>
       <button
         type="button"
         disabled={isPending}

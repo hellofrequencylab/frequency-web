@@ -9,6 +9,7 @@ import { isError } from '@/lib/action-result'
 import { getInitials } from '@/lib/utils'
 import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { Input } from '@/components/ui/field'
+import { Button } from '@/components/ui/button'
 
 export type CohostView = {
   id: string
@@ -308,14 +309,14 @@ function TransferHost({ eventId, slug }: { eventId: string; slug: string }) {
             stay on as a Co Host.
           </p>
           <div className="mt-2 flex items-center gap-2">
-            <button
+            <Button
+              size="sm"
               type="button"
               onClick={confirm}
               disabled={pending}
-              className="rounded-control bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
             >
               {pending ? 'Transferring…' : 'Confirm transfer'}
-            </button>
+            </Button>
             <button
               type="button"
               onClick={() => setPick(null)}

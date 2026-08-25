@@ -29834,6 +29834,211 @@ own screenshots. Both remainders are counted on `PROG-P5`.
 
 ---
 
+## ADR-1119: An XL sweep is sliced by SHAPE, not by directory — and a re-freeze discloses the part it did not buy (2026-08-25)
+
+**Status:** accepted · advances `PROG-DAWN3` · rests on [ADR-928](#adr-928) and
+[ADR-1082](#adr-1082) · enforced by `pnpm check:adoption` + the re-measured bucket
+
+### The two questions this settles
+
+`PROG-DAWN3` is 2,004 sites and CI fails a PR over 40 changed files, so the sweep ships in slices.
+Two things had to be decided before the first one: **how to cut a slice**, and **what a re-freeze
+is allowed to claim** when the ratchet's current reading already sits below its frozen floor.
+
+### Cut by shape, not by address
+
+The obvious cut is by directory — `app/(main)/admin` holds 66 of the 463 remaining
+`raw-button-bg` sites, and a directory is easy to name in a PR title. It is the wrong cut. A
+directory is an arbitrary bag of button shapes, so a 33-file diff cut that way contains 33
+different judgements, each needing its own before/after reasoning, and a reviewer has no way to
+check the set except by reading every one.
+
+The cut that works is an **equivalence class over the class string**: every site whose className
+token set is exactly the primitive's own `variant × size` string, plus the tokens the primitive's
+`BASE` already absorbs (`rounded-*`, `inline-flex`/`items-center`/`gap-*`, `transition-colors`,
+`disabled:opacity-*`). Membership is decided by set equality against `components/ui/button.tsx`,
+not by eye. Every member takes the identical edit, the result carries **no `className` at all**,
+and one reading of one site is a reading of all 43.
+
+Slice 1 was the `primary × sm` class: 43 sites, 33 files, one edit shape, `raw-button-bg`
+513 → 463 and `literal-radius` 2291 → 2228 (the literal `rounded-lg`/`rounded-xl` each site
+carried, replaced by the `rounded-control` role). Each converted control also gains `tap-target`,
+`press` and the focus ring it had been re-deriving, which is the whole reason the primitive exists.
+
+### 🔴 The sweep MOVES PIXELS, and the first slice proved it in CI
+
+The paragraph above was written before `pr-compare` ran, and it undersells its own change in one
+specific way. `tap-target`, `press` and the focus ring are all things a site "had been
+re-deriving" — the primitive gives back something the raw button was approximating. **`lift-1` is
+not.** It is two box-shadows (`app/globals.css:2538` — a 1px contact shadow plus a wide soft one),
+it is on the primitive's `BASE`, and a census of slice 1's own diff shows **not one of the 37
+retired strings carried a shadow of any kind**. Those 37 strings fall into 19 distinct shapes; the
+set-equality above holds only up to the tokens `BASE` absorbs, and `lift-1` is an addition on top
+of that, not an absorption.
+
+Add `tap-target` and the two are enough to move a rendered surface, and they did: slice 1's
+`pr-compare` failed **4 checks — `/spaces/<slug>/manage`, desktop and mobile × dawn-light and
+dawn-dark**. That is correct behaviour, not a regression. `tap-target` is documented on the
+primitive as the fix for the most widespread touch defect in the product (every `sm` control sat
+at 29.75px against a 44px floor on a phone), and gaining it is the point of `PROG-DAWN3`.
+
+**Owner ruling, 2026-08-25: both are accepted and baselines are re-captured as slices land.** The
+rule this leaves behind for slices 2..n: a DAWN slice states in its PR body which watched surfaces
+it expects to move and why, so a baseline update is a named step rather than a surprise red.
+
+### 🔴 140 green checks measured coverage, not stillness — and that is `HYG-026`
+
+The more useful half of the failure. Slice 1 changed 37 sites; **exactly ONE of them renders on a
+surface the visual suite watches** (the event approval controls, which the space console mounts).
+The other 36 moved with nothing looking at them. So "140 passed" was never evidence the sweep held
+still — it was evidence that 36 of 37 sites are unobserved, and the one honest reading of that run
+is a single data point that happened to be caught.
+
+The cause is structural rather than an oversight: `test/e2e/visual.spec.ts` reads its surfaces from
+`EDITABLE_PAGES` (`lib/page-editor/data.ts`) at run time, and that list exists to say *which pages
+the page editor may edit*. It was never chosen for visual coverage, so what the suite watches is a
+by-product of an unrelated product decision. This is [ADR-970](#adr-970)'s failure mode inside the
+guard meant to prevent it: a gate that cannot fire over most of the tree still reads as coverage.
+
+Filed as `HYG-026`, with the owner's ruling to give the visual suite its own surface list chosen
+for coverage — including the operator and admin routes where most of `PROG-DAWN3`'s remaining
+~1,960 sites live. Not fixed here, because widening the list requires a baseline capture on a
+runner and that is its own change with its own green run to read.
+
+**A slice must prove it is exhaustive for its class**, by re-measuring the bucket after the sweep
+and getting 0 — otherwise "the primary-small shape" names an intent rather than a set, and the next
+agent has to re-derive which members were left behind. Slice 1's bucket reads 0. Slice 2 is already
+sized by the same query: `primary × md`, 49 sites in 37 files.
+
+### A re-freeze discloses the part it did not buy
+
+[ADR-928](#adr-928) refuses a RISE unless it is forced and explained. It has nothing to say about
+the case that actually turned up here, which is quieter: **the class already read below its floor
+before the sweep started.** `raw-button-bg` was frozen at 513 and measured 506 on `origin/main`;
+`literal-radius` was frozen at 2291 and measured 2245. Merged work had retired 7 and 46 sites and
+never re-froze.
+
+A `--update` after the sweep writes 463 and 2228 and stamps this sweep's sentence on both. The
+numbers are correct and the mechanism is working exactly as designed — but the *reason* would then
+claim 50 and 63 retired sites for a change that retired 43 and 17. That is not a laundered rise;
+it is a laundered **credit**, and it is the same defect one level down, because `frozen.reason` is
+the only account anyone can audit later.
+
+**So a re-freeze that banks a pre-existing fall names the split in its own sentence** — how many
+sites this change retired, how many were already there, and the commit they were measured against.
+Both entries frozen on 2026-08-25 carry that disclosure.
+
+### What is NOT claimed
+
+Not a new gate. `--update` still writes what it measures; nothing here changes what passes or
+fails. The rule is about the sentence, which is the half of the record a machine cannot check —
+the same reason [ADR-1082](#adr-1082) had to be written by hand.
+
+### The wider point
+
+The row's own header said `~3,124 sites`, expired, and was replaced on 2026-08-19 by `2,072`,
+which had also expired by the time anyone read it: two of its four sub-figures (15 `<select>`,
+4 `<textarea>`) were bare-grep drift on a day the frozen baselines already read 4 and 2 — drift the
+row's own closing sentence warned about, in the paragraph directly beneath the numbers. The
+re-census is 2,004. **Measure through the instrument the gate uses, or the census expires faster
+than the sweep it is meant to plan.**
+## ADR-1123: The marketing surface was already on the app tokens — what diverged was the gates watching it (2026-08-25)
+
+**Status:** accepted · closes `PROG-P9` · narrows the marketing exemptions in `check:tokens` ·
+extends [ADR-1064](#adr-1064)-era gate practice · enforced by `pnpm check:tokens` +
+`pnpm check:contrast` + `PROG-P9`'s probe
+
+### The question this settles
+
+`PROG-P9` has read the same way since it was written: *"Align the marketing brand system with the
+app tokens where they diverge."* It is the phase that assumes there are **two** systems. The row
+was marked `(optional)` because nobody was sure how much of the gap was deliberate.
+
+Both halves of that assumption were re-measured before any code moved, and both were wrong in the
+same direction: there is **one** token system, and the divergence is not in the brand at all.
+
+### What was measured, 2026-08-25
+
+Marketing = `app/(marketing)/**` + `components/marketing/**` (61 `.ts`/`.tsx` files) plus the
+marketing header/footer. In-app = `app/(main)/**` + `components/**` (1,996 files).
+
+| Axis | Marketing | In-app | Verdict |
+| :--- | :--- | :--- | :--- |
+| Raw hex / `text-[Npx]` / inline `rgb()` | **0** across 61 files | 0 | ✅ no divergence |
+| Colour utility vocabulary | a strict SUBSET of the one `@theme inline` map | the same map | ✅ no divergence |
+| Utilities used ONLY on marketing | 3 (`border-ink-border`, `text-ink-border`, `text-surface-elevated`) | — | ✅ all three are app tokens |
+| Ground token | `--color-marketing-canvas` | `--color-canvas` | ⚠️ **deliberate**, and skinned in all 5 states |
+| Display face | `font-display` (Anton) at 22× the in-app rate | type roles | ⚠️ **deliberate** brand choice |
+| Vertical rhythm | `.mk-band/.mk-beat/.mk-cont/.mk-tight` | the five templates | ⚠️ **deliberate** (DAWN 2026-08-03) |
+| Hand-rolled eyebrows | 8 sites (0.13/file) | 463 sites (0.23/file) | 🔴 **NOT a marketing divergence** — in-app is worse |
+| Literal `rounded-2xl` over `rounded-card` | 34 (0.53/file) | 717 (0.36/file) | 🔴 repo-wide `literal-radius` debt (P1), not P9 |
+| `check:tokens` coverage | **exempt, whole-tree** | governed | 🔴 the real gap |
+| `check:contrast` coverage of the ground | **1 pair** | 5 pairs on the app canvas | 🔴 the real gap |
+
+The two rows that matter are the last two, and neither is about colour values. **The brand systems
+agree. The instruments watching them did not.**
+
+### The decision
+
+**`PROG-P9` is not a re-theme. It is two gate corrections, and then it closes.**
+
+**1. The `check:tokens` marketing exemption is deleted.** Two whole-file waivers covered
+`app/(marketing)/` and `components/marketing/` on the reasoning that marketing "is a separate brand
+design system, not the in-app DAWN surface the guard governs". Run the classifier with them lifted
+and it reports **0 violations across 61 files**. The exemption was protecting nothing — and by
+existing, it was the only artifact in the repo still asserting that a second brand system was
+there. Deleting it is the whole of "reconcile marketing with the app tokens", because the
+reconciliation had already happened in the code and only the gate had not noticed.
+
+**2. The marketing canvas joins the contrast contract at parity with the app canvas.** The cream
+ground carried exactly one row (`--color-text`) while the app canvas beside it carried five
+foregrounds. It is 5/255 darker than the app canvas in light mode, so every twin ratio is
+*tighter*, and none of them had been measured. Seven pairs are added: the four app-canvas twins
+plus `--color-primary-strong`, and three that miss and are waived at their measured floors.
+
+### What is deliberate, and stays
+
+Three differences are real brand positions and were **not** flattened:
+
+- **`--color-marketing-canvas`.** A warm sand ground so the public site reads as brand while the
+  member surface reads as light and airy — stated in `globals.css` since the DAWN port, and
+  overridden in every block that overrides `--color-canvas` (`:root`, `.theme-light-lock`,
+  `[data-skin="midnight"]`, `.dark`, `.dark [data-skin="midnight"]`). There is no skin gap to fix.
+- **The Anton display face** and its `text-[clamp(…)]` sizing on headlines.
+- **The `.mk-*` four-role rhythm**, and with it the `check:headers` / `check:templates` marketing
+  skips. Those two gates govern PAGE STRUCTURE, which genuinely does differ: a marketing page is a
+  sequence of tonal beats, not one of the five interior templates. They keep their skips.
+
+### The one thing a person already knew and no gate did
+
+`components/marketing/comparison-table.tsx` pins its mobile ledger cards to `bg-surface` and says
+why in a comment: *"a `yes` cell's `text-success` clears 4.5:1 on the surface tone and misses it on
+the canvas tone."* That is exactly right — 4.67:1 on a card, **4.05:1 / 3.80:1** on the cream — and
+it was true for as long as the comment has existed, with the gate green the entire time, because
+the gate did not model that ground.
+
+So the pair is entered and waived at its measured floor rather than left out. It gets the rank-gold
+treatment ([ADR-1064](#adr-1064)-era practice, stated in `WAIVERS`): nothing paints it today, the
+floor is frozen, and the fact is printed on every run. A measured fact that lives only in a code
+comment is one refactor from being deleted, and the next author to want a green check on a cream
+section should be told the number rather than discover it in an axe report.
+
+### What this does not claim
+
+It does not claim marketing is now clean of every literal. It carries 34 literal `rounded-2xl` (vs
+10 `rounded-card`) and 8 hand-rolled eyebrows — but those are held by the repo-wide `literal-radius`
+ratchet and belong to P1/P3, and **in-app is worse than marketing on both when normalised per
+file**. Folding them into P9 would have made a large invented row out of a small true one. The
+measurement is what shrank the row, and it is recorded here so the next reader does not re-derive it.
+
+### The wider point
+
+Same shape as [ADR-1112](#adr-1112) and [ADR-1082](#adr-1082): the row was not wrong about the
+work, it was wrong about the *premise*. "Align two systems" had one system underneath it. Nothing
+in the tree said so, because the artifact that would have said so — a gate covering the marketing
+surface — was the missing thing. **An exemption is a claim, and an unmeasured exemption is a claim
+nobody has checked.** This one had been true once and had quietly stopped being true, and the only
+way to find out was to lift it and look.
 ## ADR-1125: Repairing a dead address is not authoring a page, and the seed was never the whole bug (2026-08-25)
 
 **Status:** Accepted · **Works:** `LIVE-104`, `LIVE-108`, `LIVE-109` · **Corrects:** `LIVE-109` ·
