@@ -29456,6 +29456,111 @@ refutation and a proposal. The proposal ships with the build that proves it, or 
 timeout are what *every* hang looks like. Before reading a failure as a known one, name the thing that
 would be different if it were not — here, the restored cache — and go look at whether it was.
 
+## ADR-1118: The phone sheet becomes a projection of the header menu, and the header's own landings stop being unreachable (2026-08-24)
+
+**Status:** Accepted · **Closes:** `LIVE-106`, `LIVE-107` · **Files:** `LIVE-110`, `HYG-019` ·
+**Corrects:** `docs/FINALIZE-PLAN.md` row 4.3 · **Extends:** [ADR-1082](DECISIONS.md) (re-test the
+premise), [ADR-860](DECISIONS.md) (the inserts-only menu sync), [ADR-970](DECISIONS.md) (a gate that
+cannot fire honestly) · **Files:** `components/layout/marketing-mobile-menu.tsx`,
+`components/layout/marketing-header.tsx`, `components/layout/mega-menu.tsx`,
+`lib/menus/project.ts`, `lib/nav/registry.ts`, `scripts/maintenance/menu-drift.mjs`,
+`scripts/adr-1118-header-spaces-directory.sql`
+
+### Both rows were re-measured first, and both were wrong about themselves
+
+| Row | Claimed | Measured 2026-08-24 |
+|:--|:--|:--|
+| `LIVE-106` | "twenty destinations are unreachable", then itemised **fifteen** | **13** — and not the fifteen it named. The sheet also rendered a hand-kept `DISCOVER_NAV` block, so four of the six `/discover/*` surfaces it listed (circles, events, journeys, topics) **were** reachable; it missed `/spaces/directory` and `/what-is-frequency`, which were not |
+| `LIVE-107` | "23 DB items against 26 code nodes" | Both numbers are right and the comparison is not: 26 counts **registry nodes** (6 triggers + 20 children), the DB stores **items**. The comparable code figure was **22**, so the drift was ONE extra row and ONE changed href, not three missing pages |
+| `LIVE-106` | an unmerged `claude/mobile-menu-popover-fixes` branch may overlap | It does not touch either file, and it is behind `main` |
+
+`LIVE-107`'s two member-facing claims both held exactly: `/spaces/directory` sat in
+`synced_default_keys` with no live row, and a live row labelled "Spaces directory" pointed at
+`/spaces`.
+
+### The cause of the mislabel, which nobody had connected
+
+A dropdown trigger carries **no href of its own** — a category with a panel is a disclosure, and its
+landing page is reachable only as a row *inside* that panel. Two triggers did not contain their own
+landing, so `/spaces` and `/the-community` had no path from the public header at all.
+`docs/MENU-AUDIT-2026-08-06.md` row 3 found the Spaces half, called it 🔴, and routed the repair to
+**the DB**. The repair that landed relabelled the directory row instead of adding a landing row —
+which is precisely how the header came to offer "Spaces directory" and land on the marketing page.
+**A code-shaped defect repaired in data produces a lie in the UI**, and the code defect survives.
+
+So the landing rows go in `HEADER_TRIGGER_SEEDS`, where every surface projecting the header gets
+them, and `registry.source.test.ts` holds the invariant by name.
+
+### `/discover/spaces`, not `/spaces/directory`
+
+The directory row now points at the **public** twin. `/spaces/directory` is the app-shell twin:
+`app/robots.ts` disallows it so it cannot cannibalise the canonical, and the `(main)` layout already
+redirects a signed-out visitor from it to `/discover/spaces`. A public header linking it sends every
+visitor and every crawler through a noindex bounce to reach a page we publish directly. The same
+test refuses all three known twins.
+
+### The sheet is a projection now, not a parallel list
+
+`MarketingMobileMenu` mapped `headerTriggers()` flat, and `MarketingHeader` passed it only `light`.
+Two defects, one shape: the sheet was **its own nav**, so it could neither show a trigger's children
+nor ever see an operator's edit. It now takes the same `headerMenu` prop `PrimaryNav` takes and
+renders it through `categoryTriggers` — the panel-or-link decision **extracted from
+`mega-menu.tsx`'s `buildTriggers`** into `lib/menus/project.ts` so the bar and the sheet cannot
+disagree about a destination. A dropdown becomes a collapsible group holding everything the desktop
+panel holds (child columns folded in via `flattenCategoryTree`); a single-link category stays a
+plain link. The hand-kept `DISCOVER_NAV` block is gone: all five of its links are rows of the menu.
+
+`sheetGroups` is exported, and that is deliberate. The sheet mounts only on a tap and this repo has
+no browser in `pnpm test`, so a source assertion would have been the only thing left to hold — and
+source assertions are exactly what stayed green while this defect shipped. The test drives the
+content model and compares the phone's destination set to the bar's, which is the property that
+matters.
+
+### The drift check exists, is scoped where the subject is, and was proven on both states
+
+`LIVE-107` asked for the weekly check `HYG-010` wanted, retargeted. `HYG-010` aimed it at
+`admin_header`, which has **zero DB rows** — it would have guarded an empty set forever and read as
+coverage (ADR-970). `scripts/maintenance/menu-drift.mjs` reads the **`header`** surface, on the
+`ledger-parity.mjs` pattern exactly: a token-gated fetch in the workflow feeds the script JSON, so
+the script never touches a database and is testable without one.
+
+Its headline finding is the one no count could make: **a live row whose LABEL matches a code default
+but whose HREF does not.** The 2026-08-24 row was present, its href was a real page, and the totals
+agreed — every instrument the repo had said green while the link lied. An earlier draft of the
+comparison excused that row because `/spaces` is itself a code default elsewhere, and reported a
+clean sweep; the guard is gone and a test reconstructs the exact row.
+
+**Proven on real production payloads in the same change, both directions:** it exits 1 on the
+pre-correction read (naming the mislabel) and 0 on the post-correction read. Stale baseline keys and
+pending injections are **advisory and never fail**: five stale keys were live, none of them changes
+what a renderer does, and a report that is red on arrival for something nobody can act on is a
+report people stop reading.
+
+### The data correction, and why it was applied rather than described
+
+`scripts/adr-1118-header-spaces-directory.sql` (idempotent, the ADR-868 precedent) renames the live
+row to "Spaces", adds "Spaces directory" → `/discover/spaces`, and drops the dead
+`/spaces/directory` key from the baseline. It was **run against production on 2026-08-24** and
+re-read: the correction is complete on the code that is live today, with no dependency on this PR
+merging, because the DB menu is what the header renders either way.
+
+One detail worth the line: the two rows get **distinct** positions (`-2`, `-1`). Reading order is
+`position` alone, and a tie is not ordered at all — a naive "landing + 1" collided with "For coaches
+and healers" at 0 and would have left the panel's first two rows in whatever order the planner felt
+like.
+
+### What was deliberately not done
+
+- **`SiteHeader` has no phone nav at all** ("mobile relies on the prominent CTA + footer nav until a
+  drawer ships"), so on `/discover/*` and `/help` a phone visitor has no header nav whatsoever. That
+  is a larger surface than either row named and a different component. Filed as `LIVE-110`.
+- **`DISCOVER_NAV` is now an orphan** — nothing renders it. Three ADRs name it as a concept, so
+  retiring it deserves its own reasoning rather than a drive-by deletion. Filed as `HYG-019`.
+- **The Home⇄Feed toggle** the desktop bar applies for a signed-in viewer is not mirrored in the
+  sheet. It is not an operator edit and not a reachability defect.
+- **The five stale baseline keys** were left in place. Removing a key restores the sync's willingness
+  to re-inject that href, which would quietly overwrite a past operator delete; they are inert.
+
 ---
 
 ---
@@ -29653,6 +29758,79 @@ note and a ledger comment without ever being a decision. A committed order is a 
 back is a decision, and decisions live here. Same shape as [ADR-1112](#adr-1112): the thing to
 distrust is not the finding, it is a finding that never got recorded where it would be read.
 
+## ADR-1117: The detail cover gets one resolver, and its ladder is deliberately inverted from the index's (2026-08-24)
+
+**Status:** accepted · advances `PROG-P5` · the detail-side twin of
+[`lib/layout/index-hero.ts`](../lib/layout/index-hero.ts) (PROG-P4) · extends
+[ADR-793](#adr-793), [ADR-411](#adr-411)
+
+`PROG-P5` asks for the entity headers to fold onto the one `PageHero` grammar. The component half
+of that has been shipped for a while: `DetailTemplate` carries `coverImage` / `coverFocus` /
+`coverSize` / `coverOverlayStyle`, and setting any of the last three routes the cover through
+`PageHero` `variant="minimal"` — the same component the index band renders. What was missing was
+the same thing PROG-P4 found missing on the index side: **a place to put the stanza every adopter
+re-types**. `/channels/[id]` and `/circles/[slug]` each carry a near-identical copy of it today
+(resolve the header element, read the entity's focal point, take the host's stored height only when
+they actually chose one, otherwise defer to the element).
+
+[`lib/layout/detail-hero.ts`](../lib/layout/detail-hero.ts) is that place: `resolveDetailHero(route,
+opts)` returns a spreadable `DetailTemplate` prop bag. Three decisions in it are worth recording.
+
+### 1. The ladder is inverted from `index-hero`, and the reason is whose surface it is
+
+| Rung | `resolveIndexHero` (browse) | `resolveDetailHero` (entity) |
+|---|---|---|
+| 1 | the operator's Settings image for the route | **the entity's own cover** |
+| 2 | the page-content hero (ADR-180) | the operator's Settings image for the **section** |
+| 3 | explicit `fallbackImage`, else the section default | explicit `fallbackImage`, else the section default |
+| 4 | `null` — the gradient band | the section's **tail** (see 2) |
+
+On a browse page the operator owns the surface, so their choice is rung 1. On an entity page the
+entity's own owner does: a host who uploads a cover for **their** Circle, Practice or Channel must
+not be outranked by a site-wide setting. The symmetry people expect between the two resolvers is
+the *shape* — four rungs, a spreadable bag, a fail-safe wrapper — not the order, and getting the
+order right is the entire point of having a second resolver rather than one with a flag.
+
+### 2. The tail is `undefined` (no cover), not `null` (gradient band) — and that is not an oversight
+
+On an index the band **carries the page's `<h1>`** (`heroOverlay`), so it must always exist; `null`
+there is the band still doing its job. On a detail page the `<h1>` lives in the context header
+*below* the cover, so the cover is decoration — and a grey rectangle with an icon in it over every
+Hub, help article and public profile is chrome nobody asked for.
+
+So the tail is per-section data, not per-page taste: `'placeholder'` paints the gradient band,
+`'none'` renders no cover at all. **The placeholder is an affordance, so it belongs where someone
+can act on it.** A section whose cover is editable in place (the admin-settings scope kit,
+PAGE-FRAMEWORK §8.5) shows the empty slot to the host who can fill it; its public twin, where the
+viewer can do nothing about it, does not. That is why `/practices` and `/discover/practices` — the
+same entity, the same `header_image` — take different tails.
+
+### 3. An unmapped route resolves to NO cover, which makes adoption safe by construction
+
+`DETAIL_HERO_DEFAULTS` is a section-prefix map (longest prefix wins). A route no row covers falls to
+`DETAIL_HERO_FALLBACK` = no cover, so spreading `{...hero}` onto a page whose section nobody mapped,
+whose entity carries no image, is a **visual no-op**. This matters because the remaining adoption is
+~25 more pages across a surface `check:one-list`-sized PRs cannot take in one go: an adopter can land
+the call site in one change and the section's design in another, and neither step can accidentally
+paint a band on a page nobody looked at. A section joins the program by adding a row — never by a
+page inventing a stanza, which is exactly the shape PROG-P4 was filed to stop.
+
+### The focal point travels with its image
+
+A focal point is picked against one specific photo, so applying it to a different one crops
+someone else's picture by coordinates nobody chose. Rung 1 carries `entityFocus`, rung 2 carries the
+operator's focal point for the section image, and rungs 3–4 carry none because nobody has ever
+framed a shipped section default. `index-hero` states the narrower version of this rule ("focus
+rides rung 1 only") because it has exactly one focus-bearing rung; this is the same rule with two.
+
+### What this does not do
+
+It does not touch `DetailTemplate` — no new props, no changed rendering. It does not fold the seven
+pages that hand-roll `hero={<PageHero variant="identity" …>}` with an eyebrow, a leading badge and
+on-cover actions (`/channels/[id]`, `/circles/[slug]`, `/journeys/[slug]`, `/journeys/[slug]/learn`,
+`/people/[handle]`, `/spaces/[slug]`, `/circles/starter/[slug]`); those carry a lockup the minimal
+cover has no slot for, and folding them is a behaviour change that belongs in its own PR with its
+own screenshots. Both remainders are counted on `PROG-P5`.
 ## ADR-1121: Loom ingest decodes no pixels on the server, and search ranks without a migration (2026-08-25)
 
 **Status:** Accepted

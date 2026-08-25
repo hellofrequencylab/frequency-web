@@ -6,6 +6,7 @@ import { getPublicPractice, listPublicPractices } from '@/lib/practices'
 import { SignInCta } from '@/components/discover/cards'
 import { ShareButton } from '@/components/discover/share-button'
 import { DetailTemplate } from '@/components/templates'
+import { resolveDetailHero } from '@/lib/layout/detail-hero'
 import { SITE_NAME } from '@/lib/site'
 import { JsonLd } from '@/components/json-ld'
 import { practiceSchema, breadcrumbSchema } from '@/lib/jsonld'
@@ -47,6 +48,14 @@ export default async function PublicPracticePage({
   const practice = await getPublicPractice(id)
   if (!practice) notFound()
 
+  // The standard entity cover (PROG-P5, ADR-1117). The public twin of /practices/<id>: the SAME
+  // ladder and the SAME `header_image`, so a practice whose photo already showed in-app now shows
+  // it here too. The section's tail differs on purpose — a signed-out visitor cannot fill an empty
+  // cover slot, so a practice with no photo gets no band rather than a grey placeholder.
+  const hero = await resolveDetailHero(`/discover/practices/${practice.slug ?? practice.id}`, {
+    entityImage: practice.header_image,
+  })
+
   return (
     <div className="mx-auto max-w-3xl px-6 py-20 sm:py-24">
       <JsonLd
@@ -69,6 +78,7 @@ export default async function PublicPracticePage({
       </Link>
 
       <DetailTemplate
+        {...hero}
         title={practice.title}
         actions={
           <ShareButton
