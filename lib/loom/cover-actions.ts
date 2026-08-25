@@ -36,6 +36,7 @@ import type { LedgerEntry } from '@/lib/studio/kernel/ledger'
 import { getSpaceById, getSpaceBySlug, loadRootSpaceId } from '@/lib/spaces/store'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { insertSpaceLibraryImage } from '@/lib/library/store'
+import { ingestImageBytes } from '@/lib/library/ingest'
 import { LIBRARY_MEDIA_BUCKET } from '@/lib/library/upload-kinds'
 import { downloadRecraft, generateImages, recraftConfigured } from './recraft'
 import {
@@ -183,10 +184,15 @@ export async function generateEntityCoverAction(input: {
     const stamp = `${Date.now()}-${Math.round(Math.random() * 1e6).toString(36)}`
     const path = `${spaceId}/${slugify(title)}-cover-${stamp}.${extFor(mime)}`
 
+    // INGEST (PROG-D1): checksum + dimensions for a generated cover. The strip is a no-op on a
+    // Recraft render, but the dimensions are not — a cover that does not know its own aspect ratio
+    // cannot be laid out without loading it first.
+    const ingested = ingestImageBytes(bytes, mime)
+
     const admin = createAdminClient()
     const { error: upErr } = await admin.storage
       .from(LIBRARY_MEDIA_BUCKET)
-      .upload(path, bytes, { contentType: mime, upsert: false })
+      .upload(path, ingested.bytes, { contentType: mime, upsert: false })
     if (upErr) return fail('Vera drew it but could not save it. Try again.')
 
     const { data: pub } = admin.storage.from(LIBRARY_MEDIA_BUCKET).getPublicUrl(path)
@@ -201,7 +207,10 @@ export async function generateEntityCoverAction(input: {
       storagePath: path,
       url: pub.publicUrl,
       mime,
-      bytes: bytes.byteLength,
+      bytes: ingested.bytes.byteLength,
+      sha256: ingested.sha256,
+      width: ingested.width,
+      height: ingested.height,
       kind: 'image',
       createdBy: caller.id,
       source: 'recraft',

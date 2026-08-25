@@ -142,7 +142,7 @@ and not per-surface.
 | `surfaces.page` names a page surface | Literal `{}` on all 157 rows; `defaultTemplate`/`defaultSlot` declared, read nowhere |
 | Apps declare surfaces | All 349 declare exactly one. The multi-surface badge at `app-registry.tsx:243` has never fired |
 | `App.config` is the editable Layer-2 schema | Populated on **zero** of 349 rows |
-| `app_instances` is Layer 3 | Correct schema, 3 indexes, full RLS quad — **zero writers, zero readers** |
+| `app_instances` is Layer 3 | 🔴 **THE TABLE NO LONGER EXISTS.** Corrected 2026-08-25 ([ADR-1129](DECISIONS.md)): it had correct schema, 3 indexes and a full RLS quad, and **zero writers, zero readers** — so `20270316000000_drop_app_instances_until_e0.sql` dropped it on 2026-08-19 (OWN-031), naming E0 as the owner that re-creates it *with* its writers. Verified absent in the live database. This makes E0 task 16 **additive**, not the drop-and-add widening [`EDITOR-E0.md`](EDITOR-E0.md) §4.1 planned |
 | `library_usages` is the live xref | 🔴 **Dropped by migration `20260925000000`**, five days after creation. The read discarded its error and silently returned `[]` |
 
 [ADR-927](DECISIONS.md) already states the rule: *"a registry that cannot resolve its rows to a
@@ -681,7 +681,7 @@ phases are insurance against risks the data says are not arriving this year.
 | Profiles | 52 · **4** with a Spotlight · **1** with a Stripe account |
 | Signed in, last 7 days | **5** |
 | `stripe_webhook_events`, **all time** | **0** — no payment has ever flowed through this platform |
-| `app_instances` | **0**, since 2026-09 |
+| `app_instances` | **0**, since 2026-09 — and since 2026-08-19 the table itself is dropped (§2.4) |
 | Editor events in `engagement_events` | **0** of 14,843 |
 | Stored editor documents, all stores | **41** |
 | Email events, 30 days | 704 (297 sends), most recent **today** |

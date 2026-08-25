@@ -131,6 +131,16 @@ function business(): Block {
 }
 
 // ── Closing CALLOUT band (operator authored; a friendly conversion moment at the foot of the page).
+//
+// 🔴 ctaHref SEEDS EMPTY, AND '#' MUST NEVER COME BACK (ADR-1125, backlog LIVE-109). This line shipped
+// `ctaHref: '#'`, and because it is a SEED rather than an authored value it was identical on all 18
+// Space micro-sites in production: every one of them rendered a "Get in touch" button that left the
+// visitor exactly where they stood. It is the only link those pages had.
+//
+// Empty is the honest day-zero value and it now WORKS, which it did not before: SpaceCalloutBlock used
+// to gate its button on `ctaLabel` alone and fall back to `href={ctaHref || '#'}`, so blanking this
+// field would have changed nothing. The renderer now requires BOTH a label and a destination, so a new
+// Space draws the band with its heading and body and no button until the operator points it somewhere.
 function callout(name: string): Block {
   return {
     type: 'SpaceCallout',
@@ -140,7 +150,7 @@ function callout(name: string): Block {
       heading: 'Come say hello',
       body: `Have a question or want to get started with ${name}? We would love to hear from you.`,
       ctaLabel: 'Get in touch',
-      ctaHref: '#',
+      ctaHref: '',
       align: 'center',
     },
   }

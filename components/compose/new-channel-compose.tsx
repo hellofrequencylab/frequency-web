@@ -7,6 +7,7 @@ import { StudioWindow } from '@/components/studio/studio-window'
 import { StudioFooter } from '@/components/studio/kit/studio-footer'
 import { Field, Input, Textarea, labelClasses } from '@/components/ui/field'
 import { Select } from '@/components/ui/select'
+import { Button } from '@/components/ui/button'
 
 interface ScopeOption {
   scope: 'hub' | 'nexus' | 'outpost'
@@ -95,14 +96,13 @@ export function NewChannelCompose({
               >
                 Cancel
               </button>
-              <button
+              <Button
                 type="button"
                 onClick={submit}
                 disabled={!name.trim() || !selected || isPending}
-                className="rounded-xl bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
               >
                 {isPending ? 'Creating…' : 'Create channel'}
-              </button>
+              </Button>
             </StudioFooter>
           }
         >

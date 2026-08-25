@@ -16,6 +16,7 @@ import { Select } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Field, Input, Textarea } from '@/components/ui/field'
 import type { SpaceAccessContext } from '@/lib/events/ticket-space-access'
+import { Button } from '@/components/ui/button'
 
 type EventData = {
   id: string
@@ -220,13 +221,12 @@ export function EventEditClient({
               <Check className="h-3.5 w-3.5" /> Saved
             </span>
           )}
-          <button
+          <Button
             type="submit"
             disabled={isPending}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary hover:bg-primary-hover disabled:opacity-40 transition-colors"
           >
             {isPending ? 'Saving…' : 'Save changes'}
-          </button>
+          </Button>
         </div>
       </form>
 
@@ -576,13 +576,12 @@ function TierForm({
         ))}
 
       <div className="flex items-center gap-2 pt-1">
-        <button
+        <Button
           type="submit"
           disabled={disabled}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary hover:bg-primary-hover disabled:opacity-40 transition-colors"
         >
           {initial ? 'Save tier' : 'Add tier'}
-        </button>
+        </Button>
         <button
           type="button"
           onClick={onCancel}

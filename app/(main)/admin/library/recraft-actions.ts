@@ -7,6 +7,7 @@ import { requireAdmin } from '@/lib/admin/guard'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { aiAvailable, featureOverBudget, recordAiUsage } from '@/lib/ai/usage'
 import { getRootSpaceId } from '@/lib/library/store'
+import { ingestImageBytes } from '@/lib/library/ingest'
 import { recordVersion, rollbackToVersion, listVersions, type LibraryVersion } from '@/lib/library/versions'
 import { listStyles, recordStyle, resolveStyleId, deleteStyle, type BrandStyle } from '@/lib/library/styles'
 import {
@@ -99,6 +100,13 @@ export async function generateWithRecraft(input: {
       const stored = await store(spaceId, bytes, contentType, prompt)
       const title = results.length > 1 ? `${prompt.slice(0, 60)} ${i + 1}` : prompt.slice(0, 80)
       const slug = `recraft-${slugify(title)}-${Date.now().toString(36)}-${i}`
+      // INGEST (PROG-D1). The second of the two sites that used to write `library_assets` directly.
+      // A generated image never carries EXIF, so the strip is a no-op here — what this call earns is
+      // the CHECKSUM and the DIMENSIONS, which matter for a generator: ask Recraft twice for the same
+      // prompt and it can return the same picture, and until now that filled the Loom with untagged
+      // twins. Dedupe is not applied as a REJECTION here (the caller asked for N images and paid for
+      // them), it is recorded so D4's safe-delete and global-swap can see the duplication.
+      const ingested = ingestImageBytes(bytes, stored.mime)
       const { error } = await dbh().from('library_assets').insert({
         space_id: spaceId,
         kind: 'image',
@@ -114,6 +122,8 @@ export async function generateWithRecraft(input: {
         url: stored.url,
         mime: stored.mime,
         bytes: stored.bytes,
+        sha256: ingested.sha256,
+        ...(ingested.width ? { width: ingested.width, height: ingested.height } : {}),
         config: { source: 'recraft', prompt, lane: input.lane, ...(recraftStyleId ? { styleId: recraftStyleId } : {}) },
       })
       if (!error) n++
