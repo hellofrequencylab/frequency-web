@@ -416,15 +416,15 @@ function RsvpNote({
         className="resize-none"
       />
       <div className="flex items-center gap-2">
-        <button
+        <Button
+          size="sm"
           type="button"
           onClick={save}
           disabled={pending || !note.trim()}
-          className="inline-flex items-center gap-1.5 rounded-control bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
         >
           <Check className="h-3.5 w-3.5" />
           {pending ? 'Saving…' : 'Add note'}
-        </button>
+        </Button>
         {saved && !pending && (
           <span className="inline-flex items-center gap-1 text-2xs text-success">
             <Check className="h-3 w-3" />

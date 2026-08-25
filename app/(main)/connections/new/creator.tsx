@@ -560,13 +560,13 @@ export function Creator({ userId }: { userId: string }) {
                 {pendingScan.quality.note || 'That capture looks hard to read.'}
               </p>
               <div className="mt-2 flex flex-wrap gap-2">
-                <button
+                <Button
+                  size="sm"
                   type="button"
                   onClick={() => { setPendingScan(null); clearScanFiles() }}
-                  className="inline-flex items-center gap-1.5 rounded-control bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover"
                 >
                   <Camera className="h-3.5 w-3.5" /> Retake
-                </button>
+                </Button>
                 <button
                   type="button"
                   onClick={useAnyway}

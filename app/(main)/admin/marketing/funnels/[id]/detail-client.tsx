@@ -19,6 +19,7 @@ import {
 import { updateCampaign, archiveCampaign, reassignEntryPoint } from '../actions'
 import type { CampaignStatus } from '@/lib/entry-points/campaigns'
 import { Input } from '@/components/ui/field'
+import { Button } from '@/components/ui/button'
 
 export interface AssignableMember {
   id: string
@@ -84,13 +85,13 @@ export function CampaignDetail({
               onChange={(e) => setName(e.target.value)}
               className="px-2.5 py-1.5"
             />
-            <button
+            <Button
+              size="sm"
               onClick={saveName}
               disabled={pending}
-              className="rounded-lg bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary hover:bg-primary-hover disabled:opacity-60"
             >
               Save
-            </button>
+            </Button>
             <button onClick={() => { setRenaming(false); setName(campaign.name) }} className="px-2 py-1.5 text-meta font-semibold text-muted hover:text-text">
               Cancel
             </button>

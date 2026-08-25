@@ -29832,6 +29832,116 @@ on-cover actions (`/channels/[id]`, `/circles/[slug]`, `/journeys/[slug]`, `/jou
 cover has no slot for, and folding them is a behaviour change that belongs in its own PR with its
 own screenshots. Both remainders are counted on `PROG-P5`.
 
+---
+
+## ADR-1119: An XL sweep is sliced by SHAPE, not by directory — and a re-freeze discloses the part it did not buy (2026-08-25)
+
+**Status:** accepted · advances `PROG-DAWN3` · rests on [ADR-928](#adr-928) and
+[ADR-1082](#adr-1082) · enforced by `pnpm check:adoption` + the re-measured bucket
+
+### The two questions this settles
+
+`PROG-DAWN3` is 2,004 sites and CI fails a PR over 40 changed files, so the sweep ships in slices.
+Two things had to be decided before the first one: **how to cut a slice**, and **what a re-freeze
+is allowed to claim** when the ratchet's current reading already sits below its frozen floor.
+
+### Cut by shape, not by address
+
+The obvious cut is by directory — `app/(main)/admin` holds 66 of the 463 remaining
+`raw-button-bg` sites, and a directory is easy to name in a PR title. It is the wrong cut. A
+directory is an arbitrary bag of button shapes, so a 33-file diff cut that way contains 33
+different judgements, each needing its own before/after reasoning, and a reviewer has no way to
+check the set except by reading every one.
+
+The cut that works is an **equivalence class over the class string**: every site whose className
+token set is exactly the primitive's own `variant × size` string, plus the tokens the primitive's
+`BASE` already absorbs (`rounded-*`, `inline-flex`/`items-center`/`gap-*`, `transition-colors`,
+`disabled:opacity-*`). Membership is decided by set equality against `components/ui/button.tsx`,
+not by eye. Every member takes the identical edit, the result carries **no `className` at all**,
+and one reading of one site is a reading of all 43.
+
+Slice 1 was the `primary × sm` class: 43 sites, 33 files, one edit shape, `raw-button-bg`
+513 → 463 and `literal-radius` 2291 → 2228 (the literal `rounded-lg`/`rounded-xl` each site
+carried, replaced by the `rounded-control` role). Each converted control also gains `tap-target`,
+`press` and the focus ring it had been re-deriving, which is the whole reason the primitive exists.
+
+### 🔴 The sweep MOVES PIXELS, and the first slice proved it in CI
+
+The paragraph above was written before `pr-compare` ran, and it undersells its own change in one
+specific way. `tap-target`, `press` and the focus ring are all things a site "had been
+re-deriving" — the primitive gives back something the raw button was approximating. **`lift-1` is
+not.** It is two box-shadows (`app/globals.css:2538` — a 1px contact shadow plus a wide soft one),
+it is on the primitive's `BASE`, and a census of slice 1's own diff shows **not one of the 37
+retired strings carried a shadow of any kind**. Those 37 strings fall into 19 distinct shapes; the
+set-equality above holds only up to the tokens `BASE` absorbs, and `lift-1` is an addition on top
+of that, not an absorption.
+
+Add `tap-target` and the two are enough to move a rendered surface, and they did: slice 1's
+`pr-compare` failed **4 checks — `/spaces/<slug>/manage`, desktop and mobile × dawn-light and
+dawn-dark**. That is correct behaviour, not a regression. `tap-target` is documented on the
+primitive as the fix for the most widespread touch defect in the product (every `sm` control sat
+at 29.75px against a 44px floor on a phone), and gaining it is the point of `PROG-DAWN3`.
+
+**Owner ruling, 2026-08-25: both are accepted and baselines are re-captured as slices land.** The
+rule this leaves behind for slices 2..n: a DAWN slice states in its PR body which watched surfaces
+it expects to move and why, so a baseline update is a named step rather than a surprise red.
+
+### 🔴 140 green checks measured coverage, not stillness — and that is `HYG-026`
+
+The more useful half of the failure. Slice 1 changed 37 sites; **exactly ONE of them renders on a
+surface the visual suite watches** (the event approval controls, which the space console mounts).
+The other 36 moved with nothing looking at them. So "140 passed" was never evidence the sweep held
+still — it was evidence that 36 of 37 sites are unobserved, and the one honest reading of that run
+is a single data point that happened to be caught.
+
+The cause is structural rather than an oversight: `test/e2e/visual.spec.ts` reads its surfaces from
+`EDITABLE_PAGES` (`lib/page-editor/data.ts`) at run time, and that list exists to say *which pages
+the page editor may edit*. It was never chosen for visual coverage, so what the suite watches is a
+by-product of an unrelated product decision. This is [ADR-970](#adr-970)'s failure mode inside the
+guard meant to prevent it: a gate that cannot fire over most of the tree still reads as coverage.
+
+Filed as `HYG-026`, with the owner's ruling to give the visual suite its own surface list chosen
+for coverage — including the operator and admin routes where most of `PROG-DAWN3`'s remaining
+~1,960 sites live. Not fixed here, because widening the list requires a baseline capture on a
+runner and that is its own change with its own green run to read.
+
+**A slice must prove it is exhaustive for its class**, by re-measuring the bucket after the sweep
+and getting 0 — otherwise "the primary-small shape" names an intent rather than a set, and the next
+agent has to re-derive which members were left behind. Slice 1's bucket reads 0. Slice 2 is already
+sized by the same query: `primary × md`, 49 sites in 37 files.
+
+### A re-freeze discloses the part it did not buy
+
+[ADR-928](#adr-928) refuses a RISE unless it is forced and explained. It has nothing to say about
+the case that actually turned up here, which is quieter: **the class already read below its floor
+before the sweep started.** `raw-button-bg` was frozen at 513 and measured 506 on `origin/main`;
+`literal-radius` was frozen at 2291 and measured 2245. Merged work had retired 7 and 46 sites and
+never re-froze.
+
+A `--update` after the sweep writes 463 and 2228 and stamps this sweep's sentence on both. The
+numbers are correct and the mechanism is working exactly as designed — but the *reason* would then
+claim 50 and 63 retired sites for a change that retired 43 and 17. That is not a laundered rise;
+it is a laundered **credit**, and it is the same defect one level down, because `frozen.reason` is
+the only account anyone can audit later.
+
+**So a re-freeze that banks a pre-existing fall names the split in its own sentence** — how many
+sites this change retired, how many were already there, and the commit they were measured against.
+Both entries frozen on 2026-08-25 carry that disclosure.
+
+### What is NOT claimed
+
+Not a new gate. `--update` still writes what it measures; nothing here changes what passes or
+fails. The rule is about the sentence, which is the half of the record a machine cannot check —
+the same reason [ADR-1082](#adr-1082) had to be written by hand.
+
+### The wider point
+
+The row's own header said `~3,124 sites`, expired, and was replaced on 2026-08-19 by `2,072`,
+which had also expired by the time anyone read it: two of its four sub-figures (15 `<select>`,
+4 `<textarea>`) were bare-grep drift on a day the frozen baselines already read 4 and 2 — drift the
+row's own closing sentence warned about, in the paragraph directly beneath the numbers. The
+re-census is 2,004. **Measure through the instrument the gate uses, or the census expires faster
+than the sweep it is meant to plan.**
 ## ADR-1124: The slicing instrument goes into the repo, because slice 1's exhaustiveness claim could not be re-run — and there is no no-op bucket to find (2026-08-25)
 
 **Status:** accepted · advances `PROG-DAWN3` · amends [ADR-1119](#adr-1119) · rests on

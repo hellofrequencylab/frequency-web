@@ -12,6 +12,7 @@ import { Loader2, Lock, Send, Sparkles } from 'lucide-react'
 import { isError, type ActionResult } from '@/lib/action-result'
 import { sendConversationReply } from '@/app/(main)/admin/crm/conversations/actions'
 import { Textarea } from '@/components/ui/field'
+import { Button } from '@/components/ui/button'
 
 type SendAction = (input: { conversationId: string; body: string; isInternal?: boolean }) => Promise<ActionResult>
 type DraftAction = (conversationId: string) => Promise<ActionResult<{ draft: string }>>
@@ -151,15 +152,15 @@ export function ConversationComposer({
             {internal ? 'Only your team sees notes.' : 'Their reply comes back to this thread. Opt-outs are honored.'}
           </p>
         )}
-        <button
+        <Button
+          size="sm"
           type="button"
           onClick={submit}
           disabled={pending || !body.trim()}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
         >
           {pending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
           {internal ? 'Add note' : 'Send reply'}
-        </button>
+        </Button>
       </div>
     </div>
   )
