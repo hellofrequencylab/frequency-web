@@ -29942,3 +29942,54 @@ which had also expired by the time anyone read it: two of its four sub-figures (
 row's own closing sentence warned about, in the paragraph directly beneath the numbers. The
 re-census is 2,004. **Measure through the instrument the gate uses, or the census expires faster
 than the sweep it is meant to plan.**
+
+## ADR-1133: The LIVE-105 bound and the discover retry had never met — and the gap failed a production deploy (2026-08-25)
+
+**Status:** accepted · amends the [ADR-1114](#adr-1114)/`LIVE-105` line of work · rests on
+[LIVE-084]'s retry ladder · proven by `lib/discover.test.ts` §"the 2026-08-25 production deploy"
+
+### What happened
+
+Production deploy `dpl_CwB9iB62` (main @ `fcb5348c4`, the #2266 merge) failed in
+*Generating static pages*. The log shows the sequence exactly:
+
+1. A burst of build-time reads of `public_event_by_slug` all exceeded 20 seconds in the same
+   wall-clock second and were aborted — by the **LIVE-105 bound working as designed**
+   (`lib/supabase/public.ts`, #2264). Each printed its banner, including the line "the caller's
+   `.catch(() => [])` now fires and the route degrades".
+2. That line was true for the LIST callers it was written about, and false for the one that
+   mattered: `detailRead` (`lib/discover.ts`) **throws** on error — deliberately, so a sitemapped
+   URL 500s rather than 404ing at Googlebot ([LIVE-084]'s header explains the split).
+3. `detailRead`'s throw is supposed to be softened by the retry ladder in front of it. It was not,
+   because `isTransientDiscoverError` said the abort was **deterministic**: undici reports an abort
+   as `TimeoutError: The operation was aborted due to timeout` with empty `code` and `hint`, and
+   `TRANSIENT_RE` knew every errno token (`ECONNRESET`, `ETIMEDOUT`, …) but not `TimeoutError`.
+   The bound was invented on 2026-08-24; the regex predates it and was never told.
+4. So the FIRST abort threw with both retry delays unused, the `/discover/events/[slug]`
+   prerender failed, and the export exited the whole build.
+
+The control that says this is the right diagnosis: the same RPC, run against the same live
+database minutes later, answered in 1.6 seconds. The database had a slow moment under a
+concurrent page-data burst; nothing was down, and nothing was wrong with the data.
+
+### The decision
+
+**Our own bound's abort is transient by definition.** A 20-second ceiling firing is the statement
+"this read was slow just now" — never "the database has answered". `TRANSIENT_RE` gains
+`TimeoutError|AbortError|aborted`, so an aborted read gets the same 250ms/500ms ladder as a
+dropped packet. Deterministic answers stay unretried: the code guard runs first, so a real
+Postgres error whose text happens to say "aborted" (57014 does) is still believed on the first
+answer — there is a test pinning exactly that.
+
+This is the third entry in one lesson ([LIVE-084] wrote the first two): **every new failure shape
+must be introduced to the classifier that decides what is worth retrying.** The empty-code fix
+taught it that an errno can arrive without a code; this teaches it that our own instruments
+produce failure shapes too. A bound added anywhere near a read path is not done until the retry
+in front of that path classifies its abort.
+
+### What is NOT claimed
+
+Retrying does not make the build immune: a database slow for longer than three bounded attempts
+still fails the export, and should — `detailRead`'s throw-over-404 posture is unchanged, and
+LIVE-105 stays open for the part of this that is about the database being slow at build time
+at all. The fix removes the single-packet fragility, not the dependency.
