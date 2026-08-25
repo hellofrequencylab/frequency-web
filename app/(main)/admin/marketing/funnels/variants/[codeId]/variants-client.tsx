@@ -10,6 +10,7 @@ import type { VariantResult } from '@/lib/entry-points/ab'
 import { Input } from '@/components/ui/field'
 import { Select } from '@/components/ui/select'
 import { addVariant, updateVariant, deleteVariant } from '../actions'
+import { Button } from '@/components/ui/button'
 
 const pct = (rate: number) => `${(rate * 100).toFixed(1)}%`
 
@@ -115,7 +116,7 @@ function VariantRow({ codeId, v, groups, isWinner }: { codeId: string; v: Varian
         </div>
         {error && <p className="text-meta text-danger">{error}</p>}
         <div className="flex gap-2">
-          <button onClick={save} disabled={pending} className="rounded-lg bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary hover:bg-primary-hover disabled:opacity-60">Save</button>
+          <Button size="sm" onClick={save} disabled={pending}>Save</Button>
           <button onClick={() => { setEditing(false); setError(null) }} className="px-2 py-1.5 text-meta font-semibold text-muted hover:text-text">Cancel</button>
         </div>
       </div>
@@ -184,7 +185,7 @@ function AddVariant({ codeId, groups }: { codeId: string; groups: DestinationGro
       </div>
       {error && <p className="text-meta text-danger">{error}</p>}
       <div className="flex gap-2">
-        <button onClick={submit} disabled={pending} className="rounded-lg bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary hover:bg-primary-hover disabled:opacity-60">Add variant</button>
+        <Button size="sm" onClick={submit} disabled={pending}>Add variant</Button>
         <button onClick={() => { setOpen(false); setError(null) }} className="px-2 py-1.5 text-meta font-semibold text-muted hover:text-text">Cancel</button>
       </div>
     </div>
