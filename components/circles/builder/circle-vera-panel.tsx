@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react'
 import { Sparkles, Wand2, ChevronDown } from 'lucide-react'
 import type { CircleComposeSection } from '@/lib/ai/circle-compose'
 import { Textarea } from '@/components/ui/field'
+import { Button } from '@/components/ui/button'
 
 // The Vera panel in the Circle builder, mirroring the Journey composer (ADR-302):
 // a collapsible section with two moves. "Fill this section" buttons ask Vera to
@@ -110,14 +111,13 @@ export function CircleVeraPanel({
             className="mt-2 resize-y"
           />
           <div className="mt-2">
-            <button
+            <Button
               type="button"
               disabled={pending || !change.trim()}
               onClick={apply}
-              className="inline-flex items-center gap-1.5 rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary hover:bg-primary-hover disabled:opacity-60"
             >
               <Wand2 className="h-4 w-4" aria-hidden /> {pending && !busySection ? 'Applying…' : 'Apply with Vera'}
-            </button>
+            </Button>
           </div>
 
           {note && <p className="mt-2 text-meta text-muted">{note}</p>}

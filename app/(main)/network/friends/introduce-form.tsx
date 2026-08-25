@@ -6,6 +6,7 @@ import { isError } from '@/lib/action-result'
 import { Select } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/field'
 import { createIntroduction } from '@/lib/connections/introductions'
+import { Button } from '@/components/ui/button'
 
 export interface FriendOption {
   id: string
@@ -141,15 +142,14 @@ export function IntroduceForm({ friends, rewardGems }: { friends: FriendOption[]
       )}
 
       <div className="mt-4 flex justify-end">
-        <button
+        <Button
           type="button"
           disabled={!canSubmit}
           onClick={submit}
-          className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
         >
           <HeartHandshake className="h-4 w-4" />
           {isPending ? 'Introducing…' : 'Introduce them'}
-        </button>
+        </Button>
       </div>
     </div>
   )

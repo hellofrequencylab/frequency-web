@@ -30439,3 +30439,117 @@ red under `check:migrations --require-ledger` until it merges, and there were fo
 night this landed. Also unwritten: an operator surface for the `'*'` site rung. The resolver reads
 it and the test covers it; `CONTENT_EDIT_ROUTES` gates writes to real routes, so nothing can set it
 yet. Both are on the row, not in a new document.
+## ADR-1124: The slicing instrument goes into the repo, because slice 1's exhaustiveness claim could not be re-run — and there is no no-op bucket to find (2026-08-25)
+
+**Status:** accepted · advances `PROG-DAWN3` · amends [ADR-1119](#adr-1119) · rests on
+[ADR-928](#adr-928) and [ADR-1082](#adr-1082) · enforced by `scripts/dawn-bucket.mjs`, wired as the
+probe on `HYG-022` and `LIVE-114`
+
+### What slice 2 shipped
+
+The `primary × md` near-miss class: **40 raw `<button>`s across 31 files**, each now a bare
+`<Button>` carrying no `className` and no props — because `primary × md` **is** the primitive's
+default pair, which is why slice 2's result is smaller on the page than slice 1's
+`<Button size="sm">`. `raw-button-bg` 513 → 466, `literal-radius` 2291 → 2222.
+
+### Slice 1's estimate did not hold, and the miss mattered
+
+ADR-1119 pre-sized this slice at "49 sites in 37 files". Re-measured on `origin/main` at
+`de6c218cd`: **53 sites in 40 files**. Four sites and three files more — and the three files are
+the whole problem, because the PR size gate fails above 40 changed files and the source half alone
+would have sat exactly on the ceiling with the ADR, the backlog and the baselines still to add.
+A slice sized by an estimate is a slice that discovers at push time that it does not fit.
+
+This is [ADR-1082](#adr-1082) landing on the row that quotes ADR-1082. The figure was six hours
+old.
+
+### The correction that matters more: there is no set-equal bucket, and never was
+
+ADR-1119 describes its cut as "an **equivalence class** over the class string … Membership is
+decided by **set equality** against `components/ui/button.tsx`". Set equality is not what it
+measured and not what is available to measure. `BASE` emits three things no hand-rolled string in
+this tree carries:
+
+| gained | what it does | measured |
+| --- | --- | --- |
+| `tap-target` | `min-block-size: var(--tap-min, 32px)`; `--tap-min` rises to 44–56px across presets | `app/globals.css:1794` |
+| `press` | the one sanctioned pressed look | `app/globals.css`, INTERACTION-STATES §2 |
+| `lift-1` | **two box-shadows** — a 1px contact shadow and a wide soft one | `app/globals.css:2538` |
+
+ADR-1119 names the first two ("gains `tap-target`, `press` and the focus ring it had been
+re-deriving"). It does not name `lift-1`, and `lift-1` is the one that is not a re-derivation:
+**not one** retired string in either slice carried any shadow at all. So the honest criterion is
+**near-miss equality** — every token the primitive emits for the pair is present, and every token
+the site carries is one `BASE` already supplies — and the honest consequence, which no entry in
+the record had yet drawn, is that **every slice of this sweep moves rendered pixels on purpose.**
+
+That is the program working. `components/ui/button.tsx` calls `tap-target` "the fix for the most
+widespread touch defect in the product": both hand-rolled sizes computed under the 44px touch
+floor (`sm` → 29.75px, `md` → 38.25px), on the most-used interactive element in the app. Gaining
+it is the reason the primitive exists. Per owner ruling, both `lift-1` and `tap-target` are
+**accepted** and visual baselines are re-captured as slices land.
+
+Two smaller deltas, stated rather than buried: `disabled:opacity-40|60` → `50` on the sites that
+carried one, and 22 of the 40 sites carried a **literal** radius (11 `rounded-lg`, 11
+`rounded-xl`) that became the `rounded-control` role. `rounded-lg` → `rounded-control` is identical
+pixels at the base skin (`--radius-control` is 14px, `= --radius-lg`) and skin-responsive
+everywhere else; `rounded-xl` → `rounded-control` is a real 16px → 14px change at base, which is
+correct — a control should take the control role.
+
+### The rule this ADR adds: the query ships with the slice
+
+ADR-1119 requires a slice to "prove it is exhaustive for its class, by re-measuring the bucket
+after the sweep and getting 0", and reports that slice 1's bucket reads 0. Re-run today with the
+query committed here, **`primary × sm` reads 45 sites in 34 files**, of which slice 1 takes 43 in
+33. The two survivors are both in
+`app/(main)/admin/marketing/deliverability/requeue-button.tsx`, and the reason is worth the row it
+gets (`HYG-022`): **they carry `lift-1`**. They are *closer* to the primitive than the 43 that were
+converted, and an unwritten query that treats an unrecognised token as a disqualifier reads that
+as a reason to skip them.
+
+The two sites are trivia. The mechanism is not. **An exhaustiveness claim whose instrument exists
+only inside the agent that ran it is a claim about an intent, not about a set** — a reviewer cannot
+re-run it, CI cannot re-run it, and the next agent must re-derive it and will get a different
+answer, which is precisely what happened between ADR-1119's "49 in 37" and this slice's "53 in 40".
+So: **`scripts/dawn-bucket.mjs` is the cut**, it is the probe on both new rows, and a later slice
+runs it rather than re-deriving it.
+
+### The slice is deliberately not exhaustive, and here is the part it did not buy
+
+40 of the 53 shipped. The **13 sites in 9 files** left behind are exactly those whose file is
+**import-reachable from a surface `test/e2e/visual.spec.ts` photographs** (`EDITABLE_PAGES` +
+`/discover` + the member shell trio + the Space console). They are `LIVE-114`, and the residual is
+mechanically checkable: `dawn-bucket --size md` reads 13 after this sweep, not 0.
+
+Cutting *that* set, rather than an arbitrary three files, is what makes the shipped half
+**provably unable to move a committed baseline** — not one of its 31 files is in the import graph
+of any watched surface. Import-reachability is a deliberate **over**-estimate of render-reachability
+(several of the 9 are dialogs that only mount on an interaction), because that is the direction
+that cannot be wrong.
+
+This is disclosure, not caution: the brief for this slice warned that a silent truncation reads as
+"covered everything" when it did not, and ADR-1119's own re-freeze rule says a record must name the
+part it did not buy.
+
+### The coverage finding, which is the expensive one
+
+Slice 1's `pr-compare` failed 4 checks on `/spaces/<slug>/manage` — and exactly **one** of its 37
+converted sites sits on a watched surface. The other 36 moved unphotographed. **"140 passed" was
+not evidence they held still; it was evidence they are not looked at.** The watched-surface list is
+being widened on its own row on slice 1's branch (`HYG-026`); this ADR records only that slice 2's
+split was measured — **9 watched files, 31 unwatched** — and that the split is what the cut was
+made on.
+
+### What is NOT claimed
+
+No new gate. `dawn-bucket.mjs` is a measurement instrument and a backlog probe; nothing here
+changes what passes or fails CI. It does not parse `VARIANT`/`SIZE` out of the primitive — it
+mirrors them as data, so that editing the primitive makes this file disagree and demand an update
+in the same change, rather than silently re-defining every past slice's membership.
+
+### The wider point
+
+[ADR-1119](#adr-1119) got the hard half right: cutting an XL sweep by SHAPE instead of by address
+is what makes a 31-file diff one reviewable judgement instead of 31. What it left in the agent's
+head was the half a machine can hold. **A sweep's slicing query is not working notes; it is the
+definition of what shipped, and it belongs in the repo beside the gate whose number it moves.**

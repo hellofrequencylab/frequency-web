@@ -1542,10 +1542,46 @@
         "file": "docs/DAWN-CONVERSION.md",
         "ref": "Phase 3"
       },
-      "detail": "RE-CENSUSED 2026-08-25 (the 2026-08-19 figure had itself expired). On the ratchet basis ({app,components,lib}/**/*.tsx, tests and the primitives themselves excluded, comments blanked by check-adoption's own corpus loader): 1,830 raw <button>, 168 <input>, 4 <select>, 2 <textarea> = 2,004 sites, against the row's claimed 2,072. Two of the row's four sub-figures were bare-grep drift, which is the failure mode the row's own last paragraph warned about: it said 15 <select> and 4 <textarea> on a day the frozen baselines already read 4 and 2. Select and textarea are DONE (both sitting on their floors); input is not a sweep either (168 raw tags, but the ratchet's raw-input pattern counts 87 after excluding the hidden and sr-only file pickers no field primitive can receive). What is left is the button sweep and nothing else.\n\n── SLICE 1 SHIPPED 2026-08-25 (dawn/phase3-slice-1): the exact primary-small shape. 43 sites across 33 files whose className token set was EXACTLY the Button primitive's `primary × sm` string plus noise the primitive's BASE already absorbs, so every file took one identical edit and the result carries no className at all (the slicing rule and the disclosure rule are ADR-1119). raw-button-bg 513 → 463, literal-radius 2291 → 2228 (the literal rounded-lg/xl each of them carried, replaced by the rounded-control ROLE). That bucket is now EMPTY — re-measured at 0 sites after the sweep, so the slice is exhaustive for its class.\n\n── WHAT IS LEFT, WITH ITS ADDRESS. raw-button-bg = 463 (the ratcheted half). By directory: app/(main)/admin 66 · components/admin 33 · components/journey 33 · components/events 27 · components/on-air 23 · app/(main)/events 20 · components/spaces 20 · app/(main)/spaces 17 · components/studio 15 · app/(main)/settings 12; the tail is 100+ directories at under 12 each. Raw <button> overall = 1,787 in 587 files, so ~74% of button sites carry no primary fill and are a different (mostly ghost/secondary) sweep. SLICE 2 IS ALREADY IDENTIFIED AND SIZED: the exact primary-MEDIUM shape, 49 sites in 37 files, the same one edit at `size=\"md\"` — under the 40-file CI ceiling as it stands, so it ships as-is.\n\n── UNPARKED 2026-08-20 (owner ruling): scheduled into the build-out; sequence in meta.slate.",
+      "detail": "RE-CENSUSED 2026-08-25 (the 2026-08-19 figure had itself expired). On the ratchet basis ({app,components,lib}/**/*.tsx, tests and the primitives themselves excluded, comments blanked by check-adoption's own corpus loader): 1,830 raw <button>, 168 <input>, 4 <select>, 2 <textarea> = 2,004 sites, against the row's claimed 2,072. Two of the row's four sub-figures were bare-grep drift. Select and textarea are DONE (both on their floors); input is not a sweep either. What is left is the button sweep and nothing else.\n\n── HOW A SLICE IS CUT (ADR-1119, amended by ADR-1124). By SHAPE, not by directory: the set of raw <button> sites whose className is a NEAR-MISS for one `variant × size` of the Button primitive — every token the primitive emits for that pair is present, and every token the site carries is one the primitive's BASE already supplies. It is near-miss and NOT set-equality, because no raw <button> in the tree is set-equal to the primitive: BASE adds `tap-target`, `press` and `lift-1` on purpose. Converting GAINS those three, so EVERY SLICE MOVES RENDERED PIXELS — that is the program working, not a defect. The query is `scripts/dawn-bucket.mjs`; run it, do not re-derive it.\n\n── SLICE 1 (dawn/phase3-slice-1, ADR-1119): the `primary × sm` class, 43 sites in 33 files.\n\n── SLICE 2 SHIPPED 2026-08-25 (dawn/phase3-slice-2, ADR-1124): the `primary × md` class. MEASURED at 53 sites in 40 files, against slice 1's pre-sizing of 49 in 37 — the estimate did NOT hold, and 40 source files alone would have breached the 40-file CI ceiling. Cut to the 40 sites in 31 files that are NOT import-reachable from any surface test/e2e/visual.spec.ts photographs, so the slice cannot move a committed baseline. raw-button-bg 513 → 466, literal-radius 2291 → 2222. Because `primary × md` is the primitive's DEFAULT pair, every converted site is a bare <Button> with no className and no props.\n\n── WHAT IS LEFT, WITH ITS ADDRESS. raw-button-bg = 466 (the ratcheted half) before slice 1 merges, 423 after both slices land. The two named residues are HYG-022 (2 sites the `primary × sm` slice left behind) and LIVE-114 (the 13 `primary × md` sites on watched surfaces). Beyond them the remaining population is mostly ghost/secondary fills, a different sweep: raw <button> overall is ~1,787 in 587 files, so ~74% of button sites carry no primary fill at all.\n\n── UNPARKED 2026-08-20 (owner ruling): scheduled into the build-out; sequence in meta.slate.",
       "verify": {
         "kind": "manual",
-        "evidence": "Program phase; tracked live by the adoption ratchet (node scripts/check-adoption.mjs). Counts re-derived 2026-08-25 through check-adoption's own corpus loader, not a bare grep: raw-button-bg 463, raw-input 87, raw-select 4, raw-textarea 2, all sitting on their frozen baselines. Closes when raw-button-bg reaches 0.",
+        "evidence": "Program phase; tracked live by the adoption ratchet (node scripts/check-adoption.mjs) and cut by node scripts/dawn-bucket.mjs. Counts re-derived 2026-08-25 on origin/main at de6c218cd through check-adoption's own corpus loader, not a bare grep: raw-button-bg 466 after slice 2 (506 before it), raw-input 87, raw-select 4, raw-textarea 2. Closes when raw-button-bg reaches 0.",
+        "checked": "2026-08-25"
+      }
+    },
+    {
+      "id": "HYG-022",
+      "title": "The `primary × sm` bucket is not empty: 2 sites survived slice 1 because they carry the primitive's own `lift-1`",
+      "status": "open",
+      "lane": "hygiene",
+      "size": "XS",
+      "source": {
+        "file": "docs/DECISIONS.md",
+        "ref": "ADR-1124"
+      },
+      "detail": "ADR-1119 asserted that slice 1 was exhaustive for `primary × sm` — \"Slice 1's bucket reads 0\". Re-run on origin/main at de6c218cd with the query now committed as scripts/dawn-bucket.mjs, the class reads 45 sites in 34 files, of which slice 1 takes 43 in 33. The 2 left behind are both in app/(main)/admin/marketing/deliverability/requeue-button.tsx, and the reason is instructive: they carry `lift-1`, which is part of what the primitive itself emits for the primary variant. They are CLOSER to the primitive than the 43 that were converted, and an unwritten query that treated any unrecognised token as a disqualifier read that as a reason to skip them.\n\nThe finding is not the 2 sites; it is that an exhaustiveness claim whose instrument is not in the repo cannot be re-run by a reviewer, by CI, or by the next agent — so it is a claim about an intent rather than about a set. scripts/dawn-bucket.mjs is the fix; this row is the debt it exposed. Fold these 2 into any later `primary × sm` pass; do not open a PR for them alone.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node scripts/dawn-bucket.mjs --variant primary --size sm --expect 0 --quiet",
+        "note": "Measures the CONSEQUENCE: the `primary × sm` near-miss class is empty. Fails today at 45 (43 of which are slice 1's, in flight on dawn/phase3-slice-1) and will still fail at 2 once slice 1 merges, which is exactly the residue this row names.",
+        "checked": "2026-08-25"
+      }
+    },
+    {
+      "id": "LIVE-114",
+      "title": "13 `primary × md` buttons are deferred because they sit on surfaces the visual suite photographs",
+      "status": "open",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "docs/DECISIONS.md",
+        "ref": "ADR-1124"
+      },
+      "detail": "Slice 2 measured the `primary × md` class at 53 sites in 40 files and shipped 40 sites in 31 files. The 13 it did not ship are the ones whose file is import-reachable from a surface test/e2e/visual.spec.ts photographs (EDITABLE_PAGES + /discover + the member shell trio + the Space console), in 9 files: app/(main)/events/[slug]/ticket-button.tsx (2), app/(main)/nearby/broadcast-compose.tsx, app/(main)/settings/profile/profile-form.tsx, components/crm/import/import-wizard.tsx (4), components/on-air/mindless.tsx, components/on-air/movement-session.tsx, components/on-air/session.tsx, components/support/report-dialog.tsx, components/walkthroughs/walkthrough-card.tsx.\n\nThey were held back for ONE reason and it is not caution about the pixels: the owner has ruled that the sweep ships and baselines get re-captured as slices land. It is that slice 2 was already at 40 source files against a 40-file CI ceiling, so something had to be cut, and cutting the watched set is the only cut that leaves the shipped half provably unable to move a committed baseline. Ship these with a baseline re-capture, as their own PR. Note that `lift-1` + `tap-target` mean the re-capture is expected, not a surprise red — the same four checks slice 1 tripped on /spaces/<slug>/manage.\n\nImport-reachability is a SUPERSET of render-reachability: several of the 9 are dialogs or drawers that only mount on an interaction and so would not appear in an at-rest screenshot. The over-inclusion is deliberate — it is the direction that cannot be wrong.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node scripts/dawn-bucket.mjs --variant primary --size md --expect 0 --quiet",
+        "note": "Measures the CONSEQUENCE: the `primary × md` near-miss class is empty. Reads 13 today — exactly the deferred set, since slice 2 retired the other 40.",
         "checked": "2026-08-25"
       }
     },

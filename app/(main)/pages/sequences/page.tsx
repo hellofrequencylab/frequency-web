@@ -31,6 +31,7 @@ import { FunnelRowActions } from './funnel-actions'
 import { TRIGGER_CHIP } from '@/lib/walkthroughs'
 import { allRolePromotionWalkthroughs } from '@/lib/walkthroughs/role-promotion'
 import { RolePromotionPreview } from './role-promotion-preview'
+import { Button } from '@/components/ui/button'
 
 // Funnels (ADR-068 → ADR-162 → ADR-1090): the one library for the whole sign-up
 // front door. The FIRST entry is Funnel 1 — the current LIVE default (stored slug beta-default),
@@ -128,12 +129,11 @@ export default async function SplashFunnelsPage() {
             <ArrowLeft className="h-3.5 w-3.5" /> All pages
           </Link>
           <form action={createFromTemplateAction}>
-            <button
+            <Button
               type="submit"
-              className="inline-flex items-center gap-1.5 rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
             >
               <Plus className="h-4 w-4" /> Create from template
-            </button>
+            </Button>
           </form>
         </div>
       }
@@ -222,12 +222,11 @@ export default async function SplashFunnelsPage() {
               description="Every new member walks the template above. Start a funnel tuned to a specific audience when you want one."
               action={
                 <form action={createFromTemplateAction}>
-                  <button
+                  <Button
                     type="submit"
-                    className="inline-flex items-center gap-1.5 rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
                   >
                     <Plus className="h-4 w-4" /> Create from template
-                  </button>
+                  </Button>
                 </form>
               }
             />

@@ -13,6 +13,7 @@ import { EmptyState } from '@/components/ui/empty-state'
 import type { SpaceReviewsData, SpaceReviewItem, SpaceReviewResponse } from '@/lib/spaces/content-data'
 import { ProgressTrack } from '@/components/ui/progress-track'
 import { Textarea } from '@/components/ui/field'
+import { Button } from '@/components/ui/button'
 
 // THE REVIEWS TAB body (redesign). A best-in-class review experience: a rating summary with a per-star
 // distribution, a sortable review wall where each member card carries a Member badge + relative date,
@@ -482,15 +483,14 @@ function ReviewForm({ slug, initial }: { slug: string; initial: { rating: number
       {error && <p className="text-meta text-danger">{error}</p>}
       {note && <p className="text-meta text-success" role="status">{note}</p>}
       <div className="flex justify-end">
-        <button
+        <Button
           type="button"
           onClick={submit}
           disabled={pending}
-          className="inline-flex items-center gap-1.5 rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
         >
           {pending && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
           {initial ? 'Update review' : 'Post review'}
-        </button>
+        </Button>
       </div>
     </div>
   )
