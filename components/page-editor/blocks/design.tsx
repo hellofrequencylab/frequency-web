@@ -188,19 +188,24 @@ export function PhotoHeroBlock({
   layout?: LayoutValue
 }) {
   const hasImage = variant === 'image' && !!image
-  // A no-link button still renders (buttons always show once labelled) — the operator wires the link
-  // later, so a blank href falls back to '#'. Only an empty label hides a button.
-  const hasActions = !!(actionPrimaryLabel || actionSecondaryLabel)
+  // 🔴 A BUTTON NEEDS BOTH A LABEL AND A DESTINATION (LIVE-115, ADR-1147). This used to gate on the
+  // LABEL alone and fall back to `href={... || '#'}`, so an operator who typed a label and left the
+  // link box empty shipped a button that left the visitor exactly where they stood. `hasActions`
+  // therefore counts BUTTONS THAT WILL ACTUALLY RENDER, not labels — otherwise withholding both
+  // still drew the empty `mt-8` action row and left a gap under the copy.
+  const showPrimary = !!(actionPrimaryLabel && actionPrimaryHref)
+  const showSecondary = !!(actionSecondaryLabel && actionSecondaryHref)
+  const hasActions = showPrimary || showSecondary
 
   // The beside / below layouts read in the warm theme tokens (no scrim); only overlay-on-a-photo goes on-ink.
   const onInk = hasImage && display === 'overlay'
   const actions = hasActions ? (
     <div className={`mt-8 flex flex-wrap items-center gap-3 ${display === 'overlay' ? 'justify-center' : ''}`}>
-      {actionPrimaryLabel && (
-        <CtaButton href={actionPrimaryHref || '#'} label={actionPrimaryLabel} variant="primary" />
+      {showPrimary && (
+        <CtaButton href={actionPrimaryHref as string} label={actionPrimaryLabel as string} variant="primary" />
       )}
-      {actionSecondaryLabel && (
-        <CtaButton href={actionSecondaryHref || '#'} label={actionSecondaryLabel} variant="secondary" />
+      {showSecondary && (
+        <CtaButton href={actionSecondaryHref as string} label={actionSecondaryLabel as string} variant="secondary" />
       )}
     </div>
   ) : null
@@ -492,8 +497,12 @@ export function CardGridBlock({
                   >
                     {/* A whole-card link (email overhaul) applies to the title, so the card stays a single, valid
                         link even when it also has its own button. */}
+                    {/* The `|| '#'` this line used to carry was DEAD (LIVE-115): the ternary has
+                        already tested safeHref(card.href), so no visitor could ever reach the
+                        fallback. The cast is what the ternary proves and TypeScript cannot narrow
+                        across two calls; removing the '#' stops this reading as a seventh instance. */}
                     {safeHref(card.href) ? (
-                      <Link href={safeHref(card.href) || '#'} className="transition-colors hover:text-primary-strong">
+                      <Link href={safeHref(card.href) as string} className="transition-colors hover:text-primary-strong">
                         {card.title}
                       </Link>
                     ) : (
@@ -509,9 +518,14 @@ export function CardGridBlock({
                 {role === 'testimonial' && card.by && (
                   <p className="mt-auto text-body-sm font-semibold text-text">{card.by}</p>
                 )}
-                {card.button?.label && (
+                {card.button?.label && safeHref(card.button.href) && (
                   <div className="mt-auto pt-1">
-                    <CtaButton href={safeHref(card.button.href) || '#'} label={card.button.label} variant="secondary" withArrow={false} />
+                    <CtaButton
+                      href={safeHref(card.button.href) as string}
+                      label={card.button.label}
+                      variant="secondary"
+                      withArrow={false}
+                    />
                   </div>
                 )}
               </div>
@@ -519,11 +533,13 @@ export function CardGridBlock({
           ))}
         </div>
       )}
-      {/* Browse link shows once labelled; a missing link falls back to '#' until the operator sets one. */}
-      {browseLabel && (
+      {/* Browse link needs BOTH a label and a destination (LIVE-115): a labelled link with no href
+          used to render at '#' and go nowhere. `browseSafe` is also what an UNSAFE url degrades to,
+          so this withholds the link in that case too, which is the same correct answer. */}
+      {browseLabel && browseSafe && (
         <div className="mt-10">
           <Link
-            href={browseSafe || '#'}
+            href={browseSafe}
             className="inline-flex items-center gap-2 text-body-sm font-bold uppercase tracking-[0.18em] text-primary-strong hover:underline"
           >
             {browseLabel}
@@ -617,10 +633,11 @@ export function ZigzagBlock({
           <InlineRich value={lead} className="text-body-lg leading-relaxed text-muted" />
         )}
       </div>
-      {/* Link shows once labelled; a missing link falls back to '#' until the operator sets one. */}
-      {ctaLabel && (
+      {/* Both, or neither (LIVE-115). `ctaSafe` is also the degradation for an unsafe url, so a
+          blocked destination withholds the link rather than pointing it at nothing. */}
+      {ctaLabel && ctaSafe && (
         <Link
-          href={ctaSafe || '#'}
+          href={ctaSafe}
           className="mt-6 inline-flex items-center gap-2 text-body-sm font-bold uppercase tracking-[0.18em] text-primary-strong hover:underline"
         >
           {ctaLabel}
@@ -704,11 +721,11 @@ export function AccentBeatBlock({
         <DesignHeading title={title} accentWord={accentWord} headerFont={headerFont} />
       )}
       <InlineRich as="p" value={body} className="mx-auto mt-5 max-w-xl text-body-lg text-muted" />
-      {/* Buttons always show once labelled (a no-link button falls back to '#' until the operator sets a
-          link); only a blank label hides the CTA. */}
-      {mode === 'cta' && ctaLabel && (
+      {/* Both, or neither (LIVE-115). A CTA band with a label and no destination used to draw the
+          page's most prominent button straight at '#'. */}
+      {mode === 'cta' && ctaLabel && ctaSafe && (
         <div className="mt-8">
-          <CtaButton href={ctaSafe || '#'} label={ctaLabel} variant="primary" />
+          <CtaButton href={ctaSafe} label={ctaLabel} variant="primary" />
         </div>
       )}
     </div>

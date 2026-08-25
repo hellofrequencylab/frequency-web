@@ -40,7 +40,6 @@ vi.mock('@/lib/ai/circle-spark', () => ({
   suggestCircleDraft: vi.fn(async () => null),
   fallbackCircleSuggestion: vi.fn(() => ({})),
 }))
-vi.mock('@/lib/beta/referral-contest', () => ({ recordCircleStarterMilestone: vi.fn(async () => {}) }))
 
 // Admin client: circles.name + profiles.display_name reads, and the invite_links insert.
 vi.mock('@/lib/supabase/admin', () => ({

@@ -32194,3 +32194,114 @@ whether to wire a cron or delete the sweep is an owner ruling about whether the 
 - `scripts/maintenance/dead-exports.mjs` fails only when its own walk stops descending (a 2,000-file
   floor). It is a report, so it must not be a gate: a gate over 1,343 findings that nobody can action
   is the shape [ADR-970](#adr-970) warns about.
+
+---
+
+## ADR-1146: the beta referral contest is removed, and the backlog's parked set shrinks to three (2026-08-25)
+
+**Status:** Accepted · owner ruling 2026-08-25 · SCAN-510 (closed), SCAN-511 (filed), HYG-028 (closed as superseded)
+
+**Context.** SCAN-510 asked one question: is the beta referral contest live? The owner ruled **no**.
+
+**The ruling settles it at the wider scope, because the whole feature was provably inert.** Measured
+on production the same day:
+
+| signal | value |
+| :-- | :-- |
+| `platform_flags.beta_referral_contest` | **false** |
+| `beta_referrals` rows | **0** |
+| `reward_grants` with `beta_contest.*` | **0** |
+| `/referral` while the flag is off | `notFound()` — unreachable |
+
+**Decision.** Remove the feature: `lib/beta/referral-contest.ts` (423 lines) and its test, the
+`/referral` route and its `copy-link` client component, the `recordReferralActivation` call in
+`lib/qr/referral.ts`, the `recordCircleStarterMilestone` call in `app/(main)/circles/actions.ts`,
+three now-pointless `vi.mock` lines, and a stale cross-reference in `lib/zaps.ts`.
+
+**⚠️ The table is deliberately left behind, and that is the interesting half.** `public.beta_referrals`
+stays, filed as **SCAN-511**. The repo's own sequencing rule — stated in `20260925000000`'s header
+about `commerce_variants` — is *drop the write, deploy, THEN drop the table*. Dropping a table in the
+same change that removes its callers is precisely the shape [ADR-1144](#adr-1144) was written about,
+where a drop and its code moved out of step and a feature silently never worked for a month. Here the
+order is deliberate rather than accidental.
+
+**The parked set is now exactly three**, by the same ruling: `DEF-MOBILE` (the mobile app),
+`DEF-ETSY` (the full Etsy-grade marketplace build) and `PROG-W6` (white-labeled member sites + the
+theme marketplace). Everything else belongs on the active production list, so `OWN-005` (cron
+monitoring), `OWN-011` (Google OAuth verification) and `DEF-A2P` (10DLC registration) were
+**un-parked**.
+
+**`PROG-E10` stays active**, and the distinction matters: it is *"Editor E10: Sites — absorbs White
+Label W1–W5"*, the final phase of the E0–E10 Editor programme. Parking it would land E0–E9 with
+nothing consuming them. The white-label work that is parked is `PROG-W6` — member sites and the theme
+marketplace — not the Sites engine itself.
+
+**Consequences.**
+- SCAN-510's probe is **inverted** by the ruling. It used to demand a cron for the sweep; it now
+  asserts the feature stays gone — four named files absent, and no `.ts`/`.tsx` anywhere mentioning
+  the module or its four entry points, so a re-add under a new filename still fails. It carries a
+  2,000-file walk floor so a walk that stopped descending cannot pass by not looking (ADR-970).
+- **HYG-028 is closed as superseded**, and its headline was wrong. It asserted *"THE RETIREMENT WAS
+  WRONG, and that is the finding"* about `listing_saves`. ADR-1144 established the opposite: the
+  retirement was correct on the day it was made and the callers arrived twenty days later. Two rows
+  described one thing and one of them asserted what the other disproves; the one list keeps the
+  accurate one.
+
+---
+
+## ADR-1147: a button needs a destination, and a stale census held three rows open (2026-08-25)
+
+**Status:** Accepted · `components/page-editor/blocks/design.tsx`, `design.cta-href.test.tsx`,
+`scripts/stored-links.json` · LIVE-115 (closed), LIVE-108 + LIVE-109 (closed), LIVE-104 (re-scoped)
+
+**Context — the code half.** ADR-1125 fixed `SpaceCallout` and `SpaceCTA`: a button must require BOTH
+a label and a destination, not fall back to `href='#'`. **The same shape survived in six more
+renderers** in `design.tsx`, four of which said so in their own comments (*"a missing link falls back
+to '#' until the operator sets one"*). All six now gate on both.
+
+**The seventh was a false positive, and it is worth recording.** The card-title link already sat
+inside `safeHref(card.href) ? …`, so its `|| '#'` was **dead code the type checker forced**, not a
+route any visitor could reach. It is gone too, so the site stops reading as a seventh instance.
+
+**⚠️ The three behind `safeHref()` are not a separate case**, which is what made LIVE-115 a triage row
+rather than a sweep. `'#'` is *also* what an unsafe url degrades to there. Withholding the link is the
+correct answer to **both** — a blocked destination and a missing one are equally not somewhere to send
+someone. One wrapper bug went with it: `hasActions` counted **labels**, so withholding every button
+still drew the empty action row and left a gap under the copy.
+
+**Context — the census half, which is the more interesting failure.** `scripts/stored-links.json`
+carried `capturedAt: 2026-08-25` while its **body still held the 2026-08-24 reading**. Three probes
+(LIVE-104/108/109) derive their verdict from that file, so all three went on agreeing with `open`
+from a snapshot that no longer described production. **A date moved without the data moving with it.**
+
+That is precisely the failure **HYG-023** already names: *the stored-links census has no checker and
+no freshness rule.* It is [ADR-970](#adr-970) in a new costume — the probes were not skipping, they
+were confidently reporting a past.
+
+**What live production actually holds**, re-measured:
+
+| store | documents | set hrefs | targets |
+| :-- | --: | --: | :-- |
+| `pages.data` (drafts) | 3 | 3 | all `/join` |
+| `pages.published_data` | 1 | 5 | all `/join` |
+| `spaces.preferences.pageDocs` | 18 | 16 | all `#contact` |
+
+**Decision.** Close **LIVE-108** (`/onboarding/beta` is gone from every store) and **LIVE-109** (the 18
+Space documents now point at `#contact`, zero at `'#'` — which is exactly what the owner ruled on
+2026-08-25 should happen, already shipped). Re-capture the census from live.
+
+**⚠️ The "hardcodes production" half needed a second look rather than a celebration.** Four Spaces
+still match `frequencylocal.com` — but every hit is an `image` prop at
+`https://api.frequencylocal.com/storage/v1/...`, a Supabase **storage** url on the `api` subdomain,
+absolute by nature and not navigation. No stored document has a *link* that hardcodes the site origin.
+
+**LIVE-104 stays open and its headline changes.** *"and it is a retired address"* is no longer true.
+What remains is the half that was always the real finding: **five anchors, one destination.** The two
+`CallToAction` bands offer *"Start a Circle"* and *"or just join as a member"* as separate labels
+pointing at the **same** url. The fix is content, not code — the document needs second destinations
+(`/discover/events`, `/discover/spaces`, `/help` are all live) set through the page editor.
+
+**Consequences.**
+- A snapshot a probe reads is **an input, not evidence**. Re-derive it before trusting a verdict built
+  on it, and give it a freshness rule — HYG-023 is now the row that matters most in the hygiene lane,
+  because two others were hiding behind it.

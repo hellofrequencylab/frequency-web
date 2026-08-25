@@ -100,7 +100,7 @@ export interface ZapAwardResult {
    *  already spent for this UTC day (award_zaps_atomic, 20270322000000). Mirrors the `capped`
    *  flag on the Gem path's AwardResult, but stays OPTIONAL here on purpose: several callers
    *  already write `.catch(() => ({ awarded: false, amount: 0 }))` as their failure fallback
-   *  (lib/qr/referral.ts, lib/beta/referral-contest.ts), and a required third field would make
+   *  (lib/qr/referral.ts), and a required third field would make
    *  those literals stop type-checking for no gain. Absent means "not a cap refusal". */
   capped?: boolean
 }

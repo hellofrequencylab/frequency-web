@@ -82,20 +82,41 @@ describe('DesignBlockView — an empty slot renders nothing on the live page (no
   })
 })
 
-describe('DesignBlockView button always shows once labelled (Fix 8)', () => {
-  it('photoHero renders the button with NO link set (falls back to #)', () => {
+// 🔴 REVERSED 2026-08-25 (LIVE-115, ADR-1147), AND THE REVERSAL IS DELIBERATE. These two tests used to
+// pin the OPPOSITE contract — "button always shows once labelled (Fix 8)", asserting href="#" — and that
+// rule is what shipped 18 dead "Get in touch" buttons to production and left seven more renderers able to
+// do the same. ADR-1125 overturned it for SpaceCallout/SpaceCTA; ADR-1147 finishes the job here. A label
+// with no destination is not a button, it is a promise the page cannot keep, so it is WITHHELD.
+//
+// DesignBlockView is an ADAPTER over components/page-editor/blocks/design.tsx, not a second renderer, so
+// these assertions and design.cta-href.test.tsx are two views of one contract — which is exactly why this
+// file went red the moment the contract changed, and why it is updated rather than deleted.
+describe('DesignBlockView withholds a button that has no destination (LIVE-115)', () => {
+  it('photoHero draws NO button when labelled with no link', () => {
     const html = renderToStaticMarkup(
       <DesignBlockView id="photoHero" props={{ title: 'Hi', buttonLabel: 'Get started' }} />,
     )
-    expect(html).toContain('Get started')
-    expect(html).toContain('href="#"')
+    expect(html).not.toContain('href="#"')
+    expect(html).not.toContain('Get started')
+    // The block itself still renders — the title is real content.
+    expect(html).toContain('Hi')
   })
 
-  it('accentBeat renders the CTA with no link (falls back to #)', () => {
+  it('photoHero draws the button once a destination is set', () => {
+    const html = renderToStaticMarkup(
+      <DesignBlockView id="photoHero" props={{ title: 'Hi', buttonLabel: 'Get started', buttonUrl: '/join' }} />,
+    )
+    expect(html).toContain('Get started')
+    expect(html).toContain('href="/join"')
+  })
+
+  it('accentBeat draws NO CTA when labelled with no link', () => {
     const html = renderToStaticMarkup(
       <DesignBlockView id="accentBeat" props={{ title: 'Hi', buttonLabel: 'Join now' }} />,
     )
-    expect(html).toContain('Join now')
+    expect(html).not.toContain('Join now')
+    expect(html).not.toContain('href="#"')
+    expect(html).toContain('Hi')
   })
 
   it('the button toggle OFF (buttonOn:false) hides the button entirely', () => {
