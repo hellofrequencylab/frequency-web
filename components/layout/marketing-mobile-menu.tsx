@@ -80,11 +80,25 @@ export function sheetGroups(menu: ResolvedMenu, viewer: MenuViewer): SheetGroup[
 export function MarketingMobileMenu({
   light,
   headerMenu,
+  viewer,
+  isAuth = false,
 }: {
   light: boolean
   /** The resolved `header` menu (server-fetched, threaded through MarketingHeader).
    *  Falls back to the code default, exactly like PrimaryNav, so the sheet never breaks. */
   headerMenu?: ResolvedMenu
+  /** WHO is looking, for menu gating. Defaults to the logged-out visitor, which is what
+   *  MarketingHeader has always passed implicitly and still means. SiteHeader passes a real
+   *  viewer: it renders on /discover/* and /help, where a signed-in member is ordinary
+   *  (LIVE-110), and a sheet gated as 'visitor' would hide from that member exactly the rows
+   *  the desktop bar beside it shows them. Mirrors PrimaryNav's `viewerRole`. */
+  viewer?: MenuViewer
+  /** Whether the viewer is signed in, for the FOOTER only — deliberately separate from
+   *  `viewer`, exactly as PrimaryNav keeps `isAuth` separate from `viewerRole`. A janitor
+   *  previewing as a visitor has viewerRole 'visitor' AND isAuth true, and both are correct:
+   *  the nav should hide what a visitor cannot see, and the footer should not offer to sign
+   *  in someone who already is. */
+  isAuth?: boolean
 }) {
   const [open, setOpen] = useState(false)
   const [openGroups, setOpenGroups] = useState<readonly string[]>([])
@@ -93,11 +107,13 @@ export function MarketingMobileMenu({
   const openButtonRef = useRef<HTMLButtonElement>(null)
   const closeButtonRef = useRef<HTMLButtonElement>(null)
 
-  // The public marketing header is always a logged-out 'visitor' for menu purposes (the
-  // same token PrimaryNav passes), so the sheet hides exactly what the bar hides.
+  // The sheet hides exactly what the bar beside it hides, because both gate on the SAME
+  // viewer token. MarketingHeader passes none and gets 'visitor' — the marketing chrome is
+  // always logged-out for menu purposes, which is what this line used to hardcode. SiteHeader
+  // passes the real one.
   const groups = useMemo(
-    () => sheetGroups(headerMenu ?? defaultMenu('header'), { viewerRole: 'visitor' }),
-    [headerMenu],
+    () => sheetGroups(headerMenu ?? defaultMenu('header'), viewer ?? { viewerRole: 'visitor' }),
+    [headerMenu, viewer],
   )
 
   useEffect(() => {
@@ -252,21 +268,38 @@ export function MarketingMobileMenu({
               })}
             </nav>
 
+            {/* The footer follows the VIEWER, not the surface. This sheet now also rides
+                SiteHeader on /discover/* and /help (LIVE-110), where a signed-in member is
+                ordinary rather than an edge case — and the logged-out pair invited a member
+                who is already here to sign in and then to join a beta they are in, which is
+                the kind of copy that tells a member the product does not know them. */}
             <div className="mt-4 flex flex-col gap-2">
-              <Link
-                href="/sign-in"
-                onClick={close}
-                className="rounded-control border border-border py-2.5 text-center text-body font-semibold text-text transition-colors hover:bg-surface-elevated"
-              >
-                Sign in
-              </Link>
-              <Link
-                href={BETA_CTA_HREF}
-                onClick={close}
-                className="rounded-xl bg-primary py-2.5 text-center text-body font-bold text-on-primary transition-colors hover:bg-primary-hover"
-              >
-                {BETA_CTA_LABEL}
-              </Link>
+              {isAuth ? (
+                <Link
+                  href="/feed"
+                  onClick={close}
+                  className="rounded-xl bg-primary py-2.5 text-center text-body font-bold text-on-primary transition-colors hover:bg-primary-hover"
+                >
+                  Your feed
+                </Link>
+              ) : (
+                <>
+                  <Link
+                    href="/sign-in"
+                    onClick={close}
+                    className="rounded-control border border-border py-2.5 text-center text-body font-semibold text-text transition-colors hover:bg-surface-elevated"
+                  >
+                    Sign in
+                  </Link>
+                  <Link
+                    href={BETA_CTA_HREF}
+                    onClick={close}
+                    className="rounded-xl bg-primary py-2.5 text-center text-body font-bold text-on-primary transition-colors hover:bg-primary-hover"
+                  >
+                    {BETA_CTA_LABEL}
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         </div>

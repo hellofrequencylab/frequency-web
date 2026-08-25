@@ -9,6 +9,7 @@
 // (including hidden items), the renderer does the per-role / per-mode filtering.
 
 import { menuDb } from './db'
+import { briefError } from '@/lib/log'
 import { defaultMenu, DEFAULT_MENU_SETTINGS } from './defaults'
 import { applyRegistryGates } from './gates'
 import { STAFF_DOMAINS, ACCESS_LEVELS, type StaffDomain, type Access } from '@/lib/core/staff-roles'
@@ -248,7 +249,7 @@ export async function getMenu(
     menuQuery = spaceId == null ? menuQuery.is('space_id', null) : menuQuery.eq('space_id', spaceId)
     const { data: menuRows, error: menuError } = await menuQuery.limit(1)
     if (menuError) {
-      console.error('[menus] getMenu menu query failed', surfaceKey, menuError.message)
+      console.error('[menus] getMenu menu query failed', surfaceKey, briefError(menuError))
       return defaultMenu(surfaceKey)
     }
     const menu = (menuRows ?? [])[0]
@@ -277,7 +278,7 @@ export async function getMenu(
       console.error(
         '[menus] getMenu child query failed',
         surfaceKey,
-        categoriesRes.error?.message ?? itemsRes.error?.message ?? railCardsRes.error?.message,
+        briefError(categoriesRes.error ?? itemsRes.error ?? railCardsRes.error),
       )
       return defaultMenu(surfaceKey)
     }
@@ -306,7 +307,7 @@ export async function getMenu(
     // the code again. Order, grouping, labels, icons and on/off stay the operator's.
     return applyRegistryGates(resolved)
   } catch (err) {
-    console.error('[menus] getMenu threw, falling back to defaults', surfaceKey, err)
+    console.error('[menus] getMenu threw, falling back to defaults', surfaceKey, briefError(err))
     return defaultMenu(surfaceKey)
   }
 }
@@ -341,13 +342,13 @@ export async function getSyncedDefaultKeys(
     query = spaceId == null ? query.is('space_id', null) : query.eq('space_id', spaceId)
     const { data, error } = await query.limit(1)
     if (error) {
-      console.error('[menus] getSyncedDefaultKeys failed', surfaceKey, error.message)
+      console.error('[menus] getSyncedDefaultKeys failed', surfaceKey, briefError(error))
       return []
     }
     const raw = (data ?? [])[0]?.synced_default_keys
     return Array.isArray(raw) ? raw.map(String) : []
   } catch (err) {
-    console.error('[menus] getSyncedDefaultKeys threw', surfaceKey, err)
+    console.error('[menus] getSyncedDefaultKeys threw', surfaceKey, briefError(err))
     return []
   }
 }
@@ -365,7 +366,7 @@ export async function getMenuSettings(): Promise<MenuSettings> {
       .eq('id', 1)
       .limit(1)
     if (error) {
-      console.error('[menus] getMenuSettings failed', error.message)
+      console.error('[menus] getMenuSettings failed', briefError(error))
       return DEFAULT_MENU_SETTINGS
     }
     const row = (data ?? [])[0]
@@ -376,7 +377,7 @@ export async function getMenuSettings(): Promise<MenuSettings> {
       fadeMs: row.fade_ms ?? DEFAULT_MENU_SETTINGS.fadeMs,
     }
   } catch (err) {
-    console.error('[menus] getMenuSettings threw, falling back to defaults', err)
+    console.error('[menus] getMenuSettings threw, falling back to defaults', briefError(err))
     return DEFAULT_MENU_SETTINGS
   }
 }

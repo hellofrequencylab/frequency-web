@@ -32758,3 +32758,257 @@ the half with no compiler to notice.
 
 `check:adr` caught the third omission in the same run: this ADR was cited by the drop migration before
 it was written. *A citation is a promise that a reader can go and find the reasoning.*
+
+## ADR-1156: a blocker can be real and still be measured by the wrong instrument (2026-08-25)
+
+**Context.** ADR-1082 established that a blocker phrased as "cannot be checked" is a claim with an
+expiry date, and re-testing five such premises found five expired. That rule catches a row whose
+*answer* has changed. It does not catch a row whose *question* was aimed at the wrong number. Two
+owner-lane rows were re-measured today and both turned out to be that second, quieter failure: the
+work was real, the blocker was real, and the figure the row reported to the owner was measuring
+something else.
+
+**OWN-011 — Google OAuth verification.** Every prior re-measure read `auth.identities` by provider
+(google 33, most recent 2026-08-20) and reported Google's 100-user unverified-app cap as "about a
+third consumed and flat". Google's cap counts users who have granted a **sensitive or restricted**
+scope. Sign-in requests basic profile and email, which are neither, and are not capped.
+[ADR-374](DECISIONS.md) is exactly what makes the two easy to conflate — the contacts import
+deliberately reuses the sign-in OAuth client rather than minting a second one, so both flows sit
+behind one client id and read as one population.
+
+The instrument that actually counts is who has granted `contacts.readonly`, and the import stamps
+every row it writes with `source='import'`. Production `network_contacts` by source: **269 rows
+across one distinct `owner_id`**, most recent 2026-07-28. One member has ever completed that consent.
+**The cap is at 1/100, not 33/100** — the row overstated its own pressure by 33x. What survives is
+smaller and sharper: a Safe Browsing review requested 2026-06-23 against a stated ~72-hour
+turnaround is now **63 days** old. A 72-hour review that has been "pending" for two months is not
+pending; it resolved and nobody looked.
+
+**OWN-020 — config and env.** The VAPID half closed on the row's own stated condition: production
+`/api/status` returns `"push":true`, so `VAPID_PRIVATE_KEY` is set and push sending is live. That is
+the [ADR-1064](DECISIONS.md)-shaped move working as designed — publish the consequence, never the
+secret. The Resend half was the mismeasured one. The row asks to "verify frequencylocal.com in
+Resend, plus SPF/DKIM/DMARC subdomain isolation" as a single undone unit; DNS says two thirds of it
+shipped some time ago and nobody recorded it. `send.frequencylocal.com` MXes to Resend's SES backend
+and publishes a live `resend._domainkey`, neither of which Resend issues before verification
+completes — so verification is done, **and it is done on an isolated subdomain**, which was the
+entire point of the ask. The apex carries an enforcing `p=quarantine` DMARC with a `rua`, an SPF
+that resolves to Google Workspace alone, and a 2048-bit Workspace DKIM.
+
+Two records really are missing, and neither is the one the row names: the sending subdomain
+publishes **no SPF TXT at all** (so every Resend send fails the SPF leg — DMARC still passes on the
+DKIM leg under relaxed alignment, which is why nothing broke and nothing reported it), and its DKIM
+key is **1024-bit** against the 2048 that Google's and Yahoo's bulk-sender rules call for.
+
+**Decision.** Both rows keep their status and record the correction in place, with the measurement
+that produced it. Neither correction closes its row; both change what the owner is asked to do next,
+and one of them removes an urgency that was never there.
+
+**Consequences.** The generalization worth carrying: *a probe measures the consequence, and a row's
+own evidence line has to name which consequence.* "33 Google identities" and "1 contacts.readonly
+grant" are both true facts about the same production database, and only one of them is about the
+100-user cap. Where a row reports a number to the owner, the evidence line must state what that
+number is a count OF — an unlabelled figure is how a row can be re-measured four times and stay
+wrong in the same way each time. The two DNS gaps are new, real, and at-volume: they are recorded on
+OWN-020 rather than opened as a new row, because [ADR-1043](DECISIONS.md) says findings become
+backlog entries on the row that owns them, not new documents.
+
+## ADR-1157: a throttle belongs where it can bind, and four of eight already had one (2026-08-25)
+
+**Context.** OWN-040 carried the item *"set daily_cap on the circle_start (100 Zaps) and
+circle_activate (40 Zaps) rows at /admin/gamification"*, added when
+[ADR-1109](DECISIONS.md) / migration `20270322000000` finally taught the Zap path to read
+`daily_cap` at all. Asked how wide to go, the owner ruled: cap every self-triggerable creation
+action, not just the two. A census of all 23 `zap_config` rows says the original item was **too
+narrow in one place and too broad in five**, and that "cap all eight" would have manufactured five
+dead gates.
+
+**What the census found.** Only 2 of 23 rows carried a cap. Eight actions are self-triggerable
+"create a thing" payouts. They are not one population:
+
+| Action | Zaps | Writer | Verdict |
+| --- | --- | --- | --- |
+| `circle_start` | 100 | `awardZapsForAction` | ⚠️ uncapped, cappable → **cap 1/day** |
+| `event_host` | 60 | `awardZapsForAction` | 🔴 uncapped, **not on the row at all** → **cap 2/day** |
+| `circle_activate` | 40 | `awardZapsForAction` | ⚠️ uncapped, cappable → **cap 2/day** |
+| `create_journey` | 100 | `awardZaps` | ✅ validation-gated, once per asset ever |
+| `create_event` | 50 | `awardZaps` | ✅ same |
+| `create_practice` | 40 | `awardZaps` | ✅ same |
+| `entry_point_created` | 20 | `awardZapsForAction` | ✅ lifetime cap of 5 in code |
+| `practice_full_cycle` | 50 | *none* | ✅ legacy row, nothing awards it |
+
+**The too-narrow half.** `event_host` pays 60 Zaps unconditionally at the end of `createEvent`
+(`app/(main)/events/actions.ts:462`). Create an event, collect 60, repeat, unbounded. It is the
+largest self-triggerable payout in the table and no backlog row named it — the item was written
+from the two actions someone happened to be looking at, not from the table.
+
+**The too-broad half, which is the more interesting one.** `daily_cap` is read in exactly one
+place: `awardZapsForAction`. The three `create_*` actions are paid only by
+`awardValidatedCreation` on the `awardZaps` path, which does not read it and says so in its own
+header. A cap set on those rows would gate **nothing** while displaying in `/admin/gamification`
+as a configured throttle — ADR-970's named failure, committed inside the very table that
+`20270322000000` exists to repair, four months after that repair. It would also be *weaker* than
+what already guards them: the payout requires a distinct, email-verified member who was not
+invited by the creator to actually use the asset, and pays once per asset **ever** via a
+`reward_grants` rule key. `awardValidatedCreation`'s header already states the design in one line:
+*"Uncapped (the validation gate is the throttle)."*
+
+`entry_point_created` is capped at five per lifetime in code. `practice_full_cycle` has no writer
+at all — the string survives in the seed, in `ZAP_AMOUNTS`, in a test, and in
+`lib/economy/ledger.ts:191` where it is labelled *"(legacy)"*.
+
+**Decision.** Migration `20270340000000` caps three rows — `circle_start` 1/day, `event_host`
+2/day, `circle_activate` 2/day — and deliberately caps nothing else. The numbers come from what
+each action means rather than from its size: founding a circle is described in its own seed row as
+*"the rarest, highest act of leadership"*, so 1; hosting is the point of the product, so 2, sitting
+above ordinary use and below a farming loop; claiming legitimately repeats for a crew member
+working a small backlog, so 2 rather than 1.
+
+**Consequences.** The migration's self-test asserts exactly three rows moved, that they carry the
+intended values (a count alone would pass if they moved wrongly), and that the two pre-existing
+caps were not touched — the blast-radius arm, since a mis-scoped `UPDATE` is the only way this
+change could do harm. It carries one more arm that is not about this write at all: a **standing
+control** that the five deliberately-uncapped actions are still `NULL`. If a later change caps one
+of them, the reasoning above has been contradicted, and the next fresh apply fails naming the row
+rather than letting the contradiction land silently.
+
+When a cap binds it withholds the Zap payout only — the circle is still founded, the event is still
+created. Seeding a launch batch costs Zaps, not work.
+
+The generalization: *"add a throttle" is not one decision, it is one per site, and the first
+question is whether the throttle can reach that site at all.* Five of these eight were already
+throttled — three by a stronger gate, one by a lifetime cap, one by having no code path — and the
+only way to know that was to read each writer. A ruling to "cap them all" applied literally would
+have shipped five switches that gate nothing and read as coverage.
+
+## ADR-1158: the phone sheet moves to the browse surface, and follows the viewer there (2026-08-25)
+
+**Context.** `SiteHeader` renders on every `/discover/*` and `/help` page — the public browse
+surface the sitemap advertises — and its `PrimaryNav` is `hidden md:block`. Its own comment said
+so plainly: *"Desktop only; mobile relies on the prominent CTA + footer nav until a drawer
+ships."* So below `md`, a visitor to any of those pages had a wordmark, a search glyph and a CTA,
+and no header navigation whatsoever. [ADR-1118](DECISIONS.md) fixed the same shape one component
+over, on `MarketingHeader`, and deliberately did not bundle this: a different component with its
+own header-fit contract and its own visual baselines.
+
+**Decision.** Reuse the sheet rather than build a second one. `MarketingMobileMenu` is already a
+pure projection of a `ResolvedMenu`, and `SiteHeader` already fetches the same `headerMenu`, so
+the change is a mount plus two optional props. `ViewerMobileMenu` joins `viewer-chrome.tsx` for
+the client-auth path, mirroring `ViewerPrimaryNav` exactly — same `useViewer` hook, same
+`viewerRoleFor` collapse — so on a statically-rendered `/discover` page the sheet and the bar
+agree about who is looking once `/api/viewer` answers, and agree before it too, both rendering
+the anonymous view that a crawler gets.
+
+**The viewer-aware half is two props, and they stay separate on purpose.** `viewer` gates the nav
+rows; `isAuth` decides only the footer. That mirrors `PrimaryNav`, which already keeps
+`viewerRole` apart from `isAuth`, and the reason is a real case rather than symmetry: a janitor
+previewing as a visitor carries `viewerRole: 'visitor'` **and** `isAuth: true`, and both readings
+are correct at once — hide what a visitor cannot see, and do not offer to sign in someone who
+already is. Collapsing them into one flag makes one of those two wrong.
+
+**A second defect the row did not name.** The sheet's footer was an unconditional *"Sign in"* +
+join-the-beta pair. On `MarketingHeader` that is right — the marketing chrome is always
+logged-out for menu purposes. On `SiteHeader` it is not: `/discover` is an ordinary destination
+for a signed-in member, and the pair would have invited that member to sign in, and then to join
+a beta they are already in. That is copy that tells a member the product does not know them. The
+footer now branches on `isAuth`; the signed-in arm is one *"Your feed"* link.
+
+**Consequences.** `MarketingHeader`'s call site is byte-for-byte unchanged — both new props are
+optional and default to the visitor reading it always had — and its existing test pins that call
+by exact string. **That test passing unmodified is the proof this change is additive**, which is
+worth more than a new assertion would have been.
+
+The mobile search glyph stays, deliberately: search is the other half of a browse surface, and a
+nav sheet is not a search field. Both controls are `shrink-0` and the wordmark is this header's
+one flexible child, which is the same fit contract `MarketingHeader` states and what keeps the
+added button off the right edge below ~500px.
+
+Twelve cases in `marketing-mobile-menu.test.ts`. The behavioural arm drives `sheetGroups` with a
+member-gated menu and asserts a visitor sees `['/pub']` where a member sees `['/pub','/mem']`.
+The wiring arms are source-shape, for the reason already written above `sheetGroups`: the sheet
+only mounts on a tap and `pnpm test` has no browser — and **both defects ADR-1118 found were
+wiring**, a prop that was never passed and a projection that dropped children. Source-shape is
+the weaker instrument, and it is the one that would have caught those two.
+
+`/discover` is a photographed `@visual` route, so its four mobile baselines move by exactly one
+hamburger button. Desktop is untouched (`md:hidden`), and so is the member shell — `AppShell`,
+not `SiteHeader`, carries the authenticated app — so this is a public-surface recapture:
+`update_baselines` alone, never `capture_shell`.
+
+## ADR-1159: one outage, twenty error groups, and a probe that passed on a button that is not there (2026-08-25)
+
+**Context.** A read of the project's grouped runtime errors — the same read that found
+[LIVE-053](BUILD-BACKLOG.json), and not a gate — returned 327 KB across 42 groups for a 7-day
+window. Three separate things came out of it, and they are recorded together because reading them
+apart is what would have made each one look small.
+
+### 1. The incident, and the fail-safe that worked
+
+Between **02:18 and 02:53 UTC on 2026-08-25**, Supabase was unreachable from the runtime:
+Cloudflare **521**, **522** and **525** against the project host, plus `Timed out acquiring
+connection from connection pool` and `upstream request timeout`. Thirty-five of the 42 groups both
+begin and end inside that 35-minute window.
+
+✅ **The site stayed up, and the reason is a fail-safe that also reports.** `getMenu` /
+`getMenuSettings` fall back to the code defaults on any miss, so roughly 340 menu-read failures
+produced a rendered site rather than an error page — and every one of them logged. That is the
+AGENTS.md rule (*every fail-safe needs a gate that notices it fired*) working as written.
+
+### 2. The two logging defects the incident exposed — fixed here
+
+🔴 **`String(err)` on a PostgrestError is the string `"[object Object]"`.** Two cron sites did
+exactly that, so the one field that says what went wrong said nothing, and the fields that would
+have said it (`code`, `details`, `hint`) were discarded on the way.
+
+🔴 **A raw `.message` from an edge 5xx is the entire Cloudflare HTML page** — roughly 15 KB of
+markup. Vercel groups runtime errors **by message**, and each of those pages carries a unique Ray
+ID and timestamp, so every occurrence hashed to its own group. **One 35-minute outage came back as
+~20 groups and 327 KB**, with the actual diagnosis — `522: Connection timed out` — buried in a
+`<title>` partway down each one.
+
+`lib/log.ts` exists, by its own header, to standardise the *shape* so logs are queryable by field.
+A 15 KB message and an `"[object Object]"` defeat that from opposite directions. `briefError()`
+lands there and is applied at 21 call sites: prefer a real `message`, never stringify an object
+into nothing (fall back to `JSON.stringify`, and only then to `String`), replace an HTML error page
+with its `<title>`, collapse whitespace, and bound the length while saying how much was dropped.
+Nine tests, every case taken from this incident — including the one that matters most: two requests
+from one outage differing only by Ray ID must produce the **same** line, or the incident splits
+across groups again.
+
+### 3. The stall hypothesis, tested and refuted
+
+[LIVE-105](BUILD-BACKLOG.json) and [LIVE-123](BUILD-BACKLOG.json) are both builds hanging at
+*Collecting page data*, and LIVE-105 has already excluded the build cache. "Collecting page data"
+executes every page's data fetching, so "the database was unreachable" is the obvious next
+hypothesis, and this incident looked like the evidence for it.
+
+**It is not.** Runtime errors were queried for both recorded stall windows —
+2026-08-24T19:30–21:30Z (LIVE-105) and 2026-08-25T05:00–06:30Z (LIVE-123) — and both returned
+**zero errors**. Meanwhile the one genuine outage window contains **no recorded build stall**. In
+every window measured the two are **anti-correlated**. One caveat stated rather than glossed: build
+containers are not the serving runtime, so a null result here excludes a broad project-wide outage
+at those moments, not every possible build-side DB problem.
+
+The residue is [LIVE-124](BUILD-BACKLOG.json): `Vercel Runtime Timeout Error: Task timed out after
+300 seconds`, **count 572, users 48, across 30 routes, spanning six weeks** — which no single
+outage explains, and which no row named until now.
+
+### 4. 🔴 The one I got wrong: a probe that passes by existing
+
+LIVE-110 (phone navigation on `/discover`) was implemented, typechecked, linted, tested and
+**closed on its probe** — a grep of `site-header.tsx` for `MobileMenu` and `headerMenu={headerMenu}`.
+Both strings are present. The probe passed. **The button does not render.**
+
+A baseline capture against the branch preview — whose `/api/status` reports the very commit
+carrying the change — photographed 128 surfaces and committed nothing: the `/discover` mobile PNG
+is byte-identical to the pre-change baseline, and its header shows wordmark, search, *Sign in*,
+*Start a Circle* and no hamburger. The positive control from the same run and viewport,
+`about--dawn-light-mobile.png`, **does** show one.
+
+This is the shape-not-truth failure four ADRs already name, committed in its cleanest form. The
+mechanism is still unexplained and is recorded as unexplained on the row rather than guessed. Two
+consequences: the row reopens, and its probe becomes `manual` with the measurement attached,
+because the consequence — a control visible at 390px on a deployed build — is not reachable from a
+`pnpm test` that has no browser, and a gate that already produced one false close does not get a
+second try. **`check:backlog` fails both ways and it fired on the reopen**, insisting the probe was
+right and the status wrong; it was the other way round, and that inversion is the thing to remember.

@@ -3,7 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
 import { rejectUnauthorizedCron } from '@/lib/cron-auth'
 import { withCronHeartbeat } from '@/lib/observability/cron-heartbeat'
-import { log } from '@/lib/log'
+import { log, briefError } from '@/lib/log'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -23,7 +23,7 @@ async function handler(request: Request) {
     .lte('scheduled_for', now)
 
   if (error) {
-    log.error('cron.publish_scheduled.fetch_failed', { error: error.message })
+    log.error('cron.publish_scheduled.fetch_failed', { error: briefError(error) })
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 

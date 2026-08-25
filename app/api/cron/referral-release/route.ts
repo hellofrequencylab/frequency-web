@@ -10,7 +10,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { rejectUnauthorizedCron } from '@/lib/cron-auth'
 import { withCronHeartbeat } from '@/lib/observability/cron-heartbeat'
 import { runReferralRelease } from '@/lib/qr/referral'
-import { log } from '@/lib/log'
+import { log, briefError } from '@/lib/log'
 
 export const dynamic = 'force-dynamic'
 
@@ -23,7 +23,7 @@ async function handler(req: NextRequest) {
     log.info('cron.referral_release', { ...result })
     return NextResponse.json({ ok: true, ...result })
   } catch (err) {
-    log.error('cron.referral_release.failed', { error: err instanceof Error ? err.message : String(err) })
+    log.error('cron.referral_release.failed', { error: briefError(err) })
     return NextResponse.json({ error: 'referral release failed' }, { status: 500 })
   }
 }

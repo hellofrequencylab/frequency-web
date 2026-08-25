@@ -24,7 +24,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { unlockedPhaseCount } from '@/lib/journeys/schedule'
 import { sendPushToProfile } from '@/lib/push'
-import { log } from '@/lib/log'
+import { log, briefError } from '@/lib/log'
 
 // ── PURE: due-step selection (unit-tested, no IO) ────────────────────────────────────────────────
 
@@ -277,7 +277,7 @@ export async function runDueJourneyDripSends(limit = 200): Promise<JourneyDripRu
       // STAMP: the delivery is done; release the 'sending' claim to its terminal state.
       await dripSendsTable().update({ status: 'sent', sent_at: new Date().toISOString() }).eq('id', winner.id)
     } catch (err) {
-      log.error('cron.journey_drips.enrollment_threw', { enrollment: enrollment.id, error: String(err) })
+      log.error('cron.journey_drips.enrollment_threw', { enrollment: enrollment.id, error: briefError(err) })
     }
   }
 
