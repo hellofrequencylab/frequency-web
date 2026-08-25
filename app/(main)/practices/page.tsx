@@ -9,8 +9,7 @@ import { PageContents } from '@/components/templates/page-contents'
 import { Input } from '@/components/ui/field'
 import { PageModules } from '@/components/widgets/page-modules'
 import { resolvePageContent, pageContentMetadata } from '@/lib/page-content'
-import { getPageHeaderImage, getPageHeaderFocus } from '@/lib/page-settings/store'
-import { resolveHeaderElement } from '@/lib/elements/header'
+import { resolveIndexHero } from '@/lib/layout/index-hero'
 
 // Practices (ADR-270/294). The whole interior is module-driven: the personal blocks (stats ·
 // activity · Pillar balance · your practices) AND the faceted Practice Library are layout modules
@@ -104,18 +103,13 @@ export default async function PracticesPage({
   // Operator-editable page header (ADR-180) — falls back to the coded defaults.
   const { title, description, heroImage: contentHero, ctaLabel, ctaHref } =
     await resolvePageContent('/practices', CONTENT_FALLBACK)
-  // The wide header banner can be set from EITHER the Settings header image (page_settings) OR the
-  // older page-content hero (ADR-180). Prefer the new uploader, then fall back to the page-content
-  // hero so an image set there actually shows (it was being dropped — the page read only the
-  // page_settings field), mirroring how /journeys resolves its banner.
-  // The uniform overlay Hero Header (the Business Spaces grammar): the operator image wins, else a calm
-  // section default so the hero band always renders. Swap the default by uploading a header image.
-  const operatorHero = await getPageHeaderImage('/practices')
-  const heroImage = operatorHero ?? contentHero ?? '/images/site/meditation-circle.jpg'
-  // The focal point applies only to the operator's own header image (the fallbacks crop centered).
-  const heroFocus = operatorHero ? await getPageHeaderFocus('/practices') : null
-  // The operator-tunable header element (ADR-793): resolves to today's overlay/large/scrim-on look.
-  const header = await resolveHeaderElement({ defaults: { layout: 'overlay', height: 'large' } })
+  // The uniform overlay Hero Header, resolved by the ONE browse-hero ladder (lib/layout/index-hero,
+  // PROG-P4). This page used to re-type the whole stanza — operator image, then page-content hero,
+  // then the section cover, with the focal point riding the operator's upload alone, then the
+  // operator-tunable header element. All of it now lives in the resolver, and the section cover
+  // ('/images/site/meditation-circle.jpg') is the '/practices' row of INDEX_HERO_DEFAULTS. The
+  // page-content hero is passed explicitly because this page has already resolved it for its copy.
+  const hero = await resolveIndexHero('/practices', { contentImage: contentHero })
 
   return (
     <IndexTemplate
@@ -178,12 +172,7 @@ export default async function PracticesPage({
         { href: '/network', label: 'Community' },
         { href: '/practices', label: 'Practices' },
       ]}
-      heroImage={heroImage}
-      heroFocus={heroFocus}
-      heroOverlay
-      heroLayout={header.layout}
-      heroSize={header.height}
-      heroScrim={header.scrim}
+      {...hero}
     >
       {/* Jump between your stuff and the library. The personal entries point at module-driven
           blocks that render only for a signed-in member with data; a dangling anchor is harmless

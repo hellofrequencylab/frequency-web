@@ -66,6 +66,12 @@ export const INDEX_HERO_DEFAULTS: readonly IndexHeroDefault[] = [
   { prefix: '/network', image: null, size: 'large' },
   // Utility — the member came here to do something. `inheritHero: false` keeps the gradient band
   // even though '/journeys' and '/network' both carry an operator hero in production.
+  //
+  // '/events/calendar' is the exception that shows why the two flags are separate: it is a work
+  // surface, so it takes `short`, but the operator's '/events' hero SHOULD reach it (the calendar is
+  // the Events section wearing a different body), so it keeps the default `inheritHero: true`. The
+  // section owns no map `image` because the Events cover lives with the events surface it heads.
+  { prefix: '/events/calendar', image: null, size: 'short' },
   { prefix: '/journeys/mine', image: null, size: 'short', inheritHero: false },
   { prefix: '/network/contacts', image: null, size: 'short', inheritHero: false },
   { prefix: '/network/friends', image: null, size: 'short', inheritHero: false },
@@ -196,4 +202,55 @@ export async function resolveIndexHero(
       opts,
     )
   }
+}
+
+// ── THE EDITABLE-INDEX TWIN ─────────────────────────────────────────────────────────────────────
+// Nine browse render sites do NOT compose `IndexTemplate`. They are the sanctioned "editable index"
+// (PAGE-FRAMEWORK §8.5): a `MarketHero` header over an operator-rearrangeable body. `MarketHero` is
+// a thin wrapper over the SAME `PageHero`, so the band is already identical — but every one of those
+// nine resolved its image by hand, and every one of them stopped at rung 2. Measured 2026-08-25:
+// `getPageHeaderImage` appears in exactly THREE of the 41 browse render sites in the tree. The
+// operator's Settings > Basics header-image uploader is offered on any safe route (savePageSeo gates
+// on `isSafeRoute`, not on an allowlist), so on the other 38 an operator can upload a header image
+// and watch nothing happen. That is /network's bug (ADR-1122) at scale, and it is why "universal"
+// here means one LADDER over both compositions, not one template.
+//
+//   const hero = await resolveMarketHero('/store', { cover: HERO_IMAGE })
+//   return <MarketHero {...hero} title="Wear it, gift it, show up" … />
+
+/** The spreadable `MarketHero` prop bag — the editable-index twin of `IndexHeroProps`. Same four
+ *  rungs, same focal-point rule; only the prop NAMES differ, because `MarketHero` predates them. */
+export interface MarketHeroProps {
+  image: string
+  focal: string | null
+  variant: PageHeroVariant
+  size: HeaderSize
+  overlay: boolean
+}
+
+/** PURE: re-shape a resolved index hero into `MarketHero`'s prop names.
+ *
+ *  `MarketHero` types `image` as a NON-NULL string — an editable index is hero-led, so the gradient
+ *  band that is a legitimate result on a utility index would be a broken header here. `cover` is
+ *  therefore required and carries that guarantee in the type, rather than leaving a `?? SOMETHING`
+ *  at each of the nine call sites for the ladder to fall through to. */
+export function asMarketHero(hero: IndexHeroProps, cover: string): MarketHeroProps {
+  return {
+    image: hero.heroImage ?? cover,
+    focal: hero.heroFocus,
+    variant: hero.heroLayout,
+    size: hero.heroSize,
+    overlay: hero.heroScrim,
+  }
+}
+
+/** Resolve the hero band for an EDITABLE-INDEX route through the same ladder `resolveIndexHero`
+ *  uses, shaped for `MarketHero`. `cover` is the page's coded cover, i.e. rung 3. FAIL-SAFE. */
+export async function resolveMarketHero(
+  route: string,
+  opts: IndexHeroOptions & { cover: string },
+): Promise<MarketHeroProps> {
+  const { cover, ...rest } = opts
+  const hero = await resolveIndexHero(route, { ...rest, fallbackImage: rest.fallbackImage ?? cover })
+  return asMarketHero(hero, cover)
 }

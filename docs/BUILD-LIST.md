@@ -282,12 +282,13 @@ Verified on prod (`azsqfeonabsbmemvddqd`): embeddings unpopulated (0/21), no lin
   `100 - primary_pct`; null secondary = 100%). One slider, snaps 75/25, floor 50 keeps the primary
   dominant. The split **attributes earned Zaps across Pillars** (per-Pillar progress) and **never
   changes the wallet total** — no inflation lever. Columns ship Phase 1; attribution ledger Phase 4.
-- **Auto-valued, creator-proof points.** `computePracticeReward(practice)` derives **intensity** from
-  structure (`timer_kind`, required `duration_min`, modality → light/standard/heavy = 8/12/15 Zaps),
-  with **cadence as the frequency-normalizer** (ADR-303 balance preserved). Writes `weight_class` /
-  `reward_zaps`; log-time chokepoint unchanged. Free-form pick + manual override become a **staff-only
-  audited break-glass**. Anti-farm: value is bound to required engaged time and the timer gate forces
-  it to be spent (no 2-minute "heavy"), so Zaps-per-real-minute stays flat. Stacks on the existing
+- **Auto-valued, creator-proof points.** ✅ **Delivered by ADR-442/443, not by the create-time
+  `computePracticeReward(practice)` this bullet originally named** ([ADR-1131](DECISIONS.md) retired
+  it): the creator's tier pick is clamped server-side to what `duration_min` earns
+  (`clampTierToDuration`), and a TIMED practice pays the tier its REAL engaged minutes reach at log
+  time (`achievedTier`) — the pick is only the recommendation + quick-log fallback. Manual
+  `reward_zaps` override is a **staff-only audited break-glass**. Anti-farm: value is bound to real
+  engaged time, so Zaps-per-real-minute stays flat (no 2-minute "heavy"). Stacks on the existing
   one-log/practice/day, 25-distinct/day cap, partial=1, Zaps-non-spendable, validated-creation gates.
 
 ### Phase 1 — Scale it (the operator workspace)
@@ -324,9 +325,9 @@ Verified on prod (`azsqfeonabsbmemvddqd`): embeddings unpopulated (0/21), no lin
 ### Phase 4 — Run it on autopilot (AI curation + analytics)
 | # | Scope | Status |
 |---|---|---|
-| 4.1 | **`computePracticeReward()`** wired as the valuation authority + **per-Pillar Zap attribution ledger** (the split's payoff). | 📋 |
-| 4.2 | **Vera curation.** Auto-suggest Pillar/subcategory from the embedding, auto-tag, auto-summary, voice-check, generate remix prompts. | 📋 |
-| 4.3 | **Library health dashboard.** Growth, **coverage gaps by Pillar/subcategory**, adoption funnel, top/bottom performers, review SLA, contributor leaderboard. | 📋 |
+| 4.1 | **Valuation authority + per-Pillar Zap attribution ledger** (the split's payoff). The `computePracticeReward()` half was RETIRED — ADR-442/443 already deliver creator-proof valuation at log time ([ADR-1131](DECISIONS.md)). The ledger's server half shipped: log-time split snapshot on `practice_logs` (migration `20270324000000`) + `lib/practices/attribution.ts` (conservation-proved math, `getMemberPillarZaps`). | ⏳ slider + surfaces next |
+| 4.2 | **Vera curation.** Auto-suggest Pillar/subcategory from the embedding, auto-tag, auto-summary, voice-check, generate remix prompts. (The ADR-446 publish pre-screen covers voice/completeness/safety already.) | 📋 |
+| 4.3 | **Library health dashboard.** Growth, **coverage gaps by Pillar/subcategory**, adoption funnel, top/bottom performers, review SLA, contributor leaderboard. | ✅ `lib/practices/health.ts` + `/admin/content/practices/health` (#2193) |
 
 **Cross-cutting (every phase):** naming + voice canon (no em dashes, "Make it yours") · page-framework kit (compose, don't author) · docs protocol (ADR in git, operator how-to in Notion) · audit log · RLS · `space_id` scoping · tuning via `zap_config`/`gem_config` (data, not code).
 
