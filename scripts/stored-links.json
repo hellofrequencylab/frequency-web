@@ -1,0 +1,78 @@
+{
+  "what": "A census of every LINK TARGET (href / url / link props) present in stored page documents in production, per store, plus the block-by-block link map of the one document that is actually published. Targets and counts only, no tenant copy: the census records WHERE a document sends a visitor, never what it says.",
+  "why": "The block census next door (scripts/stored-block-types.json) answers 'does every stored block still RESOLVE?'. Nothing answered the other half — 'does every stored link still GO anywhere?' — and on 2026-08-24 the answer turned out to be no, for every link in the corpus at once (ADR-1114). The home page is the case that matters: `/` is the site's root and the strongest page it has, and the published document that IS the home page (OWN-043) offers the visitor exactly ONE destination, which is a retired address.",
+  "howToRecapture": "Run the SQL in `recaptureQuery` against production (read-only) and rewrite `stores` + `home` from the result, then set `capturedAt`. The CLASSIFICATION half is deliberately not captured: `retired` is re-derived from the redirect table in next.config.ts every time a probe reads this file, so retiring a new URL can turn a reading red without a re-capture.",
+  "scope": "The Puck-shaped page documents only: pages.data (marketing drafts), pages.published_data (marketing published), and spaces.preferences.pageDocs / .puck (Space micro-sites). Chrome is deliberately OUT of scope — the header and footer menus are DB rows in `menus`, guarded by check:menu, and a visitor reaches them from every page rather than from a document.",
+  "capturedAt": "2026-08-24",
+  "project": "Frequency Community (azsqfeonabsbmemvddqd)",
+  "recaptureQuery": "with docs as (select 'pages.data' as store, slug as doc_key, data as doc from pages where data is not null union all select 'pages.published_data', slug, published_data from pages where published_data is not null union all select 'spaces.preferences.puck', slug, preferences->'puck' from spaces where preferences ? 'puck' union all select 'spaces.preferences.pageDocs', s.slug||'#'||d.key, d.value from spaces s, lateral jsonb_each(coalesce(s.preferences->'pageDocs','{}'::jsonb)) d), items as (select store, doc_key, e as blk from docs, lateral jsonb_array_elements(doc->'content') e where jsonb_typeof(doc->'content')='array'), hrefs as (select store, doc_key, blk->>'type' as type, k as prop, v #>> '{}' as href from items, lateral jsonb_each(blk->'props') as p(k,v) where jsonb_typeof(v)='string' and (k ilike '%href%' or k ilike '%url%' or k ilike '%link%')) select store, doc_key, href, count(*) as n from hrefs where href <> '' group by store, doc_key, href order by store, doc_key, href;",
+
+  "origin": "https://frequencylocal.com",
+
+  "stores": [
+    {
+      "store": "pages.data",
+      "note": "The marketing DRAFT documents. Four carry a link prop that is set, and every one of them points at /onboarding/beta, which next.config.ts 308s to /join.",
+      "documents": 4,
+      "hrefsSet": 8,
+      "hrefsEmpty": 20,
+      "targets": {
+        "/onboarding/beta": { "hits": 7, "docs": 4 },
+        "https://frequencylocal.com/onboarding/beta": { "hits": 1, "docs": 1 }
+      }
+    },
+    {
+      "store": "pages.published_data",
+      "note": "The marketing PUBLISHED documents. `home` is the only page that has ever been published (published_at 2026-07-13), and by OWN-043 it IS the home page: app/page.tsx renders it and nothing else.",
+      "documents": 1,
+      "hrefsSet": 5,
+      "hrefsEmpty": 3,
+      "targets": {
+        "/onboarding/beta": { "hits": 4, "docs": 1 },
+        "https://frequencylocal.com/onboarding/beta": { "hits": 1, "docs": 1 }
+      }
+    },
+    {
+      "store": "spaces.preferences.pageDocs",
+      "note": "The Space micro-site documents. All 18 carry exactly one link and it is the same one: the `SpaceCallout` 'Get in touch' button, href '#'. Seeded rather than authored — lib/page-editor/templates/space-default.ts ships ctaHref: '#'.",
+      "documents": 18,
+      "hrefsSet": 18,
+      "hrefsEmpty": 36,
+      "targets": {
+        "#": { "hits": 18, "docs": 18 }
+      }
+    }
+  ],
+
+  "home": {
+    "note": "The five link props the published home document sets, block by block, read from production 2026-08-24. Cross-checked against the live HTML of https://frequencylocal.com/ the same day: <main> holds exactly 5 anchors and 2 distinct hrefs, both of them this one destination. ⚠️ The four counts below are DERIVED, not authored: LIVE-104's probe recomputes every one of them from `links` + the redirect table in next.config.ts and fails when a recorded number disagrees, so a wrong figure here goes red instead of passing.",
+    "slug": "home",
+    "publishedAt": "2026-07-13",
+    "blocks": 13,
+    "anchorsInMain": 5,
+    "distinctDestinations": 1,
+    "destinations": ["/join"],
+    "retiredHrefs": 5,
+    "absoluteSelfHrefs": 1,
+    "links": [
+      { "block": 1, "id": "home-hero", "type": "Hero", "prop": "ctaPrimaryHref", "label": "JOIN THE BETA", "href": "https://frequencylocal.com/onboarding/beta" },
+      { "block": 10, "id": "home-cta-mid", "type": "CallToAction", "prop": "ctaPrimaryHref", "label": "Start a Circle", "href": "/onboarding/beta" },
+      { "block": 10, "id": "home-cta-mid", "type": "CallToAction", "prop": "ctaSecondaryHref", "label": "or just join as a member", "href": "/onboarding/beta" },
+      { "block": 13, "id": "home-cta", "type": "CallToAction", "prop": "ctaPrimaryHref", "label": "Start a Circle", "href": "/onboarding/beta" },
+      { "block": 13, "id": "home-cta", "type": "CallToAction", "prop": "ctaSecondaryHref", "label": "or just join as a member", "href": "/onboarding/beta" }
+    ],
+    "emptyCtaSlots": [
+      { "block": 1, "id": "home-hero", "type": "Hero", "heading": "Frequency exists to create and support healthy community", "props": ["ctaSecondaryLabel", "ctaSecondaryHref"] },
+      { "block": 7, "id": "home-structure", "type": "MediaText", "heading": "A community that builds Circles, not walls", "props": ["ctaLabel", "ctaHref"] },
+      { "block": 11, "id": "home-builders", "type": "MediaText", "heading": "The people who start things.", "props": ["ctaLabel", "ctaHref"] }
+    ]
+  },
+
+  "chromeForReference": {
+    "note": "NOT part of the guarded corpus. Recorded because 'how many destinations does / offer?' is a question about the PAGE and LIVE-104 answered it from the DOCUMENT, which is the correction ADR-1114 makes. Read from the live HTML of https://frequencylocal.com/ on 2026-08-24.",
+    "serverRenderedAnchors": { "header": 6, "main": 5, "footer": 9 },
+    "headerServerRendered": ["/", "/join", "/sign-in", "/the-lab"],
+    "headerBehindJs": "The Community / The Quest / Spaces / About are <button> mega triggers, not links. Their 19 panel items (menus.surface_key='header') exist only after hydration, so a crawler and a no-JS visitor never reach /discover, /pricing, /the-community, /the-quest, /spaces, /help or /what-is-frequency from `/`.",
+    "footerServerRendered": ["/", "/about", "/privacy", "/spaces", "/terms", "/the-community", "/the-lab", "/the-quest", "mailto:hello@frequencylocal.com"]
+  }
+}

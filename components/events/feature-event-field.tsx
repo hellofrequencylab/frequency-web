@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { CalendarPlus, Loader2 } from 'lucide-react'
-import { Input } from '@/components/ui/field'
+import { Field, Input } from '@/components/ui/field'
 import { Button } from '@/components/ui/button'
 import { isError } from '@/lib/action-result'
 import { requestFeatureEventBySlug } from '@/app/(main)/events/share-actions'
@@ -46,16 +46,17 @@ export function FeatureEventField({ spaceId }: { spaceId: string }) {
         Paste a public event link to ask its host to feature it on your space calendar. They approve it,
         then it shows up alongside your own events.
       </p>
-      <div className="flex flex-wrap items-center gap-2">
-        <Input
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          placeholder="frequencylocal.com/events/sound-bath  or  sound-bath"
-          className="min-w-0 flex-1"
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') submit()
-          }}
-        />
+      <div className="flex flex-wrap items-end gap-2">
+        <Field label="Event link or slug" className="min-w-0 flex-1">
+          <Input
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            placeholder="frequencylocal.com/events/sound-bath  or  sound-bath"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') submit()
+            }}
+          />
+        </Field>
         <Button type="button" onClick={submit} disabled={!value.trim() || pending}>
           {pending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <CalendarPlus className="h-4 w-4" aria-hidden />}
           Send request

@@ -374,6 +374,7 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
         <div className="min-w-0 flex-1">
           <Input
             variant="seamless"
+            aria-label="Practice name"
             value={title}
             onChange={(e) => { setTitle(e.target.value); queueSave({ title: e.target.value }) }}
             maxLength={80}
@@ -382,6 +383,7 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
           />
           <Input
             variant="seamless"
+            aria-label="Short hook"
             value={summary}
             onChange={(e) => { setSummary(e.target.value); queueSave({ summary: e.target.value }) }}
             maxLength={140}
@@ -815,6 +817,7 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
           </StudioNote>
           <div className="mt-2">
             <Textarea
+              aria-label="Warm-up message"
               value={warmupMessage}
               onChange={(e) => setWarmupMessage(e.target.value)}
               onBlur={() => queueSave({ warmup_message: warmupMessage })}

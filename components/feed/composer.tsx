@@ -475,6 +475,7 @@ export function Composer({
         <Textarea
           variant="seamless"
           ref={textareaRef}
+          aria-label={isAnnouncement ? 'Your announcement' : 'Your post'}
           value={body}
           onChange={handleChange}
           onKeyDown={handleKeyDown}

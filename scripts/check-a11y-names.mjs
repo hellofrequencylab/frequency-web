@@ -113,10 +113,31 @@ export const MIN_WRAPPERS = 4
  * judgement gets made, one surface at a time.
  *
  * SEEDED 2026-08-24 at the measured value, twice. 429 under the old (wrong) precedence; 87 once
- * the placeholder test moved behind the real label paths; 59 after this same change retired 28 of
- * them across the event address blocks, the event-draft editor rows, the induction funnel and the
- * Journey title rail. The number here is the LAST of those three, because a ceiling seeded above
+ * the placeholder test moved behind the real label paths; 59 after that change retired 28 of them
+ * across the event address blocks, the event-draft editor rows, the induction funnel and the
+ * Journey title rail. The number was the LAST of those three, because a ceiling seeded above
  * reality is a ceiling guarding nothing.
+ *
+ * LOWERED TO 1 on 2026-08-24 (LIVE-103, second pass), when the remaining 58 were retired across
+ * 38 files. 15 took a VISIBLE label — the block editor's feature and card rails (12), the two
+ * paste-a-link fields, and the reject-a-verification note — and the tally below moved by exactly
+ * that: `wrapping label` 468 -> 483, `aria-label` 737 -> 780. The other 43 took an `aria-label`,
+ * because the surface is deliberately chrome-free: seamless search boxes inside pickers and
+ * overlays, seamless title rails in the Studio builders, the feed / event / reply composers, and
+ * dense repeated rows (block links, booking questions) where a per-row visible label is noise.
+ * No placeholder was deleted to move this number: the ones that only repeated their new label
+ * went, the ones carrying a real example stayed.
+ *
+ * 🔴 THE 1 THAT IS LEFT IS A FALSE POSITIVE, AND IT IS LEFT ON PURPOSE.
+ * `app/(main)/spaces/new/business/business-quickstart-form.tsx:50` is `<Field id="biz-what"
+ * label="What do you do?">` from `components/spaces/space-form.tsx`, which renders
+ * `<Label htmlFor={id}>` beside the control. That IS a real, permanent name; this walk cannot see
+ * it because the `htmlFor` is a forwarded prop in ANOTHER file, so the literal never lands in
+ * `fors`. `discoverWrappers` already solves the sibling problem for label-WRAPPING components;
+ * the forwarding shape has no equivalent yet. Fixing the render site instead would put a second,
+ * duplicate name on a correctly-labelled control to satisfy an instrument — the shape-not-truth
+ * trade this gate's own 429 was built out of. It is booked as HYG-018 and the ceiling carries it
+ * honestly at 1 rather than pretending to a 0 it has not earned.
  *
  * A COUNT, NOT A SET — and check-templates.mjs's §"A COUNT IS NOT A SET" is the argument against
  * that, so it is answered rather than ignored. There, one page adopting a template and one new
@@ -130,7 +151,7 @@ export const MIN_WRAPPERS = 4
  * TO LOWER IT: give the fields real names, then set this to what the run prints, in the SAME
  * change. Never raise it.
  */
-export const MAX_PLACEHOLDER_ONLY = 59
+export const MAX_PLACEHOLDER_ONLY = 1
 
 /**
  * The ceiling verdict, as a pure function of the count.

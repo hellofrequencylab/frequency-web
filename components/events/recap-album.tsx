@@ -146,6 +146,7 @@ export function RecapAlbum({
             <div className="mt-2 flex items-center gap-2">
               <Input
                 type="text"
+                aria-label="Photo caption (optional)"
                 value={caption}
                 onChange={(e) => setCaption(e.target.value)}
                 placeholder="Add a caption (optional)"

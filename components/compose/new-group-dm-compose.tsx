@@ -151,7 +151,7 @@ export function NewGroupDMCompose({
 
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-subtle" />
-            <Input type="text" value={query} onChange={e => setQuery(e.target.value)}
+            <Input type="text" aria-label="Search name or handle" value={query} onChange={e => setQuery(e.target.value)}
               placeholder="Search name or handle…" className="pl-9" />
           </div>
         </div>

@@ -29460,6 +29460,123 @@ would be different if it were not — here, the restored cache — and go look a
 
 ---
 
+## ADR-1115: Every link in every stored page document is broken, and the home page's one destination is a redirect (2026-08-24)
+
+**Status:** Accepted · **Corrects:** `LIVE-104` · **Files:** `LIVE-108`, `LIVE-109` ·
+**Adds:** `scripts/stored-links.json` ·
+**Extends:** [ADR-1082](DECISIONS.md) (re-test the premise), `OWN-043` (the
+published document is the source of truth for `/`), [ADR-1090](DECISIONS.md) (`/onboarding/beta` →
+`/join`) · **Model:** [ADR-978](DECISIONS.md) / `scripts/stored-block-types.json`
+
+### Why this exists
+
+`LIVE-104` was picked up to be worked and re-tested first, as ADR-1082 requires. It was **right
+about its headline and wrong about every detail under it** — and re-testing it turned up a defect
+one axis over that is worse than the row's own subject.
+
+Measured two ways on 2026-08-24: the live HTML of `https://frequencylocal.com/` (200), and the
+published document read straight out of `pages.published_data` (slug `home`, published 2026-07-13,
+13 blocks).
+
+| `LIVE-104` claimed | What is true |
+|:--|:--|
+| The home page offers **one destination** | ✅ **Confirmed.** `<main>` holds exactly 5 anchors resolving to 1 destination |
+| Both rungs "link only to the **beta CTA**" (`/join`) | ⚠️ The **template** does. The **published document** — the only rung a visitor reaches — points at **`/onboarding/beta`**, retired by ADR-1090 |
+| `/about`, `/pricing`, `/sign-in` were **lost** with the coded body | ⚠️ All three are reachable from `/` today: `/sign-in` in the header, `/about` in the footer, `/pricing` in the header mega |
+| Confirmed "by querying the live document" | ⚠️ The question is about the **page**; the answer was taken from the **document**. The page server-renders 20 anchors over 11 distinct destinations |
+
+Genuinely unreachable from `/`: **`/start`** (nowhere in the header, the footer, the mega catalog or
+the body) and the per-item `/events/{slug}` + `/people/{handle}` links, which were live-proof rows
+with no chrome equivalent.
+
+### The finding the row did not have
+
+The published home document's every href is `/onboarding/beta`, and **the Hero's is written
+absolute**: `https://frequencylocal.com/onboarding/beta`. Two consequences, and the second is the
+sharper one:
+
+- Every CTA click on the site's front door pays a 308 before it reaches `/join`.
+- **On a preview deployment the front door's primary button leaves the preview for production.** A
+  preview of a home-page change cannot be walked past its first click. A stored document must never
+  name the origin; every block renderer takes a path.
+
+Nothing noticed because the redirect *works*. ADR-1090 swept the **code** — `lib/site.ts`, every
+template, every route — and the **stored documents** were not swept, because no gate reads them.
+
+### So the corpus was censused, and it is worse than one page
+
+Every link prop in every stored page document in production, across all four stores:
+
+| Target | Hits | Documents | Verdict |
+|:--|--:|--:|:--|
+| `/onboarding/beta` | 11 | 5 (`about`, `home`, `how-it-works`, `the-lab` drafts + `home` published) | retired by ADR-1090 |
+| `https://frequencylocal.com/onboarding/beta` | 2 | 2 (`home` draft + published) | retired **and** origin-pinned |
+| `#` | 18 | 18 Space micro-sites | dead |
+
+**23 documents carry a link prop. 31 are set, 59 are left empty, and zero point at a live address.**
+The `#` half is seeded, not authored: `lib/page-editor/templates/space-default.ts:143` ships
+`ctaHref: '#'`, so all 18 Space pages render the same "Get in touch" button that does nothing. Filed
+as `LIVE-108` (marketing) and `LIVE-109` (Spaces).
+
+### What this decides
+
+**1. The census is the instrument, and it is the `stored-block-types.json` pattern applied to link
+targets.** `scripts/stored-links.json` records where each stored document sends a visitor and never
+what it says. The block census answers *"does every stored block still resolve?"*; nothing answered
+*"does every stored link still go anywhere?"*, and the answer was no for the entire corpus at once.
+
+**2. The classification half is re-derived, never captured.** A target is retired because
+`next.config.ts` declares it a redirect **source**, and origin-pinned because it starts with the
+recorded origin. Retiring another URL turns a reading red with no edit to the census. Every count in
+the `home` block is recomputed from the recorded links and the run fails when a recorded number
+disagrees with the derived one, so **a row here cannot be closed by editing a number** — only by
+re-capturing after a real edit.
+
+**3. `LIVE-104` stops being `manual` and closes in the EDITOR, not in code.** Per OWN-043 the
+published document is the source of truth for `/`, so recovering links into
+`lib/page-editor/templates/home.ts` would write them where no visitor reads them, which is the exact
+mistake that ruling exists to prevent. The document already carries the slots: **`home-structure`
+(block 7) and `home-builders` (block 11) are both `MediaText` with empty `ctaLabel` + `ctaHref`**,
+and `MediaText` renders its CTA only when both are set (`components/page-editor/blocks/media.tsx:393`),
+which is why they draw nothing. The Hero's secondary pair is empty too. So the whole change is
+filling in fields that already exist: no new block, no schema change, no code.
+
+**4. No production content was written by this change, deliberately.** OWN-043 makes the published
+home document the owner's surface. An agent-issued `UPDATE` to `pages.published_data` is a content
+deploy to the site's front door that bypasses both the editor and the owner's review, which is
+precisely what the ruling reserves. The measurement, the probe and the exact recommended edit ship
+here; the edit itself is the owner's, at `/pages/home`.
+
+### The recommended edit, voice-checked
+
+Chosen by reading each block's **body**, not its heading — block 7's heading is about Circles but its
+body is mostly about The Quest.
+
+| Block | Heading | Label | Destination |
+|:--|:--|:--|:--|
+| 7 `home-structure` | "A community that builds Circles, not walls" | "See how The Quest works" | `/the-quest` |
+| 11 `home-builders` | "The people who start things." | "Meet The Community" | `/the-community` |
+
+Both are plain sentences, both let a proper noun carry the interest, neither narrates the reader's
+feelings, neither uses an em dash (CONTENT-VOICE §10). Two links is the floor the probe asserts; the
+owner picks the copy and may pick different destinations.
+
+### The probes are negative-controlled, not merely red
+
+`LIVE-104`'s was run against five mutated censuses: the fix applied → 0; the fix applied but one
+href left on the retired address → 1; the count hand-edited without touching the links → 1;
+the census truncated → 79; baseline → 1. `LIVE-109`'s was run half-fixed (template only, documents
+untouched) → 1, which is the arm that matters: a template fix does not reach documents already
+written, and shipping it alone would leave eighteen dead buttons behind a green gate.
+
+### What is recorded and not done
+
+`/start` has no path from `/` and is not filed here. It is one of two candidate readings — a page
+nobody links, or a page nobody needs — and deciding between them is a product call, not a
+measurement. It is named in `LIVE-104`'s detail so the next reader does not have to re-measure it.
+
+---
+
 ## ADR-1117: The detail cover gets one resolver, and its ladder is deliberately inverted from the index's (2026-08-24)
 
 **Status:** accepted · advances `PROG-P5` · the detail-side twin of

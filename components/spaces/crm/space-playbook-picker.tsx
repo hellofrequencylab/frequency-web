@@ -107,6 +107,7 @@ export function SpacePlaybookPicker({
             <Input
               surface="inset"
               type="text"
+              aria-label="Subject"
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
               placeholder="Subject"

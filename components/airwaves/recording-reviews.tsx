@@ -148,6 +148,7 @@ export function RecordingReviews({
           </div>
           <Textarea
             variant="seamless"
+            aria-label="Your note"
             value={body}
             onChange={(e) => setBody(e.target.value)}
             placeholder="Add a note (optional)."

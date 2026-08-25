@@ -188,6 +188,7 @@ export function ConversationTriage({
       {stagingTrade && (
         <div className="flex items-center gap-2">
           <Input
+            aria-label="Handoff note (optional)"
             value={handoff}
             onChange={(e) => setHandoff(e.target.value)}
             placeholder="Handoff note (optional)" className="flex-1 !px-2 !py-1 text-meta"
