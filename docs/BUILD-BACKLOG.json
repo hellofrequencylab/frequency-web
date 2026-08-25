@@ -4220,8 +4220,8 @@
       "lane": "hygiene",
       "size": "S",
       "source": {
-        "file": "scripts/maintenance",
-        "ref": "no fold tool for DECISIONS.md / BUILD-BACKLOG.json"
+        "file": "docs/BUILD-BACKLOG.json",
+        "ref": "the file half of the conflict; no committed tool folds it or DECISIONS.md"
       },
       "detail": "FOUND 2026-08-25 by driving eleven PRs through the queue in one session. EVERY open PR appends to the tail of docs/DECISIONS.md and adds rows to docs/BUILD-BACKLOG.json, so EVERY merge to main re-conflicts EVERY other open PR on those exact two files — and on nothing else (verified with `git merge-tree --write-tree` across all remaining branches: the conflict set was those two paths, every time, with zero code conflicts). The queue session hit this eleven times and resolved it eleven times by hand or by throwaway scripts, and this is at least the second session to do so. ── THE TWO RESOLUTIONS ARE MECHANICAL AND ALWAYS THE SAME. DECISIONS.md: both sides append ADR entries at the tail, so keep main's block first and the branch's after (theirs-then-ours), then `node scripts/check-adr.mjs` proves it. BUILD-BACKLOG.json: a 3-way merge BY ROW ID — for each id, if ours == base take theirs, if theirs == base take ours, if both changed STOP and report rather than guess; emit in main's order and append ids only this branch has. Both are ~30 lines. 🔴 THE JSON HALF MUST NOT BE HAND-EDITED: doing so has already produced an invalid file (a dropped `},{` between two rows) and a duplicated row id in this repo's history, each costing a CI round. 🔴 AND IT MUST NOT SILENTLY PICK A WINNER when both sides edited one row: that case is real (HYG-020 was edited on both sides in this session, main holding it `open` and the closing PR holding it `done`) and it needs a human, so the tool must exit non-zero and name the id. Write it to reproduce byte-identical output (the repo file has NO trailing newline; json.dump(indent=2, ensure_ascii=False) plus no final write matches it exactly) or the diff becomes unreviewable.",
       "verify": {
