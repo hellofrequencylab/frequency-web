@@ -4630,6 +4630,23 @@
         "evidence": "check:shell-weight's own header scopes it to the shell + admin fingerprints; SCAN-302 demonstrates the escape. Gate design not yet written.",
         "checked": "2026-08-25"
       }
+    },
+    {
+      "id": "SCAN-507",
+      "title": "The app-space-console visual baseline is 21px stale, so pr-compare is red on every PR that reaches it",
+      "status": "open",
+      "lane": "owner",
+      "size": "XS",
+      "source": {
+        "file": "test/e2e/__screenshots__/visual.spec.ts/app-space-console--dawn-dark-mobile.png",
+        "ref": "meta-scan 2026-08-25, CI forensics"
+      },
+      "detail": "MS25 Phase 0. The @visual suite's four app-space-console checks (/spaces/<slug>/manage, dawn-light + dawn-dark, desktop + mobile) fail on EVERY branch that runs them, with the baseline 21px shorter than what the app now renders. Proven not-branch-specific by identical pixel arithmetic across two unrelated branches: editor/e0-foundations (run 32806462760, merged as #2281) and claude/frequency-codebase-audit-vii214 (run 32810507921) both report 'Expected an image 390px by 3133px, received 390px by 3154px. 25507 pixels (ratio 0.03)' on app-space-console--dawn-dark.png, with 140 other checks passing in both. Main drifted past the baseline (the loading-skeleton and hero work) and nothing recaptured it. THREE PRs have since merged with this red (#2275, #2277, #2281), which is the failure mode this repo names directly: a check that is red for a reason nobody owns trains everyone to ignore it, and then it reads as coverage (ADR-970, and the e2e workflow's own header on why a meaningless red X is worse than no gate). No code change unblocks it - the baselines are recaptured by the maintainer-triggered job in .github/workflows/e2e-manual.yml, so this is an owner action.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Two CI runs read 2026-08-25: job 97677438550 (editor/e0-foundations, merged) and job 97688833852 (this audit branch) fail the same 4 checks with byte-identical dimensions and pixel counts. Neither branch touches the Space manage console: it renders no STUDIO_LEAVES rows (grep 0 hits in the manage route and entity-manage-console) and nothing mutates the getViewerHats result that the cache() change could share.",
+        "checked": "2026-08-25"
+      }
     }
   ]
 }
