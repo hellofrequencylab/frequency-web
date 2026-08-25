@@ -205,6 +205,7 @@ export function EventSpark({
   initial,
   startInManual,
   home,
+  payoutsReadyByScope,
 }: {
   groups: Group[]
   journeys?: JourneyOption[]
@@ -215,6 +216,8 @@ export function EventSpark({
   startInManual?: boolean
   /** The viewer's saved home, to default the venue autocomplete's location bias. */
   home?: { lat: number; lng: number } | null
+  /** Pass-through to EventForm's price control (LIVE-126). This component never reads it. */
+  payoutsReadyByScope?: Record<string, boolean>
 }) {
   const router = useRouter()
   const [mode, setMode] = useState<'wizard' | 'manual'>(startInManual ? 'manual' : 'wizard')
@@ -276,6 +279,7 @@ export function EventSpark({
         defaultGroupId={defaultGroupId}
         initial={initial}
         home={home}
+        payoutsReadyByScope={payoutsReadyByScope}
       />
     )
 

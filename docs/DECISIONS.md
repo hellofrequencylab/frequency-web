@@ -33107,3 +33107,64 @@ routed around, which is [ADR-970](DECISIONS.md)'s entire subject.
 I was right to re-open the row: I could not prove the change worked at the time, and shipping a
 "done" I could not evidence is the failure this repo's backlog discipline exists to prevent. I was
 wrong about why, and being right for the wrong reason is not being right.
+
+## ADR-1162: the predicate was not dead, it was waiting for a render that got hand-written instead (2026-08-25)
+
+**Context.** SCAN-502's dead-export census flagged `ticketSellerVerdict` and `canSellTickets`
+(`lib/events/ticket-eligibility.ts`) as having no callers, and a trim sweep would have deleted them.
+They were kept, and working the row that kept them turned up a second finding that corrects the first.
+
+Four comments across the tree point at those predicates as the seller-side half of the ticket gate,
+and `lib/billing/tickets.ts:313` states the design in full: the buyer sees a neutral sentence, and
+"the HOST gets the real line (`NEEDS_PAYOUT_ACCOUNT`) beside the price control, where it is an
+actionable two-minute setup step rather than a dead end." `NEEDS_PAYOUT_ACCOUNT` had zero renderers,
+so the obvious reading was that the host half had never been built.
+
+**That reading was wrong, and I wrote it down before reading the form.** The affordance exists.
+`app/(main)/events/new/event-form.tsx` already rendered, in the paid branch, "Sets a ticket price. To
+take the money you need a payout account. [Set that up] in about two minutes, before or after you
+publish", with a link to `/settings/billing` and a comment above it giving exactly the reasoning I had
+credited as missing. Someone wrote the sentence by hand rather than calling the constant.
+
+**Decision.** Wire the predicate, and let it retire the duplicate sentence.
+
+The real defect, once the premise was corrected, is much smaller and quite different: the notice was
+**state-blind**. It rendered on `priceMode === 'paid'` alone and never referenced whether this host
+already had a ready connected account, so a host who finished payout onboarding last week was still
+told to go and set one up. That is the product not knowing its own user — the same class as
+[ADR-1158](DECISIONS.md)'s sheet footer offering "Sign in" to a signed-in member.
+
+`ticketSellerVerdict` takes exactly one input, `payoutsReady`, and returns either allowed or
+`{ step: 'connect_payouts', reason: NEEDS_PAYOUT_ACCOUNT }`. That is precisely the branch this render
+needed. So the exports are not dead code and must not be swept.
+
+**The complication the row did not name: the payee is not always the caller.** A space-hosted event
+pays the space OWNER ([ADR-819](DECISIONS.md)), who may be someone else, and on CREATE the scope is
+not chosen until the host picks it. Passing the caller's own readiness would have been wrong on
+exactly the surfaces where a manager runs events for a space they do not own.
+
+So readiness is resolved **per pickable scope**, server-side, and published as a map:
+
+| Where | What it resolves |
+| :--- | :--- |
+| `app/(main)/events/new/page.tsx` | `self` plus every circle → the caller; every space → that space's owner. One batched read (`getConnectReadyMap`). |
+| `app/(main)/events/[slug]/edit/page.tsx` | The scope is fixed, so one payee and one key, resolved exactly as `tickets.ts` resolves it. |
+
+`payoutScopeKey` normalises the three encodings the form's scope state holds (a `__public__` sentinel,
+a bare circle id, a `space:`-prefixed id) so a map built on one page cannot silently miss on the other.
+
+**An absent key reads as not ready**, in agreement with `ticketSellerVerdict`'s own fail-closed
+direction. That matters more than it looks: a miss then shows the line this control always showed, so
+the failure mode of the whole change is "no worse than before" rather than a host being told money will
+land when nobody knows whether it will.
+
+**Consequences.** Nothing visible changes in production *yet*, and that is worth stating plainly rather
+than discovering later: zero profiles currently have `charges_enabled && payouts_enabled`, because
+`accounts.create` is being refused for the platform-profile reasons on OWN-040. Every host sees the
+setup line today, correctly. The change earns out the moment that questionnaire answer is fixed.
+
+**The lesson is about the census, not the feature.** "No callers" is evidence that a symbol is
+unreferenced. It is not evidence that the thing it does is unbuilt — someone may have built it beside
+the seam instead of through it, which leaves the export looking dead and the duplicate looking
+finished. Before deleting an export whose comments describe a *product behaviour*, look for that
+behaviour on the surface, not just for the identifier in the tree.

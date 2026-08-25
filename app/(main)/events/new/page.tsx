@@ -8,6 +8,8 @@ import type { EventFormInitial } from './event-form'
 import { loadRootSpaceId } from '@/lib/spaces/store'
 import { listLinkableJourneys, resolveJourneyRef } from '@/lib/events/placement'
 import { canEditJourney } from '@/lib/journeys/authoring'
+import { getConnectReadyMap } from '@/lib/billing/connect'
+import { PAYOUT_SCOPE_SELF } from '@/lib/events/ticket-eligibility'
 
 // Build a prefill from a SOURCE event for the Duplicate flow: clone every field the
 // create form sets EXCEPT the date (the new copy defaults to the active day, PART 2) and
@@ -154,13 +156,22 @@ export default async function NewEventPage({
   // Spaces the caller RUNS: the owner, plus any space where they are an ACTIVE admin member.
   const { data: ownedSpaces } = await admin
     .from('spaces')
-    .select('id, name, brand_name')
+    .select('id, name, brand_name, owner_profile_id')
     .eq('owner_profile_id', profile.id)
   const spaceName = (s: { name: string | null; brand_name: string | null }) =>
     s.brand_name ?? s.name ?? 'Space'
   const spaceById = new Map<string, string>()
-  for (const s of (ownedSpaces ?? []) as { id: string; name: string | null; brand_name: string | null }[]) {
+  // Who each space PAYS. A space-hosted event pays the space owner (ADR-819), who is not always the
+  // caller, so the price control cannot answer "will this land?" from the caller's account alone.
+  const spaceOwnerById = new Map<string, string>()
+  for (const s of (ownedSpaces ?? []) as {
+    id: string
+    name: string | null
+    brand_name: string | null
+    owner_profile_id: string | null
+  }[]) {
     spaceById.set(s.id, spaceName(s))
+    if (s.owner_profile_id) spaceOwnerById.set(s.id, s.owner_profile_id)
   }
 
   // Editor+ managers create events too — the Calendar console that links here is gated at
@@ -179,10 +190,17 @@ export default async function NewEventPage({
   if (managerSpaceIds.length > 0) {
     const { data: managerSpaces } = await admin
       .from('spaces')
-      .select('id, name, brand_name')
+      .select('id, name, brand_name, owner_profile_id')
       .in('id', managerSpaceIds)
-    for (const s of (managerSpaces ?? []) as { id: string; name: string | null; brand_name: string | null }[]) {
+    for (const s of (managerSpaces ?? []) as {
+      id: string
+      name: string | null
+      brand_name: string | null
+      owner_profile_id: string | null
+    }[]) {
       spaceById.set(s.id, spaceName(s))
+      // A space the caller MANAGES but does not own pays its owner, not them (ADR-819).
+      if (s.owner_profile_id) spaceOwnerById.set(s.id, s.owner_profile_id)
     }
   }
   const spaces = [...spaceById.entries()]
@@ -253,6 +271,24 @@ export default async function NewEventPage({
     ...circles.map((c) => ({ id: c.id, name: c.name, kind: 'circle' as const, label: circleLabel(c) })),
     ...spaces.map((s) => ({ id: s.id, name: s.name, kind: 'space' as const, label: `In ${s.name} (space you run)` })),
   ]
+
+  // PAYOUT READINESS PER SCOPE (LIVE-126). The price control's setup line used to render on
+  // `priceMode === 'paid'` alone, so a host who finished onboarding was still told to go and do it.
+  // It now reads the real state — but the state belongs to the PAYEE, and a space-hosted event pays
+  // the space owner (ADR-819), so readiness is resolved per pickable scope rather than once for the
+  // caller. One batched read over the distinct payees; an unresolved scope simply has no key and
+  // falls back to the line this control always showed.
+  const scopePayees = new Map<string, string>([[PAYOUT_SCOPE_SELF, profile.id]])
+  for (const c of circles) scopePayees.set(c.id, profile.id) // a circle event pays its host
+  for (const sp of spaces) {
+    const owner = spaceOwnerById.get(sp.id)
+    if (owner) scopePayees.set(sp.id, owner)
+  }
+  const readyByPayee = await getConnectReadyMap([...scopePayees.values()])
+  const payoutsReadyByScope: Record<string, boolean> = {}
+  for (const [scopeKey, payeeId] of scopePayees) {
+    if (readyByPayee[payeeId]) payoutsReadyByScope[scopeKey] = true
+  }
 
   // Duplicate flow (`?duplicate=<id>`): clone a source event into a prefilled manual form,
   // skipping Vera's wizard. The prefill is null when the source is missing or the viewer
@@ -369,6 +405,7 @@ export default async function NewEventPage({
         initial={formInitial}
         startInManual={!!duplicateInitial}
         home={viewerHome}
+        payoutsReadyByScope={payoutsReadyByScope}
       />
     </>
   )

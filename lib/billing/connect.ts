@@ -91,6 +91,39 @@ export async function getConnectStatus(profileId: string): Promise<ConnectStatus
   return toStatus(data as ProfileConnectRow | null)
 }
 
+/**
+ * Payout readiness for MANY profiles in one read (LIVE-126).
+ *
+ * The event form's price control has to answer "will this money land?" for every scope a host can
+ * pick, and a space-hosted event pays the space OWNER (ADR-819) rather than the caller. Doing that
+ * with `getConnectStatus` per scope is one round trip per option on a page that already runs several.
+ *
+ * Returns ONLY the ids that are ready. A missing id therefore reads as not ready at every call site,
+ * which is the same direction `ticketSellerVerdict` fails and the correct one: telling a host the
+ * money will land when we do not know is the failure that strands a buyer's payment.
+ *
+ * Respects the same platform gate the buy path does — when payouts are not live, nobody is ready.
+ * Never calls Stripe.
+ */
+export async function getConnectReadyMap(profileIds: string[]): Promise<Record<string, boolean>> {
+  const ids = [...new Set(profileIds.filter(Boolean))]
+  if (ids.length === 0) return {}
+  if (!(await payoutsLive())) return {}
+  const { data } = await db()
+    .from('profiles')
+    .select('id, stripe_charges_enabled, stripe_payouts_enabled')
+    .in('id', ids)
+  const out: Record<string, boolean> = {}
+  for (const row of (data ?? []) as {
+    id: string
+    stripe_charges_enabled: boolean | null
+    stripe_payouts_enabled: boolean | null
+  }[]) {
+    if (row.stripe_charges_enabled && row.stripe_payouts_enabled) out[row.id] = true
+  }
+  return out
+}
+
 /** The profile's connected-account id, creating an Express account if none exists. */
 export async function getOrCreateConnectedAccount(profileId: string): Promise<string | null> {
   if (!stripe) return null

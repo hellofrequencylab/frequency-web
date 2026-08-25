@@ -73,3 +73,29 @@ export function ticketSellerVerdict(ctx: TicketSellerContext): TicketSellerVerdi
 export function canSellTickets(ctx: TicketSellerContext): boolean {
   return ticketSellerVerdict(ctx).allowed
 }
+
+// ── Publishing the verdict's ONE input to a render (LIVE-126, ADR-1162) ────────────────────────
+//
+// `payoutsReady` is the whole context, and the surface that most needs it — the price control on the
+// event form — cannot read it: the payee is not the caller on a space-hosted event, and on CREATE the
+// scope is not chosen until the host picks it. So the server resolves readiness for EVERY scope the
+// host can pick and publishes it as a map; the form looks up whichever scope is selected right now.
+//
+// WHY A KEY FUNCTION RATHER THAN THE RAW SELECT VALUE. The form encodes its scope <select> three ways
+// — a sentinel for a public event, a bare id for a circle, and a `space:`-prefixed id for a space —
+// and the edit page seeds the same state from a bare `scope_id`. A map keyed on the raw value would
+// silently miss on whichever page encodes differently, and a miss reads as "not ready", so the bug
+// would be an invisible nag rather than a crash. Both sides call this instead.
+//
+// AN ABSENT KEY IS NOT READY, deliberately and in agreement with `ticketSellerVerdict` above: an
+// unknown payee is exactly the case where we must not tell a host the money will land.
+
+/** The map key for a scope whose payee is the caller themselves (a public event). */
+export const PAYOUT_SCOPE_SELF = 'self'
+
+/** The key a scope's payout readiness is published under. Pure; total; accepts every encoding the
+ *  event form's scope state can hold. */
+export function payoutScopeKey(scopeId: string | null | undefined): string {
+  if (!scopeId || scopeId === '__public__') return PAYOUT_SCOPE_SELF
+  return scopeId.startsWith('space:') ? scopeId.slice('space:'.length) : scopeId
+}
