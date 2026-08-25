@@ -1,7 +1,15 @@
 import { CalendarCheck, PenTool, Mic, Flame, Shield } from 'lucide-react'
 import { getMyProfileId } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { getPracticeStreak } from '@/lib/practice-streak'
+import {
+  getPracticeStreak,
+  derivePracticeStreak,
+  frozenDaysFrom,
+  isResting,
+  shiftDay,
+  type RestWindow,
+} from '@/lib/practice-streak'
+import { memberDay } from '@/lib/member-day'
 import { STREAK_CONFIG, isStreakActive, type StreakType } from '@/lib/gamification'
 import { streakProgress } from '@/lib/streak'
 import { circleMatesToNudge, type CircleMateStreak } from '@/lib/circles/social-fuel'
@@ -34,10 +42,37 @@ type StreakRow = {
 /** One Circle mate flagged for the one-tap nudge row, resolved for display. */
 type MateAtRisk = { profileId: string; name: string; current: number }
 
-/** How many Circle mates the at-risk scan reads before the selector picks its (capped) few. Each
- *  mate costs a real `getPracticeStreak` read (their own local day, their own reserve), so the scan
- *  is bounded — a Circle is a small room, and the nudge row only ever shows the top three anyway. */
+/** How many Circle mates the at-risk scan covers before the selector picks its (capped) few. The
+ *  scan is bounded because a Circle is a small room and the nudge row only ever shows the top three
+ *  anyway — it is no longer bounded by round trips: every mate's streak is now derived from two
+ *  batched reads rather than a `getPracticeStreak` call of its own. */
 const MATE_SCAN_CAP = 12
+
+/** How far back the batched log read reaches. Mirrors the (module-private) WINDOW_DAYS in
+ *  lib/practice-streak.ts, which is the window `getPracticeStreak` reads and the cap
+ *  `derivePracticeStreak` stops its own walk at — so reading a day or two FURTHER back than a given
+ *  mate's own floor cannot change the number that comes out. */
+const STREAK_WINDOW_DAYS = 400
+
+/** PostgREST truncates a response at the project's `max_rows` (1000 — supabase/config.toml), and a
+ *  member can hold MORE THAN ONE log row per day (practice_logs is unique on
+ *  (profile_id, practice_id, logged_for), not on the day). So one `.in()` over twelve mates × a
+ *  400-day window is not guaranteed to fit, and a truncated response would silently shorten
+ *  somebody's streak. The window is read in small mate CHUNKS instead: each chunk gets the whole
+ *  row budget, and every chunk goes out in the SAME wave, so the latency is one round trip either
+ *  way. Rows come back newest-first, so a chunk that ever did hit the cap would lose the OLDEST
+ *  days — the ones furthest from a walk that starts at today. */
+const MATE_LOG_CHUNK = 2
+const MATE_LOG_ROW_BUDGET = 1000
+
+/** The mate columns the streak derivation needs, plus the name the nudge row renders. */
+type MateProfileRow = {
+  id: string
+  display_name: string | null
+  handle: string | null
+  home_timezone: string | null
+  meta: unknown
+}
 
 /**
  * The Circle mates worth a one-tap nudge (Resonance Engine Phase 5 · ADR-386): mates in the
@@ -74,28 +109,84 @@ async function loadMatesAtRisk(
     )
     if (mateIds.length === 0) return []
 
-    // Each mate's streak through the real reader, so "at risk" honors THEIR local day, reserve,
-    // and rest window — a mate on a planned rest is calm, not a nudge target.
-    const states: CircleMateStreak[] = await Promise.all(
-      mateIds.map(async (id) => {
-        const s = await getPracticeStreak(id)
-        return { profileId: id, current: s.current, atRisk: s.atRisk }
-      }),
-    )
+    // ── Every mate's streak, from TWO batched reads ──────────────────────────────────────────
+    // This was `mateIds.map((id) => getPracticeStreak(id))`. Each of those calls does a serial
+    // `profiles.home_timezone` read (resolveMemberDay) and THEN a two-query wave of its own, so
+    // twelve mates cost ~36 round trips — plus a thirteenth read afterwards, just for the names.
+    // None of that fan-out was needed: every input is a column on a row we can fetch by `.in(...)`.
+    //
+    // So: one `profiles` read for the zone + meta of all of them (carrying `display_name`/`handle`
+    // too, which retires the follow-up name query entirely), one windowed `practice_logs` read, and
+    // then the streak per mate is DERIVED in memory through the very same pure functions the
+    // per-member reader uses — `frozenDaysFrom` for the bridged days, `derivePracticeStreak` for the
+    // count, `isResting` for the calm case. The rules are not restated here; they are called.
+    const now = new Date()
+    // A member's local day is at most one day either side of UTC's, so a floor built from the UTC
+    // day (minus one) is at or below every mate's own floor. Over-reaching is free — see
+    // STREAK_WINDOW_DAYS.
+    const logFloor = shiftDay(memberDay(null, now), -(STREAK_WINDOW_DAYS + 1))
+    const mateChunks: string[][] = []
+    for (let i = 0; i < mateIds.length; i += MATE_LOG_CHUNK) {
+      mateChunks.push(mateIds.slice(i, i + MATE_LOG_CHUNK))
+    }
+
+    const [{ data: profs }, logChunks] = await Promise.all([
+      admin.from('profiles').select('id, display_name, handle, home_timezone, meta').in('id', mateIds),
+      Promise.all(
+        mateChunks.map((ids) =>
+          admin
+            .from('practice_logs')
+            .select('profile_id, logged_for')
+            .in('profile_id', ids)
+            .gte('logged_for', logFloor)
+            .order('logged_for', { ascending: false })
+            .limit(MATE_LOG_ROW_BUDGET),
+        ),
+      ),
+    ])
+
+    const profById = new Map(((profs ?? []) as unknown as MateProfileRow[]).map((p) => [p.id, p]))
+    // The DAYS a mate practised, deduped per mate — the shape derivePracticeStreak takes.
+    const loggedByMate = new Map<string, Set<string>>()
+    for (const chunk of logChunks) {
+      for (const row of (chunk.data ?? []) as unknown as { profile_id: string; logged_for: string }[]) {
+        let days = loggedByMate.get(row.profile_id)
+        if (!days) {
+          days = new Set<string>()
+          loggedByMate.set(row.profile_id, days)
+        }
+        days.add(String(row.logged_for))
+      }
+    }
+
+    const states: CircleMateStreak[] = mateIds.map((id) => {
+      const prof = profById.get(id) ?? null
+      const meta = (prof?.meta ?? null) as Record<string, unknown> | null
+      // THEIR local day, the same boundary logPractice writes `logged_for` under and the same one
+      // resolveMemberDay resolves inside getPracticeStreak: durable profiles.home_timezone, else
+      // UTC (a server scan of other people has no client tz to offer, and never did — the old
+      // per-mate getPracticeStreak call passed none either).
+      const today = memberDay(prof?.home_timezone ?? null, now)
+      const logged = loggedByMate.get(id) ?? new Set<string>()
+      const frozen = frozenDaysFrom(meta, today)
+      const { current, loggedToday, alive } = derivePracticeStreak(logged, frozen, today)
+      const rest = ((meta?.practiceStreak ?? {}) as { rest?: RestWindow | null }).rest ?? null
+      // At risk only when alive, unlogged, AND not resting — a mate on a planned rest is calm,
+      // not a nudge target.
+      return { profileId: id, current, atRisk: alive && !loggedToday && !isResting(rest, today) }
+    })
+
     const flagged = circleMatesToNudge(states, profileId)
     if (flagged.length === 0) return []
 
-    const { data: profs } = await admin
-      .from('profiles')
-      .select('id, display_name, handle')
-      .in('id', flagged.map((f) => f.profileId))
-    const nameById = new Map(
-      ((profs ?? []) as { id: string; display_name: string | null; handle: string | null }[]).map((p) => [
-        p.id,
-        p.display_name || p.handle || 'A Circle mate',
-      ]),
-    )
-    return flagged.map((f) => ({ profileId: f.profileId, name: nameById.get(f.profileId) ?? 'A Circle mate', current: f.current }))
+    return flagged.map((f) => {
+      const p = profById.get(f.profileId)
+      return {
+        profileId: f.profileId,
+        name: p?.display_name || p?.handle || 'A Circle mate',
+        current: f.current,
+      }
+    })
   } catch {
     return []
   }

@@ -23,9 +23,33 @@ describe('the Consistency module carries the mates-at-risk row', () => {
     expect(widget).toContain('circleMatesToNudge(states, profileId)')
   })
 
-  it('reads each mate through the real streak reader, so at-risk honors their day and rest', () => {
-    expect(widget).toContain('getPracticeStreak(id)')
-    expect(widget).toContain('atRisk: s.atRisk')
+  it('derives each mate through the real streak rules, so at-risk honors their day and rest', () => {
+    // THE RULES ARE THE ASSERTION, NOT THE CALL SHAPE. This used to pin `getPracticeStreak(id)` and
+    // `atRisk: s.atRisk` — the per-mate reader called once per mate. SCAN-304 replaced that fan-out
+    // (twelve mates cost ~36 round trips) with two batched reads plus an in-memory derivation, and
+    // the whole point of that refactor is that it CALLS the same pure rules rather than restating
+    // them. So the pin follows the rules: the mate's own local day, the frozen-day bridge, the
+    // streak walk, and the rest window must each come from lib/, not from a hand-rolled comparison
+    // in this widget. Re-implement any one of them here and this goes red.
+    expect(widget).toContain("from '@/lib/practice-streak'")
+    expect(widget).toContain("from '@/lib/member-day'")
+    expect(widget).toContain('memberDay(prof?.home_timezone ?? null, now)') // THEIR day, not the server's
+    expect(widget).toContain('frozenDaysFrom(meta, today)')                // their reserve
+    expect(widget).toContain('derivePracticeStreak(logged, frozen, today)') // the same walk
+    expect(widget).toContain('isResting(rest, today)')                     // a planned rest is calm
+    expect(widget).toMatch(/atRisk:\s*alive && !loggedToday && !isResting\(/)
+  })
+
+  it('cannot silently truncate a mate window into a shortened streak', () => {
+    // PostgREST caps a response at max_rows (1000) and practice_logs is unique on
+    // (profile_id, practice_id, logged_for) — NOT on the day — so one `.in()` across every mate is
+    // not guaranteed to fit, and the rows it would drop are the oldest ones, which is exactly where
+    // a streak walk ends. The batched read chunks the mates instead, so each chunk gets the whole
+    // row budget. Remove the chunking and this row is the thing that notices.
+    expect(widget).toContain('MATE_LOG_CHUNK')
+    expect(widget).toContain('MATE_LOG_ROW_BUDGET')
+    expect(widget).toMatch(/\.limit\(MATE_LOG_ROW_BUDGET\)/)
+    expect(widget).toMatch(/\.order\('logged_for', \{ ascending: false \}\)/)
   })
 
   it('bounds the scan (each mate is a real read, and the row is capped anyway)', () => {

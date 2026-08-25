@@ -7,6 +7,7 @@ import { getEarningLog, ledgerLabel, type LedgerEntry, type LedgerStreakType } f
 import { RANK_LABELS, type SeasonRank } from '@/lib/season-ranks'
 import { RankBadge } from '@/components/ui/rank-badge'
 import { amplitudeLevel, formatAmplitude } from '@/lib/amplitude'
+import { dayInZone, HOME_TZ } from '@/lib/time/zone'
 import { DashboardTemplate } from '@/components/templates'
 import { SectionHeader } from '@/components/ui/section-header'
 import { StatCard } from '@/components/ui/stat-card'
@@ -23,18 +24,31 @@ const STREAK_META: Record<LedgerStreakType, { label: string; icon: LucideIcon }>
 const STREAK_ORDER: LedgerStreakType[] = ['attendance', 'posting', 'hosting', 'login']
 
 // Day bucket for grouping the timeline — "Today" / "Yesterday" / "Mon, Jun 2".
+//
+// The bucket is the COMMUNITY's calendar day (HOME_TZ), never the server's. This page renders on
+// the server, and on Vercel that clock is UTC — so every Zap banked after ~5pm Pacific grouped
+// under "Yesterday", and the weekday labels below it shifted by a day.
 function dayLabel(iso: string): string {
-  const d = new Date(iso)
-  const today = new Date()
-  const startOf = (x: Date) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime()
-  const diffDays = Math.round((startOf(today) - startOf(d)) / 86_400_000)
-  if (diffDays <= 0) return 'Today'
-  if (diffDays === 1) return 'Yesterday'
-  return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+  const day = dayInZone(new Date(iso), HOME_TZ)
+  const today = dayInZone(new Date(), HOME_TZ)
+  // Yesterday derived from today's own day string via noon-anchored UTC arithmetic, so a DST
+  // change can never make "24 hours ago" land on the wrong calendar day. Day strings are
+  // YYYY-MM-DD, so `>=` is a chronological compare (a clock-skewed future row still reads Today).
+  const yesterday = new Date(Date.parse(`${today}T12:00:00Z`) - 86_400_000).toISOString().slice(0, 10)
+  if (day >= today) return 'Today'
+  if (day === yesterday) return 'Yesterday'
+  return new Date(iso).toLocaleDateString('en-US', {
+    timeZone: HOME_TZ,
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+  })
 }
 
+// Same rule one level down: the row's clock has to read in the zone its day bucket was built in,
+// or a 7pm Pacific earn files under "Today" and then prints "2:00 AM".
 function clockLabel(iso: string): string {
-  return new Date(iso).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+  return new Date(iso).toLocaleTimeString('en-US', { timeZone: HOME_TZ, hour: 'numeric', minute: '2-digit' })
 }
 
 export default async function VaultLedgerPage() {

@@ -28,6 +28,7 @@ import {
   Sparkles as SparklesIcon,
 } from 'lucide-react'
 import { Input, Textarea } from '@/components/ui/field'
+import { useDialogFocusTrap } from '@/components/ui/use-dialog-focus-trap'
 import type { LibraryGalleryItem, LibraryCollection } from '@/lib/library/store'
 import { renderRegistryElement, isRenderableElement } from '@/lib/library/element-registry'
 import { sanitizeSvg } from '@/lib/library/svg-sanitize'
@@ -528,6 +529,24 @@ function DetailDrawer({
   const [copied, setCopied] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
 
+  // ── The keyboard contract this drawer was missing ────────────────────────────────────────
+  // It declares `aria-modal="true"`, which is a PROMISE that the rest of the page is inert. It kept
+  // none of it: Escape did nothing, focus stayed on the grid card behind the drawer, and Tab walked
+  // straight out through the scrim into a page the drawer had just told a screen reader to ignore.
+  // The panel is a right-edge drawer, which the shared `ui/Dialog` cannot express (it centers, or
+  // sheets from the bottom), so this takes the same focus behaviour Dialog uses through the hook
+  // that was extracted for exactly this case, and keeps Escape here beside it. The drawer only
+  // exists while it is open, so `open` is simply true: unmounting runs the restore.
+  const panelRef = useRef<HTMLDivElement>(null)
+  useDialogFocusTrap(true, panelRef)
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [onClose])
+
   const [title, setTitle] = useState(asset.title)
   const [alt, setAlt] = useState(asset.alt ?? '')
   const [category, setCategory] = useState(asset.category ?? '')
@@ -695,7 +714,11 @@ function DetailDrawer({
         onClick={onClose}
         className="absolute inset-0 bg-slat/40"
       />
-      <div className="relative flex h-full w-full max-w-md flex-col overflow-y-auto bg-surface shadow-pop">
+      <div
+        ref={panelRef}
+        tabIndex={-1}
+        className="relative flex h-full w-full max-w-md flex-col overflow-y-auto bg-surface shadow-pop outline-none"
+      >
         <div className="flex items-center justify-between border-b border-border px-5 py-4">
           <h2 className="font-display text-body-lg uppercase text-text">Asset</h2>
           <button type="button" onClick={onClose} className="rounded-pill p-1 text-subtle hover:bg-surface-elevated" aria-label="Close">

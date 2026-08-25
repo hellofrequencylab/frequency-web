@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useTransition, useEffect, useCallback, useRef, type ReactNode } from 'react'
+import { useState, useTransition, useEffect, useCallback, useRef, Suspense, type ReactNode } from 'react'
+import dynamic from 'next/dynamic'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Loader2, Send } from 'lucide-react'
@@ -10,10 +11,37 @@ import { getInitials, relativeTime } from '@/lib/utils'
 import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { ProfileFlair } from '@/components/profile-flair'
 import { isEndorsed } from '@/lib/season-ranks'
-import { PostBody } from './post-body'
 import { ReactionBar, ReactionCounts, ReactionInlinePicker, usePostReactions, type ReactionRow } from './reaction-button'
 import type { CommentNode, CommentLeaf, CommentThread } from '@/lib/feed/comment-thread'
 import { Textarea } from '@/components/ui/field'
+
+// ── The markdown body, loaded on demand ──────────────────────────────────────
+// `PostBody` pulls react-markdown and the remark pipeline behind it (~35-45 KB gz). THIS file is
+// a Client Component and post-card renders <PostReplies> under EVERY post, so a static import put
+// that parser in the first-load JS of every feed-bearing route — downloaded on every phone, on
+// every scroll, whether or not a single comment ever renders. post-card's own <PostBody> is
+// untouched and stays eager: that file is a Server Component, so its copy renders on the server
+// and ships no client JS at all.
+//
+// NO `loading` OPTION, on purpose. next/dynamic only wraps the lazy component in a Suspense
+// boundary of its own when `loading` is set or `ssr` is false (`hasSuspenseBoundary` in
+// node_modules/next/dist/shared/lib/lazy-dynamic/loadable.js). Leaving it off lets the suspend
+// reach OUR boundary below — whose fallback can carry the comment's actual words, which a
+// `loading` component (it receives only {error,isLoading,pastDelay}) cannot.
+const MarkdownBody = dynamic(() => import('./post-body').then((m) => m.PostBody))
+
+/**
+ * One comment's body. The words show immediately as plain text, then swap to the rendered
+ * markdown the moment the parser chunk lands — so a thread never flashes an empty row, which is
+ * the one thing worse here than un-bolded copy.
+ */
+function CommentBody({ body, className }: { body: string; className?: string }) {
+  return (
+    <Suspense fallback={<div className={`whitespace-pre-wrap break-words ${className ?? ''}`}>{body}</div>}>
+      <MarkdownBody body={body} className={className} />
+    </Suspense>
+  )
+}
 
 // Show the latest N top-level comments by default; the rest collapse behind a
 // "View all" expander so a long thread doesn't stack 15 one-liners (the freshest
@@ -88,7 +116,7 @@ function CommentRow({
             )}
             <span className="text-2xs text-muted">{relativeTime(comment.created_at)}</span>
           </div>
-          <PostBody body={comment.body ?? ''} className="mt-0.5 text-meta leading-relaxed text-text" />
+          <CommentBody body={comment.body ?? ''} className="mt-0.5 text-meta leading-relaxed text-text" />
           {/* Per-comment actions: the emoji ReactionBar (comments are posts, so the
               same curated set, with grouped counts) and a Reply affordance that
               opens the composer aimed here. Replying to your OWN comment earns

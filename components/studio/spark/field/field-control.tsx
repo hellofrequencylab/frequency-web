@@ -16,7 +16,7 @@
 // entity then inherits. An entity manifest can never introduce a control of its own.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { ImageIcon, X } from 'lucide-react'
 import { Input, Textarea } from '@/components/ui/field'
 import { Select } from '@/components/ui/select'
@@ -53,8 +53,21 @@ export interface FieldControlProps {
    */
   scopeKey?: string
   disabled?: boolean
-  /** Rendered under the control (a hint, or a validation reason). */
+  /** Rendered under the control: standing guidance about the field, not a verdict on the value. */
   hint?: string
+  /**
+   * What is wrong with the value RIGHT NOW. Set it and three things happen at once, which is the
+   * whole reason it is one prop: the message gets a stable id and is announced, the control points
+   * at that id through `aria-describedby`, and the control carries `aria-invalid` (which is also
+   * what paints the danger border — `components/ui/field.tsx` keys the error look off the
+   * attribute, never off a prop, so the state a screen reader hears and the state a sighted
+   * author sees cannot drift).
+   *
+   * The hint stays visible beside it: a hint is usually the FORMAT rule ("Letters and numbers
+   * only") and the error is the specific failure, so hiding the rule at the moment someone needs
+   * it to fix the value would be the wrong trade.
+   */
+  error?: ReactNode
   /**
    * Ghost text inside the control. Deliberately a PROP, not a manifest field: a placeholder is an
    * example tuned to the surface asking ("acme-yoga.com" reads right on the Seeder and wrong in a
@@ -115,18 +128,94 @@ const asList = (v: string | string[]): string[] => (Array.isArray(v) ? v : v ? [
  * exactly like the rest of the Studio kit, so this composes with autosave or with a staged wizard
  * without knowing which it is in.
  */
-export function FieldControl({ def, value, onChange, loaded, scopeKey, disabled, hint, placeholder, id }: FieldControlProps) {
-  const describedBy = hint ? `${id ?? def.path}-hint` : undefined
-  const control = renderControl({ def, value, onChange, loaded, scopeKey, disabled, placeholder, id, describedBy })
+export function FieldControl({
+  def,
+  value,
+  onChange,
+  loaded,
+  scopeKey,
+  disabled,
+  hint,
+  error,
+  placeholder,
+  id,
+}: FieldControlProps) {
+  // One anchor for both ids, so a field's hint and its error are addressable without the caller
+  // minting anything. `def.path` is unique within a manifest, and `id` overrides it when a surface
+  // renders the same manifest twice on one page.
+  const anchor = id ?? def.path
+  const hintId = hint ? `${anchor}-hint` : undefined
+  const errorId = error ? `${anchor}-error` : undefined
+  // Both, in reading order: the rule first, then what is wrong with this value.
+  const describedBy = [hintId, errorId].filter(Boolean).join(' ') || undefined
+  const control = renderControl({
+    def,
+    value,
+    onChange,
+    loaded,
+    scopeKey,
+    disabled,
+    placeholder,
+    id,
+    describedBy,
+    invalid: Boolean(error),
+  })
 
   return (
     <div>
       {control}
       {hint && (
-        <p id={describedBy} className="mt-1.5 text-2xs text-muted">
+        <p id={hintId} className="mt-1.5 text-2xs text-muted">
           {hint}
         </p>
       )}
+      <FieldError id={errorId} className="mt-1.5 text-2xs font-medium text-danger">
+        {error}
+      </FieldError>
+    </div>
+  )
+}
+
+/**
+ * THE ONE ANNOUNCED ERROR LINE for the Spark kit — a field's, a step's, or an offer's.
+ *
+ * 🔴 WHY THE WRAPPER IS ALWAYS RENDERED, even with nothing to say. A live region has to be in the
+ * document BEFORE its text changes; a `role="alert"` element that mounts already carrying its
+ * message is, to several screen readers, just a new node appearing, and it is announced to nobody.
+ * That is the bug this component exists to make unrepeatable: the error markup in this kit was
+ * styled and placed correctly and simply never reached a listener. The empty wrapper has no class
+ * of its own, so it has no box, no margin, and no effect on layout — the spacing lives on the
+ * child, exactly where it lived before.
+ *
+ * `urgent` picks the register. A failed SUBMIT interrupts (`role="alert"`), because the author is
+ * about to walk away believing it saved. A failed background offer waits its turn (`role="status"`)
+ * — they asked for it and are watching that spot already.
+ *
+ * `as` exists because a caller may pass rich content: a `<p>` cannot legally contain a `<div>`, and
+ * React silently reflows the DOM when it does, which moves the id off the text it names.
+ */
+export function FieldError({
+  id,
+  children,
+  className,
+  as: Tag = 'p',
+  urgent = true,
+}: {
+  /** Stable id the control points at through `aria-describedby`. */
+  id?: string
+  children?: ReactNode
+  /** The look. This component decides nothing about it — the caller keeps its own styling. */
+  className?: string
+  as?: 'p' | 'div'
+  urgent?: boolean
+}) {
+  return (
+    <div role={urgent ? 'alert' : 'status'}>
+      {children ? (
+        <Tag id={id} className={className}>
+          {children}
+        </Tag>
+      ) : null}
     </div>
   )
 }
@@ -141,8 +230,18 @@ function renderControl({
   placeholder,
   id,
   describedBy,
-}: Omit<FieldControlProps, 'hint'> & { describedBy?: string }) {
-  const common = { id: id ?? def.path, disabled, placeholder, 'aria-describedby': describedBy }
+  invalid,
+}: Omit<FieldControlProps, 'hint' | 'error'> & { describedBy?: string; invalid?: boolean }) {
+  // `aria-invalid` rides in `common`, so every kind that takes `common` gets the state AND the
+  // danger border for free (components/ui/field.tsx paints on the attribute). `|| undefined` keeps
+  // the attribute off the DOM entirely when the value is fine, rather than emitting "false".
+  const common = {
+    id: id ?? def.path,
+    disabled,
+    placeholder,
+    'aria-describedby': describedBy,
+    'aria-invalid': invalid || undefined,
+  }
 
   switch (def.kind) {
     case 'longtext':
@@ -366,6 +465,7 @@ function TagsControl({
   disabled,
   id,
   'aria-describedby': describedBy,
+  'aria-invalid': invalid,
 }: {
   value: string[]
   /** The declared field's own label, carried in so the entry box can name ITSELF.
@@ -379,6 +479,7 @@ function TagsControl({
   disabled?: boolean
   id?: string
   'aria-describedby'?: string
+  'aria-invalid'?: boolean
 }) {
   const [entry, setEntry] = useState('')
 
@@ -414,6 +515,7 @@ function TagsControl({
         disabled={disabled}
         aria-label={label}
         aria-describedby={describedBy}
+        aria-invalid={invalid}
         value={entry}
         placeholder="Type and press Enter"
         onChange={(e) => (e.target.value.endsWith(',') ? commit(e.target.value) : setEntry(e.target.value))}
@@ -438,12 +540,14 @@ function DateRangeControl({
   disabled,
   id,
   'aria-describedby': describedBy,
+  'aria-invalid': invalid,
 }: {
   value: string[]
   onChange: (next: string[]) => void
   disabled?: boolean
   id?: string
   'aria-describedby'?: string
+  'aria-invalid'?: boolean
 }) {
   const [start = '', end = ''] = value
   return (
@@ -455,6 +559,7 @@ function DateRangeControl({
           type="datetime-local"
           disabled={disabled}
           aria-describedby={describedBy}
+          aria-invalid={invalid}
           value={start}
           onChange={(e) => onChange([e.target.value, end])}
         />
@@ -464,6 +569,9 @@ function DateRangeControl({
         <Input
           type="datetime-local"
           disabled={disabled}
+          // Both halves carry the invalid state: the manifest declared ONE field, so it would read
+          // as a lie to mark the start red and leave the end looking accepted.
+          aria-invalid={invalid}
           value={end}
           // An end before the start is the single most common date mistake, so the control
           // refuses it inline rather than letting the server reject the whole submission later.
