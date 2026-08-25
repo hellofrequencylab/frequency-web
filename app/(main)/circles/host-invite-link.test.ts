@@ -40,7 +40,6 @@ vi.mock('@/lib/ai/circle-spark', () => ({
   suggestCircleDraft: vi.fn(async () => null),
   fallbackCircleSuggestion: vi.fn(() => ({})),
 }))
-vi.mock('@/lib/beta/referral-contest', () => ({ recordCircleStarterMilestone: vi.fn(async () => {}) }))
 
 // Admin client: the circles existence read, the "deactivate previous links" update, and the insert.
 vi.mock('@/lib/supabase/admin', () => ({

@@ -52,7 +52,6 @@ vi.mock('@/lib/ai/circle-spark', () => ({
   suggestCircleDraft: vi.fn(async () => null),
   fallbackCircleSuggestion: vi.fn(() => ({})),
 }))
-vi.mock('@/lib/beta/referral-contest', () => ({ recordCircleStarterMilestone: vi.fn(async () => {}) }))
 
 // Table-aware mock: the access gate reads `circles`, then `memberships`, and one Space table per
 // Space mode — `space_members` (the TEAM) only for access='space_members', `space_memberships`

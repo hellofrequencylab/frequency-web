@@ -32194,3 +32194,55 @@ whether to wire a cron or delete the sweep is an owner ruling about whether the 
 - `scripts/maintenance/dead-exports.mjs` fails only when its own walk stops descending (a 2,000-file
   floor). It is a report, so it must not be a gate: a gate over 1,343 findings that nobody can action
   is the shape [ADR-970](#adr-970) warns about.
+
+---
+
+## ADR-1146: the beta referral contest is removed, and the backlog's parked set shrinks to three (2026-08-25)
+
+**Status:** Accepted · owner ruling 2026-08-25 · SCAN-510 (closed), SCAN-511 (filed), HYG-028 (closed as superseded)
+
+**Context.** SCAN-510 asked one question: is the beta referral contest live? The owner ruled **no**.
+
+**The ruling settles it at the wider scope, because the whole feature was provably inert.** Measured
+on production the same day:
+
+| signal | value |
+| :-- | :-- |
+| `platform_flags.beta_referral_contest` | **false** |
+| `beta_referrals` rows | **0** |
+| `reward_grants` with `beta_contest.*` | **0** |
+| `/referral` while the flag is off | `notFound()` — unreachable |
+
+**Decision.** Remove the feature: `lib/beta/referral-contest.ts` (423 lines) and its test, the
+`/referral` route and its `copy-link` client component, the `recordReferralActivation` call in
+`lib/qr/referral.ts`, the `recordCircleStarterMilestone` call in `app/(main)/circles/actions.ts`,
+three now-pointless `vi.mock` lines, and a stale cross-reference in `lib/zaps.ts`.
+
+**⚠️ The table is deliberately left behind, and that is the interesting half.** `public.beta_referrals`
+stays, filed as **SCAN-511**. The repo's own sequencing rule — stated in `20260925000000`'s header
+about `commerce_variants` — is *drop the write, deploy, THEN drop the table*. Dropping a table in the
+same change that removes its callers is precisely the shape [ADR-1144](#adr-1144) was written about,
+where a drop and its code moved out of step and a feature silently never worked for a month. Here the
+order is deliberate rather than accidental.
+
+**The parked set is now exactly three**, by the same ruling: `DEF-MOBILE` (the mobile app),
+`DEF-ETSY` (the full Etsy-grade marketplace build) and `PROG-W6` (white-labeled member sites + the
+theme marketplace). Everything else belongs on the active production list, so `OWN-005` (cron
+monitoring), `OWN-011` (Google OAuth verification) and `DEF-A2P` (10DLC registration) were
+**un-parked**.
+
+**`PROG-E10` stays active**, and the distinction matters: it is *"Editor E10: Sites — absorbs White
+Label W1–W5"*, the final phase of the E0–E10 Editor programme. Parking it would land E0–E9 with
+nothing consuming them. The white-label work that is parked is `PROG-W6` — member sites and the theme
+marketplace — not the Sites engine itself.
+
+**Consequences.**
+- SCAN-510's probe is **inverted** by the ruling. It used to demand a cron for the sweep; it now
+  asserts the feature stays gone — four named files absent, and no `.ts`/`.tsx` anywhere mentioning
+  the module or its four entry points, so a re-add under a new filename still fails. It carries a
+  2,000-file walk floor so a walk that stopped descending cannot pass by not looking (ADR-970).
+- **HYG-028 is closed as superseded**, and its headline was wrong. It asserted *"THE RETIREMENT WAS
+  WRONG, and that is the finding"* about `listing_saves`. ADR-1144 established the opposite: the
+  retirement was correct on the day it was made and the callers arrived twenty days later. Two rows
+  described one thing and one of them asserted what the other disproves; the one list keeps the
+  accurate one.

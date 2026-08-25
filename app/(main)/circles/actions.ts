@@ -27,7 +27,6 @@ import {
   type FieldChange,
 } from '@/lib/studio/kernel/redraw'
 import { saveSteer } from '@/lib/studio/steer-store'
-import { recordCircleStarterMilestone } from '@/lib/beta/referral-contest'
 
 // Vera's start-a-circle assist: suggest a name + about from the chosen Interest.
 // Live (Haiku) when AI is on; a deterministic draft otherwise — so the modal's
@@ -226,11 +225,6 @@ export async function joinCircle(
   awardGems(myProfileId, 'circle_join').catch(() => {})
   // Activation-funnel step 3 + the engagement funnel's join step (ADR-075). Best-effort.
   await track('circle.joined', { circleId }, myProfileId)
-
-  // Beta referral + Circle-starter contest (phase P3): if this join pushed the Circle
-  // to ten active members, credit the founder. No-op unless the contest flag is on;
-  // idempotent per Circle. Awaited (best-effort) so it runs before the redirect below.
-  await recordCircleStarterMilestone(circleId).catch(() => {})
 
   revalidatePath('/circles')
   revalidatePath('/feed')
