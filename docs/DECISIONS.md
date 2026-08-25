@@ -32706,3 +32706,55 @@ the tree. Control green at 9/9.
 callback — still goes unseen, because it is indistinguishable from the excused idiom without a real
 parser. That direction is the safe one: the guard misses a rare shape rather than flagging a common
 correct one.
+
+## ADR-1155: a required check needs its own escape hatch, and a dropped table needs its census (2026-08-25)
+
+Two things landed together because the second is what the first taught.
+
+### The flip, and the deadlock it creates
+
+The owner made `db-tests` a **required** status check (OWN-038). It earned that the same day: it caught
+a defect `checks`, `lint`, `test` and `analyze` all passed ([ADR-1150](#adr-1150)), because it is the
+only gate in CI that applies every migration to an **empty** database.
+
+🔴 **The flip does not carry its own fix.** `db-tests.yml` is path-filtered to `supabase/**`. A pull
+request touching none of those paths never triggers it, so the context is never posted — and GitHub
+renders a required-but-never-posted context as *"Expected — Waiting for status to be reported"* and
+blocks the merge **forever**. PR #2107 hit this exact shape with `pr-compare` on 2026-08-12 and could
+not be merged by any means: `bypass_actors` is null on ruleset 17640795, so it does not exempt admins
+either.
+
+`.github/workflows/db-tests-fallback.yml` closes it, modelled line for line on `pr-compare-fallback.yml`
+and inheriting both incidents that shaped that file:
+
+| Trap | Why the obvious implementation is wrong |
+| --- | --- |
+| A job named `db-tests` with `paths-ignore:` | `paths-ignore` fires when **any** changed file falls outside the list, so a PR touching a migration *and* a doc matches both. Two check runs share the name, latest wins, and **a red migration gate is overwritten by a stub that applied nothing.** |
+| A single un-retried POST | The deadlock is caused by the context being *absent*, and a failed POST leaves it absent. A real 503 on PR #2142 left a clean docs PR with no exit. Retry transient codes only, then **read the context back** — a 201 says the write was accepted; the merge depends on the context existing. |
+
+**Proven on its own PR:** the job read the real changed-file list, found the migration, and posted
+nothing while `db-tests` ran for real. The two never both spoke.
+
+### One parser, not two
+
+`scripts/db-paths.mjs` reads the path list **out of** `db-tests.yml`. A drifted copy fails in the
+direction that matters: a path missing from the copy means a migration-touching PR gets a free green.
+Rather than copy `pixel-paths.mjs`, its parser and matcher moved to `scripts/workflow-paths.mjs` and
+both fallbacks call it — copying would have reproduced, one file over, the exact hazard
+`pixel-paths`' own header is written about. Its 12 tests pass unchanged, which is the proof.
+
+### The dropped table, and the census that still named it
+
+`public.beta_referrals` was dropped (SCAN-511) once its precondition was **checked rather than
+assumed**: SCAN-510 shipped in #2297 and its production deployment read `READY`. The table held **0
+rows**.
+
+🔴 **And the drop was incomplete in a way only CI could see.** `scripts/rls-deny-all.txt` and
+`scripts/table-grants.txt` are hand-maintained censuses of every table's RLS posture and grant
+verdict, and both still listed `beta_referrals`. `check:rls` and `check:grants` went red on a table
+that no longer exists. The lesson is small and exact: **dropping a table is not one edit.** It is the
+migration, the generated types, and every census that enumerates the schema — and the censuses are
+the half with no compiler to notice.
+
+`check:adr` caught the third omission in the same run: this ADR was cited by the drop migration before
+it was written. *A citation is a promise that a reader can go and find the reasoning.*
