@@ -31855,3 +31855,122 @@ Two things follow, and both are more useful than the paragraph they replace:
 
 ⚠️ The consequence for sequencing: **phase 4 depends on phase 3** and must land after it, because Arm C
 is red until `SCAN-302`'s fix is on `main`. That is the gate working, not a gate to route around.
+
+## ADR-1141: hide_address was a render-layer suggestion, every public event advertised the wrong hour, and a probe that shells out cannot tell clean from broken (2026-08-25)
+
+**Status:** accepted · closes `SCAN-106`, `SCAN-207`, `SCAN-209`, `SCAN-210`, `SCAN-303` · files
+`SCAN-211`, `SCAN-212` · applies [ADR-964](#adr-964) (a correct row policy over uncontrolled column
+grants), [ADR-186](#adr-186) (city-level only), [ADR-825](#adr-825) (registration unlocks a withheld
+address) · fourth occurrence of the truncation class in [ADR-962](#adr-962) / [ADR-969](#adr-969)
+
+The final security, speed and SEO/GEO pass over the 2026-08-25 meta-scan. Every finding below was
+**reproduced against production before anything changed**, and every fix carries the paired positive
+that proves it did not over-correct.
+
+### 1. `hide_address` was honoured by the page and by nothing underneath it
+
+Reproduced as `role anon` — the publishable key that ships in the browser bundle by design:
+
+| | |
+|---|---|
+| event rows readable | **59** |
+| with `hide_address = true`, still returning `street` | **18** |
+| returning `organizer_contact` (host phone numbers, personal email) | **24** |
+
+`public.events` carries no table-wide SELECT for anon. Someone had been careful — `claim_token` and
+`rsvp_requires_approval` are correctly withheld — but **column-level** SELECT was granted on nearly
+everything else, including the exact set a host asks us to keep. That is ADR-964's shape verbatim, on
+a different table, and `scripts/table-grants.txt` says in its own header that `check:grants` cannot
+see column grants at all.
+
+🔴 **The first proposed fix was wrong, and checking it is what caught that.** *"Revoke select on
+`public.events` from anon — every `from('events')` read uses `createAdminClient()"`* is true of 244
+of 245 sites. `app/discover/events/_data.ts` reads this table with the anon key, and a blanket revoke
+would have dark-screened the public events hub. The revoke is therefore **column-level**, and the
+migration proves both directions inside its own transaction: the real `/discover` query must still
+return rows, *and* the leaked columns must be refused.
+
+**A grant could never have closed the whole thing**, and the migration says so rather than implying
+otherwise. The `.ics` surfaces read through `createAdminClient()`, which bypasses RLS and grants
+entirely:
+
+- The two **uncredentialed feeds** are redacted **in SQL** (`20270331000000`), not in the routes —
+  three routes read them and a fourth consumer is a matter of time. Verified after: the master public
+  feed now publishes `Vista, California` where it published `3598 Royal Rd, Vista, California`.
+- The **per-event export** is fixed in the route, which holds the row. Its `masked` flag covers
+  draft / private / cancelled and said nothing about `hide_address`.
+- ✅ **`event_calendar_feed(_token)` is deliberately untouched.** Every row in it is a `going` RSVP,
+  and the rule hides the address only from readers who are **not** attending. Redacting it would take
+  the venue from the one audience entitled to it, on the day they need it — the over-correction that
+  a rushed sweep makes.
+
+**The rule already existed and predicted this**, module-private in `guest-rsvp-email.ts`:
+
+> Calendar links go too, wholesale — an `.ics` carries the address in its own LOCATION field, so
+> redacting the visible line alone would leak it straight back.
+
+It now lives in `lib/events/visible-location.ts` with one copy. The member-confirmation site in that
+same file keeps the full address on purpose (ADR-825), and a test pins that reason so a future
+tidy-up has to read it before collapsing two shapes into one.
+
+### 2. Every public event advertised a start time seven hours early
+
+`events.starts_at` stores the wall clock as UTC parts. `eventSchema` published it raw, so a 6:30pm
+Pacific event told Google `2026-08-27T18:30:00Z` — 11:30am. All five upcoming public events were
+wrong, and so was the `/events` ItemList.
+
+This is `SCAN-101` on the SEO surface: the same convention read as an instant, which in SQL closed
+the guest RSVP door before lunch. `lib/time/zone.ts` gains `eventIsoWithOffset`, and **its own test
+found a defect while being written** — reading the offset independently disagreed with `eventInstant`
+by an hour for a wall clock inside the spring-forward gap. The offset is now derived from
+`eventInstant`'s own answer, so the two cannot disagree by construction. **Three assertions in
+`lib/jsonld.test.ts` were pinning the bug.**
+
+### 3. A host could pin an announcement into any circle
+
+`createPost` coerces an announcement to `cluster`, then checked membership only for `group`. The
+host+ check above it answers a different question — *may this account announce*, not *where*. The
+database was not silent: `posts: insert (crew+ in scope)` requires membership or hosting for
+`cluster`. The action accepted exactly what the policy would refuse, and because it inserts through
+`createAdminClient()` the policy never ran to say so.
+
+### 4. The truncation class recurs for the fourth time
+
+PostgREST caps a response at `max_rows` (1000) **server-side**: `service_role` does not escape it and
+`.limit()` does not raise it. `SCAN-303`'s going-RSVP tally read every row for up to 1,500 events to
+produce one integer each, so past 1,000 it silently under-reported — flipping *"Has open spots"* on
+for a full event and mis-ordering *"Most going"*. Same shape as ADR-962 and ADR-969.
+
+Closed with a grouped RPC, chunked at 500 ids so a full response can never be a truncated one, and a
+**paged** fail-safe that discards a partial RPC result rather than merging it. The value is in what
+was measured next: the loader's other three `.in()` reads were checked rather than assumed —
+`myRsvpRows` is bounded by a uniqueness constraint, `circlesRows` by the count of hosting circles, and
+**`tierRows` is still exposed** and now has its own row (`SCAN-211`).
+
+### 5. `SCAN-106` chose the community's day, and the reason generalises
+
+Vera's dispatch key was the UTC day, so it rolled over at 5pm Pacific. The fix uses
+`dayInZone(now, HOME_TZ)` — the **community's** day, not the member's — and that choice is the
+recorded part. The key sits under `UNIQUE (profile_id, day)` with no zone stored beside the date, and
+`profiles.home_timezone` is nullable and browser-written, so a member key **changes meaning between
+two reads**: an unset zone mints under UTC, the client then persists `America/Los_Angeles`, and the
+next session that evening mints a *second* Dispatch. Travel skips a day. A delivery key must be a
+pure function of the instant; a measurement key (`practice_logs.logged_for`) is the opposite case and
+correctly uses the member's day.
+
+⚠️ It ships with a one-time, member-visible effect, recorded rather than papered over: members served
+in the 5pm–midnight Pacific window before deploy can get one extra Dispatch, and that orphaned
+tomorrow-keyed row replays as tomorrow's rather than a fresh one.
+
+### 6. A probe that shells out cannot tell a clean tree from a missing binary
+
+`SCAN-501`'s first probe grepped, with a control asserting the same search still found a known-live
+symbol. Under `scripts/backlog-contract.test.ts`'s rg-parity arm — which runs the whole gate with the
+tooling stripped from `PATH` — `grep` was absent, `execFileSync` threw, the search returned nothing,
+and **the control fired on "I have no tool" as though it were "I found nothing"**. The rewrite has no
+subprocess at all and keeps a 2,000-file walk floor.
+
+The same file caught two more probes the same day: one carrying a double quote inside its `node -e "…"`
+body (the shell eats it, the probe throws, and a `SyntaxError` exit 1 reads as an honest *"not
+done"* forever), and one whose `\\s` was eaten the same way. **A probe is code that runs unattended
+and reports on itself; the gate that checks the checker earned its place three times in one session.**

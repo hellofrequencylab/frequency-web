@@ -211,6 +211,18 @@ Cached one per (member, day) in `vera_dispatches` (unique race → read the winn
 Replays and the history scroll (`listDispatches`) read the table. **No live Vera
 on revisit**, by design.
 
+**The `day` is the COMMUNITY's calendar day** — `dispatchDay()` in
+`lib/vera-dispatch.ts`, which is `dayInZone(now, HOME_TZ)`. It was the server's UTC
+day until 2026-08-25, which on Vercel rolls over at ~5pm Pacific, so a Dispatch
+generated at 6pm Pacific was stored under *tomorrow* and stopped reading as today's
+the moment it was written (SCAN-106). Deliberately **not** each member's own day
+(`lib/member-day.ts`, right for `practice_logs.logged_for`): this is a delivery key
+under `UNIQUE (profile_id, day)` that stores no zone beside the date, and
+`profiles.home_timezone` is nullable and browser-written, so a per-member key can
+change meaning between two reads and double-send or skip. Every reader imports
+`dispatchDay()` — the module itself, the Zap menu's `/api/zap-prompt`, and the
+archive page's Today/Yesterday labels — so the key is minted in exactly one place.
+
 ## Roadmap
 
 - ~~P2: Vera live~~ ✅ shipped: AI phrasing + the Dispatch archive at `/on-air/dispatches`.

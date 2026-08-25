@@ -13,6 +13,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { publicVisibleLocation } from '@/lib/events/visible-location'
 import { buildVevent, computeFeedExdates, icsEventInstants, icsLocalWallTimes, renderCalendar, rruleForRecurrence } from '@/lib/events/ics'
 import { eventInstant, resolveZone } from '@/lib/time/zone'
 
@@ -23,6 +24,13 @@ type EventRow = {
   title:             string
   description:       string | null
   location:          string | null
+  /** The redaction inputs. `location` above is the host's free-text line and is NOT city-redacted,
+   *  so it may only be published through publicVisibleLocation (SCAN-209). */
+  hide_address:      boolean | null
+  venue_name:        string | null
+  street:            string | null
+  city:              string | null
+  region:            string | null
   starts_at:         string
   ends_at:           string | null
   slug:              string
@@ -44,7 +52,7 @@ export async function GET(
 
   const { data: rawEvent } = await admin
     .from('events')
-    .select('id, title, description, location, starts_at, ends_at, slug, is_cancelled, status, visibility, time_zone, recurrence_type, recurrence_until, parent_event_id')
+    .select('id, title, description, location, hide_address, venue_name, street, city, region, starts_at, ends_at, slug, is_cancelled, status, visibility, time_zone, recurrence_type, recurrence_until, parent_event_id')
     .eq('slug', slug)
     .maybeSingle()
 
@@ -124,7 +132,15 @@ export async function GET(
         summary: masked ? 'Private event' : ev.title,
         url: `${appUrl}/events/${ev.slug}`,
         // Venue + description are omitted entirely when masked (never leak them).
-        location: masked ? null : ev.location,
+        //
+        // 🔴 AND `masked` IS NOT THE WHOLE GATE. It covers draft / private / cancelled; it says
+        // nothing about `hide_address`, so a PUBLISHED PUBLIC event whose host switched the address
+        // off was exporting its full street here — this route is unauthenticated, and the .ics
+        // carries the venue in its own LOCATION field where no page-level redaction reaches it
+        // (SCAN-209). This route holds the row and cannot prove the reader is attending, so it uses
+        // the not-attending rule; the exception for a viewer who IS going lives on the page and on
+        // event_calendar_feed(_token), both of which can prove it.
+        location: masked ? null : publicVisibleLocation(ev),
         description: masked ? null : ev.description,
         rrule,
         exdates,

@@ -5,6 +5,7 @@
 // city isn't known we describe the location generically rather than leak it.
 
 import { SITE_URL, SITE_NAME, SITE_DESCRIPTION, SITE_TAGLINE } from '@/lib/site'
+import { eventIsoWithOffset } from '@/lib/time/zone'
 import type { PublicCircle, PublicEvent, TopicalChannel } from '@/lib/discover'
 import type { JourneyPlan, JourneyPlanItem } from '@/lib/journey-plans'
 
@@ -99,6 +100,15 @@ export function breadcrumbSchema(items: { name: string; path: string }[]) {
 // The fields layered onto a PublicEvent by app/discover/events/_data.ts. Kept
 // structurally typed (not imported) so lib/jsonld stays dependency-light.
 type EventSchemaEnrichment = {
+  /** The event's IANA zone (`events.time_zone`, not null, default 'America/Los_Angeles').
+   *
+   *  🔴 REQUIRED FOR A CORRECT `startDate`, and absent is a fallback rather than an omission.
+   *  `events.starts_at` stores the WALL CLOCK as UTC parts, so publishing it raw tells every
+   *  search and answer engine the local time is a UTC instant — seven or eight hours early in
+   *  North America. Measured on production 2026-08-25 (SCAN-207): a 6:30pm Pacific event was
+   *  published as `2026-08-27T18:30:00Z`, which reads as 11:30am. Absent or null falls back to the
+   *  community zone, the same direction `resolveZone` fails in. */
+  time_zone?: string | null
   attendance_mode?: 'in_person' | 'online' | 'hybrid' | null
   is_cancelled?: boolean | null
   category?: string | null
@@ -137,6 +147,12 @@ const ATTENDANCE_MODE_URL: Record<'in_person' | 'online' | 'hybrid', string> = {
 
 export function eventSchema(event: PublicEvent & EventSchemaEnrichment) {
   const mode: 'in_person' | 'online' | 'hybrid' = event.attendance_mode ?? 'in_person'
+  // Resolved ONCE and reused by startDate, endDate and offers.validFrom, so the three can never
+  // disagree about when the event is — a page whose offer opens at a different moment than the
+  // event starts is a page-vs-schema contradiction of the same kind the availability note below
+  // guards against.
+  const startIso = eventIsoWithOffset(event.starts_at, event.time_zone)
+  const endIso = eventIsoWithOffset(event.ends_at, event.time_zone)
   // Canonical public event URL is /events/<slug> (both the /events page's
   // alternates.canonical and the sitemap point there; /discover/events/<slug>
   // canonicalizes to it), so the schema url/image/offers all consolidate there.
@@ -176,8 +192,12 @@ export function eventSchema(event: PublicEvent & EventSchemaEnrichment) {
     '@context': 'https://schema.org',
     '@type': 'Event',
     name: event.title,
-    startDate: event.starts_at,
-    ...(event.ends_at ? { endDate: event.ends_at } : {}),
+    // The wall clock the host chose, carrying its zone's offset — see eventIsoWithOffset. Falls
+    // back to the raw stored string only if the conversion cannot run at all, which for a
+    // well-formed timestamp it always can; that branch exists so a malformed row degrades to the
+    // old behaviour rather than dropping the field Google requires.
+    startDate: startIso ?? event.starts_at,
+    ...(endIso || event.ends_at ? { endDate: endIso ?? event.ends_at } : {}),
     eventStatus: event.is_cancelled
       ? 'https://schema.org/EventCancelled'
       : 'https://schema.org/EventScheduled',
@@ -213,7 +233,7 @@ export function eventSchema(event: PublicEvent & EventSchemaEnrichment) {
           ? 'https://schema.org/SoldOut'
           : 'https://schema.org/InStock',
       url,
-      validFrom: event.starts_at,
+      validFrom: startIso ?? event.starts_at,
     },
   }
 }
@@ -298,6 +318,10 @@ type EventListingInput = {
   slug: string
   title: string
   starts_at: string
+  /** Same requirement, same reason as `EventSchemaEnrichment.time_zone`: `starts_at` is a wall
+   *  clock kept as UTC parts, so a listing that publishes it raw is as wrong as the detail page
+   *  was (SCAN-207). Absent falls back to the community zone. */
+  time_zone?: string | null
   is_cancelled?: boolean | null
 }
 
@@ -315,7 +339,7 @@ export function eventsListingSchema(events: readonly EventListingInput[], listNa
       item: {
         '@type': 'Event',
         name: e.title,
-        startDate: e.starts_at,
+        startDate: eventIsoWithOffset(e.starts_at, e.time_zone) ?? e.starts_at,
         url: abs(`/events/${e.slug}`),
         eventStatus: e.is_cancelled
           ? 'https://schema.org/EventCancelled'

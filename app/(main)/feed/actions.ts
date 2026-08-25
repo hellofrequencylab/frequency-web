@@ -112,16 +112,44 @@ export async function createPost(formData: FormData): Promise<ActionResult> {
     }
   }
 
-  // Circle-scoped (`group`) posts require active membership in that circle.
-  if (visibility === 'group') {
-    const { data: membership } = await admin
-      .from('memberships')
-      .select('id')
-      .eq('profile_id', profileId)
-      .eq('circle_id', scopeId)
-      .eq('status', 'active')
-      .maybeSingle()
-    if (!membership) return fail('Join this circle to post here.')
+  // Circle-scoped posts require a real relationship to that circle.
+  //
+  // 🔴 `cluster` IS IN THIS GATE, AND USED NOT TO BE (SCAN-210). The host+ check above proves the
+  // author may post an ANNOUNCEMENT; it says nothing about WHICH circle. Announcements are coerced
+  // to `cluster` at the top of this function, so they fell straight past a check that named only
+  // `group` — and because the admin client bypasses RLS, the database's own rule never ran. That
+  // rule is not silent on the question:
+  //
+  //     posts: insert (crew+ in scope) … (visibility = 'cluster' AND (scope_id = ANY
+  //       (private.get_my_circle_ids()) OR EXISTS (select 1 from circles c
+  //       where c.id = posts.scope_id and c.host_id = private.get_my_profile_id())))
+  //
+  // So the database would have refused exactly what this action accepted: any host+ account could
+  // pin an announcement into ANY circle by passing its id. The check below is that predicate,
+  // mirrored — active membership, OR hosting the circle. Widening it is a schema decision, not an
+  // action one; change the policy first.
+  if (visibility === 'group' || visibility === 'cluster') {
+    const [{ data: membership }, { data: hosted }] = await Promise.all([
+      admin
+        .from('memberships')
+        .select('id')
+        .eq('profile_id', profileId)
+        .eq('circle_id', scopeId)
+        .eq('status', 'active')
+        .maybeSingle(),
+      // Only `cluster` admits the host arm, matching the policy. A `group` post from a
+      // non-member host is not something the database would accept, so neither does this.
+      visibility === 'cluster'
+        ? admin.from('circles').select('id').eq('id', scopeId).eq('host_id', profileId).maybeSingle()
+        : Promise.resolve({ data: null }),
+    ])
+    if (!membership && !hosted) {
+      return fail(
+        visibility === 'cluster'
+          ? 'You can only announce in a circle you belong to or host.'
+          : 'Join this circle to post here.',
+      )
+    }
   }
 
   const mediaUrls = imageUrl ? [imageUrl] : []

@@ -87,6 +87,11 @@ type EventDetail = {
   location: string | null
   starts_at: string
   ends_at: string | null
+  /** The event's IANA zone (`events.time_zone`, not null, default 'America/Los_Angeles').
+   *  `starts_at` above is a WALL CLOCK kept as UTC parts, so this is what turns it back into an
+   *  instant. Read here for the JSON-LD `startDate` (SCAN-207); the page's own labels format
+   *  through lib/time/zone, which resolves the zone the same way. */
+  time_zone: string | null
   is_cancelled: boolean
   price_cents: number | null
   /** ISO 4217 as stored (DEFAULT 'usd'). Read only to denominate the JSON-LD Offer — the page's
@@ -286,7 +291,7 @@ export default async function EventDetailPage({
   const { data: rawEvent } = await admin
     .from('events')
     .select(
-      `id, title, slug, description, location, starts_at, ends_at, is_cancelled, price_cents, currency,
+      `id, title, slug, description, location, starts_at, ends_at, time_zone, is_cancelled, price_cents, currency,
        visibility, scope_id, scope_type, recurrence_type, recurrence_until, parent_event_id,
        host:profiles!host_id ( id, display_name, handle, avatar_url )`
     )
@@ -1692,6 +1697,11 @@ export default async function EventDetailPage({
     description: event.description,
     starts_at: event.starts_at,
     ends_at: event.ends_at,
+    // The event's OWN zone, so the published startDate carries the right offset. `starts_at` is a
+    // wall clock kept as UTC parts, so passing it without the zone tells Google the local time is a
+    // UTC instant — seven or eight hours early here (SCAN-207). Same convention as every other
+    // reader on this page.
+    time_zone: event.time_zone,
     city: extra?.city ?? null,
     // The Circle only, never the raw scope id: a public event's scope_id is the shared sentinel
     // region, which is not an organizer and must not be published as one.

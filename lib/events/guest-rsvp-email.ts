@@ -7,6 +7,7 @@ import { shouldSend } from '@/lib/notification-preferences'
 // despite living under components/ — the builder is a pure URL function.
 import { buildGoogleCalendarUrl } from '@/components/events/add-to-calendar'
 import { formatEventWhen, resolveZone } from '@/lib/time/zone'
+import { publicVisibleLocation } from '@/lib/events/visible-location'
 
 // THE GUEST'S ONLY RECEIPT. A guest RSVP has no account, no notification bell and no "my events"
 // page, so this email is the entire record that anything happened. If it does not send, the guest
@@ -95,14 +96,11 @@ async function loadCircleName(
  *  gives them the city line. Calendar links go too, wholesale — an .ics carries the address in its
  *  own LOCATION field, so redacting the visible line alone would leak it straight back. */
 function guestVisibleLocation(ev: GuestEmailEvent): { location: string | null; addressHidden: boolean } {
-  const addressHidden = ev.hide_address === true
-  const cityLine = [ev.city, ev.region].filter(Boolean).join(', ') || null
-  return {
-    addressHidden,
-    location: addressHidden
-      ? cityLine
-      : ev.location || [ev.venue_name, ev.street, ev.city, ev.region].filter(Boolean).join(', ') || null,
-  }
+  // The rule itself now lives in lib/events/visible-location.ts. It was module-private here, and the
+  // comment above turned out to be a prediction rather than a caveat: the .ics surfaces did leak the
+  // address straight back, because they had no way to reach this function (SCAN-209). Same behaviour,
+  // one copy.
+  return { addressHidden: ev.hide_address === true, location: publicVisibleLocation(ev) }
 }
 
 /** Best-effort. Never throws into the RSVP path: a failed send must not change what the guest sees. */

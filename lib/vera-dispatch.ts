@@ -19,6 +19,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { aiAvailable, featureOverBudget, recordAiUsage } from '@/lib/ai/usage'
 import { completeText } from '@/lib/ai/complete'
 import { withVoice } from '@/lib/ai/voice'
+import { dispatchDay } from '@/lib/on-air/dispatch-day'
 
 function db(): SupabaseClient {
   return createAdminClient()
@@ -40,7 +41,10 @@ interface Assignment {
   payload: Record<string, unknown>
 }
 
-const todayUTC = () => new Date().toISOString().slice(0, 10)
+// The day key `vera_dispatches` is minted and de-duplicated under lives in its own leaf module
+// (lib/on-air/dispatch-day.ts) so the Zap menu's hot route can import it without pulling this
+// module's AI dependencies behind it. That file carries the full rationale for why the key is the
+// COMMUNITY's day and not each member's, and the one-time transition note for the day it flips.
 
 /** Pick the single highest-leverage next thing. Priority order is deliberate:
  *  the next Journey lesson first (the program spine), then a challenge within reach,
@@ -227,7 +231,7 @@ async function voiceCopy(assignment: Assignment, profileId: string): Promise<str
  *  forever (replays never re-generate; the insert losing a race reads the winner). */
 export async function getOrCreateDispatch(profileId: string): Promise<VeraDispatch> {
   const admin = db()
-  const day = todayUTC()
+  const day = dispatchDay()
 
   const { data: existing } = await admin
     .from('vera_dispatches')
