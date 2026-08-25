@@ -532,7 +532,9 @@ export async function captureLead(input: CaptureLeadInput): Promise<CaptureResul
           {
             email,
             space_id: spaceId,
-            display_name: (input.displayName ?? '').trim() || null,
+            // clip like label/captured_where above: this arrives from anon-reachable doors,
+            // and the signup-leads RPC bounds its names to 120 the same way.
+            display_name: clip(input.displayName, 120),
             consent_state: consent,
             source: `lead_${input.door}`,
             meta: phoneKey ? { phone: input.phone ?? null, phone_key: phoneKey } : {},
@@ -549,7 +551,7 @@ export async function captureLead(input: CaptureLeadInput): Promise<CaptureResul
       if (await mayClaimSpace(contact.space_id, spaceId, contact.profile_id)) patch.space_id = spaceId
       const nextConsent = consentStateForDoor(input.door, (contact.consent_state as ConsentState) ?? 'unknown', opts)
       if (nextConsent !== (contact.consent_state ?? 'unknown')) patch.consent_state = nextConsent
-      if (!contact.display_name && input.displayName) patch.display_name = input.displayName.trim() || null
+      if (!contact.display_name && input.displayName) patch.display_name = clip(input.displayName, 120)
       try {
         await table('contacts').update(patch).eq('id', contact.id)
       } catch {
