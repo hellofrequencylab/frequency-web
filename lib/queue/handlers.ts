@@ -9,8 +9,13 @@ import { recordContactInteraction } from '@/lib/crm/interactions'
 import type { SendCategory } from '@/lib/comms/send-gate'
 import { RESEARCH_JOB_KIND, researchHandler } from '@/lib/importer/queue'
 import { BOOKING_REMINDER_KIND, runBookingReminder } from '@/lib/spaces/booking-notify'
+import { SPACE_CAMPAIGN_EMAIL_KIND, runSpaceCampaignEmail } from '@/lib/spaces/email'
 
 export const queueHandlers: Record<string, JobHandler> = {
+  // Space campaign send (the drain half of deliverSpaceCampaign). NOT the generic 'email' kind:
+  // this one writes the provider id back onto the outreach_sends ledger row so the Space
+  // bounce/complaint + engagement webhooks (which match on resend_id) can find the send.
+  [SPACE_CAMPAIGN_EMAIL_KIND]: runSpaceCampaignEmail,
   // 1:1 booking reminder (ADR-605 P3). Idempotent: re-reads the booking and no-ops unless it is still
   // confirmed and in the future, so a cancel / reschedule needs no job surgery.
   [BOOKING_REMINDER_KIND]: runBookingReminder,

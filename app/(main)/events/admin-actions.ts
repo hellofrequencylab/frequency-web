@@ -7,6 +7,7 @@ import { getEventCapabilities } from '@/lib/core/load-capabilities'
 import { loadEventCoreStats, type EventCoreStats } from '@/lib/events/event-stats'
 import { getMyProfileId } from '@/lib/auth'
 import { cancelAudit, reinstateAudit } from '@/lib/events/event-lifecycle'
+import { refundAndNotifyForCancelledEvent } from '@/lib/events/cancellation'
 import { logAdminAction } from '@/lib/admin/audit'
 import { slugify } from '@/lib/utils'
 import { saveEventLocation, type EventAddress } from '@/lib/events/geocode'
@@ -205,9 +206,26 @@ export async function setEventCancelled(id: string, slug: string, cancelled: boo
   if (!caps.has('event.editSettings')) throw new Error('Unauthorized')
 
   const admin = createAdminClient()
-  const update = cancelled ? cancelAudit(await getMyProfileId(), null) : reinstateAudit()
-  const { error } = await admin.from('events').update(update).eq('id', id)
-  if (error) throw new Error(error.message)
+  if (cancelled) {
+    // The GUARDED live → cancelled transition, same as cancelEvent (events/actions.ts):
+    // `.eq('is_cancelled', false)` + `.select('id')` makes the fan-out fire exactly once.
+    // This path used to flip the flag bare, which stranded every paid ticket un-refunded,
+    // told nobody (guests have no other way to find out), and — because the flag was then
+    // already true — made the refunding path unreachable forever after (firstCancel=false).
+    const { data: flipped, error } = await admin
+      .from('events')
+      .update(cancelAudit(await getMyProfileId(), null))
+      .eq('id', id)
+      .eq('is_cancelled', false)
+      .select('id')
+    if (error) throw new Error(error.message)
+    if ((flipped ?? []).length > 0) {
+      await refundAndNotifyForCancelledEvent(id)
+    }
+  } else {
+    const { error } = await admin.from('events').update(reinstateAudit()).eq('id', id)
+    if (error) throw new Error(error.message)
+  }
 
   revalidatePath(`/events/${slug}`)
   revalidatePath('/events')

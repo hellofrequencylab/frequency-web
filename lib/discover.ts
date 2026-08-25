@@ -152,7 +152,11 @@ export type ListRead<T> = { rows: T[]; ok: boolean }
 // Callers now pass a THUNK so every attempt builds a fresh PostgrestBuilder — re-awaiting one
 // builder re-uses its settled promise, which would make a "retry" a no-op that re-reads the
 // same failure.
-const TRANSIENT_RE = /fetch failed|ECONNRESET|ECONNREFUSED|ETIMEDOUT|EAI_AGAIN|ENOTFOUND|socket|network|UND_ERR|TimeoutError|AbortError|aborted/i
+// Abort matching is deliberately NARROW: `TimeoutError` (the bound's own abort — undici names
+// it that and says "aborted due to timeout") is transient, but a bare `AbortError`/"aborted"
+// is a CALLER-initiated abort, which buildBoundedFetch explicitly does not claim — retrying one
+// would spend up to another 20s per attempt on a read someone above us already cancelled.
+const TRANSIENT_RE = /fetch failed|ECONNRESET|ECONNREFUSED|ETIMEDOUT|EAI_AGAIN|ENOTFOUND|socket|network|UND_ERR|TimeoutError|aborted due to timeout/i
 
 export function isTransientDiscoverError(err: unknown): boolean {
   if (!err || typeof err !== 'object') return false
