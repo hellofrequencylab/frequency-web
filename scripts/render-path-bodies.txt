@@ -14,9 +14,17 @@
 # context and never checked.
 #
 # RETIREMENT ORDER (FINALIZE-PLAN §5.2, by risk): ~~circles~~ -> ~~about~~ -> ~~spaces~~ -> ~~the-lab~~ ->
-# ~~the-quest~~ -> ~~the-community~~ -> ~~home~~ -> pricing. Each retirement is gated on the visual suite
-# proving the template equivalent, one slug per PR. `pricing` is partial only: it carries LIVE
-# take-rate bindings, and its figures must never be frozen into a document.
+# ~~the-quest~~ -> ~~the-community~~ -> ~~home~~ -> ~~pricing~~. Each retirement was gated on the visual
+# suite proving the template equivalent, one slug per PR.
+#
+# ✅ THE SERIES IS CLOSED (2026-08-24, ADR-1116). Seven slugs retired; `pricing` was REMOVED from
+# the series rather than retired, and that removal is a DECISION with an ADR rather than a note.
+# The order used to call `pricing` "partial only" because it carries LIVE take-rate bindings. The
+# measurement behind ADR-1116 is that partial retirement had nothing to retire: `/pricing` resolves
+# published -> coded (TWO rungs, not three — `getTemplate('pricing')` is not a middle rung), the
+# coded body is the DERIVED page rather than a relic, and all seven of its components consume the
+# derived model (Offering / PlanExtra / FeatureGrid / the resolved rate string). So its 7 never
+# reaches 0, and the gate below keeps holding it exact-match anyway: a RISE is still refused.
 #
 # ⚠️ `home` WAS MISSING FROM THIS LINE UNTIL 2026-08-24, which made the order read as though the
 # series ended at the-community. It never did: LIVE-006 always named `home` LAST (Splash carried the
@@ -120,6 +128,15 @@ the-quest       0   # ✅ RETIRED 2026-08-19 (Lift 5c, ADR-1068). LegacyTheQuest
                     #    /discover link, the /pricing link) were recovered into existing template
                     #    blocks in the same change. Template-only from here.
 pricing         7   # PlanCard + RateLine + PlanPrice + PlanCta + IndependentStrip + ExtraCard + ComparisonBlock (860 lines)
+                    #    🔴 NOT A PENDING RETIREMENT — OUT OF THE SERIES BY DECISION (ADR-1116).
+                    #    This body is the page that reads live prices, the live take-rate vector,
+                    #    the beta-window resolution the checkout asks, and the operator's live gate
+                    #    overrides; there is no dollar figure or percentage typed in the file
+                    #    (ADR-916/918). Retiring any part of it would freeze a rate into a jsonb
+                    #    document, and slotting the static template in as a middle rung would let
+                    #    any deploy where nobody has published downgrade /pricing to a snapshot.
+                    #    The number stays gated EXACT-MATCH: it may fall if the body genuinely
+                    #    shrinks, and a rise is refused. It is not expected to reach 0.
 circles         0   # ✅ template only — the one slug already on a single render path (104 lines)
 
 # ── The seeker articles (Lift 5d, ADR-1068), enrolled one per PR ───────────────
