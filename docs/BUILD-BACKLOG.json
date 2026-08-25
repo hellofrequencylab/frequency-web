@@ -4027,7 +4027,7 @@
     {
       "id": "LIVE-111",
       "title": "The weekly job can see menu drift; the operator standing in the Menu manager still cannot",
-      "status": "open",
+      "status": "done",
       "lane": "live",
       "size": "S",
       "source": {
@@ -4078,18 +4078,18 @@
     {
       "id": "HYG-026",
       "title": "The visual suite's surfaces are inherited from the page editor, so most of the tree is unwatched and reads as covered",
-      "status": "open",
+      "status": "done",
       "lane": "hygiene",
       "size": "M",
       "source": {
         "file": "test/e2e/surfaces.ts",
-        "ref": "EDITABLE_PAGES_FALLBACK"
+        "ref": "OPERATOR_PATHS"
       },
       "verify": {
         "kind": "cmd",
         "cmd": "node -e \"const fs=require('fs');const S='test/e2e/surfaces.ts';if(!fs.existsSync(S))process.exit(79);const src=fs.readFileSync(S,'utf8');const admin=new Set((src.match(/'\\\\/admin[^']*'/g)||[]));if(admin.size<6){console.error('the visual suite watches '+admin.size+' operator route(s); its surfaces still come from EDITABLE_PAGES, which is the page editor\\\\'s list, not a coverage list');process.exit(1)}process.exit(0)\""
       },
-      "detail": "FOUND 2026-08-25 by PROG-DAWN3 slice 1 (ADR-1119), and found the only way it could be — by a sweep moving pixels and CI mostly not noticing. Slice 1 changed 37 sites; EXACTLY ONE of them renders on a surface the visual suite watches (the event approval controls, mounted by the space console), and that one produced 4 real failures. The other 36 moved with nothing looking at them. So the run's '140 passed' was never evidence the sweep held still — it was evidence that 36 of 37 sites are unobserved.\n\n🔴 THE CAUSE IS STRUCTURAL, NOT AN OVERSIGHT. test/e2e/visual.spec.ts takes its surfaces from test/e2e/surfaces.ts, which parses EDITABLE_PAGES out of lib/page-editor/data.ts at run time and adds one hand-maintained extra ('/discover'). EDITABLE_PAGES exists to say WHICH PAGES THE PAGE EDITOR MAY EDIT. It was never chosen for visual coverage, so what the suite watches is a by-product of an unrelated product decision, and it grows only when a marketing page is converted to a template. MEASURED 2026-08-25: the file contains ZERO '/admin' paths, so no operator surface in the product is visually watched at all — which is where the bulk of PROG-DAWN3's remaining ~1,960 sites live.\n\nThis is ADR-970's failure mode INSIDE the guard meant to prevent it: a gate that cannot fire over most of the tree still reads as coverage, and a green pr-compare gets quoted as 'no visual change'. The parse-at-run-time design is right and stays; what is wrong is the LIST it parses being someone else's.\n\nTHE FIX (owner ruling 2026-08-25, asked and answered while slice 1 was red): give the visual suite its own surface list, chosen for coverage rather than inherited — keeping the EDITABLE_PAGES parse as one INPUT so Lift 5c conversions still join automatically, and adding the operator/admin routes explicitly. Costs runner time per PR and a one-off baseline capture, which is why it is not folded into a DAWN slice: widening the list requires a capture on a runner (e2e-manual.yml → workflow_dispatch → update_baselines) and that is its own change with its own green run to read.\n\nTHE PROBE measures the consequence, not the title: it counts distinct '/admin' route literals in test/e2e/surfaces.ts and fails while that is under 6. Today it is 0. It cannot be satisfied by renaming anything, only by actually watching operator surfaces."
+      "detail": "FOUND 2026-08-25 by PROG-DAWN3 slice 1 (ADR-1119), and found the only way it could be — by a sweep moving pixels and CI mostly not noticing. Slice 1 changed 37 sites; EXACTLY ONE of them rendered on a surface the visual suite watched (the event approval controls, mounted by the space console), and that one produced 4 real failures. The other 36 moved with nothing looking at them, so the run's '140 passed' was never evidence the sweep held still.\n\nTHE CAUSE WAS STRUCTURAL. test/e2e/visual.spec.ts took its surfaces from test/e2e/surfaces.ts, which parsed EDITABLE_PAGES out of lib/page-editor/data.ts at run time plus one hand-maintained extra ('/discover'). EDITABLE_PAGES exists to say WHICH PAGES THE PAGE EDITOR MAY EDIT, so the camera pointed wherever an unrelated product decision happened to point it. Measured 2026-08-25: ZERO '/admin' literals in the file, i.e. no operator surface in the product was visually watched at all.\n\n── CLOSED 2026-08-25 (ADR-1128). The visual suite now has its OWN list, coverageSurfaces(), with three inputs: the parsed EDITABLE_PAGES routes (the parse was never the bug — Lift 5c conversions must keep joining automatically, so it stays as ONE INPUT), the public extras, and OPERATOR_PATHS — seven /admin routes chosen by CENSUS, not by taste. scripts/visual-surface-census.mjs is committed so the argument re-runs. Measured on the tree AFTER slice 1 landed, so these are live numbers and not pre-sweep ones: 99 of the repo's 463 frozen raw-button-bg sites (21.4%) and 518 of its 1,799 raw <button> tags (28.8%) live in app/(main)/admin/** + components/admin/**, and the seven picked routes hold 47/98 and 256/481 of what all 92 static admin routes can be credited with — 48% of the operator raw-button-bg and 53% of its buttons for 7.5% of the routes, at ~1.5 minutes of added runner time per pixel-moving PR. The share is stable under a sweep: slice 1 retired 43 sites repo-wide and the operator share of raw <button> did not move off 28.8%, which is what makes this structural rather than a snapshot.\n\nTHE MEASUREMENT HAD ITS OWN TRAP AND THE ADR RECORDS IT: a FULL transitive import closure credits fourteen unrelated admin routes with the same 71 debt-bearing files, because a registry deep in the graph imports most of the product. An import is not a render, so the census basis is deliberately shallow (route directory + two import hops) and every number is stated as an UPPER BOUND.\n\nWHAT WAS CUT, NAMED RATHER THAN TRUNCATED SILENTLY: the other 85 static admin routes (368 captures, ~18 min/PR, for the remaining 51 sites), every dynamic route (no stable seeded id survives a new preview hostname — the app-room failure), the seeder/demo consoles, and the @a11y + overflow suites (an operator surface with no a11y-baselines.json row is held to $defaultMax, so widening those needs its own seeded capture — HYG-027).\n\n🔴 NOT MERGEABLE UNTIL THE BASELINES ARE CAPTURED ON A RUNNER: e2e-manual.yml → workflow_dispatch → base_url=<preview>, capture_shell ✔, update_baselines ✔ writes the 28 admin* PNGs. The operator surfaces ride the SAME PW_STORAGE_STATE as the member shell (no second auth path); what they need on top is the /admin role floor, and whether the e2e account clears it is the subject of HYG-027."
     },
     {
       "id": "HYG-023",
@@ -4124,6 +4124,22 @@
         "evidence": "Measured 2026-08-25: ledger row 20270327000000 present; public.listing_saves live with 0 rows; and the readers exist -- grep -rn listing_saves lib app --include=*.ts --include=*.tsx returns lib/listings/index.ts (saveListing/unsaveListing/listSavedListingIds) plus the housing action and page callers. Re-measure with that grep and: select to_regclass('public.listing_saves').",
         "checked": "2026-08-25"
       }
+    },
+    {
+      "id": "HYG-027",
+      "title": "The operator surfaces have no a11y ratchet rows, and the e2e account may not clear the /admin role floor",
+      "status": "open",
+      "lane": "hygiene",
+      "size": "S",
+      "source": {
+        "file": "test/e2e/a11y-baselines.json",
+        "ref": "surfaces"
+      },
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const F='test/e2e/a11y-baselines.json';if(!fs.existsSync(F))process.exit(79);const j=JSON.parse(fs.readFileSync(F,'utf8'));const keys=Object.keys(j.surfaces||{}).filter(k=>k.startsWith('/admin'));if(keys.length===0){console.error('the a11y ratchet holds 0 operator rows, so the seven /admin surfaces the visual suite watches are still held to $defaultMax and cannot join the a11y matrix');process.exit(1)}process.exit(0)\""
+      },
+      "detail": "FILED 2026-08-25 by ADR-1128, which deliberately left both halves out of its own change.\n\nHALF ONE — THE A11Y RATCHET. ADR-1128 added seven /admin routes to the VISUAL suite only. a11y.spec.ts and overflow.spec.ts still read publicSurfaces()/appSurfaces(). A surface with no row in test/e2e/a11y-baselines.json is held to $defaultMax (0 serious+), so adding the operator routes there without first SEEDING the ratchet would fail pull requests on debt that predates them — exactly what update-a11y + capture_shell exists to prevent. The seed is a dispatch: e2e-manual.yml → base_url=<preview>, capture_shell ✔, update_a11y ✔. The probe measures the consequence: at least one '/admin' key in the ratchet.\n\nHALF TWO — THE ROLE FLOOR, AND IT WAS MEASURED RATHER THAN CALLED UNCHECKABLE. requireAdminFloor() (lib/admin/guard.ts) admits platform staff (web_role admin/janitor) or a team_members staff role that sees an admin group, and redirects everyone else to /feed. PW_MEMBER_EMAIL is an owner-held secret, but its CONSEQUENCE is readable: test/e2e/a11y-baselines.json carries '/spaces/danieltyack/manage' rows, so the e2e account manages that Space, and exactly two profiles do — danieltyack (web_role janitor, clears the floor) and awesomepossum (web_role none, does not). Repo-wide only danieltyack and moderation hold a staff web_role and team_members holds one row. So the outcome is one of two and the first capture run settles it in one line of the job summary: if the seven /admin rows appear under 'Still unphotographed', the account is the second one and the fix is a single grant (web_role='admin', or a team_members staff role that sees an admin group). Until then operatorDenialReason() skips those tests WITH THE CAUSE NAMED and shell-reporter.ts lists every one of them on every run — loud, never silent."
     }
   ]
 }

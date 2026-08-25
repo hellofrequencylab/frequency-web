@@ -1,9 +1,18 @@
 // Visual snapshots of the real surface area (UX maturity plan, Lift 6).
 //
 // The matrix is: SURFACE × RENDER STATE × VIEWPORT PROJECT.
-//   surfaces      — every EDITABLE_PAGES route (read from lib/page-editor/data.ts at run
-//                   time, so Lift 5c conversions join automatically) plus /discover, plus
-//                   the member shell trio + Space console when PW_STORAGE_STATE is set.
+//   surfaces      — `coverageSurfaces()` in test/e2e/surfaces.ts: THE VISUAL SUITE'S OWN LIST,
+//                   chosen for coverage (ADR-1128). Three inputs — the parsed EDITABLE_PAGES
+//                   routes (so Lift 5c conversions still join automatically), the public
+//                   extras, and an explicit operator/admin set measured by
+//                   `node scripts/visual-surface-census.mjs` — plus the member shell trio +
+//                   Space console when PW_STORAGE_STATE is set.
+//
+//                   🔴 It used to be EDITABLE_PAGES plus /discover, full stop. That list
+//                   answers "which pages may the page editor edit?", so the camera pointed
+//                   wherever an unrelated product decision happened to point it, and it held
+//                   ZERO /admin routes. A DAWN sweep moved 37 sites, ONE of them was watched,
+//                   and the run said "140 passed" (HYG-026).
 //   render states — DAWN light/dark × Midnight light/dark (test/e2e/surfaces.ts).
 //                   The member shell captures the two MODE states only; see
 //                   SHELL_RENDER_STATES for why the skin axis is not ours there.
@@ -27,6 +36,8 @@ import {
   assertNotProtectionWall,
   currentPathname,
   masksFor,
+  operatorDenialReason,
+  operatorSurfaces,
   publicSurfaces,
   settle,
   type RenderState,
@@ -45,6 +56,11 @@ async function capture(
   await applyRenderState(page, state)
   await page.goto(surface.path, { waitUntil: 'load' })
   await assertNotProtectionWall(page)
+  // An OPERATOR surface bounced to /feed is requireAdminFloor()'s denial: the e2e account is a
+  // member and not staff. That is an owner-held account fact, not this PR's fault, so it skips
+  // WITH THE CAUSE NAMED and is counted by shell-reporter.ts. See operatorDenialReason().
+  const denied = operatorDenialReason(page, surface)
+  if (denied) test.skip(true, denied)
   // A member surface on the sign-in page is a dead credential, not a missing one; a member
   // surface on ANY other page is a mis-pointed surface. Throw rather than photograph the
   // wrong page under the shell's name — see the app-room case in assertMemberSession.
@@ -107,6 +123,40 @@ test.describe('visual · member shell', { tag: ['@visual', '@shell'] }, () => {
   for (const state of SHELL_RENDER_STATES) {
     test.describe(state.id, () => {
       for (const surface of appSurfaces()) {
+        test(`${surface.path} matches baseline`, async ({ page }) => {
+          await capture(page, surface, state)
+        })
+      }
+    })
+  }
+})
+
+// The operator console (HYG-026, ADR-1128). SAME session as the member shell — `test.use` takes
+// the same `STORAGE_STATE`, so nothing here is a second auth path; `capture_shell` in
+// e2e-manual.yml (and the `Mint the member session` step in e2e.yml) is what supplies it.
+//
+// @shell is deliberate and load-bearing: it is what makes `shell-reporter.ts` count these tests
+// and NAME each unphotographed operator route in the job summary. An operator describe without
+// the tag would skip in silence, which is the disease this change treats, not the cure.
+//
+// SHELL_RENDER_STATES, not RENDER_STATES: /admin renders inside the authed shell, which stamps
+// `[data-skin]` server-side on a DESCENDANT of <html>, so the skin axis is not ours here and the
+// two midnight variants would only duplicate these baselines.
+test.describe('visual · operator console', { tag: ['@visual', '@shell'] }, () => {
+  test.use({ storageState: STORAGE_STATE })
+
+  test.skip(
+    !baseURL,
+    'PW_BASE_URL is not set. Point it at a Vercel preview or a running dev server to run the visual suite.',
+  )
+  test.skip(
+    !STORAGE_STATE,
+    'PW_STORAGE_STATE is not set (or the file is missing). The operator surfaces ride the SAME member session as the app shell — point it at a saved storage state for an account that is platform staff.',
+  )
+
+  for (const state of SHELL_RENDER_STATES) {
+    test.describe(state.id, () => {
+      for (const surface of operatorSurfaces()) {
         test(`${surface.path} matches baseline`, async ({ page }) => {
           await capture(page, surface, state)
         })

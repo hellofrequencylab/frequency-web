@@ -55,6 +55,25 @@
 # Repo variables it reads: PW_ROOM_PATH (default /channels), PW_SPACE_SLUG (adds the console).
 # Full procedure: test/e2e/README.md § The member shell.
 #
+# ── capture_shell ALSO CARRIES THE OPERATOR CONSOLE (ADR-1128) ────────────────────────────
+# Since 2026-08-25 the @visual matrix includes seven /admin routes (`OPERATOR_PATHS` in
+# test/e2e/surfaces.ts, chosen by `node scripts/visual-surface-census.mjs`). They are member
+# surfaces with a role floor, so they ride the SAME minted session — there is no separate
+# input, and there must not be a second auth path.
+#
+# 🔴 THE ACCOUNT MUST BE PLATFORM STAFF or the 28 operator captures cannot be taken.
+# requireAdminFloor() redirects a signed-in non-staff viewer to /feed, and the suite SKIPS
+# with the cause named rather than photographing /feed seven times under seven admin names.
+# A capture run in that state commits the member-shell PNGs and silently no operator ones —
+# so before dispatching update_baselines for these, confirm PW_MEMBER_EMAIL's account has
+# web_role = 'admin'. The job summary's shell-coverage table names every /admin route it
+# could not photograph; read it before believing the capture was complete (backlog HYG-027).
+#
+# FIRST CAPTURE OF THE OPERATOR BASELINES (28 PNGs — 7 routes x 2 modes x 2 viewports):
+#     base_url = <the PR's preview URL>, capture_shell ✔, update_baselines ✔
+# Expect the commit to name `admin*` files only. Anything else in that diff is a regression,
+# not a capture (ADR-948's attribution property).
+#
 # ⚠️ WHETHER THE COMMIT THIS MAKES RE-RUNS CI IS NOT RELIABLE — DO NOT PLAN AROUND EITHER ANSWER.
 #
 # Both capture jobs push with GITHUB_TOKEN. GitHub suppresses workflow runs triggered by that
@@ -97,7 +116,7 @@ on:
         default: false
         type: boolean
       capture_shell:
-        description: 'Include the MEMBER SHELL (/feed, the room, /settings, the Space console). Mints a session first; needs the SUPABASE_SERVICE_ROLE_KEY + PW_MEMBER_EMAIL secrets. Leave OFF for a marketing-only run.'
+        description: 'Include the MEMBER SHELL (/feed, the room, /settings, the Space console) AND the operator console (7 /admin routes, ADR-1128). Mints a session first; needs the SUPABASE_SERVICE_ROLE_KEY + PW_MEMBER_EMAIL secrets, and that account must be platform staff for the /admin half. Leave OFF for a marketing-only run.'
         required: false
         default: false
         type: boolean

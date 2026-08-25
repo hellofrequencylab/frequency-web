@@ -458,7 +458,10 @@ async function nextItemPosition(
  *  Returns the freshly-assembled menu. */
 export async function syncMenuFromDefaults(
   surfaceKey: MenuSurfaceKey,
-): Promise<{ ok: true; menu: ResolvedMenu } | { ok: false; error: string }> {
+): Promise<
+  | { ok: true; menu: ResolvedMenu; syncedDefaultKeys: string[] }
+  | { ok: false; error: string }
+> {
   try {
     await requireJanitor()
     if (!isSurface(surfaceKey)) return { ok: false, error: 'Unknown surface' }
@@ -470,7 +473,8 @@ export async function syncMenuFromDefaults(
     if (existing.isDefault) {
       const seeded = await seedMenuFromDefaults(surfaceKey)
       if (!seeded.ok) return seeded
-      return { ok: true, menu: await getAdminMenu(surfaceKey) }
+      // The seed just baselined every default href (see seedMenuFromDefaults).
+      return { ok: true, menu: await getAdminMenu(surfaceKey), syncedDefaultKeys: leafHrefs(def) }
     }
 
     const ensured = await ensureMenu(surfaceKey)
@@ -526,7 +530,10 @@ export async function syncMenuFromDefaults(
     }
     if (toInject.length > 0) revalidatePath('/', 'layout')
 
-    return { ok: true, menu: await getAdminMenu(surfaceKey) }
+    // Hand back the baseline this sync just settled on, so the Menu manager's drift badges
+    // (lib/menus/drift.ts, ADR-1134) classify against the SAME keys the row now carries rather
+    // than the copy the server page read before this sync ran.
+    return { ok: true, menu: await getAdminMenu(surfaceKey), syncedDefaultKeys: newSeen }
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : 'syncMenuFromDefaults failed' }
   }

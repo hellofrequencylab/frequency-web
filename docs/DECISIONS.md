@@ -31209,6 +31209,232 @@ is per-export now — one above an export exempts only that export; an unattache
 historical file-level meaning for the two files that predate this. Floors added
 (`MIN_ACTION_FILES`/`MIN_ACTION_EXPORTS`) so the corpus — 137 files, 707 exports — cannot go
 invisible the way LIVE-022's routes did.
+## ADR-1134: Menu drift faces the operator — one comparison serves the weekly job AND the Menu manager (2026-08-25)
+
+**Status:** accepted · closes `LIVE-111` (filed on #2267) · builds on ADR-860, ADR-390's gate
+contract, and LIVE-107's `scripts/maintenance/menu-drift.mjs` · proven by `lib/menus/drift.test.ts`
+
+### The decision
+
+Per-item drift is now rendered inside the Menu manager, and the derivation behind it is the SAME
+comparison the weekly maintenance sweep runs. Three pieces:
+
+- **`lib/menus/drift-core.mjs`** — the four-finding comparison (mislabelled / unreachable /
+  pending / staleBaseline) MOVED here verbatim from `scripts/maintenance/menu-drift.mjs`, which now
+  imports and re-exports it. A dependency-free `.mjs` rather than a `.ts` module because the weekly
+  script runs under plain `node` (Node 22, no TypeScript loader), while TypeScript imports a `.mjs`
+  without ceremony — so ONE file serves both callers instead of two copies that can disagree, which
+  is the failure LIVE-111 names.
+- **`lib/menus/drift.ts`** — `deriveMenuDrift(menu, defaultMenu(surfaceKey), synced_default_keys)`,
+  a pure function of exactly those three inputs, testable without a browser or a database. Per live
+  row: `synced` / `edited` (with the diverged fields named) / `custom`. Per absent code default:
+  `retired` (its href is in the `synced_default_keys` baseline, so the inserts-only sync will never
+  resurrect it) or `missing` (new; the next sync injects it) — consumed directly from the shared
+  comparison's `unreachable` / `pending` buckets, not re-derived. A mislabelled default (LIVE-107's
+  member-facing defect) surfaces as BOTH halves of what it is: the live row reads `edited` on its
+  label, and the orphaned default appears in the absent list naming the href the label actually
+  points at.
+- **The thread from the server.** `synced_default_keys` is DB state the client editor never
+  received, so `MenuGroupsBlock` reads it (`getSyncedDefaultKeys`, `lib/menus/read.ts`) and passes
+  it as a prop; `syncMenuFromDefaults` now returns the baseline it just settled so the badges never
+  classify against the pre-sync copy. The editor recomputes the derivation from its LOCAL working
+  state, so "Edited" appears the moment a label leaves its default — at the keystroke, not in next
+  week's report.
+
+### Why the editor, when the weekly job already looks
+
+A weekly CI job is not a substitute for telling the author, and LIVE-107 is the proof rather than
+the refutation: the mislabelled "Spaces directory" row was created BY AN OPERATOR IN THIS EDITOR,
+and nothing on the screen said the row had left its default behind. The weekly job told a
+maintainer a week later. Both instruments now read one comparison, so they cannot tell two stories.
+
+### What is deliberately NOT compared
+
+- **Access gates.** Since the gate contract (2026-08-06, `lib/menus/gates.ts`) the registry
+  overwrites every known href's gate at read time, so a resolved menu's gates structurally cannot
+  drift from code; comparing them would always read equal and would imply the field can drift.
+  The `edited` diff covers what the operator actually owns: label, subheading, shown/hidden.
+- **Operator-added links.** A row with no code counterpart is `custom`, never a finding — the same
+  refusal the weekly comparison already makes, for the same reason: calling additions drift trains
+  people to ignore the report.
+- **The pinned Profile rail row.** Runtime-injected, never a DB row, never synced; skipped on both
+  sides of the derivation.
+## ADR-1128: The visual suite gets its own surface list, and the operator routes are chosen by census (2026-08-25)
+
+**Status:** accepted · closes `HYG-026`, filed by [ADR-1119](#adr-1119) (PROG-DAWN3 slice 1) ·
+amends [ADR-948](#adr-948) / [ADR-950](#adr-950) (the member shell) · files `HYG-027`
+
+**The finding, in one line:** `test/e2e/visual.spec.ts` took its surfaces from a list that
+answers a different question, so most of the product was unwatched and the board still read
+green.
+
+`test/e2e/surfaces.ts` parsed `EDITABLE_PAGES` out of `lib/page-editor/data.ts` at run time and
+added one hand-maintained extra (`/discover`). `EDITABLE_PAGES` exists to say **which pages the
+page editor may edit**. It was never chosen for visual coverage, so what the camera watched was
+a by-product of an unrelated product decision, and it grew only when a marketing page was
+converted to a template.
+
+Measured 2026-08-25: the file contained **zero** `'/admin'` route literals. No operator surface
+in the product was visually watched at all.
+
+It was found the only way a gap like this can be found — by something moving and nothing
+noticing. PROG-DAWN3 slice 1 changed 37 sites; exactly **one** of them rendered on a watched
+surface (the event approval controls, mounted by the Space console) and that one produced 4 real
+failures. The other 36 moved unobserved, and the run's `140 passed` was never evidence the sweep
+held still. It was evidence that 36 of 37 sites are unobserved.
+
+This is [ADR-970](#adr-970)'s failure mode *inside the guard meant to prevent it*: a gate that
+cannot fire over most of the tree still reads as coverage, and a green `pr-compare` gets quoted
+as "no visual change".
+
+### The decision
+
+The visual suite gets **its own list**, `coverageSurfaces()`, chosen for coverage rather than
+inherited. Three inputs:
+
+| Input | Source | Why it is an input rather than the list |
+| :--- | :--- | :--- |
+| the `EDITABLE_PAGES` routes | parsed from `lib/page-editor/data.ts` at run time | **the parse was never the bug.** A Lift 5c template conversion must keep joining the matrix the day it lands, with no edit to the registry — that part of the design is right and stays |
+| the public extras | `EXTRA_PUBLIC_PATHS` | routes with no editor row (`/discover`) |
+| the operator console | `OPERATOR_PATHS` — seven `/admin` routes | measured, below |
+
+`appSurfaces()` (the member shell) was already its own list and is unchanged.
+
+### What was measured, and why those seven routes
+
+`scripts/visual-surface-census.mjs` is committed so the argument re-runs rather than being taken
+on trust. It counts two populations per file — the frozen `raw-button-bg` class, read **through
+`check-adoption.mjs`'s own corpus** so it cannot drift from the ratchet (AGENTS.md: quote the
+frozen baselines, not a fresh grep), and raw `<button>` opening tags, which is PROG-DAWN3's own
+basis for its ~2,070 figure.
+
+**The population, by directory — no graph, no assumptions.** Measured on the tree *after*
+PROG-DAWN3 slice 1 landed (#2266), so these are the live numbers and not the pre-sweep ones:
+
+| Where | `raw-button-bg` | raw `<button>` | files |
+| :--- | ---: | ---: | ---: |
+| repo-wide | 463 | 1,799 | — |
+| `app/(main)/admin/**` + `components/admin/**` | **99 (21.4%)** | **518 (28.8%)** | 165 |
+| reachable from every surface watched *before* this change | 117 (25.3%) | 480 (26.7%) | — |
+
+Better than a fifth of the remaining DAWN population sits in code an operator surface is the only
+way to photograph, and none of it was watched. **The share is also stable under a sweep**: slice 1
+retired 43 sites repo-wide and the operator share of raw `<button>` did not move off 28.8%, which
+is what makes this a structural gap rather than a snapshot.
+
+**🔴 The attribution, and the trap in it.** The obvious method — follow a route's imports
+transitively and sum the debt you reach — is wrong, and wrong in the flattering direction. Run
+that way, a full closure from `/admin/gamification` reaches 71 debt-bearing files worth 51
+`raw-button-bg`, and **fourteen unrelated admin routes reach the same 71**, because a registry
+deep in the graph imports most of the product. Under that measure `/admin/moderation` "covers"
+`components/events/event-activity.tsx`, which it does not render and no camera pointed at it would
+ever see. An import is not a render; a coverage number built on imports is exactly the
+shape-not-truth failure this repo names in four ADRs, performed by the fix rather than the bug.
+
+So the census basis is deliberately shallow and **stated rather than assumed**: a route owns the
+files in its own directory (minus nested directories that are routes of their own), plus **two
+import hops**. Two hops reaches the page, its co-located client components, and the components
+those mount, and stops before the registries. It still over-counts — a component behind a tab or
+a dialog is reachable and unphotographed — so every number below is an **upper bound** on what a
+screenshot watches, never a promise.
+
+| Route | `raw-button-bg` | raw `<button>` | why it is on the list |
+| :--- | ---: | ---: | :--- |
+| `/admin` | 6 | 28 | the console index, and the **only** surface that photographs the shared admin chrome — sub-nav band, Ask-Vera search bar, info rail, page dock, footer |
+| `/admin/library` | 12 | 73 | highest measured |
+| `/admin/marketing/nurture` | 9 | 65 | second; the entry to the email-studio cluster |
+| `/admin/crew-tasks` | 7 | 17 | densest ratio in the tree — 7 sites in two files |
+| `/admin/crm` | 5 | 18 | the Resonance CRM head, in front of the `components/crm` + `components/admin/crm` cluster |
+| `/admin/content/practices` | 4 | 43 | the biggest single button population in the admin tree — a dense table plus its controls |
+| `/admin/qr` | 4 | 37 | the QR studio is button-heavy and composes none of the kit |
+| **union (deduped)** | **47** | **256** | 59 files |
+
+Against all 92 static admin routes (98 / 481 on the same basis), seven routes hold **48% of the
+admin-attributable `raw-button-bg` and 53% of the buttons, for 7.5% of the routes**. The set is a
+greedy cover run on both axes and then filtered: `/admin/business-seeder` places fifth on the
+button axis and is dropped as a development fixture rather than missed, and `/admin` is kept
+despite ranking fourth because whichever operator route comes first is the one that buys the
+chrome.
+
+### The cost, and what was cut
+
+28 new captures per pixel-moving PR (7 routes × 2 modes × 2 viewports — the shell renders
+`[data-skin]` server-side, so the skin axis is not the harness's here and the midnight variants
+would be duplicate PNGs). At the suite's own measured ~11.5s/test over 4 workers, that is
+**~1.5 minutes** added to the `pr-compare` visual step, against 144 existing baselines.
+
+**Cut, and named rather than performed silently — a silent truncation reads as coverage, which is
+the failure this ADR exists to close:**
+
+- **the other 85 static admin routes.** All 92 would be 368 captures, ~18 minutes per PR, to buy
+  the remaining 51 `raw-button-bg`. The tail is genuinely flat: after the first seven the greedy
+  marginal gain is 3 sites or fewer per route.
+- **every dynamic route** (`/admin/crm/deals/[...slug]`, `/admin/appearance/[id]`, …). They need a
+  seeded id that survives a new preview hostname; without one the surface bounces and photographs
+  the wrong page under an operator's name — the `app-room` failure ([ADR-948](#adr-948)) with a
+  different route.
+- **the seeder and demo consoles** (`/admin/business-seeder` 3/27, `/admin/demo` 3/16): development
+  fixtures with generated content, not operator product.
+- **the `@a11y` and overflow suites.** Both still read `publicSurfaces()` / `appSurfaces()`. An
+  operator surface with no row in `a11y-baselines.json` is held to `$defaultMax` (0 serious+), so
+  adding it there without a seeded ratchet capture would fail PRs on debt that predates them.
+  Filed as `HYG-027`.
+
+### The role floor is a skip, not a throw — and it is a *loud* skip
+
+The operator routes ride the **same** `PW_STORAGE_STATE` as the member shell. There is no second
+auth path and there must not be one. What they need on top of a session is a role:
+`requireAdminFloor()` admits platform staff or a `team_members` staff role that sees an admin
+group, and redirects everyone else to `/feed`.
+
+So a bounce to `/feed` from an `/admin` path means exactly one thing: the account behind
+`PW_MEMBER_EMAIL` is a member and not an operator. That is an owner-held account fact, not a
+defect in the pull request under test, and a red X meaning *"nobody has promoted the e2e account
+yet"* is precisely the check-training failure `e2e.yml`'s own header argues against. So
+`operatorDenialReason()` returns a sentence and the test skips.
+
+**Which branch this actually lands on was measured, not assumed** — a blocker phrased as *"an
+agent cannot see it"* is a claim with an expiry date (AGENTS.md), and this one took three queries.
+`PW_MEMBER_EMAIL` is an owner-held secret and unreadable, but its *consequence* is not:
+`test/e2e/a11y-baselines.json` carries `/spaces/danieltyack/manage` rows, so the e2e account can
+manage that Space, and exactly two profiles can — `danieltyack` (`web_role` janitor) and
+`awesomepossum` (`web_role` none). Across the whole database only `danieltyack` and `moderation`
+hold a staff `web_role`, and `team_members` holds one row (`danieltyack`, owner). So:
+
+| If `PW_MEMBER_EMAIL` is… | `requireAdminFloor()` | the 28 operator captures |
+| :--- | :--- | :--- |
+| `danieltyack` | admitted (`isJanitor`) | run on the first capture |
+| `awesomepossum` | redirected to `/feed` | skip, and are named in the job summary |
+
+Both branches are live, and neither is guessed at in code. The capture run settles it in one line of
+the job summary, and if it is the second the fix is one grant — filed as `HYG-027`.
+
+**⚠️ The skip is the part that has to be got right, because a silent skip is the disease.** The
+describe carries `@shell`, so `shell-reporter.ts` counts these tests and names every unphotographed
+`/admin` route in `$GITHUB_STEP_SUMMARY` on every run — the same treatment `/nearby` gets, for the
+same reason. The reporter's surface union is conditional on the run having *collected* an operator
+test (a skipped test is a collected one): `a11y.spec.ts` and `overflow.spec.ts` carry the member
+shell and not the operator console, and an unconditional union would make every a11y run announce
+seven routes as unphotographed — true of that run, useless as a signal, and the fastest way to
+teach a reader to skip the banner.
+
+### This PR is not mergeable on its own
+
+Baselines are captured on a runner, never in an agent sandbox. Until
+`e2e-manual.yml → workflow_dispatch → base_url=<preview>, capture_shell ✔, update_baselines ✔`
+lands its 28 `admin*` PNGs on the branch, the seven surfaces fail with *"snapshot doesn't exist"* —
+which the shell reporter already renders as a capture step rather than a regression. Read the job
+summary's shell-coverage table before believing a capture was complete: if the account is not
+staff, the capture commits the member-shell PNGs and **no** operator ones.
+
+### One thing to expect on the first green run
+
+`baseline-distinctness.test.ts` fails the committed tree when two surfaces are near-identical, and
+its `ALLOWED_TWINS` list is empty on purpose. Seven admin consoles share a chrome band and a lot of
+table furniture. If two operator baselines come back near-identical, that is the file doing its job
+and the answer is one of two, with the measurement attached: the pair is a defensible twin and gets
+an `ALLOWED_TWINS` row, or one of the two surfaces is redundant and comes off `OPERATOR_PATHS`.
+Never widen the similarity threshold.
 ---
 
 ## ADR-1136: The 26 adoptable bands adopt, and "9 bespoke stanzas" turns out to be 5 stanzas plus 4 compositions (2026-08-25)
