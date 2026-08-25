@@ -28,8 +28,8 @@ import { getMyProfileId } from '@/lib/auth'
 import { getSpaceById } from '@/lib/spaces/store'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { spaceFunctionAccess, spaceFunctionAvailable } from '@/lib/spaces/functions'
-import { enqueueEmail, listUnsubscribeHeaders } from '@/lib/email'
-import { bulkRunAfter } from '@/lib/queue/outbox'
+import { sendRawEmail, listUnsubscribeHeaders } from '@/lib/email'
+import { bulkRunAfter, enqueue, type JobHandler } from '@/lib/queue/outbox'
 import { suppress } from '@/lib/suppression'
 import { buildSpaceUnsubscribeUrl } from '@/lib/unsubscribe-tokens'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
@@ -591,20 +591,27 @@ async function deliverSpaceCampaign(
       // The BULK lane, dripped: a campaign is mail nobody is sitting and waiting for, so it must
       // never spend the quota a welcome email is queued behind. bulkRunAfter staggers when each
       // job becomes DUE, because the claim is ordered by run_after and knows nothing about lanes.
-      await enqueueEmail(
+      await enqueue(
+        SPACE_CAMPAIGN_EMAIL_KIND,
         {
           to: rec.email,
           subject,
           html: personalizedHtml,
           from: fromLine,
           headers,
+          // The ledger row this job must move on at drain time (runSpaceCampaignEmail below). The
+          // generic 'email' kind DISCARDS sendRawEmail's provider id, which would strand this row
+          // at 'queued' forever and blind both webhook matchers — that is why campaigns get their
+          // own kind rather than riding the shared one.
+          outreachSendId: sendId,
         },
         { lane: 'bulk', runAfter: bulkRunAfter(sent, fanOutStartedAt) },
       )
-      // The row is QUEUED, not sent — the send happens in the drain and the delivery webhook moves
-      // it on. The ledger id still equals the tracking token's send id, so opens and clicks resolve
-      // exactly as before. The caps count a job we have COMMITTED to send, which is what makes the
-      // in-window check honest against a fresh countTodaySends.
+      // The row is QUEUED, not sent — the send happens in the drain (runSpaceCampaignEmail moves
+      // the row to 'sent' + resend_id when Resend accepts) and the delivery webhook moves it on
+      // from there. The ledger id still equals the tracking token's send id, so opens and clicks
+      // resolve exactly as before. The caps count a job we have COMMITTED to send, which is what
+      // makes the in-window check honest against a fresh countTodaySends.
       {
         sent++
         // Track our own accepted send against the live count so the cap holds between re-reads (a
@@ -664,6 +671,60 @@ async function deliverSpaceCampaign(
   }
 
   return ok({ sent, suppressed, failed })
+}
+
+// ── Outbox seam: the drain half of a campaign send ────────────────────────────────────────────────
+// deliverSpaceCampaign COMMITS a recipient by writing the outreach_sends row at 'queued' and
+// enqueueing a job of this kind. This handler runs at drain time and moves that SAME row on:
+//   • Resend accepts → 'sent' + resend_id — the id both webhook matchers below resolve a Space
+//     send by. Without it a campaign row can never leave 'queued', per-Space bounce/complaint
+//     suppression can never fire for campaign recipients, and spaceDeliverability ("sent =
+//     everything except queued") under-reports every campaign.
+//   • Sending disabled / globally suppressed at drain time (sendRawEmail returns id null) →
+//     'failed' with the reason, restoring the pre-outbox behavior where a no-op was visible.
+//   • Provider error → THROW: the outbox retries with backoff and the row honestly stays 'queued'.
+//     A job that exhausts max_attempts dead-letters with the row still 'queued' — the DLQ surface
+//     is the gate that notices.
+// The ledger update targets still-'queued' rows only (a webhook that raced us keeps its later
+// status) and is best-effort: the email is already accepted, so a ledger blip must never re-send.
+export const SPACE_CAMPAIGN_EMAIL_KIND = 'space-campaign-email'
+
+export const runSpaceCampaignEmail: JobHandler = async (p) => {
+  // Malformed jobs surface as dead-letters for inspection (the push handler's posture).
+  if (!p.to || !p.subject || typeof p.outreachSendId !== 'string') {
+    throw new Error('space-campaign-email job missing to, subject, or outreachSendId')
+  }
+  const { id } = await sendRawEmail({
+    to: p.to as string,
+    subject: p.subject as string,
+    html: (p.html as string) ?? '',
+    headers: (p.headers as Record<string, string> | undefined) ?? undefined,
+    from: typeof p.from === 'string' ? p.from : undefined,
+  })
+  try {
+    const db = createAdminClient() as unknown as {
+      from: (t: string) => {
+        update: (patch: Record<string, unknown>) => {
+          eq: (c: string, v: string) => { eq: (c: string, v: string) => Promise<{ error: unknown }> }
+        }
+      }
+    }
+    const { error } = await db
+      .from('outreach_sends')
+      .update(
+        id
+          ? { status: 'sent', resend_id: id }
+          : { status: 'failed', error: 'sending disabled or address suppressed at drain time' },
+      )
+      .eq('id', p.outreachSendId)
+      .eq('status', 'queued')
+    if (error) throw error
+  } catch (err) {
+    console.error(
+      '[spaces/email] campaign ledger update failed:',
+      err instanceof Error ? err.message : String(err),
+    )
+  }
 }
 
 // ── Webhook seam: update a Space send on a provider bounce / complaint ────────────────────────────

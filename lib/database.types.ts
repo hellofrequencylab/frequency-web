@@ -7273,6 +7273,39 @@ export type Database = {
           },
         ]
       }
+      listing_saves: {
+        Row: {
+          created_at: string
+          listing_id: string
+          profile_id: string
+        }
+        Insert: {
+          created_at?: string
+          listing_id: string
+          profile_id: string
+        }
+        Update: {
+          created_at?: string
+          listing_id?: string
+          profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "listing_saves_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "listing_saves_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       listings: {
         Row: {
           category: string | null
@@ -7526,6 +7559,7 @@ export type Database = {
           astrology_opt_in: boolean
           birth_data: Json | null
           connect_intent: string[]
+          natal_chart: Json | null
           profile_id: string
           romance_mode: boolean
           updated_at: string
@@ -7534,6 +7568,7 @@ export type Database = {
           astrology_opt_in?: boolean
           birth_data?: Json | null
           connect_intent?: string[]
+          natal_chart?: Json | null
           profile_id: string
           romance_mode?: boolean
           updated_at?: string
@@ -7542,6 +7577,7 @@ export type Database = {
           astrology_opt_in?: boolean
           birth_data?: Json | null
           connect_intent?: string[]
+          natal_chart?: Json | null
           profile_id?: string
           romance_mode?: boolean
           updated_at?: string
@@ -9809,8 +9845,11 @@ export type Database = {
           created_at: string
           id: string
           logged_for: string
+          pillar_id: string | null
           practice_id: string | null
+          primary_pct: number | null
           profile_id: string
+          secondary_pillar_id: string | null
           seconds_done: number | null
           seconds_target: number | null
           zaps_awarded: number | null
@@ -9821,8 +9860,11 @@ export type Database = {
           created_at?: string
           id?: string
           logged_for?: string
+          pillar_id?: string | null
           practice_id?: string | null
+          primary_pct?: number | null
           profile_id: string
+          secondary_pillar_id?: string | null
           seconds_done?: number | null
           seconds_target?: number | null
           zaps_awarded?: number | null
@@ -9833,8 +9875,11 @@ export type Database = {
           created_at?: string
           id?: string
           logged_for?: string
+          pillar_id?: string | null
           practice_id?: string | null
+          primary_pct?: number | null
           profile_id?: string
+          secondary_pillar_id?: string | null
           seconds_done?: number | null
           seconds_target?: number | null
           zaps_awarded?: number | null
@@ -9845,6 +9890,13 @@ export type Database = {
             columns: ["circle_id"]
             isOneToOne: false
             referencedRelation: "circles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "practice_logs_pillar_id_fkey"
+            columns: ["pillar_id"]
+            isOneToOne: false
+            referencedRelation: "pillars"
             referencedColumns: ["id"]
           },
           {
@@ -9866,6 +9918,13 @@ export type Database = {
             columns: ["profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "practice_logs_secondary_pillar_id_fkey"
+            columns: ["secondary_pillar_id"]
+            isOneToOne: false
+            referencedRelation: "pillars"
             referencedColumns: ["id"]
           },
         ]
@@ -15634,6 +15693,16 @@ export type Database = {
         }
         Returns: Json
       }
+      award_zaps_atomic: {
+        Args: {
+          _action: string
+          _amount: number
+          _daily_cap: number
+          _metadata?: Json
+          _profile: string
+        }
+        Returns: Json
+      }
       capture_guest_rsvp: {
         Args: { p_email: string; p_event_id: string; p_name?: string }
         Returns: string
@@ -16016,6 +16085,10 @@ export type Database = {
         Returns: string
       }
       handle_is_available: { Args: { check_handle: string }; Returns: boolean }
+      housing_aspect_score: {
+        Args: { lon_a: number; lon_b: number }
+        Returns: number
+      }
       housing_astro_compat: { Args: { a: string; b: string }; Returns: number }
       housing_element_pair: { Args: { a: string; b: string }; Returns: number }
       housing_lifestyle_agreement: {
@@ -16037,6 +16110,7 @@ export type Database = {
           timing_fit: number
         }[]
       }
+      housing_natal_compat: { Args: { ca: Json; cb: Json }; Returns: number }
       housing_roommate_matches: {
         Args: { _limit?: number }
         Returns: {
@@ -16051,6 +16125,7 @@ export type Database = {
         }[]
       }
       housing_safe_date: { Args: { t: string }; Returns: string }
+      housing_safe_float: { Args: { t: string }; Returns: number }
       housing_safe_int: { Args: { t: string }; Returns: number }
       housing_sign_element: { Args: { s: string }; Returns: string }
       housing_sign_modality: { Args: { s: string }; Returns: string }

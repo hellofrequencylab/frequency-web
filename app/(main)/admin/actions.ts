@@ -15,6 +15,7 @@ import { recordEngagementEvent } from '@/lib/engagement/events'
 import { awardZapsForAction } from '@/lib/zaps'
 import { processGamificationEvent } from '@/lib/achievements'
 import { cancelAudit, reinstateAudit } from '@/lib/events/event-lifecycle'
+import { refundAndNotifyForCancelledEvent } from '@/lib/events/cancellation'
 import { atLeastRole, isStaff, isJanitor } from '@/lib/core/roles'
 import { coerceTierZaps } from '@/lib/practices/tiers'
 import { stampCircleSpaceId } from '@/lib/circles/store'
@@ -851,9 +852,24 @@ export async function toggleCancelEvent(id: string, cancel: boolean) {
   const caller = await getCallerProfile()
   await requireScopedManage(caller, caps.has('event.editSettings'), 'community')
   const admin = createAdminClient()
-  const update = cancel ? cancelAudit(caller?.id ?? null, null) : reinstateAudit()
-  const { error } = await admin.from('events').update(update).eq('id', id)
-  if (error) throw new Error(error.message)
+  if (cancel) {
+    // Guarded live → cancelled transition + the refund/notify fan-out, mirroring cancelEvent
+    // (events/actions.ts). This path used to flip the flag bare — no refunds, no attendee or
+    // guest notice — and left the flag true so the refunding path could never fire later.
+    const { data: flipped, error } = await admin
+      .from('events')
+      .update(cancelAudit(caller?.id ?? null, null))
+      .eq('id', id)
+      .eq('is_cancelled', false)
+      .select('id')
+    if (error) throw new Error(error.message)
+    if ((flipped ?? []).length > 0) {
+      await refundAndNotifyForCancelledEvent(id)
+    }
+  } else {
+    const { error } = await admin.from('events').update(reinstateAudit()).eq('id', id)
+    if (error) throw new Error(error.message)
+  }
   revalidatePath('/admin/events')
   revalidatePath('/events')
   revalidatePath('/feed')

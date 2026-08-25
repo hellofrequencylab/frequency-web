@@ -36,8 +36,14 @@ export async function createRoom(fd: FormData): Promise<ActionResult<{ id: strin
 
   const name = (fd.get('name') as string)?.trim().slice(0, 120)
   const description = (fd.get('description') as string)?.trim().slice(0, 500) || null
-  const visibility = ((fd.get('visibility') as string) || 'public') as RoomVisibility
-  const scopeId = (fd.get('scope_id') as string)?.trim() || null
+  // Member-created rooms are public or private, full stop — the same coercion updateRoom
+  // applies. Scoped visibilities ('circle'/'hub'/'channel'/…) pair with a scope_id and are
+  // provisioned server-side; accepting either from the form let a caller mint a room that
+  // MATCHES a scope's official-room lookup (e.g. a channel's open room resolves purely by
+  // visibility+scope_id) with themselves seeded as its admin. The compose UI only ever
+  // offers public/private, so nothing legitimate loses anything.
+  const rawVisibility = (fd.get('visibility') as string) || 'public'
+  const visibility: RoomVisibility = rawVisibility === 'private' ? 'private' : 'public'
 
   if (!name) return fail('Name is required')
 
@@ -48,7 +54,7 @@ export async function createRoom(fd: FormData): Promise<ActionResult<{ id: strin
       name,
       description,
       visibility,
-      scope_id: scopeId,
+      scope_id: null,
       creator_id: caller.id,
     })
     .select('id')
@@ -146,10 +152,14 @@ export async function leaveRoom(roomId: string) {
   revalidatePath('/messages')
 }
 
+// Same cap as the DM sibling's MAX_MESSAGE_BODY (messages/actions.ts): the DB only checks
+// non-emptiness, so without this a multi-megabyte body is accepted and stored verbatim.
+const MAX_ROOM_MESSAGE_BODY = 4000
+
 export async function sendRoomMessage(roomId: string, body: string) {
   const caller = await getCallerProfile()
   if (!caller) redirect('/sign-in')
-  const trimmed = body.trim()
+  const trimmed = body.trim().slice(0, MAX_ROOM_MESSAGE_BODY)
   if (!trimmed) return
 
   const admin = createAdminClient()

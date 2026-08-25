@@ -279,7 +279,10 @@ export async function adoptCircleChallenge(
       { circle_id: circleId, challenge_id: challengeId, adopted_by: myProfileId ?? null },
       { onConflict: 'circle_id,challenge_id', ignoreDuplicates: true },
     )
-  if (error) return { error: error.message }
+  if (error) {
+    console.error('[adoptCircleChallenge]', { code: error.code, message: error.message, circleId })
+    return { error: 'That challenge could not be adopted. Try again in a moment.' }
+  }
 
   revalidatePath(`/circles/${slug}`)
   return { ok: true }
@@ -300,7 +303,10 @@ export async function dropCircleChallenge(
     .delete()
     .eq('circle_id', circleId)
     .eq('challenge_id', challengeId)
-  if (error) return { error: error.message }
+  if (error) {
+    console.error('[dropCircleChallenge]', { code: error.code, message: error.message, circleId })
+    return { error: 'That challenge could not be removed. Try again in a moment.' }
+  }
 
   revalidatePath(`/circles/${slug}`)
   return { ok: true }
@@ -466,7 +472,10 @@ export async function setCircleCoverUrl(
   if (!isLoomPublicImageUrl(url)) return { error: 'That image could not be used.' }
   const admin = createAdminClient()
   const { error } = await admin.from('circles').update({ image_url: url }).eq('id', id)
-  if (error) return { error: error.message }
+  if (error) {
+    console.error('[setCircleCoverUrl]', { code: error.code, message: error.message, circleId: id })
+    return { error: 'That cover image did not save. Try again in a moment.' }
+  }
   revalidatePath(`/circles/${slug}`)
   revalidatePath('/circles')
 }
@@ -520,7 +529,10 @@ export async function updateCircleCoverFocus(
     .from('circles')
     .update({ theme: next as Json })
     .eq('id', id)
-  if (error) return { error: error.message }
+  if (error) {
+    console.error('[updateCircleCoverFocus]', { code: error.code, message: error.message, circleId: id })
+    return { error: 'That cover position did not save. Try again in a moment.' }
+  }
 
   revalidatePath(`/circles/${slug}`)
   revalidatePath('/circles')
@@ -546,7 +558,10 @@ export async function updateCircleHeroHeight(
     .from('circles')
     .update({ theme: next as Json })
     .eq('id', id)
-  if (error) return { error: error.message }
+  if (error) {
+    console.error('[updateCircleHeroHeight]', { code: error.code, message: error.message, circleId: id })
+    return { error: 'That header height did not save. Try again in a moment.' }
+  }
 
   revalidatePath(`/circles/${slug}`)
   revalidatePath('/circles')
@@ -579,7 +594,10 @@ export async function updateCircleCoverScrim(
     .from('circles')
     .update({ theme: next as Json })
     .eq('id', id)
-  if (error) return { error: error.message }
+  if (error) {
+    console.error('[updateCircleCoverScrim]', { code: error.code, message: error.message, circleId: id })
+    return { error: 'That cover shading did not save. Try again in a moment.' }
+  }
 
   revalidatePath(`/circles/${slug}`)
   revalidatePath('/circles')
@@ -615,7 +633,10 @@ export async function updateCirclePermalink(
     .from('circles')
     .update({ slug: next })
     .eq('id', id)
-  if (error) return { error: error.message }
+  if (error) {
+    console.error('[updateCirclePermalink]', { code: error.code, message: error.message, circleId: id })
+    return { error: 'That address did not save. It may already be taken.' }
+  }
 
   revalidatePath(`/circles/${slug}`)
   revalidatePath(`/circles/${next}`)
@@ -655,7 +676,10 @@ export async function deleteCircle(id: string, slug: string): Promise<{ error?: 
   await admin.from('stewardships').delete().eq('scope_type', 'circle').eq('scope_id', id)
 
   const { error } = await admin.from('circles').delete().eq('id', id)
-  if (error) return { error: error.message }
+  if (error) {
+    console.error('[deleteCircle]', { code: error.code, message: error.message, circleId: id })
+    return { error: 'This Circle could not be deleted. Try again in a moment.' }
+  }
 
   const actorId = await getMyProfileId().catch(() => null)
   await logAdminAction({

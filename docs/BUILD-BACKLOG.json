@@ -3644,11 +3644,11 @@
       "detail": "FOUND 2026-08-24 while fixing LIVE-091, and it is the reason that fix does not reach as far as it looks. LIVE-091 said 'bulk and transactional mail share one queue', which assumes all bulk mail IS queued. It is not. lib/email-studio/send.ts fans a campaign out through the OUTBOX — durable, retried, and now lane-tagged so it can never starve a welcome. lib/spaces/email.ts sendSpaceCampaign sends campaigns INLINE via sendRawEmail, with no outbox row at all: no durability, no retry, no lane, and no dead-letter surface. So a Space campaign that hits the same daily quota that dropped 359 emails on 2026-07-17 does not get deferred and does not get recorded — it just fails, and nothing holds the message. The LIVE-091 lane work cannot reach that path by construction. THE DECISION: route sendSpaceCampaign through enqueueEmail with lane 'bulk' like its sibling, or state deliberately why a Space campaign is allowed to be best-effort while a platform campaign is durable. Two senders with different reliability postures and no recorded reason is the thing to fix either way. ── CLOSED 2026-08-24 by the ROUTE arm (owner ruling). sendSpaceCampaign now enqueues each recipient onto the durable outbox with lane 'bulk' and a dripped run_after off one fan-out clock, exactly like its sibling lib/email-studio/send.ts. The inline sendRawEmail call is gone, which also settles the contradiction that made this a finding: lib/email.ts's own header states 'the spine: queue all email, never send inline (ADR-026)', and this was the one campaign sender violating it. THE RECONCILIATION QUESTION THAT MADE ME DEFER THIS TURNED OUT TO BE ALREADY ANSWERED BY THE SCHEMA. The blocker looked like recordSend writing status 'sent' + resend_id per recipient, which cannot be true at enqueue time. But outreach_sends_status_check already permits queued | sent | delivered | bounced | complained | failed | suppressed — the DB was designed for this async lifecycle all along and only the TypeScript union was narrower. So a campaign row is now 'queued' with no resend_id, the delivery webhook moves it on, and NO MIGRATION was needed. The ledger id still equals the tracking token's send id, so opens and clicks resolve unchanged. Cap accounting is unchanged and still honest: it counts a job we have COMMITTED to send, which is what a fresh countTodaySends will also see. Tests: the suite's mock was re-pointed from sendRawEmail to enqueueEmail (the seam moved, the assertions did not), and the ledger assertion now pins the queued lifecycle including the deliberate ABSENCE of a resend id — asserting one there is precisely what would let this test pass against an inline send it no longer does. 83 files / 1,215 tests green across lib/spaces, lib/queue and lib/email-studio.",
       "verify": {
         "kind": "grep-present",
-        "pattern": "enqueueEmail",
+        "pattern": "enqueue\\(\\s*SPACE_CAMPAIGN_EMAIL_KIND",
         "paths": [
           "lib/spaces/email.ts"
         ],
-        "note": "Passes when the Space campaign sender goes through the durable outbox like its sibling."
+        "note": "Passes when the Space campaign sender goes through the durable outbox like its sibling. Re-pointed 2026-08-25: the 08-24 close enqueued the generic 'email' kind, whose handler DISCARDS the provider id -- so 'the delivery webhook moves it on' was impossible (webhooks match on resend_id), campaign rows stranded at 'queued', and per-Space bounce suppression was blind. Campaigns now enqueue the dedicated kind whose drain handler (runSpaceCampaignEmail) writes resend_id + 'sent' back to the ledger row; the old /enqueueEmail/ pattern matched the broken shape."
       }
     },
     {
@@ -4197,6 +4197,148 @@
         "kind": "manual",
         "evidence": "Hand-add verified by eye against migration 20270325000000 (columns/nullability) on 2026-08-25. Not yet proven by a regen; regen after the migration is applied.",
         "checked": "2026-08-25"
+      }
+    },
+    {
+      "id": "SCAN-001",
+      "title": "Regenerate lib/database.types.ts once the train lands",
+      "status": "done",
+      "lane": "hygiene",
+      "size": "XS",
+      "source": {
+        "file": "docs/META-SCAN-STATUS.md",
+        "ref": "meta-scan 2026-08-25, Phase 0"
+      },
+      "detail": "MS25 Phase 0. listing_saves was restored to production (20270327000000) and the natal/guestbook tables land with the open train, but lib/database.types.ts is train-owned mid-flight, so the restore ships with the code casting around the missing types (how the original ghost compiled). One regen after the merge window picks everything up in one pass.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const s=require('fs').readFileSync('lib/database.types.ts','utf8');const miss=['listing_saves'].filter(t=>!s.includes(t));if(miss.length){console.error('types missing: '+miss.join(', '));process.exit(1)}\"",
+        "note": "Measures the CONSEQUENCE: the generated types carry the restored table, so code stops casting around a type that does not exist. Regenerated 2026-08-25 against the live project; +117 lines, purely additive, tsc --noEmit clean."
+      }
+    },
+    {
+      "id": "SCAN-101",
+      "title": "The guest RSVP door closes ~7-8 hours early: wall-clock-as-UTC compared to now()",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "supabase/migrations/20270303000100_guest_rsvp_functions.sql",
+        "ref": "line 70"
+      },
+      "detail": "MS25 Phase 1. capture_guest_rsvp gates on v_event.starts_at <= now(), but starts_at stores the event's WALL-CLOCK as UTC parts (lib/time/zone.ts convention): a 7pm PT event reads as 19:00Z, so from ~noon PT every guest submission is silently rejected while the anti-oracle receipt still says ok - the guest believes they RSVP'd. Members face no such gate. Fix is one SQL function change resolving the stored wall-clock through events.time_zone before comparing. BLOCKED on the migration freeze; apply the moment it lifts.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const f='supabase/migrations/20270328000000_guest_rsvp_zone_aware_gate.sql';if(!fs.existsSync(f)){console.error('the zone-aware gate migration is missing');process.exit(1)}const s=fs.readFileSync(f,'utf8');if(!/at time zone/.test(s)||!/pg_timezone_names/.test(s)){console.error('the gate does not resolve the event zone, or does not validate it');process.exit(1)}\"",
+        "note": "Measures the CONSEQUENCE: a migration exists that resolves the stored wall clock through the event's own zone AND validates the zone name (the unvalidated form raises on the anon door). Applied to production 2026-08-25 with the ledger reconciled to the filename; verified beforehand that zone-aware and naive comparisons agreed on all 20 future events and that zero rows carry an unknown zone."
+      }
+    },
+    {
+      "id": "SCAN-103",
+      "title": "A pre-existing membership row makes Join a permanent 'try again'",
+      "status": "done",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "app/(main)/circles/actions.ts",
+        "ref": "joinCircle, lines 187-195"
+      },
+      "detail": "MS25 Phase 1. joinCircle plain-inserts against UNIQUE(profile_id, circle_id); a 23505 conflict (already-active member re-tapping Join, or a dormant row) returns 'Could not join this circle. Please try again.' - which retrying can never fix. On conflict: redirect if the row is active, reactivate with the cap re-check (grantCircleRow's shape) if dormant.",
+      "verify": {
+        "kind": "grep-present",
+        "pattern": "23505",
+        "paths": [
+          "app/(main)/circles/actions.ts"
+        ],
+        "note": "Passes when the unique-violation path is handled distinctly instead of folding into the generic retry message."
+      }
+    },
+    {
+      "id": "SCAN-104",
+      "title": "Cancellation and refund emails assert UTC for a wall-clock that isn't",
+      "status": "done",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "lib/events/cancellation.ts",
+        "ref": "formatEventWhen, lines 20-29"
+      },
+      "detail": "MS25 Phase 1. The cancellation email renders the stored UTC-parts wall-clock with timeZoneName 'short' in UTC - '7:00 PM UTC' for a 7pm PT event. Digits right, label wrong: a recipient who converts gets the wrong hour. lib/time/zone's formatEventWhen(storedIso, tz) already renders '7:00 PM PDT'; pass events.time_zone through and use the shared formatter.",
+      "verify": {
+        "kind": "grep-present",
+        "pattern": "time/zone",
+        "paths": [
+          "lib/events/cancellation.ts"
+        ],
+        "note": "Passes when the email formats through the shared zone-aware formatter instead of its local UTC-labeled one."
+      }
+    },
+    {
+      "id": "SCAN-404",
+      "title": "~18 admin action sites return raw Postgres error strings to member/host UI",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "app/(main)/circles/admin-actions.ts",
+        "ref": "282,303,469,523,549,582,618,658 (+channels/hubs/nexuses/journeys/circles siblings)"
+      },
+      "detail": "MS25 Phase 4. return fail(error.message) straight off PostgREST hands RLS denials and constraint names to hosts and members. The good pattern exists in the tree (circles/[slug]/manage/events-actions.ts:85-92: structured server log + plain on-voice sentence). Sweep the six files' return sites; keep the pg detail in the server log.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const files=['app/(main)/circles/admin-actions.ts','app/(main)/channels/admin-actions.ts','app/(main)/hubs/admin-actions.ts','app/(main)/nexuses/admin-actions.ts','app/(main)/journeys/actions.ts','app/(main)/circles/actions.ts'];let n=0;for(const f of files){const m=fs.readFileSync(f,'utf8').match(/error: error\\.message/g);n+=m?m.length:0}if(n>0){console.error(n+' raw pg strings still returned to the UI');process.exit(1)}\"",
+        "note": "Passes at zero raw error.message returns across the six files (server-side logging of the detail is expected to stay)."
+      }
+    },
+    {
+      "id": "SCAN-105",
+      "title": "Rule how pending-approval seats interact with capacity and the waitlist",
+      "status": "open",
+      "lane": "owner",
+      "size": "XS",
+      "source": {
+        "file": "docs/META-SCAN-STATUS.md",
+        "ref": "meta-scan 2026-08-25, correctness sweep"
+      },
+      "detail": "MS25 Phase 1. The approval-gate fixes exposed a design tension nothing has ruled on: a pending (unapproved) seat holds status 'going' and consumes capacity (lib/events/capacity.ts:27-38), and promoteFromWaitlist promotes a still-pending waitlist row into a confirmed seat. Either behavior may be intended; neither is recorded. One ruling, then a small code follow-through if it changes.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Read 2026-08-25: getCapacityInfo counts status='going' regardless of approval_status; promoteFromWaitlist does not consult approval_status. No ADR or comment records the choice.",
+        "checked": "2026-08-25"
+      }
+    },
+    {
+      "id": "SCAN-106",
+      "title": "Vera's dispatch is keyed on the UTC day, so it rolls over at 5pm Pacific",
+      "status": "open",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/vera-dispatch.ts",
+        "ref": "todayUTC(), line 43; used at line 230"
+      },
+      "detail": "MS25 Phase 1, split out of SCAN-102 on 2026-08-25 after the display fix exposed the real root. vera_dispatches holds one row per (profile, day) and the day is minted by todayUTC() = new Date().toISOString().slice(0,10) - the SERVER's UTC calendar day. For a Pacific community that rolls over at 5pm local, so a Dispatch generated at 6pm Pacific is stored under TOMORROW's key and stops reading as today's the moment it is written. This is why the /on-air/dispatches page could NOT simply be re-keyed to HOME_TZ like its three sibling surfaces (feed story lens, Journal widget, Vault ledger, all fixed): re-labelling against a key that is still UTC would inverth the bug rather than fix it. The page's label was pinned to UTC in the same change, which is honest about what the value currently is. THE FIX is to mint the key with dayInZone(new Date(), HOME_TZ) and label the page in the same zone. THE COST, which is why this is its own row: flipping the key mid-day can mint one extra Dispatch for any member in the 5pm-midnight Pacific window on the day it ships, because their UTC-keyed row for 'tomorrow' will not match the new zone-keyed 'today'. That is a one-time, per-member duplicate rather than a correctness risk, but it is a member-visible side effect and wants shipping deliberately - ideally with a note, or timed for a low-traffic hour.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const s=require('fs').readFileSync('lib/vera-dispatch.ts','utf8');if(/toISOString\\(\\)\\.slice\\(0,\\s*10\\)/.test(s)){console.error('the dispatch day key is still minted from the server UTC calendar day');process.exit(1)}\"",
+        "note": "Measures the CONSEQUENCE: the day key stops coming from the server's UTC calendar. Passes when the key is minted in the community zone."
+      }
+    },
+    {
+      "id": "SCAN-508",
+      "title": "Answer the reconstructed listing_saves migration's open question, and amend the 2026-09 retirement claim it contradicts",
+      "status": "open",
+      "lane": "hygiene",
+      "size": "XS",
+      "source": {
+        "file": "supabase/migrations/20270327000000_restore_listing_saves.sql",
+        "ref": "the RECONSTRUCTED-FROM-LIVE-STATE header"
+      },
+      "detail": "MS25 Phase 0. That migration file was reconstructed from live state by the session running the merge queue (#2276) after the 2026-08-25 meta-scan applied the restore to production ahead of its file, which turned check:migrations red on every open branch until the reconstruction landed. Its header records what it could not establish and asks for two things. Both are answerable now. (1) WHY: the restore was DELIBERATE. 20260925000000 dropped listing_saves on the claim '0 code references', and that claim was false - lib/listings/index.ts holds four live .from('listing_saves') sites (saveListing / unsaveListing / listSavedListingIds / listSavedListings) reached from components/marketplace/save-listing-button.tsx on the /housing index and detail pages. Every path failed SAFE (the write discarded its error, the reads fell back to an empty set), so the heart flipped and silently reset on reload, and the saves tests mock the client so nothing caught it. THE READER THAT NEEDS THE TABLE is that button. (2) The retirement claim in 20260925000000 is contradicted by production and wants amending in place - not by editing the reconstructed file, which correctly describes an apply that already happened. An ADR recording the restore + the false-orphan lesson belongs with it.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const F='supabase/migrations/20260925000000_retire_orphaned_tables_and_functions.sql';if(!fs.existsSync(F))process.exit(79);const s=fs.readFileSync(F,'utf8');if(!/listing_saves/.test(s))process.exit(79);if(!/AMENDED|restored|false|ADR-861/i.test(s)){console.error('the retirement migration still asserts listing_saves was orphaned, with no note that production contradicted it');process.exit(1)}\"",
+        "note": "Measures the CONSEQUENCE: the 2026-09 retirement migration carries an in-file amendment saying its listing_saves orphan claim was false (ADR-861 had already wired the heart). A grep for the table name in DECISIONS.md passes on ADR-861's ORIGINAL mention, which is shape rather than truth."
       }
     },
     {

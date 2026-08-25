@@ -999,7 +999,7 @@ export async function toggleRSVP(eventId: string) {
 
   const { data: existing } = await admin
     .from('event_rsvps')
-    .select('id, status')
+    .select('id, status, approval_status')
     .eq('event_id', eventId)
     .eq('profile_id', myProfileId)
     .maybeSingle()
@@ -1039,7 +1039,26 @@ export async function toggleRSVP(eventId: string) {
       // Re-join: honour real capacity — waitlist only when genuinely full.
       const { isFull } = await getCapacityInfo(eventId)
       const next = isFull ? 'waitlist' : 'going'
-      await supabase.from('event_rsvps').update({ status: next }).eq('id', existing.id)
+      // The approval gate applies to a RE-join too. The row reaching this branch is
+      // maybe/not_going — NOT currently in — so "an existing row already cleared the gate"
+      // does not hold: a withdrawn 'pending' request must stay a request (re-joining is not
+      // the host saying yes), and a maybe row never consulted the gate at all. Only a row
+      // the host already 'approved' skips the queue.
+      const needsApproval =
+        existing.approval_status === 'approved'
+          ? false
+          : existing.approval_status === 'pending'
+            ? true
+            : await eventRequiresApproval(eventId)
+      await supabase
+        .from('event_rsvps')
+        .update({
+          status: next,
+          ...(needsApproval && existing.approval_status !== 'pending'
+            ? { approval_status: 'pending' }
+            : {}),
+        })
+        .eq('id', existing.id)
       // The capacity trigger has the final say (a concurrent fill demotes 'going' →
       // 'waitlist'), so branch the side-effects on the PERSISTED status, not the
       // app's intent — otherwise a waitlisted guest gets gems / a host payout / a
@@ -1047,14 +1066,18 @@ export async function toggleRSVP(eventId: string) {
       const stored = await readRsvpStatus(eventId, myProfileId)
       // On a read failure (null) fall back to the intent; otherwise trust the row.
       const effective: 'going' | 'waitlist' = (stored ?? next) === 'going' ? 'going' : 'waitlist'
-      if (effective === 'going') onGoing(false)
-      // Post the "RSVP'd" activity entry only for a confirmed seat (never waitlist).
-      await syncRsvpActivityPost(eventId, myProfileId, effective === 'going')
-      // Fire-and-forget confirmation — never blocks/breaks the RSVP (best-effort,
-      // self-contained try-catch + pref/suppression gating inside the helper).
-      sendRsvpConfirmation(eventId, myProfileId, effective).catch((e) =>
-        console.error('[events rsvp confirmation email]', e)
-      )
+      // Nothing that means "you are in" fires while the request is pending (mirrors the
+      // first-RSVP arm below): no gems/payout, no feed line, no "you're going" email.
+      if (!needsApproval) {
+        if (effective === 'going') onGoing(false)
+        // Post the "RSVP'd" activity entry only for a confirmed seat (never waitlist).
+        await syncRsvpActivityPost(eventId, myProfileId, effective === 'going')
+        // Fire-and-forget confirmation — never blocks/breaks the RSVP (best-effort,
+        // self-contained try-catch + pref/suppression gating inside the helper).
+        sendRsvpConfirmation(eventId, myProfileId, effective).catch((e) =>
+          console.error('[events rsvp confirmation email]', e)
+        )
+      }
       // Segment into the hosting Space's CRM for follow-up (fire-and-forget).
       void captureRsvpLead(eventId, myProfileId, 'rsvp')
     }
@@ -1132,7 +1155,7 @@ export async function setRsvpStatus(
 
   const { data: existing } = await admin
     .from('event_rsvps')
-    .select('id, status')
+    .select('id, status, approval_status')
     .eq('event_id', eventId)
     .eq('profile_id', myProfileId)
     .maybeSingle()
@@ -1164,12 +1187,29 @@ export async function setRsvpStatus(
     if (prevStatus !== 'going' && prevStatus !== 'waitlist') {
       const { isFull } = await getCapacityInfo(eventId)
       const next = isFull ? 'waitlist' : 'going'
-      // Only a NEW seat can be made pending. An existing row already cleared whatever gate was in
-      // force when it was created, so turning approval on later must not retroactively suspend
-      // people who are already in — they would silently vanish from the roster they are on.
-      const needsApproval = !existing && (await eventRequiresApproval(eventId))
+      // The gate applies to every transition INTO going, not just a new row. "An existing row
+      // already cleared the gate" only holds for a row the host approved: any row reaching this
+      // branch is currently maybe/not_going (see the prevStatus guard above), so a 'pending'
+      // request stays a request on the upgrade, and a maybe/not_going row — which never
+      // consulted the gate — is derived against the event's setting. The already-in rule the
+      // old comment protected still holds: going/waitlist rows never reach this branch, so
+      // turning approval on later cannot retroactively suspend anyone on the roster.
+      const needsApproval =
+        existing?.approval_status === 'approved'
+          ? false
+          : existing?.approval_status === 'pending'
+            ? true
+            : await eventRequiresApproval(eventId)
       if (existing) {
-        await supabase.from('event_rsvps').update({ status: next }).eq('id', existing.id)
+        await supabase
+          .from('event_rsvps')
+          .update({
+            status: next,
+            ...(needsApproval && existing.approval_status !== 'pending'
+              ? { approval_status: 'pending' }
+              : {}),
+          })
+          .eq('id', existing.id)
       } else {
         await supabase.from('event_rsvps').insert({
           event_id: eventId,

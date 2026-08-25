@@ -162,7 +162,17 @@ export async function uploadJourneyCover(
   const { error } = await admin.storage
     .from('event-media')
     .upload(path, bytes, { contentType: file.type || 'image/jpeg', upsert: true })
-  if (error) return { error: error.message }
+  if (error) {
+    // The Storage detail (bucket policy, object name, size limit) stays server-side; the author
+    // gets a sentence they can act on.
+    console.error('[uploadJourneyCover] event-media upload failed', {
+      message: error.message,
+      planId,
+      path,
+      bytes: file.size,
+    })
+    return { error: 'That image did not upload. Try again, or pick a different file.' }
+  }
   return { url: admin.storage.from('event-media').getPublicUrl(path).data.publicUrl }
 }
 
