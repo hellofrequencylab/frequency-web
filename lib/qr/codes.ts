@@ -11,11 +11,38 @@ const SLUG_RE = /^[a-z0-9-]{3,48}$/
 
 export type DestinationType = 'url' | 'node' | 'circle' | 'event'
 
-/** A random, unambiguous slug for the /q/<slug> short link. */
+// ── Why this is not `byte % alphabet.length` (CodeQL: biased random from a secure source) ─────
+//
+// The alphabet is 31 characters and a byte holds 256 values. 256 = 8x31 + 8, so folding a byte with
+// `%` gives the FIRST EIGHT characters nine chances each and the other twenty-three only eight —
+// about 12.5% more often. randomBytes is a CSPRNG, and this threw that away on the last line.
+//
+// It is small and it is real. These slugs are the /q/<slug> namespace: they are guessed at by anyone
+// who wants to find codes they were not given, and a known skew is exactly the head start a guesser
+// wants. Rejection sampling costs nothing measurable and removes it entirely.
+
+/** The largest multiple of the alphabet length that fits in a byte (248 for 31 characters). Bytes at
+ *  or above it are REJECTED rather than folded, because folding them is the whole bias. */
+export const SLUG_UNBIASED_CEILING = 256 - (256 % SLUG_ALPHABET.length)
+
+/** One random byte to one slug character, or null when the byte must be redrawn. Exported so the
+ *  boundary can be pinned by a test that enumerates every byte rather than sampling. */
+export function slugCharForByte(b: number): string | null {
+  return b >= SLUG_UNBIASED_CEILING ? null : SLUG_ALPHABET[b % SLUG_ALPHABET.length]
+}
+
+/** A random, unambiguous slug for the /q/<slug> short link. Uniform over the alphabet. */
 export function generateSlug(length = 7): string {
-  const bytes = randomBytes(length)
   let out = ''
-  for (let i = 0; i < length; i++) out += SLUG_ALPHABET[bytes[i] % SLUG_ALPHABET.length]
+  while (out.length < length) {
+    // Over-draw a little: ~3% of bytes are rejected, so one round almost always finishes.
+    for (const b of randomBytes(length - out.length + 8)) {
+      const ch = slugCharForByte(b)
+      if (ch === null) continue
+      out += ch
+      if (out.length === length) break
+    }
+  }
   return out
 }
 
