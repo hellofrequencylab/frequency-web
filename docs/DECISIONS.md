@@ -30842,3 +30842,139 @@ A surface that must render a ref whose cache was never primed (an API-written do
 at which point the unwrap needs a resolve-on-miss, and `refreshAssetRefUrls` is the seam it slots
 into. Or a measured case of the editor needing the CURRENT url mid-session, which would move the
 refresh from `getPublishedData` into `getPage`.
+## ADR-1125: Repairing a dead address is not authoring a page, and the seed was never the whole bug (2026-08-25)
+
+**Status:** Accepted · **Works:** `LIVE-104`, `LIVE-108`, `LIVE-109` · **Corrects:** `LIVE-109` ·
+**Files:** `LIVE-115`, `HYG-023` · **Adds:**
+`supabase/migrations/20270323000000_stored_doc_links_repair.sql`,
+`components/page-editor/blocks/profile.cta-href.test.tsx` ·
+**Upholds:** [ADR-1115](#adr-1115) §4 and `OWN-043` (the published home document is the owner's
+surface) · **Extends:** [ADR-1082](#adr-1082) (re-test the premise), [ADR-1090](#adr-1090)
+(`/onboarding/beta` → `/join`), [ADR-1111](#adr-1111) (migration ordering across branches)
+
+### What was re-measured, before anything was written
+
+[ADR-1082](#adr-1082) is unambiguous: a probe measures whether the work is done, and **nothing
+measures whether the row is still true**. So `recaptureQuery` from `scripts/stored-links.json` was
+re-run against production first. The 2026-08-24 census and the 2026-08-25 reading are **identical on
+every axis** — same three stores, same 4 / 1 / 18 documents, same 8 / 5 / 18 hrefs set, same
+20 / 3 / 36 empty, same three targets at the same hit counts.
+
+| Row | Claim | Verdict on 2026-08-25 |
+|:--|:--|:--|
+| `LIVE-104` | the published home document offers ONE destination and it is retired | ✅ holds — 13 blocks, 5 link props, all `/onboarding/beta`, one of them absolute |
+| `LIVE-108` | every link in every stored marketing document is broken | ✅ holds — 13 hrefs over 5 documents, zero pointing anywhere live |
+| `LIVE-109` | all 18 Space micro-sites ship one link and it is `href="#"` | ✅ holds on the count, ⚠️ **wrong on the remedy** (below) |
+
+**Nothing was retracted, and that is a result rather than a non-result.** Five rows re-measured on
+2026-08-18 had five expired premises; three re-measured here had none. The check costs one query.
+
+### The correction that mattered: the seed was not the whole bug
+
+`LIVE-109` proposed seeding an empty `ctaHref` "so the block draws no button at all (SpaceCallout,
+like MediaText, renders its CTA only when label and href are both set)". That is true of `MediaText`
+and it was **false of `SpaceCallout`**, which gated its button on `ctaLabel` alone and rendered:
+
+```tsx
+<CtaButton href={ctaHref || '#'} label={ctaLabel} … />
+```
+
+An empty href fell straight back to `'#'`. **Shipping the row exactly as written would have left all
+eighteen buttons as dead as they started, behind a diff that read as a fix** — and behind a probe
+that would have gone green, because the old probe grepped the seed file for `ctaHref: '#'` and the
+seed would indeed have changed.
+
+Two more things the row did not have:
+
+- **Three seeding sites, not one.** Besides `templates/space-default.ts:143`, the block registry's
+  own `defaultProps` seed `'#'` for **both** `SpaceCallout` and its twin `SpaceCTA`, so a Callout
+  dragged in from the palette shipped the same dead button. The probe now reads both files.
+- **`#contact` is only a destination for 16 of the 18.** Every one of the documents carries a
+  `SpaceContact` block rendering inside `<section id="contact">`, so the anchor is real — but
+  `SpaceContactBlock` returns `null` with no rows and its section carries `empty:hidden`. Measured:
+  `danny-kenduck` and `templeofaset` have none of address / hours / phone / email / website, so
+  sending them to `#contact` would be **the same lie in a new costume**. Those two get no button.
+
+The fix is therefore in the renderer, not only the seed: `SpaceCallout` and `SpaceCTA` now require
+a label **and** a destination, which is the rule `MediaText` already had.
+
+### The decision: repair is not authorship
+
+`LIVE-108` routes the two `home` documents to the editor, because `OWN-043` makes the published home
+document the owner's surface and [ADR-1115](#adr-1115) §4 declined to write it. Both are right, and
+taken literally they would mean **no agent can ever fix a broken link on the home page**. So the line
+gets drawn one notch finer, where `OWN-043`'s own evidence already put it — *"an agent cannot decide
+which words the homepage should carry."*
+
+| | Example here | Whose |
+|:--|:--|:--|
+| **Repair** — an address that no longer exists | `/onboarding/beta` → `/join`; dropping the hardcoded origin; `'#'` → `#contact` | the agent's |
+| **Authorship** — which words, and where they newly point | filling `home-structure` / `home-builders` with a label and a destination | the **owner's** |
+
+Rewriting the 13 marketing hrefs changes **no word, no label and no destination**: every one of those
+clicks already lands on `/join` via a 308. It removes a redirect hop and stops a preview deployment's
+front door throwing the reviewer out to production. That is repair.
+
+Giving the home page a **second** destination is not, and it is **deliberately not done here**.
+[ADR-1115](#adr-1115) §4 reserved it to the owner one day before these rows were picked up; an agent
+overriding that inside a pull request titled as a link fix is exactly the drift the one list exists
+to stop. `LIVE-104` therefore stays open, and after the migration its probe fails on **exactly one
+line** — `1 destination` — which is the row correctly reporting an owner action, not a gap in this
+change. The recommended, voice-checked copy is already in [ADR-1115](#adr-1115); the edit is two
+fields at `/pages/home`.
+
+### The migration ships UNAPPLIED, and the reason is other people's branches
+
+[ADR-1111](#adr-1111) decision 1 keeps apply-before-merge, and scopes it: it is required **when code
+in the same change reads the new schema**. Nothing here does — there is no schema change at all. Set
+against that, [ADR-1111](#adr-1111)'s own finding is that an applied migration turns **every open
+branch whose tree lacks the file red**, and five branches were in flight. Applying would have gone
+red across all five for a change none of them touch.
+
+So it merges first and is applied after, following `20270305000000` (the `LIVE-028` block rewrite),
+which shipped the same way. **The price is stated rather than discovered:** CI arms the ledger half
+of `check:migrations` with real credentials, so while the file sits unapplied that one guard is
+**red**, reporting it as `unpairedRepo`. That is the expected signature of "not applied yet" — and
+it means `check:migrations` red with everything else green is the state to merge from, while any
+*other* red is a real problem. The consequence is stated rather than glossed: **`LIVE-108` and
+`LIVE-109` stay open until the owner applies it and the census is re-captured.** That is the reading
+`scripts/check-stored-blocks.mjs` already settled for its own probe — *"a probe that went green on
+the declared state would close a row whose work has not happened."* Re-capturing the census now would
+record a fix that has not happened, so it is deliberately left red.
+
+The migration is **idempotent and a true no-op on a second run** (both statements are guarded, and
+neither `pages` nor `spaces` carries a trigger); it is applicable **before or after any sibling** in
+either order, since it creates nothing and depends on nothing; and it is **pinned to the corpus as
+measured** — its post-asserts hard-code 36 / 13 / 207 / 18 / 16 / 2, so a corpus that has moved
+underneath it produces a loud rollback rather than a silent corruption.
+
+### Nothing was shipped that had not been run
+
+- **The migration was dry-run against production as SELECTs**, the identical expressions, writing
+  nothing: 0 occurrences of the retired address left, block counts unchanged (36 / 13 / 207),
+  8 + 5 hrefs on `/join`, 16 → `#contact`, 2 → `''`, and — the strongest of them — the full
+  (space, page, ordinal, type, prop, value) multiset diffed before against after with
+  `SpaceCallout.ctaHref` excluded: **954 props compared, 0 lost, 0 gained.**
+- **The text substitution's safety was measured, not assumed.** Per document the count of the bare
+  substring `onboarding/beta` equals the count of complete quoted link values in every row, so there
+  is no prose mention, partial path or query string to damage.
+- **The renderer tests are negative-controlled**: 7 of 9 fail against `origin/main` and pass here;
+  the other 2 are positive controls asserting a real href still renders.
+- **The rewritten `LIVE-109` probe was controlled four ways**: `origin/main` code → 3 seeding sites;
+  this tree → code arm silent, census arm still red; census with the `'#'` target removed → 0;
+  census absent → 79.
+
+### What this leaves behind, filed rather than mentioned
+
+- **`LIVE-115`** — the same `href={… || '#'}` shape survives in **seven** renderers in
+  `blocks/design.tsx`. Latent rather than live (no stored marketing document carries `'#'`), and
+  deliberately a triage row: three of the seven sit behind `safeHref()`, where `'#'` is also the
+  stored-XSS degradation path and must be separated from the empty-field case, not deleted.
+- **`HYG-023`** — [ADR-1115](#adr-1115) copied the `stored-block-types.json` census but not the
+  instrument around it. There is no `check-stored-links.mjs`, so both row probes re-implement the
+  census walk and the `next.config.ts` redirect parse inline, and nothing reads `capturedAt`.
+- **A caveat this change cannot close.** `#contact` is right for the 16 *as measured today*. A Space
+  that later clears its contact details keeps a button pointing at a section that no longer renders,
+  and the block cannot know — it has no access to the Space's profile data. The durable answer is an
+  editor field that offers the page's live anchors instead of a free-text box, which is `PROG-E`
+  work; it is recorded on `LIVE-115`.
