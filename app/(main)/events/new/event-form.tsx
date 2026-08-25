@@ -16,6 +16,7 @@ import type { PlaceResult } from '@/lib/geocode'
 // The category vocabulary comes from the ONE source (lib/events/options.ts) — this form used to
 // inline an identical copy, which is exactly the drift check:vocab now fails the build on.
 import { CATEGORY_OPTIONS } from '@/lib/events/options'
+import { ticketSellerVerdict, payoutScopeKey, NEEDS_PAYOUT_ACCOUNT } from '@/lib/events/ticket-eligibility'
 
 // The draggable-pin location picker runs MapLibre, which must never touch the server, so it
 // lazy-mounts client-only (ssr:false) — the same dynamic-import pattern as EventLocationMap.
@@ -175,6 +176,7 @@ export function EventForm({
   backHref,
   defaultGroupId,
   home,
+  payoutsReadyByScope,
 }: {
   groups: Group[]
   /** Journeys the caller may link this event to (create AND edit). Empty/absent hides the field. */
@@ -197,6 +199,12 @@ export function EventForm({
   /** The viewer's saved home {lat,lng}, used to bias the venue autocomplete before a pin
    *  exists so the FIRST, local-bounded pass has an anchor. Null when the viewer has no home. */
   home?: { lat: number; lng: number } | null
+  /** Payout readiness for each scope this host can pick, keyed by `payoutScopeKey` (LIVE-126).
+   *  Resolved server-side because the PAYEE is not always the caller: a space-hosted event pays
+   *  the space OWNER (ADR-819), who may be someone else entirely. An absent key reads as NOT
+   *  ready, which is the direction `ticketSellerVerdict` fails and the line this control showed
+   *  unconditionally before, so a miss is never worse than the old behaviour. */
+  payoutsReadyByScope?: Record<string, boolean>
 }) {
   const isEdit = !!eventId
   // Sentinel scope for a standalone PUBLIC event (any nearby member — no circle/space needed).
@@ -961,16 +969,32 @@ export function EventForm({
                 because Stripe will not move money to an unverified one, and that is a banking fact
                 rather than a tier. So this reads as a SETUP STEP with somewhere to go, never as a
                 refusal: production has zero completed onboardings today precisely because the funnel
-                is open and nothing ever asks. */}
+                is open and nothing ever asks.
+
+                🔴 AND IT NOW READS THE HOST'S REAL STATE (LIVE-126). This sentence used to render on
+                `priceMode === 'paid'` alone, so a host who finished payout onboarding last week was
+                still told to go and set one up — the product not knowing them, the same defect class
+                as offering "Sign in" to a signed-in member (ADR-1158). The verdict, its copy and the
+                setup-step token all already existed in lib/events/ticket-eligibility and had no
+                caller; wiring them here is what retires the hand-written duplicate of this sentence,
+                so the buy path and the price control can no longer drift apart.
+
+                THE LOOKUP FOLLOWS THE SCOPE PICKER, because the payee does: a space-hosted event pays
+                the space OWNER (ADR-819), not whoever is filling in this form. An unresolved scope has
+                no key, reads as not ready, and shows exactly what this control showed before. */}
             <p className="mt-1.5 text-2xs leading-relaxed text-muted">
               {priceMode === 'paid' ? (
-                <>
-                  Sets a ticket price. To take the money you need a payout account.{' '}
-                  <Link href="/settings/billing" className="font-medium text-primary underline-offset-2 hover:underline">
-                    Set that up
-                  </Link>{' '}
-                  in about two minutes, before or after you publish.
-                </>
+                ticketSellerVerdict({ payoutsReady: payoutsReadyByScope?.[payoutScopeKey(scopeId)] }).allowed ? (
+                  <>Sets a ticket price. Your payout account is ready, so ticket money lands in your bank.</>
+                ) : (
+                  <>
+                    Sets a ticket price. {NEEDS_PAYOUT_ACCOUNT}{' '}
+                    <Link href="/settings/billing" className="font-medium text-primary underline-offset-2 hover:underline">
+                      Set that up
+                    </Link>{' '}
+                    before or after you publish.
+                  </>
+                )
               ) : (
                 'A free event people RSVP to. Switch to a price to sell tickets.'
               )}

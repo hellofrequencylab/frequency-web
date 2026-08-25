@@ -87,6 +87,18 @@ const UNWIRED: Record<string, string> = {
   // catches), the owner said "implement best practice", and the promotion change carried the
   // preview build whose postbuild printed it BLOCKING-green. The warn-only pin inverted in that
   // same change, so a re-added flag now fails as a silent demotion.
+
+  // ── check:mail-dns — NOT A GATE, and must never become one (OWN-020, 2026-08-25) ─────────────
+  'check:mail-dns':
+    'It measures LIVE PUBLIC DNS for the sending domain (SPF on send.frequencylocal.com, the ' +
+    'Resend DKIM key length, apex DMARC), which is state NO pull request can change. Wiring it ' +
+    'into the guards array would fail builds on the contents of a GoDaddy zone, so a red run ' +
+    'would carry no information about the diff that triggered it — the inverse of ADR-970: not a ' +
+    'gate that cannot fire honestly, but one that fires on something the change never touched. ' +
+    'It is also non-hermetic (an offline runner would read a missing record as a failure, which ' +
+    'is why the script itself exits 2 rather than 1 when the resolver is unreachable). Its home ' +
+    'is an operator command and the evidence line on OWN-020, which is a `manual` row precisely ' +
+    'because nothing in the repo can close it. Run `pnpm check:mail-dns` when the row is worked.',
 }
 
 /** ── THE FOURTH HOME: enforced by a vitest test (ADR-1011) ────────────────────────────────────

@@ -11,6 +11,8 @@ import { loadRootSpaceId } from '@/lib/spaces/store'
 import { getMyProfileId } from '@/lib/auth'
 import { listLinkableJourneys, resolveJourneyRef } from '@/lib/events/placement'
 import { canEditJourney } from '@/lib/journeys/authoring'
+import { getConnectStatus } from '@/lib/billing/connect'
+import { payoutScopeKey } from '@/lib/events/ticket-eligibility'
 
 // Edit an event's details — the host's (and any circle manager's / admin's) self-service editor.
 // Gated by the same `event.editSettings` capability the admin editor + /manage use. Reuses the
@@ -27,6 +29,10 @@ interface EventEditRow {
   scope_type: string | null
   /** The owning Space placement (ADR-246/ADR-857) — names the scope for a Space event. */
   space_id: string | null
+  /** Who the ticket money goes to. A SPACE-hosted event pays the space owner, a personal one pays
+   *  the host (ADR-819) — the same resolution lib/billing/tickets.ts makes before every sale. */
+  host_id: string | null
+  host_space_id: string | null
   /** The Journey ASSOCIATION (journey_plans), or null. Newer than the generated DB types, which is
    *  why the row is read through `unknown` below (ADR-246). Never a placement. */
   journey_id: string | null
@@ -80,7 +86,7 @@ export default async function EditEventPage({ params }: { params: Promise<{ slug
   const { data } = await admin
     .from('events')
     .select(
-      'id, title, description, location, scope_id, scope_type, space_id, journey_id, starts_at, ends_at, capacity, visibility, category, ' +
+      'id, title, description, location, scope_id, scope_type, space_id, host_id, host_space_id, journey_id, starts_at, ends_at, capacity, visibility, category, ' +
         'energy_tag, attendance_mode, online_url, venue_name, street, city, region, postal_code, country, is_cancelled, cover_image_path, gallery_image_paths, recurrence_type, recurrence_until, price_cents, geog',
     )
     .eq('slug', slug)
@@ -170,6 +176,23 @@ export default async function EditEventPage({ params }: { params: Promise<{ slug
     journeyId: ev.journey_id ?? '',
   }
 
+  // PAYOUT READINESS (LIVE-126). The scope is FIXED in edit mode, so unlike the create page there is
+  // exactly one payee and one key. Resolved the way lib/billing/tickets.ts resolves it before a sale —
+  // a space-hosted event pays the space OWNER (ADR-819) — so the price control and the buy path can
+  // never tell a host two different stories about the same event.
+  let payeeProfileId: string | null = ev.host_id
+  if (ev.host_space_id) {
+    const { data: hs } = await admin
+      .from('spaces')
+      .select('owner_profile_id')
+      .eq('id', ev.host_space_id)
+      .maybeSingle()
+    payeeProfileId = (hs as { owner_profile_id: string | null } | null)?.owner_profile_id ?? null
+  }
+  const payoutsReadyByScope: Record<string, boolean> = payeeProfileId
+    ? { [payoutScopeKey(initial.scopeId)]: (await getConnectStatus(payeeProfileId)).ready }
+    : {}
+
   return (
     <EventEditorWindow backHref={`/events/${slug}`}>
       <EventForm
@@ -180,6 +203,7 @@ export default async function EditEventPage({ params }: { params: Promise<{ slug
         currentScopeName={scopeName ?? undefined}
         scopeIsCircle={ev.scope_type === 'circle'}
         backHref={`/events/${slug}`}
+        payoutsReadyByScope={payoutsReadyByScope}
       />
 
       {/* Duplicate event — clone this event into a fresh, prefilled draft so a one-off can be
