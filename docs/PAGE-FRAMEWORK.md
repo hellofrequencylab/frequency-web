@@ -641,12 +641,16 @@ banner. Exemplars **that really compose `IndexTemplate` today** (verified 2026-0
 they moved to the **editable index** below. Same hero, different body.)*
 
 **Overlay Hero Header (`heroOverlay`):** the uniform Business-Spaces hero band — a cover image
-with the title, subtitle, and the page's own action buttons overlaid on an ink scrim. Adopters:
+with the title, subtitle, and the page's own action buttons overlaid on an ink scrim. Adopters
+(all of them now spread `{...await resolveIndexHero(route)}` rather than passing the props by hand):
 [`practices/page.tsx`](<../app/(main)/practices/page.tsx>),
 [`library/page.tsx`](<../app/(main)/library/page.tsx>),
-[`journeys/page.tsx`](<../app/(main)/journeys/page.tsx>), plus the surfaces that take the band
-with no cover image (the gradient placeholder): `journeys/mine`, `network`,
-`network/contacts`, `network/friends`. Each keeps its own title/description +
+[`journeys/page.tsx`](<../app/(main)/journeys/page.tsx>),
+[`events/calendar/page.tsx`](<../app/(main)/events/calendar/page.tsx>), plus the surfaces that take
+the band with no cover image (the gradient placeholder): `journeys/mine`, `network`,
+`network/contacts`, `network/friends`. **8 of the 32 `IndexTemplate` render sites; the other 24 are
+still plain** (`LIVE-117` — adopting there is a real layout change, not a dropped rung, so it
+carries its own PR and its own visual-baseline pass). Each keeps its own title/description +
 buttons; a section default image (under `public/images/site/`) keeps the band present when the
 operator has set none. Secondary buttons that ride the scrim use on-ink styling
 (`border-white/30 bg-white/10 text-on-ink`); primary create buttons stay `bg-primary`.
@@ -738,6 +742,29 @@ Adding a page to the program is a row in that map plus `{...hero}` — never a n
 A row also carries **`inheritHero`** (default `true`). The utility rows set it `false`, so the copy
 cascade cannot hand `/journeys/mine` the Journeys section photo and quietly overturn the short/large
 split above. A hero set on the utility route *itself* still wins, because that is not inheritance.
+
+**The two flags are separate on purpose: `size` is about the BAND, `inheritHero` is about the
+IMAGE.** `/events/calendar` is the row that shows the difference — it takes `short` (a month grid is
+a work surface) while keeping `inheritHero: true`, because the calendar *is* the Events section
+wearing a different body, so the photo an operator uploaded for `/events` belongs on it.
+
+**The editable index uses the SAME ladder — call `resolveMarketHero`** (PROG-P4,
+[ADR-1127](DECISIONS.md)). The nine `MarketHero` surfaces below already render the same `PageHero`,
+so the band was never the problem; the ladder was. Measured 2026-08-25: `getPageHeaderImage` — rung
+1, the operator's Settings › Basics uploader — appeared in **3 of the 41 browse render sites**, and
+`savePageSeo` offers that uploader on any safe route, so on the rest an operator could upload a
+header image and watch nothing happen. `resolveMarketHero` returns the same four rungs shaped for
+`MarketHero`'s prop names:
+
+```tsx
+const hero = await resolveMarketHero('/store', { cover: HERO_IMAGE })
+return <MarketHero {...hero} title="Wear it, gift it, show up" search={…} action={…} />
+```
+
+`cover` is **required**, unlike `resolveIndexHero`'s optional `fallbackImage`: `MarketHero` types
+`image` as non-null, because the neutral gradient band is a legitimate result on a utility index and
+a broken header on a hero-led commerce one. The requirement puts that guarantee in the type instead
+of nine `?? SOMETHING` expressions.
 
 ## 8.6 The copy cascade: site → section → page (ADR-1122)
 

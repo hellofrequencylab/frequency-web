@@ -29936,3 +29936,86 @@ red under `check:migrations --require-ledger` until it merges, and there were fo
 night this landed. Also unwritten: an operator surface for the `'*'` site rung. The resolver reads
 it and the test covers it; `CONTENT_EDIT_ROUTES` gates writes to real routes, so nothing can set it
 yet. Both are on the row, not in a new document.
+
+## ADR-1127: The browse hero's missing rung, not its missing template — 34 of 41 render sites threw the operator's upload away (2026-08-25)
+
+**Status:** accepted · advances `PROG-P4` · builds on [ADR-1122](#adr-1122) (the copy cascade) and
+the resolver shipped in #2254 · sibling of [ADR-1117](#adr-1117) (the detail-side twin) · extends
+[ADR-793](#adr-793), [ADR-411](#adr-411)
+
+### The premise, re-tested first (AGENTS.md, [ADR-1082](#adr-1082))
+
+`PROG-P4` reads *"the 24 plain `IndexTemplate` pages adopt `heroOverlay` so the hero is
+everywhere."* Two things about that sentence did not survive measurement.
+
+**The count is close but the frame is wrong.** Counted by RENDER SITE on 2026-08-25 there are **41
+browse render sites**, not 24 pages of one kind: **32 compose `IndexTemplate`** and **9 head an
+operator-rearrangeable body with `MarketHero`** — the sanctioned "editable index" of
+PAGE-FRAMEWORK §8.5 (`/circles`, `/channels`, `/events` via `events-surface.tsx`,
+`/spaces/directory`, `/discover/spaces`, `/classifieds`, `/housing`, `/market`, `/store`). Of the
+32, seven already draw the band and 25 are plain — so the row's 24 was one page off on a count it
+was taking over only half the surfaces.
+
+**And "adopt `heroOverlay`" is not the thing that is broken.** `MarketHero` is a thin wrapper over
+the same `PageHero` that `IndexTemplate`'s `heroOverlay` branch renders, so those 9 already have a
+band that looks right. What they do not have is the **ladder**. Measured across the whole tree:
+`getPageHeaderImage` — rung 1, the operator's Settings › Basics header-image uploader — appears in
+exactly **THREE** of the 41 browse render sites. Four more reach it through `resolveIndexHero`.
+**That is 7 of 41. The other 34 read the operator's upload nowhere.**
+
+That is not a cosmetic gap, because `savePageSeo` gates the uploader on `isSafeRoute` and **not** on
+an allowlist. An operator can open Settings on `/market`, `/store`, `/housing`, `/events` or any of
+the 25 plain indexes, upload a header image, watch it save, and see nothing change. It is
+[ADR-1122](#adr-1122)'s `/network` bug — a hero stored and dropped on the floor — at 34× the scale,
+and it is invisible in production only because `page_settings` currently holds **one** header image
+in the whole table (`/crew`, a Dashboard, which does read it).
+
+So P4's remaining work is **one ladder over both browse compositions**, not one template over both.
+
+### What shipped
+
+**1. `resolveMarketHero` — the editable-index twin, in the same module.**
+[`lib/layout/index-hero.ts`](../lib/layout/index-hero.ts) gains `asMarketHero` (pure) and
+`resolveMarketHero` (the async wrapper), returning a spreadable `MarketHero` prop bag off the
+**same four rungs** as `resolveIndexHero`. Only the prop names differ, because `MarketHero` predates
+them. All nine editable-index sites adopted it and each lost its hand-rolled `resolveHeaderElement`
+call. They gain rung 1 (the operator's image, with its focal point) and rung 2 (the `page_content`
+hero through the cascade) without changing what renders today.
+
+One asymmetry is deliberate: `resolveMarketHero` **requires** a `cover: string`. `MarketHero` types
+`image` as non-null, and rightly — the neutral gradient band is a legitimate *result* on a utility
+index (`/journeys/mine`) and a broken header on a hero-led commerce one. Requiring `cover` puts that
+guarantee in the type instead of leaving nine `?? SOMETHING` expressions to drift.
+
+**2. The three pages the resolver was written for finally call it.** `/practices`, `/journeys` and
+`/library` are the pages whose duplicated stanza motivated `index-hero.ts` in #2254 — and all three
+still carried it, verbatim, a week later. The module's own header says *"this module is the one
+copy"*; it was the fifth. They now spread `{...hero}`, deleting ~30 lines of re-typed ladder. Zero
+visual change: the resolver's `/practices`, `/journeys` and `/library` rows already hold the exact
+section covers those pages hardcoded.
+
+**3. `/events/calendar` adopts the band, and shows what the cascade is for.** It is the one plain
+index whose *section* carries a live operator hero — `page_content['/events'].hero_image`, set in
+June. Its new `INDEX_HERO_DEFAULTS` row takes `short` while keeping the default `inheritHero: true`,
+which is the first row to separate the two flags: **`short` is about the band, `inheritHero` is
+about the image.** A month grid is a work surface, so a 24rem billboard would push the first week
+below the fold on a phone — but the calendar *is* the Events section wearing a different body, so
+the operator's photo belongs on it. `/journeys/mine` and the `/network/*` rows say the opposite on
+both axes, and now the map can express that difference instead of conflating it.
+
+### What did NOT ship, and why it is a second PR
+
+The remaining **24 plain `IndexTemplate` pages** (`LIVE-117`). Adopting the band there is not a
+dropped rung — it is a real layout change on 24 surfaces at once, moving each page's `<h1>` onto a
+hero band, and it needs its own PR with screenshots and a visual-baseline pass. It also cannot ride
+along here: 24 pages plus this change's 18 files clears the 40-file PR gate. Splitting on **"does this
+change what renders today"** keeps the reviewable half reviewable.
+
+### The rule this adds
+
+**A resolver is not adopted because it exists.** `index-hero.ts` shipped with four adopters, was
+documented in PAGE-FRAMEWORK §8.5 as *the* way to resolve a browse hero, was extended by a second
+program phase — and the three pages it was extracted from never called it. A seam PR that leaves its
+own exemplars behind reads as done from the ledger and is not, which is the same failure mode
+[ADR-1082](#adr-1082) names for backlog rows, applied to code. **Convert the pages that motivated
+the extraction in the extraction's own PR**, or the "one copy" claim starts life false.
