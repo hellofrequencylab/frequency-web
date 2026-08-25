@@ -1,13 +1,13 @@
 {
   "what": "A census of every LINK TARGET (href / url / link props) present in stored page documents in production, per store, plus the block-by-block link map of the one document that is actually published. Targets and counts only, no tenant copy: the census records WHERE a document sends a visitor, never what it says.",
-  "why": "The block census next door (scripts/stored-block-types.json) answers 'does every stored block still RESOLVE?'. Nothing answered the other half — 'does every stored link still GO anywhere?' — and on 2026-08-24 the answer turned out to be no, for every link in the corpus at once (ADR-1114). The home page is the case that matters: `/` is the site's root and the strongest page it has, and the published document that IS the home page (OWN-043) offers the visitor exactly ONE destination, which is a retired address.",
+  "why": "The block census next door (scripts/stored-block-types.json) answers 'does every stored block still RESOLVE?'. Nothing answered the other half \u2014 'does every stored link still GO anywhere?' \u2014 and on 2026-08-24 the answer turned out to be no, for every link in the corpus at once (ADR-1114). The home page is the case that matters: `/` is the site's root and the strongest page it has, and the published document that IS the home page (OWN-043) offers the visitor exactly ONE destination, which is a retired address.",
   "howToRecapture": "Run the SQL in `recaptureQuery` against production (read-only) and rewrite `stores` + `home` from the result, then set `capturedAt`. The CLASSIFICATION half is deliberately not captured: `retired` is re-derived from the redirect table in next.config.ts every time a probe reads this file, so retiring a new URL can turn a reading red without a re-capture.",
-  "scope": "The Puck-shaped page documents only: pages.data (marketing drafts), pages.published_data (marketing published), and spaces.preferences.pageDocs / .puck (Space micro-sites). Chrome is deliberately OUT of scope — the header and footer menus are DB rows in `menus`, guarded by check:menu, and a visitor reaches them from every page rather than from a document.",
+  "scope": "The Puck-shaped page documents only: pages.data (marketing drafts), pages.published_data (marketing published), and spaces.preferences.pageDocs / .puck (Space micro-sites). Chrome is deliberately OUT of scope \u2014 the header and footer menus are DB rows in `menus`, guarded by check:menu, and a visitor reaches them from every page rather than from a document.",
   "capturedAt": "2026-08-25",
   "recaptureLog": [
-    "2026-08-24 — first capture (ADR-1115).",
-    "2026-08-25 — RE-CAPTURED before working LIVE-104/108/109, because ADR-1082 requires a row's premise to be re-tested rather than believed. `recaptureQuery` was re-run against production and the result is IDENTICAL to the 2026-08-24 reading on every axis: same three stores, same 4/1/18 document counts, same 8/5/18 hrefs set, same 20/3/36 empty, same three targets at the same 7+1 / 4+1 / 18 hit counts. No premise had expired. The date moves; not one number does. ⚠️ The reading still describes production BEFORE supabase/migrations/20270323000000_stored_doc_links_repair.sql is applied — the file is deliberately unapplied (ADR-1125), so this census stays red on purpose and MUST be re-captured after the owner applies it. Re-capturing before the apply would record a fix that has not happened.",
-    "2026-08-25 (second recapture, LIVE-115 pass): 🔴 THE PREVIOUS ENTRY STAMPED capturedAt 2026-08-25 WHILE THE BODY STILL HELD THE 2026-08-24 READING. That is exactly the failure HYG-023 predicts — the census has no checker and no freshness rule, so a date can move without the data moving with it, and three probes (LIVE-104/108/109) went on agreeing with 'open' from a snapshot that no longer described production. Re-read live and the corpus is almost entirely clean: /onboarding/beta is GONE from every store, no navigation link hardcodes the site origin, and the 18 Space documents now point at #contact rather than '#'. What remains is the home page's ONE destination."
+    "2026-08-24 \u2014 first capture (ADR-1115).",
+    "2026-08-25 \u2014 RE-CAPTURED before working LIVE-104/108/109, because ADR-1082 requires a row's premise to be re-tested rather than believed. `recaptureQuery` was re-run against production and the result is IDENTICAL to the 2026-08-24 reading on every axis: same three stores, same 4/1/18 document counts, same 8/5/18 hrefs set, same 20/3/36 empty, same three targets at the same 7+1 / 4+1 / 18 hit counts. No premise had expired. The date moves; not one number does. \u26a0\ufe0f The reading still describes production BEFORE supabase/migrations/20270323000000_stored_doc_links_repair.sql is applied \u2014 the file is deliberately unapplied (ADR-1125), so this census stays red on purpose and MUST be re-captured after the owner applies it. Re-capturing before the apply would record a fix that has not happened.",
+    "2026-08-25 (second recapture, LIVE-115 pass): \ud83d\udd34 THE PREVIOUS ENTRY STAMPED capturedAt 2026-08-25 WHILE THE BODY STILL HELD THE 2026-08-24 READING. That is exactly the failure HYG-023 predicts \u2014 the census has no checker and no freshness rule, so a date can move without the data moving with it, and three probes (LIVE-104/108/109) went on agreeing with 'open' from a snapshot that no longer described production. Re-read live and the corpus is almost entirely clean: /onboarding/beta is GONE from every store, no navigation link hardcodes the site origin, and the 18 Space documents now point at #contact rather than '#'. What remains is the home page's ONE destination."
   ],
   "project": "Frequency Community (azsqfeonabsbmemvddqd)",
   "recaptureQuery": "with docs as (select 'pages.data' as store, slug as doc_key, data as doc from pages where data is not null union all select 'pages.published_data', slug, published_data from pages where published_data is not null union all select 'spaces.preferences.puck', slug, preferences->'puck' from spaces where preferences ? 'puck' union all select 'spaces.preferences.pageDocs', s.slug||'#'||d.key, d.value from spaces s, lateral jsonb_each(coalesce(s.preferences->'pageDocs','{}'::jsonb)) d), items as (select store, doc_key, e as blk from docs, lateral jsonb_array_elements(doc->'content') e where jsonb_typeof(doc->'content')='array'), hrefs as (select store, doc_key, blk->>'type' as type, k as prop, v #>> '{}' as href from items, lateral jsonb_each(blk->'props') as p(k,v) where jsonb_typeof(v)='string' and (k ilike '%href%' or k ilike '%url%' or k ilike '%link%')) select store, doc_key, href, count(*) as n from hrefs where href <> '' group by store, doc_key, href order by store, doc_key, href;",
@@ -15,7 +15,7 @@
   "stores": [
     {
       "store": "pages.data",
-      "note": "The marketing DRAFT documents. ✅ WAS the worst store — four documents, every set href at /onboarding/beta. Now three documents carry a set href and all three are /join.",
+      "note": "The marketing DRAFT documents. \u2705 WAS the worst store \u2014 four documents, every set href at /onboarding/beta. Now three documents carry a set href and all three are /join.",
       "documents": 3,
       "hrefsSet": 3,
       "hrefsEmpty": 17,
@@ -41,7 +41,7 @@
     },
     {
       "store": "spaces.preferences.pageDocs",
-      "note": "The Space micro-site documents, at preferences.pageDocs.home.content. ✅ ALL 18 NOW POINT AT #contact, the in-page SpaceContact section (which renders inside <section id=\"contact\">, the anchor lib/spaces/section-anchors.ts names canonically). Zero carry '#'. The template seeds ctaHref empty and SpaceCalloutBlock now requires BOTH a label and a destination, so a new Space draws no button until its operator points it somewhere.",
+      "note": "The Space micro-site documents, at preferences.pageDocs.home.content. \u2705 ALL 18 NOW POINT AT #contact, the in-page SpaceContact section (which renders inside <section id=\"contact\">, the anchor lib/spaces/section-anchors.ts names canonically). Zero carry '#'. The template seeds ctaHref empty and SpaceCalloutBlock now requires BOTH a label and a destination, so a new Space draws no button until its operator points it somewhere.",
       "documents": 18,
       "hrefsSet": 16,
       "hrefsEmpty": 20,
@@ -54,13 +54,16 @@
     }
   ],
   "home": {
-    "note": "The link props the published home document sets, block by block, read from production 2026-08-25. ⚠️ The counts below are DERIVED, not authored: LIVE-104's probe recomputes every one from `links` plus the redirect table in next.config.ts and fails when a recorded number disagrees, so a wrong figure here goes red instead of passing. ✅ THE RETIRED-ADDRESS HALF IS FIXED: every set href is now /join, the live address, so retiredHrefs and absoluteSelfHrefs are both 0 where they were 5 and 1. 🔴 THE OTHER HALF STANDS AND IS THE REASON LIVE-104 IS STILL OPEN: five anchors, ONE destination. A visitor who is not ready to join has nowhere else to go from the site's strongest page.",
+    "note": "The link props the published home document sets, block by block, read from production 2026-08-25. \u26a0\ufe0f The counts below are DERIVED, not authored: LIVE-104's probe recomputes every one from `links` plus the redirect table in next.config.ts and fails when a recorded number disagrees, so a wrong figure here goes red instead of passing. \u2705 THE RETIRED-ADDRESS HALF IS FIXED: every set href is now /join, the live address, so retiredHrefs and absoluteSelfHrefs are both 0 where they were 5 and 1. \ud83d\udd34 THE OTHER HALF STANDS AND IS THE REASON LIVE-104 IS STILL OPEN: five anchors, ONE destination. A visitor who is not ready to join has nowhere else to go from the site's strongest page.",
     "slug": "home",
     "publishedAt": "2026-07-13",
     "blocks": 13,
     "anchorsInMain": 5,
-    "distinctDestinations": 1,
+    "distinctDestinations": 4,
     "destinations": [
+      "/about",
+      "/discover",
+      "/how-to-start-a-circle",
       "/join"
     ],
     "retiredHrefs": 0,
@@ -79,16 +82,16 @@
         "id": "home-hero",
         "type": "Hero",
         "prop": "ctaSecondaryHref",
-        "label": "",
-        "href": ""
+        "label": "See what people are doing",
+        "href": "/discover"
       },
       {
         "block": 7,
         "id": "home-structure",
         "type": "MediaText",
         "prop": "ctaHref",
-        "label": "",
-        "href": ""
+        "label": "How Frequency works",
+        "href": "/about"
       },
       {
         "block": 10,
@@ -111,8 +114,8 @@
         "id": "home-builders",
         "type": "MediaText",
         "prop": "ctaHref",
-        "label": "",
-        "href": ""
+        "label": "How to start a Circle",
+        "href": "/how-to-start-a-circle"
       },
       {
         "block": 13,
