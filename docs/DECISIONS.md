@@ -32549,3 +32549,110 @@ written asking eleven questions and the kernel's eight-question limit rejected i
 `propertyType`, `amenities` and `neighborhood` moved to the rail. Nothing was dropped: `placement` is
 the one seam between creating and editing (ADR-450 §2), which is what makes that a placement change
 rather than a scope cut.
+
+## ADR-1152: a request is not a seat, everywhere the product counts one (2026-08-25)
+
+**Context.** [ADR-1148](#adr-1148) (SCAN-105) settled one question: an RSVP awaiting the host does not
+hold a seat. It changed `getCapacityInfo`, the waitlist pick, and the `event_going_counts` RPC — and
+deliberately left the ~20 other reads that filter `status = 'going'` for a follow-up, on the correct
+grounds that **they are not all the same bug**. SCAN-512 is that follow-up: rule each group, then
+apply.
+
+**The row's own enumeration was wrong in three ways**, and all three trace to one cause — its grep
+matched only the literal `.eq('status', 'going')`:
+
+| Claim | Reality |
+| --- | --- |
+| `event-reminders (x2)` | x1. The **recipient** read was already fixed alongside SCAN-105; only the warm-proof count was open. |
+| `lib/spaces/tickets.ts (x3)` | **False positive.** Different table (`space_ticket_rsvps`), which has no `approval_status` column. The "fix" would have errored. |
+| 20 sites | **Missed eight** that filter in JS or in SQL — including the two highest-impact defects in the row. |
+
+### The two the grep could not see
+
+🔴 **`enforce_event_rsvp_capacity()` answered SCAN-105's question the OLD way, one layer BELOW the
+app — and the database wins.** `getCapacityInfo` said "1 spot left", the member RSVP'd, and the
+trigger — counting the pending rows the app had just learned to ignore — silently rewrote their
+status to `waitlist`. It reproduced SCAN-105's headline failure verbatim: with 20 pending requests on
+a 20-seat event, the host could not admit anyone, because their own event read as full.
+
+🔴 **And it never fired at approval time at all.** `lib/events/rsvp-depth.ts` says of `approveRsvp`:
+*"the capacity trigger still applies if they're going."* That comment has been **false for the whole
+life of the approval feature** — approving changes only `approval_status`, so the guard
+`OLD.status is distinct from 'going'` is false and the body never runs. The old function had it
+exactly backwards: it charged a seat for a **request** (which takes none) and charged nothing for an
+**approval** (which takes one).
+
+🔴 **`event_calendar_feed` leaked a hidden venue**, through a door held open on purpose.
+[ADR-1131](#adr-1131)'s migration exempted it because *"every row in it is an event the subscriber is
+ATTENDING."* Approval-gating falsified that premise — a request is stored as `going` + `pending` — so
+an unapproved requester's calendar app pulled `e.location` raw on a `hide_address` event. **The
+exemption was not wrong; it expired.** Same class as [ADR-1150](#adr-1150): a decision justified by a
+property of the data, the property stopped holding, and nothing re-checked it, because the
+justification lived in a comment and comments are not probes.
+
+**Both were reproduced against production before being fixed** — the trigger demoted a third pending
+request on a two-seat event with **zero seats actually taken**, and the feed returned `123 Secret St`.
+
+### The ruling
+
+**Wrong, and fixed (12 sites).** The capacity trigger; the calendar feed; the event page's `goingRsvps`
+(which also put unapproved requesters' faces in the public attendee pile, and rendered a count beside
+the `spotsLeft` that contradicted it); `tallyGoingByEvent` + its query; the reminder email's warm
+proof; `achievements` and `founder-tasks` (both **write durable rewards state**, so a badge minted
+from a request cannot be clawed back); `matching`, `event-blurb` and `connectors` (member-visible
+claims — "people you know are going", "Real attendance only" — that would be false); and
+`poster-observer` + `poster-quality`, whose anti-farming evidence already excludes the cheaper
+guest-seat forgery and must exclude the self-minted pending row by the same argument.
+
+**Correct, and deliberately left alone.** The host's own pending queue; cancellation notices (a
+requester's plans are disrupted either way); the member's own digest and their own RSVP badge; all
+host-facing *reach* (a host must be able to message someone they have not yet approved — that is how
+approval decisions get made); the dispatch audience, which includes `maybe` and `waitlist` by design;
+and the GDPR export, where portability must include everything.
+
+**The new rule, stated once:** *the seat is taken when the RSVP is `going` AND is not still waiting on
+the host.* In the trigger that one sentence is both the COUNT and the TRIGGER CONDITION, which is why
+it fixes both halves at once — and why the pending→approved transition now re-enters the check, the
+moment the seat is actually claimed. That finally makes `rsvp-depth.ts`'s comment true.
+
+**Proof.** Both migrations carry **behavioural** controls, not text greps: they drive a real gated
+event and assert what each row becomes (three pending on a two-seat event → none demoted; approve two
+→ both stand; approve a third → waitlist), then delete every row they made. Each control was run
+against the OLD function first and **failed**, which is what makes it a control. The twelve-site probe
+was mutation-tested per site — including a first version whose migration arm was too loose and matched
+the `OLD`/`NEW` comparison instead of the pending predicate, and so **did not fire**; it was tightened
+until it did.
+
+**Latent today.** Production carries 0 events with `rsvp_requires_approval` and 0 rows at
+`approval_status = 'pending'`, so none of this has hurt anyone. That is exactly when it is cheap —
+the same argument [ADR-1149](#adr-1149) was written on.
+
+## ADR-1153: `create or replace` carries the GRANTS forward too (2026-08-25)
+
+**Context.** While fixing the calendar-feed leak in [ADR-1152](#adr-1152), the migration copied the
+function body forward with
+`create or replace` — **and copied the trailing grant with it**:
+
+```sql
+grant execute on function public.event_calendar_feed(text) to anon, authenticated;
+```
+
+That grant had been revoked in the meantime by
+`20270304000000_revoke_browser_execute_on_service_only_rpcs`, and `scripts/function-grants.txt`
+records the verdict as `internal`. Statements replay in order, so the copied grant is the state that
+survives. 🔴 **The migration written to close a leak re-opened a wider one** — any holder of the
+publishable anon key could call the RPC directly against PostgREST and read a member's private
+calendar, hidden venues included. It reached production before anything noticed.
+
+✅ **`check:function-grants` (LIVE-020) caught it**, named the offending file, and printed the exact
+statement to add. That guard was built for the mirror-image mistake — ADR-959's finding that a revoke
+naming only `PUBLIC` leaves the per-role grants `ALTER DEFAULT PRIVILEGES` creates — and it turns out
+to catch a role-explicit grant that should no longer be there just as well. `20270338000000` revokes
+it; production now shows `service_role, postgres` and nothing else.
+
+Nobody needed the grant: the only caller reads the feed through `admin.rpc(...)` on the service_role
+client. A calendar app fetching the `.ics` talks to the Next route, not to PostgREST.
+
+**The rule:** *carrying a function body forward carries its grants forward too, and the grants are the
+half most likely to have changed underneath you since the body was written.* Re-derive them from
+`scripts/function-grants.txt`; never copy them from the definition you are replacing.

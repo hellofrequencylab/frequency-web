@@ -143,6 +143,10 @@ export async function getPosterCounts(profileId: string): Promise<PosterCounts> 
       .select('event_id, profile_id, status')
       .in('event_id', ids)
       .eq('status', 'going')
+      // A REAL RSVP, which the comment above already demands, cannot be one the host has not
+      // acted on. This is anti-farming evidence on an approval-gated event the poster controls,
+      // so an unapproved request is a row they can mint for themselves (SCAN-512).
+      .neq('approval_status', 'pending')
     const rsvpRows = ((rsvps ?? []) as { event_id: string; profile_id: string }[]).filter(
       (r) => r.profile_id && r.profile_id !== profileId,
     )

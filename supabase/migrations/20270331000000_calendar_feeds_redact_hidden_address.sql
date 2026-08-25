@@ -23,7 +23,14 @@
 -- ✅ event_calendar_feed(_token) IS DELIBERATELY LEFT ALONE, and this is the half worth reading. That
 -- feed joins `event_rsvps r on r.status = 'going'` — every row in it is an event the subscriber is
 -- ATTENDING, and the rule `guestVisibleLocation` implements hides the exact address "unless the
--- viewer is going". Redacting it would take the venue away from the one audience entitled to it, on
+-- viewer is going".
+--
+-- 🔴 THAT PREMISE EXPIRED, and 20270337000000 restored it (ADR-1152). Approval gating stores a
+-- REQUEST as `status = 'going'` with `approval_status = 'pending'`, so `r.status = 'going'` stopped
+-- meaning "attending" and this exemption started handing hidden venues to people the host had not
+-- admitted. The exemption below was not wrong when written; nothing re-checked whether it was still
+-- true. The join now requires the approval too, so the sentence above is once again literally
+-- correct rather than merely once-correct. Redacting it would take the venue away from the one audience entitled to it, on
 -- the day they need it, which is the over-correction this note exists to prevent. Its token is also
 -- per-profile and revocable, so it is not an uncredentialed surface.
 --

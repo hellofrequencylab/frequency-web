@@ -119,6 +119,9 @@ export async function eventBlurb(profileId: string, eventId: string): Promise<st
         .select('profile_id')
         .eq('event_id', eventId)
         .eq('status', 'going')
+        // "Real attendance only" is the rule two lines up, and a request awaiting the host is not
+        // attendance (SCAN-105 / SCAN-512). Vera renders this count to the member as a fact.
+        .neq('approval_status', 'pending')
         .in('profile_id', [...connectionIds])
       knownGoingCount = (going ?? []).length
     }

@@ -210,6 +210,9 @@ export async function scoreEventsForViewer(
       .select('event_id, profile_id')
       .in('event_id', ids)
       .eq('status', 'going')
+      // "people you know are going" has to be true. A friend whose request the host has not
+      // answered is not going yet (SCAN-105 / SCAN-512).
+      .neq('approval_status', 'pending')
       .in('profile_id', [...knownWeight.keys()])
     for (const r of (going ?? []) as { event_id: string; profile_id: string }[]) {
       socialRaw[r.event_id] = (socialRaw[r.event_id] ?? 0) + (knownWeight.get(r.profile_id) ?? 0)

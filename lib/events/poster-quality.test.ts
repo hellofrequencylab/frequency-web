@@ -42,6 +42,7 @@ function qbuilder(table: string) {
   self.in = chain
   self.is = chain
   self.not = chain
+  self.neq = chain
   self.limit = chain
   self.order = chain
   self.maybeSingle = async () => ({ data: null })

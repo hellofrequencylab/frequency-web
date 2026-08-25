@@ -43,7 +43,9 @@ export async function getFounderTasks(profileId: string): Promise<FounderTasks> 
       .eq('status', 'accepted')
       .or(`user_a_id.eq.${profileId},user_b_id.eq.${profileId}`),
     admin.from('memberships').select('id', { count: 'exact', head: true }).eq('profile_id', profileId).eq('status', 'active'),
-    admin.from('event_rsvps').select('id', { count: 'exact', head: true }).eq('profile_id', profileId).eq('status', 'going'),
+    // Threshold is `> 0`, so a SINGLE pending request would complete a rewarded founder task and
+    // pay out. A request is not an RSVP until the host says so (SCAN-105 / SCAN-512).
+    admin.from('event_rsvps').select('id', { count: 'exact', head: true }).eq('profile_id', profileId).eq('status', 'going').neq('approval_status', 'pending'),
     getPracticeStreak(profileId),
     admin.from('profiles').select('meta').eq('id', profileId).maybeSingle(),
   ])
