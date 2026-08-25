@@ -17,6 +17,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { useState, type ReactNode } from 'react'
+import { Checkbox } from '@/components/ui/checkbox'
 import { ImageIcon, X } from 'lucide-react'
 import { Input, Textarea } from '@/components/ui/field'
 import { Select } from '@/components/ui/select'
@@ -642,16 +643,19 @@ function MultiSelectControl({
     // wrapper, which already supplies the label and the description a fieldset legend would repeat.
     <div role="group" aria-label={label} id={id} {...aria} className="grid grid-cols-2 gap-x-4 gap-y-2 sm:grid-cols-3">
       {options.map((o) => (
-        <label key={o.value} className="flex items-center gap-2 text-body-sm text-text">
-          <input
-            type="checkbox"
-            checked={picked.has(o.value)}
-            disabled={disabled}
-            onChange={() => toggle(o.value)}
-            className="h-4 w-4 rounded border-border accent-primary"
-          />
-          <span>{o.label}</span>
-        </label>
+        // The kit primitive, NOT a hand-rolled `<input type="checkbox">`. The first version of this
+        // control rolled its own and raised the `raw-input` adoption ratchet from 87 to 88 — a debt
+        // class that may fall and never rise, and it went red on main for every PR until this. The
+        // primitive is a drop-in (`checked` + `onChange(event)`), and it also brings the things the
+        // hand-rolled box silently dropped: the amber focus ring, disabled styling, and implicit
+        // label association with no id to mint.
+        <Checkbox
+          key={o.value}
+          checked={picked.has(o.value)}
+          disabled={disabled}
+          onChange={() => toggle(o.value)}
+          label={o.label}
+        />
       ))}
     </div>
   )
