@@ -24,11 +24,25 @@ export async function getCapacityInfo(eventId: string): Promise<CapacityInfo> {
   const admin = createAdminClient()
   const [evRes, countRes] = await Promise.all([
     admin.from('events').select('capacity').eq('id', eventId).maybeSingle(),
+    // 🔴 A PENDING REQUEST DOES NOT HOLD A SEAT (SCAN-105, ADR-1148, owner ruling 2026-08-25).
+    // On an approval-gated event an unapproved answer is written as status 'going' with
+    // approval_status 'pending', so counting `status = going` alone let TWENTY unapproved
+    // REQUESTS fill a twenty-seat event the host had not said yes to — and the host could then
+    // not approve anyone, because their own event read as full.
+    //
+    // It also contradicted the published promise. content/help/groups/events.md tells hosts
+    // "A full event still sends approved people to the waitlist. Approving says 'yes, you are
+    // welcome', not 'there is room'" — which is only true if approval, not the request, is what
+    // consumes the seat.
+    //
+    // `approval_status` is NOT NULL with default 'none', so a plain neq is complete: every
+    // ungated RSVP carries 'none' and is counted, and only 'pending' is withheld.
     admin
       .from('event_rsvps')
       .select('id', { count: 'exact', head: true })
       .eq('event_id', eventId)
-      .eq('status', 'going'),
+      .eq('status', 'going')
+      .neq('approval_status', 'pending'),
   ])
 
   const capacity: number | null =
@@ -73,11 +87,17 @@ export async function promoteFromWaitlist(eventId: string): Promise<PromotedSeat
   const admin = createAdminClient()
   // guest_email postdates the generated types, so the row is read untyped and cast to the
   // shape used here (ADR-246, same seam as lib/events/cancellation.ts).
+  // ⚠️ AND PROMOTION MUST NOT BYPASS THE APPROVAL GATE (SCAN-105). This read used to take the
+  // oldest waitlist row whatever its approval state, so a STILL-PENDING request could be lifted
+  // straight into a confirmed seat by someone else's cancellation — approval granted by timing
+  // rather than by the host. Skipping pending rows means the next APPROVED person moves up, and a
+  // pending one waits for the host either way.
   const { data: nextRaw } = await admin
     .from('event_rsvps')
     .select('id, profile_id, guest_email')
     .eq('event_id', eventId)
     .eq('status', 'waitlist')
+    .neq('approval_status', 'pending')
     .order('created_at', { ascending: true })
     .limit(1)
     .maybeSingle()

@@ -32305,3 +32305,181 @@ pointing at the **same** url. The fix is content, not code — the document need
 - A snapshot a probe reads is **an input, not evidence**. Re-derive it before trusting a verdict built
   on it, and give it a freshness rule — HYG-023 is now the row that matters most in the hygiene lane,
   because two others were hiding behind it.
+
+---
+
+## ADR-1148: approval gates the seat (2026-08-25)
+
+**Status:** Accepted · owner ruling 2026-08-25 · `lib/events/capacity.ts`,
+`lib/events/going-counts.ts`, `20270333000000_going_counts_exclude_pending.sql` · SCAN-105 (closed),
+SCAN-512 (filed)
+
+**Context.** On an approval-gated event an unapproved answer is written as `status = 'going'` with
+`approval_status = 'pending'`. Every capacity read counted `status` alone, so **twenty unapproved
+requests could fill a twenty-seat event the host had not said yes to** — and the host could then not
+approve anyone, because their own event read as full.
+
+It also contradicted a promise already published to hosts. `content/help/groups/events.md`:
+
+> A full event still sends approved people to the waitlist. **Approving says "yes, you are welcome",
+> not "there is room".**
+
+That sentence is only true if approval, not the request, is what consumes the seat.
+
+**Decision.** **Approval gates the seat.** A pending request does not consume capacity; only an
+approved or ungated `going` seat counts. On approval, a full event sends the person to the waitlist.
+
+**Three places answer the same question and are kept in lockstep**, because a disagreement between
+them would make the `/events` listing depend on whether a migration had been applied:
+
+| where | what it drives |
+| :-- | :-- |
+| `getCapacityInfo` | the seat count, `spotsLeft`, `isFull` |
+| `going-counts.ts` paged fallback | the "Has open spots" facet, the Popularity sort |
+| `event_going_counts` RPC | the same, server-side, for the whole listing |
+
+**And promotion no longer bypasses the gate.** `promoteFromWaitlist` took the oldest waitlist row
+whatever its approval state, so a still-pending request could be lifted into a confirmed seat by
+someone else's cancellation — **approval granted by timing rather than by the host.**
+
+**✅ `approval_status` is `NOT NULL DEFAULT 'none'`** (verified on production), so a plain
+`<> 'pending'` is **complete**, not merely careful: every ungated RSVP carries `'none'` and is
+counted. A null-tolerant filter would be wrong rather than redundant — it would imply a state the
+column cannot hold.
+
+**⚠️ Measured before changing:** 0 events with `rsvp_requires_approval`, 0 rows at `'pending'`, and
+`'none'` the only value present. This changes **no current count**. It closes the rule before the
+first gated event exists — the opposite of how the truncation class in ADR-962/ADR-969 was always
+found.
+
+**Consequences.**
+- `lib/events/capacity.test.ts` asserts **the filter is sent**, not that a number came back: the bug
+  was never in the arithmetic, it was in which rows the query asked for.
+- The migration's probe **failed atomically first**, on `events.scope_id` being NOT NULL — the same
+  lesson `20270332000000`'s probe had already taught, which I had not carried forward. Nothing landed
+  until it passed: no function, no ledger row, no probe rows.
+- 🔴 **Twenty other reads still count a pending request as an attendee**, filed as **SCAN-512** rather
+  than swept in. They are not all the same bug: a cancellation notice probably *should* reach a
+  pending requester, while an achievement probably should not. Each group needs its own ruling.
+
+---
+
+## ADR-1149: scoped rooms and three open tables stop admitting anon (2026-08-25)
+
+**Status:** Accepted · owner ruling 2026-08-25 ·
+`20270334000000_scoped_rooms_and_open_tables_require_identity.sql` · SCAN-212 (closed)
+
+**Context — two findings, both latent at zero rows.**
+
+1. **Scoped rooms had no identity check at all.** `rooms_read_public_or_member` read
+   `visibility = 'public' OR visibility IN ('circle','hub','nexus','outpost','channel') OR am_room_member(id)`,
+   and **that middle branch asks nothing of the caller.** `room_messages` and `room_members` carried
+   the same shape. Measured: anon read the one channel room's metadata, and messages/members returned
+   `200 []` rather than `42501` — so only **emptiness** was withholding them, and `room_messages` is
+   in the realtime publication.
+2. **Three tables were `USING (true)`** with the anon grant intact: `dispatch_poll_votes`,
+   `spotlight_top_friends`, `listing_comments`. Poll votes carry `(profile_id, option_id)` on
+   member-only dispatches — a de-anonymising pair the moment rows exist.
+
+**✅ Why it was free, and the check that made it safe to do.** Every application reader of all three
+tables goes through `createAdminClient()`, which bypasses RLS entirely. **Those policies served no
+application path** — they only widened what the publishable anon key could ask PostgREST for directly.
+The rooms side is the same story: the one non-admin reader (`app/(main)/messages/popover-actions.ts`)
+already calls `auth.getUser()` and scopes to the caller's own memberships.
+
+**⚠️ That question is not a formality.** `20270330000000` nearly shipped as a blanket table revoke
+until `app/discover/events/_data.ts` turned out to be the **one** anon reader among 245 `from('events')`
+sites; a blanket revoke would have dark-screened the public events hub. The same question was asked
+here and came back clean.
+
+**Decision.**
+
+| relation | becomes |
+| :-- | :-- |
+| `rooms` / `room_messages` / `room_members` | scoped branches require an **authenticated** caller; `visibility = 'public'` stays open to anon; membership grants what it always did |
+| `dispatch_poll_votes` | your **own** vote |
+| `spotlight_top_friends` | the **owner's** rows |
+| `listing_comments` | **authenticated** — public-adjacent community content on public listings, so owner-scoping would be wrong rather than merely strict; what it stops is signed-out bulk enumeration |
+
+**Identity rather than membership for rooms, deliberately.** Browsing a circle's rooms before joining
+is a plausible flow and there is no data to say whether it is used. This row closes the anon hole; it
+does not redesign room visibility.
+
+**⚠️ And a second pass went further than the policies.** Anon's SELECT **grant** was revoked on all
+five tables with no anon path. A policy the caller misses returns `200 []` — the very shape this
+finding criticised — while removing the grant makes the same refusal arrive as **42501**, a fact about
+permission rather than about how many rows happen to exist. **`public.rooms` keeps its anon grant on
+purpose**, or the genuinely-public branch would go with it.
+
+**Consequences.**
+- Verified as `role anon` after: **rooms 1 → 0 readable** — the channel room is now withheld, and that
+  is the policy rather than emptiness. Messages, members, poll votes and top friends all 0.
+- The ledger was repaired to the repo version and verified as an **exact bijection by hash**, not by
+  count: 642 ⇄ 642, `md5 = e870925394181ea1cd8d0a2c48c7abac` on both sides. Equal counts were what hid
+  the 2026-08-12 drift where one file was missing *and* one was unapplied.
+- The migration's verification block asserts the **positive** control too — that the tightening did
+  not take more than it meant to. Without it, nothing would fail if a future edit revoked one table
+  too many.
+- 🔴 **The first version of that positive control was wrong, and `db-tests` caught it.** It asserted
+  that anon still held `SELECT` on `public.rooms`, on the reasoning that the policy's
+  `visibility = 'public'` branch exists to serve anonymous readers. Nobody measured whether an anon
+  caller reads `rooms` at all. It does not, and the grant is not in this repo's migration chain —
+  see **ADR-1150**, which revokes it and restates the control as a before/after comparison.
+
+## ADR-1150: a control that names an absolute grant measures the environment, not the change (2026-08-25)
+
+**Context.** ADR-1149 (`20270334000000`) revoked anon's `SELECT` on five tables and deliberately
+spared a sixth, `public.rooms`, reasoning that the policy's `visibility = 'public'` branch exists to
+serve anonymous readers and that removing the grant would take that branch with it. It then wrote
+that reasoning into the migration as a positive control:
+
+> `raise exception 'anon lost SELECT on public.rooms, so genuinely public rooms are unreachable - this took too much'`
+
+`db-tests` failed on that exact line. On a fresh apply of every migration in this repo, anon does
+**not** hold `SELECT` on `public.rooms` — because no migration here has ever granted it. Production's
+copy is vestigial, predating the tracked chain.
+
+**The premise was never measured.** Re-checked against every caller of `public.rooms`, 2026-08-25:
+
+| Caller | How it reads |
+| --- | --- |
+| `app/(main)/channels/[id]/page.tsx` | admin client (service_role, bypasses RLS and grants) |
+| `app/(main)/channels/[id]/manage/load.ts` | admin client |
+| `app/(main)/messages/page.tsx` | `if (!user) redirect('/sign-in')` |
+| `app/(main)/messages/r/[roomId]/page.tsx` | `if (!user) redirect('/sign-in')` |
+| `app/(main)/messages/actions.ts` | server actions, authenticated |
+| `app/(main)/messages/rooms/actions.ts` | server actions, authenticated (delete via admin) |
+| `app/(main)/messages/popover-actions.ts` | both entry points call `auth.getUser()` and bail on null |
+
+There is **no anonymous reader**. The sparing was not "taking exactly enough"; it was leaving one
+over-grant in place on the strength of an unmeasured premise — [ADR-1082](#adr-1082) in its purest
+form, committed by the same pass that cited ADR-1082 elsewhere.
+
+**Decision.**
+
+1. `20270335000000` revokes `select on public.rooms from anon`. Production now holds **zero** anon
+   `SELECT` grants across all six tables, with all six retained for `authenticated`.
+2. **Both migrations' positive controls are restated as a before/after comparison.** Each opens its
+   transaction by snapshotting `authenticated`'s `SELECT` grants on the six tables into a temp table,
+   and asserts at the end that every grant present at `begin` is still present at `commit`.
+3. The `visibility = 'public'` policy branch stays, and is asserted. It is not an anon affordance and
+   never was: it is what lets an **authenticated** member see a public room they have not joined.
+
+**The rule.** *A control that asserts an absolute fact — "grant X exists" — measures the ENVIRONMENT
+it happens to run in. A control that asserts a difference — "whatever existed at `begin` still exists
+at `commit`" — measures the CHANGE, which is the only thing a migration is answerable for.* The
+absolute form passes in the environment it was written against and fails everywhere else, which reads
+as a broken gate rather than as the true statement it is. Prefer the difference.
+
+**What did its job.** `db-tests` is not a required check, and it caught a defect that `checks`,
+`lint`, `test` and `analyze` all passed. This is the second argument in a week for making it required
+(`OWN-038`), and the first one backed by a real catch.
+
+**Also recorded — the apply-then-commit hazard.** Applying a migration to production *before*
+committing its file turns `check:migrations` red on every CI run already in flight, because the
+ledger gains a row the tree does not yet carry. That is what failed `checks` on `67766731c`. Apply and
+commit in the same motion, or expect a spurious red.
+
+**Ledger.** 643 ⇄ 643, verified as an exact bijection **by hash**:
+`md5 = 0ffdd8328b00d33504cb3261d106b548` on both sides. Not by count — equal counts are what hid the
+2026-08-12 drift.

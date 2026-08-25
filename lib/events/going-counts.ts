@@ -102,6 +102,11 @@ async function countByPaging(ids: string[]): Promise<Record<string, number>> {
           .select('event_id')
           .in('event_id', chunk)
           .eq('status', 'going')
+          // SCAN-105: a pending request is not a going seat, here as in getCapacityInfo. This
+          // count drives the "Has open spots" facet and the Popularity sort, so counting an
+          // unapproved answer would flip a full event to "open" and over-rank it at once. Kept in
+          // lockstep with event_going_counts, which applies the same predicate server-side.
+          .neq('approval_status', 'pending')
           // `id` is the primary key, so this is a TOTAL order. Without it two rows sharing an
           // event_id could straddle a page boundary and be counted twice or not at all.
           .order('id', { ascending: true })
