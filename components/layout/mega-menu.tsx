@@ -11,6 +11,7 @@ import type {
   ResolvedMenu,
   ResolvedRailCard,
 } from '@/lib/menus/types'
+import { categoryTriggers } from '@/lib/menus/project'
 import { effectiveMode } from '@/components/layout/menu-role'
 import { GhostLink } from '@/components/layout/ghost-link'
 import {
@@ -99,25 +100,21 @@ type Trigger = {
 
 function buildTriggers(menus: ResolvedMenu[], triggerLevel: 'menu' | 'category'): Trigger[] {
   if (triggerLevel === 'category') {
-    // Admin: the single menu's top-level categories are the triggers. CLICK-TO-OPEN model:
-    // a category WITH a panel (child columns or more than one item) is a disclosure BUTTON
-    // (no trigger href), and ALL its items — including the section landing — ride inside the
-    // panel, so nothing is unreachable without a hover. A single-link section stays a plain
-    // nav link (its one item's href, no panel).
+    // Admin + the public header: the single menu's top-level categories are the triggers.
+    // The CLICK-TO-OPEN decision (panel vs plain link, and where a plain link goes) is
+    // `categoryTriggers` in lib/menus/project.ts — shared with the phone sheet, which
+    // draws the SAME `header` menu and must agree with this bar about every destination.
     const menu = menus[0]
     if (!menu) return []
-    return menu.categories.map((cat) => {
-      const hasPanel = cat.children.length > 0 || cat.items.length > 1
-      return {
-        key: cat.id,
-        label: cat.label ?? menu.label,
-        href: hasPanel ? undefined : cat.items[0]?.href,
-        columns: menu.columns,
-        categories: cat.children,
-        rootItems: hasPanel ? cat.items : [],
-        railCards: menu.railCards,
-      }
-    })
+    return categoryTriggers(menu).map(({ category, label, href, panelItems }) => ({
+      key: category.id,
+      label,
+      href,
+      columns: menu.columns,
+      categories: category.children,
+      rootItems: panelItems,
+      railCards: menu.railCards,
+    }))
   }
   // Public: each menu is one trigger; its categories are the panel columns.
   return menus.map((menu) => ({
