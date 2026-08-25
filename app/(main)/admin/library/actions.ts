@@ -4,16 +4,19 @@ import { revalidatePath } from 'next/cache'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { requireAdmin } from '@/lib/admin/guard'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { getRootSpaceId } from '@/lib/library/store'
+import { getRootSpaceId, insertSpaceLibraryImage, findLibraryAssetBySha256 } from '@/lib/library/store'
+import { ingestImageBytes } from '@/lib/library/ingest'
+import { readImageDescriptor } from '@/lib/library/image-describe'
 import { classifyLoomUpload, fallbackExtFor, fallbackMimeFor } from '@/lib/library/upload-kinds'
 
 // Upload a file into The Loom: store it in the right bucket (images -> library-media, audio/video ->
 // recordings-media) and write a `library_assets` row (kind resolved from the MIME, scoped to the
-// root/shared library). Janitor-gated. Image behavior is byte-identical to before; Airwaves P0
-// (ADR-608) only widens the ACCEPTED types to audio + video via classifyLoomUpload.
+// root/shared library). Janitor-gated. Airwaves P0 (ADR-608) widened the ACCEPTED types to audio +
+// video via classifyLoomUpload; PROG-D1 routed the write through `insertSpaceLibraryImage` and added
+// ingest, so `duplicateOf` is returned when the bytes are already in this Loom and nothing was stored.
 export async function uploadLibraryImage(
   formData: FormData,
-): Promise<{ ok: true } | { error: string }> {
+): Promise<{ ok: true; duplicateOf?: string } | { error: string }> {
   await requireAdmin('janitor')
 
   const file = formData.get('file')
@@ -33,11 +36,18 @@ export async function uploadLibraryImage(
   const ext = (file.name.split('.').pop() || fallbackExtFor(target.kind)).toLowerCase().replace(/[^a-z0-9]/g, '')
   const stamp = `${Date.now()}-${Math.round(Math.random() * 1e6).toString(36)}`
   const path = `${spaceId}/${stamp}.${ext}`
-  const bytes = new Uint8Array(await file.arrayBuffer())
+
+  // INGEST (PROG-D1). This action used to write `library_assets` directly, one of the two sites that
+  // bypassed the chokepoint; it now runs the same pipeline as every other uploader — strip private
+  // metadata, checksum the stored bytes, read the dimensions — and inserts through
+  // `insertSpaceLibraryImage` so there is exactly ONE place a Loom row is written.
+  const ingested = ingestImageBytes(new Uint8Array(await file.arrayBuffer()), file.type)
+  const duplicate = await findLibraryAssetBySha256(spaceId, ingested.sha256)
+  if (duplicate) return { ok: true, duplicateOf: duplicate.title || 'an asset already in the Loom' }
 
   const { error: upErr } = await admin.storage
     .from(target.bucket)
-    .upload(path, bytes, { contentType: file.type || fallbackMimeFor(target.kind), upsert: false })
+    .upload(path, ingested.bytes, { contentType: file.type || fallbackMimeFor(target.kind), upsert: false })
   if (upErr) return { error: upErr.message }
 
   const { data: pub } = admin.storage.from(target.bucket).getPublicUrl(path)
@@ -48,26 +58,29 @@ export async function uploadLibraryImage(
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/(^-|-$)/g, '')
 
-  // eslint-disable-next-line no-restricted-syntax -- library_assets isn't in lib/database.types.ts yet (types regen is a follow-up integrator step); genuinely untyped table access
-  const dbh = admin as unknown as SupabaseClient
-  const { error: insErr } = await dbh.from('library_assets').insert({
-    space_id: spaceId,
-    kind: target.kind,
+  const id = await insertSpaceLibraryImage({
+    spaceId,
     title: rawTitle || base,
     slug,
-    source: 'curated',
-    status: 'approved',
-    visibility: 'public',
-    storage_bucket: target.bucket,
-    storage_path: path,
+    storageBucket: target.bucket,
+    storagePath: path,
     url: pub.publicUrl,
     mime: file.type || fallbackMimeFor(target.kind),
-    bytes: file.size,
+    bytes: ingested.bytes.byteLength,
+    kind: target.kind,
+    source: 'curated',
+    // The Studio's own upload is the SHARED master library, so it stays public — the one place a Loom
+    // row is public rather than space-scoped, and the reason this call passes `visibility` explicitly.
+    visibility: 'public',
+    sha256: ingested.sha256,
+    width: ingested.width,
+    height: ingested.height,
+    ...readImageDescriptor(formData),
   })
-  if (insErr) {
+  if (!id) {
     // Roll back the orphaned file so a failed insert doesn't leave litter in storage.
     await admin.storage.from(target.bucket).remove([path])
-    return { error: insErr.message }
+    return { error: 'Could not save that file to the Loom. Try again.' }
   }
 
   revalidatePath('/admin/library')

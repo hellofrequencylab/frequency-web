@@ -23,6 +23,7 @@ import type { JourneyTree } from '@/lib/journeys/tree'
 import type { LessonContent, CheckConfig } from '@/lib/journeys/store'
 import type { PartialToday } from '@/lib/practices'
 import { ProgressTrack } from '@/components/ui/progress-track'
+import { Button } from '@/components/ui/button'
 
 interface Props {
   slug: string
@@ -559,9 +560,9 @@ export function LearnPlayer({
                         <Lock className="h-4 w-4" /> {unlockLabel(phaseLock.get(phaseOfLesson.get(nextId) ?? '')?.unlockAt ?? null)}
                       </span>
                     ) : nextId ? (
-                      <button type="button" onClick={() => goTo(nextId)} className="inline-flex items-center gap-1 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary hover:bg-primary-hover">
+                      <Button type="button" onClick={() => goTo(nextId)}>
                         Continue <ChevronRight className="h-4 w-4" />
-                      </button>
+                      </Button>
                     ) : (
                       <span className="inline-flex items-center gap-1 text-body-sm font-semibold text-success"><Check className="h-4 w-4" /> Completed</span>
                     )
@@ -585,9 +586,9 @@ export function LearnPlayer({
                       {pending ? 'Saving…' : 'Continue without logging'}
                     </button>
                   ) : (
-                    <button type="button" onClick={complete} disabled={pending} className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary hover:bg-primary-hover disabled:opacity-60">
+                    <Button type="button" onClick={complete} disabled={pending}>
                       <Check className="h-4 w-4" /> {pending ? 'Saving…' : 'Mark complete & continue'}
-                    </button>
+                    </Button>
                   )}
                 </div>
               </div>

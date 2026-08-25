@@ -1,7 +1,13 @@
 import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 import {
-  isUnguardedAction,
+  classifyActionFile,
+  actionExports,
+  actionAnnotations,
+  scanActions,
+  ACTION_GATE,
+  MIN_ACTION_FILES,
+  MIN_ACTION_EXPORTS,
   isRouteFile,
   classifyRoute,
   scanRoutes,
@@ -77,11 +83,11 @@ const ledgerFor = (file: string, src: string, over: Record<string, unknown> = {}
 
 describe('the blindness LIVE-022 named', () => {
   it('was a route-SHAPE assumption, not a path glob: the action classifier dismisses a real handler', () => {
-    // `isUnguardedAction` opens with `if (!src.includes("'use server'")) return false`. This
+    // The action classifier opens with `if (!src.includes("'use server'")) return null`. This
     // fixture bypasses RLS with the admin client and updates another member's ROLE with no gate
     // at all — the single worst thing a route can do — and the action scan calls it clean.
     expect(BARE_ROUTE.includes("'use server'")).toBe(false)
-    expect(isUnguardedAction('app/api/promote/route.ts', BARE_ROUTE)).toBe(false)
+    expect(classifyActionFile('app/api/promote/route.ts', BARE_ROUTE)).toBeNull()
   })
 
   it('was never a path problem: app/api route files were always inside the walk', () => {
@@ -506,5 +512,248 @@ describe('the real tree', () => {
     const gated = routes.results.filter((r: RouteResult) => r.source === 'gate').length
     const asserted = routes.results.filter((r: RouteResult) => r.source === 'ledger').length
     expect(asserted).toBeLessThan(gated)
+  })
+})
+
+// ── HYG-020 (ADR-1135): the ACTION scan is per-export too ───────────────────────────────────────
+//
+// Same discipline as the LIVE-031 block above: every "must fail" fixture FIRST proves the OLD
+// rule (a gate token anywhere in the file) passed it, because that is the blindness being closed.
+
+/** One guard, five exports — the exact complaint in the HYG-020 row. The whole-file rule read
+ *  this green off `requireAdmin` in deleteEverything alone. */
+const HALF_GATED_ACTIONS = `'use server'
+
+import { requireAdmin } from '@/lib/admin/guard'
+import { createAdminClient } from '@/lib/supabase/admin'
+
+export async function deleteEverything(id: string) {
+  await requireAdmin('janitor')
+  await createAdminClient().from('things').delete().eq('id', id)
+}
+
+export async function promoteMember(id: string, role: string) {
+  await createAdminClient().from('profiles').update({ community_role: role }).eq('id', id)
+}
+`
+
+/** The requireMarketer shape: the guard helper's RETURN TYPE carries braces, which the old
+ *  bodyAfterParams read as the helper's body — so the gate inside was never seen. This single
+ *  boundary was ~90 of the 112 false positives a naive per-export scan reports. */
+const BRACED_RETURN_TYPE_ACTIONS = `'use server'
+
+import { getCallerProfile } from '@/lib/auth'
+import { createAdminClient } from '@/lib/supabase/admin'
+
+async function requireMarketer(): Promise<{ id: string } | string> {
+  const me = await getCallerProfile()
+  if (!me) return 'Sign in first.'
+  return { id: me.id }
+}
+
+export async function createCampaign(name: string): Promise<{ id: string } | null> {
+  const who = await requireMarketer()
+  if (typeof who === 'string') return null
+  const { data } = await createAdminClient().from('campaigns').insert({ name }).select('id').single()
+  return data
+}
+`
+
+/** The lookup-then-gate shape 16 real actions use: resolve slug → id through the admin client,
+ *  deny with null, THEN gate on capabilities of that id. Structurally forced (the gate needs the
+ *  id) and nothing the query read can escape before the gate — R3 must not fire. */
+const LOOKUP_THEN_GATE_ACTIONS = `'use server'
+
+import { createAdminClient } from '@/lib/supabase/admin'
+import { getHubCapabilities } from '@/lib/capabilities'
+
+export async function getHubAdminData(slug: string) {
+  const admin = createAdminClient()
+  const { data: hub } = await admin.from('hubs').select('id, name').eq('slug', slug).maybeSingle()
+  if (!hub) return null
+  const caps = await getHubCapabilities(hub.id)
+  if (!caps.has('hub.manage')) return null
+  return hub
+}
+`
+
+/** The same shape but ANSWERING pre-gate: the early return carries the queried rows out before
+ *  anyone is identified. This is the danger R3 names, and it must still fire. */
+const PRE_GATE_ANSWER_ACTIONS = `'use server'
+
+import { createAdminClient } from '@/lib/supabase/admin'
+import { requireAdmin } from '@/lib/admin/guard'
+
+export async function listMembers(preview: boolean) {
+  const admin = createAdminClient()
+  const { data } = await admin.from('profiles').select('id, contact_email')
+  if (preview) return data
+  await requireAdmin('janitor')
+  return data
+}
+`
+
+/** A pre-gate MUTATION with only denial-shaped returns: the write happens whether or not the
+ *  caller would have passed the gate. Denial-shaped returns must not excuse it. */
+const PRE_GATE_MUTATION_ACTIONS = `'use server'
+
+import { createAdminClient } from '@/lib/supabase/admin'
+import { requireAdmin } from '@/lib/admin/guard'
+
+export async function resetThing(id: string) {
+  const admin = createAdminClient()
+  await admin.from('things').update({ state: 'reset' }).eq('id', id)
+  if (!id) return null
+  await requireAdmin('janitor')
+  return null
+}
+`
+
+/** A gate on one branch only — the else path mutates ungated. R2, action edition. */
+const BRANCH_GATED_ACTIONS = `'use server'
+
+import { requireAdmin } from '@/lib/admin/guard'
+import { createAdminClient } from '@/lib/supabase/admin'
+
+export async function saveThing(scope: string, id: string) {
+  if (scope === 'all') {
+    await requireAdmin('janitor')
+  }
+  await createAdminClient().from('things').update({ scope }).eq('id', id)
+}
+`
+
+/** A per-export annotation: the comment block DIRECTLY ABOVE an export exempts that export only —
+ *  the ungated sibling must still be reported. */
+const PER_EXPORT_ANNOTATED_ACTIONS = `'use server'
+
+import { createAdminClient } from '@/lib/supabase/admin'
+
+// authz-ok: gated by an httpOnly cookie stash this scan cannot see; the only write is an audit row.
+export async function stopSomething() {
+  await createAdminClient().from('audit').insert({ what: 'stop' })
+}
+
+export async function stillUngated(id: string) {
+  await createAdminClient().from('things').delete().eq('id', id)
+}
+`
+
+/** A file-header annotation (not attached to any export) keeps its historical file-level meaning. */
+const FILE_ANNOTATED_ACTIONS = `'use server'
+
+// authz-ok: intentionally PUBLIC + anonymous lead capture; the admin client only checks handle existence.
+
+import { createAdminClient } from '@/lib/supabase/admin'
+
+export async function captureLead(email: string) {
+  await createAdminClient().from('leads').insert({ email })
+}
+`
+
+/** A regex literal carrying a backtick and quotes. Before maskLiterals learned regexes, this
+ *  opened a phantom string that masked every export below it out of existence — and an invisible
+ *  export is an unscanned public endpoint (found live in nearby/actions.ts). */
+const REGEX_THEN_EXPORT_ACTIONS = `'use server'
+
+import { getCallerProfile } from '@/lib/auth'
+import { createAdminClient } from '@/lib/supabase/admin'
+
+function makeExcerpt(body: string): string {
+  return body.replace(/[#*_\`[\\]]/g, '').replace(/\\s+/g, ' ').trim()
+}
+
+export async function publishThing(body: string) {
+  const caller = await getCallerProfile()
+  if (!caller) return null
+  await createAdminClient().from('things').insert({ excerpt: makeExcerpt(body), author: caller.id })
+  return null
+}
+`
+
+const actionProblems = (src: string) =>
+  (classifyActionFile('app/(main)/x/actions.ts', src)?.problems ?? []).map(
+    (p: { method: string; kind: string }) => `${p.method}:${p.kind}`,
+  )
+
+describe('HYG-020 — a guard on a sibling export is not coverage', () => {
+  it('the OLD rule (a gate token anywhere in the file) passes the fixtures that must now fail', () => {
+    for (const [name, src] of Object.entries({ HALF_GATED_ACTIONS, PRE_GATE_ANSWER_ACTIONS, PRE_GATE_MUTATION_ACTIONS, BRANCH_GATED_ACTIONS })) {
+      expect(ACTION_GATE.test(src), name).toBe(true)
+    }
+  })
+
+  it('FAILS the ungated export and names it, leaving the gated sibling alone', () => {
+    expect(actionProblems(HALF_GATED_ACTIONS)).toEqual(['promoteMember:ungated-export'])
+  })
+
+  it('FAILS an export that answers from the admin client before the gate', () => {
+    expect(actionProblems(PRE_GATE_ANSWER_ACTIONS)).toEqual(['listMembers:pre-gate-admin-query'])
+  })
+
+  it('FAILS a pre-gate MUTATION even when every pre-gate return is denial-shaped', () => {
+    expect(actionProblems(PRE_GATE_MUTATION_ACTIONS)).toEqual(['resetThing:pre-gate-admin-query'])
+  })
+
+  it('FAILS a gate that runs on one branch only', () => {
+    expect(actionProblems(BRANCH_GATED_ACTIONS)).toEqual(['saveThing:conditional-gate'])
+  })
+
+  it('exempts ONLY the export a per-export annotation sits directly above', () => {
+    const ann = actionAnnotations(PER_EXPORT_ANNOTATED_ACTIONS)
+    expect(ann.fileLevel).toBe(false)
+    expect([...ann.exports]).toEqual(['stopSomething'])
+    expect(actionProblems(PER_EXPORT_ANNOTATED_ACTIONS)).toEqual(['stillUngated:ungated-export'])
+  })
+
+  it('keeps the historical file-level meaning for an annotation not attached to any export', () => {
+    const ann = actionAnnotations(FILE_ANNOTATED_ACTIONS)
+    expect(ann.fileLevel).toBe(true)
+    expect(classifyActionFile('app/(main)/x/actions.ts', FILE_ANNOTATED_ACTIONS)).toBeNull()
+  })
+})
+
+describe('HYG-020 — and the shapes that made a naive scan report 112 false positives must pass', () => {
+  it('sees the gate inside a helper whose RETURN TYPE carries braces', () => {
+    expect(actionProblems(BRACED_RETURN_TYPE_ACTIONS)).toEqual([])
+  })
+
+  it('passes the lookup-then-gate shape: a pre-gate resolve whose only escape is a denial', () => {
+    expect(actionProblems(LOOKUP_THEN_GATE_ACTIONS)).toEqual([])
+  })
+
+  it('still sees exports below a regex literal that carries a backtick', () => {
+    const masked = maskLiterals(REGEX_THEN_EXPORT_ACTIONS)
+    expect(actionExports(masked).map((e: { method: string }) => e.method)).toEqual(['publishThing'])
+    expect(actionProblems(REGEX_THEN_EXPORT_ACTIONS)).toEqual([])
+  })
+
+  it('lexes a template interpolation as code, so a nested template cannot spill markup into it', () => {
+    const src = 'const page = `<p>${name ? `<b>${name}</b>` : \'\'}</p>`\nexport async function GET() { await requireAdmin() }\n'
+    const masked = maskLiterals(src)
+    expect(masked).toHaveLength(src.length)
+    expect(handlerExports(masked).map((e: { method: string }) => e.method)).toEqual(['GET'])
+    expect(gateSoundness(src).problems).toEqual([])
+  })
+})
+
+describe('HYG-020 — the real action corpus', () => {
+  it('scans every admin-client action export, well past both floors, and finds them all gated', () => {
+    const { actions } = runChecks()
+    expect(actions.fileCount).toBeGreaterThanOrEqual(MIN_ACTION_FILES)
+    expect(actions.exportCount).toBeGreaterThanOrEqual(MIN_ACTION_EXPORTS)
+    expect(
+      actions.violations.flatMap((v: { file: string; problems: { method: string }[] }) =>
+        v.problems.map((p) => `${v.file} :: ${p.method}`),
+      ),
+    ).toEqual([])
+  })
+
+  it('scanActions is not vacuous: the multi-export fixture fails through the same entry point runChecks uses', () => {
+    const files = { 'app/(main)/x/actions.ts': HALF_GATED_ACTIONS }
+    const out = scanActions(Object.keys(files), (f: string) => files[f as keyof typeof files])
+    expect(out.fileCount).toBe(1)
+    expect(out.violations).toHaveLength(1)
+    expect(out.violations[0].problems[0].method).toBe('promoteMember')
   })
 })

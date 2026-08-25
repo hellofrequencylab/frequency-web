@@ -160,3 +160,49 @@ describe('the error that killed the 2026-08-21 production deploy', () => {
     expect(out.error).toBeTruthy()
   })
 })
+
+// The EXACT error from the 2026-08-25 production deploy (dpl_CwB9iB62, main @ fcb5348c4):
+// the LIVE-105 build-time bound (lib/supabase/public.ts) aborted a read that exceeded 20s,
+// and undici reports an abort as TimeoutError with — like the ECONNRESET case above — empty
+// `hint` and `code`, because the request never got an answer from PostgREST. The classifier
+// knew every errno token but not this one, so detailRead threw on the FIRST abort with both
+// retry delays unused, and the /discover/events/[slug] prerender failed the whole build.
+// The first assertion FAILS on the pre-fix tree.
+const BOUNDED_READ_ABORT = {
+  message: 'TimeoutError: The operation was aborted due to timeout',
+  details: 'TimeoutError: The operation was aborted due to timeout',
+  hint: '',
+  code: '',
+}
+
+describe('the error that killed the 2026-08-25 production deploy (the LIVE-105 bound firing)', () => {
+  it('is classified TRANSIENT: our own 20s abort is a slow moment, not a database answer', () => {
+    expect(isTransientDiscoverError(BOUNDED_READ_ABORT)).toBe(true)
+  })
+
+  it('is retried, so one slow read no longer ends the export', async () => {
+    let calls = 0
+    const query = () => {
+      calls++
+      if (calls <= 2) return Promise.resolve({ data: null, error: BOUNDED_READ_ABORT })
+      return Promise.resolve({ data: [{ slug: 'breathe-connect-expand-2026-09-03' }], error: null })
+    }
+    const out = await __retryForTest.attempt('public_event_by_slug', query, noSleep)
+    expect(calls).toBe(3)
+    expect(out.error).toBeNull()
+  })
+
+  it('a Postgres error whose MESSAGE mentions an abort is still not retried: the code wins', async () => {
+    let calls = 0
+    const query = () => {
+      calls++
+      return Promise.resolve({
+        data: null,
+        error: { message: 'canceling statement: query aborted', hint: '', code: '57014' },
+      })
+    }
+    const out = await __retryForTest.attempt('public_event_by_slug', query, noSleep)
+    expect(calls).toBe(1)
+    expect(out.error).not.toBeNull()
+  })
+})
