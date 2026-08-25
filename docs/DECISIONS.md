@@ -32758,3 +32758,57 @@ the half with no compiler to notice.
 
 `check:adr` caught the third omission in the same run: this ADR was cited by the drop migration before
 it was written. *A citation is a promise that a reader can go and find the reasoning.*
+
+## ADR-1156: a blocker can be real and still be measured by the wrong instrument (2026-08-25)
+
+**Context.** ADR-1082 established that a blocker phrased as "cannot be checked" is a claim with an
+expiry date, and re-testing five such premises found five expired. That rule catches a row whose
+*answer* has changed. It does not catch a row whose *question* was aimed at the wrong number. Two
+owner-lane rows were re-measured today and both turned out to be that second, quieter failure: the
+work was real, the blocker was real, and the figure the row reported to the owner was measuring
+something else.
+
+**OWN-011 — Google OAuth verification.** Every prior re-measure read `auth.identities` by provider
+(google 33, most recent 2026-08-20) and reported Google's 100-user unverified-app cap as "about a
+third consumed and flat". Google's cap counts users who have granted a **sensitive or restricted**
+scope. Sign-in requests basic profile and email, which are neither, and are not capped.
+[ADR-374](DECISIONS.md) is exactly what makes the two easy to conflate — the contacts import
+deliberately reuses the sign-in OAuth client rather than minting a second one, so both flows sit
+behind one client id and read as one population.
+
+The instrument that actually counts is who has granted `contacts.readonly`, and the import stamps
+every row it writes with `source='import'`. Production `network_contacts` by source: **269 rows
+across one distinct `owner_id`**, most recent 2026-07-28. One member has ever completed that consent.
+**The cap is at 1/100, not 33/100** — the row overstated its own pressure by 33x. What survives is
+smaller and sharper: a Safe Browsing review requested 2026-06-23 against a stated ~72-hour
+turnaround is now **63 days** old. A 72-hour review that has been "pending" for two months is not
+pending; it resolved and nobody looked.
+
+**OWN-020 — config and env.** The VAPID half closed on the row's own stated condition: production
+`/api/status` returns `"push":true`, so `VAPID_PRIVATE_KEY` is set and push sending is live. That is
+the [ADR-1064](DECISIONS.md)-shaped move working as designed — publish the consequence, never the
+secret. The Resend half was the mismeasured one. The row asks to "verify frequencylocal.com in
+Resend, plus SPF/DKIM/DMARC subdomain isolation" as a single undone unit; DNS says two thirds of it
+shipped some time ago and nobody recorded it. `send.frequencylocal.com` MXes to Resend's SES backend
+and publishes a live `resend._domainkey`, neither of which Resend issues before verification
+completes — so verification is done, **and it is done on an isolated subdomain**, which was the
+entire point of the ask. The apex carries an enforcing `p=quarantine` DMARC with a `rua`, an SPF
+that resolves to Google Workspace alone, and a 2048-bit Workspace DKIM.
+
+Two records really are missing, and neither is the one the row names: the sending subdomain
+publishes **no SPF TXT at all** (so every Resend send fails the SPF leg — DMARC still passes on the
+DKIM leg under relaxed alignment, which is why nothing broke and nothing reported it), and its DKIM
+key is **1024-bit** against the 2048 that Google's and Yahoo's bulk-sender rules call for.
+
+**Decision.** Both rows keep their status and record the correction in place, with the measurement
+that produced it. Neither correction closes its row; both change what the owner is asked to do next,
+and one of them removes an urgency that was never there.
+
+**Consequences.** The generalization worth carrying: *a probe measures the consequence, and a row's
+own evidence line has to name which consequence.* "33 Google identities" and "1 contacts.readonly
+grant" are both true facts about the same production database, and only one of them is about the
+100-user cap. Where a row reports a number to the owner, the evidence line must state what that
+number is a count OF — an unlabelled figure is how a row can be re-measured four times and stay
+wrong in the same way each time. The two DNS gaps are new, real, and at-volume: they are recorded on
+OWN-020 rather than opened as a new row, because [ADR-1043](DECISIONS.md) says findings become
+backlog entries on the row that owns them, not new documents.
