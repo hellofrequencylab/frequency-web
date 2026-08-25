@@ -24,8 +24,8 @@
 -- signer can delete their own note but can never update it — otherwise a hidden
 -- signer could null their own hidden_at and resurface.
 --
--- RLS idiom (ADR-208): profile-id ownership compares to get_my_profile_id() —
--- NEVER auth.uid() (profiles.id != the auth user id). Staff via get_my_web_role().
+-- RLS idiom (ADR-208): profile-id ownership compares to private.get_my_profile_id() —
+-- NEVER auth.uid() (profiles.id != the auth user id). Staff via private.get_my_web_role().
 -- Reads here are IDENTITY-GATED (verdict `authenticated` in table-grants.txt):
 -- the public Spotlight page renders entries through the same admin-client reader
 -- as the rest of the page (lib/spotlight/data.ts, anon has zero RLS), so no
@@ -68,16 +68,16 @@ alter table public.spotlight_guestbook enable row level security;
 drop policy if exists spotlight_guestbook_read on public.spotlight_guestbook;
 create policy spotlight_guestbook_read on public.spotlight_guestbook
   for select using (
-    owner_profile_id = get_my_profile_id()
-    or signer_profile_id = get_my_profile_id()
-    or get_my_web_role() in ('admin','janitor')
+    owner_profile_id = private.get_my_profile_id()
+    or signer_profile_id = private.get_my_profile_id()
+    or private.get_my_web_role() in ('admin','janitor')
   );
 
 -- Anyone signed in writes — as themselves, visible, never into their own book.
 drop policy if exists spotlight_guestbook_insert on public.spotlight_guestbook;
 create policy spotlight_guestbook_insert on public.spotlight_guestbook
   for insert with check (
-    signer_profile_id = get_my_profile_id()
+    signer_profile_id = private.get_my_profile_id()
     and hidden_at is null
   );
 
@@ -86,20 +86,20 @@ create policy spotlight_guestbook_insert on public.spotlight_guestbook
 drop policy if exists spotlight_guestbook_update on public.spotlight_guestbook;
 create policy spotlight_guestbook_update on public.spotlight_guestbook
   for update using (
-    owner_profile_id = get_my_profile_id()
-    or get_my_web_role() in ('admin','janitor')
+    owner_profile_id = private.get_my_profile_id()
+    or private.get_my_web_role() in ('admin','janitor')
   ) with check (
-    owner_profile_id = get_my_profile_id()
-    or get_my_web_role() in ('admin','janitor')
+    owner_profile_id = private.get_my_profile_id()
+    or private.get_my_web_role() in ('admin','janitor')
   );
 
 -- The owner clears their guestbook; a signer takes back their own note; staff moderate.
 drop policy if exists spotlight_guestbook_delete on public.spotlight_guestbook;
 create policy spotlight_guestbook_delete on public.spotlight_guestbook
   for delete using (
-    owner_profile_id = get_my_profile_id()
-    or signer_profile_id = get_my_profile_id()
-    or get_my_web_role() in ('admin','janitor')
+    owner_profile_id = private.get_my_profile_id()
+    or signer_profile_id = private.get_my_profile_id()
+    or private.get_my_web_role() in ('admin','janitor')
   );
 
 comment on table public.spotlight_guestbook is
