@@ -23,6 +23,7 @@ import {
   setRecordingVisibilityAction,
   deleteRecordingAction,
 } from './actions'
+import { Button } from '@/components/ui/button'
 
 const VISIBILITY_LABEL: Record<RecordingVisibility, string> = {
   public: 'Anyone',
@@ -148,15 +149,14 @@ export function AirwavesConsole({
               }}
               className="hidden"
             />
-            <button
+            <Button
               type="button"
               disabled={pending}
               onClick={() => fileRef.current?.click()}
-              className="inline-flex items-center gap-2 rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
             >
               <Upload className="h-4 w-4" aria-hidden />
               {pending ? 'Uploading' : 'Upload audio or video'}
-            </button>
+            </Button>
             <p className="text-2xs text-muted">Audio or video, up to 500 MB. It lands in your Loom.</p>
           </div>
           {error && <p className="text-meta text-danger">{error}</p>}

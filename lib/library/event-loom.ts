@@ -89,7 +89,9 @@ export async function copyImageToLoom(input: {
       storagePath: input.storagePath,
       url: input.url,
       mime: input.mime || 'image/jpeg',
-      bytes: input.bytes ?? 0,
+      // NULL, not 0: this path files an object already in storage and never reads its bytes, so the
+      // size is genuinely unknown. `0` would render as a real "0 B" asset (PROG-D1).
+      bytes: input.bytes ?? null,
       createdBy: input.createdBy ?? null,
       source: input.source ?? null,
     })
