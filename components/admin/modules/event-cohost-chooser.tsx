@@ -58,7 +58,11 @@ export function EventCohostChooser({ eventId, slug }: { eventId: string; slug: s
     }
     setError(null)
     startTransition(async () => {
-      await removeCohost(eventId, slug, row.profileId)
+      const res = await removeCohost(eventId, slug, row.profileId)
+      if (isError(res)) {
+        setError(res.error)
+        return
+      }
       reload()
     })
   }

@@ -61,14 +61,14 @@
       "exclude": [
         "**/*.{test,spec}.{ts,tsx}"
       ],
-      "baseline": 2205,
+      "baseline": 2208,
       "frozen": {
         "at": "2026-08-25",
-        "value": 2205,
-        "direction": "lowered",
+        "value": 2208,
+        "direction": "raised",
         "basis": "db695768f455",
-        "reason": "Carried by DAWN Phase 3, slice 2 (PROG-DAWN3, ADR-1124): 22 of the 40 buttons retired onto the Button primitive carried a LITERAL radius (11 rounded-lg, 11 rounded-xl); the primitive takes the rounded-control ROLE radius instead, so those literals left the tree with the className that held them. The other 18 were already on rounded-control. 2291 -> 2205 on the merged tree. Note that rounded-lg -> rounded-control is identical pixels at the base skin (--radius-control is 14px, = --radius-lg) and skin-responsive everywhere else, while rounded-xl -> rounded-control is a real 16px -> 14px change at base - deliberate, since a control taking the control role is the point. DISCLOSURE: only 22 of the 69 are this sweep's - the class already read 2244 against its 2291 floor on origin/main at de6c218cd, 47 sites having been retired by merged work that never re-froze. Those 47 are banked here rather than left floating. MERGED WITH SLICE 1 (2026-08-25): both slices measured from the same pre-merge floor and both banked the same pre-existing falls, so neither branch's number is the union's. Re-measured on the merged tree and set to what it reads there; the two history entries below chain the same arithmetic.",
-        "from": 2291
+        "reason": "Route-level loading skeletons added by the HYG-010 residue sweep (#2267) mirror the LITERAL radii of the surfaces they stand in for: three rounded-3xl hero-band skeletons match PageHero's own rounded-3xl (rounded-card is 24px, the band is 32px, so the role token would mismatch and skin-shift a surface that does not), plus one rounded-xl bar skeleton. Banked on this branch because it owns the baseline file in flight; the underlying PageHero literal is P2-class debt, not new.",
+        "from": 2205
       },
       "history": [
         {
@@ -224,6 +224,13 @@
           "to": 2205,
           "direction": "lowered",
           "reason": "Carried by DAWN Phase 3, slice 2 (PROG-DAWN3, ADR-1124): 22 of the 40 buttons retired onto the Button primitive carried a LITERAL radius (11 rounded-lg, 11 rounded-xl); the primitive takes the rounded-control ROLE radius instead, so those literals left the tree with the className that held them. The other 18 were already on rounded-control. 2228 -> 2205 after merging slice 1. Note that rounded-lg -> rounded-control is identical pixels at the base skin (--radius-control is 14px, = --radius-lg) and skin-responsive everywhere else, while rounded-xl -> rounded-control is a real 16px -> 14px change at base - deliberate, since a control taking the control role is the point. DISCLOSURE: only 22 of the 69 are this sweep's - the class already read 2244 against its 2291 floor on origin/main at de6c218cd, 47 sites having been retired by merged work that never re-froze. Those 47 are banked here rather than left floating."
+        },
+        {
+          "at": "2026-08-25",
+          "from": 2205,
+          "to": 2208,
+          "direction": "raised",
+          "reason": "Route-level loading skeletons added by the HYG-010 residue sweep (#2267) mirror the LITERAL radii of the surfaces they stand in for: three rounded-3xl hero-band skeletons match PageHero's own rounded-3xl (rounded-card is 24px, the band is 32px, so the role token would mismatch and skin-shift a surface that does not), plus one rounded-xl bar skeleton. Banked on this branch because it owns the baseline file in flight; the underlying PageHero literal is P2-class debt, not new."
         }
       ]
     },

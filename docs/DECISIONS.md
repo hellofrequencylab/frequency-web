@@ -30039,6 +30039,406 @@ in the tree said so, because the artifact that would have said so — a gate cov
 surface — was the missing thing. **An exemption is a claim, and an unmeasured exemption is a claim
 nobody has checked.** This one had been true once and had quietly stopped being true, and the only
 way to find out was to lift it and look.
+---
+
+## ADR-1120: The residue sweep, measured item by item — eight of fifteen were about nothing (2026-08-25)
+
+**Status:** accepted · closes `HYG-010` · opens `LIVE-111`, `LIVE-112`, `HYG-020` · continues
+[ADR-1082](#adr-1082) and [ADR-1112](#adr-1112) · rests on [ADR-970](#adr-970)
+
+### The question this settles
+
+`HYG-010` was the bag the 2026-08-20 sweep swept into: fifteen carry-forwards "too small for their
+own rows, gathered so none lives only in prose". It had already been triaged once, on 2026-08-24,
+which pulled `LIVE-106` and `LIVE-107` out of it and left a warning in the row itself: **do not work
+this as written.** This is what happened when every remaining item was measured rather than read.
+
+### What was measured
+
+| # | Item as written | Verdict |
+|---|---|---|
+| 1 | `feed-list.tsx:495` local `EmptyState` | ✅ true — fixed |
+| 2 | five retired-shell `loading.tsx` files | ✅ true — fixed |
+| 3 | `theme-editor.tsx:158` hand-rolled `h1` | ✅ true — fixed |
+| 4 | operator/admin em dashes | 🔴 **zero, tree-wide** |
+| 5 | 113 raw `<img>` on non-LCP surfaces | 🔴 **none actionable** |
+| 6 | Menu-manager drift badges | ⤴ true, but a feature → `LIVE-111` |
+| 7 | marketing mobile menu | ⤴ `LIVE-106`, shipped ([ADR-1118](#adr-1118)) |
+| 8 | `AdminSubNav` heading separators | 🔴 **harm cannot occur** |
+| 9 | `pages.space_id` NOT NULL | ⤴ blocker empty → `LIVE-112` |
+| 10 | the `as unknown as` burn-down | 🔴 **not work** |
+| 11 | `check:authz` per-export for actions | ⤴ true, yield is one false positive → `HYG-020` |
+| 12 | axe `incomplete`-class note | ✅ true — written down |
+| 13 | `embed-events` cron cadence | 🔴 **nothing measured against it** |
+| 14 | admin row-action error-feedback audit | ✅ true — audit done, 4 fixed |
+| 15 | weekly `admin_header` drift check | 🔴 **empty set** → `LIVE-107` shipped it against `header` |
+
+Three of the retractions are worth stating precisely, because in each case the row's number was real
+and measured the wrong population.
+
+**Em dashes.** The item survived four sweeps on a grep. Running `check-canon.mjs`'s own seam walker —
+the AST pass that knows what a copy POSITION is — over 3,405 files finds **21,758 strings a human can
+read and zero em dashes among them**, member and operator alike. The 429 the grep had been counting
+were code comments, JSX comments, empty-cell placeholders, and 30 `lib/traits/registry.ts`
+`description` fields that no renderer projects.
+
+**Raw `<img>`.** 134 `<img` lines, and **zero take a static local asset**: every `src` is a runtime
+expression (`{image}`, `{signedUrls[…]}`, an operator URL on a non-whitelisted host), which is the
+one case `next/image` cannot serve. 101 carry a written eslint justification. The clause "on non-LCP
+surfaces" was also backwards: `templates/page-hero.tsx`'s raw img is a documented escape hatch **on
+the LCP hero itself**.
+
+**Both blockers, against the live database.** `public.pages` holds **4 rows, 0 untenanted**, so the
+"untenanted-rows ruling" item 9 waited on has no subject. `admin_header` holds **0 `menu_items`**, so
+item 15's weekly drift check would have guarded an empty set — which also moots item 8, whose stated
+harm is that Menu-manager grouping of `admin_header` has no visible effect. `LIVE-107` had already
+retargeted that check at the PUBLIC `header` menu and shipped it as
+`scripts/maintenance/menu-drift.mjs`; what item 6 still asks for is the half that faces a person, and
+that is now `LIVE-111`.
+
+### The decision
+
+**`HYG-010` closes, and it closes with a `cmd` probe rather than the `manual` block it carried.** Four
+consequences, none of them the row's own words: `feed-list.tsx` no longer declares an `EmptyState`,
+no `loading.tsx` under `app/` carries `px-4 py-8 max-w-2xl mx-auto`, `theme-editor.tsx` contains no
+`<h1>`, and `removeCohost` returns an `ActionResult` at all.
+
+**The three items that were not polish become rows** (`LIVE-111`, `LIVE-112`, `HYG-020`), each
+carrying the measurement that sizes it, so nobody re-derives it. `HYG-020` in particular records its
+expected yield up front: **one export, and it is not a defect** — the value is regression coverage,
+and a naive implementation reports 119 of which 118 are false.
+
+**Items 10 and 13 are dropped rather than carried.** The `as unknown as` count is **654 non-test
+casts, exactly the number the row recorded** — flat, not burning down — with no stated consequence
+and no owner; and the `embed-events` cadence is an owner taste call with nothing measured against it.
+A row that will never be worked and can never fail is residue, and residue in the one list is what
+the one list is for preventing.
+
+### The part that generalises
+
+**The audit that "does not exist" is usually the cheapest thing in the row.** Item 14 had sat since
+2026-07-27 as *"client mutations without error feedback (some admin row-actions) — still open as a
+class, no per-row audit exists"*. The audit took one script: **98 transition blocks under
+`components/admin` await something, 6 read nothing back, 2 of those are a read or already handled,
+and the 4 real silent mutations were fixed in the same pass.** Four sweeps had re-recorded "still
+open as a class" instead of spending the ten minutes that turned a class into four line changes.
+Same shape as [ADR-1112](#adr-1112): a blocker phrased as an absence is a claim with an expiry date.
+
+And the sweep's own probe caught the failure this repo names most often, in its first draft. Written
+without stripping comments, it read the sentences that EXPLAIN the fix — `// It used to open with
+px-4 py-8 max-w-2xl mx-auto` — and reported the work undone. A probe that can match prose is not
+measuring the tree. Both probes here strip line comments before they look.
+
+## ADR-1133: The LIVE-105 bound and the discover retry had never met — and the gap failed a production deploy (2026-08-25)
+
+**Status:** accepted · amends the [ADR-1114](#adr-1114)/`LIVE-105` line of work · rests on
+[LIVE-084]'s retry ladder · proven by `lib/discover.test.ts` §"the 2026-08-25 production deploy"
+
+### What happened
+
+Production deploy `dpl_CwB9iB62` (main @ `fcb5348c4`, the #2266 merge) failed in
+*Generating static pages*. The log shows the sequence exactly:
+
+1. A burst of build-time reads of `public_event_by_slug` all exceeded 20 seconds in the same
+   wall-clock second and were aborted — by the **LIVE-105 bound working as designed**
+   (`lib/supabase/public.ts`, #2264). Each printed its banner, including the line "the caller's
+   `.catch(() => [])` now fires and the route degrades".
+2. That line was true for the LIST callers it was written about, and false for the one that
+   mattered: `detailRead` (`lib/discover.ts`) **throws** on error — deliberately, so a sitemapped
+   URL 500s rather than 404ing at Googlebot ([LIVE-084]'s header explains the split).
+3. `detailRead`'s throw is supposed to be softened by the retry ladder in front of it. It was not,
+   because `isTransientDiscoverError` said the abort was **deterministic**: undici reports an abort
+   as `TimeoutError: The operation was aborted due to timeout` with empty `code` and `hint`, and
+   `TRANSIENT_RE` knew every errno token (`ECONNRESET`, `ETIMEDOUT`, …) but not `TimeoutError`.
+   The bound was invented on 2026-08-24; the regex predates it and was never told.
+4. So the FIRST abort threw with both retry delays unused, the `/discover/events/[slug]`
+   prerender failed, and the export exited the whole build.
+
+The control that says this is the right diagnosis: the same RPC, run against the same live
+database minutes later, answered in 1.6 seconds. The database had a slow moment under a
+concurrent page-data burst; nothing was down, and nothing was wrong with the data.
+
+### The decision
+
+**Our own bound's abort is transient by definition.** A 20-second ceiling firing is the statement
+"this read was slow just now" — never "the database has answered". `TRANSIENT_RE` gains
+`TimeoutError|AbortError|aborted`, so an aborted read gets the same 250ms/500ms ladder as a
+dropped packet. Deterministic answers stay unretried: the code guard runs first, so a real
+Postgres error whose text happens to say "aborted" (57014 does) is still believed on the first
+answer — there is a test pinning exactly that.
+
+This is the third entry in one lesson ([LIVE-084] wrote the first two): **every new failure shape
+must be introduced to the classifier that decides what is worth retrying.** The empty-code fix
+taught it that an errno can arrive without a code; this teaches it that our own instruments
+produce failure shapes too. A bound added anywhere near a read path is not done until the retry
+in front of that path classifies its abort.
+
+### What is NOT claimed
+
+Retrying does not make the build immune: a database slow for longer than three bounded attempts
+still fails the export, and should — `detailRead`'s throw-over-404 posture is unchanged, and
+LIVE-105 stays open for the part of this that is about the database being slow at build time
+at all. The fix removes the single-packet fragility, not the dependency.
+
+---
+
+## ADR-1126: A gate that cannot resolve a shape gets taught the shape, not an exception list (2026-08-25)
+
+**Status:** accepted · closes `HYG-018` · enforced by `pnpm check:a11y-names`
+(`scripts/check-a11y-names.mjs`, in the `guards=( )` array of `.github/workflows/ci.yml`) +
+`scripts/check-a11y-names.test.ts` · extends [ADR-1069](#adr-1069), applies
+[ADR-970](#adr-970--an-orphan-help-key-is-a-broken-link-not-a-backlog-item-2026-08-10)
+
+`check:a11y-names` reported exactly one finding on `main`, and the finding was correct code.
+`discoverForwarders` now resolves the shape it could not see, the control re-tallies from
+`placeholder (weak)` to `htmlFor`, and `MAX_PLACEHOLDER_ONLY` goes to **0** — a measured zero, not
+a declared one.
+
+| | before | after |
+|---|---|---|
+| controls judged | 3,575 | 3,575 |
+| accessible-name violations | 0 | 0 |
+| **weak (placeholder-only) findings** | **1** | **0** |
+| of those, false | **1 (all of them)** | — |
+| of those, real | **0** | — |
+| named by `htmlFor` | 338 | **339** |
+| resolver components | 6 wrapping | 6 wrapping + **11 forwarding** |
+
+Exactly one classification moved on the whole tree. That is the evidence, not the summary: a
+resolver that only ever ADDS to `fors` can move a control out of the finding population and can
+never invent a name, and a tally that shifts by one control in one column is what that looks like
+from outside.
+
+### 1. The premise was re-tested before the work, and it held
+
+[ADR-1082](#adr-1082) says a blocker phrased as a limitation is a claim with an expiry date, and
+five of five re-measured premises had expired. This one had not. `pnpm check:a11y-names` on
+`origin/main` printed `0 violations · 1 placeholder (weak)`, and the 1 was the row's own example:
+`app/(main)/spaces/new/business/business-quickstart-form.tsx:50`, a `<Textarea id="biz-what">`
+whose `<Label htmlFor={id}>` is rendered by `components/spaces/space-form.tsx`'s `Field`. So the
+gate's **entire finding population was false**. Fixing it surfaced nothing that had been hiding
+behind the noise, and there was nothing to file — which is worth stating plainly, because
+"we fixed the instrument and found no bodies" is a result, not an anticlimax.
+
+### 2. The interesting question: why not just excuse the one file
+
+Three fixes were available. Two of them keep the number and lose the thing the number is for.
+
+| Option | What it costs | Verdict |
+|---|---|---|
+| `aria-label` at the render site | a control that already has a real `<label>` gets a **second** name, to satisfy an instrument | 🔴 rejected |
+| an allowlist entry for the one file | the gate's report is now "0 findings, 1 waived" — coverage in name only | 🔴 rejected |
+| teach the checker the shape | ~130 lines and a floor to notice if it breaks | ✅ taken |
+
+The rejected pair is the same trade in two sizes. A gate that reports a finding everyone knows is
+false gets routed around within a day, and then it reads as coverage while providing none
+(ADR-970) — and an allowlist is the *institutional* version of routing around it, complete with a
+paper trail that makes the routing look like diligence. The render-site fix is worse than that: it
+edits **correct application code** to please a checker, which is the shape-not-truth trade this
+gate's own history is made of. `check:a11y-names` has already been wrong in exactly this direction
+twice — 126 of 143 false at LIVE-033, then 347 of 429 false at LIVE-103 — and both times the honest
+answer was the same one: a naming path the walk could not see is a naming path it has to be taught.
+
+**The rule this generalises to:** a checker that cannot resolve a shape gets taught the shape, or
+says out loud that it cannot and downgrades what it claims. It does not get an exception list. The
+third option is legitimate and was live here — the file header already carries a
+§`WHAT IT STILL CANNOT SEE`, and "the forwarding shape is beyond this walk" could honestly have
+gone in it. It was not taken because the shape turned out to be cheap to resolve, not because
+downgrading is a lesser answer. **What is never an answer is keeping the claim and hiding the
+counter-example.**
+
+### 3. What `discoverForwarders` resolves, and why the second shape is load-bearing
+
+It is symmetric with the existing `discoverWrappers` — the pass that is the only reason this gate
+runs at 17 findings instead of 143 — and publishes `path::Component -> the prop carrying the id`,
+to a fixpoint:
+
+| Shape | Example | Resolves to |
+|---|---|---|
+| (a) **bound** | `export function Field({ id }) { … <Label htmlFor={id}> … }` | `Field -> id` |
+| (b) **spread** | `export function Label({ ...props }) { return <label {...props} /> }` | `Label -> htmlFor` |
+
+⚠️ **Without (b) the chain never starts.** `components/ui/field.tsx`'s own `Label` never writes
+`htmlFor`; it spreads the rest of its props onto a `<label>`. Miss that one seed and `Field` is
+never discovered either, and `TextField` after it: **11 forwarders resolve today, 2 without it.**
+That is why `MIN_FORWARDERS = 6` exists as the twin of `MIN_WRAPPERS` — forwarder discovery is a
+*chain*, so one broken link silently un-names a whole family of correctly labelled controls and the
+gate would report them as findings rather than notice it had stopped resolving.
+
+### 4. The error this could make is the opposite one, so it is fenced
+
+Everything the pass finds only ever adds a literal to `fors`, and `fors` only moves controls **out**
+of the finding populations. So a forwarder discovered *wrongly* costs a missed finding rather than a
+false one — the same conservative trade `hasSpread` and the unknowable-children rule already make.
+That trade is only acceptable while it stays rare, so `propBehindIdentifier` refuses an identifier a
+nested scope **shadows**:
+
+```tsx
+export function Rows({ id, rows }) {                      // Rows does NOT forward `id`
+  return <fieldset id={id}>{rows.map((r) => {
+    const id = r.key                                      // …this one is a local
+    return <Label htmlFor={id}>{r.label}</Label>
+  })}</fieldset>
+}
+```
+
+Published as a forwarder, `Rows` would hand every `<Rows id="x">` call site a phantom `x` and could
+silently name a genuinely unnamed control. Scanning the function body for a shadowing declaration
+*before* its parameters is what tells a prop from a local.
+
+### 5. Three mutations, because a gate that passes its own tests can still be wrong
+
+`check:cache-budget` passed its unit tests, ran clean locally, and killed two production builds
+(ADR-1064, ADR-1086). Each arm of this change was therefore broken on purpose and the break was
+watched:
+
+| Mutation | Tests | The gate itself |
+|---|---|---|
+| kill rule (b), the spread seed | 6 red | exits 1 |
+| unwire the call-site collection | 3 red | exits 1 |
+| drop the shadow check | 1 red | passes (as designed — this arm costs findings, it does not create them) |
+
+🔴 **The third test failed its own mutation on the first attempt and had to be rewritten.** Its
+fixture used a plain `const id = useId()` in a component with no `id` prop at all — so
+`propBehindIdentifier` returned `null` for want of a matching parameter, with or without the shadow
+check, and the test passed green over a disabled guard. The only shape in which that check can
+matter is the one in §4: an inner `const id` *beside* an outer `id` prop. **A test that cannot fail
+is indistinguishable from one that passes**, which is the same fact this ADR is about, one layer
+down.
+
+### 6. What the gate now claims, and what it still does not
+
+✅ A name threaded through a **component** is resolved in both of its shapes — wrapping
+(`discoverWrappers`) and forwarding (`discoverForwarders`). The §`WHAT COUNTS AS A NAME` header
+says so, and the green line prints both resolver counts.
+
+🔴 It does **not** claim a forwarded id actually *reaches* a control. `<Field id="biz-wat">` beside
+`<Textarea id="biz-what">` passes here, because "does this control have a name" and "does this
+label name something" are different questions; the second is `scripts/check-labels.mjs`'s contract
+(ADR-966, ADR-1057) and it runs at zero. Both caveats are now written into the file header rather
+than left implied.
+
+⚠️ **The ratchet is still a ratchet.** 0 is where the population sits today, not a zero by
+construction. axe-core accepts a non-empty placeholder, so a gate that FAILED on one would be
+stricter than the axe pass already running in e2e, disagree with it, and get routed around — the
+argument that made this a ceiling has not changed. A new placeholder-only control fails as a
+ceiling breach, not as an accessible-name violation, and the failure text still says how to give it
+a real name.
+
+### 7. The probe measures the consequence, and carries its own positive control
+
+`HYG-018`'s probe does not re-run the guard: that parses 1,865 files, and pointing a probe at it
+took `check:backlog` from 6.0s to 16.8s the last time a row tried (ADR-1063). It imports the module
+and drives `discoverForwarders` + `auditNames` over a two-component fixture in **0.5s**, asserting
+the seed resolves, the fixpoint resolves, and the forwarded control is named by `htmlFor`. It then
+audits the *same fixture blind* and requires that one to still read as placeholder-only — so a probe
+that has lost the ability to see the defect **fails rather than passes**, which is the failure mode
+a probe is least able to notice about itself.
+---
+
+## ADR-1122: Operator page copy inherits down the route tree, and the six rows that already existed were the section rung all along (2026-08-25)
+
+**Status:** accepted · advances `PROG-P6` (Re-theme P6, the copy cascade) · generalizes
+[ADR-180](#adr-180) / [ADR-182](#adr-182) · feeds PROG-P4's `resolveIndexHero` (and PROG-P5's
+detail-side twin when it lands) · enforced by `lib/layout/content-cascade.test.ts` +
+`lib/layout/index-hero.test.ts`
+
+### What the row said, and what the table actually held
+
+`PROG-P6` reads: "Generalize `page_content` into a site → section → page inherit-cascade, widen
+editable fields to body copy and images, and extend `check:canon` to `.tsx`." Two of those three
+clauses did not survive measurement.
+
+**`check:canon` already covers `.tsx`, and has since [ADR-1065](#adr-1065).** `SEAM_ROOTS` is
+`['app', 'lib', 'components']` and the walk takes `/\.tsx?$/`. Measured on this branch:
+**3,406 seam files, 1,882 of them `.tsx`, 21,674 member-facing strings judged, 0 violations.** The
+clause was closed by `LIVE-018` eight days before this row was picked up, and the row never heard.
+The number to quote for "how many violations would turning it on surface" is **zero**, because it
+is on.
+
+**`page_content` does not hold copy.** The production table was read before anything was designed:
+
+| Rows | On section roots | Setting `title` | Setting `description` | Setting `hero_image` | Setting a usable CTA |
+|---|---|---|---|---|---|
+| 6 | 6 | **0** | **0** | **6** | **0** |
+
+`/circles`, `/events`, `/journeys`, `/nearby`, `/network`, `/practices`. Every row is a section
+root. Not one sets a word of copy. All six set a hero image. The one row that mentions a CTA
+(`/circles`, label `"Start a Circle"`) has an **empty `cta_href`**, so it has never rendered.
+
+So the operator's real use of this table is a single field, the section hero, stored at exactly the
+rung a cascade would inherit *from* — while the reader only ever looked at the exact route. The
+cascade is not a generalization waiting for data. It is the thing that makes six rows that already
+exist reach the pages under them.
+
+### The decision
+
+`lib/layout/content-cascade.ts` resolves a route against **page → section(s) → site → coded
+fallback**, in one `WHERE route IN (...)`, request-cached and fail-safe.
+`resolvePageContent` calls it. **No migration, no new column**: the section rung is the row that is
+already there.
+
+Three properties, each a consequence rather than taste:
+
+1. **Per FIELD, not per row.** A page that sets only its title still inherits its section's hero.
+   That is the difference between a cascade and a fallback chain.
+2. **Identity does not inherit.** `title` and `description` resolve at the page rung or fall
+   through to the coded copy. A section titled "Events" inherited by `/events/calendar` renames the
+   calendar; and both feed `pageContentMetadata` straight into `<title>`, the meta description and
+   the og/twitter cards, so inheriting them would emit one description across a whole section. That
+   is the duplicate-metadata pattern `check:seo` exists to keep out of this tree, manufactured by
+   the cascade itself.
+3. **The CTA is one unit.** Label and href come from the nearest scope that sets *either*, and
+   render only when both survive. Resolving them independently would splice a page's label onto a
+   section's link, and production's `/circles` row is the live proof that the halves come apart: a
+   label with no link would otherwise be handed to the first page beneath `/circles` that set a
+   link of its own, labelling someone else's button.
+
+The site rung is the reserved key `'*'`, **deliberately not `'/'`**. The home page already owns the
+`'/'` row for its SEO title and meta description alone, so making `'/'` the site rung would quietly
+promote the home page's `<title>` to the default for every page in the app. Production's `'/'`
+fields are empty, which is precisely what would have made that the expensive kind of mistake.
+
+### The adoption, and the bug it closes
+
+`resolveIndexHero` (PROG-P4) now **resolves rung 2 itself** instead of waiting to be handed it.
+`/network` is why. It has carried a `page_content.hero_image` since June, it resolves that very row
+for its title and description, and it calls `resolveIndexHero('/network')` with no `contentImage` —
+so the operator's uploaded directory cover has been invisible in production for two months. Four
+adopters had the same shape. Making the resolver read what it needs closes the class instead of the
+instance.
+
+One guard rides with it. `INDEX_HERO_DEFAULTS` rows gain **`inheritHero`** (default true), set
+`false` on the three utility rows. `/journeys` and `/network` both carry heroes; without the flag
+the cascade would hand `/journeys/mine`, `/network/contacts` and `/network/friends` a section
+photograph and silently overturn the documented short/large split, which says a management space
+gets the band without the billboard. A hero set on the utility route *itself* still wins, because
+that is not inheritance. **A cascade that can reverse a product decision by arriving is a cascade
+with a missing parameter.**
+
+`longestPrefixRow` moves into the cascade module and `index-hero.ts` consumes it. The same loop was
+written by hand there, again in PROG-P5's in-flight `detail-hero.ts`, and was about to be written a
+third time.
+
+### What this cascade does NOT subsume, stated so nobody tries
+
+It does not replace the two hero ladders, and the reason is not that the work was skipped. The
+cascade is a **lookup mechanism over one table**. The ladders **order different tables by
+ownership**, and they order them deliberately opposite: `resolveIndexHero` puts the operator's
+`page_settings` image on top because an operator owns a browse surface; `resolveDetailHero` puts the
+entity's own cover on top because a host owns their Circle. Collapsing them into one three-rung
+cascade would force the detail side to invert and hand a site-wide setting authority over a host's
+own photograph. What genuinely was shared is now shared: the prefix loop, and the `page_content`
+rung itself.
+
+### What is left, and it is counted on `PROG-P6`
+
+"Widen editable fields to body copy and images" is the remaining half and it is the half that needs
+columns. It is deliberately not in this change: a new migration file makes every other open branch
+red under `check:migrations --require-ledger` until it merges, and there were four branches open the
+night this landed. Also unwritten: an operator surface for the `'*'` site rung. The resolver reads
+it and the test covers it; `CONTENT_EDIT_ROUTES` gates writes to real routes, so nothing can set it
+yet. Both are on the row, not in a new document.
 ## ADR-1124: The slicing instrument goes into the repo, because slice 1's exhaustiveness claim could not be re-run — and there is no no-op bucket to find (2026-08-25)
 
 **Status:** accepted · advances `PROG-DAWN3` · amends [ADR-1119](#adr-1119) · rests on
