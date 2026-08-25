@@ -32361,3 +32361,61 @@ found.
 - 🔴 **Twenty other reads still count a pending request as an attendee**, filed as **SCAN-512** rather
   than swept in. They are not all the same bug: a cancellation notice probably *should* reach a
   pending requester, while an achievement probably should not. Each group needs its own ruling.
+
+---
+
+## ADR-1149: scoped rooms and three open tables stop admitting anon (2026-08-25)
+
+**Status:** Accepted · owner ruling 2026-08-25 ·
+`20270334000000_scoped_rooms_and_open_tables_require_identity.sql` · SCAN-212 (closed)
+
+**Context — two findings, both latent at zero rows.**
+
+1. **Scoped rooms had no identity check at all.** `rooms_read_public_or_member` read
+   `visibility = 'public' OR visibility IN ('circle','hub','nexus','outpost','channel') OR am_room_member(id)`,
+   and **that middle branch asks nothing of the caller.** `room_messages` and `room_members` carried
+   the same shape. Measured: anon read the one channel room's metadata, and messages/members returned
+   `200 []` rather than `42501` — so only **emptiness** was withholding them, and `room_messages` is
+   in the realtime publication.
+2. **Three tables were `USING (true)`** with the anon grant intact: `dispatch_poll_votes`,
+   `spotlight_top_friends`, `listing_comments`. Poll votes carry `(profile_id, option_id)` on
+   member-only dispatches — a de-anonymising pair the moment rows exist.
+
+**✅ Why it was free, and the check that made it safe to do.** Every application reader of all three
+tables goes through `createAdminClient()`, which bypasses RLS entirely. **Those policies served no
+application path** — they only widened what the publishable anon key could ask PostgREST for directly.
+The rooms side is the same story: the one non-admin reader (`app/(main)/messages/popover-actions.ts`)
+already calls `auth.getUser()` and scopes to the caller's own memberships.
+
+**⚠️ That question is not a formality.** `20270330000000` nearly shipped as a blanket table revoke
+until `app/discover/events/_data.ts` turned out to be the **one** anon reader among 245 `from('events')`
+sites; a blanket revoke would have dark-screened the public events hub. The same question was asked
+here and came back clean.
+
+**Decision.**
+
+| relation | becomes |
+| :-- | :-- |
+| `rooms` / `room_messages` / `room_members` | scoped branches require an **authenticated** caller; `visibility = 'public'` stays open to anon; membership grants what it always did |
+| `dispatch_poll_votes` | your **own** vote |
+| `spotlight_top_friends` | the **owner's** rows |
+| `listing_comments` | **authenticated** — public-adjacent community content on public listings, so owner-scoping would be wrong rather than merely strict; what it stops is signed-out bulk enumeration |
+
+**Identity rather than membership for rooms, deliberately.** Browsing a circle's rooms before joining
+is a plausible flow and there is no data to say whether it is used. This row closes the anon hole; it
+does not redesign room visibility.
+
+**⚠️ And a second pass went further than the policies.** Anon's SELECT **grant** was revoked on all
+five tables with no anon path. A policy the caller misses returns `200 []` — the very shape this
+finding criticised — while removing the grant makes the same refusal arrive as **42501**, a fact about
+permission rather than about how many rows happen to exist. **`public.rooms` keeps its anon grant on
+purpose**, or the genuinely-public branch would go with it.
+
+**Consequences.**
+- Verified as `role anon` after: **rooms 1 → 0 readable** — the channel room is now withheld, and that
+  is the policy rather than emptiness. Messages, members, poll votes and top friends all 0.
+- The ledger was repaired to the repo version and verified as an **exact bijection by hash**, not by
+  count: 642 ⇄ 642, `md5 = e870925394181ea1cd8d0a2c48c7abac` on both sides. Equal counts were what hid
+  the 2026-08-12 drift where one file was missing *and* one was unapplied.
+- The migration's verification block asserts the **positive** control too — that anon did *not* lose
+  `public.rooms`. Without it, nothing would fail if a future edit revoked one table too many.
