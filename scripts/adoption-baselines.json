@@ -61,14 +61,14 @@
       "exclude": [
         "**/*.{test,spec}.{ts,tsx}"
       ],
-      "baseline": 2291,
+      "baseline": 2222,
       "frozen": {
-        "at": "2026-08-18",
-        "value": 2291,
+        "at": "2026-08-25",
+        "value": 2222,
         "direction": "lowered",
         "basis": "db695768f455",
-        "reason": "The beta-price-grant panel's three literal radii (one rounded-2xl card, two rounded-full pills) moved onto rounded-card / rounded-pill: identical pixels at the base skin and skin-responsive everywhere else. Pays off the +2 that arrived with the panel in #2143 rather than banking it.",
-        "from": 2292
+        "reason": "Carried by DAWN Phase 3, slice 2 (PROG-DAWN3, ADR-1124): 22 of the 40 buttons retired onto the Button primitive carried a LITERAL radius (11 rounded-lg, 11 rounded-xl); the primitive takes the rounded-control ROLE radius instead, so those literals left the tree with the className that held them. The other 18 were already on rounded-control. 2291 -> 2222. Note that rounded-lg -> rounded-control is identical pixels at the base skin (--radius-control is 14px, = --radius-lg) and skin-responsive everywhere else, while rounded-xl -> rounded-control is a real 16px -> 14px change at base - deliberate, since a control taking the control role is the point. DISCLOSURE: only 22 of the 69 are this sweep's - the class already read 2244 against its 2291 floor on origin/main at de6c218cd, 47 sites having been retired by merged work that never re-froze. Those 47 are banked here rather than left floating.",
+        "from": 2291
       },
       "history": [
         {
@@ -210,6 +210,13 @@
           "to": 2291,
           "direction": "lowered",
           "reason": "The beta-price-grant panel's three literal radii (one rounded-2xl card, two rounded-full pills) moved onto rounded-card / rounded-pill: identical pixels at the base skin and skin-responsive everywhere else. Pays off the +2 that arrived with the panel in #2143 rather than banking it."
+        },
+        {
+          "at": "2026-08-25",
+          "from": 2291,
+          "to": 2222,
+          "direction": "lowered",
+          "reason": "Carried by DAWN Phase 3, slice 2 (PROG-DAWN3, ADR-1124): 22 of the 40 buttons retired onto the Button primitive carried a LITERAL radius (11 rounded-lg, 11 rounded-xl); the primitive takes the rounded-control ROLE radius instead, so those literals left the tree with the className that held them. The other 18 were already on rounded-control. 2291 -> 2222. Note that rounded-lg -> rounded-control is identical pixels at the base skin (--radius-control is 14px, = --radius-lg) and skin-responsive everywhere else, while rounded-xl -> rounded-control is a real 16px -> 14px change at base - deliberate, since a control taking the control role is the point. DISCLOSURE: only 22 of the 69 are this sweep's - the class already read 2244 against its 2291 floor on origin/main at de6c218cd, 47 sites having been retired by merged work that never re-froze. Those 47 are banked here rather than left floating."
         }
       ]
     },
@@ -518,14 +525,14 @@
         "components/ui/button.tsx",
         "components/ui/icon-button.tsx"
       ],
-      "baseline": 513,
+      "baseline": 466,
       "frozen": {
-        "at": "2026-08-19",
-        "value": 513,
+        "at": "2026-08-25",
+        "value": 466,
         "direction": "lowered",
         "basis": "c478ed64ec1e",
-        "reason": "Banking a real shrink, not a raise: 514 to 513. One raw button background left the tree when #2167 moved the record-payment confirm dialog onto the kit button.",
-        "from": 514
+        "reason": "DAWN Phase 3, slice 2 (PROG-DAWN3, ADR-1124): the primary x md near-miss class. 40 raw <button>s across 31 files carried every token the Button primitive emits for primary x md and nothing its BASE does not already supply; each is now a bare <Button> with no className and no props, because primary x md IS the primitive's default pair. Each converted control GAINS lift-1 (two box-shadows), tap-target (the 44px touch floor under a coarse pointer), press and the focus ring - so the sweep MOVES RENDERED PIXELS by design; near-miss equality, never a no-op. 513 -> 466. DISCLOSURE 1: only 40 of the 47 are this sweep's - the class already read 506 against its 513 floor on origin/main at de6c218cd, 7 sites having been retired by merged work that never re-froze. Those 7 are banked here rather than left floating. DISCLOSURE 2: the slice is deliberately NOT exhaustive for its class. 13 further primary x md sites in 9 files are import-reachable from a surface test/e2e/visual.spec.ts photographs, and are deferred to LIVE-114 so this PR cannot move a committed baseline.",
+        "from": 513
       },
       "history": [
         {
@@ -632,6 +639,13 @@
           "to": 513,
           "direction": "lowered",
           "reason": "Banking a real shrink, not a raise: 514 to 513. One raw button background left the tree when #2167 moved the record-payment confirm dialog onto the kit button."
+        },
+        {
+          "at": "2026-08-25",
+          "from": 513,
+          "to": 466,
+          "direction": "lowered",
+          "reason": "DAWN Phase 3, slice 2 (PROG-DAWN3, ADR-1124): the primary x md near-miss class. 40 raw <button>s across 31 files carried every token the Button primitive emits for primary x md and nothing its BASE does not already supply; each is now a bare <Button> with no className and no props, because primary x md IS the primitive's default pair. Each converted control GAINS lift-1 (two box-shadows), tap-target (the 44px touch floor under a coarse pointer), press and the focus ring - so the sweep MOVES RENDERED PIXELS by design; near-miss equality, never a no-op. 513 -> 466. DISCLOSURE 1: only 40 of the 47 are this sweep's - the class already read 506 against its 513 floor on origin/main at de6c218cd, 7 sites having been retired by merged work that never re-froze. Those 7 are banked here rather than left floating. DISCLOSURE 2: the slice is deliberately NOT exhaustive for its class. 13 further primary x md sites in 9 files are import-reachable from a surface test/e2e/visual.spec.ts photographs, and are deferred to LIVE-114 so this PR cannot move a committed baseline."
         }
       ]
     },

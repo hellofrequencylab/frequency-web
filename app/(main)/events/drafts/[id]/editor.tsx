@@ -22,6 +22,7 @@ import type { DetailsMedia, EventDetailsWithMedia } from '@/lib/events/details-m
 import { updateDraft, publishDraft } from '../../scan/actions'
 import { isoToWallClockInput, wallClockToIso } from '@/lib/events/datetime'
 import { OutreachCard } from './outreach-card'
+import { Button } from '@/components/ui/button'
 
 export interface DraftEditorData {
   id: string
@@ -678,15 +679,14 @@ export function DraftEditor({
             <Check className="h-3.5 w-3.5" /> Saved
           </span>
         )}
-        <button
+        <Button
           type="button"
           onClick={handleSave}
           disabled={pending}
-          className="inline-flex items-center gap-1.5 rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
         >
           {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
           {pending ? 'Saving' : 'Save draft'}
-        </button>
+        </Button>
       </div>
 
       {/* ── Publish: the ownership question ── */}
@@ -710,16 +710,15 @@ export function DraftEditor({
           />
         </div>
         <div className="mt-3 flex justify-end">
-          <button
+          <Button
             type="button"
             onClick={handlePublish}
             disabled={pending || !ownership || !!dateProblem}
             title={dateProblem ? 'Set a valid future start date to publish' : undefined}
-            className="inline-flex items-center gap-1.5 rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
           >
             {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
             Publish
-          </button>
+          </Button>
         </div>
       </div>
     </div>
