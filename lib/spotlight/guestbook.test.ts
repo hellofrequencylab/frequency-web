@@ -33,7 +33,7 @@ describe('normalizeGuestbookMessage', () => {
   it('rejects a note that is too short once cleaned', () => {
     expect(normalizeGuestbookMessage('')).toBeNull()
     expect(normalizeGuestbookMessage('   ')).toBeNull()
-    expect(normalizeGuestbookMessage('a')).toBeNull()
+    expect(normalizeGuestbookMessage('\x07\x07a')).toBeNull()
     expect('a'.repeat(GUESTBOOK_MESSAGE_MIN).length).toBe(2) // the bound the cases above sit under
   })
 
