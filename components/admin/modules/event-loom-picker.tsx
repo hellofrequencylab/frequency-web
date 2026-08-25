@@ -85,6 +85,7 @@ export function EventLoomPicker({
             <Input
               variant="seamless"
               type="text"
+              aria-label="Search the Loom"
               value={q}
               onChange={(e) => setQ(e.target.value)}
               placeholder="Search the Loom"

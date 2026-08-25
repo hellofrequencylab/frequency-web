@@ -64,6 +64,7 @@ export function RoomSearch({ roomId }: { roomId: string }) {
               <Input
                 variant="seamless"
                 ref={inputRef}
+                aria-label="Search this room"
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
                 placeholder="Search this room…"

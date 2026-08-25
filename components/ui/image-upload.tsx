@@ -257,6 +257,7 @@ export function ImageUpload({
       {mode === 'url' && !noUrlPaste && (
         <input
           type="url"
+          aria-label={`${label} URL`}
           value={value ?? ''}
           onChange={(e) => onChange(e.target.value.trim() || null)}
           disabled={disabled || busy}
