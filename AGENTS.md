@@ -22,13 +22,16 @@ ARTIFACT. Full rules and the incident: [`docs/DEPLOY-SAFETY.md`](docs/DEPLOY-SAF
   `buildCommand: pnpm build` so a dashboard edit cannot silently take the lifecycle away. **Four
   gates run there and fail the build** (all wired and proven on real artifacts as of #2194,
   2026-08-19 — LIVE-035/LIVE-048/LIVE-029 closed):
-  - `check:build-budget` — total per-function output under 8 GB; **measured 6.67 GB across 498
-    functions on the PRODUCTION build of `main` at c8b5ee97, 2026-08-25 09:50Z** (the deploy carrying
-    all four meta-scan phases), after 6.55 GB / 496 fns the same day (#2280 and #2285, two independent
+  - `check:build-budget` — total per-function output under 8 GB; **measured 6.66 GB across 497
+    functions on the PRODUCTION build of `main` at e3cec7af, 2026-08-25 21:43Z** (the current
+    production deploy), after 6.67 GB / 498 fns at c8b5ee97 09:50Z (the deploy carrying
+    all four meta-scan phases), 6.55 GB / 496 fns the same day (#2280 and #2285, two independent
     previews), 6.02 GB / 496 fns (#2245, 2026-08-24), 6.03 GB / 497 fns (#2243, same day), 6.04 GB /
     499 fns (2026-08-18), 5.81 GB (2026-08-13) and 5.59 GB before that. This sentence once read "two
-    consecutive readings have now fallen"; ⚠️ **that is long retired — the series has now risen twice
-    in one day, +0.53 GB and then +0.12 GB.** At **83%** of its ceiling the headroom is still real,
+    consecutive readings have now fallen"; ⚠️ **that is long retired — the series rose twice
+    in one day, +0.53 GB and then +0.12 GB**, and has since gone FLAT: the three production deploys
+    that closed 2026-08-25 read 6.67 / 6.67 / 6.66 GB, i.e. one function retired and no growth.
+    At **83%** of its ceiling the headroom is still real,
     and the trend is still the thing to watch rather than the number. Largest single cost, named by
     the gate itself: **1510 MB of libvips (17.4 MB × 87 functions)** — which is `sharp`, so this gate
     and `check:og-trace` below are measuring two faces of one thing.
@@ -77,17 +80,27 @@ ARTIFACT. Full rules and the incident: [`docs/DEPLOY-SAFETY.md`](docs/DEPLOY-SAF
       reading on the same mix, accurate to 1%. The other three gates read IDENTICALLY to c8b5ee97 on
       this build — build-budget 6.67 GB / 498 fns, og-trace 69/100, shell-weight 1011 KB / 21 chunks —
       so the series is flat across two consecutive production deploys rather than still climbing.
-    ✅ **Both are real, and the disagreement is the mix-dependence this paragraph already describes —
-    not a defect in either measurement.** So the honest statement is the range, not a single figure:
+    - 🔴 **`main` at e3cec7af, production, 21:43Z: 1.34 GB predicted, 1.34 GB uploaded** (2.35 GiB raw
+      — node_modules 934 MiB + `.next/cache` **1476 MiB**), **89% of the ceiling and 97% of the
+      1.38 GB trim point**. ⚠️ This is the current production reading and it has RISEN +0.07 GB
+      against the two deploys above, entirely in `.next/cache/turbopack` (1362 → 1476 MiB); the other
+      three gates barely moved (6.66 GB / 497 fns, 69/100, 1012 KB / 22 chunks). A FOURTH paired
+      reading, and the third EXACT one — predicted 1.34, uploaded 1.34 — so `PACKED_PER_RAW` is not
+      what is moving here; the cache itself is. This is the gate to watch.
+    ✅ **All three are real, and the disagreement is the mix-dependence this paragraph already
+    describes — not a defect in any of the measurements.** So the honest statement is the range,
+    not a single figure:
     this gate sits between 85% and 99% of its trim point depending on what the cache is holding, it is
-    the gate closest to firing at both ends, and `PACKED_PER_RAW` is accurate to within 2% on both.
+    the gate closest to firing at both ends, and `PACKED_PER_RAW` is accurate to within 2% on all four
+    paired readings (three of them exact).
     Re-derive it from paired readings before trusting a margin, and read `LIVE-123`
     for the page-data build failures measured in the same window.
   - `check:shell-weight` ([ADR-1066](docs/DECISIONS.md)) — the CLIENT half: the app shell's eager
-    first-load JS (**1011 KB across 21 chunks, production 2026-08-25**, one kilobyte above the 1010 KB
-    it read on two artifacts a week earlier, ceiling 1,400 KB — **72%**, the most headroom of the
+    first-load JS (**1012 KB across 22 chunks on the current production deploy, e3cec7af
+    2026-08-25 21:43Z**, after 1011 KB / 21 chunks earlier the same day and 1010 KB on two artifacts a
+    week earlier, ceiling 1,400 KB — **72%**, the most headroom of the
     four) plus named fingerprints for admin module bodies that must stay behind `next/dynamic` (all 8
-    lazy, positive control present, 493 client-reference manifests read). Promoted from `--warn-only`
+    lazy, positive control present, 492 client-reference manifests read). Promoted from `--warn-only`
     in #2188 after two green production readings; the source-shape test pins the promoted state.
     ✅ **ARM C joined it on 2026-08-25 ([ADR-1140](docs/DECISIONS.md), `SCAN-506`) and does NOT run
     here.** Arms A/B measure the artifact, so `postbuild` is their only possible home; Arm C reads
