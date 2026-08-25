@@ -29681,3 +29681,79 @@ nobody links, or a page nobody needs — and deciding between them is a product 
 measurement. It is named in `LIVE-104`'s detail so the next reader does not have to re-measure it.
 
 ---
+
+## ADR-1116: `/pricing` leaves the Lift 5c series, because its coded body is the DERIVED page and there is no template rung behind it (2026-08-24)
+
+**Status:** accepted · closes `LIVE-006` · narrows [ADR-1068](#adr-1068) · rests on
+[ADR-916](#adr-916) and [ADR-918](#adr-918) · enforced by `pnpm check:render-path` +
+`LIVE-006`'s probe
+
+### The question this settles
+
+Lift 5c retired the coded marketing bodies one slug per PR. [ADR-1068](#adr-1068) wrote the
+committed order down as `circles → about → spaces → the-lab → the-quest → the-community →
+pricing`, and `scripts/render-path-bodies.txt` carries the same line with `home` added and
+`pricing` last, annotated "partial only". Seven of the eight are retired; `check:render-path`
+reads **16 gated slugs, 15 template-only, 1 still carrying a coded body** (`pricing`, 7
+components, 2,526 route lines) as of 2026-08-24.
+
+Recent notes on `LIVE-006` said `pricing` "stays out of the series entirely". **That is a
+narrowing of a committed order, and a narrowing that lives only in a backlog note is exactly the
+drift the one list exists to stop.** So it is recorded here instead.
+
+### What was measured
+
+`app/(marketing)/pricing/page.tsx` does not resolve `published → template → legacy` the way every
+other gated route does. Its own header says so, and the code agrees: there are **two rungs, not
+three** — an operator-published document, then the coded page. `getTemplate('pricing')` is *not* a
+middle rung, even though `lib/page-editor/templates/pricing.ts` exists and is registered in
+`EDITABLE_PAGES`.
+
+That inversion is [ADR-916](#adr-916)'s and [ADR-918](#adr-918)'s consequence, not an oversight.
+On every other slug the coded body is a **relic** that duplicates a static document. Here the
+coded body is the **derived** one: it reads live prices, the live take-rate vector, the beta-window
+resolution the checkout asks, and the operator's live feature-gate overrides, and it contains no
+dollar figure and no percentage anywhere in the file. The Puck template is the static snapshot.
+
+Each of the seven components was read, and **all seven consume the derived model** — `Offering`
+(`PlanCard`, `PlanPrice`, `PlanCta`, `IndependentStrip`), `PlanExtra` (`ExtraCard`), the resolved
+rate string (`RateLine`), and `FeatureGrid` (`ComparisonBlock`). None of them is a copy-only block
+that could be lifted into the template while the figures stayed live.
+
+### The decision
+
+**`pricing` is removed from the Lift 5c retirement series. Its coded body stays.** The "partial"
+qualifier the order carried is retired with it: partial retirement had nothing to retire, because
+every component in the body exists to render a derived figure.
+
+Two consequences follow, and both are the point:
+
+- **Retiring any part of that body would freeze a take rate into a jsonb document.** That is the
+  failure [ADR-916](#adr-916) was written to end and [ADR-918](#adr-918) locked with a test — nine
+  structures enumerating a tier, six of them able to disagree, and `/pricing` quoting $19 while the
+  app quoted $29.
+- **Slotting the template in as a middle rung is worse than leaving it out.** Any deploy where
+  nobody has published would silently downgrade `/pricing` from live figures to a snapshot, with
+  no signal that it had.
+
+### What is NOT claimed
+
+The ledger's `pricing 7` row stays, and `check:render-path` keeps gating it exact-match. This is
+not an exemption from the scoreboard: a rise is still refused, and if the body genuinely shrinks
+the number still comes down in the PR that earned it. What ends is the expectation that the number
+reaches 0.
+
+### What would reopen this
+
+One thing, and it is a schema change rather than a judgement: **a block kind that binds a live
+pricing key the way `lib/page-editor/templates/pricing.ts` already binds `livePriceKey` per
+[ADR-918](#adr-918), for every figure the body renders — rates, gates and the comparison grid
+included.** Until a document can carry a *binding* rather than a *number* for all of them, moving
+this page into the editor means quoting figures the product has stopped charging.
+
+### The wider point
+
+The exclusion was true, the reasoning was sound, and it had been written three times in a backlog
+note and a ledger comment without ever being a decision. A committed order is a promise; walking one
+back is a decision, and decisions live here. Same shape as [ADR-1112](#adr-1112): the thing to
+distrust is not the finding, it is a finding that never got recorded where it would be read.

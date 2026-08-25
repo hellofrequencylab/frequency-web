@@ -1,5 +1,25 @@
 # Production → DAWN handoff — the divergence round (2026-08-19)
 
+> **▶ ONE STEP, AND ONLY THE OWNER CAN TAKE IT. Give DAWN this file and say:**
+>
+> *"Apply `HANDOFF-TO-DAWN-2026-08-19.md`: §2 + §4 → `tokens/colors.css`, §5 → `tokens/skins.css`
+> (both modes), §6 → `tokens/spacing.css` + the skin radii, §7 → `tokens/effects.css`, §8 →
+> `tokens/typography.css`. Sweep §9's twelve files. Fix §10 in `ui_kits/app/nav-rail.jsx` +
+> `readme.md`. Regenerate the reference cards. Answer §11 with a `/the-community` reference frame,
+> desktop and mobile. Then reply through `design_handoff/CHANGES.md`, answering §12's trip rows and
+> §13's budget rows — a change, a reasoned decline, or a question back; 'not addressed this round'
+> is legal, silence is not."*
+>
+> 🔴 **Strike `--color-text-on-primary` from any older sheet before applying it (§3).** Production
+> and DAWN agree on `#FFFFFF` in both modes; re-applying the old row would reintroduce the exact AA
+> failure the rank-glyph split fixed.
+>
+> Nothing in this repo can perform the send. DAWN is an external Claude Design project and
+> [`README.md`](README.md)'s copy-the-bundle loop is owner-mediated in both directions. The round is
+> tracked as `LIVE-027` in [`BUILD-BACKLOG.json`](../docs/BUILD-BACKLOG.json) and closes when a
+> `CHANGES.md` reply references this handoff. Re-measured 2026-08-24: the five correction rows in §2
+> still diverge and §3 still agrees, so this document is current as written.
+
 > **Direction: reversed.** The repo is the source of truth for everything in this
 > document. `SYNC.md` § "Going the other way" requires that when production moves
 > ahead of DAWN, the differences travel back on the next round — this is that round.
