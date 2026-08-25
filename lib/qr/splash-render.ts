@@ -75,6 +75,9 @@ export function renderSplashPage(splash: Splash, origin: string): string {
   return (
     `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">` +
     `<meta name="viewport" content="width=device-width,initial-scale=1">` +
+    // Token-attributed, single-purpose landing: never indexable (robots.ts also disallows /q/;
+    // this meta is the belt-and-suspenders half, same pattern as the claim/capture pages).
+    `<meta name="robots" content="noindex">` +
     `<title>${heading}</title></head>` +
     `<body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;` +
     `background:#f5f5f5;margin:0;padding:48px 16px;color:#1a1a1a;">` +
