@@ -29942,6 +29942,243 @@ which had also expired by the time anyone read it: two of its four sub-figures (
 row's own closing sentence warned about, in the paragraph directly beneath the numbers. The
 re-census is 2,004. **Measure through the instrument the gate uses, or the census expires faster
 than the sweep it is meant to plan.**
+## ADR-1123: The marketing surface was already on the app tokens — what diverged was the gates watching it (2026-08-25)
+
+**Status:** accepted · closes `PROG-P9` · narrows the marketing exemptions in `check:tokens` ·
+extends [ADR-1064](#adr-1064)-era gate practice · enforced by `pnpm check:tokens` +
+`pnpm check:contrast` + `PROG-P9`'s probe
+
+### The question this settles
+
+`PROG-P9` has read the same way since it was written: *"Align the marketing brand system with the
+app tokens where they diverge."* It is the phase that assumes there are **two** systems. The row
+was marked `(optional)` because nobody was sure how much of the gap was deliberate.
+
+Both halves of that assumption were re-measured before any code moved, and both were wrong in the
+same direction: there is **one** token system, and the divergence is not in the brand at all.
+
+### What was measured, 2026-08-25
+
+Marketing = `app/(marketing)/**` + `components/marketing/**` (61 `.ts`/`.tsx` files) plus the
+marketing header/footer. In-app = `app/(main)/**` + `components/**` (1,996 files).
+
+| Axis | Marketing | In-app | Verdict |
+| :--- | :--- | :--- | :--- |
+| Raw hex / `text-[Npx]` / inline `rgb()` | **0** across 61 files | 0 | ✅ no divergence |
+| Colour utility vocabulary | a strict SUBSET of the one `@theme inline` map | the same map | ✅ no divergence |
+| Utilities used ONLY on marketing | 3 (`border-ink-border`, `text-ink-border`, `text-surface-elevated`) | — | ✅ all three are app tokens |
+| Ground token | `--color-marketing-canvas` | `--color-canvas` | ⚠️ **deliberate**, and skinned in all 5 states |
+| Display face | `font-display` (Anton) at 22× the in-app rate | type roles | ⚠️ **deliberate** brand choice |
+| Vertical rhythm | `.mk-band/.mk-beat/.mk-cont/.mk-tight` | the five templates | ⚠️ **deliberate** (DAWN 2026-08-03) |
+| Hand-rolled eyebrows | 8 sites (0.13/file) | 463 sites (0.23/file) | 🔴 **NOT a marketing divergence** — in-app is worse |
+| Literal `rounded-2xl` over `rounded-card` | 34 (0.53/file) | 717 (0.36/file) | 🔴 repo-wide `literal-radius` debt (P1), not P9 |
+| `check:tokens` coverage | **exempt, whole-tree** | governed | 🔴 the real gap |
+| `check:contrast` coverage of the ground | **1 pair** | 5 pairs on the app canvas | 🔴 the real gap |
+
+The two rows that matter are the last two, and neither is about colour values. **The brand systems
+agree. The instruments watching them did not.**
+
+### The decision
+
+**`PROG-P9` is not a re-theme. It is two gate corrections, and then it closes.**
+
+**1. The `check:tokens` marketing exemption is deleted.** Two whole-file waivers covered
+`app/(marketing)/` and `components/marketing/` on the reasoning that marketing "is a separate brand
+design system, not the in-app DAWN surface the guard governs". Run the classifier with them lifted
+and it reports **0 violations across 61 files**. The exemption was protecting nothing — and by
+existing, it was the only artifact in the repo still asserting that a second brand system was
+there. Deleting it is the whole of "reconcile marketing with the app tokens", because the
+reconciliation had already happened in the code and only the gate had not noticed.
+
+**2. The marketing canvas joins the contrast contract at parity with the app canvas.** The cream
+ground carried exactly one row (`--color-text`) while the app canvas beside it carried five
+foregrounds. It is 5/255 darker than the app canvas in light mode, so every twin ratio is
+*tighter*, and none of them had been measured. Seven pairs are added: the four app-canvas twins
+plus `--color-primary-strong`, and three that miss and are waived at their measured floors.
+
+### What is deliberate, and stays
+
+Three differences are real brand positions and were **not** flattened:
+
+- **`--color-marketing-canvas`.** A warm sand ground so the public site reads as brand while the
+  member surface reads as light and airy — stated in `globals.css` since the DAWN port, and
+  overridden in every block that overrides `--color-canvas` (`:root`, `.theme-light-lock`,
+  `[data-skin="midnight"]`, `.dark`, `.dark [data-skin="midnight"]`). There is no skin gap to fix.
+- **The Anton display face** and its `text-[clamp(…)]` sizing on headlines.
+- **The `.mk-*` four-role rhythm**, and with it the `check:headers` / `check:templates` marketing
+  skips. Those two gates govern PAGE STRUCTURE, which genuinely does differ: a marketing page is a
+  sequence of tonal beats, not one of the five interior templates. They keep their skips.
+
+### The one thing a person already knew and no gate did
+
+`components/marketing/comparison-table.tsx` pins its mobile ledger cards to `bg-surface` and says
+why in a comment: *"a `yes` cell's `text-success` clears 4.5:1 on the surface tone and misses it on
+the canvas tone."* That is exactly right — 4.67:1 on a card, **4.05:1 / 3.80:1** on the cream — and
+it was true for as long as the comment has existed, with the gate green the entire time, because
+the gate did not model that ground.
+
+So the pair is entered and waived at its measured floor rather than left out. It gets the rank-gold
+treatment ([ADR-1064](#adr-1064)-era practice, stated in `WAIVERS`): nothing paints it today, the
+floor is frozen, and the fact is printed on every run. A measured fact that lives only in a code
+comment is one refactor from being deleted, and the next author to want a green check on a cream
+section should be told the number rather than discover it in an axe report.
+
+### What this does not claim
+
+It does not claim marketing is now clean of every literal. It carries 34 literal `rounded-2xl` (vs
+10 `rounded-card`) and 8 hand-rolled eyebrows — but those are held by the repo-wide `literal-radius`
+ratchet and belong to P1/P3, and **in-app is worse than marketing on both when normalised per
+file**. Folding them into P9 would have made a large invented row out of a small true one. The
+measurement is what shrank the row, and it is recorded here so the next reader does not re-derive it.
+
+### The wider point
+
+Same shape as [ADR-1112](#adr-1112) and [ADR-1082](#adr-1082): the row was not wrong about the
+work, it was wrong about the *premise*. "Align two systems" had one system underneath it. Nothing
+in the tree said so, because the artifact that would have said so — a gate covering the marketing
+surface — was the missing thing. **An exemption is a claim, and an unmeasured exemption is a claim
+nobody has checked.** This one had been true once and had quietly stopped being true, and the only
+way to find out was to lift it and look.
+---
+
+## ADR-1120: The residue sweep, measured item by item — eight of fifteen were about nothing (2026-08-25)
+
+**Status:** accepted · closes `HYG-010` · opens `LIVE-111`, `LIVE-112`, `HYG-020` · continues
+[ADR-1082](#adr-1082) and [ADR-1112](#adr-1112) · rests on [ADR-970](#adr-970)
+
+### The question this settles
+
+`HYG-010` was the bag the 2026-08-20 sweep swept into: fifteen carry-forwards "too small for their
+own rows, gathered so none lives only in prose". It had already been triaged once, on 2026-08-24,
+which pulled `LIVE-106` and `LIVE-107` out of it and left a warning in the row itself: **do not work
+this as written.** This is what happened when every remaining item was measured rather than read.
+
+### What was measured
+
+| # | Item as written | Verdict |
+|---|---|---|
+| 1 | `feed-list.tsx:495` local `EmptyState` | ✅ true — fixed |
+| 2 | five retired-shell `loading.tsx` files | ✅ true — fixed |
+| 3 | `theme-editor.tsx:158` hand-rolled `h1` | ✅ true — fixed |
+| 4 | operator/admin em dashes | 🔴 **zero, tree-wide** |
+| 5 | 113 raw `<img>` on non-LCP surfaces | 🔴 **none actionable** |
+| 6 | Menu-manager drift badges | ⤴ true, but a feature → `LIVE-111` |
+| 7 | marketing mobile menu | ⤴ `LIVE-106`, shipped ([ADR-1118](#adr-1118)) |
+| 8 | `AdminSubNav` heading separators | 🔴 **harm cannot occur** |
+| 9 | `pages.space_id` NOT NULL | ⤴ blocker empty → `LIVE-112` |
+| 10 | the `as unknown as` burn-down | 🔴 **not work** |
+| 11 | `check:authz` per-export for actions | ⤴ true, yield is one false positive → `HYG-020` |
+| 12 | axe `incomplete`-class note | ✅ true — written down |
+| 13 | `embed-events` cron cadence | 🔴 **nothing measured against it** |
+| 14 | admin row-action error-feedback audit | ✅ true — audit done, 4 fixed |
+| 15 | weekly `admin_header` drift check | 🔴 **empty set** → `LIVE-107` shipped it against `header` |
+
+Three of the retractions are worth stating precisely, because in each case the row's number was real
+and measured the wrong population.
+
+**Em dashes.** The item survived four sweeps on a grep. Running `check-canon.mjs`'s own seam walker —
+the AST pass that knows what a copy POSITION is — over 3,405 files finds **21,758 strings a human can
+read and zero em dashes among them**, member and operator alike. The 429 the grep had been counting
+were code comments, JSX comments, empty-cell placeholders, and 30 `lib/traits/registry.ts`
+`description` fields that no renderer projects.
+
+**Raw `<img>`.** 134 `<img` lines, and **zero take a static local asset**: every `src` is a runtime
+expression (`{image}`, `{signedUrls[…]}`, an operator URL on a non-whitelisted host), which is the
+one case `next/image` cannot serve. 101 carry a written eslint justification. The clause "on non-LCP
+surfaces" was also backwards: `templates/page-hero.tsx`'s raw img is a documented escape hatch **on
+the LCP hero itself**.
+
+**Both blockers, against the live database.** `public.pages` holds **4 rows, 0 untenanted**, so the
+"untenanted-rows ruling" item 9 waited on has no subject. `admin_header` holds **0 `menu_items`**, so
+item 15's weekly drift check would have guarded an empty set — which also moots item 8, whose stated
+harm is that Menu-manager grouping of `admin_header` has no visible effect. `LIVE-107` had already
+retargeted that check at the PUBLIC `header` menu and shipped it as
+`scripts/maintenance/menu-drift.mjs`; what item 6 still asks for is the half that faces a person, and
+that is now `LIVE-111`.
+
+### The decision
+
+**`HYG-010` closes, and it closes with a `cmd` probe rather than the `manual` block it carried.** Four
+consequences, none of them the row's own words: `feed-list.tsx` no longer declares an `EmptyState`,
+no `loading.tsx` under `app/` carries `px-4 py-8 max-w-2xl mx-auto`, `theme-editor.tsx` contains no
+`<h1>`, and `removeCohost` returns an `ActionResult` at all.
+
+**The three items that were not polish become rows** (`LIVE-111`, `LIVE-112`, `HYG-020`), each
+carrying the measurement that sizes it, so nobody re-derives it. `HYG-020` in particular records its
+expected yield up front: **one export, and it is not a defect** — the value is regression coverage,
+and a naive implementation reports 119 of which 118 are false.
+
+**Items 10 and 13 are dropped rather than carried.** The `as unknown as` count is **654 non-test
+casts, exactly the number the row recorded** — flat, not burning down — with no stated consequence
+and no owner; and the `embed-events` cadence is an owner taste call with nothing measured against it.
+A row that will never be worked and can never fail is residue, and residue in the one list is what
+the one list is for preventing.
+
+### The part that generalises
+
+**The audit that "does not exist" is usually the cheapest thing in the row.** Item 14 had sat since
+2026-07-27 as *"client mutations without error feedback (some admin row-actions) — still open as a
+class, no per-row audit exists"*. The audit took one script: **98 transition blocks under
+`components/admin` await something, 6 read nothing back, 2 of those are a read or already handled,
+and the 4 real silent mutations were fixed in the same pass.** Four sweeps had re-recorded "still
+open as a class" instead of spending the ten minutes that turned a class into four line changes.
+Same shape as [ADR-1112](#adr-1112): a blocker phrased as an absence is a claim with an expiry date.
+
+And the sweep's own probe caught the failure this repo names most often, in its first draft. Written
+without stripping comments, it read the sentences that EXPLAIN the fix — `// It used to open with
+px-4 py-8 max-w-2xl mx-auto` — and reported the work undone. A probe that can match prose is not
+measuring the tree. Both probes here strip line comments before they look.
+
+## ADR-1133: The LIVE-105 bound and the discover retry had never met — and the gap failed a production deploy (2026-08-25)
+
+**Status:** accepted · amends the [ADR-1114](#adr-1114)/`LIVE-105` line of work · rests on
+[LIVE-084]'s retry ladder · proven by `lib/discover.test.ts` §"the 2026-08-25 production deploy"
+
+### What happened
+
+Production deploy `dpl_CwB9iB62` (main @ `fcb5348c4`, the #2266 merge) failed in
+*Generating static pages*. The log shows the sequence exactly:
+
+1. A burst of build-time reads of `public_event_by_slug` all exceeded 20 seconds in the same
+   wall-clock second and were aborted — by the **LIVE-105 bound working as designed**
+   (`lib/supabase/public.ts`, #2264). Each printed its banner, including the line "the caller's
+   `.catch(() => [])` now fires and the route degrades".
+2. That line was true for the LIST callers it was written about, and false for the one that
+   mattered: `detailRead` (`lib/discover.ts`) **throws** on error — deliberately, so a sitemapped
+   URL 500s rather than 404ing at Googlebot ([LIVE-084]'s header explains the split).
+3. `detailRead`'s throw is supposed to be softened by the retry ladder in front of it. It was not,
+   because `isTransientDiscoverError` said the abort was **deterministic**: undici reports an abort
+   as `TimeoutError: The operation was aborted due to timeout` with empty `code` and `hint`, and
+   `TRANSIENT_RE` knew every errno token (`ECONNRESET`, `ETIMEDOUT`, …) but not `TimeoutError`.
+   The bound was invented on 2026-08-24; the regex predates it and was never told.
+4. So the FIRST abort threw with both retry delays unused, the `/discover/events/[slug]`
+   prerender failed, and the export exited the whole build.
+
+The control that says this is the right diagnosis: the same RPC, run against the same live
+database minutes later, answered in 1.6 seconds. The database had a slow moment under a
+concurrent page-data burst; nothing was down, and nothing was wrong with the data.
+
+### The decision
+
+**Our own bound's abort is transient by definition.** A 20-second ceiling firing is the statement
+"this read was slow just now" — never "the database has answered". `TRANSIENT_RE` gains
+`TimeoutError|AbortError|aborted`, so an aborted read gets the same 250ms/500ms ladder as a
+dropped packet. Deterministic answers stay unretried: the code guard runs first, so a real
+Postgres error whose text happens to say "aborted" (57014 does) is still believed on the first
+answer — there is a test pinning exactly that.
+
+This is the third entry in one lesson ([LIVE-084] wrote the first two): **every new failure shape
+must be introduced to the classifier that decides what is worth retrying.** The empty-code fix
+taught it that an errno can arrive without a code; this teaches it that our own instruments
+produce failure shapes too. A bound added anywhere near a read path is not done until the retry
+in front of that path classifies its abort.
+
+### What is NOT claimed
+
+Retrying does not make the build immune: a database slow for longer than three bounded attempts
+still fails the export, and should — `detailRead`'s throw-over-404 posture is unchanged, and
+LIVE-105 stays open for the part of this that is about the database being slow at build time
+at all. The fix removes the single-packet fragility, not the dependency.
 ## ADR-1128: The visual suite gets its own surface list, and the operator routes are chosen by census (2026-08-25)
 
 **Status:** accepted · closes `HYG-026`, filed by [ADR-1119](#adr-1119) (PROG-DAWN3 slice 1) ·
