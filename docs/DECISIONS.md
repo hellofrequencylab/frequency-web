@@ -29963,7 +29963,7 @@ into the block architecture Top Friends already proved.
 
 ### The decision
 
-1. **A real table, not JSON.** `spotlight_guestbook` (migration `20270323000000`) holds
+1. **A real table, not JSON.** `spotlight_guestbook` (migration `20270325000000`) holds
    `owner_profile_id` / `signer_profile_id` FKs to `profiles` (cascade), the note text, and
    `hidden_at`. Like Top Friends, the row references OTHER profiles, so it gets referential
    integrity a `meta` blob cannot; the signer's displayed identity resolves from their own
@@ -29997,7 +29997,7 @@ into the block architecture Top Friends already proved.
    entity — signing is a single-field inline form on someone else's page, not a creation
    wizard, so the Studio contract (ADR-986) does not apply.
 6. **Migration ordering (ADR-1111 posture, stated explicitly).** The file is committed at
-   version `20270323000000` (next after the ledger head `20270322000000`, verified live on
+   version `20270325000000` (next after the ledger head `20270322000000`, verified live on
    2026-08-25) and is **not yet applied**: this session's permission gate blocks production
    DDL, and the strict file⇄apply pairing means `check:migrations --require-ledger` reads
    RED on this branch — a repo file with no ledger row — until a maintainer runs the
@@ -30005,7 +30005,7 @@ into the block architecture Top Friends already proved.
    exact version). That red is the gate reporting the true state, not a defect (ADR-1111's
    own diagnostic). Apply BEFORE merge: the code in this same change reads the table. The
    table is additive and inert until this code deploys (nothing else reads it). Any sibling
-   branch that also claims `20270323000000` must renumber; whichever lands second takes
+   branch that also claims `20270325000000` must renumber; whichever lands second takes
    `main` first, per ADR-1111 rule 2.
 
 ### Deferred, recorded where status lives
@@ -30018,7 +30018,7 @@ from production (the `spotlight_guestbook` types were hand-added in the generate
 
 ### Consequences
 
-New: `supabase/migrations/20270323000000_spotlight_guestbook.sql`,
+New: `supabase/migrations/20270325000000_spotlight_guestbook.sql`,
 `lib/spotlight/guestbook.ts` (admin read, baselined), `lib/spotlight/guestbook.shared.ts`
 (+ `guestbook.test.ts`, 7 cases), `app/spotlight/[handle]/guestbook-actions.ts`,
 `components/widgets/member-profile/guestbook.tsx`, `components/spotlight/guestbook-form.tsx`.
