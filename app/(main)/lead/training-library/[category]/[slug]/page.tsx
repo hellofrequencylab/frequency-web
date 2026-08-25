@@ -4,6 +4,7 @@ import { requireLeadFloor } from '@/lib/admin/guard'
 import { getTrainingDoc, trainingHref, TRAINING_BASE } from '@/lib/leader-training/content'
 import { HelpMarkdown } from '@/components/help/help-markdown'
 import { DetailTemplate } from '@/components/templates'
+import { resolveDetailHero } from '@/lib/layout/detail-hero'
 
 // A single Leader Training guide. Reuses the help center's <HelpMarkdown> renderer
 // (one rendering path, no bespoke Markdown) inside the page-kit DetailTemplate.
@@ -29,8 +30,13 @@ export default async function LeaderTrainingDocPage({ params }: Params) {
   const prev = idx > 0 ? cat.docs[idx - 1] : null
   const next = idx < cat.docs.length - 1 ? cat.docs[idx + 1] : null
 
+  // The standard entity cover (PROG-P5, ADR-1136): the operator's /lead/training-library Settings
+  // image, or nothing. Training docs carry no cover of their own.
+  const hero = await resolveDetailHero(`/lead/training-library/${category}/${slug}`)
+
   return (
     <DetailTemplate
+      {...hero}
       title={doc.title}
       subtitle={
         <>

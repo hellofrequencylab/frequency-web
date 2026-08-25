@@ -2,6 +2,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { HandHeart, Radio, LifeBuoy, ShieldCheck, BookOpen } from 'lucide-react'
 import { DetailTemplate } from '@/components/templates'
+import { resolveDetailHero } from '@/lib/layout/detail-hero'
 import { RoleBadge } from '@/lib/community-roles'
 import { getInitials } from '@/lib/utils'
 import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
@@ -39,7 +40,7 @@ const WHAT_SHE_DOES = [
   },
 ]
 
-export function VeraProfile({
+export async function VeraProfile({
   name,
   handle,
   avatarUrl,
@@ -50,8 +51,13 @@ export function VeraProfile({
   avatarUrl: string | null
   bio: string | null
 }) {
+  // The standard entity cover (PROG-P5, ADR-1136). Vera is a /people detail page like any other:
+  // her avatar is identity (it stays in the title lockup), so the cover is the operator's /people
+  // Settings image or nothing.
+  const hero = await resolveDetailHero(`/people/${handle}`)
   return (
     <DetailTemplate
+      {...hero}
       title={
         <span className="inline-flex items-center gap-3 align-middle">
           {avatarUrl ? (

@@ -11,6 +11,7 @@ import { LikeButton } from './like-button'
 import { CommentSection } from './comment-section'
 import { PollSection } from './poll-section'
 import { DetailTemplate } from '@/components/templates/detail-template'
+import { resolveDetailHero } from '@/lib/layout/detail-hero'
 import { StaffEditButton } from '@/components/ui/staff-edit-button'
 
 interface Props {
@@ -37,7 +38,7 @@ export default async function DispatchDetailPage({ params }: Props) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  const [dispatchRes, myProfileRes] = await Promise.all([
+  const [dispatchRes, myProfileRes, hero] = await Promise.all([
     admin
       .from('dispatches')
       .select(`
@@ -52,6 +53,9 @@ export default async function DispatchDetailPage({ params }: Props) {
     user
       ? admin.from('profiles').select('id').eq('auth_user_id', user.id).maybeSingle()
       : Promise.resolve({ data: null }),
+    // The standard entity cover (PROG-P5, ADR-1136). Dispatches carry no cover column, so the
+    // ladder is the operator's /nearby Settings image or nothing.
+    resolveDetailHero(`/nearby/${id}`),
   ])
 
   const dispatch = dispatchRes.data
@@ -149,6 +153,7 @@ export default async function DispatchDetailPage({ params }: Props) {
       {/* ── DISPATCH HEADER (DetailTemplate) ────────────────── */}
       <article>
         <DetailTemplate
+          {...hero}
           title={dispatch.title}
           badges={
             <>

@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { MapPin, Globe, Ticket, ScanLine } from 'lucide-react'
 import { getPartnerView } from '@/lib/partners/read'
 import { DetailTemplate } from '@/components/templates/detail-template'
+import { resolveDetailHero } from '@/lib/layout/detail-hero'
 import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
 import { RowCard } from '@/components/cards/row-card'
@@ -41,9 +42,14 @@ export default async function PartnerPage({
   const partner = await getPartnerView(slug)
   if (!partner) notFound()
 
+  // The standard entity cover (PROG-P5, ADR-1136). Partners carry no image column, so the ladder
+  // is the operator's /partners Settings image or nothing — a visual no-op until one is set.
+  const hero = await resolveDetailHero(`/partners/${slug}`)
+
   return (
     <div>
       <DetailTemplate
+        {...hero}
         back={{ href: '/partners', label: 'All partners' }}
         title={partner.name}
         badges={

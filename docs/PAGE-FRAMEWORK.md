@@ -842,6 +842,25 @@ The tail's `placeholder` / `none` split is a product decision held as data: the 
 **affordance**, so it paints where a host can fill it in place (`/practices`) and not on the public
 twin where a visitor cannot (`/discover/practices`).
 
+**The identity-lockup pages call the same module — `resolveIdentityHero`** (ADR-1136, the detail
+echo of PROG-P4's `resolveMarketHero`). `/channels/<id>`, `/circles/<slug>`, `/journeys/<slug>`
+(+ `/learn`) and `/people/<handle>` do not take the standard cover: their `<h1>` rides an
+identity-variant `PageHero` in `DetailTemplate`'s `hero` slot, with an eyebrow, a leading chip and
+on-cover actions the minimal cover has no slot for. What they share with every other entity page is
+the resolution: `resolveIdentityHero(route, opts)` runs the SAME four-rung ladder and the header
+element (asked as an `identity` surface) and returns a spreadable `PageHero` bag
+(`variant · size · overlayStyle · coverImage · coverFocus`). One semantic difference, inherited
+from the index side for the index side's reason: the identity band carries the `<h1>`, so its
+empty-ladder result is `null` (the gradient) — never "no band" — and the section `tail` does not
+apply. The page keeps its own lockup; only the stanza moved.
+
+As of the ADR-1136 adoption, 26 of the 30 live `DetailTemplate` render sites resolve their band
+through this module (21 standard + 5 identity). The four that do not — `/circles/starter/<slug>`
+(a generated `TemplateCover`), the Space profile layout (its own Header/Hero size vocabulary), and
+the two event pages via `EventDetailTemplate` (a multi-source event-media ladder) — hand-roll a
+bespoke cover NODE, not the stanza, and folding each is a behaviour change with its own PR
+(counted on `PROG-P5`).
+
 ### The admin-settings scope kit (9 touch-points)
 
 The repeatable recipe to give a new entity an in-place **Settings** module with cover-image

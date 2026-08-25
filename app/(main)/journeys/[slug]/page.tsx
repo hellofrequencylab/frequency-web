@@ -14,7 +14,7 @@ import { accentColor } from '@/lib/studio/accents'
 import { JOURNEY_ICON_MAP, DefaultJourneyIcon } from '@/lib/studio/journey-icons'
 import { adoptPlanAction, forkPlanAction } from '../actions'
 import { enabledWidgets } from '@/lib/journey-page-config'
-import { resolveHeaderElement } from '@/lib/elements/header'
+import { resolveIdentityHero } from '@/lib/layout/detail-hero'
 import {
   StoryBlock,
   OutcomesBlock,
@@ -164,20 +164,21 @@ export default async function JourneyPlanPage({
   // (/admin/elements), defaulting to identity/standard, so an operator can retune it without a deploy.
   // The author's picked overlay (journey_plans) is the surface default; an operator master value still
   // overrides site-wide. Only none/shadow/fade are honored; anything else falls back to the registry default.
+  // The identity band's chrome through the ONE resolver (PROG-P5, ADR-1136): the Journey's own
+  // cover + focal point is rung 1, the operator's /journeys Settings image stands behind it, and
+  // variant/height/overlay still resolve through the header element exactly as before.
   const oStyle = plan.header_overlay_style
-  const header = await resolveHeaderElement({
-    defaults: { layout: 'identity', height: 'standard', ...(oStyle === 'none' || oStyle === 'shadow' || oStyle === 'fade' ? { overlayStyle: oStyle } : {}) },
+  const hero = await resolveIdentityHero(`/journeys/${plan.slug}`, {
+    entityImage: plan.cover_image,
+    entityFocus: plan.cover_focus,
+    defaults: oStyle === 'none' || oStyle === 'shadow' || oStyle === 'fade' ? { overlayStyle: oStyle } : {},
   })
   const page = (
     <DetailTemplate
       hero={
         <PageHero
-          variant={header.layout}
-          size={header.height}
-          overlayStyle={header.overlayStyle}
+          {...hero}
           overlayColor={plan.header_overlay_color ?? undefined}
-          coverImage={plan.cover_image ?? null}
-          coverFocus={plan.cover_focus ?? undefined}
           eyebrow={topPillar ? topPillar.name : 'Journey'}
           leading={
             plan.logo_image ? (

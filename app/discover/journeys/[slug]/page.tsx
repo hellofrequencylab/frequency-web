@@ -18,6 +18,7 @@ import {
 } from '@/components/journey/discovery-widgets'
 import { getPlanAuthor } from '@/lib/journey-plans'
 import { DetailTemplate } from '@/components/templates'
+import { resolveDetailHero } from '@/lib/layout/detail-hero'
 import { ShareButton } from '@/components/discover/share-button'
 import { buttonClasses } from '@/components/ui/button'
 import { accentColor, accentTint } from '@/lib/studio/accents'
@@ -87,7 +88,17 @@ export default async function DiscoverJourneyPage({
   if (!found) notFound()
   const { plan, items } = found
 
-  const [pillars, author] = await Promise.all([getPillars(), getPlanAuthor(plan.author_id)])
+  const [pillars, author, hero] = await Promise.all([
+    getPillars(),
+    getPlanAuthor(plan.author_id),
+    // The standard entity cover (PROG-P5, ADR-1136): the Journey's own cover + focal point is
+    // rung 1 — the same `journey_plans` image the in-app page shows — so a published Journey's
+    // photo now shows on its public twin too.
+    resolveDetailHero(`/discover/journeys/${plan.slug}`, {
+      entityImage: plan.cover_image,
+      entityFocus: plan.cover_focus,
+    }),
+  ])
   const byId = pillarsById(pillars)
   const accent = plan.accent
   const PlanIcon = JOURNEY_ICON_MAP[plan.emoji ?? ''] ?? DefaultJourneyIcon
@@ -121,6 +132,7 @@ export default async function DiscoverJourneyPage({
       />
 
       <DetailTemplate
+        {...hero}
         back={{ href: '/discover/journeys', label: 'Journeys' }}
         title={
           <span className="inline-flex items-center gap-3 align-middle">
