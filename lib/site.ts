@@ -25,17 +25,24 @@ export const SITE_DESCRIPTION =
 // `desc` powers the subtitle line in the dropdown panels.
 export type NavLink = { label: string; href: string; desc?: string }
 
-// Discover dropdown — the live-community explore pages. This is the SHARED CORE:
-// the same community surfaces a member uses in-app (Circles / Events / Channels),
-// so the public "main menu" and the in-app nav stay in sync. Naming matches the
-// in-app rail ("Channels", not "Topics" or "Interests").
-export const DISCOVER_NAV: NavLink[] = [
-  { label: "Discover", href: "/discover", desc: "Everything happening near you" },
-  { label: "Circles", href: "/discover/circles", desc: "Small groups around an interest" },
-  { label: "Events", href: "/discover/events", desc: "Gatherings you can show up to" },
-  { label: "Journeys", href: "/discover/journeys", desc: "Guided practices for a season" },
-  { label: "Channels", href: "/discover/topics", desc: "Browse by what you practice" },
-];
+// ── DISCOVER_NAV was retired here on 2026-08-25 (HYG-019). ───────────────────
+// It was a hand-maintained list of the five /discover destinations, and three ADRs
+// (the ADR-190 and ADR-352 areas, plus the OPEN-THREADS B4 note) name it as a CONCEPT:
+// "the shared community core", the surfaces the public menu and the in-app nav were
+// meant to keep in sync.
+//
+// THE CONCEPT SURVIVES; ONLY ITS OBSOLETE IMPLEMENTATION IS GONE. Keeping two lists in
+// sync was the job, and a SECOND hand-kept list is the weakest possible way to do it —
+// it holds only while someone remembers to edit both. All five destinations are rows of
+// the ONE nav registry below, which every header already projects, so they are now in
+// sync by construction rather than by discipline. Its last renderer was the marketing
+// phone sheet, which has projected the `header` menu since ADR-1118, so by 2026-08-24
+// this export was tested and drawn by nothing.
+//
+// The five are still guarded, and more strictly than before: lib/site.test.ts asserts the
+// registry itself reaches /discover, /discover/circles, /discover/events,
+// /discover/journeys and /discover/topics. That test used to check a list nothing
+// rendered; it now checks the list every header draws.
 
 // The six PRIMARY marketing pages, in nav order: Home, The Community, The Quest,
 // The Lab, Spaces, About. DERIVED from the ONE nav registry (lib/nav) — the public

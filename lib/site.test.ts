@@ -1,10 +1,10 @@
 import { describe, it, expect } from 'vitest'
+import { NAV_REGISTRY } from '@/lib/nav/registry'
 import {
   SITE_URL,
   SITE_NAME,
   SITE_TAGLINE,
   SITE_DESCRIPTION,
-  DISCOVER_NAV,
   SITE_NAV,
   MARKETING_NAV,
   BETA_CTA_HREF,
@@ -61,29 +61,34 @@ describe('SITE_DESCRIPTION', () => {
   })
 })
 
-describe('DISCOVER_NAV', () => {
-  it('is an array of NavLink objects', () => {
-    expect(Array.isArray(DISCOVER_NAV)).toBe(true)
-    expect(DISCOVER_NAV.length).toBeGreaterThan(0)
+// ── The shared community core, now measured on the registry (HYG-019) ────────────────
+// These four cases used to assert against DISCOVER_NAV, a hand-kept second list that by
+// 2026-08-24 was drawn by nothing. Deleting them with it would have dropped the guard on
+// the CONCEPT three ADRs name — the community surfaces the public menu and the in-app nav
+// are meant to keep in sync. So they moved rather than went: same five destinations, asked
+// of the ONE registry every header projects. A list nothing renders cannot drift in a way
+// anyone notices; this one can, and now says so.
+describe('the shared community core is reachable from the nav registry', () => {
+  const destinations = () => NAV_REGISTRY.map((n) => n.href).filter((h): h is string => !!h)
+
+  it('every registry node with an href points somewhere rooted', () => {
+    for (const href of destinations()) expect(href.startsWith('/')).toBe(true)
   })
 
-  it('every entry has a label and an href', () => {
-    for (const link of DISCOVER_NAV) {
-      expect(typeof link.label).toBe('string')
-      expect(link.label.length).toBeGreaterThan(0)
-      expect(typeof link.href).toBe('string')
-      expect(link.href.startsWith('/')).toBe(true)
-    }
+  it('reaches the /discover root', () => {
+    expect(destinations()).toContain('/discover')
   })
 
-  it('includes the /discover root entry', () => {
-    expect(DISCOVER_NAV.some((l) => l.href === '/discover')).toBe(true)
-  })
-
-  it('includes Circles and Events', () => {
-    const hrefs = DISCOVER_NAV.map((l) => l.href)
+  it('reaches Circles and Events', () => {
+    const hrefs = destinations()
     expect(hrefs).toContain('/discover/circles')
     expect(hrefs).toContain('/discover/events')
+  })
+
+  it('reaches Journeys and Channels — the two the old list carried that are easiest to lose', () => {
+    const hrefs = destinations()
+    expect(hrefs).toContain('/discover/journeys')
+    expect(hrefs).toContain('/discover/topics')
   })
 })
 
