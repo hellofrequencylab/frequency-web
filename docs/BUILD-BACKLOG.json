@@ -1338,11 +1338,11 @@
         "file": "docs/BUILD-LIST.md",
         "ref": "Loom D2"
       },
-      "detail": "One Upload / Pick from library / Paste URL control replacing ImageField everywhere; blocks store an asset REFERENCE plus a URL cache; render resolves reference → CDN url; backfill existing site-media URLs into the catalog and rewrite references.\n\n── UNPARKED 2026-08-20 (owner ruling): scheduled into the build-out; sequence in meta.slate.",
+      "detail": "One Upload / Pick from library / Paste URL control replacing ImageField everywhere; blocks store an asset REFERENCE plus a URL cache; render resolves reference → CDN url; backfill existing site-media URLs into the catalog and rewrite references.\n\n── UNPARKED 2026-08-20 (owner ruling): scheduled into the build-out; sequence in meta.slate.\n\n── ⚙️ RE-TESTED, RE-SHAPED AND HALF-SHIPPED 2026-08-25 (ADR-1130). The row promised three things; the census against the LIVE database found ONE of them real. (1) THE ONE CONTROL ALREADY EXISTED AND WAS ALREADY EVERYWHERE: components/loom/loom-picker.tsx has 16 consumers (page editor, entity blocks, Studio spark, branding, events, QR, email), and the row's 'Paste URL' leg was overruled by an owner directive recorded in three code headers — the Loom is the only way in, upload lives inside the picker, no paste box. (2) THE REFERENCE HALF WAS GENUINELY UNBUILT and is NOW SHIPPED for Puck documents: an image value is string | AssetRef ({ assetId, url }, lib/library/asset-ref.ts); the picker's onSelectAsset/onSelectManyAssets hand the caller the reference; imgField, loomImageField and the gallery field store it; the BlockRender walk unwraps every ref to its URL string before any renderer sees props (proven byte-identical against the same doc stored as strings); and getPublishedData refreshes stale caches via lib/library/resolve-refs.ts — fail-open to the cache, zero queries for a ref-free document, zero sharp/og-trace fan-out. Legacy strings stay legal forever, so NO stored document was rewritten. (3) 🔴 THE BACKFILL'S PREMISE IS DEAD, IN THE GOOD DIRECTION, and it was the row's own headline. Measured 2026-08-25: live pages documents hold ZERO site-media URLs (2 URL occurrences total, 1 distinct, external); all 6 page_content.hero_image site-media references already have catalog rows; 15 of 23 site-media objects are catalogued and the other 8 are importer/<intakeId>/ INTAKE STAGING files referenced only by 7 business_intake staging rows (LIVE-120), which the post-ADR-1121 importer no longer produces uncatalogued. There is nothing to backfill and nothing to rewrite; the backfill is STRUCK with these numbers, not built.\n\nREMAINING SEQUENCE, in order: (a) HYG-029 — reference-storing adoption beyond the Puck fields: entity-block controls, Studio spark image fields, header-image-field, email studio, and the DECISION for column-backed surfaces (spaces.brand_logo_url, page_content.hero_image, page_settings.og_image_url cannot hold a ref in a text column — companion id columns or stay URL-cached). (b) Space-document cache refresh: space docs render refs correctly via the cache today (the unwrap is in the shared BlockRender), but readPageDoc does not call refreshAssetRefUrls; wire it when D3 edits can re-point a live asset's URL. (c) The usage index over refs is D4 (block_usage per ADR-975) — refs make it a cheap JSONB scan; do not build it here.",
       "verify": {
         "kind": "manual",
-        "evidence": "Program phase.",
-        "checked": "2026-08-17"
+        "evidence": "Seam half shipped + proven in-tree (lib/library/asset-ref.test.ts, lib/library/resolve-refs.test.ts, the AssetRef describe in lib/page-editor/block-render.test.tsx, all under pnpm test); backfill struck on the ADR-1130 census. Remaining breadth is HYG-029 + the space-doc refresh.",
+        "checked": "2026-08-25"
       }
     },
     {
@@ -3780,6 +3780,40 @@
       "verify": {
         "kind": "manual",
         "evidence": "Measured 2026-08-25: grep for `blurhash` across the four server-side write paths returns nothing, while lib/loom/picker-actions.ts, lib/page-editor/loom-field-actions.ts, lib/email-studio/loom-actions.ts and app/(main)/admin/library/actions.ts all read it via readImageDescriptor. Manual rather than cmd because the row's resolution may legitimately be 'decided not worth it' (option a), and a probe cannot tell that apart from 'not done' — ADR-970: a gate that cannot fire honestly gets routed around, and then it reads as coverage.",
+        "checked": "2026-08-25"
+      }
+    },
+    {
+      "id": "LIVE-120",
+      "title": "Eight orphaned importer staging files sit in site-media with no catalog row and no lifecycle",
+      "status": "open",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/importer/harvest/media.ts",
+        "ref": "the site-media/importer/<intakeId>/ upload path"
+      },
+      "detail": "FOUND 2026-08-25 during the PROG-D2 census (ADR-1130). The site-media bucket holds 23 objects; 15 have library_assets rows; the other 8 are importer/<intakeId>/ hero and logo files (4.2 MB, oldest 2026-07-09) uploaded by the harvest stage and referenced ONLY by business_intake staging rows (7 of 18 intakes reference this prefix) — no page, space, or block document points at any of them. Since ADR-1121 the importer files publish-time media into the Loom through insertSpaceLibraryImage, so the LIVE surface no longer grows this debt; what is missing is a LIFECYCLE for the staging prefix: an abandoned intake leaves its harvested media in the public bucket forever, invisible to the Loom Studio and to any quota. The fix is a policy, not a backfill — delete staging media when an intake is abandoned or materialized (materialize already re-files what it keeps), or age them out. Do NOT catalogue them into the Loom: they are drafts nobody accepted, and surfacing them in the Studio grid would present harvested third-party imagery as house assets.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Live-DB census 2026-08-25: 8 uncatalogued site-media objects, all under importer/, referenced only from business_intake; zero references from pages, spaces, space_updates, circles, events, journey_plans, element_settings, practices. A repo probe cannot reach the live bucket.",
+        "checked": "2026-08-25"
+      }
+    },
+    {
+      "id": "HYG-029",
+      "title": "AssetRef adoption stops at the Puck fields; every other picker consumer still throws the reference away",
+      "status": "open",
+      "lane": "hygiene",
+      "size": "M",
+      "source": {
+        "file": "docs/LIBRARY.md",
+        "ref": "One picker at every upload point"
+      },
+      "detail": "Split out of PROG-D2 on 2026-08-25 (ADR-1130) rather than left implicit. The AssetField seam ships with THREE writers (imgField, loomImageField, the gallery field) out of the picker's 16 consumers; the other 13 still call onSelect(url) and discard the assetId at the last step. Two distinct classes, and they are NOT the same work: (1) JSONB-BACKED surfaces (entity-block controls/loom-image-field.tsx, the space canvas, Studio spark field-control.tsx, email studio canvas) can adopt the stored AssetRef shape directly — their documents ride through walks that either already unwrap (shared BlockRender) or need the same one-line unwrap; switch each to onSelectAsset and verify its render path reads through assetRefUrl. (2) COLUMN-BACKED surfaces (spaces.brand_logo_url, spaces.cover_image_url, page_content.hero_image, page_settings.og_image_url/header_image_url, profiles.header_image_url) store a text URL and CANNOT hold a ref without a schema decision — companion *_asset_id columns (a migration, full ADR-1111 ordering discipline) or an explicit ruling that column caches stay URL-only until D4's usage index needs them. Decide (2) before building it; do not half-adopt by stuffing JSON into a text column. The value either way: a D3 edit or version rollback re-points every consumer without a manual re-save, and D4's block_usage derivation can see column users too.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Grep 2026-08-25: onSelectAsset appears only in loom-picker.tsx and the three lib/page-editor fields; the entity-block control, spark field-control and header-image-field still pass onSelect only. The column half needs an owner/schema decision first, so a repo probe would measure the wrong thing.",
         "checked": "2026-08-25"
       }
     },

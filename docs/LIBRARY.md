@@ -140,9 +140,16 @@ resolver, not a table schema): `lib/library/renditions.ts`. Access is **service-
 
 ## Best-practice architecture
 
-- **Blocks store an asset reference** (`assetId` + rendition/crop), not a raw URL, so we can
-  re-version, track usage, and swap globally. A denormalized URL is cached alongside for legacy
-  compatibility; the render path resolves reference → CDN URL.
+- **Blocks store an asset reference** ([ADR-1130](DECISIONS.md)): an image value is
+  `string | AssetRef` where `AssetRef = { assetId, url }` — the reference plus a cached CDN URL
+  (`lib/library/asset-ref.ts`, pure; `assetRefUrl` is the one read). Legacy URL strings stay legal
+  forever, which is what makes this a seam and not a stored-document migration. The picker offers
+  the pair (`onSelectAsset`), the page-editor fields store it, the `BlockRender` walk unwraps every
+  ref to its URL string before any block renderer sees props (so renderers never learn refs exist),
+  and `getPublishedData` refreshes stale caches through `refreshAssetRefUrls`
+  (`lib/library/resolve-refs.ts`) — fail-open to the cache at every grain, no query at all for a
+  ref-free document. 🔴 The refresh decodes nothing and must never import `sharp` (same rule as
+  ingest).
 - **One master, many renditions.** Serve web-optimized renditions (thumb/grid/hero/og), never the
   master, in pages and grids. Transforms are on-the-fly against the master.
 - **Non-destructive editing.** Every edit (Recraft op, Vera SVG save, Filerobot recipe) first
@@ -179,8 +186,13 @@ resolver, not a table schema): `lib/library/renditions.ts`. Access is **service-
   ts_rank` — no migration, and `rankLibraryMatches` is the one seam a `search_library_assets` RPC
   would replace if a Loom outgrew the candidate cap.
 - **Usage index** powers "used on N pages," archive-not-destroy, and global swap.
-- **One `AssetField`** (Upload / Pick from library / Paste URL) replaces `ImageField` at every
-  upload point (Puck first, then branding / Spotlight / OG / email).
+- **One picker at every upload point.** The universal control is `components/loom/loom-picker.tsx`
+  (16 consumers: page editor, entity blocks, Studio spark, branding, events, QR, email). The old
+  "Upload / Pick / Paste URL" tri-mode plan was superseded by the owner directive recorded in the
+  field headers: **the Loom is the only way in** — upload lives inside the picker, and there is no
+  paste-a-URL box. Reference-storing adoption beyond the Puck fields (entity-block controls, spark
+  fields, column-backed surfaces like `spaces.brand_logo_url`, which cannot hold a ref in a text
+  column) is tracked in `HYG-029`.
 
 ## Scoping
 

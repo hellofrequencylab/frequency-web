@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { X, ImageIcon } from 'lucide-react'
 import { LoomPicker } from '@/components/loom/loom-picker'
+import { assetRefUrl, type AssetValue } from '@/lib/library/asset-ref'
 import { useSpaceEditorSlug } from './space-editor-context'
 
 // A Loom-BACKED custom Puck image field for a SPACE OPERATOR editing their own page. It is a thin wrapper
@@ -25,21 +26,24 @@ function LoomImageField({
   onChange,
   square,
 }: {
-  value?: string
-  onChange: (value: string) => void
+  value?: AssetValue
+  onChange: (value: AssetValue) => void
   /** Render the preview as a 1:1 square (logos / avatars); otherwise a landscape frame. */
   square?: boolean
 }) {
   const slug = useSpaceEditorSlug()
   const [picking, setPicking] = useState(false)
   const aspect = square ? 'aspect-square' : 'aspect-[16/10]'
+  // A stored value may be a legacy URL string or an AssetRef ({ assetId, url }, ADR-1130);
+  // both preview through the same read. New picks store the ref when the Loom has a row.
+  const url = assetRefUrl(value)
 
   return (
     <div className="space-y-2">
-      {value ? (
+      {url ? (
         <div className={`relative ${aspect} w-full overflow-hidden rounded-card border border-border`}>
           {/* eslint-disable-next-line @next/next/no-img-element -- Loom-served asset preview in the editor, not a build-time asset */}
-          <img src={value} alt="" className="h-full w-full object-cover" />
+          <img src={url} alt="" className="h-full w-full object-cover" />
           <div className="absolute right-2 top-2 flex gap-1.5">
             <button
               type="button"
@@ -73,7 +77,7 @@ function LoomImageField({
       <LoomPicker
         open={picking}
         onClose={() => setPicking(false)}
-        onSelect={(url) => onChange(url)}
+        onSelectAsset={(pick) => onChange(pick.assetId ? { assetId: pick.assetId, url: pick.url } : pick.url)}
         title="Choose an image"
         scopeKey={slug ?? undefined}
         kinds={['image', 'icon']}
@@ -82,7 +86,7 @@ function LoomImageField({
   )
 }
 
-type CustomFieldRenderArgs = { value?: string; onChange: (value: string) => void }
+type CustomFieldRenderArgs = { value?: AssetValue; onChange: (value: AssetValue) => void }
 
 /** The Loom-backed image field (landscape preview) for block media / cover fields. */
 export const loomImageField = {
