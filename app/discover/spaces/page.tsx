@@ -16,7 +16,7 @@ import {
   normalizePage,
   DIRECTORY_GRID_WIDE,
 } from '@/components/spaces/directory-view'
-import { resolveHeaderElement } from '@/lib/elements/header'
+import { resolveMarketHero } from '@/lib/layout/index-hero'
 
 // PUBLIC Business Spaces directory (/discover/spaces) — the indexable, no-rail twin of the in-app directory
 // (/spaces/directory). It renders inside the shared /discover chrome (SiteHeader + footer, no left menu, no
@@ -79,8 +79,12 @@ export default async function PublicSpacesDirectoryPage({
   // The pager base — the current filters, so paging preserves them (no `following` on the public surface).
   const urlBase = { q, subject, category, sort: sortParam, per, page }
 
-  // The operator-tunable header element (ADR-793): resolves to today's overlay/large/scrim-on look.
-  const header = await resolveHeaderElement({ defaults: { layout: 'overlay', height: 'large' } })
+  // The whole hero band through the ONE browse-hero ladder (lib/layout/index-hero, PROG-P4):
+  // the operator's Settings header image, then the page_content hero via the copy cascade, then
+  // this page's coded cover, plus the operator-tunable header element (ADR-793) for
+  // layout / height / scrim. It used to read the element alone, so an operator who uploaded a
+  // header image for this route got nothing.
+  const hero = await resolveMarketHero('/discover/spaces', { cover: '/images/site/business-directory-hero.jpg' })
 
   return (
     // Ride in the SAME centered content column as the public Space profiles: the member three-column grid
@@ -104,13 +108,10 @@ export default async function PublicSpacesDirectoryPage({
           glow, a bold display headline, an in-hero SEARCH (writes ?q=, so the grid below filters live), and
           two buttons: List your business (create) and Browse all (jump to the listings). */}
       <MarketHero
-        image="/images/site/business-directory-hero.jpg"
+        {...hero}
         eyebrow="Business Spaces"
         title="Find a business or nonprofit near you"
         subtitle={HERO_INVITE}
-        variant={header.layout}
-        size={header.height}
-        overlay={header.scrim}
         search={<DirectorySearch placeholder="Search businesses by name" />}
         action={
           <>
