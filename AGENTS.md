@@ -22,7 +22,9 @@ ARTIFACT. Full rules and the incident: [`docs/DEPLOY-SAFETY.md`](docs/DEPLOY-SAF
   `buildCommand: pnpm build` so a dashboard edit cannot silently take the lifecycle away. **Four
   gates run there and fail the build** (all wired and proven on real artifacts as of #2194,
   2026-08-19 — LIVE-035/LIVE-048/LIVE-029 closed):
-  - `check:build-budget` — total per-function output under 8 GB; **measured 6.67 GB across 498
+  - `check:build-budget` — total per-function output under 8 GB; **6.66 GB across 497 functions on
+    the PRODUCTION build of `main` at e3cec7af2, 2026-08-25 21:43Z (#2308)** — the first FALL in the
+    series, by 0.01 GB and one function, after the two rises below. Previously **measured 6.67 GB across 498
     functions on the PRODUCTION build of `main` at c8b5ee97, 2026-08-25 09:50Z** (the deploy carrying
     all four meta-scan phases), after 6.55 GB / 496 fns the same day (#2280 and #2285, two independent
     previews), 6.02 GB / 496 fns (#2245, 2026-08-24), 6.03 GB / 497 fns (#2243, same day), 6.04 GB /
@@ -32,7 +34,8 @@ ARTIFACT. Full rules and the incident: [`docs/DEPLOY-SAFETY.md`](docs/DEPLOY-SAF
     and the trend is still the thing to watch rather than the number. Largest single cost, named by
     the gate itself: **1510 MB of libvips (17.4 MB × 87 functions)** — which is `sharp`, so this gate
     and `check:og-trace` below are measuring two faces of one thing.
-  - `check:og-trace` — **69 incidental functions of a 100 budget, production 2026-08-25**, up from 67
+  - `check:og-trace` — **69 incidental functions of a 100 budget, HELD across three consecutive
+    production deploys (c8b5ee97, 1386abe6c, e3cec7af2), 2026-08-25**, up from 67
     on 2026-08-24. ⚠️ Read the number carefully: the budget counts the functions that carry `sharp`
     WITHOUT rasterising a card (69), not the total that carry it (18 rasterisers + 69 = 87). The +2
     is the two per-entity OG routes added by meta-scan phase 2 (#2289) — that PR's own body said
@@ -72,6 +75,14 @@ ARTIFACT. Full rules and the incident: [`docs/DEPLOY-SAFETY.md`](docs/DEPLOY-SAF
       + `.next/cache` 1359 MiB), **85% of the 1.50 GB ceiling and comfortably under the trim point**.
       And the paired reading is **EXACT**: the gate predicted 1.27 GB and `Uploading build cache`
       reported **1.27 GB**.
+    - 🔴 **`main` at e3cec7af2, production, 21:43Z: 1.34 GB predicted, `Uploading build cache [1.34 GB]`
+      — a FOURTH paired reading and the second EXACT one.** But read the direction, not just the
+      accuracy: this is **+0.07 GB in twelve hours** (1.27 → 1.34), and the raw `.next/cache` grew
+      1359 → 1476 MiB while node_modules held at 934 MiB, so the growth is entirely compiler cache.
+      At **89% of the 1.50 GB ceiling** and roughly **96% of the trim point**, this gate is now much
+      the closest of the four to firing, and the next build on this trajectory trims — which costs the
+      build after it a cold compile (113s against a 46s warm control). The other three gates moved by
+      0.01 GB, zero, and 1 KB across the same window; this one is the series to watch.
     - **`main` at 1386abe6c, production, 12:35Z: 1.28 GB predicted, 1.27 GB uploaded** (2.24 GiB raw —
       node_modules 934 MiB + `.next/cache` 1362 MiB), again **85%** of the ceiling. A THIRD paired
       reading on the same mix, accurate to 1%. The other three gates read IDENTICALLY to c8b5ee97 on
@@ -84,7 +95,8 @@ ARTIFACT. Full rules and the incident: [`docs/DEPLOY-SAFETY.md`](docs/DEPLOY-SAF
     Re-derive it from paired readings before trusting a margin, and read `LIVE-123`
     for the page-data build failures measured in the same window.
   - `check:shell-weight` ([ADR-1066](docs/DECISIONS.md)) — the CLIENT half: the app shell's eager
-    first-load JS (**1011 KB across 21 chunks, production 2026-08-25**, one kilobyte above the 1010 KB
+    first-load JS (**1012 KB across 22 chunks, production e3cec7af2, 2026-08-25 21:43Z** — one
+    kilobyte and one chunk above the 1011 KB / 21 it read hours earlier, which was itself one kilobyte above the 1010 KB
     it read on two artifacts a week earlier, ceiling 1,400 KB — **72%**, the most headroom of the
     four) plus named fingerprints for admin module bodies that must stay behind `next/dynamic` (all 8
     lazy, positive control present, 493 client-reference manifests read). Promoted from `--warn-only`
