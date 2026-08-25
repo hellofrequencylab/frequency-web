@@ -32812,3 +32812,71 @@ number is a count OF — an unlabelled figure is how a row can be re-measured fo
 wrong in the same way each time. The two DNS gaps are new, real, and at-volume: they are recorded on
 OWN-020 rather than opened as a new row, because [ADR-1043](DECISIONS.md) says findings become
 backlog entries on the row that owns them, not new documents.
+
+## ADR-1157: a throttle belongs where it can bind, and four of eight already had one (2026-08-25)
+
+**Context.** OWN-040 carried the item *"set daily_cap on the circle_start (100 Zaps) and
+circle_activate (40 Zaps) rows at /admin/gamification"*, added when
+[ADR-1109](DECISIONS.md) / migration `20270322000000` finally taught the Zap path to read
+`daily_cap` at all. Asked how wide to go, the owner ruled: cap every self-triggerable creation
+action, not just the two. A census of all 23 `zap_config` rows says the original item was **too
+narrow in one place and too broad in five**, and that "cap all eight" would have manufactured five
+dead gates.
+
+**What the census found.** Only 2 of 23 rows carried a cap. Eight actions are self-triggerable
+"create a thing" payouts. They are not one population:
+
+| Action | Zaps | Writer | Verdict |
+| --- | --- | --- | --- |
+| `circle_start` | 100 | `awardZapsForAction` | ⚠️ uncapped, cappable → **cap 1/day** |
+| `event_host` | 60 | `awardZapsForAction` | 🔴 uncapped, **not on the row at all** → **cap 2/day** |
+| `circle_activate` | 40 | `awardZapsForAction` | ⚠️ uncapped, cappable → **cap 2/day** |
+| `create_journey` | 100 | `awardZaps` | ✅ validation-gated, once per asset ever |
+| `create_event` | 50 | `awardZaps` | ✅ same |
+| `create_practice` | 40 | `awardZaps` | ✅ same |
+| `entry_point_created` | 20 | `awardZapsForAction` | ✅ lifetime cap of 5 in code |
+| `practice_full_cycle` | 50 | *none* | ✅ legacy row, nothing awards it |
+
+**The too-narrow half.** `event_host` pays 60 Zaps unconditionally at the end of `createEvent`
+(`app/(main)/events/actions.ts:462`). Create an event, collect 60, repeat, unbounded. It is the
+largest self-triggerable payout in the table and no backlog row named it — the item was written
+from the two actions someone happened to be looking at, not from the table.
+
+**The too-broad half, which is the more interesting one.** `daily_cap` is read in exactly one
+place: `awardZapsForAction`. The three `create_*` actions are paid only by
+`awardValidatedCreation` on the `awardZaps` path, which does not read it and says so in its own
+header. A cap set on those rows would gate **nothing** while displaying in `/admin/gamification`
+as a configured throttle — ADR-970's named failure, committed inside the very table that
+`20270322000000` exists to repair, four months after that repair. It would also be *weaker* than
+what already guards them: the payout requires a distinct, email-verified member who was not
+invited by the creator to actually use the asset, and pays once per asset **ever** via a
+`reward_grants` rule key. `awardValidatedCreation`'s header already states the design in one line:
+*"Uncapped (the validation gate is the throttle)."*
+
+`entry_point_created` is capped at five per lifetime in code. `practice_full_cycle` has no writer
+at all — the string survives in the seed, in `ZAP_AMOUNTS`, in a test, and in
+`lib/economy/ledger.ts:191` where it is labelled *"(legacy)"*.
+
+**Decision.** Migration `20270340000000` caps three rows — `circle_start` 1/day, `event_host`
+2/day, `circle_activate` 2/day — and deliberately caps nothing else. The numbers come from what
+each action means rather than from its size: founding a circle is described in its own seed row as
+*"the rarest, highest act of leadership"*, so 1; hosting is the point of the product, so 2, sitting
+above ordinary use and below a farming loop; claiming legitimately repeats for a crew member
+working a small backlog, so 2 rather than 1.
+
+**Consequences.** The migration's self-test asserts exactly three rows moved, that they carry the
+intended values (a count alone would pass if they moved wrongly), and that the two pre-existing
+caps were not touched — the blast-radius arm, since a mis-scoped `UPDATE` is the only way this
+change could do harm. It carries one more arm that is not about this write at all: a **standing
+control** that the five deliberately-uncapped actions are still `NULL`. If a later change caps one
+of them, the reasoning above has been contradicted, and the next fresh apply fails naming the row
+rather than letting the contradiction land silently.
+
+When a cap binds it withholds the Zap payout only — the circle is still founded, the event is still
+created. Seeding a launch batch costs Zaps, not work.
+
+The generalization: *"add a throttle" is not one decision, it is one per site, and the first
+question is whether the throttle can reach that site at all.* Five of these eight were already
+throttled — three by a stronger gate, one by a lifetime cap, one by having no code path — and the
+only way to know that was to read each writer. A ruling to "cap them all" applied literally would
+have shipped five switches that gate nothing and read as coverage.
