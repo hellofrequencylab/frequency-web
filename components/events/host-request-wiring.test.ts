@@ -20,7 +20,13 @@ describe('the event page mounts the ask-to-host CTA', () => {
 
   it('resolves the eligible Spaces through the gate-mirroring loader, never for a manager', () => {
     expect(page).toContain('listSpacesThatCanAskToHost(event.id)')
-    expect(page).toContain('myProfileId && !canManage ? await listSpacesThatCanAskToHost')
+    // THE GATE IS THE ASSERTION, NOT ITS SYNTAX. This used to pin the literal string
+    // `myProfileId && !canManage ? await listSpacesThatCanAskToHost`, which broke when SCAN-301
+    // moved the loader off its own serial await and into the page's existing parallel wave — a
+    // change that touched WHEN it runs and nothing about WHO it runs for. So the pin now spans the
+    // gate and the call while tolerating either form, and still fails the only way that matters:
+    // drop `!canManage`, or hand the loader an unconditional call, and this goes red.
+    expect(page).toMatch(/myProfileId && !canManage\s*\?\s*(?:await\s*)?listSpacesThatCanAskToHost/)
   })
 
   it('renders the CTA only when an eligible Space exists, after the claim branches', () => {

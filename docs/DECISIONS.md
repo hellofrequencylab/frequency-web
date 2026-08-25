@@ -31601,3 +31601,146 @@ surfaces honour it instead of ignoring it.
 26 of 30 render sites resolve through the one module (21 standard + 5 identity). The remaining 4
 are not stragglers of THIS grammar but candidates for their own: each is a bespoke cover
 composition whose folding changes behaviour, counted on `PROG-P5` as such.
+
+## ADR-1137: The route-chunk arm lands in the CI half, seven orphans go, and two probes that measured the wrong thing get fixed (2026-08-25)
+
+**Status:** accepted · closes `SCAN-202`, `SCAN-204`, `SCAN-301`, `SCAN-302`, `SCAN-304`, `SCAN-305`,
+`SCAN-501`, `SCAN-506` · re-scopes `SCAN-502` · extends [ADR-1066](#adr-1066) (check:shell-weight) ·
+applies [ADR-970](#adr-970) (a gate that cannot fire honestly gets routed around) and
+[ADR-1082](#adr-1082) (re-test the premise before working the row)
+
+### 1. Arm C — the route chunk — and why it is NOT in `postbuild`
+
+`check:shell-weight` watches the app shell: Arm A is a byte budget on the shell's eager first-load
+JS, Arm B is a set of named fingerprints for admin module bodies that must stay behind
+`next/dynamic`. Both read `.next`, so both can only run in `postbuild`. Their documented blind spot
+is a heavy library pulled in by a **route's own** client component: it never enters the shell entry,
+it lands in that route's chunk, and every member who opens that route pays for it. `SCAN-302` found
+react-markdown on the feed path by hand, which is how the arm came to exist.
+
+**Arm C** closes the class. From each member hot route's `page.tsx` — deliberately the page and not
+the layout, because the layout *is* the shell Arms A/B already measure to the byte — it walks the
+static import graph, marks everything below the first `'use client'` boundary as client code, and
+fails if a **named** heavy module is statically imported inside that subtree.
+
+What it can prove without a build is the half a build cannot prove cheaply: **a static import below
+a client boundary is not code-split by any bundler setting**, so "statically reachable from this
+route's client subtree" *is* "in this route's first-load JS". `dynamic()` and bare `import()` are not
+static edges and are correctly invisible to it. What it explicitly cannot do is measure bytes or see
+a chunking change that voids a split — only Arms A/B can, and only on the artifact. It is the
+route-level twin of Arm B, a fingerprint arm, never a budget.
+
+**It runs in `scripts/check-shell-weight.test.ts`, not in `main()`.** It was briefly wired ahead of
+`main()`'s missing-`.next` return, and two things were wrong with that:
+
+| | |
+|---|---|
+| **Timing** | `main()` only ever runs in `postbuild`, i.e. on Vercel, i.e. *after* the merge. A filesystem-only arm has no reason to pay artifact-gate latency, and doing so caught the class one merge later than possible. |
+| **It broke the artifact arms' own proof** | Arms A/B are proven by mutation: their tests copy the script into a temp dir and run it against a **synthetic `.next` in a cwd that is deliberately not this repo**. Arm C resolves its controls and hot routes against `ROOT`, so in those fixtures it failed on "control does not exist" and swallowed the arm the fixture existed to exercise. |
+
+The tempting fix — teach Arm C to skip when the source tree is absent — would have given it a way to
+pass without looking, which is ADR-970's failure mode performed on a brand-new gate. So the arm moved
+to the half where the cwd is always the repo root and every PR runs it. That is a promotion in timing
+and identical in strength.
+
+**Two controls, because "absent" is worthless without proof it can see "present":**
+
+- ✅ *Detector* — two **real** `use client` files that genuinely import a heavy library today
+  (`app/(main)/nearby/[id]/dispatch-body.tsx` → react-markdown,
+  `components/maps/maplibre-canvas.tsx` → maplibre-gl). If one stops firing, the arm fails and says
+  so. 🔴 If it stops because someone **fixed** the file, that is good news and the fix is to repoint
+  the row, never to delete it.
+- ✅ *Walk* — a 150-module floor against **668 client modules measured** across the four routes
+  (366 / 30 / 178 / 94), so a broken resolver cannot report "0 leaks" from having visited one file.
+
+Every row in `HEAVY_CLIENT_MODULES` is verified to be a real dependency, by a test: a row naming a
+package this repo does not install can never fire, and a list of rows that cannot fire reads as
+coverage.
+
+**Proven by mutation, on the real tree:** a static `react-markdown` import added to
+`components/feed/post-replies.tsx` turns the arm red and names the exact chain
+`feed/page.tsx → feed-list.tsx → post-card.tsx → post-replies.tsx`. Reverted; green again.
+
+⚠️ **A live instance of the class sits outside the entry list.** `app/(main)/nearby/[id]/dispatch-body.tsx`
+is `'use client'` with a static `react-markdown` import, on a route `HOT_ROUTE_ENTRIES` does not
+name. It is used as a *control* rather than folded into the entry list on purpose: widening the list
+in the same change would have merged a real finding into a gate wiring. It wants its own decision.
+
+### 2. `SCAN-302`'s premise had half-expired before the row was worked
+
+Re-tested first, per ADR-1082. `post-card.tsx` and `post-body.tsx` are **Server Components**, so
+react-markdown ships no client bytes through them, and `post-replies.tsx` — the one client module on
+the path — **already** mounts the body through `next/dynamic`. The instance was fixed; only the class
+was still open, and Arm C is what closes it. The row is closed on the truth, not on the title.
+
+### 3. Seven orphan rulings, and the blind spot that would have deleted live code
+
+`SCAN-501` named eight verified orphans. All seven surviving candidates were re-verified with four
+fresh searches each — static importers, dynamic import, bare name across the whole tree, own-test-only
+— rather than trusting the archived scan, and all seven were **deleted**: the `lib/theme` barrel (30
+files import submodules directly), `createSpacePlanCheckout` (which makes [ADR-880](#adr-880)
+*structural*: one door, so the two prices cannot diverge), `sendBookingReminderEmail`,
+`sendListingClaimInviteEmail` with its three module-private renderers, the `lib/founding/status.ts`
+residue, `EditModeButton`, `SpotlightBlocks` and `SITE_NAV_MEMBER`. Two test files were **rewritten
+rather than dropped** — every unique assertion was re-pointed at the surviving door.
+
+🔴 **The finding that matters most is in `SCAN-502`, and it is a near-miss.** Re-running the orphan
+scan as an exact-identifier index turned up two things:
+
+1. **The original scan misses `.mts`.** `lib/help/drift.ts` and `lib/ai/autodoc.ts` scored *fully
+   dead* and are both **live**, consumed by `scripts/help-drift.mts` and `scripts/help-autodoc.mts`.
+   A sweep that skips `.mts` / `.cts` / `.cjs` / `.yml` deletes working code.
+2. **~85% of the row is not deletable.** Of 860 dead value exports across 707 `lib` modules, **734
+   are used inside their own file** — the sweep for those is dropping the `export` keyword, not
+   deleting. Only **126** are declaration-only. So `SCAN-502` is an S-sized API-surface trim plus a
+   small delete list, not the M-sized code sweep it described, and three of its ranked candidates are
+   registry/menu-adjacent and want a ruling rather than a sweep — a parallel rail registry with no
+   consumer is a MENU-CONTRACT finding in its own right.
+
+### 4. Two probes that measured the wrong thing, and one that could not tell "clean" from "no tool"
+
+Three rows closed this round needed their probes fixed first. All three failures are the same family
+— *the probe measured the shape, not the consequence* — and the repo's own gates caught every one.
+
+| Row | What the probe did | Why it was wrong | What it does now |
+|---|---|---|---|
+| `SCAN-304` | forbade the string `getPracticeStreak(` outright | the **viewer's own** streak is a correct single read, so the probe failed on the fix | strips comments, then requires **exactly one** call, plus `derivePracticeStreak(` and the row budget |
+| `SCAN-501` | grepped for the deleted names anywhere | every deletion deliberately leaves a comment saying what went and why; forbidding those pushes a future session to **erase the record to go green** | walks the tree in node, strips comments, and searches **executable code only** |
+| `SCAN-506` | ran `vitest run` on the arm's test file | `LIVE-034` forbids a probe that spawns a test runner, and it cost 1.9s | calls the arm's exported functions directly — 0.2s, both controls included |
+
+⚠️ **`SCAN-501`'s first fix was worse than the bug, and `scripts/backlog-contract.test.ts` caught
+it.** It shelled out to `grep`, with a control asserting the same search still finds a known-live
+symbol. Under the rg-parity arm — which runs the whole gate with the tooling stripped from `PATH` —
+`grep` was absent, `execFileSync` threw, the search returned nothing, and **the control fired on
+"I have no tool" as though it were "I found nothing"**. That is precisely the confusion that test
+exists to prevent, and it is worth stating plainly: **a probe that shells out cannot distinguish a
+clean tree from a missing binary.** The rewrite has no subprocess at all, and keeps a non-triviality
+floor (it fails if it walked fewer than 2,000 source files) so a broken walk cannot read as a clean
+verdict either.
+
+### The four speed rows
+
+`SCAN-301` folds three reads on the event detail page into waves that already existed — the
+ticket-tiers read into the RSVP wave, `loadSeriesDates` and `listSpacesThatCanAskToHost` into the
+social wave. Neither move changes **who** anything runs for: the host-ask loader keeps its
+`myProfileId && !canManage` gate, now as the ternary inside the wave.
+
+`SCAN-304` replaces ~36 round trips with two batched reads and derives each mate's streak in memory
+**through the same pure functions the per-member reader uses** — `memberDay`, `frozenDaysFrom`,
+`derivePracticeStreak`, `isResting`. The rules are called, not restated. The logs read is chunked,
+because PostgREST truncates at `max_rows` (1000) and `practice_logs` is unique on
+`(profile_id, practice_id, logged_for)` — not on the day — so one `.in()` over twelve mates × a
+400-day window is not guaranteed to fit, and a truncated response drops the **oldest** rows, which is
+exactly where a streak walk ends.
+
+`SCAN-305` moves the `last_read_at` write behind `after()` from `next/server`, off the thread's
+render path.
+
+### The wiring tests that pinned the old shapes
+
+Two source-shape guards went red on these refactors, and both were **right to notice and wrong in
+what they pinned**: `host-request-wiring.test.ts` pinned the literal `? await listSpacesThatCanAskToHost`
+(the gate is the assertion, not its syntax) and `streak-nudge-wiring.test.ts` pinned
+`getPracticeStreak(id)` (the rules are the assertion, not the call shape). Both now pin the property
+the refactor was required to preserve, and both still fail if it is dropped — `streak-nudge-wiring`
+gained a row for the chunking, which nothing else was watching.

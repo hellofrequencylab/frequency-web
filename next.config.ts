@@ -241,6 +241,25 @@ const nextConfig: NextConfig = {
       // the year-round game is "The Quest"). Redirect old help links + bookmarks.
       { source: '/help/the-game', destination: '/help/the-quest', permanent: false },
       { source: '/help/the-game/:path*', destination: '/help/the-quest/:path*', permanent: false },
+      // The Dispatches help article was the LAST member-visible URL still carrying the retired
+      // noun (SCAN-204). Its body has said "Dispatches" since the rename; only the slug lagged,
+      // and ADR-1020's own reasoning for /broadcast -> /nearby ("a URL is not internal") applies
+      // here unchanged, so content/help/sharing/broadcasts.md is now dispatches.md.
+      //
+      // Permanent (308), same as /broadcast: the noun is retired, not under review, so the new
+      // slug is final — and the old URL is genuinely in the wild. It is linked from support
+      // replies, and a production sweep for the /broadcast rename found a `help_chunks` row
+      // holding this exact path as text (noted in lib/layout/editable-content.ts, where it was
+      // correctly ruled a false positive for THAT rename — it is a true positive for this one).
+      // Rows and sent mail cannot be rewritten; the 308 is what keeps them landing.
+      //
+      // Shadows nothing: the source file is renamed, so /help/sharing/broadcasts no longer
+      // resolves through the filesystem router at all.
+      {
+        source: '/help/sharing/broadcasts',
+        destination: '/help/sharing/dispatches',
+        permanent: true,
+      },
       // The pricing "five doors" (ADR-590/591). Only genuinely RETIRED persona slugs belong here.
       //
       // These rules used to assume a short-slug rename (coaches / hosts / communities) that the funnel

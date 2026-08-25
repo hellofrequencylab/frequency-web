@@ -4384,14 +4384,14 @@
     {
       "id": "SCAN-202",
       "title": "Organizer and city hubs fall back to the generic OG card",
-      "status": "open",
+      "status": "done",
       "lane": "live",
       "size": "S",
       "source": {
         "file": "docs/META-SCAN-STATUS.md",
         "ref": "meta-scan 2026-08-25, SEO sweep"
       },
-      "detail": "MS25 Phase 2. Per-entity OG images exist for events, spaces, circles, journeys, partners, practices, pillars and spotlight - but /discover/events/organizer/[handle] and the city hubs (cities/places) share the generic brand card. New opengraph-image.tsx files beside the (train-claimed) pages; reuse the existing card components. Watch check:og-trace headroom (67/100 sharp functions).",
+      "detail": "MS25 Phase 2. Per-entity OG images exist for events, spaces, circles, journeys, partners, practices, pillars and spotlight - but /discover/events/organizer/[handle] and the city hubs (cities/places) share the generic brand card. New opengraph-image.tsx files beside the (train-claimed) pages; reuse the existing card components. Watch check:og-trace headroom (67/100 sharp functions). CLOSED 2026-08-25. Both hubs render their own card: app/discover/events/organizer/[handle]/opengraph-image.tsx and app/discover/cities/[citySlug]/opengraph-image.tsx, each composed from the existing card primitives rather than a new one. check:og-trace headroom is unchanged at 67/100 sharp functions: both routes render text over the brand ground and never touch sharp.",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e \"const fs=require('fs');const want=['app/discover/events/organizer/[handle]/opengraph-image.tsx','app/discover/cities/[citySlug]/opengraph-image.tsx'];const missing=want.filter(f=>!fs.existsSync(f));if(missing.length){console.error('no per-entity card: '+missing.join(', '));process.exit(1)}\"",
@@ -4418,14 +4418,14 @@
     {
       "id": "SCAN-204",
       "title": "The last member-visible URL carrying a retired noun: /help/sharing/broadcasts",
-      "status": "open",
+      "status": "done",
       "lane": "hygiene",
       "size": "XS",
       "source": {
-        "file": "content/help/sharing/broadcasts.md",
-        "ref": "slug"
+        "file": "content/help/sharing/dispatches.md",
+        "ref": "the slug, renamed from broadcasts.md"
       },
-      "detail": "MS25 Phase 2. The article body is fully on-canon (Dispatches), but the slug still says broadcasts - and ADR-1020's own reasoning ('a URL is not internal') is why /broadcast became /nearby. Rename to dispatches.md with a redirect, or record the slug as a deliberate survivor in NAMING §Dispatch and re-point this probe.",
+      "detail": "MS25 Phase 2. The article body is fully on-canon (Dispatches), but the slug still says broadcasts - and ADR-1020's own reasoning ('a URL is not internal') is why /broadcast became /nearby. Rename to dispatches.md with a redirect, or record the slug as a deliberate survivor in NAMING §Dispatch and re-point this probe. CLOSED 2026-08-25 by the rename, not by a ruling: content/help/sharing/broadcasts.md -> dispatches.md, with a permanent redirect in next.config.ts so the old URL keeps resolving. PRODUCTION FOLLOW-UP, tracked on SCAN-205: the help_chunks row for this article still carries the literal /help/sharing/broadcasts key and needs re-keying — the redirect covers a visitor, it does not rewrite a stored retrieval key.",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e \"const fs=require('fs');if(!fs.existsSync('content/help/sharing/dispatches.md')){console.error('slug still carries the retired noun');process.exit(1)}\"",
@@ -4452,31 +4452,31 @@
     {
       "id": "SCAN-301",
       "title": "Event detail carries 3-6 avoidable serial round trips after its batched waves",
-      "status": "open",
+      "status": "done",
       "lane": "live",
       "size": "S",
       "source": {
         "file": "app/(main)/events/[slug]/page.tsx",
         "ref": "lines ~720, ~906, ~1699"
       },
-      "detail": "MS25 Phase 3. On the highest-traffic entity page: the ticket-tiers read depends only on event.id but runs serially after the RSVP wave; loadSeriesDates is a serial query that could ride the social wave; listSpacesThatCanAskToHost runs serially for every signed-in non-manager and is itself 3-4 sequential stages. Fold (a) into the RSVP wave and (b)+(c) into the social wave. Theme-P5 touched this page's header region - re-verify line positions after the train.",
+      "detail": "MS25 Phase 3. On the highest-traffic entity page: the ticket-tiers read depends only on event.id but runs serially after the RSVP wave; loadSeriesDates is a serial query that could ride the social wave; listSpacesThatCanAskToHost runs serially for every signed-in non-manager and is itself 3-4 sequential stages. Fold (a) into the RSVP wave and (b)+(c) into the social wave. Theme-P5 touched this page's header region - re-verify line positions after the train. CLOSED 2026-08-25. All three fold into waves that already existed: the ticket-tiers read joins the RSVP wave (it depends only on event.id), and loadSeriesDates + listSpacesThatCanAskToHost join the social wave. Neither move changes WHO anything runs for — the host-ask loader keeps its `myProfileId && !canManage` gate, now as the ternary inside the wave.",
       "verify": {
-        "kind": "manual",
-        "evidence": "Read 2026-08-25 at b79d00a: ticket tiers at :720 after the :580 wave; loadSeriesDates :907; listSpacesThatCanAskToHost :1699 with internal serial stages at host-transfer-actions.ts:215-256. All independent of their preceding awaits.",
-        "checked": "2026-08-25"
+        "kind": "cmd",
+        "cmd": "node -e \"const s=require('fs').readFileSync('app/(main)/events/[slug]/page.tsx','utf8');const serial=['loadSeriesDates','listSpacesThatCanAskToHost'].filter(n=>new RegExp('await\\\\\\\\s+'+n+'\\\\\\\\(').test(s));if(serial.length){console.error('back on its own await: '+serial.join(', '));process.exit(1)};if(!/data: rawTiers \\\\}\\\\] = await Promise.all\\\\(/.test(s)){console.error('ticket tiers no longer ride the RSVP wave');process.exit(1)}\"",
+        "note": "Fails if either read goes back on its own await, or if the tiers read leaves the RSVP wave. Measures the round trips, not the words in the title."
       }
     },
     {
       "id": "SCAN-302",
       "title": "react-markdown ships in the client chunk of every feed-bearing route",
-      "status": "open",
+      "status": "done",
       "lane": "live",
       "size": "S",
       "source": {
         "file": "components/feed/post-replies.tsx",
         "ref": "line 1 -> post-body.tsx"
       },
-      "detail": "MS25 Phase 3. post-card (RSC) renders PostReplies for every post; post-replies is 'use client' and statically imports PostBody -> react-markdown (+remark, ~35-45KB gz), so the chunk downloads on /feed and every circle/channel feed. The shell-weight gate measures the app shell, not route chunks - its documented blind spot. next/dynamic the markdown body inside replies, or pre-render reply bodies server-side.",
+      "detail": "MS25 Phase 3. post-card (RSC) renders PostReplies for every post; post-replies is 'use client' and statically imports PostBody -> react-markdown (+remark, ~35-45KB gz), so the chunk downloads on /feed and every circle/channel feed. The shell-weight gate measures the app shell, not route chunks - its documented blind spot. next/dynamic the markdown body inside replies, or pre-render reply bodies server-side. CLOSED 2026-08-25, and the re-test found the premise had already half-expired: post-card.tsx and post-body.tsx are Server Components, so react-markdown ships no client bytes through them, and post-replies.tsx — the one client module on the path — already mounts the body through next/dynamic. The CLASS is what stayed open, and SCAN-506 closes it.",
       "verify": {
         "kind": "grep-present",
         "pattern": "next/dynamic",
@@ -4506,31 +4506,31 @@
     {
       "id": "SCAN-304",
       "title": "The leaderboard Consistency widget fans out ~36 queries for 12 mates",
-      "status": "open",
+      "status": "done",
       "lane": "live",
       "size": "S",
       "source": {
         "file": "components/widgets/leaderboard/leaderboard-consistency.tsx",
         "ref": "lines 79-88"
       },
-      "detail": "MS25 Phase 3. mateIds.map(getPracticeStreak) - each call resolves the member day (serial profiles read) then a 2-query wave, so 12 mates cost ~36 queries plus a follow-up profiles read per render. Batch: one profiles .in() for zones, one practice_logs .in() for the window, then derive per-mate in memory - derivePracticeStreak is already pure.",
+      "detail": "MS25 Phase 3. mateIds.map(getPracticeStreak) - each call resolves the member day (serial profiles read) then a 2-query wave, so 12 mates cost ~36 queries plus a follow-up profiles read per render. Batch: one profiles .in() for zones, one practice_logs .in() for the window, then derive per-mate in memory - derivePracticeStreak is already pure. CLOSED 2026-08-25. Two batched reads (one profiles .in() for zone + meta + name, one windowed practice_logs .in()) replace ~36 round trips, and the per-mate streak is DERIVED through the same pure functions the reader uses — memberDay, frozenDaysFrom, derivePracticeStreak, isResting — so the rules are called, not restated. The logs read is chunked (MATE_LOG_CHUNK) because PostgREST truncates at max_rows=1000 and practice_logs is unique on (profile_id, practice_id, logged_for), not on the day: one .in() over twelve mates x a 400-day window is not guaranteed to fit, and a truncated response drops the OLDEST rows, which is exactly where a streak walk ends. components/widgets/leaderboard/streak-nudge-wiring.test.ts pins both halves.",
       "verify": {
         "kind": "cmd",
-        "cmd": "node -e \"const s=require('fs').readFileSync('components/widgets/leaderboard/leaderboard-consistency.tsx','utf8');if(s.includes('getPracticeStreak(')){console.error('still one streak resolution per mate');process.exit(1)}\"",
-        "note": "Passes when the per-mate fan-out is gone in favor of batched reads."
+        "cmd": "node -e \"const fs=require('fs');const strip=s=>s.replace(/\\/\\*[\\s\\S]*?\\*\\//g,'').replace(/([^:])\\/\\/.*$/gm,(m,a)=>a).replace(/^\\s*\\/\\/.*$/gm,'');const c=strip(fs.readFileSync('components/widgets/leaderboard/leaderboard-consistency.tsx','utf8'));const n=(c.match(/getPracticeStreak\\(/g)||[]).length;if(n!==1){console.error('expected exactly one getPracticeStreak call in code (the viewer own streak); found '+n);process.exit(1)}if(!c.includes('derivePracticeStreak(')){console.error('the mates are no longer derived from batched reads');process.exit(1)}if(!/\\.limit\\(MATE_LOG_ROW_BUDGET\\)/.test(c)){console.error('the batched practice_logs read lost its row budget, so it can truncate a mate window silently');process.exit(1)}\"",
+        "note": "Counts in CODE, after comments are stripped — the file explains at length what it replaced, and a probe that counted those sentences would fail on its own fix. The ORIGINAL probe forbade the string outright and was wrong in the direction that matters: the viewer own streak is a correct single read. Exactly one call is the honest count; derivePracticeStreak proves the mates went the batched way; the row budget proves the window cannot truncate into a shortened streak."
       }
     },
     {
       "id": "SCAN-305",
       "title": "Opening a DM thread blocks its render on the mark-as-read write",
-      "status": "open",
+      "status": "done",
       "lane": "live",
       "size": "XS",
       "source": {
         "file": "app/(main)/messages/[id]/page.tsx",
         "ref": "lines 118-122"
       },
-      "detail": "MS25 Phase 3. The conversation_participants last_read_at UPDATE sits between data assembly and JSX on every thread open. Move it behind next/server's after() (verify the exact API in node_modules/next/dist/docs first - this Next differs from training data). The sibling serial-await nits on /circles and /channels pages are folded here; both pages are train-claimed today, re-check after the merge window.",
+      "detail": "MS25 Phase 3. The conversation_participants last_read_at UPDATE sits between data assembly and JSX on every thread open. Move it behind next/server's after() (verify the exact API in node_modules/next/dist/docs first - this Next differs from training data). The sibling serial-await nits on /circles and /channels pages are folded here; both pages are train-claimed today, re-check after the merge window. CLOSED 2026-08-25. The last_read_at write moves behind after() from next/server (stable since v15.1.0 — verified in node_modules/next/dist/docs before use, per AGENTS.md), so the thread renders without waiting on it.",
       "verify": {
         "kind": "grep-present",
         "pattern": "after\\(",
@@ -4631,18 +4631,18 @@
     {
       "id": "SCAN-501",
       "title": "Rule on the eight verified orphans in one sitting",
-      "status": "open",
+      "status": "done",
       "lane": "hygiene",
       "size": "S",
       "source": {
         "file": "docs/META-SCAN-STATUS.md",
         "ref": "meta-scan 2026-08-25, orphan sweep"
       },
-      "detail": "MS25 Phase 5. Verified dead with full reference searches: lib/theme/index.ts (barrel, 0 importers, 13 files bypass it - theme train may adopt, rule after it lands), createSpacePlanCheckout (ADR-880 adapter, test-only), sendBookingReminderEmail + sendListingClaimInviteEmail (superseded/never-wired), lib/founding/status.ts residue (reserveFounding, foundingBusinessTakenInCity), EditModeButton, SpotlightBlocks export + the 6-export spotlight draft/theme layer (guestbook train may adopt first). Each gets delete-or-adopt, one sitting, so it stops dribbling.",
+      "detail": "MS25 Phase 5. Verified dead with full reference searches: lib/theme/index.ts (barrel, 0 importers, 13 files bypass it - theme train may adopt, rule after it lands), createSpacePlanCheckout (ADR-880 adapter, test-only), sendBookingReminderEmail + sendListingClaimInviteEmail (superseded/never-wired), lib/founding/status.ts residue (reserveFounding, foundingBusinessTakenInCity), EditModeButton, SpotlightBlocks export + the 6-export spotlight draft/theme layer (guestbook train may adopt first). Each gets delete-or-adopt, one sitting, so it stops dribbling. CLOSED 2026-08-25: seven rulings, all DELETE, each re-verified tonight with four fresh searches over the whole tree (static importers, dynamic import, bare name across app/components/lib/ scripts/supabase/test/docs/.github/content, own-test-only) rather than trusting the archived scan. lib/theme/index.ts (barrel, 30 files import submodules directly), createSpacePlanCheckout (+ its two now-dead imports; ADR-880 becomes STRUCTURAL — one door, so the two prices cannot diverge), sendBookingReminderEmail (buildBookingReminderEmail is shared and stays), sendListingClaimInviteEmail (+ its three module-private renderers, which had it as their only caller), reserveFounding + foundingBusinessTakenInCity (premise re-tested: no /founders route exists and lib/founding/business-checkout.ts is already retired), EditModeButton, SpotlightBlocks and SITE_NAV_MEMBER. Two test files were rewritten rather than dropped — every unique assertion was re-pointed at the surviving door. TWO FOLLOW-UPS this created, both on SCAN-502: useEditMode().toggle now has no caller, and offersPeriod lost its last external consumer (still used internally, so it is an unexport, never a delete).",
       "verify": {
-        "kind": "manual",
-        "evidence": "Import-graph scan 2026-08-25 over 4,391 files (static+dynamic+registry+string refs): zero importers for each named item outside its own tests. Two items deliberately wait on the open theme/spotlight branches.",
-        "checked": "2026-08-25"
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const path=require('path');const D=['app','components','lib','scripts','supabase','test'];const EXT=new Set(['.ts','.tsx','.js','.jsx','.mjs','.cjs','.mts','.cts','.sql']);const DEAD=['createSpacePlanCheckout','sendBookingReminderEmail','sendListingClaimInviteEmail','reserveFounding','foundingBusinessTakenInCity','EditModeButton','SITE_NAV_MEMBER'];const CONTROL='StartEditingLink';const strip=s=>s.replace(/\\/\\*[\\s\\S]*?\\*\\//g,'').replace(/([^:])\\/\\/.*$/gm,(m,a)=>a).replace(/^\\s*\\/\\/.*$/gm,'');const files=[];const walk=d=>{let ents;try{ents=fs.readdirSync(d,{withFileTypes:true})}catch{return}for(const e of ents){if(e.name==='node_modules'||e.name==='.next'||e.name.startsWith('.'))continue;const p=path.join(d,e.name);if(e.isDirectory())walk(p);else if(EXT.has(path.extname(e.name)))files.push(p)}};for(const d of D)walk(d);if(files.length<2000){console.error('probe cannot run: walked only '+files.length+' source files, so a clean verdict would be about the WALK');process.exit(1)}const bad=[];let control=0;for(const f of files){const raw=fs.readFileSync(f,'utf8');let code=null;if(raw.includes(CONTROL)){code=strip(raw);if(code.includes(CONTROL))control++}for(const n of DEAD){if(!raw.includes(n))continue;if(code===null)code=strip(raw);if(code.includes(n))bad.push(f+' :: '+n)}}if(control===0){console.error('probe control failed: '+CONTROL+' is live in an edited file and was not found, so this search proves nothing');process.exit(1)}if(bad.length){console.error('orphan still in executable code:\\n'+bad.join('\\n'));process.exit(1)}\"",
+        "note": "Measures EXECUTABLE code, not text: every deleted symbol deliberately survives in a comment saying what was removed and why, and a probe that forbade those would push a future session to erase the record to go green. Carries its own control — the same search must still find StartEditingLink, a live sibling in one of the edited files — so it cannot pass by having been broken."
       }
     },
     {
@@ -4650,15 +4650,15 @@
       "title": "One trim sweep over the ~154 lib modules carrying dead exports",
       "status": "open",
       "lane": "hygiene",
-      "size": "M",
+      "size": "S",
       "source": {
         "file": "docs/META-SCAN-STATUS.md",
         "ref": "meta-scan 2026-08-25, orphan sweep"
       },
-      "detail": "MS25 Phase 5. Token-presence scan found ~154 lib modules with at least one export referenced nowhere outside their own file/tests (standouts: airwaves read-layer getters, journey-plans helpers, maps/approximate). Under-reports by construction (a name in a comment counts as a reference). One deliberate sweep with the scan script re-run fresh - not 154 rows.",
+      "detail": "MS25 Phase 5. RE-SCOPED 2026-08-25 by an exact-identifier index over the whole tree (the original number came from a token-presence scan, which under-reports by construction). Two findings changed the row. (1) THE ORIGINAL SCAN MISSES .mts: lib/help/drift.ts and lib/ai/autodoc.ts scored fully dead and are both LIVE, consumed by scripts/help-drift.mts and scripts/help-autodoc.mts. Any sweep that skips .mts/.cts/.cjs/.yml deletes live code — this is the load-bearing correction. (2) ~85% of the row is not deletable: of 860 dead value exports across 707 lib modules, 734 are used INSIDE their own file, so the sweep for those is dropping the `export` keyword, not deleting. Only 126 are declaration-only. Exactly one module is fully dead — lib/help/drift.ts — and that one is the false positive above. So this is an API-surface trim plus a small delete list, not the M-sized code sweep the row described. A ranked 15 is scoped (each with all four searches clean), with three flagged for a ruling before touching, not a sweep: lib/verticals/registry.ts, lib/nav/admin-rail.ts and lib/admin/modules/spine.ts are registry/menu-adjacent — a parallel rail registry with no consumer is a MENU-CONTRACT finding in its own right. Two items carried over from SCAN-501: useEditMode().toggle (no caller since EditModeButton went) and offersPeriod (internal-only now; unexport, and its own test updates with it). Excluded on purpose: lib/profile/spotlight-flags.ts belongs to SCAN-501.",
       "verify": {
         "kind": "manual",
-        "evidence": "Scan output archived in the 2026-08-25 session scratchpad (orphan-scan.py + refine-out.txt); spot-verified 10 modules by hand. A sweep re-runs the scan rather than trusting the archive.",
+        "evidence": "Exact-identifier index re-run 2026-08-25 over the whole tree INCLUDING .mts/.cts/.cjs: 860 dead value exports / 707 lib modules, of which 126 are declaration-only. Ranked 15 hand-verified with four searches each. The archived 2026-08-25 token-presence output is superseded and must not be the basis of a sweep.",
         "checked": "2026-08-25"
       }
     },
@@ -4722,18 +4722,18 @@
     {
       "id": "SCAN-506",
       "title": "Route chunks have no weight gate: the shell gate's documented blind spot",
-      "status": "open",
+      "status": "done",
       "lane": "hygiene",
       "size": "S",
       "source": {
         "file": "docs/META-SCAN-STATUS.md",
         "ref": "meta-scan 2026-08-25, perf sweep"
       },
-      "detail": "MS25 Phase 5. check:shell-weight watches the app shell's eager JS and named admin fingerprints, but a heavy library statically imported by a route-level client component (SCAN-302's react-markdown) is invisible to it. A small fingerprint gate over the member hot-route chunks (feed/events/circles/messages) closes the class, not just the instance.",
+      "detail": "MS25 Phase 5. check:shell-weight watches the app shell's eager JS and named admin fingerprints, but a heavy library statically imported by a route-level client component (SCAN-302's react-markdown) is invisible to it. A small fingerprint gate over the member hot-route chunks (feed/events/circles/messages) closes the class, not just the instance. CLOSED 2026-08-25 as ARM C of check:shell-weight, and it is a FINGERPRINT arm, never a budget: from each member hot route page.tsx (feed/events/circles/messages — page, not layout, because the layout IS the shell Arms A/B already measure) it walks the static import graph, marks everything below the first `use client` boundary as client code, and fails if a NAMED heavy module is statically imported inside that subtree. What it can prove without a build is the half a build cannot prove cheaply: a static import below a client boundary is not code-split by any bundler setting, so \"statically reachable\" IS \"in that route first-load JS\". dynamic() and bare import() are not static edges and are correctly invisible. It CANNOT see bytes or a chunking change — only Arms A/B can, and only on the artifact. Reading on the real tree: 0 leaks, 668 client modules walked across the four routes, 2 detector controls firing. IT LIVES IN THE CI HALF (scripts/check-shell-weight.test.ts), NOT in postbuild, for two reasons: main() only runs on Vercel, i.e. after the merge, and a filesystem-only arm has no reason to wait for a build; and in postbuild it broke the artifact arms own mutation fixtures, which run the script from a cwd that is deliberately not this repo, where its controls do not exist. Teaching it to skip when the source tree is absent would have given it a way to pass without looking (ADR-970). Two controls keep it honest: two REAL client files that genuinely import a heavy library today, and a 150-module walk floor against 668 measured. Proven by mutation: a static react-markdown import added to components/feed/post-replies.tsx turns it red and names the chain feed/page.tsx -> feed-list.tsx -> post-card.tsx -> post-replies.tsx.",
       "verify": {
-        "kind": "manual",
-        "evidence": "check:shell-weight's own header scopes it to the shell + admin fingerprints; SCAN-302 demonstrates the escape. Gate design not yet written.",
-        "checked": "2026-08-25"
+        "kind": "cmd",
+        "cmd": "node -e \"import('./scripts/check-shell-weight.mjs').then(m=>{const fs=require('fs');for(const c of m.ROUTE_HEAVY_CONTROLS){if(!fs.existsSync(c.file)){console.error('Arm C detector control is gone: '+c.file+' — repoint it, never delete it');process.exit(1)}const s=fs.readFileSync(c.file,'utf8');if(!m.declaresUseClient(s)||!m.heavyModulesIn(s).includes(c.heavy)){console.error('Arm C detector control no longer fires: '+c.file+' — the detector broke, or the file was fixed and the row needs repointing');process.exit(1)}}let t=0;const leaks=[];for(const e of m.HOT_ROUTE_ENTRIES){if(!fs.existsSync(e)){console.error('Arm C hot route is gone: '+e);process.exit(1)}const w=m.walkRouteClientGraph(process.cwd(),e);t+=w.clientFiles.size;for(const l of w.leaks)leaks.push(e+'  <-  '+l.heavy+'  imported by  '+l.file)}if(t<m.CLIENT_GRAPH_FLOOR){console.error('Arm C walked only '+t+' client modules, under the floor of '+m.CLIENT_GRAPH_FLOOR+' — the walk is not descending');process.exit(1)}if(leaks.length){console.error('a heavy library is statically imported by client code on a member hot route:\\n'+leaks.join('\\n'));process.exit(1)}}).catch(e=>{console.error('Arm C could not run: '+e.message);process.exit(1)})\"",
+        "note": "Runs Arm C itself — both controls included — so it fails when the ARM stops firing as well as when a route regresses. Not `vitest run`: LIVE-034 forbids a probe that spawns a test runner, and this way costs 0.2s instead of 1.9s. A grep for the words in the title would pass by existing."
       }
     },
     {

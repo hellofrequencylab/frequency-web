@@ -412,7 +412,7 @@ describe('saveChannelEdits writes the whole record in one commit', () => {
     // A sentence, per this test's own name. An RLS denial names a table and a privilege, which
     // is a fact about our schema and not something an operator can act on (SCAN-404).
     expect(res).toEqual({ error: 'This Channel did not save. Try again in a moment.' })
-    expect(res.error).not.toContain('permission denied')
+    expect(JSON.stringify(res)).not.toContain('permission denied')
     expect(revalidatePath).not.toHaveBeenCalled()
   })
 })
@@ -440,7 +440,7 @@ describe('deleteChannel', () => {
     // A sentence, which is what this test's name always asked for: the pg constraint text is
     // logged server-side and never handed to the operator (SCAN-404).
     expect(res).toEqual({ error: 'This Channel could not be deleted. Try again in a moment.' })
-    expect(res.error).not.toContain('foreign key')
+    expect(JSON.stringify(res)).not.toContain('foreign key')
     expect(revalidatePath).not.toHaveBeenCalled()
   })
 })

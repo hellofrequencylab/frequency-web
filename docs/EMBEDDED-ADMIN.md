@@ -377,7 +377,8 @@ Hubs · Nexuses (see the §7 *Progress* table). ⏳ **Left in `/admin/*`:** the 
 > ✅ In-place **Circle / Hub / Nexus / Event** settings modules (capability loaders in
 > `load-capabilities.ts`; an `event` scope + `event.editSettings` in the resolver). ✅ The
 > **inline tuning layer**: page-level **Edit Mode** (`useEditMode`, `?edit=1`), a discoverable
-> **Edit button** (`EditModeButton`), `InlineText` click-to-edit across Circle / Hub / Nexus /
+> entry point (`StartEditingLink` — the `EditModeButton` toggle pill this line used to name was
+> deleted on 2026-08-25 with zero callers, SCAN-501), `InlineText` click-to-edit across Circle / Hub / Nexus /
 > Event (titles; Circle + Event descriptions) via field-level `update*Field` actions, plus
 > **inline Cover** on Circle (`InlineCover` → `uploadCircleCover` / `removeCircleCover`). ⏳ Still
 > open: the `loadCapabilitiesForScope` dispatcher and the server-composed **`@admin` slot**:

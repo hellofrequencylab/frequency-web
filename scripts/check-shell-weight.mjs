@@ -34,6 +34,38 @@
 // shell chunk every member downloads. A fingerprint in the shell's eager chunks is not evidence of
 // a module being *near* the shell — it is the module's compiled body, in the bytes, on every route.
 //
+//   ARM C · THE ROUTE CHUNK (SCAN-506). Arms A and B watch ONE manifest entry, the shell layout.
+//           A heavy library pulled in by a ROUTE's own client component is invisible to both: it
+//           never enters the shell entry, it lands in that route's chunk, and every member who
+//           opens that route pays for it. That blind spot is documented above ("what became
+//           statically reachable from app-shell.tsx") and it is a real escape, not a theoretical
+//           one — SCAN-302 found react-markdown on the feed path by hand, which is how this arm
+//           came to exist. Arm C is the SOURCE half of that class: from each member hot route's
+//           `page.tsx` it walks the static import graph, marks everything below the first
+//           `'use client'` boundary as client code, and fails if a NAMED heavy module is statically
+//           imported anywhere inside that subtree.
+//
+// ⚠️ ARM C IS FILESYSTEM-ONLY AND SAYS SO OUT LOUD, because that is the thing about it most likely
+// to be over-read later. It runs with or without `.next` and it measures REACHABILITY, not bytes:
+//   • It is a FINGERPRINT arm, the route-level twin of Arm B, never a budget. A heavy dependency
+//     nobody has NAMED in HEAVY_CLIENT_MODULES is not caught. There is no route byte ceiling here,
+//     because computing one honestly needs the artifact and the artifact needs a build.
+//   • What it CAN prove without a build is the half a build cannot prove cheaply: a static import
+//     from inside a client subtree is not code-split by any bundler setting, so "statically
+//     imported below a 'use client' boundary on this route" IS "in this route's first-load JS".
+//     `dynamic()` and bare `import()` are not static edges, so they are correctly invisible to it.
+//   • It cannot see a bundler/chunking change that voids the split. Only Arms A and B can, and only
+//     on the artifact. Neither half is redundant — this is the same two-half split
+//     scripts/check-shell-weight.test.ts describes for Arms A/B, arrived at from the other side.
+//
+// ✅ ARM C IS ENFORCED AT PR TIME, IN scripts/check-shell-weight.test.ts — NOT in `main()` below.
+// Arms A/B measure the artifact, so `postbuild` is their only possible home; Arm C reads source, so
+// `pnpm test` is its only honest one (the note above `main()` says why wiring it into postbuild was
+// wrong in both directions). Everything that wiring needs is exported from here: HOT_ROUTE_ENTRIES,
+// HEAVY_CLIENT_MODULES, ROUTE_HEAVY_CONTROLS, CLIENT_GRAPH_FLOOR, walkRouteClientGraph,
+// staticModuleEdges, declaresUseClient, heavyModulesIn. Both controls are asserted there too, so
+// "no leaks" can never mean "nothing was examined".
+//
 // Runs as `postbuild`, so it runs on Vercel's real build. CI never builds.
 // ─────────────────────────────────────────────────────────────────────────────
 import { readFileSync, existsSync, statSync, globSync } from 'node:fs'
@@ -211,15 +243,204 @@ export function staticAdminImports(source) {
   return out
 }
 
+// ── ARM C · THE ROUTE CHUNK (SCAN-506) ───────────────────────────────────────────────────────
+// The member hot routes. Deliberately `page.tsx` and NOT the layout: the layout IS the shell, and
+// the shell is what Arms A and B already measure to the byte. What this arm adds is the delta a
+// route contributes ON TOP of the shell, which is the half nothing was watching.
+//
+// A missing entry is a FAILURE, not a skip. A route file that moved would silently reduce this arm
+// to "I looked at three routes and one empty string", which is the vacuous pass the whole file is
+// organised against.
+export const HOT_ROUTE_ENTRIES = [
+  'app/(main)/feed/page.tsx',
+  'app/(main)/events/page.tsx',
+  'app/(main)/circles/page.tsx',
+  'app/(main)/messages/page.tsx',
+]
+
+/** The named heavy libraries. A prefix match, so `@tiptap/react` also catches `@tiptap/react/menus`.
+ *
+ *  ⚠️ EVERY ROW MUST BE A REAL DEPENDENCY of this repo. A row naming a package that is not installed
+ *  can never fire, and a list of rows that can never fire reads as coverage (ADR-970). Verified
+ *  against package.json on 2026-08-25: react-markdown ^10.1.0, maplibre-gl ^6.5.0, @tiptap/* ^3.30.2.
+ *  The list may GROW; a row leaves only when the dependency does. */
+export const HEAVY_CLIENT_MODULES = [
+  // ~35-45 KB gz with the remark pipeline behind it — the number components/feed/post-replies.tsx
+  // cites as its reason for mounting PostBody through `dynamic()`. This is SCAN-302's library.
+  'react-markdown',
+  // The map engine. Hundreds of KB, and the reason components/maps/ is a seam at all (ADR-901).
+  'maplibre-gl',
+  // The rich-text editor. Only ever wanted on an editing surface, never on a reading one.
+  '@tiptap/react',
+  '@tiptap/starter-kit',
+  '@tiptap/pm',
+  '@tiptap/extension-link',
+  '@tiptap/extension-placeholder',
+]
+
+/** THE DETECTOR CONTROLS. Real files, not fixtures: each is a `'use client'` module that really does
+ *  statically import a heavy library today, so the classifier must report it. If a control stops
+ *  firing, the detector is broken (or the file was fixed) and EVERY "no heavy module on this route"
+ *  verdict above it is "I never looked" rather than "I looked and it was clean".
+ *
+ *  🔴 IF ONE BREAKS BECAUSE SOMEONE FIXED THE FILE, THAT IS GOOD NEWS AND THE FIX IS TO REPOINT THE
+ *  ROW, never to delete the control. `app/(main)/nearby/[id]/dispatch-body.tsx` is a live instance
+ *  of the very class this arm exists to catch, sitting on a route HOT_ROUTE_ENTRIES does not name;
+ *  it is used as a control precisely because it is real. */
+export const ROUTE_HEAVY_CONTROLS = [
+  { file: 'app/(main)/nearby/[id]/dispatch-body.tsx', heavy: 'react-markdown' },
+  { file: 'components/maps/maplibre-canvas.tsx', heavy: 'maplibre-gl' },
+]
+
+/** THE WALK CONTROL. The four entries reached 668 client-side modules on 2026-08-25 (366/30/178/94).
+ *  A floor well under that catches the failure where the resolver breaks and the walk quietly visits
+ *  the entry file and nothing else — at which point "0 leaks" means "0 files examined". */
+export const CLIENT_GRAPH_FLOOR = 150
+
+const MODULE_EXTS = ['.tsx', '.ts', '.jsx', '.js', '.mjs']
+
+/** Static module edges: `import ... from 'x'`, bare `import 'x'`, and `export ... from 'x'`.
+ *
+ *  Re-exports are edges too — a barrel that `export * from './heavy-thing'` pulls the body just as
+ *  hard as an import does, and leaving them out is how a graph walk gets talked past by an index.ts.
+ *  `import type` / `{ type A }` are erased by the compiler and are not runtime edges. `import()` and
+ *  `dynamic(() => import(...))` are NOT matched, which is the point: those are the split.
+ *
+ *  Pure and exported so the CI half can run it on the real files. */
+export function staticModuleEdges(source) {
+  const out = []
+  const re = /(?:^|\n)\s*(?:import|export)\s+(?!type[\s{])(?:([^'"();]*?)\s*from\s*)?['"]([^'"]+)['"]/g
+  let m
+  while ((m = re.exec(source))) {
+    const clause = (m[1] ?? '').trim()
+    const braces = /\{([^}]*)\}/.exec(clause)
+    if (braces && !clause.slice(0, braces.index).replace(/,\s*$/, '').trim()) {
+      const names = braces[1].split(',').map((x) => x.trim()).filter(Boolean)
+      if (names.length > 0 && names.every((n) => /^type\s/.test(n))) continue
+    }
+    out.push(m[2])
+  }
+  return out
+}
+
+/** Does this source open a client boundary? The directive must be the first STATEMENT, but license
+ *  headers and the repo's long comment banners legally precede it, so leading comments are skipped
+ *  rather than assumed absent — reading only line 1 would classify half this codebase as server. */
+export function declaresUseClient(source) {
+  let rest = source.replace(/^﻿/, '')
+  for (;;) {
+    const trimmed = rest.replace(/^\s+/, '')
+    if (trimmed.startsWith('//')) { rest = trimmed.slice(trimmed.indexOf('\n') + 1); continue }
+    if (trimmed.startsWith('/*')) {
+      const end = trimmed.indexOf('*/')
+      if (end === -1) return false
+      rest = trimmed.slice(end + 2)
+      continue
+    }
+    return /^['"]use client['"]/.test(trimmed)
+  }
+}
+
+/** The heavy modules a single source statically pulls, by name (prefix match on the package). */
+export function heavyModulesIn(source, heavy = HEAVY_CLIENT_MODULES) {
+  const hit = new Set()
+  for (const spec of staticModuleEdges(source)) {
+    const h = heavy.find((x) => spec === x || spec.startsWith(x + '/'))
+    if (h) hit.add(h)
+  }
+  return [...hit]
+}
+
+/** Walk one route's static graph from `entryRel`, marking everything below the first `'use client'`
+ *  as client code, and report the heavy modules statically imported inside that subtree.
+ *
+ *  Returns `{ clientFiles, leaks }`. A file is visited once per boundary state, because the same
+ *  module can legitimately be reached both server-side and client-side and only the client visit is
+ *  a leak. Only `@/` and relative specifiers are followed: tsconfig declares exactly one alias
+ *  (`@/*` -> `./*`, verified 2026-08-25), so nothing else resolves to a file in this repo.
+ *
+ *  Pure apart from reads, and exported for the CI half. */
+export function walkRouteClientGraph(rootDir, entryRel, heavy = HEAVY_CLIENT_MODULES) {
+  const resolveLocal = (spec, fromFile) => {
+    let base
+    if (spec.startsWith('@/')) base = path.join(rootDir, spec.slice(2))
+    else if (spec.startsWith('.')) base = path.resolve(path.dirname(fromFile), spec)
+    else return null
+    for (const e of MODULE_EXTS) {
+      const p = base + e
+      if (existsSync(p) && statSync(p).isFile()) return p
+    }
+    if (existsSync(base) && statSync(base).isDirectory()) {
+      for (const e of MODULE_EXTS) {
+        const p = path.join(base, 'index' + e)
+        if (existsSync(p)) return p
+      }
+    }
+    if (existsSync(base) && statSync(base).isFile()) return base
+    return null
+  }
+
+  const clientFiles = new Set()
+  const leaks = []
+  const seen = new Set()
+  const queue = [[path.join(rootDir, entryRel), false, [entryRel]]]
+  while (queue.length > 0) {
+    const [file, inClient, chain] = queue.shift()
+    const key = `${file}|${inClient}`
+    if (seen.has(key)) continue
+    seen.add(key)
+    let source
+    try {
+      source = readFileSync(file, 'utf8')
+    } catch {
+      continue
+    }
+    const client = inClient || declaresUseClient(source)
+    const rel = path.relative(rootDir, file)
+    if (client) clientFiles.add(rel)
+    for (const spec of staticModuleEdges(source)) {
+      if (spec.startsWith('@/') || spec.startsWith('.')) {
+        const target = resolveLocal(spec, file)
+        if (target && !target.includes(`${path.sep}node_modules${path.sep}`)) {
+          queue.push([target, client, [...chain, path.relative(rootDir, target)]])
+        }
+      } else if (client) {
+        const h = heavy.find((x) => spec === x || spec.startsWith(x + '/'))
+        if (h) leaks.push({ heavy: h, file: rel, chain })
+      }
+    }
+  }
+  return { clientFiles, leaks }
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 const fail = (msg) => {
   console.error(`\n🔴 check:shell-weight — ${msg}\n`)
   bail(1)
 }
 
+// 🔴 ARM C HAS NO RUNNER IN THIS FILE, ON PURPOSE — its enforcement lives in
+// scripts/check-shell-weight.test.ts, and that is a PROMOTION rather than a demotion.
+//
+// It was briefly wired here, ahead of `main()`'s missing-`.next` return. Two things were wrong with
+// that, and the second is the one that decided it:
+//   1. TIMING. `main()` only ever runs in `postbuild`, i.e. on Vercel, i.e. AFTER the merge that
+//      introduced the regression. Arm C needs no artifact, so paying artifact-gate latency for a
+//      filesystem read meant catching the class one merge later than possible.
+//   2. IT BROKE THE ARTIFACT ARMS' OWN PROOF. Arms A/B are proven by MUTATION: their tests copy this
+//      script into a temp dir and run it against a SYNTHETIC `.next` in a cwd that is deliberately
+//      not this repo (scripts/check-shell-weight-chunk-root.test.ts,
+//      scripts/check-shell-weight-warn-only.test.ts). Arm C resolves its controls and hot routes
+//      against `ROOT`, so in those fixtures it failed on "control does not exist" and swallowed the
+//      arm the fixture existed to exercise. Teaching Arm C to skip when the source tree is absent
+//      would have fixed the symptom by giving it a way to pass without looking — the vacuous pass
+//      this whole file is organised against (ADR-970).
+// So it runs in the CI half instead, where the cwd is ALWAYS the repo root, on every PR, with both
+// of its controls asserted. `pnpm test` is the honest home for a filesystem-only arm.
+
 function main() {
 if (!existsSync(NEXT_DIR)) {
-  console.log('check:shell-weight — no .next/ directory; nothing built, nothing to measure. Skipping.')
+  console.log('check:shell-weight — no .next/ directory; Arms A and B need one, so they are skipped.')
   process.exit(0)
 }
 
