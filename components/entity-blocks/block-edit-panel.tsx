@@ -903,22 +903,26 @@ function FeaturesEditor({
             {textOnCanvas ? (
               <p className="flex-1 pt-1 text-2xs leading-snug text-muted">Edit the title and text on the canvas.</p>
             ) : (
-              <Input
-                value={it.title}
-                placeholder="Title"
-                onChange={(e) => patch(i, { title: e.target.value })}
-                className={compactField}
-              />
+              <label className="block flex-1 space-y-1">
+                <span className={labelCls}>Title</span>
+                <Input
+                  value={it.title}
+                  onChange={(e) => patch(i, { title: e.target.value })}
+                  className={compactField}
+                />
+              </label>
             )}
           </div>
           {!textOnCanvas && (
-            <Textarea
-              rows={2}
-              value={it.text}
-              placeholder="Description"
-              onChange={(e) => patch(i, { text: e.target.value })}
-              className={compactField}
-            />
+            <label className="block space-y-1">
+              <span className={labelCls}>Description</span>
+              <Textarea
+                rows={2}
+                value={it.text}
+                onChange={(e) => patch(i, { text: e.target.value })}
+                className={compactField}
+              />
+            </label>
           )}
           {/* An image (ADR-585): use INSTEAD of the icon for a photo-forward item (cards / spotlight layouts).
               Loom-only, like every other block photo field. */}
@@ -928,24 +932,33 @@ function FeaturesEditor({
             scopeKey={loomScope}
             onChange={(url) => patch(i, { image: url ?? '' })}
           />
-          <Input
-            value={it.price}
-            placeholder="Price (optional), e.g. from $80"
-            onChange={(e) => patch(i, { price: e.target.value })}
-            className={compactField}
-          />
-          <Input
-            value={it.link}
-            placeholder="Link (optional), https://"
-            onChange={(e) => patch(i, { link: e.target.value })}
-            className={compactField}
-          />
-          <Input
-            value={it.cta}
-            placeholder="Button label (optional), e.g. Learn more"
-            onChange={(e) => patch(i, { cta: e.target.value })}
-            className={compactField}
-          />
+          <label className="block space-y-1">
+            <span className={labelCls}>Price (optional)</span>
+            <Input
+              value={it.price}
+              placeholder="e.g. from $80"
+              onChange={(e) => patch(i, { price: e.target.value })}
+              className={compactField}
+            />
+          </label>
+          <label className="block space-y-1">
+            <span className={labelCls}>Link (optional)</span>
+            <Input
+              value={it.link}
+              placeholder="https://"
+              onChange={(e) => patch(i, { link: e.target.value })}
+              className={compactField}
+            />
+          </label>
+          <label className="block space-y-1">
+            <span className={labelCls}>Button label (optional)</span>
+            <Input
+              value={it.cta}
+              placeholder="e.g. Learn more"
+              onChange={(e) => patch(i, { cta: e.target.value })}
+              className={compactField}
+            />
+          </label>
         </div>
       </div>
     )
@@ -1077,21 +1090,25 @@ function CardsEditor({
         <ItemSettingsHeader label={c.title || `Card ${i + 1}`} onBack={() => selectItem(null)} />
         <div className="space-y-1.5 rounded-lg border border-border bg-surface p-2">
           {!textOnCanvas && (
-            <Input
-              value={c.title}
-              placeholder="Card title"
-              onChange={(e) => patch(i, { title: e.target.value })}
-              className={compactField}
-            />
+            <label className="block space-y-1">
+              <span className={labelCls}>Card title</span>
+              <Input
+                value={c.title}
+                onChange={(e) => patch(i, { title: e.target.value })}
+                className={compactField}
+              />
+            </label>
           )}
           {!textOnCanvas && (
-            <Textarea
-              rows={2}
-              value={c.text}
-              placeholder="Card text"
-              onChange={(e) => patch(i, { text: e.target.value })}
-              className={compactField}
-            />
+            <label className="block space-y-1">
+              <span className={labelCls}>Card text</span>
+              <Textarea
+                rows={2}
+                value={c.text}
+                onChange={(e) => patch(i, { text: e.target.value })}
+                className={compactField}
+              />
+            </label>
           )}
           {textOnCanvas && (
             <p className="text-2xs leading-snug text-muted">Edit this card&rsquo;s title and text on the canvas.</p>
@@ -1106,41 +1123,54 @@ function CardsEditor({
           />
 
           {/* Stat box: a big value + a label. Use INSTEAD of a photo for a metric card. */}
-          <div className="flex items-center gap-1.5">
-            <Input
-              value={c.statValue}
-              placeholder="Stat, e.g. 500+"
-              onChange={(e) => patch(i, { statValue: e.target.value })}
-              className={`${compactField} w-28`}
-            />
-            <Input
-              value={c.statLabel}
-              placeholder="Stat label"
-              onChange={(e) => patch(i, { statLabel: e.target.value })}
-              className={compactField}
-            />
+          <div className="flex items-end gap-1.5">
+            <label className="block w-28 space-y-1">
+              <span className={labelCls}>Stat</span>
+              <Input
+                value={c.statValue}
+                placeholder="e.g. 500+"
+                onChange={(e) => patch(i, { statValue: e.target.value })}
+                className={compactField}
+              />
+            </label>
+            <label className="block flex-1 space-y-1">
+              <span className={labelCls}>Stat label</span>
+              <Input
+                value={c.statLabel}
+                onChange={(e) => patch(i, { statLabel: e.target.value })}
+                className={compactField}
+              />
+            </label>
           </div>
 
           {/* Whole-card link + an optional separate button. */}
-          <Input
-            value={c.link}
-            placeholder="Card link (optional), https://"
-            onChange={(e) => patch(i, { link: e.target.value })}
-            className={compactField}
-          />
-          <div className="flex items-center gap-1.5">
+          <label className="block space-y-1">
+            <span className={labelCls}>Card link (optional)</span>
             <Input
-              value={c.buttonLabel}
-              placeholder="Button label"
-              onChange={(e) => patch(i, { buttonLabel: e.target.value })}
-              className={`${compactField} w-1/3`}
-            />
-            <Input
-              value={c.buttonHref}
-              placeholder="Button link, https://"
-              onChange={(e) => patch(i, { buttonHref: e.target.value })}
+              value={c.link}
+              placeholder="https://"
+              onChange={(e) => patch(i, { link: e.target.value })}
               className={compactField}
             />
+          </label>
+          <div className="flex items-end gap-1.5">
+            <label className="block w-1/3 space-y-1">
+              <span className={labelCls}>Button label</span>
+              <Input
+                value={c.buttonLabel}
+                onChange={(e) => patch(i, { buttonLabel: e.target.value })}
+                className={compactField}
+              />
+            </label>
+            <label className="block flex-1 space-y-1">
+              <span className={labelCls}>Button link</span>
+              <Input
+                value={c.buttonHref}
+                placeholder="https://"
+                onChange={(e) => patch(i, { buttonHref: e.target.value })}
+                className={compactField}
+              />
+            </label>
           </div>
         </div>
       </div>
@@ -1206,12 +1236,14 @@ function LinksEditor({
         <div key={i} className="flex items-center gap-1.5">
           <Input
             value={it.label}
+            aria-label={`Link ${i + 1} label`}
             placeholder="Label"
             onChange={(e) => update(items.map((x, j) => (j === i ? { ...x, label: e.target.value } : x)))}
             className={`${compactField} w-1/3`}
           />
           <Input
             value={it.url}
+            aria-label={`Link ${i + 1} web address`}
             placeholder="https://"
             onChange={(e) => update(items.map((x, j) => (j === i ? { ...x, url: e.target.value } : x)))}
             className={compactField}

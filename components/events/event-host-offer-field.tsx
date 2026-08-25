@@ -225,6 +225,7 @@ function HostSpaceSearch({ pending, onPick }: { pending: boolean; onPick: (space
         <Input
           variant="seamless"
           type="text"
+          aria-label="Search Spaces by name"
           value={query}
           onChange={(e) => {
             setQuery(e.target.value)

@@ -35,6 +35,7 @@ export function EmailSignatureCard({ initial, autoDefault }: { initial: string; 
         Added to the bottom of the emails you send from your inbox. Leave it blank to use the default below.
       </p>
       <Textarea
+        aria-label="Email signature"
         value={value}
         onChange={(e) => {
           setValue(e.target.value)

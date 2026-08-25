@@ -370,6 +370,7 @@ export function LoomPicker({
                 <Search className="h-3.5 w-3.5 shrink-0 text-subtle" />
                 <Input
                   variant="seamless"
+                  aria-label="Search this library"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder="Search this library"

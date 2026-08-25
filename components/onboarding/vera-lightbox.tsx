@@ -287,6 +287,7 @@ export function VeraLightbox({
               {!done ? (
                 <div className="flex items-center gap-2">
                   <Input
+                    aria-label="Message to Vera"
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={(e) => { if (e.key === 'Enter') send() }}

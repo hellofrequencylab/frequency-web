@@ -135,6 +135,7 @@ function ReplyComposer({
   onChange,
   onSubmit,
   disabled,
+  label,
   placeholder,
   autoFocus = false,
   divided = false,
@@ -143,6 +144,9 @@ function ReplyComposer({
   onChange: (v: string) => void
   onSubmit: (e: React.FormEvent | React.KeyboardEvent) => void
   disabled: boolean
+  /** The box's permanent name. The placeholder is a prompt, and it is gone the moment
+   *  there is a draft in the box, so it cannot be the only thing naming the field. */
+  label: string
   placeholder: string
   autoFocus?: boolean
   /** Rule the row off from the counts line above it. Post-level only: a nested
@@ -173,6 +177,7 @@ function ReplyComposer({
     >
       <Textarea
         ref={boxRef}
+        aria-label={label}
         // `surface="post"`, not the default white (owner, 2026-08-06: "make all comment and
         // dispatch box backgrounds the same as the post box in every feed"). A `bg-surface`
         // field inside a `bg-surface-post` card was the brightest thing in the post — the
@@ -323,6 +328,7 @@ export function PostReplies({
               onChange={setReplyBody}
               onSubmit={handleReplySubmit}
               disabled={isPending}
+              label={`Reply to ${replyTo.name}`}
               placeholder={`Reply to ${replyTo.name}…`}
               autoFocus
             />
@@ -422,6 +428,7 @@ export function PostReplies({
         onChange={setBody}
         onSubmit={handleSubmit}
         disabled={isPending}
+        label="Your comment"
         placeholder="Add a comment…"
         divided
       />

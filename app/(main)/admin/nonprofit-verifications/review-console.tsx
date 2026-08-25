@@ -8,7 +8,7 @@
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Check, Loader2, X } from 'lucide-react'
-import { Textarea, fieldClasses } from '@/components/ui/field'
+import { Field, Textarea, fieldClasses } from '@/components/ui/field'
 import { isError } from '@/lib/action-result'
 import { approveNonprofitVerification, rejectNonprofitVerification } from './actions'
 
@@ -61,14 +61,16 @@ export function ReviewConsole({ id }: { id: string }) {
         </div>
       ) : (
         <div className="space-y-2">
-          <Textarea
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            placeholder="Why is this being rejected? The owner sees this note."
-            className={fieldClasses}
-            rows={2}
-            maxLength={500}
-          />
+          <Field label="Reason for rejecting">
+            <Textarea
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              placeholder="Why is this being rejected? The owner sees this note."
+              className={fieldClasses}
+              rows={2}
+              maxLength={500}
+            />
+          </Field>
           <div className="flex flex-wrap gap-2">
             <button
               type="button"

@@ -60,6 +60,7 @@ export function FilterBar({
             <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-subtle" aria-hidden />
             <Input
               type="search"
+              aria-label={searchPlaceholder}
               defaultValue={params.get(search) ?? ''}
               placeholder={searchPlaceholder}
               onChange={(e) => setParam(search, e.target.value || null)}
