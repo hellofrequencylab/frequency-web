@@ -93,8 +93,10 @@ export interface Surface {
   path: string
   /** Snapshot + test-title slug. Stable across route renames only if you keep it stable. */
   slug: string
-  /** 'anon' renders signed-out; 'member' needs PW_STORAGE_STATE. */
-  audience: 'anon' | 'member'
+  /** 'anon' renders signed-out; 'member' and 'operator' both need PW_STORAGE_STATE.
+   *  'operator' is a member surface behind the /admin role floor as well as the auth wall
+   *  (lib/admin/guard.ts), so it has one extra way to fail — see operatorDenialReason(). */
+  audience: 'anon' | 'member' | 'operator'
   /** Selectors masked on this surface only (on top of the global list). */
   masks?: readonly string[]
   /**
@@ -376,6 +378,138 @@ export function appSurfaces(
   return surfaces
 }
 
+
+/* ── The operator surfaces (HYG-026, ADR-1128) ──────────────────────────────────
+   🔴 WHY THIS BLOCK EXISTS. Until 2026-08-25 the visual suite's surfaces were, in full:
+   `EDITABLE_PAGES` (parsed above) plus `/discover`. `EDITABLE_PAGES` answers a different
+   question — WHICH PAGES THE PAGE EDITOR MAY EDIT — so what the camera watched was a
+   by-product of an unrelated product decision, and the file contained ZERO '/admin' paths.
+   No operator surface in the product was visually watched at all.
+
+   That was found the only way it could be. A DAWN sweep moved 37 sites; exactly ONE of them
+   sat on a watched surface, and that one produced 4 real failures. The other 36 moved while
+   the run reported "140 passed" — a number that was never evidence the sweep held still.
+
+   The parse stays: it is right, and Lift 5c conversions must keep joining automatically. What
+   changes is that it is now ONE INPUT to a list chosen for COVERAGE, instead of the list. */
+
+/**
+ * The operator routes, CHOSEN BY MEASUREMENT rather than by taste.
+ *
+ * `node scripts/visual-surface-census.mjs` is the measurement, and it re-runs. It counts the
+ * frozen `raw-button-bg` class (through check-adoption.mjs's own corpus, so it cannot drift
+ * from the ratchet) and raw `<button>` opening tags (PROG-DAWN3's own basis), then attributes
+ * them to routes on a DELIBERATELY SHALLOW basis: the files in a route's own directory plus two
+ * import hops. Reading, 2026-08-25, ON THE TREE AFTER PROG-DAWN3 slice 1 (#2266) landed:
+ *
+ *   · 99 raw-button-bg (21.4% of 463) and 518 raw `<button>` (28.8% of 1,799) live in
+ *     `app/(main)/admin/**` + `components/admin/**` — code an operator surface is the ONLY
+ *     way to photograph. None of it was watched.
+ *   · These seven routes hold 47 of the 98 raw-button-bg and 256 of the 481 raw `<button>`
+ *     that all 92 static admin routes can be credited with — 48% / 53% of the operator
+ *     population for 7.5% of the routes.
+ *
+ * 🔴 AN IMPORT IS NOT A RENDER, so every number here is an UPPER BOUND on what the camera
+ * sees. The census header records the measurement that proves it matters: a FULL transitive
+ * closure credits fourteen unrelated admin routes with the same 71 files, because a registry
+ * deep in the graph imports most of the product. Widening this list on a transitive number
+ * would buy coverage that does not exist.
+ *
+ * 🔴 AND `/admin` IS FIRST FOR A REASON THAT IS NOT ITS OWN DEBT. Whichever operator route
+ * comes first buys the shared admin chrome — the sub-nav band, the Ask-Vera search bar, the
+ * info rail, the page dock, the footer (`app/(main)/admin/layout.tsx`) — which nothing else in
+ * the registry renders. The console index is the honest place to put that.
+ */
+const OPERATOR_PATHS: readonly { readonly path: string; readonly why: string }[] = [
+  { path: '/admin', why: 'The console index — and the only surface that photographs the shared admin chrome (sub-nav, search band, info rail, page dock, footer). 6 raw-button-bg / 28 raw <button> of its own.' },
+  { path: '/admin/library', why: 'Highest measured operator route: 12 raw-button-bg / 73 raw <button>.' },
+  { path: '/admin/marketing/nurture', why: 'Second: 9 raw-button-bg / 65 raw <button>, and the entry point to the email-studio cluster.' },
+  { path: '/admin/crew-tasks', why: '7 raw-button-bg / 17 raw <button> in two files — the densest ratio in the admin tree.' },
+  { path: '/admin/crm', why: 'The Resonance CRM console head: 5 / 18 here, in front of the components/crm + components/admin/crm cluster.' },
+  { path: '/admin/content/practices', why: '4 raw-button-bg / 43 raw <button> — the biggest single button population in the admin tree, a dense table plus its controls.' },
+  { path: '/admin/qr', why: '4 raw-button-bg / 37 raw <button>; the QR studio is button-heavy and composes none of the kit.' },
+]
+
+/**
+ * WHAT WAS DELIBERATELY LEFT OUT, so a later reader does not read this list as "the admin area".
+ *
+ *  · THE OTHER 85 STATIC ADMIN ROUTES. All 92 would be 368 captures on every PR that can move a
+ *    pixel — roughly 18 minutes at the suite's measured ~11.5s/test over 4 workers — to buy the
+ *    remaining 51 raw-button-bg. Seven buys 48% of the population for ~1.5 minutes. Cutting the
+ *    tail is a trade, and it is stated here rather than performed silently: a silent truncation
+ *    reads as coverage, which is the exact failure HYG-026 was filed about.
+ *  · EVERY DYNAMIC ROUTE (`/admin/crm/deals/[...slug]`, `/admin/appearance/[id]`, …). They need
+ *    a seeded id that survives across preview deployments; without one the surface would bounce
+ *    and photograph the wrong page under an operator's name — the `app-room` failure (see
+ *    assertMemberSession) with a different route.
+ *  · THE SEEDER AND DEMO CONSOLES (`/admin/business-seeder` 3/27, `/admin/demo` 3/16). They are
+ *    development fixtures, not operator product, and their content is generated. A button-first
+ *    greedy cover picks `/admin/business-seeder` fifth; it is skipped on that ground, not missed.
+ *  · THE @a11y AND OVERFLOW SUITES. Both read `publicSurfaces()` / `appSurfaces()` and are
+ *    untouched by this change. An operator surface with no row in `a11y-baselines.json` is held
+ *    to `$defaultMax` (0 serious+), so adding them there without a seeded ratchet capture would
+ *    fail PRs on debt that predates them. That is its own change, with its own capture — filed
+ *    as HYG-027.
+ */
+export function operatorSurfaces(): readonly Surface[] {
+  return OPERATOR_PATHS.map(({ path }) => ({
+    path,
+    slug: slugFor(path),
+    audience: 'operator' as const,
+  }))
+}
+
+/**
+ * THE VISUAL SUITE'S OWN SURFACE LIST — the union, and the answer to HYG-026.
+ *
+ * Three inputs, each with a different reason to be here:
+ *   (a) `publicSurfaces()`  — the parsed `EDITABLE_PAGES` routes. Kept as an INPUT so a Lift 5c
+ *       template conversion still joins the matrix the day it lands, with no edit here.
+ *   (b) the public extras inside (a) (`EXTRA_PUBLIC_PATHS`) — routes with no editor row.
+ *   (c) `operatorSurfaces()` — chosen above, by measurement.
+ * plus `appSurfaces()`, the member shell, which was already its own list.
+ *
+ * ⚠️ IT IS A UNION, NOT A REPLACEMENT, and the ORDER of the inputs is not the point — the point
+ * is that (c) can never again be a by-product of (a). If a future reader wants the visual suite
+ * to watch something, this is the function that decides, and `scripts/visual-surface-census.mjs`
+ * is how the argument gets made.
+ */
+export function coverageSurfaces(
+  env?: { roomPath?: string; spaceSlug?: string },
+): readonly Surface[] {
+  return [...publicSurfaces(), ...appSurfaces(env), ...operatorSurfaces()]
+}
+
+/**
+ * Did an OPERATOR surface bounce off the /admin role floor? Returns the reason, or null.
+ *
+ * 🔴 WHY THIS IS A SKIP AND NOT A THROW, when `assertMemberSession` throws for the member shell.
+ * `requireAdminFloor()` (lib/admin/guard.ts) redirects a signed-in NON-STAFF viewer to `/feed`.
+ * So a bounce to `/feed` from an /admin path means exactly one thing: the account behind
+ * `PW_MEMBER_EMAIL` is a member and not an operator. That is an owner-held account fact, not a
+ * defect in the pull request being tested — and a red X meaning "nobody has promoted the e2e
+ * account yet" is the thing e2e.yml's own header says trains people to ignore the check.
+ *
+ * ⚠️ IT IS NOT SILENT, WHICH IS THE WHOLE DIFFERENCE FROM WHAT HYG-026 FOUND. These tests carry
+ * the `@shell` tag, so `shell-reporter.ts` counts them and names every unphotographed operator
+ * route in `$GITHUB_STEP_SUMMARY` on every run. The same treatment `/nearby` gets, for the same
+ * reason: a listed-and-skipping surface is visible; an absent one is not.
+ *
+ * A bounce to /sign-in is NOT handled here — that is a dead credential and it still throws,
+ * through assertMemberSession, because it means the member half of the matrix is lying too.
+ */
+export function operatorDenialReason(page: Page, surface: Surface): string | null {
+  if (surface.audience !== 'operator') return null
+  const landed = currentPathname(page)
+  if (!landed.startsWith('/feed')) return null
+  return [
+    `${surface.path} redirected to ${landed}, which is requireAdminFloor()'s denial target:`,
+    'the account behind PW_MEMBER_EMAIL is signed in and is NOT platform staff, so no operator',
+    'surface can be photographed with it. Give that account web_role admin (or a staff role that',
+    'sees an admin group) and these captures start running — see backlog HYG-027.',
+  ].join(' ')
+}
+
 /** Path to a Playwright storage-state JSON for the beta member account, or undefined. */
 export const STORAGE_STATE: string | undefined =
   process.env.PW_STORAGE_STATE && existsSync(process.env.PW_STORAGE_STATE)
@@ -603,7 +737,7 @@ const SHELL_MARKER = '[data-tour-anchor="content"]'
  * thing someone must fix, so it throws.
  */
 export async function assertMemberSession(page: Page, surface: Surface): Promise<void> {
-  if (surface.audience !== 'member') return
+  if (surface.audience === 'anon') return
   const landed = currentPathname(page)
 
   if (landed.startsWith('/sign-in')) {
