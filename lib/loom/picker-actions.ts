@@ -22,9 +22,12 @@ import {
   listLoomScopeImages,
   listLoomScopeTags,
   insertSpaceLibraryImage,
+  findLibraryAssetBySha256,
   deleteSpaceLibraryAsset,
   type LoomPickAsset,
 } from '@/lib/library/store'
+import { ingestImageBytes } from '@/lib/library/ingest'
+import { readImageDescriptor } from '@/lib/library/image-describe'
 import { classifyLoomUpload, effectiveMime, fallbackExtFor, fallbackMimeFor } from '@/lib/library/upload-kinds'
 import { resolveElement } from '@/lib/elements/store'
 import { elementDef } from '@/lib/elements/registry'
@@ -223,16 +226,30 @@ export async function uploadLoomImage(
   const ext = (file.name.split('.').pop() || fallbackExtFor(target.kind)).toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg'
   const stamp = `${Date.now()}-${Math.round(Math.random() * 1e6).toString(36)}`
   const path = `${spaceId}/${stamp}.${ext}`
-  const bytes = new Uint8Array(await file.arrayBuffer())
+
+  // INGEST (PROG-D1): strip EXIF/XMP/IPTC, checksum the result, read the dimensions — before the
+  // bytes reach storage, so what is stored is what was hashed.
+  const ingested = ingestImageBytes(new Uint8Array(await file.arrayBuffer()), mime)
+
+  // DEDUPE: the same photo, uploaded twice into the same Loom, is one asset. Answer with the row that
+  // is already there rather than storing a second copy of identical bytes. Note this is now
+  // METADATA-INSENSITIVE — two exports of one picture that differ only in their EXIF block hash the
+  // same, because the hash is taken AFTER the strip.
+  const existing = await findLibraryAssetBySha256(spaceId, ingested.sha256)
+  if (existing?.url) return { url: existing.url, id: existing.id }
 
   const { error: upErr } = await admin.storage
     .from(target.bucket)
-    .upload(path, bytes, { contentType: mime || fallbackMimeFor(target.kind), upsert: false })
+    .upload(path, ingested.bytes, { contentType: mime || fallbackMimeFor(target.kind), upsert: false })
   if (upErr) return { error: upErr.message }
 
   const { data: pub } = admin.storage.from(target.bucket).getPublicUrl(path)
   const base = (file.name.replace(/\.[^.]+$/, '') || 'image').slice(0, 120)
   const slug = `${base}-${stamp}`.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
+
+  // The browser's half of ingest (blurhash + palette + pre-downscale dimensions), validated here
+  // because it arrived from a client. Absent on any uploader that has not adopted it yet.
+  const described = readImageDescriptor(formData)
 
   const id = await insertSpaceLibraryImage({
     spaceId,
@@ -242,10 +259,17 @@ export async function uploadLoomImage(
     storagePath: path,
     url: pub.publicUrl,
     mime: mime || fallbackMimeFor(target.kind),
-    bytes: file.size,
+    bytes: ingested.bytes.byteLength,
     kind: 'image',
     createdBy: caller.id,
     source: 'upload',
+    sha256: ingested.sha256,
+    width: ingested.width,
+    height: ingested.height,
+    blurhash: described.blurhash,
+    colors: described.colors,
+    origWidth: described.origWidth ?? ingested.width,
+    origHeight: described.origHeight ?? ingested.height,
   })
   if (!id) {
     await admin.storage.from(target.bucket).remove([path])
