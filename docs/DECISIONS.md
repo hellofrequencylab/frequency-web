@@ -33045,3 +33045,65 @@ contains null values"* names neither the offending count nor the table's size, a
 failed production deploy at 2am should not have to go and query for both. The after-arm catches the
 subtler case: an `ALTER` on an already-NOT-NULL column *also* succeeds, so without it this
 migration could pass while doing nothing, and read in the ledger as if it had done work.
+
+## ADR-1161: the visual gate declined to have an opinion, and I read that as a no (2026-08-25)
+
+**Context.** [ADR-1158](DECISIONS.md) shipped phone navigation on `/discover`. A baseline capture
+against the branch preview then photographed 128 surfaces and printed **`No baseline changes to
+commit`**, with the `/discover` mobile PNG byte-identical to before and no hamburger in its header.
+A positive control from the same run and viewport — `about--dawn-light-mobile.png` — *did* show
+one. On that evidence I concluded the change did not render, re-opened the row, and recorded the
+mechanism as unexplained.
+
+**The change renders.** Production `/discover` at `06bf0e5` serves, immediately after the auth
+cluster:
+
+```html
+<div class="shrink-0 md:hidden"><button type="button" aria-label="Open menu"
+  aria-expanded="false" aria-haspopup="dialog" class="rounded-lg p-2 …
+```
+
+Exactly one `Open menu` and exactly one `md:hidden` in the whole document, on `/discover` and
+`/discover/topics` alike. It always worked.
+
+**What the capture actually said was nothing.** `playwright.config.ts` sets
+`maxDiffPixelRatio: 0.02` globally, with the sound-sounding reason *"tolerate sub-2% pixel drift
+(fonts/AA)"*. The suite takes **full-page** screenshots, and a *ratio* scales with the canvas:
+
+| Surface | Canvas | 2% budget |
+| --- | --- | --- |
+| `/discover` mobile | 390 × 9,675 = 3,773,250 px | **75,465 px** |
+| `/about` mobile | 390 × 9,457 = 3,688,230 px | 73,764 px |
+| `/discover` desktop | 1,280 × 7,538 = 9,648,640 px | **192,972 px** |
+
+A 40 × 40 header control is **1,600 pixels — 2.1% of the mobile budget, 0.042% of the page**. On
+desktop `/discover`, a block of roughly 440 × 440 can change with the gate reporting a pass.
+`pnpm test:e2e:update` runs `playwright test --update-snapshots`, which rewrites a snapshot only
+when the comparison **fails** — so the comparison passed under tolerance, nothing was rewritten,
+and the job printed its "no changes" line.
+
+**Decision.** LIVE-110 closes on the **served HTML**, and its verify block names that evidence
+rather than a source string or a screenshot. LIVE-125 opens on the instrument.
+
+**Consequences, and the epistemics are the point.** Both observations were true and the conclusion
+drawn from their conjunction was false. `/about`'s baseline contains a hamburger because
+[ADR-1118](DECISIONS.md) *added* one before that baseline was captured — not because this gate can
+detect one being added. It was a control for "the suite photographs headers", which I promoted into
+a control for "the suite would notice this control appearing." It cannot.
+
+Two rules fall out. **A gate's silence is not a negative result** — `No baseline changes to commit`
+means "nothing moved by more than 2% of a four-megapixel canvas", and reading it as "nothing moved"
+is reading a tolerance as a measurement. And **a control has to exercise the specific capability
+you are relying on**; a control for a neighbouring capability is worse than none, because it
+launders a guess into a conclusion.
+
+The instrument gap is real beyond this incident: a sub-threshold change both passes `pr-compare`
+**and** fails to be written into the baseline, so the reference drifts further from reality with
+every one, and the next genuine regression is measured against a stale image. The fix is an
+**absolute** `maxDiffPixels` rather than a ratio — but measured against this suite's real capture
+noise across consecutive no-op runs, not guessed, or the gate starts failing on nothing and gets
+routed around, which is [ADR-970](DECISIONS.md)'s entire subject.
+
+I was right to re-open the row: I could not prove the change worked at the time, and shipping a
+"done" I could not evidence is the failure this repo's backlog discipline exists to prevent. I was
+wrong about why, and being right for the wrong reason is not being right.
