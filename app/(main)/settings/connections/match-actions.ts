@@ -9,6 +9,9 @@ import { revalidatePath } from 'next/cache'
 import { getMyProfileId } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
+// The ONE allowed import site of the ephemeris seam (ADR-1138): charts are computed
+// in-process HERE, at save time, and stored — matching only ever reads the stored chart.
+import { computeNatalChart } from '@/lib/astrology/chart'
 import type { BirthData } from '@/lib/match/prefs'
 
 // What a member may declare they're open to. 'community' (the platonic default) and
@@ -41,12 +44,17 @@ export async function saveMatchPrefsAction(input: SaveMatchPrefsInput): Promise<
     const d = input.birthDate.trim()
     if (d === '') {
       patch.birth_data = null
+      patch.natal_chart = null
     } else {
       if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) return fail('Enter your birth date as YYYY-MM-DD.')
       const year = Number(d.slice(0, 4))
       if (year < 1900 || year > 2025) return fail('That birth year looks off.')
       const birth: BirthData = { date: d }
       patch.birth_data = birth
+      // Derived, stored, recomputable (ADR-1138). Deterministic per date, so re-saving is
+      // idempotent; null (unparseable/ephemeris failure) falls back to the sun-sign signal.
+      // Requires migration 20270326000000 (natal_chart column) to be applied first.
+      patch.natal_chart = computeNatalChart(birth)
     }
   }
 

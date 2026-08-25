@@ -1,4 +1,5 @@
 import { notFound, redirect } from 'next/navigation'
+import { after } from 'next/server'
 import Image from 'next/image'
 import Link from 'next/link'
 import { ChevronLeft, LogOut, UsersRound } from 'lucide-react'
@@ -114,12 +115,38 @@ export default async function ConversationPage({
   const { data: rawMessages } = rawMessagesRes
   const messages = ((rawMessages ?? []) as unknown as Message[]).reverse()
 
-  // Mark as read (participants_update_own_last_read policy)
-  await supabase
-    .from('conversation_participants')
-    .update({ last_read_at: new Date().toISOString() })
-    .eq('conversation_id', conversationId)
-    .eq('profile_id', myProfileId)
+  // Mark as read (participants_update_own_last_read policy) — OFF THE CRITICAL PATH.
+  //
+  // This UPDATE used to be AWAITED right here, between the data wave and the JSX, so every single
+  // thread open paid a write's round trip before one pixel could be sent. Nothing below reads it:
+  // `myPart` is used only for the membership guard, and `last_read_at` is never rendered. So it is
+  // scheduled to run AFTER the response instead, via `after` from next/server.
+  //
+  // WHY `after` AND NOT A FLOATING PROMISE: an un-awaited promise in a Server Component can be
+  // cancelled once the response finishes, which would silently lose the mark and leave the thread
+  // showing unread. `after` is the supported primitive — the docs
+  // (node_modules/next/dist/docs/01-app/03-api-reference/04-functions/after.md) describe it as
+  // scheduling "work to be executed after a response (or prerender) is finished", it is usable in
+  // Server Components, and its Version History table records `after` becoming **stable in v15.1.0**
+  // (this repo runs Next 16.3.2, and five server actions here already use it). On Vercel it is
+  // backed by `waitUntil`, so the invocation stays alive until the write settles.
+  //
+  // ⚠️ NO REQUEST API IS CALLED INSIDE THE CALLBACK. The same docs are explicit that a Server
+  // Component "cannot use `cookies`, `headers`, or other Request-time APIs inside `after`" and must
+  // "read it beforehand and pass the values in" — Next throws E1381 on a `cookies()` call there
+  // (server/request/cookies.js). Everything this callback touches was resolved during render:
+  // `supabase` was built above from an already-awaited cookie store (a plain object, not a fresh
+  // `cookies()` call), and `conversationId` / `myProfileId` / `readAt` are captured by value.
+  // The client's cookie WRITE-back path is already wrapped in try/catch (lib/supabase/server.ts),
+  // so a read-only store after the response is a no-op rather than a throw.
+  const readAt = new Date().toISOString()
+  after(async () => {
+    await supabase
+      .from('conversation_participants')
+      .update({ last_read_at: readAt })
+      .eq('conversation_id', conversationId)
+      .eq('profile_id', myProfileId)
+  })
 
   // Identity glyph for the compact takeover bar: the group icon, the peer's avatar,
   // or initials. Kept as a leading element beside the shared PageHeading title.

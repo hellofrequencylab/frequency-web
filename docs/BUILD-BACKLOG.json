@@ -1681,11 +1681,14 @@
         "file": "docs/MASTER-TODO.md",
         "ref": "Housing"
       },
-      "detail": "Natal-chart compatibility beyond the shipped sun-sign quiet-5%, as an opt-in both-sides factor — NEEDS AN EPHEMERIS/COMPUTE DECISION BEFORE BUILD. Alerts are the notification layer on matching RPCs that already exist.\n\n── UNPARKED 2026-08-20 (owner ruling): scheduled into the build-out; sequence in meta.slate. ── LANE CORRECTED 2026-08-24: this row was printing under the DEFERRED heading of `pnpm backlog` while meta.slate scheduled it, which is the working view contradicting the owner ruling it is meant to carry. The ids never moved; only the lane label was wrong.",
+      "detail": "Natal-chart compatibility beyond the shipped sun-sign quiet-5%, as an opt-in both-sides factor — NEEDS AN EPHEMERIS/COMPUTE DECISION BEFORE BUILD. Alerts are the notification layer on matching RPCs that already exist.\n\n── UNPARKED 2026-08-20 (owner ruling): scheduled into the build-out; sequence in meta.slate. ── LANE CORRECTED 2026-08-24: this row was printing under the DEFERRED heading of `pnpm backlog` while meta.slate scheduled it, which is the working view contradicting the owner ruling it is meant to carry. The ids never moved; only the lane label was wrong.\n\n── NATAL HALF SHIPPED 2026-08-25 (ADR-1138): the ephemeris/compute decision is RULED (in-process JS ephemeris astronomy-engine, computed server-side at profile save, stored on member_match_prefs.natal_chart; no external API, never per-request). Charts are date-only v1; both housing match RPCs and the romance lane score stored-chart synastry natal-first with the shipped sun-sign compat as fallback; both-sides opt-in and the quiet 5% weight unchanged. Migration 20270326000000 (apply before its code merges, ADR-1111). REMAINING SCOPE = the alerts half only: the notification layer on the existing match RPCs. The probe below measures that consequence (a housing.match event in the notification registry, ADR-627's one-row-per-type catalog); make it pass to close the row.",
       "verify": {
-        "kind": "manual",
-        "evidence": "Owner-deferred.",
-        "checked": "2026-08-17"
+        "kind": "grep-present",
+        "pattern": "'housing\\.match'",
+        "paths": [
+          "lib/notifications/registry.ts"
+        ],
+        "note": "The alerts half: alerts ship as a registry row (ADR-627) keyed housing.match, which the router then gates + sends. Passes only when that catalog row exists; the shipped natal half is proven by lib/astrology/chart.test.ts + synastry.test.ts in pnpm test, not by this probe."
       }
     },
     {
@@ -3641,11 +3644,11 @@
       "detail": "FOUND 2026-08-24 while fixing LIVE-091, and it is the reason that fix does not reach as far as it looks. LIVE-091 said 'bulk and transactional mail share one queue', which assumes all bulk mail IS queued. It is not. lib/email-studio/send.ts fans a campaign out through the OUTBOX — durable, retried, and now lane-tagged so it can never starve a welcome. lib/spaces/email.ts sendSpaceCampaign sends campaigns INLINE via sendRawEmail, with no outbox row at all: no durability, no retry, no lane, and no dead-letter surface. So a Space campaign that hits the same daily quota that dropped 359 emails on 2026-07-17 does not get deferred and does not get recorded — it just fails, and nothing holds the message. The LIVE-091 lane work cannot reach that path by construction. THE DECISION: route sendSpaceCampaign through enqueueEmail with lane 'bulk' like its sibling, or state deliberately why a Space campaign is allowed to be best-effort while a platform campaign is durable. Two senders with different reliability postures and no recorded reason is the thing to fix either way. ── CLOSED 2026-08-24 by the ROUTE arm (owner ruling). sendSpaceCampaign now enqueues each recipient onto the durable outbox with lane 'bulk' and a dripped run_after off one fan-out clock, exactly like its sibling lib/email-studio/send.ts. The inline sendRawEmail call is gone, which also settles the contradiction that made this a finding: lib/email.ts's own header states 'the spine: queue all email, never send inline (ADR-026)', and this was the one campaign sender violating it. THE RECONCILIATION QUESTION THAT MADE ME DEFER THIS TURNED OUT TO BE ALREADY ANSWERED BY THE SCHEMA. The blocker looked like recordSend writing status 'sent' + resend_id per recipient, which cannot be true at enqueue time. But outreach_sends_status_check already permits queued | sent | delivered | bounced | complained | failed | suppressed — the DB was designed for this async lifecycle all along and only the TypeScript union was narrower. So a campaign row is now 'queued' with no resend_id, the delivery webhook moves it on, and NO MIGRATION was needed. The ledger id still equals the tracking token's send id, so opens and clicks resolve unchanged. Cap accounting is unchanged and still honest: it counts a job we have COMMITTED to send, which is what a fresh countTodaySends will also see. Tests: the suite's mock was re-pointed from sendRawEmail to enqueueEmail (the seam moved, the assertions did not), and the ledger assertion now pins the queued lifecycle including the deliberate ABSENCE of a resend id — asserting one there is precisely what would let this test pass against an inline send it no longer does. 83 files / 1,215 tests green across lib/spaces, lib/queue and lib/email-studio.",
       "verify": {
         "kind": "grep-present",
-        "pattern": "enqueueEmail",
+        "pattern": "enqueue\\(\\s*SPACE_CAMPAIGN_EMAIL_KIND",
         "paths": [
           "lib/spaces/email.ts"
         ],
-        "note": "Passes when the Space campaign sender goes through the durable outbox like its sibling."
+        "note": "Passes when the Space campaign sender goes through the durable outbox like its sibling. Re-pointed 2026-08-25: the 08-24 close enqueued the generic 'email' kind, whose handler DISCARDS the provider id -- so 'the delivery webhook moves it on' was impossible (webhooks match on resend_id), campaign rows stranded at 'queued', and per-Space bounce suppression was blind. Campaigns now enqueue the dedicated kind whose drain handler (runSpaceCampaignEmail) writes resend_id + 'sent' back to the ledger row; the old /enqueueEmail/ pattern matched the broken shape."
       }
     },
     {
@@ -4172,10 +4175,10 @@
         "file": "scripts/check-cache-budget.mjs",
         "ref": "the cold-compile path a trim leaves behind — NOT established as the cause"
       },
-      "detail": "FOUND 2026-08-25 05:26-05:36 UTC while driving the merge queue. Preview build dpl_DYMk7sVcpW8n7xCfupmUmbtbnjqB (#2285, efad250) printed 'Collecting page data using 3 workers ...' at 05:26:05 and emitted NOTHING for the next 10 minutes, against a control that did the whole build in 2m10s. Three builds hung the same way earlier the same night. 🔴 WHY THIS IS LIVE AND NOT HYGIENE: main is protected and merging DEPLOYS, so the same stall on a production build is a production deploy that never lands. ── WHAT IS ESTABLISHED, from the two builds' own logs. They are the SAME BRANCH one docs-only commit apart, so the code is not the variable: (a) ca95b0a restored cache 8erA4jNs, compiled in 46s, finished 2m10s, green; (b) efad250 restored cache 92GM6pY7 — the build whose postbuild had just trimmed .next/cache/turbopack (1621 MiB) — compiled COLD in 113s, then stalled. The cold compile is expected and documented ('Next build: warm install, cold compile'); it costs CPU by design. The STALL is at a later stage and is NOT explained by it. ── 🔴 THREE HYPOTHESES TESTED AND RULED OUT, recorded so nobody re-runs them: (1) NOT the ADR-1064/ADR-1086 fetch-cache deletion. check-cache-budget.mjs protects it — NEVER_TRIM_DIRS = ['fetch-cache','images'], the trim walks only COMPILER_CACHE_DIRS = ['turbopack','rspack','webpack','swc'], an OVERLAP assertion refuses to trim if the lists ever meet, and check-cache-budget-trim.test.ts reconstructs the old bad trim. The gate's '.next/cache 0 MiB' line is not a deleted fetch cache: the 'holds:' line shows the directory contained only .previewinfo, config.json and .rscinfo, so there was no fetch-cache directory to lose. (2) NOT database saturation, which WAS the proven cause of the ~02:40 incident: measured mid-stall at 34/60 connections, 1 active, 0 blocked, no lock waits. (3) NOT build concurrency, the other proven cause: efad250 was the only build running. ── WHAT IS NOT KNOWN: the cause. The leading untested hypothesis is memory pressure — the builder is 4 cores / 8 GB, page data prerenders ~330 routes across 3 workers, and a cold compile denies them every warm module cache; a hung build never reaches the 'Build system report' line that would print 'No memory or disk space problems detected', so absence of that line is not evidence of health. NEXT STEP for whoever picks this up: correlate hung builds against whether their restored cache had been trimmed (the Vercel log's 'Restored build cache from previous deployment (<id>)' line gives the lineage for free), and if the correlation holds, test the memory hypothesis by raising the builder or lowering worker count before touching the trim. Do NOT 'fix' check:cache-budget on this row's suspicion alone: its trim is proven correct by mutation test, and breaking it re-opens the 1.50 GB ceiling that killed two builds. ── 🔴 AMENDED 2026-08-25 05:46: THE CACHE-LINEAGE CORRELATION IS FALSIFIED. When this row was filed, three builds were consistent with 'restored a trimmed cache -> stalls'. A direct control killed it: theme/p5-adoption was re-pushed as 71c9913c5, Vercel restored THE SAME trimmed cache (92GM6pY7 — branch-scoped restore, so the re-push could not escape it), the build cold-compiled exactly as efad250 had, and then COMPLETED — 'Build Completed in 2m', READY in ~2m50s, finishing with 'Uploading build cache [1.26 GB]'. Same branch, same cache, same cold compile, opposite outcome. So the trimmed cache does NOT cause the stall, and the 'branch is trapped on a poisoned cache' reading that followed from it is wrong too — the trap does not exist, because a build on that very cache succeeded and replaced it. FOUR hypotheses are now dead (fetch-cache deletion, DB saturation, build concurrency, cache lineage), and the stall stands as an UNEXPLAINED TRANSIENT: one occurrence, not reproducible on demand, no known trigger. 🔴 DO NOT re-run the four dead hypotheses, and do not treat the cold compile as the fault: it is documented, intended, and costs CPU only. The honest next step is not a fix but an OBSERVATION: this needs a second occurrence before it can be diagnosed at all, so what would actually help is capturing whether a stalled build ever reaches BUILD_EXCEEDED_MAXIMUM_TIME and what its 'Build system report' says — a hung build never prints that line, which is why the memory hypothesis below remains untested rather than untrue. ── ⚠️ SECOND OCCURRENCE 2026-08-25 05:51, which matters because the row previously rested on a single event: dpl_9y44g2LaSLVACtvhC4BnAzaXhS9T (#2283, housing/natal-matching, dac3a9d96) compiled fine in 77s and then sat at 'Collecting page data using 3 workers ...' from 05:51:47 with no further output for 10+ minutes — the same signature as efad250. Two facts narrow it: (a) it is NOT global to the platform — another agent's build (169a4d9, claude/frequency-codebase-audit-vii214) went READY in 3m29s while this one hung; (b) it is NOT the cold compile, because this build's compile was NORMAL (77s, warm) whereas efad250's was cold (113s), so the two stalls do not share a compile profile. The stall therefore survives every explanation tried so far. It now has a reproduction rate worth acting on: 2 of ~14 preview builds in one session. WHAT WOULD ACTUALLY DIAGNOSE IT: let one stalled build run to its natural end and read whether it reports BUILD_EXCEEDED_MAXIMUM_TIME and what its 'Build system report' says — no stalled build has been allowed to finish yet, and that report is the one line that would settle the memory hypothesis. ── ✅ 2026-08-25 06:01: THE STALL IS NOT A STALL. The #2283 build was allowed to run to its natural end — the one thing no earlier occurrence had done — and it did not time out silently, it FAILED with a real error: `Error: The file \"/vercel/path0/.next/routes-manifest.json\" couldn't be found`, emitted at 23:01:36 UTC against 'Collecting page data using 3 workers ...' at 22:51:47. So the ~10 minutes of silence is not a hang: page-data collection DIES, produces no routes-manifest.json, and Vercel only surfaces it after its own wait. That reframes the whole row — the thing to explain is a crashing collector, not a blocked one, and 'it hung' was the wrong question for four hypotheses in a row. 🔴 THE MEMORY HYPOTHESIS IS NOW THE LEADING ONE and is consistent with every observation: the builder is 4 cores / 8 GB, page data prerenders ~330 routes across 3 workers, a worker killed by the OOM reaper writes nothing and prints nothing, and the 'Build system report' line that would say 'No memory or disk space problems detected' is only reached by builds that COMPLETE — which is exactly why every healthy build shows it and no failing one does. NEXT STEP, concrete: reduce page-data worker count (or raise the builder) and see whether the ~2-in-14 rate goes to zero; the misconfigured-distDir causes Vercel's own error text suggests are ruled out by the fact that the SAME commit and config build green on retry. Retrying the build is a reliable workaround — #2285 stalled identically and its retry went green in 2m50s.",
+      "detail": "FOUND 2026-08-25 05:26-05:36 UTC while driving the merge queue. Preview build dpl_DYMk7sVcpW8n7xCfupmUmbtbnjqB (#2285, efad250) printed 'Collecting page data using 3 workers ...' at 05:26:05 and emitted NOTHING for the next 10 minutes, against a control that did the whole build in 2m10s. Three builds hung the same way earlier the same night. 🔴 WHY THIS IS LIVE AND NOT HYGIENE: main is protected and merging DEPLOYS, so the same stall on a production build is a production deploy that never lands. ── WHAT IS ESTABLISHED, from the two builds' own logs. They are the SAME BRANCH one docs-only commit apart, so the code is not the variable: (a) ca95b0a restored cache 8erA4jNs, compiled in 46s, finished 2m10s, green; (b) efad250 restored cache 92GM6pY7 — the build whose postbuild had just trimmed .next/cache/turbopack (1621 MiB) — compiled COLD in 113s, then stalled. The cold compile is expected and documented ('Next build: warm install, cold compile'); it costs CPU by design. The STALL is at a later stage and is NOT explained by it. ── 🔴 THREE HYPOTHESES TESTED AND RULED OUT, recorded so nobody re-runs them: (1) NOT the ADR-1064/ADR-1086 fetch-cache deletion. check-cache-budget.mjs protects it — NEVER_TRIM_DIRS = ['fetch-cache','images'], the trim walks only COMPILER_CACHE_DIRS = ['turbopack','rspack','webpack','swc'], an OVERLAP assertion refuses to trim if the lists ever meet, and check-cache-budget-trim.test.ts reconstructs the old bad trim. The gate's '.next/cache 0 MiB' line is not a deleted fetch cache: the 'holds:' line shows the directory contained only .previewinfo, config.json and .rscinfo, so there was no fetch-cache directory to lose. (2) NOT database saturation, which WAS the proven cause of the ~02:40 incident: measured mid-stall at 34/60 connections, 1 active, 0 blocked, no lock waits. (3) NOT build concurrency, the other proven cause: efad250 was the only build running. ── WHAT IS NOT KNOWN: the cause. The leading untested hypothesis is memory pressure — the builder is 4 cores / 8 GB, page data prerenders ~330 routes across 3 workers, and a cold compile denies them every warm module cache; a hung build never reaches the 'Build system report' line that would print 'No memory or disk space problems detected', so absence of that line is not evidence of health. NEXT STEP for whoever picks this up: correlate hung builds against whether their restored cache had been trimmed (the Vercel log's 'Restored build cache from previous deployment (<id>)' line gives the lineage for free), and if the correlation holds, test the memory hypothesis by raising the builder or lowering worker count before touching the trim. Do NOT 'fix' check:cache-budget on this row's suspicion alone: its trim is proven correct by mutation test, and breaking it re-opens the 1.50 GB ceiling that killed two builds. ── 🔴 AMENDED 2026-08-25 05:46: THE CACHE-LINEAGE CORRELATION IS FALSIFIED. When this row was filed, three builds were consistent with 'restored a trimmed cache -> stalls'. A direct control killed it: theme/p5-adoption was re-pushed as 71c9913c5, Vercel restored THE SAME trimmed cache (92GM6pY7 — branch-scoped restore, so the re-push could not escape it), the build cold-compiled exactly as efad250 had, and then COMPLETED — 'Build Completed in 2m', READY in ~2m50s, finishing with 'Uploading build cache [1.26 GB]'. Same branch, same cache, same cold compile, opposite outcome. So the trimmed cache does NOT cause the stall, and the 'branch is trapped on a poisoned cache' reading that followed from it is wrong too — the trap does not exist, because a build on that very cache succeeded and replaced it. FOUR hypotheses are now dead (fetch-cache deletion, DB saturation, build concurrency, cache lineage), and the stall stands as an UNEXPLAINED TRANSIENT: one occurrence, not reproducible on demand, no known trigger. 🔴 DO NOT re-run the four dead hypotheses, and do not treat the cold compile as the fault: it is documented, intended, and costs CPU only. The honest next step is not a fix but an OBSERVATION: this needs a second occurrence before it can be diagnosed at all, so what would actually help is capturing whether a stalled build ever reaches BUILD_EXCEEDED_MAXIMUM_TIME and what its 'Build system report' says — a hung build never prints that line, which is why the memory hypothesis below remains untested rather than untrue. ── 🔴 CORRECTION 2026-08-25 06:16, and it retracts this row's own advice: RETRY IS NOT A RELIABLE WORKAROUND. The row said so on the strength of #2285, which stalled once and went green on its first retry. #2283 then stalled THREE TIMES IN A ROW on the same branch — dac3a9d96 (05:51, terminal error captured), 0f294a89d first attempt, and 0f294a89d again after a re-push — so the earlier sentence described a coin flip, not a fix. Occurrence rate on the night: 4 of ~16 preview builds. ── WHAT THE THREE #2283 FAILURES ADD: they were NOT all cold compiles (81s, 77s and 113s across the set, against a 46s warm control), NOT all concurrent with another build (one ran alone), and NOT cache-lineage bound (#2285 succeeded on the very cache #2283 keeps failing on). The one thing every failure shares is the stage: page-data collection, 3 workers, dying without output. 🔴 APPLICATION CODE IS RULED OUT, and this is the cleanest evidence in the row: PR #2287 is DOCS-ONLY — two files, docs/BUILD-BACKLOG.json and AGENTS.md, zero code, zero dependencies — and its build stalls identically (0942e50, 11m+ at page data). A build with no code change cannot be crashed by code, so every application-level lead dies with it, including the astronomy-engine one #2283 invited. ── THE REMAINING ASYMMETRY, worth a look but NOT yet a cause: in the same window, builds on a branch based on OLD main (claude/frequency-codebase-audit-vii214, base 10c2f0b3) went READY in 2m54s and 3m29s, while every branch based on TONIGHT's main stalled. That points at something that entered main during the 11-PR merge run rather than at any one PR's diff — but main's own production build after #2285 (591bcc1) went READY in 2m6s, which argues against it, so the asymmetry is unexplained rather than damning. The concrete lever remains worker count or builder size. ── ✅ CARRIED OVER FROM THE HANDOFF BRANCH, and it is the most diagnostic fact in this row: THE STALL IS NOT A STALL. Established at 06:01, BEFORE the 06:16 correction above, and folded in here on 2026-08-25 08:5x when the two records were reconciled. The #2283 build was allowed to run to its natural end — the one thing no earlier occurrence had done — and it did not time out silently, it FAILED with a real error: `Error: The file \"/vercel/path0/.next/routes-manifest.json\" couldn't be found`, emitted at 23:01:36 UTC against 'Collecting page data using 3 workers ...' at 22:51:47. So the ~10 minutes of silence is not a hang: page-data collection DIES, produces no routes-manifest.json, and Vercel only surfaces it after its own wait. That reframes the row — the thing to explain is a CRASHING collector, not a blocked one, and 'it hung' was the wrong question for four hypotheses in a row. 🔴 IT ALSO MAKES THE MEMORY HYPOTHESIS THE LEADING ONE and is consistent with every observation: the builder is 4 cores / 8 GB, page data prerenders ~330 routes across 3 workers, a worker killed by the OOM reaper writes nothing and prints nothing, and the 'Build system report' line that would say 'No memory or disk space problems detected' is only reached by builds that COMPLETE — which is exactly why every healthy build shows it and no failing one does. NEXT STEP, concrete: reduce the page-data worker count (or raise the builder) and see whether the rate goes to zero. The misconfigured-distDir causes Vercel's own error text suggests are ruled out by the same commit and config building green on a retry. ── ⚠️ FIFTH OCCURRENCE 2026-08-25 08:12, on the meta-scan split: dpl_9WWrdz7onHuhx32cisXkTXeUmHtL (#2289 split/b-seo, 571aac085) compiled normally in 78s and then sat at 'Collecting page data using 3 workers ...' from 08:12:57 with no further output. It matters for the rate rather than the diagnosis: the SAME session's other three split branches built green (#2288, #2290, #2291 all READY), so it is still intermittent and still not branch-, code- or cache-bound. Running total on the two sessions: 5 of ~20. The workaround that worked here was not a retry but a re-push carrying a main merge, which is a new build rather than a re-run of the same one.",
       "verify": {
         "kind": "manual",
-        "evidence": "Vercel dpl_DYMk7sVcpW8n7xCfupmUmbtbnjqB (theme/p5-adoption, efad250): 'Restored build cache from previous deployment (92GM6pY7KcpiE47fmp3AH3LRZ8tz)', 'Compiled successfully in 113s', then 'Collecting page data using 3 workers ...' at 05:26:05 with no further line for 10+ min. Control dpl_AEAZN7As5zEBLceQMDQmjjYo5Cgc (hyg/visual-coverage-surfaces, ca95b0a): 'Restored build cache from previous deployment (8erA4jNsESPA6Fnj3sjYXzr71EA7)', 'Compiled successfully in 46s', READY in 2m10s. Trim recorded in dpl_92GM6pY7KcpiE47fmp3AH3LRZ8tz postbuild: 'drops compiler caches instead: .next/cache/turbopack (1621 MiB)'. Live DB mid-stall: 34/60 conns, 1 active, 0 blocked. FALSIFYING CONTROL: dpl_9JHKUk5Q9q2nzHQaT3qwdxfeTqVW (theme/p5-adoption, 71c9913c5) 'Restored build cache from previous deployment (92GM6pY7KcpiE47fmp3AH3LRZ8tz)' — the same trimmed cache efad250 pulled — then 'Build Completed in 2m', READY 05:46:17, 'Uploading build cache [1.26 GB]'. TERMINAL ERROR CAPTURED: dpl_9y44g2LaSLVACtvhC4BnAzaXhS9T failed at 23:01:36 with 'The file \"/vercel/path0/.next/routes-manifest.json\" couldn't be found', ~10 min after 'Collecting page data using 3 workers ...' at 22:51:47. The collector dies; it does not hang.",
+        "evidence": "Vercel dpl_DYMk7sVcpW8n7xCfupmUmbtbnjqB (theme/p5-adoption, efad250): 'Restored build cache from previous deployment (92GM6pY7KcpiE47fmp3AH3LRZ8tz)', 'Compiled successfully in 113s', then 'Collecting page data using 3 workers ...' at 05:26:05 with no further line for 10+ min. Control dpl_AEAZN7As5zEBLceQMDQmjjYo5Cgc (hyg/visual-coverage-surfaces, ca95b0a): 'Restored build cache from previous deployment (8erA4jNsESPA6Fnj3sjYXzr71EA7)', 'Compiled successfully in 46s', READY in 2m10s. Trim recorded in dpl_92GM6pY7KcpiE47fmp3AH3LRZ8tz postbuild: 'drops compiler caches instead: .next/cache/turbopack (1621 MiB)'. Live DB mid-stall: 34/60 conns, 1 active, 0 blocked. FALSIFYING CONTROL: dpl_9JHKUk5Q9q2nzHQaT3qwdxfeTqVW (theme/p5-adoption, 71c9913c5) 'Restored build cache from previous deployment (92GM6pY7KcpiE47fmp3AH3LRZ8tz)' — the same trimmed cache efad250 pulled — then 'Build Completed in 2m', READY 05:46:17, 'Uploading build cache [1.26 GB]'. TERMINAL ERROR CAPTURED (carried over from the handoff branch): dpl_9y44g2LaSLVACtvhC4BnAzaXhS9T failed at 23:01:36 with 'The file \"/vercel/path0/.next/routes-manifest.json\" couldn't be found', ~10 min after 'Collecting page data using 3 workers ...' at 22:51:47. The collector dies; it does not hang. FIFTH OCCURRENCE: dpl_9WWrdz7onHuhx32cisXkTXeUmHtL (#2289, 571aac085) compiled in 78s then no output after 'Collecting page data using 3 workers ...' at 08:12:57, while three sibling split branches built green in the same window.",
         "checked": "2026-08-25"
       }
     },
@@ -4197,19 +4200,340 @@
       }
     },
     {
+      "id": "SCAN-001",
+      "title": "Regenerate lib/database.types.ts once the train lands",
+      "status": "done",
+      "lane": "hygiene",
+      "size": "XS",
+      "source": {
+        "file": "docs/META-SCAN-STATUS.md",
+        "ref": "meta-scan 2026-08-25, Phase 0"
+      },
+      "detail": "MS25 Phase 0. listing_saves was restored to production (20270327000000) and the natal/guestbook tables land with the open train, but lib/database.types.ts is train-owned mid-flight, so the restore ships with the code casting around the missing types (how the original ghost compiled). One regen after the merge window picks everything up in one pass.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const s=require('fs').readFileSync('lib/database.types.ts','utf8');const miss=['listing_saves'].filter(t=>!s.includes(t));if(miss.length){console.error('types missing: '+miss.join(', '));process.exit(1)}\"",
+        "note": "Measures the CONSEQUENCE: the generated types carry the restored table, so code stops casting around a type that does not exist. Regenerated 2026-08-25 against the live project; +117 lines, purely additive, tsc --noEmit clean."
+      }
+    },
+    {
+      "id": "SCAN-101",
+      "title": "The guest RSVP door closes ~7-8 hours early: wall-clock-as-UTC compared to now()",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "supabase/migrations/20270303000100_guest_rsvp_functions.sql",
+        "ref": "line 70"
+      },
+      "detail": "MS25 Phase 1. capture_guest_rsvp gates on v_event.starts_at <= now(), but starts_at stores the event's WALL-CLOCK as UTC parts (lib/time/zone.ts convention): a 7pm PT event reads as 19:00Z, so from ~noon PT every guest submission is silently rejected while the anti-oracle receipt still says ok - the guest believes they RSVP'd. Members face no such gate. Fix is one SQL function change resolving the stored wall-clock through events.time_zone before comparing. BLOCKED on the migration freeze; apply the moment it lifts.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const f='supabase/migrations/20270328000000_guest_rsvp_zone_aware_gate.sql';if(!fs.existsSync(f)){console.error('the zone-aware gate migration is missing');process.exit(1)}const s=fs.readFileSync(f,'utf8');if(!/at time zone/.test(s)||!/pg_timezone_names/.test(s)){console.error('the gate does not resolve the event zone, or does not validate it');process.exit(1)}\"",
+        "note": "Measures the CONSEQUENCE: a migration exists that resolves the stored wall clock through the event's own zone AND validates the zone name (the unvalidated form raises on the anon door). Applied to production 2026-08-25 with the ledger reconciled to the filename; verified beforehand that zone-aware and naive comparisons agreed on all 20 future events and that zero rows carry an unknown zone."
+      }
+    },
+    {
+      "id": "SCAN-103",
+      "title": "A pre-existing membership row makes Join a permanent 'try again'",
+      "status": "done",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "app/(main)/circles/actions.ts",
+        "ref": "joinCircle, lines 187-195"
+      },
+      "detail": "MS25 Phase 1. joinCircle plain-inserts against UNIQUE(profile_id, circle_id); a 23505 conflict (already-active member re-tapping Join, or a dormant row) returns 'Could not join this circle. Please try again.' - which retrying can never fix. On conflict: redirect if the row is active, reactivate with the cap re-check (grantCircleRow's shape) if dormant.",
+      "verify": {
+        "kind": "grep-present",
+        "pattern": "23505",
+        "paths": [
+          "app/(main)/circles/actions.ts"
+        ],
+        "note": "Passes when the unique-violation path is handled distinctly instead of folding into the generic retry message."
+      }
+    },
+    {
+      "id": "SCAN-104",
+      "title": "Cancellation and refund emails assert UTC for a wall-clock that isn't",
+      "status": "done",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "lib/events/cancellation.ts",
+        "ref": "formatEventWhen, lines 20-29"
+      },
+      "detail": "MS25 Phase 1. The cancellation email renders the stored UTC-parts wall-clock with timeZoneName 'short' in UTC - '7:00 PM UTC' for a 7pm PT event. Digits right, label wrong: a recipient who converts gets the wrong hour. lib/time/zone's formatEventWhen(storedIso, tz) already renders '7:00 PM PDT'; pass events.time_zone through and use the shared formatter.",
+      "verify": {
+        "kind": "grep-present",
+        "pattern": "time/zone",
+        "paths": [
+          "lib/events/cancellation.ts"
+        ],
+        "note": "Passes when the email formats through the shared zone-aware formatter instead of its local UTC-labeled one."
+      }
+    },
+    {
+      "id": "SCAN-404",
+      "title": "~18 admin action sites return raw Postgres error strings to member/host UI",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "app/(main)/circles/admin-actions.ts",
+        "ref": "282,303,469,523,549,582,618,658 (+channels/hubs/nexuses/journeys/circles siblings)"
+      },
+      "detail": "MS25 Phase 4. return fail(error.message) straight off PostgREST hands RLS denials and constraint names to hosts and members. The good pattern exists in the tree (circles/[slug]/manage/events-actions.ts:85-92: structured server log + plain on-voice sentence). Sweep the six files' return sites; keep the pg detail in the server log.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const files=['app/(main)/circles/admin-actions.ts','app/(main)/channels/admin-actions.ts','app/(main)/hubs/admin-actions.ts','app/(main)/nexuses/admin-actions.ts','app/(main)/journeys/actions.ts','app/(main)/circles/actions.ts'];let n=0;for(const f of files){const m=fs.readFileSync(f,'utf8').match(/error: error\\.message/g);n+=m?m.length:0}if(n>0){console.error(n+' raw pg strings still returned to the UI');process.exit(1)}\"",
+        "note": "Passes at zero raw error.message returns across the six files (server-side logging of the detail is expected to stay)."
+      }
+    },
+    {
+      "id": "SCAN-105",
+      "title": "Rule how pending-approval seats interact with capacity and the waitlist",
+      "status": "open",
+      "lane": "owner",
+      "size": "XS",
+      "source": {
+        "file": "docs/META-SCAN-STATUS.md",
+        "ref": "meta-scan 2026-08-25, correctness sweep"
+      },
+      "detail": "MS25 Phase 1. The approval-gate fixes exposed a design tension nothing has ruled on: a pending (unapproved) seat holds status 'going' and consumes capacity (lib/events/capacity.ts:27-38), and promoteFromWaitlist promotes a still-pending waitlist row into a confirmed seat. Either behavior may be intended; neither is recorded. One ruling, then a small code follow-through if it changes.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Read 2026-08-25: getCapacityInfo counts status='going' regardless of approval_status; promoteFromWaitlist does not consult approval_status. No ADR or comment records the choice.",
+        "checked": "2026-08-25"
+      }
+    },
+    {
+      "id": "SCAN-106",
+      "title": "Vera's dispatch is keyed on the UTC day, so it rolls over at 5pm Pacific",
+      "status": "open",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/vera-dispatch.ts",
+        "ref": "todayUTC(), line 43; used at line 230"
+      },
+      "detail": "MS25 Phase 1, split out of SCAN-102 on 2026-08-25 after the display fix exposed the real root. vera_dispatches holds one row per (profile, day) and the day is minted by todayUTC() = new Date().toISOString().slice(0,10) - the SERVER's UTC calendar day. For a Pacific community that rolls over at 5pm local, so a Dispatch generated at 6pm Pacific is stored under TOMORROW's key and stops reading as today's the moment it is written. This is why the /on-air/dispatches page could NOT simply be re-keyed to HOME_TZ like its three sibling surfaces (feed story lens, Journal widget, Vault ledger, all fixed): re-labelling against a key that is still UTC would inverth the bug rather than fix it. The page's label was pinned to UTC in the same change, which is honest about what the value currently is. THE FIX is to mint the key with dayInZone(new Date(), HOME_TZ) and label the page in the same zone. THE COST, which is why this is its own row: flipping the key mid-day can mint one extra Dispatch for any member in the 5pm-midnight Pacific window on the day it ships, because their UTC-keyed row for 'tomorrow' will not match the new zone-keyed 'today'. That is a one-time, per-member duplicate rather than a correctness risk, but it is a member-visible side effect and wants shipping deliberately - ideally with a note, or timed for a low-traffic hour.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const s=require('fs').readFileSync('lib/vera-dispatch.ts','utf8');if(/toISOString\\(\\)\\.slice\\(0,\\s*10\\)/.test(s)){console.error('the dispatch day key is still minted from the server UTC calendar day');process.exit(1)}\"",
+        "note": "Measures the CONSEQUENCE: the day key stops coming from the server's UTC calendar. Passes when the key is minted in the community zone."
+      }
+    },
+    {
+      "id": "SCAN-508",
+      "title": "Answer the reconstructed listing_saves migration's open question, and amend the 2026-09 retirement claim it contradicts",
+      "status": "open",
+      "lane": "hygiene",
+      "size": "XS",
+      "source": {
+        "file": "supabase/migrations/20270327000000_restore_listing_saves.sql",
+        "ref": "the RECONSTRUCTED-FROM-LIVE-STATE header"
+      },
+      "detail": "MS25 Phase 0. That migration file was reconstructed from live state by the session running the merge queue (#2276) after the 2026-08-25 meta-scan applied the restore to production ahead of its file, which turned check:migrations red on every open branch until the reconstruction landed. Its header records what it could not establish and asks for two things. Both are answerable now. (1) WHY: the restore was DELIBERATE. 20260925000000 dropped listing_saves on the claim '0 code references', and that claim was false - lib/listings/index.ts holds four live .from('listing_saves') sites (saveListing / unsaveListing / listSavedListingIds / listSavedListings) reached from components/marketplace/save-listing-button.tsx on the /housing index and detail pages. Every path failed SAFE (the write discarded its error, the reads fell back to an empty set), so the heart flipped and silently reset on reload, and the saves tests mock the client so nothing caught it. THE READER THAT NEEDS THE TABLE is that button. (2) The retirement claim in 20260925000000 is contradicted by production and wants amending in place - not by editing the reconstructed file, which correctly describes an apply that already happened. An ADR recording the restore + the false-orphan lesson belongs with it.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const F='supabase/migrations/20260925000000_retire_orphaned_tables_and_functions.sql';if(!fs.existsSync(F))process.exit(79);const s=fs.readFileSync(F,'utf8');if(!/listing_saves/.test(s))process.exit(79);if(!/AMENDED|restored|false|ADR-861/i.test(s)){console.error('the retirement migration still asserts listing_saves was orphaned, with no note that production contradicted it');process.exit(1)}\"",
+        "note": "Measures the CONSEQUENCE: the 2026-09 retirement migration carries an in-file amendment saying its listing_saves orphan claim was false (ADR-861 had already wired the heart). A grep for the table name in DECISIONS.md passes on ADR-861's ORIGINAL mention, which is shape rather than truth."
+      }
+    },
+    {
+      "id": "SCAN-102",
+      "title": "Four member surfaces bucket Today/Yesterday on the server's UTC day",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "docs/META-SCAN-STATUS.md",
+        "ref": "meta-scan 2026-08-25, correctness sweep"
+      },
+      "detail": "MS25 Phase 1. The feed Story lens (components/feed/feed-list.tsx), the Journal widget, the Vault ledger page and Vera's dispatches page all build their day buckets from startOfDay(new Date()) / toISOString().slice(0,10) in Server Components - from ~5pm PT everything logged that community day groups under Yesterday, with UTC-shifted weekday labels. Same LIVE-079 class; that row swept starts_at floors only, not day-label bucketing. Fix: bucket by dayInZone(date, HOME_TZ) equality and format labels with timeZone: HOME_TZ. SPLIT 2026-08-25: three of the four surfaces (feed story lens, Journal widget, Vault ledger) are pure display bugs and are fixed here. The fourth, /on-air/dispatches, reads a row KEY that is itself UTC-minted, so its real fix is SCAN-106; its label was pinned to UTC meanwhile.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const files=['components/feed/feed-list.tsx','components/widgets/journal/journal-entries.tsx','app/(main)/crew/store/ledger/page.tsx'];const missing=files.filter(f=>!fs.readFileSync(f,'utf8').includes('dayInZone'));if(missing.length){console.error('still on the server day: '+missing.join(', '));process.exit(1)}\"",
+        "note": "The three display-only surfaces derive their day buckets from the community zone. /on-air/dispatches is deliberately NOT in this probe: its key is UTC-minted upstream and is tracked by SCAN-106."
+      }
+    },
+    {
+      "id": "SCAN-301",
+      "title": "Event detail carries 3-6 avoidable serial round trips after its batched waves",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "app/(main)/events/[slug]/page.tsx",
+        "ref": "lines ~720, ~906, ~1699"
+      },
+      "detail": "MS25 Phase 3. On the highest-traffic entity page: the ticket-tiers read depends only on event.id but runs serially after the RSVP wave; loadSeriesDates is a serial query that could ride the social wave; listSpacesThatCanAskToHost runs serially for every signed-in non-manager and is itself 3-4 sequential stages. Fold (a) into the RSVP wave and (b)+(c) into the social wave. Theme-P5 touched this page's header region - re-verify line positions after the train. CLOSED 2026-08-25. All three fold into waves that already existed: the ticket-tiers read joins the RSVP wave (it depends only on event.id), and loadSeriesDates + listSpacesThatCanAskToHost join the social wave. Neither move changes WHO anything runs for — the host-ask loader keeps its `myProfileId && !canManage` gate, now as the ternary inside the wave.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const s=require('fs').readFileSync('app/(main)/events/[slug]/page.tsx','utf8');const serial=['loadSeriesDates','listSpacesThatCanAskToHost'].filter(n=>new RegExp('await\\\\\\\\s+'+n+'\\\\\\\\(').test(s));if(serial.length){console.error('back on its own await: '+serial.join(', '));process.exit(1)};if(!/data: rawTiers \\\\}\\\\] = await Promise.all\\\\(/.test(s)){console.error('ticket tiers no longer ride the RSVP wave');process.exit(1)}\"",
+        "note": "Fails if either read goes back on its own await, or if the tiers read leaves the RSVP wave. Measures the round trips, not the words in the title."
+      }
+    },
+    {
+      "id": "SCAN-302",
+      "title": "react-markdown ships in the client chunk of every feed-bearing route",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "components/feed/post-replies.tsx",
+        "ref": "line 1 -> post-body.tsx"
+      },
+      "detail": "MS25 Phase 3. post-card (RSC) renders PostReplies for every post; post-replies is 'use client' and statically imports PostBody -> react-markdown (+remark, ~35-45KB gz), so the chunk downloads on /feed and every circle/channel feed. The shell-weight gate measures the app shell, not route chunks - its documented blind spot. next/dynamic the markdown body inside replies, or pre-render reply bodies server-side. CLOSED 2026-08-25, and the re-test found the premise had already half-expired: post-card.tsx and post-body.tsx are Server Components, so react-markdown ships no client bytes through them, and post-replies.tsx — the one client module on the path — already mounts the body through next/dynamic. The CLASS is what stayed open, and SCAN-506 closes it.",
+      "verify": {
+        "kind": "grep-present",
+        "pattern": "next/dynamic",
+        "paths": [
+          "components/feed/post-replies.tsx"
+        ],
+        "note": "Passes when the markdown body loads lazily from the client seam (re-point if the fix instead server-renders reply bodies)."
+      }
+    },
+    {
+      "id": "SCAN-303",
+      "title": "/events loader: serial settings cluster + counting RSVPs by fetching every row",
+      "status": "open",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "app/(main)/events/index-data.ts",
+        "ref": "lines ~350-388, ~549-556"
+      },
+      "detail": "MS25 Phase 3. Four independent settings/flags reads run serially before the 5-query event wave (resolvePageContent, eventsListingHorizonDays, demo checks, series config) - one Promise.all. And rsvpCounts pulls every 'going' row for up to ~500 events to count in JS; a grouped count RPC (room_unread_counts' shape) reads one row per event. The RPC half needs a migration - frozen until the freeze lifts.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Read 2026-08-25: awaits at :350/:370/:382/:388 mutually independent; the :549 select fetches event_id rows with no limit and counts client-side at :593. RPC blocked on migration freeze.",
+        "checked": "2026-08-25"
+      }
+    },
+    {
+      "id": "SCAN-304",
+      "title": "The leaderboard Consistency widget fans out ~36 queries for 12 mates",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "components/widgets/leaderboard/leaderboard-consistency.tsx",
+        "ref": "lines 79-88"
+      },
+      "detail": "MS25 Phase 3. mateIds.map(getPracticeStreak) - each call resolves the member day (serial profiles read) then a 2-query wave, so 12 mates cost ~36 queries plus a follow-up profiles read per render. Batch: one profiles .in() for zones, one practice_logs .in() for the window, then derive per-mate in memory - derivePracticeStreak is already pure. CLOSED 2026-08-25. Two batched reads (one profiles .in() for zone + meta + name, one windowed practice_logs .in()) replace ~36 round trips, and the per-mate streak is DERIVED through the same pure functions the reader uses — memberDay, frozenDaysFrom, derivePracticeStreak, isResting — so the rules are called, not restated. The logs read is chunked (MATE_LOG_CHUNK) because PostgREST truncates at max_rows=1000 and practice_logs is unique on (profile_id, practice_id, logged_for), not on the day: one .in() over twelve mates x a 400-day window is not guaranteed to fit, and a truncated response drops the OLDEST rows, which is exactly where a streak walk ends. components/widgets/leaderboard/streak-nudge-wiring.test.ts pins both halves.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const strip=s=>s.replace(/\\/\\*[\\s\\S]*?\\*\\//g,'').replace(/([^:])\\/\\/.*$/gm,(m,a)=>a).replace(/^\\s*\\/\\/.*$/gm,'');const c=strip(fs.readFileSync('components/widgets/leaderboard/leaderboard-consistency.tsx','utf8'));const n=(c.match(/getPracticeStreak\\(/g)||[]).length;if(n!==1){console.error('expected exactly one getPracticeStreak call in code (the viewer own streak); found '+n);process.exit(1)}if(!c.includes('derivePracticeStreak(')){console.error('the mates are no longer derived from batched reads');process.exit(1)}if(!/\\.limit\\(MATE_LOG_ROW_BUDGET\\)/.test(c)){console.error('the batched practice_logs read lost its row budget, so it can truncate a mate window silently');process.exit(1)}\"",
+        "note": "Counts in CODE, after comments are stripped — the file explains at length what it replaced, and a probe that counted those sentences would fail on its own fix. The ORIGINAL probe forbade the string outright and was wrong in the direction that matters: the viewer own streak is a correct single read. Exactly one call is the honest count; derivePracticeStreak proves the mates went the batched way; the row budget proves the window cannot truncate into a shortened streak."
+      }
+    },
+    {
+      "id": "SCAN-305",
+      "title": "Opening a DM thread blocks its render on the mark-as-read write",
+      "status": "done",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "app/(main)/messages/[id]/page.tsx",
+        "ref": "lines 118-122"
+      },
+      "detail": "MS25 Phase 3. The conversation_participants last_read_at UPDATE sits between data assembly and JSX on every thread open. Move it behind next/server's after() (verify the exact API in node_modules/next/dist/docs first - this Next differs from training data). The sibling serial-await nits on /circles and /channels pages are folded here; both pages are train-claimed today, re-check after the merge window. CLOSED 2026-08-25. The last_read_at write moves behind after() from next/server (stable since v15.1.0 — verified in node_modules/next/dist/docs before use, per AGENTS.md), so the thread renders without waiting on it.",
+      "verify": {
+        "kind": "grep-present",
+        "pattern": "after\\(",
+        "paths": [
+          "app/(main)/messages/[id]/page.tsx"
+        ],
+        "note": "Passes when the write leaves the render's critical path."
+      }
+    },
+    {
+      "id": "SCAN-401",
+      "title": "Field errors are visual-only across both form systems",
+      "status": "done",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "components/studio/spark/field/field-control.tsx",
+        "ref": "line 119 (+ spark-shell, spark-offers, sampled hand forms)"
+      },
+      "detail": "MS25 Phase 4. The Studio kernel's describedBy carries the HINT only; errors render as bare styled text with no id association, no aria-invalid, no role='alert' - zero aria-invalid hits across components/studio. The sampled hand forms (event-form, new-room-compose, circle-settings) share the gap. One shared FieldError seam in the field primitive fixes both lanes at once: error id appended to describedBy, aria-invalid on the control, role='alert' on submit-level errors.",
+      "verify": {
+        "kind": "grep-present",
+        "pattern": "aria-invalid",
+        "paths": [
+          "components/studio/spark/field/field-control.tsx"
+        ],
+        "note": "Passes when the kernel's field control associates its error; the hand-form sweep rides the same seam."
+      }
+    },
+    {
+      "id": "SCAN-402",
+      "title": "Two hand-rolled overlays have no keyboard contract at all",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "app/(main)/admin/library/loom-grid.tsx",
+        "ref": "line ~691 (+ components/entity-blocks/controls/field-controls.tsx ~571)"
+      },
+      "detail": "MS25 Phase 4. The Loom asset drawer sets aria-modal with zero Escape handling and zero focus management; the icon-picker popover declares role='dialog' with backdrop-click-close only. Convert both to the Dialog primitive (the LIVE-089 pattern) or add Escape + initial focus + restore. The overlay-conversion lane on the train owns adjacent files - coordinate, don't duplicate.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const bad=['app/(main)/admin/library/loom-grid.tsx','components/entity-blocks/controls/field-controls.tsx'].filter(f=>{const s=fs.readFileSync(f,'utf8');return !(s.includes('Escape')||s.includes('@/components/ui/dialog'))});if(bad.length){console.error('no keyboard contract: '+bad.join(', '));process.exit(1)}\"",
+        "note": "Passes when both overlays either ride the Dialog primitive or handle Escape themselves."
+      }
+    },
+    {
+      "id": "SCAN-403",
+      "title": "Three member overlays handle Escape but never move focus in",
+      "status": "done",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "docs/META-SCAN-STATUS.md",
+        "ref": "meta-scan 2026-08-25, a11y sweep"
+      },
+      "detail": "MS25 Phase 4. trophy-celebration, event-gallery and the on-air session overlay each handle Escape but contain zero .focus()/autoFocus/inert - keyboard and screen-reader users stay focused behind the modal. Focus the dialog (or its close control) on open; restore on close.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const bad=['components/journey/v2/trophy-celebration.tsx','components/events/event-gallery.tsx','components/on-air/session.tsx'].filter(f=>{const s=fs.readFileSync(f,'utf8');return !(s.includes('useDialogFocusTrap')||s.includes('.focus(')||s.includes('autoFocus'))});if(bad.length){console.error('focus never moves in: '+bad.join(', '));process.exit(1)}\"",
+        "note": "Re-pointed 2026-08-25: the original probe grepped for a literal .focus( call, but the fix routes through the shared useDialogFocusTrap hook (the same one Dialog uses), which moves focus in and restores it on close. Grepping for the hand-rolled shape would have read a correct fix as unfixed."
+      }
+    },
+    {
+      "id": "SCAN-405",
+      "title": "Verify-then-add loading.tsx on the hot child routes that block above the shell",
+      "status": "open",
+      "lane": "hygiene",
+      "size": "XS",
+      "source": {
+        "file": "docs/META-SCAN-STATUS.md",
+        "ref": "meta-scan 2026-08-25, a11y/UX sweep"
+      },
+      "detail": "MS25 Phase 4. channels/[id], messages/r/[roomId], spaces + spaces/[slug], journeys/[slug] and drafts have no route-level loading.tsx. PAGE-FRAMEWORK §5 prefers per-section Suspense, so this is verify-FIRST: add a skeleton only where the page genuinely blocks above the shell; record the ones that already stream as fine.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "find inventory 2026-08-25: the six routes lack loading.tsx; per-section Suspense coverage not yet audited per-route (that audit is the work).",
+        "checked": "2026-08-25"
+      }
+    },
+    {
       "id": "OWN-044",
       "title": "#2286 (the 2026-08-25 meta-scan) is unmerged, conflicts with main, and is a second agent's in-flight draft",
-      "status": "blocked",
+      "status": "done",
       "lane": "owner",
       "size": "M",
       "source": {
         "file": "supabase/migrations/20270327000000_restore_listing_saves.sql",
         "ref": "the add/add conflict against main's copy of the same version"
       },
-      "detail": "HANDOFF 2026-08-25 from the merge-queue session that landed #2274, #2276, #2277, #2278, #2279, #2280, #2281, #2282, #2284, #2285 and #2283. #2286 is the ONE open PR that session did not land, and it is blocked on ownership rather than on code: it is a DRAFT belonging to a different agent that was still pushing to it during the queue run (its head moved three times: 44153f2e -> 09e793e8 -> b5908fe8). Pushing a merge commit into a branch another agent is actively rewriting risks colliding with them, so the queue session deliberately did not. ── ITS CONFLICT IS UNDERSTOOD AND CHEAP: two files. (1) docs/BUILD-BACKLOG.json — #2286 adds 30 SCAN-* rows; a 3-way merge by row id resolves it with no losses (measured: base 223 / ours 253 / theirs 225 -> 255 entries, 0 duplicate ids, no both-sides row edits). (2) supabase/migrations/20270327000000_restore_listing_saves.sql — an add/add where BOTH SIDES ARE FUNCTIONALLY IDENTICAL: same table, same PK, same two FKs, same covering index, same private.get_my_profile_id() RLS policy. Main's copy is already merged AND already applied to production, so keep MAIN's file; the only thing worth taking from #2286's copy is its comment block, which answers the question main's copy leaves open (see LIVE-123's sibling finding below). 🔴 DO NOT re-derive the listing_saves provenance: #2286 established it. 20260925000000 dropped public.listing_saves claiming '0 code references', and that claim was FALSE — lib/listings/index.ts holds four live call sites (saveListing / unsaveListing / listSavedListingIds / listSavedListings) reaching the UI through components/marketplace/save-listing-button.tsx and the /housing pages. Every path failed SAFE (the write discarded its error, the reads fell back to 'nothing saved'), so from 2026-09-25 until the restore, hearting a housing listing wrote to a table that did not exist and the heart silently reset on reload. No gate noticed because the saves tests mock the client. NEXT STEP: decide who owns #2286, then resolve those two files and land it, or close it and re-file its 30 SCAN rows.",
+      "detail": "HANDOFF 2026-08-25 from the merge-queue session that landed #2274, #2276, #2277, #2278, #2279, #2280, #2281, #2282, #2284, #2285 and #2283. #2286 is the ONE open PR that session did not land, and it is blocked on ownership rather than on code: it is a DRAFT belonging to a different agent that was still pushing to it during the queue run (its head moved three times: 44153f2e -> 09e793e8 -> b5908fe8). Pushing a merge commit into a branch another agent is actively rewriting risks colliding with them, so the queue session deliberately did not. ── ITS CONFLICT IS UNDERSTOOD AND CHEAP: two files. (1) docs/BUILD-BACKLOG.json — #2286 adds 30 SCAN-* rows; a 3-way merge by row id resolves it with no losses (measured: base 223 / ours 253 / theirs 225 -> 255 entries, 0 duplicate ids, no both-sides row edits). (2) supabase/migrations/20270327000000_restore_listing_saves.sql — an add/add where BOTH SIDES ARE FUNCTIONALLY IDENTICAL: same table, same PK, same two FKs, same covering index, same private.get_my_profile_id() RLS policy. Main's copy is already merged AND already applied to production, so keep MAIN's file; the only thing worth taking from #2286's copy is its comment block, which answers the question main's copy leaves open (see LIVE-123's sibling finding below). 🔴 DO NOT re-derive the listing_saves provenance: #2286 established it. 20260925000000 dropped public.listing_saves claiming '0 code references', and that claim was FALSE — lib/listings/index.ts holds four live call sites (saveListing / unsaveListing / listSavedListingIds / listSavedListings) reaching the UI through components/marketplace/save-listing-button.tsx and the /housing pages. Every path failed SAFE (the write discarded its error, the reads fell back to 'nothing saved'), so from 2026-09-25 until the restore, hearting a housing listing wrote to a table that did not exist and the heart silently reset on reload. No gate noticed because the saves tests mock the client. NEXT STEP: decide who owns #2286, then resolve those two files and land it, or close it and re-file its 30 SCAN rows. ── ✅ CLOSED 2026-08-25, and NOT by merging #2286. That branch reached 112 changed files, and ci.yml's PR-size gate fails anything over 40 unless the title carries [sweep] — owner-directed after a 215-file PR killed production deploys for a day (ADR-1002). [sweep] is reserved for a single-purpose mechanical change where every file takes the same one edit, which a branch carrying four high-severity fixes, an SEO round, a speed round, an a11y round and an orphan sweep is not. So it was split by backlog row, which is the remedy the gate's own message names: #2288 (phase 1, correctness), #2289 (phase 2, SEO/GEO), #2290 (phase 3, speed + a11y) and #2291 (phase 4, hygiene). Four branches off main with DISJOINT paths, each carrying only the rows it closes, each run through the full battery on its OWN branch rather than on the tree it was carved from. That last part earned itself twice: it surfaced two cross-slice dependencies the combined branch could never have shown (two Spark modules importing a FieldError from another slice, and a route-chunk gate that stays red until the slice fixing its instance lands). This row's own conclusions were both confirmed and used: the listing_saves migration kept MAIN's copy, and the provenance it recorded was not re-derived. #2286 itself is closed as superseded, not merged. ADR-1140 §5 records the decision.",
       "verify": {
         "kind": "manual",
-        "evidence": "PR #2286 open as a draft at 2026-08-25 05:50 UTC, head b5908fe851a9a33553213797e51192751711d051, base 10c2f0b380d7e46345171928f41c21751964df0b (stale), GitHub reporting conflicts in docs/BUILD-BACKLOG.json and supabase/migrations/20270327000000_restore_listing_saves.sql. Both sides of the migration read off the live catalog and compared field by field: identical.",
+        "evidence": "PR #2286 closed as superseded on 2026-08-25 after #2288/#2289/#2290/#2291 replaced it. Each replacement is <= 40 changed files and passed the PR-size gate, which #2286 could not. Split by path with disjoint sets; each verified on its own branch (tsc, eslint, full vitest suite, all 24 contract guards, check:backlog) before push.",
         "checked": "2026-08-25"
       }
     },
@@ -4233,18 +4557,35 @@
     {
       "id": "OWN-045",
       "title": "🔴 PICK THIS UP FIRST: #2283 is unmerged and the migration ledger is deliberately one row AHEAD of main until it lands",
-      "status": "blocked",
+      "status": "done",
       "lane": "owner",
       "size": "S",
       "source": {
         "file": "supabase/migrations/README.md",
         "ref": "the two-step apply/ledger-repair protocol; 20270326000000 lives on #2283, not yet on main"
       },
-      "detail": "HANDOFF 2026-08-25 06:00 UTC, and the FIRST thing the next thread should read. #2283 (housing/natal-matching, head dac3a9d96) is the last PR of the merge queue. THIRTEEN of its fourteen checks are green — checks, lint, test, CodeQL, analyze, db-tests, drift, autodoc, preflight all passed — and it is blocked on ONE thing: its Vercel preview stalled at 'Collecting page data' (see LIVE-123; this is that bug's SECOND occurrence). ── 🔴 WHY IT CANNOT SIMPLY BE ABANDONED. production's migration ledger currently holds 635 rows while main's tree holds 634 files, because the ledger row `20270326000000 natal_chart_matching` was restored BEFORE the merge, which the sequence requires: check:migrations runs pre-merge, so a PR carrying a migration file reads repoOnly drift unless its row is already there. That means main is in a deliberate, temporary ledgerOnly drift RIGHT NOW, and `check:migrations` reads red on main and on any branch lacking that file until #2283 merges. ── ✅ THE FIX IS TO MERGE #2283, NOT TO DELETE THE ROW. The migration is genuinely applied: all five functions (housing_safe_float, housing_aspect_score, housing_natal_compat, housing_match_candidates, housing_roommate_matches) were verified present in production with signatures matching the repo file exactly, and db-tests proves the file replays on a fresh database. Deleting the ledger row would be the lie in the other direction — a fresh `db reset` would then not create functions production has. If the Vercel stall persists, re-push the branch to retrigger a build (the queue did exactly this for #2285 and the retry succeeded in 2m50s on the same cache), or merge once Vercel reports. ── ALSO STILL OPEN ON #2283, advisory only: the autodoc bot flagged content/help/connecting/matching-and-romance.md, whose line 'Only your sign is used. We work out your sun sign from your birth date and use that.' becomes FALSE once #2283 lands, since a full natal chart is then derived and stored from the birth date. The privacy half of that sentence ('your birth date itself is never shown to anyone') stays true, and no chart is ever returned by an RPC. Fix the first half in the same pass, on voice, per docs/CONTENT-VOICE.md.",
+      "detail": "HANDOFF 2026-08-25 06:00 UTC, and the FIRST thing the next thread should read. #2283 (housing/natal-matching, head dac3a9d96) is the last PR of the merge queue. THIRTEEN of its fourteen checks are green — checks, lint, test, CodeQL, analyze, db-tests, drift, autodoc, preflight all passed — and it is blocked on ONE thing: its Vercel preview stalled at 'Collecting page data' (see LIVE-123; this is that bug's SECOND occurrence). ── 🔴 WHY IT CANNOT SIMPLY BE ABANDONED. production's migration ledger currently holds 635 rows while main's tree holds 634 files, because the ledger row `20270326000000 natal_chart_matching` was restored BEFORE the merge, which the sequence requires: check:migrations runs pre-merge, so a PR carrying a migration file reads repoOnly drift unless its row is already there. That means main is in a deliberate, temporary ledgerOnly drift RIGHT NOW, and `check:migrations` reads red on main and on any branch lacking that file until #2283 merges. ── ✅ THE FIX IS TO MERGE #2283, NOT TO DELETE THE ROW. The migration is genuinely applied: all five functions (housing_safe_float, housing_aspect_score, housing_natal_compat, housing_match_candidates, housing_roommate_matches) were verified present in production with signatures matching the repo file exactly, and db-tests proves the file replays on a fresh database. Deleting the ledger row would be the lie in the other direction — a fresh `db reset` would then not create functions production has. If the Vercel stall persists, re-push the branch to retrigger a build (the queue did exactly this for #2285 and the retry succeeded in 2m50s on the same cache), or merge once Vercel reports. ── ALSO STILL OPEN ON #2283, advisory only: the autodoc bot flagged content/help/connecting/matching-and-romance.md, whose line 'Only your sign is used. We work out your sun sign from your birth date and use that.' becomes FALSE once #2283 lands, since a full natal chart is then derived and stored from the birth date. The privacy half of that sentence ('your birth date itself is never shown to anyone') stays true, and no chart is ever returned by an RPC. Fix the first half in the same pass, on voice, per docs/CONTENT-VOICE.md. ── ✅ CLOSED 2026-08-25: #2283 MERGED (main 0ab3b4abb, \"Natal charts are computed in-process at save and stored; matching reads them natal-first\"). The deliberate one-row-ahead ledger drift this row existed to protect is therefore resolved the way it said it must be — by merging, never by deleting the row. Verified after the fact: the ledger and supabase/migrations/ are an exact bijection again (636 ⇄ 636 as of 08:0x, which includes 20270328000000 guest_rsvp_zone_aware_gate applied and ledger-repaired by the meta-scan phase 1 PR). The advisory half is still OPEN and now has its own row: content/help/connecting/matching-and-romance.md still says \"Only your sign is used\", which #2283 made false.",
       "verify": {
-        "kind": "manual",
-        "evidence": "PR #2283 at 2026-08-25 06:00 UTC: 13 successful checks, Vercel pending on deployment 9y44g2LaSLVACtvhC4BnAzaXhS9T which logged 'Collecting page data using 3 workers ...' at 05:51:47 and emitted nothing for 10+ minutes. Live ledger measured 635 rows including 20270325000000 and 20270326000000; origin/main tree holds 634 .sql files. Production catalog: 5 housing_* functions present, signatures identical to the repo file.",
-        "checked": "2026-08-25"
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');if(!fs.existsSync('supabase/migrations/20270326000000_natal_chart_matching.sql')){console.error('20270326000000 is still not in the tree, so the ledger is still one row ahead of main');process.exit(1)}\"",
+        "note": "Probes the CONSEQUENCE the row was about: the migration file being in the tree is what ends the deliberate ledgerOnly drift. Not a grep for the words in the title."
+      }
+    },
+    {
+      "id": "SCAN-206",
+      "title": "The matching help article still says \"Only your sign is used\", which #2283 made false",
+      "status": "done",
+      "lane": "hygiene",
+      "size": "XS",
+      "source": {
+        "file": "content/help/connecting/matching-and-romance.md",
+        "ref": "the \"Only your sign is used\" line"
+      },
+      "detail": "Raised by the autodoc bot on #2283 and carried on OWN-045 until that PR landed. #2283 derives and STORES a full natal chart from the birth date and matches on it natal-first, so \"We work out your sun sign from your birth date and use that\" is now inaccurate. The PRIVACY half of the sentence (\"your birth date itself is never shown to anyone\") stays true, and no chart is ever returned by an RPC, so the fix is to correct what is computed without weakening the privacy claim. On voice per docs/CONTENT-VOICE.md: plain sentences, no em dashes, never narrate the reader's feelings. ── ✅ ALREADY TRUE WHEN THE ROW WAS FILED, and the probe is what said so on its first run — the ADR-1082 rule paying for itself again, this time within a minute. The article does NOT carry the sentence the autodoc bot flagged: content/help/connecting/matching-and-romance.md:18 already reads \"Your chart is worked out, never shown. We build a birth chart from your birth date and use it to spot quiet overlaps. Nobody sees your birth date or your chart, and nobody gets a breakdown of the score.\" That is accurate for what #2283 computes AND keeps the privacy claim intact, which is exactly the shape the fix was supposed to take. The row is kept rather than deleted because the advisory was real when raised and the probe is worth keeping pointed at the sentence: if a future edit reintroduces a sun-sign-only claim, this goes red.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const s=require('fs').readFileSync('content/help/connecting/matching-and-romance.md','utf8');if(/Only your sign is used/.test(s)){console.error('the article still claims only the sun sign is used');process.exit(1)}\"",
+        "note": "Probes the sentence that would be false, not the row title. It passed on its first run, which is how the row was found to be already closed. Re-point it if the article is restructured rather than edited in place."
       }
     }
   ]

@@ -16,13 +16,23 @@ export const metadata: Metadata = {
   description: 'Your past assignments, saved.',
 }
 
+// 🔴 `d.day` IS A UTC CALENDAR DAY, because that is the key the Dispatch is minted and
+// de-duplicated under: `todayUTC()` in lib/vera-dispatch.ts, one row per (profile, UTC day). So
+// Today / Yesterday are compared in UTC ON PURPOSE. Re-keying them to the community's zone here
+// while the row's key stays UTC would be the same bug pointed the other way: a Dispatch generated
+// at 6pm Pacific is stored under TOMORROW's UTC date, and would stop reading "Today" the moment it
+// was written. Moving this to HOME_TZ means moving `todayUTC()` with it, in one change.
+//
+// What IS pinned: the date label. It used to read the AMBIENT server zone, which is UTC on Vercel
+// and something else everywhere it is developed. The anchor is noon UTC, so an explicit zone names
+// the same calendar date it always did, and can no longer drift with where the render happens.
 function dayLabel(day: string): string {
   const today = new Date().toISOString().slice(0, 10)
   if (day === today) return 'Today'
   const d = new Date(`${day}T12:00:00Z`)
-  const yesterday = new Date(Date.now() - 86_400_000).toISOString().slice(0, 10)
+  const yesterday = new Date(Date.parse(`${today}T12:00:00Z`) - 86_400_000).toISOString().slice(0, 10)
   if (day === yesterday) return 'Yesterday'
-  return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+  return d.toLocaleDateString('en-US', { timeZone: 'UTC', weekday: 'short', month: 'short', day: 'numeric' })
 }
 
 export default async function DispatchesPage() {

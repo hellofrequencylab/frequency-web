@@ -85,7 +85,10 @@ export function MatchPrefsForm({
               </span>
             )}
           </div>
-          <p className="mt-1 text-2xs text-muted">Only your sign is used. We never show your birth date.</p>
+          <p className="mt-1 text-2xs text-muted">
+            Your date becomes your sign and a private birth chart, used only to match you with
+            people who also opted in. We never show your birth date or your chart.
+          </p>
         </div>
       )}
 

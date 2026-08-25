@@ -69,6 +69,8 @@ const sends: {
   subject: string
   from?: string
   headers?: Record<string, string>
+  outreachSendId?: string
+  __kind?: string
   __lane?: string
   __runAfter?: Date
 }[] = []
@@ -79,13 +81,40 @@ let throwOnSend = false
 // is unchanged in meaning — the payload carries the same to/subject/from/headers it always did, and
 // the enqueue is where the send is now decided. `throwOnSend` still models a failing send, because
 // a throw out of enqueue is caught by the same handler that caught a throw out of the provider.
-vi.mock('@/lib/email', () => ({
-  enqueueEmail: async (
-    payload: { to: string; subject: string; from?: string; headers?: Record<string, string> },
+// The campaign loop enqueues its OWN job kind (not the generic 'email' one) so the drain half can
+// move the outreach_sends row on with the provider id — `__kind` records which kind was used, and
+// `outreachSendId` ties the job to its ledger row.
+vi.mock('@/lib/queue/outbox', async (orig) => ({
+  ...(await orig<typeof import('@/lib/queue/outbox')>()),
+  enqueue: async (
+    kind: string,
+    payload: Record<string, unknown>,
     opts?: { lane?: string; runAfter?: Date },
   ) => {
-    sends.push({ ...payload, __lane: opts?.lane, __runAfter: opts?.runAfter })
+    sends.push({
+      ...(payload as { to: string; subject: string; from?: string; headers?: Record<string, string> }),
+      __kind: kind,
+      __lane: opts?.lane,
+      __runAfter: opts?.runAfter,
+    })
     if (throwOnSend) throw new Error('provider boom')
+  },
+}))
+
+// The provider seam, now reached only by the DRAIN half (runSpaceCampaignEmail). Returns the fake
+// Resend id (`nextSendId`; null models sending-disabled/suppressed) and throws on `throwOnSend` so
+// the handler's retry posture can be asserted.
+const rawSends: { to: string; subject: string; from?: string; headers?: Record<string, string> }[] = []
+vi.mock('@/lib/email', () => ({
+  sendRawEmail: async (payload: {
+    to: string
+    subject: string
+    from?: string
+    headers?: Record<string, string>
+  }) => {
+    if (throwOnSend) throw new Error('provider boom')
+    rawSends.push(payload)
+    return { id: nextSendId }
   },
   listUnsubscribeHeaders: (url: string) => ({
     'List-Unsubscribe': `<${url}>`,
@@ -195,12 +224,20 @@ function spacesBuilder() {
 function outreachBuilder() {
   // Supports: insert([rows])
   //           select('id', {count:'exact',head:true}).eq('space_id',x).neq('status',y).gte('created_at',z)
+  //           update(patch).eq('id', x).eq('status', y)   ← the drain half's ledger move
   const filters: { space_id?: string; neqStatus?: string } = {}
+  let pendingUpdate: Record<string, unknown> | null = null
+  let updateId: string | null = null
   const api: Record<string, unknown> = {
+    update(patch: Record<string, unknown>) {
+      pendingUpdate = patch
+      return api
+    },
     insert(rows: Record<string, unknown>[]) {
       for (const r of rows) {
         db.outreach.push({
-          id: `o${db.outreach.length}`,
+          // Respect an explicit id (recordSend keys the row to the tracking token's send id).
+          id: (r.id as string) ?? `o${db.outreach.length}`,
           space_id: r.space_id as string,
           campaign_id: (r.campaign_id as string) ?? null,
           contact_id: (r.contact_id as string) ?? null,
@@ -217,6 +254,24 @@ function outreachBuilder() {
       return api
     },
     eq(col: string, val: string) {
+      if (pendingUpdate) {
+        if (col === 'id') {
+          updateId = val
+          return api
+        }
+        if (col === 'status') {
+          // Terminal: apply the patch to the row iff it still holds the guarded status.
+          const row = db.outreach.find((r) => r.id === updateId && r.status === val)
+          if (row) {
+            if (typeof pendingUpdate.status === 'string') row.status = pendingUpdate.status
+            if ('resend_id' in pendingUpdate) row.resend_id = (pendingUpdate.resend_id as string) ?? null
+            if ('error' in pendingUpdate) row.error = (pendingUpdate.error as string) ?? null
+          }
+          pendingUpdate = null
+          updateId = null
+          return Promise.resolve({ error: null })
+        }
+      }
       if (col === 'space_id') filters.space_id = val
       return api
     },
@@ -254,6 +309,8 @@ import {
   setSpaceEmailEnabled,
   sendSpaceCampaign,
   sendSpaceCampaignSystem,
+  runSpaceCampaignEmail,
+  SPACE_CAMPAIGN_EMAIL_KIND,
   DAILY_SEND_CAP,
 } from './email'
 
@@ -269,6 +326,7 @@ beforeEach(() => {
   }
   canEdit = true
   sends.length = 0
+  rawSends.length = 0
   nextSendId = 'resend-id-xyz'
   throwOnSend = false
   globalSuppressed.clear()
@@ -825,3 +883,89 @@ describe('sendSpaceCampaign: cross-space isolation of writes', () => {
     expect(sends).toHaveLength(0)
   })
 })
+
+// ── The drain half: runSpaceCampaignEmail moves the ledger row on ────────────────────────────────
+// The regression this guards: the LIVE-099 outbox move originally enqueued the generic 'email'
+// kind, whose handler discards sendRawEmail's provider id — so no campaign row could ever leave
+// 'queued', and the resend_id-matching webhooks (bounce suppression, engagement) were blind to
+// every campaign recipient. These tests pin the whole contract: the loop enqueues the DEDICATED
+// kind carrying its ledger row id, and the handler writes the provider id back.
+
+describe('deliverSpaceCampaign ⇄ runSpaceCampaignEmail: the ledger linkage', () => {
+  it('enqueues the dedicated kind, with outreachSendId equal to the ledger row id', async () => {
+    await sendSpaceCampaign('space-A', { subject: 'Hi', html: '<p>x</p>', recipients: recips('a@b.com') })
+    expect(sends).toHaveLength(1)
+    expect(sends[0].__kind).toBe(SPACE_CAMPAIGN_EMAIL_KIND)
+    expect(sends[0].outreachSendId).toBeTruthy()
+    const row = db.outreach.find((o) => o.id === sends[0].outreachSendId)
+    expect(row?.status).toBe('queued')
+  })
+
+  it('moves the row to sent + resend_id when the provider accepts', async () => {
+    db.outreach.push(seedQueuedRow('send-1'))
+    await runSpaceCampaignEmail({ to: 'a@b.com', subject: 'Hi', html: '<p>x</p>', outreachSendId: 'send-1' })
+    expect(rawSends).toHaveLength(1)
+    expect(rawSends[0].to).toBe('a@b.com')
+    const row = db.outreach.find((o) => o.id === 'send-1')
+    expect(row?.status).toBe('sent')
+    expect(row?.resend_id).toBe('resend-id-xyz')
+  })
+
+  it('passes the per-Space sender identity and headers through to the provider', async () => {
+    db.outreach.push(seedQueuedRow('send-2'))
+    await runSpaceCampaignEmail({
+      to: 'a@b.com',
+      subject: 'Hi',
+      html: '<p>x</p>',
+      from: 'River Studio <noreply@send.example>',
+      headers: { 'List-Unsubscribe': '<https://x>' },
+      outreachSendId: 'send-2',
+    })
+    expect(rawSends[0].from).toBe('River Studio <noreply@send.example>')
+    expect(rawSends[0].headers?.['List-Unsubscribe']).toBe('<https://x>')
+  })
+
+  it('marks the row failed when sending is disabled (provider id null)', async () => {
+    nextSendId = null
+    db.outreach.push(seedQueuedRow('send-3'))
+    await runSpaceCampaignEmail({ to: 'a@b.com', subject: 'Hi', html: '<p>x</p>', outreachSendId: 'send-3' })
+    const row = db.outreach.find((o) => o.id === 'send-3')
+    expect(row?.status).toBe('failed')
+    expect(row?.error).toMatch(/disabled|suppressed/i)
+  })
+
+  it('THROWS on a provider error so the outbox retries, leaving the row queued', async () => {
+    throwOnSend = true
+    db.outreach.push(seedQueuedRow('send-4'))
+    await expect(
+      runSpaceCampaignEmail({ to: 'a@b.com', subject: 'Hi', html: '<p>x</p>', outreachSendId: 'send-4' }),
+    ).rejects.toThrow(/provider boom/)
+    const row = db.outreach.find((o) => o.id === 'send-4')
+    expect(row?.status).toBe('queued')
+  })
+
+  it('does not regress a row a webhook already moved on (guarded to still-queued)', async () => {
+    db.outreach.push({ ...seedQueuedRow('send-5'), status: 'bounced' })
+    await runSpaceCampaignEmail({ to: 'a@b.com', subject: 'Hi', html: '<p>x</p>', outreachSendId: 'send-5' })
+    const row = db.outreach.find((o) => o.id === 'send-5')
+    expect(row?.status).toBe('bounced')
+  })
+
+  it('rejects a malformed job so it dead-letters instead of silently succeeding', async () => {
+    await expect(runSpaceCampaignEmail({ to: 'a@b.com', subject: 'Hi' })).rejects.toThrow(/outreachSendId/)
+  })
+})
+
+function seedQueuedRow(id: string) {
+  return {
+    id,
+    space_id: 'space-A',
+    campaign_id: null,
+    contact_id: null,
+    email: 'a@b.com',
+    status: 'queued',
+    resend_id: null,
+    error: null,
+    created_at: new Date().toISOString(),
+  }
+}
