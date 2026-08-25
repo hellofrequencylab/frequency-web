@@ -29458,7 +29458,7 @@ would be different if it were not — here, the restored cache — and go look a
 
 ## ADR-1118: The phone sheet becomes a projection of the header menu, and the header's own landings stop being unreachable (2026-08-24)
 
-**Status:** Accepted · **Closes:** `LIVE-106`, `LIVE-107` · **Files:** `LIVE-108`, `HYG-018` ·
+**Status:** Accepted · **Closes:** `LIVE-106`, `LIVE-107` · **Files:** `LIVE-110`, `HYG-019` ·
 **Corrects:** `docs/FINALIZE-PLAN.md` row 4.3 · **Extends:** [ADR-1082](DECISIONS.md) (re-test the
 premise), [ADR-860](DECISIONS.md) (the inserts-only menu sync), [ADR-970](DECISIONS.md) (a gate that
 cannot fire honestly) · **Files:** `components/layout/marketing-mobile-menu.tsx`,
@@ -29553,9 +29553,9 @@ like.
 
 - **`SiteHeader` has no phone nav at all** ("mobile relies on the prominent CTA + footer nav until a
   drawer ships"), so on `/discover/*` and `/help` a phone visitor has no header nav whatsoever. That
-  is a larger surface than either row named and a different component. Filed as `LIVE-108`.
+  is a larger surface than either row named and a different component. Filed as `LIVE-110`.
 - **`DISCOVER_NAV` is now an orphan** — nothing renders it. Three ADRs name it as a concept, so
-  retiring it deserves its own reasoning rather than a drive-by deletion. Filed as `HYG-018`.
+  retiring it deserves its own reasoning rather than a drive-by deletion. Filed as `HYG-019`.
 - **The Home⇄Feed toggle** the desktop bar applies for a signed-in viewer is not mirrored in the
   sheet. It is not an operator edit and not a reachability defect.
 - **The five stale baseline keys** were left in place. Removing a key restores the sync's willingness
