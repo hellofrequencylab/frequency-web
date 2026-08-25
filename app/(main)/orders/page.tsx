@@ -73,17 +73,17 @@ export default async function OrdersPage() {
   const disputes = await disputesForOrders(orders.map((o) => o.id))
 
   return (
-    <IndexTemplate title="My orders" description="Everything you've bought from makers and the Frequency shop.">
+    <IndexTemplate title="My orders" description="Everything you've bought from the Market and the Frequency Store.">
       {orders.length === 0 ? (
         <EmptyState
           icon={Receipt}
           variant="first-use"
           title="No orders yet."
-          description="When you buy from a maker or the shop, your orders show up here."
+          description="When you buy from the Market or the Frequency Store, your orders show up here."
           action={
             <Link href="/market" className={buttonClasses('primary', 'md')}>
               <ShoppingBag className="h-4 w-4" aria-hidden />
-              Browse makers
+              Browse the Market
             </Link>
           }
         />

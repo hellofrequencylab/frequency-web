@@ -26,6 +26,7 @@ import { useEffect, useRef, type ReactNode } from 'react'
 import { usePathname } from 'next/navigation'
 import { ArrowLeft, Loader2 } from 'lucide-react'
 import { WizardProgress, wizardPrimaryClass, wizardSecondaryClass } from '@/components/templates'
+import { FieldError } from './field/field-control'
 import { draftScope } from './draft/draft-store'
 import { useSparkDraft } from './draft/use-spark-draft'
 import { SparkDraftConflict, SparkDraftCue, SparkResumeOffer } from './draft/spark-resume'
@@ -180,8 +181,14 @@ export function SparkShell({
         <div className="mt-5">{children}</div>
 
         {/* A div, not a p: callers pass rich error content (a Banner is a div) and nesting one
-            inside a p is invalid HTML that React will silently reflow. */}
-        {error && <div className="mt-4 text-body-sm text-warning">{error}</div>}
+            inside a p is invalid HTML that React will silently reflow.
+            The reason a step could not continue is ANNOUNCED, not just coloured — the author is
+            one keystroke from walking away believing it went through, so this is the assertive
+            register. `FieldError` keeps the live region mounted whether or not there is anything
+            in it, which is the half that made the difference (see its note). */}
+        <FieldError as="div" className="mt-4 text-body-sm text-warning">
+          {error}
+        </FieldError>
 
         {(footer ?? standardFooter) && <div className="mt-7">{footer ?? standardFooter}</div>}
       </div>

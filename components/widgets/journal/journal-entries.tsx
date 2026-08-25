@@ -4,22 +4,31 @@ import { NotebookPen, Camera, PenLine } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { relativeTime } from '@/lib/utils'
+import { dayInZone, HOME_TZ } from '@/lib/time/zone'
 
 // Your Journal — the daily-log face of Capture (§6 Phase 3, ADR-155/156). The feed is the
 // community's record of lived experience; this is *your* slice of it, your captured moments
 // grouped by day. Reads your own posts (notes / photos / posts) — no new store; a Note is just
 // post_type='note' on the posts substrate.
 
-function startOfDay(d: Date): number {
-  return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()
-}
-
+// The bucket is the COMMUNITY's calendar day (HOME_TZ), never the server's. This renders in a
+// Server Component, and on Vercel the server clock is UTC — so keying off the server's day filed
+// everything captured after ~5pm Pacific under "Yesterday", and shifted the weekday labels with it.
 function dayLabel(iso: string): string {
   const d = new Date(iso)
-  const diff = Math.round((startOfDay(new Date()) - startOfDay(d)) / 86_400_000)
-  if (diff === 0) return 'Today'
-  if (diff === 1) return 'Yesterday'
-  return d.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })
+  const day = dayInZone(d, HOME_TZ)
+  const today = dayInZone(new Date(), HOME_TZ)
+  // Yesterday derived from today's own day string via noon-anchored UTC arithmetic, so a DST
+  // change can never make "24 hours ago" land on the wrong calendar day.
+  const yesterday = new Date(Date.parse(`${today}T12:00:00Z`) - 86_400_000).toISOString().slice(0, 10)
+  if (day === today) return 'Today'
+  if (day === yesterday) return 'Yesterday'
+  return d.toLocaleDateString(undefined, {
+    timeZone: HOME_TZ,
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+  })
 }
 
 type Entry = { id: string; body: string | null; media_urls: string[] | null; post_type: string; created_at: string }

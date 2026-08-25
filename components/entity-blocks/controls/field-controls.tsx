@@ -26,6 +26,7 @@ import { searchEmoji, searchLucide } from '@/lib/entity-blocks/icon-tokens'
 import { BlockIcon } from '@/components/entity-blocks/block-icon'
 import { IconButton } from '@/components/ui/icon-button'
 import { Input } from '@/components/ui/field'
+import { useDialogFocusTrap } from '@/components/ui/use-dialog-focus-trap'
 
 // THE REUSABLE INSPECTOR CONTROL PRIMITIVES (ADR-569 C6). A tight, modern, Framer/Webflow/Notion-style set
 // of controls the block editor composes — and that a FEATURE agent attaches to a block by DECLARING a field,
@@ -530,6 +531,14 @@ export function IconPicker({
   const [query, setQuery] = useState('')
   const rootRef = useRef<HTMLDivElement>(null)
 
+  // The popover calls itself a dialog and covers the viewport with a click-catcher, so a mouse can
+  // always get out of it and a keyboard could not: there was no Escape, and when it closed, focus
+  // went nowhere (the search box it was sitting in had just unmounted). The hook is the same focus
+  // behaviour `ui/Dialog` uses — it keeps Tab inside the popover, respects the search box's own
+  // autoFocus, and puts focus back on the trigger when the picker closes, however it closed.
+  const popoverRef = useRef<HTMLDivElement>(null)
+  useDialogFocusTrap(open, popoverRef)
+
   const lucideResults = useMemo(() => (source === 'icon' ? searchLucide(query) : []), [source, query])
   const emojiResults = useMemo(() => (source === 'emoji' ? searchEmoji(query) : []), [source, query])
 
@@ -568,9 +577,20 @@ export function IconPicker({
             onClick={() => setOpen(false)}
           />
           <div
+            ref={popoverRef}
             role="dialog"
             aria-label={`Choose ${ariaLabel.toLowerCase()}`}
-            className="absolute left-0 top-10 z-50 w-64 space-y-2 rounded-card border border-border bg-surface p-2 lift-3"
+            tabIndex={-1}
+            // Escape closes the picker and STOPS THERE. The block rail and the page editor both
+            // listen for Escape as well, and an unstopped press would close the picker and the
+            // surface behind it in one go — the trap the other in-flow pickers in this repo
+            // already document (components/events/picker-dismiss.test.ts).
+            onKeyDown={(e) => {
+              if (e.key !== 'Escape') return
+              e.stopPropagation()
+              setOpen(false)
+            }}
+            className="absolute left-0 top-10 z-50 w-64 space-y-2 rounded-card border border-border bg-surface p-2 outline-none lift-3"
           >
             <div className="flex items-center gap-1">
               <button type="button" aria-pressed={source === 'icon'} className={tabCls(source === 'icon')} onClick={() => setSource('icon')}>

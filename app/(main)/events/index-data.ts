@@ -146,31 +146,39 @@ function distanceKm(lat1: number, lng1: number, lat2: number, lng2: number): num
 // Resolve a Date-range facet value to an inclusive [from, to] starts_at window.
 // Returns null bounds when the facet is off (the page's default 60-day horizon
 // then applies). All maths is local to the passed `now` so it stays a pure helper.
+//
+// starts_at stores the event's WALL-CLOCK as UTC parts and the filter compares it via
+// `new Date(e.starts_at)`, so the window must be the COMMUNITY's calendar days expressed
+// the same way (their Y-M-D as UTC parts) — exactly how `listableFrom` below builds the
+// listing floor. The old version built it from now.getDate(), the SERVER's calendar (UTC
+// on Vercel): from ~5pm PT, "today" meant tomorrow — tonight's events vanished from
+// ?date=today while tomorrow's passed with cards reading "Tomorrow at …", and the
+// week/weekend bands shifted a day the same way. UTC-parts day arithmetic is DST-free.
 function dateRangeWindow(value: string | undefined, now: Date): { from: Date; to: Date } | null {
   if (!value) return null
-  const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-  const endOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59, 999)
+  const dayMs = 24 * 60 * 60 * 1000
+  const startOfDay = new Date(`${dayInZone(now, HOME_TZ)}T00:00:00.000Z`)
+  const shift = (d: Date, days: number) => new Date(d.getTime() + days * dayMs)
+  const endOfDay = (d: Date) => new Date(d.getTime() + dayMs - 1)
   if (value === 'today') return { from: startOfDay, to: endOfDay(startOfDay) }
   if (value === 'week') {
     // Through the end of the current week (Sunday-based, matching the locale grid).
-    const dow = startOfDay.getDay() // 0 = Sun
-    const end = new Date(startOfDay)
-    end.setDate(startOfDay.getDate() + (6 - dow))
-    return { from: startOfDay, to: endOfDay(end) }
+    // getUTCDay is the wall-clock date's own weekday (the parts ARE the community day).
+    const dow = startOfDay.getUTCDay() // 0 = Sun
+    return { from: startOfDay, to: endOfDay(shift(startOfDay, 6 - dow)) }
   }
   if (value === 'weekend') {
     // Saturday + Sunday of the current week.
-    const dow = startOfDay.getDay()
-    const sat = new Date(startOfDay)
-    sat.setDate(startOfDay.getDate() + ((6 - dow + 7) % 7))
-    const sun = new Date(sat)
-    sun.setDate(sat.getDate() + 1)
+    const dow = startOfDay.getUTCDay()
+    const sat = shift(startOfDay, (6 - dow + 7) % 7)
+    const sun = shift(sat, 1)
     // If today is already the weekend, start from today, not next Saturday.
     const from = dow === 0 || dow === 6 ? startOfDay : sat
     return { from, to: endOfDay(sun) }
   }
   if (value === 'month') {
-    const end = new Date(now.getFullYear(), now.getMonth() + 1, 0)
+    const [y, m] = dayInZone(now, HOME_TZ).split('-').map(Number)
+    const end = new Date(Date.UTC(y, m, 0)) // last day of the community month, as UTC parts
     return { from: startOfDay, to: endOfDay(end) }
   }
   return null
@@ -346,11 +354,38 @@ export async function getEventsIndexData(params: EventsIndexParams): Promise<Eve
     }
   }
 
-  // Operator-editable page header (ADR-180) — falls back to the coded defaults.
-  const { title: pageTitle, description: pageDescription, heroImage, ctaLabel, ctaHref } =
-    await resolvePageContent('/events', CONTENT_FALLBACK)
-
   const nowDate = new Date()
+
+  // ── Settings + flags, fetched in ONE wave ──────────────────────────────────
+  // Four reads that between them cost four serial round trips in front of the event queries,
+  // and NOT ONE of them depends on another (or on anything above): the operator-editable header
+  // content, the listing horizon, the demo-mode pair, and the series display config. They are
+  // keyed on constants and on the viewer's cookie, so they resolve concurrently.
+  //
+  // `hideDemo` was `!(await demoModeEnabled()) || (await viewerHidesDemo())`, whose `||`
+  // short-circuited the second read away when demo mode was OFF. Evaluating both is free:
+  // viewerHidesDemo is a cookie read with no I/O and no side effects, and the boolean it feeds
+  // is identical either way.
+  const [
+    { title: pageTitle, description: pageDescription, heroImage, ctaLabel, ctaHref },
+    horizonDays,
+    demoOn,
+    viewerHidesDemoContent,
+    { cardsPerSeries },
+  ] = await Promise.all([
+    // Operator-editable page header (ADR-180) — falls back to the coded defaults.
+    resolvePageContent('/events', CONTENT_FALLBACK),
+    eventsListingHorizonDays(),
+    demoModeEnabled(),
+    viewerHidesDemo(),
+    // How many cards one repeating series may occupy here (ADR-897). Operator-tunable with no
+    // deploy (/admin/events > Repeating events); zero configuration is DEFAULT_CARDS_PER_SERIES = 3,
+    // and a failed settings read returns the same 3, so the knob can only ever show fewer
+    // duplicates, never an empty index. Read ONCE per surface, at the top of the loader, never
+    // per row.
+    getSeriesDisplayConfig(),
+  ])
+
   // THE LISTING HORIZON — operator-set, and UNCAPPED by default (owner ruling 2026-08-20).
   //
   // This was a hardcoded 60 days. A host published a gathering 64 days out, it never appeared here,
@@ -367,7 +402,6 @@ export async function getEventsIndexData(params: EventsIndexParams): Promise<Eve
   // set ever grows past that budget, the rows dropped are the FURTHEST out (each query is ordered
   // by starts_at ascending), which is the right tail to lose — raise SERIES_WIDE_READ deliberately
   // rather than reaching for a date ceiling again.
-  const horizonDays = await eventsListingHorizonDays()
   const listUntil =
     horizonDays > 0
       ? new Date(nowDate.getTime() + horizonDays * 24 * 60 * 60 * 1000).toISOString()
@@ -379,13 +413,7 @@ export async function getEventsIndexData(params: EventsIndexParams): Promise<Eve
   // not-yet-started events from every listing.
   const listableFrom = `${dayInZone(nowDate, HOME_TZ)}T00:00:00.000Z`
 
-  const hideDemo = !(await demoModeEnabled()) || (await viewerHidesDemo())
-
-  // How many cards one repeating series may occupy here (ADR-897). Operator-tunable with no deploy
-  // (/admin/events > Repeating events); zero configuration is DEFAULT_CARDS_PER_SERIES = 3, and a
-  // failed settings read returns the same 3, so the knob can only ever show fewer duplicates, never
-  // an empty index. Read ONCE per surface, at the top of the loader, never per row.
-  const { cardsPerSeries } = await getSeriesDisplayConfig()
+  const hideDemo = !demoOn || viewerHidesDemoContent
 
   // The columns we read for the card + facets. category / attendance_mode /
   // capacity / price_cents / cover_image_path are newer than the generated DB

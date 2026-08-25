@@ -6,8 +6,9 @@
 // also shows a printable certificate card. Modeled on the season celebration's card/Burst/anim
 // pattern (token-only colors, reduced-motion safe), but milestone-aware and season-free.
 
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { Trophy, Gem, X, Sparkles, Award, Printer } from 'lucide-react'
+import { useDialogFocusTrap } from '@/components/ui/use-dialog-focus-trap'
 
 export interface TrophyMilestone {
   kind: 'phase' | 'journey'
@@ -51,6 +52,15 @@ function Certificate({ title }: { title: string }) {
 }
 
 export function TrophyCelebration({ milestone, onDismiss }: { milestone: TrophyMilestone; onDismiss: () => void }) {
+  // Escape and the scroll-lock below were already here; focus was not, so the celebration was a
+  // wall a keyboard could not walk up to. The learner tabbed on behind an `aria-modal` card that
+  // had just told their screen reader the rest of the page did not exist. The hook moves focus to
+  // the card's first control (Dismiss), keeps Tab inside it, and hands focus back to whatever the
+  // learner was on when the card goes away. No motion is involved, so nothing here touches the
+  // reduced-motion guards below.
+  const cardRef = useRef<HTMLDivElement>(null)
+  useDialogFocusTrap(true, cardRef)
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onDismiss()
     window.addEventListener('keydown', onKey)
@@ -81,7 +91,9 @@ export function TrophyCelebration({ milestone, onDismiss }: { milestone: TrophyM
           confetti in this same file was guarded all along (`motion-reduce:hidden`), which is how
           we know the rule was known and these two were missed. */}
       <div
-        className="relative w-full max-w-sm overflow-hidden rounded-3xl border border-primary-bg bg-surface p-8 text-center lift-3 motion-safe:animate-[slideUp_0.45s_ease-out]"
+        ref={cardRef}
+        tabIndex={-1}
+        className="relative w-full max-w-sm overflow-hidden rounded-3xl border border-primary-bg bg-surface p-8 text-center outline-none lift-3 motion-safe:animate-[slideUp_0.45s_ease-out]"
         onClick={(e) => e.stopPropagation()}
       >
         <Burst />
