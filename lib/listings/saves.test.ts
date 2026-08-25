@@ -18,11 +18,17 @@ interface RecordedCall {
 const calls: RecordedCall[] = []
 // Data payloads handed back per terminal read, in call order.
 const results: unknown[] = []
+// Errors handed back per terminal read, in call order. EMPTY BY DEFAULT, so every existing test
+// still sees `error: null` — but without this channel the stub could not produce a database error
+// AT ALL, and #2288's throw-on-write-failure branch was therefore unreachable in tests. That is the
+// same blind spot SCAN-508 is about: `listing_saves` was dropped for a month and these tests stayed
+// green, because a stub that cannot fail cannot notice a table that is gone (ADR-1144).
+const errors: unknown[] = []
 
 function makeBuilder(table: string) {
   const call: RecordedCall = { table, op: null, row: null, filters: [], inFilter: null, limit: null }
   calls.push(call)
-  const resolve = () => Promise.resolve({ data: results.shift() ?? null, error: null })
+  const resolve = () => Promise.resolve({ data: results.shift() ?? null, error: errors.shift() ?? null })
   const b: Record<string, unknown> = {}
   Object.assign(b, {
     select: () => b,
@@ -55,6 +61,7 @@ import {
 beforeEach(() => {
   calls.length = 0
   results.length = 0
+  errors.length = 0
 })
 
 describe('updateListing', () => {
@@ -208,5 +215,37 @@ describe('housing surfaces wiring', () => {
     expect(src).toContain('SaveListingButton')
     expect(src).toContain('Nothing saved yet.')
     expect(src).toContain('Tap the heart on a home to keep it here.')
+  })
+})
+
+// 🔴 THE BRANCH THAT SHIPPED WITHOUT A TEST (SCAN-508 / ADR-1144). `listing_saves` was dropped on
+// 2026-07-07 and these helpers were written against it on 2026-07-27, so the save button never
+// worked at all — the heart flipped on click and reset on reload. Nothing surfaced it: the writes
+// swallowed their error, and this file's stub could not produce one. #2288 made the writes THROW so
+// the optimistic flip reverts; these are the tests that branch never had.
+//
+// A missing table arrives here exactly as any other write failure does — PostgREST answers
+// `42P01 relation "public.listing_saves" does not exist` — so this IS the regression test for the
+// original incident, not merely for a generic error path.
+describe('the write helpers throw on a real failure, so the optimistic heart reverts', () => {
+  it('saveListing throws, naming the underlying error', async () => {
+    errors.push({ message: 'relation "public.listing_saves" does not exist' })
+    await expect(saveListing('p-1', 'l-1')).rejects.toThrow(/saveListing failed/)
+    await expect(saveListing('p-2', 'l-2')).resolves.toBeUndefined()
+  })
+
+  it('unsaveListing throws too — a half-throwing pair would strand the heart in the on state', async () => {
+    errors.push({ message: 'relation "public.listing_saves" does not exist' })
+    await expect(unsaveListing('p-1', 'l-1')).rejects.toThrow(/unsaveListing failed/)
+    await expect(unsaveListing('p-2', 'l-2')).resolves.toBeUndefined()
+  })
+
+  // The READS stay fail-safe on purpose, and that asymmetry is the design: a browse grid must still
+  // render when saves are unavailable, but a write that silently did nothing is a lie to the member.
+  it('the reads still fail SAFE rather than throwing', async () => {
+    errors.push({ message: 'relation "public.listing_saves" does not exist' })
+    await expect(listSavedListingIds('p-1', ['l-1'])).resolves.toEqual(new Set())
+    errors.push({ message: 'relation "public.listing_saves" does not exist' })
+    await expect(listSavedListings('p-1', 'housing')).resolves.toEqual([])
   })
 })

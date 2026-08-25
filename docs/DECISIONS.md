@@ -32089,3 +32089,60 @@ atomically with no function, no ledger row and no probe rows left behind:
 - The remaining `.in()` reads in that loader were measured, not assumed, when SCAN-303 closed:
   `myRsvpRows` is bounded by `event_rsvps_event_profile_uniq` and `circlesRows` by the count of
   hosting circles. **With this row closed, no read in the listing is unbounded.**
+
+---
+
+## ADR-1144: `listing_saves` was retired correctly, then a feature was built on the dropped table and never worked (2026-08-25)
+
+**Status:** Accepted · `supabase/migrations/20260925000000_retire_orphaned_tables_and_functions.sql`
+(amended), `20270327000000_restore_listing_saves.sql`, `lib/listings/index.ts`, SCAN-508
+
+**Context.** `20270327000000_restore_listing_saves.sql` was reconstructed from live state during the
+2026-08-25 merge run, after `listing_saves` reappeared in production with no branch, ADR or backlog
+row behind it. Its header records two things it could not establish — **why** the table was restored,
+and whether `20260925000000`'s retirement claim needed retracting — and asks the next reader to
+settle them. This ADR settles them.
+
+**🔴 The backlog row's own answer was wrong, and that is the finding.** SCAN-508 was filed saying the
+retirement claim *"was false — `lib/listings/index.ts` holds four live sites."* Deepening the shallow
+clone (71 commits locally; `git fetch --deepen=500` reaches 681) settles the order:
+
+| date | event |
+| :-- | :-- |
+| **2026-07-07** (#1606) | `20260925000000` drops `listing_saves`, verifying **0 code references** |
+| **2026-07-27** (#1967) | `lib/listings/index.ts` gains four `.from('listing_saves')` sites — **20 days later** |
+| **2026-08-25** | the table is restored in production; the file is reconstructed as `20270327000000` |
+
+**So the claim was TRUE when it was written, and needs no retraction.** The defect is the mirror of a
+bad retirement: **a feature was built against a table that had already been dropped, so it never
+worked at all.** Not *worked, then broke* — the save heart on `/housing` flipped on click and silently
+reset on reload from the day it shipped. That is also why the restored table holds **zero rows**.
+
+**Why nothing caught it for a month.** Two independent reasons, and both generalise:
+
+1. **It compiled.** `db()` in `lib/listings/index.ts` returns `createAdminClient()` typed as a bare
+   `SupabaseClient`, **with no `Database` generic**. The generated types were *correct* — they did not
+   carry `listing_saves`, because it had been dropped — but an untyped handle never consults them. A
+   typed client would have failed the build that introduced the calls.
+2. **It was silent.** The writes discarded their error and the reads fell back to an empty set, so a
+   missing table produced no error, no log line and no failing test. `lib/listings/saves.test.ts`
+   drives a recording stub whose `resolve()` hardcodes `error: null`, so it can never observe a
+   database error of any kind.
+
+**Decision.** Keep the retirement migration's SQL and its premise sentence; **amend it with a note**
+recording that `listing_saves` was later restored and why, so the two files stop contradicting each
+other. Do not edit `20270327000000` — it describes an apply that already happened.
+
+**Consequences.**
+- The general hazard is the **untyped `db()` handle**, not the retirement sweep. A bare
+  `SupabaseClient` turns "this table does not exist" from a build error into a runtime silence.
+- ✅ Half the silence is already fixed: #2288 made `saveListing`/`unsaveListing` **throw**, so the
+  button's optimistic flip reverts instead of lying. This change adds the error-path tests that
+  branch never had — the stub's hardcoded `error: null` meant the throw was unreachable in tests.
+- The other five tables in that sweep were re-checked on 2026-08-25 and remain correctly retired:
+  `circle_topics`, `menu_config`, `library_renditions`, `library_usages` and
+  `conversation_room_migration` have **zero** `.from(...)`/`.rpc(...)` call sites across `app/`,
+  `lib/` and `components/`.
+- ⚠️ **A retirement sweep is only as good as the clock it is read against.** "0 references" is a fact
+  about one day. Nothing stopped a later branch from writing against the dropped table, and nothing
+  will next time either — which is why the untyped handle, not the sweep, is the thing to fix.
