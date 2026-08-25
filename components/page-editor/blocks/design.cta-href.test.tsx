@@ -72,7 +72,6 @@ describe('CardGridBlock — card links, card buttons, and the browse link', () =
   // missing one is. This is the arm that proves the two cases converge.
   it('draws NO card button for an UNSAFE href, rather than degrading it to #', () => {
     const html = renderToStaticMarkup(
-      // eslint-disable-next-line no-script-url
       <CardGridBlock cards={[{ title: 'A card', button: { label: 'Open', href: 'javascript:alert(1)' } }]} />,
     )
     expect(anchors(html)).toEqual([])
