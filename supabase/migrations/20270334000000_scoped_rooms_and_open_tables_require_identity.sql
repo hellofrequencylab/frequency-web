@@ -49,6 +49,19 @@
 
 begin;
 
+-- ── The before-picture, captured before a single statement runs ──────────────────────────────────
+-- Every control below that says "this took too much" compares against THIS, not against a grant
+-- named in the file. The first version of this migration asserted an absolute fact — that anon holds
+-- SELECT on public.rooms — and `db-tests` failed it, because that grant exists in production and in
+-- no fresh apply of this repo. An absolute assertion measures the ENVIRONMENT; a before/after
+-- comparison measures the CHANGE, which is the only thing a migration is responsible for.
+create temp table _auth_grants_before on commit drop as
+select table_name
+  from information_schema.role_table_grants
+ where table_schema = 'public' and grantee = 'authenticated' and privilege_type = 'SELECT'
+   and table_name in ('rooms', 'room_messages', 'room_members', 'dispatch_poll_votes',
+                      'spotlight_top_friends', 'listing_comments');
+
 -- ── Rooms ────────────────────────────────────────────────────────────────────────────────────────
 drop policy if exists "rooms_read_public_or_member" on public.rooms;
 create policy "rooms_read_public_or_member" on public.rooms
@@ -105,9 +118,16 @@ for select to authenticated using (true);
 -- shape this row criticised ("only EMPTINESS is withholding them"). Removing the GRANT makes the same
 -- refusal arrive as 42501, a fact about permission rather than about how many rows happen to exist.
 --
--- ⚠️ public.rooms KEEPS its anon SELECT on purpose: the policy above deliberately leaves
--- `visibility = 'public'` readable by anon, and revoking the grant would take that branch with it.
--- Taking exactly enough is the discipline 20270330000000 was written about.
+-- ⚠️ public.rooms KEEPS its anon SELECT in THIS migration, and the reasoning was wrong. The premise
+-- was that `visibility = 'public'` is a branch anon uses; nobody measured whether an anon caller ever
+-- reads `rooms` at all. `db-tests` answered it by failing: on a fresh apply the grant does not exist,
+-- because no migration in this repo has ever granted it — production's copy is vestigial. Re-checked
+-- against every caller: `channels/[id]` and `channels/[id]/manage` read through the admin client, and
+-- `messages/*` plus both popover actions call `auth.getUser()` and redirect or return null without a
+-- user. There is no anon reader. 20270335000000 revokes it and states the control that is true.
+--
+-- The `visibility = 'public'` policy branch stays either way — it is what lets an AUTHENTICATED member
+-- discover a public room they have not joined, which is the flow the branch was written for.
 revoke select on public.room_messages         from anon;
 revoke select on public.room_members          from anon;
 revoke select on public.dispatch_poll_votes   from anon;
@@ -156,14 +176,15 @@ begin
     raise exception 'rooms_read_public_or_member no longer requires identity for scoped rooms';
   end if;
 
-  -- POSITIVE: a genuinely public room must still be anon-readable, or this took too much.
+  -- POSITIVE: the public branch must survive, or this took too much. It is what lets an authenticated
+  -- member discover a public room before joining it.
   if not exists (
     select 1 from pg_policies
      where schemaname = 'public' and tablename = 'rooms'
        and policyname = 'rooms_read_public_or_member'
        and qual like '%public%'
   ) then
-    raise exception 'rooms_read_public_or_member dropped its public branch, so anon lost genuinely public rooms';
+    raise exception 'rooms_read_public_or_member dropped its public branch, so public-room discovery is gone';
   end if;
 
   -- The grant half, both directions.
@@ -177,12 +198,21 @@ begin
     raise exception 'anon still holds SELECT on: %', v_bad;
   end if;
 
-  if not exists (
-    select 1 from information_schema.role_table_grants
-     where table_schema = 'public' and grantee = 'anon'
-       and privilege_type = 'SELECT' and table_name = 'rooms'
-  ) then
-    raise exception 'anon lost SELECT on public.rooms, so genuinely public rooms are unreachable - this took too much';
+  -- POSITIVE: every SELECT grant `authenticated` held when this transaction opened, it still holds.
+  -- Stated as a DIFFERENCE against _auth_grants_before rather than as a list of grants that must
+  -- exist, so it is equally true on a fresh apply and on production however their histories differ.
+  -- What it catches is a revoke aimed at the wrong role — the one way these five statements could
+  -- take something they were not meant to.
+  select string_agg(b.table_name, ', ')
+    into v_bad
+    from _auth_grants_before b
+   where not exists (
+     select 1 from information_schema.role_table_grants g
+      where g.table_schema = 'public' and g.grantee = 'authenticated'
+        and g.privilege_type = 'SELECT' and g.table_name = b.table_name
+   );
+  if v_bad is not null then
+    raise exception 'authenticated lost SELECT on: % - this took too much', v_bad;
   end if;
 end $$;
 

@@ -32417,5 +32417,69 @@ purpose**, or the genuinely-public branch would go with it.
 - The ledger was repaired to the repo version and verified as an **exact bijection by hash**, not by
   count: 642 ⇄ 642, `md5 = e870925394181ea1cd8d0a2c48c7abac` on both sides. Equal counts were what hid
   the 2026-08-12 drift where one file was missing *and* one was unapplied.
-- The migration's verification block asserts the **positive** control too — that anon did *not* lose
-  `public.rooms`. Without it, nothing would fail if a future edit revoked one table too many.
+- The migration's verification block asserts the **positive** control too — that the tightening did
+  not take more than it meant to. Without it, nothing would fail if a future edit revoked one table
+  too many.
+- 🔴 **The first version of that positive control was wrong, and `db-tests` caught it.** It asserted
+  that anon still held `SELECT` on `public.rooms`, on the reasoning that the policy's
+  `visibility = 'public'` branch exists to serve anonymous readers. Nobody measured whether an anon
+  caller reads `rooms` at all. It does not, and the grant is not in this repo's migration chain —
+  see **ADR-1150**, which revokes it and restates the control as a before/after comparison.
+
+## ADR-1150: a control that names an absolute grant measures the environment, not the change (2026-08-25)
+
+**Context.** ADR-1149 (`20270334000000`) revoked anon's `SELECT` on five tables and deliberately
+spared a sixth, `public.rooms`, reasoning that the policy's `visibility = 'public'` branch exists to
+serve anonymous readers and that removing the grant would take that branch with it. It then wrote
+that reasoning into the migration as a positive control:
+
+> `raise exception 'anon lost SELECT on public.rooms, so genuinely public rooms are unreachable - this took too much'`
+
+`db-tests` failed on that exact line. On a fresh apply of every migration in this repo, anon does
+**not** hold `SELECT` on `public.rooms` — because no migration here has ever granted it. Production's
+copy is vestigial, predating the tracked chain.
+
+**The premise was never measured.** Re-checked against every caller of `public.rooms`, 2026-08-25:
+
+| Caller | How it reads |
+| --- | --- |
+| `app/(main)/channels/[id]/page.tsx` | admin client (service_role, bypasses RLS and grants) |
+| `app/(main)/channels/[id]/manage/load.ts` | admin client |
+| `app/(main)/messages/page.tsx` | `if (!user) redirect('/sign-in')` |
+| `app/(main)/messages/r/[roomId]/page.tsx` | `if (!user) redirect('/sign-in')` |
+| `app/(main)/messages/actions.ts` | server actions, authenticated |
+| `app/(main)/messages/rooms/actions.ts` | server actions, authenticated (delete via admin) |
+| `app/(main)/messages/popover-actions.ts` | both entry points call `auth.getUser()` and bail on null |
+
+There is **no anonymous reader**. The sparing was not "taking exactly enough"; it was leaving one
+over-grant in place on the strength of an unmeasured premise — [ADR-1082](#adr-1082) in its purest
+form, committed by the same pass that cited ADR-1082 elsewhere.
+
+**Decision.**
+
+1. `20270335000000` revokes `select on public.rooms from anon`. Production now holds **zero** anon
+   `SELECT` grants across all six tables, with all six retained for `authenticated`.
+2. **Both migrations' positive controls are restated as a before/after comparison.** Each opens its
+   transaction by snapshotting `authenticated`'s `SELECT` grants on the six tables into a temp table,
+   and asserts at the end that every grant present at `begin` is still present at `commit`.
+3. The `visibility = 'public'` policy branch stays, and is asserted. It is not an anon affordance and
+   never was: it is what lets an **authenticated** member see a public room they have not joined.
+
+**The rule.** *A control that asserts an absolute fact — "grant X exists" — measures the ENVIRONMENT
+it happens to run in. A control that asserts a difference — "whatever existed at `begin` still exists
+at `commit`" — measures the CHANGE, which is the only thing a migration is answerable for.* The
+absolute form passes in the environment it was written against and fails everywhere else, which reads
+as a broken gate rather than as the true statement it is. Prefer the difference.
+
+**What did its job.** `db-tests` is not a required check, and it caught a defect that `checks`,
+`lint`, `test` and `analyze` all passed. This is the second argument in a week for making it required
+(`OWN-038`), and the first one backed by a real catch.
+
+**Also recorded — the apply-then-commit hazard.** Applying a migration to production *before*
+committing its file turns `check:migrations` red on every CI run already in flight, because the
+ledger gains a row the tree does not yet carry. That is what failed `checks` on `67766731c`. Apply and
+commit in the same motion, or expect a spurious red.
+
+**Ledger.** 643 ⇄ 643, verified as an exact bijection **by hash**:
+`md5 = 0ffdd8328b00d33504cb3261d106b548` on both sides. Not by count — equal counts are what hid the
+2026-08-12 drift.
