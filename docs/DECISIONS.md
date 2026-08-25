@@ -32169,7 +32169,7 @@ hand splits them three ways, and only one third is safe to delete blindly:
 
 | kind | example | what a blind trim would do |
 | :-- | :-- | :-- |
-| **Built, never wired** | `runContestSweep` — its own doc says *"safe to run on a schedule"*, and none of `vercel.json`'s 27 crons calls it | **delete a finished feature** |
+| **Built, never scheduled** | `runContestSweep` — its own doc says *"safe to run on a schedule"*, and none of `vercel.json`'s 27 crons calls it | **delete a finished feature** |
 | **Retired, stale doc** | `spaceTrailingProcessedCents` — still cites ADR-552 for the *"you'd have saved $X"* nudge, which **ADR-811 retired** | correct, but only by luck |
 | **Convenience wrapper** | most of the rest | correct — drop the `export` keyword |
 
@@ -32178,6 +32178,12 @@ report that ranks; it does not decide. `runContestSweep` is filed separately as 
 whether to wire a cron or delete the sweep is an owner ruling about whether the contest is live.
 
 **Consequences.**
+- 🔴 **And it is not evidence of the ABSENCE of one, either — I got this wrong on my own new row within
+  the hour.** SCAN-510 was first written saying the contest *"never tallies"*, from reading
+  `runContestSweep`'s callers and its doc. Both of its sibling recorders are in fact wired inline
+  (`lib/qr/referral.ts:121`, `app/(main)/circles/actions.ts:233`), so the contest tallies fine and only
+  the **reconciliation pass** is missing. Classifying one export means reading the module, not the
+  symbol.
 - ⚠️ **A doc comment is not evidence of a caller.** Two of the three categories above are
   indistinguishable from their comments alone — one advertises a schedule it never got, the other
   advertises a feature that was removed from under it. Both read as gaps; only one is.
