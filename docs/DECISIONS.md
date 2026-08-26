@@ -33233,6 +33233,15 @@ owner row whose probe reads the bundle directly rather than our declaration abou
 
 ## ADR-1164: the naive search_path guard is wrong 47 times out of 50, so it was not shipped (2026-08-26)
 
+> ⚠️ **Where the migration itself lands.** A second session opened #2313 independently, having
+> observed the same divergence from the other side — production carrying the pin while no repo file
+> named it — and recovered the migration **verbatim from the ledger's own `statements` column**
+> (md5 `285a642176b0b53a60b301a709089e76`, matching on both sides). That is a stronger artifact than
+> the one written here, so #2312 withdrew its copy and #2313 owns closing `SCAN-520`. Everything
+> below is unaffected: it records the apply, the decision not to ship the guard, and the timestamp
+> trap — none of which depends on which PR carries the file. **`SCAN-520` stays open until #2313
+> merges; production is ahead of the tree until it does.**
+
 **Context.** `20270326000000` created three natal-chart synastry helpers — `housing_safe_float`,
 `housing_aspect_score`, `housing_natal_compat` — without `set search_path`, tripping the Supabase
 `function_search_path_mutable` advisor three times. The class was in neither `acceptedByName` nor
