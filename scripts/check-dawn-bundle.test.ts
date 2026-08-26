@@ -6,6 +6,7 @@ import {
   roundOf,
   bundlePathsNamedIn,
   bundleIsCurrent,
+  pendingMarkers,
   CHANGES_ROUND,
   BUNDLE_ROUND,
   ROUND_MARKERS,
@@ -29,13 +30,38 @@ describe('check:dawn-bundle', () => {
     expect(failures).toEqual([])
   })
 
-  it('knows the bundle is behind, and says so rather than reporting nothing', () => {
-    // The state this guard was written for. If someone re-exports the bundle and updates
-    // BUNDLE_ROUND, this assertion flips and forces a read of the three-file checklist in the
-    // script's header — which is the point. It is not a claim that being behind is acceptable.
-    expect(bundleIsCurrent()).toBe(false)
-    expect(BUNDLE_ROUND).toBe('2026-08-03')
+  it('knows the bundle is MIXED, and says which files are still behind', () => {
+    // The state this guard was written for, now one round finer. tokens/colors.css was brought to
+    // the 2026-08-25 round by TRANSCRIPTION from CHANGES.md §2; the other five markers are design
+    // work that cannot be transcribed and still await a real DAWN export. A single BUNDLE_ROUND
+    // was false in both directions once that split existed, so provenance lives on each marker.
+    expect(BUNDLE_ROUND).toBe('mixed')
     expect(CHANGES_ROUND).toBe('2026-08-25')
+    expect(bundleIsCurrent()).toBe(false)
+
+    const pending = pendingMarkers().map((m) => m.file).sort()
+    expect(pending).toEqual([
+      'tokens/effects.css',
+      'ui_kits/app/index.html',
+      'ui_kits/app/nav-rail.jsx',
+      'ui_kits/marketing/beta.jsx',
+      'ui_kits/marketing/sections.jsx',
+    ])
+
+    // Exactly one marker has arrived, and it is the transcribable one. If a later change marks a
+    // design file 'transcribed', this fails and forces the question of what it was copied FROM.
+    const arrived = ROUND_MARKERS.filter((m) => m.state !== 'pending')
+    expect(arrived.map((m) => m.file)).toEqual(['tokens/colors.css'])
+    expect(arrived[0].state).toBe('transcribed')
+  })
+
+  it('accepts only the three provenance values, so a typo cannot read as arrived', () => {
+    // `arrived` is computed as state === 'transcribed' || state === 'exported'. A misspelled state
+    // would silently mean "pending", which is the quiet direction, but a NEW value invented later
+    // deserves to fail loudly rather than be guessed at.
+    for (const m of ROUND_MARKERS) {
+      expect(['transcribed', 'exported', 'pending']).toContain(m.state)
+    }
   })
 
   it('reads the round out of the real CHANGES.md', () => {

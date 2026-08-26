@@ -18,7 +18,7 @@
   --color-marketing-canvas:  #F5EEE2;
   --color-surface:           #FFFFFF;
   --color-surface-elevated:  #F5F2EC;
-  --color-surface-post:      #F7F5F0;
+  --color-surface-post:      var(--color-surface);
   /* Chrome. The app frame (top bar, rails, menus) sits a step DOWN from the
      canvas instead of white, so the frame reads as frame and the white content
      cards are the thing that pops. */
@@ -33,7 +33,7 @@
      black: the editorial direction wants ink that reads printed, not harsh. */
   --color-text:              #3D352A;
   --color-text-muted:        #6B6253;
-  --color-text-subtle:       #8F8675;
+  --color-text-subtle:       #6E6558;
 
   /* ── Ink. The cinematic dark band, drawn from Frequency's black wood-slat
      interiors. Near-neutral warm, NOT brown. Load-bearing half of the bold
@@ -48,7 +48,7 @@
   /* ── Brand · Primary (amber-gold) — the single chrome accent ──────────── */
   --color-primary:           #E2912F;
   --color-primary-hover:     #CE8023;
-  --color-primary-strong:    #9A5E12;
+  --color-primary-strong:    #965C12;
   --color-primary-bg:        #FBEFD9;
   --color-text-on-primary:   #FFFFFF;
 
@@ -64,7 +64,7 @@
   --color-broadcast:         #1EB6C5;
   --color-broadcast-strong:  #0E808D;
   --color-broadcast-bg:      #D8F2F5;
-  --color-text-on-broadcast: #FFFFFF;
+  --color-text-on-broadcast: #1A1206;
 
   /* ── Brand · Move (cerulean blue-teal) — the Get Moving accent for the
      Mindless door. Deliberately BLUER than the green-leaning success and
@@ -88,7 +88,7 @@
   --color-info-bg:           #E3EDF7;
 
   /* ── Focus ─────────────────────────────────────────────────────────────── */
-  --color-focus-ring:        #E2912F;
+  --color-focus-ring:        #B86A15;
 
   /* ── Rank spectrum. Ten primitives, same in both modes. The season-rank
      ladder (Ghost → Initiate → Adept → Master) draws from the first four;
@@ -113,6 +113,18 @@
   --brand-burn:         rgba(74, 40, 12, 0.45);
   --brand-shine:        rgba(255, 244, 222, 0.65);
   --brand-wash:         rgba(194, 88, 18, 0.62);
+  /* Added 2026-08-25 (CHANGES.md §2). Transcribed from PROD-AHEAD.md §5, which carries
+     production's values, because the additions are listed by NAME in CHANGES.md and by
+     VALUE only in the sheet. Not from a DAWN export -- see the header of this file. */
+  --color-text-on-rank:      #1A1206;
+  --color-chrome-hover:      #FFFFFF;
+  --color-text-on-danger:    #FFFFFF;
+  --color-text-on-warning:   #1A1206;
+  --color-text-on-success:   #FFFFFF;
+  /* Follows the IMAGE, not the theme, which is why these alias rather than hold hexes. */
+  --color-on-media-light:    var(--color-on-ink);
+  --color-on-media-dark:     var(--color-ink);
+  --color-on-media:          var(--color-on-media-light);
 }
 
 .dark {
@@ -125,7 +137,7 @@
   --color-marketing-canvas:  #120E07;
   --color-surface:           #211A10;
   --color-surface-elevated:  #2B2415;
-  --color-surface-post:      #2B2415;
+  --color-surface-post:      var(--color-surface);
   --color-chrome:            #1C1710;
   --color-chrome-border:     #33291A;
 
@@ -134,7 +146,7 @@
 
   --color-text:              #EFE8DB;
   --color-text-muted:        #A99C88;
-  --color-text-subtle:       #7E735F;
+  --color-text-subtle:       #A2957D;
 
   /* Ink runs deeper than the dark canvas so marketing dark bands still read as
      a deliberate, cinematic black in dark mode. */
@@ -159,7 +171,7 @@
   --color-broadcast:         #69D6E6;
   --color-broadcast-strong:  #69D6E6;
   --color-broadcast-bg:      #0F2A34;
-  --color-text-on-broadcast: #FFFFFF;
+  --color-text-on-broadcast: #1A1206;
 
   --color-move:              #58B4E0;
   --color-move-hover:        #76C2E7;
@@ -185,6 +197,13 @@
   --brand-burn:         rgba(20, 9, 0, 0.60);
   --brand-shine:        rgba(255, 230, 190, 0.42);
   --brand-wash:         rgba(232, 134, 54, 0.55);
+  /* Added 2026-08-25 (CHANGES.md §2). Transcribed from PROD-AHEAD.md §5, which carries
+     production's values, because the additions are listed by NAME in CHANGES.md and by
+     VALUE only in the sheet. Not from a DAWN export -- see the header of this file. */
+  --color-chrome-hover:      #2B2415;
+  --color-text-on-danger:    #1A1206;
+  --color-text-on-warning:   #1A1206;
+  --color-text-on-success:   #1A1206;
 }
 
 /* ── Always-light lock ─────────────────────────────────────────────────────
@@ -197,7 +216,7 @@
   --color-marketing-canvas:  #F5EEE2;
   --color-surface:           #FFFFFF;
   --color-surface-elevated:  #F5F2EC;
-  --color-surface-post:      #F7F5F0;
+  --color-surface-post:      var(--color-surface);
   /* Chrome. The app frame (top bar, rails, menus) sits a step DOWN from the
      canvas instead of white, so the frame reads as frame and the white content
      cards are the thing that pops. */
@@ -207,10 +226,10 @@
   --color-border-strong:     #D8CDBB;
   --color-text:              #3D352A;
   --color-text-muted:        #6B6253;
-  --color-text-subtle:       #8F8675;
+  --color-text-subtle:       #6E6558;
   --color-primary:           #E2912F;
   --color-primary-hover:     #CE8023;
-  --color-primary-strong:    #9A5E12;
+  --color-primary-strong:    #965C12;
   --color-primary-bg:        #FBEFD9;
   --color-text-on-primary:   #FFFFFF;
   --color-success:           #11827A;
@@ -222,7 +241,9 @@
   --color-move-strong:       #0F4E72;
   --color-move-bg:           #DCEFF8;
   --color-text-on-move:      #FFFFFF;
-  --color-focus-ring:        #E2912F;
+  --color-focus-ring:        #B86A15;
   background: var(--color-canvas);
   color: var(--color-text);
+  /* Added in step with the light block (CHANGES.md §2). */
+  --color-chrome-hover:      #FFFFFF;
 }

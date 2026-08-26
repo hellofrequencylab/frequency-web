@@ -17,37 +17,40 @@ green). The outbound round that copies this sheet is
 
 ---
 
-## 0. 🔴 READ FIRST — this sheet is derived from a bundle that is three weeks behind
+## 0. ✅ THE COLOUR DIVERGENCE IS CLOSED — §2, §3 and §5 are history, not a to-do
 
-**DAWN applied every correction in §2 and §3 on 2026-08-25. Do not send them again.**
+**Do not send §2, §3 or §5. There is nothing in them left to apply.**
 
-`design_handoff/CHANGES.md` is the **2026-08-25** round and its §2 lists all five corrections plus
-the aliasing decision as *applied, value for value*, along with the twelve additions from §5. The
-vendored copy this sheet is derived from — `design_handoff/dawn/tokens/colors.css` — is still the
-**2026-08-03** export. It was never re-copied, so it still holds the pre-correction values
-(`--color-focus-ring: #E2912F`, and the rest).
+DAWN applied every correction on 2026-08-25 (`CHANGES.md` §2). The vendored copy lagged three
+weeks, so this sheet went on listing them; on **2026-08-26** `design_handoff/dawn/tokens/colors.css`
+was brought up to that round and the two now agree on **every colour token**.
 
-That is why every row below still reads as open. **The rows are true about the file on disk and
-false about DAWN.** The tables are kept, unchanged and machine-checked, because they are what the
-divergence guard derives and compares — but the next outbound handoff must carry §0, not §2.
+`lib/theme/dawn-divergence.test.ts` derives the set on every `pnpm test` and its ledger is now
+**empty in both directions** — no value divergence, and no colour token production has that DAWN
+lacks. That is a re-proven fact, not a claim.
+
+⚠️ **The values were TRANSCRIBED, not exported.** They were written from what `CHANGES.md` §2
+documents, with the twelve additions taking their hexes from §5 below (CHANGES.md names those twelve
+but prints no values). Faithful to two independent statements — DAWN's own changelog and the owner's
+confirmation — but it is **not** a DAWN export.
 
 | | |
 | :--- | :--- |
-| **What is actually outstanding** | Nothing in §2 or §3. The plate divergence in §6a is, and it is new. |
-| **Why the guard is green anyway** | `lib/theme/dawn-divergence.test.ts` asserts *found divergences == declared divergences*. Both sets are eight rows. Green means "they disagree in the ways we wrote down", never "they agree". |
-| **What closes this** | Re-export `design_handoff/dawn/` from DAWN, then move `BUNDLE_ROUND` in `scripts/check-dawn-bundle.mjs`, the ledger in the divergence test, and this sheet, in one change. |
-| **Who** | Owner — DAWN is an external Claude Design project and the bundle is copied by hand. Backlog row `LIVE-127`. |
+| **What is actually outstanding** | Only §6a, the hero plate — and it is a correction going TO DAWN, not one coming from it. |
+| **What the rest of the bundle is** | Still the 2026-08-03 photocopy. Five markers pending: `tokens/effects.css`, `ui_kits/marketing/sections.jsx`, `ui_kits/app/index.html`, `ui_kits/marketing/beta.jsx`, `ui_kits/app/nav-rail.jsx`, plus `guidelines/on-media.card.html` which never arrived. |
+| **Why those were not transcribed too** | They are **design** work — four hero rungs, a rewritten nav rail, new banner copy, a whole guideline card. Writing those from a prose description would be inventing an artifact rather than copying one. DAWN made exactly that mistake this round: it drew a plate from a description production had deleted (§6a). |
+| **Who** | Owner — `LIVE-127`. `pnpm check:dawn-bundle` tracks which markers are pending and fails if any arrives undeclared. |
 
-`pnpm check:dawn-bundle` measures this gap and fails the moment the bundle is refreshed without the
-three files above moving with it.
+**§2, §3 and §5 are kept below as the record of what was reconciled and why each value is what it
+is.** They are no longer an outbound ask. The next handoff carries **§6a**.
 
 ---
 
 ## 1. The answer, first
 
-**Three AA fixes and one aliasing decision are waiting to go back, plus twelve tokens DAWN has no
-row for at all.** A fourth row that four documents still carry — `--color-text-on-primary` — is
-**stale and must not be sent**. See §4.
+**Nothing in §2, §3 or §5 is outstanding — all of it is applied on both sides as of 2026-08-26.**
+See §0. The one live outbound item is **§6a: production has no hero plate in any rung**, and DAWN
+drew four. `--color-text-on-primary` remains the row that must never be sent (§4).
 
 ---
 
