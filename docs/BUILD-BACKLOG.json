@@ -5066,6 +5066,22 @@
         "expect": "exit0",
         "note": "Measures the CONSEQUENCE, not the title, in four independent ways. (1) The price control must BRANCH on the verdict, not merely mention payouts. (2) The hand-written duplicate sentence must be GONE \u2014 that negative is the half that proves the shared constant is actually the one rendering, and it is the only assertion here that a re-hand-rolling would trip. (3) The prop must reach BOTH server renderers plus the spark pass-through, or the notice is state-aware on some surfaces and not others, which is worse than uniformly state-blind. (4) The create page must resolve readiness per scope through the batched helper, since the payee is not always the caller (ADR-819). NO TEST RUNNER: lib/events/ticket-eligibility.test.ts pins the behaviour and runs in `pnpm test` on every PR; a probe that re-spawns vitest is what the LIVE-034 meta-guard forbids, and it correctly rejected the first version of this probe."
       }
+    },
+    {
+      "id": "SCAN-520",
+      "title": "Three natal-chart SQL helpers ship without a pinned search_path, repeating a fix the same function family already took",
+      "status": "open",
+      "lane": "hygiene",
+      "size": "XS",
+      "source": {
+        "file": "docs/DATABASE.md",
+        "ref": "general scan 2026-08-25, live Supabase security advisors"
+      },
+      "detail": "FOUND 2026-08-25 by reading the LIVE security advisors against scripts/maintenance/accepted-advisories.json rather than by reading the tree. Supabase returns 145 security lints; 142 are adjudicated by name or target (78 rls_enabled_no_policy, 60 security_definer_function_executable, 3 extension_in_public, 1 spatial_ref_sys). THREE ARE NOT: function_search_path_mutable on public.housing_safe_float, public.housing_aspect_score and public.housing_natal_compat, all created by 20270326000000_natal_chart_matching.sql (ADR-1138, the natal-chart work). `function_search_path_mutable` appears in NEITHER acceptedByName NOR acceptedByTarget, so the next weekly maintenance sweep surfaces all three as novel, unadjudicated findings.\n\nWHY THIS IS A MISSED CONNECTION AND NOT JUST A LINT. The same function family already took this exact fix once. 20261133000000_housing_matching_v2.sql created housing_safe_date/housing_safe_int without a search_path, the advisor flagged them, and 20261134000000_housing_matching_v2_search_path.sql exists for no other purpose than to re-declare those two with `set search_path = public`. The new migration's own comment cites those functions as the pattern it is following (\"same pattern as housing_safe_date/housing_safe_int\") and then omits the one thing that dedicated migration was written to add.\n\nSEVERITY IS LOW AND SHOULD BE STATED HONESTLY. All three are SECURITY INVOKER, not DEFINER, and the migration revokes EXECUTE from public, anon and authenticated by name (ADR-959), so no browser role can call them; they run only inside the SECURITY DEFINER match RPCs. Internal references are schema-qualified. So this is convention drift and advisor noise, not a live exposure -- but it is the kind that goes unadjudicated and then reads as coverage.\n\nNOTHING IN THE REPO COULD HAVE CAUGHT IT. check:rls, check:grants and check:function-grants replay migrations for RLS and for grants; none of them looks at search_path. The advisor sweep that would have is weekly and advisory. The durable fix is a guard, not just a migration -- but the migration is the part that closes the finding.\n\nTHE FIX. One migration mirroring 20261134000000: re-declare the three with `set search_path = public`, bodies unchanged. Per docs/DATABASE.md the file and the prod apply travel together (ADR-1111) -- the file alone turns check:migrations red from the unapplied side, so ship the repo file and apply the DDL via MCP execute_sql plus an explicit ledger insert at the file's own version in the same sitting. Consider adding function_search_path_mutable to accepted-advisories.json ONLY if the owner decides the three should stay unpinned; the default is to pin them.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "for f in housing_safe_float housing_aspect_score housing_natal_compat; do grep -rhA2 \"create or replace function public\\.$f(\" supabase/migrations/ | grep -q \"set search_path\" || exit 1; done"
+      }
     }
   ]
 }
