@@ -57,7 +57,6 @@ import type { MyFrequency } from '@/lib/nav/my-frequency'
 import { BrandMark } from '@/components/layout/brand-mark'
 import { Wordmark } from '@/components/layout/wordmark'
 import { MemberFooter } from '@/components/layout/member-footer'
-import { SiteAlertBar } from '@/components/layout/site-alert-bar'
 import { AREA_ICONS, railIconFor } from '@/components/layout/nav-icons'
 import { UpgradeCrew } from '@/components/layout/upgrade-crew'
 import { DemoToggle } from '@/components/layout/demo-toggle'
@@ -1660,6 +1659,7 @@ export default function AppShell({
   mobileStats,
   dock,
   ticker,
+  banner,
   unreadCount = 0,
   // Reserved for the persistent chat dock's unread badge (Phase 1). The header
   // popover that consumed it has moved into the dock; kept on the shell API so the
@@ -1722,6 +1722,12 @@ export default function AppShell({
   dock?: React.ReactNode
   /** Community news ticker pinned above the page content (streamed via Suspense). */
   ticker?: React.ReactNode
+  /** The operator announcement strip, rendered full-width directly under the header, or undefined
+   *  when nothing is set. The SHELL never decides whether an announcement exists: the layout reads
+   *  `announcementBannerState()` in the wave it already awaits and passes the bar in already built,
+   *  so the height is present in the first flush and nothing shifts (ADR-1030). Signed-in only by
+   *  construction, because this shell is. */
+  banner?: React.ReactNode
   unreadCount?: number
   /** Live total of unread messages (1:1 DMs + rooms), resolved server-side. Seeds the header
    *  Messages icon's badge so it shows on first paint (mobile + desktop) without opening the
@@ -2243,9 +2249,11 @@ export default function AppShell({
       </header>
       )}
 
-      {/* Site-wide announcement strip, directly below the header (hidden on a chromeless editor
-          takeover). Dismissible; scrolls away with content. */}
-      {!editorTakeover && <SiteAlertBar />}
+      {/* The operator announcement strip, directly below the header (hidden on a chromeless editor
+          takeover). A SLOT, not a component: the layout does the read (ADR-1030 -- reading it here
+          behind Suspense reserved no height and shifted the whole page when it landed) and passes
+          the rendered bar in, or nothing at all when no announcement is set. */}
+      {!editorTakeover && banner}
 
       {/* ── Admin contextual sub-nav (NAV-SYSTEM-REDESIGN §6) ── */}
       {/* The old admin MegaBar sub-header (a second dropdown layer) is GONE. On /admin* the active

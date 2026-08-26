@@ -33434,3 +33434,70 @@ either half yet.**
   delete the history in order to go green. It now strips line comments first, and gained two arms it
   never had: an absolute tolerance must be **set**, and it must be **under 1,600**. The row can no
   longer be closed by deleting the tolerance, nor by setting one too loose to see a control.
+
+## ADR-1166: the beta strip was on four public trees, so the announcement bar now carries no copy and mounts signed-in only (2026-08-26)
+
+**Context.** `SiteAlertBar` said, in a string literal:
+
+> Hey Friends 👋🏼 Frequency will be in Beta until September 1st. Feel free to browse around, make some
+> friends, and please report any bugs!
+
+It was mounted in **five** places: the member shell (`app-shell.tsx`), the marketing tree, the help
+centre, `/discover`, and the signed-out public-twin branch of `app/(main)/layout.tsx`. **Four of the
+five are public and indexable.** The authed app is robots-disallowed; `/discover` and the help centre
+are explicitly the only indexable community URLs the site has. So the first line under the header on
+every page a stranger or a crawler could reach was an operational notice written for members, telling
+them the product was unfinished, with a "Submit a bug" button beside it.
+
+Two smaller defects rode along:
+
+- **The public "Submit a bug" button did nothing on the public twins.** `SupportLauncher` listens for
+  an `open-support` event and the three public layouts mounted it; the `(main)` twin branch did not.
+  The button rendered and the dialog never opened.
+- **Dismissal was keyed to a hand-bumped `ALERT_KEY` constant.** Edit the copy, forget the bump, and
+  the NEW announcement is hidden from everyone who dismissed the old one — silently, and visible only
+  to someone who had never dismissed.
+
+Meanwhile the repo already had the general mechanism this bar was supposed to be. `AnnouncementBanner`
+(ADR-1060, ADR-1030) reads `platform_settings.announcement_message`, is dark until an operator writes
+one, and mounts in the signed-in branch of the same layout — as an inline card inside the content
+column, which is why `BannerMeasure` existed at all (to stop it painting across the operator consoles'
+info rail). **Two announcement systems, one of them hardcoded.**
+
+**Decision.** One announcement, one surface, no copy in the component.
+
+| Before | After |
+| :--- | :--- |
+| `site-alert-bar.tsx` — literal beta copy, 5 mounts, 4 public | `announcement-bar.tsx` — operator's words, 1 mount, signed-in |
+| `AnnouncementBanner` — inline card in the content column | deleted; `announcementBannerState()` kept as the state module |
+| `BannerMeasure` — kept the card off the admin info rail | deleted; a full-width strip above the columns needs no measure |
+| `ALERT_KEY`, bumped by hand | `keyFor(message)` — new words are a new key by construction |
+| countdown computed in the component | `countdownLabel()` on the server; the bar reads no clock |
+
+The bar mounts through a new `banner` **slot** on `AppShell` rather than importing itself. That keeps
+ADR-1030's constraint intact — the layout does the read inside the parallel wave it already awaits, so
+the height is present in the first flush and nothing shifts — while making "signed-in only" structural
+rather than remembered: the shell is the only thing that can pass the slot, and the shell is signed-in.
+
+`SupportLauncher` came out of the three public layouts with it. Nothing in those trees dispatches
+`open-support` once the bar is gone, so it was a listener with no callers. **Public pages now have no
+bug-report affordance**; signed-in members keep three (the right rail, the account menu, the member
+footer). Add a public one deliberately if it is wanted, rather than inheriting it from a beta notice.
+
+**Consequences.**
+
+- **The announcement surface is dark right now.** `announcement_message` is unset in
+  `platform_settings`, and `beta_ends_at` is still `2026-10-31` — a date with no message, which
+  ADR-1060's gate correctly ignores. Nothing renders until an operator writes words.
+- **🔴 The two copy assertions failed on their first run, against a bar that was already correct.**
+  "No beta copy" and "no `ALERT_KEY`" both tripped on the new file's own header comment, which
+  explains the regression and names the constant it replaced. A probe that cannot tell **use** from
+  **mention** pressures the next person to delete the history in order to go green — the identical
+  defect [ADR-1165](#adr-1165) records in a backlog probe the same week. The assertions now strip
+  comments first. This is the second time in one week; treat "grep the file for a word" as suspect by
+  default.
+- **The guards are source-shape, deliberately.** What went wrong was *where a component was mounted*
+  and *whether it held a literal*. Neither is observable by rendering it, which is exactly why
+  rendering it caught nothing for the two weeks this was live. `announcement-bar.test.ts` reads the
+  three public layouts plus the twin branch and was mutation-checked: re-adding the bar to
+  `app/(marketing)/layout.tsx` fails it.

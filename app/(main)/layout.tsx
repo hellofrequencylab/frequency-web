@@ -7,9 +7,8 @@ import { hasOperatedSpaces } from '@/lib/spaces/operated'
 import { VERTICALS } from '@/lib/verticals'
 import AppShell from '@/components/layout/app-shell'
 import { ImpersonationBanner } from '@/components/layout/impersonation-banner'
-import { AnnouncementBanner, announcementBannerState } from '@/components/layout/announcement-banner'
-import { BannerMeasure } from '@/components/layout/banner-measure'
-import { SiteAlertBar } from '@/components/layout/site-alert-bar'
+import { announcementBannerState, countdownLabel } from '@/components/layout/announcement-banner'
+import { AnnouncementBar } from '@/components/layout/announcement-bar'
 import type { Metadata } from 'next'
 import { matchPublicTwin } from '@/lib/nav/public-twin'
 import { getPublicCircles, getTopicalChannels } from '@/lib/discover'
@@ -228,9 +227,6 @@ export default async function MainLayout({
         {/* Spacer clears the now-taller fixed header (4rem + safe-area-inset-top). min-h-dvh
             (not screen) tracks the iOS dynamic toolbar so landscape height doesn't glitch. */}
         <main className="min-h-dvh bg-canvas" style={{ paddingTop: 'calc(4rem + env(safe-area-inset-top))' }}>
-          {/* Site-wide announcement strip, directly below the fixed header (full width, above the
-              centered content column). */}
-          <SiteAlertBar />
           {/* A public page rides in the SAME centered CONTENT COLUMN as the signed-in shell: the member
               three-column grid (empty left/right rail gutters flanking a flex-1 center column inside
               max-w-[105rem]), so a public Space profile is the exact width it is signed in. The public
@@ -747,6 +743,11 @@ export default async function MainLayout({
       mobileStats={mobileStats}
       dock={dock}
       ticker={ticker}
+      banner={
+        announcement ? (
+          <AnnouncementBar message={announcement.message} countLabel={countdownLabel(announcement.ends)} />
+        ) : null
+      }
       unreadCount={unreadCount}
       messagesUnread={messagesUnread}
       canReceivePayouts={canReceivePayoutsGate}
@@ -768,17 +769,6 @@ export default async function MainLayout({
       <GaConsentGate disabled={!analyticsConsent || gaStaffExcluded} />
       {gaStaffExcluded && <GaStaffOptOut />}
       <ImpersonationBanner />
-      {/* Announcement banner (platform_settings.announcement_message) — absent entirely until an operator writes a
-          date, so no space is held for a banner that is not coming. When one IS coming the date is
-          already resolved above, so the banner renders in the same flush as the shell and there is
-          nothing to shift. BannerMeasure holds it to the page BODY's width on the operator consoles,
-          whose info rail is a column inside the page rather than a shell rail — without it the alert
-          ran the full width and painted across LIVE / NEEDS ATTENTION. */}
-      {announcement && (
-        <BannerMeasure>
-          <AnnouncementBanner message={announcement.message} ends={announcement.ends} />
-        </BannerMeasure>
-      )}
       {children}
       {/* The Spark modal slot (ADR-1017). Sits beside the page rather than inside it, next to the
           app's other overlay launchers below, because a wizard opened over a page is chrome, not

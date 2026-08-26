@@ -65,3 +65,37 @@ describe('announcementBannerState', () => {
     expect(await announcementBannerState()).toEqual({ message: 'Doors open Friday.', ends: null })
   })
 })
+
+// ─────────────────────────────────────────────────────────────────────────────────────────────
+// THE COUNTDOWN'S WORDS ARE RENDERED ON THE SERVER.
+//
+// The bar is a Client Component now (it owns the dismissal), and this arithmetic used to be inline
+// in it. Two things broke: react-hooks/purity rejects `Date.now()` in render, and a countdown
+// computed once on the server and again in the browser disagrees across a midnight boundary, which
+// is a hydration mismatch on precisely the day the number matters. So the label is built here and
+// handed over finished.
+// ─────────────────────────────────────────────────────────────────────────────────────────────
+
+describe('countdownLabel', () => {
+  it('is null when there is no deadline, so the pill never renders empty', async () => {
+    const { countdownLabel } = await import('./announcement-banner')
+    expect(countdownLabel(null)).toBeNull()
+  })
+
+  it('says "1 day left" in the singular', async () => {
+    const { countdownLabel } = await import('./announcement-banner')
+    expect(countdownLabel(new Date(Date.now() + 12 * HOUR))).toBe('1 day left')
+  })
+
+  it('rounds a partial day UP, so the last day is never shown as zero', async () => {
+    const { countdownLabel } = await import('./announcement-banner')
+    expect(countdownLabel(new Date(Date.now() + 49 * HOUR))).toBe('3 days left')
+  })
+
+  it('floors at zero rather than counting negative for a date already gone', async () => {
+    // `announcementBannerState` drops a passed date before this is ever called, so this is a
+    // belt-and-braces case: nothing should be able to paint "-4 days left".
+    const { countdownLabel } = await import('./announcement-banner')
+    expect(countdownLabel(new Date(Date.now() - 100 * HOUR))).toBe('0 days left')
+  })
+})

@@ -1,8 +1,6 @@
 import Link from 'next/link'
 import { SiteHeader } from '@/components/layout/site-header'
 import { ViewerProvider } from '@/components/layout/viewer-chrome'
-import { SiteAlertBar } from '@/components/layout/site-alert-bar'
-import { SupportLauncher } from '@/components/support/support-launcher'
 import { SupportChatWidget } from '@/components/chat/support-chat-widget'
 import { Wordmark } from '@/components/layout/wordmark'
 
@@ -29,9 +27,6 @@ export default function DiscoverLayout({ children }: { children: React.ReactNode
       {/* id="main" is the target of SiteHeader's "Skip to content" link (WCAG 2.4.1 Bypass
           Blocks) on the only indexable community surface. */}
       <main id="main" tabIndex={-1} className="min-h-dvh bg-surface" style={{ paddingTop: 'calc(4rem + env(safe-area-inset-top))' }}>
-        {/* Site-wide announcement strip, directly below the fixed header (full width). Self-hides
-            once dismissed (localStorage). */}
-        <SiteAlertBar />
         {children}
       </main>
 
@@ -56,9 +51,6 @@ export default function DiscoverLayout({ children }: { children: React.ReactNode
           </div>
         </div>
       </footer>
-      {/* The report dialog the SiteAlertBar's "Submit a bug" button opens. This public tree has no
-          app shell, so it mounts the launcher here (it listens for the 'open-support' event). */}
-      <SupportLauncher />
       {/* Anonymous live chat (ADR-816) — this PUBLIC surface owns the bottom-right corner
           (docs/CHAT-SHELL-PLAN.md §2); the member shell owns its own via the dock. Off unless
           NEXT_PUBLIC_SUPPORT_CHAT is enabled. */}
