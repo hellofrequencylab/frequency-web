@@ -144,6 +144,13 @@ const VITEST_ENFORCED: Record<string, string> = {
   // the real census with its quarantine stripped, which must still name all five orphans) as well
   // as against the real tree, so neither half can go quietly vacuous.
   'check:stored-blocks': 'scripts/check-stored-blocks.test.ts',
+  // Added 2026-08-25. Measures whether design_handoff/dawn/ is the round design_handoff/CHANGES.md
+  // describes. Pure file reading, so vitest is its home; and its sibling test calls run() directly
+  // rather than spawning node, because a probe that spawns a runner is what LIVE-034 exists about.
+  // The guard fails BOTH ways on purpose: a re-exported bundle that leaves the divergence ledger
+  // and PROD-AHEAD.md behind is the dangerous direction, since a refreshed colors.css silently
+  // closes five declared divergences and the sheet would go on asking DAWN to apply them.
+  'check:dawn-bundle': 'scripts/check-dawn-bundle.test.ts',
   // Added 2026-08-25 (PROG-E0, ADR-1129). The entity-block twin of check:stored-blocks and the
   // same split for the same reason: the CLI half is pure node and cannot import the TSX entity
   // registry, so the ENFORCING arm — every stored EntityLayout type resolves against the live

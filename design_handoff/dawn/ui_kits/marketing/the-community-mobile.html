@@ -1,0 +1,112 @@
+<!-- @dsCard group="Screens · Marketing" viewport="1400x1420" name="Marketing — The Community, mobile" subtitle="The mobile reference frame for /the-community at 390px: one breakpoint at 900px, what moves, and the three places it matters" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Frequency · The Community, mobile frame</title>
+<link rel="stylesheet" href="../../styles.css">
+<style>
+  html, body { margin: 0; background: var(--color-marketing-canvas); }
+  body { font-family: var(--font-sans); color: var(--color-text); padding: 34px 30px 40px; box-sizing: border-box; min-height: 100vh; }
+  .hd { max-width: 900px }
+  .hd h1 { font-family: var(--font-display); font-size: 2rem; letter-spacing: var(--tracking-tight); margin: 0.5rem 0 0 }
+  .hd p { font-size: 1.02rem; line-height: 1.7; color: var(--color-text-muted); margin: 0.6rem 0 0; text-wrap: pretty }
+  /* Fixed 406px tracks: the phone is a 390px reference frame plus an 8px bezel a
+     side, so the track cannot be fractional or the bezel clips. */
+  .row { display: grid; grid-template-columns: repeat(3, 406px); gap: 24px; margin-top: 30px; align-items: start }
+  .phone { border: 8px solid var(--color-ink); border-radius: 34px; overflow: hidden; background: var(--color-canvas); box-shadow: 0 1px 2px color-mix(in srgb, var(--color-ink) 8%, transparent), 0 18px 40px -12px color-mix(in srgb, var(--color-ink) 22%, transparent) }
+  .phone iframe { display: block; width: 390px; height: 620px; border: 0; transform-origin: 0 0 }
+  .wrap { width: 100%; overflow: hidden }
+  .cap { margin-top: 14px }
+  .cap .eyebrow { color: var(--color-primary-strong) }
+  .cap h2 { font-size: 1.06rem; letter-spacing: var(--tracking-tight); margin: 0.3rem 0 0 }
+  .cap ul { margin: 0.5rem 0 0; padding-left: 1.05rem; display: grid; gap: 6px }
+  .cap li { font-size: 0.92rem; line-height: 1.6; color: var(--color-text-muted) }
+  .law { margin-top: 32px; max-width: 900px; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-card); padding: 1.2rem 1.4rem }
+  .law h2 { font-size: 1.05rem; margin: 0; letter-spacing: var(--tracking-tight) }
+  .law table { border-collapse: collapse; width: 100%; margin-top: 0.7rem }
+  .law th, .law td { text-align: left; font-size: 0.92rem; padding: 0.5rem 0.9rem 0.5rem 0; border-top: 1px solid var(--color-border); vertical-align: top; line-height: 1.55 }
+  .law th { color: var(--color-text-subtle); font-weight: 600; white-space: nowrap }
+  .law td { color: var(--color-text-muted) }
+  code { font-family: var(--font-mono); font-size: 0.88em; color: var(--color-text) }
+</style>
+</head>
+<body>
+<div class="hd">
+  <p class="eyebrow" style="margin:0;color:var(--color-primary-strong)">Reference frame · mobile · OWN-019</p>
+  <h1>The Community, on a phone</h1>
+  <p>One breakpoint, at 900px. Above it the page is the desktop frame; below it these three things move, and nothing else does. The frames are the real page rendered at 390px, not a redraw, so what you see here is what the CSS does.</p>
+</div>
+
+<div class="row">
+  <div>
+    <div class="phone"><div class="wrap"><iframe data-at="top" src="the-community.html" title="Hero and Pillars at 390px"></iframe></div></div>
+    <div class="cap">
+      <p class="eyebrow" style="margin:0">Above the fold</p>
+      <h2>Hero, then the four Pillars</h2>
+      <ul>
+        <li>One image request above the fold, and it is the hero. Nothing else loads eagerly.</li>
+        <li>Hero type drops to the clamp floor; the two buttons stack full width and stay above 44px.</li>
+        <li>Pillars go 4-up to 2-up. They stay buttons, not a select: the point is seeing all four at once.</li>
+      </ul>
+    </div>
+  </div>
+  <div>
+    <div class="phone"><div class="wrap"><iframe data-at="zig" src="the-community.html" title="ZigZag beats at 390px"></iframe></div></div>
+    <div class="cap">
+      <p class="eyebrow" style="margin:0">The editorial run</p>
+      <h2>ZigZag stops zigzagging</h2>
+      <ul>
+        <li>Every beat becomes image then text, in that order, on both beats. The desktop <code>reverse</code> flip is dropped rather than alternated: alternating on one column reads as a mistake.</li>
+        <li>The Statement and the marquee keep full bleed. The marquee speed is unchanged and reduced motion parks it.</li>
+        <li>The ladder rows keep the numeral gutter at 2.6rem, so the five words stay a column and not a list.</li>
+      </ul>
+    </div>
+  </div>
+  <div>
+    <div class="phone"><div class="wrap"><iframe data-at="tour" src="the-community.html#tour" title="Product tour at 390px"></iframe></div></div>
+    <div class="cap">
+      <p class="eyebrow" style="margin:0">The open question, answered</p>
+      <h2>The tour becomes a snap rail</h2>
+      <ul>
+        <li>The step list moves above the screen and turns into a horizontal snap rail at 78% width, so step two is always half visible and the row reads as scrollable.</li>
+        <li>Tapping a step scrolls nothing: the screen below swaps in place, so the thumb never loses its position.</li>
+        <li>The mock screen keeps all three rows. It is the payload of the page, so it does not truncate.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div class="law">
+  <h2>What the breakpoint owns</h2>
+  <table>
+    <tr><th>Pillars</th><td><code>.tc-pillars</code> 4-up to 2-up. Tap target 100% width, 84px tall.</td></tr>
+    <tr><th>ZigZag</th><td><code>.tc-zig</code> to one column, <code>.tc-zig-media</code> forced to <code>order:-1</code>. Image always first.</td></tr>
+    <tr><th>Tour</th><td><code>.tc-tour</code> to one column; <code>.tc-tour-steps</code> from grid to an x-snap flex rail.</td></tr>
+    <tr><th>Trios and hero grid</th><td>The shared <code>.mk-trio</code> / <code>.mk-hero-grid</code> rule, same as every other marketing page.</td></tr>
+    <tr><th>Untouched</th><td>Section rhythm, tone adjacency, the FAQ disclosures, BetaCTA. They are already single column.</td></tr>
+  </table>
+</div>
+
+<script>
+// Park each frame at the beat it is documenting. Same-origin, so we measure the
+// real layout instead of guessing a pixel offset.
+const AT = {
+  top: () => 0,
+  zig: (d) => { const el = d.querySelector('.tc-zig'); return el ? el.closest('section').offsetTop : 0; },
+  tour: (d) => { const el = d.querySelector('#tour'); return el ? el.offsetTop : 0; },
+};
+document.querySelectorAll('iframe[data-at]').forEach((f) => {
+  const go = () => {
+    try {
+      const d = f.contentDocument;
+      const y = AT[f.dataset.at](d);
+      f.contentWindow.scrollTo(0, y);
+    } catch (e) { /* cross-origin or not ready; the frame simply shows the top */ }
+  };
+  f.addEventListener('load', () => { go(); setTimeout(go, 900); setTimeout(go, 2200); });
+});
+</script>
+</body>
+</html>
