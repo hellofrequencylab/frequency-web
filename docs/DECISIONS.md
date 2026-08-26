@@ -33228,3 +33228,66 @@ owner row whose probe reads the bundle directly rather than our declaration abou
   separately will desynchronise, and a guard that reads only one of them cannot see it. The guard was
   not wrong; it was answering a narrower question than the one being asked of it. Before trusting a
   green run as evidence of a claim, check that the claim is the one the assertion actually makes.
+
+---
+
+## ADR-1164: the naive search_path guard is wrong 47 times out of 50, so it was not shipped (2026-08-26)
+
+**Context.** `20270326000000` created three natal-chart synastry helpers — `housing_safe_float`,
+`housing_aspect_score`, `housing_natal_compat` — without `set search_path`, tripping the Supabase
+`function_search_path_mutable` advisor three times. The class was in neither `acceptedByName` nor
+`acceptedByTarget`, so every weekly sweep surfaced them as novel and unadjudicated.
+
+This is the **second** time this family drifted. `20261134000000` exists for no other purpose than to
+re-pin eight housing helpers after the advisor flagged them, and `20270326000000`'s own comment cites
+two of those eight as the pattern it was following — then omits the single thing that migration was
+written to add.
+
+**Decision 1: pin them, with `CREATE OR REPLACE` and nothing else.** Same signatures, same bodies,
+same volatility and `STRICT` markers. PostgreSQL preserves a replaced function's ACL, so
+`20270326000000`'s three by-name revokes (ADR-959) survive untouched — verified before and after:
+`postgres=X | service_role=X` both times, byte-identical. The advisor now reports
+`function_search_path_mutable` × **0**, and a smoke call of `housing_natal_compat` on a trine-heavy
+synthetic pair still returns 0.945.
+
+**Stated honestly, because the severity matters:** all three are `SECURITY INVOKER`, not `DEFINER`,
+and no browser role could reach them. This was convention drift and advisor noise, **not a live
+exposure**, and it should never be written up as one.
+
+**Decision 2: do NOT ship the obvious guard.** The row said "nothing in the repo could have caught
+it", which is true — `check:rls`, `check:grants` and `check:function-grants` all replay
+`supabase/migrations/` and none reads `search_path`. The tempting fix is a static pass over every
+`create [or replace] function public.x(...)` header.
+
+**That instrument reports fifty unpinned functions out of 183, and roughly forty-seven of them are
+wrong.** `set_updated_at`, `trg_increment_member_count`, `handle_new_auth_user`,
+`public_circle_by_id`, `get_my_hub_ids`, `is_blocked_between`, `mkt_growth`, `density_by_city`,
+`circle_momentum` and `member_engagement_stats` were each read out of `pg_proc`: every one carries a
+pin. The live advisor agrees with production, not with the static read.
+
+They diverge because **a pin does not only arrive on the create header**. `20270101000000` pins
+through a dynamic catalog loop — `execute format('alter function %s set search_path = public,
+private, pg_temp', f.sig)` — which no static reader can see; `check-function-grants.mjs` already
+carries `CATALOG_LOOP_PROOF` for exactly this shape on the grants side. That loop's named list does
+not account for all forty-seven, so at least one more mechanism is in play. **That was not run down,
+and is recorded as unfinished rather than guessed.**
+
+So the guard needs the stateful, event-ordered replay `check-function-grants.mjs` already performs
+for ACLs, with `search_path` as one more tracked attribute and an extension-owned exclusion (866 of
+1021 public functions are unpinned in production, a headline dominated entirely by PostGIS). That is
+`LIVE-128`, sized M.
+
+**Consequences.**
+
+- Bolting a same-day guard onto an XS row would have shipped a build-blocking gate whose only
+  measurement was against itself — the failure `AGENTS.md` names in its own words: *a gate that has
+  never seen a real artifact is the 2026-08-11 incident with the roles reversed.* The correct move
+  when a guard turns out to be M-sized is to write down why, not to ship the S-sized wrong one.
+- **A convenience tool can put the ledger out of order.** `apply_migration` over MCP stamps its own
+  timestamp: it recorded this as `20260826001448`, while the repo file is `20270342000000`. That is
+  not merely a name mismatch — the repo dates migrations into 2027, so the applied version sorted
+  *before* `20270326000000`, and on a fresh replay the pin would have run before the functions
+  existed and then been overwritten by the very migration that omitted it. The ledger row was
+  corrected to match the file. **Check the version a tool assigns, not just that it succeeded.**
+- Ledger parity re-verified directly, since `check:migrations` skips that arm without credentials:
+  650 repo files ⇄ 650 applied rows, `versions` and `version+name` sha256 digests byte-identical.
