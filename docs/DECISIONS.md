@@ -33233,14 +33233,23 @@ owner row whose probe reads the bundle directly rather than our declaration abou
 
 ## ADR-1164: the naive search_path guard is wrong 47 times out of 50, so it was not shipped (2026-08-26)
 
-> ⚠️ **Where the migration itself lands.** A second session opened #2313 independently, having
-> observed the same divergence from the other side — production carrying the pin while no repo file
-> named it — and recovered the migration **verbatim from the ledger's own `statements` column**
-> (md5 `285a642176b0b53a60b301a709089e76`, matching on both sides). That is a stronger artifact than
-> the one written here, so #2312 withdrew its copy and #2313 owns closing `SCAN-520`. Everything
-> below is unaffected: it records the apply, the decision not to ship the guard, and the timestamp
-> trap — none of which depends on which PR carries the file. **`SCAN-520` stays open until #2313
-> merges; production is ahead of the tree until it does.**
+> ⚠️ **Two sessions wrote this migration, and the attempt to yield it failed in an instructive way.**
+> A second session opened #2313 independently, having seen the same divergence from the other side —
+> production carrying the pin while no repo file named it — and recovered the migration **verbatim
+> from the ledger's own `statements` column** (md5 `285a642176b0b53a60b301a709089e76`). That is the
+> stronger artifact, so #2312 deleted its own copy to avoid an add/add conflict.
+>
+> 🔴 **CI went red immediately, and it was right.** Deleting the file left 649 repo files against 650
+> ledger rows — *recreating the exact drift #2313 exists to fix*. `check:migrations` reads the ledger
+> in CI (it only skips that arm locally, for want of credentials), and `checks` is a required context.
+> **A migration whose DDL is already applied is not optional in the tree**: the repo must be able to
+> reproduce production, so there is no version of "let the other PR carry it" that is green.
+>
+> ✅ **The resolution is not to pick a winner.** #2312 restored the file taking **#2313's bytes
+> verbatim**, and took #2313's `SCAN-520` row verbatim too. Identical additions of the same path
+> merge cleanly rather than conflicting, so both PRs can land in either order with no resolution step.
+> Where two agents produce the same artifact, converging on one of them byte-for-byte beats deleting
+> either.
 
 **Context.** `20270326000000` created three natal-chart synastry helpers — `housing_safe_float`,
 `housing_aspect_score`, `housing_natal_compat` — without `set search_path`, tripping the Supabase
