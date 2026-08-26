@@ -48,17 +48,37 @@
 # `test` because that is how they are named in the ruleset; renaming one silently un-gates it.
 #
 # ⚠️ CORRECTED 2026-08-12 — this block said `pr-compare` was "STILL NOT REQUIRED, deliberately"
-# and that was FALSE. Ruleset 17640795 requires `checks`, `analyze`, `lint`, `test` AND
-# `pr-compare`; it was last modified 2026-08-11 03:55Z and nobody updated this comment. The
-# config drifted from the doc and no gate noticed, which is the same class of failure as every
-# other one recorded today. `lighthouse` is genuinely still advisory.
+# and that was FALSE at the time. `lighthouse` is genuinely still advisory.
 #
-# 🔴 A REQUIRED `pr-compare` DEADLOCKS ANY PR THAT CANNOT TRIGGER e2e.yml. It is posted by a
-# path-filtered workflow, so a docs-only, migrations-only or scripts-only PR never produces the
-# context, and GitHub blocks such a PR FOREVER on "Expected — Waiting for status to be reported".
+# 🔴 RE-READ FROM THE API 2026-08-26, AND THE 08-12 CORRECTION IS ITSELF NOW STALE. Ruleset
+# 17640795 was last modified 2026-08-25T17:22:09Z — AFTER both this block and the header of
+# .github/workflows/pr-compare-fallback.yml were written, so both were describing a config that
+# had moved. `GET /repos/{owner}/{repo}/rulesets/17640795` returns SIX required contexts:
+#
+#     checks · analyze · lint · test · Vercel · db-tests
+#
+# So this block was wrong in BOTH directions at once: it listed `pr-compare`, which is NOT
+# required, and it omitted `Vercel` and `db-tests`, which are. `db-tests` became required via
+# #2302 (ADR-1150 — it is the only gate that applies every migration to an empty database, and
+# it caught a fresh-apply defect the other four passed). `strict_required_status_checks_policy`
+# is false and `bypass_actors` is null.
+#
+# The rule this keeps re-earning: a claim in a comment is a claim, and it has an expiry date
+# (ADR-1082). Two files in this repo stated contradictory required-context lists and neither
+# was right; the API settled it in one read. Re-read it before citing this list — do not
+# propagate it from here.
+#
+# 🔴 THE DEADLOCK SHAPE, which is why both fallback workflows exist. A required context posted
+# by a PATH-FILTERED workflow is never produced by a PR that touches none of those paths, and
+# GitHub blocks such a PR FOREVER on "Expected — Waiting for status to be reported".
 # `bypass_actors` is null, so an admin cannot force it either. PR #2107 (two files, both docs/)
-# hit exactly this. `.github/workflows/pr-compare-fallback.yml` now posts the context for those
-# PRs, reading e2e.yml's own path list so the two can never drift apart.
+# hit exactly this with `pr-compare` on 2026-08-12. Both gates now have a fallback that posts
+# the context for those PRs — `pr-compare-fallback.yml` and `db-tests-fallback.yml` — each
+# reading its partner workflow's own path list so the two can never drift apart.
+#
+# Of the two, only `db-tests` is REQUIRED today (see the API reading above), so it is the one
+# whose fallback is load-bearing. `pr-compare`'s fallback is insurance against the gate being
+# re-required, and its header explains why deleting it is not the cleanup it looks like.
 #
 # A Claude Code session cannot change this: the agent proxy refuses writes to the GitHub
 # rulesets API. Reading it back is permitted, which is how the state above was confirmed —
