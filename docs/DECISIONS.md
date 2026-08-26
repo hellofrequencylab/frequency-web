@@ -33388,15 +33388,34 @@ either half yet.**
 - ⚠️ **They must not be recaptured blind.** Nobody has looked at what the 21 diffs contain.
   Recapturing bakes in whatever is there, including any real regression the gate has been hiding —
   converting a measurement problem into a permanent one.
-- 🔵 **A hypothesis about the split, labelled as one.** The four `/discover` diffs are within 100
-  pixels of each other across dawn-light, dawn-dark, midnight-light *and* midnight-dark. A
-  theme-independent delta of the same size in all four reads as **structure, not colour** — and
-  `test/e2e/surfaces.ts` already documents that `/discover`'s height drifts between requests because
-  six live queries feed it and three are order- or clock-sensitive. So the likely split is
-  content-dynamic surfaces, where **no absolute threshold can ever be stable** and the answer is
-  `mask` or `viewportOnly` (both already supported by `visual.spec.ts`), versus genuinely stale
-  baselines that need a recapture. **Unconfirmed:** the diff images sit in a 256 MB artifact that was
-  not opened.
+- 🔴 **A hypothesis about the split — since REFUTED, and the truth is worse.** It read: the four
+  `/discover` diffs sit within 100 pixels of each other across all four themes, `surfaces.ts`
+  documents that `/discover`'s height drifts between requests because six live queries feed it, so
+  the failures are probably content churn on dynamic surfaces. **Tested against the run log the same
+  day. Both halves fail.**
+
+  | Test | Result |
+  | :--- | :--- |
+  | Any dimension change? Playwright reports those as *"Expected an image W×H, received W×H2"* | **None.** All 21 are pixel diffs at **identical** dimensions. Churn would move the height. |
+  | Do the counts vary between retries? | **No.** `discover--dawn-dark` reads 8,890 · 8,890 · 8,890. `app-nearby--dawn-dark` reads 5,507 three times. `app-settings` and `app-space-console` read 899 three times each. |
+
+  Deterministic, dimension-stable deltas are **real visual changes**, not timing or data. Something
+  changed on `/discover`, `/feed`, `/nearby`, `/settings` and `/spaces/…/manage`, and the gate never
+  told anyone. The four `/discover` readings agreeing to within 100 px across four palettes is one
+  **structural** change rendered four ways — which is what a theme-independent constant delta means.
+
+  ⚠️ **One real exception, and only one:** `app-feed--dawn-dark` reads **1,439, then 669, then 669**.
+  That surface does carry non-determinism and is the sole candidate for `mask` / `viewportOnly`.
+
+  **This shrinks step 2 from three surfaces to one, and changes step 1** from "decide whether these
+  are churn" to "find out *what* changed" — because whether something changed is no longer in doubt.
+  A recapture without that answer banks an unreviewed change across five member surfaces.
+
+  🔵 **The evidence is on a clock.** `playwright-report-pr-compare` (245 MB) **expires 2026-09-02**.
+  An agent cannot fetch it: `api.github.com` is reachable from the build container, but the artifact
+  302s to `productionresultssa16.blob.core.windows.net`, which the egress proxy denies with a 403 on
+  CONNECT. Tested, not assumed. After expiry the only route back is re-running `pr-compare` with the
+  threshold re-applied.
 
 **Consequences.**
 
