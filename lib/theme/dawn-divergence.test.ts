@@ -123,41 +123,34 @@ function prodOnly(mode: Mode): string[] {
 // ── THE LEDGER. Read as: "these are the differences, and every one of them is deliberate." ──────
 // Written out in full rather than snapshotted so a reviewer sees the hexes in the diff.
 const DECLARED: Divergence[] = [
-  // Aliased, not retuned: the post surface follows --color-surface rather than holding its own
-  // value, so a skin that moves the surface moves the post card with it. Both modes.
-  { token: '--color-surface-post', mode: 'light', dawn: '#F7F5F0', prod: 'VAR(--COLOR-SURFACE)' },
-  { token: '--color-surface-post', mode: 'dark', dawn: '#2B2415', prod: 'VAR(--COLOR-SURFACE)' },
-  // Focus ring: PR #2036 took the ring from 1.75:1 to 3.87:1 against the canvas. DAWN's amber is
-  // the BRAND amber, which is not a contrast value — a focus ring has to be seen, not matched.
-  { token: '--color-focus-ring', mode: 'light', dawn: '#E2912F', prod: '#B86A15' },
-  // A rounding step on the strong amber, kept because the contrast sweep measured this one.
-  { token: '--color-primary-strong', mode: 'light', dawn: '#9A5E12', prod: '#965C12' },
-  // Label on the broadcast cyan. White on that fill fails AA; warm ink passes. Both modes.
-  { token: '--color-text-on-broadcast', mode: 'light', dawn: '#FFFFFF', prod: '#1A1206' },
-  { token: '--color-text-on-broadcast', mode: 'dark', dawn: '#FFFFFF', prod: '#1A1206' },
-  // The quietest text step, darkened on light and lightened on dark by the contrast sweep.
-  { token: '--color-text-subtle', mode: 'light', dawn: '#8F8675', prod: '#6E6558' },
-  { token: '--color-text-subtle', mode: 'dark', dawn: '#7E735F', prod: '#A2957D' },
+  // ✅ EMPTY SINCE 2026-08-26, AND THAT IS THE FILE WORKING, NOT A HOLE IN IT.
+  //
+  // All eight rows that stood here closed at once. DAWN applied every one on 2026-08-25 and said
+  // so in `design_handoff/CHANGES.md` §2 — five corrections, the `--color-surface-post` aliasing in
+  // both modes, and twelve additions. The vendored copy did not move for three weeks (LIVE-127),
+  // so this ledger went on describing a FILE rather than a PROJECT. That gap is ADR-1163, and
+  // `scripts/check-dawn-bundle.mjs` is what measures it now.
+  //
+  // ⚠️ THE VALUES WERE TRANSCRIBED, NOT EXPORTED. `design_handoff/dawn/tokens/colors.css` was
+  // edited to the values CHANGES.md §2 documents, with the additions taking their hexes from
+  // `PROD-AHEAD.md` §5 — CHANGES.md names those twelve but prints no values. That is faithful to
+  // two independent statements (DAWN's own changelog, and the owner confirming it in-thread) and
+  // it is NOT a DAWN export. The rest of the bundle is still the 2026-08-03 photocopy.
+  //
+  // WHAT AN EMPTY LEDGER STILL CATCHES, which is the assertion that carries the weight: the moment
+  // either stylesheet moves and the two disagree, `divergences()` returns a row this list does not
+  // have and the test fails. Empty means "they agree today", re-proven on every run — never
+  // "nobody looked".
 ]
 
 /** Tokens production has and DAWN does not. Sent as ADDITIONS, not as corrections. */
 const DECLARED_PROD_ONLY: Record<Mode, string[]> = {
-  light: [
-    '--color-chrome-hover',
-    '--color-on-media',
-    '--color-on-media-dark',
-    '--color-on-media-light',
-    '--color-text-on-danger',
-    '--color-text-on-rank',
-    '--color-text-on-success',
-    '--color-text-on-warning',
-  ],
-  dark: [
-    '--color-chrome-hover',
-    '--color-text-on-danger',
-    '--color-text-on-success',
-    '--color-text-on-warning',
-  ],
+  // Empty for the same reason as DECLARED, and closed in the same change: the twelve additions
+  // CHANGES.md §2 lists were transcribed into the vendored sheet on 2026-08-26, so there is no
+  // colour token production declares that DAWN has no row for. A NEW prod-only token fails this
+  // the moment it appears, which is the only job this list has.
+  light: [],
+  dark: [],
 }
 
 const key = (d: Divergence) => `${d.mode} ${d.token} DAWN ${d.dawn} → prod ${d.prod}`
