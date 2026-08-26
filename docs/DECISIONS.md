@@ -33228,3 +33228,190 @@ owner row whose probe reads the bundle directly rather than our declaration abou
   separately will desynchronise, and a guard that reads only one of them cannot see it. The guard was
   not wrong; it was answering a narrower question than the one being asked of it. Before trusting a
   green run as evidence of a claim, check that the claim is the one the assertion actually makes.
+
+---
+
+## ADR-1164: the naive search_path guard is wrong 47 times out of 50, so it was not shipped (2026-08-26)
+
+> ⚠️ **Two sessions wrote this migration, and the attempt to yield it failed in an instructive way.**
+> A second session opened #2313 independently, having seen the same divergence from the other side —
+> production carrying the pin while no repo file named it — and recovered the migration **verbatim
+> from the ledger's own `statements` column** (md5 `285a642176b0b53a60b301a709089e76`). That is the
+> stronger artifact, so #2312 deleted its own copy to avoid an add/add conflict.
+>
+> 🔴 **CI went red immediately, and it was right.** Deleting the file left 649 repo files against 650
+> ledger rows — *recreating the exact drift #2313 exists to fix*. `check:migrations` reads the ledger
+> in CI (it only skips that arm locally, for want of credentials), and `checks` is a required context.
+> **A migration whose DDL is already applied is not optional in the tree**: the repo must be able to
+> reproduce production, so there is no version of "let the other PR carry it" that is green.
+>
+> ✅ **The resolution is not to pick a winner.** #2312 restored the file taking **#2313's bytes
+> verbatim**, and took #2313's `SCAN-520` row verbatim too. Identical additions of the same path
+> merge cleanly rather than conflicting, so both PRs can land in either order with no resolution step.
+> Where two agents produce the same artifact, converging on one of them byte-for-byte beats deleting
+> either.
+
+**Context.** `20270326000000` created three natal-chart synastry helpers — `housing_safe_float`,
+`housing_aspect_score`, `housing_natal_compat` — without `set search_path`, tripping the Supabase
+`function_search_path_mutable` advisor three times. The class was in neither `acceptedByName` nor
+`acceptedByTarget`, so every weekly sweep surfaced them as novel and unadjudicated.
+
+This is the **second** time this family drifted. `20261134000000` exists for no other purpose than to
+re-pin eight housing helpers after the advisor flagged them, and `20270326000000`'s own comment cites
+two of those eight as the pattern it was following — then omits the single thing that migration was
+written to add.
+
+**Decision 1: pin them, with `CREATE OR REPLACE` and nothing else.** Same signatures, same bodies,
+same volatility and `STRICT` markers. PostgreSQL preserves a replaced function's ACL, so
+`20270326000000`'s three by-name revokes (ADR-959) survive untouched — verified before and after:
+`postgres=X | service_role=X` both times, byte-identical. The advisor now reports
+`function_search_path_mutable` × **0**, and a smoke call of `housing_natal_compat` on a trine-heavy
+synthetic pair still returns 0.945.
+
+**Stated honestly, because the severity matters:** all three are `SECURITY INVOKER`, not `DEFINER`,
+and no browser role could reach them. This was convention drift and advisor noise, **not a live
+exposure**, and it should never be written up as one.
+
+**Decision 2: do NOT ship the obvious guard.** The row said "nothing in the repo could have caught
+it", which is true — `check:rls`, `check:grants` and `check:function-grants` all replay
+`supabase/migrations/` and none reads `search_path`. The tempting fix is a static pass over every
+`create [or replace] function public.x(...)` header.
+
+**That instrument reports fifty unpinned functions out of 183, and roughly forty-seven of them are
+wrong.** `set_updated_at`, `trg_increment_member_count`, `handle_new_auth_user`,
+`public_circle_by_id`, `get_my_hub_ids`, `is_blocked_between`, `mkt_growth`, `density_by_city`,
+`circle_momentum` and `member_engagement_stats` were each read out of `pg_proc`: every one carries a
+pin. The live advisor agrees with production, not with the static read.
+
+They diverge because **a pin does not only arrive on the create header**. `20270101000000` pins
+through a dynamic catalog loop — `execute format('alter function %s set search_path = public,
+private, pg_temp', f.sig)` — which no static reader can see; `check-function-grants.mjs` already
+carries `CATALOG_LOOP_PROOF` for exactly this shape on the grants side. That loop's named list does
+not account for all forty-seven, so at least one more mechanism is in play. **That was not run down,
+and is recorded as unfinished rather than guessed.**
+
+So the guard needs the stateful, event-ordered replay `check-function-grants.mjs` already performs
+for ACLs, with `search_path` as one more tracked attribute and an extension-owned exclusion (866 of
+1021 public functions are unpinned in production, a headline dominated entirely by PostGIS). That is
+`LIVE-128`, sized M.
+
+**Consequences.**
+
+- Bolting a same-day guard onto an XS row would have shipped a build-blocking gate whose only
+  measurement was against itself — the failure `AGENTS.md` names in its own words: *a gate that has
+  never seen a real artifact is the 2026-08-11 incident with the roles reversed.* The correct move
+  when a guard turns out to be M-sized is to write down why, not to ship the S-sized wrong one.
+- **A convenience tool can put the ledger out of order.** `apply_migration` over MCP stamps its own
+  timestamp: it recorded this as `20260826001448`, while the repo file is `20270342000000`. That is
+  not merely a name mismatch — the repo dates migrations into 2027, so the applied version sorted
+  *before* `20270326000000`, and on a fresh replay the pin would have run before the functions
+  existed and then been overwritten by the very migration that omitted it. The ledger row was
+  corrected to match the file. **Check the version a tool assigns, not just that it succeeded.**
+- Ledger parity re-verified directly, since `check:migrations` skips that arm without credentials:
+  650 repo files ⇄ 650 applied rows, `versions` and `version+name` sha256 digests byte-identical.
+
+---
+
+## ADR-1165: the ratio hid 21 stale baselines, and the absolute threshold that found them cannot land until they are fixed (2026-08-26)
+
+**Context.** `playwright.config.ts` set `maxDiffPixelRatio: 0.02` for every `toHaveScreenshot`, with
+the stated reason *"tolerate sub-2% pixel drift (fonts/AA)"*. The intent is right. The instrument is
+not, because the visual suite takes **full-page** captures of very tall pages and a ratio scales with
+the canvas:
+
+| Surface | Canvas | 2% allows |
+| :--- | ---: | ---: |
+| `/discover` mobile | 390 × 9675 = 3,773,250 px | **75,465 px** |
+| `/about` mobile | 390 × 9457 = 3,688,230 px | 73,764 px |
+| `/discover` desktop | 1280 × 7538 = 9,648,640 px | **192,972 px** |
+
+A 40 × 40 header control is 1,600 px — **2.1% of the mobile budget**. The gate was blindest on
+exactly the content-rich pages that matter most, and it is silent in *both* directions:
+`--update-snapshots` rewrites a baseline only when the comparison FAILS, so a sub-threshold change is
+neither caught nor banked, and every one drifts the baseline further from reality.
+
+It has already cost something. ADR-1161 records a correct change being marked broken, re-opened, and
+re-closed on the strength of `No baseline changes to commit` — a line that reads as *nothing moved*
+and means *nothing moved by more than 2% of a four-megapixel canvas*.
+
+**Decision: an absolute `maxDiffPixels: 400`, with the floor measured rather than guessed.**
+
+The row that raised this insisted the number be measured, because a threshold set below real noise
+fails on nothing and then gets routed around — ADR-970's whole subject. Production could not be
+captured from the build container (the agent proxy answers 403 to CONNECT for the site), so the floor
+was measured where it actually lives: **the renderer**. "Fonts/AA" is a property of the browser build,
+not of the site.
+
+Six consecutive full-page captures of a purpose-built 390 × 63392 page and a 1280 × 29790 page —
+dense antialiased text, gradients, box-shadows, rounded edges — each from a **fresh browser context**,
+which is what a CI re-run does rather than the best case of one warm page:
+
+> **0 differing pixels. Every pair. Both viewports.**
+
+Chromium is deterministic within one pinned build, and CI pins the build. The noise this tolerance was
+sized for is **cross-environment, not per-run**.
+
+400 is not zero because a floor of zero is brittle: one Chromium patch bump shifting a subpixel would
+fail every surface at once. It is a quarter of the smallest thing the gate must see (1,600 px) and
+0.0016% of a 24-megapixel canvas — scattered AA differences absorbed, a control unable to hide, and
+**it does not grow with page height**.
+
+**Then `pr-compare` ran, and it came back RED. That run is the real content of this ADR.**
+
+The change was pushed precisely so its own `pr-compare` would exercise the new threshold against the
+**committed** baselines — the repo's standing rule is to wire a gate in the same change as the run
+that proves it. What it proved was not what was expected.
+
+**123 of 144 surfaces passed at 400 absolute pixels.** That is CI confirming, on its own hardware and
+its own font set, that the noise floor is under 400. The local 0-pixel result holds. **The threshold
+is not too tight.**
+
+**21 surfaces failed, with ten distinct readings:**
+
+| | Differing pixels |
+| :--- | ---: |
+| `discover` × 4 themes | 8,890 · 8,928 · 8,973 · 8,990 |
+| `app-feed` light/dark, `app-nearby` light/dark | 5,507 · 5,973 · 2,345 · 1,439 |
+| `app-settings`, `app-space-console` | 899 · 669 |
+
+**Every one reported ratio 0.01 or lower — every one was passing under the old 2%.** This is exactly
+what the row predicted: `--update-snapshots` rewrites a baseline only when the comparison FAILS, so
+these were neither caught nor banked, and the baselines have been drifting for as long as the ratio
+has been in place.
+
+**Decision, revised: keep the threshold at 400 and treat the 21 as stale baselines — but do not land
+either half yet.**
+
+- 🔴 **Raising the number is the move the red run invites, and it is wrong.** A threshold above 8,990
+  is 5.6× the 1,600 pixels of a header control. It would restore precisely the blindness this ADR
+  exists to remove. The threshold is right; the *baselines* are stale.
+- ⚠️ **They must not be recaptured blind.** Nobody has looked at what the 21 diffs contain.
+  Recapturing bakes in whatever is there, including any real regression the gate has been hiding —
+  converting a measurement problem into a permanent one.
+- 🔵 **A hypothesis about the split, labelled as one.** The four `/discover` diffs are within 100
+  pixels of each other across dawn-light, dawn-dark, midnight-light *and* midnight-dark. A
+  theme-independent delta of the same size in all four reads as **structure, not colour** — and
+  `test/e2e/surfaces.ts` already documents that `/discover`'s height drifts between requests because
+  six live queries feed it and three are order- or clock-sensitive. So the likely split is
+  content-dynamic surfaces, where **no absolute threshold can ever be stable** and the answer is
+  `mask` or `viewportOnly` (both already supported by `visual.spec.ts`), versus genuinely stale
+  baselines that need a recapture. **Unconfirmed:** the diff images sit in a 256 MB artifact that was
+  not opened.
+
+**Consequences.**
+
+- **The config change was withdrawn from #2312 rather than carried red.** `SCAN-520` in that same PR
+  is finished and already applied to production; holding a completed database fix hostage to a
+  baseline recapture is the wrong trade. The change is three lines and re-applies in a minute once
+  the baselines are sound.
+- **A gate can be correct and still not landable.** The rule "wire a gate in the same change as the
+  green build that proves it" assumes the proving run goes green. When it does not, the honest move
+  is to keep the measurement and withdraw the gate — not to loosen the gate until the run agrees with
+  it. Loosening would have produced a permanently green, permanently blind check: ADR-970's failure
+  mode reached by the opposite road.
+- **The probe had to change with it, and that is the transferable part.** `LIVE-125`'s original probe
+  grepped the whole file for `maxDiffPixelRatio` — so the *comment explaining why the setting was
+  retired* failed it. A probe that cannot tell **use** from **mention** pressures the next person to
+  delete the history in order to go green. It now strips line comments first, and gained two arms it
+  never had: an absolute tolerance must be **set**, and it must be **under 1,600**. The row can no
+  longer be closed by deleting the tolerance, nor by setting one too loose to see a control.
