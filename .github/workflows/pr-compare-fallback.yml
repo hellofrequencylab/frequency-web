@@ -1,8 +1,15 @@
 # Posts the `pr-compare` context for the pull requests e2e.yml deliberately skips.
 #
 # 🔴 READ THIS BEFORE CITING THIS FILE: `pr-compare` IS NOT A REQUIRED CONTEXT TODAY.
-# RULESET 17640795, read 2026-08-18 — required: checks, analyze, lint, test, Vercel. NOT pr-compare.
-# Neither is any other visual gate. That one line is the fact; everything below it is the history.
+# RULESET 17640795, re-read from the API 2026-08-26 (ruleset last modified 2026-08-25T17:22:09Z) —
+# required: checks, analyze, lint, test, Vercel, db-tests. NOT pr-compare, and no other visual
+# gate. That one line is the fact; everything below it is the history.
+#
+# ⚠️ The 2026-08-18 reading this line used to carry was right about `pr-compare` and has since gone
+# stale on the rest: `db-tests` joined the required set via #2302 (ADR-1150). It was corrected in
+# the same pass that found ci.yml's own list wrong in the other direction — that block claimed
+# `pr-compare` WAS required and omitted `Vercel` and `db-tests`. Two files, two contradictory
+# lists, neither correct; one API read settled it. Re-read before citing, do not propagate.
 #
 # This file used to OPEN by calling it required, and that sentence got cited as evidence to close a
 # backlog row before anyone had opened the ruleset (OWN-004, corrected by LIVE-049). The disproof
