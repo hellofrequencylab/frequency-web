@@ -87,10 +87,15 @@ violation fails a REQUIRED check rather than relying on memory.
    auto-merge (squash); the required checks are the reviewer. Anything a gate cannot see (visual
    equivalence on a page retirement, a schema change) stays a draft until a human looks.
 
-   **The required set, read from ruleset 17640795 on 2026-08-18 — five contexts, and this list is
-   the only authority on it:** `checks`, `analyze`, `lint`, `test`, `Vercel`. Do not restate it
-   from a workflow comment; one such comment was wrong for six days and got cited as evidence
-   (LIVE-049). Two absences are deliberate and both change what "green" promises:
+   **The required set, re-read from the ruleset API on 2026-08-26 — six contexts, and this list is
+   the only authority on it:** `checks`, `analyze`, `lint`, `test`, `Vercel`, `db-tests`. Do not
+   restate it from a workflow comment; one such comment was wrong for six days and got cited as
+   evidence (LIVE-049), and on 2026-08-26 *two* workflow comments were found stating contradictory
+   lists, neither correct (SCAN-520's pass). `db-tests` joined the set via #2302 (ADR-1150): it is
+   the only gate that applies every migration to an empty database, and it caught a fresh-apply
+   defect the other four passed. The 2026-08-18 reading recorded here said five contexts and was
+   correct on the day; ruleset 17640795 was last modified 2026-08-25T17:22:09Z, so re-read rather
+   than trust this line's date. Two absences are deliberate and both change what "green" promises:
 
    - **`pr-compare` is NOT required**, so the visual suite is advisory. "Auto-merge on green" means
      the code was compiled, linted, typechecked and tested, and the preview deployed. It does not
