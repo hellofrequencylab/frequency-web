@@ -299,6 +299,49 @@ const COMPILER_CACHE_DIRS = ['turbopack', 'rspack', 'webpack', 'swc']
 // to the compiler list disables the trim and says so, instead of quietly repeating 2026-08-18.
 const NEVER_TRIM_DIRS = ['fetch-cache', 'images']
 
+// ── LOOSE TOP-LEVEL FILES NEXT WRITES INTO .next/cache, BY NAME ──────────────────────────────
+// These are FILES, not directories, so the trim cannot address them at all — but until they were
+// named here the gate reported them as "not recognised" on EVERY production build, which is a
+// warning that fires forever and therefore teaches everyone to scroll past the one line that is
+// supposed to mean something (ADR-970, the same reasoning as the advisory gates).
+//
+// Named after reading Next's own source, not after guessing from the filename — and the reading
+// matters, because two of them are KEY MATERIAL rather than cache:
+//
+//   .rscinfo      `encryption.key` + a 14-day expiry: the SERVER ACTIONS encryption key.
+//                 next/dist/server/app-render/encryption-utils-server.js, `CONFIG_FILE='.rscinfo'`.
+//   .previewinfo  `previewModeId` + `previewModeSigningKey` + `previewModeEncryptionKey` + a 14-day
+//                 expiry: the preview-mode keys.
+//                 next/dist/build/preview-key-utils.js, `CONFIG_FILE='.previewinfo'`.
+//
+// Both are persisted ACROSS builds on purpose, so that a redeploy does not rotate the key out from
+// under a payload already in flight. They are bytes-nothing (0 MiB each), so they never affect the
+// budget — the point of naming them is only that a key file must never read as an unexplained term.
+//
+// 🔴 `config.json` IS DELIBERATELY NOT IN THIS LIST. It appears beside them on real builds and
+// nothing under `next/dist` was found to write it, so its provenance is genuinely unknown. Naming
+// it here to quiet the line would be exactly the shape-not-truth move this repo names in four ADRs:
+// the list would say "recognised" while nobody had recognised anything. It stays unattributed, and
+// the floor below is what keeps it from shouting while it is 0 MiB.
+const KNOWN_LOOSE_FILES = ['.rscinfo', '.previewinfo']
+
+// ── THE FLOOR THE "not recognised" LINE FIRES ABOVE ──────────────────────────────────────────
+// The warning exists to answer one question: is there a term under .next/cache that is GROWING
+// where the trim cannot reach it? A zero-byte file is not that question, and three of them printing
+// on every build is how a real answer gets lost.
+//
+// So the escalation is size-gated while the REPORT is not: the composition line above still lists
+// every remaining entry by name and size, recognised or not, so nothing is hidden and the numbers
+// still reconcile with their own total. This only decides what gets a ⚠️ next to it.
+//
+// 1 MiB is the smallest figure `mib()` renders as non-zero, so the rule reads exactly as it looks:
+// anything that shows up as 0 MiB is not worth a warning, and anything that shows up at all is.
+//
+// Written as a plain literal, not `1024 * 1024`, because check-cache-budget-trim.test.ts derives its
+// fixtures from this script's own constants by regex — a fixture pinned to a hardcoded size stops
+// straddling the threshold the day the threshold moves, and every case passes by testing nothing.
+const UNKNOWN_REPORT_FLOOR_BYTES = 1048576
+
 const OVERLAP = COMPILER_CACHE_DIRS.filter((name) => NEVER_TRIM_DIRS.includes(name))
 
 /** Sum a directory tree the way a tar of it would: real files once, symlinks as links (~0). */
@@ -537,11 +580,18 @@ const parts = remaining.length > 0 ? remaining.map(([n, b]) => `${n} ${mib(b)} M
 // only walks COMPILER_CACHE_DIRS; loose entries are kept because the trim cannot address them at
 // all. Either way the answer is the same and it is said out loud, by name and with a size, so a new
 // term under .next/cache reads as new rather than as arithmetic that does not add up.
+// Size-gated at UNKNOWN_REPORT_FLOOR_BYTES: an unattributed term only earns a ⚠️ once it is big
+// enough to be the growth this line exists to catch. Everything is still NAMED in `parts` above
+// either way, so the composition continues to reconcile with its own total.
 const unknown = [
   ...kept
     .filter(([n]) => !COMPILER_CACHE_DIRS.includes(n) && !NEVER_TRIM_DIRS.includes(n))
+    .filter(([, b]) => b >= UNKNOWN_REPORT_FLOOR_BYTES)
     .map(([n, b]) => `${n} (${mib(b)} MiB)`),
-  ...looseParts.map(([n, b]) => `${n} (${mib(b)} MiB, not a directory)`),
+  ...looseParts
+    .filter(([n]) => !KNOWN_LOOSE_FILES.includes(n))
+    .filter(([, b]) => b >= UNKNOWN_REPORT_FLOOR_BYTES)
+    .map(([n, b]) => `${n} (${mib(b)} MiB, not a directory)`),
 ]
 // Say which side of the ceiling this lands on, both ways. A "✅ … under the ceiling" line printed
 // over a number that is above the ceiling is the swallowed regression this file exists to stop.

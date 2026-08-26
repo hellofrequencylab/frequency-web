@@ -338,3 +338,115 @@ describe('the lists the trim is restricted to', () => {
     expect(compiler, 'the fetch cache must never be trimmable').not.toContain('fetch-cache')
   })
 })
+
+
+// ─────────────────────────────────────────────────────────────────────────────────────────────
+// WHAT THE "not recognised" LINE IS ALLOWED TO SHOUT ABOUT.
+//
+// 🔴 THE FAILURE THIS EXISTS FOR. The line fired on EVERY production build, naming three loose
+// files that are each 0 MiB: `.previewinfo`, `config.json`, `.rscinfo`. A warning that is always
+// on is a warning nobody reads, which is the same defect ADR-970 records for advisory gates -- and
+// it was sitting on top of the one line that is supposed to say "a term you cannot trim is
+// growing". Two of the three turned out not to be cache at all but KEY MATERIAL (the Server Actions
+// encryption key and the preview-mode keys), so the honest fix was to read what writes them and
+// name them, which is exactly what the warning's own text asks a reader to do.
+//
+// The escalation is now size-gated and the REPORT is not: every remaining entry is still named with
+// its size in the composition line, so nothing is hidden and the total still reconciles.
+// ─────────────────────────────────────────────────────────────────────────────────────────────
+
+const UNKNOWN_FLOOR = constant('UNKNOWN_REPORT_FLOOR_BYTES')
+
+/** A share of the trim point that lands on an exact byte count, for testing the floor. */
+const bytesShare = (bytes: number): number => bytes / TRIM_RAW
+
+describe('the unrecognised-entry warning fires on growth, not on key files', () => {
+  it('does not shout about the two Next key files, but still names them in the composition', () => {
+    // .rscinfo and .previewinfo are written by Next on every build and are bytes-nothing. They are
+    // key material with a 14-day TTL, deliberately persisted across builds so a redeploy does not
+    // rotate a key out from under a payload in flight.
+    const root = fixture({ turbopack: 0.5, '.rscinfo': 0, '.previewinfo': 0 })
+    const { status, out } = run(root)
+
+    expect(
+      out,
+      'a 0 MiB key file was reported as an unrecognised term. This line fires on every build if it ' +
+        'does that, and an always-on warning is one nobody reads when it finally means something.',
+    ).not.toContain('Not recognised')
+    expect(out, 'the key files vanished from the composition, so the total no longer reconciles').toContain(
+      '.rscinfo',
+    )
+    expect(out).toContain('.previewinfo')
+    expect(status).toBe(0)
+  })
+
+  it('stays quiet about an unattributed entry while it is below the floor', () => {
+    // config.json is NOT in KNOWN_LOOSE_FILES: nothing under next/dist was found to write it, so
+    // claiming to recognise it would be a lie the list tells forever. The floor is what keeps it
+    // from shouting while it is 0 MiB -- attribution and escalation are separate questions.
+    const root = fixture({ turbopack: 0.5, 'config.json': 0 })
+    const { out } = run(root)
+
+    expect(out).not.toContain('Not recognised')
+    expect(out, 'an unattributed entry must still be NAMED even when it is not escalated').toContain('config.json')
+  })
+
+  it('DOES shout as soon as that same unattributed entry crosses the floor', () => {
+    // The discriminating case. Without this, a floor set absurdly high -- or a filter that dropped
+    // loose entries altogether -- would pass every assertion above.
+    const root = fixture({ turbopack: 0.5, 'config.json': bytesShare(UNKNOWN_FLOOR * 4) })
+    const { out } = run(root)
+
+    expect(
+      out,
+      'an unattributed term grew past the floor and the gate said nothing. This line is the only ' +
+        'thing that gives growth under .next/cache an address.',
+    ).toContain('Not recognised')
+    expect(out).toContain('config.json')
+  })
+
+  it('still shouts about an unrecognised DIRECTORY above the floor', () => {
+    // The floor must not have quietly disarmed the fail-closed case the trim depends on.
+    const root = fixture({ 'quantum-cache': 0.5, 'fetch-cache': 0.1 })
+    const { out } = run(root)
+
+    expect(out).toContain('Not recognised')
+    expect(out).toContain('quantum-cache')
+  })
+})
+
+describe('the key-file exemption can actually fail', () => {
+  // 🔴 Same reasoning as the mutation cases above: the four assertions above all assert an ABSENCE
+  // of noise, and an absence is what a test that stopped exercising anything also reports. Break
+  // the exemption and the quiet case must go loud.
+  it('reports the key files again once they are removed from KNOWN_LOOSE_FILES', () => {
+    const mutant = SRC.replace(
+      /const KNOWN_LOOSE_FILES = \[[^\]]*\]/,
+      'const KNOWN_LOOSE_FILES = []',
+    )
+    expect(mutant, 'KNOWN_LOOSE_FILES is no longer a plain array literal; this mutation is a no-op').not.toBe(SRC)
+
+    const root = fixture({ turbopack: 0.5, '.rscinfo': 0, '.previewinfo': 0 })
+    const { out } = run(root, [], mutant)
+
+    // With the names gone they are still 0 MiB, so the FLOOR alone keeps them quiet -- which is the
+    // point worth pinning: the two mechanisms are independent, and neither is load-bearing alone.
+    expect(out).not.toContain('Not recognised')
+
+    // So drive them over the floor too: now only the naming can keep them quiet, and it is gone.
+    const big = fixture({ turbopack: 0.5, '.rscinfo': bytesShare(UNKNOWN_FLOOR * 4) })
+    const loud = run(big, [], mutant)
+    expect(
+      loud.out,
+      'with .rscinfo unnamed AND over the floor the gate stayed quiet, so neither the name list nor ' +
+        'the floor is doing anything and the quiet cases above prove nothing.',
+    ).toContain('Not recognised')
+
+    const named = run(fixture({ turbopack: 0.5, '.rscinfo': bytesShare(UNKNOWN_FLOOR * 4) }))
+    expect(
+      named.out,
+      'the real script shouts about an oversized .rscinfo. It is named, so it must stay quiet -- a ' +
+        'key file does not become an unrecognised term by growing.',
+    ).not.toContain('Not recognised')
+  })
+})
