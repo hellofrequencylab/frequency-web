@@ -33501,3 +33501,55 @@ footer). Add a public one deliberately if it is wanted, rather than inheriting i
   rendering it caught nothing for the two weeks this was live. `announcement-bar.test.ts` reads the
   three public layouts plus the twin branch and was mutation-checked: re-adding the bar to
   `app/(marketing)/layout.tsx` fails it.
+
+## ADR-1167: the upgrade prompt is app chrome, so it mounts once and everything else raises it (2026-08-26)
+
+**Context.** The Crew upsell existed twice over, in two different shapes.
+
+`CrewGate` and `CrewGateButton` each held a private `useState` and rendered their own
+`<UpgradeLightbox>`, at **nine call sites**. Three consequences, all the same defect wearing different
+clothes:
+
+1. The dialog existed nine times in the tree.
+2. **Only a component that had already decided to render a gate could open it.** Anything else that
+   discovers a member is out of scope — a rejected server action, a meter at its cap, a nav item they
+   cannot use — had no way to raise the prompt at all.
+3. The left rail carried a **second, separately-worded pitch**: a full panel with its own headline,
+   blurb and CTA, dismissed into localStorage, which re-expanded inline on click. Two wordings for one
+   product, drifting independently.
+
+The repo already had the right shape three times over — `SupportLauncher`, `CaptureLauncher`,
+`InviteLauncher` all mount one dialog in the shell and listen for a window event.
+
+**Decision.** The upgrade prompt joins them.
+
+| Before | After |
+| :--- | :--- |
+| 9 gates × (`useState` + `<UpgradeLightbox>`) | one `<UpgradeLauncher />` in the shell |
+| only a rendered gate can open it | `openUpgrade(reason)` from anywhere |
+| rail panel with its own pitch + dismissal | an orange `Upgrade` tab that raises the same prompt |
+| `"Crew is free during the beta…"` hardcoded | `crewUpgradeSuffix()` (docs/BETA-NOTICES §4.1) |
+| CTA `"Upgrade to Crew, free"` | `"Upgrade to Crew"` |
+
+The `reason` keys into `UPGRADE_COPY` for tailored copy and falls back to the Quest pitch, so a typo'd
+reason opens a populated dialog rather than an empty one.
+
+**Consequences.**
+
+- **The beta line had to be routed in the same change, not after it.** This dialog is now raised by
+  every gate in the app, and it was asserting "Crew is free during the beta. Upgrade in one tap, no
+  card" as a literal. Making a claim with an expiry date *more* prominent while leaving it hardcoded
+  is how "Beta until September 1st" survived on four public trees ([ADR-1166](#adr-1166)) — the same
+  week, in the same shell.
+- **🔴 THE PROMPT WILL NOT FIRE FOR TIER GATES TODAY, AND THAT IS CORRECT.** `BETA_OPEN_ACCESS` is
+  `true`, so `lib/auth.ts` serves every signed-in member `membershipTier: 'crew'`; separately
+  `featureGatesLive()` is false during the beta grace window, which is what deliberately silences
+  `UpsellTease` (ADR-874: a tease that says "this is locked" while nothing is locked fails the
+  CONTENT-VOICE §10 skeptic test). The plumbing is therefore built ahead of the moment it is needed.
+  What still fires today is the **creation** gates, which read `realMembershipTier` and are never
+  beta-overridden (ADR-414). Do not "fix" the quiet by lowering a gate.
+- **`CrewGate` gained a `reason` it never had.** It always opened the default Quest pitch regardless
+  of what was behind it. Existing call sites are unchanged (the parameter is optional and the fallback
+  is the old copy), but a store card and a locked Journey can now say different things.
+- The guards are source-shape for the same reason as ADR-1166: "how many of these exist" and "who can
+  open one" are structural questions that rendering a single component cannot ask.

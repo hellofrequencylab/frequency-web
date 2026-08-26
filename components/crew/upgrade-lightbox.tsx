@@ -1,15 +1,22 @@
 'use client'
 
-import { useState, type ReactNode } from 'react'
+import { type ReactNode } from 'react'
 import Link from 'next/link'
 import { Zap, X, Lock } from 'lucide-react'
 import { Dialog } from '@/components/ui/dialog'
+import { crewUpgradeSuffix } from '@/lib/core/beta-notices'
+import { openUpgrade } from './upgrade-launcher'
 
-// The upsell lightbox shown when a non-paying member tries to engage with a Quest
-// surface they can browse but not act on. Plus `CrewGate`, a wrapper that mutes
-// its children and intercepts clicks to open the lightbox — wrap any earn/spend
-// action with it. (Server enforcement still gates the underlying actions; this is
-// the UX layer.)
+// The upsell lightbox shown when a non-paying member reaches past their scope. Plus `CrewGate` and
+// `CrewGateButton`, the two wrappers that raise it. (Server enforcement still gates the underlying
+// actions; this is the UX layer.)
+//
+// 🔴 THE DIALOG IS NOT MOUNTED HERE ANY MORE. It is rendered once, app-wide, by `UpgradeLauncher`
+// (./upgrade-launcher.tsx), and the gates below RAISE it with `openUpgrade(reason)`. Each gate used to
+// own a private `useState` plus its own `<UpgradeLightbox>`, so the prompt existed nine times over and
+// only a component that had already decided to render a gate could ever open it. Anything else that
+// discovers a member is out of scope - a rejected server action, a meter at its cap, a nav item they
+// cannot use - can now raise the same prompt with one call.
 
 // Per-context copy for the gate. Default is the Quest upsell; pass a `reason` (via
 // CrewGateButton) to tailor the headline + blurb to what the member just tried to do.
@@ -74,15 +81,19 @@ export function UpgradeLightbox({
         </div>
         <h2 className="mt-4 text-lead font-bold text-text">{title ?? DEFAULT_COPY.title}</h2>
         <p className="mt-2 text-body-sm leading-relaxed text-muted">{blurb ?? DEFAULT_COPY.blurb}</p>
-        {/* The reassurance: Crew costs nothing during the beta — a one-tap, no-card upgrade. */}
+        {/* 🔴 ROUTED, NOT WRITTEN (docs/BETA-NOTICES.md §3 + §4.1). This line read "Crew is free during
+            the beta. Upgrade in one tap, no card, and keep everything you have." as a literal, which is
+            a claim with an expiry date sitting in a dialog that is about to appear on every gate in the
+            app. `crewUpgradeSuffix()` swaps it for "Crew is a paid membership." the moment
+            BETA_OPEN_ACCESS flips, with no edit here. */}
         <p className="mt-3 rounded-xl bg-primary-bg/60 px-3 py-2 text-meta font-semibold leading-relaxed text-primary-strong">
-          Crew is free during the beta. Upgrade in one tap, no card, and keep everything you have.
+          {crewUpgradeSuffix()} You keep everything you have.
         </p>
         <Link
           href="/upgrade"
           className="mt-4 inline-flex w-full items-center justify-center rounded-xl bg-primary px-5 py-2.5 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
         >
-          Upgrade to Crew, free
+          Upgrade to Crew
         </Link>
         <button
           type="button"
@@ -99,22 +110,18 @@ export function UpgradeLightbox({
 /** Wrap an earn/spend action. When `locked`, the children render muted and
  *  non-interactive, and a click opens the upgrade lightbox. Use this to keep a
  *  block (a store card, a journey) visible-but-previewable. */
-export function CrewGate({ locked, children }: { locked: boolean; children: ReactNode }) {
-  const [open, setOpen] = useState(false)
+export function CrewGate({ locked, reason, children }: { locked: boolean; reason?: string; children: ReactNode }) {
   if (!locked) return <>{children}</>
   return (
-    <>
-      <div className="relative">
-        <div className="pointer-events-none opacity-60 saturate-[0.6]">{children}</div>
-        <button
-          type="button"
-          aria-label="Upgrade to Crew to engage"
-          onClick={() => setOpen(true)}
-          className="absolute inset-0 z-10 cursor-pointer rounded-[inherit]"
-        />
-      </div>
-      <UpgradeLightbox open={open} onClose={() => setOpen(false)} />
-    </>
+    <div className="relative">
+      <div className="pointer-events-none opacity-60 saturate-[0.6]">{children}</div>
+      <button
+        type="button"
+        aria-label="Upgrade to Crew to engage"
+        onClick={() => openUpgrade(reason)}
+        className="absolute inset-0 z-10 cursor-pointer rounded-[inherit]"
+      />
+    </div>
   )
 }
 
@@ -135,23 +142,18 @@ export function CrewGateButton({
   reason?: string
   children?: ReactNode
 }) {
-  const [open, setOpen] = useState(false)
   if (isCrew) return <>{children}</>
-  const copy = reason ? UPGRADE_COPY[reason] : undefined
   return (
-    <>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className={
-          buttonClassName ??
-          'inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary hover:bg-primary-hover transition-colors'
-        }
-      >
-        <Lock className="h-3.5 w-3.5" />
-        {label}
-      </button>
-      <UpgradeLightbox open={open} onClose={() => setOpen(false)} title={copy?.title} blurb={copy?.blurb} />
-    </>
+    <button
+      type="button"
+      onClick={() => openUpgrade(reason)}
+      className={
+        buttonClassName ??
+        'inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary hover:bg-primary-hover transition-colors'
+      }
+    >
+      <Lock className="h-3.5 w-3.5" />
+      {label}
+    </button>
   )
 }

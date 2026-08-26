@@ -62,6 +62,7 @@ import { ChoresOverlay } from '@/components/onboarding/chores-overlay'
 import { CaptureLauncher } from '@/components/feed/capture-launcher'
 import { TimezoneSync } from '@/components/layout/timezone-sync'
 import { SupportLauncher } from '@/components/support/support-launcher'
+import { UpgradeLauncher } from '@/components/crew/upgrade-launcher'
 import { InviteLauncher } from '@/components/invite/invite-launcher'
 import { DailyCheckIn } from '@/components/daily-check-in'
 import { getProfileChores } from '@/lib/onboarding/profile-chores'
@@ -797,6 +798,9 @@ export default async function MainLayout({
       {/* Support — the app-wide bug/report dialog; opened from the account menu, the
           Vera chat box, or any "Report" button via the 'open-support' event. */}
       <SupportLauncher />
+      {/* Upgrade — the app-wide Crew upsell prompt; raised by every feature gate, the rail's Upgrade
+          tab, or anywhere else that finds a member reaching past their scope, via `openUpgrade()`. */}
+      <UpgradeLauncher />
       {/* Invite — the app-wide "invite friends, earn zaps" modal; opened from the
           account menu / anywhere via the 'open-invite' event. */}
       <InviteLauncher />
