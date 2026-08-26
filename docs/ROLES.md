@@ -81,13 +81,19 @@ on top of normal Community membership.
 | 📣 **Collaborator** | influencers, authors, teachers, speakers **with an audience** | bring-your-audience tools; their Practices/Journeys in a **featured directory**; **influencer program** (kickbacks tied to their activity + gamification) | affiliate kickbacks |
 | 🧘 **Practitioner** | healers, breathwork, yogis **running their own client network** | **host paywalled Programs** (Practices + Journeys) + **gamify clients' progress**; private Channel + private Circles, under the Frequency brand | Stripe Connect (verified) |
 | 🏪 **Business** | local businesses | business **listing** + network integration; **loyalty rewards**; **CRM**, **web builder**, deep business tools | payments + loyalty |
-| 🏢 **Organization** | nonprofits / orgs | a full suite tied to whoever's tagged with the org: their own **sub-community on Hook**, CRM, gamification, promotion | tenant billing |
+| 🏢 **Organization** | nonprofits / orgs | a full suite tied to whoever's tagged with the org: their own **branded Space website**, CRM, gamification, promotion | tenant billing |
 
 **Verification ladder (P2.7, ADR-165).** A claim is a *request*, not an instant unlock:
 `claimed` (pending review) → staff **verify** → `active` (suspend/reinstate as needed). A
 persona's tools light up only once **verified/active**: a `profiles`-domain operator (or
 janitor) runs the queue at `/admin/personas`. The per-persona **Stripe Connect** binding is
 the money gate at `active` (stubbed until Connect is configured).
+
+> ⚠️ **The white-label tenancy model below is UNDER REWORK** (owner, 2026-08-26). The `hookNetwork`
+> surface it described is retired (ADR-1168) and **Hook is a separate app** the owner intends to
+> embed, not the vehicle for Frequency's white-label tenants. The isolation PRINCIPLE stated here
+> still holds; what is not yet decided is what the tenant *is*. Read the next three mentions of
+> "Hook tenant" as "the tenant, vehicle TBD", not as a live design.
 
 **Organization isolation rule.** An org runs its **own editable admin/staff roles inside its
 Hook tenant**. On the main Frequency site that admin **does not bleed over**: org people are
@@ -159,7 +165,6 @@ cell across every hat a person holds. *(The **Crew** column = the **paid members
 | Connections (Personal CRM) | 🚫 | ✋ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | CRM Pipeline (Business CRM) | 🚫 | 🚫 | 🚫 | 🚫 | 🚫 | 🚫 | 🚫 | ✋ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Website (hosted site builder) | 🚫 | 🚫 | 🚫 | 🚫 | 🚫 | 🚫 | 🚫 | ✋ | ✅ | ✅ | 🚫 | ✅ | ✅ |
-| Hook Network | 🚫 | 🚫 | 🚫 | 🚫 | 🚫 | 🚫 | 🚫 | 🚫 | ✋ | ✅ | 🚫 | ✅ | ✅ |
 | Growth Studio | 🚫 | 🚫 | 🚫 | 🚫 | 🚫 | 🚫 | 🚫 | 🚫 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Finances (Earnings & Commissions) | 🚫 | 🚫 | 🚫 | 🚫 | 🚫 | 🚫 | ✅ | ✅ | ✅ | ✅ | 🚫 | ✅ | ✅ |
 | QR Studio | 🚫 | ✋ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
@@ -176,9 +181,12 @@ cell across every hat a person holds. *(The **Crew** column = the **paid members
   ✋ preview (Message Boards 🚫). Nobody gets a *different* site; see the principle below.
 - **✋ = the paid-membership gate.** The Vault, Studio Overview, Connections (Personal CRM) and QR
   Studio are ✋ for free Members and ✅ once paid → this is the **Entitlement** axis (Free → Member).
-- **Studio business block** (CRM Pipeline · Website · Hook · Growth · Finances) is the **Partners**
-  surface: Business/Organization ✅, Practitioner ✋, Collaborator gets the Earnings view; Hook
-  Network is Org-only.
+- **Studio business block** (CRM Pipeline · Website · Growth · Finances) is the **Partners**
+  surface: Business/Organization ✅, Practitioner ✋, Collaborator gets the Earnings view.
+  ⚠️ **The Hook Network row is gone** (ADR-1168, owner ruling 2026-08-26). It was never built, and its
+  function is **Website**: a Space's own branded site is the same thing. `website` already grants
+  Business and Organization ✅, so nothing was lost. The NAME is also spoken for now: Hook is a
+  separate app the owner intends to embed.
 - **Platform management** (Hubs & Nexuses · Memberships · Pages) is **Admin/Janitor only**, and
   **Financial Dashboard is Janitor-only** (Admin excluded): the Admin system, with the
   financials/owner carve-out. ⚠️ *This centralizes structure management to Admin, stricter than

@@ -4,11 +4,15 @@
 > (`docs/DECISIONS.md`). Canonical, fuller strategy doc lives in the Hook repo:
 > `hook/docs/FREQUENCY-INTEGRATION.md`. First test client: **danieltyack.com**.
 >
-> **Expanded by ADR-158 / build §8, "Hook Networks":** generalizes this integration from a
-> marketplace over Hook programs to a **federated network of white-label Hook sub-communities**
-> (pro-profile types + a new **Organization** role · membership rollover · points rollup ·
-> channel/circle federation). Same principle: Frequency = federation layer, Hook = the tenant OS,
-> typed contracts.
+> 🔴 **The ADR-158 "Hook Networks" expansion is SUPERSEDED (ADR-1168, owner ruling 2026-08-26).**
+> It generalized this integration into a federated network of white-label Hook sub-communities, and
+> the `hookNetwork` access-matrix surface was its only built artifact. That surface is retired: a
+> Space's own branded site (**Website**) is the same function, and white-label tenancy is being
+> reworked rather than carried forward on this design.
+>
+> **ADR-059, the doc below, is NOT superseded.** Hook as a separate app with typed contracts is
+> exactly the arrangement the owner still intends. What changed is that Hook is not the vehicle for
+> Frequency's white-label tenants.
 
 ## TL;DR
 

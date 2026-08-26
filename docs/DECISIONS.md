@@ -5068,6 +5068,11 @@ this ADR (design only); the build adds the records table + seed content + the as
 
 ## ADR-158: Hook Networks — federated white-label sub-communities (extends ADR-059) (design)
 
+> 🔴 **SUPERSEDED by [ADR-1168](#adr-1168) (2026-08-26).** Never built. Its one artifact, the
+> `hookNetwork` access-matrix surface, is removed: the function is `website` and the name belongs to
+> a separate app. White-label tenancy is being reworked, not carried forward on this design. ADR-059
+> (Hook as a separate app, typed contracts) still stands.
+
 **Decision.** Frequency becomes a **federated network of white-label sub-communities** ("Hook
 networks"). This is the *generalization* of ADR-059 (Frequency ⇄ Hook): there, Hook is the
 **Practitioner OS** (branded sites, private cohorts/courses, member→creator billing) and Frequency is
@@ -33553,3 +33558,50 @@ reason opens a populated dialog rather than an empty one.
   is the old copy), but a store card and a locked Journey can now say different things.
 - The guards are source-shape for the same reason as ADR-1166: "how many of these exist" and "who can
   open one" are structural questions that rendering a single component cannot ask.
+
+## ADR-1168: the Hook Network surface is retired — the function is Website, and the name belongs to another app (2026-08-26)
+
+**Context.** Owner ruling: *"I originally wanted to use that as the white label tenants but I want to
+rework that. Hook is the name of another app I was planning on embedding. The Space Website is the
+same function."*
+
+`hookNetwork` was one of the 34 rows in the access matrix, labelled "Org product", designed by
+[ADR-158](#adr-158) as a federated network of white-label Hook sub-communities. Two independent
+reasons retire it, and either alone would be enough:
+
+1. **The function already exists under another name.** A Space's own branded site is `website`. The
+   matrix bears this out — `website` grants Business **full** where `hookNetwork` granted only
+   `limited`, and both grant Organization full. The row was strictly weaker than the row beside it.
+2. **The name is spoken for.** Hook is a separate application the owner intends to embed. A matrix
+   row called `hookNetwork` that means "white-label tenancy" would collide with the real Hook the
+   moment it arrives.
+
+**It was never built.** No route, no nav item, no capability, no `featureAllowed` key — a surface
+declared in the matrix and nowhere else. Its entire footprint was one matrix row, one conformance-sheet
+row, and two test assertions.
+
+**Decision.** Remove the surface. `Surface` drops from 34 members to 33.
+
+- The matrix row is replaced by a **tombstone comment** naming both reasons, so the identifier is not
+  silently reused for the real Hook later.
+- `access-matrix.test.ts`'s "Hook Network is Organization-only" case becomes a test of the thing that
+  actually has to stay true: **that removing the row cost Business and Organization nothing**, because
+  `website` already covers both at full.
+- `docs/ROLES.md` loses the row and gains a note; [ADR-158](#adr-158) and `docs/HOOK-INTEGRATION.md`
+  get superseding banners.
+
+**Consequences.**
+
+- **ADR-059 is untouched and still live.** Hook as a separate app bound by typed contracts is exactly
+  the arrangement the owner still intends. What ADR-158 added — Hook as the *vehicle for Frequency's
+  white-label tenants* — is what ends here. Do not read this ADR as retiring the Hook integration.
+- **🔴 The tenancy model in `docs/ROLES.md` is now explicitly UNDER REWORK, not rewritten.** Three
+  passages there ("an org runs its own admin roles inside its Hook tenant", isolated from Frequency)
+  describe ADR-158's model. The isolation *principle* survives; what the tenant IS has not been
+  decided. They carry a warning banner rather than a replacement design, because inventing one would
+  put a model in the canon that the owner has not chosen — and this repo's plan docs being trusted is
+  the thing that makes them worth having.
+- **If white-label tenancy returns, it is a capability under `website`, not a surface of its own.**
+  The matrix answers "how much function on this surface"; "can this Space run its own branded tenant"
+  is a gate, and gates live in `FEATURE_GATES` (`space_whitelabel` already exists there, Independent
+  tier). The surface row was the wrong shape for the question from the start.
