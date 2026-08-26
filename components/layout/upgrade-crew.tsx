@@ -1,68 +1,31 @@
 'use client'
 
-import Link from 'next/link'
-import { useState, useEffect } from 'react'
-import { Zap, X } from 'lucide-react'
+import { Zap } from 'lucide-react'
+import { openUpgrade } from '@/components/crew/upgrade-launcher'
 
-// The "Upgrade to Crew" pitch for non-paying members. Shown in full once; the
-// sell is unlocking the full game (ranks, seasons, rewards, the Quest). After the
-// member views/closes it, it tucks under the profile card as a slim "Upgrade" tab
-// that re-opens the pitch on click. Dismissal persists (one-time by default).
-const KEY = 'fq_upgrade_crew_dismissed'
-
+// THE UPGRADE TAB - a small orange tab sitting flush on top of the profile card in the left rail,
+// for members who are not on the paid tier. One tap raises the app-wide upgrade prompt
+// (components/crew/upgrade-launcher.tsx), the same dialog every feature gate raises.
+//
+// 🔴 IT USED TO BE A PITCH CARD, AND THE CARD WAS THE PROBLEM. The rail rendered a full panel -
+// headline, blurb, CTA - that a member had to dismiss, after which it collapsed to a tab that
+// re-expanded the panel inline. So the rail held a SECOND, differently-worded upgrade surface beside
+// the lightbox every gate opens, with its own copy to keep in sync and its own dismissal state in
+// localStorage. Two pitches, two wordings, one product.
+//
+// Now the rail's job is to be a door, not a pitch: the tab is always the tab, and the words live in
+// exactly one place. The dismissal state went with the panel, because there is nothing to dismiss -
+// a tab is not an interruption.
 export function UpgradeCrew() {
-  const [dismissed, setDismissed] = useState(false)
-  const [expanded, setExpanded] = useState(false)
-
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setDismissed(localStorage.getItem(KEY) === '1')
-  }, [])
-
-  function dismiss() {
-    setDismissed(true)
-    setExpanded(false)
-    try { localStorage.setItem(KEY, '1') } catch {}
-  }
-
-  // Collapsed → a slim tab sitting flush on top of the profile card.
-  if (dismissed && !expanded) {
-    return (
-      <button
-        type="button"
-        onClick={() => setExpanded(true)}
-        aria-label="Upgrade to Crew"
-        className="mx-3 -mb-px flex items-center justify-center gap-1.5 rounded-t-lg border border-b-0 border-primary-bg bg-primary-bg/60 px-3 py-1.5 text-meta font-semibold text-primary-strong transition-colors hover:bg-primary-bg"
-      >
-        <Zap className="h-3.5 w-3.5" />
-        Upgrade
-      </button>
-    )
-  }
-
   return (
-    <div className="relative mx-3 mb-3 rounded-xl border border-primary-bg bg-primary-bg p-3.5">
-      <button
-        type="button"
-        onClick={dismiss}
-        aria-label="Dismiss"
-        className="absolute right-2 top-2 rounded-md p-1 text-primary-strong/60 transition-colors hover:bg-surface/50 hover:text-primary-strong"
-      >
-        <X className="h-3.5 w-3.5" />
-      </button>
-      <p className="mb-1 flex items-center gap-1.5 pr-5 text-meta font-semibold text-primary-strong">
-        <Zap className="h-3.5 w-3.5 shrink-0" />
-        Upgrade to Crew
-      </p>
-      <p className="mb-3 text-meta leading-snug text-muted">
-        Crew gets the full game: ranks, seasons, rewards, and the Quest.
-      </p>
-      <Link
-        href="/upgrade"
-        className="block rounded-lg bg-primary px-3 py-1.5 text-center text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover"
-      >
-        Upgrade →
-      </Link>
-    </div>
+    <button
+      type="button"
+      onClick={() => openUpgrade()}
+      aria-label="Upgrade to Crew"
+      className="mx-3 -mb-px flex items-center justify-center gap-1.5 rounded-t-lg bg-primary px-3 py-1.5 text-meta font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+    >
+      <Zap className="h-3.5 w-3.5" aria-hidden />
+      Upgrade
+    </button>
   )
 }

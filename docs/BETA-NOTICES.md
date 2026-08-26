@@ -32,7 +32,7 @@ each notice actually depends on.
 | `billingLive()` | `lib/pricing/settings` (DB `platform_settings`) | Gates the `/upgrade` + `/settings/billing` beta banners and founder-reservation actions. Turn on when billing goes live. |
 | `betaEndsAt()` | `lib/platform-flags.ts` (DB) | The countdown clock (`beta-countdown-banner`). Auto-hides after the date. |
 | `FUNNEL_INDUCTION_ACTIVE`, `BETA_MEMBERS_GET_CREW` | `lib/onboarding/funnel-script.ts` | The Funnels induction (ADR-1090). `BETA_MEMBERS_GET_CREW` flips at GA; the Funnels machinery itself stays. |
-| `ALERT_KEY` | `components/layout/site-alert-bar.tsx:17` | Bump after editing the alert copy so it re-shows. |
+| ~~`ALERT_KEY`~~ | ~~`components/layout/site-alert-bar.tsx`~~ | ✅ **Retired 2026-08-26** (ADR-1166). The strip is operator-written now and its dismissal key is derived from the message, so there is no constant to bump. |
 
 ## 3. The inventory (edit at launch)
 
@@ -59,7 +59,7 @@ Legend — Driver: 🟢 `BETA_OPEN_ACCESS` (auto-swaps via `beta-notices.ts`) ·
 |---|---|---|
 | `app/(main)/upgrade/page.tsx:79` | "…free during beta." (always shown) | Manual edit. **High risk (unconditional).** |
 | `app/(main)/upgrade/page.tsx:82-206` · `app/(main)/settings/billing/page.tsx:85` | Free-beta banners | 🟡 `billingLive()` auto-hides. |
-| `components/layout/site-alert-bar.tsx:63` | "Frequency will be in Beta until September 1st…" | Edit copy + bump `ALERT_KEY`. |
+| ~~`components/layout/site-alert-bar.tsx`~~ | ~~"Frequency will be in Beta until September 1st…"~~ | ✅ **Done 2026-08-26** (ADR-1166). The file is gone. The strip is now `components/layout/announcement-bar.tsx`, it carries no sentence of its own, and it mounts **signed-in only** — it had been rendering on the marketing tree, `/discover`, the help centre and the public Space twins. |
 | `components/layout/beta-countdown-banner.tsx` | "We're in Beta. The Founding Business rate ends…" | 🟡 `betaEndsAt()` auto-hides. Reframed 2026-08-06: what ends is the **rate**, not free access. The closing clause ("it stays your rate") is load-bearing, not decoration — see the file's header. |
 | `app/page.tsx:125,137,249,588` | Home hero + FAQ "free for the whole beta / no card / $10/mo" | Manual edit (4 strings). **High risk.** |
 | `app/(marketing)/beta/*` · `app/(marketing)/founders/*` · `components/marketing/beta-form.tsx` · `components/discover/inline-beta-capture.tsx` | Waitlist + founder-reservation funnels | Retire at GA. |

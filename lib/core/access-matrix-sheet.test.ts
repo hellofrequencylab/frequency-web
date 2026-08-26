@@ -53,7 +53,6 @@ const SHEET: Record<Surface, AccessLevel[]> = {
   personalCrm: [_, L, F, F, F, F, F, F, F, F, F, F, F],
   businessCrm: [_, _, _, _, _, _, _, L, F, F, F, F, F],
   website: [_, _, _, _, _, _, _, L, F, F, _, F, F],
-  hookNetwork: [_, _, _, _, _, _, _, _, L, F, _, F, F],
   growthStudio: [_, _, _, _, _, _, _, _, F, F, F, F, F],
   earnings: [_, _, _, _, _, _, F, F, F, F, _, F, F],
   qrStudio: [_, L, F, F, F, F, F, F, F, F, F, F, F],
@@ -72,7 +71,7 @@ const SHEET: Record<Surface, AccessLevel[]> = {
   settings: [F, F, F, F, F, F, F, F, F, F, F, F, F],
 }
 
-describe('access matrix conforms to the owner sheet (34 surfaces × 13 roles)', () => {
+describe('access matrix conforms to the owner sheet (33 surfaces × 13 roles)', () => {
   for (const [surface, expected] of Object.entries(SHEET) as [Surface, AccessLevel[]][]) {
     it(`${surface}`, () => {
       const got = COLS.map((c) => accessTo(surface, hatsFor(c)))

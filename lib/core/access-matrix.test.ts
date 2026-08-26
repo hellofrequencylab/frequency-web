@@ -68,10 +68,13 @@ describe('Studio business block — Partners only', () => {
     expect(accessTo('businessCrm', practitioner)).toBe('limited')
   })
 
-  it('Hook Network is Organization-only', () => {
-    expect(accessTo('hookNetwork', business)).toBe('limited')
-    expect(accessTo('hookNetwork', organization)).toBe('full')
-    expect(accessTo('hookNetwork', host)).toBe('none')
+  // 🔴 `hookNetwork` was asserted here (Organization-only) until ADR-1168 retired the surface: the
+  // function is `website` and the NAME belongs to a separate app. The replacement asserts the thing
+  // that actually has to stay true -- that removing the row cost the two personas nothing.
+  it('the Space website covers what Hook Network used to, for both partner tiers', () => {
+    expect(accessTo('website', business)).toBe('full')
+    expect(accessTo('website', organization)).toBe('full')
+    expect(accessTo('website', host)).toBe('none')
   })
 
   it('Collaborator gets the Earnings view but not the business CRM', () => {
@@ -120,7 +123,7 @@ describe('most-open union across hats', () => {
   })
 
   it('janitor sees everything at full', () => {
-    for (const s of ['feed', 'vault', 'businessCrm', 'hookNetwork', 'platformManage', 'financialDashboard'] as const) {
+    for (const s of ['feed', 'vault', 'businessCrm', 'website', 'platformManage', 'financialDashboard'] as const) {
       expect(canUse(s, janitor)).toBe(true)
     }
   })

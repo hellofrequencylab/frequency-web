@@ -5068,6 +5068,11 @@ this ADR (design only); the build adds the records table + seed content + the as
 
 ## ADR-158: Hook Networks — federated white-label sub-communities (extends ADR-059) (design)
 
+> 🔴 **SUPERSEDED by [ADR-1168](#adr-1168) (2026-08-26).** Never built. Its one artifact, the
+> `hookNetwork` access-matrix surface, is removed: the function is `website` and the name belongs to
+> a separate app. White-label tenancy is being reworked, not carried forward on this design. ADR-059
+> (Hook as a separate app, typed contracts) still stands.
+
 **Decision.** Frequency becomes a **federated network of white-label sub-communities** ("Hook
 networks"). This is the *generalization* of ADR-059 (Frequency ⇄ Hook): there, Hook is the
 **Practitioner OS** (branded sites, private cohorts/courses, member→creator billing) and Frequency is
@@ -33434,3 +33439,169 @@ either half yet.**
   delete the history in order to go green. It now strips line comments first, and gained two arms it
   never had: an absolute tolerance must be **set**, and it must be **under 1,600**. The row can no
   longer be closed by deleting the tolerance, nor by setting one too loose to see a control.
+
+## ADR-1166: the beta strip was on four public trees, so the announcement bar now carries no copy and mounts signed-in only (2026-08-26)
+
+**Context.** `SiteAlertBar` said, in a string literal:
+
+> Hey Friends 👋🏼 Frequency will be in Beta until September 1st. Feel free to browse around, make some
+> friends, and please report any bugs!
+
+It was mounted in **five** places: the member shell (`app-shell.tsx`), the marketing tree, the help
+centre, `/discover`, and the signed-out public-twin branch of `app/(main)/layout.tsx`. **Four of the
+five are public and indexable.** The authed app is robots-disallowed; `/discover` and the help centre
+are explicitly the only indexable community URLs the site has. So the first line under the header on
+every page a stranger or a crawler could reach was an operational notice written for members, telling
+them the product was unfinished, with a "Submit a bug" button beside it.
+
+Two smaller defects rode along:
+
+- **The public "Submit a bug" button did nothing on the public twins.** `SupportLauncher` listens for
+  an `open-support` event and the three public layouts mounted it; the `(main)` twin branch did not.
+  The button rendered and the dialog never opened.
+- **Dismissal was keyed to a hand-bumped `ALERT_KEY` constant.** Edit the copy, forget the bump, and
+  the NEW announcement is hidden from everyone who dismissed the old one — silently, and visible only
+  to someone who had never dismissed.
+
+Meanwhile the repo already had the general mechanism this bar was supposed to be. `AnnouncementBanner`
+(ADR-1060, ADR-1030) reads `platform_settings.announcement_message`, is dark until an operator writes
+one, and mounts in the signed-in branch of the same layout — as an inline card inside the content
+column, which is why `BannerMeasure` existed at all (to stop it painting across the operator consoles'
+info rail). **Two announcement systems, one of them hardcoded.**
+
+**Decision.** One announcement, one surface, no copy in the component.
+
+| Before | After |
+| :--- | :--- |
+| `site-alert-bar.tsx` — literal beta copy, 5 mounts, 4 public | `announcement-bar.tsx` — operator's words, 1 mount, signed-in |
+| `AnnouncementBanner` — inline card in the content column | deleted; `announcementBannerState()` kept as the state module |
+| `BannerMeasure` — kept the card off the admin info rail | deleted; a full-width strip above the columns needs no measure |
+| `ALERT_KEY`, bumped by hand | `keyFor(message)` — new words are a new key by construction |
+| countdown computed in the component | `countdownLabel()` on the server; the bar reads no clock |
+
+The bar mounts through a new `banner` **slot** on `AppShell` rather than importing itself. That keeps
+ADR-1030's constraint intact — the layout does the read inside the parallel wave it already awaits, so
+the height is present in the first flush and nothing shifts — while making "signed-in only" structural
+rather than remembered: the shell is the only thing that can pass the slot, and the shell is signed-in.
+
+`SupportLauncher` came out of the three public layouts with it. Nothing in those trees dispatches
+`open-support` once the bar is gone, so it was a listener with no callers. **Public pages now have no
+bug-report affordance**; signed-in members keep three (the right rail, the account menu, the member
+footer). Add a public one deliberately if it is wanted, rather than inheriting it from a beta notice.
+
+**Consequences.**
+
+- **The announcement surface is dark right now.** `announcement_message` is unset in
+  `platform_settings`, and `beta_ends_at` is still `2026-10-31` — a date with no message, which
+  ADR-1060's gate correctly ignores. Nothing renders until an operator writes words.
+- **🔴 The two copy assertions failed on their first run, against a bar that was already correct.**
+  "No beta copy" and "no `ALERT_KEY`" both tripped on the new file's own header comment, which
+  explains the regression and names the constant it replaced. A probe that cannot tell **use** from
+  **mention** pressures the next person to delete the history in order to go green — the identical
+  defect [ADR-1165](#adr-1165) records in a backlog probe the same week. The assertions now strip
+  comments first. This is the second time in one week; treat "grep the file for a word" as suspect by
+  default.
+- **The guards are source-shape, deliberately.** What went wrong was *where a component was mounted*
+  and *whether it held a literal*. Neither is observable by rendering it, which is exactly why
+  rendering it caught nothing for the two weeks this was live. `announcement-bar.test.ts` reads the
+  three public layouts plus the twin branch and was mutation-checked: re-adding the bar to
+  `app/(marketing)/layout.tsx` fails it.
+
+## ADR-1167: the upgrade prompt is app chrome, so it mounts once and everything else raises it (2026-08-26)
+
+**Context.** The Crew upsell existed twice over, in two different shapes.
+
+`CrewGate` and `CrewGateButton` each held a private `useState` and rendered their own
+`<UpgradeLightbox>`, at **nine call sites**. Three consequences, all the same defect wearing different
+clothes:
+
+1. The dialog existed nine times in the tree.
+2. **Only a component that had already decided to render a gate could open it.** Anything else that
+   discovers a member is out of scope — a rejected server action, a meter at its cap, a nav item they
+   cannot use — had no way to raise the prompt at all.
+3. The left rail carried a **second, separately-worded pitch**: a full panel with its own headline,
+   blurb and CTA, dismissed into localStorage, which re-expanded inline on click. Two wordings for one
+   product, drifting independently.
+
+The repo already had the right shape three times over — `SupportLauncher`, `CaptureLauncher`,
+`InviteLauncher` all mount one dialog in the shell and listen for a window event.
+
+**Decision.** The upgrade prompt joins them.
+
+| Before | After |
+| :--- | :--- |
+| 9 gates × (`useState` + `<UpgradeLightbox>`) | one `<UpgradeLauncher />` in the shell |
+| only a rendered gate can open it | `openUpgrade(reason)` from anywhere |
+| rail panel with its own pitch + dismissal | an orange `Upgrade` tab that raises the same prompt |
+| `"Crew is free during the beta…"` hardcoded | `crewUpgradeSuffix()` (docs/BETA-NOTICES §4.1) |
+| CTA `"Upgrade to Crew, free"` | `"Upgrade to Crew"` |
+
+The `reason` keys into `UPGRADE_COPY` for tailored copy and falls back to the Quest pitch, so a typo'd
+reason opens a populated dialog rather than an empty one.
+
+**Consequences.**
+
+- **The beta line had to be routed in the same change, not after it.** This dialog is now raised by
+  every gate in the app, and it was asserting "Crew is free during the beta. Upgrade in one tap, no
+  card" as a literal. Making a claim with an expiry date *more* prominent while leaving it hardcoded
+  is how "Beta until September 1st" survived on four public trees ([ADR-1166](#adr-1166)) — the same
+  week, in the same shell.
+- **🔴 THE PROMPT WILL NOT FIRE FOR TIER GATES TODAY, AND THAT IS CORRECT.** `BETA_OPEN_ACCESS` is
+  `true`, so `lib/auth.ts` serves every signed-in member `membershipTier: 'crew'`; separately
+  `featureGatesLive()` is false during the beta grace window, which is what deliberately silences
+  `UpsellTease` (ADR-874: a tease that says "this is locked" while nothing is locked fails the
+  CONTENT-VOICE §10 skeptic test). The plumbing is therefore built ahead of the moment it is needed.
+  What still fires today is the **creation** gates, which read `realMembershipTier` and are never
+  beta-overridden (ADR-414). Do not "fix" the quiet by lowering a gate.
+- **`CrewGate` gained a `reason` it never had.** It always opened the default Quest pitch regardless
+  of what was behind it. Existing call sites are unchanged (the parameter is optional and the fallback
+  is the old copy), but a store card and a locked Journey can now say different things.
+- The guards are source-shape for the same reason as ADR-1166: "how many of these exist" and "who can
+  open one" are structural questions that rendering a single component cannot ask.
+
+## ADR-1168: the Hook Network surface is retired — the function is Website, and the name belongs to another app (2026-08-26)
+
+**Context.** Owner ruling: *"I originally wanted to use that as the white label tenants but I want to
+rework that. Hook is the name of another app I was planning on embedding. The Space Website is the
+same function."*
+
+`hookNetwork` was one of the 34 rows in the access matrix, labelled "Org product", designed by
+[ADR-158](#adr-158) as a federated network of white-label Hook sub-communities. Two independent
+reasons retire it, and either alone would be enough:
+
+1. **The function already exists under another name.** A Space's own branded site is `website`. The
+   matrix bears this out — `website` grants Business **full** where `hookNetwork` granted only
+   `limited`, and both grant Organization full. The row was strictly weaker than the row beside it.
+2. **The name is spoken for.** Hook is a separate application the owner intends to embed. A matrix
+   row called `hookNetwork` that means "white-label tenancy" would collide with the real Hook the
+   moment it arrives.
+
+**It was never built.** No route, no nav item, no capability, no `featureAllowed` key — a surface
+declared in the matrix and nowhere else. Its entire footprint was one matrix row, one conformance-sheet
+row, and two test assertions.
+
+**Decision.** Remove the surface. `Surface` drops from 34 members to 33.
+
+- The matrix row is replaced by a **tombstone comment** naming both reasons, so the identifier is not
+  silently reused for the real Hook later.
+- `access-matrix.test.ts`'s "Hook Network is Organization-only" case becomes a test of the thing that
+  actually has to stay true: **that removing the row cost Business and Organization nothing**, because
+  `website` already covers both at full.
+- `docs/ROLES.md` loses the row and gains a note; [ADR-158](#adr-158) and `docs/HOOK-INTEGRATION.md`
+  get superseding banners.
+
+**Consequences.**
+
+- **ADR-059 is untouched and still live.** Hook as a separate app bound by typed contracts is exactly
+  the arrangement the owner still intends. What ADR-158 added — Hook as the *vehicle for Frequency's
+  white-label tenants* — is what ends here. Do not read this ADR as retiring the Hook integration.
+- **🔴 The tenancy model in `docs/ROLES.md` is now explicitly UNDER REWORK, not rewritten.** Three
+  passages there ("an org runs its own admin roles inside its Hook tenant", isolated from Frequency)
+  describe ADR-158's model. The isolation *principle* survives; what the tenant IS has not been
+  decided. They carry a warning banner rather than a replacement design, because inventing one would
+  put a model in the canon that the owner has not chosen — and this repo's plan docs being trusted is
+  the thing that makes them worth having.
+- **If white-label tenancy returns, it is a capability under `website`, not a surface of its own.**
+  The matrix answers "how much function on this surface"; "can this Space run its own branded tenant"
+  is a gate, and gates live in `FEATURE_GATES` (`space_whitelabel` already exists there, Independent
+  tier). The surface row was the wrong shape for the question from the start.

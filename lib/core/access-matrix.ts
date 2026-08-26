@@ -72,7 +72,7 @@ export type Surface =
   | 'lead'
   // Studio
   | 'studioOverview' | 'support' | 'personalCrm' | 'businessCrm' | 'website'
-  | 'hookNetwork' | 'growthStudio' | 'earnings' | 'qrStudio'
+  | 'growthStudio' | 'earnings' | 'qrStudio'
   // Platform
   | 'status' | 'insight' | 'veraAi' | 'platformManage' | 'financialDashboard' | 'settings'
   | 'platformSpaces'
@@ -135,8 +135,15 @@ export const ACCESS_MATRIX: Record<Surface, Row> = {
   support: { visitor: 'limited', ...PAID_FULL }, // members submit a request (limited); full console at crew+/staff
   personalCrm: PAID_FULL, // Connections / personal CRM — member preview → paid; partners/staff full
   businessCrm: { practitioner: 'limited', business: 'full', organization: 'full', analyst: 'full', admin: 'full', janitor: 'full' },
+  // 🔴 `hookNetwork` WAS HERE AND IS DELIBERATELY GONE (ADR-1168, owner ruling 2026-08-26). It was
+  // designed as the federated white-label sub-community product (ADR-158) and never built: no route,
+  // no nav item, no capability read it. Two things retired it at once. The FUNCTION is `website` -- a
+  // Space's own branded site is the same thing the Hook Network row described, and `website` already
+  // grants Business and Organization 'full', so removing the row takes nothing away (it granted
+  // Business strictly LESS: 'limited'). And the NAME is spoken for: Hook is a separate app the owner
+  // intends to embed, so leaving a matrix row called hookNetwork here would collide with it.
+  // If white-label tenancy comes back, it is a capability under `website`, not a surface of its own.
   website: { practitioner: 'limited', business: 'full', organization: 'full', admin: 'full', janitor: 'full' }, // analyst 🚫
-  hookNetwork: { business: 'limited', organization: 'full', admin: 'full', janitor: 'full' }, // Org product
   growthStudio: { business: 'full', organization: 'full', analyst: 'full', admin: 'full', janitor: 'full' }, // practitioner 🚫 (sheet)
   earnings: { ...PARTNERS_FULL, admin: 'full', janitor: 'full' }, // analyst 🚫 (sheet)
   qrStudio: PAID_FULL, // member preview → paid; partners/staff full
