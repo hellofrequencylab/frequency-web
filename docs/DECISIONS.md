@@ -33291,3 +33291,64 @@ for ACLs, with `search_path` as one more tracked attribute and an extension-owne
   corrected to match the file. **Check the version a tool assigns, not just that it succeeded.**
 - Ledger parity re-verified directly, since `check:migrations` skips that arm without credentials:
   650 repo files ⇄ 650 applied rows, `versions` and `version+name` sha256 digests byte-identical.
+
+---
+
+## ADR-1165: a tolerance expressed as a ratio grows with the page, so the gate went blind where it mattered most (2026-08-26)
+
+**Context.** `playwright.config.ts` set `maxDiffPixelRatio: 0.02` for every `toHaveScreenshot`, with
+the stated reason *"tolerate sub-2% pixel drift (fonts/AA)"*. The intent is right. The instrument is
+not, because the visual suite takes **full-page** captures of very tall pages and a ratio scales with
+the canvas:
+
+| Surface | Canvas | 2% allows |
+| :--- | ---: | ---: |
+| `/discover` mobile | 390 × 9675 = 3,773,250 px | **75,465 px** |
+| `/about` mobile | 390 × 9457 = 3,688,230 px | 73,764 px |
+| `/discover` desktop | 1280 × 7538 = 9,648,640 px | **192,972 px** |
+
+A 40 × 40 header control is 1,600 px — **2.1% of the mobile budget**. The gate was blindest on
+exactly the content-rich pages that matter most, and it is silent in *both* directions:
+`--update-snapshots` rewrites a baseline only when the comparison FAILS, so a sub-threshold change is
+neither caught nor banked, and every one drifts the baseline further from reality.
+
+It has already cost something. ADR-1161 records a correct change being marked broken, re-opened, and
+re-closed on the strength of `No baseline changes to commit` — a line that reads as *nothing moved*
+and means *nothing moved by more than 2% of a four-megapixel canvas*.
+
+**Decision: an absolute `maxDiffPixels: 400`, with the floor measured rather than guessed.**
+
+The row that raised this insisted the number be measured, because a threshold set below real noise
+fails on nothing and then gets routed around — ADR-970's whole subject. Production could not be
+captured from the build container (the agent proxy answers 403 to CONNECT for the site), so the floor
+was measured where it actually lives: **the renderer**. "Fonts/AA" is a property of the browser build,
+not of the site.
+
+Six consecutive full-page captures of a purpose-built 390 × 63392 page and a 1280 × 29790 page —
+dense antialiased text, gradients, box-shadows, rounded edges — each from a **fresh browser context**,
+which is what a CI re-run does rather than the best case of one warm page:
+
+> **0 differing pixels. Every pair. Both viewports.**
+
+Chromium is deterministic within one pinned build, and CI pins the build. The noise this tolerance was
+sized for is **cross-environment, not per-run**.
+
+400 is not zero because a floor of zero is brittle: one Chromium patch bump shifting a subpixel would
+fail every surface at once. It is a quarter of the smallest thing the gate must see (1,600 px) and
+0.0016% of a 24-megapixel canvas — scattered AA differences absorbed, a control unable to hide, and
+**it does not grow with page height**.
+
+**Consequences.**
+
+- ⚠️ **Stated rather than papered over:** this is one container and one browser build. If a CI
+  runner's font set differs from the run that captured a baseline, real drift could exceed 400. That
+  is precisely why the change lands as a PR whose own `pr-compare` exercises the new threshold against
+  the **committed** baselines — the repo's standing rule is to wire a gate in the same change as the
+  run that proves it. **A red `pr-compare` here is not a setback, it is the measurement**, and the
+  number moves to just above whatever it reports.
+- **The probe had to change with it, and that is the transferable part.** `LIVE-125`'s original probe
+  grepped the whole file for `maxDiffPixelRatio` — so the *comment explaining why the setting was
+  retired* failed it. A probe that cannot tell **use** from **mention** pressures the next person to
+  delete the history in order to go green. It now strips line comments first, and gained two arms it
+  never had: an absolute tolerance must be **set**, and it must be **under 1,600**. The row can no
+  longer be closed by deleting the tolerance, nor by setting one too loose to see a control.
