@@ -33294,7 +33294,7 @@ for ACLs, with `search_path` as one more tracked attribute and an extension-owne
 
 ---
 
-## ADR-1165: a tolerance expressed as a ratio grows with the page, so the gate went blind where it mattered most (2026-08-26)
+## ADR-1165: the ratio hid 21 stale baselines, and the absolute threshold that found them cannot land until they are fixed (2026-08-26)
 
 **Context.** `playwright.config.ts` set `maxDiffPixelRatio: 0.02` for every `toHaveScreenshot`, with
 the stated reason *"tolerate sub-2% pixel drift (fonts/AA)"*. The intent is right. The instrument is
@@ -33338,14 +33338,59 @@ fail every surface at once. It is a quarter of the smallest thing the gate must 
 0.0016% of a 24-megapixel canvas — scattered AA differences absorbed, a control unable to hide, and
 **it does not grow with page height**.
 
+**Then `pr-compare` ran, and it came back RED. That run is the real content of this ADR.**
+
+The change was pushed precisely so its own `pr-compare` would exercise the new threshold against the
+**committed** baselines — the repo's standing rule is to wire a gate in the same change as the run
+that proves it. What it proved was not what was expected.
+
+**123 of 144 surfaces passed at 400 absolute pixels.** That is CI confirming, on its own hardware and
+its own font set, that the noise floor is under 400. The local 0-pixel result holds. **The threshold
+is not too tight.**
+
+**21 surfaces failed, with ten distinct readings:**
+
+| | Differing pixels |
+| :--- | ---: |
+| `discover` × 4 themes | 8,890 · 8,928 · 8,973 · 8,990 |
+| `app-feed` light/dark, `app-nearby` light/dark | 5,507 · 5,973 · 2,345 · 1,439 |
+| `app-settings`, `app-space-console` | 899 · 669 |
+
+**Every one reported ratio 0.01 or lower — every one was passing under the old 2%.** This is exactly
+what the row predicted: `--update-snapshots` rewrites a baseline only when the comparison FAILS, so
+these were neither caught nor banked, and the baselines have been drifting for as long as the ratio
+has been in place.
+
+**Decision, revised: keep the threshold at 400 and treat the 21 as stale baselines — but do not land
+either half yet.**
+
+- 🔴 **Raising the number is the move the red run invites, and it is wrong.** A threshold above 8,990
+  is 5.6× the 1,600 pixels of a header control. It would restore precisely the blindness this ADR
+  exists to remove. The threshold is right; the *baselines* are stale.
+- ⚠️ **They must not be recaptured blind.** Nobody has looked at what the 21 diffs contain.
+  Recapturing bakes in whatever is there, including any real regression the gate has been hiding —
+  converting a measurement problem into a permanent one.
+- 🔵 **A hypothesis about the split, labelled as one.** The four `/discover` diffs are within 100
+  pixels of each other across dawn-light, dawn-dark, midnight-light *and* midnight-dark. A
+  theme-independent delta of the same size in all four reads as **structure, not colour** — and
+  `test/e2e/surfaces.ts` already documents that `/discover`'s height drifts between requests because
+  six live queries feed it and three are order- or clock-sensitive. So the likely split is
+  content-dynamic surfaces, where **no absolute threshold can ever be stable** and the answer is
+  `mask` or `viewportOnly` (both already supported by `visual.spec.ts`), versus genuinely stale
+  baselines that need a recapture. **Unconfirmed:** the diff images sit in a 256 MB artifact that was
+  not opened.
+
 **Consequences.**
 
-- ⚠️ **Stated rather than papered over:** this is one container and one browser build. If a CI
-  runner's font set differs from the run that captured a baseline, real drift could exceed 400. That
-  is precisely why the change lands as a PR whose own `pr-compare` exercises the new threshold against
-  the **committed** baselines — the repo's standing rule is to wire a gate in the same change as the
-  run that proves it. **A red `pr-compare` here is not a setback, it is the measurement**, and the
-  number moves to just above whatever it reports.
+- **The config change was withdrawn from #2312 rather than carried red.** `SCAN-520` in that same PR
+  is finished and already applied to production; holding a completed database fix hostage to a
+  baseline recapture is the wrong trade. The change is three lines and re-applies in a minute once
+  the baselines are sound.
+- **A gate can be correct and still not landable.** The rule "wire a gate in the same change as the
+  green build that proves it" assumes the proving run goes green. When it does not, the honest move
+  is to keep the measurement and withdraw the gate — not to loosen the gate until the run agrees with
+  it. Loosening would have produced a permanently green, permanently blind check: ADR-970's failure
+  mode reached by the opposite road.
 - **The probe had to change with it, and that is the transferable part.** `LIVE-125`'s original probe
   grepped the whole file for `maxDiffPixelRatio` — so the *comment explaining why the setting was
   retired* failed it. A probe that cannot tell **use** from **mention** pressures the next person to

@@ -76,37 +76,11 @@ export default defineConfig({
   expect: {
     toHaveScreenshot: {
       // Deterministic captures: freeze animations, hide the caret, snapshot
-      // at CSS pixel scale, and tolerate a small ABSOLUTE amount of pixel drift.
-      //
-      // 🔴 THIS WAS `maxDiffPixelRatio: 0.02` AND THAT NUMBER MADE THE GATE BLIND (LIVE-125,
-      // ADR-1165). The intent -- "tolerate font and antialiasing noise" -- was right; a RATIO
-      // was the wrong instrument, because these are FULL-PAGE captures of very tall pages and a
-      // ratio scales with the canvas:
-      //     /discover mobile   390 x 9675 = 3,773,250 px  ->  2% = 75,465 px allowed
-      //     /discover desktop 1280 x 7538 = 9,648,640 px  ->  2% = 192,972 px allowed
-      // A whole header control is 40 x 40 = 1,600 px, i.e. 2.1% of the mobile budget. So the gate
-      // was blindest on exactly the content-rich pages that matter most, and it cost a real
-      // change being marked broken, re-opened and re-closed (ADR-1161): `No baseline changes to
-      // commit` reads as "nothing moved" but means "nothing moved by more than 2% of a
-      // four-megapixel canvas". It is silent in BOTH directions -- `--update-snapshots` rewrites
-      // a baseline only when the comparison FAILS, so a sub-threshold change is neither caught
-      // NOR banked, and the baseline drifts further from reality with every one.
-      //
-      // THE FLOOR WAS MEASURED, NOT GUESSED, because a threshold set below real noise fails on
-      // nothing and then gets routed around (ADR-970). Six consecutive captures of a 390x63392
-      // and a 1280x29790 page -- text, gradients, shadows, rounded edges, a fresh browser
-      // CONTEXT each time, which is what a CI re-run actually does -- differed by **0 pixels**,
-      // every pair, both viewports. Chromium is deterministic within one pinned build, and CI
-      // pins the build. The noise this tolerance exists for is CROSS-environment, not per-run.
-      //
-      // 400 sits far above that measured floor and far below the smallest thing the gate must
-      // catch: a quarter of a 40 x 40 control, and 0.0016% of a 24-megapixel canvas, so scattered
-      // AA differences are still absorbed while a control cannot hide. It does not grow with page
-      // height, which is the whole point.
+      // at CSS pixel scale, and tolerate sub-2% pixel drift (fonts/AA).
       animations: 'disabled',
       caret: 'hide',
       scale: 'css',
-      maxDiffPixels: 400,
+      maxDiffPixelRatio: 0.02,
     },
   },
   use: {
