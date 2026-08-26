@@ -21,6 +21,7 @@
     "test:rls": "supabase test db",
     "check:authz": "node scripts/check-authz-guards.mjs",
     "check:canon": "node scripts/check-canon.mjs",
+    "check:dawn-bundle": "node scripts/check-dawn-bundle.mjs",
     "check:headers": "node scripts/check-headers.mjs",
     "check:menu": "node scripts/check-menu.mjs",
     "check:mail-dns": "node scripts/check-mail-dns.mjs",

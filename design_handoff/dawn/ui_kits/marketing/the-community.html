@@ -1,0 +1,285 @@
+<!-- @dsCard group="Screens · Marketing" viewport="1280x820" name="Marketing — The Community" subtitle="/the-community reference frame (OWN-019). PhotoHero, four Pillars, ZigZag on the ladder, Statement + Marquee, the interactive tour, FAQ with JSON-LD, BetaCTA to /join" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Frequency · What is a Circle?</title>
+<link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<script src="../../_ds_bundle.js"></script>
+<script src="reveal.js"></script>
+<style>
+  html, body { margin: 0; }
+  html { background: var(--color-marketing-canvas); min-height: 100vh; }
+  body { background: var(--color-marketing-canvas); min-height: 100vh; box-sizing: border-box; font-family: var(--font-sans); color: var(--color-text); }
+  a { color: var(--color-primary-strong); }
+  a:hover { color: var(--color-primary); }
+  /* The marquee is the only motion this page owns. One track, duplicated, so the
+     loop has no seam. Reduced motion parks it. */
+  @keyframes tc-marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+  .tc-marquee-track { display: flex; width: max-content; animation: tc-marquee 34s linear infinite; }
+  @media (prefers-reduced-motion: reduce) { .tc-marquee-track { animation: none; } }
+  /* Mobile law, one breakpoint at 900px. See the-community-mobile.html for the
+     reference frame: pillars 4-up to 2-up, ZigZag always image-then-text, the
+     tour's step list becomes a snap rail above the screen. */
+  @media (max-width: 900px) {
+    .tc-pillars { grid-template-columns: repeat(2, 1fr) !important; }
+    .mk-trio, .mk-hero-grid { grid-template-columns: 1fr !important; }
+    .tc-tour { grid-template-columns: 1fr !important; }
+    .tc-tour-steps { display: flex !important; gap: 10px; overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 6px; }
+    .tc-tour-steps > * { flex: 0 0 78%; scroll-snap-align: start; }
+    .tc-zig { grid-template-columns: 1fr !important; }
+    .tc-zig > .tc-zig-media { order: -1 !important; }
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[
+{"@type":"Question","name":"Is a Circle the same thing as a group chat?","acceptedAnswer":{"@type":"Answer","text":"No. A Circle owns a day of the week and a place. The chat is a side effect of the meeting, not a replacement for it."}},
+{"@type":"Question","name":"What is a Hub?","acceptedAnswer":{"@type":"Answer","text":"A Hub is several Circles that share a place and a host. Circles meet inside Hubs. Circles never meet in Outposts."}},
+{"@type":"Question","name":"Do I have to pay to join a Circle?","acceptedAnswer":{"@type":"Answer","text":"No. Joining is what a Member does, and Member is the first rung of the pricing ladder. A plan buys a bigger allowance and a lower rate on the people we bring you, never entry to a room."}}]}
+</script>
+<script type="text/babel" src="icon.jsx"></script>
+<script type="text/babel" src="header.jsx"></script>
+<script type="text/babel" src="footer.jsx"></script>
+<script type="text/babel" src="sections.jsx"></script>
+<script type="text/babel" data-presets="react">
+const NSTC = window.DAWNFrequencyDesignSystem_c868e3;
+const I = ({ n, s = 18 }) => <window.MkIco n={n} style={{ width: s, height: s }} />;
+
+// The four Pillars. Not decoration: they are how a stranger locates themselves
+// before any vocabulary lands, so each one names a real Circle rather than a mood.
+const PILLARS = [
+  { id: 'mind', label: 'Mind', icon: 'brain', tone: 'broadcast', line: 'Reading groups, repair nights, the people who want to understand the thing.', eg: 'Repair night · Thursdays · Vista' },
+  { id: 'body', label: 'Body', icon: 'waves', tone: 'move', line: 'Plunges, rides, lifts, long walks. A body that is expected somewhere shows up.', eg: 'Sunrise plunge · Tuesdays · Leucadia' },
+  { id: 'spirit', label: 'Spirit', icon: 'sunrise', tone: 'primary', line: 'Sits, breath, grief circles, gratitude. The quiet half of a week, kept with company.', eg: 'Morning sit · Sundays · Encinitas' },
+  { id: 'expression', label: 'Expression', icon: 'music', tone: 'signal', line: 'Dance, music, making things badly in public until they are good.', eg: 'Beach sound bath · Fridays · Cardiff' },
+];
+
+function PillarNav() {
+  const [active, setActive] = React.useState('body');
+  const p = PILLARS.find((x) => x.id === active);
+  return (
+    <section className="mk-beat mk-cream" style={{ background: 'var(--color-surface)' }}>
+      <div style={{ maxWidth: 'var(--width-wide)', margin: '0 auto' }}>
+        <window.MkEdHead eyebrow="Four doors, one community" title="Pick the part of your week" script="that keeps going missing" />
+        <div className="tc-pillars" role="tablist" aria-label="The four Pillars" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14, marginTop: 'var(--space-10)' }}>
+          {PILLARS.map((x) => {
+            const on = x.id === active;
+            return (
+              <button key={x.id} role="tab" aria-selected={on} onClick={() => setActive(x.id)}
+                style={{ display: 'grid', gap: 10, textAlign: 'left', padding: '1.2rem 1.2rem 1.3rem', cursor: 'pointer', fontFamily: 'inherit',
+                  borderRadius: 'var(--radius-card)', border: `1px solid ${on ? `var(--color-${x.tone})` : 'var(--color-border)'}`,
+                  background: on ? `var(--color-${x.tone}-bg)` : 'var(--color-canvas)',
+                  transition: 'background var(--motion-base) var(--ease-out), border-color var(--motion-base) var(--ease-out)' }}>
+                <span style={{ width: 36, height: 36, display: 'grid', placeItems: 'center', borderRadius: 'var(--radius-control)',
+                  background: on ? 'var(--color-surface)' : `var(--color-${x.tone}-bg)`, color: `var(--color-${x.tone}-strong)` }}><I n={x.icon} s={18} /></span>
+                <span style={{ fontSize: '1.15rem', fontWeight: 'var(--weight-heading)', letterSpacing: 'var(--tracking-tight)' }}>{x.label}</span>
+              </button>
+            );
+          })}
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: 20, alignItems: 'center', maxWidth: 'var(--width-read)', margin: 'var(--space-8) auto 0',
+          padding: '1.15rem 1.35rem', background: 'var(--color-canvas)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-card)' }}>
+          <span className="eyebrow" style={{ color: `var(--color-${p.tone}-strong)` }}>{p.label}</span>
+          <div>
+            <p style={{ margin: 0, fontSize: '1.05rem', lineHeight: 1.65, textWrap: 'pretty' }}>{p.line}</p>
+            <p style={{ margin: '0.4rem 0 0', fontFamily: 'var(--font-mono)', fontSize: 'var(--text-meta)', color: 'var(--color-text-muted)' }}>{p.eg}</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// The ladder, as one row per rung. The naming canon is load bearing here, so the
+// row carries the word, the size, and the one sentence that keeps them distinct.
+const LADDER = [
+  ['Circle', 'A handful of people, one day of the week', 'Eight seats. A fixed slot. One host who counts heads.'],
+  ['Hub', 'Several Circles sharing a place', 'Usually somebody’s studio, gym, or back room. A Hub has a calendar.'],
+  ['Nexus', 'The Circles and Hubs of one town', 'What Around You is showing you. It has no door and no key.'],
+  ['Outpost', 'A partner venue that hosts, but does not run', 'A cafe, a yard, a hall. Circles never meet in Outposts.'],
+  ['Frequency Lab', 'The building we run ourselves', 'Plumbing, heat, cold, sound. One of them, so far, and it is not bookable yet.'],
+];
+
+function Ladder() {
+  return (
+    <section className="dot-grid mk-beat mk-cream" style={{ position: 'relative', background: 'var(--color-marketing-canvas)' }}>
+      <div style={{ position: 'relative', zIndex: 2, maxWidth: 'var(--width-read)', margin: '0 auto' }}>
+        <window.MkEdHead eyebrow="The vocabulary, once" title="Five words" script="in order of size" blurb="Every other page assumes you have read this one. It is five words, and four of them are places." />
+        <div className="stagger" style={{ marginTop: 'var(--space-10)' }}>
+          {LADDER.map(([w, sub, d], i) => (
+            <div key={w} className="reveal" style={{ display: 'grid', gridTemplateColumns: '2.6rem 1fr', gap: 18, padding: '1.35rem 0', borderTop: i ? '1px solid var(--color-border)' : 'none' }}>
+              <span className="font-display" style={{ fontSize: '1.75rem', lineHeight: 1.1, color: 'var(--color-primary-strong)' }}>{'0' + (i + 1)}</span>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '1.2rem', letterSpacing: 'var(--tracking-tight)' }}>{w}</h3>
+                <p style={{ margin: '0.25rem 0 0', fontSize: 'var(--text-meta)', color: 'var(--color-primary-strong)', fontWeight: 600 }}>{sub}</p>
+                <p style={{ margin: '0.4rem 0 0', fontSize: '1.02rem', lineHeight: 1.7, color: 'var(--color-text-muted)', textWrap: 'pretty' }}>{d}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// A ZigZag pair, written locally so the media block can be reordered on a phone
+// (image always first) without the shared component learning a new prop.
+function Zig({ img, alt, eyebrow, title, body, reverse }) {
+  return (
+    <section className="mk-beat mk-cream" style={{ background: 'var(--color-surface)' }}>
+      <div className="tc-zig reveal" style={{ maxWidth: 'var(--width-wide)', margin: '0 auto', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-10)', alignItems: 'center' }}>
+        <div className="tc-zig-media lift-1" style={{ order: reverse ? 2 : 1, borderRadius: 'var(--radius-2xl)', overflow: 'hidden' }}>
+          <img src={img} alt={alt} loading="lazy" decoding="async" style={{ display: 'block', width: '100%', aspectRatio: '4 / 3', objectFit: 'cover' }} />
+        </div>
+        <div style={{ order: reverse ? 1 : 2 }}>
+          <p className="eyebrow" style={{ margin: 0, color: 'var(--color-primary-strong)' }}>{eyebrow}</p>
+          <h2 className="font-display" style={{ margin: '0.5rem 0 0', fontSize: 'var(--text-display-h3)', lineHeight: 'var(--leading-snug)', letterSpacing: 'var(--tracking-tight)' }}>{title}</h2>
+          <p style={{ margin: '0.9rem 0 0', fontSize: '1.08rem', lineHeight: 1.75, color: 'var(--color-text-muted)', textWrap: 'pretty' }}>{body}</p>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function Marquee() {
+  const words = ['Tuesdays', 'the same two tubs', 'eight seats', 'a fixed day', 'one host', 'nobody is ranked', 'a hollow dot', 'show up again'];
+  const track = [...words, ...words];
+  return (
+    <div className="mk-ink" style={{ overflow: 'hidden', padding: '1.1rem 0', background: 'var(--color-ink)', borderTop: '1px solid var(--color-ink-border)', borderBottom: '1px solid var(--color-ink-border)' }} aria-hidden="true">
+      <div className="tc-marquee-track">
+        {track.map((w, i) => (
+          <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: 22, padding: '0 22px', whiteSpace: 'nowrap',
+            fontFamily: 'var(--font-mono)', fontSize: 'var(--text-meta)', letterSpacing: 'var(--tracking-eyebrow)', textTransform: 'uppercase', color: 'var(--color-on-ink-muted)' }}>
+            {w}<span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--color-primary)' }} />
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// The product tour. Four steps, and the right half is a real screen built from DS
+// components rather than a screenshot, so it stays honest when the app moves.
+const TOUR = [
+  { k: 'Find one', icon: 'radar', t: 'Around You, not a feed', d: 'Circles within a few miles, sorted by the next time they meet. No algorithm, no infinite scroll.' },
+  { k: 'Ask to join', icon: 'door-open', t: 'A host says yes', d: 'Eight seats means somebody decides. It takes a day, usually less, and a no is rare.' },
+  { k: 'Show up', icon: 'footprints', t: 'Log the Practice', d: 'One tap when you get there. The log is the only score, and it is only visible inside the Circle.' },
+  { k: 'Keep going', icon: 'flame', t: 'A season, not a streak app', d: 'Twelve weeks in, the Circle outlives the reason it started. A missed week is a hollow dot.' },
+];
+
+function Tour() {
+  const { Card, Badge, Avatar, Button } = NSTC;
+  const [step, setStep] = React.useState(0);
+  const s = TOUR[step];
+  return (
+    <section id="tour" className="mk-beat mk-cream" style={{ background: 'var(--color-marketing-canvas)' }}>
+      <div style={{ maxWidth: 'var(--width-wide)', margin: '0 auto' }}>
+        <window.MkEdHead eyebrow="The tour" title="Four screens" script="and one Tuesday" />
+        <div className="tc-tour" style={{ display: 'grid', gridTemplateColumns: '0.85fr 1fr', gap: 'var(--space-10)', alignItems: 'start', marginTop: 'var(--space-10)' }}>
+          <div className="tc-tour-steps" role="tablist" aria-label="Tour steps" style={{ display: 'grid', gap: 10 }}>
+            {TOUR.map((x, i) => {
+              const on = i === step;
+              return (
+                <button key={x.k} role="tab" aria-selected={on} onClick={() => setStep(i)}
+                  style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: 14, alignItems: 'center', textAlign: 'left', cursor: 'pointer', fontFamily: 'inherit',
+                    padding: '0.95rem 1.1rem', borderRadius: 'var(--radius-control)',
+                    border: `1px solid ${on ? 'var(--color-primary)' : 'var(--color-border)'}`,
+                    background: on ? 'var(--color-surface)' : 'transparent',
+                    boxShadow: on ? '0 1px 2px color-mix(in srgb, var(--color-ink) 7%, transparent), 0 6px 16px -8px color-mix(in srgb, var(--color-ink) 14%, transparent)' : 'none' }}>
+                  <span style={{ width: 32, height: 32, display: 'grid', placeItems: 'center', borderRadius: 'var(--radius-control)',
+                    background: on ? 'var(--color-primary-bg)' : 'var(--color-surface)', color: 'var(--color-primary-strong)' }}><I n={x.icon} s={16} /></span>
+                  <span>
+                    <span style={{ display: 'block', fontSize: '1rem', fontWeight: 'var(--weight-heading)', letterSpacing: 'var(--tracking-tight)' }}>{x.k}</span>
+                    <span style={{ display: 'block', marginTop: 2, fontSize: 'var(--text-meta)', color: 'var(--color-text-muted)' }}>{x.t}</span>
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+          <div className="lift-2" style={{ background: 'var(--color-canvas)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-card)', padding: '1.4rem 1.5rem 1.6rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+              <p className="eyebrow" style={{ margin: 0, color: 'var(--color-primary-strong)' }}>{'Step 0' + (step + 1)}</p>
+              <Badge tone="signal">Around You</Badge>
+            </div>
+            <h3 style={{ margin: '0.5rem 0 0', fontSize: '1.35rem', letterSpacing: 'var(--tracking-tight)' }}>{s.t}</h3>
+            <p style={{ margin: '0.5rem 0 0', fontSize: '1.02rem', lineHeight: 1.7, color: 'var(--color-text-muted)', textWrap: 'pretty' }}>{s.d}</p>
+            <hr className="rule-amber" style={{ margin: '1.2rem 0' }} />
+            <div style={{ display: 'grid', gap: 12 }}>
+              {[['Sunrise plunge', 'Tuesday 6:30am · Leucadia', '6 of 8'], ['Repair night', 'Thursday 7:00pm · Vista', '5 of 8'], ['Morning sit', 'Sunday 7:00am · Encinitas', '8 of 8']].map(([t, when, seats], i) => (
+                <div key={t} style={{ display: 'grid', gridTemplateColumns: 'auto 1fr auto', gap: 14, alignItems: 'center',
+                  background: 'var(--color-surface)', border: `1px solid ${i === step % 3 ? 'var(--color-primary)' : 'var(--color-border)'}`, borderRadius: 'var(--radius-control)', padding: '0.8rem 0.95rem' }}>
+                  <Avatar name={t} size={34} />
+                  <div style={{ minWidth: 0 }}>
+                    <p style={{ margin: 0, fontSize: '1rem', fontWeight: 600 }}>{t}</p>
+                    <p style={{ margin: '2px 0 0', fontSize: 'var(--text-meta)', color: 'var(--color-text-muted)' }}>{when}</p>
+                  </div>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-meta)', color: 'var(--color-text-subtle)' }}>{seats}</span>
+                </div>
+              ))}
+            </div>
+            <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
+              <Button size="sm">Ask to join</Button>
+              <Button size="sm" variant="ghost">See the week</Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function Page() {
+  const { MkEdHead: H } = window;
+  return (
+    <>
+      <window.PageHero
+        image="../../assets/images/beach-crowd.jpg"
+        alt="Several dozen people gathered on a beach at golden hour"
+        eyebrow="The Community Collective"
+        title="What is a Circle?"
+        script="community with a shape"
+        lead="Most communities are a list of names and a room nobody books. A Circle is a handful of people, one day of the week, and somebody who unlocks the door. Everything else here is built on that."
+        primary="Find one near you"
+        secondary="How the ladder works"
+        align="center" />
+      <PillarNav />
+      <Zig
+        img="../../assets/images/circle-morning-card.jpg"
+        alt="People sitting in a circle on a bluff at first light"
+        eyebrow="A Circle"
+        title="Eight seats and a standing invitation"
+        body="Not a group chat, not a follower count. Eight people agreed on a day, and the day is what survives a bad week. Attendance is visible inside the Circle and nowhere else, because a Circle is cooperative and local and there is no global leaderboard to climb." />
+      <Zig reverse
+        img="../../assets/images/lab-lounge.jpg"
+        alt="A warm lounge with wood slat walls and low light. Reference image"
+        eyebrow="A Hub"
+        title="Several Circles, one place, one host"
+        body="A studio, a gym, a back room with a kettle. A Hub has a calendar and a person whose name is on it. Circles meet inside Hubs. Circles never meet in Outposts, and an Outpost is a venue that hosts without running anything." />
+      <Marquee />
+      <window.MkStatement>Friendship is a schedule before it is a feeling.</window.MkStatement>
+      <Ladder />
+      <Tour />
+      <window.FaqList items={[
+        { q: 'Is a Circle the same thing as a group chat?', a: 'No. A Circle owns a day of the week and a place. The chat is a side effect of the meeting, not a replacement for it, and a Circle that only talks is a Circle that has quietly ended.' },
+        { q: 'What is a Hub?', a: 'Several Circles that share a place and a host. Circles meet inside Hubs. An Outpost is a partner venue that hosts but does not run anything, and Circles never meet in Outposts.' },
+        { q: 'Do I have to pay to join a Circle?', a: 'No. Joining is what a Member does, and Member is the first rung of the pricing ladder. A plan buys a bigger allowance and a lower rate on the people we bring you, never entry to a room.' },
+        { q: 'What if the map is empty where I live?', a: 'Then it is empty, and we will say so. Circles in North County are real today. Everywhere else, starting one is the honest answer, and hosting the first one is free.' },
+      ]} />
+      <window.BetaCTA />
+    </>
+  );
+}
+
+function Mount() { return (<><window.MarketingHeader onNav={() => {}} /><Page /><window.MarketingFooter onNav={() => {}} /></>); }
+ReactDOM.createRoot(document.getElementById('root')).render(<Mount />);
+</script>
+</body>
+</html>

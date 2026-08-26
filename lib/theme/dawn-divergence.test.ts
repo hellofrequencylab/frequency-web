@@ -4,6 +4,22 @@ import { join } from 'node:path'
 
 // PRODUCTION AHEAD OF DAWN, HELD OPEN UNTIL IT IS SENT BACK.
 //
+// 🔴 WHAT A GREEN RUN HERE DOES NOT MEAN (added 2026-08-25). This file asserts that the divergences
+// it FINDS equal the divergences it DECLARES. Both sets are eight rows. Green therefore means "the
+// two stylesheets disagree in exactly the ways written down below" — it never means they agree, and
+// it says nothing at all about whether DAWN's file is current.
+//
+// It is not. `design_handoff/dawn/` is a hand-copied photocopy of the external Claude Design
+// project, and the 2026-08-25 round was never copied in: DAWN applied all five corrections below on
+// its side and said so in `design_handoff/CHANGES.md` §2, while the file this test reads still holds
+// the pre-correction values. So on 2026-08-25 this test was green, the ledger was accurate, and the
+// outbound sheet was nevertheless asking DAWN to redo three-week-old work.
+//
+// `scripts/check-dawn-bundle.mjs` measures the freshness half, because nothing here can. When the
+// bundle IS re-exported, that guard fails and names the three files that must move together: its own
+// BUNDLE_ROUND, the ledger below, and `design_handoff/PROD-AHEAD.md`. Expect five of the eight rows
+// below to go stale in that same change — which is this test's failure mode 2, working as designed.
+//
 // `design_handoff/SYNC.md` § "Going the other way" makes sync two-directional: when the repo
 // changes something DAWN documents, it goes back on the next round. Four colour tokens have been
 // waiting to go back since 2026-08-05 — production fixed AA failures that DAWN's artifact still
