@@ -306,7 +306,7 @@ export default async function ClaimSpacePage({ params }: { params: Promise<{ tok
               Original note follows: the operator's Hero-size cover
               with the identity (logo + eyebrow + name + tagline) overlaid on a bottom scrim. Visitor view:
               no Follow / owner actions. Mirrors layout.tsx `heroCoverNode`. */}
-          <header className={cn('relative w-full overflow-hidden rounded-[var(--radius-cover,0.75rem)] bg-surface-elevated', coverH)}>
+          <header className={cn('relative w-full overflow-hidden rounded-[var(--radius-cover,1.5rem)] bg-surface-elevated', coverH)}>
             <Image
               src={coverSrc}
               alt=""

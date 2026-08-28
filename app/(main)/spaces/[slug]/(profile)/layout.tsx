@@ -471,11 +471,12 @@ export default async function SpaceProfileChromeLayout({
   const heroScrimGradient =
     coverScrim === 'none' ? null : heroOnInk ? 'from-ink/80 via-ink/30 to-transparent' : 'from-canvas via-canvas/40 to-transparent'
   const heroCoverNode = (
-    // The cover's corner rounding is themable (`--radius-cover`, set only by non-bold themes); the
-    // fallback 0.75rem IS today's rounded-xl, so a `bold` Space renders pixel-identically.
+    // The cover's corner rounding is themable (`--radius-cover`); the :root baseline is 24px — the same
+    // corner as --radius-card, IndexTemplate's hero and PageHero — so a `bold` Space cover agrees with
+    // every card and cover around it. Non-bold themes retune it (editorial 2px … playful 20px).
     <div
       className={cn(
-        'relative w-full overflow-hidden rounded-[var(--radius-cover,0.75rem)] bg-surface-elevated',
+        'relative w-full overflow-hidden rounded-[var(--radius-cover,1.5rem)] bg-surface-elevated',
         coverH,
       )}
     >
@@ -509,10 +510,10 @@ export default async function SpaceProfileChromeLayout({
   // sits half on the image, half below it. The name + actions live in the infoBand, cleared below it.
   const headerCoverNode = (
     <div className="relative w-full">
-      {/* Same themable cover rounding as the Hero size (fallback 0.75rem = today's rounded-xl). */}
+      {/* Same themable cover rounding as the Hero size (baseline 24px = rounded-2xl). */}
       <div
         className={cn(
-          'relative w-full overflow-hidden rounded-[var(--radius-cover,0.75rem)] bg-surface-elevated',
+          'relative w-full overflow-hidden rounded-[var(--radius-cover,1.5rem)] bg-surface-elevated',
           coverH,
         )}
       >

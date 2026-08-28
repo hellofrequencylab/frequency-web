@@ -33605,3 +33605,51 @@ row, and two test assertions.
   The matrix answers "how much function on this surface"; "can this Space run its own branded tenant"
   is a gate, and gates live in `FEATURE_GATES` (`space_whitelabel` already exists there, Independent
   tier). The surface row was the wrong shape for the question from the start.
+
+## ADR-1169: the Space cover had no `--radius-cover` baseline, so every Space profile rendered squarer than the rest of the product (2026-08-28)
+
+**Context.** An owner scan of the Business Spaces reported "the spaces have square images. the
+appropriate look is the rounded corners." The Space profile cover — the one image every Business
+Space leads with, at both Header and Hero sizes — is painted by
+`rounded-[var(--radius-cover,1.5rem)]` in `app/(main)/spaces/[slug]/(profile)/layout.tsx`, with the
+route skeleton (`[slug]/loading.tsx`) and the claim page mirroring it.
+
+The class compiles. `--radius-cover` did not exist. It was declared ONLY inside the five non-`bold`
+Space theme blocks in `app/globals.css` (editorial 2px · classic 3px · playful 20px · accessible 8px ·
+modern 14px), and `bold` is the default every existing Space resolves to. So on the default theme the
+var was undefined and the **fallback** was what painted: `0.75rem`, 12px.
+
+Every other cover in the product paints 24px — `PageHero` (`rounded-3xl`, the standard Detail cover),
+`IndexTemplate`'s `heroImage` (`rounded-2xl`), `EntityCard` (`rounded-2xl`), and the `--radius-card`
+role token itself. The Space cover was at HALF that, directly above cards drawn at 24px. That reads
+as square, and it was the only large surface in the product that did.
+
+Verified rather than reasoned: `app/globals.css` was compiled through Tailwind 4.3.3's own `compile()`
+and the emitted declarations read for `--radius-cover`. Before the fix the token appeared five times
+(2/3/20/8/14px) and never at `:root`; after, it appears seven, the two new ones both `24px`.
+
+**Decision.**
+
+- `--radius-cover: 24px` joins `--radius-control` / `--radius-card` / `--radius-pill` as a role token
+  at `:root`. The baseline is the CARD radius, not a fourth invented value: a cover is a large surface
+  and it should agree with the surfaces it sits above.
+- The `[data-space-theme]` **pin** gains `--radius-cover: 24px` alongside the card and control pins it
+  already carried. The pin's whole purpose is that a Space's shape is the SPACE's, not the viewer's
+  skin; cover was the one shape token missing from it.
+- The three call-site fallbacks move `0.75rem → 1.5rem` so the literal agrees with the token it stands
+  in for. The fallback is now unreachable, which is the point — a fallback that disagrees with its
+  token is a second, silent value.
+- The five themed blocks are UNTOUCHED. `editorial` at 2px is a deliberate square-edged theme and
+  stays square; this ADR is about the default having no value at all.
+
+**Consequences.**
+
+- Business Space covers move 12px → 24px on the default theme. That is a visible change and an
+  intended one; `bold`'s byte-identity claim in `globals.css` covers what the `[data-space-theme="bold"]`
+  BLOCK authors, and that block is unchanged — `space-themes.test.ts`'s bold pins still pass.
+- A cover is now shaped by a token with a real baseline, so a future skin can retune covers by moving
+  the role, which was impossible while the value lived only in a fallback literal.
+- **The general lesson: a `var()` fallback is not a default, it is an undeclared token wearing one.**
+  Nothing in the repo could see 12px — no gate, no baseline, no test — because the number was inside a
+  Tailwind arbitrary value rather than in the token table where every other radius lives. Grepping for
+  `--radius-cover` found five declarations and read as covered.
