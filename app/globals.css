@@ -195,6 +195,14 @@
   --radius-control: 14px;   /* = rounded-lg  */
   --radius-card:    24px;   /* = rounded-2xl */
   --radius-pill:    9999px;
+  /* COVER — the shape of a full-width entity cover / hero photo. It had NO :root baseline,
+     so every `rounded-[var(--radius-cover,0.75rem)]` cover fell back to 12px while the
+     PageHero cover every other Detail page uses (`rounded-3xl`) and IndexTemplate's hero
+     (`rounded-2xl`) both paint 24px. A Space profile therefore rendered visibly SQUARER
+     than every card and cover around it — the "spaces have square images" report. The
+     baseline is the card radius: a cover is a big surface, and it should agree with the
+     surfaces it sits above. Non-bold Space themes still retune it below. */
+  --radius-cover:   24px;   /* = rounded-2xl, agrees with --radius-card */
 
   /* Motion durations — defaults match the current animation timings in this file
      (cue-pop ~260ms is the base interaction beat; faster/slower bracket it). The
@@ -1102,6 +1110,7 @@
   font-family: var(--font-body, var(--font-nunito)), system-ui, sans-serif;
   --radius-card: 24px;
   --radius-control: 14px;
+  --radius-cover: 24px;
 }
 
 /* bold — today's look (Anton / Nunito). No radius override: a no-op anchor. */

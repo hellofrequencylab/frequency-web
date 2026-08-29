@@ -160,7 +160,7 @@ export default async function SpaceCalendarConsolePage({ params }: { params: Pro
               />
               <Link
                 href={`/events/new?space=${space.id}`}
-                className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-body-sm font-bold text-on-primary transition-colors hover:bg-primary-hover"
+                className="inline-flex items-center gap-1.5 rounded-control bg-primary px-4 py-2 text-body-sm font-bold text-on-primary transition-colors hover:bg-primary-hover"
               >
                 <Plus className="h-4 w-4" aria-hidden /> New event
               </Link>
@@ -180,7 +180,7 @@ export default async function SpaceCalendarConsolePage({ params }: { params: Pro
               </p>
               <Link
                 href={`/events/new?space=${space.id}`}
-                className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-body-sm font-bold text-on-primary transition-colors hover:bg-primary-hover"
+                className="mt-4 inline-flex items-center gap-1.5 rounded-control bg-primary px-4 py-2 text-body-sm font-bold text-on-primary transition-colors hover:bg-primary-hover"
               >
                 <Plus className="h-4 w-4" aria-hidden /> Create your first event
               </Link>

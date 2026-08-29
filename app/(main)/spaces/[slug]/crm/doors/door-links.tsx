@@ -76,7 +76,7 @@ function MakeButton({ status, children }: { status: 'idle' | 'loading'; children
     <button
       type="submit"
       disabled={status === 'loading'}
-      className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-body-sm font-bold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
+      className="inline-flex items-center justify-center gap-2 rounded-control bg-primary px-5 py-2.5 text-body-sm font-bold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
     >
       {status === 'loading' ? 'Making it…' : children}
     </button>

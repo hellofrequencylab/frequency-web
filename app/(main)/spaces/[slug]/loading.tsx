@@ -23,7 +23,7 @@ import { ProfileBodySkeleton } from '@/components/spaces/profile-body-skeleton'
 // streaming (loading.js "Status Codes").
 //
 // Radii are ROLE tokens, and the cover reuses the layout's own themable
-// rounded-[var(--radius-cover,0.75rem)] rather than a literal utility — a route skeleton that
+// rounded-[var(--radius-cover,1.5rem)] rather than a literal utility — a route skeleton that
 // mirrors a literal radius is what raised the literal-radius baseline on 2026-08-25, and this one
 // is dimension-matched without doing that.
 export default function SpaceDetailLoading() {
@@ -32,7 +32,7 @@ export default function SpaceDetailLoading() {
       {/* The Header-size cover (h-40 sm:h-52, the default) with the brand chip hanging half off it. */}
       <div className="mb-2">
         <div className="relative w-full">
-          <div className="h-40 w-full overflow-hidden rounded-[var(--radius-cover,0.75rem)] bg-surface-elevated sm:h-52" />
+          <div className="h-40 w-full overflow-hidden rounded-[var(--radius-cover,1.5rem)] bg-surface-elevated sm:h-52" />
           <div className="absolute -bottom-10 left-5 sm:-bottom-12 sm:left-6">
             <Skeleton className="h-20 w-20 rounded-card border-4 border-surface lg:h-28 lg:w-28" />
           </div>

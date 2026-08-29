@@ -66,7 +66,7 @@ export async function CollaboratorsBody({
           </p>
           <Link
             href={`/spaces/${slug}/settings/billing`}
-            className="mt-4 inline-flex items-center rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover motion-reduce:transition-none"
+            className="mt-4 inline-flex items-center rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover motion-reduce:transition-none"
           >
             See plans
           </Link>

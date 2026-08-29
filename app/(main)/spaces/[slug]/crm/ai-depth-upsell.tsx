@@ -88,7 +88,7 @@ export async function AiDepthUpsell({
         </div>
         <Link
           href={`/spaces/${slug}/settings/billing`}
-          className="inline-flex shrink-0 items-center gap-1.5 self-center rounded-xl bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary hover:bg-primary-hover"
+          className="inline-flex shrink-0 items-center gap-1.5 self-center rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary hover:bg-primary-hover"
         >
           {next.cta}
         </Link>

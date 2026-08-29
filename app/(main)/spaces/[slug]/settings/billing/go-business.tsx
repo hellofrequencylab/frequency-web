@@ -112,7 +112,7 @@ export function GoBusinessCta({
               type="button"
               onClick={goBusiness}
               disabled={pending}
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-body-sm font-bold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
+              className="flex w-full items-center justify-center gap-2 rounded-control bg-primary px-4 py-3 text-body-sm font-bold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
             >
               {pending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <ArrowRight className="h-4 w-4" aria-hidden />}
               {pending ? 'Redirecting' : 'Go Business'}

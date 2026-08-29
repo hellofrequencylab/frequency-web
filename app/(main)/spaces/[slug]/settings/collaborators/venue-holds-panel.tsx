@@ -215,7 +215,7 @@ export function VenueHoldsPanel({
                 },
               )
             }
-            className="mt-3 inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-body-sm font-bold text-on-primary hover:bg-primary-hover disabled:opacity-50"
+            className="mt-3 inline-flex items-center gap-2 rounded-control bg-primary px-4 py-2 text-body-sm font-bold text-on-primary hover:bg-primary-hover disabled:opacity-50"
           >
             {pending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <CalendarPlus className="h-4 w-4" aria-hidden />}
             Send request

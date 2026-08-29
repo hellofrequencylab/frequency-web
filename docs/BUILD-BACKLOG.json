@@ -5135,6 +5135,43 @@
         "evidence": "Measured on PR #2310, 2026-08-25/26. `list_workflow_runs` filtered to branch claude/website-comprehensive-audit-cj5o9t returned total_count 0 across ALL workflows while the PR was open at head 9cd67ce. Manual dispatch of ci.yml produced run 32912208126 (event workflow_dispatch, conclusion success, pull_requests [2310]) with check runs checks/lint/test on that SHA. db-tests-fallback.yml declares only `on: pull_request: branches: [main]` -- no workflow_dispatch -- and db-tests is required per GET /repos/hellofrequencylab/frequency-web/rulesets/17640795 (strict_required_status_checks_policy false, bypass_actors null).",
         "checked": "2026-08-26"
       }
+    },
+    {
+      "id": "SCAN-522",
+      "title": "Space covers painted 12px because --radius-cover had no :root baseline, only a var() fallback",
+      "status": "done",
+      "lane": "hygiene",
+      "size": "XS",
+      "source": {
+        "file": "docs/DECISIONS.md",
+        "ref": "ADR-1169 \u2014 Business Spaces UI scan, 2026-08-28"
+      },
+      "detail": "Owner report: 'the spaces have square images'. The Space profile cover uses rounded-[var(--radius-cover,...)], but --radius-cover was declared ONLY inside the five non-bold theme blocks, and bold is the default every existing Space resolves to. On the default theme the var was undefined and the 0.75rem FALLBACK painted: 12px, against 24px for PageHero, IndexTemplate's hero, EntityCard and --radius-card. Fixed by giving --radius-cover a 24px :root baseline, pinning it in [data-space-theme] beside the card/control pins it already carried, and moving the three call-site fallbacks to 1.5rem so the literal agrees with its token. Verified by compiling globals.css through Tailwind 4.3.3's compile() and reading the emitted declarations: five before, none at :root; seven after, the two new ones both 24px.",
+      "verify": {
+        "kind": "grep-present",
+        "pattern": "--radius-cover:   24px",
+        "paths": [
+          "app/globals.css"
+        ],
+        "note": "Passes when the cover radius is a role token with a :root baseline, not a value that exists only as a var() fallback."
+      }
+    },
+    {
+      "id": "SCAN-523",
+      "title": "Space owner-console buttons drifted to literal rounded-lg/xl instead of the rounded-control role",
+      "status": "done",
+      "lane": "hygiene",
+      "size": "XS",
+      "source": {
+        "file": "docs/DECISIONS.md",
+        "ref": "ADR-1169 \u2014 Business Spaces UI scan, 2026-08-28"
+      },
+      "detail": "Same scan, button half. buttonClasses' BASE is rounded-control (ADR-578: buttons are CONTROLS, so the Space theme shapes them). Sixteen hand-rolled button/link classNames across the Space CRM, billing, calendar, collaborators and manage consoles used literal rounded-xl (16px) or rounded-lg (14px) instead, so primary buttons on the same Space rendered at three different corners and none of them followed the Space's theme. All sixteen moved to rounded-control; literal-radius fell 2208 -> 2185.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "! grep -rn 'rounded-\\(lg\\|xl\\|2xl\\)[^\"]*bg-primary px-' --include=*.tsx 'app/(main)/spaces' components/spaces",
+        "note": "Passes when no Space surface paints a primary button with a literal radius instead of the rounded-control role."
+      }
     }
   ]
 }

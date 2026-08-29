@@ -99,7 +99,7 @@ export function SeatEditor({
             type="button"
             onClick={save}
             disabled={pending || !dirty}
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2 text-body-sm font-bold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
+            className="inline-flex items-center justify-center gap-2 rounded-control bg-primary px-4 py-2 text-body-sm font-bold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
           >
             {pending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Check className="h-4 w-4" aria-hidden />}
             Save
