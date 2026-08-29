@@ -33733,3 +33733,62 @@ signed-out check-in door, and **`checkInEvent` itself**.
 - Both theme-bag switches now read-merge-write onto **one** base in sequence. Writing each
   independently off the freshly-read row would make the second clobber the first — a bug this change
   would otherwise have introduced the moment a host used both.
+
+## ADR-1172: a draft was squatting the canonical event slug, so the link a host shared pointed at a page nobody could open (2026-08-29)
+
+**Context.** An owner reported a real event they had created, edited, and shared: *"Something glitched
+on the link and I can't find the page anywhere. When I go to my drafts, there's the event with the
+initial seed info, but I had edited that and created the event."*
+
+The database held **two rows, 59 seconds apart**, both `source: 'poster_scan'`:
+
+| | draft | published |
+|---|---|---|
+| slug | `meld-…-2026-09-02` (clean) | `meld-…-2026-09-02-148a01` |
+| title | the scan's seed title | the edited title |
+| status | `draft` | `published` |
+
+`mintSlug` runs at DRAFT CREATION (`createEventDraft`), not at publish. So the FIRST draft of a
+poster takes the clean `title-date` slug, and every later one is stamped `base-<randomBytes(3)>`
+— the six hex characters `148a01` are that call, which is how the two rows were tied together.
+
+The member scanned, abandoned that draft, scanned again, and published the SECOND row. The
+abandoned draft kept the pretty URL; the live event wore the suffix. A link built from the clean
+slug resolves to a **draft**, which is not publicly viewable — so the person they sent it to hit a
+dead end, and the host, looking for the clean URL, could not find their own event.
+
+Two further defects sat behind it, both found while tracing this:
+
+- `mintSlug` tested only the base and then returned `base-<6 hex>` **unchecked**. A second
+  collision surfaced as a raw unique-violation on insert.
+- The 'posted' publish branch emailed the claim invite with `draft.slug`. Any slug change at
+  publish would have shipped a link that 404s on open.
+
+**Decision.**
+
+- **A published event outranks a draft for the canonical slug.** `claimCanonicalSlug` runs at
+  publish, before the status flip, and takes the base slug for the event's CURRENT title (which is
+  usually not the scan's seed title any more).
+- It steps another row aside **only** when that row is the same poster's own unpublished draft —
+  never a published event, never anyone else's — and that sideways move is itself guarded on
+  `status='draft'`, so a concurrent publish of that draft wins instead.
+- Anything it cannot claim cleanly leaves the existing slug untouched: **a working suffixed URL
+  beats a failed publish.**
+- `mintSlug` now checks the suffixed candidate too, over a bounded walk.
+- The promoted slug is what publish writes on both ownership branches, what the claim-invite email
+  links to, and what publish returns to the caller for its redirect.
+
+**Consequences.**
+
+- Re-slugging at publish is safe *precisely because it is a draft*: it has never been publicly
+  reachable, so no link can break. That is the property the whole change rests on, and it is why
+  this could not be done one step later.
+- Scanning the same poster twice is no longer punished. The draft you abandon quietly loses the
+  slug to the event you actually publish.
+- **Not fixed here, and deliberately:** nothing DEDUPES draft creation, so a repeated scan still
+  makes a second row. Merging them automatically would have to guess that two scans of the same
+  wall are the same event, and guessing wrong silently destroys someone's edits. The slug rule
+  removes the harm without the guess.
+- The owner's own event was repaired directly in the database the same day (start date corrected
+  from a five-day span back to Sep 2, clean slug restored, orphan draft deleted) after confirming
+  each change with them. The row backup is in that session's transcript.
