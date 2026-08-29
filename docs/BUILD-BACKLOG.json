@@ -5211,6 +5211,23 @@
       }
     },
     {
+      "id": "SCAN-526",
+      "title": "A draft squatted the canonical event slug, so a published event's shared link led to an unviewable draft",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "docs/DECISIONS.md",
+        "ref": "ADR-1172 \u2014 owner report, lost event link, 2026-08-29"
+      },
+      "detail": "mintSlug ran at DRAFT creation, so the first draft of a poster claimed the clean title-date slug and every later one carried base-<randomBytes(3)> forever. A member scanned a poster, abandoned that draft, scanned again and published the second row: the abandoned draft kept the pretty URL and the live event wore the suffix, so the link they shared resolved to a draft, which is not publicly viewable. Fixed by claimCanonicalSlug at publish time - a published event outranks a draft for the canonical slug, stepping aside only the same poster's own unpublished draft, guarded on status='draft', and keeping the existing slug whenever it cannot claim cleanly. mintSlug now checks the suffixed candidate over a bounded walk, and the promoted slug is what publish writes on both branches, what the claim-invite email links to, and what publish returns.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "grep -q 'async function claimCanonicalSlug' lib/events/event-drafts.ts && ! grep -nE \"slug: draft\\.slug($|[^ ?])\" lib/events/event-drafts.ts",
+        "note": "Passes while publish promotes the canonical slug and no surface still hands out the pre-publish one."
+      }
+    },
+    {
       "id": "SCAN-527",
       "title": "Public visual baselines went stale after #2317 removed the announcement strip, timing pr-compare out on every PR",
       "status": "open",
@@ -5220,10 +5237,10 @@
         "file": "docs/DECISIONS.md",
         "ref": "ADR-1173 \u2014 traced from PR #2319's cancelled pr-compare, 2026-08-29"
       },
-      "detail": "#2317 (eb087aa) took the beta strip off the public site: by its own commit message it 'mounted in five places, four of them public and indexable: the marketing tree, the help centre, /discover, and the signed-out public-twin branch of (main)/layout'. Every public page lost a full-width bar off the top. The @visual baselines were last recaptured in #2303 (3b86a74), which predates it, so every public baseline is stale by that strip's height. On PR #2319 this failed ~130 public surfaces in midnight-light and midnight-dark on [mobile]; test #359 (midnight-dark /) PASSED, which rules out the deployment-protection wall the workflow warns about, and the baseline PNGs are all present, which rules out missing-baseline. THE CANCELLATION IS A SYMPTOM, NOT A SECOND BUG: playwright runs retries:2 in CI, so every stale surface burns three attempts at ~16s, the Visual compare step took 29m39s, and pr-compare (timeout-minutes: 35) was SIGTERMed at exit 143. It went unnoticed because the visual half only runs when a preview resolves before the job reaches it. Fix is a maintainer dispatch of e2e-manual.yml with update_baselines ON and capture_shell OFF (that file's own rule: a public-surface recapture wants update_baselines ALONE, since capture_shell rewrites shell PNGs the change never touched and needs a platform-staff account).",
+      "detail": "#2317 (eb087aa) took the beta strip off the public site: by its own commit message it 'mounted in five places, four of them public and indexable: the marketing tree, the help centre, /discover, and the signed-out public-twin branch of (main)/layout'. Every public page lost a full-width bar off the top. The @visual baselines were last recaptured in #2303 (3b86a74), which predates it, so every public baseline is stale by that strip's height. On PR #2319 this failed ~130 public surfaces in midnight-light and midnight-dark on [mobile]; test #359 (midnight-dark /) PASSED, which rules out the deployment-protection wall the workflow warns about, and the baseline PNGs are all present, which rules out missing-baseline. THE CANCELLATION IS A SYMPTOM, NOT A SECOND BUG: playwright runs retries:2 in CI, so every stale surface burns three attempts at ~16s, the Visual compare step took 29m39s, and pr-compare (timeout-minutes: 35) was SIGTERMed at exit 143. It went unnoticed because the visual half only runs when a preview resolves before the job reaches it. Recaptured on 2026-08-29 by an e2e-manual.yml dispatch with update_baselines ON and capture_shell OFF: 120 public PNGs moved, zero member-shell or /admin ones. The capture commit was pushed by GITHUB_TOKEN and produced exactly one check run, so the compare did NOT re-run on it - the proof is the next PR's pr-compare completing instead of timing out.",
       "verify": {
         "kind": "manual",
-        "evidence": "Closes when a capture commit lands and pr-compare completes green on a PR rather than timing out. Deliberately manual: the probe would have to run the visual suite against a preview with the bypass secret, which is exactly the thing that cannot be done from a unit-test process (ADR-970 - a gate that cannot fire honestly gets routed around).",
+        "evidence": "Closes when a PR's pr-compare completes green rather than timing out. Deliberately manual: the probe would have to run the visual suite against a preview with the bypass secret, which cannot be done from a unit-test process (ADR-970 - a gate that cannot fire honestly gets routed around).",
         "checked": "2026-08-29"
       }
     }
