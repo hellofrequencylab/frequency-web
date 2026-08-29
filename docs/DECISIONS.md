@@ -33653,3 +33653,83 @@ and the emitted declarations read for `--radius-cover`. Before the fix the token
   Nothing in the repo could see 12px — no gate, no baseline, no test — because the number was inside a
   Tailwind arbitrary value rather than in the token table where every other radius lives. Grepping for
   `--radius-cover` found five declarations and read as covered.
+
+## ADR-1170: RSVP closed when the event STARTED, not when it ended, so a live event could not be joined (2026-08-29)
+
+**Context.** An owner reported that RSVP was dead on a private-invite event: the link was being sent
+to people so they could say they were coming, and neither the owner (signed in) nor an invitee
+(signed out) had any way to answer. The event ran Aug 28 10:00 → Sep 2 16:00, so it had STARTED but
+was nowhere near finished.
+
+`app/(main)/events/[slug]/page.tsx` computes two different clocks, and its own comment states the
+rule:
+
+```
+const isPast   = isEventPast(event.starts_at, null, eventTz)          // has STARTED
+const hasEnded = isEventPast(event.starts_at, event.ends_at, eventTz) // past ends_at
+// "RSVP stays changeable until the event actually ENDS (not merely starts), so a
+//  member can still un-RSVP during a live session."
+```
+
+The Join box then gated on the wrong one. Both answer branches read `!isPast`, so **the entire RSVP
+surface disappeared the moment the event began** — for the whole five-day window here:
+
+- Signed-in, not going → the `RsvpControls` branch was false, and every later branch wanted
+  `isGoing` or `isWaitlisted`, so the cascade fell through to `null`. The box rendered its warm
+  "Be the first to RSVP" nudge above **no control at all**, which is what the report showed.
+- Signed out → the `GuestRsvpForm` branch was false too, so an invitee following the shared link got
+  the check-in door instead of a way to RSVP. The private invite could not be accepted by anyone.
+
+The stated intent was never implemented at the branch that decides. `hasEnded` existed and was used
+only for the mobile bottom bar and the quiet "Cancel RSVP" link.
+
+Separately, `events.details.rsvpWindow` (the host's "RSVPs open / close" pair) is **display-only** —
+`event-when-where.tsx` prints it and nothing enforces it. Not the cause here, and left alone.
+
+**Decision.**
+
+- Both answer branches move to `!hasEnded`. RSVP is answerable for the whole life of the event and
+  closes when the event is actually over, exactly as the comment always said.
+- The going-and-live **check-in branch moves ABOVE** the RSVP branch. It was reachable before only
+  because the RSVP branch excluded started events; widening RSVP without reordering would have
+  swallowed it and check-in would never have rendered.
+- The signed-out guest keeps the ADR-1033 check-in door, but **beside** the RSVP form rather than
+  instead of it. Its exclusivity was an artifact of RSVP closing at the start.
+
+**Consequences.**
+
+- A member can now RSVP, change their answer, or withdraw during a live event, and a guest on a
+  shared link can accept an invitation to something already under way. Nothing changes before the
+  start or after the end.
+- The `null` fall-through is gone for the signed-in, not-going, live case — the one that produced a
+  header with no control under it.
+- **The lesson: two clocks named `isPast` and `hasEnded` invite exactly this.** `isPast` does not
+  mean past, it means started; the comment explaining that sat six lines above the code that got it
+  wrong. A comment is not a guard.
+
+## ADR-1171: check-in is a host choice, not an automatic consequence of an event starting (2026-08-29)
+
+**Context.** Every event got check-in the instant it started, and no host could decline. That is
+right for a gathering with a door — a class, a weekly cowork — and wrong for a planning session, a
+multi-day working block, or a private invite where the only question is "are you coming". The same
+owner report asked for the switch.
+
+**Decision.** A per-event **check-in switch**, stored on the existing `events.theme` jsonb bag under
+`checkInEnabled` (`lib/events/checkin-enabled.ts`) — **no column and no migration**, the same
+reasoning [ADR-844](#adr-844) used for public listing. ON is the default and writing `true` DELETES
+the key, so the bag stays sparse and every event that exists today is untouched.
+
+It gates four places: the detail page's check-in branches, the movable `event-checkin` block, the
+signed-out check-in door, and **`checkInEvent` itself**.
+
+**Consequences.**
+
+- Hosts choose. A planning session stops advertising a door it does not have.
+- 🔴 **The server action is gated, not just the UI.** A switch that hides the button while the action
+  still records attendance, verifies the member, awards Zaps and ticks their streak is not a switch,
+  it is a coat of paint. `checkInEvent` re-reads `theme` and refuses.
+- Reading fails **OPEN**: a malformed bag leaves check-in on. Closing a host's door because of bad
+  JSON is the worse failure, and the time window still gates it either way.
+- Both theme-bag switches now read-merge-write onto **one** base in sequence. Writing each
+  independently off the freshly-read row would make the second clobber the first — a bug this change
+  would otherwise have introduced the moment a host used both.

@@ -5172,6 +5172,43 @@
         "cmd": "! grep -rn 'rounded-\\(lg\\|xl\\|2xl\\)[^\"]*bg-primary px-' --include=*.tsx 'app/(main)/spaces' components/spaces",
         "note": "Passes when no Space surface paints a primary button with a literal radius instead of the rounded-control role."
       }
+    },
+    {
+      "id": "SCAN-524",
+      "title": "RSVP closed at the event's START instead of its END, so a live event could not be joined",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "docs/DECISIONS.md",
+        "ref": "ADR-1170 \u2014 owner report, private-invite event, 2026-08-29"
+      },
+      "detail": "The event page computes isPast (has STARTED) and hasEnded (past ends_at), and its own comment says 'RSVP stays changeable until the event actually ENDS (not merely starts)'. Both answer branches gated on !isPast, so the whole RSVP surface vanished the moment an event began. On a multi-day event that is the entire window: a signed-in non-attendee fell through every branch to null (a warm 'Be the first to RSVP' header above no control), and a signed-out invitee on a shared link got the check-in door instead of a way to RSVP, so a private invite could not be accepted at all. Fixed by moving both branches to !hasEnded, hoisting the going-and-live check-in branch above the widened RSVP branch so it stays reachable, and letting the guest check-in door sit beside the RSVP form rather than replacing it.",
+      "verify": {
+        "kind": "grep-absent",
+        "pattern": "myProfileId && !isPast \\?",
+        "paths": [
+          "app/(main)/events/[slug]/page.tsx"
+        ],
+        "note": "Passes when no RSVP answer branch closes on the event's start instead of its end."
+      }
+    },
+    {
+      "id": "SCAN-525",
+      "title": "Check-in was automatic on every event with no way for a host to turn it off",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "docs/DECISIONS.md",
+        "ref": "ADR-1171 \u2014 owner report, private-invite event, 2026-08-29"
+      },
+      "detail": "Every event opened check-in the instant it started, whether or not the gathering had a door to mark. Added a per-event switch on the existing events.theme jsonb bag under checkInEnabled (lib/events/checkin-enabled.ts) - no column, no migration, same pattern as ADR-844's marketListed. Default ON and writing true deletes the key, so no existing event changes. Gates the detail page's check-in branches, the movable event-checkin block, the signed-out check-in door, AND the checkInEvent server action, so turning it off actually stops attendance being recorded and Zaps being paid rather than only hiding the button. Both theme-bag switches now merge onto one base in sequence so saving one cannot clobber the other.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "grep -q 'readEventCheckInEnabled(ev.theme)' 'app/(main)/events/actions.ts' && grep -q 'ctx.checkInEnabled' components/widgets/events/event-checkin.tsx",
+        "note": "Passes only while the switch is enforced in the check-in ACTION and not merely in the page chrome."
+      }
     }
   ]
 }

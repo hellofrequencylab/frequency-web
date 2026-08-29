@@ -10,6 +10,9 @@ export const EventCheckin = async () => {
   const ctx = getEventContext()
   if (!ctx) return null
   if (ctx.event.is_cancelled) return null
+  // The host can turn check-in off entirely (events.theme.checkInEnabled) — a planning session or
+  // a private working block has no door to mark. Default is on, so nothing existing changes.
+  if (!ctx.checkInEnabled) return null
   // Check-in is only meaningful while the event is actually happening.
   if (!ctx.isPast || ctx.hasEnded) return null
 

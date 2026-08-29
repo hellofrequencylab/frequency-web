@@ -26,6 +26,7 @@ import { posterSignedUrl } from '@/lib/events/poster-media'
 import { writeEventHeroHeight, type EventHeroHeight } from '@/lib/events/hero-height'
 import { writeEventCoverFocus } from '@/lib/events/cover-focus'
 import { writeEventMarketListed } from '@/lib/events/market-listing'
+import { writeEventCheckInEnabled } from '@/lib/events/checkin-enabled'
 import { pointFromGeog } from '@/lib/events/geo'
 import { approveRsvpById } from '@/lib/events/rsvp-depth'
 import { sendRsvpApprovedNotice } from '@/lib/events/guest-rsvp-email'
@@ -304,11 +305,24 @@ export async function updateEventSettings(id: string, slug: string, fd: FormData
   // Public listing (ADR-844): read-merge-write into events.theme beside coverFocus/heroHeight, and
   // ONLY when the form carries the control ('on'/'off'), so a form without it can never silently
   // relist an event the host took out of the listings.
+  // Both theme-bag switches read-merge-write onto the SAME base in sequence, so saving one never
+  // drops the other (writing them independently off `currentBags` would make the second clobber
+  // the first). Each is applied ONLY when the form carries its control, so a form without it can
+  // never silently flip a host's choice back on.
   const listingRaw = fd.get('market_listed')
-  const nextTheme =
-    listingRaw != null
-      ? writeEventMarketListed((currentBags as { theme?: unknown } | null)?.theme, listingRaw === 'on')
-      : null
+  const checkInRaw = fd.get('checkin_enabled')
+  const baseTheme = (currentBags as { theme?: unknown } | null)?.theme
+  let mergedTheme: unknown = baseTheme
+  let themeTouched = false
+  if (listingRaw != null) {
+    mergedTheme = writeEventMarketListed(mergedTheme, listingRaw === 'on')
+    themeTouched = true
+  }
+  if (checkInRaw != null) {
+    mergedTheme = writeEventCheckInEnabled(mergedTheme, checkInRaw === 'on')
+    themeTouched = true
+  }
+  const nextTheme = themeTouched ? (mergedTheme as Record<string, unknown>) : null
 
   // Untyped update handle (ADR-246): `rsvp_requires_approval` is a live column that
   // lib/database.types.ts has not been regenerated for, so the typed Update rejects it as `never`.

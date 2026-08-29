@@ -137,6 +137,9 @@ export interface EventDetailContext {
   canContribute: boolean
   isPast: boolean
   hasEnded: boolean
+  /** The host's check-in switch (events.theme.checkInEnabled, default ON — lib/events/checkin-enabled.ts).
+   *  False ⇒ the movable `event-checkin` block self-hides and the check-in action refuses. */
+  checkInEnabled: boolean
   /** The flexible poster harvest (lineup, schedule, links…) + signed URLs for its crops. */
   posterDetails: EventDetailsWithMedia
   posterCropUrls: Record<string, string>
