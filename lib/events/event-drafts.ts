@@ -134,13 +134,83 @@ async function resolveDomainId(domain: DomainSlug | null): Promise<string | null
   return (data as { id?: string } | null)?.id ?? null
 }
 
-/** Mint a unique slug from a title + start date (mirrors createEvent). */
-async function mintSlug(title: string, startsAt: string | null): Promise<string> {
+/** The canonical slug a title + start date WANTS, before any collision suffix. */
+function baseSlug(title: string, startsAt: string | null): string {
   const datePart = startsAt ? startsAt.slice(0, 10) : new Date().toISOString().slice(0, 10)
-  const base = `${slugify(title) || 'event'}-${datePart}`
-  const { data: existing } = await db().from('events').select('slug').eq('slug', base).maybeSingle()
-  if (!existing) return base
-  return `${base}-${randomBytes(3).toString('hex')}`
+  return `${slugify(title) || 'event'}-${datePart}`
+}
+
+/** Mint a unique slug from a title + start date (mirrors createEvent).
+ *
+ *  The suffixed candidate is CHECKED too, and the walk is bounded. The previous version
+ *  tested only the base and then returned `base-<6 hex>` unchecked, so a second collision
+ *  (astronomically unlikely, but the row it would hit is another draft of the same poster
+ *  scanning the same poster twice) surfaced as a raw unique-violation on insert. */
+async function mintSlug(title: string, startsAt: string | null): Promise<string> {
+  const base = baseSlug(title, startsAt)
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    const candidate = attempt === 0 ? base : `${base}-${randomBytes(3).toString('hex')}`
+    const { data: taken } = await db().from('events').select('slug').eq('slug', candidate).maybeSingle()
+    if (!taken) return candidate
+  }
+  // Five collisions in a row is not a slug problem any more; fall back to something that
+  // cannot collide rather than returning a value we know is taken.
+  return `${base}-${randomBytes(8).toString('hex')}`
+}
+
+/**
+ * PUBLISH-TIME slug promotion — the fix for a draft squatting the canonical URL.
+ *
+ * `mintSlug` runs at DRAFT creation, which means the first draft of a poster claims the clean
+ * `title-date` slug and every later one is stamped `…-<6 hex>` forever. Scan the same poster
+ * twice (or start the flow, abandon it, and start again) and the draft you ABANDON keeps the
+ * pretty URL while the one you actually publish carries the suffix. A link built from the clean
+ * slug then resolves to a draft, which is not publicly viewable, so the person you sent it to
+ * hits a dead end. That is a real incident: 2026-08-29, two drafts 59 seconds apart, the shared
+ * link pointing at the abandoned one.
+ *
+ * The rule this establishes: **a PUBLISHED event outranks a DRAFT for the canonical slug.** At
+ * publish we try to take the base slug for the event's CURRENT title (which may have been edited
+ * since the scan, and usually has). We move another row aside only when it is the same poster's
+ * own unpublished draft — never a published event, and never anyone else's row. Anything we
+ * cannot claim cleanly leaves the existing slug untouched, because a working suffixed URL beats
+ * a failed publish.
+ *
+ * Safe to re-slug here precisely BECAUSE it is a draft: it has never been publicly reachable, so
+ * no link can break. Returns the slug the event should end up with.
+ */
+async function claimCanonicalSlug(
+  posterProfileId: string,
+  eventId: string,
+  title: string | null,
+  startsAt: string | null,
+  currentSlug: string | null,
+): Promise<string | null> {
+  const base = baseSlug(title ?? '', startsAt)
+  if (!base || currentSlug === base) return currentSlug
+
+  const { data: holderRow } = await db()
+    .from('events')
+    .select('id, status, posted_by_profile_id')
+    .eq('slug', base)
+    .maybeSingle()
+  const holder = holderRow as { id: string; status: string; posted_by_profile_id: string | null } | null
+
+  if (holder && holder.id !== eventId) {
+    // Held by a published event, or by someone else's row: leave it alone and keep our suffix.
+    if (holder.status !== 'draft' || holder.posted_by_profile_id !== posterProfileId) return currentSlug
+    // Our own abandoned draft. Step it aside so the event a member actually published gets the
+    // clean URL. Guarded on status='draft' so a concurrent publish of THAT draft wins instead.
+    const { error: moveError } = await db()
+      .from('events')
+      .update({ slug: `${base}-${randomBytes(3).toString('hex')}` })
+      .eq('id', holder.id)
+      .eq('status', 'draft')
+      .eq('posted_by_profile_id', posterProfileId)
+    if (moveError) return currentSlug
+  }
+
+  return base
 }
 
 /** A url-safe, hard-to-guess one-time claim secret. */
@@ -433,6 +503,10 @@ export async function publishEventDraft(
   const admin = db()
   const nowIso = new Date().toISOString()
 
+  // Take the canonical slug if this draft can have it (see claimCanonicalSlug). Runs BEFORE the
+  // status flip so the event is never publicly reachable under a URL we are about to change.
+  const finalSlug = await claimCanonicalSlug(posterProfileId, id, draft.title, draft.startsAt, draft.slug)
+
   if (ownership === 'mine') {
     const { error } = await admin
       .from('events')
@@ -440,6 +514,7 @@ export async function publishEventDraft(
         status: 'published',
         published_at: nowIso,
         host_id: posterProfileId,
+        ...(finalSlug && finalSlug !== draft.slug ? { slug: finalSlug } : {}),
       })
       .eq('id', id)
       .eq('posted_by_profile_id', posterProfileId)
@@ -450,7 +525,7 @@ export async function publishEventDraft(
     processGamificationEvent({ type: 'event_host', profileId: posterProfileId }).catch(() => {})
     await awardZapsForAction(posterProfileId, 'event_host').catch(() => {})
     await recordStreakActivity(posterProfileId, 'hosting').catch(() => {})
-    return { slug: draft.slug ?? '', zapsAwarded: 0 }
+    return { slug: finalSlug ?? draft.slug ?? '', zapsAwarded: 0 }
   }
 
   // ownership === 'posted'
@@ -461,6 +536,7 @@ export async function publishEventDraft(
       status: 'published',
       published_at: nowIso,
       claim_token: claimToken,
+      ...(finalSlug && finalSlug !== draft.slug ? { slug: finalSlug } : {}),
     })
     .eq('id', id)
     .eq('posted_by_profile_id', posterProfileId)
@@ -473,7 +549,9 @@ export async function publishEventDraft(
   const invite = await deliverClaimInvite({
     eventId: id,
     title: draft.title,
-    slug: draft.slug,
+    // The PROMOTED slug, not the draft's: the claim invite is an email we are about to send, and
+    // pointing it at the pre-publish slug would deliver a link that 404s the moment it is opened.
+    slug: finalSlug ?? draft.slug,
     startsAt: draft.startsAt,
     location: draft.location,
     organizerName: draft.organizerName,
@@ -504,7 +582,7 @@ export async function publishEventDraft(
     /* rewards are best-effort; a failed grant must not break publish */
   }
 
-  return { slug: draft.slug ?? '', claimToken, zapsAwarded, claimSentTo: invite.sentTo }
+  return { slug: finalSlug ?? draft.slug ?? '', claimToken, zapsAwarded, claimSentTo: invite.sentTo }
 }
 
 // ── Poster notifications ─────────────────────────────────────────────────────

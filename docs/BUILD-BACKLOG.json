@@ -5209,6 +5209,23 @@
         "cmd": "grep -q 'readEventCheckInEnabled(ev.theme)' 'app/(main)/events/actions.ts' && grep -q 'ctx.checkInEnabled' components/widgets/events/event-checkin.tsx",
         "note": "Passes only while the switch is enforced in the check-in ACTION and not merely in the page chrome."
       }
+    },
+    {
+      "id": "SCAN-526",
+      "title": "A draft squatted the canonical event slug, so a published event's shared link led to an unviewable draft",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "docs/DECISIONS.md",
+        "ref": "ADR-1172 \u2014 owner report, lost event link, 2026-08-29"
+      },
+      "detail": "mintSlug ran at DRAFT creation, so the first draft of a poster claimed the clean title-date slug and every later one carried base-<randomBytes(3)> forever. A member scanned a poster, abandoned that draft, scanned again and published the second row: the abandoned draft kept the pretty URL and the live event wore the suffix, so the link they shared resolved to a draft, which is not publicly viewable. Fixed by claimCanonicalSlug at publish time - a published event outranks a draft for the canonical slug, stepping aside only the same poster's own unpublished draft, guarded on status='draft', and keeping the existing slug whenever it cannot claim cleanly. mintSlug now checks the suffixed candidate over a bounded walk, and the promoted slug is what publish writes on both branches, what the claim-invite email links to, and what publish returns.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "grep -q 'async function claimCanonicalSlug' lib/events/event-drafts.ts && ! grep -nE \"slug: draft\\.slug($|[^ ?])\" lib/events/event-drafts.ts",
+        "note": "Passes while publish promotes the canonical slug and no surface still hands out the pre-publish one."
+      }
     }
   ]
 }
