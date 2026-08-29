@@ -5209,6 +5209,23 @@
         "cmd": "grep -q 'readEventCheckInEnabled(ev.theme)' 'app/(main)/events/actions.ts' && grep -q 'ctx.checkInEnabled' components/widgets/events/event-checkin.tsx",
         "note": "Passes only while the switch is enforced in the check-in ACTION and not merely in the page chrome."
       }
+    },
+    {
+      "id": "SCAN-527",
+      "title": "Public visual baselines went stale after #2317 removed the announcement strip, timing pr-compare out on every PR",
+      "status": "open",
+      "lane": "hygiene",
+      "size": "S",
+      "source": {
+        "file": "docs/DECISIONS.md",
+        "ref": "ADR-1173 \u2014 traced from PR #2319's cancelled pr-compare, 2026-08-29"
+      },
+      "detail": "#2317 (eb087aa) took the beta strip off the public site: by its own commit message it 'mounted in five places, four of them public and indexable: the marketing tree, the help centre, /discover, and the signed-out public-twin branch of (main)/layout'. Every public page lost a full-width bar off the top. The @visual baselines were last recaptured in #2303 (3b86a74), which predates it, so every public baseline is stale by that strip's height. On PR #2319 this failed ~130 public surfaces in midnight-light and midnight-dark on [mobile]; test #359 (midnight-dark /) PASSED, which rules out the deployment-protection wall the workflow warns about, and the baseline PNGs are all present, which rules out missing-baseline. THE CANCELLATION IS A SYMPTOM, NOT A SECOND BUG: playwright runs retries:2 in CI, so every stale surface burns three attempts at ~16s, the Visual compare step took 29m39s, and pr-compare (timeout-minutes: 35) was SIGTERMed at exit 143. It went unnoticed because the visual half only runs when a preview resolves before the job reaches it. Fix is a maintainer dispatch of e2e-manual.yml with update_baselines ON and capture_shell OFF (that file's own rule: a public-surface recapture wants update_baselines ALONE, since capture_shell rewrites shell PNGs the change never touched and needs a platform-staff account).",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Closes when a capture commit lands and pr-compare completes green on a PR rather than timing out. Deliberately manual: the probe would have to run the visual suite against a preview with the bypass secret, which is exactly the thing that cannot be done from a unit-test process (ADR-970 - a gate that cannot fire honestly gets routed around).",
+        "checked": "2026-08-29"
+      }
     }
   ]
 }

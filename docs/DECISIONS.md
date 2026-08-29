@@ -33733,3 +33733,45 @@ signed-out check-in door, and **`checkInEvent` itself**.
 - Both theme-bag switches now read-merge-write onto **one** base in sequence. Writing each
   independently off the freshly-read row would make the second clobber the first — a bug this change
   would otherwise have introduced the moment a host used both.
+
+## ADR-1173: the visual baselines are stale by one removed announcement strip, and that is why pr-compare times out (2026-08-29)
+
+**Context.** `pr-compare` on PR #2319 ended `cancelled` after 40 minutes, having failed roughly 130
+visual tests across every public route in `midnight-light` and `midnight-dark` on `[mobile]`. The
+PR touched only events code and docs.
+
+Two explanations were ruled out by evidence rather than assumed. The workflow warns that a
+password-walled preview makes every route diff against the wall — but test #359,
+`midnight-dark › /`, **passed**, so the preview was serving the real app. And every failing
+route's baseline PNG is present on disk, so it is not missing-baseline either. These are genuine
+pixel diffs.
+
+The cause is in the base branch. Baselines were last recaptured in **#2303** (`3b86a74`). Eighteen
+commits merged since; exactly two touch marketing or global CSS:
+
+- **`eb087aa` (#2317)** — its own message: the beta strip *"mounted in five places, four of them
+  public and indexable: the marketing tree, the help centre, /discover, and the signed-out
+  public-twin branch of (main)/layout"*, and it removed it ([ADR-1166](#adr-1166)). Every public
+  page lost a full-width bar off the top. That is precisely the failing set.
+- `2015262` (#2318) — ruled out: it adds `--radius-cover` to `:root` and the `[data-space-theme]`
+  pin, and only three files under `spaces/` read that token. An unread custom property cannot move
+  a marketing page, and that PR's own `pr-compare` was green.
+
+**Decision.** Recapture the PUBLIC baselines against current `main`, in a PR of its own, via a
+maintainer dispatch of `e2e-manual.yml` with `update_baselines` ON and `capture_shell` **OFF** —
+that workflow's own 🔴 rule: *"A public-surface recapture wants `update_baselines` ALONE — adding
+capture_shell rewrites shell PNGs your change never touched."*
+
+**Consequences.**
+
+- 🔴 **The 40-minute cancellation is a SYMPTOM, not a second bug.** Playwright runs `retries: 2` in
+  CI, so every stale surface burns three attempts at ~16 s. The Visual compare step took 29m 39s
+  and `pr-compare` (`timeout-minutes: 35`) was SIGTERMed at exit 143. Fixing the baselines fixes
+  the timeout; treating the timeout as a flake and re-running would burn another 40 minutes to
+  reproduce the same pixels.
+- **This is why it went unnoticed:** the visual half only runs when a preview resolves before the
+  job reaches it. Drift accumulates silently across every PR whose preview is slow, and lands on
+  whichever PR happens to be fast.
+- A recapture must never be folded into an unrelated PR. Thirty-plus snapshot PNGs in a feature
+  diff both bury the feature and hide any genuine regression sitting among the legitimate
+  strip-shift diffs. Read the capture's diff before merging it.
