@@ -33792,3 +33792,54 @@ Two further defects sat behind it, both found while tracing this:
 - The owner's own event was repaired directly in the database the same day (start date corrected
   from a five-day span back to Sep 2, clean slug restored, orphan draft deleted) after confirming
   each change with them. The row backup is in that session's transcript.
+## ADR-1173: the visual baselines are stale by one removed announcement strip, and that is why pr-compare times out (2026-08-29)
+
+**Context.** `pr-compare` on PR #2319 ended `cancelled` after 40 minutes, having failed roughly 130
+visual tests across every public route in `midnight-light` and `midnight-dark` on `[mobile]`. The
+PR touched only events code and docs.
+
+Two explanations were ruled out by evidence rather than assumed. The workflow warns that a
+password-walled preview makes every route diff against the wall — but test #359,
+`midnight-dark › /`, **passed**, so the preview was serving the real app. And every failing
+route's baseline PNG is present on disk, so it is not missing-baseline either. These are genuine
+pixel diffs.
+
+The cause is in the base branch. Baselines were last recaptured in **#2303** (`3b86a74`). Eighteen
+commits merged since; exactly two touch marketing or global CSS:
+
+- **`eb087aa` (#2317)** — its own message: the beta strip *"mounted in five places, four of them
+  public and indexable: the marketing tree, the help centre, /discover, and the signed-out
+  public-twin branch of (main)/layout"*, and it removed it ([ADR-1166](#adr-1166)). Every public
+  page lost a full-width bar off the top. That is precisely the failing set.
+- `2015262` (#2318) — ruled out: it adds `--radius-cover` to `:root` and the `[data-space-theme]`
+  pin, and only three files under `spaces/` read that token. An unread custom property cannot move
+  a marketing page, and that PR's own `pr-compare` was green.
+
+**Decision.** Recapture the PUBLIC baselines against current `main`, in a PR of its own, via a
+maintainer dispatch of `e2e-manual.yml` with `update_baselines` ON and `capture_shell` **OFF** —
+that workflow's own 🔴 rule: *"A public-surface recapture wants `update_baselines` ALONE — adding
+capture_shell rewrites shell PNGs your change never touched."*
+
+**Consequences.**
+
+- 🔴 **The 40-minute cancellation is a SYMPTOM, not a second bug.** Playwright runs `retries: 2` in
+  CI, so every stale surface burns three attempts at ~16 s. The Visual compare step took 29m 39s
+  and `pr-compare` (`timeout-minutes: 35`) was SIGTERMed at exit 143. Fixing the baselines fixes
+  the timeout; treating the timeout as a flake and re-running would burn another 40 minutes to
+  reproduce the same pixels.
+- **This is why it went unnoticed:** the visual half only runs when a preview resolves before the
+  job reaches it. Drift accumulates silently across every PR whose preview is slow, and lands on
+  whichever PR happens to be fast.
+- A recapture must never be folded into an unrelated PR. Thirty-plus snapshot PNGs in a feature
+  diff both bury the feature and hide any genuine regression sitting among the legitimate
+  strip-shift diffs. Read the capture's diff before merging it.
+- **The recapture PR carries `[sweep]` in its title, and that is the gate working as designed.**
+  CI's PR-size gate fails any PR over 40 changed files unless the title carries that tag, which it
+  reserves for *"single-purpose mechanical changes where every file takes the same one edit"*. A
+  baseline capture is the archetype: 120 PNGs, one operation, and not a line of runtime code. The
+  gate exists because a 215-file PR passed every check and killed production deploys for a day
+  ([ADR-1002](#adr-1002)) — a blast-radius argument about SHIPPED CODE, which a test fixture has
+  none of. Worth knowing how the failure presents, because it is misleading: the guards step runs
+  under `if: !cancelled()`, so a size-gate failure yields a job that reports FAILURE while its log
+  shows all 24 contract guards passing, in a 53-second run. Reading only the log, or re-running it,
+  finds nothing. The failing step is above the guards, not among them.
