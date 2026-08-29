@@ -3,7 +3,7 @@ title: Events & RSVPs
 description: Find gatherings, RSVP, and add them to your calendar.
 category: groups
 order: 3
-updated: 2026-07-27
+updated: 2026-08-29
 audience: member
 role: host
 featureKeys: [events]
@@ -17,7 +17,7 @@ Events are the gatherings that make Frequency real: the in-person and online mee
 - Open an event to see the details and **RSVP** so the host knows you're coming. Not sure yet? Mark yourself **Interested** instead. It signals you're curious without claiming a spot.
 - Bringing people? On a "going" RSVP you can add **+1, +2 guests** so the host has an accurate headcount.
 - The event page shows **who's already going** (faces, the count, your guests, and anyone from your Circles) so you can see the room before you arrive.
-- Changed your plans? You can update your RSVP anytime.
+- Changed your plans? You can update your RSVP anytime, right up until the event ends. A gathering that has already started still takes an answer, so you can say you are coming to something running now, or withdraw from a session part way through.
 - When you RSVP, we **email you a confirmation** with the details and a one-tap calendar link (and a quick note if you land on the waitlist), then nudge you again as the date nears.
 - Your upcoming events surface in your feed so they don't sneak up on you.
 - **No account needed.** Any public event takes an RSVP from a signed-out visitor: one email field, and a name if they want to give one. They get the same confirmation, the same reminders, and the same notice if you cancel. The moment they sign in with that address their RSVPs attach to their account, whether it is brand new or one they already had.
@@ -75,6 +75,12 @@ See a cool event poster around town, or one on Eventbrite or in a group chat? Ca
 ## Checking in verifies you
 
 When you **check in at the door** of an event you're going to, you earn your Zaps, keep your streak, and you also become a **verified member**: a small check appears by your name. Showing up in the real world is the truest sign you're a real person, so it's how verification works here. Nothing to upload, no form, just turn up.
+
+**How to check in.** Open the event page once the gathering has started and tap **Check in**. It appears there for anyone marked going, from the start time onward, so a late arrival can still check in. Once you have checked in the button reads **Checked In**, and tapping again changes nothing, so there is no way to count yourself twice.
+
+**You need an account to check in.** A guest who RSVPs by email holds a real spot, but check-in is tied to an account. Sign in with the address you used and your RSVP comes with you.
+
+**Hosts choose whether there is a door at all.** Check-in fits a class or a weekly cowork, and does not fit a planning session or a long working block where the only question is who is coming. In event settings there is a **Let guests check in** switch. Leave it on and check-in opens once the event starts, the way it always has. Turn it off and there is no check-in on that event: no button, no prompt, and RSVPs are the whole answer.
 
 ## Invite people with your own link
 

@@ -35,6 +35,11 @@ import { EventShareField } from '@/components/events/event-share-field'
 import { readEventHeroHeight } from '@/lib/events/hero-height'
 import { readEventCoverFocus } from '@/lib/events/cover-focus'
 import {
+  readEventCheckInEnabled,
+  CHECK_IN_LABEL,
+  CHECK_IN_HELP,
+} from '@/lib/events/checkin-enabled'
+import {
   readEventMarketListed,
   MARKET_LISTING_LABEL,
   MARKET_LISTING_HELP,
@@ -126,6 +131,7 @@ export function EventSettingsModule() {
   const [hideAddress, setHideAddress] = useState(false)
   const [requiresApproval, setRequiresApproval] = useState(false)
   const [marketListed, setMarketListed] = useState(true)
+  const [checkInEnabled, setCheckInEnabled] = useState(true)
   const [city, setCity] = useState('')
   const [region, setRegion] = useState('')
   const [postalCode, setPostalCode] = useState('')
@@ -180,6 +186,7 @@ export function EventSettingsModule() {
             setHideAddress(d.hide_address === true)
             setRequiresApproval(d.rsvp_requires_approval === true)
             setMarketListed(readEventMarketListed(d.theme))
+            setCheckInEnabled(readEventCheckInEnabled(d.theme))
             setCity(d.city ?? '')
             setRegion(d.region ?? '')
             setPostalCode(d.postal_code ?? '')
@@ -426,6 +433,24 @@ export function EventSettingsModule() {
           wrapperClassName="flex pt-1"
         />
         <input type="hidden" name="rsvp_requires_approval" value={requiresApproval ? 'on' : 'off'} />
+
+        {/* CHECK-IN switch (lib/events/checkin-enabled.ts). Check-in is right for a gathering with
+            a door — a class, a weekly cowork — and wrong for a planning session, a multi-day
+            working block, or a private invite where the only question is "are you coming". Every
+            event used to get it the moment it started, with no way to say no. Stored on the
+            events.theme bag beside marketListed, so no column and no migration; ON is the default
+            so nothing existing changes. Same controlled-hidden-input idiom as the two above. */}
+        <Checkbox
+          checked={checkInEnabled}
+          onChange={(e) => {
+            setCheckInEnabled(e.target.checked)
+            requestAnimationFrame(saveNow)
+          }}
+          label={CHECK_IN_LABEL}
+          hint={CHECK_IN_HELP}
+          wrapperClassName="flex pt-1"
+        />
+        <input type="hidden" name="checkin_enabled" value={checkInEnabled ? 'on' : 'off'} />
 
         {/* TICKET PRICE — blank keeps the event a free RSVP. */}
         <label className="block space-y-1.5">

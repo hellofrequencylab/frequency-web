@@ -10,8 +10,20 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ## [Unreleased]
 
+### Fixed
+
+- **RSVP works on a gathering that has already started**: RSVP used to close the moment an event
+  began rather than when it ended, so a live session, or anything running across more than one day,
+  could not be answered at all. Someone signed in saw the RSVP box with nothing in it, and someone
+  opening a shared invite link got no way to say they were coming. You can now answer, change your
+  answer, or withdraw right up until the event ends.
+
 ### Added
 
+- **Hosts choose whether an event has check-in**: a new **Let guests check in** switch in event
+  settings. Check-in fits a class or a weekly cowork; it does not fit a planning session or a long
+  working block where the only question is who is coming. Leave it on and nothing changes. Turn it
+  off and that event has no check-in at all, and RSVPs are the whole answer.
 - **Nudge a streak mate**: the leaderboard's consistency view now shows Circle mates whose streak
   is on the line today, with a one-tap nudge.
 - **Ask to host an event**: a Space that could host an event someone else runs can now ask from

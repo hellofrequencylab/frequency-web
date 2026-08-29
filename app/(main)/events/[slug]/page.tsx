@@ -33,6 +33,7 @@ import { isStaff, asWebRole } from '@/lib/core/roles'
 import { isPaidViewer } from '@/lib/core/viewer-hats'
 import { updateEventField } from '../admin-actions'
 import { RsvpControls } from '@/components/events/rsvp-controls'
+import { readEventCheckInEnabled } from '@/lib/events/checkin-enabled'
 import { WarmProof } from '@/components/events/warm-proof'
 import { GuestRsvpForm } from '@/components/events/guest-rsvp-form'
 import { GuestCheckInPrompt } from '@/components/events/guest-check-in-prompt'
@@ -914,6 +915,11 @@ export default async function EventDetailPage({
   // member can still un-RSVP during a live session. Falls back to starts_at when
   // no end time is set.
   const hasEnded = isEventPast(event.starts_at, event.ends_at, eventTz)
+  // The host's CHECK-IN switch (events.theme.checkInEnabled, no migration — see
+  // lib/events/checkin-enabled.ts). Defaults ON, so every event that exists today is unchanged.
+  // Off closes the door everywhere: this page's check-in branches, the movable `event-checkin`
+  // block, and the `checkInEvent` action itself.
+  const checkInEnabled = readEventCheckInEnabled(extra?.theme)
 
   // For a recurring anchor whose start has passed, compute the next upcoming date so the
   // page surfaces "Next: ..." instead of looking like a one-off that already happened
@@ -1493,24 +1499,12 @@ export default async function EventDetailPage({
             Answers change any time. The add-to-calendar buttons moved to the Event Details card
             (the `event-when-where` module), where they're available regardless of RSVP state —
             so the going / ticket-holder branches here carry no calendar row anymore. */}
-        {!ticketsMode && myProfileId && !isPast ? (
-          !(isPaidEvent && hasTiers) ? (
-            <RsvpControls
-              eventId={event.id}
-              slug={event.slug}
-              status={myRsvpStatus as 'going' | 'maybe' | 'waitlist' | 'not_going' | null}
-              plusOnes={myPlusOnes}
-              isFull={capacityInfo.isFull}
-              initialNote={myRsvpNote}
-              // The host's approval gate. RsvpControls has accepted these two props since
-              // EVENTS-REWORK A1 and NOTHING has ever passed them, so "Request to join" and the
-              // pending state were unreachable UI for the whole life of the feature.
-              requiresApproval={extra?.rsvp_requires_approval === true}
-              approvalStatus={myApprovalStatus}
-            />
-          ) : null
-        ) : ticketsMode && ownsTicket && !isPast ? null : myProfileId && isGoing && isPast ? (
-          /* Event time, going: Check in is the primary action; Cancel RSVP is quiet. */
+        {myProfileId && isGoing && isPast && checkInEnabled ? (
+          /* Event time, going, check-in ON: Check in is the primary action; Cancel RSVP is quiet.
+             This branch moved ABOVE the RsvpControls branch when RSVP stopped closing at the start
+             (see below) — otherwise the widened RSVP branch would swallow it and check-in would
+             never render. When the host has check-in OFF it falls through to the answer switch,
+             which is the whole point of the toggle. */
           <div className="flex flex-wrap items-center gap-4">
             {alreadyCheckedIn ? (
               <div className="inline-flex items-center gap-2 rounded-lg bg-success-bg text-success px-4 py-2 text-body-sm font-semibold">
@@ -1531,7 +1525,23 @@ export default async function EventDetailPage({
               </form>
             )}
           </div>
-        ) : myProfileId && isWaitlisted ? (
+        ) : !ticketsMode && myProfileId && !hasEnded ? (
+          !(isPaidEvent && hasTiers) ? (
+            <RsvpControls
+              eventId={event.id}
+              slug={event.slug}
+              status={myRsvpStatus as 'going' | 'maybe' | 'waitlist' | 'not_going' | null}
+              plusOnes={myPlusOnes}
+              isFull={capacityInfo.isFull}
+              initialNote={myRsvpNote}
+              // The host's approval gate. RsvpControls has accepted these two props since
+              // EVENTS-REWORK A1 and NOTHING has ever passed them, so "Request to join" and the
+              // pending state were unreachable UI for the whole life of the feature.
+              requiresApproval={extra?.rsvp_requires_approval === true}
+              approvalStatus={myApprovalStatus}
+            />
+          ) : null
+        ) : ticketsMode && ownsTicket && !isPast ? null : myProfileId && isWaitlisted ? (
           <form action={toggleRSVP.bind(null, event.id)}>
             <button
               type="submit"
@@ -1541,7 +1551,7 @@ export default async function EventDetailPage({
               On waitlist · tap to leave
             </button>
           </form>
-        ) : !myProfileId && !isPast && !ticketsMode && !(isPaidEvent && hasTiers) ? (
+        ) : !myProfileId && !hasEnded && !ticketsMode && !(isPaidEvent && hasTiers) ? (
           /* Signed-out visitor on a FREE RSVP-mode upcoming event: RSVP is for everyone, so
              offer the one step that unlocks it. (A priced RSVP event's flow above carries its
              own sign-in step; tickets-mode events carry theirs in the cascade.) */
@@ -1551,6 +1561,11 @@ export default async function EventDetailPage({
              anyone who already has an account. */
           <div className="space-y-3">
             <GuestRsvpForm eventId={event.id} isFull={capacityInfo.isFull} />
+            {/* Once it has STARTED, the check-in door sits BESIDE the RSVP form instead of
+                replacing it (ADR-1033 kept, its exclusivity dropped): a guest arriving on a
+                shared link mid-event can still say they are coming. Only when the host has
+                check-in on. */}
+            {isPast && checkInEnabled && <GuestCheckInPrompt slug={event.slug} />}
             <p className="text-meta text-muted">
               Already a member?{' '}
               <Link
@@ -1562,12 +1577,15 @@ export default async function EventDetailPage({
               to RSVP with your account.
             </p>
           </div>
-        ) : !myProfileId && isPast && !ticketsMode ? (
-          /* Signed-out visitor on an event that has STARTED (ADR-1033). RSVP is closed, so the guest
-             form above is gone and, until now, nothing replaced it. This is the check-in door: a
-             guest seat can only become a counted attendance by becoming a member's seat first, so
-             the honest offer is the sign-in that claims it. Tickets-mode events are excluded because
-             a guest seat cannot exist on one (capture_guest_rsvp refuses join_mode = 'tickets'). */
+        ) : !myProfileId && isPast && !ticketsMode && checkInEnabled ? (
+          /* Signed-out visitor after the event ENDED (ADR-1033, rescoped). RSVP is genuinely closed
+             now, so the guest form above is gone and nothing else would replace it. This is the
+             check-in door: a guest seat can only become a counted attendance by becoming a member's
+             seat first, so the honest offer is the sign-in that claims it. While the event is merely
+             LIVE this branch is unreachable — the guest form above carries the same door beside it,
+             because a guest arriving on a shared link mid-event should still be able to say they are
+             coming. Tickets-mode events are excluded because a guest seat cannot exist on one
+             (capture_guest_rsvp refuses join_mode = 'tickets'). */
           <GuestCheckInPrompt slug={event.slug} />
         ) : null}
 
@@ -1646,6 +1664,7 @@ export default async function EventDetailPage({
     canContribute,
     isPast,
     hasEnded,
+    checkInEnabled,
     posterDetails,
     posterCropUrls,
     cohosts,

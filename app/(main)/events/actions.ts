@@ -28,6 +28,7 @@ import { spaceIdForCircle } from '@/lib/circles/store'
 import { wallClockToIso, dateToWallClockIso } from '@/lib/events/datetime'
 import { coerceVisibilityForScope } from '@/lib/events/options'
 import { HOME_TZ, isValidTimeZone, isEventPast, zoneAbbrev, resolveZone } from '@/lib/time/zone'
+import { readEventCheckInEnabled } from '@/lib/events/checkin-enabled'
 import { embedEvent } from '@/lib/events/embeddings'
 import { saveEventLocation, type AttendanceMode } from '@/lib/events/geocode'
 import { nominatimGeocoder } from '@/lib/events/geocode-provider'
@@ -1340,14 +1341,23 @@ export async function checkInEvent(eventId: string): Promise<CheckInResult> {
   // still returned at runtime.
   const { data: evRaw } = await admin
     .from('events')
-    .select('starts_at, is_cancelled, time_zone')
+    .select('starts_at, is_cancelled, time_zone, theme')
     .eq('id', eventId)
     .maybeSingle()
-  const ev = evRaw as unknown as { starts_at: string; is_cancelled: boolean; time_zone: string | null } | null
+  const ev = evRaw as unknown as {
+    starts_at: string
+    is_cancelled: boolean
+    time_zone: string | null
+    theme: unknown
+  } | null
   // Check-in unlocks only once the event has actually STARTED in its own zone. Comparing
   // the raw wall-clock to now unlocked it (and awarded Zaps) ~7h early for a PT event.
   const evCheckInTz = resolveZone(ev?.time_zone)
   if (!ev || ev.is_cancelled || !isEventPast(ev.starts_at, null, evCheckInTz)) return { ok: false }
+  // The host's switch (lib/events/checkin-enabled.ts). Enforced HERE and not only in the UI:
+  // a control that hides the button while the action still records attendance and pays Zaps is
+  // not a switch, it is a coat of paint. Defaults on, so no existing event changes.
+  if (!readEventCheckInEnabled(ev.theme)) return { ok: false }
 
   const { data: rsvp } = await admin
     .from('event_rsvps')
