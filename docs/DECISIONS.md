@@ -33833,3 +33833,13 @@ capture_shell rewrites shell PNGs your change never touched."*
 - A recapture must never be folded into an unrelated PR. Thirty-plus snapshot PNGs in a feature
   diff both bury the feature and hide any genuine regression sitting among the legitimate
   strip-shift diffs. Read the capture's diff before merging it.
+- **The recapture PR carries `[sweep]` in its title, and that is the gate working as designed.**
+  CI's PR-size gate fails any PR over 40 changed files unless the title carries that tag, which it
+  reserves for *"single-purpose mechanical changes where every file takes the same one edit"*. A
+  baseline capture is the archetype: 120 PNGs, one operation, and not a line of runtime code. The
+  gate exists because a 215-file PR passed every check and killed production deploys for a day
+  ([ADR-1002](#adr-1002)) — a blast-radius argument about SHIPPED CODE, which a test fixture has
+  none of. Worth knowing how the failure presents, because it is misleading: the guards step runs
+  under `if: !cancelled()`, so a size-gate failure yields a job that reports FAILURE while its log
+  shows all 24 contract guards passing, in a 53-second run. Reading only the log, or re-running it,
+  finds nothing. The failing step is above the guards, not among them.
