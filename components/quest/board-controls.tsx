@@ -103,7 +103,7 @@ export function BoardControls({
                 href={boardHref(basePath, key, track, showScope)}
                 role="tab"
                 aria-selected={active}
-                className={`inline-flex min-h-11 items-center rounded-control px-3 py-1.5 text-meta font-semibold transition-colors motion-reduce:transition-none ${
+                className={`inline-flex min-h-11 items-center rounded-control-nested px-3 py-1.5 text-meta font-semibold transition-colors motion-reduce:transition-none ${
                   active ? 'bg-surface text-text lift-1' : 'text-muted hover:text-text'
                 }`}
               >
@@ -129,7 +129,7 @@ export function BoardControls({
               href={boardHref(basePath, scope, key, showScope)}
               role="tab"
               aria-selected={active}
-              className={`inline-flex min-h-11 items-center gap-1.5 rounded-control px-3 py-1.5 text-meta font-semibold transition-colors motion-reduce:transition-none ${
+              className={`inline-flex min-h-11 items-center gap-1.5 rounded-control-nested px-3 py-1.5 text-meta font-semibold transition-colors motion-reduce:transition-none ${
                 active ? 'bg-surface text-text lift-1' : 'text-muted hover:text-text'
               }`}
             >

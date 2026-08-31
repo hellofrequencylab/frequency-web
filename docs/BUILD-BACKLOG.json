@@ -5486,23 +5486,20 @@
     },
     {
       "id": "HYG-035",
-      "status": "open",
+      "status": "done",
       "lane": "hygiene",
       "size": "XS",
       "source": {
         "file": "docs/DECISIONS.md",
-        "ref": "mobile design pass, 2026-08-31"
+        "ref": "ADR-1177"
       },
-      "title": "Four more segmented controls nest a 14px radius inside a 24px card, the same mismatch the RSVP picker had",
-      "detail": "Found while fixing the RSVP picker's corners. The repo's radius ladder is authored BY ROLE (docs/DESIGN.md: control = 14px, card = 24px), which is right for siblings and wrong for NESTING — two corners share a centre only when the inner radius is the outer minus the gap. A `rounded-control` (14px) segment inside a `rounded-card` (24px) box with `p-1` between it reads 5.75px too square.\n\n`--radius-control-nested` now exists for exactly this (app/globals.css, derived as `calc(var(--radius-card) - 0.25rem)` so it tracks both the skin's radius and the generation's density), and components/events/rsvp-controls.tsx uses it. These four still carry the old shape:\n  • components/quest/board-controls.tsx:94 and :119 (two — scope + track)\n  • app/(main)/spaces/[slug]/settings/airwaves/airwaves-console.tsx:107\n  • app/(main)/connections/new/creator.tsx:492\n\nPurely visual, nothing is broken, and each is a one-class change. Left out of the RSVP pass because the owner asked for the RSVP control specifically and these are four unrelated surfaces.",
+      "title": "Eight segmented controls and menus nested a 14px radius inside a 24px card, the same mismatch the RSVP picker had",
+      "detail": "Found while fixing the RSVP picker's corners. The repo's radius ladder is authored BY ROLE (docs/DESIGN.md: control = 14px, card = 24px), which is right for siblings and wrong for NESTING — two corners share a centre only when the inner radius is the outer minus the gap. A `rounded-control` (14px) child inside a `rounded-card` (24px) box with `p-1` between them reads 5.75px too square, because `p-1` is 4.25px at this app's 17px root (--density-root 106.25%).\n\n`--radius-control-nested` (app/globals.css, `calc(var(--radius-card) - 0.25rem)` so it tracks both the skin's radius and the generation's density) now carries it, and eight surfaces use it: components/events/rsvp-controls.tsx, components/quest/board-controls.tsx (scope + track), app/(main)/spaces/[slug]/settings/airwaves/airwaves-console.tsx, app/(main)/connections/new/creator.tsx, app/(main)/events/events-sort.tsx, components/spaces/spaces-sort.tsx, components/ui/facet-dropdown.tsx and components/ui/underline-tabs.tsx.\n\n⚠️ THE ROW'S FIRST PROBE WAS WRONG IN BOTH DIRECTIONS, and it is the useful part of this entry. It was `grep-absent 'rounded-control px-3 py-1.5'` over three files — a string that also matches three SIBLING controls (a dropdown's trigger button, the leaderboard's hide-me toggle) that are correct at 14px, so satisfying the probe would have meant breaking them, while the four menu surfaces it named none of stayed broken. Nesting is the claim, so nesting is what is now measured: scripts/check-nested-radius.mjs walks app/ and components/ for a container carrying both `rounded-card` and `p-1` with a bare `rounded-control` in its subtree.\n\n🔴 That detector printed a clean ✓ on its first run and was more than half blind: a mutation sweep reintroducing the defect at each of the 15 fixed sites showed EIGHT walking past it (a multi-line JSX tag closes its own `>` at the opening tag's indent, so the subtree window ended before any child). Fixed, plus a second arm that follows a capitalised child into a same-file helper component. The sweep is now scripts/check-nested-radius.test.ts (18 tests), and the guard is registered in VITEST_ENFORCED so vitest auto-discovery keeps it running rather than an array in ci.yml.",
       "verify": {
-        "kind": "grep-absent",
-        "pattern": "rounded-control px-3 py-1\\.5",
-        "paths": [
-          "components/quest/board-controls.tsx",
-          "app/(main)/spaces/[slug]/settings/airwaves/airwaves-console.tsx",
-          "app/(main)/connections/new/creator.tsx"
-        ]
+        "kind": "cmd",
+        "cmd": "node scripts/check-nested-radius.mjs",
+        "note": "Fails when a bare `rounded-control` appears inside a `rounded-card` + `p-1` container. A helper imported from ANOTHER module is the declared blind spot (resolveLocalComponent says so in its own doc comment); scripts/check-nested-radius.test.ts drives every arm against fixtures that must fail, and asserts a floor on the denominator so an empty walk cannot read as compliance.",
+        "checked": "2026-08-31"
       }
     }
   ]

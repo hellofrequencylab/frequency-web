@@ -110,7 +110,7 @@ export function FacetDropdown({
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
                 placeholder={`Search ${label.toLowerCase()}…`}
-                className="w-full rounded-control border border-border bg-surface-elevated py-1.5 pl-8 pr-2 text-meta text-text placeholder:text-subtle focus:border-border-strong focus:outline-none"
+                className="w-full rounded-control-nested border border-border bg-surface-elevated py-1.5 pl-8 pr-2 text-meta text-text placeholder:text-subtle focus:border-border-strong focus:outline-none"
               />
             </div>
           )}
@@ -119,7 +119,7 @@ export function FacetDropdown({
             <button
               type="button"
               onClick={() => choose(null)}
-              className={`flex w-full items-center justify-between rounded-control px-2.5 py-1.5 text-left text-meta press transition-[color,background-color,box-shadow,transform] motion-reduce:transition-none hover:bg-surface-elevated ${
+              className={`flex w-full items-center justify-between rounded-control-nested px-2.5 py-1.5 text-left text-meta press transition-[color,background-color,box-shadow,transform] motion-reduce:transition-none hover:bg-surface-elevated ${
                 !active ? 'font-semibold text-primary-strong' : 'text-text'
               }`}
             >
@@ -133,7 +133,7 @@ export function FacetDropdown({
                   key={o.value}
                   type="button"
                   onClick={() => choose(o.value)}
-                  className={`flex w-full items-center justify-between gap-2 rounded-control px-2.5 py-1.5 text-left text-meta press transition-[color,background-color,box-shadow,transform] motion-reduce:transition-none hover:bg-surface-elevated ${
+                  className={`flex w-full items-center justify-between gap-2 rounded-control-nested px-2.5 py-1.5 text-left text-meta press transition-[color,background-color,box-shadow,transform] motion-reduce:transition-none hover:bg-surface-elevated ${
                     isSel ? 'font-semibold text-primary-strong' : 'text-text'
                   }`}
                 >
