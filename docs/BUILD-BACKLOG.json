@@ -5206,7 +5206,7 @@
       "detail": "Every event opened check-in the instant it started, whether or not the gathering had a door to mark. Added a per-event switch on the existing events.theme jsonb bag under checkInEnabled (lib/events/checkin-enabled.ts) - no column, no migration, same pattern as ADR-844's marketListed. Default ON and writing true deletes the key, so no existing event changes. Gates the detail page's check-in branches, the movable event-checkin block, the signed-out check-in door, AND the checkInEvent server action, so turning it off actually stops attendance being recorded and Zaps being paid rather than only hiding the button. Both theme-bag switches now merge onto one base in sequence so saving one cannot clobber the other.",
       "verify": {
         "kind": "cmd",
-        "cmd": "grep -q 'readEventCheckInEnabled(ev.theme)' 'app/(main)/events/actions.ts' && grep -q 'ctx.checkInEnabled' components/widgets/events/event-checkin.tsx",
+        "cmd": "grep -q 'readEventCheckInEnabled(ev.theme)' 'app/(main)/events/actions.ts' && grep -q 'ctx.checkInOpen' components/widgets/events/event-checkin.tsx",
         "note": "Passes only while the switch is enforced in the check-in ACTION and not merely in the page chrome."
       }
     },
@@ -5237,11 +5237,59 @@
         "file": "docs/DECISIONS.md",
         "ref": "ADR-1173 \u2014 traced from PR #2319's cancelled pr-compare, 2026-08-29"
       },
-      "detail": "#2317 (eb087aa) took the beta strip off the public site: by its own commit message it 'mounted in five places, four of them public and indexable: the marketing tree, the help centre, /discover, and the signed-out public-twin branch of (main)/layout'. Every public page lost a full-width bar off the top. The @visual baselines were last recaptured in #2303 (3b86a74), which predates it, so every public baseline is stale by that strip's height. On PR #2319 this failed ~130 public surfaces in midnight-light and midnight-dark on [mobile]; test #359 (midnight-dark /) PASSED, which rules out the deployment-protection wall the workflow warns about, and the baseline PNGs are all present, which rules out missing-baseline. THE CANCELLATION IS A SYMPTOM, NOT A SECOND BUG: playwright runs retries:2 in CI, so every stale surface burns three attempts at ~16s, the Visual compare step took 29m39s, and pr-compare (timeout-minutes: 35) was SIGTERMed at exit 143. It went unnoticed because the visual half only runs when a preview resolves before the job reaches it. Recaptured on 2026-08-29 by an e2e-manual.yml dispatch with update_baselines ON and capture_shell OFF: 120 public PNGs moved, zero member-shell or /admin ones. The capture commit was pushed by GITHUB_TOKEN and produced exactly one check run, so the compare did NOT re-run on it - the proof is the next PR's pr-compare completing instead of timing out.",
+      "detail": "#2317 (eb087aa) took the beta strip off the public site: by its own commit message it 'mounted in five places, four of them public and indexable: the marketing tree, the help centre, /discover, and the signed-out public-twin branch of (main)/layout'. Every public page lost a full-width bar off the top. The @visual baselines were last recaptured in #2303 (3b86a74), which predates it, so every public baseline is stale by that strip's height. On PR #2319 this failed ~130 public surfaces in midnight-light and midnight-dark on [mobile]; test #359 (midnight-dark /) PASSED, which rules out the deployment-protection wall the workflow warns about, and the baseline PNGs are all present, which rules out missing-baseline. THE CANCELLATION IS A SYMPTOM, NOT A SECOND BUG: playwright runs retries:2 in CI, so every stale surface burns three attempts at ~16s, the Visual compare step took 29m39s, and pr-compare (timeout-minutes: 35) was SIGTERMed at exit 143. It went unnoticed because the visual half only runs when a preview resolves before the job reaches it. Recaptured on 2026-08-29 by an e2e-manual.yml dispatch with update_baselines ON and capture_shell OFF: 120 public PNGs moved, zero member-shell or /admin ones. The capture commit was pushed by GITHUB_TOKEN and produced exactly one check run, so the compare did NOT re-run on it - the proof is the next PR's pr-compare completing instead of timing out. ✅ THE PUBLIC HALF IS PROVEN, AND IT UNCOVERED A SECOND HALF (2026-08-31, PR #2322). pr-compare on #2322 COMPLETED in 11.1 minutes with 128 passing rather than timing out, which is exactly this row's stated close condition for the public surfaces. But it failed 16 tests, and every one is @shell: /feed, /settings, /nearby and /spaces/danieltyack/manage across dawn-light/dawn-dark and [desktop]/[mobile]. Those are stale for the SAME reason and were never recaptured: `git show 11d1ccb --name-only` is 120 files with ZERO matching app-(feed|settings|nearby|space-console) or app-admin, because that dispatch ran capture_shell OFF. The shell baselines date to 2026-08-24 (#2270) and 2026-08-25 (#2303); #2317 (eb087aa) landed 2026-08-26 and DID move the member shell — it deleted banner-measure.tsx, deleted announcement-banner's inline card, and rewired app-shell.tsx to mount the bar through a new `banner` slot. The failure shape agrees exactly: expected 3154px, received 2893px, a 261px full-width band missing from the top of all four. Playwright's own two retries produced the identical pixel count, so it is deterministic, not a flake. THE FIX is the same dispatch with update_baselines AND capture_shell, which e2e-manual.yml's header prescribes for precisely this case ('a change to the header ... DOES move the shell, and then you want both, because leaving them stale hands the next PR a failure it did not cause'). ⚠️ NOT DONE BLIND: the same run warns that seven /admin routes 'did not run' despite a member session being available and says that is NOT the known blind spot. Capturing from a run with an unexplained gap is how a wrong baseline gets frozen, which is the failure this row exists to describe. Read that gap before dispatching.",
       "verify": {
         "kind": "manual",
         "evidence": "Closes when a PR's pr-compare completes green rather than timing out. Deliberately manual: the probe would have to run the visual suite against a preview with the bypass secret, which cannot be done from a unit-test process (ADR-970 - a gate that cannot fire honestly gets routed around).",
         "checked": "2026-08-29"
+      }
+    },
+    {
+      "id": "SCAN-528",
+      "title": "The host's RSVP booking window was written and displayed and enforced by nothing",
+      "status": "done",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "docs/DECISIONS.md",
+        "ref": "ADR-1174 — found by the events meta-scan, 2026-08-31"
+      },
+      "detail": "Event settings has carried \"RSVPs open at\" / \"RSVPs close at\" since the control shipped. Both values were saved to events.details.rsvpWindow (app/(main)/events/admin-actions.ts) and printed on the event page (components/widgets/events/event-when-where.tsx), and NOT ONE code path consulted them: a grep across app/lib/components outside the writer, the display and its tests returned zero hits. A host who closed RSVPs a week before the door went on collecting them while the page told readers the opposite. Four live events carried a window when this was found. Fixed by lib/events/rsvp-window.ts (pure, zone-aware, fails open on a malformed or backwards window) enforced in eventOpenForRsvp and every seat-taking path, in the page's member and guest branches, and in capture_guest_rsvp (migration 20270343000000) — the last of which is the one that counts, since that function is granted to anon and reachable over PostgREST directly. LEAVING is never gated: closing RSVPs stops new answers, it does not lock in the people who already answered.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "grep -q 'rsvpWindowStateFromDetails(ev.details, zone)' 'app/(main)/events/actions.ts' && grep -q 'v_closes is not null and now() >= v_closes' supabase/migrations/20270343000000_guest_rsvp_honours_the_booking_window.sql && grep -q 'rsvpWindowOpen' 'app/(main)/events/[slug]/page.tsx'"
+      }
+    },
+    {
+      "id": "SCAN-529",
+      "title": "Check-in had an opening bound and no closing one, so a finished event stayed payable forever",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "docs/DECISIONS.md",
+        "ref": "ADR-1175 — found by the events meta-scan, 2026-08-31"
+      },
+      "detail": "checkInEvent guarded only that the event had STARTED (isEventPast(starts_at, null, tz)) and nothing anywhere set an upper bound: not the action, not the page, not the QR door at app/q/[slug]/route.ts that routes through it. So every event a member had ever RSVP'd going to stayed checkable, and checking in to a gathering that ended in March still paid Zaps, ticked the attendance streak and counted toward verified-member standing. Attendance is a claim about a room someone stood in; a claim with no expiry is a button. Fixed by lib/events/checkin-window.ts: open from the start, shut 4 hours past ends_at (falling back to starts_at when the host set no end time), resolved in the event's own zone. The EventDetailContext flag was renamed checkInEnabled to checkInOpen so ONE flag carries both the host switch and the clock and no surface can honour one and forget the other.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "grep -q 'checkInWindowOpen(ev.starts_at, ev.ends_at, evCheckInTz)' 'app/(main)/events/actions.ts' && ! grep -q 'isEventPast(ev.starts_at, null' 'app/(main)/events/actions.ts' && grep -q 'ctx.checkInOpen' components/widgets/events/event-checkin.tsx"
+      }
+    },
+    {
+      "id": "SCAN-530",
+      "title": "The QR door wrote its own RSVP, walking past the approval queue the code was printed for",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "docs/DECISIONS.md",
+        "ref": "ADR-1176 — found by the events meta-scan, 2026-08-31"
+      },
+      "detail": "app/q/[slug]/route.ts inserted into event_rsvps through the admin client with no gate in front of it: `insert({ event_id, profile_id, status: 'going' })`. A cancelled or long-finished event took a seat, the host's booking window (ADR-1174) was ignored, and approval_status was omitted so it fell to its column default of 'none' — verified against the live schema. On an event with rsvp_requires_approval that is not a request in the host's queue, it is an ADMITTED guest, so a printed code was a way around the door it was printed for. Capacity was the one rule that survived, and only because trg_enforce_event_rsvp_capacity is a BEFORE INSERT trigger that fires whatever writes the row: the rules living in SQL held and the rules living in the server action were simply not on this path. The row was also second-class in every visible way (no confirmation email, no activity-feed line, no gems, no revalidation). Fixed by calling setRsvpStatus(eventId, 'going') — the same action the event page calls, not a copy of its gates.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "grep -q \"await setRsvpStatus(code.event_id, 'going')\" 'app/q/[slug]/route.ts' && ! grep -q 'event_rsvps' 'app/q/[slug]/route.ts'"
       }
     }
   ]

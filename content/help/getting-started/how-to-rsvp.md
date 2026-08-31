@@ -24,9 +24,14 @@ Events also show up on Space pages. Tap one there and a small window opens with
 the basics and the same RSVP button, so you can answer without leaving the page.
 Want the full details? Tap **View full event**.
 
+Sometimes the button is not there yet, or is gone. A Host can set dates for when
+RSVPs open and when they close, and the page says which it is. Closing RSVPs only
+stops new answers: if you already said you were going, your own controls stay
+there and you can still change or cancel.
+
 ## What do my RSVP choices mean?
 
-There are two, and you can change either one anytime.
+There are two, and you can change your answer right up until the gathering ends.
 
 - **Going** holds you a spot and tells the Host you will be there. If you are
   bringing people, add **+1 or +2 guests** so the headcount is right.

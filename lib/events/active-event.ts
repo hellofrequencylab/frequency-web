@@ -137,9 +137,12 @@ export interface EventDetailContext {
   canContribute: boolean
   isPast: boolean
   hasEnded: boolean
-  /** The host's check-in switch (events.theme.checkInEnabled, default ON — lib/events/checkin-enabled.ts).
+  /** Is the check-in door open RIGHT NOW: the host's switch (events.theme.checkInEnabled, default
+   *  ON) AND the time window (open from the start, shut four hours past the end —
+   *  lib/events/checkin-window.ts). One flag rather than two so a surface cannot honour the switch
+   *  and forget the clock, which is exactly how check-in stayed payable on finished events.
    *  False ⇒ the movable `event-checkin` block self-hides and the check-in action refuses. */
-  checkInEnabled: boolean
+  checkInOpen: boolean
   /** The flexible poster harvest (lineup, schedule, links…) + signed URLs for its crops. */
   posterDetails: EventDetailsWithMedia
   posterCropUrls: Record<string, string>

@@ -33843,3 +33843,117 @@ capture_shell rewrites shell PNGs your change never touched."*
   under `if: !cancelled()`, so a size-gate failure yields a job that reports FAILURE while its log
   shows all 24 contract guards passing, in a 53-second run. Reading only the log, or re-running it,
   finds nothing. The failing step is above the guards, not among them.
+
+## ADR-1174: the RSVP booking window is enforced, not merely displayed (2026-08-31)
+
+**Context.** Event settings has carried two fields, "RSVPs open at" and "RSVPs close at", since the
+control shipped. Both were saved (`app/(main)/events/admin-actions.ts` writes
+`events.details.rsvpWindow`) and both were printed on the event page
+(`components/widgets/events/event-when-where.tsx` reads the same key). Nothing else in the
+repository referenced them. A grep across `app`, `lib` and `components`, excluding the writer, the
+display and their tests, returned zero hits: not the RSVP actions, not the guest door, not the SQL.
+
+So a host who set "RSVPs close Friday" kept collecting RSVPs on Sunday, and the page told readers
+the opposite of what the system did. Four live events carried a window when this was found. The
+failure mode is worse than a missing feature, because the host stops watching the thing they believe
+is handled — the control is not inert, it is actively misleading, in both directions at once.
+
+**Decision.** One pure rule, `lib/events/rsvp-window.ts`, consulted everywhere a seat can be taken.
+
+- **Zone-aware.** Both values are the event's WALL CLOCK carried in UTC parts, because they come
+  from the same `datetime-local` control the start and end times do. They resolve through
+  `eventInstant` in the EVENT's zone before any comparison. Comparing the stored string to `now()`
+  is [ADR-1150](#adr-1150)'s seven-hours-early bug, and it is not repeated.
+- **Fails open.** A missing key, a malformed bag, an unparseable date, a backwards window: every one
+  yields `open`. Refusing an RSVP is the expensive direction — the guest is at a door that will not
+  let them say they are coming, and no error reaches the host. A host who fat-fingers two dates
+  should not silently lose every RSVP.
+- **Enforced in the SQL, not only the action.** `capture_guest_rsvp` (migration `20270343000000`) is
+  granted to `anon` and reachable over PostgREST directly, so the server action is a convenience
+  wrapper and never a boundary. The window branches join the existing rejection block, which keeps
+  the function's anti-oracle property: a window rejection returns the same opaque receipt every other
+  rejection does.
+- **The window gates JOINING, never LEAVING.** Withdrawing, moving to maybe, and reducing a plus-one
+  count stay available after the window shuts; taking a seat, re-joining, and increasing a plus-one
+  count do not. Otherwise "close RSVPs" quietly becomes "lock the guest list", which is a different
+  feature and one nobody asked for. On the page, a member who already holds a seat still gets their
+  ordinary controls; only someone with no seat sees the line explaining which side of the window
+  we are on.
+
+**Also fixed in passing.** `eventOpenForRsvp` checked `is_cancelled` and nothing else, so the member
+RSVP actions had NO time gate at all. The page has hidden those controls past the event's end since
+#2319; the action never enforced it, so a stale tab or a direct call still minted a seat for last
+month's event. It now refuses once `isEventPast(starts_at, ends_at, zone)`.
+
+## ADR-1175: check-in closes four hours after the event ends (2026-08-31)
+
+**Context.** `checkInEvent` guarded exactly one edge:
+
+```ts
+if (!ev || ev.is_cancelled || !isEventPast(ev.starts_at, null, evCheckInTz)) return { ok: false }
+```
+
+That is an OPENING bound. There was no closing bound anywhere — not in the action, not on the event
+page, not in the QR door at `app/q/[slug]/route.ts` that routes through the same action. Every event
+a member had ever RSVP'd going to stayed checkable forever, and a check-in to a gathering that ended
+in March still paid Zaps, ticked the attendance streak, and counted toward verified-member standing
+via `markVerifiedByAttendance`.
+
+Attendance is a claim about a room somebody stood in. A claim with no expiry is not attendance, it
+is a button.
+
+**Decision.** `lib/events/checkin-window.ts`: the door opens at the start and shuts
+`CHECK_IN_GRACE_HOURS` (four) past `ends_at`, falling back to `starts_at` for an event with no end
+time. Both sides resolve in the event's own zone.
+
+Four hours is deliberate slack rather than precision. It covers the late walk-in, the person who
+remembers in the car, and the host who runs long, without leaving a month-old event payable. It is
+not a security boundary; it is the honest edge of "was there". An `ends_at` that precedes the start
+is treated as a bad row and falls back to the start, so a data slip cannot shut the door on a
+gathering that is happening right now. An unreadable start answers CLOSED: a check-in we cannot place
+in time is not one to pay for.
+
+**One flag, not two.** `EventDetailContext.checkInEnabled` became `checkInOpen`, carrying the host's
+switch ([ADR-1171](#adr-1171)) AND the clock. Two flags is how a surface honours the switch and
+forgets the window, which is the exact shape of the defect above.
+
+## ADR-1176: the QR door RSVPs through the same action the page does (2026-08-31)
+
+**Context.** Scanning a printed event code (`app/q/[slug]/route.ts`) wrote the RSVP itself:
+
+```ts
+await admin.from('event_rsvps')
+  .insert({ event_id: code.event_id, profile_id: profileId, status: 'going' })
+```
+
+An admin-client insert with no gates in front of it. Every rule the RSVP actions enforce was absent:
+
+- a **cancelled** event took a seat, and so did one that finished months ago;
+- the host's **booking window** ([ADR-1174](#adr-1174)) was ignored;
+- `approval_status` was omitted, so it fell to its column default of `'none'`. On an event with
+  `rsvp_requires_approval`, that is not a request in the host's queue — it is an **admitted guest**.
+  A printed code was a way around the door it was printed for.
+
+Capacity was the one rule that survived, and only by accident: `trg_enforce_event_rsvp_capacity` is
+a BEFORE INSERT trigger, so it demotes an over-capacity row to `waitlist` whatever writes it. That is
+the shape of the whole finding — the rules that lived in SQL held, and the rules that lived in the
+server action were simply not on this path.
+
+The row was also second-class in every way that shows: no confirmation email, no activity-feed line,
+no gems, no revalidation.
+
+**Decision.** The branch calls `setRsvpStatus(eventId, 'going')`, the same action the event page
+calls. Not a copy of the gates — the gates.
+
+The alternative was to re-check cancelled, ended, window and approval inline. That is how the
+divergence happened in the first place: two places implementing one rule, one of them a year behind.
+An action is already the unit that carries them, and the route was already importing `checkInEvent`
+from the same module, so nothing new is crossed.
+
+**Two behaviour changes, both intended.** A scan by someone who had answered `maybe` or withdrawn
+now moves them to going, where before only a MISSING row was written; standing at the door with the
+code is the clearest statement of intent there is. And a scan on an approval-gated event now lands
+as `pending`, which is the host's queue doing its job.
+
+`app/q/qr-event-rsvp.test.ts` pins that this route never names `event_rsvps` again. The tempting
+small change here will always be another direct write.

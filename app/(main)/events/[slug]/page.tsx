@@ -34,6 +34,8 @@ import { isPaidViewer } from '@/lib/core/viewer-hats'
 import { updateEventField } from '../admin-actions'
 import { RsvpControls } from '@/components/events/rsvp-controls'
 import { readEventCheckInEnabled } from '@/lib/events/checkin-enabled'
+import { rsvpWindowStateFromDetails, rsvpWindowNote } from '@/lib/events/rsvp-window'
+import { checkInWindowOpen } from '@/lib/events/checkin-window'
 import { WarmProof } from '@/components/events/warm-proof'
 import { GuestRsvpForm } from '@/components/events/guest-rsvp-form'
 import { GuestCheckInPrompt } from '@/components/events/guest-check-in-prompt'
@@ -920,6 +922,18 @@ export default async function EventDetailPage({
   // Off closes the door everywhere: this page's check-in branches, the movable `event-checkin`
   // block, and the `checkInEvent` action itself.
   const checkInEnabled = readEventCheckInEnabled(extra?.theme)
+  // The host's BOOKING WINDOW (events.details.rsvpWindow — lib/events/rsvp-window.ts). It was
+  // written by event settings and printed by the when/where card, and gated nothing at all: a host
+  // who closed RSVPs a week early kept taking them. 'open' for every event without a window, which
+  // is nearly all of them. The server actions enforce the same rule, so this hides a control that
+  // would refuse rather than hiding a control that would work.
+  const rsvpWindow = rsvpWindowStateFromDetails(extra?.details, eventTz)
+  const rsvpWindowOpen = rsvpWindow === 'open'
+  const rsvpWindowLine = rsvpWindowNote(rsvpWindow)
+  // The CHECK-IN window (lib/events/checkin-window.ts): open from the start, shut four hours past
+  // the end. There used to be no upper bound at all, so every event a member had ever said yes to
+  // stayed checkable, and checking in to one that ended in March still paid Zaps (ADR-1175).
+  const checkInWindow = checkInEnabled && checkInWindowOpen(event.starts_at, event.ends_at, eventTz)
 
   // For a recurring anchor whose start has passed, compute the next upcoming date so the
   // page surfaces "Next: ..." instead of looking like a one-off that already happened
@@ -1000,7 +1014,7 @@ export default async function EventDetailPage({
   }
 
   // Practice check-in availability + whether the viewer already checked in.
-  const canCheckIn = !!myProfileId && isGoing && isPast && !event.is_cancelled
+  const canCheckIn = !!myProfileId && isGoing && checkInWindow && !event.is_cancelled
 
   const [
     ciRes,
@@ -1499,7 +1513,7 @@ export default async function EventDetailPage({
             Answers change any time. The add-to-calendar buttons moved to the Event Details card
             (the `event-when-where` module), where they're available regardless of RSVP state —
             so the going / ticket-holder branches here carry no calendar row anymore. */}
-        {myProfileId && isGoing && isPast && checkInEnabled ? (
+        {myProfileId && isGoing && isPast && checkInEnabled && (checkInWindow || alreadyCheckedIn) ? (
           /* Event time, going, check-in ON: Check in is the primary action; Cancel RSVP is quiet.
              This branch moved ABOVE the RsvpControls branch when RSVP stopped closing at the start
              (see below) — otherwise the widened RSVP branch would swallow it and check-in would
@@ -1525,6 +1539,12 @@ export default async function EventDetailPage({
               </form>
             )}
           </div>
+        ) : !ticketsMode && myProfileId && !hasEnded && !rsvpWindowOpen && !isGoing && !isWaitlisted ? (
+          /* The host's booking window is shut and this member holds no seat, so there is nothing to
+             change. Say which side of the window we are on rather than rendering a control the
+             action would refuse. Anyone who ALREADY answered falls through to the ordinary controls
+             below: closing RSVPs stops new answers, it does not lock people in. */
+          <p className="text-body-sm text-muted">{rsvpWindowLine}</p>
         ) : !ticketsMode && myProfileId && !hasEnded ? (
           !(isPaidEvent && hasTiers) ? (
             <RsvpControls
@@ -1560,12 +1580,19 @@ export default async function EventDetailPage({
              email, once there is a reason to make one. Signing in is still available below for
              anyone who already has an account. */
           <div className="space-y-3">
-            <GuestRsvpForm eventId={event.id} isFull={capacityInfo.isFull} />
+            {/* The host's booking window gates the guest door too — the SQL behind the form refuses
+                outside it (capture_guest_rsvp), so showing the form would be showing a form that
+                silently does nothing, which is exactly the failure ADR-1150 found here. */}
+            {rsvpWindowOpen ? (
+              <GuestRsvpForm eventId={event.id} isFull={capacityInfo.isFull} />
+            ) : (
+              <p className="text-body-sm text-muted">{rsvpWindowLine}</p>
+            )}
             {/* Once it has STARTED, the check-in door sits BESIDE the RSVP form instead of
                 replacing it (ADR-1033 kept, its exclusivity dropped): a guest arriving on a
                 shared link mid-event can still say they are coming. Only when the host has
                 check-in on. */}
-            {isPast && checkInEnabled && <GuestCheckInPrompt slug={event.slug} />}
+            {isPast && checkInWindow && <GuestCheckInPrompt slug={event.slug} />}
             <p className="text-meta text-muted">
               Already a member?{' '}
               <Link
@@ -1577,7 +1604,7 @@ export default async function EventDetailPage({
               to RSVP with your account.
             </p>
           </div>
-        ) : !myProfileId && isPast && !ticketsMode && checkInEnabled ? (
+        ) : !myProfileId && isPast && !ticketsMode && checkInWindow ? (
           /* Signed-out visitor after the event ENDED (ADR-1033, rescoped). RSVP is genuinely closed
              now, so the guest form above is gone and nothing else would replace it. This is the
              check-in door: a guest seat can only become a counted attendance by becoming a member's
@@ -1664,7 +1691,7 @@ export default async function EventDetailPage({
     canContribute,
     isPast,
     hasEnded,
-    checkInEnabled,
+    checkInOpen: checkInWindow,
     posterDetails,
     posterCropUrls,
     cohosts,

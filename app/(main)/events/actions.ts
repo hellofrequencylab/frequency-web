@@ -29,6 +29,8 @@ import { wallClockToIso, dateToWallClockIso } from '@/lib/events/datetime'
 import { coerceVisibilityForScope } from '@/lib/events/options'
 import { HOME_TZ, isValidTimeZone, isEventPast, zoneAbbrev, resolveZone } from '@/lib/time/zone'
 import { readEventCheckInEnabled } from '@/lib/events/checkin-enabled'
+import { checkInWindowOpen } from '@/lib/events/checkin-window'
+import { rsvpWindowStateFromDetails } from '@/lib/events/rsvp-window'
 import { embedEvent } from '@/lib/events/embeddings'
 import { saveEventLocation, type AttendanceMode } from '@/lib/events/geocode'
 import { nominatimGeocoder } from '@/lib/events/geocode-provider'
@@ -876,10 +878,44 @@ async function readEventHostId(eventId: string): Promise<string | null> {
 // Guard: the event must exist and not be cancelled before we write an RSVP row
 // (mirrors checkInEvent's own check). Without it a stale/cancelled event id could
 // mint orphaned RSVP rows + fire the going side-effects. Returns false to no-op.
-async function eventOpenForRsvp(eventId: string): Promise<boolean> {
+/**
+ * The two answers a caller needs. `open` is the hard gate — a cancelled or finished event takes
+ * nothing at all. `windowOpen` gates JOINING only: a host's booking window stops new answers, it
+ * does not trap the people who already answered. Somebody who said yes must always be able to say
+ * no, or "close RSVPs" quietly becomes "lock the guest list", which is a different feature and one
+ * nobody asked for.
+ */
+interface RsvpGate { open: boolean; windowOpen: boolean }
+const CLOSED_FOR_RSVP: RsvpGate = { open: false, windowOpen: false }
+
+async function eventOpenForRsvp(eventId: string): Promise<RsvpGate> {
   const admin = createAdminClient()
-  const { data } = await admin.from('events').select('id, is_cancelled').eq('id', eventId).maybeSingle()
-  return !!data && !(data as { is_cancelled: boolean | null }).is_cancelled
+  // `details` and `time_zone` sit outside the generated types, so this reads untyped and casts
+  // (repo convention, ADR-246). Both are returned at runtime.
+  const { data } = await admin
+    .from('events')
+    .select('id, is_cancelled, starts_at, ends_at, time_zone, details')
+    .eq('id', eventId)
+    .maybeSingle()
+  const ev = data as unknown as {
+    id: string
+    is_cancelled: boolean | null
+    starts_at: string
+    ends_at: string | null
+    time_zone: string | null
+    details: unknown
+  } | null
+  if (!ev || ev.is_cancelled) return CLOSED_FOR_RSVP
+
+  const zone = resolveZone(ev.time_zone)
+  // Once the gathering is OVER there is nothing left to say you are coming to. The page has hidden
+  // the controls past this point since #2319; the action never enforced it, so a stale tab or a
+  // direct call still minted a seat for last month's event.
+  if (isEventPast(ev.starts_at, ev.ends_at, zone)) return CLOSED_FOR_RSVP
+
+  // The host's booking window (lib/events/rsvp-window.ts). Enforced HERE and not only in the page,
+  // because a control that merely hides a button is not a window (ADR-1174).
+  return { open: true, windowOpen: rsvpWindowStateFromDetails(ev.details, zone) === 'open' }
 }
 
 // Drop / update / remove the "<Name> RSVP'd" entry in the event's activity feed
@@ -993,7 +1029,8 @@ async function captureRsvpLead(
 export async function toggleRSVP(eventId: string) {
   const myProfileId = await getMyProfileId()
   if (!myProfileId) return
-  if (!(await eventOpenForRsvp(eventId))) return
+  const gate = await eventOpenForRsvp(eventId)
+  if (!gate.open) return
 
   const admin = createAdminClient()
   const supabase = await createClient()
@@ -1037,6 +1074,9 @@ export async function toggleRSVP(eventId: string) {
         await promoteFromWaitlist(eventId).catch((e) => { console.error('[events waitlist]', e); return null })
       }
     } else {
+      // Re-join is a JOIN, so the host's booking window applies to it. Withdrawing above never
+      // consults the window: closing RSVPs must not trap the people who already answered.
+      if (!gate.windowOpen) return
       // Re-join: honour real capacity — waitlist only when genuinely full.
       const { isFull } = await getCapacityInfo(eventId)
       const next = isFull ? 'waitlist' : 'going'
@@ -1083,6 +1123,8 @@ export async function toggleRSVP(eventId: string) {
       void captureRsvpLead(eventId, myProfileId, 'rsvp')
     }
   } else {
+    // A first RSVP is a join, so the booking window applies.
+    if (!gate.windowOpen) return
     const { isFull } = await getCapacityInfo(eventId)
     const next = isFull ? 'waitlist' : 'going'
     // The host's approval gate (20270303000000). A pending seat is a REQUEST, not an admission,
@@ -1149,7 +1191,12 @@ export async function setRsvpStatus(
 ) {
   const myProfileId = await getMyProfileId()
   if (!myProfileId) return
-  if (!(await eventOpenForRsvp(eventId))) return
+  const gate = await eventOpenForRsvp(eventId)
+  if (!gate.open) return
+  // The booking window stops people taking a SEAT. Every move that gives one up ('maybe' frees it,
+  // 'not_going' withdraws) stays available, so a host closing RSVPs does not lock anyone into a
+  // seat they no longer want.
+  if (!gate.windowOpen && intent === 'going') return
 
   const admin = createAdminClient()
   const supabase = await createClient()
@@ -1299,13 +1346,20 @@ export async function setRsvpPlusOnes(eventId: string, plusOnes: number) {
 
   const { data: existing } = await admin
     .from('event_rsvps')
-    .select('id, status')
+    .select('id, status, plus_ones')
     .eq('event_id', eventId)
     .eq('profile_id', myProfileId)
     .maybeSingle()
 
   // Only a confirmed attendee can bring guests — guard rather than create rows.
   if (!existing || existing.status !== 'going') return
+
+  // Adding a plus-one adds a head to the room, so it obeys the same two gates a fresh RSVP does:
+  // a finished or cancelled event takes nothing, and a closed booking window takes no new seats.
+  // REDUCING the count is always allowed, for the same reason a withdrawal is.
+  const gate = await eventOpenForRsvp(eventId)
+  const current = (existing as { plus_ones?: number | null }).plus_ones ?? 0
+  if (n > current && (!gate.open || !gate.windowOpen)) return
 
   await supabase
     .from('event_rsvps')
@@ -1341,19 +1395,24 @@ export async function checkInEvent(eventId: string): Promise<CheckInResult> {
   // still returned at runtime.
   const { data: evRaw } = await admin
     .from('events')
-    .select('starts_at, is_cancelled, time_zone, theme')
+    .select('starts_at, ends_at, is_cancelled, time_zone, theme')
     .eq('id', eventId)
     .maybeSingle()
   const ev = evRaw as unknown as {
     starts_at: string
+    ends_at: string | null
     is_cancelled: boolean
     time_zone: string | null
     theme: unknown
   } | null
-  // Check-in unlocks only once the event has actually STARTED in its own zone. Comparing
-  // the raw wall-clock to now unlocked it (and awarded Zaps) ~7h early for a PT event.
+  // THE WINDOW (lib/events/checkin-window.ts). It opens once the event has actually STARTED in its
+  // own zone — comparing the raw wall clock to now unlocked it, and awarded Zaps, ~7h early for a
+  // PT event — and it SHUTS four hours past the end. There used to be no upper bound at all, so a
+  // member marked going could check in to a gathering that ended in March and collect Zaps, a
+  // streak tick and verified-member standing for it (ADR-1175).
   const evCheckInTz = resolveZone(ev?.time_zone)
-  if (!ev || ev.is_cancelled || !isEventPast(ev.starts_at, null, evCheckInTz)) return { ok: false }
+  if (!ev || ev.is_cancelled) return { ok: false }
+  if (!checkInWindowOpen(ev.starts_at, ev.ends_at, evCheckInTz)) return { ok: false }
   // The host's switch (lib/events/checkin-enabled.ts). Enforced HERE and not only in the UI:
   // a control that hides the button while the action still records attendance and pays Zaps is
   // not a switch, it is a coat of paint. Defaults on, so no existing event changes.
