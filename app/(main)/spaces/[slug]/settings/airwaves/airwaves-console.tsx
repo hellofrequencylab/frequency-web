@@ -114,8 +114,8 @@ export function AirwavesConsole({
               onClick={() => setTab(t)}
               className={
                 tab === t
-                  ? 'flex-1 rounded-control bg-primary px-3 py-1.5 text-body-sm font-semibold text-on-primary'
-                  : 'flex-1 rounded-control px-3 py-1.5 text-body-sm font-semibold text-muted transition-colors hover:text-text'
+                  ? 'flex-1 rounded-control-nested bg-primary px-3 py-1.5 text-body-sm font-semibold text-on-primary'
+                  : 'flex-1 rounded-control-nested px-3 py-1.5 text-body-sm font-semibold text-muted transition-colors hover:text-text'
               }
             >
               {t === 'recordings' ? 'Recordings' : 'Shows'}

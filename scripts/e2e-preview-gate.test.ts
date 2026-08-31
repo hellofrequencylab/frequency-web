@@ -67,6 +67,38 @@ describe('🔴 a timed-out poll may not report success while a build is still in
     expect(exitIdx).toBeLessThan(greenIdx === -1 ? Number.MAX_SAFE_INTEGER : greenIdx)
   })
 
+  it('🔴 reads the COMMIT STATUS too, because the Deployments API is empty while it builds', () => {
+    // The hole the first version of this fix left, and the reason it is worth a named assertion.
+    // On #2328 the deployment-status arm matched no pending state across 36 polls while the build
+    // was genuinely in flight (verified against Vercel: `readyState: BUILDING` for 26+ minutes,
+    // with the `Vercel` commit status at `pending` throughout). The states list came back empty,
+    // the pending branch did not fire, and the job fell through to the quiet green meant for a
+    // fork or a skipped build: 12 minutes of polling, zero pixels photographed, green check —
+    // #2322's vacuous green, reappearing through a hole in its own fix.
+    //
+    // The exact reason the deployment arm was silent was not established, and is deliberately not
+    // asserted here. The invariant that matters is that it CAN be silent mid-build, so a second,
+    // independent source has to reach the same classification.
+    //
+    // So the classifier reads BOTH sources. Deleting either one restores a way for a build in
+    // flight to read as "nothing to wait for", which is what this assertion refuses.
+    expect(block).toContain('commits/${SHA}/statuses')
+    expect(block).toMatch(/context \| ascii_downcase \| test\("vercel"\)/)
+    // Both sources must feed the SAME states list the pending branch greps, not a second
+    // unchecked variable — the arm is only load-bearing if it reaches the classification.
+    //
+    // ⚠️ The bound here is the SUBSHELL, not "somewhere before the grep", and that distinction is
+    // the whole assertion. A first version sliced from `states=$(` to the grep and passed a
+    // mutation that moved the call OUT of the subshell into `unused=$(...)` sitting between the
+    // two — captured by nothing, read by nothing, and still inside the slice.
+    const open = block.indexOf('states=$(')
+    const close = block.indexOf('\n            )\n', open)
+    expect(close).toBeGreaterThan(open)
+    const subshell = block.slice(open, close)
+    expect(subshell).toContain('deployments/${dep}/statuses')
+    expect(subshell).toContain('commits/${SHA}/statuses')
+  })
+
   it('keeps the quiet green for the three absences that genuinely justify it', () => {
     // Not a ratchet that turns every fork and skipped build red. When nothing is building there is
     // nothing to wait for, and Vercel's own check owns the build-failure signal.
