@@ -10,7 +10,7 @@
 // induction (warm light, brandmark on top, big font-display headings, progress at the bottom) so it
 // reads as a real page, not a mobile app in a box. Three beats:
 //   1. Demo — a phone mockup runs the real box-breath timer (a 5s countdown, then the ring), with the
-//      coaching beside it. At the first hold a "Keep going" nudge + "Get a Free Timer" reveals name +
+//      coaching beside it. At the first hold a "Keep going" nudge + "Get my invitation" reveals name +
 //      email (auto-saved). A quiet Skip sits under it.
 //   2. Reward — the true first-log outcome (Day 1 streak + the 25-Zap welcome), and "claim your
 //      @username" (a live-checked handle). Skip under it.
@@ -321,8 +321,15 @@ function DemoStep({
           <p className="mx-auto mt-1 max-w-md text-body text-muted md:mx-0">
             This timer is your invitation into the Frequency beta. Grab it and your streak starts today.
           </p>
+          {/* "Get a Free Timer" until 2026-08-31. Someone read that in Instagram's in-app browser as
+              a DOWNLOAD, and there is no file: the timer is an in-app surface (/on-air). The two
+              sentences either side of this button already said the honest thing — "This timer is
+              your invitation into the Frequency beta" above, "Where should we send your
+              invitation?" below — so the button was the only part disagreeing with its own beat.
+              Also sentence case now, which docs/CONTENT-VOICE.md §10.8 asks for and Title Case
+              was quietly breaking. */}
           <button type="button" onClick={() => setShowFields(true)} className={`${PRIMARY_BTN} mt-4 sm:w-auto sm:px-6`}>
-            Get a Free Timer
+            Get my invitation
           </button>
         </div>
       )}
@@ -351,8 +358,10 @@ function DemoStep({
               className={FIELD}
             />
           </div>
+          {/* "Keep my timer" until 2026-08-31 — same reason: nothing is kept here, an invitation is
+              sent. This button submits the email that mails the sign-in link. */}
           <button type="button" onClick={proceed} disabled={!emailOk} className={`${PRIMARY_BTN} mt-3`}>
-            Keep my timer
+            Send my invitation
           </button>
           <button type="button" onClick={onNext} className="mt-2 block w-full text-center text-meta text-subtle hover:underline">
             Skip for now

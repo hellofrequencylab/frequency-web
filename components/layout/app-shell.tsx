@@ -60,7 +60,7 @@ import { MemberFooter } from '@/components/layout/member-footer'
 import { AREA_ICONS, railIconFor } from '@/components/layout/nav-icons'
 import { UpgradeCrew } from '@/components/layout/upgrade-crew'
 import { DemoToggle } from '@/components/layout/demo-toggle'
-import { railFor, leftRailFor, mergeChrome, railStartsCollapsed, isFullViewportEditor, isFullWidthEditor, type ChromeOverrides } from '@/lib/layout/page-chrome'
+import { railFor, leftRailFor, mergeChrome, railStartsCollapsed, isFullViewportEditor, isFullWidthEditor, type ChromeOverrides , ownsBreadcrumb } from '@/lib/layout/page-chrome'
 import {
   DEFAULT_RAIL_FOLDS,
   nextRailFold,
@@ -2441,10 +2441,13 @@ export default function AppShell({
               {/* A full-viewport editor takeover drops the page padding + breadcrumbs so the editor
                   (its own top bar / thumb-zone dock) fills the column edge to edge. */}
               <main id="main" tabIndex={-1} className={`flex-1 min-w-0 ${edgeToEdge ? '' : 'py-6'}`} data-tour-anchor="content">
-                {/* A Space route (/spaces/<slug>/...) renders its OWN brand-aware breadcrumb inside the
-                    Space layout (components/spaces/space-breadcrumbs), so the generic slug-only one is
-                    suppressed there to avoid a doubled, lower-fidelity trail. */}
-                {!edgeToEdge && !/^\/spaces\/[^/]+/.test(pathname) && <Breadcrumbs />}
+                {/* Some routes render their OWN breadcrumb, with the entity's REAL name, and the
+                    generic pathname-derived one stands down for them — otherwise the page carries a
+                    doubled trail whose lower-fidelity half titleizes the slug and so announces a
+                    renamed entity under its old name (LIVE-132). Which routes those are lives in
+                    lib/layout/page-chrome.ts, not in a regex here: chrome decisions belong in the
+                    registry the shell reads. */}
+                {!edgeToEdge && !ownsBreadcrumb(pathname) && <Breadcrumbs />}
                 {children}
                 {showFooter && (
                   <MemberFooter role={gateRole} staffRole={staffRole} navAccess={navAccess} />

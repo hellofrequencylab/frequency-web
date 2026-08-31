@@ -67,6 +67,9 @@ export interface EventDetailTemplateProps {
   cover?: ReactNode
   /** The single back affordance. Never hand-roll a second one above the template. */
   back?: { href: string; label: string }
+  /** The page's own breadcrumb trail, carrying the event's REAL title rather than its frozen slug
+   *  (LIVE-132). Handed straight to DetailTemplate; see the prop's note there. */
+  breadcrumb?: { href: string; label: string }[]
   title: ReactNode
   /** Status / mode chips (In person · Online · This event has ended). */
   badges?: ReactNode
@@ -120,6 +123,7 @@ export function EventDetailTemplate({
   hasActionBar = true,
   cover,
   back,
+  breadcrumb,
   title,
   badges,
   actions,
@@ -155,6 +159,7 @@ export function EventDetailTemplate({
       <DetailTemplate
         hero={cover}
         back={back}
+        breadcrumb={breadcrumb}
         titleScale={titleScale}
         title={title}
         badges={badges}

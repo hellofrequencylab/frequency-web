@@ -52,7 +52,7 @@ or a mood.
 
 [See the Body practices](/discover/practices/pillar/body)
 
-When you want the timer to hold the space for you, [open Mindless](/help/the-quest/on-air),
+When you want the timer to hold the space for you, [open Mindless](/on-air),
 set a couple of minutes, and let it count you down. The point is small and repeated,
 not long and perfect.
 

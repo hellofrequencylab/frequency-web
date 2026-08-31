@@ -1876,6 +1876,14 @@ export default async function EventDetailPage({
           </div>
         )
       }
+      // The page's OWN breadcrumb, carrying the event's real TITLE. The shell's generic trail
+      // titleizes the pathname, and an event slug freezes at creation — so a renamed event was
+      // announced under its old name directly above the h1 giving the new one (LIVE-132). The
+      // shell stands down for this route via ownsBreadcrumb() in lib/layout/page-chrome.ts.
+      breadcrumb={[
+        { href: '/events', label: 'Events' },
+        { href: `/events/${event.slug}`, label: event.title },
+      ]}
       // The event title renders at the DISPLAY scale (a step up from the default Detail h1) —
       // this is the page's marquee fact, so it leads at destination-page stature.
       titleScale="display"

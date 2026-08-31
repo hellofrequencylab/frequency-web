@@ -7,6 +7,8 @@ import { getEventEnrichment } from '../_data'
 import { SignInCta } from '@/components/discover/cards'
 import { FrequencyArcs } from '@/components/marketing/vector-art'
 import { EventDetailTemplate } from '@/components/templates'
+import { PosterBand } from '@/components/media/poster-band'
+import { eventPosterHeightClass } from '@/lib/events/hero-height'
 import { SITE_NAME, BETA_CTA_HREF, BETA_CTA_LABEL } from '@/lib/site'
 import { JsonLd } from '@/components/json-ld'
 import { eventSchema, breadcrumbSchema } from '@/lib/jsonld'
@@ -113,6 +115,19 @@ export default async function EventPage({
               ]),
             ]}
           />
+        }
+        // The event's own artwork (LIVE-133). This page composed the same template as the in-app
+        // one and passed no cover at all, so the crawlable half of every event — the half a
+        // first-time visitor and a crawler see — opened on a back link and an H1 with no image.
+        // Same PosterBand the in-app page uses, so a poster is shown whole on a phone here too.
+        cover={
+          enrichment?.cover_url ? (
+            <PosterBand
+              src={enrichment.cover_url}
+              heightClass={eventPosterHeightClass('standard')}
+              focus={enrichment.cover_focus ?? null}
+            />
+          ) : undefined
         }
         // Nothing to RSVP to while signed out, so no sticky bar and no space reserved for one.
         hasActionBar={false}
