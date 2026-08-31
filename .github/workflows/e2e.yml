@@ -182,10 +182,21 @@ jobs:
             # PENDING is a build in flight: we ran out of patience, we did not run out of work,
             # and claiming success would be a lie. Anything else (no deployment at all, or a
             # failed one) keeps the quiet green the three enumerated cases justify.
+            # 🔴 TWO SOURCES, BECAUSE ONE OF THEM IS EMPTY WHILE THE BUILD IS IN FLIGHT.
+            # The first version of this classifier read the Deployments API alone, and on #2328
+            # that API returned NOTHING for a sha whose preview was building: Vercel had posted a
+            # `Vercel` COMMIT STATUS at `pending` and no deployment record yet. So the states list
+            # came back empty, the pending branch did not match, and the job took the quiet-green
+            # path meant for "a fork, a skipped build, or a failed build" — reporting success on a
+            # run that photographed nothing. That is #2322's vacuous green reappearing through a
+            # hole in its own fix, which is why both sources are consulted and neither is trusted
+            # to be populated on its own.
             states=$(
               for dep in $(gh api "repos/${REPO}/deployments?sha=${SHA}&per_page=100" --jq '.[].id' || true); do
                 gh api "repos/${REPO}/deployments/${dep}/statuses?per_page=100" --jq '.[].state' || true
               done
+              gh api "repos/${REPO}/commits/${SHA}/statuses?per_page=100" \
+                --jq '.[] | select(.context | ascii_downcase | test("vercel")) | .state' || true
             )
             if printf '%s\n' "${states}" | grep -qE '^(pending|queued|in_progress)$'; then
               echo "::error title=Preview never resolved::A Vercel deployment for ${SHA} is still building after 12 minutes, so nothing was tested. This job fails rather than reporting a green it did not earn — re-run it once the preview is live."
@@ -442,10 +453,21 @@ jobs:
             # PENDING is a build in flight: we ran out of patience, we did not run out of work,
             # and claiming success would be a lie. Anything else (no deployment at all, or a
             # failed one) keeps the quiet green the three enumerated cases justify.
+            # 🔴 TWO SOURCES, BECAUSE ONE OF THEM IS EMPTY WHILE THE BUILD IS IN FLIGHT.
+            # The first version of this classifier read the Deployments API alone, and on #2328
+            # that API returned NOTHING for a sha whose preview was building: Vercel had posted a
+            # `Vercel` COMMIT STATUS at `pending` and no deployment record yet. So the states list
+            # came back empty, the pending branch did not match, and the job took the quiet-green
+            # path meant for "a fork, a skipped build, or a failed build" — reporting success on a
+            # run that photographed nothing. That is #2322's vacuous green reappearing through a
+            # hole in its own fix, which is why both sources are consulted and neither is trusted
+            # to be populated on its own.
             states=$(
               for dep in $(gh api "repos/${REPO}/deployments?sha=${SHA}&per_page=100" --jq '.[].id' || true); do
                 gh api "repos/${REPO}/deployments/${dep}/statuses?per_page=100" --jq '.[].state' || true
               done
+              gh api "repos/${REPO}/commits/${SHA}/statuses?per_page=100" \
+                --jq '.[] | select(.context | ascii_downcase | test("vercel")) | .state' || true
             )
             if printf '%s\n' "${states}" | grep -qE '^(pending|queued|in_progress)$'; then
               echo "::error title=Preview never resolved::A Vercel deployment for ${SHA} is still building after 12 minutes, so nothing was tested. This job fails rather than reporting a green it did not earn — re-run it once the preview is live."
