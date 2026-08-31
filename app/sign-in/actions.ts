@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation'
 import { headers, cookies } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
 import { rateLimitOk } from '@/lib/rate-limit'
+import { FUNNELS } from '@/lib/funnels/definitions'
 import type { SignInErrorCode } from './errors'
 
 // Shared passwordless sign-in actions, used by /sign-in and by the beta induction's
@@ -16,6 +17,25 @@ import type { SignInErrorCode } from './errors'
 function safeNext(raw: FormDataEntryValue | null): string {
   const v = typeof raw === 'string' ? raw : ''
   return v.startsWith('/') && !v.startsWith('//') && !v.startsWith('/\\') ? v : ''
+}
+
+/** The funnel a signup came from, narrowed to a slug the CODE defines.
+ *
+ *  🔴 WHY THIS TRAVELS ON THE USER AND NOT ONLY IN THE COOKIE. The comment above is right that a
+ *  bare `emailRedirectTo` keeps the provider's redirect-allowlist match safe, and that is not
+ *  being changed here. What it assumes is that the magic link is opened in the SAME browser
+ *  context that set the cookie — and for the beta funnel's actual traffic that is false almost
+ *  every time: the page is opened inside Instagram's in-app webview, which has its own cookie
+ *  jar, and the emailed link opens in Safari. `fq_post_login` is simply not there, so the
+ *  destination defaults to /feed and a person who asked for a breathwork timer lands in the
+ *  generic Circles induction.
+ *
+ *  Supabase applies `options.data` to the new auth user's metadata, so this survives the jump
+ *  between browsers, devices and days in a way no cookie can. It is READ BACK through this same
+ *  FUNNELS map in app/auth/callback/route.ts — never trusted as a path. */
+function safeSeq(raw: FormDataEntryValue | null): string {
+  const v = typeof raw === 'string' ? raw : ''
+  return Object.prototype.hasOwnProperty.call(FUNNELS, v) ? v : ''
 }
 
 const POST_LOGIN_COOKIE = 'fq_post_login'
@@ -85,9 +105,15 @@ export async function signInWithMagicLink(formData: FormData) {
   // gate (platform_flags.beta_invite_only) that passed shouldCreateUser=false for anyone not admitted
   // off the beta waitlist, and bounced them to /beta. The waitlist is gone, so the gate has nothing
   // left to check and every email takes the same path.
+  // `emailRedirectTo` stays the bare, known-good /auth/callback — see the note at the top of this
+  // file. The funnel rides in user metadata instead, which costs the allowlist nothing.
+  const seq = safeSeq(formData.get('seq'))
   const { error } = await supabase.auth.signInWithOtp({
     email,
-    options: { emailRedirectTo: await getCallbackUrl() },
+    options: {
+      emailRedirectTo: await getCallbackUrl(),
+      ...(seq ? { data: { funnel_seq: seq } } : {}),
+    },
   })
 
   if (error) {

@@ -34,6 +34,10 @@ const DISALLOW = [
   "/people",
   "/search",
   "/crew",
+  // The Mindless timer. Added to PROTECTED_PATHS in the same change (LIVE-136) so a sign-in
+  // triggered from the timer keeps the timer as its destination; a crawler reaching it only
+  // gets the 307 to /sign-in, so it belongs here too.
+  "/on-air",
   "/groups",
   "/hubs",
   "/nexuses",

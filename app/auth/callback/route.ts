@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
+import { FUNNELS } from '@/lib/funnels/definitions'
 import { createClient } from '@/lib/supabase/server'
 import { track } from '@/lib/analytics/track'
 import { claimGuestSeatsOnSignIn, type SessionClient } from '@/lib/events/guest-seat-claim'
@@ -58,6 +59,15 @@ export async function GET(request: Request) {
       // theirs here, and if one of those events is happening RIGHT NOW they land on it instead of
       // the feed. Set inside the fail-safe block below; null means "use the normal destination".
       let seatLanding: string | null = null
+      // FUNNEL RECOVERY (2026-08-31). The twin of seatLanding, for the same reason and the same
+      // cookie-less arrival — see the `destination` note below, which already describes this exact
+      // case for guests. A person who signed up through a feature funnel inside Instagram's in-app
+      // browser opens the emailed link in Safari, arrives with no `fq_post_login`, defaults to
+      // /feed, is bounced to /onboarding and then to /join with no `?seq` — landing in the GENERIC
+      // Circles induction after asking for a breathwork timer. The funnel is stamped on the auth
+      // user at sign-in (app/sign-in/actions.ts), which is the one carrier that survives the jump
+      // between browsers, so it can be read back here. Null means "use the normal destination".
+      let funnelLanding: string | null = null
 
       try {
         const { data: { user } } = await supabase.auth.getUser()
@@ -94,6 +104,15 @@ export async function GET(request: Request) {
               profile.id,
             )
           }
+
+          // Read the funnel back through the SAME map that wrote it. `user_metadata` is
+          // user-influenceable in general, so the slug is never interpolated into a path until it
+          // has been matched against the code funnels — this builds `/join?seq=<known slug>` or
+          // nothing at all, and can therefore never become an open redirect or an arbitrary path.
+          const seq = user.user_metadata?.funnel_seq
+          if (typeof seq === 'string' && Object.prototype.hasOwnProperty.call(FUNNELS, seq)) {
+            funnelLanding = `/join?seq=${encodeURIComponent(seq)}`
+          }
         }
       } catch {
         // Swallowed on purpose. See FAIL-SAFE above.
@@ -104,7 +123,14 @@ export async function GET(request: Request) {
       // a different browser than the one that asked for it arrives with no `fq_post_login` at all,
       // and a guest standing at the event would otherwise be dropped on the feed with their newly
       // claimed seat and no sign of the room they are in.
-      const destination = !hasExplicitNext && seatLanding ? seatLanding : next
+      //
+      // 🔴 SEAT BEFORE FUNNEL, and the order is not arbitrary. A claimed seat can be an event
+      // happening RIGHT NOW (that is the whole point of claimGuestSeatsOnSignIn); a funnel
+      // recovery is only ever "resume the thing you asked for", which keeps. Both are recoveries
+      // for the SAME missing cookie, so neither may overrule a destination that was actually asked
+      // for — hence both sit behind `!hasExplicitNext`.
+      const recovered = seatLanding ?? funnelLanding
+      const destination = !hasExplicitNext && recovered ? recovered : next
 
       const res = NextResponse.redirect(`${origin}${destination}`)
       res.cookies.delete(POST_LOGIN_COOKIE)

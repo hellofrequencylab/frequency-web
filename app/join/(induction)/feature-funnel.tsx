@@ -569,6 +569,11 @@ function JoinStep({
     const fd = new FormData()
     fd.set('email', lead.email.trim())
     fd.set('next', completeNext)
+    // WHICH funnel this is, carried to the auth user itself rather than only to a cookie.
+    // `next` above rides in `fq_post_login`, and this whole page is most often opened inside
+    // Instagram's in-app browser — whose cookie jar is not the one that opens the emailed link.
+    // See app/sign-in/actions.ts and app/auth/callback/route.ts for the recovery this enables.
+    fd.set('seq', sequence)
     await signInWithMagicLink(fd)
   }
 

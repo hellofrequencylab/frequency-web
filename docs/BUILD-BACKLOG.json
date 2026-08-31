@@ -5437,7 +5437,7 @@
     },
     {
       "id": "LIVE-136",
-      "status": "open",
+      "status": "done",
       "lane": "live",
       "size": "XS",
       "source": {
@@ -5445,7 +5445,7 @@
         "ref": "Breathwork funnel flow audit, 2026-08-31"
       },
       "title": "/on-air is not a protected path, so signing in to reach the timer drops the timer",
-      "detail": "PROVEN. proxy.ts's PROTECTED_PATHS lists 17 prefixes and /on-air is not one of them. The proxy is what builds `/sign-in?next=<destination>` (the ADR-1082 re-measurement confirmed #2132 taught it to), so a route outside that list never gets a next=. /on-air therefore falls through to the page's own guard at app/(main)/on-air/page.tsx:26 — a bare `redirect('/sign-in')` with no next.\n\nConsequence: a signed-out person who taps the PWA shortcut labelled \"Mindless — Tune out: time your practice\" (public/manifest.json) or a \"Time to practice\" push (lib/practices/lifecycle.ts:311, lib/vera-dispatch.ts:156,171) signs in and lands on /feed, never reaching the timer they tapped. Same user-visible symptom as LIVE-134 by a second, independent route.",
+      "detail": "PROVEN. proxy.ts's PROTECTED_PATHS lists 17 prefixes and /on-air is not one of them. The proxy is what builds `/sign-in?next=<destination>` (the ADR-1082 re-measurement confirmed #2132 taught it to), so a route outside that list never gets a next=. /on-air therefore falls through to the page's own guard at app/(main)/on-air/page.tsx:26 — a bare `redirect('/sign-in')` with no next.\n\nConsequence: a signed-out person who taps the PWA shortcut labelled \"Mindless — Tune out: time your practice\" (public/manifest.json) or a \"Time to practice\" push (lib/practices/lifecycle.ts:311, lib/vera-dispatch.ts:156,171) signs in and lands on /feed, never reaching the timer they tapped. Same user-visible symptom as LIVE-134 by a second, independent route.\n\n── FIXED 2026-08-31. '/on-air' added to PROTECTED_PATHS in proxy.ts, so the proxy builds `/sign-in?next=/on-air` and the timer survives the sign-in it triggered. Pinned by app/auth/funnel-recovery.test.ts, watched go red with the entry removed.",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e \"const s=require('fs').readFileSync('proxy.ts','utf8');const m=s.match(/PROTECTED_PATHS[^=]*=\\\\s*\\\\[([^\\\\]]*)\\\\]/);process.exit(m&&m[1].includes('/on-air')?0:1)\"",
@@ -5467,6 +5467,23 @@
         "kind": "cmd",
         "cmd": "node -e \"const s=require('fs').readFileSync('lib/page-editor/templates/the-quest.ts','utf8');const i=s.indexOf(\\\"id: 'tq-mindless'\\\");if(i<0)process.exit(0);const end=s.indexOf('\\\\n    },', i);const seg=s.slice(i, end<0?s.length:end);process.exit(/ctaHref:\\\\s*'\\\\/[^']+'/.test(seg)?0:1)\"",
         "note": "Scoped to the `tq-mindless` block by its own id, not a character window. 🔴 The first version of this probe read +/-900 chars around the body copy and passed on a NEIGHBOURING block's ctaHref — check:backlog rejected it as a row claiming OPEN whose probe said DONE, which is the second time this gate has caught a probe of mine measuring the wrong thing."
+      }
+    },
+    {
+      "id": "LIVE-137",
+      "status": "done",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "docs/DECISIONS.md",
+        "ref": "Breathwork funnel flow audit, 2026-08-31"
+      },
+      "title": "A beta signup started in Instagram's in-app browser landed in the generic Circles induction",
+      "detail": "Owner capture of the LIVE funnel showed the giveaway: the page is served inside INSTAGRAM'S IN-APP BROWSER. That webview keeps its own cookie jar, and the emailed magic link opens in Mail/Safari — a different one.\n\nThe chain, all proven: email submitted in the Instagram webview sets `fq_post_login` in ITS jar -> the emailed link opens elsewhere with the cookie absent -> app/auth/callback has no cookie and no ?next, so it defaults to /feed -> (main)/layout sees an un-onboarded member and sends them to /onboarding -> /onboarding forwards to /join with no ?seq -> /join resolves the DEFAULT funnel. Someone who asked for a breathwork timer got the generic Vera induction about starting a local Circle. For Instagram traffic this is the normal path, not an edge case, and nothing in the repo detects in-app browsers.\n\nWHY THE OBVIOUS FIX WAS NOT TAKEN. Putting ?next= on the callback URL is two lines and app/auth/callback/route.ts:22 already reads and validates it — but app/sign-in/actions.ts:12-15 documents a deliberate decision to keep `emailRedirectTo` bare so the provider's redirect-allowlist match is never affected, and on an allowlist miss some Supabase versions silently fall back to the Site URL, which would land people on the homepage and be WORSE than the bug. That config is owner-held and unreadable from the repo.\n\nFIXED with a second carrier instead: the funnel slug is stamped on the AUTH USER at sign-in (Supabase `options.data`), which no change of browser, device or day can lose, and is read back in the callback through the SAME FUNNELS map that wrote it — never interpolated into a path unvalidated. It joins `seatLanding` as a sibling recovery for the identical cookie-less arrival the `destination` comment there already described, and sits behind `hasExplicitNext` so it can never overrule a destination actually asked for. Seat wins over funnel: a claimed seat can be an event happening right now.\n\n⚠️ This lands them back in the BREATHWORK funnel, with its timer and its copy. Where that funnel then finishes is LIVE-134, still open.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const s=fs.readFileSync('app/sign-in/actions.ts','utf8');const c=fs.readFileSync('app/auth/callback/route.ts','utf8');process.exit(s.includes('data: { funnel_seq: seq }')&&s.includes('hasOwnProperty.call(FUNNELS, v)')&&c.includes('hasOwnProperty.call(FUNNELS, seq)')&&c.includes('seatLanding ?? funnelLanding')?0:1)\"",
+        "note": "All four halves or none: the slug is stamped on the auth user, narrowed through FUNNELS on the way in, re-validated through FUNNELS on the way out, and ordered behind the seat claim. Any one missing and the recovery is either dead or an open redirect."
       }
     }
   ]
