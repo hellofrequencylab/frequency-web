@@ -60,6 +60,27 @@ export type EventEnrichment = {
    *  cannot see `event_rsvps`, so RSVP-capacity sold-out is knowable only on the canonical
    *  /events/<slug> page, which supplies it there. Absent is the honest answer, not `false`. */
   is_sold_out?: boolean
+  /** The event's cover as a PUBLIC URL, or null (LIVE-133).
+   *
+   *  The public event page composed the same EventDetailTemplate as the in-app one and passed no
+   *  `cover` at all, so the crawlable half of every event opened on a back link and an H1 while
+   *  the in-app half led with the artwork.
+   *
+   *  🔴 WHY IT COMES FROM HERE AND NOT FROM lib/discover.ts. The row that filed this assumed the
+   *  fix was "the same event-media getPublicUrl the in-app page already does" — but the in-app
+   *  page uses the ADMIN client, and `public_event_by_slug` (the anon RPC behind
+   *  getPublicEventBySlug) returns no cover column at all. Adding one there means a DROP + CREATE
+   *  on a SECURITY DEFINER function granted to `anon` — the same function that, before ADR-903,
+   *  served private events to anonymous callers. That is not a cover change.
+   *
+   *  This module already reads `events` directly with the ANON client, so RLS is the gate and the
+   *  cover rides along on a select this page was making anyway — no migration, no new surface, and
+   *  no widening of what anon may see: a row this read cannot see returns nothing here either.
+   *  `getPublicUrl` builds a string and needs no privileges. */
+  cover_url?: string | null
+  /** The operator's focal point ("x% y%") from events.theme, so the public crop matches the
+   *  in-app one instead of defaulting to centre. */
+  cover_focus?: string | null
 }
 
 export type EnrichedPublicEvent = PublicEvent & EventEnrichment
@@ -120,7 +141,7 @@ export async function getEventEnrichment(slug: string): Promise<EventEnrichment 
   const supabase = createPublicClient()
   const { data } = await supabase
     .from('events')
-    .select('id, attendance_mode, is_cancelled, category, region, country, currency')
+    .select('id, attendance_mode, is_cancelled, category, region, country, currency, cover_image_path, theme')
     .eq('slug', slug)
     .limit(1)
     .maybeSingle()
@@ -128,7 +149,18 @@ export async function getEventEnrichment(slug: string): Promise<EventEnrichment 
   const r = data as unknown as Pick<
     SafeEventRow,
     'attendance_mode' | 'is_cancelled' | 'category' | 'region' | 'country' | 'currency'
-  > & { id: string }
+  > & { id: string; cover_image_path: string | null; theme: unknown }
+
+  // The cover, as a public URL. `getPublicUrl` is pure string construction — no request, no
+  // privileges — so it is safe on the anon client. A null path yields null, not a broken <img>.
+  const coverUrl = r.cover_image_path
+    ? (supabase.storage.from('event-media').getPublicUrl(r.cover_image_path).data?.publicUrl ?? null)
+    : null
+  // events.theme is a free-form jsonb bag; read the one key we want and ignore the rest.
+  const coverFocus =
+    r.theme && typeof r.theme === 'object' && typeof (r.theme as Record<string, unknown>).coverFocus === 'string'
+      ? ((r.theme as Record<string, string>).coverFocus)
+      : null
 
   // A ticketed event prices on its ACTIVE TIERS, not events.price_cents (null for them), so the
   // schema.org Offer published "free" for every tier-priced event. The tier read is anon-safe:
@@ -152,6 +184,8 @@ export async function getEventEnrichment(slug: string): Promise<EventEnrichment 
     region: r.region,
     country: r.country,
     currency: r.currency,
+    cover_url: coverUrl,
+    cover_focus: coverFocus,
     ...(tiers.length > 0
       ? { ticket_from_cents: ticketFromPriceCents(tiers), is_sold_out: ticketsSoldOut(tiers) }
       : {}),

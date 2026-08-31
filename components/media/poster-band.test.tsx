@@ -39,34 +39,37 @@ describe('the arithmetic that made this a bug and not a preference', () => {
     expect(Math.min(1, 380 / (1400 * scale))).toBeLessThan(0.55)
   })
 
-  it('and desktop is the LOUDER number, which is why the fix is staged rather than global', () => {
-    // The same 24 covers measured against the 1044x374 desktop band: the crop there is VERTICAL,
-    // it is worse in area, and every one of those covers carries an operator focal point aimed at
-    // it. Pinned so "just flip it everywhere" has to face what it would silently retire.
-    expect(shownArea(1024, 1024, 1044, 374)).toBeLessThan(0.4) // a 1:1 poster, 13 of the 24
-    expect(shownArea(1024, 1024, 380, 306)).toBeGreaterThan(0.75) // the same poster on a phone
+  it('🔴 and desktop was the LOUDER number all along — which is why the crop is gone there too', () => {
+    // The same 24 covers against the 1044x374 desktop band. This assertion used to exist to argue
+    // the desktop half should WAIT; the arithmetic it pins is what eventually settled the opposite
+    // (LIVE-131). A 1:1 poster — 13 of the 24 — survived at under 40% of its area on the surface
+    // the owner believed was working, against 75%+ on the phone that was reported as broken.
+    expect(shownArea(1024, 1024, 1044, 374)).toBeLessThan(0.4)
+    expect(shownArea(1024, 1024, 380, 306)).toBeGreaterThan(0.75)
+    // And a PORTRAIT poster, the worst case, kept a quarter of itself on desktop.
+    expect(shownArea(681, 1024, 1044, 374)).toBeLessThan(0.3)
   })
 })
 
-describe('the treatment: whole poster on a phone, shipped crop from sm up', () => {
+describe('the treatment: the whole poster, at every width', () => {
   const markup = renderToStaticMarkup(
     <PosterBand src="https://example.test/p.png" heightClass={posterHeightClass('standard')} focus="49% 48%" />,
   )
 
-  it('fits the WHOLE poster below sm and keeps object-cover from sm up', () => {
-    // Both halves in one class string. `object-contain` alone would change desktop; `sm:object-cover`
-    // alone would leave the phone cropped.
-    expect(markup).toContain('object-contain sm:object-cover')
+  it('🔴 fits the WHOLE poster, and never crops at any width', () => {
+    expect(markup).toContain('object-contain')
+    // The class it must never regain. `sm:object-cover` is precisely what left 23 of 24 covers
+    // losing more than a quarter of their artwork on desktop (LIVE-131).
+    expect(markup).not.toContain('object-cover')
   })
 
-  it('still aims the operator focal point, which only means anything where it still crops', () => {
-    expect(markup).toContain('object-position:49% 48%')
-  })
-
-  it('fills the letterbox with the poster itself, and only where a letterbox exists', () => {
-    // The blurred backdrop is what stops `contain` from reading as a rendering failure. It is
-    // `sm:hidden` because from sm up the band crops and there are no bars to fill.
-    expect(markup).toMatch(/blur-2xl[^"]*sm:hidden|sm:hidden[^"]*blur-2xl/)
+  it('fills the letterbox with the poster itself, at every width', () => {
+    // The blurred backdrop is what stops `contain` from reading as a rendering failure. It used to
+    // be `sm:hidden`, because the desktop band still cropped and had no bars to fill; now that it
+    // contains everywhere, the backdrop has to be everywhere too or desktop letterboxes onto bare
+    // page colour.
+    expect(markup).toContain('blur-2xl')
+    expect(markup).not.toContain('sm:hidden')
     expect(markup).toContain('background-image:url(&quot;https://example.test/p.png&quot;)')
   })
 
@@ -78,7 +81,7 @@ describe('the treatment: whole poster on a phone, shipped crop from sm up', () =
 })
 
 describe('the poster ladder is the cover ladder with a shorter phone half', () => {
-  it('🔴 every tier keeps its sm: height BYTE FOR BYTE — the desktop band did not move', () => {
+  it('🔴 every tier keeps its sm: height BYTE FOR BYTE — the desktop band still does not move', () => {
     for (const tier of TIERS) {
       const smOf = (cls: string) => cls.split(/\s+/).filter((c) => c.startsWith('sm:')).join(' ')
       expect(smOf(posterHeightClass(tier)), `tier ${tier}`).toBe(smOf(coverHeightClass(tier)))

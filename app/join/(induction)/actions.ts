@@ -22,6 +22,7 @@ import { track } from '@/lib/analytics/track'
 import { FUNNEL_INDUCTION_VERSION, BETA_MEMBERS_GET_CREW } from '@/lib/onboarding/funnel-script'
 import { resolveFunnel } from '@/lib/funnels/resolve'
 import { funnelGrant } from '@/lib/funnels/definitions'
+import { adoptPractice } from '@/lib/practices'
 import { grantFoundingStatus } from '@/lib/founding/status'
 import { awardZaps } from '@/lib/zaps'
 import { funnelLanding, isSafeInAppPath } from '@/lib/funnels/destination'
@@ -248,6 +249,30 @@ async function applyFunnelGrants(seqSlug: string | null, authUserId: string, pro
       if (!existing) {
         await awardZaps(profileId, grant.zaps, { actionType: 'funnel_bonus', metadata: { seq: seqSlug } })
       }
+    }
+    if (grant.practiceSlug) {
+      // ADOPT THE FUNNEL'S PRACTICE, so the timer it lands on has something to run.
+      //
+      // 🔴 THE HALF THAT MAKES THE DESTINATION WORK. app/(main)/on-air/page.tsx renders
+      // "Nothing on your list yet — adopt a practice first" when `practices.length === 0`, so
+      // pointing the breathwork funnel at /on-air without this would swap one wrong landing
+      // (the feed) for an emptier one. Both halves ship together or neither should.
+      //
+      // Resolved by SLUG here rather than stored as a uuid in the funnel definition, which is
+      // pure data with no database access. A slug that matches nothing resolves to null and
+      // this is a no-op — the member still lands on the timer with whatever they hold, and a
+      // renamed practice can never fail a signup.
+      //
+      // Idempotent by construction: adoptPractice is a no-op over an already-active row (it is
+      // the one chokepoint that enforces the active-adoption cap), so the returning-member path
+      // through applyFunnelGrants cannot double-adopt or reset a term the member chose.
+      const { data: row } = await createAdminClient()
+        .from('practices')
+        .select('id')
+        .eq('slug', grant.practiceSlug)
+        .maybeSingle()
+      const practiceId = (row as { id: string } | null)?.id
+      if (practiceId) await adoptPractice(profileId, practiceId)
     }
   } catch (err) {
     console.error('[funnels] grant failed:', err)

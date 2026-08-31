@@ -206,6 +206,36 @@ export function isFullWidthEditor(pathname: string): boolean {
 // templated/movable blocks, NEVER to remove the rail. The event detail page falls through to
 // the default 'global' rail like every other member surface.
 
+// ── WHO OWNS THE BREADCRUMB ──────────────────────────────────────────────────
+// The shell renders a generic <Breadcrumbs /> derived from the PATHNAME, which titleizes any
+// segment it does not recognise. For a slug route that segment is a SLUG, and a slug freezes at
+// creation: the owner's own event is announced as "Meld Community Cowork Launch At Ro…" directly
+// above an <h1> reading "Co Creating What's Next", because the title was edited afterwards and the
+// slug was not (LIVE-132). The same is true of every renamed entity across events, circles,
+// channels, people and the commerce surfaces.
+//
+// 🔴 WHY THIS IS A REGISTRY ENTRY AND NOT A CONTEXT. The obvious fix — let the page hand its real
+// title up — cannot work: the shell renders <Breadcrumbs /> ABOVE {children}, so the page is a
+// DESCENDANT of the crumb it would need to fill in. A client store would work and would flash the
+// wrong name on first paint, because the server pass renders the crumb before the page that would
+// correct it.
+//
+// So the page renders its OWN trail, with the real name, and the shell stands down for that route.
+// That is not a new mechanism: components/spaces/space-breadcrumbs.tsx has done exactly this since
+// the Space layout shipped, and the shell carried a hardcoded `/^\/spaces\/[^/]+/` regex to
+// suppress itself there. This function is that regex, given a name and somewhere to grow — chrome
+// decisions belong in this file, which is the whole point of it.
+export function ownsBreadcrumb(pathname: string): boolean {
+  // Spaces: the Space layout renders a brand-aware trail (lib/spaces/owner-nav.ts). Any depth.
+  if (/^\/spaces\/[^/]+/.test(pathname)) return true
+  // An event DETAIL page: exactly /events/<slug>, never /events itself and never a sub-route
+  // (/manage, /edit, /settings) — those are their own pages and keep the derived trail.
+  // `new` is the create flow, which has no entity and therefore no real name to render.
+  const event = pathname.match(/^\/events\/([^/]+)$/)
+  if (event && event[1] !== 'new') return true
+  return false
+}
+
 export function railFor(pathname: string): Rail {
   // The Leader surface (/lead/*) is a member-side CONSOLIDATED dashboard (not the
   // /admin operator workspace), so it rides the standard GLOBAL community right rail
