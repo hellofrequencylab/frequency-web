@@ -412,7 +412,7 @@ async function CommunityArea({
             <ul className="space-y-2">
               {fullest.map((c) => (
                 <li key={c.id} className="flex items-baseline justify-between gap-3 text-body-sm">
-                  <Link href={`/circles/${c.slug}`} className="truncate text-muted hover:text-text">
+                  <Link href={`/circles/${c.slug}`} className="block truncate text-muted hover:text-text">
                     {c.name}
                     {c.hub?.name ? <span className="text-subtle"> · {c.hub.name}</span> : null}
                   </Link>

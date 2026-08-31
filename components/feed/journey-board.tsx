@@ -256,7 +256,7 @@ export function JourneyBoard({
               <li key={`partial-${practice.id}`} className="flex items-center justify-between gap-3">
                 <Link
                   href={`/practices/${practice.slug ?? practice.id}`}
-                  className="min-w-0 truncate text-body-sm text-text transition-colors hover:text-primary-strong"
+                  className="min-w-0 block truncate text-body-sm text-text transition-colors hover:text-primary-strong"
                 >
                   {practice.title}
                 </Link>
@@ -277,7 +277,7 @@ export function JourneyBoard({
               <li key={practice.id} className="flex items-center justify-between gap-3">
                 <Link
                   href={`/practices/${practice.slug ?? practice.id}`}
-                  className="min-w-0 truncate text-body-sm text-text transition-colors hover:text-primary-strong"
+                  className="min-w-0 block truncate text-body-sm text-text transition-colors hover:text-primary-strong"
                 >
                   {practice.title}
                 </Link>

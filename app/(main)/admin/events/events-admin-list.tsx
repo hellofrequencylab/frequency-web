@@ -111,7 +111,7 @@ function EventRow({ event }: { event: AdminEvent }) {
         <div className="flex flex-wrap items-center gap-2">
           <Link
             href={`/events/${event.slug}`}
-            className="truncate text-body-sm font-semibold text-text hover:text-primary-strong dark:hover:text-primary-strong"
+            className="block truncate text-body-sm font-semibold text-text hover:text-primary-strong dark:hover:text-primary-strong"
           >
             {event.title}
           </Link>

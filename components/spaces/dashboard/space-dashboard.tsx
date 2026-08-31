@@ -262,7 +262,7 @@ async function DashboardUpcoming({ spaceId, slug }: { spaceId: string; slug: str
                 <CalendarClock className="h-3.5 w-3.5" aria-hidden />
               </span>
               <div className="min-w-0 flex-1">
-                <Link href={`/events/${e.slug}`} className="truncate text-body-sm font-medium text-text hover:underline">
+                <Link href={`/events/${e.slug}`} className="block truncate text-body-sm font-medium text-text hover:underline">
                   {e.title || 'Event'}
                 </Link>
                 <p className="text-2xs text-muted">

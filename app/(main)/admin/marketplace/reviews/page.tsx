@@ -23,7 +23,7 @@ function ReviewRow({ r }: { r: ModeratedReview }) {
   return (
     <div className="rounded-card border border-border bg-surface p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <Link href={`/market/${r.productId}`} className="min-w-0 truncate font-medium text-text hover:text-primary">
+        <Link href={`/market/${r.productId}`} className="min-w-0 block truncate font-medium text-text hover:text-primary">
           {r.productTitle}
         </Link>
         <div className="flex items-center gap-2">

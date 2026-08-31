@@ -5483,6 +5483,24 @@
         "cmd": "node -e \"const fs=require('fs');const s=fs.readFileSync('app/sign-in/actions.ts','utf8');const c=fs.readFileSync('app/auth/callback/route.ts','utf8');process.exit(s.includes('data: { funnel_seq: seq }')&&s.includes('hasOwnProperty.call(FUNNELS, v)')&&c.includes('hasOwnProperty.call(FUNNELS, seq)')&&c.includes('seatLanding ?? funnelLanding')?0:1)\"",
         "note": "All four halves or none: the slug is stamped on the auth user, narrowed through FUNNELS on the way in, re-validated through FUNNELS on the way out, and ordered behind the seat claim. Any one missing and the recovery is either dead or an open redirect."
       }
+    },
+    {
+      "id": "HYG-036",
+      "status": "done",
+      "lane": "hygiene",
+      "size": "S",
+      "source": {
+        "file": "docs/DECISIONS.md",
+        "ref": "ADR-1178"
+      },
+      "title": "`truncate` on an inline <Link> dropped the ellipsis and kept white-space:nowrap, pushing the Space console 57px off a 390px phone",
+      "detail": "Caught by test/e2e/overflow.spec.ts, not by review: /spaces/<slug>/manage ran 57px past a 390px viewport in TWO <section>s at once, on a shell root carrying overflow-x-clip — so nothing scrolled and the dashboard was cut off.\n\nBoth sections reported the SAME width because they are the two items of one single-column grid, and a grid track is sized by the widest item's min-content. Tailwind's `truncate` is overflow:hidden + text-overflow:ellipsis + white-space:nowrap; the first two do NOT apply to a non-replaced inline box, and <Link> renders an inline <a>. So two thirds evaporated and the harmful third survived: nowrap made the element's min-content the full title string, which is the floor no grid track can shrink below.\n\n`min-w-0 flex-1` on the wrapper is why this hides in plain sight — it looks like shrinking is handled, and it is, for the WRAPPER. `flex-1` is `flex: 1 1 0%` on an ITEM; its children stay inline.\n\nSix real defects fixed: components/spaces/dashboard/space-dashboard.tsx, components/spaces/checkin-roster.tsx, components/spaces/membership-event-access.tsx, components/events/event-share-approvals.tsx, components/events/placement-approvals.tsx, components/widgets/quest/quest-leaderboard.tsx.\n\n🔴 THE FIRST GUARD WAS WRONG THREE TIMES AND POINTED AWAY FROM THE BUG. Resolving each link's parent by indentation picked a SIBLING in dock-chat.tsx and skipped an inline-flex wrapper in calendar-repeats-strip.tsx (two false positives), and an earlier pass read `min-w-0 flex-1` as a flex CONTAINER — which is exactly the wrapper the real defect lives in, so the audit reported the six broken files as fine. The shipped rule is coarser and unfoolable: a <Link> with `truncate` must carry an explicit display class. It over-requires by 15 links whose flex parent already blockifies them (CSS Display §2.7), and an explicit `block` there is a no-op.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node scripts/check-link-truncate.mjs",
+        "note": "Fails when any <Link> whose className carries `truncate` lacks a display class. A CLI rather than a vitest run because LIVE-034 forbids a backlog probe from spawning a test runner — and it caught this row doing exactly that. scripts/check-link-truncate.test.ts is the enforcing arm: it imports this same detector and drives it against fixtures that must fail, including flex-1 / flex-col / flex-wrap, the three tokens whose misreading caused the original wrong answer, plus a floor on the denominator.",
+        "checked": "2026-08-31"
+      }
     }
   ]
 }

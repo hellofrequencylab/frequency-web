@@ -35,7 +35,7 @@ export async function PlacementApprovals({
             className="flex flex-wrap items-center gap-3 rounded-card border border-border bg-surface-elevated/40 px-3 py-2.5"
           >
             <div className="min-w-0 flex-1">
-              <Link href={`/events/${r.eventSlug}`} className="truncate text-body-sm font-medium text-text hover:underline">
+              <Link href={`/events/${r.eventSlug}`} className="block truncate text-body-sm font-medium text-text hover:underline">
                 {r.eventTitle}
               </Link>
               <p className="truncate text-meta text-subtle">Requested by {r.requestedByName}</p>

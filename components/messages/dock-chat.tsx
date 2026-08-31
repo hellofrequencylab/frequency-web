@@ -335,7 +335,7 @@ export function DockChat({
           {/* Parity with the page's title: a 1:1 thread is a route to the person you are
               talking to. From the dock there was no way to reach their profile at all. */}
           {open.kind === 'dm' && peer ? (
-            <Link href={`/people/${peer.handle}`} onClick={onNavigate} className="min-w-0 flex-1 truncate text-body-sm font-semibold text-text transition-opacity hover:opacity-80">
+            <Link href={`/people/${peer.handle}`} onClick={onNavigate} className="min-w-0 flex-1 block truncate text-body-sm font-semibold text-text transition-opacity hover:opacity-80">
               {heading}
             </Link>
           ) : (

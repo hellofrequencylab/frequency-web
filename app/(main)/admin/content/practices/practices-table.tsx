@@ -526,7 +526,7 @@ export function PracticesTable({
                     <Link
                       href={`/practices/${p.id}/edit`}
                       title={`Edit ${p.title}`}
-                      className="truncate text-body-sm font-medium text-text hover:underline"
+                      className="block truncate text-body-sm font-medium text-text hover:underline"
                     >
                       {p.title}
                     </Link>

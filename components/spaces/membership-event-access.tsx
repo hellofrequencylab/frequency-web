@@ -79,7 +79,7 @@ export function MembershipEventAccess({
             <div className="min-w-0">
               <Link
                 href={`/events/${r.slug}`}
-                className="truncate text-body-sm font-semibold text-text underline-offset-2 hover:underline"
+                className="block truncate text-body-sm font-semibold text-text underline-offset-2 hover:underline"
               >
                 {r.title}
               </Link>

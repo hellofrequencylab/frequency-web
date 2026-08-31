@@ -44,7 +44,7 @@ function ThemeRowCard({ t }: { t: ThemeRow }) {
         <div className="flex flex-wrap items-center gap-2">
           <Link
             href={`/admin/appearance/${t.id}`}
-            className="truncate text-body font-bold text-text hover:text-primary-strong"
+            className="block truncate text-body font-bold text-text hover:text-primary-strong"
           >
             {t.name || 'Untitled theme'}
           </Link>
