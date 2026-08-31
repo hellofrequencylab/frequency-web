@@ -182,15 +182,22 @@ jobs:
             # PENDING is a build in flight: we ran out of patience, we did not run out of work,
             # and claiming success would be a lie. Anything else (no deployment at all, or a
             # failed one) keeps the quiet green the three enumerated cases justify.
-            # 🔴 TWO SOURCES, BECAUSE ONE OF THEM IS EMPTY WHILE THE BUILD IS IN FLIGHT.
-            # The first version of this classifier read the Deployments API alone, and on #2328
-            # that API returned NOTHING for a sha whose preview was building: Vercel had posted a
-            # `Vercel` COMMIT STATUS at `pending` and no deployment record yet. So the states list
-            # came back empty, the pending branch did not match, and the job took the quiet-green
-            # path meant for "a fork, a skipped build, or a failed build" — reporting success on a
-            # run that photographed nothing. That is #2322's vacuous green reappearing through a
-            # hole in its own fix, which is why both sources are consulted and neither is trusted
-            # to be populated on its own.
+            # 🔴 TWO SOURCES, BECAUSE ONE OF THEM YIELDS NOTHING WHILE THE BUILD IS IN FLIGHT.
+            # The first version of this classifier read the Deployments API alone. On #2328 it
+            # polled 36 times over 12 minutes and never matched a pending state, so the states list
+            # was empty, the pending branch did not fire, and the job took the quiet-green path
+            # meant for "a fork, a skipped build, or a failed build" — reporting success on a run
+            # that photographed nothing. #2322's vacuous green, reappearing through a hole in its
+            # own fix one commit after it landed.
+            #
+            # ⚠️ WHAT WAS MEASURED, AND WHAT WAS NOT. Verified against Vercel's API: deployment
+            # dpl_FWSFE4L6TJSZ… for that sha was `readyState: BUILDING` for 26+ minutes, and the
+            # `Vercel` COMMIT STATUS sat at `pending` the whole time. So a build WAS in flight and
+            # the deployment-status arm still produced no pending/queued/in_progress line. Whether
+            # that is because the deployment record was not yet visible to the poll or because it
+            # carried no statuses yet was NOT established — do not write it down as though it were.
+            # What matters is the shape: the deployment arm can be silent while a build runs, and
+            # the commit status is not, so both are consulted and neither is trusted alone.
             states=$(
               for dep in $(gh api "repos/${REPO}/deployments?sha=${SHA}&per_page=100" --jq '.[].id' || true); do
                 gh api "repos/${REPO}/deployments/${dep}/statuses?per_page=100" --jq '.[].state' || true
@@ -453,15 +460,22 @@ jobs:
             # PENDING is a build in flight: we ran out of patience, we did not run out of work,
             # and claiming success would be a lie. Anything else (no deployment at all, or a
             # failed one) keeps the quiet green the three enumerated cases justify.
-            # 🔴 TWO SOURCES, BECAUSE ONE OF THEM IS EMPTY WHILE THE BUILD IS IN FLIGHT.
-            # The first version of this classifier read the Deployments API alone, and on #2328
-            # that API returned NOTHING for a sha whose preview was building: Vercel had posted a
-            # `Vercel` COMMIT STATUS at `pending` and no deployment record yet. So the states list
-            # came back empty, the pending branch did not match, and the job took the quiet-green
-            # path meant for "a fork, a skipped build, or a failed build" — reporting success on a
-            # run that photographed nothing. That is #2322's vacuous green reappearing through a
-            # hole in its own fix, which is why both sources are consulted and neither is trusted
-            # to be populated on its own.
+            # 🔴 TWO SOURCES, BECAUSE ONE OF THEM YIELDS NOTHING WHILE THE BUILD IS IN FLIGHT.
+            # The first version of this classifier read the Deployments API alone. On #2328 it
+            # polled 36 times over 12 minutes and never matched a pending state, so the states list
+            # was empty, the pending branch did not fire, and the job took the quiet-green path
+            # meant for "a fork, a skipped build, or a failed build" — reporting success on a run
+            # that photographed nothing. #2322's vacuous green, reappearing through a hole in its
+            # own fix one commit after it landed.
+            #
+            # ⚠️ WHAT WAS MEASURED, AND WHAT WAS NOT. Verified against Vercel's API: deployment
+            # dpl_FWSFE4L6TJSZ… for that sha was `readyState: BUILDING` for 26+ minutes, and the
+            # `Vercel` COMMIT STATUS sat at `pending` the whole time. So a build WAS in flight and
+            # the deployment-status arm still produced no pending/queued/in_progress line. Whether
+            # that is because the deployment record was not yet visible to the poll or because it
+            # carried no statuses yet was NOT established — do not write it down as though it were.
+            # What matters is the shape: the deployment arm can be silent while a build runs, and
+            # the commit status is not, so both are consulted and neither is trusted alone.
             states=$(
               for dep in $(gh api "repos/${REPO}/deployments?sha=${SHA}&per_page=100" --jq '.[].id' || true); do
                 gh api "repos/${REPO}/deployments/${dep}/statuses?per_page=100" --jq '.[].state' || true
