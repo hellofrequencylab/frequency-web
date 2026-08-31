@@ -33,9 +33,9 @@ import Image from 'next/image'
 // rendering square-by-convention artwork inside a 2.79:1 letterbox and asking the crop to be kind.
 //
 // ── THE TREATMENT ────────────────────────────────────────────────────────────────────────────────
-// BELOW `sm`: `object-contain`, over a blurred, scaled copy of the same image, in a band one tier
-// shorter than the ladder's (posterHeightClass, lib/layout/cover-height.ts).
-// FROM `sm` UP: byte-identical to what shipped — `object-cover` at the operator's focal point.
+// AT EVERY WIDTH: `object-contain`, over a blurred, scaled copy of the same image. Below `sm` the
+// band is also one tier shorter than the ladder's (posterHeightClass, lib/layout/cover-height.ts);
+// from `sm` up the band keeps the exact height it has always had, so page layout does not move.
 //
 // `contain` is what guarantees the fix: it fits the WHOLE poster inside the band at any aspect, so
 // nothing is ever cut, for every cover that exists today and every one uploaded tomorrow. Its cost
@@ -51,13 +51,27 @@ import Image from 'next/image'
 // and the second half without the first just moves the wasted space around. 306 -> 221px at the
 // standard tier; the `sm:` heights are untouched.
 //
-// 🔴 AND `sm:object-cover` IS DELIBERATE, NOT AN OVERSIGHT. Three reasons the desktop half is a
-// separate change: the report was about phones; desktop crops VERTICALLY, which trims a photo's sky
-// rather than a headline's letters; and all 24 covers carry an operator-set focal point aimed at
-// the crop they currently get, so flipping desktop to `contain` would silently retire 24 deliberate
-// framing decisions. The measurement above says the fixed band is structurally wrong for posters on
-// both surfaces — this component is where that gets fixed when the desktop half is taken, and the
-// change is one class.
+// ── 🔴 THE DESKTOP HALF, TAKEN 2026-08-31 (LIVE-131) ─────────────────────────────────────────────
+// This shipped as `object-contain sm:object-cover`, and the comment here argued for keeping the
+// desktop crop on three grounds. Two of them did not survive being looked at again:
+//
+//   · "the report was about phones" — true, and irrelevant to whether desktop is broken. It is:
+//     median 36% of the artwork, 23 of 24 covers losing more than a quarter. That is the worse
+//     number of the two, and it stayed unfixed only because nobody had measured it.
+//   · "desktop crops VERTICALLY, which trims a photo's sky rather than a headline's letters" —
+//     true of a PHOTO. 19 of the 24 covers are square or portrait, i.e. posters, whose top and
+//     bottom are where the date and the venue are. A vertical crop eats those.
+//   · "all 24 carry an operator focal point aimed at the crop they get" — the one real cost, and
+//     it is smaller than it sounds: with `contain` nothing is cropped, so there is no framing
+//     decision left to honour. The focal value is not deleted and the picker still writes it; it
+//     simply has nothing to aim while the whole poster is shown.
+//
+// WHAT IT COSTS. A landscape PHOTO cover (5 of the 24) now letterboxes instead of filling the
+// band — 560x374 of a 1044px band for a 3:2 photo, with its own blurred colour either side. That
+// is the deliberate trade: the majority case is a poster that was losing its text, and a photo
+// shown whole inside its own wash is a weaker look, not a broken one.
+//
+// The band's `sm:` HEIGHT is untouched, so nothing on the page moves.
 //
 // 🔴 IT NEEDS NO STORED DIMENSIONS, AND THAT IS THE POINT. The exact fix is to size the band to the
 // poster's own aspect, which needs the poster's intrinsic size — and there is nowhere cheap to get
@@ -89,8 +103,13 @@ export function PosterBand({
   /** The band's height. Pass `posterHeightClass(tier)` — the shared ladder with a shorter phone
    *  half (lib/layout/cover-height.ts). */
   heightClass: string
-  /** The operator's focal point ("x% y%"). Applies from `sm` up, where the band still crops;
-   *  below `sm` the whole poster is shown and there is nothing to aim. */
+  /** The operator's focal point ("x% y%").
+   *
+   *  ⚠️ INERT WHILE THE BAND CONTAINS, and kept on purpose. `object-position` moves an image
+   *  inside its box only when the box crops it; with `object-contain` the whole poster fits, so
+   *  there is nothing to aim. The prop stays because the operator's focal picker still writes the
+   *  value, the callers still hold it, and it is the one thing a future re-crop would need — a
+   *  deleted prop would have to be rediscovered and re-threaded through three call sites. */
   focus?: string | null
   /** Decorative by default — on an event page the title is the very next element, so announcing
    *  the cover twice is noise. Pass a real string only when the artwork carries information the
@@ -110,18 +129,16 @@ export function PosterBand({
           reader needs and must never take a tap. */}
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 scale-125 bg-cover bg-center opacity-45 blur-2xl sm:hidden"
+        className="pointer-events-none absolute inset-0 scale-125 bg-cover bg-center opacity-45 blur-2xl"
         style={{ backgroundImage: `url("${src}")` }}
       />
-      {/* THE POSTER. `object-contain` below `sm` is the entire fix; `sm:object-cover` plus the
-          focal point is exactly what shipped. Every other prop is the plumbing the event page
-          already had. */}
+      {/* THE POSTER, whole, at every width. `object-contain` is the entire fix. */}
       <Image
         src={src}
         alt={alt}
         fill
         sizes="(max-width: 1024px) 100vw, 1344px"
-        className="object-contain sm:object-cover"
+        className="object-contain"
         style={{ objectPosition: focus ?? undefined }}
         preload
         unoptimized={unoptimized}
