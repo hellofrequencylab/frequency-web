@@ -124,6 +124,18 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 //               hit band on top, so the tab takes taps up to 136.5 at rest and 146.5 waiting.
 //               var(--dock-tab-rise) = 36 + 17 = 53 is that worst case, and it is now the term
 //               that wins the max() inside var(--tab-bar-clearance).
+//     SLOT 0c - a full-bleed page ACTION BAR: the event RSVP bar, and any future one-thumb
+//               conversion bar a page pins to the bottom edge. It is the ONE occupant that
+//               spans the lane rather than sitting on top of it — `inset-x-0`, opaque,
+//               bottom var(--tab-bar-h), with padding-bottom calc(var(--lane-rise) + gutter).
+//               Spans [0, ~162] on a 390x844 phone: background from the safe-area edge, content
+//               above 146.5. z-40, and BELOW the tab bar in paint order (the shell renders the
+//               page first), which is why slots 0a and 0b land ON it rather than under it.
+//               🔴 WRITTEN DOWN 2026-08-31, AFTER IT SHIPPED WITH A 53px HOLE UNDER IT. It was
+//               pinned at var(--tab-bar-clearance) — the lane's TOP — which is the correct
+//               number for slot 1 and the wrong one for a bar that is `inset-x-0` and opaque:
+//               it floated the bar off the tab bar and the page scrolled through the gap. See
+//               rule 7, and the amendment in app/globals.css.
 //     SLOT 1  - the toast lane. ONE lane, one definition (components/toast-lane.tsx).
 //               calc(var(--tab-bar-clearance) + 0.75rem) = 159.25px, right-4 = 17px. Clears the
 //               top of the lane by --space-3 (12.75px), which is the contract's own minimum gap
@@ -150,6 +162,8 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 //        still read 115.5 (the Zap catch) after slot 0b arrived reaching 146.5, so the shell's
 //        own content pad stood 31px inside a control. `max()`, not a sum: 0a and 0b break out of
 //        the same edge in different columns, so the lane's top is the taller of them.
+//        ⚠️ AND RULE 3 IS FOR THINGS THAT FLOAT. If your element is `inset-x-0` and opaque, the
+//        clearance is the wrong number and rule 7 is yours — that mistake is slot 0c's history.
 //     4. Two fixed boxes that must not overlap is not a thing you fix with better offsets. It
 //        is ONE box. toast-lane.tsx is the precedent, written after two lanes drifted into
 //        being byte-identical.
@@ -157,6 +171,18 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 //        pointer-events-none, so it deliberately outranks the sheet it briefly overlaps.
 //     6. State the arithmetic at a 17px root in the comment. Every bottom-* in this app is
 //        6.25% larger than its class name.
+//     7. A FULL-BLEED OPAQUE BAR TAKES THE LANE AS PADDING, NEVER AS AN OFFSET. Rules 2-3 are
+//        written for a narrow floating object, which must start above the lane because it can
+//        neither dodge the risers sideways nor hide the page beside itself. A bar that spans
+//        `inset-x-0` has no sideways, and being opaque its underside is a WINDOW onto scrolling
+//        content, not empty air — so pinning it at the clearance opens a hole instead of
+//        avoiding an overlap. It pins its BACKGROUND at var(--tab-bar-h) and pads its CONTENT
+//        by calc(var(--lane-rise) + gutter): flush below, clear above, one box spanning the
+//        lane. Slots 0a and 0b then ride ON it and stay pressable.
+//        🔴 Neither half alone is the fix. Flush with no padding is the 2026-08-11 overlap
+//        (catch over the bar's bottom 22px, chat tab over its bottom 53px, both on the page's
+//        primary conversion control); padded with no flush is the 2026-08-31 gap. var(--lane-rise)
+//        exists so the two halves read the same number.
 //
 //   THUMB ZONE (Q6). The repo's rules, written down here because DAWN carries no touch
 //   guidance at all — no media query in tokens/ except prefers-reduced-motion and

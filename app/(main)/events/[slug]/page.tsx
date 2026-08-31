@@ -1,7 +1,6 @@
 import type { Metadata } from 'next'
 import { Suspense } from 'react'
 import { notFound } from 'next/navigation'
-import Image from 'next/image'
 import Link from 'next/link'
 import { ClaimButton } from '@/app/events/claim/[token]/claim-button'
 import { ClaimRequestCta } from './claim-request-cta'
@@ -23,6 +22,7 @@ import { toggleRSVP } from '../actions'
 import { EventCheckInButton } from './check-in-button'
 import { TicketButton, type TicketTierView } from './ticket-button'
 import { RsvpBottomBar } from './rsvp-bottom-bar'
+import { PosterBand } from '@/components/media/poster-band'
 import { getConnectStatus, payoutsLive } from '@/lib/billing/connect'
 import { hasTicket, recordTicketFromSessionId } from '@/lib/billing/tickets'
 import { getCapacityInfo } from '@/lib/events/capacity'
@@ -61,7 +61,7 @@ import { listCohosts, listCohostInvites, getMyCohostInvite } from '@/lib/events/
 import { listCollaboratorSpacesForEvent } from '@/lib/events/event-share'
 import { posterSignedUrlMap } from '@/lib/events/poster-media'
 import { pointFromGeog } from '@/lib/events/geo'
-import { eventHeroHeightClass, readEventHeroHeight } from '@/lib/events/hero-height'
+import { readEventHeroHeight, eventPosterHeightClass } from '@/lib/events/hero-height'
 import { readEventCoverFocus } from '@/lib/events/cover-focus'
 import { detailsMediaPaths, type EventDetailsWithMedia } from '@/lib/events/details-media'
 import type { EventMapPin } from '@/components/events/events-map'
@@ -539,7 +539,9 @@ export default async function EventDetailPage({
   const heroUrl = coverUrl ?? posterFullUrl ?? coverCropUrl
   // Host-picked hero height (Short / Standard / Tall), stored on events.theme; mirrors the
   // Business Space cover hero. Applied to both the cover and the no-cover placeholder.
-  const heroHeightCls = eventHeroHeightClass(readEventHeroHeight(extra?.theme))
+  // The poster band's own ladder: same tiers, same desktop heights, one rung shorter on a phone
+  // because a contain-fitted poster does not use the whole box (lib/layout/cover-height.ts).
+  const posterHeightCls = eventPosterHeightClass(readEventHeroHeight(extra?.theme))
   // Host-picked cover FOCAL POINT (object-position), stored on events.theme.coverFocus. Applied to
   // the cover <img> so the important part of the photo survives the crop; defaults centered.
   const coverFocus = readEventCoverFocus(extra?.theme)
@@ -1843,27 +1845,25 @@ export default async function EventDetailPage({
       // poster's cropped cover / full flyer (heroUrl); token placeholder when none.
       cover={
         heroUrl ? (
-          <div className={`relative ${heroHeightCls} w-full overflow-hidden rounded-2xl bg-surface-elevated`}>
-            {/* The uploaded cover is a PUBLIC URL the optimizer is configured for; a
-                scanned poster's hero is a SIGNED URL from the private bucket (path
-                `/object/sign/...`, outside next.config remotePatterns), so it must
-                bypass the optimizer — matching PosterDetails' plain <img> crops. */}
-            <Image
-              src={heroUrl}
-              alt=""
-              fill
-              sizes="(max-width: 1024px) 100vw, 1344px"
-              className="object-cover"
-              style={{ objectPosition: coverFocus }}
-              preload
-              unoptimized={heroUrl !== coverUrl}
-            />
-          </div>
+          /* The whole poster on a phone, the shipped focal crop from `sm` up. The band used to be
+             a fixed-height box with `object-cover` on it, which sliced 47% off the width of the
+             Meld poster — its own title — on a 412px screen. components/media/poster-band.tsx
+             carries the measurement across all 24 production covers and the reasoning.
+             The uploaded cover is a PUBLIC URL the optimizer is configured for; a scanned
+             poster's hero is a SIGNED URL from the private bucket (path `/object/sign/...`,
+             outside next.config remotePatterns), so it must bypass the optimizer — matching
+             PosterDetails' plain <img> crops. */
+          <PosterBand
+            src={heroUrl}
+            heightClass={posterHeightCls}
+            focus={coverFocus}
+            unoptimized={heroUrl !== coverUrl}
+          />
         ) : (
           // No cover: a designed placeholder, not a blank box. Mirrors the
           // circle-card no-cover fill (soft DAWN gradient + centered icon) and
           // leads with the event's date so the slot still says something.
-          <div className={`relative flex ${heroHeightCls} w-full items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-primary-bg via-surface-elevated to-signal-bg text-primary-strong`}>
+          <div className={`relative flex ${posterHeightCls} w-full items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-primary-bg via-surface-elevated to-signal-bg text-primary-strong`}>
             <div className="flex flex-col items-center gap-1 text-center">
               <CalendarDays className="h-7 w-7 opacity-80" />
               <span className="text-display-h3 font-bold leading-none">

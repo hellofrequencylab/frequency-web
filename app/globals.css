@@ -296,9 +296,37 @@
      `max()` and not a sum: slot 0a (the catch, centred) and slot 0b (the tab, right corner) do
      not stack — they are two things breaking upward out of the same edge in different columns,
      so the lane's top is the taller of them. Adding a third occupant means adding a term here,
-     and every consumer of --tab-bar-clearance (the shell's content column, the RSVP bar, the
-     teaser pill, the toast lane, the Quest CTA, the notification popover's max-height) gets it
-     without an edit. That is the whole reason this is one name and not six literals. */
+     and every consumer of --tab-bar-clearance (the shell's content column, the teaser pill, the
+     toast lane, the Quest CTA, the notification popover's max-height) gets it without an edit.
+     That is the whole reason this is one name and not six literals.
+
+     ── 🔴 AMENDED 2026-08-31: A FULL-BLEED OPAQUE BAR IS NOT A FLOATING PILL ────────────────
+     Owner, off a phone capture of the Meld event page: the RSVP bar hung 53px ABOVE the tab bar
+     with page content scrolling through the gap underneath it. It was doing exactly what the
+     paragraphs above told it to — `bottom: var(--tab-bar-clearance)` — and that was the bug.
+
+     THE DISTINCTION THE LANE WAS MISSING. Everything else that reads the clearance is NARROW
+     and floats: a toast, a teaser pill, the Quest CTA. Such a thing has to start above the
+     lane's tallest occupant because it cannot dodge sideways past the catch or the chat tab,
+     and because the page shows through beside it either way. A page ACTION BAR is the opposite
+     on both counts: it spans `inset-x-0`, so there is no sideways to dodge to, and it is
+     OPAQUE, so a gap under it is a window onto scrolling content rather than empty air. Pinning
+     it to the lane's TOP is what opens that window.
+
+     SO A FULL-BLEED BAR TAKES THE LANE AS PADDING, NOT AS AN OFFSET:
+        bottom:         var(--tab-bar-h)                    ← its BACKGROUND meets the tab bar
+        padding-bottom: calc(var(--lane-rise) + <gutter>)    ← its CONTENT clears the risers
+     The box then spans the whole lane. No gap, because the background reaches the bar; no
+     overlap, because the controls sit above --lane-rise. The Zap catch and the chat tab ride ON
+     the bar instead of through it, and both stay visible and pressable — which is why this is
+     padding rather than simply hiding them: covering slot 0a would take Zap, the app's one
+     create action, off the page.
+
+     🔴 DO NOT "FIX" THIS BY PINNING THE BAR FLUSH AND STOPPING THERE. `bottom: var(--tab-bar-h)`
+     with no bottom padding closes the gap and re-opens the ORIGINAL 2026-08-11 defect one line
+     down: the tab bar is later in the DOM than the page, so the catch paints over the bar's
+     bottom 22px and the chat tab over its bottom 53px — on the primary conversion control of
+     the page, which is precisely the overlap this whole block exists to record. */
   --tab-bar-lift:      22px;
   --tab-bar-h:         calc(3.5rem + env(safe-area-inset-bottom));
   /* SLOT 0b — the chat tab's peel, named once and read by the launcher itself. */
@@ -306,7 +334,13 @@
   --dock-tab-peek-alert: 36px;
   --dock-tab-reach:      1rem;
   --dock-tab-rise:       calc(var(--dock-tab-peek-alert) + var(--dock-tab-reach));
-  --tab-bar-clearance: calc(var(--tab-bar-h) + max(var(--tab-bar-lift), var(--dock-tab-rise)));
+  /* THE LANE'S RISE, NAMED ON ITS OWN: how far the tallest occupant breaks upward out of the
+     bottom edge, WITHOUT the bar under it. It existed only inside --tab-bar-clearance, and that
+     is why the RSVP bar could not be written correctly — a full-bleed bar needs this as PADDING
+     and could only reach it as an OFFSET. One name, two readers (offset users add the bar; the
+     action bar pads by it). */
+  --lane-rise:         max(var(--tab-bar-lift), var(--dock-tab-rise));
+  --tab-bar-clearance: calc(var(--tab-bar-h) + var(--lane-rise));
   /* The sticky app header, same reasoning: 3.5rem plus the TOP inset under viewport-fit=cover. */
   --app-header-h:      calc(3.5rem + env(safe-area-inset-top));
 

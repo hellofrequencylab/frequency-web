@@ -6,6 +6,7 @@
 
 import {
   coverHeightClass,
+  posterHeightClass,
   asCoverHeight,
   COVER_HEIGHT_OPTIONS,
   COVER_HEIGHT_DEFAULT,
@@ -20,6 +21,13 @@ export const EVENT_HERO_HEIGHTS: { value: EventHeroHeight; label: string }[] = [
 /** The Tailwind height classes for a hero height (delegates to the shared ladder). */
 export function eventHeroHeightClass(height: EventHeroHeight): string {
   return coverHeightClass(height)
+}
+
+/** The height classes for the event page's CONTAIN-fitted poster band — the same tiers and the
+ *  same desktop heights, one rung shorter on a phone (see the poster ladder's note in
+ *  lib/layout/cover-height.ts, and components/media/poster-band.tsx for why). */
+export function eventPosterHeightClass(height: EventHeroHeight): string {
+  return posterHeightClass(height)
 }
 
 /** Read the saved hero height out of events.theme (jsonb), defaulting to 'standard' (maps legacy 'medium'). */

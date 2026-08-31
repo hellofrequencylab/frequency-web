@@ -81,13 +81,23 @@ describe('the lane names slot 0b, so the clearance can count it', () => {
 
 describe('--tab-bar-clearance is the top of the LANE, not of one occupant', () => {
   it('is a max() over both things that break upward out of the bottom edge', () => {
+    // The max() moved into --lane-rise on 2026-08-31 so a full-bleed bar could read it as
+    // PADDING (rule 7 / slot 0c). It is still ONE expression with two readers — asserted here as
+    // the derivation chain rather than as one string, because the whole point of the extraction
+    // is that the clearance and the action bar's padding cannot drift apart.
     const clearance = token('--tab-bar-clearance')
+    const rise = token('--lane-rise')
     expect(clearance).toContain('var(--tab-bar-h)')
+    expect(clearance).toContain('var(--lane-rise)')
     // `max()`, not `+`: slot 0a (the centred Zap catch) and slot 0b (the corner chat tab) rise
     // out of the same edge in different columns, so the lane's top is the TALLER of them. A sum
     // would pad 75px for a lane that is 53px tall.
-    expect(clearance).toMatch(/max\(\s*var\(--tab-bar-lift\)\s*,\s*var\(--dock-tab-rise\)\s*\)/)
-    expect(clearance).not.toMatch(/var\(--tab-bar-lift\)\s*\+\s*var\(--dock-tab-rise\)/)
+    expect(rise).toMatch(/max\(\s*var\(--tab-bar-lift\)\s*,\s*var\(--dock-tab-rise\)\s*\)/)
+    expect(rise).not.toMatch(/var\(--tab-bar-lift\)\s*\+\s*var\(--dock-tab-rise\)/)
+    // 🔴 And the max() lives in exactly ONE of them. Restating it inside the clearance would be
+    // the two-literals-that-agree failure this whole file exists to stop, performed on the very
+    // token that records it.
+    expect(clearance).not.toContain('max(')
   })
 
   it('🔴 and the tallest occupant is the CHAT TAB, which is what the old value missed', () => {
@@ -146,8 +156,29 @@ describe('everything that must clear the lane reads the one token', () => {
     expect(laneCode).not.toContain('bottom-32')
   })
 
-  it('the event RSVP bar — a FIXED control, which cannot be scrolled clear of anything', () => {
-    expect(rsvpBar).toContain('bottom-[var(--tab-bar-clearance)]')
+  it('🔴 the event RSVP bar spans the lane — flush background, padded content (slot 0c)', () => {
+    // THE 2026-08-31 BUG, as two assertions. The bar was `bottom-[var(--tab-bar-clearance)]`,
+    // which is the lane's TOP: correct for a narrow floating pill, and for an `inset-x-0` opaque
+    // bar it hung the whole thing 53px in the air with the page scrolling through underneath
+    // (owner, off a phone capture of the Meld event page).
+    //
+    // BOTH HALVES OR NEITHER. Flush alone re-opens the original overlap one line down — the tab
+    // bar paints after the page, so the Zap catch would take the bar's bottom 22px and the chat
+    // tab its bottom 53px, on the page's primary conversion control. Padded alone is the gap.
+    expect(rsvpBar).toContain('bottom-[var(--tab-bar-h)]')
+    expect(rsvpBar).toContain('pb-[calc(var(--lane-rise)+0.75rem)]')
+    // The offset it must never go back to, matched against the CODE — the comment above the
+    // element deliberately quotes the old class so the next reader knows what was wrong.
+    const barCode = rsvpBar.replace(/\{\/\*[\s\S]*?\*\/\}/g, '')
+    expect(barCode).not.toContain('bottom-[var(--tab-bar-clearance)]')
+  })
+
+  it('and it relaxes at md+, where both risers and the tab bar are gone', () => {
+    // The launcher tab and the whole tab bar are `md:hidden`, so above md there is no lane to
+    // pad for: the bar sits on the screen edge with a plain gutter. Padding --lane-rise there
+    // would be 53px of dead space under a bar with nothing beneath it.
+    expect(rsvpBar).toContain('md:bottom-0')
+    expect(rsvpBar).toContain('md:pb-3')
   })
 
   it('the Quest hub CTA, which used to guess the bar at 4rem', () => {
@@ -171,5 +202,15 @@ describe('the mobile stacking contract records slot 0b', () => {
   it('and rule 3 now points at the lane rather than at the catch', () => {
     expect(contract).toContain('max(var(--tab-bar-lift), var(--dock-tab-rise))')
     expect(contract).not.toContain('3. Clear 115.5px, not 93.5px')
+  })
+
+  it('names slot 0c and rule 7, so a full-bleed bar is not written as a floating pill again', () => {
+    // Rule 1 is "name your slot before you pick a number", and the RSVP bar had been at this
+    // edge for weeks with no slot of its own — it was borrowing slot 1's number, which is how it
+    // got the lane's top instead of the lane. Both halves of the fix are named here so the next
+    // full-bleed bar inherits the distinction instead of rediscovering it.
+    expect(contract).toContain('//     SLOT 0c -')
+    expect(contract).toContain('7. A FULL-BLEED OPAQUE BAR TAKES THE LANE AS PADDING')
+    expect(contract).toContain('var(--lane-rise)')
   })
 })

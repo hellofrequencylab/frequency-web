@@ -29,6 +29,7 @@ const PROTECTED_PATHS = [
   '/people',
   '/search',
   '/crew',
+  '/on-air',
   '/groups',
   '/hubs',
   '/nexuses',
