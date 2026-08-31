@@ -195,6 +195,18 @@
   --radius-control: 14px;   /* = rounded-lg  */
   --radius-card:    24px;   /* = rounded-2xl */
   --radius-pill:    9999px;
+  /* NESTED CONTROL — a control-role box sitting INSIDE a card-role one, e.g. the selected
+     segment of a segmented picker (RSVP's Going / Maybe / Can't go).
+     🔴 WHY THE ROLE TOKENS ALONE ARE NOT ENOUGH. The radius ladder above is authored BY ROLE
+     (docs/DESIGN.md "Radius — by role"): control = 14, card = 24. That is right for siblings and
+     wrong for nesting — two corners share a centre only when the inner radius is the outer MINUS
+     the gap between them. A 14px control inside a 24px card with `p-1` between reads 5.75px too
+     square, and the eye sees it as the corners fighting rather than as one object.
+     THE GAP IS `p-1` = 0.25rem, and it is a rem while the radii are px: --density-root makes
+     1rem = 17px here, so the padding is 4.25px and re-scales per generation while the radii do
+     not. Deriving the token keeps the nest correct through every skin that retunes --radius-card
+     (midnight 15px, playful 36px, minimal 2px) AND every generation that retunes the density. */
+  --radius-control-nested: calc(var(--radius-card) - 0.25rem);
   /* COVER — the shape of a full-width entity cover / hero photo. It had NO :root baseline,
      so every `rounded-[var(--radius-cover,0.75rem)]` cover fell back to 12px while the
      PageHero cover every other Detail page uses (`rounded-3xl`) and IndexTemplate's hero
@@ -1445,6 +1457,7 @@
   --radius-control: var(--radius-control);
   --radius-card:    var(--radius-card);
   --radius-pill:    var(--radius-pill);
+  --radius-control-nested: var(--radius-control-nested);
 
   /* ── THE RADIUS STEPS, at DAWN's values (ported 2026-08-04) ─────────────────
      These were never defined, so every `rounded-sm|md|lg|xl|2xl` in the codebase —

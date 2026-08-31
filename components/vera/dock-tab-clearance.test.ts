@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 
 // ── SLOT 0b MUST BE IN THE LANE'S CLEARANCE, NOT IN ITS OWN FILE ───────────────────────────
 //
@@ -27,7 +27,6 @@ const globals = readFileSync('app/globals.css', 'utf8')
 const launcher = readFileSync('components/vera/vera-launcher.tsx', 'utf8')
 const shell = readFileSync('components/layout/app-shell.tsx', 'utf8')
 const toastLane = readFileSync('components/toast-lane.tsx', 'utf8')
-const rsvpBar = readFileSync('app/(main)/events/[slug]/rsvp-bottom-bar.tsx', 'utf8')
 const questCta = readFileSync('app/(main)/crew/hub-primary-cta.tsx', 'utf8')
 const contract = readFileSync('components/sidebar/game-stats-dock.tsx', 'utf8')
 
@@ -156,29 +155,20 @@ describe('everything that must clear the lane reads the one token', () => {
     expect(laneCode).not.toContain('bottom-32')
   })
 
-  it('🔴 the event RSVP bar spans the lane — flush background, padded content (slot 0c)', () => {
-    // THE 2026-08-31 BUG, as two assertions. The bar was `bottom-[var(--tab-bar-clearance)]`,
-    // which is the lane's TOP: correct for a narrow floating pill, and for an `inset-x-0` opaque
-    // bar it hung the whole thing 53px in the air with the page scrolling through underneath
-    // (owner, off a phone capture of the Meld event page).
+  it('🔴 SLOT 0c IS UNOCCUPIED, and the rule it was written for still stands', () => {
+    // The event RSVP bar was the only full-bleed action bar in the app, and it is GONE (owner,
+    // 2026-08-31): it duplicated the Join box the interior already renders, and cost the lane plus
+    // a pb-24 reservation on every event page to say the same thing twice.
     //
-    // BOTH HALVES OR NEITHER. Flush alone re-opens the original overlap one line down — the tab
-    // bar paints after the page, so the Zap catch would take the bar's bottom 22px and the chat
-    // tab its bottom 53px, on the page's primary conversion control. Padded alone is the gap.
-    expect(rsvpBar).toContain('bottom-[var(--tab-bar-h)]')
-    expect(rsvpBar).toContain('pb-[calc(var(--lane-rise)+0.75rem)]')
-    // The offset it must never go back to, matched against the CODE — the comment above the
-    // element deliberately quotes the old class so the next reader knows what was wrong.
-    const barCode = rsvpBar.replace(/\{\/\*[\s\S]*?\*\/\}/g, '')
-    expect(barCode).not.toContain('bottom-[var(--tab-bar-clearance)]')
-  })
-
-  it('and it relaxes at md+, where both risers and the tab bar are gone', () => {
-    // The launcher tab and the whole tab bar are `md:hidden`, so above md there is no lane to
-    // pad for: the bar sits on the screen edge with a plain gutter. Padding --lane-rise there
-    // would be 53px of dead space under a bar with nothing beneath it.
-    expect(rsvpBar).toContain('md:bottom-0')
-    expect(rsvpBar).toContain('md:pb-3')
+    // WHY THE RULE STAYS ANYWAY. It was written because the bar shipped at
+    // `bottom: var(--tab-bar-clearance)` — the lane's TOP, correct for a narrow floating pill and
+    // wrong for an opaque `inset-x-0` bar, which it hung 53px in the air with the page scrolling
+    // through underneath. Deleting rule 7 along with its only occupant would leave the NEXT
+    // full-bleed bar to rediscover that from a phone capture, which is exactly how this file's
+    // three earlier entries were each learned.
+    expect(existsSync('app/(main)/events/[slug]/rsvp-bottom-bar.tsx')).toBe(false)
+    expect(contract).toContain('//     SLOT 0c -')
+    expect(contract).toContain('7. A FULL-BLEED OPAQUE BAR TAKES THE LANE AS PADDING')
   })
 
   it('the Quest hub CTA, which used to guess the bar at 4rem', () => {

@@ -5302,11 +5302,11 @@
         "ref": "mobile display-surface audit, 2026-08-31"
       },
       "title": "The event RSVP bar hung 53px above the tab bar with the page scrolling through the gap",
-      "detail": "Owner, off a phone capture of the Meld event page. The bar was pinned `bottom-[var(--tab-bar-clearance)]` — the bottom lane's TOP, which is the correct number for a NARROW FLOATING thing (a toast, a teaser pill) that cannot dodge the Zap catch or the chat tab sideways. This bar is `inset-x-0` and OPAQUE, so it has no sideways to dodge to and its underside is a window onto scrolling content rather than empty air. It therefore floated 53px clear of the tab bar with the page visible underneath.\n\nFIXED as the distinction the lane was missing: a full-bleed bar takes the lane as PADDING, not as an OFFSET. Background at var(--tab-bar-h) (flush, no gap), content pushed past the new var(--lane-rise) token (no overlap), so the Zap catch and the chat tab ride ON the bar and both stay pressable. Neither half alone works — flush without padding re-opens the 2026-08-11 overlap on the page's primary conversion control, padded without flush is the gap. Recorded as SLOT 0c + rule 7 of the mobile stacking contract and pinned by three mutation-tested assertions in components/vera/dock-tab-clearance.test.ts.",
+      "detail": "Owner, off a phone capture of the Meld event page. The bar was pinned `bottom-[var(--tab-bar-clearance)]` — the bottom lane's TOP, which is the correct number for a NARROW FLOATING thing (a toast, a teaser pill) that cannot dodge the Zap catch or the chat tab sideways. This bar is `inset-x-0` and OPAQUE, so it has no sideways to dodge to and its underside is a window onto scrolling content rather than empty air. It therefore floated 53px clear of the tab bar with the page visible underneath.\n\nFIXED as the distinction the lane was missing: a full-bleed bar takes the lane as PADDING, not as an OFFSET. Background at var(--tab-bar-h) (flush, no gap), content pushed past the new var(--lane-rise) token (no overlap), so the Zap catch and the chat tab ride ON the bar and both stay pressable. Neither half alone works — flush without padding re-opens the 2026-08-11 overlap on the page's primary conversion control, padded without flush is the gap. Recorded as SLOT 0c + rule 7 of the mobile stacking contract and pinned by three mutation-tested assertions in components/vera/dock-tab-clearance.test.ts.\n\n── SUPERSEDED 2026-08-31: THE BAR IS GONE. The owner removed it outright — it duplicated the Join box the interior already renders (the SIDE column stacks FIRST on a phone, so the RSVP control is the first thing under the header) and cost the fixed bottom lane plus a `pb-24 lg:pb-0` reservation on every event page to say the same thing twice. The component, the template's `actionBar`/`hasActionBar` slot and that padding all went with it.\n\nTHE ROW STAYS DONE AND THE PROBE CHANGES SHAPE. The defect it records was real and the reasoning it produced outlived its occupant: SLOT 0c and rule 7 of the mobile stacking contract stand, because they explain why a full-bleed opaque bar takes the lane as PADDING and not as an offset — which the next such bar would otherwise rediscover from a phone capture, the way this file's three earlier entries each were. The probe now measures the consequence that is actually true today: the bar does not exist, and the rule that outlived it does.",
       "verify": {
         "kind": "cmd",
-        "cmd": "node -e \"const s=require('fs').readFileSync('app/(main)/events/[slug]/rsvp-bottom-bar.tsx','utf8');const code=s.replace(/\\\\{\\\\/\\\\*[\\\\s\\\\S]*?\\\\*\\\\/\\\\}/g,'');process.exit(code.includes('bottom-[var(--tab-bar-h)]')&&code.includes('pb-[calc(var(--lane-rise)+0.75rem)]')&&!code.includes('bottom-[var(--tab-bar-clearance)]')?0:1)\"",
-        "note": "Measures BOTH halves and the absence of the old offset: flush background, padded content, and no return to the lane-top pin. Comments are stripped first because the element's own comment quotes the class that was wrong."
+        "cmd": "node -e \"const fs=require('fs');if(fs.existsSync('app/(main)/events/[slug]/rsvp-bottom-bar.tsx'))process.exit(1);const c=fs.readFileSync('components/sidebar/game-stats-dock.tsx','utf8');process.exit(c.includes('//     SLOT 0c -')&&c.includes('7. A FULL-BLEED OPAQUE BAR TAKES THE LANE AS PADDING')?0:1)\"",
+        "note": "The bar was removed rather than kept fixed, so the probe asserts BOTH halves of what is true now: the component is gone, and SLOT 0c + rule 7 survive it in the stacking contract. Deleting the rule with its only occupant is what would make this row stale."
       }
     },
     {
@@ -5482,6 +5482,27 @@
         "kind": "cmd",
         "cmd": "node -e \"const fs=require('fs');const s=fs.readFileSync('app/sign-in/actions.ts','utf8');const c=fs.readFileSync('app/auth/callback/route.ts','utf8');process.exit(s.includes('data: { funnel_seq: seq }')&&s.includes('hasOwnProperty.call(FUNNELS, v)')&&c.includes('hasOwnProperty.call(FUNNELS, seq)')&&c.includes('seatLanding ?? funnelLanding')?0:1)\"",
         "note": "All four halves or none: the slug is stamped on the auth user, narrowed through FUNNELS on the way in, re-validated through FUNNELS on the way out, and ordered behind the seat claim. Any one missing and the recovery is either dead or an open redirect."
+      }
+    },
+    {
+      "id": "HYG-035",
+      "status": "open",
+      "lane": "hygiene",
+      "size": "XS",
+      "source": {
+        "file": "docs/DECISIONS.md",
+        "ref": "mobile design pass, 2026-08-31"
+      },
+      "title": "Four more segmented controls nest a 14px radius inside a 24px card, the same mismatch the RSVP picker had",
+      "detail": "Found while fixing the RSVP picker's corners. The repo's radius ladder is authored BY ROLE (docs/DESIGN.md: control = 14px, card = 24px), which is right for siblings and wrong for NESTING — two corners share a centre only when the inner radius is the outer minus the gap. A `rounded-control` (14px) segment inside a `rounded-card` (24px) box with `p-1` between it reads 5.75px too square.\n\n`--radius-control-nested` now exists for exactly this (app/globals.css, derived as `calc(var(--radius-card) - 0.25rem)` so it tracks both the skin's radius and the generation's density), and components/events/rsvp-controls.tsx uses it. These four still carry the old shape:\n  • components/quest/board-controls.tsx:94 and :119 (two — scope + track)\n  • app/(main)/spaces/[slug]/settings/airwaves/airwaves-console.tsx:107\n  • app/(main)/connections/new/creator.tsx:492\n\nPurely visual, nothing is broken, and each is a one-class change. Left out of the RSVP pass because the owner asked for the RSVP control specifically and these are four unrelated surfaces.",
+      "verify": {
+        "kind": "grep-absent",
+        "pattern": "rounded-control px-3 py-1\\.5",
+        "paths": [
+          "components/quest/board-controls.tsx",
+          "app/(main)/spaces/[slug]/settings/airwaves/airwaves-console.tsx",
+          "app/(main)/connections/new/creator.tsx"
+        ]
       }
     }
   ]

@@ -129,8 +129,6 @@ export default async function EventPage({
             />
           ) : undefined
         }
-        // Nothing to RSVP to while signed out, so no sticky bar and no space reserved for one.
-        hasActionBar={false}
         back={{ href: '/discover/events', label: 'Events' }}
         title={event.title}
         badges={
