@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import { describe, it, expect } from 'vitest'
 import { FUNNEL_STYLES, funnelStyle } from '@/lib/funnels/styles'
 import { getFunnel, FUNNELS, funnelGrant } from '@/lib/funnels/definitions'
@@ -100,5 +101,55 @@ describe('LIVE-134 — the breathwork funnel finishes on the timer', () => {
     // A negative control on the edit above: repointing the destination must not have disturbed
     // the grant that was already there.
     expect(funnelGrant('breathwork')?.zaps).toBe(25)
+  })
+})
+
+// ── THE COPY MUST NOT PROMISE A FILE (2026-08-31) ────────────────────────────────────────────────
+//
+// The buttons read "Get a Free Timer" and "Keep my timer". Someone opened the funnel in Instagram's
+// in-app browser, read that as a DOWNLOAD, and there is no file anywhere: the timer is an in-app
+// surface at /on-air. The sentences either side of the first button were already honest — "This
+// timer is your invitation into the Frequency beta" above it, "Where should we send your
+// invitation?" below — so the button was the only part disagreeing with its own beat.
+//
+// Checked against docs/CONTENT-VOICE.md: "get" and "send" are §5a plain verbs; "invitation" appears
+// on no avoid list; and §5d bans "unlock", which was the first replacement considered and rejected.
+describe('the funnel copy promises an invitation, not a download', () => {
+  const funnel = readFileSync('app/join/(induction)/feature-funnel.tsx', 'utf8')
+  /** The rendered copy, with the comments stripped — they quote the old labels on purpose. */
+  const copy = funnel.replace(/\{\/\*[\s\S]*?\*\/\}/g, '').replace(/^\s*\/\/.*$/gm, '')
+
+  it('🔴 neither button implies a thing you receive and keep', () => {
+    expect(copy).not.toContain('Get a Free Timer')
+    expect(copy).not.toContain('Keep my timer')
+    expect(copy).toContain('Get my invitation')
+    expect(copy).toContain('Send my invitation')
+  })
+
+  it('and the honest sentences that framed them are untouched', () => {
+    // The fix was to make the buttons agree with these, not to rewrite the beat.
+    expect(copy).toContain('This timer is your invitation into the Frequency beta.')
+    expect(copy).toContain('Where should we send your invitation?')
+  })
+
+  it('no hype word from CONTENT-VOICE §5d creeps in as the replacement', () => {
+    // "Unlock the timer" was the first replacement reached for, and §5d bans it outright. This is
+    // the guard against reaching for it again.
+    //
+    // 🔴 SCOPED TO RENDERED TEXT, and the first version was not. Matching the whole file flagged
+    // `const unlock = () => {` — the audio-autoplay gesture handler on line 264. §5d bans a word
+    // in COPY, not an identifier, and a guard that cannot tell them apart would either be
+    // permanently red or force a rename of unrelated code to satisfy a style rule about prose.
+    const rendered = (copy.match(/>[^<>{}]+</g) ?? []).join(' ')
+    for (const banned of ['Unlock', 'unlock', 'Elevate', 'Level up', 'supercharge', 'optimize']) {
+      expect(rendered, `§5d bans "${banned}" in copy`).not.toContain(banned)
+    }
+    // The control: the assertion is reading real copy, not an empty string.
+    expect(rendered).toContain('Get my invitation')
+  })
+
+  it('the eyebrow still names the thing plainly, because that part was never wrong', () => {
+    // "Free breathwork timer" is accurate and concrete (§5a). The defect was the VERB, not the noun.
+    expect(copy).toContain('Free breathwork timer')
   })
 })
