@@ -22,8 +22,12 @@
 // Differences between surfaces are expressed as an ABSENT SLOT, never as a fork. There is no
 // `variant`, no `isPublic`, no `anonymous` branch in this file, and the drift guard
 // (event-standard-layout.test.ts) fails the build if one appears. A public unauthenticated event has
-// no operator actions and no RSVP bar because it omits `actions` and `actionBar` — not because the
-// template knows who is looking.
+// no operator actions because it omits `actions` — not because the template knows who is looking.
+//
+// THERE IS NO STICKY ACTION BAR SLOT (removed 2026-08-31, owner). It carried a mobile RSVP bar that
+// duplicated the Join box the interior already renders — the SIDE column stacks FIRST on a phone,
+// so the RSVP control is the first thing under the header — and it cost the fixed bottom lane plus
+// a `pb-24 lg:pb-0` reservation on EVERY event page to say the same thing twice. Both are gone.
 
 import type { ReactNode } from 'react'
 import { DetailTemplate } from './detail-template'
@@ -58,9 +62,6 @@ export interface EventDetailTemplateProps {
   structuredData?: ReactNode
   /** The banner region ABOVE the header: cancelled, just-claimed, ticket-confirmed, cohost invite. */
   notices?: ReactNode
-  /** Reserve the mobile action bar's space at the page root (`pb-24 lg:pb-0`). Defaults to true —
-   *  a surface that can never show a bar (a signed-out reader has nothing to RSVP to) passes false. */
-  hasActionBar?: boolean
 
   // ── header lockup (handed straight to DetailTemplate) ─────────────────────────────────────────
   /** The full-bleed cover band: uploaded cover, scanned poster, or the date placeholder. */
@@ -94,10 +95,6 @@ export interface EventDetailTemplateProps {
    *  the two interiors are the same shape by construction, not by coincidence. */
   interiorMain?: ReactNode
   interiorSide?: ReactNode
-
-  // ── mobile ────────────────────────────────────────────────────────────────────────────────────
-  /** The sticky bottom action bar (RsvpBottomBar). Absent = no bar. */
-  actionBar?: ReactNode
 }
 
 // The interior geometry, byte-identical to the `main-side` case of TemplateGrid in
@@ -120,7 +117,6 @@ function EventInterior({ main, side }: { main?: ReactNode; side?: ReactNode }) {
 export function EventDetailTemplate({
   structuredData,
   notices,
-  hasActionBar = true,
   cover,
   back,
   breadcrumb,
@@ -134,7 +130,6 @@ export function EventDetailTemplate({
   interior,
   interiorMain,
   interiorSide,
-  actionBar,
 }: EventDetailTemplateProps) {
   const lines = [
     identity.when,
@@ -152,7 +147,7 @@ export function EventDetailTemplate({
   const hasIdentity = lines.some((line) => line !== undefined && line !== null && line !== false)
 
   return (
-    <div className={hasActionBar ? 'pb-24 lg:pb-0' : undefined}>
+    <div>
       {structuredData}
       {notices}
 
@@ -188,7 +183,6 @@ export function EventDetailTemplate({
           ) : null)}
       </DetailTemplate>
 
-      {actionBar}
     </div>
   )
 }

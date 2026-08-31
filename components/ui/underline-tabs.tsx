@@ -87,7 +87,7 @@ export function UnderlineTabs({
                   href={m.href}
                   aria-current={isActive(m.href) ? 'page' : undefined}
                   className={cn(
-                    'block rounded-control px-3 py-1.5 text-body-sm transition-colors',
+                    'block rounded-control-nested px-3 py-1.5 text-body-sm transition-colors',
                     isActive(m.href)
                       ? 'bg-primary-bg font-semibold text-primary-strong'
                       : 'text-muted hover:bg-surface-elevated hover:text-text',

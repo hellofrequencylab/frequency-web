@@ -93,6 +93,7 @@ import Image from 'next/image'
 export function PosterBand({
   src,
   heightClass,
+  radiusClass = 'rounded-2xl',
   focus,
   alt = '',
   unoptimized = false,
@@ -103,6 +104,14 @@ export function PosterBand({
   /** The band's height. Pass `posterHeightClass(tier)` — the shared ladder with a shorter phone
    *  half (lib/layout/cover-height.ts). */
   heightClass: string
+  /** The band's corner radius, substituted into the base class string.
+   *
+   *  🔴 A PROP AND NOT SOMETHING YOU APPEND VIA `className`. This repo's `cn` is a plain join with
+   *  no tailwind-merge, so two competing `rounded-*` classes are settled by Tailwind's alphabetical
+   *  EMISSION order, not by the order you wrote them (the measurement is recorded in
+   *  components/ui/skeleton.tsx). Appending `rounded-none` to override a baked-in `rounded-2xl`
+   *  would work today by luck of the alphabet and silently invert the day a token is renamed. */
+  radiusClass?: string
   /** The operator's focal point ("x% y%").
    *
    *  ⚠️ INERT WHILE THE BAND CONTAINS, and kept on purpose. `object-position` moves an image
@@ -121,7 +130,7 @@ export function PosterBand({
   className?: string
 }) {
   return (
-    <div className={`relative ${heightClass} w-full overflow-hidden rounded-2xl bg-surface-elevated ${className}`}>
+    <div className={`relative ${heightClass} w-full overflow-hidden ${radiusClass} bg-surface-elevated ${className}`}>
       {/* THE BACKDROP. The same image, scaled past the edges so the blur has pixels to work with
           all the way out (a blur samples beyond its own box and would otherwise fade to
           transparent at the frame), then dimmed so it stays clearly BEHIND the poster rather than

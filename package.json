@@ -35,6 +35,7 @@
     "check:render-path": "node scripts/check-render-path.mjs",
     "check:help": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/help-coverage.mts --strict",
     "check:tokens": "node scripts/check-tokens.mjs",
+    "check:nested-radius": "node scripts/check-nested-radius.mjs",
     "check:templates": "node scripts/check-templates.mjs",
     "check:phantom": "node scripts/check-phantom-classes.mjs",
     "check:bridge": "node scripts/check-bridge.mjs",

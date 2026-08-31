@@ -873,7 +873,7 @@ function TabBtn({ active, onClick, icon: Icon, label }: { active: boolean; onCli
     <button
       type="button"
       onClick={onClick}
-      className={`flex flex-1 items-center justify-center gap-1.5 rounded-control px-3 py-2 text-body-sm font-medium transition-colors ${
+      className={`flex flex-1 items-center justify-center gap-1.5 rounded-control-nested px-3 py-2 text-body-sm font-medium transition-colors ${
         active ? 'bg-primary text-on-primary' : 'text-muted hover:text-text'
       }`}
     >
