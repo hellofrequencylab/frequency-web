@@ -12,7 +12,7 @@ import {
   type FirstTouch,
 } from '@/lib/attribution/first-touch'
 import { joinCircle } from '@/app/(main)/circles/actions'
-import { checkInEvent } from '@/app/(main)/events/actions'
+import { checkInEvent, setRsvpStatus } from '@/app/(main)/events/actions'
 import { listActiveVariants, pickVariant } from '@/lib/entry-points/ab'
 import { referralsEnabled } from '@/lib/platform-flags'
 import { normalizeSplash, primarySplashLink } from '@/lib/qr/splash'
@@ -339,19 +339,19 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
       .maybeSingle()
     if (!ev) return unavailable
     if (profileId) {
-      // Ensure a 'going' RSVP (idempotent), then run the verified-practice check-in.
-      const { data: existing } = await admin
-        .from('event_rsvps')
-        .select('id')
-        .eq('event_id', code.event_id)
-        .eq('profile_id', profileId)
-        .maybeSingle()
-      if (!existing) {
-        await admin
-          .from('event_rsvps')
-          .insert({ event_id: code.event_id, profile_id: profileId, status: 'going' })
-          .then(() => {}, () => {})
-      }
+      // Ensure a 'going' RSVP, then run the verified-practice check-in.
+      //
+      // This used to INSERT the row straight through the admin client, which bypassed every rule
+      // the RSVP actions enforce: a cancelled or long-finished event took a seat, the host's
+      // booking window was ignored, and — worst of it — `approval_status` fell to its column
+      // default of 'none', so scanning a printed code walked past an approval-gated event's queue
+      // entirely. It also skipped the confirmation email, the activity-feed line and the gems, so
+      // a scanned RSVP was a second-class row wherever the two were compared (ADR-1176).
+      //
+      // Routing it through `setRsvpStatus` means the door and the page enforce one rule, because
+      // they run the same code. It is idempotent for someone already going, and it upgrades a
+      // maybe or a withdrawal, which is the honest reading of standing at the door with the code.
+      await setRsvpStatus(code.event_id, 'going').catch(() => {})
       await checkInEvent(code.event_id).catch(() => {})
     }
     return withReferral(to(`/events/${ev.slug}`))

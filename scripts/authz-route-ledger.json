@@ -174,9 +174,9 @@
     },
     "app/q/[slug]/route.ts": {
       "verdict": "self-scoped",
-      "reason": "Universal QR / dynamic-code resolver (LIVE-031 re-read). The pre-gate admin read is the code row itself, looked up by the PUBLIC slug printed on the poster — service-role only because qr_codes carries no client read policy — and nothing caller-scoped is projected. getMyProfileId() is not the gate; it answers WHO scanned. Every side effect (scan log, joinCircle, checkInEvent, captureQrContact, lead grab) is bound to that session-resolved profile id, never to a client-supplied one, and an anonymous scanner only ever gets cookies plus a redirect.",
-      "checked": "2026-08-17",
-      "digest": "e16086597e3fc255"
+      "reason": "Universal QR / dynamic-code resolver (re-read 2026-08-31 for ADR-1176). The pre-gate admin read is the code row itself, looked up by the PUBLIC slug printed on the poster — service-role only because qr_codes carries no client read policy — and nothing caller-scoped is projected. getMyProfileId() is not the gate; it answers WHO scanned. Every side effect (scan log, joinCircle, setRsvpStatus, checkInEvent, captureQrContact, lead grab) is bound to that session-resolved profile id, never to a client-supplied one, and an anonymous scanner only ever gets cookies plus a redirect. The re-read was forced by ADR-1176, which REMOVED the one admin-client write in this file: the event branch used to insert into event_rsvps directly, past the cancelled/ended/window/approval gates, and now calls setRsvpStatus — the same action the event page calls, which resolves the caller itself. Strictly more self-scoped than the body this verdict was first given to.",
+      "checked": "2026-08-31",
+      "digest": "00d1e097b953707b"
     },
     "app/spaces/[slug]/calendar.ics/route.ts": {
       "verdict": "model-gated",

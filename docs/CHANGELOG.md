@@ -18,6 +18,12 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
   honoured everywhere someone can answer, including the one-field form a signed-out visitor uses.
   Closing RSVPs only stops new answers: anyone who already said they were coming can still change
   or cancel.
+- **Scanning an event's QR code respects the host's settings**: a scan used to add you straight to
+  the going list, no matter what the host had set. On an event that asks the host to approve guests,
+  the code walked past the queue entirely; on a cancelled or long-finished event it still took a
+  seat, and the RSVP came with no confirmation email. A scan now goes through the same door the RSVP
+  button does, so an event that needs approval puts you in the queue, and everything that normally
+  follows an RSVP still follows.
 - **Check-in closes when the event is over**: check-in opened at the start time and never shut, so
   a gathering that finished months ago could still be checked into, Zaps and all. It now stays open
   for four hours past the end time, which covers a late arrival and remembering in the car, then

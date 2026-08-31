@@ -5275,6 +5275,22 @@
         "kind": "cmd",
         "cmd": "grep -q 'checkInWindowOpen(ev.starts_at, ev.ends_at, evCheckInTz)' 'app/(main)/events/actions.ts' && ! grep -q 'isEventPast(ev.starts_at, null' 'app/(main)/events/actions.ts' && grep -q 'ctx.checkInOpen' components/widgets/events/event-checkin.tsx"
       }
+    },
+    {
+      "id": "SCAN-530",
+      "title": "The QR door wrote its own RSVP, walking past the approval queue the code was printed for",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "docs/DECISIONS.md",
+        "ref": "ADR-1176 — found by the events meta-scan, 2026-08-31"
+      },
+      "detail": "app/q/[slug]/route.ts inserted into event_rsvps through the admin client with no gate in front of it: `insert({ event_id, profile_id, status: 'going' })`. A cancelled or long-finished event took a seat, the host's booking window (ADR-1174) was ignored, and approval_status was omitted so it fell to its column default of 'none' — verified against the live schema. On an event with rsvp_requires_approval that is not a request in the host's queue, it is an ADMITTED guest, so a printed code was a way around the door it was printed for. Capacity was the one rule that survived, and only because trg_enforce_event_rsvp_capacity is a BEFORE INSERT trigger that fires whatever writes the row: the rules living in SQL held and the rules living in the server action were simply not on this path. The row was also second-class in every visible way (no confirmation email, no activity-feed line, no gems, no revalidation). Fixed by calling setRsvpStatus(eventId, 'going') — the same action the event page calls, not a copy of its gates.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "grep -q \"await setRsvpStatus(code.event_id, 'going')\" 'app/q/[slug]/route.ts' && ! grep -q 'event_rsvps' 'app/q/[slug]/route.ts'"
+      }
     }
   ]
 }

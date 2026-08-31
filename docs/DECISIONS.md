@@ -33916,3 +33916,44 @@ in time is not one to pay for.
 **One flag, not two.** `EventDetailContext.checkInEnabled` became `checkInOpen`, carrying the host's
 switch ([ADR-1171](#adr-1171)) AND the clock. Two flags is how a surface honours the switch and
 forgets the window, which is the exact shape of the defect above.
+
+## ADR-1176: the QR door RSVPs through the same action the page does (2026-08-31)
+
+**Context.** Scanning a printed event code (`app/q/[slug]/route.ts`) wrote the RSVP itself:
+
+```ts
+await admin.from('event_rsvps')
+  .insert({ event_id: code.event_id, profile_id: profileId, status: 'going' })
+```
+
+An admin-client insert with no gates in front of it. Every rule the RSVP actions enforce was absent:
+
+- a **cancelled** event took a seat, and so did one that finished months ago;
+- the host's **booking window** ([ADR-1174](#adr-1174)) was ignored;
+- `approval_status` was omitted, so it fell to its column default of `'none'`. On an event with
+  `rsvp_requires_approval`, that is not a request in the host's queue — it is an **admitted guest**.
+  A printed code was a way around the door it was printed for.
+
+Capacity was the one rule that survived, and only by accident: `trg_enforce_event_rsvp_capacity` is
+a BEFORE INSERT trigger, so it demotes an over-capacity row to `waitlist` whatever writes it. That is
+the shape of the whole finding — the rules that lived in SQL held, and the rules that lived in the
+server action were simply not on this path.
+
+The row was also second-class in every way that shows: no confirmation email, no activity-feed line,
+no gems, no revalidation.
+
+**Decision.** The branch calls `setRsvpStatus(eventId, 'going')`, the same action the event page
+calls. Not a copy of the gates — the gates.
+
+The alternative was to re-check cancelled, ended, window and approval inline. That is how the
+divergence happened in the first place: two places implementing one rule, one of them a year behind.
+An action is already the unit that carries them, and the route was already importing `checkInEvent`
+from the same module, so nothing new is crossed.
+
+**Two behaviour changes, both intended.** A scan by someone who had answered `maybe` or withdrawn
+now moves them to going, where before only a MISSING row was written; standing at the door with the
+code is the clearest statement of intent there is. And a scan on an approval-gated event now lands
+as `pending`, which is the host's queue doing its job.
+
+`app/q/qr-event-rsvp.test.ts` pins that this route never names `event_rsvps` again. The tempting
+small change here will always be another direct write.

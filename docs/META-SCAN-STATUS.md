@@ -7,6 +7,69 @@
 > The durable record of the full-repo meta scan: what shipped, and what is still open with the
 > exact fix. Update it as items close. Newest pass first; earlier passes are kept below.
 
+## 2026-08-31 pass (events, spaces, drafts, RSVP — one defect shape, three times)
+
+Run at the owner's request after four events fixes landed (#2318 cover radius, #2319 RSVP window +
+check-in switch, #2320 draft slug promotion, #2321 visual baselines). The tree was green on entry:
+**all 46 `check:*` gates**, `tsc --noEmit`, 12,675 tests, the 288-row backlog contract, and the
+migration ledger at 650/650. Supabase advisors held no new finding — 1 ERROR (`spatial_ref_sys`,
+PostGIS's own table, not ours to alter), 78 INFO `rls_enabled_no_policy` (the deliberate deny-all
+tables `check:rls` already adjudicates), 60 SECURITY DEFINER declarations tracked by `OWN-006`; the
+performance side had **zero** `unindexed_foreign_keys`, `auth_rls_initplan`, `duplicate_index` or
+`multiple_permissive_policies`, and 538 unused indexes on a pre-launch database, which is expected.
+
+So, as in the 2026-08-24 pass, nothing was found where a gate can look. Everything below came from
+reading the code the gates are not shaped to see.
+
+### One shape, three times: a rule that exists, is shown to members, and is called by nothing
+
+This is the finding, and it is worth naming as a class because all three instances were found the
+same way — by asking, of each control a host can set, *who reads this?*
+
+| | The rule | Who enforced it | Row |
+|---|---|---|---|
+| 1 | The RSVP booking window (`events.details.rsvpWindow`) | **nobody** — written by settings, printed on the page, zero other references in `app`/`lib`/`components` | `SCAN-528` |
+| 2 | Check-in closes when the event is over | **nobody** — `checkInEvent` had an opening bound and no closing one | `SCAN-529` |
+| 3 | Cancelled / ended / window / approval, on the QR door | **nobody** — `app/q/[slug]/route.ts` inserted `event_rsvps` through the admin client | `SCAN-530` |
+
+Each shipped as a decorative control that a host could reasonably believe was working. That is worse
+than a missing feature: the host stops watching the thing they think is handled. Fixed in
+[ADR-1174](DECISIONS.md), [ADR-1175](DECISIONS.md), [ADR-1176](DECISIONS.md), with the rules pulled
+into pure modules (`lib/events/rsvp-window.ts`, `lib/events/checkin-window.ts`) so the page and the
+action cannot drift, and enforced in the SQL where the SQL is the real boundary.
+
+**The generalisable lesson.** In every one of the three, the rules living in SQL held and the rules
+living in a server action were absent from the second path. Capacity survived the QR hole only
+because `trg_enforce_event_rsvp_capacity` is a BEFORE INSERT trigger and fires whatever writes the
+row. Where a rule can live in the database, it should.
+
+### The premise re-tests that came back NOT A BUG
+
+Recorded so nobody spends the same reads twice:
+
+- **The RSVP approval gate is fully wired** (`actions.ts` 1043–1096, `social-actions.ts` 668–669).
+  The comment in `rsvp-depth.ts` calling it unreachable is stale prose, not a finding.
+- **`readEventMarketListed` / `listableOnly` and `readEventHeroHeight`** are both genuinely read.
+  They were checked because they are the same *shape* as `rsvpWindow`; they are not the same defect.
+- **Circle route "stubs"** are deliberate `permanentRedirect`s, not unfinished pages.
+- **The marketplace review `TODO(payments-on)`** is a correct deferral while payments are off, not a
+  gap: no order can settle, so `verified_purchase` is honestly false for everyone.
+- **`captureEventGuest`** writes `event_guests` (the inviter's own CRM lane, ADR-154), not
+  `event_rsvps`. No seat, so no approval or capacity concern.
+- **Every remaining key** in the `events.theme` / `events.details` bags has a reader. The two that
+  did not are rows 1 and 2 above.
+- **`LIVE-053`'s next step is still a source-mapped frame.** The row's own reasoning holds: no
+  destructured or unbound Supabase client method exists in the tree, so any patch would be a guard
+  added blind. Not touched.
+- **`LIVE-124` is already split and largely explained** by the 35-minute Supabase outage of
+  2026-08-25; the six days before it show zero timeouts on the six member-facing routes.
+
+### Still open after this pass
+
+Nothing new. The 55 open rows on entry are unchanged in character: three owner items, the Editor /
+Loom / Money / Re-theme programs, and the live rows above. The scan added three rows and closed
+three.
+
 ## 2026-08-24 pass (production-first audit — the tree was already green)
 
 Run against a tree where **all 36 `check:*` gates, `tsc --noEmit`, the 180-row backlog contract and
