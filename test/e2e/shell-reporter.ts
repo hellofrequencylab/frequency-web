@@ -99,6 +99,11 @@ export default class ShellCoverageReporter implements Reporter {
       observations: [...this.seen.values()],
       specs: [...this.specs].sort(),
       spaceSlug: process.env.PW_SPACE_SLUG,
+      // Only when the run actually COLLECTED the operator half — the same condition
+      // `authedSurfaces` uses. An a11y run carries the member shell and not the console, so
+      // handing it the operator list would let a reason about the /admin role floor be
+      // attached to a run that never asked for an operator surface in the first place.
+      operatorSurfaces: this.operatorCollected ? operatorSurfaces().map((s) => s.path) : [],
     })
 
     const report = renderShellCoverage(coverage)

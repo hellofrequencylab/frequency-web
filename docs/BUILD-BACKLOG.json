@@ -5397,6 +5397,77 @@
         "evidence": "Owner phone capture 2026-08-31 (Android, 412 CSS px): the bar renders 'Menu / Feed / Communi... / Zap / Events / The Quest / Marketpl...'. Arithmetic: 412/7 = 58.9px per slot and 320/7 = 45.7px; label type is --text-3xs 0.625rem = 10.625px at the --density-root 106.25% root (app/globals.css). Seven-slot cap and the 44px floor are stated in components/sidebar/game-stats-dock.tsx.",
         "checked": "2026-08-31"
       }
+    },
+    {
+      "id": "LIVE-134",
+      "status": "open",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "docs/DECISIONS.md",
+        "ref": "Breathwork funnel flow audit, 2026-08-31"
+      },
+      "title": "The breathwork funnel's button says \"Get a Free Timer\" and the flow ends on the community feed",
+      "detail": "Reported by a real user via the owner: they tried to download the Breathwork timer and \"it took them to something else\".\n\nPROVEN, and it is not a redirect bug — it is the destination. app/join/(induction)/feature-funnel.tsx:325 renders a button labelled \"Get a Free Timer\" whose only handler is setShowFields(true) (it reveals name + email); :355 \"Keep my timer\" advances a beat; :307 heads the beat \"Free breathwork timer\". The funnel's terminal destination is lib/funnels/definitions.ts:277 — `destination: { mode: 'direct', url: '/feed?welcome=vera' }`. The signed-in branch's \"Start breathing\" button (:591) goes to that same feed URL. The actual timer is a different route: app/(main)/on-air/page.tsx, metadata title 'Mindless'.\n\nSo on the PERFECT happy path, someone who asks for a free timer is emailed a magic link and lands on the social feed with a Vera lightbox. No timer, no download. There is also no downloadable artifact anywhere in the repo — nothing in public/, and every `download=` hit is a QR/vCard/CSV export — so \"download\" is the wrong verb regardless of destination.\n\nThe repo already knew: ADR for the feature funnel lists as an open follow-up \"a deep-link that opens the breath timer directly on landing (today lands at /feed?welcome=vera)\". The ADR also records why /feed was chosen (landing in the app reuses the tested rewards path), so the fix is a product call — deep-link to the timer, or stop promising an artifact in the copy — not a mechanical repoint.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const d=fs.readFileSync('lib/funnels/definitions.ts','utf8');const f=fs.readFileSync('app/join/(induction)/feature-funnel.tsx','utf8');const b=d.slice(d.indexOf('BREATHWORK_FEATURE_FUNNEL'));const dest=(b.match(/destination:\\\\s*\\\\{[^}]*\\\\}/)||[''])[0];const promises=/Free Timer|Keep my timer/.test(f);process.exit(!promises||/on-air/.test(dest)?0:1)\"",
+        "note": "Passes when the promise and the destination AGREE — either the copy stops offering a timer, or the funnel lands on the timer route. Deliberately does not prescribe which, because the ADR shows /feed was a considered choice."
+      }
+    },
+    {
+      "id": "LIVE-135",
+      "status": "open",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "docs/DECISIONS.md",
+        "ref": "Breathwork funnel flow audit, 2026-08-31"
+      },
+      "title": "Two help articles link the words \"open Mindless\" to the help page about Mindless, not to Mindless",
+      "detail": "PROVEN. content/help/find-your-people/how-to-calm-down-fast.md:55 and content/help/find-your-people/how-to-stop-doomscrolling.md:55 both read `[open Mindless](/help/the-quest/on-air)`. The label is an imperative to launch the tool; the href is a help article. The timer is at /on-air.\n\nIt fails silently because both routes resolve — a reader in the middle of a panic-attack article clicks \"open Mindless\" and gets prose. Note content/help/the-quest/movement.md:13 uses the SAME href correctly, because there the label is a noun reference rather than a command, so this is not a blanket find-and-replace.\n\nFound in the same sweep as LIVE-134, and it is the same defect class: a control that names the timer and does not reach it.",
+      "verify": {
+        "kind": "grep-absent",
+        "pattern": "\\[open Mindless\\]\\(/help/",
+        "paths": [
+          "content/help/find-your-people/how-to-calm-down-fast.md",
+          "content/help/find-your-people/how-to-stop-doomscrolling.md"
+        ]
+      }
+    },
+    {
+      "id": "LIVE-136",
+      "status": "open",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "docs/DECISIONS.md",
+        "ref": "Breathwork funnel flow audit, 2026-08-31"
+      },
+      "title": "/on-air is not a protected path, so signing in to reach the timer drops the timer",
+      "detail": "PROVEN. proxy.ts's PROTECTED_PATHS lists 17 prefixes and /on-air is not one of them. The proxy is what builds `/sign-in?next=<destination>` (the ADR-1082 re-measurement confirmed #2132 taught it to), so a route outside that list never gets a next=. /on-air therefore falls through to the page's own guard at app/(main)/on-air/page.tsx:26 — a bare `redirect('/sign-in')` with no next.\n\nConsequence: a signed-out person who taps the PWA shortcut labelled \"Mindless — Tune out: time your practice\" (public/manifest.json) or a \"Time to practice\" push (lib/practices/lifecycle.ts:311, lib/vera-dispatch.ts:156,171) signs in and lands on /feed, never reaching the timer they tapped. Same user-visible symptom as LIVE-134 by a second, independent route.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const s=require('fs').readFileSync('proxy.ts','utf8');const m=s.match(/PROTECTED_PATHS[^=]*=\\\\s*\\\\[([^\\\\]]*)\\\\]/);process.exit(m&&m[1].includes('/on-air')?0:1)\"",
+        "note": "Measures the consequence: the timer's own path is in the list the proxy uses to build next=, so the deep link survives a sign-in."
+      }
+    },
+    {
+      "id": "HYG-034",
+      "status": "open",
+      "lane": "hygiene",
+      "size": "XS",
+      "source": {
+        "file": "docs/DECISIONS.md",
+        "ref": "Breathwork funnel flow audit, 2026-08-31"
+      },
+      "title": "The two marketing pages that explain the Mindless timer offer no way to open it",
+      "detail": "PROVEN. lib/page-editor/templates/the-quest.ts:229-238 ships a MediaText block headed \"Mindless\" whose body reads \"Mindless is the timer you run a Practice on\" — with `ctaLabel: ''` and `ctaHref: ''`, so the page that introduces the timer has no door to it. lib/page-editor/templates/calm-down-fast.ts:102-103 is step 3 of a timeline, \"Let the timer hold the space… set a couple of minutes and let it count you down\", and the BuildTimeline step shape carries no href at all; every CTA on that page points at /discover/practices/pillar/body, /discover, /loneliness or /the-community.\n\nLow severity on its own — nothing is broken, a reader simply cannot act — but it is the third instance of the LIVE-134 pattern, and it is why a visitor told about a breathing timer ends up somewhere else no matter which door they use. ⚠️ Both pages render getPublishedData(SLUG) BEFORE the code template, so a published Puck document can override this copy; the probe reads the code template, which is what ships when no document exists.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const s=require('fs').readFileSync('lib/page-editor/templates/the-quest.ts','utf8');const i=s.indexOf(\\\"id: 'tq-mindless'\\\");if(i<0)process.exit(0);const end=s.indexOf('\\\\n    },', i);const seg=s.slice(i, end<0?s.length:end);process.exit(/ctaHref:\\\\s*'\\\\/[^']+'/.test(seg)?0:1)\"",
+        "note": "Scoped to the `tq-mindless` block by its own id, not a character window. 🔴 The first version of this probe read +/-900 chars around the body copy and passed on a NEIGHBOURING block's ctaHref — check:backlog rejected it as a row claiming OPEN whose probe said DONE, which is the second time this gate has caught a probe of mine measuring the wrong thing."
+      }
     }
   ]
 }

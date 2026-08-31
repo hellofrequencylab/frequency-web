@@ -162,3 +162,98 @@ describe('member-shell coverage', () => {
     expect(markdown).toContain('capture_shell')
   })
 })
+
+// ── THE REASON MUST NAME THE /admin ROLE FLOOR, NOT SEND THE READER AWAY ─────────────────────────
+//
+// 🔴 THE BUG (2026-08-31, off the pr-compare run on #2323). Seven operator routes went
+// unphotographed and the banner said: "A member session WAS available and the app-shell tests
+// still did not run. That is not the known blind spot; read the run log."
+//
+// It IS the known blind spot. `operatorDenialReason()` (surfaces.ts) exists for exactly this case
+// and names it: requireAdminFloor() bounces a signed-in non-staff viewer to /feed, so no operator
+// surface can be photographed with that account, and it cites backlog HYG-027. `reasonFor()` simply
+// never consulted it — the three branches above it only knew about a MISSING session — so the one
+// diagnostic sentence a reader gets pointed away from the row that explains it.
+//
+// ADR-949 again: the negative control is the assertion that matters. A reason that always blamed
+// the role floor would be the same defect wearing the other face.
+const OPERATORS = ['/admin', '/admin/library', '/admin/qr']
+
+function run(surface: string, status: 'ran' | 'skipped'): ShellObservation {
+  return { title: `visual · operator console › dawn-light › ${surface}`, surface, status }
+}
+
+describe('the reason tells the two blind spots apart', () => {
+  const base = {
+    baseURL: 'https://preview.example.vercel.app',
+    storageStateVar: '/tmp/state.json',
+    storageState: '/tmp/state.json',
+    specs: ['visual.spec.ts'],
+    spaceSlug: 'demo',
+    operatorSurfaces: OPERATORS,
+  }
+
+  it('🔴 names the /admin role floor and HYG-027 when ONLY operator routes are missing', () => {
+    const coverage = summarizeShellCoverage({
+      ...base,
+      surfaces: [...SURFACES, ...OPERATORS],
+      observations: [
+        ...ranRun(),
+        ...OPERATORS.map((s) => run(s, 'skipped')),
+      ],
+    })
+    expect(coverage.verdict).toBe('covered')
+    expect(coverage.unphotographed).toEqual(OPERATORS)
+    expect(coverage.reason).toContain('/admin role floor')
+    expect(coverage.reason).toContain('HYG-027')
+    // The sentence that was actively wrong must be gone in this case.
+    expect(coverage.reason).not.toContain('That is not the known blind spot')
+    // And the remedy has to be the ACTION, not "go read the log".
+    expect(coverage.remedy).toContain('web_role admin')
+  })
+
+  it('does NOT blame the role floor when a MEMBER surface is also missing', () => {
+    // The negative control. A member surface skipping is not explained by requireAdminFloor(), so
+    // the honest answer there is still "read the run log".
+    const coverage = summarizeShellCoverage({
+      ...base,
+      surfaces: [...SURFACES, ...OPERATORS],
+      observations: [
+        ...ranRun().map((o) => (o.surface === '/settings' ? { ...o, status: 'skipped' as const } : o)),
+        ...OPERATORS.map((s) => run(s, 'skipped')),
+      ],
+    })
+    expect(coverage.unphotographed).toContain('/settings')
+    expect(coverage.reason).not.toContain('HYG-027')
+    expect(coverage.reason).toContain('That is not the known blind spot')
+  })
+
+  it('does NOT blame the role floor when the run never collected an operator surface', () => {
+    // An a11y run carries the member shell and not the console. With no operator list, a skip has
+    // to fall through to the honest unknown rather than borrowing an explanation.
+    const coverage = summarizeShellCoverage({
+      ...base,
+      operatorSurfaces: [],
+      surfaces: SURFACES,
+      observations: ranRun().map((o) =>
+        o.surface === '/channels' ? { ...o, status: 'skipped' as const } : o,
+      ),
+    })
+    expect(coverage.reason).not.toContain('HYG-027')
+  })
+
+  it('still reports a MISSING session as the missing session, not as the role floor', () => {
+    // The three original branches must keep winning: no credential is a different problem with a
+    // different fix, and it is the one the reporter was built for.
+    const coverage = summarizeShellCoverage({
+      baseURL: 'https://preview.example.vercel.app',
+      surfaces: [...SURFACES, ...OPERATORS],
+      observations: [...skippedRun(), ...OPERATORS.map((s) => run(s, 'skipped'))],
+      operatorSurfaces: OPERATORS,
+      specs: ['visual.spec.ts'],
+      spaceSlug: 'demo',
+    })
+    expect(coverage.reason).toContain('PW_STORAGE_STATE is not set')
+    expect(coverage.reason).not.toContain('HYG-027')
+  })
+})

@@ -142,7 +142,12 @@ jobs:
           # live URL as `environment_url` on the deployment's `success` status. Poll for it:
           # the PR event fires before the build finishes.
           url=""
-          for attempt in $(seq 1 30); do
+          # 36 x 20s = 12 minutes, not 10. #2322 polled for 10 minutes, gave up, and reported
+          # SUCCESS at 17:12:01 — nine seconds after its own Vercel Preview check went green at
+          # 17:11:52. The build had not failed; the poll simply lost a race with it, and the
+          # visual suite never ran behind a green check. Two minutes of headroom is the cheap
+          # half of that fix; the classification below is the half that matters.
+          for attempt in $(seq 1 36); do
             for dep in $(gh api "repos/${REPO}/deployments?sha=${SHA}&per_page=100" --jq '.[].id' || true); do
               candidate=$(gh api "repos/${REPO}/deployments/${dep}/statuses?per_page=100" \
                 --jq 'map(select(.state=="success") | .environment_url // empty) | first // empty' || true)
@@ -154,17 +159,57 @@ jobs:
             if [ -n "${url}" ]; then
               break
             fi
-            echo "No successful deployment for ${SHA} yet (attempt ${attempt}/30); waiting 20s."
+            echo "No successful deployment for ${SHA} yet (attempt ${attempt}/36); waiting 20s."
             sleep 20
           done
 
           if [ -z "${url}" ]; then
+            # 🔴 A GREEN HERE IS ONLY HONEST WHEN THERE IS GENUINELY NOTHING TO TEST.
+            #
+            # The preflight job above already states this repo's rule: "a job that runs and takes
+            # no action reports `success`, which is indistinguishable from a job that ran and
+            # passed", and it fixed that for the missing-bypass-secret arm by SKIPPING the job.
+            # This arm was left green on the strength of three enumerated cases — a fork, a
+            # skipped build, or a build failure that Vercel's own check reports.
+            #
+            # #2322 was a FOURTH case nobody listed: the build SUCCEEDED and the deployment
+            # simply arrived after the poll window. There was no build failure for Vercel to
+            # report, so the justification did not hold, and pr-compare reported success having
+            # photographed nothing. That is the vacuous green preflight exists to prevent,
+            # reappearing one arm over.
+            #
+            # So classify the absence instead of assuming it is benign. A deployment still
+            # PENDING is a build in flight: we ran out of patience, we did not run out of work,
+            # and claiming success would be a lie. Anything else (no deployment at all, or a
+            # failed one) keeps the quiet green the three enumerated cases justify.
+            states=$(
+              for dep in $(gh api "repos/${REPO}/deployments?sha=${SHA}&per_page=100" --jq '.[].id' || true); do
+                gh api "repos/${REPO}/deployments/${dep}/statuses?per_page=100" --jq '.[].state' || true
+              done
+            )
+            if printf '%s\n' "${states}" | grep -qE '^(pending|queued|in_progress)$'; then
+              echo "::error title=Preview never resolved::A Vercel deployment for ${SHA} is still building after 12 minutes, so nothing was tested. This job fails rather than reporting a green it did not earn — re-run it once the preview is live."
+              {
+                echo "### e2e compare did NOT run"
+                echo
+                echo "A Vercel deployment for \`${SHA}\` was still building when the 12-minute poll"
+                echo "expired, so the visual suite never ran."
+                echo
+                echo "**This is a failure and not a skip on purpose.** The build did not fail, so"
+                echo "Vercel's own check will go green, and a green here too would be"
+                echo "indistinguishable from \"the visual suite passed\" — which is exactly how"
+                echo "#2322 merged with nothing photographed. Re-run this job once the preview is live."
+              } >> "$GITHUB_STEP_SUMMARY"
+              exit 1
+            fi
             echo "ready=false" >> "$GITHUB_OUTPUT"
-            echo "::notice title=Visual/a11y compare skipped::No successful Vercel deployment for ${SHA} after 10 minutes. Nothing was tested (the Vercel check reports build failures on its own)."
+            echo "::notice title=Visual/a11y compare skipped::No Vercel deployment for ${SHA} is building or live after 12 minutes. Nothing was tested (the Vercel check reports build failures on its own)."
             {
               echo "### e2e compare skipped"
               echo
-              echo "No successful Vercel deployment was found for \`${SHA}\` within 10 minutes."
+              echo "No successful Vercel deployment was found for \`${SHA}\` within 12 minutes, and"
+              echo "none is still building — so there is nothing to wait for: a fork, a skipped"
+              echo "build, or a build failure."
               echo "Build failures are reported by Vercel's own check; this job stays quiet rather"
               echo "than duplicating that signal as a false visual-regression failure."
             } >> "$GITHUB_STEP_SUMMARY"
@@ -357,7 +402,12 @@ jobs:
           # live URL as `environment_url` on the deployment's `success` status. Poll for it:
           # the PR event fires before the build finishes.
           url=""
-          for attempt in $(seq 1 30); do
+          # 36 x 20s = 12 minutes, not 10. #2322 polled for 10 minutes, gave up, and reported
+          # SUCCESS at 17:12:01 — nine seconds after its own Vercel Preview check went green at
+          # 17:11:52. The build had not failed; the poll simply lost a race with it, and the
+          # visual suite never ran behind a green check. Two minutes of headroom is the cheap
+          # half of that fix; the classification below is the half that matters.
+          for attempt in $(seq 1 36); do
             for dep in $(gh api "repos/${REPO}/deployments?sha=${SHA}&per_page=100" --jq '.[].id' || true); do
               candidate=$(gh api "repos/${REPO}/deployments/${dep}/statuses?per_page=100" \
                 --jq 'map(select(.state=="success") | .environment_url // empty) | first // empty' || true)
@@ -369,17 +419,57 @@ jobs:
             if [ -n "${url}" ]; then
               break
             fi
-            echo "No successful deployment for ${SHA} yet (attempt ${attempt}/30); waiting 20s."
+            echo "No successful deployment for ${SHA} yet (attempt ${attempt}/36); waiting 20s."
             sleep 20
           done
 
           if [ -z "${url}" ]; then
+            # 🔴 A GREEN HERE IS ONLY HONEST WHEN THERE IS GENUINELY NOTHING TO TEST.
+            #
+            # The preflight job above already states this repo's rule: "a job that runs and takes
+            # no action reports `success`, which is indistinguishable from a job that ran and
+            # passed", and it fixed that for the missing-bypass-secret arm by SKIPPING the job.
+            # This arm was left green on the strength of three enumerated cases — a fork, a
+            # skipped build, or a build failure that Vercel's own check reports.
+            #
+            # #2322 was a FOURTH case nobody listed: the build SUCCEEDED and the deployment
+            # simply arrived after the poll window. There was no build failure for Vercel to
+            # report, so the justification did not hold, and pr-compare reported success having
+            # photographed nothing. That is the vacuous green preflight exists to prevent,
+            # reappearing one arm over.
+            #
+            # So classify the absence instead of assuming it is benign. A deployment still
+            # PENDING is a build in flight: we ran out of patience, we did not run out of work,
+            # and claiming success would be a lie. Anything else (no deployment at all, or a
+            # failed one) keeps the quiet green the three enumerated cases justify.
+            states=$(
+              for dep in $(gh api "repos/${REPO}/deployments?sha=${SHA}&per_page=100" --jq '.[].id' || true); do
+                gh api "repos/${REPO}/deployments/${dep}/statuses?per_page=100" --jq '.[].state' || true
+              done
+            )
+            if printf '%s\n' "${states}" | grep -qE '^(pending|queued|in_progress)$'; then
+              echo "::error title=Preview never resolved::A Vercel deployment for ${SHA} is still building after 12 minutes, so nothing was tested. This job fails rather than reporting a green it did not earn — re-run it once the preview is live."
+              {
+                echo "### e2e compare did NOT run"
+                echo
+                echo "A Vercel deployment for \`${SHA}\` was still building when the 12-minute poll"
+                echo "expired, so the visual suite never ran."
+                echo
+                echo "**This is a failure and not a skip on purpose.** The build did not fail, so"
+                echo "Vercel's own check will go green, and a green here too would be"
+                echo "indistinguishable from \"the visual suite passed\" — which is exactly how"
+                echo "#2322 merged with nothing photographed. Re-run this job once the preview is live."
+              } >> "$GITHUB_STEP_SUMMARY"
+              exit 1
+            fi
             echo "ready=false" >> "$GITHUB_OUTPUT"
-            echo "::notice title=Visual/a11y compare skipped::No successful Vercel deployment for ${SHA} after 10 minutes. Nothing was tested (the Vercel check reports build failures on its own)."
+            echo "::notice title=Visual/a11y compare skipped::No Vercel deployment for ${SHA} is building or live after 12 minutes. Nothing was tested (the Vercel check reports build failures on its own)."
             {
               echo "### e2e compare skipped"
               echo
-              echo "No successful Vercel deployment was found for \`${SHA}\` within 10 minutes."
+              echo "No successful Vercel deployment was found for \`${SHA}\` within 12 minutes, and"
+              echo "none is still building — so there is nothing to wait for: a fork, a skipped"
+              echo "build, or a build failure."
               echo "Build failures are reported by Vercel's own check; this job stays quiet rather"
               echo "than duplicating that signal as a false visual-regression failure."
             } >> "$GITHUB_STEP_SUMMARY"

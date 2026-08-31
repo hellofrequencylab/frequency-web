@@ -56,6 +56,16 @@ export interface ShellCoverageInput {
   /** `PW_SPACE_SLUG`. Without it the Space console is not in the matrix AT ALL — a second,
    *  quieter absence than a skip, because there is no test row to notice missing. */
   spaceSlug?: string
+  /** The OPERATOR surface paths in this run's matrix, from `operatorSurfaces()`.
+   *
+   *  🔴 Why the reason needs this. An operator surface behind the /admin role floor skips for a
+   *  cause this repo has already NAMED and FILED — `operatorDenialReason()` in surfaces.ts, backlog
+   *  HYG-027: the account behind PW_MEMBER_EMAIL is a member, not staff, so requireAdminFloor()
+   *  bounces it to /feed. Without this list, `reasonFor()` could only see "a session existed and
+   *  things still skipped" and told the reader "That is not the known blind spot; read the run
+   *  log" — pointing away from the one row that explains it. Observed on the 2026-08-31 run that
+   *  named all seven operator routes under exactly that sentence. */
+  operatorSurfaces?: readonly string[]
 }
 
 /**
@@ -87,7 +97,18 @@ export interface ShellCoverage {
 
 const RUNBOOK = 'test/e2e/README.md § The member shell'
 
-function reasonFor(input: ShellCoverageInput): { reason: string; remedy: string } {
+/** Is every surface that went unphotographed an OPERATOR surface? Then the cause is not a
+ *  mystery — it is the /admin role floor, and it has a row. */
+function onlyOperatorsMissing(input: ShellCoverageInput, unphotographed: readonly string[]): boolean {
+  const operators = input.operatorSurfaces ?? []
+  if (operators.length === 0 || unphotographed.length === 0) return false
+  return unphotographed.every((path) => operators.includes(path))
+}
+
+function reasonFor(
+  input: ShellCoverageInput,
+  unphotographed: readonly string[] = [],
+): { reason: string; remedy: string } {
   if (!input.baseURL) {
     return {
       reason: 'PW_BASE_URL is not set, so NOTHING ran in this suite — the shell is only the loudest part of that.',
@@ -107,6 +128,17 @@ function reasonFor(input: ShellCoverageInput): { reason: string; remedy: string 
       remedy: `Re-mint it with \`pnpm e2e:session\` — the path is created fresh each run and is never committed. See ${RUNBOOK}.`,
     }
   }
+  if (onlyOperatorsMissing(input, unphotographed)) {
+    // The one case the old fall-through actively mis-described. Every missing surface is an
+    // operator route, which means requireAdminFloor() bounced the session to /feed — a known,
+    // named, already-filed account fact, not something to go hunting for in the run log.
+    return {
+      reason:
+        'Every unphotographed surface is an OPERATOR route, so the session bounced off the /admin role floor: the account behind PW_MEMBER_EMAIL is signed in but is not platform staff. This IS a known blind spot (backlog HYG-027), not a defect in this pull request.',
+      remedy:
+        'Give that account web_role admin (or a staff role that sees an admin group) and these captures start running — see backlog HYG-027.',
+    }
+  }
   return {
     reason:
       'A member session WAS available and the app-shell tests still did not run. That is not the known blind spot; read the run log.',
@@ -120,7 +152,7 @@ export function summarizeShellCoverage(input: ShellCoverageInput): ShellCoverage
   const skipped = observations.filter((o) => o.status === 'skipped')
   const photographed = input.surfaces.filter((path) => ran.some((o) => o.surface === path))
   const unphotographed = input.surfaces.filter((path) => !photographed.includes(path))
-  const { reason, remedy } = reasonFor(input)
+  const { reason, remedy } = reasonFor(input, unphotographed)
 
   const verdict: ShellVerdict =
     observations.length === 0 ? 'idle' : ran.length === 0 ? 'partial' : 'covered'
