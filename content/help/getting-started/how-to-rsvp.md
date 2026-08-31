@@ -26,8 +26,8 @@ Want the full details? Tap **View full event**.
 
 Sometimes the button is not there yet, or is gone. A Host can set dates for when
 RSVPs open and when they close, and the page says which it is. Closing RSVPs only
-stops new answers: if you already said you were going, you can still change or
-cancel yours.
+stops new answers: if you already said you were going, your own controls stay
+there and you can still change or cancel.
 
 ## What do my RSVP choices mean?
 
