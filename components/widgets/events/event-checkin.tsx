@@ -10,11 +10,10 @@ export const EventCheckin = async () => {
   const ctx = getEventContext()
   if (!ctx) return null
   if (ctx.event.is_cancelled) return null
-  // The host can turn check-in off entirely (events.theme.checkInEnabled) — a planning session or
-  // a private working block has no door to mark. Default is on, so nothing existing changes.
-  if (!ctx.checkInEnabled) return null
-  // Check-in is only meaningful while the event is actually happening.
-  if (!ctx.isPast || ctx.hasEnded) return null
+  // One flag carries both halves of "is there a door right now" (lib/events/active-event.ts): the
+  // host's switch, which a planning session or a private working block turns off, and the time
+  // window, which opens at the start and shuts four hours past the end.
+  if (!ctx.checkInOpen) return null
 
   return (
     <div className="@container rounded-2xl border border-primary/30 bg-primary-bg p-4">

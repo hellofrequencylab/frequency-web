@@ -5206,7 +5206,7 @@
       "detail": "Every event opened check-in the instant it started, whether or not the gathering had a door to mark. Added a per-event switch on the existing events.theme jsonb bag under checkInEnabled (lib/events/checkin-enabled.ts) - no column, no migration, same pattern as ADR-844's marketListed. Default ON and writing true deletes the key, so no existing event changes. Gates the detail page's check-in branches, the movable event-checkin block, the signed-out check-in door, AND the checkInEvent server action, so turning it off actually stops attendance being recorded and Zaps being paid rather than only hiding the button. Both theme-bag switches now merge onto one base in sequence so saving one cannot clobber the other.",
       "verify": {
         "kind": "cmd",
-        "cmd": "grep -q 'readEventCheckInEnabled(ev.theme)' 'app/(main)/events/actions.ts' && grep -q 'ctx.checkInEnabled' components/widgets/events/event-checkin.tsx",
+        "cmd": "grep -q 'readEventCheckInEnabled(ev.theme)' 'app/(main)/events/actions.ts' && grep -q 'ctx.checkInOpen' components/widgets/events/event-checkin.tsx",
         "note": "Passes only while the switch is enforced in the check-in ACTION and not merely in the page chrome."
       }
     },
@@ -5242,6 +5242,38 @@
         "kind": "manual",
         "evidence": "Closes when a PR's pr-compare completes green rather than timing out. Deliberately manual: the probe would have to run the visual suite against a preview with the bypass secret, which cannot be done from a unit-test process (ADR-970 - a gate that cannot fire honestly gets routed around).",
         "checked": "2026-08-29"
+      }
+    },
+    {
+      "id": "SCAN-528",
+      "title": "The host's RSVP booking window was written and displayed and enforced by nothing",
+      "status": "done",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "docs/DECISIONS.md",
+        "ref": "ADR-1174 — found by the events meta-scan, 2026-08-31"
+      },
+      "detail": "Event settings has carried \"RSVPs open at\" / \"RSVPs close at\" since the control shipped. Both values were saved to events.details.rsvpWindow (app/(main)/events/admin-actions.ts) and printed on the event page (components/widgets/events/event-when-where.tsx), and NOT ONE code path consulted them: a grep across app/lib/components outside the writer, the display and its tests returned zero hits. A host who closed RSVPs a week before the door went on collecting them while the page told readers the opposite. Four live events carried a window when this was found. Fixed by lib/events/rsvp-window.ts (pure, zone-aware, fails open on a malformed or backwards window) enforced in eventOpenForRsvp and every seat-taking path, in the page's member and guest branches, and in capture_guest_rsvp (migration 20270343000000) — the last of which is the one that counts, since that function is granted to anon and reachable over PostgREST directly. LEAVING is never gated: closing RSVPs stops new answers, it does not lock in the people who already answered.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "grep -q 'rsvpWindowStateFromDetails(ev.details, zone)' 'app/(main)/events/actions.ts' && grep -q 'v_closes is not null and now() >= v_closes' supabase/migrations/20270343000000_guest_rsvp_honours_the_booking_window.sql && grep -q 'rsvpWindowOpen' 'app/(main)/events/[slug]/page.tsx'"
+      }
+    },
+    {
+      "id": "SCAN-529",
+      "title": "Check-in had an opening bound and no closing one, so a finished event stayed payable forever",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "docs/DECISIONS.md",
+        "ref": "ADR-1175 — found by the events meta-scan, 2026-08-31"
+      },
+      "detail": "checkInEvent guarded only that the event had STARTED (isEventPast(starts_at, null, tz)) and nothing anywhere set an upper bound: not the action, not the page, not the QR door at app/q/[slug]/route.ts that routes through it. So every event a member had ever RSVP'd going to stayed checkable, and checking in to a gathering that ended in March still paid Zaps, ticked the attendance streak and counted toward verified-member standing. Attendance is a claim about a room someone stood in; a claim with no expiry is a button. Fixed by lib/events/checkin-window.ts: open from the start, shut 4 hours past ends_at (falling back to starts_at when the host set no end time), resolved in the event's own zone. The EventDetailContext flag was renamed checkInEnabled to checkInOpen so ONE flag carries both the host switch and the clock and no surface can honour one and forget the other.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "grep -q 'checkInWindowOpen(ev.starts_at, ev.ends_at, evCheckInTz)' 'app/(main)/events/actions.ts' && ! grep -q 'isEventPast(ev.starts_at, null' 'app/(main)/events/actions.ts' && grep -q 'ctx.checkInOpen' components/widgets/events/event-checkin.tsx"
       }
     }
   ]

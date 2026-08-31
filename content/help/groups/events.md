@@ -18,6 +18,7 @@ Events are the gatherings that make Frequency real: the in-person and online mee
 - Bringing people? On a "going" RSVP you can add **+1, +2 guests** so the host has an accurate headcount.
 - The event page shows **who's already going** (faces, the count, your guests, and anyone from your Circles) so you can see the room before you arrive.
 - Changed your plans? You can update your RSVP anytime, right up until the event ends. A gathering that has already started still takes an answer, so you can say you are coming to something running now, or withdraw from a session part way through.
+- **Hosts can set a window for answers.** Some events open RSVPs on a date, close them a few days before the door, or both. When a window is set and it is not open yet, the page says so instead of showing the RSVP button. Closing RSVPs only stops new answers: if you already said you were coming, you can still change or cancel it.
 - When you RSVP, we **email you a confirmation** with the details and a one-tap calendar link (and a quick note if you land on the waitlist), then nudge you again as the date nears.
 - Your upcoming events surface in your feed so they don't sneak up on you.
 - **No account needed.** Any public event takes an RSVP from a signed-out visitor: one email field, and a name if they want to give one. They get the same confirmation, the same reminders, and the same notice if you cancel. The moment they sign in with that address their RSVPs attach to their account, whether it is brand new or one they already had.
@@ -77,6 +78,8 @@ See a cool event poster around town, or one on Eventbrite or in a group chat? Ca
 When you **check in at the door** of an event you're going to, you earn your Zaps, keep your streak, and you also become a **verified member**: a small check appears by your name. Showing up in the real world is the truest sign you're a real person, so it's how verification works here. Nothing to upload, no form, just turn up.
 
 **How to check in.** Open the event page once the gathering has started and tap **Check in**. It appears there for anyone marked going, from the start time onward, so a late arrival can still check in. Once you have checked in the button reads **Checked In**, and tapping again changes nothing, so there is no way to count yourself twice.
+
+**Check-in closes a few hours after the event.** You have until four hours past the end time, so remembering in the car still counts. After that the button is gone and the event is done. If the host set no end time, the four hours run from the start.
 
 **You need an account to check in.** A guest who RSVPs by email holds a real spot, but check-in is tied to an account. Sign in with the address you used and your RSVP comes with you.
 
