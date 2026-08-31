@@ -33960,6 +33960,51 @@ small change here will always be another direct write.
 
 ---
 
+## ADR-1177: a nested corner is the outer radius minus the gap, and a gate now says so (2026-08-31)
+
+**Context.** The radius ladder in [DESIGN.md](DESIGN.md) is authored **by role** — `control` = 14px,
+`card` = 24px. That is right for siblings and wrong for nesting. Two rounded rectangles read as
+concentric only when the inner radius equals the outer radius minus the gap between them, so a
+`rounded-control` row sitting inside a `rounded-card` panel with `p-1` between them should be
+24 − 4.25 = **19.75px**. It was 14px: every inner corner **5.75px too square**.
+
+The 4.25 is not a typo for 4. This app sets `--density-root: 106.25%`, so `1rem` is **17px** and
+`p-1` is 4.25px — which is exactly why the fix is a token that derives the number rather than a
+number somebody measured once:
+
+```css
+--radius-control-nested: calc(var(--radius-card) - 0.25rem);
+```
+
+It tracks both the skin's card radius and the generation's density. Hardcoding 19.75px would be
+correct today and wrong on the first theme or density change.
+
+**Decision.** `rounded-control-nested` for a control inset one step inside a card; `rounded-control`
+stays correct for a control that is a card's **sibling** (a dropdown's trigger, a toggle beside a
+segmented control). Eight surfaces were converted: the event RSVP picker, the two Quest leaderboard
+segmented controls, the Airwaves section tabs, the connection-creator tabs, the events and Spaces
+sort menus, the facet dropdown, and the underline-tab overflow menu.
+
+**Consequences — and the part worth reading.** The obvious probe for this is a grep, and the obvious
+grep is wrong in both directions. `rounded-control px-3 py-1.5` (the string the backlog row first
+carried) matches three *sibling* controls that are already correct, so satisfying it would have meant
+breaking them. Nesting is the whole claim, so `scripts/check-nested-radius.mjs` measures nesting: a
+container carrying both `rounded-card` and `p-1`, and a bare `rounded-control` in its subtree.
+
+That guard printed a clean ✓ on its first run, and **a mutation sweep that reintroduced the defect at
+each of the 15 fixed sites showed 8 of them walking straight past it.** The cause was one assumption
+about where a JSX container ends: a multi-line tag closes its own `>` at the same indent as its `<`,
+so the subtree window terminated before it had seen a single child. A second arm was then needed for
+the container whose children are a local helper component (`<TabBtn/>`) rather than a tag. The sweep
+now stands as `scripts/check-nested-radius.test.ts`, and the guard is registered in
+`VITEST_ENFORCED` so vitest auto-discovery — not an array in `ci.yml` — is what keeps it running.
+
+This is the rule from [AGENTS.md](../AGENTS.md) landing again in miniature: a gate that has never
+been watched go red is not evidence of anything. The detector was carefully reasoned, ran clean, and
+was more than half blind.
+
+A helper imported from **another** module remains the declared blind spot; `resolveLocalComponent`
+says so in its own doc comment rather than leaving the coverage implied.
 ## ADR-1178: `truncate` on an inline link widens the page instead of shortening the text (2026-08-31)
 
 **Context.** `test/e2e/overflow.spec.ts` measured `/spaces/<slug>/manage` running **57px past a 390px

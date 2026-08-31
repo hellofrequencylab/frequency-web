@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { Suspense } from 'react'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
+import { IconLink } from '@/components/ui/icon-button'
 import { ClaimButton } from '@/app/events/claim/[token]/claim-button'
 import { ClaimRequestCta } from './claim-request-cta'
 import { HostRequestCta } from './host-request-cta'
@@ -21,7 +22,6 @@ import { ticketFromPriceCents, ticketsSoldOut } from '@/lib/commerce/ticket-proj
 import { toggleRSVP } from '../actions'
 import { EventCheckInButton } from './check-in-button'
 import { TicketButton, type TicketTierView } from './ticket-button'
-import { RsvpBottomBar } from './rsvp-bottom-bar'
 import { PosterBand } from '@/components/media/poster-band'
 import { getConnectStatus, payoutsLive } from '@/lib/billing/connect'
 import { hasTicket, recordTicketFromSessionId } from '@/lib/billing/tickets'
@@ -1640,23 +1640,6 @@ export default async function EventDetailPage({
     </div>
   )
 
-  // Whether the mobile bottom bar should appear (there's a real action to take). A host
-  // CAN RSVP to their own FREE event (so the bar shows), but never buys a ticket to it —
-  // so the host is excluded only on the paid path ("you're hosting, no ticket needed").
-  // While ticketing is off, a priced event rides the RSVP path (no "Get ticket" CTA).
-  const showBottomBar =
-    !event.is_cancelled && !hasEnded && (ticketsMode ? !isHost && !ownsTicket && !allTiersSoldOut : !!myProfileId)
-  const bottomBarLabel = ticketsMode
-    ? `Get ticket${hasTiers ? '' : ` · ${priceLabel}`}`
-    : isGoing
-      ? 'Going'
-      : capacityInfo.isFull
-        ? 'Join waitlist'
-        : 'RSVP'
-  const bottomBarStatus = ticketingActive
-    ? hasTiers ? 'Tickets' : priceLabel
-    : isGoing ? "You're going" : isWaitlisted ? 'On the waitlist' : isPaidEvent ? priceLabel : 'Free'
-
   // Stamp the resolved per-viewer context into the request-scoped holder so EVERY event interior
   // module (components/widgets/events/*) reads it without prop-drilling — then the single
   // <PageModules> renders them in the operator-arranged layout. The whole interior is module-driven
@@ -1858,12 +1841,26 @@ export default async function EventDetailPage({
             heightClass={posterHeightCls}
             focus={coverFocus}
             unoptimized={heroUrl !== coverUrl}
+            // FULL BLEED on a phone (owner, 2026-08-31): edge to edge, no gutter, no corners.
+            // `-mx-4` is the exact inverse of the shell's ONE horizontal gutter — `px-4` on the
+            // page row in app-shell.tsx — and `sm:mx-0` hands it back from 640px up. Both are
+            // rem-based so they cancel exactly at this app's 17px root, where a mismatched
+            // `-mx-6` over-pulls by 8.5px and bleeds into a horizontal scroll
+            // (lib/meta-scan-highs.test.ts records that exact mistake on the chat surfaces).
+            //
+            // 🔴 THE BLEED LIVES HERE AND NOT IN PosterBand, WHICH IS SHARED. The public twin at
+            // app/discover/events/[slug] renders the same component inside a `px-6 overflow-hidden`
+            // frame: a `-mx-4` baked into the band would under-pull by 8.5px there AND be clipped
+            // rather than bleed. Same reason it is not in DetailTemplate, whose hero slot has ten
+            // other callers.
+            className="-mx-4 w-auto sm:mx-0 sm:w-full"
+            radiusClass="rounded-none sm:rounded-2xl"
           />
         ) : (
           // No cover: a designed placeholder, not a blank box. Mirrors the
           // circle-card no-cover fill (soft DAWN gradient + centered icon) and
           // leads with the event's date so the slot still says something.
-          <div className={`relative flex ${posterHeightCls} w-full items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-primary-bg via-surface-elevated to-signal-bg text-primary-strong`}>
+          <div className={`-mx-4 sm:mx-0 relative flex ${posterHeightCls} w-full items-center justify-center overflow-hidden rounded-none sm:rounded-2xl bg-gradient-to-br from-primary-bg via-surface-elevated to-signal-bg text-primary-strong`}>
             <div className="flex flex-col items-center gap-1 text-center">
               <CalendarDays className="h-7 w-7 opacity-80" />
               <span className="text-display-h3 font-bold leading-none">
@@ -1907,7 +1904,20 @@ export default async function EventDetailPage({
       // Every viewer gets "QR & Share" (the public send-this-event control); operators/hosts
       // additionally get Edit (Settings drawer) then Manage (dashboard), stacked beneath it.
       actions={
-        <div className="flex flex-col items-stretch gap-2 sm:items-end">
+        // MICRO ACTION ROW on a phone (owner, 2026-08-31). This was `flex-col items-stretch`, so
+        // three full-width buttons stacked ~137px tall above the fold before any content — and
+        // `flex-col` was unconditional, so they stacked on desktop too and only right-aligned.
+        //
+        // Three LABELLED buttons cannot share a row here: at text-body-sm semibold they measure
+        // ~127 + ~125 + ~143px plus two gaps against a 359px content column at 393px. So the
+        // shape is the one the Space profile's mobile band already ships
+        // (app/(main)/spaces/[slug]/(profile)/layout.tsx): the control EVERY viewer gets keeps its
+        // words, and the two owner-only tools go icon-only with the label as their accessible name.
+        //
+        // Both use primitives that already exist — OpenAdminBarButton's own `iconOnly` prop and
+        // IconLink — rather than a hand-rolled `<button className="h-9 w-9">`, which would trip
+        // the `handrolled-icon-button` adoption ratchet and skip `tap-target` + the focus ring.
+        <div className="flex flex-wrap items-center gap-2 sm:justify-end">
           <EventShareButton
             slug={event.slug}
             title={event.title}
@@ -1922,15 +1932,37 @@ export default async function EventDetailPage({
           />
           {canManage && (
             <>
-              <OpenAdminBarButton
-                scope={{ kind: 'event', id: event.id }}
-                caps={Array.from(eventCaps)}
-                label="Edit event"
-                icon={<Settings className="h-4 w-4" />}
-              />
+              {/* Icon-only below sm, labelled from sm up — two renders rather than one, because
+                  `iconOnly` decides the accessible name and cannot be a breakpoint. */}
+              <span className="sm:hidden">
+                <OpenAdminBarButton
+                  scope={{ kind: 'event', id: event.id }}
+                  caps={Array.from(eventCaps)}
+                  label="Edit event"
+                  icon={<Settings className="h-4 w-4" />}
+                  iconOnly
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-control border border-border bg-surface text-text transition-colors hover:border-border-strong hover:bg-surface-elevated"
+                />
+              </span>
+              <span className="hidden sm:inline-flex">
+                <OpenAdminBarButton
+                  scope={{ kind: 'event', id: event.id }}
+                  caps={Array.from(eventCaps)}
+                  label="Edit event"
+                  icon={<Settings className="h-4 w-4" />}
+                />
+              </span>
+              <IconLink
+                href={`/events/${event.slug}/manage`}
+                label="Manage event"
+                variant="bordered"
+                className="sm:hidden"
+              >
+                <LayoutDashboard className="h-4 w-4" />
+              </IconLink>
               <Link
                 href={`/events/${event.slug}/manage`}
-                className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-2 text-body-sm font-semibold text-text transition-colors hover:border-border-strong hover:bg-surface-elevated"
+                className="hidden sm:inline-flex items-center justify-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-2 text-body-sm font-semibold text-text transition-colors hover:border-border-strong hover:bg-surface-elevated"
               >
                 <LayoutDashboard className="h-4 w-4 text-subtle" />
                 Manage event
@@ -2161,14 +2193,10 @@ export default async function EventDetailPage({
       //    order-first), so a guest still sees who's going + the facts before the conversation —
       //    the old mobile-only duplicate is gone (no double-render). ──
       interior={<PageModules route={`/events/${event.slug}`} />}
-      // MOBILE sticky action bar — hidden on lg+, hidden for host/past/cancelled.
-      actionBar={
-        showBottomBar ? (
-          <RsvpBottomBar primaryLabel={bottomBarLabel} statusLine={bottomBarStatus}>
-            {joinActions}
-          </RsvpBottomBar>
-        ) : null
-      }
+      // No mobile sticky action bar. It was a duplicate of the Join box the interior already
+      // renders — the SIDE column stacks first on a phone, so the RSVP control is the first thing
+      // under the header — and the bar cost the fixed lane plus a pb-24 reservation on every
+      // event page to say the same thing twice (owner, 2026-08-31).
     />
   )
 }

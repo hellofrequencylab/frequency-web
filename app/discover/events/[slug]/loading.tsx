@@ -13,7 +13,6 @@ export default function PublicEventDetailLoading() {
   return (
     <div className="relative overflow-hidden max-w-5xl mx-auto px-6 py-20 sm:py-24">
       <EventDetailTemplate
-        hasActionBar={false}
         back={{ href: '/discover/events', label: 'Events' }}
         title={<Skeleton className="h-9 w-2/3" />}
         identity={{

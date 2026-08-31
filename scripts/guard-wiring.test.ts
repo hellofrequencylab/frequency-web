@@ -180,6 +180,13 @@ const VITEST_ENFORCED: Record<string, string> = {
   // cross-checks both source parsers against the real TypeScript modules so a parser that stops
   // matching cannot turn the guard green.
   'check:module-reachability': 'scripts/check-module-reachability.test.ts',
+  // Added 2026-08-31 (HYG-035, ADR-1177). It walks app/ and components/ for a `rounded-card` +
+  // `p-1` container holding a bare `rounded-control` — a 14px corner nested inside a 24px one,
+  // which is 5.75px too square at this app's 17px root. Source-only, so vitest is its home by the
+  // rule above, and vitest auto-discovery is what makes it un-forgettable rather than an entry in
+  // an array. Its sibling test is the standing form of the mutation sweep that caught the FIRST
+  // version of the detector missing 8 of the 15 defects it had just been used to fix.
+  'check:nested-radius': 'scripts/check-nested-radius.test.ts',
   // Added 2026-08-31 (HYG-036, ADR-1178). It walks app/ and components/ for a <Link> whose
   // className carries `truncate` without an explicit display class — an inline <a> on which two
   // thirds of `truncate` do not apply and the surviving `white-space: nowrap` widens the

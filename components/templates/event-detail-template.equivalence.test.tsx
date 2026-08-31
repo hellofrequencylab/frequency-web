@@ -31,9 +31,15 @@ vi.mock('@/components/layout/page-admin-bar', () => ({
 const S = ({ id }: { id: string }) => <i data-slot={id} />
 
 // ── The "before": the page's own JSX skeleton at f92f1ae, leaves replaced by sentinels. ──────────
+//
+// ⚠️ AMENDED 2026-08-31 for the bottom bar's removal. The root was `pb-24 lg:pb-0` — space reserved
+// for a sticky mobile RSVP bar that no longer exists (it duplicated the Join box the interior
+// already renders). The reference tracks the shape the template is SUPPOSED to produce, so it moves
+// with a deliberate change; what it still guards is that the template and a hand-rolled page cannot
+// drift APART. The `actionBar` sentinel went with the slot.
 function Reference() {
   return (
-    <div className="pb-24 lg:pb-0">
+    <div>
       <S id="structuredData" />
       <S id="notice-cancelled" />
       <S id="notice-claimed" />
@@ -62,8 +68,6 @@ function Reference() {
         <S id="gallery" />
         <S id="interior" />
       </DetailTemplate>
-
-      <S id="actionBar" />
     </div>
   )
 }
@@ -97,7 +101,6 @@ function Subject() {
       bodyLead={<S id="bodyLead" />}
       gallery={<S id="gallery" />}
       interior={<S id="interior" />}
-      actionBar={<S id="actionBar" />}
     />
   )
 }
@@ -107,7 +110,7 @@ describe('EventDetailTemplate renders the photographed event page byte-identical
     const html = renderToStaticMarkup(<Reference />)
     expect(html.length).toBeGreaterThan(400)
     // Every slot actually reached the output, so the equality below is comparing a full page.
-    for (const id of ['cover', 'title', 'badges', 'actions', 'when', 'reward', 'interior', 'actionBar']) {
+    for (const id of ['cover', 'title', 'badges', 'actions', 'when', 'reward', 'interior']) {
       expect(html).toContain(`data-slot="${id}"`)
     }
   })
@@ -126,18 +129,21 @@ describe('EventDetailTemplate renders the photographed event page byte-identical
 })
 
 describe('a surface differs by an ABSENT SLOT, never a fork', () => {
-  it('drops the mobile bar reservation when there is no action bar (the public twin)', () => {
+  it('🔴 reserves NO bottom-bar space, because there is no bottom bar (owner, 2026-08-31)', () => {
+    // This used to assert that `hasActionBar={false}` DROPPED a `pb-24 lg:pb-0` reservation — the
+    // public twin opted out, and every in-app event page paid it. The bar is gone (it duplicated
+    // the Join box the interior already renders, and the SIDE column stacks first on a phone), so
+    // the reservation is gone with it and no surface has to opt out of anything.
     const html = renderToStaticMarkup(
-      <EventDetailTemplate hasActionBar={false} title={<S id="title" />} interiorMain={<S id="main" />} />,
+      <EventDetailTemplate title={<S id="title" />} interiorMain={<S id="main" />} />,
     )
     expect(html).not.toContain('pb-24')
     expect(html).toContain('data-slot="title"')
   })
 
-  it('renders no operator action column and no bottom bar when those slots are omitted', () => {
+  it('renders no operator action column when that slot is omitted', () => {
     const html = renderToStaticMarkup(<EventDetailTemplate title={<S id="title" />} />)
     expect(html).not.toContain('data-slot="actions"')
-    expect(html).not.toContain('data-slot="actionBar"')
     // No identity lines supplied -> no empty subtitle container carrying the subtitle margin.
     expect(html).not.toContain('space-y-1.5')
   })

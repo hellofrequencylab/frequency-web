@@ -14,7 +14,14 @@ import { EventDetailTemplate } from '@/components/templates/event-detail-templat
 export default function EventDetailLoading() {
   return (
     <EventDetailTemplate
-      cover={<Skeleton className="h-48 w-full rounded-2xl sm:h-64" />}
+      // Mirrors the live band exactly — full bleed and square-cornered on a phone, inset and
+      // rounded from sm up. A gutter-inset skeleton under a full-bleed cover makes the page jump
+      // sideways on hydration, the class of defect this file's header says it was rewritten to
+      // prevent.
+      // 🔴 The HEIGHTS were already wrong before the bleed: h-48/sm:h-64 is 204/272px against the
+      // live band's posterHeightClass('standard') = h-52/sm:h-[22rem] = 221/374px, so every event
+      // page jumped VERTICALLY on load too. Both halves fixed here.
+      cover={<Skeleton className="-mx-4 h-52 w-auto rounded-none sm:mx-0 sm:h-[22rem] sm:w-full sm:rounded-2xl" />}
       title={<Skeleton className="h-9 w-2/3" />}
       identity={{
         when: <Skeleton className="h-5 w-56" />,
