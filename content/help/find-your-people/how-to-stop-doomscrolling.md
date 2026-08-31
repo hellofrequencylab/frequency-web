@@ -52,7 +52,7 @@ nothing mystical.
 
 [See the Mind practices](/discover/practices/pillar/mind)
 
-When you want a clean replacement for the bedtime scroll, [open Mindless](/help/the-quest/on-air),
+When you want a clean replacement for the bedtime scroll, [open Mindless](/on-air),
 set two minutes, and let the timer hold the moment instead of the feed. And the bigger
 fix for the feed is the thing the feed was a poor substitute for: real people, in a
 room, on a regular night. [Find a Circle near you](/help/getting-started/join-a-circle).

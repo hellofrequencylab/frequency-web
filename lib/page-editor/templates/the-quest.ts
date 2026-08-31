@@ -232,8 +232,11 @@ export const data: Data = {
         side: 'right',
         imgAspect: 'portrait',
         focal: 'center',
-        ctaLabel: '',
-        ctaHref: '',
+        // The door to the thing this block describes (HYG-034). It shipped with both fields
+        // empty, so the page that introduces the timer was the one page you could not open it
+        // from — the same defect class as LIVE-134, one surface over.
+        ctaLabel: 'Open Mindless',
+        ctaHref: '/on-air',
         tone: 'canvas',
         width: 'default',
         align: 'left',

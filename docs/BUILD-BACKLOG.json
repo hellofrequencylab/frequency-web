@@ -5364,7 +5364,7 @@
     },
     {
       "id": "LIVE-133",
-      "status": "open",
+      "status": "done",
       "lane": "live",
       "size": "S",
       "source": {
@@ -5372,7 +5372,7 @@
         "ref": "mobile display-surface audit, 2026-08-31"
       },
       "title": "The public /discover event page renders no cover at all, while the in-app one leads with it",
-      "detail": "Found during the display-surface sweep. app/discover/events/[slug]/page.tsx composes EventDetailTemplate but passes no `cover` slot, so the public, crawlable event page opens on a back link and an H1 with no artwork — while app/(main)/events/[slug] leads with a full-width cover band. Same template, same event, two different first impressions, and the public one is the half a first-time visitor and a crawler see.\n\nMitigating context, which is why this is S and not M: that route's own comment names /events/<slug> as the canonical public URL and it sets a canonical link accordingly, so this is the secondary surface. It is still linked from /discover/events and still indexed.\n\nThe fix is now cheap — components/media/poster-band.tsx exists and takes a public URL, and the cover resolution is the same event-media getPublicUrl the in-app page already does.",
+      "detail": "Found during the display-surface sweep. app/discover/events/[slug]/page.tsx composes EventDetailTemplate but passes no `cover` slot, so the public, crawlable event page opens on a back link and an H1 with no artwork — while app/(main)/events/[slug] leads with a full-width cover band. Same template, same event, two different first impressions, and the public one is the half a first-time visitor and a crawler see.\n\nMitigating context, which is why this is S and not M: that route's own comment names /events/<slug> as the canonical public URL and it sets a canonical link accordingly, so this is the secondary surface. It is still linked from /discover/events and still indexed.\n\nThe fix is now cheap — components/media/poster-band.tsx exists and takes a public URL, and the cover resolution is the same event-media getPublicUrl the in-app page already does.\n\n── FIXED 2026-08-31, AND THE ROW'S OWN STATED FIX WAS WRONG. This said the fix was cheap because 'the cover resolution is the same event-media getPublicUrl the in-app page already does'. It is not: the in-app page uses the ADMIN client, and `public_event_by_slug` — the anon SECURITY DEFINER RPC behind getPublicEventBySlug — returns no cover column at all (verified against pg_proc). Adding one there is a DROP + CREATE on a function granted to `anon`, and it is the same function that before ADR-903 served private events to anonymous callers. That is a security-surface migration, not a cover change.\n\nWhat made it cheap by another route: app/discover/events/_data.ts ALREADY reads `events` directly with the anon client on this very page, so RLS is the gate. `cover_image_path` + `theme` ride along on a select the page was making anyway, `getPublicUrl` is pure string construction needing no privileges, and a row the read cannot see returns nothing here either — no migration, no widening of the anon surface. The page now renders the same PosterBand as the in-app one, so a poster shows whole on a phone here too.",
       "verify": {
         "kind": "grep-present",
         "pattern": "cover=",
@@ -5417,7 +5417,7 @@
     },
     {
       "id": "LIVE-135",
-      "status": "open",
+      "status": "done",
       "lane": "live",
       "size": "XS",
       "source": {
@@ -5425,7 +5425,7 @@
         "ref": "Breathwork funnel flow audit, 2026-08-31"
       },
       "title": "Two help articles link the words \"open Mindless\" to the help page about Mindless, not to Mindless",
-      "detail": "PROVEN. content/help/find-your-people/how-to-calm-down-fast.md:55 and content/help/find-your-people/how-to-stop-doomscrolling.md:55 both read `[open Mindless](/help/the-quest/on-air)`. The label is an imperative to launch the tool; the href is a help article. The timer is at /on-air.\n\nIt fails silently because both routes resolve — a reader in the middle of a panic-attack article clicks \"open Mindless\" and gets prose. Note content/help/the-quest/movement.md:13 uses the SAME href correctly, because there the label is a noun reference rather than a command, so this is not a blanket find-and-replace.\n\nFound in the same sweep as LIVE-134, and it is the same defect class: a control that names the timer and does not reach it.",
+      "detail": "PROVEN. content/help/find-your-people/how-to-calm-down-fast.md:55 and content/help/find-your-people/how-to-stop-doomscrolling.md:55 both read `[open Mindless](/help/the-quest/on-air)`. The label is an imperative to launch the tool; the href is a help article. The timer is at /on-air.\n\nIt fails silently because both routes resolve — a reader in the middle of a panic-attack article clicks \"open Mindless\" and gets prose. Note content/help/the-quest/movement.md:13 uses the SAME href correctly, because there the label is a noun reference rather than a command, so this is not a blanket find-and-replace.\n\nFound in the same sweep as LIVE-134, and it is the same defect class: a control that names the timer and does not reach it.\n\n── FIXED 2026-08-31. Both imperative links now point at /on-air. content/help/the-quest/movement.md was deliberately left alone: its label is a NOUN reference to the tool, so the help article is the right target there — the assertion in the fix script checks that it did not move, because a blanket find-and-replace was the obvious wrong fix. /on-air became a PROTECTED_PATH in LIVE-136, so a signed-out reader clicking through now signs in and lands on the timer rather than losing it.",
       "verify": {
         "kind": "grep-absent",
         "pattern": "\\[open Mindless\\]\\(/help/",
@@ -5454,7 +5454,7 @@
     },
     {
       "id": "HYG-034",
-      "status": "open",
+      "status": "done",
       "lane": "hygiene",
       "size": "XS",
       "source": {
@@ -5462,7 +5462,7 @@
         "ref": "Breathwork funnel flow audit, 2026-08-31"
       },
       "title": "The two marketing pages that explain the Mindless timer offer no way to open it",
-      "detail": "PROVEN. lib/page-editor/templates/the-quest.ts:229-238 ships a MediaText block headed \"Mindless\" whose body reads \"Mindless is the timer you run a Practice on\" — with `ctaLabel: ''` and `ctaHref: ''`, so the page that introduces the timer has no door to it. lib/page-editor/templates/calm-down-fast.ts:102-103 is step 3 of a timeline, \"Let the timer hold the space… set a couple of minutes and let it count you down\", and the BuildTimeline step shape carries no href at all; every CTA on that page points at /discover/practices/pillar/body, /discover, /loneliness or /the-community.\n\nLow severity on its own — nothing is broken, a reader simply cannot act — but it is the third instance of the LIVE-134 pattern, and it is why a visitor told about a breathing timer ends up somewhere else no matter which door they use. ⚠️ Both pages render getPublishedData(SLUG) BEFORE the code template, so a published Puck document can override this copy; the probe reads the code template, which is what ships when no document exists.",
+      "detail": "PROVEN. lib/page-editor/templates/the-quest.ts:229-238 ships a MediaText block headed \"Mindless\" whose body reads \"Mindless is the timer you run a Practice on\" — with `ctaLabel: ''` and `ctaHref: ''`, so the page that introduces the timer has no door to it. lib/page-editor/templates/calm-down-fast.ts:102-103 is step 3 of a timeline, \"Let the timer hold the space… set a couple of minutes and let it count you down\", and the BuildTimeline step shape carries no href at all; every CTA on that page points at /discover/practices/pillar/body, /discover, /loneliness or /the-community.\n\nLow severity on its own — nothing is broken, a reader simply cannot act — but it is the third instance of the LIVE-134 pattern, and it is why a visitor told about a breathing timer ends up somewhere else no matter which door they use. ⚠️ Both pages render getPublishedData(SLUG) BEFORE the code template, so a published Puck document can override this copy; the probe reads the code template, which is what ships when no document exists.\n\n── FIXED 2026-08-31. the-quest.ts's `tq-mindless` block gets ctaLabel 'Open Mindless' + ctaHref '/on-air'. calm-down-fast.ts needed a different shape: a BuildTimeline step carries no href, so the timer step now uses the entry-level `links` array the very next entry on that page already uses — a data row, not a new control. ⚠️ Unchanged and still true: both pages render getPublishedData(SLUG) BEFORE the code template, so a published Puck document can still override this copy.",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e \"const s=require('fs').readFileSync('lib/page-editor/templates/the-quest.ts','utf8');const i=s.indexOf(\\\"id: 'tq-mindless'\\\");if(i<0)process.exit(0);const end=s.indexOf('\\\\n    },', i);const seg=s.slice(i, end<0?s.length:end);process.exit(/ctaHref:\\\\s*'\\\\/[^']+'/.test(seg)?0:1)\"",
