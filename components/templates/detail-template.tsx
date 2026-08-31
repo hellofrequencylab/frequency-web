@@ -20,6 +20,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { ChevronLeft, ImageIcon } from 'lucide-react'
 import { PageAdminBar } from '@/components/layout/page-admin-bar'
+import { Breadcrumbs } from '@/components/layout/breadcrumbs'
 import { PageHero, type PageHeroSize, type HeroOverlayStyle } from './page-hero'
 
 export interface DetailTab {
@@ -39,6 +40,7 @@ export function DetailTemplate({
   badges,
   actions,
   back,
+  breadcrumb,
   band,
   tabs,
   stickyNav,
@@ -71,6 +73,18 @@ export function DetailTemplate({
   /** Back-link shown above the identity band (nested detail pages). The single
    *  back affordance — don't also hand-roll one in `actions`. */
   back?: { href: string; label: string }
+  /** The page's OWN breadcrumb trail, with the entity's REAL name (LIVE-132).
+   *
+   *  The shell's generic <Breadcrumbs /> derives its trail from the pathname and titleizes any
+   *  segment it does not recognise — which on a slug route is the slug, frozen at creation. A
+   *  renamed entity is then announced under its old name directly above an <h1> giving the new
+   *  one. A page that knows its title passes it here.
+   *
+   *  🔴 THIS DOES NOT SUPPRESS THE SHELL'S CRUMB BY ITSELF. The route must also be listed in
+   *  `ownsBreadcrumb` (lib/layout/page-chrome.ts) or the page renders TWO trails. The two halves
+   *  are deliberately separate: the shell cannot see this prop (it renders above `children`), so
+   *  the registry is the only thing both sides can read. */
+  breadcrumb?: { href: string; label: string }[]
   /** OPTIONAL self-contained identity band. When provided it REPLACES the default
    *  title/subtitle/badges/actions lockup (the entity profile passes its own hero
    *  CARD here, §A.4), while the back-link, tab row, and divider stay identical.
@@ -108,6 +122,10 @@ export function DetailTemplate({
 }) {
   return (
     <div>
+      {/* The page's own trail, with the entity's real name. Rendered FIRST so it sits exactly
+          where the shell's generic one would have — see the prop's note for why both halves are
+          needed. */}
+      {breadcrumb && breadcrumb.length > 0 && <Breadcrumbs trail={breadcrumb} />}
       {/* Cover at the very top of the header. A custom `hero` wins; otherwise the standard
           `coverImage` treatment renders when the prop is provided (image, or a neutral gradient
           placeholder for an explicit null). Omitting both leaves no cover. */}
