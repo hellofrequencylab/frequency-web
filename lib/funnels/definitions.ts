@@ -174,6 +174,18 @@ export interface FunnelGrant {
   /** A one-time Zap bonus for finishing this funnel (idempotent per profile+seq). The Feature
    *  funnels use this as the "join now, get N Zaps" incentive. */
   zaps?: number
+  /** A library Practice to ADOPT for the finisher, by slug.
+   *
+   *  🔴 WHY A FEATURE FUNNEL NEEDS THIS. `/on-air` renders "Nothing on your list yet — adopt a
+   *  practice first" for a member who holds none, so landing a breathwork finisher on the timer
+   *  without also giving them the practice lands them on an empty state. The two halves are one
+   *  change: the destination below and this grant.
+   *
+   *  A SLUG, NOT A UUID, because this file is pure data with no database access, and a uuid here
+   *  would be an unresolvable magic string that no reader could check. The slug is resolved at
+   *  completion (applyFunnelGrants), and a slug that matches nothing is a silent no-op rather
+   *  than a failed signup. */
+  practiceSlug?: string
 }
 
 /** Per-sequence grants, keyed by the ?seq slug. `randy` is the donor onboarding funnel: everyone who
@@ -182,7 +194,7 @@ export interface FunnelGrant {
  *  the advertised 25-Zap welcome bonus. */
 export const FUNNEL_GRANTS: Record<string, FunnelGrant> = {
   randy: { crew: true, founding: true },
-  breathwork: { zaps: 25 },
+  breathwork: { zaps: 25, practiceSlug: 'box-breath' },
 }
 
 /** The grant for a sequence slug, or undefined when the sequence confers nothing. PURE. */
@@ -273,8 +285,18 @@ const BREATHWORK_FEATURE_FUNNEL: Funnel = {
   },
   vera: VERA,
   heardAbout: [...HEARD_ABOUT],
-  // Finish in the app, ready to breathe for real (a real round = a real streak + Zaps).
-  destination: { mode: 'direct', url: '/feed?welcome=vera' },
+  // Finish ON THE TIMER, breathing for real — not on the feed.
+  //
+  // 🔴 THIS USED TO BE `/feed?welcome=vera`, and it is the whole of LIVE-134. The button that
+  // gets someone here says "Get a Free Timer"; landing them on the community feed is the
+  // "I tried to download it and it took me to something else" the owner was reported. The
+  // original ADR listed "a deep-link that opens the breath timer directly on landing (today
+  // lands at /feed?welcome=vera)" as an open follow-up — this is that follow-up.
+  //
+  // Bare `/on-air`, not `/on-air?practice=<id>`: this module is pure data with no DB access, so
+  // it cannot know the id. It does not need to — the `practiceSlug` grant above adopts the
+  // practice at completion, and with exactly one adopted practice the session loader opens it.
+  destination: { mode: 'direct', url: '/on-air' },
 }
 
 export const FUNNELS: Record<string, Funnel> = {

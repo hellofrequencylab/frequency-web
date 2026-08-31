@@ -19,9 +19,14 @@ describe('breathwork feature funnel — the wiring contract', () => {
     expect(pattern.phases).toHaveLength(4)
   })
 
-  it('lands the finisher in the app (a real round starts a real streak)', () => {
+  it('lands the finisher ON THE TIMER (a real round starts a real streak)', () => {
+    // 🔴 AMENDED for LIVE-134. This asserted `/feed?welcome=vera` — the destination the funnel
+    // shipped with, and the defect itself: the button says "Get a Free Timer" and the flow ended
+    // on the community feed. The test was not wrong about its INTENT ("a real round starts a real
+    // streak") — a real round is exactly what /on-air is for, and the feed was never where one
+    // could be taken. See the LIVE-134 block at the foot of this file for the other half.
     const seq = getFunnel('breathwork')
-    expect(seq.destination).toEqual({ mode: 'direct', url: '/feed?welcome=vera' })
+    expect(seq.destination).toEqual({ mode: 'direct', url: '/on-air' })
   })
 
   it('its marketing tag is registered, so signup attribution is not skipped', () => {
@@ -56,5 +61,44 @@ describe('funnel-styles registry — feature is live', () => {
   it('onboarding is still the default', () => {
     expect(funnelStyle(undefined).id).toBe('onboarding')
     expect(FUNNEL_STYLES.some((s) => s.id === 'demographic' && s.status === 'planned')).toBe(true)
+  })
+})
+
+// ── LIVE-134: THE FUNNEL MUST END ON THE TIMER, WITH SOMETHING TO RUN ───────────────────────────
+//
+// 🔴 THE BUG. The button that gets someone into this funnel says "Get a Free Timer"
+// (app/join/(induction)/feature-funnel.tsx:325) and the flow finished at `/feed?welcome=vera` —
+// the community feed. A person who asked for a breathwork timer landed on a social feed, which is
+// the "I tried to download it and it took me to something else" the owner was reported. The
+// original ADR listed the deep-link as an open follow-up and it was never taken.
+//
+// THE FIX IS TWO HALVES AND BOTH ARE ASSERTED HERE, because either alone is still broken:
+// app/(main)/on-air/page.tsx renders "Nothing on your list yet — adopt a practice first" when the
+// member holds no practices, so repointing the destination WITHOUT granting a practice swaps the
+// wrong landing for an emptier one.
+describe('LIVE-134 — the breathwork funnel finishes on the timer', () => {
+  it('lands on /on-air, and never back on the feed', () => {
+    const dest = getFunnel('breathwork').destination
+    expect(dest).toEqual({ mode: 'direct', url: '/on-air' })
+    // The exact string it must never return to.
+    expect(JSON.stringify(dest)).not.toContain('/feed')
+  })
+
+  it('🔴 and grants a practice, so the timer it lands on has something to run', () => {
+    expect(funnelGrant('breathwork')?.practiceSlug).toBe('box-breath')
+  })
+
+  it('grants the practice by SLUG, not a uuid — this module has no database', () => {
+    // A uuid here would be an unresolvable magic string no reader could check, and a renamed or
+    // re-created practice would silently point at nothing. The slug resolves at completion.
+    const slug = funnelGrant('breathwork')?.practiceSlug ?? ''
+    expect(slug).toMatch(/^[a-z0-9-]+$/)
+    expect(slug).not.toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-/i)
+  })
+
+  it('keeps the 25-Zap promise the funnel advertises', () => {
+    // A negative control on the edit above: repointing the destination must not have disturbed
+    // the grant that was already there.
+    expect(funnelGrant('breathwork')?.zaps).toBe(25)
   })
 })
