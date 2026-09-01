@@ -31,7 +31,11 @@ export function MarketingHeader({
   overHero?: boolean
   headerMenu?: ResolvedMenu
   menuTimings?: MenuSettings
-  /** When the viewer is signed in, the logo points into the app (/feed) instead of the splash. */
+  /** Whether the viewer is signed in. Three things follow it: the logo target (/feed instead
+   *  of the splash), the auth cluster (one "Your feed" button instead of Sign in + the join
+   *  CTA), and the phone sheet's footer. Leave it false and the header renders the visitor
+   *  view — correct for a crawler, and the safe default for a statically-rendered page that
+   *  upgrades via `detectClientAuth` after hydration. */
   isAuth?: boolean
   /**
    * Overrides the header CTA label (still routes to BETA_CTA_HREF). The home splash
@@ -44,9 +48,11 @@ export function MarketingHeader({
    * marketing layout sets this so it no longer needs a server `cookies()`/`getUser()` read —
    * that read opted every marketing page OUT of static/ISR rendering (it defeated their
    * `revalidate`). With this on, the page body prerenders statically and the header simply
-   * upgrades the logo link (→ /feed) + nav mode after hydration for a signed-in member. The
-   * only auth-dependent chrome here is the logo target + PrimaryNav mode (there is no account
-   * menu), so the static default (signed-out) is safe and never changes the page body / SEO.
+   * upgrades the auth-dependent chrome after hydration for a signed-in member. That chrome is
+   * the logo target, PrimaryNav mode, the auth cluster and the phone sheet's footer — all of it
+   * header-only (there is no account menu here), so the static default (signed-out) is safe and
+   * never changes the page body / SEO. It is also what a crawler indexes, which is right: the
+   * marketing pages are the signed-out view by definition.
    */
   detectClientAuth?: boolean
 }) {
@@ -149,32 +155,67 @@ export function MarketingHeader({
 
       <div className="flex-1" />
 
-      <Link
-        href="/sign-in"
-        className={`hidden shrink-0 sm:block text-body-sm font-semibold px-3 py-1.5 rounded-lg transition-colors ${
-          light
-            ? 'text-muted hover:text-text hover:bg-surface-elevated'
-            : 'text-on-ink-muted hover:text-on-ink hover:bg-on-ink/10'
-        }`}
-      >
-        Sign in
-      </Link>
-      <Link
-        href={BETA_CTA_HREF}
-        className={`shrink-0 rounded-lg px-3 py-1.5 text-body-sm font-bold transition-colors whitespace-nowrap sm:px-4 sm:py-2 ${
-          light
-            ? 'bg-primary text-on-primary hover:bg-primary-hover'
-            : 'bg-on-ink text-ink hover:bg-on-ink/90'
-        }`}
-      >
-        {ctaLabel}
-      </Link>
+      {/* ── THE AUTH CLUSTER FOLLOWS THE VIEWER ───────────────────────────────────────────
+          A member reading /about or /help was being offered "Sign in" and then invited to
+          join a beta they are already in — on every public page, because this pair was
+          hardcoded while the wordmark beside it had known the viewer since `authed` landed.
+          The sheet below has followed the viewer since LIVE-110; the bar had not, so the two
+          halves of one header disagreed about who was looking.
+
+          A member gets ONE control, and it is the same destination and the same words the
+          phone sheet already uses ("Your feed" → /feed) — this is not new copy, it is the
+          existing copy reaching the surface where most people read it.
+
+          🔴 BOTH BRANCHES KEEP THE FIT-CONTRACT CLASSES (`hidden shrink-0 sm:block` on the
+          secondary, `shrink-0 … whitespace-nowrap` on the primary). The wordmark is this
+          bar's only shrinkable child (see the long note above); an auth-dependent control
+          that forgot to pin itself would reintroduce the exact overflow header-fit.test.ts
+          exists to prevent, on the branch a signed-out visitor never sees. */}
+      {authed ? (
+        <Link
+          href="/feed"
+          className={`shrink-0 rounded-lg px-3 py-1.5 text-body-sm font-bold transition-colors whitespace-nowrap sm:px-4 sm:py-2 ${
+            light
+              ? 'bg-primary text-on-primary hover:bg-primary-hover'
+              : 'bg-on-ink text-ink hover:bg-on-ink/90'
+          }`}
+        >
+          Your feed
+        </Link>
+      ) : (
+        <>
+          <Link
+            href="/sign-in"
+            className={`hidden shrink-0 sm:block text-body-sm font-semibold px-3 py-1.5 rounded-lg transition-colors ${
+              light
+                ? 'text-muted hover:text-text hover:bg-surface-elevated'
+                : 'text-on-ink-muted hover:text-on-ink hover:bg-on-ink/10'
+            }`}
+          >
+            Sign in
+          </Link>
+          <Link
+            href={BETA_CTA_HREF}
+            className={`shrink-0 rounded-lg px-3 py-1.5 text-body-sm font-bold transition-colors whitespace-nowrap sm:px-4 sm:py-2 ${
+              light
+                ? 'bg-primary text-on-primary hover:bg-primary-hover'
+                : 'bg-on-ink text-ink hover:bg-on-ink/90'
+            }`}
+          >
+            {ctaLabel}
+          </Link>
+        </>
+      )}
 
       {/* Mobile nav (the desktop PrimaryNav is hidden below md). It takes the SAME
           `headerMenu` PrimaryNav takes: until 2026-08-24 it took only `light`, so the bar
           above rendered the DB-backed menu and the sheet rendered the code default, and an
-          operator's edit in the Menu manager reached the desktop and never a phone. */}
-      <MarketingMobileMenu light={light} headerMenu={headerMenu} />
+          operator's edit in the Menu manager reached the desktop and never a phone.
+          It also takes `isAuth` now: the sheet has drawn a member-aware footer ("Your feed"
+          instead of Sign in / Join) since LIVE-110, and this header was the one caller that
+          never passed the flag — so on a phone the sheet defaulted to `false` and offered a
+          signed-in member the logged-out pair regardless. */}
+      <MarketingMobileMenu light={light} headerMenu={headerMenu} isAuth={authed} />
     </header>
   )
 }

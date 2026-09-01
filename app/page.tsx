@@ -101,9 +101,15 @@ const EMPTY: Data = { content: [], root: {} }
 // `check:render-path` matches it EXACTLY, so a second top-level component here fails the build. New
 // marketing structure on this page belongs in a BLOCK (lib/page-editor/config.tsx).
 export default async function RootPage() {
-  // Home ("/") shows the marketing front door for EVERYONE, signed in or out (owner directive): a
-  // member's feed lives at /feed (reached from the in-app logo / Community). We still read `user`
-  // so the marketing header renders the signed-in chrome.
+  // Home ("/") is the marketing front door for a VISITOR. A signed-in member never reaches this
+  // component: proxy.ts redirects `/` to /feed for them (owner directive, 2026-09-01 — it reverses
+  // the previous "marketing for everyone" rule this comment used to state), and the redirect runs
+  // before the route is entered so the document below is never rendered for a member.
+  //
+  // We still read `user`, and it is not dead: `/?preview` is the page editor's "View home" door
+  // (app/(main)/pages/home/page.tsx) and the ONE way a signed-in operator gets here. On that path
+  // the header must render the member's chrome — logo into /feed, no "Sign in" — rather than
+  // telling the operator who just edited the page that they are a stranger to it.
   const supabase = await createClient()
   const {
     data: { user },

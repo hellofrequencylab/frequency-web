@@ -30,7 +30,14 @@ export default async function HelpLayout({ children }: { children: React.ReactNo
 
   return (
     <>
-      <MarketingHeader headerMenu={headerMenu} menuTimings={menuTimings} />
+      {/* `detectClientAuth`, for the same reason the (marketing) layout sets it: these pages are
+          statically generated (see the note above), so the server cannot read auth here without
+          force-dynamicking the whole help centre. Without the flag the header rendered the
+          logged-out cluster on every help page forever — a member reading /help/the-quest was
+          offered "Sign in" and then invited to join the beta they are in. The flag upgrades the
+          chrome after hydration and leaves the prerendered body (and what a crawler indexes)
+          exactly as it was. */}
+      <MarketingHeader headerMenu={headerMenu} menuTimings={menuTimings} detectClientAuth />
       {/* Spacer clears the now-taller fixed header (4rem + safe-area-inset-top); min-h-dvh
           tracks the iOS dynamic toolbar so landscape height doesn't glitch. */}
       {/* id="main" is the target of MarketingHeader's "Skip to content" link (WCAG 2.4.1);

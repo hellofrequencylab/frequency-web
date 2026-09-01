@@ -224,7 +224,13 @@ export default async function MainLayout({
     ])
     return (
       <>
-        <MarketingHeader headerMenu={headerMenu} menuTimings={menuTimings} isAuth={false} />
+        {/* `isAuth={!!user}`, not a hardcoded false. This chrome serves TWO viewers (see the note
+            above the branch): a signed-out visitor, and a signed-in member who has no profile row
+            yet or is mid-induction. The second one was being shown "Sign in" on a page they were
+            already signed in to read. `!!user` is the honest answer for both, and for the member
+            it points at /feed — which is where an incomplete session belongs anyway, since the
+            shell forwards it into onboarding from there. */}
+        <MarketingHeader headerMenu={headerMenu} menuTimings={menuTimings} isAuth={!!user} />
         {/* Spacer clears the now-taller fixed header (4rem + safe-area-inset-top). min-h-dvh
             (not screen) tracks the iOS dynamic toolbar so landscape height doesn't glitch. */}
         <main className="min-h-dvh bg-canvas" style={{ paddingTop: 'calc(4rem + env(safe-area-inset-top))' }}>

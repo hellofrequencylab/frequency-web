@@ -9,6 +9,7 @@ import {
 } from '@/lib/attribution/first-touch'
 import { isProfileRef } from '@/lib/qr/public-url'
 import { hasPublicTwin } from '@/lib/nav/public-twin'
+import { frontDoorRedirect } from '@/lib/nav/front-door'
 import { referralsEnabled } from '@/lib/platform-flags'
 import { isFunnelSplashPath } from '@/lib/funnels/definitions'
 
@@ -149,6 +150,55 @@ export async function proxy(request: NextRequest) {
         path: '/', maxAge: FIRST_TOUCH_MAX_AGE, sameSite: 'lax',
       })
     }
+  }
+
+  // ── THE FRONT DOOR FOLLOWS THE VIEWER (owner directive, 2026-09-01) ──────────────────────
+  // `/` is the marketing splash for a VISITOR and the feed for a MEMBER. This REVERSES the
+  // earlier rule ("the splash is the front door for everyone, signed in or out") that
+  // app/page.tsx used to state in its own comment — a signed-in member landing on the sales
+  // pitch for the product they already pay attention to is the clearest way to tell them the
+  // site does not know who they are.
+  //
+  // It lives HERE, not in app/page.tsx, for three reasons:
+  //   · a member never pays to render the whole marketing document just to be sent away —
+  //     the redirect happens before the route is entered at all;
+  //   · one rule covers web and phone together. The installed PWA's manifest `start_url` is
+  //     "/" (public/manifest.json), so opening the app from a home screen is the same request
+  //     a desktop browser makes, and both now open on the feed;
+  //   · the proxy already holds `user` from the getUser() above, so this costs no extra read.
+  //
+  // `?preview` is the ONE way through for a signed-in viewer, and it is not invented here: it
+  // is the href the page editor's "View home" button already uses
+  // (app/(main)/pages/home/page.tsx). An operator who cannot look at the front door they just
+  // edited cannot edit it.
+  //
+  // SIGNED-OUT IS UNTOUCHED. A visitor and a crawler still get the splash at `/`, so the
+  // indexable front door, its canonical, and its cacheability do not move.
+  //
+  // The DECISION is lib/nav/front-door.ts, not the `if` below, so it can be driven directly by
+  // front-door.test.ts. Nothing in this file is cheap to unit-test — it needs a NextRequest, a
+  // live Supabase client and a session cookie — and a routing rule that only the integration
+  // path can exercise is one nobody re-checks.
+  const frontDoor = frontDoorRedirect({
+    pathname,
+    signedIn: !!user,
+    preview: request.nextUrl.searchParams.has('preview'),
+  })
+  if (frontDoor) {
+    const feedUrl = request.nextUrl.clone()
+    feedUrl.pathname = frontDoor
+    // The query is DROPPED rather than inherited, for the same reason the /sign-in redirect
+    // below rebuilds its own: whatever rode in on the marketing front door (utm_*, ?ref) is
+    // campaign input the feed has no use for, and `?ref`/first-touch are anonymous-only paths
+    // that already ran above.
+    feedUrl.search = ''
+    const redirectResponse = NextResponse.redirect(feedUrl)
+    // Carry any freshly-rotated session cookies onto the redirect, exactly as the protected
+    // -path redirect does — dropping them here would sign the member out on their own front door.
+    supabaseResponse.cookies
+      .getAll()
+      .forEach((cookie) => redirectResponse.cookies.set(cookie))
+    return redirectResponse
   }
 
   // Calendar feed downloads (.ics) are intentionally shareable — anyone with
