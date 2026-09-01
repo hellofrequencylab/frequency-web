@@ -34210,12 +34210,28 @@ baked the bytes into the publicly-cached JPEG.
 *"The admin read bypasses RLS, so mirror the page body's visibility gate here."* The image route, in
 the same folder, reading the same table with the same client, had none.
 
-**Decision.** The card gates on `visibility === 'public' && status === 'published' && !removed_at`
-and otherwise returns an identity-free neutral card (the pattern
-`spaces/[slug]/opengraph-image.tsx` already used for private Spaces). Its venue line resolves through
+**Decision.** The card gates on **link-readability** — `(visibility === 'public' || 'unlisted') &&
+status === 'published' && !removed_at` — and otherwise returns an identity-free neutral card (the
+pattern `spaces/[slug]/opengraph-image.tsx` already used for private Spaces). Its venue line resolves through
 `publicVisibleLocation`, and the gate inputs are in the `select` — a rule whose inputs were never
 fetched reads `undefined` and silently never redacts. `is_cancelled` is deliberately **not** in the
 gate: a cancelled public event is still public, and the card's "Cancelled" chip exists to say so.
+
+🔴 **THE FIRST VERSION OF THIS GATE WAS WRONG, AND IT WOULD HAVE BROKEN THE CARD IT WAS WRITTEN TO
+PROTECT.** It read `visibility === 'public'` — copied from `generateMetadata` — which neutralises
+`unlisted`. That is the wrong rule, because the two surfaces answer different questions.
+`generateMetadata` decides **indexability**, and noindexing an unlisted event is right. This card
+decides whether the person who was *sent the link* may see it, which is **readability** — and
+`unlisted` exists precisely to be shared by link. `20260612000000_events_visibility_rls.sql` says it
+in words: *"unlisted → readable by anyone WITH THE LINK"*, and `page.tsx:587` `notFound()`s only
+`private` while `circle_only` requires membership.
+
+It was caught by querying production before merging rather than by reading the diff again: **the
+event this whole thread began with is `unlisted`**, so the gate would have replaced its poster card
+with a blank brand card — undoing [ADR-1179](#adr-1179) two hours after it shipped, on the one event
+the owner was watching. The lesson is narrow and repeatable: when a gate is copied from a sibling,
+check what question the sibling was answering. Both directions are now pinned by mutation — dropping
+`unlisted` fails, and widening to any visibility fails.
 
 **⚪ Not caused by ADR-1179, and worth stating because the shape invites the opposite conclusion.**
 That commit added `cover_image_path` to this select, so more events now render a photograph. Both

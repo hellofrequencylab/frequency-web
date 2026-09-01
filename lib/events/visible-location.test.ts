@@ -107,7 +107,12 @@ describe('every non-attending reader goes through the rule', () => {
     // AND the visibility gate, which is the other half: the read is service-role, so a private,
     // draft or removed event would otherwise render its identity to anyone who guessed a slug.
     // page.tsx's generateMetadata has always carried this; the image route had none.
+    // The gate mirrors the PAGE's readability rule (public OR unlisted are link-readable;
+    // 20260612000000_events_visibility_rls.sql), NOT generateMetadata's stricter indexability rule.
+    // Gating `unlisted` out would blank the preview for events whose whole distribution model is
+    // someone pasting the link — a regression dressed as a fix.
     expect(src).toMatch(/visibility === 'public'/)
+    expect(src).toMatch(/visibility === 'unlisted'/)
     expect(src).toMatch(/status.*'published'/)
     expect(src).toContain('removed_at')
     // ⚠️ Assert the CALL, not the declaration: `toContain('neutralCard()')` passes on the function

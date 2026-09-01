@@ -138,11 +138,22 @@ export default async function Image({ params }: { params: Promise<{ slug: string
   // none. The Space card does gate (spaces/[slug]/opengraph-image.tsx) and falls back to an
   // identity-free card, which is the pattern copied here.
   //
-  // ⚪ `is_cancelled` is deliberately NOT part of the gate. A cancelled PUBLIC event is still public,
-  // people have already shared its link, and the card has a "Cancelled" chip built for precisely that
-  // — telling a recipient it is off is the useful answer, not hiding it.
-  const isPublic =
-    ev?.visibility === 'public' && (ev?.status ?? 'published') === 'published' && !ev?.removed_at
+  // 🔴 THE GATE MIRRORS THE PAGE'S READABILITY RULE, NOT generateMetadata's INDEXABILITY RULE, and
+  // getting that backwards is a regression rather than a fix. `generateMetadata` noindexes anything
+  // that is not strictly `public` — correct for a CRAWLER. But this card's question is different: may
+  // the person who was SENT this link see it? `unlisted` exists precisely to be shared by link —
+  // 20260612000000_events_visibility_rls.sql says so in words, "unlisted → readable by anyone WITH
+  // THE LINK", and page.tsx:587 notFound()s only `private` while `circle_only` needs membership.
+  // Neutralising the card for `unlisted` would blank the share preview for the exact events whose
+  // whole distribution model is someone pasting the link. (Caught by checking production before
+  // merge: the event this whole thread began with is `unlisted`, so the first version of this gate
+  // would have broken the very card it was written to protect.)
+  //
+  // ⚪ `is_cancelled` is deliberately NOT part of the gate either. A cancelled public event is still
+  // public, people have already shared its link, and the card has a "Cancelled" chip built for
+  // precisely that — telling a recipient it is off is the useful answer, not hiding it.
+  const linkReadable = ev?.visibility === 'public' || ev?.visibility === 'unlisted'
+  const isPublic = linkReadable && (ev?.status ?? 'published') === 'published' && !ev?.removed_at
 
   if (!ev || !isPublic) {
     return neutralCard()
