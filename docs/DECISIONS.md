@@ -34542,3 +34542,83 @@ whose call is `statSync(join(ROOT, rel)).isDirectory()` — a `[^)]*` pattern ca
 paren, so the probe under-counted the worklist it exists to enumerate. The probe now strips comment
 lines and tolerates nesting, and has three controls: a real call fires, a comment quoting one does
 not, the nested form fires. Running it is what produced the true number.
+
+## ADR-1186: the select ⟶ cast relation is resolved through the AST, because text lies about it three ways (2026-09-01)
+
+`check-row-type-select-parity` ([ADR-1181](#adr-1181)) shipped pinned to two hand-listed pairs. It
+found the cast by scanning ~400 characters after each `.select()` for `as unknown as <Type>`.
+`HYG-039` asked for the general version, and warned that the obvious rule — *"all selects on the same
+table in one file must request the same columns"* — had already been measured at **346 files**, almost
+all of them legitimate, because a count query and a detail query on one table are supposed to differ.
+
+**The generalised regex was written and measured before the AST version, and it was also wrong.**
+Across `app/` + `lib/` it produced **13 failures, at least three of them pure artefact** — and the
+three are worth naming, because each is a different way the text layer misrepresents the code:
+
+| # | What the text says | What the code says |
+|---|---|---|
+| 1 | `hubs/admin-actions.ts :: Row` omits `id, name, slug, member_cap` | There are **two** `type Row`s, declared inside two different functions. Name-matching merges them. `nexuses/admin-actions.ts` is identical. |
+| 2 | `TicketRow` omits `amount_cents, qty` | `event-stats.ts` issues three selects on three tables inside one `Promise.all` and casts after the last. The lookahead credits that cast to all three, so `select('status')` on `event_rsvps` reads as a `TicketRow` branch. |
+| 3 | `ShareRow`, `VenueHoldRow`, `CollaborationRow`, `WalkthroughRow` omit **every** column | They `select('*')`. |
+
+So the walk resolves the type **name** through lexical scope, and admits a select ⟶ cast edge only
+when it can **prove** the flow: the select is syntactically inside the asserted expression, or the
+asserted expression names a local binding whose initializer contains it.
+
+⚪ **Optional keys are exempt, and that is half the rule.** `TopicalChannel.pillar_id` is declared
+`?: string | null`, and only the branch that filters on it selects it. A `?` is the type saying *may
+be absent*; a **required** key missing from one branch is the bug. Without the distinction the rule
+fires on correct code — and that, not the AST, is what separates this from the 346-file version.
+
+**Reading: 12 multi-select row types discovered, 0 findings**, both originally-bled pairs among them
+and correctly attributed (`CircleRow` with 4 feeding selects, `AdminEvent` with 2). 3.2s over ~3,100
+files, so it rides `pnpm test`.
+
+⚪ **What it deliberately does not claim.** A select whose result reaches its cast through more than
+one hop is outside the guard. It would rather miss an edge than invent one — the exact inversion of
+the rejected rule — and the corpus floor (≥8 pairs) is what notices if discovery collapses.
+
+**Six mutations were watched go red**, including the two real historical omissions. 🔴 **And the
+fifth was wrong the first time, in the way this repo keeps rediscovering:** scoping resolution to the
+source file's top level made the detector **blind** rather than file-wide, so the scope control saw
+no edges at all and its `toEqual([])` passed. A mutation that makes a guard blind does not test the
+guard — it tests nothing, and from the outside it is indistinguishable from a guard that works. The
+corrected mutation reproduces the documented artefact by name.
+
+## ADR-1187: the Space console overflow is closed by measurement, and its blocker had expired (2026-09-01)
+
+`HYG-037` recorded a `/spaces/<slug>/manage` console amputated **57px past a 390px phone** (87px past
+360), with the shell's `overflow-x-clip` meaning it does not scroll — it is simply cut off. The row
+carried a diagnosis and an applied fix, and stayed **open** with an explicit refusal to close on
+reasoning: *"This row has already carried one confidently-wrong attribution and the correction cost
+more than the bug, so it closes on a MEASURED overflow run and not before."*
+
+That was the right instinct and it still sat for a day, because the row said the measurement needed
+someone with a preview open. **It did not.** `e2e-manual.yml` is a dispatch-only maintainer workflow
+built for exactly this, and running it was one call:
+
+```
+e2e (manual) · run 33474947762 · base_url https://frequencylocal.com · main @ 639859398
+capture_shell = true   update_baselines = false   update_a11y = false     ← measures, commits nothing
+✓ 269  overflow › shell › /spaces/danieltyack/manage fits 320px @overflow @shell (6.9s)
+✓ 270  overflow › shell › /spaces/danieltyack/manage fits 360px @overflow @shell (23.9s)
+✓ 271  overflow › shell › /spaces/danieltyack/manage fits 390px @overflow @shell (6.4s)
+166 passed · 0 failed · 112 skipped (theme-matrix contrast variants)
+```
+
+⚠️ **The three cases RAN — that is the claim, not that the job was green.** The row's own text warns
+that a green job with its cases skipped is what a false close looks like, and this repo has the
+matching scar: a capture run that reported *"App shell covered: 4/4 surfaces"* while silently
+photographing nothing under seven `/admin` names ([ADR-1128](#adr-1128), `HYG-027`).
+
+**The diagnosis held.** A grid item defaults to `min-width: auto`; the rows inside carry `truncate`,
+whose `white-space: nowrap` makes min-content the whole string; below `lg` the container declared no
+`grid-template-columns`, so the single implicit track was sized by the longest event title rather than
+by the phone. `grid-cols-[minmax(0,1fr)]` at the **base** breakpoint puts the floor on the track, so a
+third section added later inherits it rather than needing its own `min-w-0`.
+
+🔴 **The transferable part is not the CSS.** It is that *"this needs someone to look at it"* is a
+claim with an expiry date, and the cheapest one in the backlog to get wrong —
+[ADR-1082](#adr-1082) recorded three rows in exactly this state and this is the fourth. The row was
+right to hold out for a measurement and wrong about how hard the measurement was, and only one of
+those two is worth keeping.
