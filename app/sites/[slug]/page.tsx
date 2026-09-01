@@ -58,7 +58,7 @@ export default async function SpaceWebsiteComingSoon({
           </p>
           <Link
             href={`/spaces/${space.slug}`}
-            className="mt-8 inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-body-sm font-bold text-on-primary transition-opacity hover:opacity-90"
+            className="mt-8 inline-flex items-center gap-2 rounded-control bg-primary px-5 py-3 text-body-sm font-bold text-on-primary transition-opacity hover:opacity-90"
           >
             Visit {brandName} on Frequency
             <ArrowRight className="h-4 w-4" aria-hidden />

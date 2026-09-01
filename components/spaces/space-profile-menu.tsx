@@ -57,8 +57,22 @@ export function SpaceProfileMenu({
     <>
       {/* The menu bar: pinned under the global header. A rule UNDER it (below the menu line), and none
           above it, over an opaque canvas backdrop so content scrolls cleanly beneath. */}
+      {/* ── THE BAR SCROLLS, AND NOW IT LOOKS LIKE IT DOES ────────────────────────────────────
+          The tabs are `whitespace-nowrap` with no width, so they overflow into the `overflow-x-auto`
+          scroller rather than wrapping or clipping — that part was always right. What was missing was
+          any SIGN of it. Mobile browsers hide the scrollbar at rest, so on a 360px phone a Space with
+          seven tabs (Home/Book/Events/Practices/Calendar/Circles/Reviews ≈ 536px) put roughly 210px of
+          its own navigation past the right edge with nothing to suggest it was reachable.
+          The fix is the gutter bleed: `-mx-4 px-4` (and the `sm:` pair) widens the scroller to the full
+          content column, so the last visible pill is cut by the VIEWPORT edge rather than stopping short
+          inside dead padding. A pill sliced mid-glyph at the screen edge is the cue; ending cleanly a
+          gutter early is what read as "that is the last tab". From `lg` the row always fits, so the
+          bleed is dropped (`lg:mx-0 lg:px-0`) and nothing about the desktop bar changes.
+          The native scrollbar is deliberately NOT hidden — on desktop it is the only affordance there
+          is, and suppressing it to look tidier would remove the very signal this note is about.
+          `overscroll-x-contain` stops a horizontal fling from turning into a browser back-swipe. */}
       <div className="sticky top-[calc(3.5rem+env(safe-area-inset-top))] z-20 border-b border-border bg-canvas shadow-[0_8px_10px_2px_var(--color-canvas)]">
-        <nav className="flex items-center gap-1 overflow-x-auto py-3 sm:py-2.5">
+        <nav className="-mx-4 flex items-center gap-1 overflow-x-auto overscroll-x-contain px-4 py-3 sm:-mx-6 sm:px-6 sm:py-2.5 lg:mx-0 lg:px-0">
           {tabs.map((tab) => {
             const active = isActive(tab)
             return (
@@ -72,8 +86,12 @@ export function SpaceProfileMenu({
               </Link>
             )
           })}
+          {/* `shrink-0`: the owner's console entry is the one item here that must never be the thing
+              that gives way. `ml-auto` still right-aligns it when the row FITS; when it overflows there
+              is no free space to distribute, so it simply follows the last tab inside the scroller —
+              correct, and now reachable because the bar reads as scrollable. */}
           {canManage && indexHref && (
-            <span className="ml-auto flex items-center gap-1 border-l border-border pl-2">
+            <span className="ml-auto flex shrink-0 items-center gap-1 border-l border-border pl-2">
               <Link
                 href={`${indexHref}?panel=manage`}
                 aria-current={manageActive ? 'page' : undefined}

@@ -569,7 +569,7 @@ and enforces the full contract below, including `bold`'s deliberate absence.
 | Body face | `--font-body` | the shared `[data-space-theme]` rule applies it to the whole subtree |
 | Card shape | `--radius-card` | `rounded-card` surfaces in the subtree (cards, CTA buttons, brand anchor) |
 | Control shape | `--radius-control` | `rounded-control` controls (tab pills, compact buttons); `playful` sets 9999px for pills |
-| Cover shape | `--radius-cover` | the cover media frame, `rounded-[var(--radius-cover,0.75rem)]` (fallback = today's look) |
+| ~~Cover shape~~ | `--radius-cover` | **No longer a theme knob (2026-09-01).** See the note below. |
 
 **Treatment, not family swap (ADR-893).** A family swap alone leaves Anton's caps styling on
 every face, so each non-`bold` theme also authors unlayered
@@ -578,11 +578,31 @@ per role. The three roles: `.font-display` (headlines), `.font-section` (cover t
 headers), `.font-eyebrow` (a bare marker class with no base rule; only per-theme rules give it
 effect). The per-theme typography table lives in ADR-893 and is pinned by the guardrail test.
 
+**🔴 `--radius-cover` is NOT a theme knob (owner directive, 2026-09-01 — [ADR-1192](DECISIONS.md)).**
+It shapes the two pieces of Space *identity media* — the cover photo and the `BrandAnchor` logo chip
+beside it — and those stay round on every theme: *"the cover photo and profile images should always be
+round for business Spaces; that's the look of that part of the site."* Every non-`bold` theme used to
+retune it (editorial 2px, classic 3px, playful 20px, accessible 8px, modern 14px), which left **13 of
+21 live Spaces with a near-square hero photo**. Those five overrides are gone; the token is now
+declared in exactly two places (the `:root` baseline and the shared pin), and
+[`space-themes.test.ts`](../lib/theme/space-themes.test.ts) fails if a third appears or if a theme
+block re-declares it. A theme still shapes everything *around* the media through `--radius-card` /
+`--radius-control`, so `editorial` still reads square where square is its character.
+
+Both consumers spell it `rounded-[var(--radius-cover,1.5rem)]`. ⚠️ **The fallback is `1.5rem`, not the
+`0.75rem` this table claimed until 2026-09-01** — that value predates [ADR-1169](DECISIONS.md), which
+gave the token a 24px `:root` baseline; the doc kept calling 12px "today's look" long after it stopped
+being any look at all.
+
 **The baseline pin (generation interplay).** The shared `[data-space-theme]` rule pins
-`--radius-card: 1rem; --radius-control: 0.5rem` because the skin + generation axes retune those
-tokens on app-shell ancestors: the pin makes the SPACE's chosen shape (not the viewer's feel
-preset) govern the profile subtree, and makes a `bold` Space resolve to exactly the baseline
-literals under every skin and generation.
+`--radius-card: 24px; --radius-control: 14px; --radius-cover: 24px` because the skin + generation axes
+retune those tokens on app-shell ancestors (from 15px to 42px): the pin makes the SPACE's chosen shape
+(not the viewer's feel preset) govern the profile subtree, and makes a `bold` Space resolve to exactly
+the baseline literals under every skin and generation. ⚠️ **The card/control values here read
+`1rem`/`0.5rem` until 2026-09-01** — Tailwind's stock steps, from before the DAWN port re-declared
+them, so this paragraph described a pin holding Spaces at a radius no literal in the codebase paints.
+The cover pin now carries the most weight of the three: with no theme re-tuning it, that line is the
+only thing standing between a Space's identity media and the viewer's own skin.
 
 **`bold` is enforced absence.** It authors font vars only: no radius, no `--font-heading`, no
 treatment rule anywhere. The guardrail test asserts that absence (the `skins.test.ts`

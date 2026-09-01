@@ -62,9 +62,16 @@ export default async function SpaceShopTabPage({ params }: { params: Promise<{ s
     items: items.filter((p) => marketGroupForKind(p.productKind) === g),
   })).filter((s) => s.items.length > 0)
 
+  // The one place this tab spells the Space identity-media radius; see BrandAnchor for the rule.
+  const COVER_RADIUS = 'rounded-[var(--radius-cover,1.5rem)]'
+
   // Optional storefront banner across the top of the tab, at its saved focal crop.
+  // SHAPE: the cover token, not the `rounded-2xl` literal that stood here. This is a full-width
+  // Space COVER — the same role as the profile hero it sits directly beneath — so it takes the same
+  // always-round treatment (owner, 2026-09-01). The literal made it a static 24px, which on an
+  // `editorial` Space put a 24px banner immediately under what was then a 2px hero.
   const banner = storefront.bannerUrl ? (
-    <div className="relative mb-8 aspect-[16/6] w-full overflow-hidden rounded-2xl bg-surface-elevated">
+    <div className={`relative mb-8 aspect-[16/6] w-full overflow-hidden ${COVER_RADIUS} bg-surface-elevated`}>
       <Image
         fill
         src={storefront.bannerUrl}

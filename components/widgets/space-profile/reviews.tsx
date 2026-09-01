@@ -25,7 +25,7 @@ export function ReviewsBlock({
     const rounded = Math.round(ratingNum)
     return (
       <ModuleSection anchor="reviews">
-        <div className="rounded-2xl border border-border bg-surface p-6">
+        <div className="rounded-card border border-border bg-surface p-6">
           {(header?.eyebrow || header?.heading) && (
             <div className="mb-4">
               {/* font-section / font-eyebrow: the page theme's per-role hooks (ADR-578); a computed

@@ -215,6 +215,18 @@
      baseline is the card radius: a cover is a big surface, and it should agree with the
      surfaces it sits above. Non-bold Space themes still retune it below. */
   --radius-cover:   24px;   /* = rounded-2xl, agrees with --radius-card */
+  /* 🔴 --radius-cover IS NOT A THEMED TOKEN, AND THAT IS A DIRECTIVE, NOT AN OVERSIGHT (owner,
+     2026-09-01). It shapes the two pieces of SPACE IDENTITY MEDIA — the cover photo and the brand
+     logo chip beside it — and those "should always be round for business Spaces; that's the look of
+     that part of the site". Every non-bold theme used to retune it (editorial 2px, classic 3px,
+     playful 20px, accessible 8px, modern 14px), which left 13 of 21 live Spaces with a near-square
+     hero photo: the owner reported it twice, once as "the spaces have square images" (ADR-1169,
+     which fixed a different cause — a missing baseline) and again on 2026-09-01 with two Spaces
+     side by side. Those five overrides are gone.
+     A theme still shapes everything ELSE in the subtree through --radius-card / --radius-control,
+     so `editorial` still reads square where square is its character: cards, buttons, chips, tabs.
+     space-themes.test.ts pins BOTH halves — that no theme block declares --radius-cover, and that
+     every one of them still declares the other two. */
 
   /* Motion durations — defaults match the current animation timings in this file
      (cue-pop ~260ms is the base interaction beat; faster/slower bracket it). The
@@ -1133,7 +1145,8 @@
    `--font-display` (read by `.font-display` + the design-block header default),
    `--font-body` (applied to the subtree below), and `--font-heading` (read by `.font-section`
    on the cover title + section headers), and retunes the shape feel tokens the kit consumes
-   (`--radius-card` / `--radius-control` / `--radius-cover`). The per-theme TYPE TREATMENT
+   (`--radius-card` / `--radius-control` — NOT `--radius-cover`, which is the Space's identity
+   media and stays round on every theme; see its note at the `:root` baseline). The per-theme TYPE TREATMENT
    rules after the blocks then retune weight, case, tracking, and leading per role — a family
    swap alone is not a theme (Fraunces rendered with Anton's caps styling reads like shouted
    Playfair, not "quiet and considered").
@@ -1148,9 +1161,15 @@
    :root baseline. The pin matters because SKIN + GENERATION blocks above retune
    `--radius-card`/`--radius-control` on app-shell ancestors: without it, kit surfaces inside a
    Space subtree that consume the tokens would follow the VIEWER's feel instead of the SPACE's
-   chosen shape. With it, a `bold` Space resolves to exactly today's literals (card 1rem,
-   control 0.5rem) under every skin and generation, and only a theme's own block below
-   (0-2-0, later in source) re-tunes the shape. For `bold` the body face is Nunito — the base
+   chosen shape. With it, a `bold` Space resolves to exactly today's literals (card 24px,
+   control 14px — NOT the 1rem/0.5rem this sentence claimed until 2026-09-01; those were
+   Tailwind's stock steps from before the DAWN port, and the pin had been holding Spaces at a
+   radius no literal in the codebase paints) under every skin and generation, and only a theme's
+   own block below (0-2-0, later in source) re-tunes the shape.
+   `--radius-cover` is pinned here too and re-tuned by NOTHING: the pin is now the ONLY thing
+   standing between the Space's identity media and the viewer's skin/generation, which retune
+   `--radius-card` from 15px to 42px. Remove it and a Space's cover would follow whoever is
+   looking at it rather than staying the round the owner asked for. For `bold` the body face is Nunito — the base
    default — so the font line is a no-op; the other themes swap the reading face. */
 [data-space-theme] {
   font-family: var(--font-body, var(--font-nunito)), system-ui, sans-serif;
@@ -1172,7 +1191,6 @@
   --font-body: var(--font-nunito);
   --radius-card: 2px;
   --radius-control: 2px;
-  --radius-cover: 2px;
 }
 
 /* classic — Playfair display over a PT Serif body, small radius. */
@@ -1182,7 +1200,6 @@
   --font-body: var(--font-pt-serif);
   --radius-card: 3px;
   --radius-control: 3px;
-  --radius-cover: 3px;
 }
 
 /* playful — a rounded Fredoka display, big corners + pill controls. */
@@ -1192,7 +1209,6 @@
   --font-body: var(--font-nunito);
   --radius-card: 20px;
   --radius-control: 9999px;
-  --radius-cover: 20px;
 }
 
 /* accessible — a clear Lexend display over the character-disambiguating Atkinson Hyperlegible body. */
@@ -1202,7 +1218,6 @@
   --font-body: var(--font-atkinson);
   --radius-card: 8px;
   --radius-control: 8px;
-  --radius-cover: 8px;
 }
 
 /* modern — a crisp geometric Lexend headline over friendly Nunito body, with soft even corners. */
@@ -1212,7 +1227,6 @@
   --font-body: var(--font-nunito);
   --radius-card: 14px;
   --radius-control: 10px;
-  --radius-cover: 14px;
 }
 
 /* ── Per-theme TYPE TREATMENT (the "Playful renders as Bold" fix) ─────────────
