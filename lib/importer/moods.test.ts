@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest'
+import { readFileSync } from 'node:fs'
 import {
   SEED_MOODS,
   DEFAULT_SEED_MOOD,
@@ -99,5 +100,47 @@ describe('seed moods', () => {
     const fallback = moodLook(null)
     expect(isSpaceThemeId(fallback.theme)).toBe(true)
     expect(isAccentKey(fallback.accent)).toBe(true)
+  })
+})
+
+// ── THE THEME WRITE IS GUARDED, AND THE GUARD HAS TO BE ABLE TO FIRE ─────────────────────────────
+//
+// `writeProfileDataAndLayout` wraps its `preferences.theme` write in `if (mood)` and documents it as
+// "only when a mood is given, so a re-run with no mood never disturbs an operator's chosen style".
+// That protection was inoperative from the day it was written: the sole caller passed
+// `normalizeSeedMood(row.inputs.mood)`, and `normalizeSeedMood` is TOTAL — it answers 'warm' for
+// undefined — so `mood` was unconditionally truthy and the guard could never be false. Every apply
+// and re-apply therefore wrote a theme, and an intake carrying no mood wrote `editorial` (warm's
+// theme, 2px corners) over whatever the operator had chosen. `adoptSpaceMasterProfile` builds its
+// inputs with no mood at all, so re-applying an adopted hand-made Space was exactly that case.
+//
+// These are source assertions because the guard lives in a function that needs a live Supabase
+// client to run, and the defect was never in the guard — it was in what the caller handed it.
+describe('the seed mood reaches the theme write UNNORMALIZED, so "no mood" stays no mood', () => {
+  const SRC = readFileSync(new URL('./materialize.ts', import.meta.url), 'utf8')
+
+  it('passes the raw value through a type guard, never through normalizeSeedMood', () => {
+    expect(SRC).toContain('mood: isSeedMood(row.inputs.mood) ? row.inputs.mood : undefined,')
+    expect(SRC).not.toContain('mood: normalizeSeedMood(')
+  })
+
+  it('still guards the write, so an absent mood cannot overwrite a chosen theme', () => {
+    expect(SRC).toMatch(/if \(mood\) \{[\s\S]{0,200}moodToSpaceTheme\(mood\)/)
+  })
+
+  // The property the guard depends on: absent must be falsy at the boundary, and normalizing must
+  // NOT be. If isSeedMood ever starts defaulting, the guard silently dies again.
+  it('isSeedMood rejects absent/unknown while normalizeSeedMood substitutes a default', () => {
+    expect(isSeedMood(undefined)).toBe(false)
+    expect(isSeedMood('nonsense')).toBe(false)
+    expect(isSeedMood('playful')).toBe(true)
+    expect(normalizeSeedMood(undefined)).toBe('warm')
+  })
+
+  // Normalization still has to happen SOMEWHERE, or a junk mood would reach the CSS as a theme id.
+  it('moodToSpaceTheme is still total, so the mapping itself never returns undefined', () => {
+    expect(moodToSpaceTheme(undefined)).toBe('editorial')
+    expect(moodToSpaceTheme('nonsense')).toBe('editorial')
+    expect(moodToSpaceTheme('playful')).toBe('playful')
   })
 })

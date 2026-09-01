@@ -48,7 +48,8 @@ import { withPageDoc, HOME_SLUG } from '@/lib/spaces/profile-pages'
 import type { EntityLayout } from '@/lib/entity-blocks/layout'
 import type { BusinessProfile, ProvenanceLedger } from './schema'
 import { buildPlan, type MaterializationPlan, type CommercialPolicy } from './map'
-import { moodToSpaceTheme, normalizeSeedMood, type SeedMood } from './moods'
+import { moodToSpaceTheme, type SeedMood } from './moods'
+import { isSeedMood } from '@/lib/studio/kernel/moods'
 import { DEFAULT_SPACE_THEME } from '@/lib/theme/space-themes'
 import { composeSiteHomeDoc } from './site-compose'
 import {
@@ -708,8 +709,20 @@ export async function applyIntake(
     },
     // LOCK LAYOUT (ADR-1038): honour the operator's "keep this arrangement" toggle on a re-apply.
     lockLayout: !!row.inputs.lockLayout,
-    // The seed mood drives the PAGE STYLE (task #21): map it to one of the five page themes on apply/re-apply.
-    mood: normalizeSeedMood(row.inputs.mood),
+    // The seed mood drives the PAGE STYLE (task #21): map it to one of the five page themes on
+    // apply/re-apply.
+    //
+    // 🔴 PASSED RAW, NOT NORMALIZED, AND THE DIFFERENCE IS THE WHOLE GUARD. writeProfileDataAndLayout
+    // wraps its theme write in `if (mood)` and documents it as "only when a mood is given, so a
+    // re-run with no mood never disturbs an operator's chosen style". `normalizeSeedMood` is TOTAL —
+    // it returns 'warm' for undefined — so normalizing here made `mood` unconditionally truthy and
+    // that guard could never be false. The documented protection did not exist: any apply or
+    // re-apply of an intake carrying no mood silently wrote `editorial` (warm's theme) over
+    // whatever the operator had chosen, and `adoptSpaceMasterProfile` builds its inputs with no
+    // mood at all, so re-applying an adopted hand-made Space was exactly that case.
+    // The normalization still happens — inside moodToSpaceTheme, which is where it belongs, because
+    // that is the function that must be total. Here, absent must stay absent.
+    mood: isSeedMood(row.inputs.mood) ? row.inputs.mood : undefined,
   })
   if (!result.ok || !result.spaceId) return result
 

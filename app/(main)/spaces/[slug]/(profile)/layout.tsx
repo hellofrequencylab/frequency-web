@@ -93,8 +93,12 @@ function ownerToolClasses(onInk: boolean): string {
 // A borderless, background-free ICON button for the compact mobile action band: just the glyph, no chip
 // or white card behind it, so QR + Edit Space take minimal width and the primary CTA gets the room (owner
 // ask). Square 40px tap target, muted glyph that fills in on press. Tokens only.
+// `rounded-control`, not the `rounded-lg` literal that stood here: these are CONTROLS, so the Space's
+// theme shapes them — the identical rule this file states 20 lines above for SM_BUTTON_GEOMETRY, and
+// the one place in the file that was not following it. On `editorial` the glyphs sat at 14px beside
+// 2px chips; on `playful` they stayed square next to pills. Both read as another theme leaking in.
 const ghostIconClasses =
-  'inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-muted transition-colors hover:bg-surface hover:text-text'
+  'inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-control text-muted transition-colors hover:bg-surface hover:text-text'
 
 export default async function SpaceProfileChromeLayout({
   children,
@@ -335,7 +339,14 @@ export default async function SpaceProfileChromeLayout({
   // above the identity on the cover. `sm:hidden` — desktop keeps the overlaid row.
   const mobileActionBand = (
     <div className="mt-4 flex items-center gap-2 sm:hidden">
-      <Link href={ctaHref} className={cn(primaryCtaButton(false), 'flex-1')} {...ctaLinkProps}>
+      {/* `min-w-0` is the half that makes `flex-1` mean anything. A flex item's default
+          `min-width: auto` floors it at its own min-content — its longest WORD — and the CTA label is
+          operator-typed with no length cap anywhere in the write path (lib/spaces/header-cta.ts
+          neither slices nor validates length). Without this, one long word stops the CTA shrinking
+          and shoves the two glyph buttons past the right edge of the shell, which is
+          `overflow-x-clip`: they are not clipped-but-scrollable, they are GONE. Same defect, same
+          fix, as the tab bar in header-fit.test.ts. */}
+      <Link href={ctaHref} className={cn(primaryCtaButton(false), 'min-w-0 flex-1')} {...ctaLinkProps}>
         {ctaLabel}
         <ArrowUpRight className="h-4 w-4" aria-hidden />
       </Link>
@@ -496,7 +507,14 @@ export default async function SpaceProfileChromeLayout({
             <div className="shrink-0">
               <BrandAnchor name={brandName} logoUrl={space.brandLogoUrl} />
             </div>
-            <div className="min-w-0 pb-1">{nameLockup(heroOnInk)}</div>
+            {/* `taglineHiddenOnMobile` — the second argument, which BOTH call sites used to omit, so
+                the parameter was dead and the behaviour the comment on it describes did not exist.
+                It matters because the overlay is `absolute bottom-0` inside a FIXED-HEIGHT
+                `overflow-hidden` box: every extra line of copy grows the block UPWARD and out
+                through the top of the cover, and the <h1> is the first thing to go. The tagline is
+                the biggest and most variable term (400 chars allowed = ~19 lines on a phone), so
+                below `lg` it moves out of the cover to its own row underneath. */}
+            <div className="min-w-0 pb-1">{nameLockup(heroOnInk, true)}</div>
           </div>
           <div className="hidden shrink-0 items-end sm:flex">{identityActions(heroOnInk)}</div>
         </div>
@@ -551,6 +569,12 @@ export default async function SpaceProfileChromeLayout({
       )}
       {/* Mobile-only white action card under the cover (both Hero and Header sizes). */}
       {mobileActionBand}
+      {/* The tagline's relocated home below `lg`, off the cover and on the page background (so
+          `onInk` is false here). `empty:hidden` collapses the row entirely for a Space with no
+          tagline and a visitor who gets no "add one" prompt, so nothing reserves space for it.
+          Hidden from `lg` up, where the lockup renders it inline under the name instead — the two
+          are exact complements, so the tagline is shown exactly once at every width. */}
+      {isHero && <div className="mt-3 empty:hidden lg:hidden">{taglineNode(false)}</div>}
     </div>
   )
 

@@ -34873,3 +34873,113 @@ there, and a sign-in form is the least useful thing a signed-in person can be sh
 validation is the same same-origin-absolute-path shape `/auth/callback` and `proxy.ts` already
 enforce, computed **once** and reused by the form, so the redirect and the hidden input cannot
 disagree about what a legal destination is.
+
+## ADR-1192: the Space cover was themed, so 13 of 21 Spaces had square photos — and the theme leaked the other way too (2026-09-01)
+
+The owner reported it with two Spaces side by side: Daniel Tyack's cover rounded, Morocco Bahja
+Tours' square. Both render the same component. The difference is one token.
+
+`--radius-cover` shapes the Space cover photo, and **every non-`bold` theme re-tuned it**:
+
+| theme | cover | live Spaces |
+|---|---|---|
+| `bold` (unset default) | 24px | 5 |
+| `playful` | 20px | 3 |
+| **`classic`** | **3px** | **5** |
+| **`editorial`** | **2px** | **8** |
+
+**13 of 21 (62%) rendered a near-square hero.** ⚪ **The ruling is that this is not a theme's
+business:** the cover and the `BrandAnchor` logo chip are Space *identity media*, and *"the cover
+photo and profile images should always be round for business Spaces — that's the look of that part of
+the site."* The five overrides are deleted. A theme still shapes the chrome (`--radius-card` /
+`--radius-control`), so `editorial` still reads square where square is its character.
+
+🔴 **This is the second report of "the spaces have square images", and the first fix was right about a
+different cause.** [ADR-1169](#adr-1169) found the token had no `:root` baseline at all, so even
+`bold` fell back to 12px. That was real and it was fixed. It never touched the two themes that square
+the cover *deliberately*, so the majority of Spaces were still square and the row read as closed.
+**A fix that resolves the reported symptom on the reporter's own example is not the same as a fix that
+resolves the symptom.**
+
+⚪ **`BrandAnchor` now rides `--radius-cover`, not `--radius-card`.** The chip agreed with the cover
+before only because all six themes happened to set the two tokens to the same value — coincidence, not
+contract, and decoupling the cover would have silently desynchronised them. One token, one fact.
+
+### The leak runs the other way too, and the owner saw that as well
+
+*"Make sure all styles are rendering in Editorial. Some seemed stuck in playful."* Nothing was stuck:
+Morocco's stored preferences contain no `playful`, `rounded` or `pill` value anywhere. What reads as
+another theme bleeding in is **hardcoded radius literals inside the themed subtree** — on a 2px page a
+frozen 24px card is indistinguishable from Playful leaking. Converted, all Space-scoped:
+
+| surface | was | now |
+|---|---|---|
+| shop storefront banner | `rounded-2xl` | cover token — it *is* a cover, directly under the hero |
+| `ghostIconClasses` (QR / Edit glyphs) | `rounded-lg` | `rounded-control` — the rule this same file states 20 lines above it |
+| space-profile team + reviews cards | `rounded-2xl` | `rounded-card` |
+| `/sites/[slug]` CTA | `rounded-xl` | `rounded-control` |
+
+🔴 **`content-block-view.tsx` is deliberately NOT converted**, and the reason is the point: its eight
+literals are the operator's own Image and Gallery blocks, so they are the most visible instance — but
+that file also renders member profiles (no theme) and **feeds `lib/email-studio/render.ts`**, where a
+CSS custom property does not resolve at all. A blanket swap there trades a visible inconsistency for a
+possible broken email. It stays open with its blast radius written down rather than half-done.
+
+### What the same pass found underneath
+
+⚠️ **The route skeleton had been drawing a retired layout since ADR-526.**
+`app/(main)/spaces/[slug]/loading.tsx` painted the **Header**-size cover (`h-40 sm:h-52`, brand chip
+hanging half off, `pt-14` band beneath) and called it "the default". ADR-526 reduced `readCoverSize()`
+to `return 'hero'` unconditionally, making that shape unreachable — while the file kept mirroring it.
+Every soft navigation into every Space painted 170px and snapped to 306px: **a 136px jump on a phone**,
+the avatar teleporting ~85px, a whole band evaporating, a mobile action row appearing from nowhere.
+It now mirrors the hero and takes its height from `coverHeightClass(COVER_HEIGHT_DEFAULT)` — the
+layout's own call, not a copy of its output. 🔴 It also cannot use the role tokens: a `loading.tsx`
+renders inside the layout *sharing its folder*, and `AccentScope` lives one level down in
+`(profile)/layout.tsx`, so `rounded-card` there resolves against the **viewer's** skin (15–42px), not
+the Space's. `--radius-cover` has no skin override, which is now the reason it is the only radius the
+skeleton may spell.
+
+⚠️ **`taglineHiddenOnMobile` was dead.** The hero identity is `absolute bottom-0` inside a
+fixed-height `overflow-hidden` box with no clamp on any text, so extra copy grows **upward** and out
+through the top — the `<h1>` first. The parameter that relocates the tagline below the cover existed,
+was commented at length as shipped behaviour, and **both call sites passed one argument**. Wired, plus
+the row it describes. The tagline field allows 400 chars ≈ 19 phone lines, so it was the dominant term.
+
+⚠️ **The phone CTA was `flex-1` with no `min-w-0`**, against a label with no length cap in any write
+path (`lib/spaces/header-cta.ts` neither slices nor validates length). `min-width: auto` floored it at
+its longest word and pushed the QR/Edit glyphs into the shell's `overflow-x-clip` — gone, not
+scrollable. Same defect and same fix as the tab bar in `header-fit.test.ts`.
+
+⚠️ **The tab bar scrolled with no sign that it did.** Seven tabs ≈ 536px against a 326px column put
+~210px of a Space's own navigation past the edge; mobile hides the scrollbar at rest. Fixed with a
+gutter bleed (`-mx-4 px-4`) so the last pill is cut by the **viewport** instead of ending in dead
+padding. The native scrollbar is deliberately **not** hidden — on desktop it is the only affordance
+there is.
+
+⚠️ **The seeder's mood guard could never fire.** `writeProfileDataAndLayout` wraps its theme write in
+`if (mood)`, documented as *"only when a mood is given, so a re-run with no mood never disturbs an
+operator's chosen style"*. The sole caller passed `normalizeSeedMood(row.inputs.mood)`, which is
+**total** — 'warm' for undefined — so `mood` was unconditionally truthy. The protection never existed:
+any apply of a mood-less intake wrote `editorial` over the operator's choice, and
+`adoptSpaceMasterProfile` builds its inputs with no mood at all. Now passed through `isSeedMood`, so
+absent stays absent; normalization still happens inside `moodToSpaceTheme`, which is where totality
+belongs.
+
+⚪ **Morocco itself was not this bug, and saying so matters.** Its intake reads `mood: playful` while
+its theme is `editorial`, which looks like the write path ignoring the operator — I chased it and
+could not prove it, because `preferences` carries no audit trail and neither table has an `updated_at`
+trigger. The owner supplied the answer: the mood was changed *after* applying, and changing a mood does
+not re-run the apply. The theme is simply stale. Recording it because the forensic dead end is the
+useful part — the DB cannot answer "who wrote this and when" for `spaces.preferences`, and two separate
+investigations have now wanted it to.
+
+### What is still open
+
+Not fixed here, and each is its own change: `manage` / `settings` / `crm` / `marketing` and the
+**public, sitemap-listed** `podcasts` subtrees render outside any `AccentScope` (so "Open full page"
+changes the design of a byte-identical component); the OG card hardcodes `borderRadius: 28`, matching
+no theme, under a header claiming it "mirrors the on-page hero"; `AccentScope`'s `theme` prop is typed
+`string` rather than `SpaceThemeId`, so a typo renders a live attribute matching no CSS block; and
+**nothing guards any of it** — no check asserts a Space route renders `AccentScope`, and
+`test/e2e/overflow.spec.ts` covers `/spaces/<slug>/manage` but not the public profile.

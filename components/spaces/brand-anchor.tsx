@@ -14,10 +14,14 @@ import { getInitials, cn } from '@/lib/utils'
 //     of either polarity stays visible in BOTH modes. The halo has no effect on an opaque photo.
 // Fail-safe: an unknown or extensionless URL takes the logo path (contain — never crops), and a missing logo
 // renders the neutral initials chip, never a crash. Query strings (?t=…) are tolerated.
-// `rounded-card` (was rounded-2xl): the Space page theme shapes the chip (ADR-578). NOT
-// value-identical against this repo's ladder — the 2026-08-04 port moved rounded-2xl to 24px
-// while --radius-card stayed 1rem. The [data-space-theme] baseline pin is what keeps `bold`
-// at exactly today's radius.
+// SHAPE: `rounded-[var(--radius-cover,1.5rem)]`, the SAME token the cover photo beside it uses —
+// not `--radius-card`. The chip and the cover are the two pieces of Space IDENTITY MEDIA, and the
+// owner's directive (2026-09-01) is that both "should always be round for business Spaces". Riding
+// the cover token is what makes that one fact instead of two that have to be kept in step: it used
+// to be `rounded-card`, which agreed with the cover only because all six themes happened to set
+// --radius-card and --radius-cover to the same value. That was coincidence, not contract, and the
+// change that decoupled the cover from the theme would have silently desynchronised them.
+// A theme still shapes everything else around it (cards, buttons, tabs) via --radius-card/-control.
 export function BrandAnchor({ name, logoUrl }: { name: string; logoUrl: string | null }) {
   if (logoUrl) {
     const isOpaquePhoto = /\.(jpe?g|jfif)(\?|$)/i.test(logoUrl)
@@ -27,7 +31,7 @@ export function BrandAnchor({ name, logoUrl }: { name: string; logoUrl: string |
         src={logoUrl}
         alt=""
         className={cn(
-          'h-20 w-20 shrink-0 rounded-card border-4 border-surface bg-surface lift-1 lg:h-28 lg:w-28',
+          'h-20 w-20 shrink-0 rounded-[var(--radius-cover,1.5rem)] border-4 border-surface bg-surface lift-1 lg:h-28 lg:w-28',
           isOpaquePhoto
             ? 'object-cover'
             : 'object-contain [filter:drop-shadow(0_0_1px_var(--color-ink))] dark:[filter:drop-shadow(0_0_1px_var(--color-on-ink))]',
@@ -37,7 +41,7 @@ export function BrandAnchor({ name, logoUrl }: { name: string; logoUrl: string |
   }
   return (
     <span
-      className="flex h-20 w-20 shrink-0 items-center justify-center rounded-card border-4 border-surface bg-surface-elevated text-page-title font-bold text-subtle lift-1 lg:h-28 lg:w-28 lg:text-3xl"
+      className="flex h-20 w-20 shrink-0 items-center justify-center rounded-[var(--radius-cover,1.5rem)] border-4 border-surface bg-surface-elevated text-page-title font-bold text-subtle lift-1 lg:h-28 lg:w-28 lg:text-3xl"
       aria-hidden
     >
       {getInitials(name)}

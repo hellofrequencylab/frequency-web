@@ -155,11 +155,21 @@ describe('space-theme knob totality (every non-bold theme is a full treatment, n
         expect(roleRule(t.id, 'eyebrow')).not.toBe('')
       })
 
-      it('sets all three shape tokens (--radius-card / --radius-control / --radius-cover)', () => {
+      it('sets the two CHROME shape tokens (--radius-card / --radius-control)', () => {
         const block = themeBlock(t.id)
         expect(block).toMatch(/--radius-card:/)
         expect(block).toMatch(/--radius-control:/)
-        expect(block).toMatch(/--radius-cover:/)
+      })
+
+      // 🔴 THE OTHER HALF, AND THE ONE THAT IS A DIRECTIVE. Until 2026-09-01 every theme here also
+      // set `--radius-cover`, which shapes the Space's COVER PHOTO and the brand logo chip beside
+      // it: editorial 2px, classic 3px. That left 13 of 21 live Spaces with a near-square hero, and
+      // the owner reported it twice. The ruling is that the Space's identity MEDIA "should always be
+      // round for business Spaces" whatever the theme, while the theme keeps shaping the chrome
+      // around it. So this is not "the token happens to be absent" — an added override is a
+      // regression, and this assertion is what says so.
+      it('does NOT set --radius-cover: the cover + logo stay round on every theme', () => {
+        expect(themeBlock(t.id)).not.toMatch(/--radius-cover:/)
       })
     })
   }
@@ -193,6 +203,16 @@ describe('bold byte-identity pins (the default authors NOTHING beyond its font a
     expect(shared).toMatch(/font-family:\s*var\(--font-body/)
     expect(shared).toMatch(/--radius-card:\s*24px/)
     expect(shared).toMatch(/--radius-control:\s*14px/)
+    // The cover pin carries more weight than the other two now that no theme re-tunes it: the skin
+    // and generation axes retune --radius-card from 15px to 42px on app-shell ancestors, so without
+    // this line a Space's cover would follow whoever is LOOKING at it.
+    expect(shared).toMatch(/--radius-cover:\s*24px/)
+  })
+
+  it('--radius-cover is declared in exactly two places: the :root baseline and that pin', () => {
+    // A third declaration means someone re-themed the cover. Counting is the cheapest way to say
+    // "this token is not a knob" and have it stay true.
+    expect(globalsCss.match(/^\s*--radius-cover:/gm) ?? []).toHaveLength(2)
   })
 })
 
