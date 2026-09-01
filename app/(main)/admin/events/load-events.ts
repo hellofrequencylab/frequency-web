@@ -49,7 +49,7 @@ export async function getEventsAdminData(profileId: string) {
   const { data: directHosted } = await admin
     .from('events')
     .select(
-      `id, title, slug, starts_at, ends_at, location, is_cancelled,
+      `id, title, slug, starts_at, ends_at, location, is_cancelled, featured_at,
        host:profiles!host_id ( display_name )`,
     )
     .eq('host_id', profileId)

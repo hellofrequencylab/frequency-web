@@ -1,5 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { resolveEventHeroUrl } from '@/lib/events/hero-url'
+import { publicVisibleLocation } from '@/lib/events/visible-location'
 import { readEventCoverFocus } from '@/lib/events/cover-focus'
 import type { EventDetailsWithMedia } from '@/lib/events/details-media'
 import { fetchRemoteImage } from '@/lib/og/remote-image'
@@ -38,12 +39,62 @@ export const contentType = OG_CONTENT_TYPE
 // near-black ground, white display type.
 const INDIGO = '#6366f1'
 
+// The card a NON-PUBLIC event gets: brand ground, the events accent bar, and the words "An event on
+// Frequency" — no title, no date, no venue, no host. Identity-free by construction, so a shared link
+// to a private, draft or removed event reveals nothing through its image. Built-in font only, so it
+// can never slow or fail a crawl. Mirrors the Space card's private branch.
+function neutralCard() {
+  return cardResponse(
+    (
+      <div
+        style={{
+          width: '100%',
+          height: '100%',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'space-between',
+          padding: 72,
+          backgroundImage: 'linear-gradient(180deg, rgba(13,13,18,1) 0%, rgba(23,21,38,1) 100%)',
+          color: '#ffffff',
+          fontFamily: 'sans-serif',
+        }}
+      >
+        <div style={{ display: 'flex', fontSize: 28, fontWeight: 700, letterSpacing: '0.32em', color: 'rgba(255,255,255,0.85)' }}>
+          {SITE_NAME.toUpperCase()}
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
+          <div style={{ width: 84, height: 8, borderRadius: 9999, backgroundColor: INDIGO, marginBottom: 28 }} />
+          <div style={{ display: 'flex', fontSize: 68, fontWeight: 800, lineHeight: 1.12, letterSpacing: '-0.02em', maxWidth: 1040 }}>
+            An event on {SITE_NAME}
+          </div>
+        </div>
+        <div style={{ display: 'flex', fontSize: 26, color: 'rgba(255,255,255,0.72)' }}>
+          A community gathering
+        </div>
+      </div>
+    ),
+    size,
+  )
+}
+
 type Row = {
   title: string | null
   starts_at: string | null
-  location: string | null
   attendance_mode: string | null
   is_cancelled: boolean | null
+  // The VISIBILITY gate. The admin read below bypasses RLS, so these are the only thing standing
+  // between a private/draft/removed row and an anonymous, CDN-cached share card.
+  visibility: string | null
+  status: string | null
+  removed_at: string | null
+  // The location inputs `publicVisibleLocation` needs. `location` is the host's free-text line and
+  // often carries the street, so it is NEVER read directly here — see the header.
+  hide_address: boolean | null
+  location: string | null
+  venue_name: string | null
+  street: string | null
+  city: string | null
+  region: string | null
   // The three hero sources, in the precedence lib/events/hero-url.ts applies. All three are
   // required: selecting only the poster pair is what made every host-uploaded cover share as the
   // text card.
@@ -66,11 +117,36 @@ export default async function Image({ params }: { params: Promise<{ slug: string
   const { data } = await admin
     .from('events')
     .select(
-      'title, starts_at, location, attendance_mode, is_cancelled, cover_image_path, poster_path, details, theme, host:profiles!host_id ( display_name )',
+      'title, starts_at, attendance_mode, is_cancelled, visibility, status, removed_at, hide_address, location, venue_name, street, city, region, cover_image_path, poster_path, details, theme, host:profiles!host_id ( display_name )',
     )
     .eq('slug', slug)
     .maybeSingle()
   const ev = (data ?? null) as Row | null
+
+  // ── THE VISIBILITY GATE ─────────────────────────────────────────────────────────────────────────
+  // The read above is the SERVICE-ROLE client, so RLS is bypassed and `.eq('slug', slug)` is the only
+  // predicate. This route is also exempt from the sign-in wall (proxy.ts `isPublicEventView` lets all
+  // of /events/* through except /new and /manage), Next emits its <meta og:image> on every event page
+  // including the noindexed ones, and lib/og/deliver.ts caches the result on a shared CDN for 24h
+  // with a week of stale-while-revalidate. So without this gate a private, circle-only, draft or
+  // staff-removed event published its title, date, venue line and host name to anyone who could
+  // guess a slug — and kept publishing it for a day after anyone fixed the row.
+  //
+  // `generateMetadata` in page.tsx has mirrored the page body's gate all along, with a comment
+  // saying exactly why ("The admin read bypasses RLS, so mirror the page body's visibility gate
+  // here"). The image route, in the same folder, reading the same table with the same client, had
+  // none. The Space card does gate (spaces/[slug]/opengraph-image.tsx) and falls back to an
+  // identity-free card, which is the pattern copied here.
+  //
+  // ⚪ `is_cancelled` is deliberately NOT part of the gate. A cancelled PUBLIC event is still public,
+  // people have already shared its link, and the card has a "Cancelled" chip built for precisely that
+  // — telling a recipient it is off is the useful answer, not hiding it.
+  const isPublic =
+    ev?.visibility === 'public' && (ev?.status ?? 'published') === 'published' && !ev?.removed_at
+
+  if (!ev || !isPublic) {
+    return neutralCard()
+  }
 
   const title = ev?.title?.trim() || `An event on ${SITE_NAME}`
   const when = ev?.starts_at
@@ -81,7 +157,11 @@ export default async function Image({ params }: { params: Promise<{ slug: string
         year: 'numeric',
       })
     : null
-  const where = ev?.location?.trim() || null
+  // ⚠️ NEVER `ev.location` directly — that is the host's free-text line and it routinely carries the
+  // street. `publicVisibleLocation` is the ONE rule (SCAN-209) and it collapses to the city line when
+  // the host set `hide_address`. This card cannot prove the reader is attending, so it never gets the
+  // attendee exception the page grants.
+  const where = publicVisibleLocation(ev ?? {})?.trim() || null
   const hostName = ev?.host?.display_name?.trim() || null
   const mode = ev?.attendance_mode ?? 'in_person'
   const chip = ev?.is_cancelled

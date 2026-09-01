@@ -69,7 +69,14 @@ export async function SpaceDashboard({
           <DashboardNeedsAttention spaceId={spaceId} slug={slug} />
         </Suspense>
 
-        <div className="grid gap-8 lg:grid-cols-2 lg:items-start">
+        {/* HYG-037 · `grid-cols-[minmax(0,1fr)]` at the BASE breakpoint, not just `min-w-0` on
+            today's two children. Below `lg` there is no `grid-template-columns` at all, so the one
+            IMPLICIT column is `minmax(auto, auto)` — and a grid item defaults to `min-width: auto`,
+            which contributes its content-based minimum. The rows below carry `truncate`, whose
+            `white-space: nowrap` makes min-content the WHOLE string, so the track was sized by the
+            longest event title rather than by the phone. `lg:grid-cols-2` was never the problem:
+            Tailwind emits `repeat(2, minmax(0, 1fr))`, which already has the floor this adds. */}
+        <div className="grid gap-8 grid-cols-[minmax(0,1fr)] lg:grid-cols-2 lg:items-start">
           <Suspense fallback={<BlockSkeleton />}>
             <DashboardActivity spaceId={spaceId} slug={slug} />
           </Suspense>
