@@ -34007,9 +34007,23 @@ A helper imported from **another** module remains the declared blind spot; `reso
 says so in its own doc comment rather than leaving the coverage implied.
 ## ADR-1178: `truncate` on an inline link widens the page instead of shortening the text (2026-08-31)
 
+🔴 **AMENDED 2026-09-01, BEFORE THIS EVER MERGED: THE CAUSAL CLAIM BELOW WAS WRONG.** This ADR was
+written asserting that the inline-`truncate` defect CAUSED the `/spaces/<slug>/manage` overflow.
+It does not. PR #2328 carries the fix, and the overflow on its own preview measures
+`<section> ... x 17→447, width 430` — byte-identical to the reading taken before the fix, at every
+one of 320/360/390px. Not one pixel moved.
+
+What survives is the defect itself, which is real and independently worth fixing: on a
+non-replaced inline box `overflow` and `text-overflow` do not apply, so an inline `<a class="truncate">`
+gets no ellipsis and keeps `white-space: nowrap`, which does inflate its min-content contribution.
+Six such links existed and are fixed. What does NOT survive is the attribution: something else on
+that dashboard has a min-content of 430px, it has not been identified, and it is filed separately.
+The overflow is NOT fixed. Read the rest of this entry as the mechanism, not as the diagnosis.
+
 **Context.** `test/e2e/overflow.spec.ts` measured `/spaces/<slug>/manage` running **57px past a 390px
 viewport**, in two `<section>`s at once, on a shell root that carries `overflow-x-clip` — so nothing
-scrolled and the operator's dashboard was simply cut off on a phone.
+scrolled and the operator's dashboard was simply cut off on a phone. That measurement is what
+prompted the audit below; it is not what the audit fixed.
 
 Both sections reported the *same* width, which is the tell: they are the two items of one
 single-column grid, and a grid track is sized by the widest item's min-content. One item widened the
