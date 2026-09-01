@@ -32,11 +32,19 @@
 //
 // ── WHY QUARANTINE IS A PASS, AND WHY IT IS STILL SAFE ────────────────────────────────────────
 //
-// The fix for the four declared rows is `update store_items set is_active = false` in production —
-// an action no PR can take (docs/proposals/LIVE-013-cosmetic-fulfillment.sql, the owner's to
-// apply). Failing CI on them holds every unrelated change hostage to that, which is exactly the
-// state ADR-970 says gets routed around and then reads as coverage. So they PASS and are printed
-// on every run. What keeps that honest is the anti-rot arm: a quarantine entry whose slug is no
+// The fix for a declared row is `update store_items set is_active = false` in production — an
+// action no PR can take, the owner's to apply. Failing CI on them holds every unrelated change
+// hostage to that, which is exactly the state ADR-970 says gets routed around and then reads as
+// coverage. So they PASS and are printed on every run.
+//
+// ✅ THE QUARANTINE IS EMPTY TODAY, and this paragraph used to name the file that would clear it:
+// `docs/proposals/LIVE-013-cosmetic-fulfillment.sql`. That proposal was applied and promoted into
+// a real migration — `supabase/migrations/20270312000000_store_cosmetic_fulfillment.sql` (#2153) —
+// and `docs/proposals/` was deleted in the same pass, while this comment and the census's
+// `quarantineProposal` key both kept pointing at the deleted path. A signpost that outlives its
+// target is worse than none: had the quarantine arm ever fired, it would have told an operator to
+// apply a file that has not existed for weeks. The key is gone; the message's `?? 'the proposal
+// SQL'` fallback carries it until a future quarantine names its own remedy. What keeps that honest is the anti-rot arm: a quarantine entry whose slug is no
 // longer purchasable, or that the registry now resolves, is a claim that has rotted and FAILS —
 // so an entry cannot quietly outlive its fix. Meanwhile the CODE path is already closed
 // regardless: `redeemItem` refuses an undeliverable SKU before charging, so a quarantined row on

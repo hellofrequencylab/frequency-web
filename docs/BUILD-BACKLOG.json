@@ -5570,6 +5570,23 @@
         "evidence": "2026-09-01, PR #2328 job 99686402855: /spaces/danieltyack/manage overflows a 390px viewport (2 boxes), <section> x 17→447 width 430 — unchanged from the pre-HYG-036 reading, which is what refutes that attribution. Closes when pr-compare's Smoke + a11y step passes the three `/spaces/<slug>/manage fits Npx @overflow @shell` cases. Manual because the check needs a live preview and the bypass secret, which no unit-test process can drive (ADR-970).",
         "checked": "2026-09-01"
       }
+    },
+    {
+      "id": "HYG-038",
+      "status": "done",
+      "lane": "hygiene",
+      "size": "S",
+      "source": {
+        "file": "scripts/admin-client-baseline.txt",
+        "ref": "and scripts/store-shelf.json"
+      },
+      "title": "Two ledgers still pointed at files that had been deleted, and one of them would have misdirected an operator",
+      "detail": "Found by sweeping every committed baseline/ledger for entries whose target no longer exists. Two real ones, both left behind by a change that removed the target and not the pointer.\n\n1. scripts/admin-client-baseline.txt named lib/beta/referral-contest.ts. SCAN-510 deleted that file (423 lines) on the owner's ruling that there is no beta referral contest; the RLS-bypass ratchet's baseline kept the line. Consequence was small but real and self-reported: check:admin-client printed a standing '1 baseline entry no longer imports it - shrink the baseline' advisory on every run, which is one more line of routine noise on a gate whose whole job is that a NEW adopter stands out. Now 742 importers against a 742 baseline, exact.\n\n2. scripts/store-shelf.json carried quarantineProposal = 'docs/proposals/LIVE-013-cosmetic-fulfillment.sql', and the header of scripts/check-cosmetic-renders.mjs named the same path in prose. #2153 applied those proposals, promoted that SQL into a real migration (20270312000000_store_cosmetic_fulfillment.sql) and deleted docs/proposals/ entirely. THIS ONE IS AN OPERATOR-FACING DEFECT, not just staleness: the quarantine arm's message reads 'Clear them by applying ${quarantineProposal}', so had a SKU ever been quarantined the guard would have told an operator to apply a file that has not existed for weeks, when the remedy had in fact already shipped. It has not fired because quarantine is [] today, which is exactly why it survived - a signpost on a branch nobody walks rots unobserved.\n\nThe key is removed rather than repointed: there is no pending SQL to name, and the message already carried a `?? 'the proposal SQL'` fallback for that case. The comment now records where the SQL went, so the next reader is not sent looking for a deleted directory.\n\nNOT A FINDING, checked and dropped: check:cosmetic-renders appears in no workflow, which looks like the exact violation scripts/guard-wiring.test.ts exists to catch. It is not - that guard's VITEST_ENFORCED map records scripts/check-cosmetic-renders.test.ts as the enforcing arm, which vitest auto-discovers. All 12 check:* scripts absent from the workflows are accounted for the same way or by the documented UNWIRED list.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const b=fs.readFileSync('scripts/admin-client-baseline.txt','utf8');const c=JSON.parse(fs.readFileSync('scripts/store-shelf.json','utf8'));const m=fs.readFileSync('scripts/check-cosmetic-renders.mjs','utf8');const dangling=b.split('\\\\n').filter(l=>l.trim()&&!l.trim().startsWith('#')).filter(l=>!fs.existsSync(l.trim()));process.exit(dangling.length===0&&!('quarantineProposal' in c)&&!m.includes('docs/proposals/LIVE-013-cosmetic-fulfillment.sql, the')?0:1)\"",
+        "note": "Measures the consequence in all three files at once: no entry in the admin-client baseline names a file that is gone, the census carries no quarantineProposal key, and the guard's header no longer sends a reader to docs/proposals/. Fails if any pointer comes back."
+      }
     }
   ]
 }

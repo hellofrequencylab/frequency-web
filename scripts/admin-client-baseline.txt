@@ -448,7 +448,6 @@ lib/attribution/backfill.ts
 lib/attribution/rollup.ts
 lib/automations.ts
 lib/awards/cosmetics.ts
-lib/beta/referral-contest.ts
 lib/billing/bundle-checkout.ts
 lib/billing/bundle-invites.ts
 lib/billing/bundle-seats.ts
