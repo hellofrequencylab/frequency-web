@@ -1,5 +1,5 @@
 import { createAdminClient } from '@/lib/supabase/admin'
-import { posterSignedUrl } from '@/lib/events/poster-media'
+import { resolveEventHeroUrl } from '@/lib/events/hero-url'
 import { readEventCoverFocus } from '@/lib/events/cover-focus'
 import type { EventDetailsWithMedia } from '@/lib/events/details-media'
 import { fetchRemoteImage } from '@/lib/og/remote-image'
@@ -17,13 +17,21 @@ export const size = { width: 1200, height: 630 }
 // re-encodes and adds the CDN cache headers (lib/og/deliver.ts).
 export const contentType = OG_CONTENT_TYPE
 
-// Per-event social share / SEO card for /events/<slug>. When the event has a poster/cover (an uploaded
-// cover or a scanned poster crop), the card leads with THAT image as the background, with the identity
-// lockup (title · when · where · host) over a legibility scrim and the Frequency watermark top-right —
-// the SAME visual language as the Space OG card (spaces/[slug]/opengraph-image.tsx). When there is no
-// poster (or the image fails to fetch), it falls back to the brand-styled TEXT card, so a crawl can
-// never slow or crash on a missing/broken image. Privacy: title, date, the typed location line, and
-// the host display name only. The cancelled / online / hybrid chip rides both variants.
+// Per-event social share / SEO card for /events/<slug>. When the event has artwork, the card leads
+// with THAT image as the background, with the identity lockup (title · when · where · host) over a
+// legibility scrim and the Frequency watermark top-right — the SAME visual language as the Space OG
+// card (spaces/[slug]/opengraph-image.tsx). When there is none (or the image fails to fetch), it
+// falls back to the brand-styled TEXT card, so a crawl can never slow or crash on a missing/broken
+// image. Privacy: title, date, the typed location line, and the host display name only. The
+// cancelled / online / hybrid chip rides both variants.
+//
+// 🔴 "HAS ARTWORK" IS THREE SOURCES, NOT ONE, AND THIS ROUTE ONLY EVER ASKED FOR TWO. Until
+// 2026-09-01 the select below omitted `cover_image_path` entirely, so every event whose host
+// UPLOADED a cover — the ordinary case — resolved null and shared as the text card, while the page
+// it links to showed the photo. Nothing caught it: the card renders successfully, and the only
+// symptom is a plain card in someone else's message thread. The precedence now lives in
+// lib/events/hero-url.ts, `scripts/check-event-hero-parity.test.ts` fails a PR that drops a column
+// from this select, and ADR-1179 is the record.
 //
 // Satori has NO access to the CSS token system, so the few colors it needs are literals mirroring the
 // existing event cards (this file's prior text card + the claim card): events indigo #6366f1 accent,
@@ -36,6 +44,10 @@ type Row = {
   location: string | null
   attendance_mode: string | null
   is_cancelled: boolean | null
+  // The three hero sources, in the precedence lib/events/hero-url.ts applies. All three are
+  // required: selecting only the poster pair is what made every host-uploaded cover share as the
+  // text card.
+  cover_image_path: string | null
   poster_path: string | null
   details: EventDetailsWithMedia | null
   /** The presentation bag (events.theme jsonb) — read for its `coverFocus` key only. */
@@ -54,7 +66,7 @@ export default async function Image({ params }: { params: Promise<{ slug: string
   const { data } = await admin
     .from('events')
     .select(
-      'title, starts_at, location, attendance_mode, is_cancelled, poster_path, details, theme, host:profiles!host_id ( display_name )',
+      'title, starts_at, location, attendance_mode, is_cancelled, cover_image_path, poster_path, details, theme, host:profiles!host_id ( display_name )',
     )
     .eq('slug', slug)
     .maybeSingle()
@@ -98,10 +110,13 @@ export default async function Image({ params }: { params: Promise<{ slug: string
     </div>
   ) : null
 
-  // The event's own poster/cover (a cropped cover, else the full flyer), fetched + inlined for Satori.
-  // Any miss (no path, no signed URL, a non-image / oversized / slow fetch) yields null → the text card.
-  const coverSigned = await posterSignedUrl(ev?.details?.media?.coverPath ?? ev?.poster_path)
-  const cover = coverSigned ? await fetchRemoteImage(coverSigned) : null
+  // The event's own artwork — the SAME image the page hero renders, resolved through the one
+  // precedence (uploaded public cover → full scanned poster → the scanner's cropped cover;
+  // lib/events/hero-url.ts). Fetched + inlined because Satori needs bytes, not a remote src. Any
+  // miss (no artwork, no signed URL, a non-image / oversized / slow fetch) yields null → the text
+  // card below, so a crawl can never slow or crash on a broken image.
+  const heroUrl = await resolveEventHeroUrl(ev)
+  const cover = heroUrl ? await fetchRemoteImage(heroUrl) : null
 
   // ── FALLBACK: the brand-styled text card (no poster, or the image failed to load). Built-in font,
   // so it can never slow or fail a crawl. Matches the prior card. ────────────────────────────────────

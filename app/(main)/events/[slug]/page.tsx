@@ -63,6 +63,7 @@ import { posterSignedUrlMap } from '@/lib/events/poster-media'
 import { pointFromGeog } from '@/lib/events/geo'
 import { readEventHeroHeight, eventPosterHeightClass } from '@/lib/events/hero-height'
 import { readEventCoverFocus } from '@/lib/events/cover-focus'
+import { EVENT_MEDIA_BUCKET, eventHeroCandidates } from '@/lib/events/hero-url'
 import { detailsMediaPaths, type EventDetailsWithMedia } from '@/lib/events/details-media'
 import type { EventMapPin } from '@/components/events/events-map'
 import { ZAP_AMOUNTS } from '@/lib/zaps'
@@ -469,13 +470,6 @@ export default async function EventDetailPage({
   const isClaimable =
     isUnclaimedPosted && !!extra?.claim_token && (extra?.status ?? 'published') === 'published'
 
-  // Uploaded cover (A1) — a public storage path in the event-media bucket → public URL
-  // (next/image allows the supabase public storage host). Null when the host never
-  // uploaded one, which is the case for every event captured by scanning a poster.
-  const coverUrl = extra?.cover_image_path
-    ? admin.storage.from('event-media').getPublicUrl(extra.cover_image_path).data.publicUrl
-    : null
-
   // Both of these depend only on `extra` (not on each other): the "Posted by" credit
   // lookup and the signed URLs for the poster's media — resolve concurrently. We sign
   // the poster's crops (details.media) AND the full poster (poster_path) in one batch,
@@ -529,14 +523,36 @@ export default async function EventDetailPage({
         : null
   const posterCropUrls = Object.fromEntries(posterCropEntries)
 
-  // Header image: the ORIGINAL poster leads for a scanned event. Priority: uploaded
-  // cover → full poster (the original flyer) → the scanner's cropped cover as a last
-  // resort. (The cropped cover/region crops are NOT shown as separate images anymore —
-  // they just duplicate the poster.)
-  const posterMedia = posterDetails.media
-  const posterFullUrl = extra?.poster_path ? posterCropUrls[extra.poster_path] ?? null : null
-  const coverCropUrl = posterMedia?.coverPath ? posterCropUrls[posterMedia.coverPath] ?? null : null
-  const heroUrl = coverUrl ?? posterFullUrl ?? coverCropUrl
+  // Header image: the ORIGINAL poster leads for a scanned event. The order — uploaded
+  // cover → full poster (the original flyer) → the scanner's cropped cover — is
+  // `eventHeroCandidates` (lib/events/hero-url.ts), the ONE authority the share card and
+  // the claim card resolve through too, so a shared card can never crop or lead
+  // differently from this page. (The cropped cover/region crops are NOT shown as separate
+  // images anymore — they just duplicate the poster.)
+  //
+  // This page walks the candidates itself rather than calling `resolveEventHeroUrl` because
+  // its poster URLs are already signed: `posterCropUrls` batch-signed the whole gallery in one
+  // storage call above, and re-signing the hero would be a second round trip for a URL we hold.
+  const heroCandidates = eventHeroCandidates({
+    cover_image_path: extra?.cover_image_path,
+    poster_path: extra?.poster_path,
+    details: posterDetails,
+  })
+  let heroUrl: string | null = null
+  // The hero is PUBLIC only when the winning candidate came from the public bucket; a signed
+  // poster URL must stay unoptimized (next/image cannot re-fetch an expiring URL).
+  let heroIsPublic = false
+  for (const c of heroCandidates) {
+    const url =
+      c.bucket === EVENT_MEDIA_BUCKET
+        ? admin.storage.from(EVENT_MEDIA_BUCKET).getPublicUrl(c.path).data.publicUrl
+        : posterCropUrls[c.path] ?? null
+    if (url) {
+      heroUrl = url
+      heroIsPublic = c.bucket === EVENT_MEDIA_BUCKET
+      break
+    }
+  }
   // Host-picked hero height (Short / Standard / Tall), stored on events.theme; mirrors the
   // Business Space cover hero. Applied to both the cover and the no-cover placeholder.
   // The poster band's own ladder: same tiers, same desktop heights, one rung shorter on a phone
@@ -1840,7 +1856,7 @@ export default async function EventDetailPage({
             src={heroUrl}
             heightClass={posterHeightCls}
             focus={coverFocus}
-            unoptimized={heroUrl !== coverUrl}
+            unoptimized={!heroIsPublic}
             // FULL BLEED on a phone (owner, 2026-08-31): edge to edge, no gutter, no corners.
             // `-mx-4` is the exact inverse of the shell's ONE horizontal gutter — `px-4` on the
             // page row in app-shell.tsx — and `sm:mx-0` hands it back from 640px up. Both are

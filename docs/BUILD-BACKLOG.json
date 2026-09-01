@@ -5485,6 +5485,40 @@
       }
     },
     {
+      "id": "LIVE-138",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "docs/DECISIONS.md",
+        "ref": "ADR-1179"
+      },
+      "title": "Every event with an UPLOADED cover shared as a plain text card, because the OG route never selected cover_image_path",
+      "detail": "Reported from an iMessage thread, 2026-09-01: an event shared to a phone rendered as a plain dark text card. Owner: 'Something is broken on the social share preview. We used to have a well designed version for Events.'\n\nAn event's artwork arrives from three places, in two buckets, by two kinds of URL: the host's uploaded cover (events.cover_image_path, PUBLIC event-media, getPublicUrl), the full scanned poster (events.poster_path, PRIVATE, signed), and the scanner's cropped cover (details.media.coverPath, PRIVATE, signed). The precedence across them - uploaded cover -> full flyer -> crop - was hand-rolled at THREE call sites. The event page and the claim card resolved all three. app/(main)/events/[slug]/opengraph-image.tsx selected only the two poster columns and ordered them backwards, so for any event whose host uploaded a cover it resolved null and took its documented no-poster branch. Uploading a cover is the ordinary way an event gets artwork, so the rich poster card was reachable almost only by SCANNED events.\n\nWHY NOTHING CAUGHT IT: correct-looking code that renders successfully. Every page rendered, every test passed, every gate stayed green; the only symptom was a plain card in someone else's message thread. lib/og/root-card.test.ts opens with the same lesson for the ROOT card one route over - a stale share card is invisible from inside the app.\n\nFIXED by extracting the precedence to lib/events/hero-url.ts: eventHeroCandidates() is pure and returns the ordered {path,bucket} list (so the page keeps its batch-signed gallery URLs and walks the same order without a second round trip), resolveEventHeroUrl() walks it against injectable storage deps, and an unbuildable URL falls through to the next source rather than erasing the image. All three surfaces resolve through it.\n\nNOT CONFIRMED AGAINST PRODUCTION DATA. The diagnosis is code-level: a Supabase read against the reported event was permission-denied in the session that fixed this, and no preview URL was reachable to re-share the card. What is proven is the code path and the guard, not a re-rendered card. Re-share an event with an uploaded cover to confirm.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const og=fs.readFileSync('app/(main)/events/[slug]/opengraph-image.tsx','utf8');const h=fs.readFileSync('lib/events/hero-url.ts','utf8');const sel=(og.match(/\\\\.select\\\\(\\\\s*'([^']*)'/)||['',''])[1];const b=h.slice(h.indexOf('export function eventHeroCandidates'));const i=['ev.cover_image_path','ev.poster_path','ev.details?.media?.coverPath'].map(k=>b.indexOf(k));process.exit(sel.includes('cover_image_path')&&og.includes('resolveEventHeroUrl(ev)')&&i[0]>=0&&i[0]<i[1]&&i[1]<i[2]?0:1)\"",
+        "note": "Measures the consequence, not the title: the OG route's own .select() string must name cover_image_path (the omitted column IS the bug), the route must resolve through resolveEventHeroUrl, and eventHeroCandidates must still push cover before poster before crop. A CLI rather than a vitest run because LIVE-034 forbids a backlog probe from spawning a test runner. scripts/check-event-hero-parity.test.ts is the enforcing arm - it adds the claim card, the page, and a repo-wide net for a fourth surface, and every arm was watched go red against a real mutation."
+      }
+    },
+    {
+      "id": "LIVE-139",
+      "status": "open",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "app/discover/events/[slug]/opengraph-image.tsx",
+        "ref": "no cover, while getEventEnrichment already returns one"
+      },
+      "title": "The PUBLIC event share card is still text-only, and the cover it needs is already on the row it reads",
+      "detail": "Found while fixing LIVE-138 (the member card, ADR-1179). The /discover/events/<slug> OG card renders the brand text layout for every event. It is the crawlable, SEO half - the card a search engine and a first-time visitor see - and it has no artwork at all.\n\nThe ingredient is already there and already privacy-cleared: LIVE-133 taught app/discover/events/_data.ts to return `cover_url` (public event-media getPublicUrl, built on the ANON client so RLS is the gate) plus `cover_focus`, and this route ALREADY awaits getEventEnrichment for its chip. It reads neither. Only tier 1 applies here on purpose: the private poster bucket is not anon-readable, and a scanned flyer can carry the venue address this surface deliberately redacts to city level (ADR-186).\n\nDELIBERATELY NOT TAKEN IN THE SAME CHANGE AS LIVE-138, and the reason is build cost, not scope tidiness. This route is PRERENDERED for the same ~200 slugs as the page, and it currently fetches nothing and loads no font - its own header says so ('no remote font fetch so this can never slow or fail a crawl'). Leading with the cover adds, per slug at export time, one remote image fetch (3.5s timeout, 6MB cap) and one photographic 1200x630 rasterisation. LIVE-123 is an OPEN row about builds stalling and OOM-ing in Collecting page data; adding ~200 fetches plus ~200 heavy rasterisations to the export is exactly the kind of change that decides a marginal build, and it must be measured on a real preview build rather than reasoned about (DEPLOY-SAFETY.md).\n\nSo: do it behind a real build reading. If the export cost is unacceptable, the alternative is to drop the prerender for this one route and serve the card dynamically with the CDN headers cardResponse already sets.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const s=require('fs').readFileSync('app/discover/events/[slug]/opengraph-image.tsx','utf8');process.exit(s.includes('cover_url')&&s.includes('fetchRemoteImage')?0:1)\"",
+        "note": "Measures the consequence: the public OG route reads the enrichment's cover_url and inlines it for Satori. Fails today, which is what an open row should do."
+      }
+    },
+    {
       "id": "HYG-035",
       "status": "done",
       "lane": "hygiene",

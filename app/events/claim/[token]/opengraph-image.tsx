@@ -1,5 +1,5 @@
 import { createAdminClient } from '@/lib/supabase/admin'
-import { posterSignedUrl } from '@/lib/events/poster-media'
+import { resolveEventHeroUrl } from '@/lib/events/hero-url'
 import { readEventCoverFocus } from '@/lib/events/cover-focus'
 import type { EventDetailsWithMedia } from '@/lib/events/details-media'
 import { coverPlaceholderFor } from '@/lib/spaces/cover-placeholder'
@@ -27,13 +27,15 @@ export const contentType = OG_CONTENT_TYPE
 // reveals nothing. Events indigo accent (#6366f1) mirrors the per-event OG card.
 //
 // COVER PARITY — this must resolve the exact hero the event page renders (app/(main)/events/[slug]/page.tsx):
-//   1. uploaded PUBLIC cover  (events.cover_image_path → event-media getPublicUrl)
-//   2. else the full scanned poster  (events.poster_path, private → freshly SIGNED url)
-//   3. else the scanner's cropped cover  (details.media.coverPath, private → SIGNED url)
-// and apply the SAME focal point (events.theme.coverFocus, via readEventCoverFocus) as the hero's
-// objectPosition, so a shared card crops identically to the page. Satori can't load a bare remote src,
-// so the chosen url's bytes are inlined via fetchRemoteImage; a freshly-signed url is valid at request
-// time. Any miss (no cover, or a slow/broken/oversized fetch) yields the branded placeholder card.
+// uploaded PUBLIC cover → full scanned poster → the scanner's cropped cover. That precedence used to
+// be spelled out here AND in the page AND in the per-event OG card, and the three drifted (the OG
+// card never selected `cover_image_path` at all). It now lives in ONE place — lib/events/hero-url.ts,
+// `resolveEventHeroUrl` — with `scripts/check-event-hero-parity.test.ts` failing a PR that re-rolls
+// it by hand. Apply the SAME focal point (events.theme.coverFocus, via readEventCoverFocus) as the
+// hero's objectPosition, so a shared card crops identically to the page. Satori can't load a bare
+// remote src, so the chosen url's bytes are inlined via fetchRemoteImage; a freshly-signed url is
+// valid at request time. Any miss (no cover, or a slow/broken/oversized fetch) yields the branded
+// placeholder card.
 
 const ON_INK = '#F3EEE3'
 const INDIGO = '#6366f1'
@@ -84,18 +86,8 @@ export default async function Image({ params }: { params: Promise<{ token: strin
     })
   }
 
-  // Resolve the SAME hero the event page uses: uploaded public cover → full scanned poster →
-  // scanner's cropped cover (page.tsx `heroUrl = coverUrl ?? posterFullUrl ?? coverCropUrl`).
-  const admin = createAdminClient()
-  const publicCover = ev.cover_image_path
-    ? admin.storage.from('event-media').getPublicUrl(ev.cover_image_path).data.publicUrl
-    : null
-  const posterFullUrl = ev.poster_path ? await posterSignedUrl(ev.poster_path) : null
-  const coverCropUrl =
-    !publicCover && !posterFullUrl && ev.details?.media?.coverPath
-      ? await posterSignedUrl(ev.details.media.coverPath)
-      : null
-  const heroUrl = publicCover ?? posterFullUrl ?? coverCropUrl
+  // Resolve the SAME hero the event page uses, through the one precedence (lib/events/hero-url.ts).
+  const heroUrl = await resolveEventHeroUrl(ev)
 
   // Inline the chosen image for Satori. Any miss (no cover, slow / broken / oversized fetch) falls
   // through to the branded placeholder card below.
