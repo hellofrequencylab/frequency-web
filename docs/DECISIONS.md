@@ -34489,3 +34489,56 @@ trade that prevents the worse failure — seven min-content slots summing to 319
 screen, where the last tab leaves the viewport with no way to scroll to it. Fixing it means either
 dropping a destination (an IA decision) or renaming one, and `docs/NAMING.md` forecloses the obvious
 rename: *"'Marketplace' ≠ 'Market.'"* They name different things.
+
+## ADR-1185: a tree walker asks the filesystem once, because asking twice is a race CodeQL can see (2026-09-01)
+
+`scripts/check-metadata-images.test.ts` shipped in #2337 with two directory walks, each written the
+way every other walker in this repo is written:
+
+```ts
+const full = path.join(d, entry)
+if (statSync(full).isDirectory()) { walk(full); continue }
+const src = readFileSync(full, 'utf8')
+```
+
+CodeQL raised **two high-severity `js/file-system-race` alerts** on it — one per walk. The finding is
+a genuine TOCTOU: the path is resolved once to ask *"is this a directory?"* and a second time to open
+it, and nothing guarantees the two questions get the same answer. In a repo scanner the practical
+risk is small. The reason to fix it is not the risk; it is that a guard file which itself trips the
+security scanner is a guard nobody will trust to enforce anything.
+
+**The fix removes the second question rather than narrowing the window.**
+`readdirSync(d, { withFileTypes: true })` returns the entry type *alongside* the name, from the one
+syscall that produced the name. There is no interval between check and use because there is no check.
+
+Both walks now share one helper, `tsFilesUnder`, with `metadataRoutes` layered on top. That was not
+tidying for its own sake: the corpus-floor test — the one whose whole job is to prove the detector
+walked a real corpus rather than an empty glob — had its **own duplicate walker**, so it was a floor
+for a walk the detector did not use. It now measures the walk it is the floor for. Reading: **73
+`generateMetadata` routes** under `app/` against a floor of 40.
+
+⚪ **One behaviour change, checked rather than assumed.** `Dirent.isDirectory()` is false for a
+symlink to a directory, where `statSync().isDirectory()` was true; likewise `isFile()`. `find app
+-type l` returns nothing, so the corpus is identical. If a symlink ever appears under `app/`, the
+walk will skip it — which is the safer default for a scanner and the one worth having explicitly.
+
+🔴 **TWELVE OTHER WALKERS IN THIS REPO STILL HAVE THE PATTERN** — `build-fanout`,
+`check-client-server-boundary`, `check-detached-client-methods`, `check-docs-links`,
+`check-event-hero-parity`, `check-module-reachability`, `check-phantom-classes`,
+`check-shell-weight`, `sweep-type-roles-2a`, `visual-surface-census`, `chart.test.ts`,
+`eyebrow-role.test.ts`. CodeQL only alerts on files a PR *changed*, so each one is a latent failure
+waiting for whoever next edits it, and it will land as a surprise on a PR about something else
+entirely. They are **not** swept here: this PR is a CI fix, and a twelve-file sweep riding inside it
+is exactly the "structural change carried by an unrelated PR" that `docs/DEPLOY-SAFETY.md` exists
+about. `HYG-041` carries them, and its probe fails until the count reaches zero.
+
+⚠️ **The count in the first draft of this ADR was thirteen, and the row's first probe was wrong in
+both directions at once** — which is worth recording, because it is the failure mode this repo names
+most often, committed while writing the entry that names it. The probe counted
+`check-metadata-images.test.ts`, **the file this ADR is about fixing**, because the comment above
+quotes `statSync(full).isDirectory()` while explaining why it was removed: a probe a comment can trip
+would have stayed red forever *after* the sweep succeeded. And it missed `check-docs-links.mjs`,
+whose call is `statSync(join(ROOT, rel)).isDirectory()` — a `[^)]*` pattern cannot cross a nested
+paren, so the probe under-counted the worklist it exists to enumerate. The probe now strips comment
+lines and tolerates nesting, and has three controls: a real call fires, a comment quoting one does
+not, the nested form fires. Running it is what produced the true number.
