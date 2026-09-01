@@ -34123,3 +34123,24 @@ written yet.
 **The column, not the code, was the bug.** The share card's fallback logic was right; its `select`
 was short by one name. A guard that only checked "does this file resolve a cover" would have passed
 on the broken version, which is why the second arm parses the actual `select` string.
+
+**Measured, not inferred.** The reported event — *Co Creating What's Next*, the title on the
+screenshot — has `cover_image_path` set and both poster columns `NULL`, so the old card resolved
+`posterSignedUrl(null)` and took the text branch. Across all **63** published, un-removed events:
+
+| Event has | n | Old card showed | New card shows |
+|---|---:|---|---|
+| uploaded cover **and** a scan | 34 | the **scan**, not the host's chosen cover — disagreeing with the page hero | the uploaded cover |
+| uploaded cover only | **16** | the plain **text card**, despite having artwork | the uploaded cover |
+| scanned flyer + crop | 1 | the crop | the full flyer, as the page does |
+| scanned, one source | 9 | correct | unchanged |
+| no artwork at all | 3 | text card, correctly | unchanged |
+
+**51 of 63 (81%) shared the wrong image or none.** Twelve were right. The bug read as "some events
+look plain" because the 34 still showed *an* image — a real photo, just not the one the host picked
+and not the one the page shows — which is the quieter half and the reason this survived a display-
+surface audit that had already been through these very events.
+
+⚠️ **Not visually confirmed.** Every deployment on this project sits behind Vercel deployment
+protection and the apex is unreachable from an agent session, so no re-rendered card was fetched.
+The data, the code path and the guard are proven; the pixels are not.
