@@ -688,7 +688,19 @@ describe('the probe engine does not depend on ambient tooling', () => {
 })
 
 describe('the real tree', () => {
-  it('satisfies both contracts', () => {
+  // ⏱️ AN EXPLICIT BUDGET, because the default 30s was never a decision — it was the default, and
+  // this test outgrew it. Measured 2026-09-01: `check:backlog` 23.66s (224 probes, run serially)
+  // plus `check:one-list` 0.11s = 23.8s of real work, i.e. **79% of the default** on an idle
+  // machine. Under full-suite contention it exceeded 30s and failed the run, with a bare
+  // "Test timed out in 30000ms" that names nothing and passes when re-run alone.
+  //
+  // 🔴 RAISING THIS IS NOT THE FIX, it is what makes the failure legible while the fix is done.
+  // `HYG-042` carries the real one: 224 probes run SERIALLY in a `for` loop of `spawnSync`, and the
+  // sibling ripgrep-parity case below runs the whole set TWICE for the same reason. This is the
+  // SECOND test in this file to hit the wall; the first is documented on that case. A budget that
+  // is 3.8x the measured work leaves room for a loaded runner without becoming the place a real
+  // regression hides — the CPU budget printed by the guard (`guardCpuMs`) is what catches creep.
+  it('satisfies both contracts', { timeout: 90_000 }, () => {
     expect(run(BACKLOG_GUARD, ROOT).code, 'pnpm check:backlog').toBe(0)
     expect(run(ONE_LIST_GUARD, ROOT).code, 'pnpm check:one-list').toBe(0)
   })
