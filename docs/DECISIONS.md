@@ -34073,3 +34073,84 @@ pass as compliance.
 viewport") nor `@visual` (a 57px band is noise inside an 18,000px full-page baseline) could see
 this; ADR-1035 is the same lesson and `overflow.spec.ts` exists because of it. It has now caught its
 second class of defect.
+
+## ADR-1179: an event's hero image resolves in ONE place, because three copies drifted (2026-09-01)
+
+**Reported from an iMessage thread**: an event shared to a phone rendered as a plain dark text card.
+"Something is broken on the social share preview. We used to have a well designed version for
+Events."
+
+An event's artwork can arrive from three places, in two different buckets, reachable by two different
+kinds of URL:
+
+| Source | Column | Bucket | URL |
+|---|---|---|---|
+| the host's uploaded cover | `cover_image_path` | `event-media` (public) | `getPublicUrl()` |
+| the full scanned poster | `poster_path` | `network-contacts` (private) | `createSignedUrl()` |
+| the scanner's cropped cover | `details.media.coverPath` | `network-contacts` (private) | `createSignedUrl()` |
+
+The precedence — uploaded cover → full flyer → crop — was hand-rolled at three call sites. Two of
+them resolved all three sources. The third, `app/(main)/events/[slug]/opengraph-image.tsx`, **never
+selected `cover_image_path` at all**, and ordered the other two backwards. The card asked for two
+columns, got `null` for both, and took its documented "no poster" branch.
+
+So the rich poster card was reachable **only by scanned events**. Every event whose host uploaded a
+cover — the ordinary way an event gets its artwork — shared as the text fallback. The route's own
+header had described the intended behaviour correctly the whole time.
+
+⚠️ **Why nothing caught it.** This is correct-looking code that renders successfully. Every page
+rendered, every test passed, every gate stayed green, and the only symptom was a plain card in
+somebody else's message thread. `lib/og/root-card.test.ts` opens with the same lesson about the ROOT
+card one route over: *"a stale share card is invisible from inside the app."* It is invisible for a
+per-event card too, and for the same reason — nothing in the app ever looks at one.
+
+**Decision.** The precedence lives in `lib/events/hero-url.ts` and nowhere else.
+`eventHeroCandidates()` is pure — it returns the ordered `{ path, bucket }` candidates — so a caller
+that already holds signed URLs can apply the same order without a second round trip;
+`resolveEventHeroUrl()` walks that list against injectable storage deps. All three surfaces resolve
+through it: the page hero (which keeps its batch-signed gallery URLs and walks the candidates
+itself), the per-event share card, and the claim card. A candidate whose URL cannot be built falls
+through to the next one, so one bad path degrades the image instead of erasing it.
+
+`scripts/check-event-hero-parity.test.ts` enforces it three ways, and **each arm was watched go red**
+against a real mutation of the fixed tree: the surface must import the authority (mutation: restore
+the hand-rolled `posterSignedUrl` chain → red), its `.select(...)` must name **every** column the
+precedence reads (mutation: drop `cover_image_path` from the select — the shipped defect verbatim →
+red), and no other file in `app/`, `lib/` or `components/` may name all three sources at once
+(mutation: re-roll the chain inside the page → red), which is the net for a fourth surface nobody has
+written yet.
+
+**The column, not the code, was the bug.** The share card's fallback logic was right; its `select`
+was short by one name. A guard that only checked "does this file resolve a cover" would have passed
+on the broken version, which is why the second arm parses the actual `select` string.
+
+**Measured, not inferred.** The reported event — *Co Creating What's Next*, the title on the
+screenshot — has `cover_image_path` set and both poster columns `NULL`, so the old card resolved
+`posterSignedUrl(null)` and took the text branch. Across all **63** published, un-removed events:
+
+| Event has | n | Old card showed | New card shows |
+|---|---:|---|---|
+| uploaded cover **and** a scan | 34 | the **scan**, not the host's chosen cover — disagreeing with the page hero | the uploaded cover |
+| uploaded cover only | **16** | the plain **text card**, despite having artwork | the uploaded cover |
+| scanned flyer + crop | 1 | the crop | the full flyer, as the page does |
+| scanned, one source | 9 | correct | unchanged |
+| no artwork at all | 3 | text card, correctly | unchanged |
+
+**51 of 63 (81%) shared the wrong image or none.** Twelve were right. The bug read as "some events
+look plain" because the 34 still showed *an* image — a real photo, just not the one the host picked
+and not the one the page shows — which is the quieter half and the reason this survived a display-
+surface audit that had already been through these very events.
+
+⚠️ **Not visually confirmed.** Every deployment on this project sits behind Vercel deployment
+protection and the apex is unreachable from an agent session, so no re-rendered card was fetched.
+The data, the code path and the guard are proven; the pixels are not.
+
+**The new module holds no RLS bypass, and CI is what settled that.** The first push had
+`hero-url.ts` importing the service-role client, and `check:admin-client` failed it as a new
+RLS-bypass adopter. The gate was right and the fix was not a baseline entry: `getPublicUrl` is pure
+string construction — it issues no request and needs no privileges — so the elevated client bought
+nothing. It now uses the anon client, the same reasoning `app/discover/events/_data.ts` already
+spells out for the identical URL. The one tier that genuinely needs elevation, a signed URL for the
+private poster bucket, stays delegated to `lib/events/poster-media.ts`, which owns that bypass
+already. Extracting shared code is exactly where a bypass spreads by accident, and the ratchet
+caught it on the first push.
