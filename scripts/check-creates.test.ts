@@ -11,7 +11,7 @@ import {
   MIN_WRITE_SITES,
 } from './check-creates.mjs'
 
-// Locks the governed-create adoption guard (ADR-988 · docs/adr-drafts/998-create-adoption.md). The
+// Locks the governed-create adoption guard (ADR-988 in docs/DECISIONS.md). The
 // guard's rules are exported as pure classifiers, so feeding them fixture strings keeps them honest
 // without touching the filesystem (mirrors scripts/check-menu.test.ts).
 //

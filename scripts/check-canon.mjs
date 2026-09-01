@@ -164,10 +164,25 @@ function mdFiles(dir) {
   return out
 }
 
-/** Scan content/**\/*.md. Pure member prose, so every rule applies regardless of audience. */
+/** Member-facing markdown OUTSIDE content/. Each entry is a file this guard would otherwise
+ *  never see, even though a member reads it on a public page.
+ *
+ *  🔴 WHY THIS LIST EXISTS. `docs/CHANGELOG.md` is rendered verbatim at `/help/changelog`
+ *  (docs/HELP-CENTER.md: "Public 'What's new' | renders docs/CHANGELOG.md at /help/changelog"), so it
+ *  is member-facing copy by every definition this repo uses — and it lived under `docs/`, which this
+ *  scan never walked. It carried three em dashes against a CONTENT-VOICE hard rule while the guard
+ *  printed green, because the guard was scoped by DIRECTORY rather than by AUDIENCE. That is the same
+ *  shape as ADR-1180's finding one layer down: a whole surface sitting outside the gate that governs
+ *  it, invisible precisely because the gate looked fine.
+ *
+ *  Add a path here when a member reads it and it is not under content/. */
+export const EXTRA_MEMBER_MD = ['docs/CHANGELOG.md']
+
+/** Scan content/**\/*.md plus EXTRA_MEMBER_MD. Pure member prose, so every rule applies
+ *  regardless of audience. */
 export function scanContent() {
   const found = []
-  for (const file of mdFiles(ROOT)) {
+  for (const file of [...mdFiles(ROOT), ...EXTRA_MEMBER_MD]) {
     const lines = read(file).split('\n')
     // Skip the YAML frontmatter block (slugs, featureKeys, etc. are metadata, not prose).
     let inFrontmatter = false
@@ -513,7 +528,10 @@ if (invokedDirectly) {
   }
 
   console.log('Canon guard (docs/NAMING.md + docs/CONTENT-VOICE.md + ADR-811 + ADR-1065)\n')
-  console.log(`  content/     ${mdFiles(ROOT).length} markdown file(s), every rule, whole-line`)
+  console.log(
+    `  content/     ${mdFiles(ROOT).length} markdown file(s) + ${EXTRA_MEMBER_MD.length} member-facing doc(s) ` +
+      `(${EXTRA_MEMBER_MD.join(', ')}), every rule, whole-line`,
+  )
   console.log(`  marketing/   ${marketing.targets.length} source file(s), retired money model + taglines, comments stripped`)
   console.log(
     `  code seam    ${seam.files.length} file(s) under ${SEAM_ROOTS.join('/, ')}/ ` +

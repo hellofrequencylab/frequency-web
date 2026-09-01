@@ -285,7 +285,7 @@ export interface EventGuestListItem {
  * their own event's rows, but the Manage surface reads through the admin client (which bypasses
  * RLS), so the caller MUST have authorized the viewer as the event host / admin BEFORE calling
  * this — exactly as the Manage page does (getEventCapabilities → 'event.editSettings', 404 on
- * miss), mirroring lib/events/[slug]/manage/load.ts. It NEVER exposes the inviter's other
+ * miss), mirroring app/(main)/events/[slug]/manage/load.ts. It NEVER exposes the inviter's other
  * contacts: it reads only THIS event's guest rows. FAIL-SAFE: [] on any error.
  */
 export async function listEventGuests(eventId: string): Promise<EventGuestListItem[]> {
@@ -293,7 +293,7 @@ export async function listEventGuests(eventId: string): Promise<EventGuestListIt
   if (!id) return []
   try {
     // event_guests isn't in the generated DB types yet (ADR-246), so this read widens to an
-    // untyped client — the same seam lib/events/[slug]/manage/load.ts uses for event_dispatches.
+    // untyped client — the same seam app/(main)/events/[slug]/manage/load.ts uses for event_dispatches.
     // eslint-disable-next-line no-restricted-syntax -- event_guests not in generated types yet (ADR-246 exception)
     const admin = createAdminClient() as unknown as SupabaseClient
     const { data } = await admin

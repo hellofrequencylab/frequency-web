@@ -3,7 +3,7 @@ title: Meeting people safely
 description: How to meet someone from Frequency in person, the safe way.
 category: safety
 order: 2
-updated: 2026-07-17
+updated: 2026-09-01
 audience: member
 featureKeys: [connections, events, moderation]
 status: published
@@ -21,7 +21,7 @@ Frequency is built so you meet people the natural way: at a Circle or a public e
 ## What we do, and don't, share
 
 - **We never share your exact location.** Others only ever see your approximate neighborhood or your city, never your address. You control all of this in **Settings, Connections & Location**.
-- **Hosts can protect their address too.** Some events show only the city until you RSVP or get a ticket; the exact address appears once you register. Hosts running gatherings at a home or studio can turn this on in the event's settings.
+- **Hosts can protect their address too.** Some events show only the city until you RSVP or get a ticket; the exact address appears once you register, and the preview someone sees when the link is shared carries the city only. Hosts running gatherings at a home or studio can turn this on in the event's settings.
 - **You decide who can find you.** Ghost mode hides you entirely; you can limit who discovers you to your connections, or no one.
 
 ## Looking at housing or meeting a roommate

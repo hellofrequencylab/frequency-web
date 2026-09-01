@@ -160,7 +160,9 @@ const DELEGATED = '// authz-delegated:'
 // Intentionally PUBLIC server actions (no caller — anonymous visitors use them). Each MUST
 // carry a reason. Keep this list short; prefer a guard or an inline `// authz-ok:` note.
 const ALLOWLIST_ACTIONS = new Map([
-  ['app/(marketing)/beta/actions.ts', 'public double-opt-in beta lead capture (anonymous)'],
+  // ⚠️ Every key here is a STANDING AMNESTY from the authz gate. See staleAllowlistEntries() below:
+  // an entry whose file no longer exists fails this guard, because otherwise it lies in wait for
+  // whoever next creates a file at that path.
   ['app/(marketing)/start/actions.ts', 'public marketing lead-flow capture (anonymous)'],
 ])
 
@@ -211,6 +213,35 @@ export const ACTION_GATE = new RegExp([GUARD.source, 'contactsOwnerId'].join('|'
 
 /** Verdicts a ledger entry may claim. Anything else is a typo or an invented category, and
  *  an unrecognised verdict must FAIL rather than quietly count as coverage. */
+/**
+ * 🔴 AN ALLOWLIST ENTRY FOR A FILE THAT NO LONGER EXISTS IS A TRAP, NOT DEAD WEIGHT.
+ *
+ * `classifyActionFile` exempts a file with a bare `ALLOWLIST_ACTIONS.has(file)` and
+ * `classifyLibMutation` does the same with `ALLOWLIST_LIB`. Neither asks whether the file is still
+ * there. So a stale key sits dormant until somebody creates a file at that exact path — and then it
+ * ships an ungated, RLS-bypassing server action with the gate printing green, because the amnesty
+ * was granted years earlier to a different file.
+ *
+ * This is exactly what was found on 2026-09-01: `app/(marketing)/beta/actions.ts` was deleted with
+ * the beta surfaces (#2317) and its allowlist line stayed. `app/(marketing)/` is precisely where a
+ * new anonymous lead-capture action would be written next.
+ *
+ * The same class as the two dangling ledger pointers fixed the same day, with a sharper edge: those
+ * misdirected a reader, this one would have silently exempted code.
+ */
+export function staleAllowlistEntries() {
+  const stale = []
+  for (const [name, map] of [
+    ['ALLOWLIST_ACTIONS', ALLOWLIST_ACTIONS],
+    ['ALLOWLIST_LIB', ALLOWLIST_LIB],
+  ]) {
+    for (const file of map.keys()) {
+      if (!existsSync(file)) stale.push({ list: name, file })
+    }
+  }
+  return stale
+}
+
 export const ROUTE_VERDICTS = new Set(['public', 'token-credential', 'model-gated', 'delegated', 'self-scoped'])
 
 /** Is this file a Next Route Handler? `route.ts|tsx` is the file convention (Next 16); the
@@ -1037,6 +1068,19 @@ function main() {
   if (routes.violations.length > 0 || routes.orphans.length > 0) {
     failed = true
     console.error(formatRouteFailure(routes))
+  }
+
+  const stale = staleAllowlistEntries()
+  if (stale.length) {
+    failed = true
+    console.error(
+      '\n✗ Authz-contract check failed — allowlist entr(ies) naming a file that no longer exists:\n',
+    )
+    for (const e of stale) console.error(`  • ${e.list}: ${e.file}`)
+    console.error(
+      '\n  Each line above is a standing amnesty from this gate, waiting for someone to create a file\n' +
+        '  at that path and inherit it. Delete the entry.\n',
+    )
   }
 
   if (failed) process.exit(1)

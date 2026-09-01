@@ -37,11 +37,16 @@
 #
 # So: `public` here is a statement of FACT (anon can execute it), not an endorsement. 59 of these
 # are `public` and only about fourteen are deliberate front-door entry points. The gap between
-# those two numbers IS the finding, it is the open row OWN-006, and the proposed revokes are
-# staged in docs/proposals/OWN-006-revoke-browser-execute.sql -- outside supabase/migrations/,
-# because a file in there asserts production has run it. When an owner applies that proposal, the
-# thirteen functions it names move to `internal` / `authenticated` IN THE SAME CHANGE, and this
-# gate will refuse the change if they do not.
+# those two numbers WAS the finding, tracked as OWN-006 -- and OWN-006 is DONE. The revokes it
+# staged were applied on 2026-08-18 as
+# supabase/migrations/20270304000000_revoke_browser_execute_on_service_only_rpcs.sql, and the
+# `public` verdict count is 47 today.
+#
+# This paragraph used to say the revokes were "staged in docs/proposals/OWN-006-revoke-browser-
+# execute.sql -- outside supabase/migrations/", and pointed at a directory deleted in #2153. It is
+# the third instance in this repo of one class: a signpost that outlives its target. Two others
+# were fixed the same day (scripts/admin-client-baseline.txt naming a deleted module, and
+# scripts/store-shelf.json naming this same deleted directory).
 #
 # ONE ROW IS NEITHER MEASURED-OPEN NOR NAMED-CLOSED. `after_crew_completion_verified` is `internal`
 # and carries no revoke of its own: 20261231000000 closed it inside a catalog-driven `do $$` loop.

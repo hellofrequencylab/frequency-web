@@ -111,10 +111,28 @@ describe('every non-attending reader goes through the rule', () => {
     // 20260612000000_events_visibility_rls.sql), NOT generateMetadata's stricter indexability rule.
     // Gating `unlisted` out would blank the preview for events whose whole distribution model is
     // someone pasting the link — a regression dressed as a fix.
-    expect(src).toMatch(/visibility === 'public'/)
-    expect(src).toMatch(/visibility === 'unlisted'/)
-    expect(src).toMatch(/status.*'published'/)
-    expect(src).toContain('removed_at')
+    // 🔴 ASSERT THE GATE EXPRESSION, NOT THE PRESENCE OF WORDS ANYWHERE IN THE FILE. The first
+    // version of these four lines was `toMatch(/visibility === 'public'/)` + `toContain('removed_at')`,
+    // and it was re-audited on 2026-09-01 against mutations of the fixed tree. TWO of the three leaks
+    // this test exists for could be re-introduced with every arm still GREEN:
+    //   · deleting `&& !ev?.removed_at` — because `removed_at` also appears in the .select() string
+    //     and in the Row type, so `toContain` passed by EXISTING. Shape-not-truth, verbatim.
+    //   · widening the set to `|| 'private' || 'circle_only'` — because nothing pinned the SET, only
+    //     that two of its members were mentioned somewhere.
+    // So the gate is now matched as one expression, and the readable set is pinned exhaustively.
+    const gate = src.match(/const linkReadable = ([^\n]*)\n\s*const isPublic = ([^\n]*)/)
+    expect(gate, 'the gate is no longer two consecutive linkReadable/isPublic lines').not.toBeNull()
+    const [, readable, isPublic] = gate!
+    // Exactly two visibilities are link-readable. A third member is a leak; a missing one blanks a
+    // card that should render (20260612000000_events_visibility_rls.sql).
+    expect([...readable.matchAll(/'([a-z_]+)'/g)].map((m) => m[1]).sort()).toEqual([
+      'public',
+      'unlisted',
+    ])
+    // Both other clauses must live in the gate expression itself, not merely somewhere in the file.
+    expect(isPublic).toMatch(/=== 'published'/)
+    expect(isPublic).toMatch(/!ev\?\.removed_at/)
+    expect(isPublic).toContain('linkReadable')
     // ⚠️ Assert the CALL, not the declaration: `toContain('neutralCard()')` passes on the function
     // definition alone, so it stayed green when the gate's branch was mutated away. A guard that
     // passes by existing is the shape-not-truth failure this repo names in four ADRs.

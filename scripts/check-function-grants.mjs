@@ -192,11 +192,17 @@ export const LOOP_REVOKES = [
  * 20270221000000, after the loop — and needed its own revoke. A new trigger function added today
  * cannot be waved through here: it would sort after the loop and this entry would fail.
  *
- * Every entry is a function this repo would rather name explicitly. OWN-006's proposal
- * (docs/proposals/OWN-006-revoke-browser-execute.sql) includes the named revoke that empties this
- * map; until an owner applies it, `public` would be a lie (anon genuinely cannot execute it) and
- * a hard failure would be a gate nobody can make green. So it is declared, verified, and COUNTED
- * IN THE PASSING OUTPUT so it can never read as ordinary coverage.
+ * Every entry is a function this repo would rather name explicitly. This block used to say the
+ * named revoke was waiting on an owner to apply OWN-006's proposal at
+ * docs/proposals/OWN-006-revoke-browser-execute.sql. ✅ That is CLOSED: OWN-006 was applied on
+ * 2026-08-18 as supabase/migrations/20270304000000_revoke_browser_execute_on_service_only_rpcs.sql,
+ * whose line 136 reads
+ *   revoke execute on function public.after_crew_completion_verified() from public, anon, authenticated;
+ * so the exception this map documents is now explicitly revoked in a committed migration. The entry
+ * stays because the ORDERING check it performs is still the thing worth verifying, but it is no
+ * longer an open caveat waiting on anybody, and the proposals directory it named was deleted in
+ * #2153. It remains declared, verified, and COUNTED IN THE PASSING OUTPUT so it can never read as
+ * ordinary coverage.
  */
 export const LOOP_COVERED = {
   after_crew_completion_verified: '20261231000000_revoke_trigger_fn_rest_execute.sql',
@@ -629,14 +635,14 @@ function main() {
   )
   console.log(
     `  ⚠️ ${counts.public} function(s) are declared reachable by \`anon\`. That is a DECLARATION, not` +
-      ` a finding:\n     the gate cannot read a function body. OWN-006 is the open row that revisits it.`,
+      ` a finding:\n     the gate cannot read a function body. OWN-006 revisited it and is DONE (applied 2026-08-18 as migration 20270304000000).`,
   )
   if (loopCovered.size > 0) {
     // Never let a declared exception read as ordinary coverage. It gets a line every single run.
     console.log(
       `  ⚠️ ${loopCovered.size} function(s) rest on a CATALOG LOOP rather than a named revoke: ` +
         `${[...loopCovered].sort().join(', ')}.\n     Verified to sort before their loop, so a replay ` +
-        `covers them — but a named revoke is better, and OWN-006 carries it.`,
+        `covers them. ✅ OWN-006 shipped the named revoke on 2026-08-18 (migration 20270304000000, line 136),\n     so this entry now documents an ORDERING check rather than an outstanding gap.`,
     )
   }
 }

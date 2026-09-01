@@ -12,6 +12,20 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ### Fixed
 
+- **A shared event link now shows the event's own artwork**: paste an event's link into a message and
+  the preview leads with the cover the host uploaded. It used to lead with one only if the event had
+  been captured by scanning a poster. Every other event, which is most of them, shared as a plain dark
+  card with the title in text, while the page behind the link showed the photo the whole time.
+- **A closed event no longer reveals itself in a link preview**: an event set to a Circle, to invite
+  only, or still in draft used to publish its title, date, venue and host into the preview image, to
+  anyone the link reached, whether or not they could open it. Those now share as a plain Frequency
+  card with nothing identifying on it. An event set to "Anyone with the link" is unchanged, because
+  being shareable by link is what that setting is for.
+- **"Hide the address" now covers the link preview too**: a host who asked for the address to stay
+  hidden until someone registers had it printed into the preview image anyway, in full, for anyone
+  the link was forwarded to. The preview now carries the city only, matching the event page, the
+  browse listing and the calendar file.
+
 - **A host's RSVP window now actually holds**: event settings has always let a host say when RSVPs
   open and when they close, and both dates were shown on the event page. Neither one did anything.
   An event whose RSVPs were meant to close on Friday kept taking them all weekend. They are now
@@ -68,7 +82,7 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
   always wins.
 
 - **Adopt a practice for a stretch, not forever**: adopting now asks how long you will take it
-  on — 2 weeks, 4 weeks, 8 weeks (long enough to make it stick), or ongoing — and you can say
+  on: 2 weeks, 4 weeks, 8 weeks (long enough to make it stick), or ongoing. You can also say
   when you plan to do it ("After my morning coffee"). Your card shows where you stand ("Week 2
   of 4 · Day 9 of 28") from day one. When a commitment completes you get the note, a nudge to
   go again, and your history stays yours either way.
@@ -85,8 +99,8 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
   never by email. Turn it off any time in Settings, Notifications.
 - **Leave a Journey**: a quiet exit at the foot of the player. Your own practices and your
   lesson progress stay yours.
-- **Vera sets up the timer with you**: building a practice with Vera now sets how it is done —
-  a stillness timer, a moving timer, or a simple log — with a warm-up line, shown before you
+- **Vera sets up the timer with you**: building a practice with Vera now sets how it is done,
+  as a stillness timer, a moving timer, or a simple log, with a warm-up line shown before you
   create it. Every part still tunes in the builder.
 - **Your drafts are yours until you submit**: a new practice starts as a private draft. The
   builder shows exactly where it stands (private draft, in review, live) and submitting it to
@@ -122,7 +136,7 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
   already have is skipped, so it's safe to run again. Your imported contacts stay private to
   you. Business owners can bring a list into their Space CRM the same way.
 - **Choose exactly what Frequency sends you**: **Settings → Notifications** now lets you pick
-  each topic on its own (broadcasts, events, mentions, replies and comments on your posts, and
+  each topic on its own (Dispatches, events, mentions, replies and comments on your posts, and
   the occasional note about Frequency), pick how often (real-time, a daily digest, or a weekly
   digest), and mute a single circle or Space without leaving it. Account and security emails
   always send. Not a member but getting email from a business here? Every email now links to a
@@ -395,7 +409,7 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
   reach a new stage.
 - **Daily practice streaks that actually work**: your streak now counts the days in a
   row you’ve logged a practice (it used to quietly count weeks). Hit 3, 7, 14, 30, 60,
-  100 or 365 days to earn a badge and bonus zaps, bank **streak freezes** at the bigger
+  100 or 365 days to earn a badge and bonus Zaps, bank **streak freezes** at the bigger
   milestones that automatically save you if you miss a day, and get an **at-risk** nudge
   on your home screen before a streak slips away. See the new Streaks page in your dashboard.
 - **Your Journey on the Dashboard**: adopt a seasonal Journey and follow it on your
@@ -424,12 +438,12 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 ### Added
 
 - **A much bigger help center**: new guides covering circles, hubs, channels and events;
-  finding people, friends, messages and search; posting and broadcasts; season ranks;
+  finding people, friends, messages and search; posting and Dispatches; season ranks;
   membership and the Vault; and reporting and safety, so "how do I…?" has an answer.
 - **Season banner**: your Crew dashboard now shows the current season: its name and a live
   countdown to when it ends (or "Ongoing" while it's open), so you always know how long is
   left to climb the ranks.
-- **Lifecycle rewards**: earn zaps for starting a circle, activating it with a practice,
+- **Lifecycle rewards**: earn Zaps for starting a circle, activating it with a practice,
   and inviting someone who joins (attending already rewarded). The circle journey now
   pays off.
 - **Start your own circle**: any member can now create a circle around an Interest and
@@ -451,7 +465,7 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 - **Delete your account**: permanent, self-serve account deletion under Settings,
   Account & privacy.
 - **Practices**: adopt a practice from the library or follow your circle's, and log
-  it each day to earn zaps and build a streak. Hosts can set their circle's practice.
+  it each day to earn Zaps and build a streak. Hosts can set their circle's practice.
 - **Help Center** at `/help`: searchable guides for finding Circles, going to
   gatherings, and how the game works.
 
@@ -459,5 +473,5 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ### Added
 
-- The beta platform: Circles, Interests, events, broadcasts, messaging, friends,
-  the gamified game (zaps, gems, ranks, seasons), and the public discovery layer.
+- The beta platform: Circles, Interests, events, Dispatches, messaging, friends,
+  the gamified game (Zaps, Gems, ranks, seasons), and the public discovery layer.

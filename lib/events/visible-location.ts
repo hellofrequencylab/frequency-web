@@ -8,7 +8,7 @@
 //      so redacting the visible line alone would leak it straight back."
 //
 // Which is what happened. The event page honoured `hide_address`. The guest email honoured it. The
-// JSON-LD is city-level by ADR-186 and so never had the problem. The `.ics` surfaces did not consult
+// JSON-LD is city-level by ADR-825 + SCAN-209 and so never had the problem. The `.ics` surfaces did not consult
 // it at all, and on 2026-08-25 the master public calendar feed — which needs no credential — was
 // publishing `3598 Royal Rd, Vista, California` for a host who had switched the address off. A rule
 // that lives in one consumer is a rule the next consumer does not know about.
