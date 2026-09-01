@@ -34446,3 +34446,46 @@ allowlist entry for a deleted file, a standing amnesty waiting for whoever next 
 that path; and `LIVE-140`'s own probe and test both stayed green through two of the three leaks they
 existed for ([ADR-1180](#adr-1180)). All three were found by asking *"what does this guard not look
 at?"* rather than by reading its green output.
+
+## ADR-1184: the full bleed was half-applied, because two width classes landed on one element (2026-09-01)
+
+Owner report off a phone, second one on the same page: the event cover band bled off the **left**
+edge and stopped short on the **right**, leaving a stripe of page colour down one side.
+
+`components/media/poster-band.tsx` baked `w-full` into its base class string. The event page wanted
+a full-bleed phone band and passed `className="-mx-4 w-auto sm:mx-0 sm:w-full"`. The element
+therefore rendered carrying **both** `w-full` and `w-auto`, and this repo's `cn` is a plain join with
+no tailwind-merge — so the winner is Tailwind's emission order, not source order. `w-full` won.
+
+**The geometry is exact, not approximate.** `margin-left: -1rem` on a `width: 100%` child of a `px-4`
+content box puts the left edge at `0` and the right edge at `viewport - 2rem`. One gutter of bleed on
+the left, a 34px stripe on the right. That is precisely what the capture showed, which is how the
+diagnosis was confirmed against production rather than argued.
+
+⚠️ **The component had already learned this lesson and did not transfer it.** `radiusClass` is a
+prop, with a comment saying exactly why: *"two competing `rounded-*` classes are settled by
+Tailwind's alphabetical EMISSION order, not by the order you wrote them … would work today by luck
+of the alphabet and silently invert the day a token is renamed."* The author protected the radius
+from the trap and then left the width in the base string, where the very next caller hit it.
+
+**Decision.** Width is a prop, `widthClass`, defaulting to `w-full` so framed callers are untouched.
+A full-bleed caller passes `widthClass="w-auto sm:w-full"` and keeps margins in `className`. Nothing
+appends a second `w-*`. The no-cover placeholder had the same defect with no `w-auto` at all, so it
+was shifted rather than widened too, and is fixed in the same change.
+
+`components/media/poster-band.test.tsx` now parses the rendered class list and asserts **exactly one
+width utility per breakpoint**, plus the call site's shape. Four mutations were watched go red: re-baking
+`w-full` into the base string, moving the width back into `className`, reverting the placeholder, and
+dropping the default.
+
+**The general rule this is the second instance of.** A component that bakes a utility into a base
+string and also accepts `className` has created a collision its callers cannot win, because in this
+repo the loser is chosen by an alphabet rather than by intent. Any utility a caller may need to
+override belongs in a named prop that is *substituted*, never appended.
+
+⚪ **Not fixed here, and it is the other half of what the capture shows.** The bottom tab bar
+truncates "Marketpla…". That is `HYG-033`, an OWNER row: `min-w-0 flex-1 truncate` is a deliberate
+trade that prevents the worse failure — seven min-content slots summing to 319px against a 320px
+screen, where the last tab leaves the viewport with no way to scroll to it. Fixing it means either
+dropping a destination (an IA decision) or renaming one, and `docs/NAMING.md` forecloses the obvious
+rename: *"'Marketplace' ≠ 'Market.'"* They name different things.

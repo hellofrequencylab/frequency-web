@@ -5621,6 +5621,23 @@
       }
     },
     {
+      "id": "LIVE-145",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "docs/DECISIONS.md",
+        "ref": "ADR-1184"
+      },
+      "title": "The phone cover band bled off the left edge and stopped 34px short on the right, because two width classes fought",
+      "detail": "Owner report off a phone, 2026-09-01, second one on the same page. components/media/poster-band.tsx baked `w-full` into its base class string; the event page asked for a full bleed with className=\"-mx-4 w-auto sm:mx-0 sm:w-full\". The element rendered carrying BOTH w-full and w-auto, and this repo's `cn` is a plain join with no tailwind-merge, so the winner is Tailwind's emission order rather than source order. w-full won.\n\nTHE GEOMETRY IS EXACT: margin-left:-1rem on a width:100% child of a px-4 content box puts the left edge at 0 and the right edge at viewport-2rem. One gutter of bleed on the left, a 34px stripe of page colour on the right. Confirmed against the live rendered markup fetched from production, and the capture's geometry matches - which is how this was diagnosed rather than guessed.\n\n⚠️ THE COMPONENT HAD ALREADY LEARNED THIS AND DID NOT TRANSFER IT. radiusClass is a prop with a comment naming this exact trap ('settled by Tailwind's alphabetical EMISSION order, not by the order you wrote them'). The author protected the radius and left the width in the base string, where the very next caller hit it.\n\nFIXED: width is a prop (widthClass, default w-full so framed callers are untouched); the full-bleed caller passes widthClass=\"w-auto sm:w-full\" and keeps margins in className. The no-cover placeholder had the same defect with no w-auto at all and is fixed too. Four mutations watched go red.\n\n⚪ NOT VISUALLY CONFIRMED: the fix is proven at the markup and geometry layer, not on a re-rendered phone. Worth an owner eye after the deploy.\n\n⚪ THE OTHER HALF OF THE SAME CAPTURE is HYG-033 (owner, still open): the tab bar truncates 'Marketpla...'. min-w-0 flex-1 truncate is a deliberate trade against a worse failure, and the obvious rename is foreclosed by NAMING.md - 'Marketplace' != 'Market' name different things.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const b=fs.readFileSync('components/media/poster-band.tsx','utf8');const p=fs.readFileSync('app/(main)/events/[slug]/page.tsx','utf8');const call=p.slice(p.indexOf('<PosterBand'),p.indexOf('radiusClass=\\\"rounded-none'));process.exit(b.includes('widthClass} overflow-hidden')&&!b.includes('w-full overflow-hidden')&&call.includes('widthClass=\\\"w-auto sm:w-full\\\"')&&!/className=\\\"[^\\\"]*w-/.test(call)?0:1)\"",
+        "note": "Measures the consequence: the band's base class string carries NO w-full (so nothing collides), the component exposes widthClass, and the event page passes its width through that prop with no w-* left in className. Re-baking w-full, or moving the width back into className, fails. components/media/poster-band.test.tsx is the enforcing arm - it parses the rendered class list and asserts exactly one width utility per breakpoint."
+      }
+    },
+    {
       "id": "HYG-039",
       "status": "open",
       "lane": "hygiene",

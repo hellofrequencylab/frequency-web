@@ -139,7 +139,97 @@ describe('the event page actually uses it', () => {
 
   it('the no-cover placeholder shares the band height, so the page rhythm does not depend on art', () => {
     // An event WITHOUT a poster must not get a taller header than one with it.
-    expect(eventPage).toContain('${posterHeightCls} w-full items-center justify-center')
+    //
+    // ⚠️ This used to pin the literal '${posterHeightCls} w-full items-center justify-center'. The
+    // width was incidental to what the test is named for, and baking it in meant the HEIGHT
+    // assertion broke when the placeholder's width was corrected for the full bleed. Assert the
+    // height class and the centring; the width has its own test below.
+    expect(eventPage).toContain('${posterHeightCls}')
+    expect(eventPage).toContain('items-center justify-center')
     expect(eventPage).not.toContain('heroHeightCls')
+  })
+})
+
+// ── THE FULL BLEED WAS HALF-APPLIED, BECAUSE TWO WIDTH CLASSES LANDED ON ONE ELEMENT ─────────────
+//
+// 🔴 THE SECOND OWNER REPORT off the same page (2026-09-01): the phone band bled off the LEFT edge
+// and stopped short on the RIGHT, leaving a stripe of page colour down one side.
+//
+// The cause was this component protecting `rounded-*` from the no-tailwind-merge trap and then
+// baking `w-full` into the very same base string. The event page asked for a full bleed with
+// `className="-mx-4 w-auto sm:mx-0 sm:w-full"`, so the element rendered carrying BOTH `w-full` and
+// `w-auto`, and `w-full` won. The margins still pulled it one gutter left; the width never grew.
+//
+// The geometry is exact rather than approximate: `margin-left: -1rem` on a `width: 100%` child of a
+// `px-4` content box puts the left edge at 0 and the right edge at `viewport - 2rem`. A 34px stripe,
+// which is what the capture shows.
+//
+// So the rule is structural: ONE width class on the element, chosen by a prop, never appended.
+describe('the full bleed the owner asked for actually reaches both edges', () => {
+  /** Every Tailwind width utility on the root element, split by breakpoint prefix. */
+  function widthsByBreakpoint(markup: string): Record<string, string[]> {
+    const cls = markup.match(/class="([^"]*)"/)?.[1] ?? ''
+    const out: Record<string, string[]> = {}
+    for (const token of cls.split(/\s+/)) {
+      const m = token.match(/^(?:([a-z]+):)?(w-[\w[\]/.%-]+)$/)
+      if (m) (out[m[1] ?? 'base'] ??= []).push(m[2])
+    }
+    return out
+  }
+
+  it('renders exactly ONE width utility per breakpoint — the collision that shipped', () => {
+    const markup = renderToStaticMarkup(
+      <PosterBand
+        src="/x.png"
+        heightClass={posterHeightClass('standard')}
+        className="-mx-4 sm:mx-0"
+        widthClass="w-auto sm:w-full"
+        radiusClass="rounded-none sm:rounded-2xl"
+      />,
+    )
+    for (const [bp, widths] of Object.entries(widthsByBreakpoint(markup))) {
+      expect(widths, `${widths.length} width classes at "${bp}" — they fight, and this repo's cn has no tailwind-merge`).toHaveLength(1)
+    }
+  })
+
+  it('gives the phone band w-auto so the negative margin can widen it, not just shift it', () => {
+    const markup = renderToStaticMarkup(
+      <PosterBand
+        src="/x.png"
+        heightClass={posterHeightClass('standard')}
+        className="-mx-4 sm:mx-0"
+        widthClass="w-auto sm:w-full"
+      />,
+    )
+    const w = widthsByBreakpoint(markup)
+    // `w-auto` + negative margins = content width + both gutters. `w-full` + negative margins =
+    // content width, shifted. Only the first is a full bleed.
+    expect(w.base).toEqual(['w-auto'])
+    expect(w.sm).toEqual(['w-full'])
+  })
+
+  it('keeps w-full as the default, so the framed callers are untouched', () => {
+    const markup = renderToStaticMarkup(
+      <PosterBand src="/x.png" heightClass={posterHeightClass('standard')} />,
+    )
+    expect(widthsByBreakpoint(markup).base).toEqual(['w-full'])
+  })
+
+  it('the event page passes its width through the PROP, never appended to className', () => {
+    // The regression is re-introduced by moving `w-auto` back into className, where it collides
+    // again. Assert the call site's shape, not just the component's.
+    const call = eventPage.slice(eventPage.indexOf('<PosterBand'), eventPage.indexOf('radiusClass="rounded-none sm:rounded-2xl"'))
+    expect(call).toContain('widthClass="w-auto sm:w-full"')
+    expect(call, 'a w-* back inside className is the exact collision that shipped').not.toMatch(
+      /className="[^"]*\bw-/,
+    )
+  })
+
+  it('the no-cover placeholder bleeds too — it had the same defect and no w-auto at all', () => {
+    const ph = eventPage.slice(eventPage.indexOf('// No cover: a designed placeholder'))
+    const cls = ph.match(/className=\{`([^`]*)`\}/)?.[1] ?? ''
+    expect(cls).toContain('-mx-4')
+    expect(cls, 'w-full with -mx-4 shifts the box instead of widening it').toContain('w-auto')
+    expect(cls).toContain('sm:w-full')
   })
 })
