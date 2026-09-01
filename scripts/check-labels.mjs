@@ -59,7 +59,7 @@
 //
 // Usage: `node scripts/check-labels.mjs` (or `pnpm check:labels`). Exits 1 on violation.
 
-import { readdirSync, readFileSync, statSync } from 'node:fs'
+import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 const ROOTS = ['app', 'components']
@@ -321,14 +321,12 @@ export function auditForTargets(src) {
 function tsxFiles(dir) {
   const out = []
   let entries
-  try { entries = readdirSync(dir) } catch { return out }
+  try { entries = readdirSync(dir, { withFileTypes: true }) } catch { return out }
   for (const entry of entries) {
-    if (entry === 'node_modules' || entry === '.next') continue
-    const p = join(dir, entry)
-    let s
-    try { s = statSync(p) } catch { continue }
-    if (s.isDirectory()) out.push(...tsxFiles(p))
-    else if (entry.endsWith('.tsx') && !entry.endsWith('.test.tsx')) out.push(p)
+    if (entry.name === 'node_modules' || entry.name === '.next') continue
+    const p = join(dir, entry.name)
+    if (entry.isDirectory()) out.push(...tsxFiles(p))
+    else if (entry.name.endsWith('.tsx') && !entry.name.endsWith('.test.tsx')) out.push(p)
   }
   return out
 }

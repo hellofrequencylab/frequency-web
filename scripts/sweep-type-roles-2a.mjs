@@ -21,7 +21,7 @@
 // that the sweep is allowed to assume. Verified by compiling both sides before any call
 // site moved (see app/globals.css, the PAIRED LINE-HEIGHTS note).
 
-import { readFileSync, writeFileSync, readdirSync, statSync } from 'node:fs'
+import { readFileSync, writeFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 
 const ROOTS = ['app', 'components', 'lib']
@@ -39,10 +39,10 @@ const MAP = {
 const PATTERN = new RegExp(`\\b(${Object.keys(MAP).join('|')})\\b`, 'g')
 
 function walk(dir, out = []) {
-  for (const entry of readdirSync(dir)) {
-    if (entry === 'node_modules' || entry.startsWith('.')) continue
-    const p = join(dir, entry)
-    if (statSync(p).isDirectory()) walk(p, out)
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    if (entry.name === 'node_modules' || entry.name.startsWith('.')) continue
+    const p = join(dir, entry.name)
+    if (entry.isDirectory()) walk(p, out)
     else if (/\.tsx?$/.test(p)) out.push(p)
   }
   return out

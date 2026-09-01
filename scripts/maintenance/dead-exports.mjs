@@ -20,7 +20,7 @@
 // 🔴 THE PITFALL SCAN-502 RECORDS: a scan that only reads .ts/.tsx scores lib/help/drift.ts and
 // lib/ai/autodoc.ts as fully dead. They are LIVE, consumed by scripts/*.mts. Any consumer extension
 // left out of this list turns a live module into a deletion.
-import { readdirSync, readFileSync, statSync } from 'node:fs'
+import { readdirSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 
 const ROOT = process.cwd()
@@ -28,11 +28,10 @@ const SKIP = new Set(['node_modules', '.next', '.git', 'dist', 'build', '.vercel
 const CONSUMER_EXT = /\.(ts|tsx|mts|cts|cjs|mjs|js|jsx|yml|yaml|json|md|sql)$/
 
 function walk(dir, out = []) {
-  for (const e of readdirSync(dir)) {
-    if (SKIP.has(e)) continue
-    const p = path.join(dir, e)
-    const st = statSync(p)
-    if (st.isDirectory()) walk(p, out)
+  for (const e of readdirSync(dir, { withFileTypes: true })) {
+    if (SKIP.has(e.name)) continue
+    const p = path.join(dir, e.name)
+    if (e.isDirectory()) walk(p, out)
     else out.push(p)
   }
   return out

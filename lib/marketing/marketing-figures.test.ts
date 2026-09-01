@@ -37,13 +37,25 @@ const MARKETING_ROOTS = [
   'components/marketing',
 ]
 
+// The ONE statSync is on the caller's own `path` — a ROOTS entry, which may be a file
+// (app/llms.txt) or a directory. Below it every type comes from the dirent that produced the
+// name, so no path is resolved twice (ADR-1185).
 function sourceFiles(path: string, out: string[] = []): string[] {
-  const stat = statSync(path)
-  if (stat.isFile()) {
-    if (/\.tsx?$/.test(path) && !/\.test\.tsx?$/.test(path)) out.push(path)
+  const keep = (p: string) => {
+    if (/\.tsx?$/.test(p) && !/\.test\.tsx?$/.test(p)) out.push(p)
+  }
+  if (statSync(path).isFile()) {
+    keep(path)
     return out
   }
-  for (const entry of readdirSync(path)) sourceFiles(join(path, entry), out)
+  const walk = (dir: string) => {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const p = join(dir, entry.name)
+      if (entry.isDirectory()) walk(p)
+      else keep(p)
+    }
+  }
+  walk(path)
   return out
 }
 

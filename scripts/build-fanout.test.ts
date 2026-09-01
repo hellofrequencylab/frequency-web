@@ -38,11 +38,11 @@ const ROOTS = ['app', 'components', 'lib']
 
 function walk(dir: string): string[] {
   const out: string[] = []
-  for (const entry of readdirSync(dir)) {
-    if (entry === 'node_modules' || entry === '.next') continue
-    const full = join(dir, entry)
-    if (statSync(full).isDirectory()) out.push(...walk(full))
-    else if (/\.tsx?$/.test(entry)) out.push(full)
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    if (entry.name === 'node_modules' || entry.name === '.next') continue
+    const full = join(dir, entry.name)
+    if (entry.isDirectory()) out.push(...walk(full))
+    else if (/\.tsx?$/.test(entry.name)) out.push(full)
   }
   return out
 }

@@ -15,7 +15,7 @@
 // Exit code: NON-ZERO on any violation (a surface that dropped a shared import, or a re-inlined copy).
 // Usage: `node scripts/check-crm-parity.mjs` (or `pnpm check:crm-parity`).
 
-import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs'
+import { readFileSync, readdirSync, existsSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, join, relative } from 'node:path'
 
@@ -67,14 +67,12 @@ function walkCodeFiles() {
   const out = []
   const walk = (abs) => {
     let entries
-    try { entries = readdirSync(abs) } catch { return }
+    try { entries = readdirSync(abs, { withFileTypes: true }) } catch { return }
     for (const e of entries) {
-      if (e === 'node_modules' || e === '.next' || e === '.git' || e === 'dist') continue
-      const p = join(abs, e)
-      let s
-      try { s = statSync(p) } catch { continue }
-      if (s.isDirectory()) walk(p)
-      else if (CODE_EXT.some((x) => e.endsWith(x))) out.push(p)
+      if (e.name === 'node_modules' || e.name === '.next' || e.name === '.git' || e.name === 'dist') continue
+      const p = join(abs, e.name)
+      if (e.isDirectory()) walk(p)
+      else if (CODE_EXT.some((x) => e.name.endsWith(x))) out.push(p)
     }
   }
   for (const d of SEARCH_DIRS) walk(join(ROOT, d))

@@ -459,11 +459,21 @@ describe('the probe engine does not depend on ambient tooling', () => {
   // The assertion is deliberately a COMPARISON rather than a fixed expectation: the guard must give
   // the SAME answer with and without ripgrep on PATH. That holds no matter how the backlog changes.
   // ⏱️ TIMEOUT, and why it is not the default 30s. This test runs the WHOLE guard twice — once with
-  // ripgrep on PATH and once without. The guard costs ~6s (measured 2026-08-17, down from 23.9s: ten
-  // closed rows carried a probe that spawned a vitest run to prove its consequence, and each now
-  // measures the same consequence in-process instead). ~13s of real work, 60s of budget — headroom
-  // for a loaded runner, without the allowance itself becoming the place a regression hides. That is
-  // what the CPU budget below is for: the timeout catches a hang, the budget catches a creep.
+  // ripgrep on PATH and once without. The guard cost ~6s when this was written (2026-08-17, down
+  // from 23.9s: ten closed rows carried a probe that spawned a vitest run to prove its consequence,
+  // and each now measures the same consequence in-process instead), so the note here read "~13s of
+  // real work, 60s of budget — headroom for a loaded runner".
+  //
+  // 🔴 THAT HEADROOM IS LARGELY GONE AND THE OLD NUMBER IS RETIRED. Measured 2026-09-01 on an idle
+  // machine: **46.7s against the 60s timeout — 78%**, with 226 probes now running twice. Under
+  // full-suite contention it EXCEEDED 60s and failed the run. Adding one probe that imported the
+  // TypeScript compiler (~1.7s per pass) was enough to tip it; that probe was then made 5x cheaper
+  // and the failure went away, which postpones the problem rather than fixing it.
+  //
+  // ⚠️ The failure mode is the worst kind: a TIMEOUT, not an assertion. It names nothing, appears
+  // only under load so it does not reproduce when re-run alone, and reads exactly like a flake —
+  // which this repo's own rules correctly say is never a root cause. `HYG-042` carries the fix.
+  // The CPU budget below is the healthier half: a number someone can watch. The timeout is a cliff.
   it('gives identical results with and without ripgrep on PATH', { timeout: 60_000 }, () => {
     const stub = mkdtempSync(path.join(tmpdir(), 'nopath-'))
     // Everything a probe legitimately needs (node, git, a shell) — but deliberately not `rg`.

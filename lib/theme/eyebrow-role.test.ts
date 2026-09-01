@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { readFileSync, readdirSync, statSync } from 'node:fs'
+import { readFileSync, readdirSync } from 'node:fs'
 import { join, relative, sep } from 'node:path'
 
 // THE EYEBROW ROLE, GUARDED.
@@ -152,10 +152,10 @@ const ROOTS = ['app', 'components'] as const
 function tsxFiles(): string[] {
   const out: string[] = []
   const walk = (dir: string) => {
-    for (const name of readdirSync(dir)) {
-      const full = join(dir, name)
-      if (statSync(full).isDirectory()) {
-        if (name === 'node_modules' || name === '.next') continue
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const full = join(dir, entry.name)
+      if (entry.isDirectory()) {
+        if (entry.name === 'node_modules' || entry.name === '.next') continue
         walk(full)
         continue
       }

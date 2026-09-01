@@ -183,17 +183,28 @@ function validate(entries) {
 
 const SKIP_DIRS = new Set(['node_modules', '.git', '.next', 'dist', 'coverage'])
 
-/** Every file under a path, following directories. */
+/**
+ * Every file under a path, following directories.
+ *
+ * The ONE statSync here is on the caller's own `target` — a path this module names, which may
+ * legitimately be a file or a directory. Everything below it takes its type from the dirent that
+ * produced the name, so no path is ever resolved twice (ADR-1185).
+ */
 function filesUnder(target, acc = []) {
   const st = statSync(target)
   if (st.isFile()) {
     acc.push(target)
     return acc
   }
-  for (const name of readdirSync(target)) {
-    if (SKIP_DIRS.has(name)) continue
-    filesUnder(join(target, name), acc)
+  const walk = (dir) => {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      if (SKIP_DIRS.has(entry.name)) continue
+      const p = join(dir, entry.name)
+      if (entry.isDirectory()) walk(p)
+      else acc.push(p)
+    }
   }
+  walk(target)
   return acc
 }
 

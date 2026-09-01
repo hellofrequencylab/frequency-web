@@ -35,7 +35,7 @@
 //
 // Usage: `node scripts/check-module-reachability.mjs` (or `pnpm check:module-reachability`).
 
-import { readdirSync, readFileSync, statSync, existsSync } from 'node:fs'
+import { readdirSync, readFileSync, existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
@@ -184,11 +184,11 @@ export function parseMountedKeys(sources) {
 }
 
 function walk(dir, exts, out = []) {
-  for (const entry of readdirSync(dir)) {
-    if (entry === 'node_modules' || entry.startsWith('.')) continue
-    const p = join(dir, entry)
-    if (statSync(p).isDirectory()) walk(p, exts, out)
-    else if (exts.some((e) => entry.endsWith(e))) out.push(p)
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    if (entry.name === 'node_modules' || entry.name.startsWith('.')) continue
+    const p = join(dir, entry.name)
+    if (entry.isDirectory()) walk(p, exts, out)
+    else if (exts.some((e) => entry.name.endsWith(e))) out.push(p)
   }
   return out
 }

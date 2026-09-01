@@ -34622,3 +34622,72 @@ claim with an expiry date, and the cheapest one in the backlog to get wrong —
 [ADR-1082](#adr-1082) recorded three rows in exactly this state and this is the fourth. The row was
 right to hold out for a measurement and wrong about how hard the measurement was, and only one of
 those two is worth keeping.
+
+## ADR-1188: twenty-one walkers, and a probe that could only see twelve of them (2026-09-01)
+
+[ADR-1185](#adr-1185) converted one tree walker to `readdirSync(d, { withFileTypes: true })` after
+CodeQL raised two high-severity `js/file-system-race` alerts on it, and opened `HYG-041` for the
+rest. That row said **twelve**. The true number was **twenty-one**, and the gap is the point.
+
+**The row's probe was a regex, and it under-counted twice over.**
+
+| # | What it could not see | Cost |
+|---|---|---|
+| 1 | `statSync(join(ROOT, rel)).isDirectory()` — `[^)]*` cannot cross a nested paren | 1 walker invisible |
+| 2 | the **variable form**: `let s; try { s = statSync(p) } catch { continue }` then `if (s.isDirectory())` | **7 walkers invisible** |
+| 3 | the **recursive form**: stat the ARGUMENT, readdir the children, so the stat on a readdir-produced path happens in the *next call* | 2 more, invisible to either probe |
+
+The first was caught the day the row was written. The second and third only surfaced **while doing
+the sweep the row asked for** — which is the useful part: a probe that under-counts does not fail,
+it goes green on a job half done. It would have closed `HYG-041` with nine walkers still in the tree
+and a row saying they were gone.
+
+**So the invariant is AST-shaped and function-scoped:** no function may contain both a bare
+`readdirSync` and a `statSync`. With the dirents in hand the type is already known, so a `statSync`
+beside them is the defect *by definition* — in whatever syntax it is written.
+
+⚪ **Function scope rather than file scope is load-bearing.** `scripts/check-backlog.mjs`
+legitimately stats a **caller-named** root that may be a file or a directory, then walks with
+dirents from a nested function. One stat on a path this repo names is not a race; a stat on a path
+`readdir` just handed you is. A file-scoped rule would have flagged it and earned an allowlist —
+[ADR-970](#adr-970) again.
+
+⚠️ **The sweep broke two guards, and the before/after comparison is what caught it.**
+`check-labels.mjs` and `check-a11y-names.mjs` hold their `readdirSync` a few lines above the loop it
+feeds; converting the loop body to `entry.name` without converting the call made both throw
+`ERR_INVALID_ARG_TYPE` on the first directory. A mechanical change across 21 files is exactly where
+that happens, so every affected guard was run **before and after and diffed**. All twelve outputs
+are byte-identical, corpus counts included — 618 labels across 1,868 files, 3,576 accessible names
+across the same 1,868, the visual-surface census unchanged. **Identical output is the claim, not
+that the guards still pass**; a guard that walks less still passes.
+
+⚪ **Symlinks checked, not assumed.** `Dirent.isDirectory()` is **false** for a symlink to a
+directory where `statSync().isDirectory()` was true, so this conversion only preserves behaviour in
+a tree without them. `find . -type l` (excluding `node_modules` and `.git`) returns nothing.
+
+The gate is `scripts/check-walker-dirents.test.ts`, running on every PR — earlier and broader than
+CodeQL, which only alerts on files a PR *changed* and so left every unconverted walker silent until
+someone edited it. Its detector lives in `scripts/walker-dirents.mjs`, imported by both the gate and
+`HYG-041`'s probe, so the two cannot drift. Reading: **0 offenders across 1,976 files**.
+
+⚪ **The probe has a fast path and the gate deliberately does not.** `import typescript` costs 525ms
+against 176ms of actual work, and `scripts/backlog-contract.test.ts` runs every probe **twice** —
+with and without ripgrep on `PATH` — inside a 60s timeout. So the probe skips files a cheap regex
+rules out (a strict **superset** of the AST rule: an offender needs both calls in one *function*,
+which implies both in the *file*), and in the clean state never loads the compiler: **150ms, down
+from 820ms**. The gate takes no such shortcut, so a bug in that regex can only slow the probe, never
+blind the arm that enforces. A test asserts the two arms agree on the real tree, and **blinding the
+pre-filter was watched turn the probe green on a dirty tree while that test went red** — which is
+the whole reason the split is worth its complexity.
+
+🔴 **Adding this probe also exposed something worse than itself.** The first version, at ~1.7s a
+pass, pushed that ripgrep-parity test past its timeout under full-suite contention. Measured alone
+on an idle machine it runs **46.7s against 60s — 78%**, with 226 probes now going twice. The comment
+above it still claimed *"~13s of real work, 60s of budget — headroom for a loaded runner"*, measured
+2026-08-17 when the guard cost 6s a pass; it now costs 23.4s. Making this probe cheap postponed the
+problem rather than fixing it, so `HYG-042` carries it and the stale comment is corrected in the
+same change. The failure mode is the worst kind — a **timeout, not an assertion**: it names nothing,
+appears only under load, does not reproduce when re-run alone, and reads exactly like a flake, which
+this repo's rules correctly say is never a root cause. The CPU budget printed beside it
+(`guardCpuMs=26,860`) is the healthy half, because it is a number someone can watch. A timeout is a
+cliff.

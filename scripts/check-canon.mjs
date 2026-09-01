@@ -66,7 +66,7 @@
 // alongside check:authz and check:seo, so a canon regression fails the PR. The seam scan is
 // additionally enforced by scripts/check-canon.test.ts, which vitest auto-discovers.
 
-import { readdirSync, readFileSync, statSync } from 'node:fs'
+import { readdirSync, readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
 import ts from 'typescript'
@@ -155,11 +155,10 @@ export const RULES = [
 /** Recursively collect .md files under dir. */
 function mdFiles(dir) {
   const out = []
-  for (const entry of readdirSync(join(REPO, dir))) {
-    const p = `${dir}/${entry}`
-    const s = statSync(join(REPO, p))
-    if (s.isDirectory()) out.push(...mdFiles(p))
-    else if (entry.endsWith('.md')) out.push(p)
+  for (const entry of readdirSync(join(REPO, dir), { withFileTypes: true })) {
+    const p = `${dir}/${entry.name}`
+    if (entry.isDirectory()) out.push(...mdFiles(p))
+    else if (entry.name.endsWith('.md')) out.push(p)
   }
   return out
 }
@@ -226,13 +225,12 @@ const SRC_FILES = ['lib/site.ts', 'lib/jsonld.ts', 'app/page.tsx', 'app/llms.txt
 function srcFiles(dir) {
   const out = []
   let entries
-  try { entries = readdirSync(join(REPO, dir)) } catch { return out }
+  try { entries = readdirSync(join(REPO, dir), { withFileTypes: true }) } catch { return out }
   for (const entry of entries) {
-    const p = `${dir}/${entry}`
-    let s
-    try { s = statSync(join(REPO, p)) } catch { continue }
-    if (s.isDirectory()) out.push(...srcFiles(p))
-    else if ((entry.endsWith('.ts') || entry.endsWith('.tsx')) && !entry.endsWith('.test.ts') && !entry.endsWith('.test.tsx')) out.push(p)
+    const p = `${dir}/${entry.name}`
+    const name = entry.name
+    if (entry.isDirectory()) out.push(...srcFiles(p))
+    else if ((name.endsWith('.ts') || name.endsWith('.tsx')) && !name.endsWith('.test.ts') && !name.endsWith('.test.tsx')) out.push(p)
   }
   return out
 }
