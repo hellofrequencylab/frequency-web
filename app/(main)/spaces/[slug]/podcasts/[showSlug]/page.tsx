@@ -70,7 +70,13 @@ export async function generateMetadata({
       description,
       type: 'website',
       url: `/spaces/${slug}/podcasts/${showSlug}`,
-      images: coverUrl ? [{ url: coverUrl }] : undefined,
+      // 🔴 SPREAD, NOT `: undefined`. Declaring the key OWNS it, and Next applies a file-convention
+      // image only when the source does NOT hasOwnProperty('images') (mergeStaticMetadata in
+      // resolve-metadata.js). This route has no opengraph-image of its own — it INHERITS the Space's
+      // from app/(main)/spaces/[slug]/ — so `: undefined` suppressed that inherited card for every
+      // Show without a cover, dropping it to the generic site card. Which is the failure the comment
+      // directly below says this block was written to fix.
+      ...(coverUrl ? { images: [{ url: coverUrl }] } : {}),
     },
     // Metadata merges per TOP-LEVEL key, so a page that sets only `openGraph` still inherits the
     // ROOT twitter block: every share of a Show read "Frequency, the Community Collective" with the
@@ -79,7 +85,7 @@ export async function generateMetadata({
       card: 'summary_large_image',
       title: show.title,
       description,
-      images: coverUrl ? [coverUrl] : undefined,
+      ...(coverUrl ? { images: [coverUrl] } : {}),
     },
   }
 }
