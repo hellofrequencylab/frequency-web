@@ -29,7 +29,7 @@
 // noisy gate gets ignored. Better to catch a real subset every run than a superset once.
 
 import { compile } from 'tailwindcss'
-import { readFileSync, readdirSync, statSync } from 'node:fs'
+import { readFileSync, readdirSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 
 // `lib` is in scope because design-system class strings live there too: lib/gamification.ts
@@ -88,10 +88,10 @@ const DECLARED = [
 ]
 
 function walk(dir, out = []) {
-  for (const entry of readdirSync(dir)) {
-    if (entry === 'node_modules' || entry.startsWith('.')) continue
-    const p = join(dir, entry)
-    if (statSync(p).isDirectory()) walk(p, out)
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    if (entry.name === 'node_modules' || entry.name.startsWith('.')) continue
+    const p = join(dir, entry.name)
+    if (entry.isDirectory()) walk(p, out)
     // .ts as well as .tsx: a config module that exports class strings is just as load-bearing
     // as a component that writes them inline, and lib/gamification.ts is precisely that.
     else if (/\.tsx?$/.test(p)) out.push(p)

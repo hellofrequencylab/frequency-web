@@ -58,7 +58,7 @@
 //
 // Usage: node scripts/check-client-server-boundary.mjs [--probe]
 
-import { readdirSync, readFileSync, statSync } from 'node:fs'
+import { readdirSync, readFileSync } from 'node:fs'
 import { join, dirname, normalize } from 'node:path'
 
 const ADMIN = 'lib/supabase/admin.ts'
@@ -82,7 +82,9 @@ function walk(dir) {
     }
   }
 }
-for (const r of ROOTS) { try { if (statSync(r).isDirectory()) walk(r) } catch { /* absent root */ } }
+// `walk` already swallows ENOENT/ENOTDIR from its own readdirSync, so a stat here only
+// asked the filesystem a second question whose answer could differ (ADR-1185).
+for (const r of ROOTS) walk(r)
 
 if (!files.includes(ADMIN)) {
   console.error(`PROBE_INDETERMINATE: ${ADMIN} not found. This gate cannot look, so it will not`)

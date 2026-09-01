@@ -80,7 +80,7 @@
 //
 // Usage: `node scripts/check-a11y-names.mjs` (or `pnpm check:a11y-names`). Exits 1 on violation.
 
-import { readdirSync, readFileSync, statSync, existsSync } from 'node:fs'
+import { readdirSync, readFileSync, existsSync } from 'node:fs'
 import { join, dirname, resolve as resolvePath, relative } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import ts from 'typescript'
@@ -692,14 +692,12 @@ export function auditNames(src, ctx, file = 'fixture.tsx') {
 export function tsxFiles(dir) {
   const out = []
   let entries
-  try { entries = readdirSync(dir) } catch { return out }
+  try { entries = readdirSync(dir, { withFileTypes: true }) } catch { return out }
   for (const entry of entries) {
-    if (entry === 'node_modules' || entry === '.next') continue
-    const p = join(dir, entry)
-    let s
-    try { s = statSync(p) } catch { continue }
-    if (s.isDirectory()) out.push(...tsxFiles(p))
-    else if (entry.endsWith('.tsx') && !entry.endsWith('.test.tsx')) out.push(p)
+    if (entry.name === 'node_modules' || entry.name === '.next') continue
+    const p = join(dir, entry.name)
+    if (entry.isDirectory()) out.push(...tsxFiles(p))
+    else if (entry.name.endsWith('.tsx') && !entry.name.endsWith('.test.tsx')) out.push(p)
   }
   return out
 }

@@ -17,7 +17,7 @@
 //
 // Usage: node scripts/check-admin-client.mjs [--update]
 
-import { readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
+import { readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
@@ -31,13 +31,12 @@ const ROOTS = ['app', 'lib', 'components', 'test', 'scripts']
 const IMPORT_RE = /(?:from\s+['"]@\/lib\/supabase\/admin['"]|import\(\s*['"]@\/lib\/supabase\/admin['"]\s*\))/
 
 function walk(dir, out = []) {
-  for (const entry of readdirSync(dir)) {
-    const p = join(dir, entry)
-    const st = statSync(p)
-    if (st.isDirectory()) {
-      if (entry === 'node_modules' || entry.startsWith('.')) continue
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const p = join(dir, entry.name)
+    if (entry.isDirectory()) {
+      if (entry.name === 'node_modules' || entry.name.startsWith('.')) continue
       walk(p, out)
-    } else if (/\.(ts|tsx|mts)$/.test(entry)) {
+    } else if (/\.(ts|tsx|mts)$/.test(entry.name)) {
       out.push(p)
     }
   }

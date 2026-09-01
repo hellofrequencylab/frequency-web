@@ -17,7 +17,7 @@
 //   pnpm lint && pnpm test && pnpm build && pnpm check:menu && pnpm check:canon && pnpm check:seo
 //   plus migration/advisor drift via scripts/maintenance/sweep.mts.
 
-import { readFileSync, existsSync, readdirSync, statSync } from 'node:fs'
+import { readFileSync, existsSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 
 // ── The north star: the six tiers are Member / Crew / Business / Collective / Non Profit / Independent
@@ -40,14 +40,12 @@ function grepCount(dir, re, exts) {
   const hits = []
   const walk = (d) => {
     let entries
-    try { entries = readdirSync(d) } catch { return }
+    try { entries = readdirSync(d, { withFileTypes: true }) } catch { return }
     for (const e of entries) {
-      if (e === 'node_modules' || e === '.next' || e === '.git') continue
-      const p = join(d, e)
-      let s
-      try { s = statSync(p) } catch { continue }
-      if (s.isDirectory()) walk(p)
-      else if (exts.some((x) => e.endsWith(x))) {
+      if (e.name === 'node_modules' || e.name === '.next' || e.name === '.git') continue
+      const p = join(d, e.name)
+      if (e.isDirectory()) walk(p)
+      else if (exts.some((x) => e.name.endsWith(x))) {
         const txt = read(p)
         if (!txt) continue
         txt.split('\n').forEach((l, i) => { if (re.test(l)) { n++; hits.push(`${p}:${i + 1}`) } })

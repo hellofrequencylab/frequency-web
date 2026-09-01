@@ -366,17 +366,22 @@ export function walkRouteClientGraph(rootDir, entryRel, heavy = HEAVY_CLIENT_MOD
     if (spec.startsWith('@/')) base = path.join(rootDir, spec.slice(2))
     else if (spec.startsWith('.')) base = path.resolve(path.dirname(fromFile), spec)
     else return null
+    // One stat, not exists-then-stat. `throwIfNoEntry: false` returns undefined for a
+    // missing path, so each of these is a single question to the filesystem rather than
+    // two whose answers could disagree (ADR-1185). This is a resolver, not a tree walk —
+    // there is no readdir here to carry the entry type, so withFileTypes does not apply.
     for (const e of MODULE_EXTS) {
       const p = base + e
-      if (existsSync(p) && statSync(p).isFile()) return p
+      if (statSync(p, { throwIfNoEntry: false })?.isFile()) return p
     }
-    if (existsSync(base) && statSync(base).isDirectory()) {
+    const baseStat = statSync(base, { throwIfNoEntry: false })
+    if (baseStat?.isDirectory()) {
       for (const e of MODULE_EXTS) {
         const p = path.join(base, 'index' + e)
         if (existsSync(p)) return p
       }
     }
-    if (existsSync(base) && statSync(base).isFile()) return base
+    if (baseStat?.isFile()) return base
     return null
   }
 

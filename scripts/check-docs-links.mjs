@@ -14,7 +14,7 @@
 // Usage: `node scripts/check-docs-links.mjs` (or `pnpm check:docs-links`). Exits 1 on
 // violation. Model: scripts/check-migrations.mjs.
 
-import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs'
+import { readFileSync, readdirSync, existsSync } from 'node:fs'
 import { join, dirname, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
@@ -28,10 +28,10 @@ export function mdFiles() {
     if (f.endsWith('.md')) files.push(f)
   }
   const walk = (dir) => {
-    for (const f of readdirSync(join(ROOT, dir))) {
-      const rel = join(dir, f)
-      if (statSync(join(ROOT, rel)).isDirectory()) walk(rel)
-      else if (f.endsWith('.md')) files.push(rel)
+    for (const f of readdirSync(join(ROOT, dir), { withFileTypes: true })) {
+      const rel = join(dir, f.name)
+      if (f.isDirectory()) walk(rel)
+      else if (f.name.endsWith('.md')) files.push(rel)
     }
   }
   for (const dir of ['docs', 'design_handoff']) {

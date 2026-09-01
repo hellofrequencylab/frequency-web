@@ -34,7 +34,7 @@
 // the components those mount" and stops before the registries. It still over-counts — a
 // component behind a tab or a dialog is reachable and unphotographed — so read every number
 // below as an UPPER BOUND on what a screenshot of that route watches, never as a promise.
-import { readFileSync, existsSync, readdirSync, statSync } from 'node:fs'
+import { readFileSync, existsSync, readdirSync } from 'node:fs'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { loadConfig, loadCorpus, countEntry } from './check-adoption.mjs'
@@ -175,11 +175,11 @@ function withLayouts(pageFile) {
 function routeSeeds(dir) {
   const out = []
   const walk = (d) => {
-    for (const name of readdirSync(d)) {
-      const p = path.join(d, name)
-      if (statSync(p).isDirectory()) {
+    for (const entry of readdirSync(d, { withFileTypes: true })) {
+      const p = path.join(d, entry.name)
+      if (entry.isDirectory()) {
         if (!existsSync(path.join(p, 'page.tsx'))) walk(p)
-      } else if (/\.(tsx|ts)$/.test(name) && !/\.(test|spec)\./.test(name)) {
+      } else if (/\.(tsx|ts)$/.test(entry.name) && !/\.(test|spec)\./.test(entry.name)) {
         out.push(path.relative(ROOT, p))
       }
     }
@@ -191,9 +191,8 @@ function routeSeeds(dir) {
 function adminRouteDirs() {
   const out = []
   const walk = (d) => {
-    for (const name of readdirSync(d)) {
-      const p = path.join(d, name)
-      if (statSync(p).isDirectory()) walk(p)
+    for (const entry of readdirSync(d, { withFileTypes: true })) {
+      if (entry.isDirectory()) walk(path.join(d, entry.name))
     }
     if (existsSync(path.join(d, 'page.tsx'))) out.push(path.relative(ROOT, d))
   }

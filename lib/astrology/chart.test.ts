@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync, statSync } from 'node:fs'
+import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, it, expect } from 'vitest'
 import { computeNatalChart } from './chart'
@@ -89,12 +89,12 @@ describe('the ephemeris import seam', () => {
 
   const sources: string[] = []
   const walk = (dir: string) => {
-    for (const name of readdirSync(dir)) {
-      const full = join(dir, name)
-      if (statSync(full).isDirectory()) {
-        if (name === 'node_modules' || name.startsWith('.')) continue
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const full = join(dir, entry.name)
+      if (entry.isDirectory()) {
+        if (entry.name === 'node_modules' || entry.name.startsWith('.')) continue
         walk(full)
-      } else if (/\.(ts|tsx)$/.test(name)) {
+      } else if (/\.(ts|tsx)$/.test(entry.name)) {
         sources.push(full)
       }
     }
