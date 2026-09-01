@@ -45,7 +45,7 @@ export interface SpaceSettingsValues {
   about: string
   tagline: string
   visibility: 'network' | 'private'
-  /** The Space page THEME (ADR-578) — its typography + shape identity. */
+  /** The Space page THEME (ADR-578) — its TYPOGRAPHY identity (shape is no longer a theme knob). */
   theme: SpaceThemeId
 }
 
@@ -250,13 +250,14 @@ export function SpaceSettingsForm({
           <AccentPicker value={brandAccent} onChange={setBrandAccent} disabled={readOnly} />
         </section>
 
-        {/* PAGE THEME — the typography + shape identity of the public profile (ADR-578). Keeps your colors
-            and accent; changes the fonts, corners, and rhythm. */}
+        {/* PAGE THEME — the TYPOGRAPHY identity of the public profile (ADR-578). Keeps your colors, accent
+            AND corners; changes the fonts and their treatment. Shape stopped being a theme knob on
+            2026-09-01 (globals.css) — this copy promised corners it no longer changes. */}
         <section className="space-y-3">
           <SectionHeader title="Page theme" />
           <p className="text-meta text-muted">
-            The look of your public page. Each theme keeps your colors and accent, and changes the fonts and
-            shape. Bold is the standard look.
+            The look of your public page. Each theme keeps your colors, accent and corners, and changes the
+            fonts. Bold is the standard look.
           </p>
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             {SPACE_THEMES.map((t) => {

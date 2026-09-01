@@ -1,10 +1,21 @@
-// The SPACE PAGE THEME registry (ADR-578) — the single typed place a "space theme" is declared. A space
-// theme is the TYPOGRAPHY + SHAPE + RHYTHM feel of a Space's public profile: a display + body font pairing
-// plus a few feel tokens (radius), applied via a `[data-space-theme="<id>"]` attribute on the profile's
-// AccentScope wrapper. It is ORTHOGONAL to colour — a theme sets NO `--color-*` tokens, so the DAWN palette
-// and the Space's own brand accent (painted by AccentScope) carry through unchanged. This is deliberately a
-// LIGHTER axis than the member Spotlight theme (lib/spotlight/theme.ts): no custom palettes, backgrounds, or
-// surfaces, only the type + shape identity.
+// The SPACE PAGE THEME registry (ADR-578) — the single typed place a "space theme" is declared.
+//
+// 🔴 A SPACE THEME IS TYPOGRAPHY. It is a display + body font pairing plus the per-role treatment of
+// weight, case, tracking and leading, applied via a `[data-space-theme="<id>"]` attribute on the
+// profile's AccentScope wrapper. It sets NO `--color-*` tokens (the DAWN palette and the Space's own
+// brand accent carry through unchanged) and, since 2026-09-01, NO SHAPE TOKENS EITHER.
+//
+// This sentence used to read "the TYPOGRAPHY + SHAPE + RHYTHM feel … plus a few feel tokens (radius)".
+// The shape half is gone by owner directive: every Space now renders one radius (card 24px, control
+// 14px, cover 24px), pinned on `[data-space-theme]` in globals.css. It went because 13 of 21 live
+// Spaces sat on a theme that squared their chrome, which their operators had not knowingly chosen —
+// they picked a theme for its fonts and got near-square buttons, tabs and cards with it.
+//
+// So when adding a theme: author its FONTS and its type treatment. Do not re-introduce a radius
+// override — space-themes.test.ts fails if one comes back.
+//
+// This is deliberately a LIGHTER axis than the member Spotlight theme (lib/spotlight/theme.ts): no
+// custom palettes, backgrounds, or surfaces.
 //
 // This registry is the typed mirror of the CSS: every id here MUST have a matching
 // `[data-space-theme="<id>"]` block in app/globals.css. The guardrail test in space-themes.test.ts reads
@@ -43,7 +54,7 @@ export const SPACE_THEMES: readonly SpaceThemeDef[] = [
   {
     id: 'editorial',
     label: 'Editorial',
-    description: 'Quiet and considered: a light serif headline, square edges, and roomy rhythm.',
+    description: 'Quiet and considered: a light serif headline over clean body text, with a roomy rhythm.',
     displayFont: 'Fraunces',
     bodyFont: 'Nunito',
   },
@@ -57,7 +68,7 @@ export const SPACE_THEMES: readonly SpaceThemeDef[] = [
   {
     id: 'playful',
     label: 'Playful',
-    description: 'Rounded and warm: a chunky rounded headline, big corners, and pill buttons.',
+    description: 'Rounded and warm: a chunky rounded headline over friendly body text.',
     displayFont: 'Fredoka',
     bodyFont: 'Nunito',
   },
@@ -71,7 +82,7 @@ export const SPACE_THEMES: readonly SpaceThemeDef[] = [
   {
     id: 'modern',
     label: 'Modern',
-    description: 'Clean and current: a crisp geometric headline over friendly body text, with soft even corners.',
+    description: 'Clean and current: a crisp geometric headline over friendly body text.',
     displayFont: 'Lexend',
     bodyFont: 'Nunito',
   },

@@ -34983,3 +34983,84 @@ no theme, under a header claiming it "mirrors the on-page hero"; `AccentScope`'s
 `string` rather than `SpaceThemeId`, so a typo renders a live attribute matching no CSS block; and
 **nothing guards any of it** — no check asserts a Space route renders `AccentScope`, and
 `test/e2e/overflow.spec.ts` covers `/spaces/<slug>/manage` but not the public profile.
+
+## ADR-1193: a Space theme is typography, and the half-fix that made the second report inevitable (2026-09-01)
+
+[ADR-1192](#adr-1192) took `--radius-cover` off the theme axis so a Space's cover photo and logo chip stay
+round. It was right, it shipped, and the owner came back the same day with two Spaces side by side again:
+*"getting better but the styles still don't match ... all corners rounded."*
+
+**The middle state was the problem.** ADR-1192 reasoned that a theme should still shape *"everything around
+the media"*, so `--radius-card` and `--radius-control` were left alone. That produced a round cover sitting
+above square buttons, square tabs and square cards — a page arguing with itself, which reads worse than the
+consistent squareness it replaced. **A fix that resolves half a symptom can leave the page less coherent
+than it found it**, and "still shapes the chrome" was a sentence about design intent standing in for a look
+nobody had put side by side.
+
+⚪ **The evidence has not changed, only what it was allowed to settle.** 13 of 21 live Spaces sat on
+`editorial` (2px) or `classic` (3px). The **majority** of the product rendered near-square chrome that its
+operators had not knowingly chosen: the picker is captioned *"the fonts and shapes for your whole page"* and
+they were picking fonts. A knob that is mostly set wrong, by people unaware they are setting it, is not an
+axis — that argument retired the cover override and it retires the other two.
+
+**Every Space now renders card 24px / control 14px / cover 24px** off the shared `[data-space-theme]` pin,
+which is what the `bold` Space the owner named as the model already rendered. Measured on the compiled
+artifact (`compile()` over `app/globals.css`, the technique from ADR-1169): **no theme block emits any
+`--radius-*`**, and `--radius-cover` is declared in exactly two places. Themes stay distinct through the
+per-theme TYPE TREATMENT rules, which are untouched.
+
+### The other half of the report: "make buttons all the same height"
+
+`components/ui/button.tsx` BASE carries `tap-target` — `min-block-size: var(--tap-min)` — and `--tap-min` is
+a **viewer generation** axis, not a Space one: 26px (bold) · 32px (balanced) · 44px (classic) · 46px
+(playful) · 48px (spacious) · 46–56px (kids). The Space hero's on-cover chip was a **hand-rolled copy** of
+the button primitive's look. It carried the padding, the radius and the type scale. It did not carry the
+floor.
+
+| generation | primary CTA | QR / Edit | delta |
+|---|---|---|---|
+| bold | 37.08 | 37.08 | ✔ |
+| balanced (default) | 38.25 | 38.25 | ✔ |
+| classic | 44.00 | 39.24 | **+4.76** |
+| playful | 46.00 | 38.52 | **+7.48** |
+| spacious | 48.00 | 40.50 | **+7.50** |
+| kids-mid | 50.00 | 40.32 | **+9.68** |
+| kids-early | 56.00 | 41.40 | **+14.60** |
+
+🔴 **Six of eight generations rendered an uneven row, and the two that did not are the two densest — which
+is why it survived review.** On a default profile the row is exactly even. The file's own comment claimed
+the three buttons *"line up as one even row"*: true when written, false the day `tap-target` joined BASE,
+and nothing connected the copy to the primitive it was imitating. The MOBILE band was worse — its CTA had no
+explicit height at all, so it mismatched the glyph buttons at **every** generation, with the sign flipping
+(13px short at bold, 10px tall at kids-early).
+
+⚪ **The fix is a new seam, not a patched number.** `buttonGeometry(size, className)` exports the primitive's
+shape, padding, type scale, states and tap floor **carrying no palette**. It exists because this repo's `cn`
+is a plain `.filter(Boolean).join(' ')` with **no tailwind-merge** (`lib/utils.ts:4`) — so a caller wanting
+the button's shape with its own colours cannot pass overrides to `buttonClasses` and expect them to replace
+a variant's tokens; both survive into the attribute and Tailwind's emit order decides which paints. That is
+precisely why callers hand-rolled instead, and hand-rolling is what stops tracking the primitive.
+
+⚠️ **I wrote that trap into this change before catching it.** The first version composed
+`buttonClasses('secondary','sm', <on-ink colours>)` with a comment asserting *"tailwind-merge resolves each
+against the token it replaces"*. It does not exist here. On a photo the failure mode is a white `bg-surface`
+chip winning over the translucent scrim — the illegibility the scrim exists to prevent. Three other files
+already document this trap (`skeleton.tsx`, `select.tsx`, `poster-band.tsx`); a fourth is now the fix.
+
+⚠️ **A pre-existing false claim of the same shape survives at `layout.tsx`'s Follow chip** — *"tailwind-merge
+lets the tighter padding/size win over the base secondary tokens"*. It does not. Left in place and flagged
+rather than silently changed, because correcting it changes a rendered size and belongs with a look at the
+chip.
+
+### What this did not fix
+
+- `HERO_ACTION_CLASS` in `components/templates/page-hero.tsx` is the surviving clone, and its docstring said
+  it was *"kept byte-for-byte identical to the Space header's `onInkSecondaryClasses`"* — the sentence that
+  made it a clone. Seven non-profile heroes depend on it byte for byte and a test names it, so the string
+  stays and the docstring now warns against re-cloning in the wrong direction. The same latent mismatch is
+  live on `channels/[id]` and `journeys/[slug]`, which mix these chips with `buttonClasses` controls.
+- Padding-only controls that never rise with `--tap-min`, found by the same sweep and left for their own
+  change: the events action row (three different height rules in one row), the circles "Full" chip beside
+  five floored buttons, `OpenAdminBarButton`'s default class, and the Space Connect dialog's six chips.
+- `components/spaces/space-profile-tabs.tsx` is **dead code** — only its exported type is imported; the
+  component is never rendered.

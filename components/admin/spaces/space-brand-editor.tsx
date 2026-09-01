@@ -106,8 +106,8 @@ export function SpaceBrandEditor({
             </p>
           </div>
 
-          {/* Page theme (ADR-578): the typography + shape identity of the public profile. Keeps the palette
-              and brand accent; changes the fonts and shape. */}
+          {/* Page theme (ADR-578): the TYPOGRAPHY identity of the public profile. Keeps the palette, brand
+              accent and corners; changes the fonts. */}
           <div>
             <span className={labelClass}>Page theme</span>
             <div className="mt-1 grid grid-cols-1 gap-2 sm:grid-cols-2">
@@ -141,7 +141,7 @@ export function SpaceBrandEditor({
               })}
             </div>
             <p className="mt-1 text-meta text-subtle">
-              Fonts and shape for the public profile. Keeps the Space&rsquo;s colors and accent. Bold is the
+              Fonts for the public profile. Keeps the Space&rsquo;s colors, accent and corners. Bold is the
               standard look.
             </p>
           </div>

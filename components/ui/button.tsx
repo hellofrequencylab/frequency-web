@@ -81,6 +81,28 @@ const BASE =
   // DAWN: controls take the ROLE radius (skinnable), not a literal step (dawn/tokens/spacing.css).
   'inline-flex items-center justify-center gap-1.5 rounded-control font-semibold tap-target press transition-[color,background-color,border-color,box-shadow,transform] motion-reduce:transition-none disabled:opacity-50 disabled:cursor-not-allowed'
 
+/** The button's GEOMETRY ALONE — shape, padding, type scale, press/focus states and the
+ *  `tap-target` floor — carrying NO palette whatsoever.
+ *
+ *  This exists because `cn` in this repo is a plain `.filter(Boolean).join(' ')` with NO
+ *  tailwind-merge semantics (lib/utils.ts:4; the same trap is documented in skeleton.tsx,
+ *  select.tsx and poster-band.tsx). A caller that wants the button's SHAPE but its own
+ *  COLOURS therefore cannot pass overrides to `buttonClasses` and expect them to replace a
+ *  variant's tokens — both classes survive into the attribute and Tailwind's emit order,
+ *  not the call order, decides which paints.
+ *
+ *  The alternative callers reached for instead was hand-rolling the look, and a hand-rolled
+ *  copy of a primitive stops tracking it: the Space hero's on-cover chip did exactly that and
+ *  silently missed `tap-target`, so it stayed at its fixed height while the real button beside
+ *  it rose with `--tap-min` (26px → 56px across the generation axis). Composing this keeps the
+ *  tap floor and every other geometry decision in ONE place while leaving the palette free.
+ *
+ *  Use `buttonClasses` whenever a standard variant's colours are wanted; reach for this only
+ *  when the surface supplies its own (an on-photo scrim chip, a brand-accent fill). */
+export function buttonGeometry(size: ButtonSize = 'md', className?: string): string {
+  return cn(BASE, SIZE[size], className)
+}
+
 /** The exact button token string for a variant × size — so a styled `<Link>` (or
  *  any non-`<button>` element) shares the SAME tokens as `<Button>` without a
  *  hand-rolled `bg-primary…` class string. Pass `className` for one-off extras. */

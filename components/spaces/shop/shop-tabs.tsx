@@ -42,7 +42,7 @@ export function ShopTabs({ consoleHref, active }: { consoleHref: string; active:
             key={t.tab}
             href={href}
             aria-current={isActive ? 'page' : undefined}
-            className={`inline-flex items-center gap-1.5 rounded-control px-3 py-1.5 text-body-sm font-semibold transition-colors ${
+            className={`inline-flex items-center gap-1.5 rounded-control px-3 py-1.5 text-body-sm font-semibold transition-colors tap-target ${
               isActive ? 'bg-primary text-on-primary' : 'text-muted hover:bg-surface-elevated hover:text-text'
             }`}
           >

@@ -567,8 +567,8 @@ and enforces the full contract below, including `bold`'s deliberate absence.
 | Display face | `--font-display` | `.font-display` headlines (design blocks, Events heading, canvas) and the design-block header default |
 | Heading face | `--font-heading` | `.font-section` (cover title + section headers), falling back through `--font-body` to Nunito, so an unset var is a computed no-op |
 | Body face | `--font-body` | the shared `[data-space-theme]` rule applies it to the whole subtree |
-| Card shape | `--radius-card` | `rounded-card` surfaces in the subtree (cards, CTA buttons, brand anchor) |
-| Control shape | `--radius-control` | `rounded-control` controls (tab pills, compact buttons); `playful` sets 9999px for pills |
+| ~~Card shape~~ | `--radius-card` | **No longer a theme knob (2026-09-01).** See the note below. |
+| ~~Control shape~~ | `--radius-control` | **No longer a theme knob (2026-09-01).** See the note below. |
 | ~~Cover shape~~ | `--radius-cover` | **No longer a theme knob (2026-09-01).** See the note below. |
 
 **Treatment, not family swap (ADR-893).** A family swap alone leaves Anton's caps styling on
@@ -578,16 +578,29 @@ per role. The three roles: `.font-display` (headlines), `.font-section` (cover t
 headers), `.font-eyebrow` (a bare marker class with no base rule; only per-theme rules give it
 effect). The per-theme typography table lives in ADR-893 and is pinned by the guardrail test.
 
-**🔴 `--radius-cover` is NOT a theme knob (owner directive, 2026-09-01 — [ADR-1192](DECISIONS.md)).**
-It shapes the two pieces of Space *identity media* — the cover photo and the `BrandAnchor` logo chip
-beside it — and those stay round on every theme: *"the cover photo and profile images should always be
-round for business Spaces; that's the look of that part of the site."* Every non-`bold` theme used to
-retune it (editorial 2px, classic 3px, playful 20px, accessible 8px, modern 14px), which left **13 of
-21 live Spaces with a near-square hero photo**. Those five overrides are gone; the token is now
-declared in exactly two places (the `:root` baseline and the shared pin), and
-[`space-themes.test.ts`](../lib/theme/space-themes.test.ts) fails if a third appears or if a theme
-block re-declares it. A theme still shapes everything *around* the media through `--radius-card` /
-`--radius-control`, so `editorial` still reads square where square is its character.
+**🔴 SHAPE IS NOT A THEME KNOB AT ALL (owner directive, 2026-09-01 — [ADR-1193](DECISIONS.md)).**
+A Space theme is **typography**: a font pairing plus the per-role treatment of weight, case, tracking
+and leading. Every Space renders one shape — card 24px, control 14px, cover 24px — off the shared
+`[data-space-theme]` pin, whoever is looking and whichever theme the operator picked. That is what the
+`bold` Space the owner named as the model renders.
+
+This landed in two steps, and the first was half a fix:
+
+| | what moved | what was left |
+|---|---|---|
+| [ADR-1192](DECISIONS.md) | `--radius-cover` stopped being a knob, so cover photos and logo chips stay round | the chrome overrides, on the reasoning that a theme should still shape *"everything around the media"* |
+| **ADR-1193** | `--radius-card` + `--radius-control` follow it | nothing — themes are typography-only |
+
+The middle state is why there was a second report. A round cover above square buttons, square tabs and
+square cards is a page arguing with itself, and *"the styles still don't match"* was the owner reading
+exactly that. The sentence that stood here — *"a theme still shapes everything around the media, so
+`editorial` still reads square where square is its character"* — was the reasoning that produced it.
+
+**The evidence that settled it:** 13 of 21 live Spaces sat on `editorial` or `classic`, so the
+**majority** of the product rendered near-square chrome their operators had not knowingly chosen — they
+were picking fonts. A knob that is mostly set wrong, by people unaware they are setting it, is not an
+axis. [`space-themes.test.ts`](../lib/theme/space-themes.test.ts) now fails if any theme block declares
+any `--radius-*`, and separately counts `--radius-cover` to exactly two declarations.
 
 Both consumers spell it `rounded-[var(--radius-cover,1.5rem)]`. ⚠️ **The fallback is `1.5rem`, not the
 `0.75rem` this table claimed until 2026-09-01** — that value predates [ADR-1169](DECISIONS.md), which

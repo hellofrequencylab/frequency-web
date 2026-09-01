@@ -45,11 +45,21 @@ export function SpaceProfileMenu({
 
   const itemClasses = (active: boolean) =>
     cn(
-      // rounded-control (was rounded-lg): tab pills are CONTROLS, so the Space page theme shapes
-      // them (ADR-578 — playful pills them). NOT value-identical against this repo's ladder —
-      // the 2026-08-04 port moved rounded-lg to 14px while --radius-control stayed 0.5rem. What
-      // holds `bold` at today's radius is the [data-space-theme] baseline pin, not the literal.
-      'whitespace-nowrap rounded-control px-3 py-1.5 text-body-sm font-medium transition-colors',
+      // rounded-control (was rounded-lg): tab pills are CONTROLS, so they take the role token. The
+      // [data-space-theme] pin resolves it to 14px for EVERY Space — a theme no longer re-tunes
+      // shape (2026-09-01), so the sentence that used to sit here about `playful` pilling them is
+      // retired along with the override.
+      //
+      // 🔴 `tap-target` is the fix for a defect this row had from the start: its height was PADDING
+      // ALONE. `--tap-min` is a viewer generation axis spanning 26px → 56px, and every <Button> in
+      // the tab body below and every control in the hero above rises with it — these pills did not,
+      // sitting between them at a flat ~31px. Two costs, and the second is the serious one:
+      //   · the bar visibly disagreed with the chrome on both sides of it;
+      //   · the presets that raise the floor exist FOR pointer accuracy (spacious 48px, the kids
+      //     bands 46-56px), and the primary navigation of a Space profile was opting out of exactly
+      //     the accommodation those viewers selected.
+      // Padding stays as the resting size; min-block-size only ever raises.
+      'whitespace-nowrap rounded-control px-3 py-1.5 text-body-sm font-medium transition-colors tap-target',
       active ? 'bg-primary-bg text-primary-strong' : 'text-muted hover:bg-surface-elevated hover:text-text',
     )
 

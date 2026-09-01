@@ -155,19 +155,37 @@ describe('space-theme knob totality (every non-bold theme is a full treatment, n
         expect(roleRule(t.id, 'eyebrow')).not.toBe('')
       })
 
-      it('sets the two CHROME shape tokens (--radius-card / --radius-control)', () => {
+      // 🔴 A THEME SETS NO SHAPE AT ALL, AND THIS IS A DIRECTIVE RATHER THAN AN OBSERVATION.
+      //
+      // The assertion here used to be the INVERSE — "sets the two CHROME shape tokens" — and it
+      // passed for months while the product was wrong. The history is worth keeping because the
+      // same report arrived three times:
+      //
+      //   · every theme set `--radius-cover`, squaring the Space's cover photo and brand chip
+      //     (editorial 2px, classic 3px). Owner report #1: "the spaces have square images".
+      //     Fixed by dropping the cover override — the chrome overrides were left alone, on the
+      //     reasoning that a theme should still shape "everything around the media".
+      //   · that left the cover round and the BUTTONS, TABS and CARDS beneath it square, which is
+      //     a page arguing with itself. Owner report #2: "the styles still don't match ... all
+      //     corners rounded", with the `bold` Space (danieltyack) named as the model.
+      //
+      // So the ruling is now the whole token family, not half of it: a Space theme is TYPOGRAPHY.
+      // Every Space renders card 24px / control 14px / cover 24px off the shared pin, whoever is
+      // looking. The evidence that settled it: 13 of 21 live Spaces sat on editorial or classic, so
+      // the MAJORITY rendered near-square chrome their operators never knowingly chose — they were
+      // picking fonts. A knob that is mostly set wrong by people unaware they are setting it is not
+      // an axis.
+      //
+      // An added override of ANY of the three is a regression, and these are what say so.
+      it('sets NO shape token: a theme is typography, not shape', () => {
         const block = themeBlock(t.id)
-        expect(block).toMatch(/--radius-card:/)
-        expect(block).toMatch(/--radius-control:/)
+        expect(block).not.toMatch(/--radius-card:/)
+        expect(block).not.toMatch(/--radius-control:/)
+        expect(block).not.toMatch(/--radius-cover:/)
       })
 
-      // 🔴 THE OTHER HALF, AND THE ONE THAT IS A DIRECTIVE. Until 2026-09-01 every theme here also
-      // set `--radius-cover`, which shapes the Space's COVER PHOTO and the brand logo chip beside
-      // it: editorial 2px, classic 3px. That left 13 of 21 live Spaces with a near-square hero, and
-      // the owner reported it twice. The ruling is that the Space's identity MEDIA "should always be
-      // round for business Spaces" whatever the theme, while the theme keeps shaping the chrome
-      // around it. So this is not "the token happens to be absent" — an added override is a
-      // regression, and this assertion is what says so.
+      // Stated separately from the blanket rule above so a failure names the thing that broke:
+      // the cover + logo chip are the Space's identity MEDIA and were the first report.
       it('does NOT set --radius-cover: the cover + logo stay round on every theme', () => {
         expect(themeBlock(t.id)).not.toMatch(/--radius-cover:/)
       })
@@ -213,6 +231,27 @@ describe('bold byte-identity pins (the default authors NOTHING beyond its font a
     // A third declaration means someone re-themed the cover. Counting is the cheapest way to say
     // "this token is not a knob" and have it stay true.
     expect(globalsCss.match(/^\s*--radius-cover:/gm) ?? []).toHaveLength(2)
+  })
+
+  // 🔴 THE COUNTING GUARD, EXTENDED TO THE OTHER TWO. The per-theme `not.toMatch` above only sees
+  // inside a `[data-space-theme="<id>"] { … }` block, so it would MISS a re-themed radius smuggled
+  // in under any other selector — a descendant rule, a media query, a new attribute. Counting the
+  // declarations across the whole file is what makes "no theme shapes a Space" checkable rather
+  // than merely intended.
+  //
+  // The expected counts are the skin + generation axes (which legitimately retune card/control for
+  // the VIEWER on app-shell ancestors) plus the `:root` baseline plus this pin. They are asserted
+  // as exact numbers so that ADDING a declaration anywhere fails and has to be justified here.
+  it('card + control are declared only by :root, the skin/generation axes, and the pin', () => {
+    const card = globalsCss.match(/^\s*--radius-card:/gm) ?? []
+    const control = globalsCss.match(/^\s*--radius-control:/gm) ?? []
+    // Sanity floor: the axes must still exist, or this test is asserting against an empty file.
+    expect(card.length).toBeGreaterThan(2)
+    expect(control.length).toBeGreaterThan(2)
+    // And no `[data-space-theme="<id>"]` block may be among them — the real invariant.
+    for (const t of SPACE_THEMES) {
+      expect(themeBlock(t.id)).not.toMatch(/--radius-/)
+    }
   })
 })
 

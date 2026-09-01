@@ -124,7 +124,7 @@ export const SPACE_MANIFEST: EntityManifest = {
     { path: 'brandAccent', label: 'Brand color', kind: 'color', section: 'identity', omitWhenEmpty: true },
     { path: 'brandLogoUrl', label: 'Logo', kind: 'image', section: 'identity', veraDrafts: false, omitWhenEmpty: true },
     { path: 'coverImageUrl', label: 'Header image', kind: 'image', section: 'identity', veraDrafts: false, omitWhenEmpty: true },
-    // The Space page's typography and shape identity (ADR-578). A closed, authored set: every theme
+    // The Space page's TYPOGRAPHY identity (ADR-578); shape is no longer a theme knob. A closed set: every theme
     // is a CSS block plus a row in SPACE_THEMES, so the registry is the whole truth.
     {
       path: 'theme',
