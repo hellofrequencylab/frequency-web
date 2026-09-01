@@ -114,7 +114,7 @@ export function effectiveMode(el: ModedElement, viewerRole: MenuAccess): MenuMod
 // ── Two-axis visibility (ADR-390) ─────────────────────────────────────────────
 // The single gate every container renderer (rail, header, footer, user, contextual
 // admin sub-header) uses to decide whether a viewer may SEE a menu element. It
-// UNIONS the two axes exactly like the admin nav did (lib/admin/sections.ts
+// UNIONS the two axes exactly like the admin nav did (app/(main)/admin/sections.ts
 // canUseLink/canSeeGroup): an element shows if EITHER
 //   (a) the menu-access path admits it — effectiveMode is not 'hidden' (which already
 //       folds in roleModes + the minAccess floor), OR

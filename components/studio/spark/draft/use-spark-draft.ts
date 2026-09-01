@@ -1,7 +1,7 @@
 'use client'
 
 // ─────────────────────────────────────────────────────────────────────────────
-// THE SPARK AUTOSAVE (docs/adr-drafts/991-wizard-autosave.md, extended by 1001-draft-sync.md).
+// THE SPARK AUTOSAVE (ADR-991 in docs/DECISIONS.md, extended by 1001-draft-sync.md).
 //
 // One hook, called once, by the SHELL. Every Spark inherits autosave and the resume offer without
 // a line of its own, which is the whole reason it lives here and not in five wizards.

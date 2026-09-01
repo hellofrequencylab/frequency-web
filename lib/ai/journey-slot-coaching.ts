@@ -1,7 +1,7 @@
 // Vera's per-slot coaching prompt for the Journey course builder (JOURNEYS.md §6). When an author
 // drops a Practice into a Journey, Vera drafts one short, warm coaching line for that slot —
 // grounded in the season, what the author named the Journey, the practice, and its Pillar(s) — so
-// the player can nudge the member when they reach that step. Mirrors lib/ai/journey-outline.ts:
+// the player can nudge the member when they reach that step. Mirrors lib/ai/journey-spark.ts:
 // forced-tool structured output + the voice primer + the usage ledger; never trust the raw shape.
 // Runs on Haiku (cheap, on-demand) and degrades to null when AI is off or the call fails, so the
 // builder always falls back to the author writing the line by hand.

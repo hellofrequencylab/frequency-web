@@ -11,7 +11,7 @@ import 'server-only'
 // WHY AT RECONCILIATION, NOT AT THE SUCCESS PAGE. The client success page is a redirect a browser may
 // never follow: a member who closes the tab, pays on a phone that goes to sleep, or completes a
 // subscription Stripe activates asynchronously would silently miss their badge. The webhook is the
-// truth. This mirrors the placement discipline lib/billing/founders.ts already set for the Founders
+// truth. This mirrors the placement discipline lib/billing/founders.ts (retired) already set for the Founders
 // Round one-time grant: ONE grant function, reached from the signature-verified webhook, idempotent
 // enough that a Stripe retry or a duplicate event is a harmless no-op.
 //

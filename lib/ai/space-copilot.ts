@@ -4,7 +4,7 @@
 // `haiku` default tier through the consolidated completeText chokepoint (lib/ai/complete.ts),
 // the voice primer injected (lib/ai/voice.ts), the usage ledger tagged, and NO new infra.
 //
-// Mirrors the existing draft generators (lib/ai/circle-wizard.ts, lib/ai/event-blurb.ts):
+// Mirrors the existing draft generators (lib/ai/circle-spark.ts, lib/ai/event-blurb.ts):
 //   • voice-compliant system prompt (obeys docs/NAMING.md + docs/CONTENT-VOICE.md),
 //   • the owner's Space type/brand handed in as grounded context (invent nothing else),
 //   • parses to a plain string, re-coerced (never trust the raw shape),

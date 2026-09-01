@@ -682,7 +682,7 @@ export default async function MainLayout({
     <>
       {themeCss ? <style id="fx-theme" dangerouslySetInnerHTML={{ __html: themeCss }} /> : null}
       {/* ── THE DENSITY AXIS COULD NOT REACH THE ELEMENT THAT READS IT ────────────────────────
-          `[data-generation]` is set on the SHELL ROOT (components/app-shell.tsx), and each of the
+          `[data-generation]` is set on the SHELL ROOT (components/layout/app-shell.tsx), and each of the
           eight preset blocks in app/globals.css declares `--density-root` (spacious 112.5%, bold
           103%, kids 115%, and so on). But the only rule that consumes it is
 

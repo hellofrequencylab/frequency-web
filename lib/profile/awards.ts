@@ -4,7 +4,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 // A member's PUBLIC awards + owned items for their profile: real earned achievements
 // (user_achievements × achievements) and store items they own (store_redemptions ×
 // store_items), split into bought (gems_spent > 0) vs awarded/granted (gems_spent = 0).
-// Read through the admin client behind app-code authz, matching lib/profile-zaps.ts — the
+// Read through the admin client behind app-code authz, matching lib/profile-zaps.ts (retired) — the
 // profile page already uses the admin client, and both tables allow crew+/host+ reads.
 
 export interface ProfileAchievement {

@@ -1,7 +1,7 @@
 import type { SpaceType } from './types'
 import type { SpaceFunctionKey } from './functions'
 
-// The space PROFILE block registry (Epic 1.7, docs/SPACES-EDITOR.md). The member-facing sections of a
+// The space PROFILE block registry (Epic 1.7; see docs/SPACES.md). The member-facing sections of a
 // space profile, expressed as module blocks for the block-picker editor that replaces Puck on internal
 // pages (Puck stays for marketing/website). Each block declares its gating: an optional SPACE_FUNCTION
 // that must be enabled for it to appear by default, and the space types it applies to.

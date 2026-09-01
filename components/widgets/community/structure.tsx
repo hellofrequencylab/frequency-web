@@ -52,7 +52,7 @@ async function load(): Promise<StructureData> {
         admin.from('hubs').select('id', { count: 'exact', head: true }),
         admin.from('nexuses').select('id', { count: 'exact', head: true }),
         admin.from('dispatches').select('id', { count: 'exact', head: true }),
-        // Members = real (non-system) person profiles, the canonical count (lib/analytics/members.ts).
+        // Members = real (non-system) person profiles, the canonical count (lib/analytics/members.ts (retired)).
         admin.from('profiles').select('id', { count: 'exact', head: true }).eq('is_system', false),
         admin.from('memberships').select('id', { count: 'exact', head: true }).eq('status', 'active'),
         admin.from('team_members').select('id', { count: 'exact', head: true }),

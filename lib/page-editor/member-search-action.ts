@@ -6,7 +6,7 @@ import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
 
 // Server actions behind the Team block's NETWORK MEMBER PICKER
-// (components/page-editor/blocks/member-picker-field.tsx). A 'use server' module exports ONLY async
+// (lib/page-editor/member-picker-field.tsx). A 'use server' module exports ONLY async
 // functions, so the pure field component + its Puck config import THESE, never a server-only module
 // (the build trap: the editor bundle stays client-safe and the public profile ships no editor
 // runtime). This mirrors the Loom image field's action/context split

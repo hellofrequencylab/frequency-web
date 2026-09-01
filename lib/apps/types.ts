@@ -5,7 +5,7 @@
 // PURE METADATA ONLY. No React, no Supabase, no IO — importable on client and server alike. The
 // `Icon` on the editor surface is a Lucide icon COMPONENT reference (a plain, client-safe value that
 // flows through from the existing AdminModule catalog); component/RSC/SVG bindings live separately in
-// lib/apps/bindings.tsx (the existing registry.tsx discipline), never here.
+// lib/apps/app-registry.tsx (the existing registry.tsx discipline), never here.
 //
 // This file DEFINES the contract; it does not invert the three live registries onto it (that is LP2).
 // lib/apps/catalog.ts COMPOSES the existing registries into App rows (the read-direction adapter), and

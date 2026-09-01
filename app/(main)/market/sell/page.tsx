@@ -12,7 +12,7 @@ import { ProductSpark } from './product-spark'
 // 🔴 There used to be an `isPaid(profile.realMembershipTier)` wall here rendering "Selling is a paid
 // feature". It is deliberately gone and must not come back: a paywall at the moment someone has
 // decided to charge sends them to Venmo, and neither the sale nor the contact ever returns. The lock
-// is `app/(main)/marketplace/free-seller.test.ts`.
+// is `app/(main)/marketplace/free-seller.test.tsx`.
 //
 // The form is the Product SPARK (docs/STUDIO.md §0, ADR-986): two doors, the shared drop zone, and the
 // fields PRODUCT_MANIFEST declares. The Spark brings its own centered column + heading, so this page

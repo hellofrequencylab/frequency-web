@@ -1,4 +1,4 @@
-// Server reads for the DB-backed menu system. Mirrors lib/menu-config.ts: the new
+// Server reads for the DB-backed menu system. Mirrors lib/menu-config.ts (retired): the new
 // tables are not in the generated types yet (regenerate lib/database.types.ts after
 // the 20260721000000_menu_system migration is applied, ADR-246 pattern), so we cast
 // the base client to an untyped shape to query them.
@@ -238,7 +238,7 @@ export async function getMenu(
 ): Promise<ResolvedMenu> {
   try {
     // Query the untyped (not-yet-generated) tables via the shared menuDb handle,
-    // mirroring lib/menu-config.ts for menu_config.
+    // mirroring lib/menu-config.ts (retired) for menu_config.
     const db = menuDb()
 
     const spaceId = opts?.spaceId ?? null

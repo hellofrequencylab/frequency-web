@@ -7,7 +7,7 @@
 --    An UPDATE policy with no explicit WITH CHECK reuses its USING for the new row; supplying one
 --    REPLACES that fallback. So user_a_id / user_b_id / requested_by were unconstrained on the new
 --    row, and a member holding any pending incoming request could rewrite it into an ACCEPTED
---    friendship with any victim. Friendship is the DM gate, and lib/messages/actions.ts reads it
+--    friendship with any victim. Friendship is the DM gate, and lib/messages/direct-conversation.ts reads it
 --    through the service-role client, so the forged row was authoritative.
 --
 --    RLS cannot reference OLD, so no WITH CHECK can express "the identity triple never changes".

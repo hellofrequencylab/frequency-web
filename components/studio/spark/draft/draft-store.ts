@@ -1,12 +1,12 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// THE SPARK DRAFT STORE (docs/adr-drafts/991-wizard-autosave.md).
+// THE SPARK DRAFT STORE (ADR-991 in docs/DECISIONS.md).
 //
 // PURE. No React, no DOM, no `window`, no Supabase. Everything here takes a `StorageLike` and a
 // clock, so the rules that actually matter (what a key is, when a draft expires, what is refused,
 // what discard does) are unit-testable in node and can never quietly depend on a browser.
 //
 // WHY A CLIENT STORE AT ALL, now that there is also a server one. This is the FAST half of a
-// local-first pair (docs/adr-drafts/1001-draft-sync.md). It is what makes typing feel instant, what
+// local-first pair (ADR-1001 in docs/DECISIONS.md). It is what makes typing feel instant, what
 // survives a crash or a refresh with zero latency, and what keeps working on a flaky connection.
 // The server half (lib/studio/draft-store.ts) adds the other thing: it makes a draft THE AUTHOR'S
 // rather than THAT MACHINE'S. Sync degrades to this file on any failure, never the other way.

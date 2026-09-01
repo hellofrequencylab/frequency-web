@@ -1,6 +1,6 @@
 'use server'
 
-// The three server actions behind cross-device Spark drafts (docs/adr-drafts/1001-draft-sync.md).
+// The three server actions behind cross-device Spark drafts (ADR-1001 in docs/DECISIONS.md).
 //
 // Entity-blind, exactly like the store they wrap, and they need no per-entity capability gate
 // because they can only ever touch the CALLER'S OWN rows: `studio_draft` is keyed by profile id,

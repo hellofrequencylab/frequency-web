@@ -20477,10 +20477,11 @@ are the next increment.
 [ADR-986](DECISIONS.md#adr-986-the-studio-kernel--one-manifest-per-entity-one-renderer-a-strict-boundary)
 (the Studio kernel) and applies its law to the AI side of creation.
 
-**DRAFT.** This entry lives in `docs/adr-drafts/` only because concurrent work was in flight on
-`docs/DECISIONS.md` when it was written. Move it into the ledger verbatim. Until it lands there,
-`pnpm check:adr` reports every `ADR-990` citation in `lib/ai/*` as dangling, because the guard
-resolves cited numbers against the ledger's headings.
+✅ **LANDED.** This note used to read *"DRAFT. This entry lives in `docs/adr-drafts/` only because
+concurrent work was in flight… Move it into the ledger verbatim"* — inside the ledger it had already
+been moved into. The `docs/adr-drafts/` directory no longer exists, and `pnpm check:adr` confirms
+every cited number resolves, so the warning it carried about dangling citations is expired.
+
 
 **Context.** ADR-986 gave every creatable entity ONE declaration and one renderer, so a wizard is
 data now, not a hand-built screen. The AI half never got the same treatment. Five modules under
@@ -20627,8 +20628,10 @@ rather than papering over them. Next free number after ADR-991. Spec: [STUDIO.md
 Code: `lib/studio/kernel/manifest.ts`, `lib/studio/kernel/review-kernel.ts`,
 `lib/studio/entities/{practice,circle,product,listing,service}.ts`.
 
-> **Draft note.** Written to `docs/adr-drafts/` rather than appended to `docs/DECISIONS.md`
-> because several agents were editing that file in the same session. Fold it in verbatim.
+✅ **LANDED.** This block carried a note saying the entry lived in `docs/adr-drafts/` and should be
+folded into the ledger verbatim — written inside the ledger it had already been folded into. That
+directory no longer exists, and `pnpm check:adr` confirms every cited number resolves, so the
+warning it carried about dangling citations is expired.
 
 **Context.** Declaring the first nine manifests moved the kernel three times, and left three
 things the kernel could not yet say. ADR-986's addendum wrote them down instead of hiding them:
@@ -20731,8 +20734,12 @@ and ADR-Quest (the Journey rank gate). Sibling to the in-flight ADR-990 (one Spa
 law, applied to the three assets that were built, governed, budgeted, and then wired to exactly one
 surface each.
 
-**DRAFT.** This entry lives in `docs/adr-drafts/` only because concurrent work was in flight on
-`docs/DECISIONS.md` when it was written. Move it into the ledger verbatim.
+✅ **LANDED.** This note used to read *"DRAFT. This entry lives in `docs/adr-drafts/` only because
+concurrent work was in flight… Move it into the ledger verbatim"* — inside the ledger it had already
+been moved into. The `docs/adr-drafts/` directory no longer exists, and `pnpm check:adr` confirms
+every cited number resolves, so the warning it carried about dangling citations is expired.
+
+
 
 **Context.** Three capabilities were already paid for and already governed, and each reached one
 surface:
@@ -20882,8 +20889,10 @@ kit change is one row each.
 Code: `lib/admin/modules/registry.ts` (the catalog row), `components/admin/modules/
 practice-guided-module.tsx`, `lib/studio/redraw.ts`, `app/(main)/practices/actions.ts`.
 
-> **Draft note.** Written to `docs/adr-drafts/` rather than appended to `docs/DECISIONS.md`
-> because several agents were editing that file in the same session. Fold it in verbatim.
+✅ **LANDED.** This block carried a note saying the entry lived in `docs/adr-drafts/` and should be
+folded into the ledger verbatim — written inside the ledger it had already been folded into. That
+directory no longer exists, and `pnpm check:adr` confirms every cited number resolves, so the
+warning it carried about dangling citations is expired.
 
 **Context.** The owner's ask was plain: users should be able to go back to the wizard and edit
 the core info. ADR-450 §2 had already designed the answer (an entity page in Edit Mode is an
@@ -21190,10 +21199,10 @@ Completes [ADR-989](DECISIONS.md) (the Event Seeder), which shipped with both of
 listed under "Not built, on purpose". Respects [ADR-987](DECISIONS.md) (the Loom is the only
 image picker an operator sees) and [ADR-986](DECISIONS.md) (the Studio kernel).
 
-**DRAFT.** This lives in `docs/adr-drafts/` because concurrent work was in flight on
-`docs/DECISIONS.md` when it was written. Move it into the ledger verbatim. Until it lands there,
-`pnpm check:adr` reports every `ADR-997` citation as dangling, because the guard resolves cited
-numbers against the ledger's headings. ADR-995 and ADR-996 are dangling for the same reason today.
+✅ **LANDED.** This block carried a note saying the entry lived in `docs/adr-drafts/` and should be
+folded into the ledger verbatim — written inside the ledger it had already been folded into. That
+directory no longer exists, and `pnpm check:adr` confirms every cited number resolves, so the
+warning it carried about dangling citations is expired.
 
 **No migration.** `event_intake` is applied in production and is unchanged. Everything below is
 new jsonb keys inside `inputs`, which the table already carries.
@@ -21311,10 +21320,10 @@ enforcing it, and a proposal has no member-visible surface. Respects
 [ADR-986](DECISIONS.md) (the Studio kernel) and [ADR-382](DECISIONS.md) (the autonomy
 vocabulary). No migration: `agent_actions` already carries every column this uses.
 
-**DRAFT.** This lives in `docs/adr-drafts/` because concurrent work was in flight on
-`docs/DECISIONS.md` when it was written. Move it into the ledger verbatim. Until it lands there,
-`pnpm check:adr` reports every `ADR-998` citation as dangling, for the same reason ADR-995
-through ADR-997 and ADR-999 are dangling today.
+✅ **LANDED.** This block carried a note saying the entry lived in `docs/adr-drafts/` and should be
+folded into the ledger verbatim — written inside the ledger it had already been folded into. That
+directory no longer exists, and `pnpm check:adr` confirms every cited number resolves, so the
+warning it carried about dangling citations is expired.
 
 Code: `scripts/check-creates.mjs` (+ its test) · `lib/ai/vera/create-commits.ts` ·
 `lib/ai/vera/create-entity.ts` (three new exports) · `app/(main)/drafts/*`.

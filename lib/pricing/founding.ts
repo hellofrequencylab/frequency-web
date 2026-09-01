@@ -60,7 +60,7 @@ export interface FoundingConfig {
 }
 
 /** The seeded launch-target founding config. Kept in sync with the pricing_settings seed and the
- *  code defaults in lib/pricing/settings.ts (member one-time mirrors lib/billing/founders.ts). */
+ *  code defaults in lib/pricing/settings.ts (member one-time mirrors lib/billing/founders.ts (retired)). */
 export const FOUNDING_DEFAULT: FoundingConfig = {
   member_one_time_cents: 25000, // $250, locked for life (the Founders Round)
   member_cap: 150, // the first 150

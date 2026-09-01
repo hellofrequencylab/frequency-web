@@ -255,7 +255,7 @@ export async function foundingBadgeForSpace(
  *   • Targeted (a profileId and/or spaceId given): activate that ONE founder's row (upserting a row
  *     if none exists yet, e.g. a member who bought the one-time Founders Round), applying the locked
  *     rate from config. For a member row, also set profiles.is_founding_member=true (the existing
- *     grandfather flag, lib/billing/founders.ts).
+ *     grandfather flag, lib/billing/founders.ts (retired)).
  *   • Sweep (no subject given): activate EVERY status='reserved' row.
  *
  * It NEVER charges: charged_at is left untouched (the gated billing path sets it when money actually
@@ -359,7 +359,7 @@ async function setFoundingMemberFlag(profileId: string): Promise<void> {
 /** Clear profiles.is_founding_member, EXCEPT for a Founders Round buyer.
  *
  *  The flag has two sources: the recurring beta-founder grant (which the subscription maintains) and
- *  the one-time Founders Round purchase (lib/billing/founders.ts, `meta.founder.founder_round`), which
+ *  the one-time Founders Round purchase (lib/billing/founders.ts (retired), `meta.founder.founder_round`), which
  *  was BOUGHT OUTRIGHT and is not conditional on any subscription. A lapsing subscription must never
  *  strip a Founders Round member of the thing they paid $250 for once. Best-effort; never throws. */
 async function clearFoundingMemberFlag(profileId: string): Promise<void> {
