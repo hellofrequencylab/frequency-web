@@ -34804,3 +34804,72 @@ the code it would change.** The row said "the real fix is parallelism" in my own
 the shape of the loop rather than from what the loop's numbers are for. Two of the three assertions
 it would have broken are in the same file, forty lines away. **"Independent child processes that only
 read the tree" was true and irrelevant** — the constraint was never the work, it was the measurement.
+
+## ADR-1191: the front door follows the viewer, and the header had known who was looking all along (2026-09-01)
+
+`/` served the marketing splash to everyone, signed in or out. That was a real directive, stated in
+`app/page.tsx`'s own comment ("a member's feed lives at `/feed`, reached from the in-app logo"), and
+the owner reversed it: **a member landing on the site lands on their feed.**
+
+The redirect is in **`proxy.ts`, not `app/page.tsx`**, and the reason is not tidiness:
+
+| Where | What a member pays | What covers the phone |
+|---|---|---|
+| `app/page.tsx` | the full 13-block marketing document renders, then a 307 | nothing extra — but the render is wasted on every app open |
+| `proxy.ts` | the route is never entered | `manifest.json`'s `start_url` **is** `/`, so an installed PWA opening from a home screen makes the same request a desktop browser does |
+
+⚪ **`?preview` is the one way through, and it was not invented for this.** It is already the href of
+the page editor's "View home" button (`app/(main)/pages/home/page.tsx`). An operator who cannot look
+at the front door they just edited cannot edit it, and `front-door.test.ts` pins the two ends
+together so the escape hatch cannot become decoration by a rename at the other end.
+
+🔴 **Signed-out is untouched, deliberately and testably.** A crawler is never signed in, so `/` is
+still the indexed document with its canonical and its cacheability unmoved. The failure this guards
+is silent in both directions: an unconditional redirect sends Googlebot to a protected route, which
+the proxy bounces to a `noindex` `/sign-in`, and the home page leaves the index with every gate
+still green.
+
+**The decision is `lib/nav/front-door.ts` — a pure function of `(pathname, signedIn, preview)` — and
+the `if` in `proxy.ts` only calls it.** `proxy.ts` runs on every request and is the one file here
+that cannot be unit-tested cheaply: it needs a `NextRequest`, a live Supabase client and a session
+cookie to say anything at all. A routing rule only the integration path can exercise is a routing
+rule nobody re-checks.
+
+### The other half: "Sign in", offered to people who were already signed in
+
+**`MarketingHeader` has known the viewer since `detectClientAuth` landed** — it used the answer to
+point the wordmark at `/feed` — and then rendered a hardcoded `Sign in` + *Start a Circle* pair three
+elements later. A member reading `/about` was offered a door they were already through, and invited
+to join a beta they were in. Two more copies sat one level up, and each is a different way the thread
+gets dropped rather than three instances of one bug:
+
+| Surface | What was wrong | Fix |
+|---|---|---|
+| `MarketingHeader` bar | the cluster was outside any branch | one `Your feed` control for a member |
+| `MarketingHeader` → phone sheet | the sheet has drawn a member-aware footer since `LIVE-110`; this header was the one caller that never passed `isAuth`, so it defaulted to `false` | thread `isAuth={authed}` |
+| `app/(help)/layout.tsx` | never set `detectClientAuth`, so every help page rendered the logged-out cluster forever | set it |
+| `app/(main)` public chrome | `isAuth={false}` on a branch that also serves a **signed-in** member (no profile row yet, or mid-induction) | `isAuth={!!user}` |
+
+⚪ **The member label is `Your feed`, which is not new copy** — it is what the phone sheet has said
+since `LIVE-110`, now reaching the surface most people read. A second wording here is how a header
+and its own drawer start describing the product differently.
+
+🔴 **Both branches carry the fit-contract classes.** `header-fit.test.ts` pins the visitor controls
+(`hidden shrink-0 sm:block`, `shrink-0 … whitespace-nowrap`) because the wordmark is that bar's only
+shrinkable child. An auth-dependent control that forgot to pin itself would reintroduce the exact
+overflow that test exists to prevent — **on the branch that test never renders**, which is why
+`auth-chrome.test.ts` asserts the member arm separately.
+
+⚠️ **One existing assertion had to change, and it was measuring punctuation.**
+`marketing-mobile-menu.test.ts` pinned the sheet's element *literally*
+(`<MarketingMobileMenu light={light} headerMenu={headerMenu} />`), so threading a second correct prop
+through it failed a test whose stated subject — *"hands the sheet the SAME headerMenu"* — was
+untouched. It now asserts the prop inside the tag. A guard that fails on a change it does not name is
+a guard that teaches people to edit tests.
+
+⚪ **`/sign-in` now redirects a signed-in visitor into the app** (honouring a validated `next`). The
+header no longer offers a member that page, but bookmarks, stale tabs and old emails still land
+there, and a sign-in form is the least useful thing a signed-in person can be shown. The `next`
+validation is the same same-origin-absolute-path shape `/auth/callback` and `proxy.ts` already
+enforce, computed **once** and reused by the form, so the redirect and the hidden input cannot
+disagree about what a legal destination is.

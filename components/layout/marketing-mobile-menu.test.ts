@@ -149,8 +149,14 @@ describe('the sheet gates like the bar, and takes the menu the bar takes', () =>
   it('MarketingHeader hands the sheet the SAME headerMenu it hands PrimaryNav', () => {
     // The operator-edit half. Without this prop the sheet falls back to the code default and the
     // Menu manager silently means nothing on the surface most visitors read.
+    //
+    // Asserted on the PROP rather than the whole tag: this used to pin the element literally,
+    // which made it fail the day the header started threading `isAuth` too — a correct change
+    // caught by a test that was measuring punctuation instead of the thread it names. The
+    // viewer half has its own guard in auth-chrome.test.ts.
     const header = readFileSync(new URL('./marketing-header.tsx', import.meta.url), 'utf8')
-    expect(header).toContain('<MarketingMobileMenu light={light} headerMenu={headerMenu} />')
+    const tag = header.match(/<MarketingMobileMenu[^>]*>/)?.[0] ?? ''
+    expect(tag).toContain('headerMenu={headerMenu}')
   })
 
   it('no longer projects the registry triggers flat — that projection IS the bug', () => {

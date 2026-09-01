@@ -1,6 +1,8 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { redirect } from 'next/navigation'
 import { PhotoHero } from '@/components/marketing/marketing-ui'
+import { createClient } from '@/lib/supabase/server'
 import { BETA_CTA_HREF } from '@/lib/site'
 import { signInWithMagicLink, signInWithGoogle } from './actions'
 import { signInErrorMessage } from './errors'
@@ -19,13 +21,31 @@ export default async function SignInPage({
   searchParams: Promise<{ error?: string; next?: string; email?: string }>
 }) {
   const { error, next, email } = await searchParams
+
+  // ALREADY SIGNED IN → straight into the app. The header no longer offers a member this page
+  // (the auth cluster follows the viewer now), but a bookmark, a stale tab, an old email and the
+  // browser's own autofill history all still land here — and a sign-in form is the least useful
+  // thing a signed-in person can be shown. `next` is honoured when it is present so a link that
+  // pointed somewhere specific still arrives there.
+  //
+  // The validation is the SAME shape /auth/callback and the proxy already use: same-origin
+  // absolute path only, so an open redirect cannot ride in on the query string. It is computed
+  // before this branch and reused by the form below, so the two can never disagree about what a
+  // legal `next` is.
+  const nextTarget =
+    next && next.startsWith('/') && !next.startsWith('//') && !next.startsWith('/\\') ? next : ''
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (user) redirect(nextTarget || '/feed')
+
   // `?error=` carries a CODE and this page owns the sentence. Rendering the raw value let anyone
   // put their own words in the product's error box on the product's own login page, and let
   // Supabase's vendor strings onto the one screen a member is most likely to give up on. See
   // ./errors.ts.
   const errorMessage = signInErrorMessage(error)
-  const nextValue =
-    next && next.startsWith('/') && !next.startsWith('//') && !next.startsWith('/\\') ? next : ''
+  const nextValue = nextTarget
 
   // Prefill, for the guest-RSVP receipt email (lib/events/guest-rsvp-email.ts). A guest seat can
   // only be claimed by signing in with the SAME address, because claim_guest_rsvps reads the
