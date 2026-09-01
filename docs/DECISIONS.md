@@ -34745,3 +34745,62 @@ document, and the document is right there.**
 cited ADR *exists* (`check:adr` already does) but not that it says what the citer thinks. The
 mitigation is the quote pinned next to the line, which is evidence a reader can check in place
 rather than a rule a gate can enforce.
+
+## ADR-1190: the backlog probes stay serial, because the measurement cannot survive the pool (2026-09-01)
+
+`HYG-042` recorded two tests in `scripts/backlog-contract.test.ts` running at ~79% of their timeouts,
+and named the fix: **parallelise the 224 probes**, the way
+`.github/workflows/ci.yml` already did for its 24 contract guards (*"Run wall clock was the SUM of 26
+guards; it is now bounded by the slowest single guard"*). The probes are independent child processes
+that only read the tree. It is the obvious change.
+
+🔴 **It is also wrong, and the refutation is a measurement rather than an argument.**
+
+Per-probe CPU is read as a delta of `cutime + cstime` from `/proc/self/stat` — the kernel's
+cumulative CPU of this process's **reaped children**. That counter is **process-wide**. Serially it
+attributes exactly, because exactly one child is reaped per window. Under a pool, a probe is charged
+for whatever else was reaped inside its window:
+
+```
+── SERIAL: how the guard measures today ──
+  SLEEPER  attributed   40 ms      ← truly ~50ms of CPU (4s wall, asleep)
+  BUSY     attributed 3770 ms
+── PARALLEL: an expensive sibling completes inside the cheap probe's window ──
+  BUSY     attributed 3740 ms
+  SLEEPER  attributed 3780 ms      ← the same ~50ms probe, off by ~75x
+```
+
+[ADR-1107](#adr-1107) built **three** assertions on that number, and parallelising retires all three
+at once — silently, which is the part that matters:
+
+| Assertion | What the pool does to it |
+|---|---|
+| 4,500ms **per-probe** ceiling | fires on innocent rows, and **names the wrong one** |
+| total `BASE + 180ms × n` | double-counted, so it breaches spuriously |
+| self-report cross-checked externally | the two views stop being views of one quantity |
+
+The per-probe ceiling is the signal the gate exists for — *"ONE probe got expensive"*, the thing
+`LIVE-034` converted nine rows to fix. A change that makes it accuse the wrong row is worse than the
+24 seconds it saves.
+
+**The demonstration is committed as `scripts/maintenance/probe-cpu-attribution-demo.mjs`** rather
+than written down here alone. A claim of this shape — "the obvious optimisation breaks the
+measurement" — is exactly the kind that gets re-litigated by whoever next reads the serial loop and
+sees an easy win, and a paragraph cannot be re-run. That file can.
+
+⚪ **Two viable paths, and this ADR deliberately picks neither** — the choice changes a load-bearing
+gate whose constants came from paired CI/local readings, which makes it the owner's:
+
+- **(a) Keep the serial runner and set both budgets deliberately.** One is already done (90s against
+  23.8s of work); the ripgrep-parity case already has 60s against 46.7s. Cheap, honest, no metric
+  changes. The cost is that ~24s stays ~24s and the budgets need re-reading as `n` grows.
+- **(b) Have each `node -e` probe report its OWN `process.cpuUsage()` on exit.** Attribution then
+  survives any amount of parallelism, because it no longer comes from the parent. This is the real
+  solution. It changes how a measured gate measures, and it does not cover `cmd` probes that are not
+  node — so the ceiling would go blind on exactly the probes most likely to be expensive.
+
+⚠️ **This ADR exists because I proposed (a wrong) fix and queued it as the next task before reading
+the code it would change.** The row said "the real fix is parallelism" in my own words, written from
+the shape of the loop rather than from what the loop's numbers are for. Two of the three assertions
+it would have broken are in the same file, forty lines away. **"Independent child processes that only
+read the tree" was true and irrelevant** — the constraint was never the work, it was the measurement.
