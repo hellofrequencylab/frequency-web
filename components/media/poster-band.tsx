@@ -94,6 +94,7 @@ export function PosterBand({
   src,
   heightClass,
   radiusClass = 'rounded-2xl',
+  widthClass = 'w-full',
   focus,
   alt = '',
   unoptimized = false,
@@ -112,6 +113,23 @@ export function PosterBand({
    *  components/ui/skeleton.tsx). Appending `rounded-none` to override a baked-in `rounded-2xl`
    *  would work today by luck of the alphabet and silently invert the day a token is renamed. */
   radiusClass?: string
+  /** The band's width, substituted into the base class string.
+   *
+   *  🔴 A PROP FOR THE SAME REASON AS `radiusClass`, AND IT IS HERE BECAUSE THE LESSON DID NOT
+   *  TRANSFER. This component protected the radius from the no-tailwind-merge trap and then baked
+   *  `w-full` into the same base string. The event page wanted a full-bleed phone band, so it passed
+   *  `className="-mx-4 w-auto sm:mx-0 sm:w-full"` — and the rendered element carried BOTH `w-full`
+   *  and `w-auto`. `w-full` won.
+   *
+   *  The result shipped and the owner reported it off a phone: `-mx-4` still pulled the band one
+   *  gutter left, but the width never grew to match, so the band bled off the LEFT edge and stopped
+   *  TWO gutters short on the RIGHT. Full-bleed on one side, a 34px stripe of page colour on the
+   *  other. The geometry is exact — margin-left:-1rem with width:100% of a `px-4` content box puts
+   *  the right edge at `viewport - 2rem`.
+   *
+   *  A full-bleed caller passes `widthClass="w-auto sm:w-full"` and keeps the margins in
+   *  `className`. Nothing appends a second `w-*`. */
+  widthClass?: string
   /** The operator's focal point ("x% y%").
    *
    *  ⚠️ INERT WHILE THE BAND CONTAINS, and kept on purpose. `object-position` moves an image
@@ -130,7 +148,7 @@ export function PosterBand({
   className?: string
 }) {
   return (
-    <div className={`relative ${heightClass} w-full overflow-hidden ${radiusClass} bg-surface-elevated ${className}`}>
+    <div className={`relative ${heightClass} ${widthClass} overflow-hidden ${radiusClass} bg-surface-elevated ${className}`}>
       {/* THE BACKDROP. The same image, scaled past the edges so the blur has pixels to work with
           all the way out (a blur samples beyond its own box and would otherwise fade to
           transparent at the frame), then dimmed so it stays clearly BEHIND the poster rather than

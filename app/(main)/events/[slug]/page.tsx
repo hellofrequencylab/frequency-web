@@ -1869,14 +1869,18 @@ export default async function EventDetailPage({
             // frame: a `-mx-4` baked into the band would under-pull by 8.5px there AND be clipped
             // rather than bleed. Same reason it is not in DetailTemplate, whose hero slot has ten
             // other callers.
-            className="-mx-4 w-auto sm:mx-0 sm:w-full"
+            // ⚠️ The WIDTH goes through `widthClass`, never appended here: PosterBand bakes a width
+            // into its base string, and a second `w-*` in `className` loses to it on Tailwind's
+            // emission order (this exact collision shipped — see that prop's comment).
+            className="-mx-4 sm:mx-0"
+            widthClass="w-auto sm:w-full"
             radiusClass="rounded-none sm:rounded-2xl"
           />
         ) : (
           // No cover: a designed placeholder, not a blank box. Mirrors the
           // circle-card no-cover fill (soft DAWN gradient + centered icon) and
           // leads with the event's date so the slot still says something.
-          <div className={`-mx-4 sm:mx-0 relative flex ${posterHeightCls} w-full items-center justify-center overflow-hidden rounded-none sm:rounded-2xl bg-gradient-to-br from-primary-bg via-surface-elevated to-signal-bg text-primary-strong`}>
+          <div className={`-mx-4 sm:mx-0 relative flex ${posterHeightCls} w-auto sm:w-full items-center justify-center overflow-hidden rounded-none sm:rounded-2xl bg-gradient-to-br from-primary-bg via-surface-elevated to-signal-bg text-primary-strong`}>
             <div className="flex flex-col items-center gap-1 text-center">
               <CalendarDays className="h-7 w-7 opacity-80" />
               <span className="text-display-h3 font-bold leading-none">
