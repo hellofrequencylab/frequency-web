@@ -34691,3 +34691,57 @@ appears only under load, does not reproduce when re-run alone, and reads exactly
 this repo's rules correctly say is never a root cause. The CPU budget printed beside it
 (`guardCpuMs=26,860`) is the healthy half, because it is a number someone can watch. A timeout is a
 cliff.
+
+## ADR-1189: a correction I wrote, then acted on in the same commit, and it was wrong (2026-09-01)
+
+`LIVE-139` carried a note I added in #2334:
+
+> **(2)** `'redacts to city level (ADR-186)'` is a **MIS-CITATION**. ADR-186 is the member-proximity
+> band decision (geocells, `location_band`, `members_near`); it does not rule on event venue lines.
+> The authorities are ADR-825 and SCAN-209. This error is inherited rather than invented —
+> `lib/events/visible-location.ts` carries the same wrong citation — so fixing it there is its own
+> small cleanup.
+
+**That is false, and [ADR-825](#adr-825)'s own body is the disproof, in one sentence:**
+
+> "The public /discover surface was **already city-level only (ADR-186)** and the event JSON-LD never
+> carried the venue, so the event page was the single leak surface."
+
+ADR-825 **credits ADR-186 by name** for the city-level rule and scopes *itself* to the event page. So
+the three authorities divide cleanly, and none of them is the wrong one to cite:
+
+| Authority | Owns |
+|---|---|
+| **ADR-186** | city-level public surfaces, and the JSON-LD carrying no venue — the *prior* state |
+| **ADR-825** | hiding the **exact** address on the event page until a viewer registers — the *new* rule |
+| **SCAN-209** | that `hide_address` was render-layer only, so the address leaked through grants, two feeds and the `.ics` — the *bug* |
+
+⚠️ **The damage was not hypothetical.** The same commit that wrote the claim also acted on it,
+changing `lib/events/visible-location.ts` from *"JSON-LD is city-level by ADR-186"* to *"by ADR-825 +
+SCAN-209"* — replacing a correct pointer with a wrong one **in the privacy layer**, which is the
+worst place to send the next reader to a decision that does not say what they were told it says.
+Reverted here, with the ADR-825 quote pinned beside it so the same "correction" cannot be made a
+third time.
+
+🔴 **And the follow-on instruction was worse than the claim itself.** *"Fixing it there is its own
+small cleanup"* understated the blast radius by an order of magnitude: roughly **fourteen** more
+ADR-186 citations sit in event-venue code — `lib/jsonld.ts` (×4), `lib/jsonld.test.ts`,
+`listings-shared/listing-seo.ts`, `events-map.tsx`, `events/index-data.ts`, both discover routes —
+and every one of them is **correct**. A tidy-minded sweep would have turned fourteen right pointers
+into fourteen wrong ones, with a backlog row as its authority.
+
+⚪ **It was also stale on its own terms.** The row said `visible-location.ts` "carries the same wrong
+citation"; #2334 had already changed that line. So by the time anyone could act on it, the row
+described a file state that no longer existed, in service of a claim that was never true.
+
+**What this costs, stated plainly:** the session rule "verify every delegated finding myself" exists
+because agents and rows report things confidently. It says nothing about findings *I* write, and
+this one went from assertion to code change inside a single commit with nothing in between. The two
+minutes that would have caught it — opening ADR-825 and reading its first paragraph — are the same
+two minutes the rule already demands for everyone else's claims. **A citation is a claim about a
+document, and the document is right there.**
+
+⚪ **Not machine-checkable, and pretending otherwise would be worse.** A guard can verify that a
+cited ADR *exists* (`check:adr` already does) but not that it says what the citer thinks. The
+mitigation is the quote pinned next to the line, which is evidence a reader can check in place
+rather than a rule a gate can enforce.

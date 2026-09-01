@@ -1,5 +1,15 @@
 // ONE rule for "what venue line may this reader see" (SCAN-209).
 //
+// ⚪ THE THREE AUTHORITIES, AND WHICH ONE OWNS WHAT — recorded because this line has already been
+// mis-'corrected' once (ADR-1189). ADR-825's own body settles it in one sentence:
+//     "The public /discover surface was already city-level only (ADR-186) and the event JSON-LD
+//      never carried the venue, so the event page was the single leak surface."
+//   · ADR-186  — city-level public surfaces, and the JSON-LD carrying no venue. PRIOR state, which
+//                ADR-825 credits to it by name. Not only about member proximity.
+//   · ADR-825  — hiding the EXACT address on the event page until a viewer registers. The new rule.
+//   · SCAN-209 — that hide_address was a render-layer control, so the address leaked through grants,
+//                two feeds and the .ics. The bug, not the policy.
+//
 // 🔴 WHY THIS IS A MODULE AND NOT A LINE IN EACH CALLER. The rule was already written down — inside
 // lib/events/guest-rsvp-email.ts, module-private — and its own comment predicted exactly how it
 // would be broken:
@@ -8,7 +18,7 @@
 //      so redacting the visible line alone would leak it straight back."
 //
 // Which is what happened. The event page honoured `hide_address`. The guest email honoured it. The
-// JSON-LD is city-level by ADR-825 + SCAN-209 and so never had the problem. The `.ics` surfaces did not consult
+// JSON-LD is city-level by ADR-186 and so never had the problem. The `.ics` surfaces did not consult
 // it at all, and on 2026-08-25 the master public calendar feed — which needs no credential — was
 // publishing `3598 Royal Rd, Vista, California` for a host who had switched the address off. A rule
 // that lives in one consumer is a rule the next consumer does not know about.
