@@ -37,7 +37,7 @@ export async function CheckinRoster({ spaceId }: { spaceId: string }) {
             {entry.handle ? (
               <Link
                 href={`/people/${entry.handle}`}
-                className="truncate text-body-sm font-semibold text-text transition-colors hover:text-primary-strong"
+                className="block truncate text-body-sm font-semibold text-text transition-colors hover:text-primary-strong"
               >
                 {entry.name}
               </Link>

@@ -118,7 +118,7 @@ export function Breadcrumbs({
                 {c.label}
               </span>
             ) : (
-              <Link href={c.href} className="max-w-[11rem] truncate transition-colors hover:text-text">
+              <Link href={c.href} className="max-w-[11rem] block truncate transition-colors hover:text-text">
                 {c.label}
               </Link>
             )}

@@ -79,7 +79,7 @@ function SpaceRow({ entry, masterProfileIntakeId }: { entry: SpaceWithHealth; ma
         <div className="flex flex-wrap items-center gap-2">
           <Link
             href={`/admin/spaces/${s.id}`}
-            className="truncate text-body font-bold text-text hover:text-primary-strong"
+            className="block truncate text-body font-bold text-text hover:text-primary-strong"
           >
             {brandName}
           </Link>

@@ -81,7 +81,7 @@ export async function QuestLeaderboard() {
               <div className="min-w-0 flex-1">
                 <Link
                   href={`/people/${member.handle}`}
-                  className={`truncate text-meta font-medium hover:underline ${
+                  className={`block truncate text-meta font-medium hover:underline ${
                     isSelf ? 'text-primary-strong' : 'text-text'
                   }`}
                 >

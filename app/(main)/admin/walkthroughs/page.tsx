@@ -41,7 +41,7 @@ function WalkthroughCard({ w }: { w: Walkthrough }) {
     <div className="flex flex-col gap-3 rounded-2xl border border-border bg-surface p-4 lift-1 sm:flex-row sm:items-center sm:justify-between">
       <div className="min-w-0">
         <div className="flex flex-wrap items-center gap-2">
-          <Link href={`/admin/walkthroughs/${w.id}`} className="truncate text-body font-bold text-text hover:text-primary-strong">
+          <Link href={`/admin/walkthroughs/${w.id}`} className="block truncate text-body font-bold text-text hover:text-primary-strong">
             {w.name || 'Untitled walkthrough'}
           </Link>
           <span

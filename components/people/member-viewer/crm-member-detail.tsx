@@ -105,7 +105,7 @@ function NetworkGroup({ icon: Icon, label, items }: { icon: typeof Users; label:
         {items.map((it) => (
           <li key={it.id} className="flex items-center gap-2 text-body-sm">
             {it.href ? (
-              <Link href={it.href} className="truncate text-text hover:text-primary-strong">
+              <Link href={it.href} className="block truncate text-text hover:text-primary-strong">
                 {it.label}
               </Link>
             ) : (

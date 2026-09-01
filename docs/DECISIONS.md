@@ -34005,3 +34005,71 @@ was more than half blind.
 
 A helper imported from **another** module remains the declared blind spot; `resolveLocalComponent`
 says so in its own doc comment rather than leaving the coverage implied.
+## ADR-1178: `truncate` on an inline link widens the page instead of shortening the text (2026-08-31)
+
+🔴 **AMENDED 2026-09-01, BEFORE THIS EVER MERGED: THE CAUSAL CLAIM BELOW WAS WRONG.** This ADR was
+written asserting that the inline-`truncate` defect CAUSED the `/spaces/<slug>/manage` overflow.
+It does not. PR #2328 carries the fix, and the overflow on its own preview measures
+`<section> ... x 17→447, width 430` — byte-identical to the reading taken before the fix, at every
+one of 320/360/390px. Not one pixel moved.
+
+What survives is the defect itself, which is real and independently worth fixing: on a
+non-replaced inline box `overflow` and `text-overflow` do not apply, so an inline `<a class="truncate">`
+gets no ellipsis and keeps `white-space: nowrap`, which does inflate its min-content contribution.
+Six such links existed and are fixed. What does NOT survive is the attribution: something else on
+that dashboard has a min-content of 430px, it has not been identified, and it is filed separately.
+The overflow is NOT fixed. Read the rest of this entry as the mechanism, not as the diagnosis.
+
+**Context.** `test/e2e/overflow.spec.ts` measured `/spaces/<slug>/manage` running **57px past a 390px
+viewport**, in two `<section>`s at once, on a shell root that carries `overflow-x-clip` — so nothing
+scrolled and the operator's dashboard was simply cut off on a phone. That measurement is what
+prompted the audit below; it is not what the audit fixed.
+
+Both sections reported the *same* width, which is the tell: they are the two items of one
+single-column grid, and a grid track is sized by the widest item's min-content. One item widened the
+track and the other inherited it. The widener was a single class:
+
+```tsx
+<div className="min-w-0 flex-1">
+  <Link href={`/events/${e.slug}`} className="truncate …">{e.title}</Link>
+```
+
+Tailwind's `truncate` is `overflow: hidden` + `text-overflow: ellipsis` + `white-space: nowrap`. The
+first two **do not apply to a non-replaced inline box**, and `<Link>` renders an `<a>`, which is
+inline. So on this link two thirds of `truncate` evaporated and the third survived — and the
+survivor is the harmful one: `white-space: nowrap` makes the element's min-content the full length
+of the string, which is the floor no flex or grid track can shrink below. The title got no ellipsis;
+it made the column wider than the phone.
+
+`min-w-0 flex-1` on the wrapper is what makes this easy to miss. It looks like the shrink problem is
+already handled, and it is — for the *wrapper*. `flex-1` is `flex: 1 1 0%` on an **item**; it says
+nothing about the item's children, which stay inline.
+
+**Decision.** A `<Link>` carrying `truncate` must also carry an explicit display class.
+`scripts/check-link-truncate.test.ts` enforces it. Six real defects were fixed
+(`space-dashboard`, `checkin-roster`, `membership-event-access`, `event-share-approvals`,
+`placement-approvals`, `quest-leaderboard`); the other 15 links it covers were already correct and
+took an explicit `block` that changes nothing, for the reason below.
+
+**Why the coarse rule, when the precise one is narrower.** A link that is a **direct child of a flex
+or grid container is already blockified** (CSS Display §2.7), so `truncate` works there and nothing
+is wrong. The obvious guard therefore resolves each link's parent and checks whether that parent is
+a flex/grid container.
+
+🔴 **That guard was written first and it was wrong three times.** Walking up the JSX by indentation
+picked a *sibling* in `dock-chat.tsx` and skipped past an `inline-flex` wrapper in
+`calendar-repeats-strip.tsx`, reporting both as broken when neither is. Worse, an earlier pass read
+`min-w-0 flex-1` as a flex **container** — which pointed the audit *away* from the six files where
+the defect actually lived, since `min-w-0 flex-1` is the exact wrapper that produces it.
+
+So the rule enforced is "say what you are" rather than "have the right parent". It over-requires by
+15 links, an explicit `block` on an already-blockified flex item is a no-op, and what the
+over-requirement buys is a guard with no tree-walking left to get wrong. The sibling test drives the
+detector against fixtures that must fail — including `flex-1`, `flex-col` and `flex-wrap`, the three
+that caused the original misreading — and puts a floor on the denominator so an empty glob cannot
+pass as compliance.
+
+**The measurement found it, not the review.** Neither `@a11y` (axe has no rule for "off the
+viewport") nor `@visual` (a 57px band is noise inside an 18,000px full-page baseline) could see
+this; ADR-1035 is the same lesson and `overflow.spec.ts` exists because of it. It has now caught its
+second class of defect.

@@ -187,6 +187,14 @@ const VITEST_ENFORCED: Record<string, string> = {
   // an array. Its sibling test is the standing form of the mutation sweep that caught the FIRST
   // version of the detector missing 8 of the 15 defects it had just been used to fix.
   'check:nested-radius': 'scripts/check-nested-radius.test.ts',
+  // Added 2026-08-31 (HYG-036, ADR-1178). It walks app/ and components/ for a <Link> whose
+  // className carries `truncate` without an explicit display class — an inline <a> on which two
+  // thirds of `truncate` do not apply and the surviving `white-space: nowrap` widens the
+  // min-content floor of every flex/grid track above it. Source-only, so vitest is its home by the
+  // rule above. Its sibling test drives the detector against fixtures that must FAIL, including
+  // flex-1 / flex-col / flex-wrap — the three tokens whose misreading as `display: flex` made the
+  // FIRST version of this audit report all six broken files as fine.
+  'check:link-truncate': 'scripts/check-link-truncate.test.ts',
 }
 
 function packageScripts(): Record<string, string> {

@@ -49,7 +49,7 @@ export function CalendarRepeatsStrip({
               {s.href ? (
                 <Link
                   href={s.href}
-                  className="max-w-40 truncate px-2.5 py-1 text-2xs font-semibold text-text underline-offset-2 hover:underline"
+                  className="max-w-40 block truncate px-2.5 py-1 text-2xs font-semibold text-text underline-offset-2 hover:underline"
                 >
                   {s.name}
                 </Link>
