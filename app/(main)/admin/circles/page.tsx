@@ -65,7 +65,7 @@ export default async function AdminCirclesPage({
       const { data } = await admin
         .from('circles')
         .select(`id, name, about, type, status, member_count, member_cap, hub_id, host_id,
-                 featured_at,
+                 image_url, city, neighborhood, resonance_public, featured_at,
                  hub:hubs!hub_id ( id, name ),
                  host:profiles!host_id ( id, display_name )`)
         .in('hub_id', hubIds)
@@ -83,6 +83,7 @@ export default async function AdminCirclesPage({
         const { data } = await admin
           .from('circles')
           .select(`id, name, about, type, status, member_count, member_cap, hub_id, host_id,
+                   image_url, city, neighborhood, resonance_public, featured_at,
                    hub:hubs!hub_id ( id, name ),
                    host:profiles!host_id ( id, display_name )`)
           .in('hub_id', hubIds)

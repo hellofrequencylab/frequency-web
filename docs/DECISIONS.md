@@ -34173,3 +34173,127 @@ spells out for the identical URL. The one tier that genuinely needs elevation, a
 private poster bucket, stays delegated to `lib/events/poster-media.ts`, which owns that bypass
 already. Extracting shared code is exactly where a bypass spreads by accident, and the ratchet
 caught it on the first push.
+
+## ADR-1180: the event share card had no visibility gate, and published a withheld street (2026-09-01)
+
+Found by an audit sweep hours after [ADR-1179](#adr-1179) fixed which *image* that card renders. The
+image was the smaller problem.
+
+`app/(main)/events/[slug]/opengraph-image.tsx` read `events` on the **service-role client**, so RLS
+was bypassed and `.eq('slug', slug)` was the **only** predicate. Three properties compound it:
+
+- `proxy.ts`'s `isPublicEventView` lets every `/events/*` path through the sign-in wall except
+  `/new` and `/manage`, so the route needs no credential.
+- Next emits the `<meta og:image>` tag on **every** event page, including the ones whose
+  `generateMetadata` returned `robots: noindex`, and the URL is derivable from the slug.
+- `lib/og/deliver.ts` sets `s-maxage=86400, stale-while-revalidate=604800`, so a leak is cached on a
+  shared CDN for a day and served stale for a week **after** the row is fixed.
+
+Two distinct leaks rode on that, measured against production:
+
+**1. The withheld street.** The card rendered `ev.location` — the host's free-text venue line —
+directly onto the image. `hide_address` (ADR-825) was never consulted. **19 published, public events
+have `hide_address = true` right now.** Every one of them published the address its host had
+switched off, to anyone who pasted the link into a message thread. `lib/events/visible-location.ts`
+exists precisely for this and its header names the exact production row that leaked before:
+`3598 Royal Rd, Vista, California` — *the same event and the same street*, one surface over. Its own
+sentence is the diagnosis: **"A rule that lives in one consumer is a rule the next consumer does not
+know about."** SCAN-209 enumerated the readers it believed existed — the per-event `.ics`, the guest
+RSVP email, the two SQL calendar feeds — and the share card was not on the list.
+
+**2. No visibility gate at all.** A `private`, `circle_only`, `unlisted`, draft or staff-`removed_at`
+event rendered its title, date, venue line and host display name. 4 events are non-public and 1 is
+removed; for 1 of those the card also signed a **private-bucket** poster (`network-contacts`) and
+baked the bytes into the publicly-cached JPEG.
+
+`generateMetadata` in `page.tsx` has mirrored the page body's gate all along, under a comment saying
+*"The admin read bypasses RLS, so mirror the page body's visibility gate here."* The image route, in
+the same folder, reading the same table with the same client, had none.
+
+**Decision.** The card gates on **link-readability** — `(visibility === 'public' || 'unlisted') &&
+status === 'published' && !removed_at` — and otherwise returns an identity-free neutral card (the
+pattern `spaces/[slug]/opengraph-image.tsx` already used for private Spaces). Its venue line resolves through
+`publicVisibleLocation`, and the gate inputs are in the `select` — a rule whose inputs were never
+fetched reads `undefined` and silently never redacts. `is_cancelled` is deliberately **not** in the
+gate: a cancelled public event is still public, and the card's "Cancelled" chip exists to say so.
+
+🔴 **THE FIRST VERSION OF THIS GATE WAS WRONG, AND IT WOULD HAVE BROKEN THE CARD IT WAS WRITTEN TO
+PROTECT.** It read `visibility === 'public'` — copied from `generateMetadata` — which neutralises
+`unlisted`. That is the wrong rule, because the two surfaces answer different questions.
+`generateMetadata` decides **indexability**, and noindexing an unlisted event is right. This card
+decides whether the person who was *sent the link* may see it, which is **readability** — and
+`unlisted` exists precisely to be shared by link. `20260612000000_events_visibility_rls.sql` says it
+in words: *"unlisted → readable by anyone WITH THE LINK"*, and `page.tsx:587` `notFound()`s only
+`private` while `circle_only` requires membership.
+
+It was caught by querying production before merging rather than by reading the diff again: **the
+event this whole thread began with is `unlisted`**, so the gate would have replaced its poster card
+with a blank brand card — undoing [ADR-1179](#adr-1179) two hours after it shipped, on the one event
+the owner was watching. The lesson is narrow and repeatable: when a gate is copied from a sibling,
+check what question the sibling was answering. Both directions are now pinned by mutation — dropping
+`unlisted` fails, and widening to any visibility fails.
+
+**⚪ Not caused by ADR-1179, and worth stating because the shape invites the opposite conclusion.**
+That commit added `cover_image_path` to this select, so more events now render a photograph. Both
+leaks predate it: the old code already signed the private bucket via
+`posterSignedUrl(details.media.coverPath ?? poster_path)`, and the old text card already rendered
+`where` on its own line. ADR-1179 changed which image appears, not who may see the card.
+
+**The structural lesson, and the guard.** `opengraph-image.tsx` is neither a route handler nor a
+`'use server'` file, so `check:authz` counts none of the 19 of them — a whole route class sits
+outside every authz gate in the repo while being the most reliably-fetched anonymous surface there
+is. `check-event-hero-parity.test.ts` did not help either: it reasons about *which image renders*
+and says nothing about *whether this viewer may see it*. So the enforcement went where the rule
+lives — `lib/events/visible-location.test.ts`, the file that already enumerates every non-attending
+reader. The share card is now the fourth entry, asserting both the redaction and the gate. **Only
+two OG routes use the service-role client at all**; the other, the event claim card, already gated
+on `status='published'` + unclaimed + un-removed, which is why this stayed a single-route defect.
+
+Five mutations were watched go red: reading `ev.location` raw, dropping `hide_address` from the
+select, removing the gate, replacing the neutral branch, and deleting the branch entirely. The first
+version of the last assertion passed on the function *declaration* — `toContain('neutralCard()')`
+matches `function neutralCard()` — so it stayed green while the branch was mutated away. That is the
+shape-not-truth failure, caught by mutation rather than by review, in the guard written to prevent a
+leak.
+
+## ADR-1181: a role-scoped select forgot four columns, and the edit form wrote the gap back as null (2026-09-01)
+
+`/admin/circles` builds its list from four role-scoped queries — janitor, host, guide, mentor — and
+casts all four to one hand-written `CircleRow`. Janitor and host selected `image_url, city,
+neighborhood, resonance_public, featured_at`. **The guide branch omitted the first four; the mentor
+branch omitted all five.**
+
+TypeScript could not see it. This repo casts the returned payload rather than regenerating
+`lib/database.types.ts` for new columns (ADR-246), so an unselected column is `undefined` at runtime
+and not a type error — the same property that made [ADR-1179](#adr-1179) invisible, one surface over.
+
+**It destroyed data, and the path is short.** `circles-client.tsx` prefills its form with
+`initial?.image_url ?? ''` (and `?? false` for the boolean). `handleSubmit` then `fd.set`s all four
+**unconditionally**. `updateCircle` guards each with `fd.has(...)`, which is always true once the
+form has set them. So a guide or mentor who opened a circle, changed only its name, and saved, wrote
+`image_url: null, city: null, neighborhood: null, resonance_public: false` over live values. The
+action's own comment is the invariant that broke: *"Optional fields are only written when present in
+the form, so a partial form never clears image/location/resonance it didn't show."* It was true of
+the form and false of the query feeding it.
+
+The `featured_at` miss is quieter and still wrong: for a mentor every `c.featured_at != null` was
+`false`, so a featured circle rendered unstarred and `FeatureStar` seeded its optimistic state from
+that — every click sent `act(true)`. **A mentor could feature a circle and could never unfeature
+one**, with no sign anything was off. `/admin/events` had the identical shape: the directly-hosted
+branch of `load-events.ts` omitted `featured_at` while the circle-scoped branch selected it, and both
+merge into one `AdminEvent[]` — so the bug appeared only for events *not* scoped to one of the
+operator's circles, which is what kept it hidden.
+
+**Decision.** Every branch feeding a row type selects every column that type declares.
+`scripts/check-row-type-select-parity.test.ts` pins the two, parsing the type's scalar keys and each
+select that is cast to it. Three mutations were watched go red, including a re-introduction of the
+exact original bug.
+
+**⚠️ The general rule was written first, measured, and rejected — and the measurement is the point.**
+"All selects on the same table in one file must request the same columns" fires on **346 files**,
+almost all legitimate: a count query and a detail query on one table are *supposed* to differ.
+Divergence is a defect only when the branches feed **one row type**, and that relation is what the
+naive rule cannot see. A gate with a 346-file false-positive rate earns an allowlist and then reads
+as coverage — the ADR-970 failure. So the guard pins the two pairs that actually bled, and the
+general version is filed as HYG-039 with the false-positive rate recorded, so nobody re-derives the
+naive rule and ships it.

@@ -65,7 +65,7 @@ describe('publicVisibleLocation', () => {
   })
 })
 
-describe('every non-attending .ics reader goes through the rule', () => {
+describe('every non-attending reader goes through the rule', () => {
   // Source-shape, and it is the assertion that matters: this class of bug is not a wrong value, it
   // is a caller that never asked. A route reading the row and publishing `ev.location` straight into
   // a VEVENT is invisible to any runtime test of this module.
@@ -80,6 +80,45 @@ describe('every non-attending .ics reader goes through the rule', () => {
     ).toBe(false)
     // It must actually SELECT the inputs, or the rule silently reads undefined and never redacts.
     expect(src).toMatch(/\.select\('[^']*hide_address[^']*'\)/)
+  })
+
+  it('the per-event SHARE CARD redacts, and gates on visibility before rendering anything', () => {
+    // 🔴 THE FOURTH CONSUMER, found 2026-09-01. This module's header says "a rule that lives in one
+    // consumer is a rule the next consumer does not know about" and then names the exact production
+    // row that was leaking: `3598 Royal Rd, Vista, California`. The OG card was reading
+    // `ev.location` straight into the image — the same street, the same event, one surface over.
+    //
+    // It is the worst place to have missed it, not the least: the card needs no credential, Next
+    // emits its <meta og:image> on every event page including noindexed ones, the slug is guessable,
+    // and lib/og/deliver.ts caches the render on a shared CDN for 24h with a week of
+    // stale-while-revalidate — so the leak outlives the fix by a day. 19 published public events had
+    // `hide_address = true` when this was found.
+    const src = read('app/(main)/events/[slug]/opengraph-image.tsx')
+    expect(src).toContain("from '@/lib/events/visible-location'")
+    expect(src).toContain('publicVisibleLocation(')
+    // The raw free-text line must never reach the canvas again.
+    expect(
+      /const where = ev\??\.location/.test(src),
+      'the share card is publishing the raw venue line again (SCAN-209)',
+    ).toBe(false)
+    // The rule silently returns undefined if the inputs were never selected.
+    expect(src).toMatch(/\.select\(\s*\n?\s*'[^']*hide_address[^']*'/)
+
+    // AND the visibility gate, which is the other half: the read is service-role, so a private,
+    // draft or removed event would otherwise render its identity to anyone who guessed a slug.
+    // page.tsx's generateMetadata has always carried this; the image route had none.
+    // The gate mirrors the PAGE's readability rule (public OR unlisted are link-readable;
+    // 20260612000000_events_visibility_rls.sql), NOT generateMetadata's stricter indexability rule.
+    // Gating `unlisted` out would blank the preview for events whose whole distribution model is
+    // someone pasting the link — a regression dressed as a fix.
+    expect(src).toMatch(/visibility === 'public'/)
+    expect(src).toMatch(/visibility === 'unlisted'/)
+    expect(src).toMatch(/status.*'published'/)
+    expect(src).toContain('removed_at')
+    // ⚠️ Assert the CALL, not the declaration: `toContain('neutralCard()')` passes on the function
+    // definition alone, so it stayed green when the gate's branch was mutated away. A guard that
+    // passes by existing is the shape-not-truth failure this repo names in four ADRs.
+    expect(src).toMatch(/if \(!ev \|\| !isPublic\) \{\s*\n\s*return neutralCard\(\)/)
   })
 
   it('the guest RSVP email delegates the GUEST rule and keeps its member exception', () => {
