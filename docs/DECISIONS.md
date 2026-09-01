@@ -34256,6 +34256,40 @@ matches `function neutralCard()` — so it stayed green while the branch was mut
 shape-not-truth failure, caught by mutation rather than by review, in the guard written to prevent a
 leak.
 
+✅ **VERIFIED ON THE RENDERED ARTIFACT — by identity, not by size.** After the production deploy, the
+card was fetched off the apex for two *different* gated events:
+
+| Event | Why it is gated | Artwork it holds |
+|---|---|---|
+| `flow-frequency-2026-08-02` | public + published, but **removed** | a private-bucket poster |
+| `breathe-connect-expand-2026-07-23` | **circle_only** | none at all |
+
+**They return the same image.** Different titles, different dates, different hosts, one with a poster
+and one without — byte-identical output is only possible if neither renders any of its own identity.
+That is the neutral card, proven on the artifact rather than in the diff, and it is a far stronger
+test than the size comparison it replaced: a size band says "a photograph is absent", while identical
+bytes across two unrelated events says "no identity is present".
+
+The negative half was checked programmatically — none of the distinctive compressed-scan segments
+from the post-deploy images appear in the pre-deploy bytes, so the image genuinely changed rather
+than being served from cache (both fetches `x-vercel-cache: MISS`). And the **public control is
+unchanged at 96,066 chars before and after**, which is what proves the gate did not over-fire. Before
+the deploy, the removed event served **106,733 chars — a photograph, built from the private poster
+bucket, to an anonymous caller**.
+
+⚪ **Two method limits, stated so this is not over-read.** The two gated cards were compared by
+inspecting long high-entropy segments of their compressed scan data, not by a byte-for-byte hash: the
+fetch path returns them lossily transcoded, so no exact digest was possible. And the `hide_address`
+half is proven at the data and code layer only — a JPEG can be shown to carry a photograph or not,
+but the address cannot be read off it. Confirming the street is gone from the pixels remains a human
+check.
+
+🔴 **And the backlog probe had a hole, which is the postscript that matters.** `LIVE-140`'s probe
+asserted `visibility === 'public'` and said nothing about `'unlisted'` — so deleting the `|| unlisted`
+clause, the *precise* regression caught in production above, would have left the probe green. A probe
+that cannot see the mistake its own row was written about is not measuring the consequence. It now
+requires both literals, and the mutation that drops the clause was watched go red.
+
 ## ADR-1181: a role-scoped select forgot four columns, and the edit form wrote the gap back as null (2026-09-01)
 
 `/admin/circles` builds its list from four role-scoped queries — janitor, host, guide, mentor — and
