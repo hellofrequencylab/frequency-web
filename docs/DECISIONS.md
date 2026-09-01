@@ -34141,9 +34141,28 @@ look plain" because the 34 still showed *an* image — a real photo, just not th
 and not the one the page shows — which is the quieter half and the reason this survived a display-
 surface audit that had already been through these very events.
 
-⚠️ **Not visually confirmed.** Every deployment on this project sits behind Vercel deployment
-protection and the apex is unreachable from an agent session, so no re-rendered card was fetched.
-The data, the code path and the guard are proven; the pixels are not.
+✅ **AND THEN IT WAS CONFIRMED ON THE RENDERED CARD.** The paragraph here used to read *"not
+visually confirmed … the pixels are not"*, because every `*.vercel.app` deployment sits behind
+deployment protection. That was true of the deployment URLs and false of the **apex**, which serves
+the same build and is reachable. The card itself was fetched, before and after, on the same URL,
+both freshly rendered (`x-vercel-cache: MISS`), across the production deploy of this change:
+
+| Reading | Rendered | `content-type` | Body |
+|---|---|---|---:|
+| the reported event, OLD code | 02:55:50Z | `image/jpeg` | **25,737** |
+| the reported event, NEW code | 03:00:31Z | `image/jpeg` | **146,739** |
+| a scanned-only event (control) | 03:01:06Z | `image/jpeg` | 96,066 |
+
+**5.7×**, and the control is what makes it readable rather than suggestive: an event that was
+ALREADY showing a photograph before this change reads 96K, in the same band as the fixed card and
+nowhere near 25K. So ~25K is the flat text card and ~96–147K is a photograph, which is exactly the
+~151KB-as-JPEG figure this route's own header quotes for the photographic variant. The reported
+event crossed that boundary at the deploy.
+
+⚪ **What is still not proven this way**: that the card is *well composed* — the scrim, the focal
+crop, the lockup. Byte count says a photograph is present, not that it looks right. The bytes could
+not be recovered intact (the fetch path lossily transcodes them), so no image was ever displayed to
+verify.
 
 **The new module holds no RLS bypass, and CI is what settled that.** The first push had
 `hero-url.ts` importing the service-role client, and `check:admin-client` failed it as a new
