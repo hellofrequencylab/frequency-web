@@ -8,7 +8,7 @@ import type Stripe from 'stripe'
 //      turns the Supporter badge on. IDEMPOTENT: a redelivered event flips no row, so no second
 //      ledger append. A non-contribution / unpaid session is a clean no-op.
 // The DB + ledger are mocked (createAdminClient captures the writes; recordFinancialTransaction
-// is spied), mirroring lib/billing/founders.test.ts.
+// is spied), mirroring lib/billing/founders.test.ts (retired).
 
 const {
   contribUpdate,

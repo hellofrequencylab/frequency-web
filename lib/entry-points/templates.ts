@@ -24,7 +24,7 @@ export interface EntryTemplate {
   destinationKind: DestinationKind
   /** Default destination path (a /start lead flow, or a place/url). Editable. */
   defaultDestination: string
-  /** Flyer layout key (lib/entry-points/flyer-layout.ts). */
+  /** Flyer layout key (lib/entry-points/flyer.ts). */
   flyerLayout: FlyerLayout
   /** QR style preset key (lib/qr/style.ts STYLE_PRESETS). */
   stylePreset: string

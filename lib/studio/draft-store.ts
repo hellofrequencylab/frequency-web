@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// THE STAGED SPARK DRAFT (docs/adr-drafts/1001-draft-sync.md, ADR-991 phase 2).
+// THE STAGED SPARK DRAFT (ADR-1001 in docs/DECISIONS.md, ADR-991 phase 2).
 //
 // The server half of Spark autosave. The local half
 // (components/studio/spark/draft/draft-store.ts) is the fast one and stays the fast one; this is

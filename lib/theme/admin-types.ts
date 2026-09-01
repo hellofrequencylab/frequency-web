@@ -3,7 +3,7 @@
 // actions.ts) and the editor UI. A theme is a named set of DAWN token overrides — a
 // `light` block, a `dark` block, and a `feel` block — that an operator edits as DATA
 // (no code deploy), keyed off `data-skin`/`data-occasion`. These camelCase shapes mirror
-// the snake_case `themes` table (supabase/migrations/20260625000000_themes.sql); the
+// the snake_case `themes` table (supabase/migrations/20260625000001_themes.sql); the
 // server layer maps the columns. Token names/values are always re-validated against the
 // allowlist (lib/theme/validate.ts) before they are persisted or rendered.
 

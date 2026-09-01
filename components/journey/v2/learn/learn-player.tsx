@@ -1,7 +1,7 @@
 'use client'
 
 // Journeys v2 — the LEARN player (the "follow-along course" overhaul of the lesson player). A
-// richer sibling of components/journey/v2/journey-player.tsx: it keeps the working surface intact
+// richer sibling of components/journey/v2/journey-player.tsx (retired): it keeps the working surface intact
 // (progressive-disclosure Phase → Module → Lesson syllabus, drip lock, the "Mark complete &
 // continue" completion flow via completeJourneyLessonAction, the trophy celebration) and layers
 // in the cohesion a follower needs — each week's focus copy, a Pillar badge on practice steps, and

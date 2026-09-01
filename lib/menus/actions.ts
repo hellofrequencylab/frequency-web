@@ -19,7 +19,7 @@ import type {
 } from './types'
 
 // Janitor-gated CRUD for the DB-backed menu system. Mirrors
-// app/(main)/admin/menu/actions.ts: a requireJanitor() gate on the web_role staff
+// app/(main)/admin/menu/actions.ts (retired): a requireJanitor() gate on the web_role staff
 // axis (ADR-208), writes via the service-role admin client, and a layout-wide
 // revalidate after each write so every header refreshes. The menu tables are not in
 // the generated types yet (regenerate lib/database.types.ts after the migration is
@@ -53,7 +53,7 @@ const ACCESS_VALUES: readonly MenuAccess[] = [
 ]
 const SIDE_VALUES = ['left', 'right'] as const
 
-/** Janitor-only guard, mirroring app/(main)/admin/menu/actions.ts. Gated on the
+/** Janitor-only guard, mirroring app/(main)/admin/menu/actions.ts (retired). Gated on the
  *  web_role staff axis (ADR-208), the canonical platform-owner check. */
 async function requireJanitor() {
   const caller = await getCallerProfile()

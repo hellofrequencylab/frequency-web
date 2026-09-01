@@ -11,7 +11,7 @@
 // AdminLink / DomainKey / AdminDestination types, ADMIN_GROUPS, ADMIN_HOME,
 // adminDestinations, canUseLink, canSeeGroup, visibleGroups, visibleLinks, groupLinks,
 // groupSections, domainForPath, relatedGroups, pageLabelForPath, backToDomainFor — is
-// UNCHANGED, so the six components/admin/* consumers, app/admin/page.tsx, and
+// UNCHANGED, so the six components/admin/* consumers, app/(main)/admin/page.tsx, and
 // operator-context.ts keep compiling and rendering identically.
 //
 // Every link keeps its EXACT current href, icon, and per-link role/staff gate (all now

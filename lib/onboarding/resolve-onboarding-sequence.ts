@@ -9,7 +9,7 @@ import { DEFAULT_ONBOARDING_SEQUENCE } from './default-sequence'
 // the viewer's space UNIONED with the ROOT space (lib/library/scope.ts: space ∪ root), keeps the
 // MOST-SPECIFIC target match, and FAILS SAFE to the code default (lib/onboarding/default-sequence.ts)
 // whenever nothing resolves — the exact publish-gate + fail-safe discipline as page_settings
-// (lib/page-settings/store.ts) and the beta copy-layer (lib/onboarding/resolve-sequence.ts).
+// (lib/page-settings/store.ts) and the beta copy-layer (lib/onboarding/resolve-sequence.ts (retired)).
 //
 // ADDITIVE ONLY: this is the machinery. The live /onboarding route still renders OnboardingForm;
 // wiring the SequenceRunner to this resolver is a separate, verified cutover.

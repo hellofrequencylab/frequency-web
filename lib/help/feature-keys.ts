@@ -1,6 +1,6 @@
 // Canonical feature-key registry — the shared vocabulary that ties code areas to
 // help articles. Article front-matter `featureKeys` (see docs/HELP-CENTER.md) MUST
-// use keys from this list; the coverage tool (scripts/help-coverage.ts) reports
+// use keys from this list; the coverage tool (scripts/help-coverage.mts) reports
 // which keys have a published article and flags any article key that isn't here.
 //
 // This is the "what is everything?" measure that the living-docs loop builds on

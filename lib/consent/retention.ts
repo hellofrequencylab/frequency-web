@@ -26,7 +26,7 @@ function db(): SupabaseClient {
 
 /** Delete data past its window: expired member tags, raw interaction_events older than
  *  INTERACTION_RETENTION_DAYS, and staged Spark drafts past their seven-day life
- *  (docs/adr-drafts/1001-draft-sync.md). Returns how many of each were purged. */
+ *  (ADR-1001 in docs/DECISIONS.md). Returns how many of each were purged. */
 export async function enforceRetention(
   now: Date = new Date(),
 ): Promise<{ tagsPurged: number; interactionsPurged: number; studioDraftsPurged: number }> {

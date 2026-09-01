@@ -1,6 +1,6 @@
 -- ============================================================================
 -- STUDIO DRAFT: the author's unfinished Spark answers, staged server-side
--- (docs/adr-drafts/1001-draft-sync.md, ADR-991 phase 2).
+-- (ADR-1001 in docs/DECISIONS.md, ADR-991 phase 2).
 --
 -- Spark autosave (ADR-991) keeps what an author types in `localStorage`, which makes typing
 -- instant and survives a crash or a refresh with zero latency. What it cannot do is follow the

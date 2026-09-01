@@ -4,7 +4,7 @@
 // from the library or freshly written. The three practices COMPLEMENT the week's Anchor (the daily
 // through-line) instead of repeating it, and the week can reach back to a prior-week summary, so the
 // composition tracks the Master Journey Template. So a fresh Journey opens balanced across all four
-// Pillars, and doing the practices feeds the four-Pillar Signature. Mirrors lib/ai/journey-outline.ts:
+// Pillars, and doing the practices feeds the four-Pillar Signature. Mirrors lib/ai/journey-spark.ts:
 // forced-tool structured output + the voice + Journey-shape primers + the usage ledger; never trust
 // the raw shape, and every library id is re-validated against the candidates we sent. Degrades to
 // null when AI is off, so the builder falls back to an empty shape.

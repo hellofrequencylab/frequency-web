@@ -51,7 +51,7 @@ interface DemoSpace {
   offerings: { suffix: string; title: string; description: string; inDays: number }[]
 }
 
-// The five demos. One per registered role blueprint (lib/spaces/blueprints.ts). All share skin
+// The five demos. One per registered role blueprint (lib/spaces/categories.ts). All share skin
 // 'dawn' (the Wave B blueprints reuse the Practitioner skin) and the root money entity.
 const DEMOS: DemoSpace[] = [
   {

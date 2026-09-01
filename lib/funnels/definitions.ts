@@ -162,7 +162,7 @@ export function nicheFunnelDestination(slug: string | null | undefined): FunnelD
 // A funnel can honor the people it brings in. The grant is keyed by the ?seq slug (carried to
 // signup by the fq_beta_seq cookie, exactly like the cohort tag), so honoring a funnel is a ONE-ROW
 // data edit here, never new branching logic. Applied server-side at induction completion
-// (app/join/actions.ts applyFunnelGrants). Client-safe (pure data).
+// (app/join/(induction)/actions.ts applyFunnelGrants). Client-safe (pure data).
 
 /** The one-time grant a sequence confers on every account that finishes it. */
 export interface FunnelGrant {

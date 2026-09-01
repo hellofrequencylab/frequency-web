@@ -5,7 +5,7 @@
 //
 // PURE METADATA. No React import here (the editor `Icon` is a Lucide component reference that flows
 // through from the AdminModule catalog — a plain value, no JSX); component bindings live in
-// lib/apps/bindings.tsx.
+// lib/apps/app-registry.tsx.
 //
 // Composition, one lane per surface:
 //   • editor  ← ADMIN_MODULES        (each → an App with `surfaces.editor` + a capability gate)

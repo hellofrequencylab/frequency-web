@@ -25,7 +25,7 @@ function isKnownSlotId(id: string): boolean {
 // single-column SavedProfileLayout (lib/spaces/profile-layout.ts, {order?,hidden?}) to carry a GRID: a
 // TEMPLATE (from the module-engine template catalog) plus a per-SLOT ordered list of block ids. ONE
 // model drives both a member (Spotlight) and a space (Spaces) grid editor, so the shared block-picker
-// (components/entity-blocks/block-grid-editor.tsx) reads one shape. PURE + framework-independent (no
+// (components/entity-blocks/block-picker.tsx) reads one shape. PURE + framework-independent (no
 // React / Next / Supabase), so it is trivially unit-testable, like its S3 sibling.
 //
 // BACK-COMPATIBLE: a flat `order?: string[]` still works — it reads as the default slot of the Single

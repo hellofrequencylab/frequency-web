@@ -10,7 +10,7 @@ import { SPOTLIGHT_PUCK_TYPES } from '@/lib/spotlight/puck/convert'
 //
 // The identity header (avatar, cover image, name, bio, role) and the page theme live
 // OUTSIDE the Puck body — they stay on the profile row + meta.spotlight.theme and are
-// painted by the render bridge (components/spotlight/puck-render.tsx). So this document
+// painted by the render bridge (components/spotlight/spotlight-shell.tsx). So this document
 // is just the BODY: the blocks below the identity card.
 //
 // COPY (NAMING + CONTENT-VOICE §10): plain sentences, sentence case, no em dashes, never

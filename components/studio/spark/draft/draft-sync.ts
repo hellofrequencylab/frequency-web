@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// RECONCILING TWO COPIES OF ONE DRAFT (docs/adr-drafts/1001-draft-sync.md).
+// RECONCILING TWO COPIES OF ONE DRAFT (ADR-1001 in docs/DECISIONS.md).
 //
 // PURE. No React, no DOM, no `window`, no Supabase. The whole decision about whose typing wins
 // lives in one function that takes two plain objects and a clock, because this is the single

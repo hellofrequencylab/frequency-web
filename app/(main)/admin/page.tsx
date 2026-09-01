@@ -65,7 +65,7 @@ export default async function AdminPageView() {
     totalProfilesRes,
   ] = await Promise.all([
     // "Members" = real (non-system) person profiles — the canonical community size
-    // (see lib/analytics/members.ts), consistent with Pulse + the rail + activation.
+    // (see lib/analytics/members.ts (retired)), consistent with Pulse + the rail + activation.
     admin.from('profiles').select('id', { count: 'exact', head: true }).eq('is_system', false),
     admin.from('circles').select('id', { count: 'exact', head: true }),
     admin.from('dispatches').select('id', { count: 'exact', head: true }),

@@ -15,7 +15,7 @@ import type { FrequencySignature, PillarKey } from '@/lib/frequency-signature'
 import { PILLAR_KEYS } from '@/lib/frequency-signature'
 import { ProgressTrack } from '@/components/ui/progress-track'
 
-// Pillar → accent key (matches components/studio/journey/journey-builder.tsx) and the
+// Pillar → accent key (matches components/journey/v2/journey-builder.tsx) and the
 // axis position on the dial. Mind left, Body top, Spirit right, Expression bottom —
 // a compass of the four Pillars.
 const PILLARS: Record<PillarKey, { label: string; accent: string; angle: number }> = {
