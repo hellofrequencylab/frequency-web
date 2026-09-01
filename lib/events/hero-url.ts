@@ -25,7 +25,7 @@
 // re-hand-rolls it. To change how a hero resolves, change THIS FILE.
 
 import 'server-only'
-import { createAdminClient } from '@/lib/supabase/admin'
+import { createPublicClient } from '@/lib/supabase/public'
 import { POSTER_BUCKET, posterSignedUrl } from './poster-media'
 import type { EventDetailsWithMedia } from './details-media'
 
@@ -84,10 +84,17 @@ export type EventHeroDeps = {
   signedUrl: (path: string) => Promise<string | null>
 }
 
+// ⚠️ THE ANON CLIENT, DELIBERATELY — this module holds no RLS bypass and must not acquire one.
+// `getPublicUrl` is pure string construction: it issues no request and needs no privileges, so the
+// service-role client would buy nothing and would put this file on the RLS-bypass ratchet
+// (scripts/check-admin-client.mjs), which is where it was on its first push. The same reasoning is
+// spelled out in app/discover/events/_data.ts, which builds this identical URL on the anon client.
+// The one tier that genuinely needs elevation — a signed URL for the PRIVATE poster bucket — is
+// delegated to lib/events/poster-media.ts, which owns that bypass and is already accounted for.
 function defaultDeps(): EventHeroDeps {
   return {
     publicUrl: (path) =>
-      createAdminClient().storage.from(EVENT_MEDIA_BUCKET).getPublicUrl(path).data?.publicUrl ?? null,
+      createPublicClient().storage.from(EVENT_MEDIA_BUCKET).getPublicUrl(path).data?.publicUrl ?? null,
     signedUrl: (path) => posterSignedUrl(path),
   }
 }

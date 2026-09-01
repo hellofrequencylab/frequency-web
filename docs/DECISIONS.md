@@ -34144,3 +34144,13 @@ surface audit that had already been through these very events.
 ⚠️ **Not visually confirmed.** Every deployment on this project sits behind Vercel deployment
 protection and the apex is unreachable from an agent session, so no re-rendered card was fetched.
 The data, the code path and the guard are proven; the pixels are not.
+
+**The new module holds no RLS bypass, and CI is what settled that.** The first push had
+`hero-url.ts` importing the service-role client, and `check:admin-client` failed it as a new
+RLS-bypass adopter. The gate was right and the fix was not a baseline entry: `getPublicUrl` is pure
+string construction — it issues no request and needs no privileges — so the elevated client bought
+nothing. It now uses the anon client, the same reasoning `app/discover/events/_data.ts` already
+spells out for the identical URL. The one tier that genuinely needs elevation, a signed URL for the
+private poster bucket, stays delegated to `lib/events/poster-media.ts`, which owns that bypass
+already. Extracting shared code is exactly where a bypass spreads by accident, and the ratchet
+caught it on the first push.
