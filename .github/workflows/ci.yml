@@ -275,8 +275,8 @@ jobs:
           # "it moved to vitest" cannot become a story nobody checks.
           # Do NOT re-add them here — they would then run twice and could rot in one place.
           #
-          # This array is for SOURCE-only guards. The two ARTIFACT gates (check:build-budget,
-          # check:og-trace) deliberately live in `postbuild` instead, because CI never builds —
+          # This array is for SOURCE-only guards. All FOUR artifact gates deliberately live in
+          # `postbuild` instead, because CI never builds —
           # Vercel does. See docs/DEPLOY-SAFETY.md and ADR-1003.
           guards=(
             authz canon menu gate-parity workflows labels a11y-names help tokens phantom bridge contrast

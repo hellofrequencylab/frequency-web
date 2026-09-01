@@ -210,18 +210,16 @@ Everything below follows from that, and §9's wrong verdict followed from not ha
   build can do and deleting it is not ([ADR-1086](DECISIONS.md)).
 - **The threshold is in Vercel's units, and it says so.** Vercel weighs the **packed** archive; this
   script can only see raw bytes, and the two ran **~2:1 apart** while a comment claimed ~3%. The
-  conversion is one named constant, `PACKED_PER_RAW = 0.50`, derived from real builds (raw 2.58 GB
-  measured here against packed uploads of 1.26–1.33 GB, 2026-08-18) and carried in the file with its
-  measurements. It is **provisional**: the raw and packed readings come from different builds, so
-  every run prints the raw figure and the ratio next to the `Uploading build cache [N GB]` line to
-  compare it with. Do not tune it to make a run green.
-- **⚠️ There is no setting that raises the 1.50 GB ceiling.** No `vercel.json` key, no project
-  option, no plan toggle — the only cache control Vercel exposes is turning it off for a deployment.
-  Build under it.
-- **Every build now prints the composition.** `check:cache-budget` names what Vercel is about to
-  store and what it is made of. Before it, the only instrument was subtracting two numbers in a log
-  tail — and note the trap §9 records: `Build cache: <1 MB` in the build report does **not** measure
-  the build cache.
+  conversion is one named constant, `PACKED_PER_RAW = 0.53` (`scripts/check-cache-budget.mjs`,
+  `PACKED_PER_RAW_MEASURED = '2026-08-19'`). ✅ **It is settled, not provisional** — this paragraph
+  used to say `0.50` and call it provisional because the raw and packed readings came from
+  different builds. ADR-1113 closed exactly that caveat on 2026-08-24 (`HYG-015`) with five
+  PAIRED readings, each printing an estimate beside its own build's `Uploading build cache` line:
+  the implied ratio came out 0.524–0.526 against the constant of 0.53, i.e. accurate to 1% and
+  rounded toward firing the trim early. Four later paired readings agree, two of them exact.
+  🔴 **Do not "correct" this back toward 0.264.** That is the node_modules-only mix; near the
+  threshold the cache is compiler-heavy by definition, which is the mix 0.53 was derived on. A
+  probe holds it in a two-sided 0.52–0.54 band.
 
 ### 11. The bytes a member's phone parses are an artifact too. 🔒 `check:shell-weight`
 
@@ -236,14 +234,24 @@ That commit fixed it and said so plainly: *there is no guard for this*.
 same way its two siblings do — on the real build — because `dynamic()` and a static import are one
 keyword apart in review and 1.6 MB apart in the artifact.
 
-> 🔴 **IT IS NOT IN `postbuild` YET, AND THAT IS DELIBERATE (LIVE-035).** Both this and
-> `check:cache-budget` ship as `pnpm check:` scripts only. Neither has been run against a real
-> COMPLETED production build: the attempt on 2026-08-17 died collecting page data for
-> `/discover/cities/[citySlug]`, which needs Supabase credentials the agent container deliberately does
-> not hold. A build-blocking gate that has never seen a real artifact is this document's own incident
-> with the roles reversed — the 2026-08-11 outage was gates that passed while the artifact was broken;
-> this would be a gate that fails while the artifact is fine, and it kills deploys just as dead. Run
-> both against one green production build, then wire them into `postbuild` in the same commit. It reads
+> ✅ **BOTH ARE NOW IN `postbuild`, BLOCKING (2026-08-19).** This block used to open "🔴 IT IS NOT IN
+> `postbuild` YET" and it stayed there after the fact was no longer true, contradicting this file's own
+> merge checklist eleven lines below, which already required all four gates to print ✅. That is the
+> dangerous direction for this particular doc: a standing red warning that a **blocking** gate is
+> unwired is what talks someone into "fixing" a red build by deleting a gate.
+>
+> The history is worth keeping, because it is the rule this file exists to teach. Both shipped as
+> `pnpm check:` scripts only, because neither had been run against a real COMPLETED production build —
+> the attempt on 2026-08-17 died collecting page data for `/discover/cities/[citySlug]`, which needs
+> Supabase credentials the agent container deliberately does not hold. A build-blocking gate that has
+> never seen a real artifact is this document's own incident with the roles reversed: the 2026-08-11
+> outage was gates that passed while the artifact was broken; this would be a gate that fails while
+> the artifact is fine, and it kills deploys just as dead. So each went to `--warn-only` first, printed
+> green on real production artifacts, and was promoted in the same change as the build that proved it
+> (LIVE-029 / LIVE-035 / LIVE-048; ADR-1064, ADR-1066, ADR-1086). `postbuild` today is all four:
+> `check:build-budget && check:og-trace && check:cache-budget && check:shell-weight`, and
+> `scripts/check-cache-budget-warn-only.test.ts` + `check-shell-weight-warn-only.test.ts` fail a
+> re-added `--warn-only` as a silent demotion. It reads
 `entryJSFiles['[project]/app/(main)/layout']` from the client-reference manifests, which **is** the
 shell's eager first-load JS, and holds it to a budget (**957 KB measured 2026-08-17**, ceiling 1,400
 KB). It then does the thing a byte count cannot: it looks for **fingerprints** — literals that exist
@@ -276,7 +284,7 @@ chunks. That is not a new trick; it is how dc47b89 proved the bug was real, by f
    `check:cache-budget` (rule 10). A ⚠️ trim line from the last one is not a failure, but it is
    telling you the cache is at its ceiling.
 2. `pnpm exec tsc --noEmit` · `pnpm lint` · `pnpm test` (which now carries six of the contract
-   guards directly — ADR-1011) · the 20 guards in `ci.yml`'s `guards=( )` array.
+   guards directly — ADR-1011) · the 24 guards in `ci.yml`'s `guards=( )` array.
 3. Migrations: is every file in `supabase/migrations/` actually applied, and does the applied ledger
    contain nothing the repo lacks? A revert can leave the DB **ahead of** the code.
 4. After merge: **watch the production deployment reach READY.** A merge is a deploy.

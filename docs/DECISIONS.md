@@ -34240,7 +34240,8 @@ leaks predate it: the old code already signed the private bucket via
 `where` on its own line. ADR-1179 changed which image appears, not who may see the card.
 
 **The structural lesson, and the guard.** `opengraph-image.tsx` is neither a route handler nor a
-`'use server'` file, so `check:authz` counts none of the 19 of them — a whole route class sits
+`'use server'` file, so `check:authz` counts none of the 18 of them (15 `opengraph-image.tsx` + 3 `twitter-image.tsx`; the
+"19" this line carried until 2026-09-01 was the hide_address event count from two paragraphs above) — a whole route class sits
 outside every authz gate in the repo while being the most reliably-fetched anonymous surface there
 is. `check-event-hero-parity.test.ts` did not help either: it reasons about *which image renders*
 and says nothing about *whether this viewer may see it*. So the enforcement went where the rule
@@ -34290,6 +34291,33 @@ clause, the *precise* regression caught in production above, would have left the
 that cannot see the mistake its own row was written about is not measuring the consequence. It now
 requires both literals, and the mutation that drops the clause was watched go red.
 
+🔴 **AND THAT FIX WAS STILL NOT ENOUGH. A SECOND RE-AUDIT FOUND THE GUARD MISSING TWO OF THE THREE
+LEAKS IT WAS WRITTEN FOR.** The paragraph above added `'unlisted'` to the probe and stopped there.
+Mutating the *fixed* tree properly, on 2026-09-01, showed that **both the probe and
+`visible-location.test.ts` stayed green** through:
+
+| Mutation | The leak it restores | Old probe | Old test |
+|---|---|---|---|
+| delete `&& !ev?.removed_at` | the removed event's card, back | 🟢 pass | 🟢 pass |
+| widen to `\|\| 'private' \|\| 'circle_only'` | the four non-public events, back | 🟢 pass | 🟢 pass |
+
+The first is **shape-not-truth verbatim, inside the guard written to stop a leak**: the assertion was
+`toContain('removed_at')`, and `removed_at` also appears in the route's `.select()` string and in its
+`Row` type — so it passed *by existing*, exactly as this repo's own rules warn. The second is subtler:
+nothing pinned the readable **set**, only that two of its members were mentioned somewhere in the file,
+so adding members was free.
+
+Both arms now extract the two-line gate expression and assert the set is **exactly**
+`{public, unlisted}`, with the `published` and `removed_at` clauses required *inside that expression*
+rather than anywhere in the file. All five mutations were then watched go red on both arms.
+
+⚠️ **The sentence "five mutations were watched go red" above is true and was not enough, and that is
+the lesson worth keeping.** A mutation sweep proves only what it mutates. Five green-to-red results
+read as coverage while the two edits *closest to the original bug* were never tried. When the sweep is
+authored by whoever wrote the fix, it inherits their blind spot — so the useful question is not "did
+my mutations go red" but "which edit would a future refactor most plausibly make, and did I try that
+one".
+
 ## ADR-1181: a role-scoped select forgot four columns, and the edit form wrote the gap back as null (2026-09-01)
 
 `/admin/circles` builds its list from four role-scoped queries — janitor, host, guide, mentor — and
@@ -34331,3 +34359,81 @@ naive rule cannot see. A gate with a 346-file false-positive rate earns an allow
 as coverage — the ADR-970 failure. So the guard pins the two pairs that actually bled, and the
 general version is filed as HYG-039 with the false-positive rate recorded, so nobody re-derives the
 naive rule and ships it.
+
+## ADR-1182: the public changelog was member-facing copy that the canon guard never scanned (2026-09-01)
+
+`check:canon` enforces `docs/NAMING.md` and `docs/CONTENT-VOICE.md` over member-facing copy. Its
+content arm walked `content/**/*.md`. `docs/CHANGELOG.md` is not under `content/`, and
+[`docs/HELP-CENTER.md`](HELP-CENTER.md) says what it is:
+
+> Public "What's new" | renders `docs/CHANGELOG.md` at `/help/changelog`
+
+So a page every member can read sat outside the guard that governs what members read. It printed
+green the whole time.
+
+**What was actually in there**, found the moment the scope widened: three em dashes against a
+CONTENT-VOICE *hard* rule, three uses of "broadcasts" as a noun where the canon noun is **Dispatch**,
+four lowercase "zaps" and one lowercase "gems" against the proper-noun rule. Eight violations on a
+live public page, in the file the product uses to tell people what changed.
+
+**Decision.** The content arm scans `content/**/*.md` **plus** a named list, `EXTRA_MEMBER_MD`,
+whose only member today is `docs/CHANGELOG.md`. A path goes on that list when a member reads it and
+it does not live under `content/`. All eight violations are fixed in the same change, because a gate
+wired red is a gate someone disables.
+
+**The lesson, and it is this session's third instance of one shape.** The guard was scoped by
+DIRECTORY when the rule it enforces is defined by AUDIENCE. Every such guard is one refactor away
+from a blind spot, and the blind spot is invisible precisely because the guard reports success.
+[ADR-1180](#adr-1180) found the same thing one layer down — `opengraph-image.tsx` is neither a route
+handler nor a `'use server'` file, so `check:authz` counted none of the 19 of them while they were
+the most reliably-fetched anonymous surface in the app. Both were found by asking *"what does this
+guard NOT look at?"* rather than by reading its output.
+
+Four mutations were watched go red, including the meta one: re-introducing an em dash, a lowercase
+`zaps`, and `broadcasts` as a noun each fail — and **emptying `EXTRA_MEMBER_MD` makes the guard go
+blind again**, which is what proves the hole was real rather than theoretical.
+
+## ADR-1183: the operating rules an agent works this repo under when nobody is awake (2026-09-01)
+
+Written during an authorized overnight session ("I'm going to bed, you have my authorization to
+figure the rest of this out. Set up a rule set for yourself so nothing stalls out"). These are the
+rules that session ran under. They are recorded because the alternative — re-deriving them each time
+— is how a session talks itself into a shortcut at 3am.
+
+**The hard stops. None of these bends for progress.**
+
+1. **Never merge red.** Full vitest suite, all 26 CI guards, `tsc`, and `eslint` pass locally before
+   any push. `main` is protected and merging deploys to production, so a push is the start of a
+   deploy.
+2. **Every fix ships with a guard, and the guard is watched go RED by mutation.** A guard nobody has
+   seen fail is a guard nobody has tested. This is the rule that found the most this session, twice
+   against work I had just written myself.
+3. **Migrations are files, never `supabase db push`.** One shared database. If the ledger and the
+   tree are already at parity, there is nothing to apply, and inventing schema work to look busy is
+   worse than doing none.
+4. **A product decision is not an engineering decision.** Anything that turns on money movement,
+   changes what a member is charged, or picks between two behaviours a person would care about gets
+   a backlog row addressed to the owner. It does not get a guess.
+5. **Verify every delegated finding before acting on it.** Subagents are fast and they are sometimes
+   confidently wrong. Read the code the finding names. A wrong fix costs more than a missed one.
+
+**The rules that keep it moving rather than stalling.**
+
+6. **Blocked on one thing is not blocked on everything.** Do every part that does not depend on the
+   answer, then file the question. A session that stops entirely because one item needs a ruling has
+   converted one blocked item into zero delivered items.
+7. **Keep a PR under the 40-file gate**, and split by PURPOSE rather than by count. `[sweep]` is for
+   a genuinely single-purpose mechanical change and nothing else — tagging a mixed PR to get past
+   the gate is lying to the gate.
+8. **Re-arm a check-in after every PR.** Webhooks miss CI success and merge-conflict transitions, so
+   an unattended PR with nothing scheduled is a PR that sits until morning.
+9. **Record the correction, not just the fix.** When something shipped wrong, the durable value is
+   the sentence explaining how it got past the last reviewer — that is what stops the next instance.
+
+**What this session found by following rule 2, stated because it is the argument for the rule.**
+Three guards written to prevent a leak did not prevent it: `check:canon` was scoped by directory
+while the rule it enforces is defined by audience ([ADR-1182](#adr-1182)); `check:authz` carried an
+allowlist entry for a deleted file, a standing amnesty waiting for whoever next created a file at
+that path; and `LIVE-140`'s own probe and test both stayed green through two of the three leaks they
+existed for ([ADR-1180](#adr-1180)). All three were found by asking *"what does this guard not look
+at?"* rather than by reading its green output.

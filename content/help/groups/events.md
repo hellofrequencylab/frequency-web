@@ -3,7 +3,7 @@ title: Events & RSVPs
 description: Find gatherings, RSVP, and add them to your calendar.
 category: groups
 order: 3
-updated: 2026-08-29
+updated: 2026-09-01
 audience: member
 role: host
 featureKeys: [events]
@@ -118,7 +118,7 @@ Keep it real. The reward is for people who actually RSVP, show up, or join, neve
 
 ## For hosts
 
-- **Add photos to your event.** Set a cover image as the poster, then add as many more photos as you like. They show up as a gallery on the event page, with the poster first, and any photo opens full screen when someone taps it. You can add or remove photos anytime by editing the event.
+- **Add photos to your event.** Set a cover image as the poster, then add as many more photos as you like. They show up as a gallery on the event page, with the poster first, and any photo opens full screen when someone taps it. Your cover is also the image people see when your event's link is shared. You can add or remove photos anytime by editing the event.
 - **Announce to your guests.** Send a note to everyone who's coming, across in-app, push, and email. Anyone who muted the event or turned off event notifications is skipped.
 - **Manage screen.** One dashboard for your whole event, organized in tabs. Home opens with your numbers at a glance, a "Message everyone" box that reaches your whole guest list at once (by email, in-app message, or a Dispatch, with texting on the way), and a message center where you can look up any attendee and message them directly. Guests holds the full list, the waitlist, and approvals; the other tabs cover your questionnaire (with export), tickets, updates, and the event's settings. You reach it from the event page or the event's editor.
 - **Cohosts.** Add a cohost and they can help run the event right alongside you, including messaging the guest list while the event is on. After the event ends, a cohost on a personal account can still see the whole list and every stat, and can invite everyone to their next event. Messaging the list about anything else takes a Business Space.
@@ -127,7 +127,8 @@ Keep it real. The reward is for people who actually RSVP, show up, or join, neve
 - **Tickets for your members.** On the Collective plan, a Space-hosted event can reserve a ticket for its own members, or for one membership tier, under "Who can buy" in the ticket editor. Make it free next to a public paid ticket and your membership includes the event. You can also set this for every upcoming event at once from your Space's Memberships settings, under Event access.
 - **How people join.** In the event's settings, pick one: **RSVP** (first come, first served; any prices show as information, paid at the door or covered by membership) or **Tickets** (buying is how people attend). Automatic picks tickets when the event is priced.
 - **Where your event shows up.** Two settings, doing two different jobs. **"Who can see this"** is who is allowed in: "Anyone" makes it public, "Anyone with the link" keeps it link-only, and the Circle and invite options keep it close. **"List this event publicly"** is separate: leave it on and your public event shows up when people browse events, turn it off and it stays public and fully shareable, it just is not in the listings. A public event hosted by a Circle now shows up in browse too, the same as any other public event.
-- **Hide the address.** Turn on "Hide the address until someone registers" in the event's settings and people browsing see the city only. That includes the calendar file anyone can subscribe to, which carries the city too. The venue, street, map pin, and directions appear once they RSVP or get a ticket, and their own calendar entry carries the full address.
+- **What people see when you share.** Paste your event's link into a message and the preview shows your cover image, the title, the date, and the location. A closed event does not do that. If "Who can see this" is set to a Circle or to invite only, or the event is still a draft, the preview is a plain Frequency card with no title, date, or venue, so a forwarded link does not announce a gathering someone is not allowed into. "Anyone with the link" gets the full preview, because that is what the setting is for. A cancelled event still shows its card, marked cancelled, so anyone holding the link learns it is off.
+- **Hide the address.** Turn on "Hide the address until someone registers" in the event's settings and people browsing see the city only. That includes the calendar file anyone can subscribe to, which carries the city too, and the preview image someone sees when your link is pasted into a message. The venue, street, map pin, and directions appear once they RSVP or get a ticket, and their own calendar entry carries the full address.
 - **Your Space calendar is a manager.** In your Space's Calendar console, flip between the month grid and a list, and click any event to edit it. Drafts and past events show there too, and co-host requests from other hosts wait there for your approval.
 
 ## Tips

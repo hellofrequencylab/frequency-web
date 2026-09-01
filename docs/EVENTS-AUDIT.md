@@ -53,8 +53,27 @@ Stripe webhook signature verified; refunds authz-gated; AI blurb is read-only + 
 
 | Surface | Crawlable | Correct posture |
 |---|---|---|
-| In-app `app/(main)/events/*` | 🚫 No (auth-walled + `robots.ts` disallow; renders exact venue) | **No** metadata/JSON-LD, and must stay that way (privacy) |
+| In-app `app/(main)/events/*` | ✅ Yes — anon-readable and indexable (see the correction below) | Metadata + JSON-LD + an OG card, with the venue redacted for non-attending readers |
 | Public `app/discover/events/*` | ✅ Yes (city-level only, via privacy-safe RPCs) | The indexable surface; already had metadata + `eventSchema` + sitemap |
+
+🔴 **THE ROW ABOVE USED TO SAY THE OPPOSITE, AND THE BELIEF IT ENCODED IS WHAT LET A LEAK SHIP.**
+Until 2026-09-01 it read *"🚫 No (auth-walled + `robots.ts` disallow; renders exact venue) — **No**
+metadata/JSON-LD, and must stay that way (privacy)"*. Every one of those four claims was false
+against the tree, and had been for months:
+
+| The claim | What the code says |
+|---|---|
+| "auth-walled" | `proxy.ts` `isPublicEventView` lets **every** `/events/*` path through the sign-in wall except `/events/new` and the host `/manage` sub-routes |
+| "`robots.ts` disallow" | `app/robots.ts`: *"/events + /events/&lt;slug&gt; are PUBLIC (SEO/AIO); only the create flow stays out of the index"* |
+| "**No** metadata/JSON-LD, and must stay that way" | `page.tsx` has `generateMetadata`, `eventSchema` and `breadcrumbSchema`, plus a CDN-cached anonymous `opengraph-image` |
+| "renders exact venue" | `page.tsx` computes `addressHidden` and collapses to the city line for any non-attending reader |
+
+⚠️ **Why this row was dangerous rather than merely wrong.** A reader who trusted it concluded the
+member event page had no anonymous surface, and therefore no redaction obligation. That is exactly
+the assumption [ADR-1180](DECISIONS.md#adr-1180) was written about: the share card published 19
+hosts' withheld streets to anyone a link reached, because nobody thought there was an anonymous
+reader to protect. A doc that says a surface is private is worse than silence when the surface is
+public.
 
 The public surface was ~80% there; **fixed this pass:**
 
@@ -66,12 +85,17 @@ The public surface was ~80% there; **fixed this pass:**
 | Meta description not truncated | ✅ Truncated to ~155 chars on the detail page |
 
 **Verified good (no action):** detail `generateMetadata` + canonical, `eventSchema` +
-`breadcrumbSchema` rendered, events in `app/sitemap.ts`, `robots.ts` disallows the in-app surface,
-public RPCs never expose venue/coords (city-level only), and answerable what/when/where/who is
+`breadcrumbSchema` rendered, events in `app/sitemap.ts`, `robots.ts` keeps only `/events/new` out of
+the index, public RPCs never expose venue/coords (city-level only), and answerable what/when/where/who is
 server-rendered for answer engines.
 
-**Remaining (tracked, lower priority):** a **dynamic per-event OG image** (`app/discover/events/
-[slug]/opengraph-image.tsx`, clone `app/opengraph-image.tsx`), the biggest visual win; and an
+**Remaining (tracked, lower priority):** the public per-event OG card at
+`app/discover/events/[slug]/opengraph-image.tsx` **exists**; what is left is teaching it to lead with
+the cover it already reads (`LIVE-139`, open, deliberately deferred on build cost). 🔴 This line used
+to say "clone `app/opengraph-image.tsx`" — do **not**. That file no longer exists: it was the root
+metadata route that put libvips into 403 functions and killed production for a day
+([ADR-1002](DECISIONS.md#adr-1002)), and it is a committed `.jpg` now. Cloning it re-runs the
+incident. Also an
 **`offers` block** in `eventSchema` once the public RPC exposes `price_cents` (per DISCOVER-LAYER).
 
 ---

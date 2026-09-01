@@ -138,7 +138,7 @@ export default async function Image({ params }: { params: Promise<{ slug: string
   // none. The Space card does gate (spaces/[slug]/opengraph-image.tsx) and falls back to an
   // identity-free card, which is the pattern copied here.
   //
-  // 🔴 THE GATE MIRRORS THE PAGE'S READABILITY RULE, NOT generateMetadata's INDEXABILITY RULE, and
+  // 🔴 THE GATE MIRRORS THE PAGE'S READABILITY RULE, NOT generateMetadata's INDEXABILITY RULE (ADR-1180), and
   // getting that backwards is a regression rather than a fix. `generateMetadata` noindexes anything
   // that is not strictly `public` — correct for a CRAWLER. But this card's question is different: may
   // the person who was SENT this link see it? `unlisted` exists precisely to be shared by link —

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Governed-create adoption check (ADR-988 · docs/adr-drafts/998-create-adoption.md).
+// Governed-create adoption check (ADR-988 in docs/DECISIONS.md).
 //
 // WHAT THIS GUARDS. ADR-988 built a governed create layer — `proposeCreate` / `confirmCreate` in
 // lib/ai/vera/create-entity.ts — and then shipped it with nothing requiring anyone to use it. Its
@@ -272,7 +272,7 @@ export const NOT_PROPOSE_AND_CONFIRM = new Map([
 // cannot rot into a permanent amnesty. Anything not on this list fails on sight.
 //
 // 🔴 THE CONTRACT IS THEREFORE UNENFORCED TODAY. Every line below is real, unaudited create
-// volume. See docs/adr-drafts/998-create-adoption.md §"The order to route them in".
+// volume. See ADR-988 in docs/DECISIONS.md for the order to route them in.
 // ─────────────────────────────────────────────────────────────────────────────────────────────
 export const UNROUTED = new Map([
   ['app/(main)/circles/builder-actions.ts::createDraftFromSparkAction', '2026-08-11 — the Circle builder. Vera already drafts this spark, so it is the highest-value first adopter.'],
@@ -640,7 +640,7 @@ function main() {
       're-implement it inside the governance layer.\n' +
       'If a write is genuinely not a member create, classify it in ENTITY_WRITES with a reason. If an\n' +
       'entry point genuinely should not propose-and-confirm, say so in NOT_PROPOSE_AND_CONFIRM. Do NOT\n' +
-      'grow UNROUTED — it may only shrink. See docs/adr-drafts/998-create-adoption.md + ADR-988.\n',
+      'grow UNROUTED — it may only shrink. See ADR-988 in docs/DECISIONS.md.\n',
   )
   process.exit(1)
 }

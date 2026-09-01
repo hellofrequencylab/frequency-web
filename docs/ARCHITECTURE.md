@@ -283,7 +283,9 @@ The safety nets, all run by `.github/workflows/ci.yml` on every PR, in three par
 Two more gates live off the CI path on purpose:
 
 - **Artifact gates run in `postbuild`, not CI**, because CI never builds — Vercel does.
-  `check:build-budget` and `check:og-trace` measure the real output ([DEPLOY-SAFETY.md](DEPLOY-SAFETY.md), ADR-1003).
+  `check:build-budget`, `check:og-trace`, `check:cache-budget` and `check:shell-weight` measure the real
+  output ([DEPLOY-SAFETY.md](DEPLOY-SAFETY.md), ADR-1003; the last two were promoted from `--warn-only`
+  on 2026-08-19).
 - **`pnpm test:rls`** (pgTAP RLS/RPC suite) runs via the manual `.github/workflows/db-tests.yml`
   workflow, and `pnpm check:cron-freshness` weekly via `.github/workflows/maintenance.yml`.
 
