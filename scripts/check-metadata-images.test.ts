@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { readFileSync, readdirSync, statSync } from 'node:fs'
+import { readFileSync, readdirSync } from 'node:fs'
 import path from 'node:path'
 
 // ── DECLARING `images: undefined` OWNS THE KEY, AND OWNING IT SUPPRESSES THE SHARE CARD ──────────
@@ -32,26 +32,45 @@ import path from 'node:path'
 
 const ROOT = path.join(import.meta.dirname, '..')
 
+/**
+ * Every `.ts`/`.tsx` file under `abs`, depth-first.
+ *
+ * ⚪ `withFileTypes` is not a style preference: it is what makes this walk free of a check-then-use
+ * window. Reading `statSync(full).isDirectory()` and THEN opening `full` asks the filesystem about
+ * the path twice, and CodeQL flags the gap (js/file-system-race). One `readdirSync` carries the
+ * entry type back with the name, so there is no second question to answer differently. Both walks
+ * in this file now share this one, which is also why the corpus-floor test below can no longer
+ * drift out of step with the detector it is meant to be the floor for.
+ */
+function tsFilesUnder(abs: string): string[] {
+  const out: string[] = []
+  const walk = (d: string) => {
+    for (const entry of readdirSync(d, { withFileTypes: true })) {
+      if (entry.name === 'node_modules' || entry.name.startsWith('.')) continue
+      const full = path.join(d, entry.name)
+      if (entry.isDirectory()) walk(full)
+      else if (entry.isFile() && /\.tsx?$/.test(entry.name)) out.push(full)
+    }
+  }
+  walk(abs)
+  return out
+}
+
+/** Files under `dir` that declare a `generateMetadata`, with their source. */
+function metadataRoutes(dir: string): Array<{ full: string; src: string }> {
+  return tsFilesUnder(path.join(ROOT, dir))
+    .map((full) => ({ full, src: readFileSync(full, 'utf8') }))
+    .filter(({ src }) => src.includes('generateMetadata'))
+}
+
 /** Every `images:` ternary whose no-image branch declares the key anyway. */
 export function suppressedImageKeys(dir: string): string[] {
   const hits: string[] = []
-  const walk = (d: string) => {
-    for (const entry of readdirSync(d)) {
-      if (entry === 'node_modules' || entry.startsWith('.')) continue
-      const full = path.join(d, entry)
-      if (statSync(full).isDirectory()) {
-        walk(full)
-        continue
-      }
-      if (!/\.tsx?$/.test(entry)) continue
-      const src = readFileSync(full, 'utf8')
-      if (!src.includes('generateMetadata')) continue
-      for (const m of src.matchAll(/images:\s*[^\n]*\?[^\n]*:\s*(undefined|null)/g)) {
-        hits.push(`${path.relative(ROOT, full)} :: ${m[0].trim()}`)
-      }
+  for (const { full, src } of metadataRoutes(dir)) {
+    for (const m of src.matchAll(/images:\s*[^\n]*\?[^\n]*:\s*(undefined|null)/g)) {
+      hits.push(`${path.relative(ROOT, full)} :: ${m[0].trim()}`)
     }
   }
-  walk(path.join(ROOT, dir))
   return hits
 }
 
@@ -76,16 +95,6 @@ describe('a route never owns `images` on the branch that has no image', () => {
   it('walks a real corpus, so an empty glob cannot pass as compliance', () => {
     // The floor: app/ holds many generateMetadata routes. If this drops to a handful, the walk
     // broke and the green above means nothing.
-    let seen = 0
-    const walk = (d: string) => {
-      for (const entry of readdirSync(d)) {
-        if (entry === 'node_modules' || entry.startsWith('.')) continue
-        const full = path.join(d, entry)
-        if (statSync(full).isDirectory()) walk(full)
-        else if (/\.tsx?$/.test(entry) && readFileSync(full, 'utf8').includes('generateMetadata')) seen++
-      }
-    }
-    walk(path.join(ROOT, 'app'))
-    expect(seen).toBeGreaterThan(40)
+    expect(metadataRoutes('app').length).toBeGreaterThan(40)
   })
 })
