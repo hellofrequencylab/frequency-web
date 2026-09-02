@@ -85,7 +85,8 @@ export function SpaceBrandingForm({
   accent: string
   headerCta?: HeaderCtaPreference | null
   defaultCtaLabel: string
-  /** The current Space PAGE STYLE (ADR-578) — the selected one of the six typography + shape themes. */
+  /** The current Space PAGE STYLE (ADR-578) — the selected one of the six TYPOGRAPHY themes. A theme no
+   *  longer carries shape: every Space renders one radius (2026-09-01, see globals.css). */
   pageTheme: SpaceThemeId
   /** The hero cover height + button orientation (item 5, edited here now, not in the page builder). */
   heroHeight?: HeroHeight
@@ -134,7 +135,7 @@ export function SpaceBrandingForm({
     setScrim(coverScrim)
   }
 
-  // PAGE STYLE (ADR-578): the one of six typography + shape themes the page renders in. Optimistic like the
+  // PAGE STYLE (ADR-578): the one of six TYPOGRAPHY themes the page renders in. Optimistic like the
   // cover scrim — flip the active card now, persist to preferences.theme via updateSpaceProfile, and reflect
   // an external prop change back in with the render-time adjust-on-prop-change pattern (no effect).
   const [theme, setTheme] = useState<SpaceThemeId>(pageTheme)
@@ -551,7 +552,7 @@ export function SpaceBrandingForm({
         </div>
       </details>
 
-      {/* PAGE STYLE — the typography + shape identity the whole page renders in. A clear button + dropdown
+      {/* PAGE STYLE — the TYPOGRAPHY identity the whole page renders in. A clear button + dropdown
           (closed by default, matching Header): the presets stay tucked away until the operator opens it. The
           accent colour is set separately below. Optimistic buttons, each saves the moment it is picked. */}
       <details className="group rounded-card border border-border bg-surface-elevated">
@@ -563,7 +564,7 @@ export function SpaceBrandingForm({
         </summary>
         <div className="space-y-2 px-4 pb-4 pt-1">
           <p className="text-meta text-muted">
-            The fonts and shapes for your whole page. Your colours stay the same. Pick the feel that fits.
+            The fonts for your whole page. Your colours and corners stay the same. Pick the feel that fits.
           </p>
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             {SPACE_THEMES.map((t) => {

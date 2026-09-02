@@ -123,10 +123,27 @@ function fadeScrim(color: string): string {
   return `linear-gradient(180deg, transparent 0%, transparent 38%, color-mix(in srgb, ${color} 88%, transparent) 100%)`
 }
 
-/** The ONE header-action button style — on-ink, glassy — so every header's buttons match (Space, Profile,
- *  Journey, Marketplace). Kept byte-for-byte identical to the Space header's `onInkSecondaryClasses`
- *  (app/(main)/spaces/[slug]/(profile)/layout.tsx) so the "look like the button on Spaces" ask holds for
- *  every header button site-wide. Import this for any button placed in a PageHero `actions` slot. */
+/** The ONE header-action button style — on-ink, glassy — so every header's buttons match (Profile,
+ *  Journey, Marketplace, Channel). Import this for any button placed in a PageHero `actions` slot.
+ *
+ *  ⚠️ IT IS NO LONGER BYTE-IDENTICAL TO THE SPACE HEADER, AND MUST NOT BE MADE SO AGAIN. This
+ *  docstring used to say it was "kept byte-for-byte identical to the Space header's
+ *  `onInkSecondaryClasses`". That is what made it a CLONE rather than a shared style, and the clone
+ *  is what broke: `components/ui/button.tsx` BASE carries `tap-target`
+ *  (`min-block-size: var(--tap-min)`, a viewer axis spanning 26px → 56px), this hand-rolled string
+ *  does not, and so a header's primary CTA rose with the viewer's generation while the chips beside
+ *  it stayed put. On the Space header that produced an uneven action row on six of the eight
+ *  generations, and the owner reported it.
+ *
+ *  The Space header now composes `buttonGeometry('sm', …)` and shares ONE geometry source with every
+ *  other control in its row. This constant still does not, because seven non-profile heroes depend on
+ *  it byte for byte and a test names it — so the same latent mismatch remains HERE, for any PageHero
+ *  whose `actions` slot mixes these chips with a `<Button>` / `buttonClasses` control (measured:
+ *  channels/[id] and journeys/[slug] both do).
+ *
+ *  🔴 So do NOT "restore consistency" by copying this string back into the Space header. The fix
+ *  runs the other way: migrate this constant to `buttonGeometry` and re-baseline the test that pins
+ *  it. Tracked in ADR-1193. */
 export const HERO_ACTION_CLASS =
   'inline-flex items-center justify-center gap-1.5 rounded-lg border border-on-ink/40 bg-on-ink/10 px-3 py-1.5 text-body-sm font-semibold text-on-ink backdrop-blur-sm transition-colors hover:bg-on-ink/20'
 

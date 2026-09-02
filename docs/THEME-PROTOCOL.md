@@ -54,7 +54,7 @@ and sets the **Copy** cascade as the next build (§7).
   **no rebuild and no re-render**. Raw hex appears **only** in this file.
 - **Children (scoped, compose over one DOM):** `.dark` (mode), per-Space **`skin`** (`[data-skin]`,
   whole-palette white-label), **`AccentScope`** (re-binds `--color-primary*` for a Space subtree — the
-  tightest child-theme precedent), and per-Space **`page-theme`** (`[data-space-theme]`, fonts + radius).
+  tightest child-theme precedent), and per-Space **`page-theme`** (`[data-space-theme]`, FONTS ONLY — radius stopped being a Space-theme knob on 2026-09-01, ADR-1193).
   See [THEME.md](THEME.md) for the full four-axis model.
 - **The rule (three-tier tokens):** primitives → **semantic** → component. Only the **semantic** tier is
   a theme's override surface, and a child may re-bind a *subset* of it. Components reference semantic

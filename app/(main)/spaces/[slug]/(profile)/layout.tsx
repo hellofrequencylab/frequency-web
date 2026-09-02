@@ -3,7 +3,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { SlidersHorizontal, ArrowUpRight } from 'lucide-react'
 import { DetailTemplate } from '@/components/templates'
-import { buttonClasses } from '@/components/ui/button'
+import { buttonClasses, buttonGeometry } from '@/components/ui/button'
 import { getMyProfileId, getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug, getSpaceVisibility } from '@/lib/spaces/store'
 import { getSpaceClaimToken } from '@/lib/spaces/claim'
@@ -64,18 +64,42 @@ import { FoundingBusinessBadge } from '@/lib/community-roles'
 // lib/spaces/cover-placeholder — the OG share card (opengraph-image.tsx) draws from the same source,
 // so a shared link previews the SAME photo this hero shows.
 
-// The action-row button GEOMETRY, sized to the compact `sm` scale so the identity row stays trim next
-// to the avatar (the buttons were shrunk down a notch from `md`). On a photo (Hero overlay) a bordered
-// translucent-white chip over a backdrop blur reads legibly on any cover (the gradient scrim guarantees
-// the ≥4.5:1 floor); off-cover uses the canonical secondary token. Tokens only — no hardcoded hex; the
-// translucent whites are legibility scrims. `rounded-control` (not a rounded-lg literal): buttons are
-// CONTROLS, so the Space's page theme shapes them (ADR-578 — playful pills them); the [data-space-theme]
-// baseline pin resolves it to exactly today's 0.5rem for `bold` under every skin + generation.
-const SM_BUTTON_GEOMETRY =
-  'inline-flex items-center justify-center gap-1.5 rounded-control px-3 py-1.5 text-body-sm font-semibold transition-colors'
-const onInkSecondaryClasses = cn(
-  SM_BUTTON_GEOMETRY,
-  'border border-on-ink/40 bg-on-ink/10 text-on-ink backdrop-blur-sm hover:bg-on-ink/20',
+// The ON-COVER secondary chip: the SAME button primitive as every other control in this row, with
+// the COLOURS swapped for legibility over a photo (a bordered translucent-white chip on a backdrop
+// blur; the gradient scrim guarantees the ≥4.5:1 floor). Tokens only — the translucent whites are
+// legibility scrims, not hardcoded hex.
+//
+// 🔴 IT COMPOSES THE PRIMITIVE'S GEOMETRY, AND THAT IS THE WHOLE POINT — it used to be a HAND-ROLLED COPY of
+// the primitive's look (`inline-flex items-center justify-center gap-1.5 rounded-control px-3 py-1.5
+// text-body-sm font-semibold transition-colors`), and a copy of a primitive is a copy that stops
+// tracking it. `components/ui/button.tsx` BASE carries `tap-target`, i.e.
+// `min-block-size: var(--tap-min)`, and `--tap-min` is a VIEWER generation axis spanning 26px
+// (bold) · 32px (default) · 44px (classic) · 48px (spacious) · 46-56px (the kids bands).
+//
+// So the primary CTA — which does compose the primitive — ROSE with the viewer's generation while
+// this chip stayed pinned at its `h-9`, and Book / QR / Edit rendered as an UNEVEN ROW for every
+// viewer above 36px. That is over half the generation ladder, and it is the owner's report.
+// The comment on the action row below has claimed the three "line up as one even row" the whole
+// time: it was true when written and stopped being true the day `tap-target` joined BASE, because
+// nothing connected the hand-rolled string to the primitive it was imitating.
+//
+// Composing it means every control in the row now shares ONE geometry source: identical padding,
+// type scale, radius, press + focus states, and the same tap floor — so they rise together and
+// cannot drift apart again. The explicit `h-9` at each call site still sets the row's deliberate
+// resting height; `min-block-size` only ever RAISES, so all three resolve to max(36px, --tap-min)
+// in lockstep.
+//
+// `rounded-control` rides in from BASE: buttons are CONTROLS, so the Space's page theme shapes them.
+// 🔴 buttonGeometry, NOT buttonClasses('secondary'), and the distinction is load-bearing. `cn` in
+// this repo is a plain `.filter(Boolean).join(' ')` with NO tailwind-merge (lib/utils.ts:4), so
+// passing on-ink colours alongside the `secondary` variant would NOT replace its `bg-surface` /
+// `text-text` / `border-border` — both would survive into the class attribute and Tailwind's EMIT
+// order, not the call order, would decide which paints. A white chip winning on a photo is exactly
+// the illegible case the scrim exists to prevent. buttonGeometry carries no palette at all, so
+// there is nothing to fight: geometry from the primitive, colours from here.
+const onInkSecondaryClasses = buttonGeometry(
+  'sm',
+  'border border-on-ink/40 bg-on-ink/10 text-on-ink backdrop-blur-sm transition-colors hover:border-on-ink/60 hover:bg-on-ink/20',
 )
 
 // The ONE dominant primary action: a real filled primary BUTTON on the Space header (owner ask — the
@@ -91,14 +115,19 @@ function ownerToolClasses(onInk: boolean): string {
 }
 
 // A borderless, background-free ICON button for the compact mobile action band: just the glyph, no chip
-// or white card behind it, so QR + Edit Space take minimal width and the primary CTA gets the room (owner
+// or white card behind it, so QR + Edit take minimal width and the primary CTA gets the room (owner
 // ask). Square 40px tap target, muted glyph that fills in on press. Tokens only.
-// `rounded-control`, not the `rounded-lg` literal that stood here: these are CONTROLS, so the Space's
-// theme shapes them — the identical rule this file states 20 lines above for SM_BUTTON_GEOMETRY, and
-// the one place in the file that was not following it. On `editorial` the glyphs sat at 14px beside
-// 2px chips; on `playful` they stayed square next to pills. Both read as another theme leaking in.
+// `rounded-control`, not the `rounded-lg` literal that stood here: these are CONTROLS, so they take the
+// role token, which the [data-space-theme] pin resolves to 14px for every Space. (The sentence that
+// stood here described the glyphs sitting at 14px beside 2px chips on `editorial` and staying square
+// beside pills on `playful` — both of those are gone with the per-theme shape overrides.)
+// `tap-target` for the same reason the on-ink chip above now composes the primitive: this glyph sits
+// in the MOBILE band directly beside the primary CTA, and the CTA carries the floor while this did
+// not. At the default generation the CTA resolved to --tap-min (32px) against this button's fixed
+// 40px, so the phone toolbar was uneven too — the same defect as the desktop row, one breakpoint
+// down. With the floor on both and `h-10` on both, the pair renders max(40px, --tap-min) together.
 const ghostIconClasses =
-  'inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-control text-muted transition-colors hover:bg-surface hover:text-text'
+  'inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-control tap-target text-muted transition-colors hover:bg-surface hover:text-text'
 
 export default async function SpaceProfileChromeLayout({
   children,
@@ -249,7 +278,10 @@ export default async function SpaceProfileChromeLayout({
         spaceType={space.type}
         spaceFns={spaceFns}
         moduleMenu={{ order: moduleMenu.order, hidden: moduleMenu.hidden, activated: moduleMenu.activated }}
-        label={manage.staffViewing ? 'Edit Space (staff)' : 'Edit Space'}
+        // Just "Edit" after the glyph (owner ask). The word "Space" was redundant beside the Space's
+        // own name and cover, and it was the longest label in the row — the one most likely to push
+        // the cluster into a wrap on a narrow desktop.
+        label={manage.staffViewing ? 'Edit (staff)' : 'Edit'}
         icon={<SlidersHorizontal className={iconOnly ? 'h-5 w-5' : 'h-4 w-4'} aria-hidden />}
         iconOnly={iconOnly}
         // Desktop (non-icon) tool matches the primary CTA height (h-9) and never shrinks, so the three
@@ -281,8 +313,13 @@ export default async function SpaceProfileChromeLayout({
   // The dominant primary CTA + the Connect (QR) affordance, factored out so both the desktop action row and
   // the mobile action card render the identical buttons. `onInk` swaps Connect to on-cover styling; the
   // primary CTA keeps its accent everywhere.
-  // Desktop hero buttons share a fixed h-9 and never shrink, so Book / QR / Edit Space line up as one even
-  // row (the mobile band renders its own separate buttons, untouched).
+  // Desktop hero buttons share a fixed h-9 and never shrink, so Book / QR / Edit line up as one even row.
+  //
+  // ⚠️ THE `h-9` IS ONLY HALF OF WHY THAT IS TRUE, and for a long stretch it was not true at all. Every
+  // control here must also carry the SAME tap floor: `min-block-size: var(--tap-min)` only ever raises,
+  // so a button with the floor grows past `h-9` on a generous generation while one without it does not.
+  // All three now compose buttonClasses (see onInkSecondaryClasses above), so they resolve to
+  // max(36px, --tap-min) together. Do not re-introduce a hand-rolled look-alike here.
   const primaryCta = (onInk = false) => (
     <Link href={ctaHref} className={cn(primaryCtaButton(onInk), 'h-9 shrink-0')} {...ctaLinkProps}>
       {ctaLabel}
@@ -334,7 +371,7 @@ export default async function SpaceProfileChromeLayout({
   )
 
   // MOBILE action band (<sm): the dominant primary CTA (Book / Join) fills the row, with QR (Connect) and
-  // Edit Space as compact ICON-ONLY buttons beside it — no white chip or card behind them, so the actions
+  // Edit as compact ICON-ONLY buttons beside it — no white chip or card behind them, so the actions
   // read as a clean toolbar and the primary CTA gets the width (owner ask). Follow is NOT here: it sits
   // above the identity on the cover. `sm:hidden` — desktop keeps the overlaid row.
   const mobileActionBand = (
@@ -346,7 +383,10 @@ export default async function SpaceProfileChromeLayout({
           and shoves the two glyph buttons past the right edge of the shell, which is
           `overflow-x-clip`: they are not clipped-but-scrollable, they are GONE. Same defect, same
           fix, as the tab bar in header-fit.test.ts. */}
-      <Link href={ctaHref} className={cn(primaryCtaButton(false), 'min-w-0 flex-1')} {...ctaLinkProps}>
+      {/* `h-10` matches the two glyph buttons beside it. Without it this CTA had no explicit height at
+          all, so it resolved to whatever `tap-target` floored it at (--tap-min, 32px by default)
+          against their fixed 40px — an uneven toolbar on every phone. */}
+      <Link href={ctaHref} className={cn(primaryCtaButton(false), 'h-10 min-w-0 flex-1')} {...ctaLinkProps}>
         {ctaLabel}
         <ArrowUpRight className="h-4 w-4" aria-hidden />
       </Link>

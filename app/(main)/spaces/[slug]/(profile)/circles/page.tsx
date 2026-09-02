@@ -263,7 +263,7 @@ function FilterRow({ base, type, sort }: { base: string; type: string; sort: Sor
   }
   const pill = (active: boolean) =>
     cn(
-      'inline-flex items-center gap-1.5 rounded-control px-3 py-1.5 text-meta font-semibold transition-colors',
+      'inline-flex items-center gap-1.5 rounded-control px-3 py-1.5 text-meta font-semibold transition-colors tap-target',
       active ? 'bg-surface text-text lift-1' : 'text-muted hover:text-text',
     )
 
