@@ -1,4 +1,5 @@
 import { getInitials, cn } from '@/lib/utils'
+import type { LogoBackdrop } from '@/app/(main)/spaces/[slug]/manage/layout/preferences'
 
 // The brand LOGO chip in the Space profile identity lockup: the operator's logo, or a neutral initials chip.
 // Decorative (alt=""): the <h1> beside it carries the name. Shared by the live (profile) layout hero and the
@@ -14,6 +15,13 @@ import { getInitials, cn } from '@/lib/utils'
 //     of either polarity stays visible in BOTH modes. The halo has no effect on an opaque photo.
 // Fail-safe: an unknown or extensionless URL takes the logo path (contain — never crops), and a missing logo
 // renders the neutral initials chip, never a crash. Query strings (?t=…) are tolerated.
+//
+// BACKDROP is the operator's separate, explicit choice (preferences.logoBackdrop), and it is orthogonal to
+// the file-type split above: the type decides how the image FITS, the backdrop decides what is BEHIND it.
+// 'plate' (default) is today's look; 'none' drops the plate for a mark drawn to sit on the photo itself.
+// It is a toggle rather than alpha-sniffing on purpose — an extension says what a format CAN carry, never
+// what an image DOES carry, and 8 of 21 live Spaces would have been changed by that guess. The reasoning
+// is written out where the key is read (manage/layout/preferences.ts).
 // SHAPE: `rounded-[var(--radius-cover,1.5rem)]`, the SAME token the cover photo beside it uses —
 // not `--radius-card`. The chip and the cover are the two pieces of Space IDENTITY MEDIA, and the
 // owner's directive (2026-09-01) is that both "should always be round for business Spaces". Riding
@@ -22,23 +30,46 @@ import { getInitials, cn } from '@/lib/utils'
 // --radius-card and --radius-cover to the same value. That was coincidence, not contract, and the
 // change that decoupled the cover from the theme would have silently desynchronised them.
 // A theme still shapes everything else around it (cards, buttons, tabs) via --radius-card/-control.
-export function BrandAnchor({ name, logoUrl }: { name: string; logoUrl: string | null }) {
+export function BrandAnchor({
+  name,
+  logoUrl,
+  backdrop = 'plate',
+}: {
+  name: string
+  logoUrl: string | null
+  /** 'plate' (default) keeps the plate + ring + shadow; 'none' puts the logo bare on the cover.
+   *  Operator-chosen per Space (preferences.logoBackdrop) — see the note above. */
+  backdrop?: LogoBackdrop
+}) {
+  const bare = backdrop === 'none'
+  // The plate, the ring and the shadow are ONE decision and travel together. Dropping only the
+  // background would leave a 4px `border-surface` ring drawing a white square around a logo that
+  // asked for no square — the defect with an extra step.
+  const plate = bare ? '' : 'border-4 border-surface bg-surface lift-1'
   if (logoUrl) {
     const isOpaquePhoto = /\.(jpe?g|jfif)(\?|$)/i.test(logoUrl)
+    // The contrast halo is applied to EVERY format when bare, not just the logo path. Its usual job is
+    // lifting a transparent mark off the plate; with no plate it is the only edge between the image and
+    // the cover photo, and an opaque photo sitting directly on another photo needs that edge most.
+    const halo = '[filter:drop-shadow(0_0_1px_var(--color-ink))] dark:[filter:drop-shadow(0_0_1px_var(--color-on-ink))]'
     return (
       // eslint-disable-next-line @next/next/no-img-element -- operator-supplied Space logo URL, not a build-time asset (matches BrandMark / SpaceCard)
       <img
         src={logoUrl}
         alt=""
         className={cn(
-          'h-20 w-20 shrink-0 rounded-[var(--radius-cover,1.5rem)] border-4 border-surface bg-surface lift-1 lg:h-28 lg:w-28',
-          isOpaquePhoto
-            ? 'object-cover'
-            : 'object-contain [filter:drop-shadow(0_0_1px_var(--color-ink))] dark:[filter:drop-shadow(0_0_1px_var(--color-on-ink))]',
+          'h-20 w-20 shrink-0 rounded-[var(--radius-cover,1.5rem)] lg:h-28 lg:w-28',
+          plate,
+          isOpaquePhoto ? 'object-cover' : 'object-contain',
+          (bare || !isOpaquePhoto) && halo,
         )}
       />
     )
   }
+  // The INITIALS fallback keeps its plate at both settings, and that is not an oversight. There is no
+  // artwork here to be shown bare — the plate IS the chip, and `bg-surface-elevated` is what makes the
+  // letters readable. A bare setting would render dark initials straight onto the cover photo, which is
+  // the illegibility the halo exists to prevent, with no image to hang a halo on.
   return (
     <span
       className="flex h-20 w-20 shrink-0 items-center justify-center rounded-[var(--radius-cover,1.5rem)] border-4 border-surface bg-surface-elevated text-page-title font-bold text-subtle lift-1 lg:h-28 lg:w-28 lg:text-3xl"

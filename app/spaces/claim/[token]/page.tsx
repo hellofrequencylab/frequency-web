@@ -16,7 +16,7 @@ import { resolveAccentVars } from '@/lib/spaces/accent'
 import { defaultAccentForType, defaultPrimaryCtaLabel } from '@/lib/spaces/profile-config'
 import { readHeroConfig, resolveHero, heroHeightClass } from '@/lib/spaces/hero-config'
 import { coverPlaceholderFor } from '@/lib/spaces/cover-placeholder'
-import { readCoverScrim, readCoverFocus } from '@/app/(main)/spaces/[slug]/manage/layout/preferences'
+import { readCoverScrim, readCoverFocus, readLogoBackdrop } from '@/app/(main)/spaces/[slug]/manage/layout/preferences'
 import { parseSpaceTheme } from '@/lib/theme/space-themes'
 import { cn } from '@/lib/utils'
 import { AccentScope } from '@/components/spaces/accent-scope'
@@ -235,6 +235,10 @@ export default async function ClaimSpacePage({ params }: { params: Promise<{ tok
   const coverH = heroHeightClass(hero.height)
   const coverFocus = readCoverFocus(space.preferences)
   const coverScrim = readCoverScrim(space.preferences)
+  // The claim page renders the IDENTICAL chip to the live hero (that is the whole point of sharing
+  // BrandAnchor), so it reads the same backdrop preference. Without this a Space that chose 'none'
+  // would show a bare logo on its profile and a plated one on its claim page.
+  const logoBackdrop = readLogoBackdrop(space.preferences)
   const heroOnInk = coverScrim !== 'blend'
   const heroScrimGradient =
     coverScrim === 'none'
@@ -320,7 +324,7 @@ export default async function ClaimSpacePage({ params }: { params: Promise<{ tok
             <div className={cn('absolute inset-x-0 bottom-0 p-6 sm:p-8', coverScrim === 'none' && 'on-image-text')}>
               <div className="flex min-w-0 items-end gap-4">
                 <div className="shrink-0">
-                  <BrandAnchor name={name} logoUrl={space.brandLogoUrl} />
+                  <BrandAnchor name={name} logoUrl={space.brandLogoUrl} backdrop={logoBackdrop} />
                 </div>
                 <div className="min-w-0 pb-1">
                   {hero.eyebrow && (

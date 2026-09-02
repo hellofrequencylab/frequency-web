@@ -22,6 +22,8 @@ import { normalizeSpaceLocation } from '@/lib/spaces/location'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import {
   nextCoverScrimPreferences,
+  nextLogoBackdropPreferences,
+  type LogoBackdrop,
   nextCoverFocusPreferences,
   type CoverScrim,
 } from './preferences'
@@ -201,6 +203,30 @@ export async function setSpaceCoverScrim(slug: string, scrim: CoverScrim): Promi
   const next = nextCoverScrimPreferences(auth.preferences, scrim)
   if (!(await writePreferences(auth.spaceId, next))) {
     return fail('Could not update the cover style. Try again.')
+  }
+
+  revalidatePath(`/spaces/${slug}`)
+  revalidatePath(`/spaces/${slug}/manage/layout`)
+  return ok()
+}
+
+/**
+ * Set the LOGO BACKDROP — whether the brand logo chip keeps its plate ('plate', the default) or sits
+ * bare on the cover ('none', for a mark drawn with a transparent background).
+ * Owner/admin/editor-gated (staff preview fails closed). Returns ActionResult.
+ */
+export async function setSpaceLogoBackdrop(slug: string, backdrop: LogoBackdrop): Promise<ActionResult> {
+  // Validated against the same two values the reader and the render accept. The scrim action one block
+  // up documents what happens when this list drifts from the form's: "None" was offered, rejected here,
+  // and silently never persisted. Two values, both listed, both reachable.
+  if (backdrop !== 'plate' && backdrop !== 'none') return fail('Pick a logo backdrop.')
+
+  const auth = await authorizeEditor(slug)
+  if (!auth) return fail('You do not have access to edit this page.')
+
+  const next = nextLogoBackdropPreferences(auth.preferences, backdrop)
+  if (!(await writePreferences(auth.spaceId, next))) {
+    return fail('Could not update the logo backdrop. Try again.')
   }
 
   revalidatePath(`/spaces/${slug}`)

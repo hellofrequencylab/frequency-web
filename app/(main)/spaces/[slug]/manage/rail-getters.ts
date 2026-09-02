@@ -38,7 +38,7 @@ import {
   HOME_SLUG,
   MAX_PROFILE_PAGES,
 } from '@/lib/spaces/profile-pages'
-import { readCoverScrim, readCoverFocus } from './layout/preferences'
+import { readCoverScrim, readCoverFocus, readLogoBackdrop } from './layout/preferences'
 import { readHeaderCtaPreference, type HeaderCtaPreference } from '@/lib/spaces/header-cta'
 import { defaultPrimaryCtaLabel } from '@/lib/spaces/profile-config'
 import { enabledFunctionKeys } from '@/lib/spaces/profile-modules'
@@ -172,6 +172,9 @@ interface SpaceBrandingData {
   coverImageUrl: string | null
   brandLogoUrl: string | null
   coverScrim: ReturnType<typeof readCoverScrim>
+  /** Whether the brand logo chip keeps its white plate ('plate', the default) or sits bare on the
+   *  cover ('none'), so the rail's Logo backdrop buttons render with the current pick selected. */
+  logoBackdrop: ReturnType<typeof readLogoBackdrop>
   /** The saved hero cover FOCAL POINT (CSS object-position "x% y%"), for the header-focus picker.
    *  Defaults to centered ("50% 50%") when unset. */
   coverFocus: string
@@ -204,6 +207,7 @@ function buildBrandingData(
     coverImageUrl: space.coverImageUrl ?? null,
     brandLogoUrl: space.brandLogoUrl ?? null,
     coverScrim: readCoverScrim(space.preferences),
+    logoBackdrop: readLogoBackdrop(space.preferences),
     coverFocus: readCoverFocus(space.preferences),
     accent: space.brandAccent ?? '',
     headerCta: readHeaderCtaPreference(space.preferences),

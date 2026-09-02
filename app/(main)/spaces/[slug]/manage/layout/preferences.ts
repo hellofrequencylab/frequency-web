@@ -92,3 +92,52 @@ export function nextCoverFocusPreferences(
   else delete next.coverFocus
   return next
 }
+
+// ── LOGO BACKDROP (the plate behind the brand logo chip) ─────────────────────────────────────────
+// The BrandAnchor chip has always drawn the operator's logo on a `bg-surface` plate inside a 4px
+// `border-surface` ring with a `lift-1` shadow. That plate is not decoration: it is what guarantees a
+// DARK logo stays visible on a DARK cover photo, which is why it is still the default.
+//
+// It is also wrong for a logo that was drawn to sit on the photo itself. A mark exported with a
+// transparent background gets a white card it never asked for, and the operator has no way to say so
+// — which is the ask this key answers (owner, 2026-09-02).
+//
+//   'plate' (default) — today's look exactly: plate + ring + shadow. Safe on any cover.
+//   'none'            — the logo alone on the cover. The contrast halo STAYS (and is applied to every
+//                       format, not just the logo path), because with the plate gone it is the only
+//                       thing keeping a dark mark legible against a dark photo.
+//
+// 🔴 THIS IS DELIBERATELY NOT AUTOMATIC, and the reason is worth the paragraph. The obvious rule —
+// "a non-JPEG can carry transparency, so drop the plate" — would have changed 8 of 21 live Spaces at
+// once, none of whose operators asked for it, and would drop the plate for a PNG whose background is
+// a solid white rectangle (identical pixels, no transparency, now floating with no edge). File
+// extension is a claim about what a format CAN carry, never about what an image DOES carry. An
+// operator toggle costs one tap and cannot be wrong about someone else's artwork.
+//
+// Fail-safe to 'plate' for any missing/malformed value, so an unset Space renders exactly as before.
+
+export type LogoBackdrop = 'plate' | 'none'
+
+const LOGO_BACKDROPS: readonly LogoBackdrop[] = ['plate', 'none']
+
+/** Read the operator's chosen logo backdrop off a raw preferences blob. Default-safe to 'plate'. PURE. */
+export function readLogoBackdrop(preferences: unknown): LogoBackdrop {
+  if (!preferences || typeof preferences !== 'object' || Array.isArray(preferences)) return 'plate'
+  const v = (preferences as Record<string, unknown>).logoBackdrop
+  return typeof v === 'string' && (LOGO_BACKDROPS as readonly string[]).includes(v)
+    ? (v as LogoBackdrop)
+    : 'plate'
+}
+
+/** Compute the next preferences blob for a logo-backdrop change. Non-destructive: only `logoBackdrop`
+ *  is written, every other key preserved, and the DEFAULT drops the key so an untouched Space keeps a
+ *  sparse blob (the same sparseness rule `coverFocus` follows above). PURE. */
+export function nextLogoBackdropPreferences(
+  current: Record<string, unknown>,
+  backdrop: LogoBackdrop,
+): Record<string, unknown> {
+  const next = { ...current }
+  if (backdrop === 'plate') delete next.logoBackdrop
+  else next.logoBackdrop = backdrop
+  return next
+}
