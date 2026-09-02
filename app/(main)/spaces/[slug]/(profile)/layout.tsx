@@ -19,7 +19,7 @@ import { resolveAccentVars } from '@/lib/spaces/accent'
 import { parseSpaceTheme } from '@/lib/theme/space-themes'
 import { cn } from '@/lib/utils'
 import { BrandAnchor } from '@/components/spaces/brand-anchor'
-import { readCoverSize, readCoverScrim, readCoverFocus } from '@/app/(main)/spaces/[slug]/manage/layout/preferences'
+import { readCoverSize, readCoverScrim, readCoverFocus, readLogoBackdrop } from '@/app/(main)/spaces/[slug]/manage/layout/preferences'
 import { readTagline } from '@/lib/spaces/tagline'
 import { readProfileData } from '@/lib/spaces/profile-data'
 import { FollowSpaceButton } from '@/components/spaces/follow-space-button'
@@ -265,6 +265,9 @@ export default async function SpaceProfileChromeLayout({
   // reads as centered ("50% 50%"), so a Space that never touched it crops exactly as before. Repositions
   // the photo only — the header height is untouched (coverH is unchanged).
   const coverFocus = readCoverFocus(space.preferences)
+  // Whether the brand logo chip keeps its plate. Default 'plate' = today's look; an operator picks 'none'
+  // for a mark drawn with a transparent background (Identity & Branding -> Logo backdrop).
+  const logoBackdrop = readLogoBackdrop(space.preferences)
 
   // The ONE owner affordance (Customize): opens the STANDARDIZED admin rail (openAdminBar) pointed at this
   // Space's scope — the SAME rail chrome circles / events / hubs / nexuses use (ENTITY-MANAGEMENT / PR C),
@@ -545,7 +548,7 @@ export default async function SpaceProfileChromeLayout({
         <div className="flex items-end justify-between gap-4">
           <div className="flex min-w-0 items-end gap-4">
             <div className="shrink-0">
-              <BrandAnchor name={brandName} logoUrl={space.brandLogoUrl} />
+              <BrandAnchor name={brandName} logoUrl={space.brandLogoUrl} backdrop={logoBackdrop} />
             </div>
             {/* `taglineHiddenOnMobile` — the second argument, which BOTH call sites used to omit, so
                 the parameter was dead and the behaviour the comment on it describes did not exist.
@@ -578,7 +581,7 @@ export default async function SpaceProfileChromeLayout({
         {coverImage}
       </div>
       <div className="absolute -bottom-10 left-5 sm:-bottom-12 sm:left-6">
-        <BrandAnchor name={brandName} logoUrl={space.brandLogoUrl} />
+        <BrandAnchor name={brandName} logoUrl={space.brandLogoUrl} backdrop={logoBackdrop} />
       </div>
     </div>
   )

@@ -35064,3 +35064,53 @@ chip.
   five floored buttons, `OpenAdminBarButton`'s default class, and the Space Connect dialog's six chips.
 - `components/spaces/space-profile-tabs.tsx` is **dead code** — only its exported type is imported; the
   component is never rendered.
+
+## ADR-1194: a transparent logo gets no plate, and why that is a toggle rather than a guess (2026-09-02)
+
+`BrandAnchor` draws the operator's logo on a `bg-surface` plate inside a 4px `border-surface` ring with
+a `lift-1` shadow. The owner asked to make it possible for a transparent logo to render without that
+card. The mechanism is a per-Space preference, `logoBackdrop`: `'plate'` (default, today's look) or
+`'none'`.
+
+⚪ **The obvious rule was rejected, and the reason is a category error worth naming.** "A non-JPEG can
+carry transparency, so drop its plate" reads as automatic and free. Measured against the live data it is
+neither:
+
+| Logo format | Spaces | What the automatic rule would do |
+|---|---|---|
+| JPEG | 12 | nothing (correctly) |
+| PNG | 5 | drop the plate, asked or not |
+| WEBP | 2 | drop the plate, asked or not |
+| extensionless | 1 | drop the plate, asked or not |
+
+**8 of 21 live Spaces would have changed appearance at once, none of whose operators requested it** —
+the same silent-broad-change shape as [ADR-1169](#adr-1169) and [ADR-1192](#adr-1192), which is twice in
+one week. And it is wrong on its own terms: **a file extension states what a format CAN carry, never
+what an image DOES carry.** A PNG whose background is a solid white rectangle has no transparency at
+all; the rule would strip its plate and leave it floating with no edge, pixel-identical to the card it
+just lost.
+
+⚪ **Reading the real alpha channel was the third option and was not taken.** `sharp` is already in the
+build and could set a flag at upload. It is accurate, and it still decides on the operator's behalf,
+still needs a backfill for the 8 existing logos, and still cannot know that a dark mark on a dark cover
+needed the plate for contrast. A toggle costs one tap and cannot be wrong about someone else's artwork.
+
+🔴 **The plate is one decision, not three.** Removing only `bg-surface` leaves the ring drawing a white
+square around a logo that asked for no square — the reported defect with an extra step. Background, ring
+and shadow live in a single string, and `brand-anchor.test.ts` fails if they are ever separated.
+
+⚪ **The contrast halo is now applied at every format when the plate is gone.** Its usual job is lifting
+a transparent mark off the plate; with no plate it is the only edge between the image and the cover
+photo, and an opaque photo sitting directly on another photo needs that edge most.
+
+⚪ **The initials fallback stays plated at both settings.** There is no artwork to show bare: the plate
+*is* the chip and `bg-surface-elevated` carries the letters' contrast. A bare setting there would paint
+dark initials onto a photo with no image to hang a halo on.
+
+⚠️ **`morocco-bahja-tours` was set to `'none'` directly in the database** at the owner's request
+("I want bahja tours logo to be transparent"), by a non-destructive `||` merge that preserved its
+existing `theme` and `coverScrim`. It is the one Space that does not reach this setting through the UI,
+and flipping the control back is all it takes to undo.
+
+⚪ **The default drops the key rather than writing `'plate'`**, matching `coverFocus`. A Space that
+toggles off and back on ends up byte-identical to one that never touched the control.

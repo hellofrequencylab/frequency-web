@@ -13,11 +13,12 @@ import { DEFAULT_OBJECT_POSITION } from '@/lib/images/focal-point'
 import { AccentPicker } from '@/components/spaces/space-form'
 import { updateSpaceProfile } from '@/lib/spaces/profile-settings'
 import { SPACE_THEMES, type SpaceThemeId } from '@/lib/theme/space-themes'
-import type { CoverScrim } from '@/app/(main)/spaces/[slug]/manage/layout/preferences'
+import type { CoverScrim, LogoBackdrop } from '@/app/(main)/spaces/[slug]/manage/layout/preferences'
 import {
   setSpaceImages,
   uploadSpaceImage,
   setSpaceCoverScrim,
+  setSpaceLogoBackdrop,
   setSpaceCoverFocus,
   setSpaceAccent,
   setSpaceHeaderCta,
@@ -50,6 +51,14 @@ const HERO_BUTTONS: { value: HeroButtonOrientation; label: string }[] = [
 // plain, no em dashes.
 
 // The two Hero cover-scrim treatments (a Space profile is always Hero, ADR-526). Compact buttons.
+// The two logo backdrops. Copy runs CONTENT-VOICE: say what the reader will see, never narrate their
+// feelings, no em dashes. "Transparent logo" is the words an operator uses for the file they exported;
+// the code calls it 'none' because what it removes is the plate, not the logo.
+const LOGO_BACKDROPS: { value: LogoBackdrop; label: string; tagline: string }[] = [
+  { value: 'plate', label: 'On a card', tagline: 'Your logo sits on a white card. Safe on any photo.' },
+  { value: 'none', label: 'No card', tagline: 'Your logo sits straight on the photo. Best for a transparent PNG or WEBP.' },
+]
+
 const COVER_SCRIMS: { value: CoverScrim; label: string; tagline: string }[] = [
   { value: 'none', label: 'None', tagline: 'A clean photo with no overlay.' },
   { value: 'shade', label: 'Shade', tagline: 'A soft dark fade so your name stays readable on any photo.' },
@@ -64,6 +73,7 @@ export function SpaceBrandingForm({
   coverImageUrl = null,
   brandLogoUrl = null,
   coverScrim,
+  logoBackdrop = 'plate',
   coverFocus = DEFAULT_OBJECT_POSITION,
   accent,
   headerCta = null,
@@ -80,6 +90,8 @@ export function SpaceBrandingForm({
   coverImageUrl?: string | null
   brandLogoUrl?: string | null
   coverScrim: CoverScrim
+  /** Whether the brand logo chip keeps its white plate. Defaults to 'plate' (today's look). */
+  logoBackdrop?: LogoBackdrop
   /** The saved hero cover FOCAL POINT (CSS object-position "x% y%"). Defaults to centered. */
   coverFocus?: string
   accent: string
@@ -129,6 +141,9 @@ export function SpaceBrandingForm({
   // disabled" until a reload, so you could not switch back (bug 2). Reflect an external prop change back in
   // with React's render-time adjust-on-prop-change pattern (no effect).
   const [scrim, setScrim] = useState<CoverScrim>(coverScrim)
+  // Same optimistic pattern, same reason as the scrim above: the buttons key off local state so the
+  // picked one goes active immediately instead of waiting on router.refresh().
+  const [backdrop, setBackdrop] = useState<LogoBackdrop>(logoBackdrop)
   const [seenScrim, setSeenScrim] = useState<CoverScrim>(coverScrim)
   if (coverScrim !== seenScrim) {
     setSeenScrim(coverScrim)
@@ -297,6 +312,40 @@ export function SpaceBrandingForm({
                 return uploadSpaceImage(slug, 'logo', fd)
               }}
             />
+            {/* Logo backdrop — sits with the logo it governs, not down in the cover controls, because
+                the question it answers ("does my transparent export get a white card?") is one the
+                operator asks the moment they upload the file. */}
+            <div className="mt-3 space-y-2">
+              <p className={cn(labelClasses, 'block font-semibold')} id="branding-backdrop-label">Logo backdrop</p>
+              <div className="grid grid-cols-2 gap-2" role="group" aria-labelledby="branding-backdrop-label">
+                {LOGO_BACKDROPS.map((b) => {
+                  const active = backdrop === b.value
+                  return (
+                    <button
+                      key={b.value}
+                      type="button"
+                      disabled={readOnly || pending || active}
+                      onClick={() => {
+                        setBackdrop(b.value) // optimistic, matching the scrim buttons below
+                        run(() => setSpaceLogoBackdrop(slug, b.value))
+                      }}
+                      aria-pressed={active}
+                      title={b.tagline}
+                      className={cn(
+                        'rounded-control border px-3 py-2 text-body-sm font-semibold transition-colors disabled:cursor-default motion-reduce:transition-none',
+                        active ? 'border-primary bg-primary-bg text-text' : 'border-border bg-surface text-muted hover:border-border-strong',
+                      )}
+                    >
+                      <span className="flex items-center justify-center gap-1.5">
+                        {b.label}
+                        {active && <Check className="h-3.5 w-3.5 text-primary" aria-hidden />}
+                      </span>
+                    </button>
+                  )
+                })}
+              </div>
+              <p className="text-meta text-muted">{LOGO_BACKDROPS.find((b) => b.value === backdrop)?.tagline}</p>
+            </div>
           </div>
           <div className="min-w-0 flex-1 space-y-2">
             {/* Button groups, not labelable controls: the accessible name comes from
