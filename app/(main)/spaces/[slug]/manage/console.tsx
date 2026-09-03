@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { ArrowRight, Compass, SlidersHorizontal, Sparkles, Trash2 } from 'lucide-react'
 import { SectionHeader } from '@/components/ui/section-header'
+import { GateNotice } from '@/components/ui/gate-notice'
 import { DangerDelete } from '@/components/admin/danger-delete'
 import { deleteSpace } from '@/lib/spaces/provision'
 import type { SpaceModule } from '@/lib/admin/modules/space-modules'
@@ -114,64 +115,40 @@ export function orderWithinGroupByEmphasis(
     .map((w) => w.m)
 }
 
-// ── Access marking (Included / Freemium / Premium) ─────────────────────────────────────────────────────
+// ── Open access during the beta (ADR-1195) ───────────────────────────────────────────────────────────
 //
-// Each card carries a small BADGE (ADR-782) so the plan story is legible: what every Space gets, what is
-// free with a cap, and what needs a paid plan. This is presentation only — it does NOT gate (gating lives
-// in lib/pricing/gates.ts + the function registry). Token-clean (no hardcoded color). During the open beta
-// every tool is usable regardless of badge; the badge previews the post-launch model.
+// Every card on this console used to wear an Included / Freemium / Premium pill (ADR-782) with its
+// free-tier cap as a sublabel (ADR-784). Both are RETIRED FROM THE CONSOLE while the beta runs, because
+// they described a wall that does not exist: nothing on this board is capped or withheld today, so a
+// "Freemium" badge beside a fully working tool asked an owner to guess which half of the sentence was
+// true, and "15 bookings/mo free" read as a limit they were already under.
+//
+// The manifest KEEPS `access` + `freeNote` (lib/admin/modules/space-modules.ts) and their tests keep them
+// honest. They are the seed for the plan story when billing turns on, not console presentation. What the
+// console shows instead is ONE notice, once per board, saying the plain things in the order an owner
+// needs them: it is all open now, some of it moves onto plans later, and we say so before it does.
+//
+// To bring the badges back when the beta closes, render those two manifest fields on <SectionRow> again
+// (the pill markup is in git history at ADR-782). Nothing upstream of the render was removed.
 
-type AccessLevel = NonNullable<SpaceModule['access']>
-
-const ACCESS_META: Record<AccessLevel, { label: string; className: string; gloss: string }> = {
-  included: {
-    label: 'Included',
-    className: 'border-border bg-surface-elevated text-subtle',
-    gloss: 'Free for every space',
-  },
-  freemium: {
-    label: 'Freemium',
-    className: 'border-primary/30 bg-primary-bg text-primary-strong',
-    gloss: 'Free with a cap a paid plan lifts',
-  },
-  premium: {
-    label: 'Premium',
-    className: 'border-signal/30 bg-signal-bg text-signal-strong',
-    gloss: 'A paid plan or add-on',
-  },
-}
-
-/** The access level a module advertises, defaulting to `included` when unset. PURE. */
-function accessLevel(module: SpaceModule): AccessLevel {
-  return module.access ?? 'included'
-}
-
-/** A small access pill (Included / Freemium / Premium). `compact` drops the text to a dot on nested rows. */
-function AccessBadge({ level }: { level: AccessLevel }) {
-  const meta = ACCESS_META[level]
+/** The single open-access notice for a console board. Composes the kit's `preview` gate vocabulary
+ *  (components/ui/gate-notice.tsx) rather than inventing a second notice frame, so this page carries the
+ *  same "visible and free while billing is off" voice as every other beta surface. Copy runs the
+ *  CONTENT-VOICE §10 checklist: plain sentences, no em dashes, and the cost named alongside the gift. */
+function BetaAccessNotice() {
   return (
-    <span
-      className={`inline-flex shrink-0 items-center rounded-pill border px-1.5 py-0.5 text-2xs font-semibold ${meta.className}`}
-      title={meta.gloss}
-    >
-      {meta.label}
-    </span>
-  )
-}
-
-/** The one-line legend above the board so the three markings are self-explaining. Leads with the plan
- *  story in one line (owner overhaul 2026-07): everything is included, a paid plan raises the limits. */
-function AccessLegend() {
-  return (
-    <div className="mb-5 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-meta text-muted">
-      <span className="font-semibold text-text">Everything is included. Paid plans raise the limits.</span>
-      {(['included', 'freemium', 'premium'] as const).map((level) => (
-        <span key={level} className="inline-flex items-center gap-1.5">
-          <AccessBadge level={level} />
-          <span>{ACCESS_META[level].gloss}</span>
-        </span>
-      ))}
-    </div>
+    <GateNotice kind="preview" title="Everything is open during the beta">
+      <p className="leading-relaxed">
+        Every tool on this page is switched on for your Space right now. No caps, nothing to buy, and no
+        cut of what your own people pay you.
+      </p>
+      <p className="leading-relaxed">
+        This will change, and we would rather say it early than surprise you. After the beta some tools
+        move onto plans: a free tier for everyday work, and a paid step that lifts the limits. Our aim is
+        to back every business here, not to price you out of one. You will get plenty of notice, and a
+        clear list of what changes, before anything does.
+      </p>
+    </GateNotice>
   )
 }
 
@@ -214,9 +191,6 @@ function SectionRow({
         </span>
         <span className="min-w-0 flex-1">
           <span className={`block truncate font-medium text-text ${nested ? 'text-meta' : 'text-body-sm'}`}>{module.label}</span>
-          {!nested && module.freeNote && (
-            <span className="mt-0.5 block truncate text-2xs text-muted">{module.freeNote}</span>
-          )}
         </span>
         {suggested && (
           <span
@@ -227,7 +201,6 @@ function SectionRow({
             <span className="sr-only">Suggested for your mode</span>
           </span>
         )}
-        <AccessBadge level={accessLevel(module)} />
         <ArrowRight
           className="h-3.5 w-3.5 shrink-0 text-subtle transition-transform group-hover:translate-x-0.5 group-hover:text-primary-strong motion-reduce:transition-none"
           aria-hidden
@@ -337,6 +310,14 @@ function FeatureGrid({
   )
 }
 
+/** The hub tabs that render a grid of module cards, and so carry the open-access notice beneath it. */
+const CARD_SECTIONS: ReadonlySet<SpaceHubSection> = new Set<SpaceHubSection>([
+  'resonance',
+  'offerings',
+  'programs',
+  'settings',
+])
+
 export function SpaceManageConsole({
   slug,
   modules,
@@ -407,17 +388,19 @@ export function SpaceManageConsole({
           marketingEmbed
         ) : section === 'settings' ? (
           <SpaceSettingsSurface slug={slug} modules={modules} canDelete={canDelete} spaceId={spaceId} />
+        ) : inSection.length > 0 ? (
+          <FeatureGrid modules={inSection} slug={slug} emphasis={emphasis} />
         ) : (
-          <>
-            {inSection.length > 0 ? (
-              <FeatureGrid modules={inSection} slug={slug} emphasis={emphasis} />
-            ) : (
-              <p className="text-body-sm text-subtle">Nothing here yet for this space.</p>
-            )}
-            <div className="mt-6">
-              <AccessLegend />
-            </div>
-          </>
+          <p className="text-body-sm text-subtle">Nothing here yet for this space.</p>
+        )}
+        {/* The open-access notice sits under whichever tab LISTS TOOLS (it replaced the badge legend that
+            used to live here), so an owner meets it in the same glance as the cards it explains. Home is a
+            metrics command center and Marketing embeds its own surface with its own sub-nav; neither is a
+            catalog of tools, so neither carries it. */}
+        {CARD_SECTIONS.has(section) && (
+          <div className="mt-6">
+            <BetaAccessNotice />
+          </div>
         )}
       </div>
     </div>

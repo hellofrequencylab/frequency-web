@@ -35114,3 +35114,54 @@ and flipping the control back is all it takes to undo.
 
 ⚪ **The default drops the key rather than writing `'plate'`**, matching `coverFocus`. A Space that
 toggles off and back on ends up byte-identical to one that never touched the control.
+
+## ADR-1195: the console stopped pricing tools it does not charge for (2026-09-03)
+
+Every service card on the Space manage console wore a plan pill (`Included` / `Freemium` / `Premium`,
+[ADR-782](#adr-782)) with its free-tier cap printed underneath (`15 bookings/mo free, then unlimited`,
+[ADR-784](#adr-784)), above a three-item legend explaining the pills. All of it is removed from the
+render. One notice takes its place: everything on this page is open during the beta, some of it moves
+onto plans afterwards, and we say so first.
+
+🔴 **The badges were describing a wall that does not exist.** Both ADRs are honest about what they built
+("purely a BADGE", "presentation only", "never gates"), and ADR-782's own comment said the quiet part:
+*"during the open beta every tool is usable regardless of badge; the badge previews the post-launch
+model."* A preview of a future price, rendered in the present tense, beside a tool that is working right
+now. An owner reading `Freemium · 15 bookings/mo free` on a booking module that will take their
+sixteenth booking has to work out which half of that sentence is true today, and the honest answer is
+neither half.
+
+⚪ **The manifest keeps `access` and `freeNote`, and their tests keep them honest.** This is a RENDER
+change, not a data one. `lib/admin/modules/space-modules.ts` still carries both fields and
+`space-modules.test.ts` still checks each metered offering is badged against the real cap constants in
+`feature-meters.ts` (ADR-784's actual value: it caught badges that disagreed with the code). That work is
+the seed for the plan story when billing turns on. Deleting it to make the console quiet would have
+thrown away the only tested map between a module and its cap.
+
+🔴 **Which is exactly why the guard is a SOURCE-SHAPE probe.** Because the data survives, no assertion
+about the manifest can tell you whether a pill came back onto a card. Only the file can.
+`console.test.ts` reads `console.tsx` below the explanatory banner and fails on the three pill labels, on
+`freeNote`, and on a missing `<BetaAccessNotice />`. It was mutation-tested: reinstating a `Freemium`
+span in `SectionRow` fails it. A probe that had asserted "the manifest still has `access`" would have
+passed through the whole regression.
+
+⚪ **The notice composes `GateNotice kind="preview"` rather than a fourth notice frame.** That kind
+already means precisely this ("visible and free while billing is off"), and PROG-DAWN2 widened it to
+carry a two-paragraph body for exactly this shape of copy. The console had been hand-rolling a legend
+row; it now speaks the same vocabulary as the beta grace notice ([ADR-875](#adr-875)) and every other
+dormant surface, which is the difference between one gate voice and two.
+
+⚪ **The copy names the cost, not only the gift**, per CONTENT-VOICE §10's skeptic test: *"This will
+change, and we would rather say it early than surprise you."* A notice that said only "everything is
+free" would be true this month and a broken promise the month billing lands. What it promises is the
+notice period and the list, both of which we control, rather than a price we have not set.
+
+⚪ **It renders under the four tabs that LIST TOOLS** (Resonance, Offerings & Money, Content & Programs,
+Profile & Settings) and not under Home or Marketing, which embed their own surfaces and are not catalogs
+of tools. The old legend rendered on strictly fewer tabs than the pills it explained, so Resonance and
+Settings showed badges with nothing anywhere saying what they meant.
+
+⚠️ **The public pricing surfaces were deliberately left alone.** `components/marketing/pricing-*` and
+`/settings/billing`'s plan ladder are ABOUT plans, and an owner who opens the billing page is asking what
+things cost. The defect was pricing language on an operating console, not the existence of pricing
+language.
