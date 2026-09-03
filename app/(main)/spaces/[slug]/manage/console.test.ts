@@ -1,4 +1,6 @@
 import { describe, it, expect } from 'vitest'
+import { readFileSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
 import { groupForModule, isSuggestedByMode, orderWithinGroupByEmphasis } from './console'
 import {
   SPACE_MODULES,
@@ -190,5 +192,81 @@ describe('Community (resonance) section coverage', () => {
     const board = byId('space.crm')
     expect(sectionForModule(board)).toBe('resonance')
     expect(panelHrefForModule(board, 'demo-space')).toBe('/spaces/demo-space?panel=crm')
+  })
+})
+
+// ── Open access during the beta (ADR-1195) ───────────────────────────────────────────────────────────
+//
+// The console used to pill every card Included / Freemium / Premium (ADR-782) and print its free-tier cap
+// underneath (ADR-784). Both describe a wall that does not exist while the beta runs, so the console
+// stopped rendering them and shows one open-access notice instead.
+//
+// These are SOURCE-SHAPE probes because the consequence is a render, and the render is what regressed:
+// the manifest still CARRIES `access` + `freeNote` (the tests above keep those honest), so nothing about
+// the data can tell you whether a pill came back. Only the file can. They probe the consequence, not the
+// title: the pill markup absent, the cap sublabel unread, the notice actually mounted.
+describe('the console shows no plan-tier labels during the beta (ADR-1195)', () => {
+  const CONSOLE = readFileSync(fileURLToPath(new URL('./console.tsx', import.meta.url)), 'utf8')
+  // The banner comment explains WHY the pills are gone and which server seam resolves the date, so it
+  // names both; every probe below reads CODE, not prose about the code.
+  const CODE = CONSOLE.slice(CONSOLE.indexOf('function BetaAccessNotice'))
+  /** The file with block + line comments stripped, for the probes that must span the whole module. */
+  const CONSOLE_CODE = CONSOLE.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '')
+
+  it('renders no Included / Freemium / Premium pill on a service card', () => {
+    for (const label of ['Included', 'Freemium', 'Premium']) {
+      expect(CODE, `the ${label} pill is back on the console`).not.toContain(label)
+    }
+  })
+
+  it('does not print a module free-tier cap under its label', () => {
+    expect(CODE, 'freeNote is a manifest seed for post-beta pricing, not console copy').not.toContain(
+      'freeNote',
+    )
+  })
+
+  it('mounts the open-access notice on every tab that lists tools', () => {
+    expect(CODE).toContain('<BetaAccessNotice endsLabel={graceEndsLabel} />')
+    expect(CODE).toContain('CARD_SECTIONS.has(section)')
+  })
+
+  // The notice promises open access, so it must be bound to the switch that grants it. Rendering it
+  // unconditionally is the regression this probes: it would keep promising "no caps" on the first day
+  // featureGatesLive() starts enforcing them, and nothing else in the file would notice.
+  it('renders the notice ONLY while the grace window is open', () => {
+    expect(CODE, 'the notice must be gated on the resolved grace window').toContain(
+      'CARD_SECTIONS.has(section) && graceEndsLabel &&',
+    )
+  })
+
+  // ADR-018 presentation neutrality: the date is resolved server-side and handed in. A console that
+  // formatted its own date would be reading a different source than featureGatesLive(), which is how
+  // the copy and the caps drift apart.
+  it('takes the date as a prop and never resolves the window itself', () => {
+    for (const reader of ['betaWindow', 'getBetaGrace', 'featureGatesLive', 'betaStartLabel']) {
+      expect(CONSOLE_CODE, `the console must not read ${reader} itself`).not.toContain(reader)
+    }
+  })
+
+  it('composes the kit gate vocabulary rather than a second hand-rolled notice frame', () => {
+    expect(CONSOLE_CODE).toContain("import { GateNotice } from '@/components/ui/gate-notice'")
+    expect(CODE).toContain('<GateNotice kind="preview"')
+  })
+
+  // The notice says "nothing here is capped". That is true only on tabs whose tools all stand down with
+  // featureGatesLive(). The QR ladder (lib/qr/space-codes.ts) deliberately does NOT — 3 codes on free
+  // bites during the grace window too — and QR lives on Marketing. Putting the notice there would hang a
+  // no-caps promise directly over a capped tool, so the exclusion is load-bearing, not cosmetic.
+  it('never carries the notice onto Marketing, whose QR cap bites through the grace window', () => {
+    const set = /const CARD_SECTIONS[\s\S]*?\]\)/.exec(CODE)?.[0] ?? ''
+    expect(set, 'the CARD_SECTIONS declaration did not parse').toBeTruthy()
+    expect(set).not.toContain("'marketing'")
+    expect(set).not.toContain("'dashboard'")
+  })
+
+  it('keeps the notice copy free of em dashes (CONTENT-VOICE punctuation hard rule)', () => {
+    const copy = /<GateNotice kind="preview"[\s\S]*?<\/GateNotice>/.exec(CODE)?.[0] ?? ''
+    expect(copy, 'the notice did not parse').toBeTruthy()
+    expect(copy).not.toContain('—')
   })
 })

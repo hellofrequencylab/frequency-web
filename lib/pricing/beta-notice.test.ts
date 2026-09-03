@@ -308,11 +308,20 @@ describe('SOURCE SHAPE: the date is the operator’s, and the copy never claims 
     './beta-state.ts',
     './tease-gate.ts',
     '../../components/upsell/beta-grace-notice.tsx',
+    // The Space manage console's open-access notice (ADR-1195) names the window's end date, so it is
+    // bound by the same rule: its label is formatted from `beta_grace` and handed in as a prop.
+    '../../app/(main)/spaces/[slug]/manage/console.tsx',
   ]
+
+  // EVERY month, not the three that happened to be in play. This read `/September|Sept\.|Aug(ust)?\b/`,
+  // which was the window's own months at the time — so when the owner moved `beta_grace` to 2026-10-01
+  // (ADR-1195) the guard silently stopped covering the date it exists to catch. A guard scoped to
+  // today's value expires the moment that value moves, which is the failure it was built to prevent.
+  const MONTH = /\b(January|February|March|April|May|June|July|August|September|October|November|December|Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sept?|Oct|Nov|Dec)\b/i
 
   it.each(SURFACES)('%s hardcodes no month name (every date formats from beta_grace)', (rel) => {
     const src = codeOnly(read(rel))
-    expect(src).not.toMatch(/September|Sept\.|Aug(ust)?\b|Sep 1/i)
+    expect(src).not.toMatch(MONTH)
   })
 
   it.each(SURFACES)('%s carries no lock / unlock language in its strings', (rel) => {

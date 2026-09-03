@@ -35114,3 +35114,91 @@ and flipping the control back is all it takes to undo.
 
 ⚪ **The default drops the key rather than writing `'plate'`**, matching `coverFocus`. A Space that
 toggles off and back on ends up byte-identical to one that never touched the control.
+
+## ADR-1195: the console was labelling a wall that was real, so the wall came down (2026-09-03)
+
+Every service card on the Space manage console wore a plan pill (`Included` / `Freemium` / `Premium`,
+[ADR-782](#adr-782)) with its free-tier cap printed underneath (`15 bookings/mo free`,
+[ADR-784](#adr-784)). The owner asked for the labels to come off and for a friendly notice saying
+everything is open during the beta. Both happened, but only after the premise was measured, and the
+measurement inverted the change.
+
+🔴 **The badges were not previewing a future price. They were reporting a LIVE one.** ADR-782's own
+comment said *"during the open beta every tool is usable regardless of badge; the badge previews the
+post-launch model"*, and that sentence had quietly expired. The live values:
+
+| Switch | Value found | Consequence |
+|---|---|---|
+| `platform_flags.billing_live` | `true` | checkout sells |
+| `pricing_settings.beta_grace` | `{"until": null}` | **explicitly no grace window** |
+
+`featureGatesLive()` is `billingLive()` AND the grace window having ended ([ADR-874](#adr-874)). With
+grace explicitly null, `betaGraceActive` returns false and the gates were **biting**: 15 bookings/mo,
+200 CRM contacts, 300 emails/mo, 50 tickets, 3 QR codes, 10 Vera calls, enforced on the 16 free Spaces
+of 22. Writing "everything is open, nothing to buy" over that would have been a false promise to every
+one of them, published by the console they run their business from.
+
+⚪ **So the fix was to move the product, not the copy** (owner decision, this session: *"Let's close the
+grace window October 1"*). `beta_grace` is now `{"until": "2026-10-01"}`. The boundary is exclusive of
+itself, so the last soft day is September 30 and October 1 00:00 UTC is the first enforced day; that
+semantic was verified against `betaGraceActive` itself rather than reasoned about. The gates stand down
+through September, checkout stays open for anyone who wants to pay, and the notice is now true.
+
+🔴 **THE NOTICE IS BOUND TO THE SWITCH IT DESCRIBES, and that is the durable half of this decision.**
+Its date is formatted from `beta_grace` (`betaStartLabel`, resolved through `betaWindow()` in
+`manage-board.tsx`) and it renders only while `graceActive`. On October 1 it disappears in the same read
+that starts enforcing the caps, with no deploy and no one remembering. A static "free during the beta"
+line would have been true in September and a lie in October, which is the identical failure one layer
+up: **a surface asserting a pricing state that nothing checked.** Fixing the copy without binding it
+would have reproduced the bug on a two-month delay.
+
+⚪ **The manifest keeps `access` and `freeNote`.** This is a render change. `space-modules.test.ts` still
+checks each metered offering is badged against the real cap constants in `feature-meters.ts`, which is
+ADR-784's actual value and is what the badges come back from when the window closes.
+
+🔴 **Which is why the guard is a SOURCE-SHAPE probe.** Because the data survives, no assertion about the
+manifest can tell you whether a pill returned to a card. Only the file can. `console.test.ts` fails on
+the three pill labels, on `freeNote`, on a notice that is not gated on the resolved window, and on the
+console reading `betaWindow` / `getBetaGrace` / `featureGatesLive` itself instead of taking the date as
+a prop (ADR-018). Mutation-tested: a `Freemium` span in `SectionRow` fails it.
+
+⚠️ **The existing no-hardcoded-month guard had expired the same way the badges had.** Its regex read
+`/September|Sept\.|Aug(ust)?\b/` — the window's own months at the time it was written. Moving
+`beta_grace` to October would have silently taken the date it exists to catch outside its own pattern.
+It now matches every month name, and the console is added to its `SURFACES` list. **A guard scoped to
+today's value stops guarding the moment that value moves**, which is the failure it was built to
+prevent, performed by the guard itself.
+
+⚪ **The notice renders under the four tabs that LIST TOOLS** (Resonance, Offerings & Money, Content &
+Programs, Profile & Settings), not under Home or Marketing, which embed their own surfaces. The old
+legend rendered on strictly fewer tabs than the pills it explained, so Resonance and Settings showed
+badges with nothing anywhere saying what they meant.
+
+⚠️ **Public pricing surfaces were deliberately left alone.** `components/marketing/pricing-*` and the
+`/settings/billing` plan ladder are ABOUT plans, and an owner who opens billing is asking what things
+cost. The defect was pricing language on an operating console, not the existence of pricing language.
+
+🔴 **ONE CAP IS NOT IN THE WINDOW, and it decides where the notice may render.** The QR ladder
+(`lib/qr/space-codes.ts`) deliberately does not route through `featureGatesLive()`: *"routing it through
+featureGatesLive() would turn a live limit OFF, which is a regression dressed as a refactor."* So 3
+codes on free bites during the grace window too. QR lives on the Marketing tab, which carries no notice,
+so "nothing here is capped" is true on all four tabs that do — but that is a fact about the tab split,
+not a property of the sentence. Adding Marketing to `CARD_SECTIONS` would hang a no-caps promise
+directly over a capped tool, so a test fails if anyone does. The claim and its scope are now pinned
+together rather than merely happening to agree.
+
+⚪ **The one money claim in the notice was checked against the charge path, not the brand deck.**
+"We never take a cut of what your own people pay you" resolves to `spaceTakeRateCents(amount, plan,
+effectiveOrderSource(...))`, which returns 0 for a self-sourced order and a tier rate only for a
+network-sourced one. That is brand promise #1 stated exactly as the code implements it.
+
+⚪ **`content/help/spaces/plans-and-pricing.md` was corrected in the same pass.** It read *"Every plan
+does what this page says it does, from today"* over a set of allowances that are now switched off until
+October 1, so the help centre was making the same false claim in the opposite direction. It now opens
+with the window, names the QR exception, and drops "from today".
+
+🔴 **The general lesson, and it is the third time this repo has paid for it:** a comment that says
+"this does not bite yet" is a claim with an expiry date, and nothing re-reads it. ADR-782 wrote one in
+good faith, an operator flipped a flag months later, and the console went on rendering the old world
+until someone checked the database. Prefer a surface that DERIVES its claim from the switch over one
+that describes it, because only the first kind can go stale loudly.

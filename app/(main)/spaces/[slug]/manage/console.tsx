@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { ArrowRight, Compass, SlidersHorizontal, Sparkles, Trash2 } from 'lucide-react'
 import { SectionHeader } from '@/components/ui/section-header'
+import { GateNotice } from '@/components/ui/gate-notice'
 import { DangerDelete } from '@/components/admin/danger-delete'
 import { deleteSpace } from '@/lib/spaces/provision'
 import type { SpaceModule } from '@/lib/admin/modules/space-modules'
@@ -114,64 +115,59 @@ export function orderWithinGroupByEmphasis(
     .map((w) => w.m)
 }
 
-// ── Access marking (Included / Freemium / Premium) ─────────────────────────────────────────────────────
+// ── Open access during the beta grace window (ADR-1195) ──────────────────────────────────────────────
 //
-// Each card carries a small BADGE (ADR-782) so the plan story is legible: what every Space gets, what is
-// free with a cap, and what needs a paid plan. This is presentation only — it does NOT gate (gating lives
-// in lib/pricing/gates.ts + the function registry). Token-clean (no hardcoded color). During the open beta
-// every tool is usable regardless of badge; the badge previews the post-launch model.
+// Every card on this console used to wear an Included / Freemium / Premium pill (ADR-782) with its
+// free-tier cap as a sublabel (ADR-784), and those were ACCURATE: `billing_live` was on with NO grace
+// window configured (`beta_grace.until` was an explicit null), so `featureGatesLive()` was true and the
+// caps in feature-meters.ts were biting on all 16 free Spaces. The badges were not previewing a wall.
+// They were labelling a live one, on a console whose job is to help someone run their business.
+//
+// The owner's answer was to move the product, not the copy: `beta_grace` now runs to 2026-10-01, so the
+// gates stand down through September and every tool on this board really is open. The pills come off
+// because there is no longer a tier to report, and ONE notice takes their place.
+//
+// 🔴 THE NOTICE IS BOUND TO THE SWITCH IT DESCRIBES, which is the whole point of this shape. Its date is
+// formatted from `beta_grace` (lib/pricing/beta-notice.ts betaStartLabel, resolved in manage-board.tsx
+// via betaWindow()) and it renders ONLY while that window is open. It cannot outlive its own truth: on
+// the day the gates begin to bite the notice is gone, in the same read, without a deploy. A static
+// "everything is free" line would have been true this month and a broken promise the next, which is
+// exactly the failure this ADR is about — a console asserting a pricing state nothing checked.
+//
+// The manifest KEEPS `access` + `freeNote` (lib/admin/modules/space-modules.ts) and their tests keep them
+// honest against the real cap constants. They are what the badges come BACK from when the window closes.
+//
+// ⚠️ ONE CAP IS NOT IN THE WINDOW, AND IT IS WHY `CARD_SECTIONS` EXCLUDES MARKETING. The QR ladder
+// (lib/qr/space-codes.ts) deliberately does NOT route through featureGatesLive() — "routing it through
+// featureGatesLive() would turn a live limit OFF, which is a regression dressed as a refactor" — so 3
+// codes on free bites TODAY, grace window or not. QR lives on the Marketing tab, which carries no
+// notice, so "nothing here is capped" is true on all four tabs that DO carry it. That is a fact about
+// the tab split, not a happy accident: adding Marketing to CARD_SECTIONS would put a no-caps promise
+// directly above a capped tool, so console.test.ts fails if anyone does.
 
-type AccessLevel = NonNullable<SpaceModule['access']>
-
-const ACCESS_META: Record<AccessLevel, { label: string; className: string; gloss: string }> = {
-  included: {
-    label: 'Included',
-    className: 'border-border bg-surface-elevated text-subtle',
-    gloss: 'Free for every space',
-  },
-  freemium: {
-    label: 'Freemium',
-    className: 'border-primary/30 bg-primary-bg text-primary-strong',
-    gloss: 'Free with a cap a paid plan lifts',
-  },
-  premium: {
-    label: 'Premium',
-    className: 'border-signal/30 bg-signal-bg text-signal-strong',
-    gloss: 'A paid plan or add-on',
-  },
-}
-
-/** The access level a module advertises, defaulting to `included` when unset. PURE. */
-function accessLevel(module: SpaceModule): AccessLevel {
-  return module.access ?? 'included'
-}
-
-/** A small access pill (Included / Freemium / Premium). `compact` drops the text to a dot on nested rows. */
-function AccessBadge({ level }: { level: AccessLevel }) {
-  const meta = ACCESS_META[level]
+/** The open-access notice for a console board, shown only while the beta grace window is open.
+ *
+ *  PRESENTATION-NEUTRAL (ADR-018): the date arrives as a formatted label, resolved server-side from the
+ *  operator's own `beta_grace` window. This component writes no date and knows no window. Composes the
+ *  kit's `preview` gate vocabulary (components/ui/gate-notice.tsx) rather than inventing a second notice
+ *  frame, so the console speaks the same beta voice as every other surface.
+ *
+ *  Copy runs the CONTENT-VOICE §10 checklist: plain sentences, no em dashes, and the cost named beside
+ *  the gift. What it promises is the notice period and the list of changes, both of which we control,
+ *  rather than a price that is not set. */
+function BetaAccessNotice({ endsLabel }: { endsLabel: string }) {
   return (
-    <span
-      className={`inline-flex shrink-0 items-center rounded-pill border px-1.5 py-0.5 text-2xs font-semibold ${meta.className}`}
-      title={meta.gloss}
-    >
-      {meta.label}
-    </span>
-  )
-}
-
-/** The one-line legend above the board so the three markings are self-explaining. Leads with the plan
- *  story in one line (owner overhaul 2026-07): everything is included, a paid plan raises the limits. */
-function AccessLegend() {
-  return (
-    <div className="mb-5 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-meta text-muted">
-      <span className="font-semibold text-text">Everything is included. Paid plans raise the limits.</span>
-      {(['included', 'freemium', 'premium'] as const).map((level) => (
-        <span key={level} className="inline-flex items-center gap-1.5">
-          <AccessBadge level={level} />
-          <span>{ACCESS_META[level].gloss}</span>
-        </span>
-      ))}
-    </div>
+    <GateNotice kind="preview" title={`Everything is open until ${endsLabel}`}>
+      <p className="leading-relaxed">
+        Every tool on this page is switched on for your Space. Nothing here is capped, there is nothing
+        to buy, and we never take a cut of what your own people pay you.
+      </p>
+      <p className="leading-relaxed">
+        After {endsLabel}, some tools move onto plans: a free tier for everyday work, and a paid step
+        that lifts the limits. Our aim is to back every business here, not to price you out of one. You
+        will get a clear list of what changes, well before it changes.
+      </p>
+    </GateNotice>
   )
 }
 
@@ -214,9 +210,6 @@ function SectionRow({
         </span>
         <span className="min-w-0 flex-1">
           <span className={`block truncate font-medium text-text ${nested ? 'text-meta' : 'text-body-sm'}`}>{module.label}</span>
-          {!nested && module.freeNote && (
-            <span className="mt-0.5 block truncate text-2xs text-muted">{module.freeNote}</span>
-          )}
         </span>
         {suggested && (
           <span
@@ -227,7 +220,6 @@ function SectionRow({
             <span className="sr-only">Suggested for your mode</span>
           </span>
         )}
-        <AccessBadge level={accessLevel(module)} />
         <ArrowRight
           className="h-3.5 w-3.5 shrink-0 text-subtle transition-transform group-hover:translate-x-0.5 group-hover:text-primary-strong motion-reduce:transition-none"
           aria-hidden
@@ -337,6 +329,14 @@ function FeatureGrid({
   )
 }
 
+/** The hub tabs that render a grid of module cards, and so carry the open-access notice beneath it. */
+const CARD_SECTIONS: ReadonlySet<SpaceHubSection> = new Set<SpaceHubSection>([
+  'resonance',
+  'offerings',
+  'programs',
+  'settings',
+])
+
 export function SpaceManageConsole({
   slug,
   modules,
@@ -348,6 +348,7 @@ export function SpaceManageConsole({
   canDelete,
   spaceId,
   sectionHref,
+  graceEndsLabel = null,
 }: {
   slug: string
   /** The gated module manifest, in catalog order. */
@@ -371,6 +372,11 @@ export function SpaceManageConsole({
   /** Whether the Profile & Settings tab's Danger zone renders its delete control (owner / staff). */
   canDelete: boolean
   spaceId: string
+  /** The beta grace window's end, already formatted ("October 1"), or null when the window is shut or
+   *  unreadable. Resolved server-side in manage-board.tsx from the operator's own `beta_grace` setting:
+   *  the SAME value featureGatesLive() reads, so the notice and the caps can never disagree. Null means
+   *  the gates are biting (or may be), and the board says nothing rather than promising open access. */
+  graceEndsLabel?: string | null
 }) {
   const blurb = SPACE_HUB_SECTIONS.find((s) => s.key === section)?.blurb
   // The Profile & Settings tab renders the settings surface (identity · Team · Reviews · Plan & Billing ·
@@ -407,17 +413,20 @@ export function SpaceManageConsole({
           marketingEmbed
         ) : section === 'settings' ? (
           <SpaceSettingsSurface slug={slug} modules={modules} canDelete={canDelete} spaceId={spaceId} />
+        ) : inSection.length > 0 ? (
+          <FeatureGrid modules={inSection} slug={slug} emphasis={emphasis} />
         ) : (
-          <>
-            {inSection.length > 0 ? (
-              <FeatureGrid modules={inSection} slug={slug} emphasis={emphasis} />
-            ) : (
-              <p className="text-body-sm text-subtle">Nothing here yet for this space.</p>
-            )}
-            <div className="mt-6">
-              <AccessLegend />
-            </div>
-          </>
+          <p className="text-body-sm text-subtle">Nothing here yet for this space.</p>
+        )}
+        {/* The open-access notice sits under whichever tab LISTS TOOLS (it replaced the badge legend that
+            used to live here), so an owner meets it in the same glance as the cards it explains. Home is a
+            metrics command center and Marketing embeds its own surface with its own sub-nav; neither is a
+            catalog of tools, so neither carries it. The `graceEndsLabel` guard is the second half: with
+            the window shut there is no open access to announce, so the board shows the cards alone. */}
+        {CARD_SECTIONS.has(section) && graceEndsLabel && (
+          <div className="mt-6">
+            <BetaAccessNotice endsLabel={graceEndsLabel} />
+          </div>
         )}
       </div>
     </div>
