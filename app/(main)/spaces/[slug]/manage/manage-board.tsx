@@ -11,6 +11,8 @@ import { asHubSection, sectionForModule, type SpaceHubSection } from '@/lib/admi
 import { SpaceResonanceCrm } from '@/components/spaces/crm/space-resonance-crm'
 import { SpaceDashboard } from '@/components/spaces/dashboard/space-dashboard'
 import { SpaceMarketing } from '@/components/spaces/marketing/space-marketing'
+import { betaWindow } from '@/lib/pricing/beta-state'
+import { betaStartLabel } from '@/lib/pricing/beta-notice'
 import { SpaceManageConsole } from './console'
 
 // The Space owner console BOARD (ADR-441 EM1-3): the reusable render boundary that resolves the Space,
@@ -118,6 +120,13 @@ export async function SpaceManageBoard({
   // its delete control only when true; otherwise header-only.
   const canDelete = caps.isOwner || isStaff(caller?.webRole)
 
+  // THE OPEN-ACCESS NOTICE'S DATE, from the operator's own `beta_grace` window (ADR-1195). Resolved
+  // through betaWindow() — the SAME read featureGatesLive() consults — so the console can never announce
+  // open access on a day the caps are biting. betaWindow is request-cached and fail-quiet: a DB hiccup
+  // yields graceActive:false, which shows no notice rather than a promise nothing is honouring.
+  const { graceActive, graceEndsAtMs } = await betaWindow()
+  const graceEndsLabel = graceActive ? betaStartLabel(graceEndsAtMs) : null
+
   return (
     <SpaceManageConsole
       slug={space.slug}
@@ -130,6 +139,7 @@ export async function SpaceManageBoard({
       canDelete={canDelete}
       spaceId={space.id}
       sectionHref={sectionHref}
+      graceEndsLabel={graceEndsLabel}
     />
   )
 }

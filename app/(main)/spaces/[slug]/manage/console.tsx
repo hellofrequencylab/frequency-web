@@ -115,38 +115,57 @@ export function orderWithinGroupByEmphasis(
     .map((w) => w.m)
 }
 
-// ── Open access during the beta (ADR-1195) ───────────────────────────────────────────────────────────
+// ── Open access during the beta grace window (ADR-1195) ──────────────────────────────────────────────
 //
 // Every card on this console used to wear an Included / Freemium / Premium pill (ADR-782) with its
-// free-tier cap as a sublabel (ADR-784). Both are RETIRED FROM THE CONSOLE while the beta runs, because
-// they described a wall that does not exist: nothing on this board is capped or withheld today, so a
-// "Freemium" badge beside a fully working tool asked an owner to guess which half of the sentence was
-// true, and "15 bookings/mo free" read as a limit they were already under.
+// free-tier cap as a sublabel (ADR-784), and those were ACCURATE: `billing_live` was on with NO grace
+// window configured (`beta_grace.until` was an explicit null), so `featureGatesLive()` was true and the
+// caps in feature-meters.ts were biting on all 16 free Spaces. The badges were not previewing a wall.
+// They were labelling a live one, on a console whose job is to help someone run their business.
+//
+// The owner's answer was to move the product, not the copy: `beta_grace` now runs to 2026-10-01, so the
+// gates stand down through September and every tool on this board really is open. The pills come off
+// because there is no longer a tier to report, and ONE notice takes their place.
+//
+// 🔴 THE NOTICE IS BOUND TO THE SWITCH IT DESCRIBES, which is the whole point of this shape. Its date is
+// formatted from `beta_grace` (lib/pricing/beta-notice.ts betaStartLabel, resolved in manage-board.tsx
+// via betaWindow()) and it renders ONLY while that window is open. It cannot outlive its own truth: on
+// the day the gates begin to bite the notice is gone, in the same read, without a deploy. A static
+// "everything is free" line would have been true this month and a broken promise the next, which is
+// exactly the failure this ADR is about — a console asserting a pricing state nothing checked.
 //
 // The manifest KEEPS `access` + `freeNote` (lib/admin/modules/space-modules.ts) and their tests keep them
-// honest. They are the seed for the plan story when billing turns on, not console presentation. What the
-// console shows instead is ONE notice, once per board, saying the plain things in the order an owner
-// needs them: it is all open now, some of it moves onto plans later, and we say so before it does.
+// honest against the real cap constants. They are what the badges come BACK from when the window closes.
 //
-// To bring the badges back when the beta closes, render those two manifest fields on <SectionRow> again
-// (the pill markup is in git history at ADR-782). Nothing upstream of the render was removed.
+// ⚠️ ONE CAP IS NOT IN THE WINDOW, AND IT IS WHY `CARD_SECTIONS` EXCLUDES MARKETING. The QR ladder
+// (lib/qr/space-codes.ts) deliberately does NOT route through featureGatesLive() — "routing it through
+// featureGatesLive() would turn a live limit OFF, which is a regression dressed as a refactor" — so 3
+// codes on free bites TODAY, grace window or not. QR lives on the Marketing tab, which carries no
+// notice, so "nothing here is capped" is true on all four tabs that DO carry it. That is a fact about
+// the tab split, not a happy accident: adding Marketing to CARD_SECTIONS would put a no-caps promise
+// directly above a capped tool, so console.test.ts fails if anyone does.
 
-/** The single open-access notice for a console board. Composes the kit's `preview` gate vocabulary
- *  (components/ui/gate-notice.tsx) rather than inventing a second notice frame, so this page carries the
- *  same "visible and free while billing is off" voice as every other beta surface. Copy runs the
- *  CONTENT-VOICE §10 checklist: plain sentences, no em dashes, and the cost named alongside the gift. */
-function BetaAccessNotice() {
+/** The open-access notice for a console board, shown only while the beta grace window is open.
+ *
+ *  PRESENTATION-NEUTRAL (ADR-018): the date arrives as a formatted label, resolved server-side from the
+ *  operator's own `beta_grace` window. This component writes no date and knows no window. Composes the
+ *  kit's `preview` gate vocabulary (components/ui/gate-notice.tsx) rather than inventing a second notice
+ *  frame, so the console speaks the same beta voice as every other surface.
+ *
+ *  Copy runs the CONTENT-VOICE §10 checklist: plain sentences, no em dashes, and the cost named beside
+ *  the gift. What it promises is the notice period and the list of changes, both of which we control,
+ *  rather than a price that is not set. */
+function BetaAccessNotice({ endsLabel }: { endsLabel: string }) {
   return (
-    <GateNotice kind="preview" title="Everything is open during the beta">
+    <GateNotice kind="preview" title={`Everything is open until ${endsLabel}`}>
       <p className="leading-relaxed">
-        Every tool on this page is switched on for your Space right now. No caps, nothing to buy, and no
-        cut of what your own people pay you.
+        Every tool on this page is switched on for your Space. Nothing here is capped, there is nothing
+        to buy, and we never take a cut of what your own people pay you.
       </p>
       <p className="leading-relaxed">
-        This will change, and we would rather say it early than surprise you. After the beta some tools
-        move onto plans: a free tier for everyday work, and a paid step that lifts the limits. Our aim is
-        to back every business here, not to price you out of one. You will get plenty of notice, and a
-        clear list of what changes, before anything does.
+        After {endsLabel}, some tools move onto plans: a free tier for everyday work, and a paid step
+        that lifts the limits. Our aim is to back every business here, not to price you out of one. You
+        will get a clear list of what changes, well before it changes.
       </p>
     </GateNotice>
   )
@@ -329,6 +348,7 @@ export function SpaceManageConsole({
   canDelete,
   spaceId,
   sectionHref,
+  graceEndsLabel = null,
 }: {
   slug: string
   /** The gated module manifest, in catalog order. */
@@ -352,6 +372,11 @@ export function SpaceManageConsole({
   /** Whether the Profile & Settings tab's Danger zone renders its delete control (owner / staff). */
   canDelete: boolean
   spaceId: string
+  /** The beta grace window's end, already formatted ("October 1"), or null when the window is shut or
+   *  unreadable. Resolved server-side in manage-board.tsx from the operator's own `beta_grace` setting:
+   *  the SAME value featureGatesLive() reads, so the notice and the caps can never disagree. Null means
+   *  the gates are biting (or may be), and the board says nothing rather than promising open access. */
+  graceEndsLabel?: string | null
 }) {
   const blurb = SPACE_HUB_SECTIONS.find((s) => s.key === section)?.blurb
   // The Profile & Settings tab renders the settings surface (identity · Team · Reviews · Plan & Billing ·
@@ -396,10 +421,11 @@ export function SpaceManageConsole({
         {/* The open-access notice sits under whichever tab LISTS TOOLS (it replaced the badge legend that
             used to live here), so an owner meets it in the same glance as the cards it explains. Home is a
             metrics command center and Marketing embeds its own surface with its own sub-nav; neither is a
-            catalog of tools, so neither carries it. */}
-        {CARD_SECTIONS.has(section) && (
+            catalog of tools, so neither carries it. The `graceEndsLabel` guard is the second half: with
+            the window shut there is no open access to announce, so the board shows the cards alone. */}
+        {CARD_SECTIONS.has(section) && graceEndsLabel && (
           <div className="mt-6">
-            <BetaAccessNotice />
+            <BetaAccessNotice endsLabel={graceEndsLabel} />
           </div>
         )}
       </div>
