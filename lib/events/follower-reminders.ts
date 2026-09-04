@@ -31,7 +31,8 @@
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import { zoneAbbrev, eventInstant, resolveZone } from '@/lib/time/zone'
-import { shouldSend, wantsSpaceEventReminders } from '@/lib/notification-preferences'
+import { wantsSpaceEventReminders } from '@/lib/notification-preferences'
+import { resolveSendGate } from '@/lib/comms/send-gate'
 import { isSuppressed } from '@/lib/suppression'
 import { listSpaceFollowerIds } from '@/lib/spaces/follows'
 import { sendSpaceFollowerEventReminderEmail } from '@/lib/email'
@@ -342,9 +343,16 @@ async function processLead(lead: ReminderLead): Promise<{ events: number; sent: 
       }
       if (email) emailByProfile.set(pid, email)
 
+      // `eventsEmailOn` is the ONE seam (ADR-169) rather than the bare preference read it was: the
+      // read skipped the per-Space mute (meta-scan B9 H6/D2), so a member who muted this Space in
+      // /settings was still reminded about its events. The Space is the subject; the pure selector
+      // below keeps its own explicit `suppressed` input so its contract reads unchanged.
       const [optedIn, eventsEmailOn, suppressed] = await Promise.all([
         wantsSpaceEventReminders(pid),
-        shouldSend(pid, 'email', 'events'),
+        resolveSendGate(pid, 'email', 'events', {
+          email,
+          subject: { subjectType: 'space', subjectId: ev.space_id as string },
+        }).then((gate) => gate.allowed),
         email ? isSuppressed(email) : Promise.resolve(true),
       ])
 

@@ -4,11 +4,12 @@
 // For each active profile (anyone with a circle membership), assemble a
 // per-person digest. Skip people with nothing to surface (no recent
 // dispatches AND no upcoming events) so we never send hollow emails.
-// Each send gated by shouldSend(*, 'email', 'lifecycle').
+// Each send gated by the unified send-gate for ('email', 'lifecycle') — preference + lifecycle
+// consent + suppression in one decision (ADR-169), not the bare preference read it used to be.
 
 import { NextRequest, NextResponse } from 'next/server'
 import { sendWeeklyDigestEmail } from '@/lib/email'
-import { shouldSend } from '@/lib/notification-preferences'
+import { resolveSendGate } from '@/lib/comms/send-gate'
 import { assembleDigestForProfile, listProfileIdsForDigest } from '@/lib/digest'
 import { rejectUnauthorizedCron } from '@/lib/cron-auth'
 import { withCronHeartbeat } from '@/lib/observability/cron-heartbeat'
@@ -36,7 +37,10 @@ async function handler(req: NextRequest) {
         continue
       }
 
-      if (!(await shouldSend(profileId, 'email', 'lifecycle'))) {
+      // The ONE seam (ADR-169). The bare preference read it replaced skipped suppression and the
+      // lifecycle consent scope (meta-scan B9 H6), so a bounced or revoked address still got the
+      // digest. Strictly safer: email_lifecycle consent defaults to granted (lib/consent/scopes.ts).
+      if (!(await resolveSendGate(profileId, 'email', 'lifecycle', { email: payload.email })).allowed) {
         optOut++
         continue
       }

@@ -35,7 +35,7 @@ import { embedEvent } from '@/lib/events/embeddings'
 import { saveEventLocation, type AttendanceMode } from '@/lib/events/geocode'
 import { nominatimGeocoder } from '@/lib/events/geocode-provider'
 import { sendEventRsvpConfirmationEmail } from '@/lib/email'
-import { shouldSend } from '@/lib/notification-preferences'
+import { resolveSendGate } from '@/lib/comms/send-gate'
 import { sendSms } from '@/lib/comms/sms'
 import { recordContactInteraction } from '@/lib/crm/interactions'
 import { captureEventLead } from '@/lib/crm/lead-capture'
@@ -729,8 +729,6 @@ async function sendRsvpConfirmation(
   void sendRsvpConfirmationSms(eventId, profileId, status, ev.title, ev.starts_at, evTz)
 
   try {
-    if (!(await shouldSend(profileId, 'email', 'events'))) return
-
     const { data: profile } = await admin
       .from('profiles')
       .select('display_name, auth_user_id')
@@ -740,6 +738,11 @@ async function sendRsvpConfirmation(
 
     const { data: { user } } = await admin.auth.admin.getUserById(profile.auth_user_id)
     if (!user?.email) return
+
+    // The ONE seam (ADR-169), not the bare preference read it replaced, which skipped suppression
+    // (meta-scan B9 H6). Address first so suppression can see it. No subject on purpose: this is
+    // the receipt for the member's own RSVP, seconds after they made it, not the Circle talking.
+    if (!(await resolveSendGate(profileId, 'email', 'events', { email: user.email })).allowed) return
 
     let circleName: string | null = null
     if (ev.scope_type === 'circle' && ev.scope_id) {

@@ -6,9 +6,13 @@ import type {
   NotificationSettings,
   NotificationCategory,
 } from '@/lib/notification-preferences'
+import { isPreferenceWired, wiredCategories } from '@/lib/notifications/wired'
 import { saveNotificationPreferences } from './actions'
 import { isError } from '@/lib/action-result'
 
+// The full topic vocabulary, in display order. Which of these ROWS render, and which CELLS in a
+// row are switches, is decided by lib/notifications/wired.ts, not here — see the 🔴 note there.
+// A topic stays declared even while hidden so re-enabling it is a one-line flip in the map.
 const CATEGORIES: { key: NotificationCategory; label: string; description: string }[] = [
   {
     key:         'dispatches',
@@ -53,6 +57,17 @@ const CHANNELS = [
 // card below), so the grid shows the column as a placeholder rather than live switches —
 // the column exists, the card below is where texts are actually managed.
 const SMS_PLACEHOLDER_TITLE = 'Texts are managed in the Text messages card below.'
+
+// 🔴 A SWITCH THAT NOTHING READS IS A LIE THE MEMBER CANNOT DETECT. Ten cells of this grid
+// persisted and rendered as saved while no send site consulted them (the in-app column outside
+// Practice reminders, both Mentions/Replies rows, Practice email — meta-scan B9 D1/D6, the SCAN-528
+// shape). They now render as the same dash the SMS column uses: a placeholder is a visible absence,
+// a live-looking switch is a promise. A topic with no wired cell at all earns no row, because a row
+// of three dashes is noise rather than honesty. The stored columns are untouched, so a choice a
+// member already made survives until an emitter ships and flips the pair in
+// lib/notifications/wired.ts. Pinned by lib/notifications/wired.test.ts.
+const NOT_WIRED_TITLE = 'No switch for this yet.'
+const VISIBLE_CATEGORIES = wiredCategories(CATEGORIES.map((c) => c.key))
 
 export function NotificationsForm({ initial }: { initial: NotificationSettings }) {
   const [settings, setSettings] = useState(initial)
@@ -121,13 +136,21 @@ export function NotificationsForm({ initial }: { initial: NotificationSettings }
         </div>
 
         <div className="divide-y divide-border">
-          {CATEGORIES.map(({ key, label, description }) => (
+          {CATEGORIES.filter(({ key }) => VISIBLE_CATEGORIES.includes(key)).map(({ key, label, description }) => (
             <div key={key} className="grid grid-cols-[1fr_auto_auto_auto_auto_auto] gap-3 items-center px-4 py-3.5">
               <div className="min-w-0">
                 <p className="text-body-sm font-medium text-text">{label}</p>
                 <p className="text-meta text-muted mt-0.5">{description}</p>
               </div>
               {CHANNELS.map(({ key: channel, disabled }) => {
+                // Not wired: a dash, never a switch (see NOT_WIRED_TITLE above).
+                if (!isPreferenceWired(channel, key)) {
+                  return (
+                    <div key={channel} className="w-16 flex justify-center" title={NOT_WIRED_TITLE}>
+                      <Minus className="w-3.5 h-3.5 text-subtle" aria-hidden />
+                    </div>
+                  )
+                }
                 const prefKey = `${channel}_${key}` as keyof NotificationSettings
                 const checked = settings[prefKey] === true
                 return (

@@ -340,9 +340,14 @@ export async function startSpaceConversationAction(
   if (await isContactTopicMuted({ email, spaceId: gate.spaceId, topic: 'marketing' })) {
     return fail('This contact muted this kind of message, so it cannot go out.')
   }
-  // A member who has turned email off entirely (their platform-level preference) is also honored.
+  // A member who has turned email off entirely (their platform-level preference) is also honored,
+  // and so is a member who muted THIS Space in /settings: the Space is named as the subject, which
+  // is the only way the gate consults that mute (meta-scan B9 D2).
   if (counterpart.profileId) {
-    const gateResult = await resolveSendGate(counterpart.profileId, 'email', 'lifecycle', { email })
+    const gateResult = await resolveSendGate(counterpart.profileId, 'email', 'lifecycle', {
+      email,
+      subject: { subjectType: 'space', subjectId: gate.spaceId },
+    })
     if (!gateResult.allowed) return fail('This member has email turned off, so this message cannot go out.')
   }
 

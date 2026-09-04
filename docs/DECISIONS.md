@@ -35585,3 +35585,19 @@ A tool that rewrites a file it does not fully parse will eventually delete the p
 understand. `check-adoption.mjs` is immune to this by accident of format — its prose lives in a
 `_readme` array *inside* the JSON, so it round-trips through parse/stringify. That is the durable
 lesson: **comments-as-data survive a regenerator; comments-as-formatting do not.**
+
+
+## ADR-1204: ten notification switches had no reader, a mute muted nothing, and twelve sends bypassed the consent seam (2026-09-04)
+
+**Status.** Accepted. Continues the second-path finding of ADR-1198 (a column that did not exist) into the rules that live in code.
+
+**Context.** Ten of eighteen switches on `/settings/notifications` had no reader: five in-app categories (the router evaluated the gate and discarded the result — "no in-app outbox handler yet"), four Mentions/Replies cells for which no emitter exists, and `email_practice`. "Mute a Circle or Space" wrote 21 rows per mute and no send site ever constructed the `PreferenceSubject` those rows are keyed on. Twelve sends called `shouldSend` directly, skipping the ADR-169 seam that adds consent and subject mutes. A member was being shown controls that did nothing, which is worse than a missing control: they stop watching the thing they think is handled (SCAN-528's lesson).
+
+**Decision.**
+
+- **A member is never shown a control that does nothing.** `lib/notifications/wired.ts` declares which (category, channel) pairs a send site reads; the settings form and `/manage-emails` render from it; a tree-walking test fails both ways. The ten inert switches are hidden, not deleted — a future emitter re-enables its row by declaring the pair. No choke point existed for the 29 direct `notifications` inserts, so wiring the in-app gate at one point was not available; hiding is the honest option until it is.
+- **Every send goes through `resolveSendGate`.** `lib/comms/send-gate-seam.test.ts` pins that `shouldSend(` appears only in its definition and the seam, so a new bypass is a red test. Nine dispatch sites now pass a subject so a Space or Circle mute mutes.
+- **RSVP confirmations, guest-approval confirmations, cancellation notices and RSVP reminders are deliberately NOT subject-muted** — the member asked for them by RSVPing, and a mute swallowing a cancellation would strand someone at a venue. Whether a mute should mean "all of it" is an owner ruling (OWN-049).
+
+**Consequences.** SCAN-548 is `done` with a consequence probe; OWN-049 is `open`. `docs/ARCHITECTURE.md` names `resolveSendGate` as the seam. Two history docs still describe `shouldSend` as the idiom and stay as written.
+
