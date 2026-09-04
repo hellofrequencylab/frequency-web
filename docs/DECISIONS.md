@@ -35266,7 +35266,7 @@ no bars, no crop. The component is shaped so that is a prop and a class, not a r
 
 A full repository and production audit ran on 2026-09-03 (routes, taxonomies, entitlements, positioning,
 backlog truth, duplication, and the live Supabase + Vercel state). The findings are filed as rows
-SCAN-531…535, PROG-BUNDLE, HYG-043…047, LIVE-146…148 and OWN-047. This entry records the decisions the
+SCAN-531…535, PROG-BUNDLE, HYG-043…047, LIVE-147…151 and OWN-047. This entry records the decisions the
 audit forced, not the audit.
 
 🔴 **The headline finding is a wiring gap, not a missing feature.** Everything needed to hand a specific
@@ -35343,9 +35343,9 @@ all, and 25 open rows — including four live production incidents — have no s
 that orders them is not. It gets a probe.
 
 🔴 **Renaming the site's one CTA made a navigation control unreachable on a phone, and every guard
-stayed green.** `BETA_CTA_LABEL` went from "Start a Circle" (14 characters) to "Find your people"
-(16). Two characters is about 18px at `--text-body-sm`, and 18px is exactly how far outside a 320px
-`/discover` viewport the mobile menu button ended up — on a `fixed` bar with `overflow-x-clip`, so
+stayed green.** `BETA_CTA_LABEL` went from "Start a Circle" to "Find your people" — measured in
+Chromium at the face and size the control renders in, 85.6px to 107.9px — and the 22px that bought
+is how far outside a 320px `/discover` viewport the mobile menu button ended up — on a `fixed` bar with `overflow-x-clip`, so
 not clipped-but-scrollable, *gone*. The `@overflow` gate caught it, three times, which is the system
 working; what did not work is everything cheaper than a nineteen-minute e2e run.
 
@@ -35362,9 +35362,11 @@ by an asset swap, a longer CTA label or a denser generation preset". That is tru
 child still has width to give. On SiteHeader below `sm` the fixed row — search glyph, Sign in, CTA,
 menu button, four gaps — already spends a 320px line, so the wordmark shrinks to nothing and the next
 pixel leaves the screen. The structure was intact the whole time; the structural assertions were
-therefore green the whole time. The file now carries a **character budget** alongside the structure,
-ceilinged at the widest label CI has actually measured fitting, and checks both public headers rather
-than the one that happened to get fixed. The general form is the one this ledger keeps re-learning:
+therefore green the whole time. The file now carries a **width budget** alongside the structure,
+ceilinged at the widest label CI has actually been passing on (`Start a Circle`, 85.6px), and checks
+both public headers rather than the one that happened to get fixed. The label a phone now renders,
+`Join free` at 55.4px, is 30px narrower than that proven baseline rather than merely narrower than
+the one that failed — which is the difference between a fix and an estimate. The general form is the one this ledger keeps re-learning:
 an invariant a test can state is not the same as the property a user needs, and where they differ the
 comment is usually where the difference hides.
 

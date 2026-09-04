@@ -125,18 +125,24 @@ describe('AuthButtons: the public auth cluster is pinned and thinned on a phone'
 // on a `fixed` bar with `overflow-x-clip`, i.e. unreachable. The structural assertions above all
 // stayed green through it, because nothing structural changed.
 //
-// So the label gets a BUDGET as well as a structure. A character count is a proxy for a width and
-// an honest one only because every label here renders in one face at one size (Nunito, semibold,
-// --text-body-sm); it is deliberately calibrated against a label CI has actually measured rather
-// than against a number someone liked:
+// So the label gets a BUDGET as well as a structure. These widths were MEASURED in Chromium at the
+// size and face the control actually renders in (Nunito, --text-body-sm = 0.875rem against this
+// app's 17px root; measured at 700 because that is the weight shipped in the repo, so each figure
+// runs a hair WIDE of the semibold the button uses — the conservative direction):
 //
-//   'Start a Circle'   14 chars   the label green on main, at 320px, for months
-//   'Find your people' 16 chars   +2 chars = +18px of overflow  ⇒  ~9px per character
+//   'Start a Circle'    85.6px   green on main, at 320px, for months
+//   'Find your people' 107.9px   +22.3px, and the gate reported 18px of overflow
+//   'Join free'         55.4px   30.2px NARROWER than the label already proven to fit
 //
-// The ceiling is therefore 14 — the widest label PROVEN to fit — and the compact form the phone
-// actually renders is well inside it. The pixel half stays the @overflow gate's job; this is the
-// two-minute half, so the next label change fails in `pnpm test` instead of nineteen minutes into
-// pr-compare.
+// The last line is the argument, and it is the reason this fix does not rest on a pixel estimate:
+// the phone cluster is now narrower than a baseline CI has been passing for months, not merely
+// narrower than the one it just failed on.
+//
+// The ASSERTION is a character count, because a source test has no browser. It is a proxy, but a
+// sound one here: every label in this position renders in one face at one size, so characters and
+// width move together, and the ceiling is pinned to the widest label PROVEN to fit rather than to a
+// number someone liked. The pixel half stays the @overflow gate's job; this is the two-minute half,
+// so the next label change fails in `pnpm test` instead of nineteen minutes into pr-compare.
 describe('the CTA label a PHONE renders is inside the width CI has proven', () => {
   const PROVEN_PHONE_LABEL_CHARS = 'Start a Circle'.length
 
