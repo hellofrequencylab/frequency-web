@@ -111,19 +111,35 @@ export interface NearbyMember {
 }
 
 /** Members near a point, ranked by fuzzed-cell distance, each with only a coarse band
- *  label — never coordinates or metres (members_near RPC, ADR-186). */
+ *  label — never coordinates or metres (members_near RPC, ADR-186).
+ *
+ *  `viewerProfileId` is WHO IS LOOKING. This runs on the service-role client, under which the
+ *  RPC's own `auth.uid()` is null, so without it the function could neither exclude the caller
+ *  from their own results nor resolve the 'My connections' discoverability tier — which is why
+ *  that tier was silently identical to 'No one' until 20270344000100 (ADR-TBD). Pass it whenever
+ *  a signed-in member is behind the call; `null` fails the 'connections' tier closed.
+ *
+ *  `radiusM` is how far the VIEWER looks. It is NOT the viewer's own discovery_radius_m, which is
+ *  the "be findable within N" privacy slider and is applied by the RPC to each TARGET's row. */
 export async function membersNear(
   lat: number,
   lng: number,
   radiusM = 40000,
   limit = 60,
+  viewerProfileId: string | null = null,
 ): Promise<NearbyMember[]> {
   const db = createAdminClient()
-  const { data, error } = await db.rpc('members_near', {
+  // `_viewer` was added by 20270344000100; lib/database.types.ts is regenerated, never hand-edited,
+  // so the call is typed structurally here until the next regeneration (repo idiom:
+  // app/onboarding/actions.ts).
+  const { data, error } = await (db as unknown as {
+    rpc: (fn: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: unknown }>
+  }).rpc('members_near', {
     _lat: lat,
     _lng: lng,
     _radius_m: Math.round(radiusM),
     _limit: limit,
+    _viewer: viewerProfileId,
   })
   if (error || !Array.isArray(data)) return []
   return (data as Record<string, unknown>[]).map((r) => ({
