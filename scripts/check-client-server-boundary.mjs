@@ -53,8 +53,19 @@
 //     into a client component is not in its field of view.
 //   · Whether the service-role KEY is set, or whether any of this code runs at all.
 //
-// Exit codes: 0 clean · 1 a client entry point reaches server-only ground · 79 PROBE_INDETERMINATE
-// (the admin client is not where this gate expects it, so "no findings" would be a lie).
+// Exit codes: 0 clean · 1 a client entry point reaches server-only ground, OR the walk came back
+// too small to have looked (the floors below) · 79 PROBE_INDETERMINATE (the admin client is not
+// where this gate expects it, so "no findings" would be a lie).
+//
+// ── 2026-09-04: this gate could pass over nothing ───────────────────────────────────────────
+// The ✓ line below printed `${clientCount} client entry points` with no floor on either number.
+// A wrong cwd, a renamed root, or a resolver that stopped matching `@/` would each have printed
+// `✓ 0 client entry points, none reach lib/supabase/admin.ts` and exited 0 — a ✓ over nothing,
+// which is the one thing a gate must never print (ADR-962). The floors are set at ~70% of the
+// reading taken that day (834 client entry points, 3437 modules walked), so a genuine shrink
+// has room and a blind walk does not. scripts/check-client-server-boundary.test.ts drives the
+// leak arm, the `server-only` arm and both floors against fixtures that must FAIL, and asserts
+// the floors still sit below the live reading.
 //
 // Usage: node scripts/check-client-server-boundary.mjs [--probe]
 
@@ -63,6 +74,10 @@ import { join, dirname, normalize } from 'node:path'
 
 const ADMIN = 'lib/supabase/admin.ts'
 const ROOTS = ['app', 'components', 'lib', 'hooks']
+/** Non-triviality floors (ADR-962). ~70% of the 2026-09-04 reading: 834 client entry points and
+ *  3437 modules walked. Lower them only beside a real deletion, and name it — never to go green. */
+const MIN_CLIENT_ENTRYPOINTS = 580
+const MIN_MODULES = 2400
 const QUIET = process.argv.includes('--probe')
 
 const say = (...a) => { if (!QUIET) console.log(...a) }
@@ -193,6 +208,17 @@ if (lazyHolders.length) {
 }
 
 const clientCount = files.filter(isClient).length
+
+// The floors run AFTER the leak report on purpose: a named path is the more actionable failure,
+// and a fixture small enough to trip the floor must still be able to prove the leak arm fires.
+if (clientCount < MIN_CLIENT_ENTRYPOINTS || files.length < MIN_MODULES) {
+  console.error(`✗ client/server boundary: walked only ${files.length} module(s) and found ${clientCount} client entry point(s),`)
+  console.error(`    expected at least ${MIN_MODULES} and ${MIN_CLIENT_ENTRYPOINTS}. A ✓ over nothing is the one thing a gate must`)
+  console.error(`    never print (ADR-962): either the scan is broken (wrong cwd, a moved root, a resolver that stopped`)
+  console.error(`    matching) or the tree really shrank and the floors need updating beside that deletion.`)
+  process.exit(1)
+}
+
 say(`✓ client/server boundary: ${clientCount} client entry points, none reach ${ADMIN}.`)
 say(`  (${files.length} modules walked across ${ROOTS.join(', ')}.)`)
 process.exit(0)
