@@ -2,17 +2,17 @@ import { describe, it, expect } from 'vitest'
 import { readFileSync, readdirSync } from 'node:fs'
 import path from 'node:path'
 import {
-
-// The page source interpolates the shared constant; these pins look for that exact text. Built
-// from two halves so this file never contains `${` inside a plain string (CodeQL
-// js/template-syntax-in-string-literal reads that as a forgotten backtick).
-const INTERP = '$' + '{DIRECTORY_VISIBILITY_COLUMNS}'
   DIRECTORY_VISIBILITY_COLUMNS,
   acceptedConnectionIds,
   isListableInDirectory,
   isSurfaceableNearby,
   type DirectoryTarget,
 } from './directory-visibility'
+
+// The page source interpolates the shared constant; these pins look for that exact text. Built
+// from two halves so this file never contains `${` inside a plain string (CodeQL
+// js/template-syntax-in-string-literal reads that as a forgotten backtick).
+const INTERP = '$' + '{DIRECTORY_VISIBILITY_COLUMNS}'
 
 // The directory-visibility predicate (ADR-186 controls, ADR-TBD) in two halves:
 //
