@@ -3,6 +3,10 @@ import { Search, MapPin, Compass } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { sanitizeOrTerm } from '@/lib/search-sanitize'
 import { createClient } from '@/lib/supabase/server'
+import {
+  DIRECTORY_VISIBILITY_COLUMNS,
+  isListableInDirectory,
+} from '@/lib/connections/directory-visibility'
 import { IndexTemplate } from '@/components/templates'
 import { UnderlineTabs } from '@/components/ui/underline-tabs'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -151,15 +155,23 @@ export default async function SearchPage({
       if (safe.length < 2) return empty
 
       if (tab === 'people') {
+        // 🔴 A service-role read on a member-facing page (see ADR-274 above for why: the `?q=`
+        // sanitiser exists BECAUSE this bypasses RLS). Bypassing RLS also bypassed every privacy
+        // control: a member who switched "Show me in the Community directory" off, or turned Ghost
+        // mode on, was still findable here by name and handle, because the only enforcer of those
+        // columns is the proximity RPC and this is a name search. The four privacy columns are
+        // selected and each row goes through the shared /network predicate (ADR-TBD). The gate is
+        // applied BEFORE the truncation check so a hidden row can never be the "one more" that
+        // advertises results the reader will not be shown.
         const { data } = await admin
           .from('profiles')
-          .select('id, display_name, handle, avatar_url, community_role, is_demo')
+          .select(`id, display_name, handle, avatar_url, community_role, is_demo, ${DIRECTORY_VISIBILITY_COLUMNS}`)
           .or(`display_name.ilike.%${safe}%,handle.ilike.%${safe}%`)
           .eq('is_active', true)
           .order('display_name')
           // +1: the extra row is never rendered, it only proves there are more.
           .limit(PEOPLE_RESULTS + 1)
-        const rows = (data ?? []) as PersonRow[]
+        const rows = ((data ?? []) as PersonRow[]).filter(isListableInDirectory)
         return { ...empty, people: rows.slice(0, PEOPLE_RESULTS), truncated: rows.length > PEOPLE_RESULTS }
       }
 

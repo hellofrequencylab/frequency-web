@@ -25,10 +25,13 @@ import { searchVisibleLeads, type LeadHit } from '@/lib/crm/people-search'
 import { connectionsOwnerId } from '@/lib/connections/access'
 import {
   membersNear,
-  getMyConnectionPrefs,
   getConnectionSettings,
 } from '@/lib/connections/connection-settings'
 import type { ProximityBand } from '@/lib/connections/location'
+import {
+  DIRECTORY_VISIBILITY_COLUMNS,
+  isListableInDirectory,
+} from '@/lib/connections/directory-visibility'
 import { resolvePageContent, pageContentMetadata } from '@/lib/page-content'
 import { getInitials } from '@/lib/utils'
 import { ConnectionsPulse } from '@/components/connections/connections-pulse'
@@ -115,23 +118,34 @@ export default async function CommunityPage({
 
   // Kick the independent reads off immediately and await each at its point of use, so the
   // round-trips OVERLAP without reordering any downstream logic. All five are independent of
-  // one another — the page header, the viewer profile (name + proximity home), the connection
-  // settings/prefs pair, the steward id, and the demo-gated 500-row directory + circle vocab.
+  // one another — the page header, the viewer profile (id + name + proximity home), the
+  // connection settings, the steward id, and the demo-gated 500-row directory + circle vocab.
   // In particular the heavy directory fetch is now in flight DURING the membersNear proximity
   // RPC instead of waiting behind it. None of this changes what any read returns, so the
   // facet/filter/nearby-first ordering tail below is byte-for-byte unchanged.
   const contentPromise = resolvePageContent('/network', CONTENT_FALLBACK)
   const viewerPromise = admin
     .from('profiles')
-    .select('display_name, home_lat, home_lng')
+    .select('id, display_name, home_lat, home_lng')
     .eq('auth_user_id', user.id)
     .maybeSingle()
-  const settingsPromise = Promise.all([getConnectionSettings(), getMyConnectionPrefs()])
+  // Only the platform settings are needed here. The viewer's own prefs used to ride along so
+  // their discovery_radius_m could be passed as the search radius; that was the label inversion
+  // described at the membersNear call below, so the read is gone with the coupling.
+  const settingsPromise = getConnectionSettings()
   const stewardPromise = connectionsOwnerId()
   const directoryPromise = (async () => {
+    // 🔴 This is a SERVICE-ROLE read on a member-facing page. It was written that way for the
+    // nexus_regions embed and the 500-row cap, and it is why "Show me in the Community directory"
+    // and Ghost mode were decorative here: the only enforcer of those columns is the members_near
+    // RPC, which this page consults for BANDING, not for the listing, and a service-role read
+    // answers to no policy. The RPC cannot serve the listing (it is proximity-scoped and needs a
+    // location), so the four privacy columns are selected here and every row is passed through
+    // the shared predicate below before anything renders or is counted (ADR-TBD). Selecting them
+    // by the shared constant means a future edit cannot drop one without dropping the import.
     let query = admin
       .from('profiles')
-      .select('id, display_name, handle, avatar_url, community_role, is_system, last_seen_at, is_demo, entity_types, nexus_regions!nexus_region_id ( name )')
+      .select(`id, display_name, handle, avatar_url, community_role, is_system, last_seen_at, is_demo, entity_types, ${DIRECTORY_VISIBILITY_COLUMNS}, nexus_regions!nexus_region_id ( name )`)
       .eq('is_active', true)
       // Vera (is_system) is FULLY VISIBLE here by owner decision (ADR-231 update):
       // she gets a member card like anyone else; her chip reads Moderator.
@@ -204,7 +218,7 @@ export default async function CommunityPage({
   // coarse band ("Nearby", "Your area"). The members_near RPC returns a band only —
   // never a distance — so we never invent one. Resolved here; applied to `filtered`
   // (post-filter) below, so search / Online-now / scope all keep working.
-  const [connectionSettings, myPrefs] = await settingsPromise
+  const connectionSettings = await settingsPromise
   let proxLat: number | null = null
   let proxLng: number | null = null
   if (nearParam) {
@@ -225,8 +239,13 @@ export default async function CommunityPage({
   const bandByProfileId = new Map<string, ProximityBand>()
   const nearbyOrder: string[] = []
   if (connectionSettings.proximityEnabled && hasViewerLocation) {
-    const radius = myPrefs?.discoveryRadiusM ?? undefined
-    const near = await membersNear(proxLat!, proxLng!, radius)
+    // ⚠️ NOT the viewer's discoveryRadiusM. That is the viewer's OWN "be findable within N" slider
+    // (a privacy control on THEM, ADR-186 §3), and passing it here as the search radius made the
+    // slider mean the opposite of its label: narrowing it shrank this member's Nearby list and
+    // changed nothing for the strangers it promised to hide from. Since 20270344000100 the RPC
+    // applies each TARGET's radius itself; this call uses the default viewer-side bound. The
+    // viewer's id goes in so the RPC can exclude them and resolve their 'My connections' tier.
+    const near = await membersNear(proxLat!, proxLng!, undefined, undefined, viewer?.id ?? null)
     for (const m of near) {
       if (!bandByProfileId.has(m.profileId)) {
         bandByProfileId.set(m.profileId, m.band)
@@ -273,7 +292,12 @@ export default async function CommunityPage({
     }
   }
 
-  const typedProfiles = (profiles ?? []) as unknown as Profile[]
+  // The privacy gate (ADR-TBD): a member who opted out of the directory, or is ghosting, is not
+  // a member of this page — not in the cards, not in "Online now", not in the counts. Applied
+  // BEFORE every downstream use so no lane can re-admit them. There is deliberately no carve-out
+  // for the viewer's own row: they are listed on the same terms as everyone else, so opting out
+  // is visibly confirmed by their own card disappearing.
+  const typedProfiles = ((profiles ?? []) as unknown as Profile[]).filter(isListableInDirectory)
 
   // Apply the join-resolved + client-side filters.
   let filtered = typedProfiles
