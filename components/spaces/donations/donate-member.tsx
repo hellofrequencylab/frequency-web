@@ -5,7 +5,7 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { AdminSetupPrompt } from '@/components/spaces/admin-setup-prompt'
 import { DonateCtaTracker } from '@/components/spaces/donations/donate-cta-tracker'
 import { PriceInput } from '@/components/commerce/price-input'
-import type { Price } from '@/lib/commerce/types'
+import { formatPriceCents, type Price } from '@/lib/commerce/types'
 
 // MEMBER DONATE SURFACE (ENTITY-SPACES-SYSTEM §2.6 "Donate", MASTER-PLAN ADMIN-04). The self-fetching
 // server half of the Organization "Donate" tab: it loads this Space's single active donation ask
@@ -21,14 +21,10 @@ import type { Price } from '@/lib/commerce/types'
 /** Cents to a plain dollar chip label, e.g. 2500 -> "$25", 2550 -> "$25.50". Whole dollars drop the
  *  cents. USD only in v1 (a currency column is a later, additive expansion). DISPLAY ONLY. */
 export function formatAmount(cents: number): string {
-  const dollars = cents / 100
-  const whole = Number.isInteger(dollars)
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: whole ? 0 : 2,
-    maximumFractionDigits: 2,
-  }).format(dollars)
+  // The ONE house price format (lib/commerce/types.ts); this was a verbatim copy of it. ⚠️ Nothing
+  // calls this export today (B5 sweep, 2026-09-04): the chips render through PriceInput, which
+  // formats for itself. Kept only so the deletion is a separate, visible decision.
+  return formatPriceCents(cents)
 }
 
 export async function DonateMember({

@@ -5,7 +5,7 @@ import { Loader2, Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { isError } from '@/lib/action-result'
 import { isSafeSlug } from '@/lib/theme/validate'
-import { cn } from '@/lib/utils'
+import { cn, slugify as slugifyShared } from '@/lib/utils'
 import { createSpace } from '@/lib/spaces/provision'
 import {
   Field,
@@ -33,14 +33,12 @@ export interface SpaceModeChoice {
   hint: string
 }
 
-/** Derive a slug suggestion from a name: lowercase, spaces -> hyphens, drop unsafe chars. */
+/** Derive a slug suggestion from a name: lowercase, spaces -> hyphens, drop unsafe chars.
+ *  The shared rule (lib/utils.ts slugify) with the same 40 cap + re-strip the server applies when it
+ *  provisions the Space (lib/spaces/provision.ts), so what the form suggests is what the server
+ *  would derive; it used to carry its own copy that folded no accents and could end in "-". */
 function slugify(name: string): string {
-  return name
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 40)
+  return slugifyShared(name).slice(0, 40).replace(/-+$/g, '')
 }
 
 export function CreateSpaceForm({

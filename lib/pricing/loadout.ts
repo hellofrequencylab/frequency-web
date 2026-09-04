@@ -18,6 +18,7 @@
 import type { ResolvedCatalogItem } from './catalog-config'
 import { ADDON_KEYS, type AddonKey } from './plans'
 import { asCatalogItemKey, type BillingInterval, type CatalogItemKey } from '@/lib/billing/pricing-keys'
+import { formatPriceCents } from '@/lib/commerce/types'
 
 /** A line in the loadout breakdown: one catalog item at the chosen interval + quantity. */
 export interface LoadoutLine {
@@ -124,17 +125,12 @@ export function computeLoadoutTotal(
 }
 
 /** Cents -> a plain price label, e.g. 1900 -> "$19", 1950 -> "$19.50". Whole dollars drop the cents.
- *  USD only. PURE (mirrors lib/pricing/display.ts formatCents, duplicated here to keep this module
- *  framework + dependency free for the client picker). */
+ *  USD only. PURE (the same rule as lib/pricing/display.ts formatCents; it was duplicated here to keep
+ *  this module framework + dependency free for the client picker, and now delegates to the ONE
+ *  canonical formatter in lib/commerce/types.ts, which has no imports at all, so the module stays
+ *  exactly as dependency free as before). */
 export function formatLoadoutCents(cents: number): string {
-  const dollars = cents / 100
-  const whole = Number.isInteger(dollars)
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: whole ? 0 : 2,
-    maximumFractionDigits: 2,
-  }).format(dollars)
+  return formatPriceCents(cents)
 }
 
 /** The per-interval suffix for a price label ("/mo" or "/yr"). PURE. */

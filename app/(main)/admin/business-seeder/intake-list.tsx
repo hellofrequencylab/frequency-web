@@ -6,6 +6,7 @@ import { Building2 } from 'lucide-react'
 import { EntityCard } from '@/components/cards/entity-card'
 import { EmptyState } from '@/components/ui/empty-state'
 import { StatusChip } from '@/components/admin/status'
+import { relativeTime } from '@/lib/utils'
 import type { IntakeStatus } from '@/lib/importer/intake'
 import type { IntakeListItem } from './actions'
 
@@ -19,17 +20,6 @@ export const STATUS_META: Record<
   review: { glyph: '⚠️', tone: 'warning', label: 'In review' },
   applied: { glyph: '✅', tone: 'success', label: 'Applied' },
   failed: { glyph: '🔴', tone: 'danger', label: 'Failed' },
-}
-
-function timeAgo(iso: string): string {
-  const then = new Date(iso).getTime()
-  if (!Number.isFinite(then)) return ''
-  const mins = Math.round((Date.now() - then) / 60000)
-  if (mins < 1) return 'just now'
-  if (mins < 60) return `${mins}m ago`
-  const hrs = Math.round(mins / 60)
-  if (hrs < 24) return `${hrs}h ago`
-  return `${Math.round(hrs / 24)}d ago`
 }
 
 export function IntakeList({ imports }: { imports: IntakeListItem[] }) {
@@ -65,7 +55,7 @@ export function IntakeList({ imports }: { imports: IntakeListItem[] }) {
                 <StatusChip tone={meta.tone} size="sm">
                   {meta.glyph} {meta.label}
                 </StatusChip>
-                <span className="text-2xs text-muted">{timeAgo(it.updatedAt)}</span>
+                <span className="text-2xs text-muted">{relativeTime(it.updatedAt)}</span>
               </>
             }
           />

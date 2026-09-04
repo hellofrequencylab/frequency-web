@@ -117,7 +117,17 @@ export async function getFinanceSummary(recentLimit = 25): Promise<FinanceSummar
   }
 }
 
-/** Cents → a localized currency string, e.g. 1234 → "$12.34". */
+/** Cents → a localized currency string, e.g. 1234 → "$12.34".
+ *
+ *  ⚠️ SAME NAME, DIFFERENT RULE from lib/pricing/display.ts formatCents (and the house formatter it
+ *  delegates to, lib/commerce/types.ts formatPriceCents): THIS one always shows two decimals
+ *  (2500 → "$25.00"), the price surfaces drop the cents on whole dollars (2500 → "$25"). That is
+ *  deliberate here and not an accident of duplication: the only caller is the operator finance
+ *  ledger (components/admin/insights/financials-tab.tsx), a tabular-nums column of recorded
+ *  transactions, where "$25.00" beside "$12.34" is the accounting convention and a ragged "$25"
+ *  would misalign the column. Do not re-point it at formatPriceCents without changing what that
+ *  ledger renders; lib/commerce/format-cents-parity.test.ts pins the difference so it stays a
+ *  decision rather than a drift. */
 export function formatCents(cents: number, currency = 'usd'): string {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',

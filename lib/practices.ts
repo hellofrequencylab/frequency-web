@@ -20,6 +20,7 @@
 // the compiler, so the dozen `import type` client callers are unaffected.
 import 'server-only'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { slugify as slugifyShared } from '@/lib/utils'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { recordEngagementEvent } from '@/lib/engagement/events'
 import { track } from '@/lib/analytics/track'
@@ -1680,8 +1681,10 @@ export async function updatePractice(id: string, patch: PracticeEdit): Promise<P
   return updated
 }
 
-const slugify = (s: string): string =>
-  s.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40)
+// The shared rule (lib/utils.ts), capped at 40 and re-stripped after the cut: a 40-char cut that
+// landed on a word boundary used to leave a trailing "-", and uniquePracticeSlug then minted
+// "foo--2". Same cap + re-strip as lib/spaces/provision.ts uses for a Space.
+const slugify = (s: string): string => slugifyShared(s).slice(0, 40).replace(/-+$/g, '')
 
 /** A unique practice slug from a title: the slugified base, or base-2/-3… if taken.
  *  (slug chars are a-z0-9- only, so the ilike prefix is injection-safe.) */

@@ -21,6 +21,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { isSafeSlug } from '@/lib/theme/validate'
+import { slugify } from '@/lib/utils'
 import { isValidAccent } from '@/lib/spaces/accent'
 import type { SpaceProfileData, SpaceOffering, SpaceSocialLink } from '@/lib/spaces/profile-data'
 import type { EntityLayout, RowDef } from '@/lib/entity-blocks/layout'
@@ -85,16 +86,13 @@ export function prosePublishes(policy: CommercialPolicy, path: string): boolean 
 const SLUG_MAX = 40
 
 /** Derive a safe slug from a business name: lowercase, hyphenate, strip to [a-z0-9-], bound.
- *  Pure + total; returns '' when nothing usable survives (the caller then fails cleanly). */
+ *  Pure + total; returns '' when nothing usable survives (the caller then fails cleanly).
+ *  The rule itself is lib/utils.ts slugify (one rule for imported and hand-made entities; this
+ *  used to carry its own NFKD variant that left "naïve" as "nai-ve"). Only the cap and the
+ *  re-strip of a hyphen the cut can leave behind live here. lib/utils.ts imports nothing, so this
+ *  layer stays as pure as its header promises. */
 export function slugifyName(name: string): string {
-  const s = name
-    .toLowerCase()
-    .normalize('NFKD')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, SLUG_MAX)
-    .replace(/-+$/g, '')
-  return s
+  return slugify(name).slice(0, SLUG_MAX).replace(/-+$/g, '')
 }
 
 /** The slug to seed: an explicit valid slug wins, else derive from the name. Returns '' when

@@ -18,21 +18,15 @@ import Link from 'next/link'
 import { MessageCircle, Check, Tag } from 'lucide-react'
 import { Dialog } from '@/components/ui/dialog'
 import { submitListingContact, type OfferTargetKind } from '@/lib/marketplace/listing-offers'
+import { formatPriceCents } from '@/lib/commerce/types'
 import { openDockThread } from '@/lib/messages/dock-open'
 import { cn } from '@/lib/utils'
 import { Input, Textarea } from '@/components/ui/field'
 
-/** Cents to a plain USD label, e.g. 29900 -> "$299", 29950 -> "$299.50". Whole dollars drop the cents. */
-function formatCents(cents: number): string {
-  const dollars = cents / 100
-  const whole = Number.isInteger(dollars)
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: whole ? 0 : 2,
-    maximumFractionDigits: 2,
-  }).format(dollars)
-}
+// Cents to a plain USD label, e.g. 29900 -> "$299", 29950 -> "$299.50". Whole dollars drop the cents.
+// Rendered through the ONE house formatter (lib/commerce/types.ts formatPriceCents, imported above),
+// the same one the server action uses for the offer line, so the buyer and the seller read the same
+// number; a private copy of it used to sit here.
 
 /** Parse a free-typed dollar amount ("$1,299.50", "299") to whole cents, or null when blank/invalid. */
 function dollarsToCents(raw: string): number | null {
@@ -210,7 +204,7 @@ export function ListingContactDialog({
                     />
                   </div>
                   {highestOfferCents != null && (
-                    <p className="text-2xs text-muted">Highest offer: {formatCents(highestOfferCents)}</p>
+                    <p className="text-2xs text-muted">Highest offer: {formatPriceCents(highestOfferCents)}</p>
                   )}
                 </div>
               )}
