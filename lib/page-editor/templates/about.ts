@@ -46,7 +46,7 @@ export const data: Data = {
           { value: '1,000', label: 'Strangers at sunrise' },
           { value: '0%', label: 'On your own bookings' },
         ],
-        ctaPrimaryLabel: 'Find your way in',
+        ctaPrimaryLabel: BETA_CTA_LABEL,
         ctaPrimaryHref: '/start',
         ctaSecondaryLabel: '',
         ctaSecondaryHref: '',

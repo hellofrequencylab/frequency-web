@@ -16,6 +16,7 @@
 // splits (Collective). Everything else is a meter, and the caps are never typed here, they live in
 // lib/pricing/feature-meters.ts (ADR-837) and the copy stays qualitative.
 
+import { OPERATOR_CTA_LABEL } from '@/lib/site'
 import type { SpaceType } from '@/lib/spaces/types'
 import { spaceCreatePath, type FunnelDestination } from '@/lib/funnels/definitions'
 import { priceStrings } from '@/lib/pricing/pricing-page'
@@ -141,7 +142,11 @@ export interface FunnelConfig {
 // ── SHARED constants (identical on every funnel; do not re-author per niche) ───────────────────────
 
 /** The one primary CTA label everywhere (Hero, Pricing, FinalCTA). */
-export const FUNNEL_CTA_LABEL = 'Start free'
+// DERIVED, not declared (ADR-1196). This was a third independent CTA constant sitting beside
+// BETA_CTA_LABEL and the home page's own override — the five-labels-for-one-entrance problem, one
+// third of it. The operator doors and the operator marketing pages now say the same word because
+// they read the same constant.
+export const FUNNEL_CTA_LABEL: string = OPERATOR_CTA_LABEL
 /** The one ghost secondary, Hero only, scrolls to How it works. */
 export const FUNNEL_SECONDARY_LABEL = "See what's inside"
 
@@ -176,6 +181,10 @@ export const MISSION_COPY = {
 export const FUNNEL_FOOTER = {
   tagline: 'The community collective.',
   links: [
+    // A door has to lead somewhere other than out. Before this the footer carried only legal
+    // boilerplate and the header carried only the logo, so an operator who wanted the numbers
+    // before deciding had no route to them from the page selling them (ADR-1196, LIVE-147).
+    { label: 'Pricing', href: '/pricing' },
     { label: 'Privacy', href: '/privacy' },
     { label: 'Terms', href: '/terms' },
     { label: 'Contact', href: 'mailto:hello@frequencylocal.com' },

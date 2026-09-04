@@ -46,13 +46,13 @@
             "LIVE-124",
             "LIVE-142",
             "LIVE-144",
-            "LIVE-147",
             "LIVE-148",
             "LIVE-149",
             "HYG-042",
             "HYG-043",
             "HYG-044",
-            "HYG-046"
+            "HYG-046",
+            "SCAN-538"
           ]
         },
         {
@@ -5975,31 +5975,31 @@
     {
       "id": "LIVE-147",
       "title": "The traffic half of the site and the revenue half never link to each other",
-      "status": "open",
+      "status": "done",
       "lane": "live",
       "size": "S",
       "source": {
         "file": "docs/DECISIONS.md",
         "ref": "ADR-1196, the 2026-09-03 repair and rework audit"
       },
-      "detail": "Every surviving SEO guide — /loneliness, /friendship-as-an-adult, /how-to-be-more-social, /calm-down-fast, /how-to-build-community, /how-to-start-a-circle — routes to /discover or /the-community. Not one links to /pricing or to any /for/* door. The five /for/* funnel doors are chrome-free and link nowhere else at all.\n\nSo the pages that earn search traffic and the pages that take money are two disconnected websites sharing a domain. With Vercel Web Analytics disabled (OWN-047) there is also no way to observe that happening.\n\nAdd the onward path in both directions: a guide offers the operator door where it is genuinely relevant, and each funnel door carries a route back into the marketing site rather than dead-ending.",
+      "detail": "Every surviving SEO guide — /loneliness, /friendship-as-an-adult, /how-to-be-more-social, /calm-down-fast, /how-to-build-community, /how-to-start-a-circle — routes to /discover or /the-community. Not one links to /pricing or to any /for/* door. The five /for/* funnel doors are chrome-free and link nowhere else at all.\n\nSo the pages that earn search traffic and the pages that take money are two disconnected websites sharing a domain. With Vercel Web Analytics disabled (OWN-047) there is also no way to observe that happening.\n\nAdd the onward path in both directions: a guide offers the operator door where it is genuinely relevant, and each funnel door carries a route back into the marketing site rather than dead-ending.\n\n── FIXED 2026-09-04, AND ONE HALF OF THE ROW WAS OVERSTATED. The traffic-to-revenue link is real and is now made: /tools-for-community-builders pointed its 'Get the toolkit' primary at /spaces, a generic marketing page, and now points at /for/community-builders, the operator door built for that reader.\n\n⚠️ 'The funnel doors link nowhere else at all' was too strong. Measured: the door's header logo links to /, and its footer renders a link list. What the list held was Privacy, Terms and a mailto — legal boilerplate, so the substance held (an operator wanting the numbers before deciding had no route to them from the page selling them) but the sentence did not. Pricing is added to that list. A finding stated harder than the measurement supports is the thing this audit keeps catching in other people's comments.",
       "verify": {
         "kind": "cmd",
-        "cmd": "node -e \"const fs=require('fs');const F='components/marketing/funnel/niche-funnel.tsx';if(!fs.existsSync(F))process.exit(79);const f=fs.readFileSync(F,'utf8');const t=fs.readFileSync('lib/page-editor/templates/tools-for-community-builders.ts','utf8');process.exit(/href=\\\"\\\\//.test(f)&&/\\\\/for\\\\//.test(t)?0:1)\"",
-        "note": "Passes when the funnel door carries at least one outbound route and at least one marketing template links into /for/."
+        "cmd": "node -e \"const fs=require('fs');const G='lib/page-editor/templates/tools-for-community-builders.ts',F='lib/marketing/funnel-config.ts';if(!fs.existsSync(G)||!fs.existsSync(F))process.exit(79);const g=fs.readFileSync(G,'utf8'),f=fs.readFileSync(F,'utf8');const guideOut=/href: '\\/for\\//.test(g);const doorBack=/\\{ label: 'Pricing', href: '\\/pricing' \\}/.test(f);process.exit(guideOut&&doorBack?0:1)\"",
+        "note": "Passes when a marketing guide routes into a /for/ operator door AND the operator door offers a route to /pricing."
       }
     },
     {
       "id": "LIVE-148",
       "title": "The front door’s copy lives in an unversioned database row",
       "status": "open",
-      "lane": "live",
+      "lane": "owner",
       "size": "M",
       "source": {
         "file": "docs/DECISIONS.md",
         "ref": "ADR-1196, the 2026-09-03 repair and rework audit"
       },
-      "detail": "app/page.tsx renders a published page-editor document. Its own comment is explicit: \"lib/page-editor/templates/home.ts IS UNREACHABLE BY DECISION\" and must not be reconciled against the published page, by an owner ruling of 2026-08-24.\n\nThe consequence is that the single most important piece of copy on the site — last written 2026-07-13 — is a database row that no test, no diff, no review and none of the 48 CI gates can see. The canon guards (check:vocab, check:canon) scan the repo, so the front door is the one member-facing surface exempt from the naming and voice canons. Every conclusion anyone draws about `/` by reading this repository is a conclusion about a fallback nobody renders.\n\nThe ruling was reasonable — editing the home page in the editor is the right authoring experience. What is missing is a way for the REVIEW to happen: either publish the document back into the repo as a checked-in seed on every publish, or run the canon guards against the published document rather than the template.",
+      "detail": "app/page.tsx renders a published page-editor document. Its own comment is explicit: \"lib/page-editor/templates/home.ts IS UNREACHABLE BY DECISION\" and must not be reconciled against the published page, by an owner ruling of 2026-08-24.\n\nThe consequence is that the single most important piece of copy on the site — last written 2026-07-13 — is a database row that no test, no diff, no review and none of the 48 CI gates can see. The canon guards (check:vocab, check:canon) scan the repo, so the front door is the one member-facing surface exempt from the naming and voice canons. Every conclusion anyone draws about `/` by reading this repository is a conclusion about a fallback nobody renders.\n\nThe ruling was reasonable — editing the home page in the editor is the right authoring experience. What is missing is a way for the REVIEW to happen: either publish the document back into the repo as a checked-in seed on every publish, or run the canon guards against the published document rather than the template.\n\n── MEASURED 2026-09-04, AND THE CHOSEN FIX NEEDS A SECRET THIS REPO DOES NOT HAVE. Owner ruling: keep authoring in the editor and run the canons against the PUBLISHED document rather than the unreachable code template. Correct call, and it cannot be a CI check: scripts/check-canon.mjs is a filesystem scanner (readdirSync over app/ and lib/), and CI has no data plane.\n\nThe right home is .github/workflows/maintenance.yml, which is exactly where ci.yml's own comment says a check needing deployment state belongs (the cron-freshness precedent: 'an advisory finding forced through a blocking gate teaches everyone to route around the gate'). But maintenance.yml carries only SUPABASE_ACCESS_TOKEN, the MANAGEMENT api token used for the advisor diff and the ledger parity. Reading a row out of the `pages` table needs a data-plane key, which is not there.\n\n⚪ SO THIS IS AN OWNER ROW NOW, not a code row, and the lane is changed to say so. Unblock it by adding a read-capable Supabase key to the maintenance workflow's secrets; the step and its script are then a small change that can degrade to the repo's usual loud skip when the key is absent.",
       "verify": {
         "kind": "manual",
         "evidence": "The live home page copy is reviewable from the repository, or a guard reads the published document directly.",
@@ -6072,6 +6072,40 @@
         "kind": "cmd",
         "cmd": "node -e \"const fs=require('fs');const S='scripts/check-admin-client.mjs',T='scripts/check-admin-client.test.ts';if(!fs.existsSync(S))process.exit(79);const s=fs.readFileSync(S,'utf8');const preserves=/preserve|leading comment|header/i.test(s);const proven=fs.existsSync(T)&&/comment/i.test(fs.readFileSync(T,'utf8'));process.exit(preserves&&proven?0:1)\"",
         "note": "Passes when --update preserves the leading comment block AND a test proves regeneration leaves it intact. A code-shape check alone would not be enough here, which is why the test file is required."
+      }
+    },
+    {
+      "id": "SCAN-538",
+      "title": "Two niche vocabularies, and the map between them has no runtime consumer",
+      "status": "open",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "docs/DECISIONS.md",
+        "ref": "ADR-1196, found while closing LIVE-147"
+      },
+      "detail": "The niche funnel has TWO slug vocabularies and they do not match. lib/marketing/funnel-config.ts declares the /for/ doors as coaches-and-healers, studios, event-hosts, community-builders, nonprofits. lib/funnels/definitions.ts keys NICHE_FUNNEL_DESTINATIONS as coaches, studios, hosts, communities, nonprofits. Only studios and nonprofits are the same string, so a lookup by /for/ slug misses three of five.\n\n🔴 IT HAS NOT BITTEN ANYONE, FOR A WORSE REASON THAN LUCK: NICHE_FUNNEL_DESTINATIONS has NO runtime consumer at all. Its only importers are lib/funnels/routing.test.ts and, since SCAN-533, app/(main)/spaces/new/mode-param.test.ts. The door's own button reads FUNNEL_START_HREF, which is the literal '/spaces'. So the map that carries each niche to its pre-seeded Mode is tested, documented, cross-referenced in a comment as 'the SAME spaceCreatePath', and dead.\n\n⚠️ THIS QUALIFIES THE SCAN-533 FIX AND THE AUDIT'S HEADLINE. /spaces/new now reads ?mode= and the mode-param test proves it, which is right and needed; but the /for/ doors do not currently produce that URL, so the chain the audit described as broken at one link is broken at two. The half that is live is the /join?seq= induction path, which does route through these destinations. The half that is not is the door button.\n\n⚪ THE FIX IS ONE OF TWO SHAPES, and it is a product call rather than a mechanical one: either the door button routes through the niche destination (an operator lands in Create-a-Space pre-seeded, which is what OPERATOR-FUNNELS §5 says it should do), or the destination map is deleted and the door honestly sends everyone to /spaces. Do not close this by making the two key sets match: that fixes the spelling of a road nobody drives on.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs'),cp=require('child_process');const D='lib/funnels/definitions.ts';if(!fs.existsSync(D))process.exit(79);if(!/NICHE_FUNNEL_DESTINATIONS/.test(fs.readFileSync(D,'utf8')))process.exit(0);let out='';try{out=cp.execSync(\\\"grep -rlE '^\\\\\\\\s*(import|const).*NICHE_FUNNEL_DESTINATIONS' lib app components --include=*.ts --include=*.tsx 2>/dev/null\\\",{encoding:'utf8'})}catch(e){out=''}const users=out.split('\\n').filter(f=>f&&!/definitions\\.ts$/.test(f)&&!/\\.test\\.tsx?$/.test(f));process.exit(users.length>0?0:1)\"",
+        "note": "Measures IMPORTERS, not string mentions: a comment naming the map is not a consumer of it, and the first version of this probe was fooled by exactly that. Passes when a non-test module actually imports the destination map, or when the map is deleted outright."
+      }
+    },
+    {
+      "id": "LIVE-150",
+      "title": "Two call-to-action verbs, one per reader, and a guard that found two more labels than the audit did",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "docs/DECISIONS.md",
+        "ref": "ADR-1196, owner ruling 2026-09-04"
+      },
+      "detail": "LIVE-146 fixed the mechanical half (the home page stopped overriding the label, the secondary stopped apologising) and deliberately left the bigger call: whether \"Start a Circle\" should be the site-wide primary at all. The owner settled it: \"start a circle does not have to be the primary thing. circles are what all the groups run on, but there doesn't have to be specific rules.\"\n\nSo the set is two verbs, each named for the reader it addresses, rather than one global default any page could override:\n  SEEKER    \"Find your people\" -> /join      the guides, /discover, the-community, about\n  OPERATOR  \"Start free\"       -> /pricing   /pricing, /spaces, the /for/<niche> doors\n\n⚪ THE SEEKER VERB IS NOT NEW COPY. \"Find your people\" already ships as the eyebrow on /discover/circles and /discover/places and in the Nearby quick links, so this makes the CTA agree with the site rather than adding a phrase to it. Circles stay the mechanic every group runs on; they are simply not what a first-time reader is asked to do, and \"Start a Circle\" was the hardest ask on the site sitting under six guides whose readers had searched for help making friends.\n\n⚪ ONE VERB CHANGE REACHED ~28 SURFACES, because they already read one constant. Only the operator pages needed hand-editing, and FUNNEL_CTA_LABEL stopped being a third independent literal and now derives from the operator constant.\n\n🔴 THE GUARD FOUND TWO MORE THAN THE AUDIT DID, ON ITS FIRST RUN. The audit counted five labels by reading; lib/site.cta.test.ts counted SEVEN by measuring, adding \"Find your way in\" on /about and \"Follow the build\" on /the-lab. /about was a seeker acquisition CTA wearing a bespoke verb and now takes the approved one. /the-lab is the one named exception and is not an acquisition CTA at all: it sells a room planned for 2028, its own hero says nothing is bookable, and its primary asks you to follow a build. Putting \"Find your people\" there would promise a room that does not exist. The exemption is scoped to the one file and ratcheted, so a second page cannot inherit it. A count made by reading is a lower bound; a count made by a guard is the number.\n\n⚠️ THE FRONT DOOR DID NOT MOVE, and cannot from here. app/page.tsx renders a published DB document, so the constant change does not reach it (LIVE-148).",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const S='lib/site.ts',T='lib/site.cta.test.ts';if(!fs.existsSync(S)||!fs.existsSync(T))process.exit(79);const s=fs.readFileSync(S,'utf8');const two=/APPROVED_CTA_LABELS/.test(s)&&/OPERATOR_CTA_LABEL/.test(s);const f=fs.readFileSync('lib/marketing/funnel-config.ts','utf8');const derived=/FUNNEL_CTA_LABEL[^=]*=\\\\s*OPERATOR_CTA_LABEL/.test(f);process.exit(two&&derived?0:1)\"",
+        "note": "Passes when the approved set exists as data AND the niche doors derive their label from it rather than declaring a third. The per-template sweep is enforced continuously by lib/site.cta.test.ts, which is the stronger half."
       }
     }
   ]

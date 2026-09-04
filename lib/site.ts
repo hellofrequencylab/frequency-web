@@ -122,9 +122,8 @@ export const MARKETING_NAV: NavLink[] = marketingFooterLinks().map((node) => ({
   ...(node.blurb ? { desc: node.blurb } : {}),
 }));
 
-// Primary acquisition CTA. The label is builder-framed ("Start a Circle") to speak
-// to the Latent Leader, the reader the whole growth model runs on (CONTENT-VOICE
-// §2b/§7b); the quiet secondary is the lighter path for the Seeker. The beta is OPEN — clicking the primary opens the default Funnel
+// THE SEEKER call to action, and the site-wide default because most public surfaces are
+// seeker surfaces (the guides, /discover, the-community). The operator half is below. The beta is OPEN — clicking the primary opens the default Funnel
 // induction directly (/join, the Funnels front door, ADR-1090; formerly
 // /onboarding/beta, which now 308s here). Signed-out visitors get the cinematic
 // welcome with sign-in embedded (app/join/(induction)/induction.tsx), not a cold
@@ -136,8 +135,32 @@ export const MARKETING_NAV: NavLink[] = marketingFooterLinks().map((node) => ({
 // NOTE: changing BETA_CTA_LABEL re-labels every shared CTA site-wide (nav,
 // hero, mid-page, close); page templates that bake the literal into a published DB
 // doc need a re-publish to pick it up (see docs/DOCS-PROTOCOL.md + page-editor).
-export const BETA_CTA_LABEL = "Start a Circle";
+export const BETA_CTA_LABEL = "Find your people";
 export const BETA_CTA_HREF = "/join";
+
+// ── THE OPERATOR CALL TO ACTION ──────────────────────────────────────────────
+// The second half of the approved set (ADR-1196, owner ruling 2026-09-04). A site can carry more
+// than one verb; what it cannot carry is five for one entrance, invented per page. So the set is
+// exactly two, each named for the reader it addresses, and lib/site.cta.test.ts fails a marketing
+// surface that ships a third.
+//
+//   SEEKER   (above)  "Find your people" -> /join     · the guides, /discover, the-community, about
+//   OPERATOR (here)   "Start free"       -> /pricing  · /pricing, /spaces, the /for/<niche> doors
+//
+// ⚪ WHY THE SEEKER VERB MOVED OFF "Start a Circle". It was the hardest ask on the site and it was
+// the DEFAULT under six SEO guides whose readers had just searched "how to make friends as an adult".
+// Circles remain the mechanic every group runs on; they are simply not what a first-time reader is
+// being asked to do. Owner directive, 2026-09-04: "start a circle does not have to be the primary
+// thing. circles are what all the groups run on, but there doesn't have to be specific rules."
+// "Find your people" is not new copy — it already ships as the eyebrow on /discover/circles and
+// /discover/places and in the Nearby quick links, so this makes the CTA agree with the site.
+export const OPERATOR_CTA_LABEL = "Start free";
+export const OPERATOR_CTA_HREF = "/pricing";
+
+/** The approved set, for the guard and for anything that needs to iterate it. A marketing surface
+ *  ships one of these two or it fails lib/site.cta.test.ts. `/join` keeps its own arrival word ("Come in"): it
+ *  is the door itself, not a call to walk through it. */
+export const APPROVED_CTA_LABELS = [BETA_CTA_LABEL, OPERATOR_CTA_LABEL] as const;
 
 // The lighter secondary path, paired beside the primary as a quiet text link (never
 // a second button). For the Seeker who is not ready to host; routes into the same
