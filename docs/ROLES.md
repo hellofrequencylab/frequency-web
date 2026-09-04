@@ -6,6 +6,8 @@
 > [ONBOARDING-BUILD-LIST.md](ONBOARDING-BUILD-LIST.md) §11, decision in
 > [DECISIONS.md](DECISIONS.md) ADR-163).
 
+> ✅ **"Not yet built" above expired (checked 2026-09-04): the two-axis split SHIPPED** in `supabase/migrations/20260613000050_naming_canon_roles_split.sql` (ADR-208), and `lib/database.types.ts` carries `web_role` beside `community_role`. Names for every rank and role are locked in [NAMING.md](NAMING.md) §Roles; this doc is the model's rationale. Status lives in [`docs/BUILD-BACKLOG.json`](BUILD-BACKLOG.json).
+
 ## The shape: three independent systems + a billing entitlement
 
 Access is the **union** of four orthogonal things. A person can hold a position in each

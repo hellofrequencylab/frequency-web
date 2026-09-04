@@ -1,5 +1,7 @@
 # Modular menu system — the universal AdminModule program
 
+> ⚠️ **SUPERSEDED** by [`MENU-CONTRACT.md`](MENU-CONTRACT.md), the locked, machine-enforced contract for the admin menu (ADR-553, corrected by ADR-927): four registered catalogs, one resolution surface, `pnpm check:menu`. The "Module Manager admin area" program below was never adopted as a plan and names neither the contract nor an ADR. Kept for history.
+
 **Goal.** One module contract drives the admin menu for EVERY scope (global, space, profile/account, circle, hub, nexus, event, practice, channel, journey). Each primary area or service is an independent, self-contained **module** with a header, a live snapshot, inline admin controls, and a wire into its deep-editing route. A **Module Manager** admin area lets an owner turn features/services on and off and order/hide the modules in their menu.
 
 Naming/voice canon and the page framework apply to all module copy. Every phase = its own ADR + green gate (`tsc`, eslint, vitest, check:canon, check:authz) + PR, merged before the next.

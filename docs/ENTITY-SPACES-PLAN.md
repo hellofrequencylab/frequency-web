@@ -7,6 +7,8 @@
 **Status:** ⏳ Plan / strategy (no code). Prepared 2026-06-19.
 **Scope:** Fully-featured, templated, eventually white-label spaces for four verticals (**Practitioners, Businesses, Event Spaces, Non-Profits**), each with their own Events, Circles, Practices, Journeys, branded profile/landing pages, member-management admin, and a QR studio / splash-page builder, leading to full business suites with CRM + email marketing.
 
+> ⚠️ **"No code" above is the June 2026 framing and is false today** (checked 2026-09-04): `lib/spaces/` holds 186 files and `app/(main)/spaces/[slug]/` has a dozen sub-routes. The live model is [`SPACES.md`](SPACES.md); the live build doc is [`BUSINESS-ACCOUNTS-RECONCILED-PLAN.md`](BUSINESS-ACCOUNTS-RECONCILED-PLAN.md). This file is the original rationale.
+
 ---
 
 ## 0. Executive summary (read this first)

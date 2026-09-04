@@ -12,6 +12,8 @@
 > **Punctuation hard rule:** no em dashes or en dashes anywhere in this plan or any copy
 > it specifies. Periods, commas, parentheses, or rewrite.
 
+> ⚠️ **"PROPOSED (June 2026)" above is the framing when this was written, not the state of the tree.** As of 2026-09-04 `app/(marketing)/` has 37 entries (about, how-it-works, pricing, the-lab, the-quest and the SEO landers among them). This doc remains the spec for the public site; whether a phase is done is a backlog row, never a line here.
+
 **Legend:** ✅ exists (keep) · 🛠 improve (exists, fix it) · 🆕 new (build it) · S/M/L effort.
 
 ---

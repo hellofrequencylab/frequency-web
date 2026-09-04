@@ -4,7 +4,10 @@ The single standard for every operator surface under `/admin` (and the admin-own
 external routes). Research-backed (Stripe, Linear, Vercel/Geist, Shopify Polaris,
 Salesforce SLDS, Atlassian, GitHub/Primer, Supabase, Retool, Tremor/Catalyst, NN/g,
 WCAG 2.2). This is the spec the redesign build agents follow. If a page disagrees
-with this doc, the page is wrong. Scope decision: **deep redesign, keep the current
+with this doc, the page is wrong, unless the page is what the code does on purpose: per
+`AGENTS.md` §"Which plan is live", when the code and a doc disagree the code wins and the
+doc gets fixed in the same pass, so this doc governs a redesign in flight and never
+outranks a shipped decision. Scope decision: **deep redesign, keep the current
 IA** (no route/URL churn). ADR-233.
 
 > Voice + naming still bind every word here (docs/NAMING.md, docs/CONTENT-VOICE.md):
