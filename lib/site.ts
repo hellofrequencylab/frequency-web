@@ -163,6 +163,26 @@ export const OPERATOR_CTA_LABEL = "Start free";
 // tidier and produces self-links on exactly the pages that carry the operator verb.
 export const OPERATOR_CTA_HREF = BETA_CTA_HREF;
 
+/** THE NARROW-HEADER FORM, and the reason it exists (ADR-1196).
+ *
+ *  🔴 A HEADER IS NOT A HERO, and this is where that stops being a style opinion. The marketing
+ *  header's CTA is `shrink-0 whitespace-nowrap`, so it cannot give; the wordmark is the bar's ONE
+ *  designated give-way point (components/layout/header-fit.test.ts). Once the mark hits its floor,
+ *  every extra pixel of label pushes the mobile menu button off the screen — and that button is the
+ *  only navigation a signed-out visitor has below `md`.
+ *
+ *  Moving the seeker verb from "Start a Circle" (14 chars) to "Find your people" (16) did exactly
+ *  that: `pr-compare` caught the menu button running 18px past a 320px viewport on /discover, at
+ *  x 296→338. That file's header says a layout with one give-way point "cannot be broken by a
+ *  longer CTA label". It can. It just takes a label long enough to spend the mark's whole budget
+ *  first, which is a real limit rather than a refutation, and is now written down.
+ *
+ *  So the header shows this below `sm` and the full verb above it. The page heroes, where there is
+ *  room, always show the full verb. This is a RENDERING accommodation, not a third approved label:
+ *  it is deliberately audience-neutral, because the header is global chrome that rides seeker and
+ *  operator pages alike. */
+export const CTA_LABEL_COMPACT = "Join free";
+
 /** The approved set, for the guard and for anything that needs to iterate it. A marketing surface
  *  ships one of these two or it fails lib/site.cta.test.ts. `/join` keeps its own arrival word ("Come in"): it
  *  is the door itself, not a call to walk through it. */

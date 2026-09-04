@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { BETA_CTA_LABEL, BETA_CTA_HREF } from '@/lib/site'
+import { BETA_CTA_LABEL, BETA_CTA_HREF, CTA_LABEL_COMPACT } from '@/lib/site'
 import { PrimaryNav } from '@/components/layout/primary-nav'
 import { MarketingMobileMenu } from '@/components/layout/marketing-mobile-menu'
 import type { MenuSettings, ResolvedMenu } from '@/lib/menus/types'
@@ -203,7 +203,12 @@ export function MarketingHeader({
                 : 'bg-on-ink text-ink hover:bg-on-ink/90'
             }`}
           >
-            {ctaLabel}
+            {/* The compact form below `sm`: the bar's only flexible child is the wordmark, so a
+                long label spends its budget and then pushes the mobile menu button off a 320px
+                screen (ADR-1196, caught by pr-compare on /discover). A hero has room a header
+                does not. */}
+            <span className="sm:hidden">{CTA_LABEL_COMPACT}</span>
+            <span className="hidden sm:inline">{ctaLabel}</span>
           </Link>
         </>
       )}

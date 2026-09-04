@@ -27,6 +27,7 @@ import {
   OPERATOR_CTA_HREF,
   APPROVED_CTA_LABELS,
   BETA_CTA_SECONDARY_LABEL,
+  CTA_LABEL_COMPACT,
 } from './site'
 import { FUNNEL_CTA_LABEL } from './marketing/funnel-config'
 
@@ -135,6 +136,35 @@ describe('the approved CTA set', () => {
   it('both approved verbs route to the same door, so neither can self-link', () => {
     expect(OPERATOR_CTA_HREF).toBe(BETA_CTA_HREF)
     expect(BETA_CTA_HREF.startsWith('/')).toBe(true)
+  })
+
+  it('the compact header form is genuinely shorter than both approved verbs', () => {
+    // It exists to buy back header width, so a compact label that is not shorter is a bug that
+    // would reintroduce the overflow it was added to fix (ADR-1196). Measured against BOTH verbs
+    // because the header is global chrome and can carry either.
+    for (const label of APPROVED_CTA_LABELS) {
+      expect({ compact: CTA_LABEL_COMPACT.length, than: label, len: label.length }).toEqual({
+        compact: CTA_LABEL_COMPACT.length,
+        than: label,
+        len: label.length,
+      })
+      expect(CTA_LABEL_COMPACT.length).toBeLessThan(label.length)
+    }
+  })
+
+  it('the compact form is a rendering accommodation, not a third approved label', () => {
+    // It must NOT join the approved set: the set is the two audience verbs, and the header's
+    // narrow form is deliberately audience-neutral because the header rides both kinds of page.
+    expect(APPROVED_CTA_LABELS as readonly string[]).not.toContain(CTA_LABEL_COMPACT)
+    // And it lives only in the header, so it cannot leak into a page hero.
+    const header = readFileSync(
+      path.join(process.cwd(), 'components/layout/marketing-header.tsx'),
+      'utf8',
+    )
+    expect(header).toContain('CTA_LABEL_COMPACT')
+    for (const file of templateFiles()) {
+      expect(strip(readFileSync(file, 'utf8'))).not.toContain('CTA_LABEL_COMPACT')
+    }
   })
 
   it('the one exception is still the one exception', () => {
