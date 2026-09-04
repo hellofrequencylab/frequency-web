@@ -122,10 +122,8 @@ export const MARKETING_NAV: NavLink[] = marketingFooterLinks().map((node) => ({
   ...(node.blurb ? { desc: node.blurb } : {}),
 }));
 
-// Primary acquisition CTA. The label is builder-framed ("Start a Circle") to speak
-// to the Latent Leader, the reader the whole growth model runs on (CONTENT-VOICE
-// §2b/§7b); the quiet secondary ("or just join as a member") is the lighter path
-// for the Seeker. The beta is OPEN — clicking the primary opens the default Funnel
+// THE SEEKER call to action, and the site-wide default because most public surfaces are
+// seeker surfaces (the guides, /discover, the-community). The operator half is below. The beta is OPEN — clicking the primary opens the default Funnel
 // induction directly (/join, the Funnels front door, ADR-1090; formerly
 // /onboarding/beta, which now 308s here). Signed-out visitors get the cinematic
 // welcome with sign-in embedded (app/join/(induction)/induction.tsx), not a cold
@@ -137,13 +135,71 @@ export const MARKETING_NAV: NavLink[] = marketingFooterLinks().map((node) => ({
 // NOTE: changing BETA_CTA_LABEL re-labels every shared CTA site-wide (nav,
 // hero, mid-page, close); page templates that bake the literal into a published DB
 // doc need a re-publish to pick it up (see docs/DOCS-PROTOCOL.md + page-editor).
-export const BETA_CTA_LABEL = "Start a Circle";
+export const BETA_CTA_LABEL = "Find your people";
 export const BETA_CTA_HREF = "/join";
+
+// ── THE OPERATOR CALL TO ACTION ──────────────────────────────────────────────
+// The second half of the approved set (ADR-1197, owner ruling 2026-09-04). A site can carry more
+// than one verb; what it cannot carry is five for one entrance, invented per page. So the set is
+// exactly two, each named for the reader it addresses, and lib/site.cta.test.ts fails a marketing
+// surface that ships a third.
+//
+//   SEEKER   (above)  "Find your people" -> /join     · the guides, /discover, the-community, about
+//   OPERATOR (here)   "Start free"       -> /pricing  · /pricing, /spaces, the /for/<niche> doors
+//
+// ⚪ WHY THE SEEKER VERB MOVED OFF "Start a Circle". It was the hardest ask on the site and it was
+// the DEFAULT under six SEO guides whose readers had just searched "how to make friends as an adult".
+// Circles remain the mechanic every group runs on; they are simply not what a first-time reader is
+// being asked to do. Owner directive, 2026-09-04: "start a circle does not have to be the primary
+// thing. circles are what all the groups run on, but there doesn't have to be specific rules."
+// "Find your people" is not new copy — it already ships as the eyebrow on /discover/circles and
+// /discover/places and in the Nearby quick links, so this makes the CTA agree with the site.
+export const OPERATOR_CTA_LABEL = "Start free";
+// 🔴 THE SAME DOOR AS THE SEEKER'S, DELIBERATELY. The first version of this pointed at /pricing,
+// which made the primary CTA on /pricing link to /pricing — a self-link on the hero AND the close
+// of the page it sits on. Signup is signup: an operator needs an account before they can stand up
+// a Space, so both readers walk through /join. What differs is the WORD, because the word is what
+// tells a reader the page was written for them. Routing the two verbs to two destinations sounds
+// tidier and produces self-links on exactly the pages that carry the operator verb.
+export const OPERATOR_CTA_HREF = BETA_CTA_HREF;
+
+/** THE NARROW-HEADER FORM, and the reason it exists (ADR-1197).
+ *
+ *  🔴 A HEADER IS NOT A HERO, and this is where that stops being a style opinion. The marketing
+ *  header's CTA is `shrink-0 whitespace-nowrap`, so it cannot give; the wordmark is the bar's ONE
+ *  designated give-way point (components/layout/header-fit.test.ts). Once the mark hits its floor,
+ *  every extra pixel of label pushes the mobile menu button off the screen — and that button is the
+ *  only navigation a signed-out visitor has below `md`.
+ *
+ *  Moving the seeker verb from "Start a Circle" (14 chars) to "Find your people" (16) did exactly
+ *  that: `pr-compare` caught the menu button running 18px past a 320px viewport on /discover, at
+ *  x 296→338. That file's header says a layout with one give-way point "cannot be broken by a
+ *  longer CTA label". It can. It just takes a label long enough to spend the mark's whole budget
+ *  first, which is a real limit rather than a refutation, and is now written down.
+ *
+ *  So the header shows this below `sm` and the full verb above it. The page heroes, where there is
+ *  room, always show the full verb. This is a RENDERING accommodation, not a third approved label:
+ *  it is deliberately audience-neutral, because the header is global chrome that rides seeker and
+ *  operator pages alike. */
+export const CTA_LABEL_COMPACT = "Join free";
+
+/** The approved set, for the guard and for anything that needs to iterate it. A marketing surface
+ *  ships one of these two or it fails lib/site.cta.test.ts. `/join` keeps its own arrival word ("Come in"): it
+ *  is the door itself, not a call to walk through it. */
+export const APPROVED_CTA_LABELS = [BETA_CTA_LABEL, OPERATOR_CTA_LABEL] as const;
 
 // The lighter secondary path, paired beside the primary as a quiet text link (never
 // a second button). For the Seeker who is not ready to host; routes into the same
 // open induction, which branches by intent.
-export const BETA_CTA_SECONDARY_LABEL = "or just join as a member";
+//
+// ⚠️ THE WORD "just" WAS REMOVED (2026-09-03, ADR-1197). It read "or just join as a
+// member", and it sat under every primary on the site — including the six SEO guides
+// whose readers arrived from "how to make friends as an adult". CONTENT-VOICE §2a
+// names the Seeker as reader one, and that sentence told reader one they were the
+// lesser option in the same breath as inviting them. The path is quieter than the
+// primary because it is a text link beside a button; the copy does not need to say so
+// as well. Do not put it back.
+export const BETA_CTA_SECONDARY_LABEL = "or join as a member";
 export const BETA_CTA_SECONDARY_HREF = BETA_CTA_HREF;
 
 // Org footer line. Donations / 501(c)(3) framework deferred — no fundraising

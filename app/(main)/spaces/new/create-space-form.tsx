@@ -43,8 +43,16 @@ function slugify(name: string): string {
     .slice(0, 40)
 }
 
-export function CreateSpaceForm({ choices }: { choices: SpaceModeChoice[] }) {
-  const [choiceId, setChoiceId] = useState(choices[0]?.id ?? '')
+export function CreateSpaceForm({
+  choices,
+  initialChoiceId,
+}: {
+  choices: SpaceModeChoice[]
+  /** The Mode a niche funnel pre-selected (`${type}:${variant}`), already validated against `choices`
+   *  by the page. Undefined when the visitor arrived without one, which is the common case. */
+  initialChoiceId?: string
+}) {
+  const [choiceId, setChoiceId] = useState(initialChoiceId ?? choices[0]?.id ?? '')
   const [name, setName] = useState('')
   const [slug, setSlug] = useState('')
   const [slugTouched, setSlugTouched] = useState(false)

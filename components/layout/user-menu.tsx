@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { User, ChevronDown } from 'lucide-react'
 import { getInitials } from '@/lib/utils'
 import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
-import { BETA_CTA_LABEL, BETA_CTA_HREF } from '@/lib/site'
+import { BETA_CTA_LABEL, BETA_CTA_HREF, CTA_LABEL_COMPACT } from '@/lib/site'
 import { defaultMenu } from '@/lib/menus/defaults'
 import { canSeeMenuItem, flattenCategoryTree } from '@/components/layout/menu-role'
 import { railIconFor } from '@/components/layout/nav-icons'
@@ -32,7 +32,16 @@ export function AuthButtons({ dark = false }: { dark?: boolean }) {
     // no mobile drawer (MarketingMobileMenu belongs to MarketingHeader), and the /discover footer
     // lists Discover / Privacy / Terms / Contact. So a hidden Sign in is not a demoted link, it is
     // the last way back into an account on 22 public pages. The padding tightens on a phone
-    // instead, and the wordmark beside it gives up the rest.
+    // instead, the CTA takes its compact label (below), and the wordmark gives up the rest.
+    //
+    // 🔴 THIS CLUSTER IS THE REASON THE PHONE LABEL EXISTS. The fit contract next door says one
+    // give-way child means a longer CTA label cannot break the bar. That is true of MarketingHeader
+    // and it is NOT true here, because this cluster keeps BOTH links below sm: on a 320px screen
+    // the fixed row (search glyph + Sign in + this CTA + the menu button + four gaps) already
+    // spends the whole line, so past a certain label the wordmark has shrunk to nothing and the
+    // deficit lands on the menu button instead. Renaming BETA_CTA_LABEL from 'Start a Circle' to
+    // 'Find your people' — two characters — put that button 18px off a 320px /discover viewport
+    // (ADR-1197; the @overflow gate caught it, `header-fit.test.ts` now budgets it).
     <div className="flex shrink-0 items-center gap-1 sm:gap-2">
       <Link
         href="/sign-in"
@@ -52,7 +61,10 @@ export function AuthButtons({ dark = false }: { dark?: boolean }) {
             : 'bg-primary text-on-primary hover:bg-primary-hover'
         }`}
       >
-        {BETA_CTA_LABEL}
+        {/* The compact form below sm, for the reason stated above. Exactly one of the two is
+            displayed, so the accessible name is whichever one the viewport shows. */}
+        <span className="sm:hidden">{CTA_LABEL_COMPACT}</span>
+        <span className="hidden sm:inline">{BETA_CTA_LABEL}</span>
       </Link>
     </div>
   )

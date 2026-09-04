@@ -71,23 +71,41 @@ export function spaceBillingEntitlements(space: SpaceLike | null | undefined): E
 }
 
 /** Normalize the raw `spaces.entitlements` jsonb to a clean `{ key: boolean }` map — the UNION of the
- *  TOP-LEVEL manual grants and the BILLING-MANAGED namespace (`entitlements.billing`). A key reads as
- *  granted when EITHER source has it `true`. DEFAULT-DENY is the whole contract: anything that isn't
- *  an object of booleans collapses to {} (or drops the bad keys), so a missing/garbage blob grants
- *  NOTHING; only an explicit `true` counts as granted. The reserved `billing` object itself is NOT a
- *  capability key, so it never leaks into the map (only the keys INSIDE it do, unioned in). */
+ *  TOP-LEVEL manual grants and the BILLING-MANAGED namespace (`entitlements.billing`). DEFAULT-DENY is
+ *  the whole contract: anything that isn't an object of booleans collapses to {} (or drops the bad
+ *  keys), so a missing/garbage blob grants NOTHING; only an explicit `true` counts as granted. The
+ *  reserved `billing` object itself is NOT a capability key, so it never leaks into the map (only the
+ *  keys INSIDE it do, unioned in).
+ *
+ *  🔴 THE TOP LEVEL HAS THREE STATES, NOT TWO, AND THE THIRD IS THE WHOLE POINT (ADR-1197):
+ *    · ABSENT            -> the billing namespace decides. The common case; unchanged.
+ *    · `true`            -> granted, whatever billing says. A hand-grant the resolver cannot revoke.
+ *    · explicitly `false` -> REVOKED, whatever billing says. A hand-revoke the resolver cannot undo.
+ *  The union used to be one-directional (`if (granted) out[key] = true`), so a plan grant always beat
+ *  a hand revoke. For the three keys whose FUNCTION key and ENTITLEMENT key are the same string —
+ *  `crm`, `email`, `program` — that made the tool impossible to switch off on any Business+ Space: the
+ *  operator wrote `false`, the next read put it back. The partition comment at the top of this file
+ *  always described the symmetric behaviour ("never nukes a hand-grant"); only half of it was built.
+ *
+ *  ⚠️ ONLY A LITERAL `false` REVOKES. A garbage value (`0`, `"no"`, `null`) is not a revoke — it fails
+ *  the `=== true` grant test and then lets billing decide, exactly as an absent key does. Treating
+ *  every non-`true` value as a revoke would turn a malformed blob into a lockout, which is the
+ *  opposite of this module's never-lock-out posture. */
 export function spaceEntitlements(space: SpaceLike | null | undefined): Entitlements {
   const raw = space?.entitlements
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {}
+  const top = raw as Record<string, unknown>
   // Top-level manual grants, minus the reserved billing object (it is a container, not a capability).
   const out: Entitlements = {}
-  for (const [key, value] of Object.entries(raw as Record<string, unknown>)) {
+  for (const [key, value] of Object.entries(top)) {
     if (key === BILLING_NAMESPACE) continue
     out[key] = value === true
   }
-  // Union the billing-managed keys: a billing `true` grants even if the top level is absent/false.
+  // Union the billing-managed keys, EXCEPT where the operator wrote an explicit `false`.
   for (const [key, granted] of Object.entries(spaceBillingEntitlements(space))) {
-    if (granted) out[key] = true
+    if (!granted) continue
+    if (top[key] === false) continue
+    out[key] = true
   }
   return out
 }

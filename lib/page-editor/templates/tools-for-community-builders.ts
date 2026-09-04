@@ -125,7 +125,7 @@ export const spec: ArticleSpec = {
       answer:
         'The fastest way to get the toolkit is to claim a Space: your front door, your Circles, your feed, and your recognition in one place, free to start. If you want to see where the Labs toolkit is headed as a physical third space, tour The Lab. Both are the same idea at different sizes.',
       links: [
-        { label: 'Get the toolkit', href: '/spaces', variant: 'primary' },
+        { label: 'Get the toolkit', href: '/for/community-builders', variant: 'primary' },
         { label: 'Tour The Lab', href: '/the-lab', variant: 'secondary' },
       ],
     },

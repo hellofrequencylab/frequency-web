@@ -5,17 +5,19 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { requireAdmin } from '@/lib/admin/guard'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import { spaceFunctionDef, DEFAULT_FUNCTION_ROLE, type SpaceFunctionKey } from '@/lib/spaces/functions'
+import { nextEntitlementsForFunctionToggle } from '@/lib/spaces/function-toggle'
 import { isSpaceRole, type SpaceRole } from '@/lib/spaces/membership'
 
 // OPERATOR per-Space FEATURE actions (per-space-roles Phase 1). The janitor-gated writes behind the
 // "Features and access" grid on /admin/spaces/[id]. Two sparse, behavior-preserving merges into the
 // existing jsonb columns (no new write path beyond these):
-//   setSpaceFunctionEnabled — flip a function's ON switch.
-//       * PLAN-GATED function (crm/email): merge the entitlement key into spaces.entitlements (the same
-//         additive merge setSpacePlan uses). The janitor override is ABSOLUTE (beyond plan): an operator
-//         can grant crm:true even with no paid plan.
-//       * UNIVERSAL function: the switch lives in the SAME entitlements blob keyed by the function key,
-//         DEFAULT-ON. Enabling DELETES the key (back to the default); disabling sets it false. Sparse.
+//   setSpaceFunctionEnabled — flip a function's ON switch, via the PURE resolver in
+//       lib/spaces/function-toggle.ts (ADR-1197). The OFF switch is ALWAYS the function key, because
+//       that is the only key spaceFunctionEnabled reads; the entitlement key is a separate ADDITIVE
+//       grant that keeps the janitor override absolute (an operator may grant crm with no paid plan).
+//       Conflating the two is what made this action a silent no-op for crm / email / shop / program.
+//       The resolver returns null when a flip is refused for data safety (the `billing` key collision),
+//       and this action surfaces that rather than swallowing it.
 //   setSpaceFunctionMinRole — merge the function key into spaces.feature_roles; DELETE the key when the
 //       role equals the CODE default, so the blob only ever holds genuine overrides ("no override =
 //       today" holds, exactly like the capability_permissions grid).
@@ -84,16 +86,12 @@ export async function setSpaceFunctionEnabled(
   const blobs = await readSpaceBlobs(spaceId)
   if (!blobs) return fail('We could not find that space.')
 
-  const next = { ...blobs.entitlements }
-  if (def.entitlement) {
-    // Plan-gated: the on/off key is the ENTITLEMENT key. The operator override is absolute.
-    if (enabled) next[def.entitlement] = true
-    else delete next[def.entitlement]
-  } else {
-    // Universal: the key is the FUNCTION key, default-ON. Enabling -> delete (back to default); disabling
-    // -> false (sparse: only an explicit off is stored).
-    if (enabled) delete next[def.key]
-    else next[def.key] = false
+  // The decision lives in a PURE resolver (lib/spaces/function-toggle.ts) rather than here, because the
+  // version written inline shipped wrong for four of the twenty-two functions and could not be reached
+  // by a test to prove it (ADR-1197). `null` means the flip is refused for data safety.
+  const next = nextEntitlementsForFunctionToggle(blobs.entitlements, def, enabled)
+  if (!next) {
+    return fail('Plan and billing cannot be switched off. It shares a key with the billing record.')
   }
 
   if (!(await writeEntitlements(spaceId, next))) return fail('Could not save that change.')

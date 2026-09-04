@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { BETA_CTA_LABEL, BETA_CTA_HREF } from '@/lib/site'
+import { BETA_CTA_LABEL, BETA_CTA_HREF, CTA_LABEL_COMPACT } from '@/lib/site'
 import { PrimaryNav } from '@/components/layout/primary-nav'
 import { MarketingMobileMenu } from '@/components/layout/marketing-mobile-menu'
 import type { MenuSettings, ResolvedMenu } from '@/lib/menus/types'
@@ -39,7 +39,8 @@ export function MarketingHeader({
   isAuth?: boolean
   /**
    * Overrides the header CTA label (still routes to BETA_CTA_HREF). The home splash
-   * passes "Join the beta" so the front door reads as a beta invite; everywhere else
+   * used to pass "Join the beta" so the front door read as a beta invite. It no longer does
+   * (ADR-1197): one entrance, one verb. The prop stays for a genuine campaign landing page
    * keeps the builder-framed site-wide default ("Start a Circle", see lib/site).
    */
   ctaLabel?: string
@@ -202,7 +203,18 @@ export function MarketingHeader({
                 : 'bg-on-ink text-ink hover:bg-on-ink/90'
             }`}
           >
-            {ctaLabel}
+            {/* The compact form below `sm`: the bar's only flexible child is the wordmark, so a
+                long label spends its budget and then pushes the mobile menu button off a 320px
+                screen. A hero has room a header does not.
+
+                ⚠️ THIS BAR IS NOT THE ONE THAT OVERFLOWED. The /discover failure pr-compare kept
+                reporting is SiteHeader -> AuthButtons (components/layout/user-menu.tsx), a
+                different component with a tighter phone row — it keeps "Sign in" below `sm`, which
+                this one hides. Fixing it here changed that page by zero pixels and cost a CI
+                cycle. The compact form stays on both; header-fit.test.ts now checks both.
+                (ADR-1197.) */}
+            <span className="sm:hidden">{CTA_LABEL_COMPACT}</span>
+            <span className="hidden sm:inline">{ctaLabel}</span>
           </Link>
         </>
       )}

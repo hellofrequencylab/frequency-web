@@ -40,39 +40,24 @@
         {
           "name": "W0 · active now",
           "ids": [
-            "LIVE-072",
-            "LIVE-062",
-            "LIVE-066",
             "LIVE-053",
-            "LIVE-061",
-            "HYG-009",
-            "LIVE-069",
-            "LIVE-071",
-            "LIVE-073",
-            "LIVE-078",
-            "LIVE-080",
-            "LIVE-075",
-            "HYG-012",
-            "LIVE-090",
-            "LIVE-091",
-            "LIVE-092",
-            "LIVE-093",
-            "LIVE-094",
-            "LIVE-095",
-            "LIVE-096",
-            "LIVE-097",
-            "LIVE-098",
-            "HYG-013",
-            "LIVE-081",
-            "LIVE-113"
+            "LIVE-105",
+            "LIVE-123",
+            "LIVE-124",
+            "LIVE-142",
+            "LIVE-144",
+            "LIVE-148",
+            "LIVE-149",
+            "HYG-042",
+            "HYG-043",
+            "HYG-044",
+            "HYG-046",
+            "SCAN-538"
           ]
         },
         {
           "name": "W1 · content pipeline (5c/5d must land before Editor E3)",
-          "ids": [
-            "LIVE-007",
-            "LIVE-006"
-          ]
+          "ids": []
         },
         {
           "name": "W2 · foundation first",
@@ -80,13 +65,19 @@
             "DEF-HARDEN",
             "PROG-A1",
             "PROG-A3",
-            "PROG-DAWN2"
+            "HYG-023",
+            "HYG-027",
+            "HYG-029",
+            "LIVE-125",
+            "LIVE-128",
+            "SCAN-502",
+            "SCAN-521",
+            "SCAN-537"
           ]
         },
         {
           "name": "W3 · Loom foundation (the media layer the editor projects from)",
           "ids": [
-            "PROG-D1",
             "PROG-D2",
             "PROG-D3"
           ]
@@ -122,17 +113,10 @@
             "PROG-P4",
             "PROG-P5",
             "PROG-P6",
-            "PROG-P9",
             "PROG-DAWN3",
-            "LIVE-068",
-            "LIVE-070",
-            "HYG-010",
-            "LIVE-079",
-            "LIVE-089",
-            "HYG-015",
-            "LIVE-100",
-            "LIVE-102",
-            "LIVE-101"
+            "LIVE-114",
+            "LIVE-117",
+            "LIVE-139"
           ]
         },
         {
@@ -142,7 +126,8 @@
             "PROG-SPOT",
             "PROG-A4",
             "DEF-DOMAIN",
-            "LIVE-067"
+            "LIVE-120",
+            "LIVE-122"
           ]
         },
         {
@@ -170,8 +155,15 @@
         {
           "name": "owner-timed",
           "ids": [
-            "LIVE-027",
-            "LIVE-060"
+            "LIVE-060",
+            "OWN-005",
+            "OWN-011",
+            "OWN-040",
+            "OWN-046",
+            "OWN-047",
+            "LIVE-127",
+            "SCAN-205",
+            "HYG-033"
           ]
         }
       ],
@@ -198,7 +190,8 @@
         "OWN-041",
         "OWN-042"
       ],
-      "rationale": "Foundation before surface: hardening and module boundaries (A1/A3) pay compounding dividends across every later wave. Loom D1-D3 precede the Editor because E2 projects the editor’s asset model onto the Loom. Content retirements (W1) must precede E3, which replaces EDITABLE_PAGES in the opposite direction. Re-theme and the DAWN mechanical sweeps follow the editor so swept surfaces are not rebuilt. Flagship apps (A4) and the domain backlog ride after boundaries + editor exist. Commerce verticals close, with Resonance’s launch GO still the owner’s. White label (E10/W6/P7), mobile, and texting park by name. White-label sites and the Etsy-grade store now close the runway, in that order (owner ruling 2026-08-24): everything else is to be functional and clean before either starts."
+      "rationale": "Foundation before surface: hardening and module boundaries (A1/A3) pay compounding dividends across every later wave. Loom D1-D3 precede the Editor because E2 projects the editor’s asset model onto the Loom. Content retirements (W1) must precede E3, which replaces EDITABLE_PAGES in the opposite direction. Re-theme and the DAWN mechanical sweeps follow the editor so swept surfaces are not rebuilt. Flagship apps (A4) and the domain backlog ride after boundaries + editor exist. Commerce verticals close, with Resonance’s launch GO still the owner’s. White label (E10/W6/P7), mobile, and texting park by name. White-label sites and the Etsy-grade store now close the runway, in that order (owner ruling 2026-08-24): everything else is to be functional and clean before either starts.",
+      "rule": "Every open or blocked row has a place here, and no finished row does; scripts/check-backlog.mjs proves both (HYG-047). PLACEMENT RULE, so the next person does not have to guess: lane \"owner\" goes to owner-timed whatever its id prefix, because nothing in the repo unblocks it. A live production incident or a repair ready to work goes to W0. Instrument and record debt goes to W2, the foundation wave, because a guard that cannot fire is the thing every later wave is measured by. Layout and theme work goes to W6, feature work to W7. A row that fits none of these is a sign the wave list needs a row, not that the row needs no wave. ⚠️ CLOSING A ROW MEANS PRUNING IT FROM ITS WAVE, in the same edit. The guard treats a finished row still sitting in the slate as drift, which is exactly what it is; that is how 39 of 77 ids came to be stale. Two edits per close is the price of the sequence staying true, and the guard will not let you forget the second one."
     }
   },
   "entries": [
@@ -5790,6 +5783,346 @@
         "kind": "cmd",
         "cmd": "node -e \"const s=require('fs').readFileSync('scripts/backlog-contract.test.ts','utf8');const m=s.match(/gives identical results with and without ripgrep on PATH[^\\n]*timeout:\\s*([0-9_]+)/);if(!m){console.error('could not read the timeout on the ripgrep-parity case');process.exit(1)}const ms=Number(m[1].replace(/_/g,''));console.log('ripgrep-parity timeout: '+ms+'ms');process.exit(ms>60000?0:1)\"",
         "note": "Measures the CONSEQUENCE the row asks for and nothing else: the row is about HEADROOM, so it closes only when the ripgrep-parity case no longer runs against a 60s cliff — either because the second pass was narrowed and the budget raised to match, or because the timeout was deliberately widened with the reason recorded. It exits 1 today (the timeout is exactly 60000ms), so the row is correctly open.\n\n⚪ IT DOES NOT TIME THE TEST. A probe that ran the suite to measure 46.7s would spawn a test runner (LIVE-034 forbids it), take three quarters of a minute on every backlog run, and be the flakiest row in the file — measuring the very contention it is reporting.\n\n⚠️ THE FIRST VERSION OF THIS PROBE READ THE NUMBER WRONG and printed 'ripgrep-parity timeout: 60ms'. The source says `{ timeout: 60_000 }` and the pattern was `(\\d+)`, which stops at the numeric separator. It still exited 1 — the right answer for the wrong reason, which is the kind that survives review. Now `([0-9_]+)` with the separators stripped."
+      }
+    },
+    {
+      "id": "SCAN-531",
+      "title": "A plan grant overrides a hand revoke, so CRM cannot be subtracted from a paid Space",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "docs/DECISIONS.md",
+        "ref": "ADR-1197, the 2026-09-03 repair and rework audit"
+      },
+      "detail": "spaceEntitlements (lib/spaces/entitlements.ts) reads the union of the TOP-LEVEL manual grants and the reserved `billing` namespace, and the union is written `if (granted) out[key] = true`. That is one-directional: a billing `true` can add a key, but a top-level `false` can never remove one.\n\nFor the three keys whose FUNCTION key and ENTITLEMENT key are the same string — `crm`, `email`, `program` — this means an operator cannot turn the tool off on any Business+ Space. Setting `{ crm: false }` by hand is silently overridden by `billing.crm: true` on the next read. The partition comment above the function describes the intended behaviour correctly (\"an add-on toggling OFF removes only what the plan granted and never nukes a hand-grant\") but the code only implements half of it: it protects a manual grant from the resolver, and does not protect a manual REVOKE from a plan.\n\nThis is the exact control surface a per-operator toolset needs, so it blocks PROG-BUNDLE. The fix is a third state: an explicit top-level `false` must win over a billing `true`, while an ABSENT top-level key keeps today's union semantics (so nothing that works today changes).",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const S='lib/spaces/entitlements.ts',T='lib/spaces/entitlements.test.ts';if(!fs.existsSync(S)||!fs.existsSync(T))process.exit(79);const s=fs.readFileSync(S,'utf8').replace(/\\\\s+/g,' ');const t=fs.readFileSync(T,'utf8');const naive=s.includes('for (const [key, granted] of Object.entries(spaceBillingEntitlements(space))) { if (granted) out[key] = true }');const proven=/revoke/i.test(t)&&/billing/i.test(t);process.exit(!naive&&proven?0:1)\"",
+        "note": "Passes when the naive one-directional union is gone AND the test file proves a manual revoke beats a billing grant."
+      }
+    },
+    {
+      "id": "SCAN-532",
+      "title": "The admin Features and access off-switch is a silent no-op for CRM, Email, Shop and Program",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "docs/DECISIONS.md",
+        "ref": "ADR-1197, the 2026-09-03 repair and rework audit"
+      },
+      "detail": "app/(main)/admin/spaces/[id]/actions.ts branches on `def.entitlement`. For a function that carries one, disabling runs `delete next[def.entitlement]` — it never writes `false` anywhere. But spaceFunctionEnabled (lib/spaces/functions.ts) keys on `def.key` and treats an ABSENT key as ON, by design (universal default-on, ADR-517 Phase F).\n\nSo for the four functions with a non-null entitlement the toggle writes the wrong key and deletes rather than disables:\n  * crm      — key 'crm',  entitlement 'crm'      -> deletes 'crm', reads back ON\n  * email    — key 'email', entitlement 'email'    -> deletes 'email', reads back ON\n  * program  — key 'program', entitlement 'program' -> deletes 'program', reads back ON\n  * shop     — key 'shop',  entitlement 'storefront' -> touches a key the reader never consults at all\nThe other 18 functions take the else branch and work correctly. A janitor turning CRM off sees the switch move and nothing happen.\n\nFix by extracting the decision into a PURE, testable function rather than fixing it in place inside a server action: the defect exists precisely because the branch was unreachable from a test.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const S='lib/spaces/function-toggle.ts',T='lib/spaces/function-toggle.test.ts',A='app/(main)/admin/spaces/[id]/actions.ts';if(!fs.existsSync(S)||!fs.existsSync(T)||!fs.existsSync(A))process.exit(79);const a=fs.readFileSync(A,'utf8'),t=fs.readFileSync(T,'utf8');const wired=/nextEntitlementsForFunctionToggle/.test(a);const proven=/spaceFunctionEnabled/.test(t)&&/'crm'/.test(t)&&/'shop'/.test(t);process.exit(wired&&proven?0:1)\"",
+        "note": "Passes when the action delegates to the pure toggle resolver AND its test proves the consequence through spaceFunctionEnabled for the entitlement-carrying functions."
+      }
+    },
+    {
+      "id": "SCAN-533",
+      "title": "The niche funnel builds ?mode= and the create-a-Space wizard never reads it",
+      "status": "done",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "docs/DECISIONS.md",
+        "ref": "ADR-1197, the 2026-09-03 repair and rework audit"
+      },
+      "detail": "lib/funnels/definitions.ts builds operator destinations as `/spaces/new?mode=business:packages`, and lib/funnels/routing.test.ts asserts that URL is produced. But app/(main)/spaces/new/page.tsx takes NO argument — it is `export default async function NewSpacePage()` — so Next hands it searchParams that nothing reads, and CreateSpaceForm falls back to `choices[0]?.id`, which is 'Coach'.\n\nThe visible consequence: every operator arriving from a niche funnel is asked to re-declare the thing they just clicked, and if they accept the default they land on the wrong Mode regardless of which door they came through. The page's own comment claims the wizard \"auto-includes every operating model the registry offers (no hardcoded list here)\" while WIZARD_CHOICES is a hardcoded 7 of the registry's 10.\n\nThis is the first link of the funnel -> bundle chain (PROG-BUNDLE) and is worth fixing on its own.\n\n── FIXED 2026-09-03, AND THE FIX FOUND A SECOND DEFECT IN THE SAME SEAM. Wiring searchParams was the easy half. NICHE_FUNNEL_DESTINATIONS routes `communities` to `business:cohort`, and WIZARD_CHOICES offered seven Modes that did not include it — so even once the parameter was read, that door would still have landed every arrival on 'Coach'. The cohort choice is added using the registry profile's OWN modeLabel and focusLabel rather than new copy, and app/(main)/spaces/new/mode-param.test.ts now fails the build if any niche destination names a Mode the wizard cannot show. Verified adversarially: removing the choice again makes the test name the exact broken pair.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const P='app/(main)/spaces/new/page.tsx',T='app/(main)/spaces/new/mode-param.test.ts';if(!fs.existsSync(P))process.exit(79);const p=fs.readFileSync(P,'utf8');const reads=/searchParams/.test(p);const proven=fs.existsSync(T)&&/business:packages/.test(fs.readFileSync(T,'utf8'));process.exit(reads&&proven?0:1)\"",
+        "note": "Passes when the page accepts searchParams AND a test proves a funnel mode string selects that Mode rather than the first choice."
+      }
+    },
+    {
+      "id": "SCAN-534",
+      "title": "The grace-window comment records a production state that is not production’s",
+      "status": "done",
+      "lane": "hygiene",
+      "size": "XS",
+      "source": {
+        "file": "docs/DECISIONS.md",
+        "ref": "ADR-1197, the 2026-09-03 repair and rework audit"
+      },
+      "detail": "lib/pricing/beta.ts carries a red-flagged block stating: \"THE LIVE ROW TOOK THAT OPT OUT ON 2026-08-19 (ADR-1087, migration 20270314000000). Production reads {\\\"until\\\": null}, so the grace window is GONE and featureGatesLive() is true: the ladder bites today.\"\n\nThe live `pricing_settings` row reads `{\"until\": \"2026-10-01\"}`. The grace window is OPEN and no paid gate bites until 1 October. The claim was made false by this repo's own commit #2347 (\"Open the beta grace window to October 1\"), which changed the setting and left the comment.\n\nThe fix is NOT to update the date. AGENTS.md forbids recording status in prose precisely because prose cannot be verified, and a comment that names a live DB value will go stale again on the next change. Remove the production-state claim and leave the mechanism description, which is correct and durable. Point the reader at the setting.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const s=fs.readFileSync('lib/pricing/beta.ts','utf8').replace(/\\\\s+/g,' ');process.exit(/Production reads/.test(s)||/THE LIVE ROW TOOK THAT OPT OUT/.test(s)?1:0)\"",
+        "note": "Passes when beta.ts no longer asserts what the live pricing_settings row contains."
+      }
+    },
+    {
+      "id": "SCAN-535",
+      "title": "Nine of ten Mode presets recommend an add-on that cannot be bought",
+      "status": "done",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "docs/DECISIONS.md",
+        "ref": "ADR-1197, the 2026-09-03 repair and rework audit"
+      },
+      "detail": "lib/spaces/modes.ts declares `recommendedAddons` values of 'marketing', 'team', 'branding' and 'ai'. ADDON_ENTITLEMENT_KEYS (lib/pricing/plans.ts) has exactly one member, `ai`; marketing / team / branding were folded into plan depth by ADR-472 and sit in RETIRED_ADDON_ITEM_KEYS. The Mode settings page renders these straight to the operator as chips, so nine of the ten presets advertise a product with no Stripe price and no entitlement.\n\nThe guard that should have caught it is itself the defect: lib/spaces/modes.test.ts asserts membership against `new Set(['marketing','ai','team','branding'])` — a LITERAL, not a reference to ADDON_KEYS. It green-lights the three retired values by construction. This is the shape-not-truth failure the repo names in four ADRs, in a test.\n\nFix both: correct the data, and re-point the test at ADDON_KEYS so the next retirement fails the build instead of shipping.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const strip=t=>t.replace(/\\\\/\\\\*[\\\\s\\\\S]*?\\\\*\\\\//g,'').replace(/^\\\\s*\\\\/\\\\/.*$/gm,'');const m=strip(fs.readFileSync('lib/spaces/modes.ts','utf8'));const t=strip(fs.readFileSync('lib/spaces/modes.test.ts','utf8')).replace(/\\\\s+/g,' ');const stale=[...m.matchAll(/recommendedAddons:\\\\s*\\\\[([^\\\\]]*)\\\\]/g)].some(x=>/marketing|team|branding/.test(x[1]));const literal=/new Set\\\\(\\\\[ ?'(marketing|ai|team|branding)'/.test(t);process.exit(stale||literal?1:0)\"",
+        "note": "Comments are stripped before the assertion, so an ADR reference that QUOTES the retired literal does not read as the literal. Passes when no Mode recommends a retired add-on AND the test derives its allowed set from ADDON_KEYS."
+      }
+    },
+    {
+      "id": "PROG-BUNDLE",
+      "title": "Capability bundles: one named, curatable toolset per kind of operator",
+      "status": "done",
+      "lane": "program",
+      "size": "M",
+      "source": {
+        "file": "docs/DECISIONS.md",
+        "ref": "ADR-1197, the 2026-09-03 repair and rework audit"
+      },
+      "detail": "The audit found the three pieces of a per-operator product already built and never wired to each other:\n  1. THE DOOR — lib/marketing/funnel-config.ts, five niche landing pages, each declaring `mode: { type, variant }`. Consumed by the page render, llms.txt and sitemap.ts only; the mode never reaches signup.\n  2. THE TOOLSET — lib/spaces/modes.ts, ten curated operator presets. `navEmphasis` reaches the console; `defaultToggles` has ZERO runtime consumers; `recommendedAddons` renders as decoration (see SCAN-535).\n  3. THE GATE — spaces.entitlements jsonb + the 22 SpaceFunctionKeys, which already gate the whole admin rail through `gate: { kind:'feature', fn }`. Turning a key off removes the row, its children and its surfaces.\nspace_function_type_defaults + seedSpaceConfigFromDefaults is already a bundle-at-provision mechanism — keyed on SpaceType, which has three values.\n\nWhat is missing is a NAMED SET. There is no bundle object anywhere; lib/pricing/loadout.ts is not one despite the name (it hard-codes `business_base` plus the single add-on and carries an unused seatQuantity parameter).\n\nSCOPE, per the owner ruling of 2026-09-03: ship the MECHANISM, not the curation. A pure CapabilityBundle registry, a setSpaceBundle writer, and the funnel -> provision carry-through, seeded with ONE pass-through bundle that grants the current default set so no existing Space changes behaviour. The per-niche tool lists are the owner's to author afterwards, as data, with no further code change.\n\nBlocked by SCAN-531 and SCAN-532: both bugs are in the exact write path a bundle uses.\n\n── SHIPPED 2026-09-03: the registry (lib/pricing/bundles.ts), its drift guard (bundles.test.ts, every function key checked against the LIVE registry) and the writer (space-bundle.ts). Seeded with the pass-through `general` bundle, which lists every function so applying it writes no off-switch and changes no Space.\n\n⚠️ ONE DESIGN CHANGE FROM THE ROW AS WRITTEN, and it makes the mechanism safer rather than smaller. The row imagined setSpaceBundle writing `spaces.plan` and set-to-targeting `entitlements.billing`. It does neither. A bundle SHAPES a Space (which of the 22 tools are on, and who may reach each) and never touches money: setSpacePlan / setSpaceAddons stay the only writers of the billing namespace, and the Stripe webhook stays their only automatic caller. Shaping and charging are two decisions on two surfaces, and ADR-874 records what this repo paid the last time a pair like that was conflated. `suggestedPlan` on a bundle is a hint for a checkout to read; nothing acts on it. A bundle is therefore subtractive over the default-ON registry and COMPOSES with the plan instead of replacing it.\n\n🔴 THE THREE-STATE ENTITLEMENT READ (SCAN-531) IS LOAD-BEARING HERE. A bundle subtracts by writing a top-level `false`, which is exactly the state that now beats a plan grant. Without that fix landing first this whole module would be inert on every paid Space, which is why the two shipped in the same branch.\n\n⚪ THE PROVISION CARRY-THROUGH IS DELIBERATELY NOT WIRED. See LIVE-149: with only a pass-through bundle registered, teaching lib/spaces/provision.ts to apply one would add a branch to the Space creation path that can only ever be a no-op. Speculative code in the highest-risk path in the product, to serve curation that does not exist yet, is the trade this program was scoped to avoid. Wire it in the same change as the first curated bundle.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const R='lib/pricing/bundles.ts',T='lib/pricing/bundles.test.ts',W='lib/pricing/space-bundle.ts';if(!fs.existsSync(R)||!fs.existsSync(T)||!fs.existsSync(W))process.exit(79);const r=fs.readFileSync(R,'utf8'),t=fs.readFileSync(T,'utf8'),w=fs.readFileSync(W,'utf8');const registry=/CapabilityBundle/.test(r)&&/SpaceFunctionKey/.test(r);const drift=/SPACE_FUNCTIONS/.test(t)&&/BILLING_MANAGED_KEYS/.test(t);const writer=/setSpaceBundle/.test(w);process.exit(registry&&drift&&writer?0:1)\"",
+        "note": "Passes when the pure registry, its drift test (every function key real, every entitlement key real) and the writer all exist."
+      }
+    },
+    {
+      "id": "HYG-043",
+      "title": "Thirty static redirect pages are route files doing a job next.config already does",
+      "status": "open",
+      "lane": "hygiene",
+      "size": "S",
+      "source": {
+        "file": "docs/DECISIONS.md",
+        "ref": "ADR-1197, the 2026-09-03 repair and rework audit"
+      },
+      "detail": "49 of 398 page.tsx files (12%) contain a redirect and render no JSX. Classified by whether they can move to next.config.ts:\n  * 30 are STATIC — they import only next/navigation, take no params or searchParams, and redirect to a string literal. 15 of those are the retired (marketing) SEO guides. These are route files, build entries and function-budget lines paying for what a config line does at the edge.\n  * 12 carry a route param but no other logic and are mechanically convertible to `:slug` patterns — deliberately OUT of scope here, they need a per-file read (see HYG-044).\n  * 7 carry real logic (auth lookup, cookie read, claim-token lookup) and must stay routes: /profile, /marketplace, /settings/profile/spotlight, /events/drafts, /friends, /people/[handle]/profile-preview/edit, /events/claim/[token].\n\nThis row covers the 30 static ones only. Every consolidation in this repo has so far ADDED the new surface and left the old one running; the standing rule this row establishes is that a consolidation is not finished until the thing it replaced is deleted.\n\n⚠️ MEASURED 2026-09-03 BEFORE ATTEMPTING IT, AND THE JOB IS BIGGER THAN THE FILE COUNT. The 30 pages are mechanical, but four other files hold paired state that a deletion invalidates, and missing any one of them is how this job goes wrong quietly:\n  · scripts/check-seo.mjs INTENTIONALLY_EXCLUDED — 15 of the 30 are listed there with a verified reason. The guard WARNS on an entry with no backing page ('stale exclusion, remove it'), so the entries must go in the same change.\n  · lib/analytics/vitals-budgets.ts — budgets ~11 of the retired marketing routes. It is already stale prose about routes that 308 today; deleting the pages makes that visible rather than causing it.\n  · scripts/templates-baseline.txt and scripts/admin-client-baseline.txt — both name files under directories in this set. Note the admin ones name actions.ts SIBLINGS, not the page: deleting a page.tsx leaves a live actions.ts and a route-less directory, which needs a per-directory read rather than a sweep.\n  · lib/analytics/vitals-budgets.test.ts asserts '/how-it-works' specifically.\nThe extraction and the exact source -> destination -> permanence mapping for all 30 is done and verified; what remains is the paired bookkeeping. Do it as one change with all five files, not as a delete followed by guard chasing.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs'),path=require('path');let n=0;(function w(d){for(const e of fs.readdirSync(d,{withFileTypes:true})){const p=path.join(d,e.name);if(e.isDirectory()){w(p);continue}if(e.name!=='page.tsx')continue;const s=fs.readFileSync(p,'utf8');if(!/\\\\b(permanentRedirect|redirect)\\\\s*\\\\(/.test(s))continue;const b=s.replace(/\\\\/\\\\*[\\\\s\\\\S]*?\\\\*\\\\//g,'').replace(/^\\\\s*\\\\/\\\\/.*$/gm,'');if(/<[A-Za-z]/.test(b))continue;const im=[...b.matchAll(/from '([^']+)'/g)].map(m=>m[1]);if(im.every(i=>i==='next/navigation')&&!/params|searchParams|await |async function/.test(b)&&/(permanentRedirect|redirect)\\\\(\\\\s*'[^']*'\\\\s*\\\\)/.test(b))n++}})('app');process.exit(n===0?0:1)\"",
+        "note": "Counts page.tsx files that are a bare literal redirect with no params and only a next/navigation import. Passes at zero."
+      }
+    },
+    {
+      "id": "HYG-044",
+      "title": "Twelve param-only redirect pages could be :slug rules, one read each",
+      "status": "open",
+      "lane": "hygiene",
+      "size": "S",
+      "source": {
+        "file": "docs/DECISIONS.md",
+        "ref": "ADR-1197, the 2026-09-03 repair and rework audit"
+      },
+      "detail": "The residue of HYG-043. Twelve redirect-only pages take a route param and import nothing but next/navigation, so each is probably a next.config `:slug` rule — but 'probably' is why they are a separate row: four of them are circle tab stubs whose targets differ by tab, and two are Space settings stubs that may or may not preserve a query string.\n\nThe files: admin/crm/deals/[...slug], circles/[slug]/(circle)/{events,journey,leaderboard,practice}, circles/[slug]/crm, events/[slug]/manage/crm, spaces/[slug]/crm/inbox, spaces/[slug]/settings, spaces/[slug]/settings/{enroll,services}, admin/marketing/contacts/[id].\n\nDo them one at a time, reading the target each time. Do NOT batch-convert.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Each of the twelve is either a next.config rule or has a recorded reason it must stay a route.",
+        "checked": "2026-09-03"
+      }
+    },
+    {
+      "id": "HYG-045",
+      "title": "A completed migration plan that still read as live work",
+      "status": "done",
+      "lane": "hygiene",
+      "size": "XS",
+      "source": {
+        "file": "docs/DECISIONS.md",
+        "ref": "ADR-1197, the 2026-09-03 repair and rework audit"
+      },
+      "detail": "THE ROW AS FILED WAS WRONG ABOUT THE PREMISE, AND THE CORRECTION IS THE INTERESTING PART. It said docs/PUCK-MIGRATION-PLAN.md 'describes migrating off a library the repo does not have' and proposed deleting it.\n\nRe-read before acting: the plan's own recommendation is four steps ending '(4) delete the package'. The package IS gone from package.json. So the migration SUCCEEDED and nobody came back to say so. The audit read a finished plan as an abandoned one, because the only thing distinguishing the two was prose nobody updated — which is the failure this repo names in ADR-1043, arriving from the other direction.\n\n⚪ DELETION WOULD ALSO HAVE BEEN WRONG on its own terms. ADR-493 cites the file as its full plan and check:docs-links enforces relative .md links, so removing it breaks the ledger. The repo's established retirement mechanism for a doc is a superseded banner (18 docs carry one); deletion is the mechanism for CODE. Retiring a document and retiring a module are not the same act.\n\n🔴 AND lib/spotlight/puck/ IS NOT DEAD CODE. convert.ts / resolve.ts / metadata.ts are imported by lib/page-editor/templates/linktree.ts, components/spotlight/spotlight-shell.tsx and components/admin/modules/personal-appearance-module.tsx. They survive because the plan's central constraint was keeping the persisted { content, root } shape byte-for-byte so no stored document is migrated. The package left; the document shape, and therefore the name, stayed. The banner says so explicitly, because 'finish the migration by deleting that directory' is the obvious wrong next move for the next reader.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const D='docs/PUCK-MIGRATION-PLAN.md';if(!fs.existsSync(D))process.exit(0);const d=fs.readFileSync(D,'utf8').split('\\\\n').slice(0,25).join(' ');process.exit(/Superseded/i.test(d)?0:1)\"",
+        "note": "Passes when the plan carries a superseded banner in its first 25 lines, or has been removed entirely. It does NOT assert the package is absent: a future reinstall would be a real decision, not a regression of this row."
+      }
+    },
+    {
+      "id": "HYG-046",
+      "title": "Hub and Nexus detail pages are hand-maintained twins that have already drifted",
+      "status": "open",
+      "lane": "hygiene",
+      "size": "S",
+      "source": {
+        "file": "docs/DECISIONS.md",
+        "ref": "ADR-1197, the 2026-09-03 repair and rework audit"
+      },
+      "detail": "app/(main)/hubs/[slug]/page.tsx (243 lines) and app/(main)/nexuses/[slug]/page.tsx (232 lines) have identical import blocks and identical structure — HierarchyBreadcrumb, StatusBadge, DetailTemplate, resolveDetailHero, InlineText, OpenAdminBarButton, surfaceAccess, showsScopedInsight, StatCard, SectionHeader, EmptyState, ProgressTrack — differing only in getHubCapabilities vs getNexusCapabilities. The same holds for their admin-actions.ts files (220 and 217 lines).\n\nAfter normalising the hub/nexus and guide/mentor tokens roughly 60% of lines still differ. They are not copies kept in sync; they are copies that have drifted, which is the worse failure mode: a fix applied to one silently does not reach the other.\n\nBoth tiers are thin in production (hubs 27 code refs, nexuses 19, and neither is a member-facing nav noun). Extract one parameterised implementation rather than reconciling two.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const H='app/(main)/hubs/[slug]/page.tsx',N='app/(main)/nexuses/[slug]/page.tsx';if(!fs.existsSync(H)||!fs.existsSync(N))process.exit(79);const h=fs.readFileSync(H,'utf8'),n=fs.readFileSync(N,'utf8');const shared=/from '@\\\\/components\\\\/hierarchy\\\\/tier-detail'|from '.*tier-detail'/;process.exit(shared.test(h)&&shared.test(n)&&h.split('\\\\n').length<90&&n.split('\\\\n').length<90?0:1)\"",
+        "note": "Passes when both pages delegate to one shared tier-detail implementation and each is under 90 lines."
+      }
+    },
+    {
+      "id": "HYG-047",
+      "title": "The slate inside the verified backlog is itself unverified, and half of it is stale",
+      "status": "done",
+      "lane": "hygiene",
+      "size": "S",
+      "source": {
+        "file": "docs/DECISIONS.md",
+        "ref": "ADR-1197, the 2026-09-03 repair and rework audit"
+      },
+      "detail": "meta.slate.waves lists 77 ids. Their current statuses: 39 done, 35 open, 2 parked, and one id (LIVE-113) that does not exist in entries at all. So 51% of the sequenced slate is finished work still presented as the queue, and W0 (\"active now\") is 23 done, 1 missing and exactly 1 genuinely open.\n\nSeparately, 25 open/blocked rows are absent from the slate entirely and therefore have no sequencing position — including four live production incidents (LIVE-123 build stalls, LIVE-124 the 300s ceiling, LIVE-105 a dead deploy, LIVE-142 a firing serialization error) and OWN-046.\n\nThis is check:one-list's own failure mode reappearing INSIDE the one list: the rows are probed, the object that orders them is prose. Give the slate a probe: no done ids, no phantom ids, and every open row placed.\n\n── FIXED 2026-09-03. Removed 39 finished ids and the one phantom (LIVE-113) from the waves, and placed all 33 open rows that had no sequencing position, including the four live production incidents that had been sitting outside the queue entirely. W0 'active now' had been 23 done, 1 phantom and 1 genuinely open.\n\n⚪ THE PLACEMENT RULE IS NOW RECORDED IN meta.slate.rule rather than left implicit, because the drift was never that someone sequenced badly — it was that nothing said what the object was for, so nobody maintained it. A rule a reader can apply is the difference between a record that survives and one that rots politely.\n\n🔴 THE PROBE IS THE POINT, not the tidy-up. The slate was prose living inside the one file the repo trusts, and check:backlog now fails if a finished row is still sequenced, a phantom id appears, or an open row has no place. That is the same contract the ROWS have had since ADR-1043; the object that orders them simply never had it.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const d=require('./docs/BUILD-BACKLOG.json');const byId=new Map(d.entries.map(e=>[e.id,e]));const slate=[].concat(...(d.meta.slate&&d.meta.slate.waves||[]).map(w=>w.ids||[]));const phantom=slate.filter(i=>!byId.has(i));const done=slate.filter(i=>byId.get(i)&&byId.get(i).status==='done');const active=d.entries.filter(e=>e.status==='open'||e.status==='blocked').map(e=>e.id);const unplaced=active.filter(i=>!slate.includes(i));process.exit(phantom.length===0&&done.length===0&&unplaced.length===0?0:1)\"",
+        "note": "Passes when the slate contains no finished work, no phantom ids, and leaves no open row unsequenced."
+      }
+    },
+    {
+      "id": "LIVE-151",
+      "title": "One funnel entrance, five call-to-action labels",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "docs/DECISIONS.md",
+        "ref": "ADR-1197, the 2026-09-03 repair and rework audit"
+      },
+      "detail": "BETA_CTA_LABEL in lib/site.ts is \"Start a Circle\" and is used across the marketing pages — except app/page.tsx overrides it to \"Join the beta\", the /for/* funnel doors say \"Start free\", /pricing says \"Join free\" / \"Join Crew\" / \"Start a Space\", and /join itself says \"Come in\". Five verbs for one entrance.\n\nTwo things make it worse than inconsistency. \"Start a Circle\" is the HARDEST ask on the site and it is the default CTA on pages whose readers arrived from \"how to make friends as an adult\". And the universal secondary is \"or just join as a member\" — the word `just` telling the majority of arriving traffic that they are the lesser option, on a site whose own voice canon names the Seeker as reader one.\n\nOne primary verb, one secondary that does not apologise, both single-sourced so a page cannot override them without the guard noticing.\n\n── FIXED 2026-09-03 (the two mechanical halves). The home page no longer overrides ctaLabel, so MarketingHeader falls back to BETA_CTA_LABEL and the front door says what every other marketing page says. And the shared secondary lost the word 'just': it now reads 'or join as a member'. The path is already quieter than the primary because it is a text link beside a button; the copy did not need to say so as well.\n\n⚠️ THE BIGGER CALL IS DELIBERATELY NOT MADE HERE, and it is a positioning decision rather than a consistency one: whether 'Start a Circle' should remain the site-wide primary at all. It is the hardest ask on the site, and it is the default CTA on six SEO guides whose readers arrived from 'how to make friends as an adult'. lib/site.ts documents the current choice as builder-framing aimed at the Latent Leader, 'the reader the whole growth model runs on'. Overriding a documented positioning rationale is a different act from removing an apology, and the production data points the other way again: the customers are operators, not circle hosts. Left for the owner with the evidence stated.\n\n⚪ NOTE FOR WHOEVER CHANGES THE LABEL: lib/site.ts warns that page templates baking the literal into a PUBLISHED DB doc need a re-publish to pick it up. The live home page is one of those (LIVE-148), so changing the constant will not change the front door on its own.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const strip=t=>t.replace(/\\\\/\\\\*[\\\\s\\\\S]*?\\\\*\\\\//g,'').replace(/^\\\\s*\\\\/\\\\/.*$/gm,'').replace(/\\\\{\\\\/\\\\*[\\\\s\\\\S]*?\\\\*\\\\/\\\\}/g,'');const s=strip(fs.readFileSync('lib/site.ts','utf8'));const home=strip(fs.readFileSync('app/page.tsx','utf8'));const apologetic=/or just join/i.test(s);const overrides=/ctaLabel=\\\"[^\\\"]+\\\"/.test(home);process.exit(!apologetic&&!overrides?0:1)\"",
+        "note": "Comments and JSX comments are stripped first, so an ADR note that QUOTES the retired copy does not read as the copy. Passes when the secondary CTA no longer apologises in code and the home page stops hardcoding its own primary label."
+      }
+    },
+    {
+      "id": "LIVE-147",
+      "title": "The traffic half of the site and the revenue half never link to each other",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "docs/DECISIONS.md",
+        "ref": "ADR-1197, the 2026-09-03 repair and rework audit"
+      },
+      "detail": "Every surviving SEO guide — /loneliness, /friendship-as-an-adult, /how-to-be-more-social, /calm-down-fast, /how-to-build-community, /how-to-start-a-circle — routes to /discover or /the-community. Not one links to /pricing or to any /for/* door. The five /for/* funnel doors are chrome-free and link nowhere else at all.\n\nSo the pages that earn search traffic and the pages that take money are two disconnected websites sharing a domain. With Vercel Web Analytics disabled (OWN-047) there is also no way to observe that happening.\n\nAdd the onward path in both directions: a guide offers the operator door where it is genuinely relevant, and each funnel door carries a route back into the marketing site rather than dead-ending.\n\n── FIXED 2026-09-04, AND ONE HALF OF THE ROW WAS OVERSTATED. The traffic-to-revenue link is real and is now made: /tools-for-community-builders pointed its 'Get the toolkit' primary at /spaces, a generic marketing page, and now points at /for/community-builders, the operator door built for that reader.\n\n⚠️ 'The funnel doors link nowhere else at all' was too strong. Measured: the door's header logo links to /, and its footer renders a link list. What the list held was Privacy, Terms and a mailto — legal boilerplate, so the substance held (an operator wanting the numbers before deciding had no route to them from the page selling them) but the sentence did not. Pricing is added to that list. A finding stated harder than the measurement supports is the thing this audit keeps catching in other people's comments.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const G='lib/page-editor/templates/tools-for-community-builders.ts',F='lib/marketing/funnel-config.ts';if(!fs.existsSync(G)||!fs.existsSync(F))process.exit(79);const g=fs.readFileSync(G,'utf8'),f=fs.readFileSync(F,'utf8');const guideOut=/href: '\\/for\\//.test(g);const doorBack=/\\{ label: 'Pricing', href: '\\/pricing' \\}/.test(f);process.exit(guideOut&&doorBack?0:1)\"",
+        "note": "Passes when a marketing guide routes into a /for/ operator door AND the operator door offers a route to /pricing."
+      }
+    },
+    {
+      "id": "LIVE-148",
+      "title": "The front door’s copy lives in an unversioned database row",
+      "status": "open",
+      "lane": "owner",
+      "size": "M",
+      "source": {
+        "file": "docs/DECISIONS.md",
+        "ref": "ADR-1197, the 2026-09-03 repair and rework audit"
+      },
+      "detail": "app/page.tsx renders a published page-editor document. Its own comment is explicit: \"lib/page-editor/templates/home.ts IS UNREACHABLE BY DECISION\" and must not be reconciled against the published page, by an owner ruling of 2026-08-24.\n\nThe consequence is that the single most important piece of copy on the site — last written 2026-07-13 — is a database row that no test, no diff, no review and none of the 48 CI gates can see. The canon guards (check:vocab, check:canon) scan the repo, so the front door is the one member-facing surface exempt from the naming and voice canons. Every conclusion anyone draws about `/` by reading this repository is a conclusion about a fallback nobody renders.\n\nThe ruling was reasonable — editing the home page in the editor is the right authoring experience. What is missing is a way for the REVIEW to happen: either publish the document back into the repo as a checked-in seed on every publish, or run the canon guards against the published document rather than the template.\n\n── MEASURED 2026-09-04, AND THE CHOSEN FIX NEEDS A SECRET THIS REPO DOES NOT HAVE. Owner ruling: keep authoring in the editor and run the canons against the PUBLISHED document rather than the unreachable code template. Correct call, and it cannot be a CI check: scripts/check-canon.mjs is a filesystem scanner (readdirSync over app/ and lib/), and CI has no data plane.\n\nThe right home is .github/workflows/maintenance.yml, which is exactly where ci.yml's own comment says a check needing deployment state belongs (the cron-freshness precedent: 'an advisory finding forced through a blocking gate teaches everyone to route around the gate'). But maintenance.yml carries only SUPABASE_ACCESS_TOKEN, the MANAGEMENT api token used for the advisor diff and the ledger parity. Reading a row out of the `pages` table needs a data-plane key, which is not there.\n\n⚪ SO THIS IS AN OWNER ROW NOW, not a code row, and the lane is changed to say so. Unblock it by adding a read-capable Supabase key to the maintenance workflow's secrets; the step and its script are then a small change that can degrade to the repo's usual loud skip when the key is absent.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "The live home page copy is reviewable from the repository, or a guard reads the published document directly.",
+        "checked": "2026-09-03"
+      }
+    },
+    {
+      "id": "OWN-047",
+      "title": "Vercel Web Analytics is off, so no marketing page has ever been measured",
+      "status": "open",
+      "lane": "owner",
+      "size": "XS",
+      "source": {
+        "file": "docs/DECISIONS.md",
+        "ref": "ADR-1197, the 2026-09-03 repair and rework audit"
+      },
+      "detail": "The Vercel Web Analytics API returns `web_analytics_not_enabled` for the frequency-web project. Around twenty public marketing and SEO surfaces ship without any way to see whether a single one of them converts, and the /for/* funnel doors — the whole operator acquisition path — have no measurement at all.\n\nThe project already sends its own engagement events to Supabase (nav.page_view and the rest), which covers signed-in behaviour well. It does not cover the signed-out funnel, which is where every acquisition decision is made.\n\nThis is a dashboard toggle on the Vercel project, so it is an owner action. It is XS and it unblocks every judgement about which marketing page is worth keeping.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Vercel Web Analytics reports pageviews for the frequency-web production project.",
+        "checked": "2026-09-03"
+      }
+    },
+    {
+      "id": "SCAN-536",
+      "title": "Turning off Plan and billing destroys every plan grant the Space has",
+      "status": "done",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "docs/DECISIONS.md",
+        "ref": "ADR-1197, found while fixing SCAN-532"
+      },
+      "detail": "FOUND BY A TEST WRITTEN FOR A DIFFERENT BUG, and it is the most severe of the set. The Space function `billing` (\"Plan and billing\") has a key byte-identical to BILLING_NAMESPACE, the reserved container every plan grant lives inside.\n\nThe shipped off-switch wrote `entitlements.billing = false`. spaceBillingEntitlements normalizes a non-object to {}, so ONE janitor toggle on a paid Space silently deleted crm, email, reporting, automation, team, multi_pipeline, program and space_full_website — every grant setSpacePlan had written. Reproduced against the real reader before the fix; the assertion is kept in the test file as a permanent record of what the write costs.\n\nThe collision is refused in BOTH directions: enabling would write `billing: true`, which destroys the grants exactly as thoroughly. The resolver returns null rather than silently returning the blob unchanged, because a fail-safe nobody can observe is an invisible regression (AGENTS.md); the action surfaces it as a plain message.\n\n⚠️ NOT FIXED HERE, and deliberately: the underlying namespace collision remains. A Space function may still be added whose key shadows a reserved container, and nothing fails the build. The refusal is a stop, not a cure. A durable fix stores off-switches under their own reserved prefix, which changes the read contract in every consumer and is its own piece of work.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const S='lib/spaces/function-toggle.ts',T='lib/spaces/function-toggle.test.ts';if(!fs.existsSync(S)||!fs.existsSync(T))process.exit(79);const s=fs.readFileSync(S,'utf8'),t=fs.readFileSync(T,'utf8');const refuses=/def.key === BILLING_NAMESPACE/.test(s)&&/\\| null/.test(s);const proven=/REPRODUCES the damage/.test(t)&&/toBeNull\\(\\)/.test(t);process.exit(refuses&&proven?0:1)\"",
+        "note": "Passes when the resolver refuses the reserved-namespace key and the test both reproduces the damage and proves the refusal."
+      }
+    },
+    {
+      "id": "LIVE-149",
+      "title": "Apply a capability bundle at provision, once there is a bundle worth applying",
+      "status": "open",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "docs/DECISIONS.md",
+        "ref": "ADR-1197, the deferred half of PROG-BUNDLE"
+      },
+      "detail": "The mechanism shipped without its last link. lib/spaces/provision.ts does not call setSpaceBundle, so a Space is created with every tool on and a bundle must be applied afterwards by hand.\n\nThis is a deliberate hold, not an oversight. CAPABILITY_BUNDLES currently holds one pass-through row, so the branch could only ever be a no-op — speculative code in the Space creation path, which is the highest-risk path in the product, serving curation that does not exist yet.\n\nDO THIS IN THE SAME CHANGE AS THE FIRST CURATED BUNDLE, never before it. The seam is already open at both ends: /spaces/new reads ?mode= and resolves it to a ModeChoice (SCAN-533), and setSpaceBundle takes a space id and a bundle id. What is missing is the map from a Mode to a bundle, which is data, and one call after the row is inserted.\n\n⚠️ The first curated bundle is the moment this stops being mechanism and starts being a product decision: it decides what a given kind of operator does NOT get. The data says roughly 18 of 21 real Spaces are solo wellness practitioners and only the coaches-and-healers door has produced a customer, so that is the one bundle with evidence behind it.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const R='lib/pricing/bundles.ts',P='lib/spaces/provision.ts';if(!fs.existsSync(R)||!fs.existsSync(P))process.exit(79);const r=fs.readFileSync(R,'utf8');const curated=(r.match(/id: '/g)||[]).length>1;if(!curated)process.exit(1);process.exit(/setSpaceBundle/.test(fs.readFileSync(P,'utf8'))?0:1)\"",
+        "note": "Stays failing while only the pass-through bundle exists. Passes when a curated bundle is registered AND provision applies one. Fails loudly if a curated bundle lands without the wiring."
+      }
+    },
+    {
+      "id": "SCAN-537",
+      "title": "The sanctioned way to update the RLS-bypass baseline deletes the reasons for every bypass in it",
+      "status": "open",
+      "lane": "hygiene",
+      "size": "S",
+      "source": {
+        "file": "docs/DECISIONS.md",
+        "ref": "ADR-1197, found while fixing a CI failure"
+      },
+      "detail": "scripts/admin-client-baseline.txt is the frozen list of files allowed to import the RLS-bypassing service-role client (ADR-923). Above the list sits a 76-line comment block: the justification for each existing bypass, written per entry, naming the zero-policy table or the signed-out caller or the SECURITY DEFINER function that makes it the safe shape rather than the lazy one. It is the only place that reasoning exists.\n\nWhen the guard fails it prints the fix: 'run: node scripts/check-admin-client.mjs --update'. That command regenerates the file from a fresh scan and writes the list ALONE. Measured 2026-09-04 while adding one legitimate entry: the regenerated file was +2 / -76, and the 76 were the entire comment block.\n\n🔴 THE FAILURE MODE IS THE WORST SHAPE A SECURITY TOOL CAN HAVE. The command is the one the guard itself recommends, it is run by someone under CI pressure who wants to get green, its output passes the guard immediately, and the loss shows up in the diff as deletions in a file the reviewer is looking at for a single added path. The next person to ask 'why is lib/events/seed/store.ts allowed to bypass RLS?' finds no answer, and the honest answer is that a tool deleted it to add an unrelated line.\n\n⚪ WORKED AROUND, NOT FIXED, in the change that found it: the entry was inserted by hand in sorted position, diff +1, comments intact. That is not a fix, it is one person knowing. Make --update preserve every leading comment line, and add a test that regenerating a baseline with a header leaves the header byte-identical.\n\n⚠️ CHECK THE SIBLINGS BEFORE CLOSING. scripts/templates-baseline.txt and scripts/adoption-baselines.json have the same --update shape and may have the same hole; if they do, this row covers them too. And check the history: if a past --update already ate a comment block, some existing entries may have lost their justification years ago and nobody would know.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const S='scripts/check-admin-client.mjs',T='scripts/check-admin-client.test.ts';if(!fs.existsSync(S))process.exit(79);const s=fs.readFileSync(S,'utf8');const preserves=/preserve|leading comment|header/i.test(s);const proven=fs.existsSync(T)&&/comment/i.test(fs.readFileSync(T,'utf8'));process.exit(preserves&&proven?0:1)\"",
+        "note": "Passes when --update preserves the leading comment block AND a test proves regeneration leaves it intact. A code-shape check alone would not be enough here, which is why the test file is required."
+      }
+    },
+    {
+      "id": "SCAN-538",
+      "title": "Two niche vocabularies, and the map between them has no runtime consumer",
+      "status": "open",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "docs/DECISIONS.md",
+        "ref": "ADR-1197, found while closing LIVE-147"
+      },
+      "detail": "The niche funnel has TWO slug vocabularies and they do not match. lib/marketing/funnel-config.ts declares the /for/ doors as coaches-and-healers, studios, event-hosts, community-builders, nonprofits. lib/funnels/definitions.ts keys NICHE_FUNNEL_DESTINATIONS as coaches, studios, hosts, communities, nonprofits. Only studios and nonprofits are the same string, so a lookup by /for/ slug misses three of five.\n\n🔴 IT HAS NOT BITTEN ANYONE, FOR A WORSE REASON THAN LUCK: NICHE_FUNNEL_DESTINATIONS has NO runtime consumer at all. Its only importers are lib/funnels/routing.test.ts and, since SCAN-533, app/(main)/spaces/new/mode-param.test.ts. The door's own button reads FUNNEL_START_HREF, which is the literal '/spaces'. So the map that carries each niche to its pre-seeded Mode is tested, documented, cross-referenced in a comment as 'the SAME spaceCreatePath', and dead.\n\n⚠️ THIS QUALIFIES THE SCAN-533 FIX AND THE AUDIT'S HEADLINE. /spaces/new now reads ?mode= and the mode-param test proves it, which is right and needed; but the /for/ doors do not currently produce that URL, so the chain the audit described as broken at one link is broken at two. The half that is live is the /join?seq= induction path, which does route through these destinations. The half that is not is the door button.\n\n⚪ THE FIX IS ONE OF TWO SHAPES, and it is a product call rather than a mechanical one: either the door button routes through the niche destination (an operator lands in Create-a-Space pre-seeded, which is what OPERATOR-FUNNELS §5 says it should do), or the destination map is deleted and the door honestly sends everyone to /spaces. Do not close this by making the two key sets match: that fixes the spelling of a road nobody drives on.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs'),cp=require('child_process');const D='lib/funnels/definitions.ts';if(!fs.existsSync(D))process.exit(79);if(!/NICHE_FUNNEL_DESTINATIONS/.test(fs.readFileSync(D,'utf8')))process.exit(0);let out='';try{out=cp.execSync(\\\"grep -rlE '^\\\\\\\\s*(import|const).*NICHE_FUNNEL_DESTINATIONS' lib app components --include=*.ts --include=*.tsx 2>/dev/null\\\",{encoding:'utf8'})}catch(e){out=''}const users=out.split('\\n').filter(f=>f&&!/definitions\\.ts$/.test(f)&&!/\\.test\\.tsx?$/.test(f));process.exit(users.length>0?0:1)\"",
+        "note": "Measures IMPORTERS, not string mentions: a comment naming the map is not a consumer of it, and the first version of this probe was fooled by exactly that. Passes when a non-test module actually imports the destination map, or when the map is deleted outright."
+      }
+    },
+    {
+      "id": "LIVE-150",
+      "title": "Two call-to-action verbs, one per reader, and a guard that found two more labels than the audit did",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "docs/DECISIONS.md",
+        "ref": "ADR-1197, owner ruling 2026-09-04"
+      },
+      "detail": "LIVE-151 fixed the mechanical half (the home page stopped overriding the label, the secondary stopped apologising) and deliberately left the bigger call: whether \"Start a Circle\" should be the site-wide primary at all. The owner settled it: \"start a circle does not have to be the primary thing. circles are what all the groups run on, but there doesn't have to be specific rules.\"\n\nSo the set is two verbs, each named for the reader it addresses, rather than one global default any page could override:\n  SEEKER    \"Find your people\" -> /join      the guides, /discover, the-community, about\n  OPERATOR  \"Start free\"       -> /pricing   /pricing, /spaces, the /for/<niche> doors\n\n⚪ THE SEEKER VERB IS NOT NEW COPY. \"Find your people\" already ships as the eyebrow on /discover/circles and /discover/places and in the Nearby quick links, so this makes the CTA agree with the site rather than adding a phrase to it. Circles stay the mechanic every group runs on; they are simply not what a first-time reader is asked to do, and \"Start a Circle\" was the hardest ask on the site sitting under six guides whose readers had searched for help making friends.\n\n⚪ ONE VERB CHANGE REACHED ~28 SURFACES, because they already read one constant. Only the operator pages needed hand-editing, and FUNNEL_CTA_LABEL stopped being a third independent literal and now derives from the operator constant.\n\n🔴 THE GUARD FOUND TWO MORE THAN THE AUDIT DID, ON ITS FIRST RUN. The audit counted five labels by reading; lib/site.cta.test.ts counted SEVEN by measuring, adding \"Find your way in\" on /about and \"Follow the build\" on /the-lab. /about was a seeker acquisition CTA wearing a bespoke verb and now takes the approved one. /the-lab is the one named exception and is not an acquisition CTA at all: it sells a room planned for 2028, its own hero says nothing is bookable, and its primary asks you to follow a build. Putting \"Find your people\" there would promise a room that does not exist. The exemption is scoped to the one file and ratcheted, so a second page cannot inherit it. A count made by reading is a lower bound; a count made by a guard is the number.\n\n⚠️ THE FRONT DOOR DID NOT MOVE, and cannot from here. app/page.tsx renders a published DB document, so the constant change does not reach it (LIVE-148).",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const S='lib/site.ts',T='lib/site.cta.test.ts';if(!fs.existsSync(S)||!fs.existsSync(T))process.exit(79);const s=fs.readFileSync(S,'utf8');const two=/APPROVED_CTA_LABELS/.test(s)&&/OPERATOR_CTA_LABEL/.test(s);const f=fs.readFileSync('lib/marketing/funnel-config.ts','utf8');const derived=/FUNNEL_CTA_LABEL[^=]*=\\\\s*OPERATOR_CTA_LABEL/.test(f);process.exit(two&&derived?0:1)\"",
+        "note": "Passes when the approved set exists as data AND the niche doors derive their label from it rather than declaring a third. The per-template sweep is enforced continuously by lib/site.cta.test.ts, which is the stronger half."
       }
     }
   ]

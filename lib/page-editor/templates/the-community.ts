@@ -29,8 +29,8 @@ import {
 //    dashes. Sentence-case headings. Contractions always (CONTENT-VOICE §5e).
 //    Honest at day zero: no member counts, no leaderboards, no invented numbers.
 //  • CTA SYSTEM (updated June 2026): the page activates the Latent Leader
-//    (CONTENT-VOICE §2b/§7b). The primary action is BETA_CTA_LABEL ("Start a
-//    Circle") and appears at THREE moments — the hero, a mid-page CallToAction
+//    (CONTENT-VOICE §2b/§7b). The primary action is BETA_CTA_LABEL ("Find your
+//    people") and appears at THREE moments — the hero, a mid-page CallToAction
 //    after the How-you-start steps (highest intent), and the ink close. Each
 //    primary carries ONE quiet secondary text link for the Seeker
 //    (BETA_CTA_SECONDARY_LABEL, "or just join as a member"). Never stack two

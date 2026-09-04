@@ -12,6 +12,7 @@ import {
   effectiveLabel,
   type ModeProfile,
 } from './modes'
+import { ADDON_KEYS } from '@/lib/pricing/plans'
 import { isSpaceKind } from './categories'
 import type { SpaceType } from './types'
 
@@ -159,10 +160,22 @@ describe('the ModeProfile defaults', () => {
     }
   })
 
-  it('recommended add-ons are known catalog keys', () => {
-    const known = new Set(['marketing', 'ai', 'team', 'branding'])
+  // DERIVED from the live catalog, never a literal. The version of this test that hard-coded
+  // `new Set(['marketing','ai','team','branding'])` passed for months while nine of ten presets
+  // recommended add-ons ADR-472 had retired: the guard green-lit them by construction, which is the
+  // shape-not-truth failure this repo names in four ADRs, performed by a test (ADR-1197).
+  it('recommended add-ons are add-ons that can actually be bought', () => {
+    const known = new Set<string>(ADDON_KEYS)
     for (const m of all) {
       for (const a of m.recommendedAddons) expect(known.has(a)).toBe(true)
+    }
+  })
+
+  it('no preset recommends a retired add-on', () => {
+    // The three ADR-472 folded into plan depth. Named explicitly so a re-introduction is loud.
+    for (const retired of ['marketing', 'team', 'branding']) {
+      expect(ADDON_KEYS as readonly string[]).not.toContain(retired)
+      for (const m of all) expect(m.recommendedAddons as readonly string[]).not.toContain(retired)
     }
   })
 

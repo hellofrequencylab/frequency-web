@@ -1,5 +1,22 @@
 # Migration plan: off the deprecated `@measured/puck`
 
+> ⚠️ **Superseded (2026-09-03). The migration this plans is substantially DONE, and the header below
+> was describing a world that had already moved on.** `@measured/puck` is not in `package.json` in any
+> dependency block, which was step (4) of the recommendation. The audit of 2026-09-03 read this file as
+> live work and reported it as "a 266-line plan for a dependency that is not installed"; the truer
+> reading is that the plan succeeded and nobody came back to say so ([ADR-1197](DECISIONS.md)).
+>
+> ⚪ **`lib/spotlight/puck/` is NOT dead code, and the name is load-bearing.** `convert.ts`,
+> `resolve.ts` and `metadata.ts` are imported by `lib/page-editor/templates/linktree.ts`,
+> `components/spotlight/spotlight-shell.tsx` and `components/admin/modules/personal-appearance-module.tsx`.
+> They survive because the plan's own central constraint was to keep the persisted `{ content, root }`
+> shape byte-for-byte so **no stored document is migrated**. The package left; the document shape, and
+> therefore the name, stayed. Do not "finish the migration" by deleting that directory.
+>
+> Kept rather than deleted because [ADR-493](DECISIONS.md#adr-493) cites it as its full plan, and
+> because the rationale for owning the block layer in-house is still the reasoning the editor program
+> runs on. See [`EDITOR-ARCHITECTURE.md`](EDITOR-ARCHITECTURE.md) for the forward plan.
+
 > **Status lives in [`docs/BUILD-BACKLOG.json`](BUILD-BACKLOG.json)** — run `pnpm backlog`.
 > This document is the spec and the rationale. It does **not** record what is done, because prose
 > cannot be verified and this repo has lost that bet five times ([ADR-1043](DECISIONS.md)).

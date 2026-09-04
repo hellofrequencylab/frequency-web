@@ -713,6 +713,7 @@ lib/pricing/gates.ts
 lib/pricing/member-meter-usage.ts
 lib/pricing/settings.ts
 lib/pricing/space-allowance.ts
+lib/pricing/space-bundle.ts
 lib/pricing/space-plan.ts
 lib/privacy/export.ts
 lib/profile/awards.ts

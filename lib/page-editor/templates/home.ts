@@ -36,9 +36,9 @@ import {
 //    dashes. Sentence-case headings. Contractions always. Honest at founding stage:
 //    no member counts, no leaderboards, no invented numbers.
 //  • CTA SYSTEM (matches the-community): the primary action is BETA_CTA_LABEL
-//    ("Start a Circle"), at the mid CTA (highest intent) and the ink close, each
+//    ("Find your people"), at the mid CTA (highest intent) and the ink close, each
 //    paired with ONE quiet secondary text link for the Seeker
-//    (BETA_CTA_SECONDARY_LABEL, "or just join as a member"). The hero leads with no
+//    (BETA_CTA_SECONDARY_LABEL, "or join as a member"). The hero leads with no
 //    button; the single CTA system waits for the mid and the close. Never stack two
 //    buttons.
 //  • Movement-register sentences are RATIONED to two on the whole page (the

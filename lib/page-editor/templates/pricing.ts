@@ -1,7 +1,7 @@
 import type { Data } from '@/lib/page-editor/types'
 import {
-  BETA_CTA_LABEL,
-  BETA_CTA_HREF,
+  OPERATOR_CTA_LABEL,
+  OPERATOR_CTA_HREF,
   BETA_CTA_SECONDARY_LABEL,
   BETA_CTA_SECONDARY_HREF,
 } from '@/lib/site'
@@ -66,7 +66,8 @@ const NONPROFIT_YEAR = formatLoadoutCents(CAT.nonprofit_seat.year.listCents)
 //  • Compose ONLY from registered blocks (lib/page-editor/config.tsx). Canon terms
 //    render verbatim (Member, Crew, Circle, Zaps, Gems, Vault, Vera). No em dashes.
 //    Sentence-case headings. Contractions always. Never narrate the reader's feelings.
-//  • CTA SYSTEM: the primary action is the shared BETA_CTA (label/href from
+//  • CTA SYSTEM: /pricing is an OPERATOR surface, so its primary is the shared OPERATOR_CTA
+//    (ADR-1197), not the seeker verb. Label/href from
 //    @/lib/site), with ONE quiet secondary text link beside it. The free Member tier
 //    cards keep their own "Start free" entry into the game; the page-level asks (hero
 //    and the ink close) carry the shared beta CTA so Pricing speaks the same language
@@ -90,7 +91,7 @@ export const data: Data = {
         subtitle: "Being a Member is free, forever, and so is selling. Browse Circles and Events, show up, earn Zaps, meet Vera, and run a ticketed event and get paid on day one. A business never pays for access to people either. What a paid plan buys is a lower rate on the sales the network introduces, and your own people are always free.",
         image: '/images/site/lab-lounge.jpg', focal: 'center',
         minHeight: 'screen',
-        ctaPrimaryLabel: BETA_CTA_LABEL, ctaPrimaryHref: BETA_CTA_HREF,
+        ctaPrimaryLabel: OPERATOR_CTA_LABEL, ctaPrimaryHref: OPERATOR_CTA_HREF,
         ctaSecondaryLabel: BETA_CTA_SECONDARY_LABEL, ctaSecondaryHref: BETA_CTA_SECONDARY_HREF,
         note: 'No card today. Leave anytime.',
         tone: 'surface', width: 'default', align: 'center', layout: L,
@@ -392,7 +393,7 @@ export const data: Data = {
       props: {
         id: 'pr-cta', eyebrow: '', heading: 'Pull up a chair.', headingAccent: 'chair',
         body: 'Being a Member is free, and it sells from day one. No card today, leave anytime. Find your people, and keep every dollar the ones you brought yourself spend.',
-        ctaPrimaryLabel: BETA_CTA_LABEL, ctaPrimaryHref: BETA_CTA_HREF,
+        ctaPrimaryLabel: OPERATOR_CTA_LABEL, ctaPrimaryHref: OPERATOR_CTA_HREF,
         ctaSecondaryLabel: BETA_CTA_SECONDARY_LABEL, ctaSecondaryHref: BETA_CTA_SECONDARY_HREF,
         tone: 'ink', width: 'default', align: 'center', layout: L,
       },

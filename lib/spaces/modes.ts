@@ -18,6 +18,7 @@
 // programs / products / events) come straight from the lexicon facet, the one place a Mode renames a
 // thing.
 
+import type { AddonKey } from '@/lib/pricing/plans'
 import type { SpaceType } from './types'
 import type { SpaceFunctionKey } from './functions'
 import type { SpaceKind } from './categories'
@@ -91,9 +92,12 @@ export interface ModeProfile {
   pipeline: readonly ModeStage[]
   /** The lexicon this Mode paints over the generic nouns. */
   lexicon: ModeLexicon
-  /** The RECOMMENDED add-ons (suggested, never auto-on; entitlement stays the billing lane's job). The
-   *  values are catalog add-on keys (marketing / ai / team / branding), surfaced as a nudge. */
-  recommendedAddons: readonly string[]
+  /** The RECOMMENDED add-ons (suggested, never auto-on; entitlement stays the billing lane's job).
+   *  TYPED to `AddonKey`, the live catalog union, so a retired add-on cannot be recommended: this
+   *  field carried `marketing` / `team` / `branding` for months after ADR-472 folded all three into
+   *  plan depth, and nine of ten presets advertised a product with no Stripe price (ADR-1197). The
+   *  import is type-only, so this module stays runtime-pure. */
+  recommendedAddons: readonly AddonKey[]
   /** The dashboard next-best-actions this Mode surfaces, in order. */
   nextBestActions: readonly ModeAction[]
 }
@@ -130,7 +134,7 @@ const BUSINESS_SERVICE: ModeProfile = {
     { name: 'Lost', kind: 'lost' },
   ],
   lexicon: { people: 'Clients', person: 'Client', offerings: 'Services', offering: 'Service' },
-  recommendedAddons: ['marketing'],
+  recommendedAddons: [],
   nextBestActions: [
     { label: 'Set your booking times', surface: 'space.offerings' },
     { label: 'Add a service to quote', surface: 'space.crm' },
@@ -154,7 +158,7 @@ const BUSINESS_PRODUCT: ModeProfile = {
     { name: 'Lapsed', kind: 'lost' },
   ],
   lexicon: { people: 'Customers', person: 'Customer', offerings: 'Products', offering: 'Product' },
-  recommendedAddons: ['marketing', 'branding'],
+  recommendedAddons: [],
   nextBestActions: [
     { label: 'List a product', surface: 'space.offerings' },
     { label: 'Recover a cart', surface: 'space.crm' },
@@ -179,7 +183,7 @@ const COACHING_PACKAGES: ModeProfile = {
     { name: 'Lapsed', kind: 'lost' },
   ],
   lexicon: { people: 'Clients', person: 'Client', offerings: 'Packages', offering: 'Package' },
-  recommendedAddons: ['ai', 'marketing'],
+  recommendedAddons: ['ai'],
   nextBestActions: [
     { label: 'Fill your calendar', surface: 'space.offerings' },
     { label: 'Renew a client', surface: 'space.crm' },
@@ -204,7 +208,7 @@ const COACHING_COHORT: ModeProfile = {
     { name: 'Withdrew', kind: 'lost' },
   ],
   lexicon: { people: 'Students', person: 'Student', offerings: 'Programs', offering: 'Program' },
-  recommendedAddons: ['ai', 'marketing'],
+  recommendedAddons: ['ai'],
   nextBestActions: [
     { label: 'Open enrollment', surface: 'space.crm' },
     { label: 'Welcome your students', surface: 'space.comms' },
@@ -275,7 +279,7 @@ const EVENT_TICKETED: ModeProfile = {
     { name: 'No show', kind: 'lost' },
   ],
   lexicon: { people: 'Attendees', person: 'Attendee', offerings: 'Events', offering: 'Event' },
-  recommendedAddons: ['marketing'],
+  recommendedAddons: [],
   nextBestActions: [
     { label: 'Set up ticket tiers', surface: 'space.offerings' },
     { label: 'Show the door code', surface: 'space.offerings' },
@@ -298,7 +302,7 @@ const EVENT_MEMBERSHIP: ModeProfile = {
     { name: 'Lapsed', kind: 'lost' },
   ],
   lexicon: { people: 'Members', person: 'Member', offerings: 'Events', offering: 'Event' },
-  recommendedAddons: ['marketing'],
+  recommendedAddons: [],
   nextBestActions: [
     { label: 'Invite a member', surface: 'space.people' },
     { label: 'Show the door code', surface: 'space.offerings' },
@@ -322,7 +326,7 @@ const ORG_DONATIONS: ModeProfile = {
     { name: 'Reactivated', kind: 'won' },
   ],
   lexicon: { people: 'Supporters', person: 'Supporter', offerings: 'Programs', offering: 'Program' },
-  recommendedAddons: ['marketing'],
+  recommendedAddons: [],
   nextBestActions: [
     { label: 'Set up your fund', surface: 'space.offerings' },
     { label: 'Thank a supporter', surface: 'space.crm' },
@@ -346,7 +350,7 @@ const ORG_PROGRAMS: ModeProfile = {
     { name: 'Withdrew', kind: 'lost' },
   ],
   lexicon: { people: 'Participants', person: 'Participant', offerings: 'Programs', offering: 'Program' },
-  recommendedAddons: ['marketing'],
+  recommendedAddons: [],
   nextBestActions: [
     { label: 'Define a program', surface: 'space.offerings' },
     { label: 'Welcome a participant', surface: 'space.comms' },
@@ -462,6 +466,10 @@ const WIZARD_CHOICES: readonly { type: SpaceType; variant: ModeVariant; label: s
   { type: 'business', variant: 'product', label: 'Product business', hint: 'Catalog and storefront' },
   { type: 'business', variant: 'membership', label: 'Studio or gym', hint: 'Classes and memberships' },
   { type: 'business', variant: 'ticketed', label: 'Event space', hint: 'Tickets and check in' },
+  // Added 2026-09-03 (ADR-1197). The community-builders niche funnel routes to `business:cohort`, and
+  // the wizard did not offer it, so that door silently landed every arrival on `Coach / packages` —
+  // the first choice. Label and hint are this profile's own `modeLabel` and `focusLabel`, not new copy.
+  { type: 'business', variant: 'cohort', label: 'Coach', hint: 'Programs and enrollment' },
   { type: 'nonprofit', variant: 'donations', label: 'Nonprofit', hint: 'Programs and donations' },
 ]
 

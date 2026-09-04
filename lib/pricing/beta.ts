@@ -173,13 +173,19 @@ export interface BetaGraceConfig {
  *  gets a SELLABLE checkout with the gates still soft, which is the intended go-live, instead of an
  *  instant lockout of every free Space. Clearing the field (`{ until: null }`) is the explicit opt out.
  *
- *  🔴 THE LIVE ROW TOOK THAT OPT OUT ON 2026-08-19 (ADR-1087, migration 20270314000000). Production
- *  reads `{"until": null}`, so the grace window is GONE and `featureGatesLive()` is true: the ladder
- *  bites today, not on the date below. This constant is now only the fallback for an ABSENT or
- *  MALFORMED row, and it deliberately stays a WINDOW rather than following the live value to null.
- *  Flipping it would reverse the fail-safe direction of the whole module: a DB hiccup would then
- *  enforce every gate on the strength of a failed read, which is the one outcome this file's
- *  never-lock-out posture exists to prevent. A stale-looking default here is the safe kind of stale. */
+ *  🔴 THIS CONSTANT DOES NOT TELL YOU WHETHER THE GATES ARE BITING, AND NOTHING IN THIS FILE DOES.
+ *  The live answer is the `beta_grace` row in `pricing_settings`, read through `getBetaGrace`
+ *  (lib/pricing/settings.ts); this value is only the fallback for an ABSENT or MALFORMED row. A
+ *  comment here naming the live value would be a status claim in prose, and AGENTS.md forbids those
+ *  because nothing re-reads them: the sentence that stood here was measured true on 2026-08-19
+ *  (ADR-1087, ADR-1195) and was made false the same day it was cited, by #2347 moving the window to
+ *  October. It is the third such expiry this module has paid for (ADR-1197). Read the row.
+ *
+ *  ⚪ WHAT IS DURABLE, and the reason this default is a date rather than `null`: it deliberately stays
+ *  a WINDOW no matter what the live row holds. Following the live value to null would reverse the
+ *  fail-safe direction of the whole module — a DB hiccup would then enforce every gate on the strength
+ *  of a failed read, which is the one outcome this file's never-lock-out posture exists to prevent. A
+ *  stale-looking default here is the safe kind of stale. */
 export const BETA_GRACE_DEFAULT: BetaGraceConfig = { until: '2026-09-01' }
 
 /** Narrow a raw `beta_grace` jsonb value to a BetaGraceConfig. An absent / malformed value reads as the

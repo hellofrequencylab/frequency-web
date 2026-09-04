@@ -1,7 +1,7 @@
 import type { Data } from '@/lib/page-editor/types'
 import {
-  BETA_CTA_LABEL,
-  BETA_CTA_HREF,
+  OPERATOR_CTA_LABEL,
+  OPERATOR_CTA_HREF,
   BETA_CTA_SECONDARY_LABEL,
   BETA_CTA_SECONDARY_HREF,
 } from '@/lib/site'
@@ -50,7 +50,8 @@ import {
 //  • Rhythm: an alternating light beat with a `Statement` interstitial between
 //    movements, TWO dark beats (the ink capability band, the ink "why we do it this
 //    way"), the slat Marquee, then the ink close.
-//  • CTA SYSTEM: the primary action is BETA_CTA_LABEL ("Start a Circle") and appears
+//  • CTA SYSTEM: /spaces is an OPERATOR surface, so its primary is OPERATOR_CTA_LABEL ("Start
+//    free" -> /pricing, ADR-1197), not the seeker verb. It appears
 //    at THREE moments — the hero, a mid-page CallToAction after the how-it-works
 //    steps (highest intent), and the ink close. Each primary carries ONE quiet
 //    secondary text link (BETA_CTA_SECONDARY_*). Never stack two buttons.
@@ -83,8 +84,8 @@ export const data: Data = {
           { value: 'Free', label: 'For everyone you bring' },
           { value: 'No card', label: 'To open your room' },
         ],
-        ctaPrimaryLabel: BETA_CTA_LABEL,
-        ctaPrimaryHref: BETA_CTA_HREF,
+        ctaPrimaryLabel: OPERATOR_CTA_LABEL,
+        ctaPrimaryHref: OPERATOR_CTA_HREF,
         ctaSecondaryLabel: BETA_CTA_SECONDARY_LABEL,
         ctaSecondaryHref: BETA_CTA_SECONDARY_HREF,
         note: "We're just opening. The first builders set the tone.",
@@ -393,8 +394,8 @@ export const data: Data = {
         heading: 'Open your room.',
         headingAccent: 'your room',
         body: "You've seen what you get, the deal, and the three steps. The first builders are setting the tone now.",
-        ctaPrimaryLabel: BETA_CTA_LABEL,
-        ctaPrimaryHref: BETA_CTA_HREF,
+        ctaPrimaryLabel: OPERATOR_CTA_LABEL,
+        ctaPrimaryHref: OPERATOR_CTA_HREF,
         ctaSecondaryLabel: BETA_CTA_SECONDARY_LABEL,
         ctaSecondaryHref: BETA_CTA_SECONDARY_HREF,
         emphasis: { scale: 'default', accent: 'none' },
@@ -539,8 +540,8 @@ export const data: Data = {
         heading: 'Call in your people.',
         headingAccent: 'your people',
         body: "Bring the people you have, or the few you want to gather, and keep it free for every one of them. Start a Circle and we'll set your room up with you.",
-        ctaPrimaryLabel: BETA_CTA_LABEL,
-        ctaPrimaryHref: BETA_CTA_HREF,
+        ctaPrimaryLabel: OPERATOR_CTA_LABEL,
+        ctaPrimaryHref: OPERATOR_CTA_HREF,
         ctaSecondaryLabel: BETA_CTA_SECONDARY_LABEL,
         ctaSecondaryHref: BETA_CTA_SECONDARY_HREF,
         emphasis: { scale: 'default', accent: 'none' },

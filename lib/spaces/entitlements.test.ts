@@ -76,13 +76,48 @@ describe('entitlement partition: billing namespace UNION read (the keystone · A
     expect(spaceEntitlements(space)).toEqual({ crm: true, email: true, automation: true })
   })
 
-  it('a billing key grants even when the top level is absent or explicitly false', () => {
+  it('a billing key grants when the top level is ABSENT', () => {
+    const space: SpaceLike = {
+      entitlements: { [BILLING_NAMESPACE]: { email: true, crm: true } },
+    }
+    expect(spaceHasEntitlement(space, 'email')).toBe(true)
+    expect(spaceHasEntitlement(space, 'crm')).toBe(true)
+  })
+
+  // 🔴 THIS TEST USED TO ASSERT THE OPPOSITE, and that is why the defect shipped (ADR-1197). Its
+  // previous name was "a billing key grants even when the top level is absent or explicitly false",
+  // and it pinned a one-directional union: a plan grant beat a hand revoke. The consequence was that
+  // `crm`, `email` and `program` — the three keys whose function key and entitlement key are the same
+  // string — could not be switched off on ANY Business+ Space. The operator wrote `false`, the next
+  // read put it back, and the guard called it correct.
+  it('an explicit top-level FALSE revokes, and a plan grant cannot put it back', () => {
     const space: SpaceLike = {
       entitlements: { email: false, [BILLING_NAMESPACE]: { email: true, crm: true } },
     }
-    // The billing `true` wins the OR even over a top-level `false`.
-    expect(spaceHasEntitlement(space, 'email')).toBe(true)
-    expect(spaceHasEntitlement(space, 'crm')).toBe(true)
+    expect(spaceHasEntitlement(space, 'email')).toBe(false) // hand revoke wins
+    expect(spaceHasEntitlement(space, 'crm')).toBe(true) // untouched key still granted
+    expect(spaceEntitlements(space)).toEqual({ email: false, crm: true })
+  })
+
+  it('the revoke covers every key whose function name and entitlement name collide', () => {
+    // crm / email / program are the three, and they are the three an operator most wants to turn off.
+    for (const key of ['crm', 'email', 'program']) {
+      const space: SpaceLike = {
+        entitlements: { [key]: false, [BILLING_NAMESPACE]: { [key]: true } },
+      }
+      expect(spaceHasEntitlement(space, key)).toBe(false)
+    }
+  })
+
+  it('a GARBAGE top-level value is not a revoke — it defers to billing, never locks out', () => {
+    // Only a literal `false` revokes. Treating every non-`true` value as a revoke would turn a
+    // malformed blob into a lockout, the opposite of this module's posture.
+    for (const junk of [0, '', 'no', null, undefined, {}] as unknown[]) {
+      const space: SpaceLike = {
+        entitlements: { crm: junk, [BILLING_NAMESPACE]: { crm: true } },
+      }
+      expect(spaceHasEntitlement(space, 'crm')).toBe(true)
+    }
   })
 
   it('a manual top-level grant SURVIVES even when the billing namespace lacks the key (toggle-off)', () => {
