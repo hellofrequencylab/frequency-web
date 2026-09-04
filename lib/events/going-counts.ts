@@ -40,7 +40,8 @@ const GOING_PAGE = 1000
 /** The RPC's row shape. */
 type CountRow = { event_id: string; going: number }
 
-/** `event_going_counts` is newer than the generated DB types (its migration is not applied yet),
+/** `event_going_counts` was newer than the generated DB types until 2026-09-04 (the migration was
+ *  applied; the types were simply never regenerated — now they are, so this cast is belt-and-braces),
  *  so it is reached through a narrow untyped handle — the repo convention for not-yet-regenerated
  *  surfaces (ADR-246). Drop the cast when lib/database.types.ts carries the function. */
 type RpcHandle = {
