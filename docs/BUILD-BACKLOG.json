@@ -6229,6 +6229,57 @@
       }
     },
     {
+      "id": "SCAN-546",
+      "title": "Directory opt-out, Ghost mode and the discoverability tier were enforced in one RPC and bypassed by six member listings; the RPC ignored the target radius and the connections tier",
+      "status": "done",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "lib/connections/directory-visibility.ts",
+        "ref": "ADR-1203"
+      },
+      "detail": "members_near enforced directory_visible / ghost_mode / discoverable_by; /network, /search, the command-palette people search and three sidebar rails were service-role reads filtering on is_active only. The RPC also never read the target's discovery_radius_m (the slider governed the viewer's own search, the opposite of its label) and required discoverable_by='community', so the connections tier meant no one. Closed 2026-09-04: one predicate module mirrors the RPC clause by clause and is applied at all six listings; migration 20270344000100 (applied) honours the target radius, resolves connections as an accepted friendship with _viewer, and re-locks grants. The season leaderboard rail is the one named exemption (own opt-out).",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const r=(f)=>fs.existsSync(f)?fs.readFileSync(f,'utf8'):'';const files=['app/(main)/network/page.tsx','app/(main)/search/page.tsx','app/api/search/route.ts','components/sidebar/rail-panels.tsx'];const all=files.every(f=>r(f).includes('isListableInDirectory'));const m=r('supabase/migrations/20270344000100_members_near_honours_target_radius_and_connections.sql');process.exit(all&&m.includes('c.d <= c.discovery_radius_m')&&/discoverable_by = 'connections'/.test(m)?0:1)\"",
+        "note": "Passes when all six listings consult the predicate and the RPC migration carries both the target-radius bound and the connections clause."
+      }
+    },
+    {
+      "id": "SCAN-547",
+      "title": "Member suspension was enforced by one trigger on two tables that the app bypassed as service_role; it now reaches 32 member-write tables with no role bypass",
+      "status": "done",
+      "lane": "live",
+      "size": "L",
+      "source": {
+        "file": "lib/moderation/suspension-coverage.ts",
+        "ref": "ADR-1203"
+      },
+      "detail": "enforce_member_not_suspended was attached to posts and dispatches and opened with `if auth.role() = 'service_role' then return new`, while the compose path inserts posts through the admin client: enforcement on zero paths in practice. Migration 20270344000000 (applied) rewrites the function to read the actor column by name (a misattached column raises undefined_column on first write), drops the bypass, keeps honouring suspended_until, and attaches BEFORE INSERT to 32 tables and BEFORE UPDATE OF content columns where an edit is a fresh contribution. The coverage ledger derives the universe from the schema types and fails when a member-write table is on neither list; pgTAP covers the raise in db-tests.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const r=(f)=>fs.existsSync(f)?fs.readFileSync(f,'utf8'):'';const m=r('supabase/migrations/20270344000000_suspension_reaches_every_member_write.sql');const code=m.split('\\n').filter(l=>!/^\\s*--/.test(l)).join('\\n');const noBypass=!/auth\\.role\\(\\)/.test(code)&&!/service_role/.test(code);const n=(m.match(/create trigger /g)||[]).length;process.exit(noBypass&&n>=40&&fs.existsSync('lib/moderation/suspension-coverage.ts')&&fs.existsSync('supabase/tests/suspension_reaches_every_member_write.test.sql')?0:1)\"",
+        "note": "Passes when the migration body has no role bypass, attaches at least forty triggers, and both the coverage ledger and the pgTAP test exist."
+      }
+    },
+    {
+      "id": "HYG-051",
+      "title": "lib/database.types.ts had drifted from the live schema: two applied RPCs were absent and pages.space_id was nullable in the types and NOT NULL live",
+      "status": "done",
+      "lane": "hygiene",
+      "size": "XS",
+      "source": {
+        "file": "lib/database.types.ts",
+        "ref": "ADR-1203"
+      },
+      "detail": "Regenerated 2026-09-04 after applying 20270344000100. event_going_counts (20270329) and event_tier_price_summary (20270332) had been applied but never regenerated into the types while lib/events/going-counts.ts said the migration was not applied yet; pages.space_id had gone NOT NULL. Nothing in CI regenerates or diffs the file (HYG-052).",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const r=(f)=>fs.existsSync(f)?fs.readFileSync(f,'utf8'):'';const t=r('lib/database.types.ts');process.exit(t.includes('_viewer?: string')&&t.includes('event_going_counts')&&t.includes('event_tier_price_summary')?0:1)\"",
+        "note": "Passes when the types carry the regenerated RPC signatures."
+      }
+    },
+    {
       "id": "SCAN-541",
       "title": "The Stripe webhook granted the paid member tier to any completed checkout that was not one of three named kinds, including a one-time Shop order",
       "status": "done",
