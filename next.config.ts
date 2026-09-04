@@ -349,10 +349,16 @@ const nextConfig: NextConfig = {
       // finished until the thing it replaced is deleted — every previous one in this repo ADDED the
       // new surface and left the old one running.
       //
-      // Permanence is preserved exactly as each file had it, never "tidied": the 15 files that used
-      // `redirect()` (a 307) stay `permanent: false`, and the 15 that used `permanentRedirect()`
-      // (a 308) stay `permanent: true`. A 308 is cached by browsers effectively forever, so turning
-      // a 307 into one is not a cleanup, it is an irreversible decision made by accident.
+      // Permanence is preserved exactly as each file had it, never "tidied": of the 41 deleted files
+      // 22 used `redirect()` (a 307) and stay `permanent: false`, and 19 used `permanentRedirect()`
+      // (a 308) and stay `permanent: true`. A 308 is cached by browsers effectively forever, so
+      // turning a 307 into one is not a cleanup, it is an irreversible decision made by accident.
+      //
+      // (The rule COUNT is lower than 41: the three circle tabs sharing a destination collapse into
+      // one `:tab(...)` alternation, and `/admin/crm/deals` needs a bare rule beside its `:path*`
+      // pair. Counting rules and counting files are different questions and it is worth saying which
+      // this sentence answers — an earlier draft of this comment said "15 and 15", which was the
+      // split of the 30 STATIC files only, sitting above a block that covers all 41.)
       //
       // 🔴 SOURCES ARE EXACT WHERE A LIVE CHILD EXISTS. Redirects are checked BEFORE the filesystem
       // router, so a careless `:path*` does not merely overlap a live route, it replaces it. Two here

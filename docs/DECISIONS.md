@@ -35460,10 +35460,16 @@ Forty-one `page.tsx` files whose entire body was a redirect are deleted and reis
 `next.config.ts` rules. A route file costs a build entry and a line of the per-function budget to do
 what the edge does for free, before the filesystem router is consulted at all.
 
-**Permanence is preserved exactly, never tidied.** The 15 files using `redirect()` (307) stay
-`permanent: false`; the 15 marketing guides using `permanentRedirect()` (308) stay `permanent: true`.
-A 308 is cached by browsers effectively forever, so promoting a 307 is not a cleanup — it is an
-irreversible decision made by accident.
+**Permanence is preserved exactly, never tidied.** Of the 41 files, **22** used `redirect()` (307)
+and stay `permanent: false`; **19** used `permanentRedirect()` (308) and stay `permanent: true`. A 308
+is cached by browsers effectively forever, so promoting a 307 is not a cleanup — it is an irreversible
+decision made by accident.
+
+⚠️ This paragraph first read "15 and 15", which is the split of the 30 STATIC files alone and does not
+sum to 41. The rules were right — each was derived from its own file's call — but the prose describing
+them was not, and it was caught by re-deriving the counts from the deleted files rather than by
+re-reading the sentence. A number in a comment is a claim, and this ledger's own rule applies to it:
+prefer a figure you can recompute over one you copied forward.
 
 The standing rule this establishes: **a consolidation is not finished until the thing it replaced is
 deleted.** Every previous one in this repo added the new surface and left the old one running.
