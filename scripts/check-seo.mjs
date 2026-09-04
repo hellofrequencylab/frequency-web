@@ -83,25 +83,17 @@ export function siteName(src) {
 // Static forward-facing pages that are DELIBERATELY not advertised in the sitemap. Each
 // entry carries the real, verified reason (grep the page: redirect / noindex). Do NOT add
 // a page here just to silence the check — a genuinely public page belongs in sitemap.ts.
-// Audited 2026-07-02 against the pages themselves.
+// Audited 2026-07-02 against the pages themselves; re-audited 2026-09-04 (HYG-043, ADR-1199).
+//
+// The 15 retired SEO guides that used to sit here are GONE from this map, because the route files
+// they excused are gone too. They are now `permanent: true` rules in next.config.ts — the same 308,
+// issued at the edge before the filesystem router instead of by a page that existed only to leave.
+// This guard warns on an entry with no backing page ("stale exclusion, remove it"), so keeping them
+// would have traded one stale record for another: an allowlist excusing files that no longer exist.
+//
+// A route that redirects from next.config never reaches this scanner at all, which is the point —
+// there is no page to hold metadata, so there is nothing to exclude.
 const INTENTIONALLY_EXCLUDED = new Map([
-  ['/build', '308 permanentRedirect → /the-community (retired Mode page; old links + SEO consolidate onto canonical)'],
-  ['/how-it-works', '308 permanentRedirect → /what-is-frequency (consolidated explainer, ADR-811 IA)'],
-  ['/practice', '308 permanentRedirect → /the-quest (retired Mode page)'],
-  ['/spread', '308 permanentRedirect → /the-community (retired Mode page)'],
-  ['/demo', '308 permanentRedirect → /the-community (retired; no redirect chain for crawlers, SEO-1)'],
-  ['/lead-funnel-kit', '308 permanentRedirect → /tools-for-community-builders (retired operator preview, ADR-811 IA)'],
-  // ── ADR-811 IA consolidation (2026-07-24): overlapping SEO guides merged into authoritative
-  //    pillars; each retired guide is a 308 redirect that transfers ranking equity to its pillar. ──
-  ['/life-after-the-feed', '308 permanentRedirect → /loneliness (absorbed into the loneliness/third-place pillar)'],
-  ['/what-is-a-third-space', '308 permanentRedirect → /loneliness (absorbed into the loneliness/third-place pillar)'],
-  ['/meet-people-new-city', '308 permanentRedirect → /friendship-as-an-adult (absorbed into the making-friends pillar)'],
-  ['/find-like-minded-people', '308 permanentRedirect → /friendship-as-an-adult (absorbed into the making-friends pillar)'],
-  ['/how-to-reconnect-with-old-friends', '308 permanentRedirect → /friendship-as-an-adult (absorbed into the making-friends pillar)'],
-  ['/feel-less-awkward-in-groups', '308 permanentRedirect → /how-to-be-more-social (absorbed into the social-confidence pillar)'],
-  ['/social-life-without-drinking', '308 permanentRedirect → /how-to-be-more-social (absorbed into the social-confidence pillar)'],
-  ['/host-a-recurring-gathering', '308 permanentRedirect → /how-to-build-community (absorbed into the builder pillar)'],
-  ['/how-to-run-a-community-space', '308 permanentRedirect → /how-to-build-community (absorbed into the builder pillar)'],
   ['/subscribe/confirm', 'robots noindex — double-opt-in confirmation landing (transactional)'],
 ])
 

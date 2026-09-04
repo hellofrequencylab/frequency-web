@@ -29,7 +29,7 @@ export async function ResonanceMatches() {
           enjoy meeting, from what you already share. You decide before anyone is introduced.
         </p>
         <Link
-          href="/settings/connections"
+          href="/settings#connections"
           className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
         >
           Turn on matching <ArrowRight className="h-4 w-4" aria-hidden />

@@ -35447,3 +35447,141 @@ that notices it fired; a probe must measure the consequence rather than the shap
 how cheap the strongest fix was: the schema was already in the repo as generated types, so binding the
 string to it cost one `satisfies` clause and moved the whole class from "a test might catch it" to
 "it does not compile".
+
+## ADR-1199: forty-one route files that existed only to leave, and the guard that makes deleting them safe (2026-09-04)
+
+**Status:** accepted · **Closes:** HYG-043, HYG-044, OWN-047 · **Opens:** OWN-048 ·
+**Touches:** `next.config.ts`, `scripts/check-seo.mjs`, `scripts/templates-baseline.txt`,
+`lib/marketing/redirect-shadow.test.ts`, `app/layout.tsx`
+
+### The change
+
+Forty-one `page.tsx` files whose entire body was a redirect are deleted and reissued as
+`next.config.ts` rules. A route file costs a build entry and a line of the per-function budget to do
+what the edge does for free, before the filesystem router is consulted at all.
+
+**Permanence is preserved exactly, never tidied.** Of the 41 files, **22** used `redirect()` (307)
+and stay `permanent: false`; **19** used `permanentRedirect()` (308) and stay `permanent: true`. A 308
+is cached by browsers effectively forever, so promoting a 307 is not a cleanup — it is an irreversible
+decision made by accident.
+
+⚠️ This paragraph first read "15 and 15", which is the split of the 30 STATIC files alone and does not
+sum to 41. The rules were right — each was derived from its own file's call — but the prose describing
+them was not, and it was caught by re-deriving the counts from the deleted files rather than by
+re-reading the sentence. A number in a comment is a claim, and this ledger's own rule applies to it:
+prefer a figure you can recompute over one you copied forward.
+
+The standing rule this establishes: **a consolidation is not finished until the thing it replaced is
+deleted.** Every previous one in this repo added the new surface and left the old one running.
+
+### 🔴 The guard is the point, not the deletion
+
+Redirects are evaluated **before** the filesystem router, so a rule whose `source` matches a real page
+does not overlap it — it **replaces** it. Nothing notices: the file still exists, tsc is happy, every
+other test passes, and the page is unreachable in production. Two of the new rules sit directly above
+live subtrees: `/spaces/:slug/settings` has **19 live sub-pages** beneath it, and
+`/spaces/:slug/settings/services` has a live `new/` child. Both are written as exact sources, and
+until now that was an argument rather than a fact — a one-character edit adding `/:path*` would have
+shipped green.
+
+`lib/marketing/redirect-shadow.test.ts` generalises `funnel-redirects.test.ts` (which guards only
+`/for/<slug>`) to every rule against every route in `app/`. Widening the settings rule makes it name
+all 19 pages it would have taken out.
+
+⚠️ **The guard found two bugs in its own matcher before it found anything else**, and both would have
+made it pass while checking nothing: `:path*` left the source's own slash in front of its replacement
+and matched nothing, and then the generic `:name` rule matched the `?:` inside its own earlier output
+and produced an invalid group. It is now a segment-wise parser, because **a parser cannot re-read what
+it has already written**. The lesson generalises past this file: a detector built from chained
+`.replace()` calls over its own output is a detector whose failure mode is silence.
+
+### What the survey got wrong, measured after the edit
+
+The plan named **6** live inbound links pointing at soon-to-redirect paths. A post-edit sweep found
+**10** — `app/manage-emails`, `components/connections/resonance-matches.tsx`,
+`components/feed/romance-strip.tsx` and `components/widgets/crm/today.tsx` were missed. Each still
+worked, through an extra hop, which is exactly why nobody would have noticed. Reading a codebase
+produces a lower bound; a grep after the change produces the number.
+
+`scripts/admin-client-baseline.txt` needed no edit, contrary to the row's warning: every entry under
+these directories names an `actions.ts` sibling that survives, because `page.tsx` alone was deleted
+wherever a live sibling existed.
+
+### OWN-047, and why a toggle was only half of it
+
+Web Analytics was enabled on the Vercel project, which stopped the API erroring. It would still have
+reported **zero forever**: `@vercel/analytics` was not a dependency and `<Analytics />` was rendered
+nowhere. The dashboard switch opens the endpoint; the script is what fills it. Both halves now exist.
+
+This matters more than its size. The repo's own `nav.page_view` events cover signed-in behaviour well
+and see **nothing** of the ~20 public marketing surfaces or the `/for/*` operator doors — which is
+where every acquisition decision is made. Measurement starts now and does not backfill, so those
+judgements need a few weeks of data before they mean anything.
+
+### OWN-048, opened by owner ruling
+
+Before any bundle ships, each gets a written spec **and the 22-key function registry is re-reviewed
+beside it**. The two are one decision: a bundle is defined by what it omits, so naming omissions is a
+statement about `lib/spaces/functions.ts`. This blocks LIVE-149 rather than the reverse — the
+mechanism is finished and proven, and wiring provision to a registry holding one pass-through row
+would put a permanent no-op branch in the Space-creation path.
+
+## ADR-1200: the fix-it command the guard prints was deleting the reasons it exists to protect (2026-09-04)
+
+**Status:** accepted · **Closes:** SCAN-537 · **Opens:** SCAN-540 ·
+**Touches:** `scripts/check-admin-client.mjs`, `scripts/check-templates.mjs`,
+`scripts/check-admin-client.test.ts`
+
+### What was wrong
+
+`scripts/admin-client-baseline.txt` is the frozen list of files allowed to import the RLS-bypassing
+service-role client ([ADR-923](#adr-923)). Above the list sits an 80-line comment block carrying the
+justification for each bypass — the zero-policy table, the signed-out caller, the SECURITY DEFINER
+function that makes it the safe shape rather than the lazy one. **It is the only place that reasoning
+exists.**
+
+`--update` regenerated the file from a fresh scan and wrote a hard-coded five-line header. So adding
+one legitimate entry measured **+2 / −76**, and the 76 were the reasons.
+
+**This is the worst shape a security tool can have,** and the shape is the finding rather than the
+bug. The command is the one the guard itself PRINTS when it fails. It is run by someone under CI
+pressure who wants green. Its output passes the guard immediately. And the loss appears in the diff
+as deletions inside a file the reviewer is scanning for a single added path. Every step of that is
+designed to be trusted. Reads were already comment-blind (`loadBaseline` strips `#`); only the write
+was asymmetric, and asymmetry between read and write is where this class always lives.
+
+### The fix, and the proof
+
+`readHeader()` preserves every line above the first entry verbatim, falling back to the default only
+when there is nothing to keep. **Proven against the real file, not a fixture:** running the actual
+`node scripts/check-admin-client.mjs --update` against the committed baseline now yields a
+byte-identical 823 lines / 80 comment lines, at the exact command that used to cost 76.
+
+`scripts/check-templates.mjs` had the identical hole and got the identical fix. It round-tripped only
+by luck — its header is still byte-identical to its constant because nobody has hand-annotated an
+entry yet — so this fixes the shape *before* it has damage, which is the cheap version of the same
+repair.
+
+The test carries a **mutation control** that reconstructs the old behaviour and asserts it fails the
+same round-trip assertion, because a preservation test that would pass against a regressed script is
+worth nothing.
+
+### 🔴 What this does NOT fix
+
+**A whole-file lexicographic sort has already run over that comment block**, and the damage is done.
+Three independent proofs: 78 of the 79 adjacent comment pairs are in alphabetical order; the script's
+own five header lines, written 1-2-3-4-5, now sit at lines 45/46/51/47/63, which is precisely their
+lexicographic order and no writer produces that; and the prose no longer parses — line 24 ends
+*"...the autonomy ladder is"* and its continuation is at line 3.
+
+So the reasoning is byte-present and no longer says which bypass it is about. `git log` on the file is
+three commits deep and all 823 lines arrived at once, so the pre-sort original is **not recoverable
+from this repository**. Reassembly needs someone who knows the tenancy model to decide which sentence
+belongs to which entry; filed as **SCAN-540**.
+
+### The general form
+
+A tool that rewrites a file it does not fully parse will eventually delete the part it does not
+understand. `check-adoption.mjs` is immune to this by accident of format — its prose lives in a
+`_readme` array *inside* the JSON, so it round-trips through parse/stringify. That is the durable
+lesson: **comments-as-data survive a regenerator; comments-as-formatting do not.**

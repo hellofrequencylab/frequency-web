@@ -55,7 +55,7 @@ function OwnerBriefGuidance() {
         <li>
           <span className="font-medium text-text">Turn it on or off:</span> it rides your lifecycle
           email preference. Manage it under{' '}
-          <Link href="/settings/notifications" className="font-medium text-text underline underline-offset-2">
+          <Link href="/settings#notifications" className="font-medium text-text underline underline-offset-2">
             email settings
           </Link>
           . Off there means no brief.

@@ -49,8 +49,6 @@
             "LIVE-148",
             "LIVE-149",
             "HYG-042",
-            "HYG-043",
-            "HYG-044",
             "HYG-046",
             "SCAN-538",
             "SCAN-539"
@@ -73,8 +71,8 @@
             "LIVE-128",
             "SCAN-502",
             "SCAN-521",
-            "SCAN-537",
-            "HYG-049"
+            "HYG-049",
+            "SCAN-540"
           ]
         },
         {
@@ -162,11 +160,11 @@
             "OWN-011",
             "OWN-040",
             "OWN-046",
-            "OWN-047",
             "LIVE-127",
             "SCAN-205",
             "HYG-033",
-            "LIVE-153"
+            "LIVE-153",
+            "OWN-048"
           ]
         }
       ],
@@ -5893,14 +5891,14 @@
     {
       "id": "HYG-043",
       "title": "Thirty static redirect pages are route files doing a job next.config already does",
-      "status": "open",
+      "status": "done",
       "lane": "hygiene",
       "size": "S",
       "source": {
         "file": "docs/DECISIONS.md",
         "ref": "ADR-1197, the 2026-09-03 repair and rework audit"
       },
-      "detail": "49 of 398 page.tsx files (12%) contain a redirect and render no JSX. Classified by whether they can move to next.config.ts:\n  * 30 are STATIC — they import only next/navigation, take no params or searchParams, and redirect to a string literal. 15 of those are the retired (marketing) SEO guides. These are route files, build entries and function-budget lines paying for what a config line does at the edge.\n  * 12 carry a route param but no other logic and are mechanically convertible to `:slug` patterns — deliberately OUT of scope here, they need a per-file read (see HYG-044).\n  * 7 carry real logic (auth lookup, cookie read, claim-token lookup) and must stay routes: /profile, /marketplace, /settings/profile/spotlight, /events/drafts, /friends, /people/[handle]/profile-preview/edit, /events/claim/[token].\n\nThis row covers the 30 static ones only. Every consolidation in this repo has so far ADDED the new surface and left the old one running; the standing rule this row establishes is that a consolidation is not finished until the thing it replaced is deleted.\n\n⚠️ MEASURED 2026-09-03 BEFORE ATTEMPTING IT, AND THE JOB IS BIGGER THAN THE FILE COUNT. The 30 pages are mechanical, but four other files hold paired state that a deletion invalidates, and missing any one of them is how this job goes wrong quietly:\n  · scripts/check-seo.mjs INTENTIONALLY_EXCLUDED — 15 of the 30 are listed there with a verified reason. The guard WARNS on an entry with no backing page ('stale exclusion, remove it'), so the entries must go in the same change.\n  · lib/analytics/vitals-budgets.ts — budgets ~11 of the retired marketing routes. It is already stale prose about routes that 308 today; deleting the pages makes that visible rather than causing it.\n  · scripts/templates-baseline.txt and scripts/admin-client-baseline.txt — both name files under directories in this set. Note the admin ones name actions.ts SIBLINGS, not the page: deleting a page.tsx leaves a live actions.ts and a route-less directory, which needs a per-directory read rather than a sweep.\n  · lib/analytics/vitals-budgets.test.ts asserts '/how-it-works' specifically.\nThe extraction and the exact source -> destination -> permanence mapping for all 30 is done and verified; what remains is the paired bookkeeping. Do it as one change with all five files, not as a delete followed by guard chasing.",
+      "detail": "49 of 398 page.tsx files (12%) contain a redirect and render no JSX. Classified by whether they can move to next.config.ts:\n  * 30 are STATIC — they import only next/navigation, take no params or searchParams, and redirect to a string literal. 15 of those are the retired (marketing) SEO guides. These are route files, build entries and function-budget lines paying for what a config line does at the edge.\n  * 12 carry a route param but no other logic and are mechanically convertible to `:slug` patterns — deliberately OUT of scope here, they need a per-file read (see HYG-044).\n  * 7 carry real logic (auth lookup, cookie read, claim-token lookup) and must stay routes: /profile, /marketplace, /settings/profile/spotlight, /events/drafts, /friends, /people/[handle]/profile-preview/edit, /events/claim/[token].\n\nThis row covers the 30 static ones only. Every consolidation in this repo has so far ADDED the new surface and left the old one running; the standing rule this row establishes is that a consolidation is not finished until the thing it replaced is deleted.\n\n⚠️ MEASURED 2026-09-03 BEFORE ATTEMPTING IT, AND THE JOB IS BIGGER THAN THE FILE COUNT. The 30 pages are mechanical, but four other files hold paired state that a deletion invalidates, and missing any one of them is how this job goes wrong quietly:\n  · scripts/check-seo.mjs INTENTIONALLY_EXCLUDED — 15 of the 30 are listed there with a verified reason. The guard WARNS on an entry with no backing page ('stale exclusion, remove it'), so the entries must go in the same change.\n  · lib/analytics/vitals-budgets.ts — budgets ~11 of the retired marketing routes. It is already stale prose about routes that 308 today; deleting the pages makes that visible rather than causing it.\n  · scripts/templates-baseline.txt and scripts/admin-client-baseline.txt — both name files under directories in this set. Note the admin ones name actions.ts SIBLINGS, not the page: deleting a page.tsx leaves a live actions.ts and a route-less directory, which needs a per-directory read rather than a sweep.\n  · lib/analytics/vitals-budgets.test.ts asserts '/how-it-works' specifically.\nThe extraction and the exact source -> destination -> permanence mapping for all 30 is done and verified; what remains is the paired bookkeeping. Do it as one change with all five files, not as a delete followed by guard chasing.\n\n── DONE 2026-09-04 (ADR-1199). All 30 static stubs deleted and replaced by next.config rules, permanence preserved exactly (15 stayed 307, the 15 marketing guides stayed 308 — turning a 307 into a 308 is an irreversible decision, not a tidy-up). The paired bookkeeping landed in the SAME change, as the row demanded: the 15 marketing entries came out of check-seo.mjs INTENTIONALLY_EXCLUDED (leaving them would have traded one stale record for another, since that guard warns on an entry with no backing page), and two lines came out of templates-baseline.txt.\n\n⚠️ THE SURVEY UNDERCOUNTED THE LIVE INBOUND LINKS. The plan named 6; a post-edit sweep found 10. The four extras were app/manage-emails/page.tsx, components/connections/resonance-matches.tsx, components/feed/romance-strip.tsx and components/widgets/crm/today.tsx, each pointing at a /settings/* path that now 307s. They worked either way, which is exactly why nobody would have noticed the extra hop.\n\nadmin-client-baseline.txt needed no edit after all: every entry it holds under these directories names an actions.ts sibling that survives, because only page.tsx was deleted wherever a live sibling existed.",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e \"const fs=require('fs'),path=require('path');let n=0;(function w(d){for(const e of fs.readdirSync(d,{withFileTypes:true})){const p=path.join(d,e.name);if(e.isDirectory()){w(p);continue}if(e.name!=='page.tsx')continue;const s=fs.readFileSync(p,'utf8');if(!/\\\\b(permanentRedirect|redirect)\\\\s*\\\\(/.test(s))continue;const b=s.replace(/\\\\/\\\\*[\\\\s\\\\S]*?\\\\*\\\\//g,'').replace(/^\\\\s*\\\\/\\\\/.*$/gm,'');if(/<[A-Za-z]/.test(b))continue;const im=[...b.matchAll(/from '([^']+)'/g)].map(m=>m[1]);if(im.every(i=>i==='next/navigation')&&!/params|searchParams|await |async function/.test(b)&&/(permanentRedirect|redirect)\\\\(\\\\s*'[^']*'\\\\s*\\\\)/.test(b))n++}})('app');process.exit(n===0?0:1)\"",
@@ -5910,14 +5908,14 @@
     {
       "id": "HYG-044",
       "title": "Twelve param-only redirect pages could be :slug rules, one read each",
-      "status": "open",
+      "status": "done",
       "lane": "hygiene",
       "size": "S",
       "source": {
         "file": "docs/DECISIONS.md",
         "ref": "ADR-1197, the 2026-09-03 repair and rework audit"
       },
-      "detail": "The residue of HYG-043. Twelve redirect-only pages take a route param and import nothing but next/navigation, so each is probably a next.config `:slug` rule — but 'probably' is why they are a separate row: four of them are circle tab stubs whose targets differ by tab, and two are Space settings stubs that may or may not preserve a query string.\n\nThe files: admin/crm/deals/[...slug], circles/[slug]/(circle)/{events,journey,leaderboard,practice}, circles/[slug]/crm, events/[slug]/manage/crm, spaces/[slug]/crm/inbox, spaces/[slug]/settings, spaces/[slug]/settings/{enroll,services}, admin/marketing/contacts/[id].\n\nDo them one at a time, reading the target each time. Do NOT batch-convert.",
+      "detail": "The residue of HYG-043. Twelve redirect-only pages take a route param and import nothing but next/navigation, so each is probably a next.config `:slug` rule — but 'probably' is why they are a separate row: four of them are circle tab stubs whose targets differ by tab, and two are Space settings stubs that may or may not preserve a query string.\n\nThe files: admin/crm/deals/[...slug], circles/[slug]/(circle)/{events,journey,leaderboard,practice}, circles/[slug]/crm, events/[slug]/manage/crm, spaces/[slug]/crm/inbox, spaces/[slug]/settings, spaces/[slug]/settings/{enroll,services}, admin/marketing/contacts/[id].\n\nDo them one at a time, reading the target each time. Do NOT batch-convert.\n\n── DONE 2026-09-04 (ADR-1199), one read each as the row required. The four circle tab stubs do NOT share a destination — events/journey/practice go to whats-on, leaderboard goes to stats — so they are two rules, not one, which is precisely the mistake a batch conversion would have made. Eleven converted; app/(main)/admin/marketing/contacts/[id] stays a route file (requireAdmin plus a DB lookup to derive its destination).\n\nFour directories kept their page.tsx deleted but the directory alive, because a sibling is imported elsewhere: circles/[slug]/crm/actions.ts, events/[slug]/manage/crm/actions.ts, spaces/[slug]/settings/enroll/{enroll-body,section}.tsx and spaces/[slug]/settings/services/new/.\n\n🔴 The two dangerous rules are now GUARDED, not merely written carefully. lib/marketing/redirect-shadow.test.ts fails if any rule shadows a live route; widening /spaces/:slug/settings to :path* makes it name all 19 sub-pages it would have taken out. The guard found two bugs in its own matcher before it found anything else, both of which would have made it pass while checking nothing.",
       "verify": {
         "kind": "manual",
         "evidence": "Each of the twelve is either a next.config rule or has a recorded reason it must stay a route.",
@@ -6029,18 +6027,18 @@
     {
       "id": "OWN-047",
       "title": "Vercel Web Analytics is off, so no marketing page has ever been measured",
-      "status": "open",
+      "status": "done",
       "lane": "owner",
       "size": "XS",
       "source": {
         "file": "docs/DECISIONS.md",
         "ref": "ADR-1197, the 2026-09-03 repair and rework audit"
       },
-      "detail": "The Vercel Web Analytics API returns `web_analytics_not_enabled` for the frequency-web project. Around twenty public marketing and SEO surfaces ship without any way to see whether a single one of them converts, and the /for/* funnel doors — the whole operator acquisition path — have no measurement at all.\n\nThe project already sends its own engagement events to Supabase (nav.page_view and the rest), which covers signed-in behaviour well. It does not cover the signed-out funnel, which is where every acquisition decision is made.\n\nThis is a dashboard toggle on the Vercel project, so it is an owner action. It is XS and it unblocks every judgement about which marketing page is worth keeping.",
+      "detail": "The Vercel Web Analytics API returns `web_analytics_not_enabled` for the frequency-web project. Around twenty public marketing and SEO surfaces ship without any way to see whether a single one of them converts, and the /for/* funnel doors — the whole operator acquisition path — have no measurement at all.\n\nThe project already sends its own engagement events to Supabase (nav.page_view and the rest), which covers signed-in behaviour well. It does not cover the signed-out funnel, which is where every acquisition decision is made.\n\nThis is a dashboard toggle on the Vercel project, so it is an owner action. It is XS and it unblocks every judgement about which marketing page is worth keeping.\n\n── DONE 2026-09-04 (ADR-1199), and it took BOTH halves. The owner enabled Web Analytics on the Vercel project, which stopped the API returning `web_analytics_not_enabled`. It would still have reported zero forever: @vercel/analytics was not a dependency and <Analytics /> was rendered nowhere, so nothing sent a pageview. The dashboard switch opens the endpoint; the script is what fills it. The package is added and the component mounts in app/layout.tsx beside WebVitals.\n\n⚪ Measurement starts NOW and does not backfill, so the ~20 marketing surfaces and the /for/* doors have no history behind them yet. Any 'which page is worth keeping' judgement needs a few weeks first.",
       "verify": {
-        "kind": "manual",
-        "evidence": "Vercel Web Analytics reports pageviews for the frequency-web production project.",
-        "checked": "2026-09-03"
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const pkg=JSON.parse(fs.readFileSync('package.json','utf8'));const dep=!!(pkg.dependencies&&pkg.dependencies['@vercel/analytics']);const l=fs.readFileSync('app/layout.tsx','utf8');process.exit(dep&&/<Analytics\\\\s*\\\\/>/.test(l)&&/@vercel\\\\/analytics/.test(l)?0:1)\"",
+        "note": "Passes when the package is a dependency AND the component is actually rendered in the root layout. The dashboard toggle alone reports zero, which is the half that was missed."
       }
     },
     {
@@ -6080,14 +6078,14 @@
     {
       "id": "SCAN-537",
       "title": "The sanctioned way to update the RLS-bypass baseline deletes the reasons for every bypass in it",
-      "status": "open",
+      "status": "done",
       "lane": "hygiene",
       "size": "S",
       "source": {
         "file": "docs/DECISIONS.md",
         "ref": "ADR-1197, found while fixing a CI failure"
       },
-      "detail": "scripts/admin-client-baseline.txt is the frozen list of files allowed to import the RLS-bypassing service-role client (ADR-923). Above the list sits a 76-line comment block: the justification for each existing bypass, written per entry, naming the zero-policy table or the signed-out caller or the SECURITY DEFINER function that makes it the safe shape rather than the lazy one. It is the only place that reasoning exists.\n\nWhen the guard fails it prints the fix: 'run: node scripts/check-admin-client.mjs --update'. That command regenerates the file from a fresh scan and writes the list ALONE. Measured 2026-09-04 while adding one legitimate entry: the regenerated file was +2 / -76, and the 76 were the entire comment block.\n\n🔴 THE FAILURE MODE IS THE WORST SHAPE A SECURITY TOOL CAN HAVE. The command is the one the guard itself recommends, it is run by someone under CI pressure who wants to get green, its output passes the guard immediately, and the loss shows up in the diff as deletions in a file the reviewer is looking at for a single added path. The next person to ask 'why is lib/events/seed/store.ts allowed to bypass RLS?' finds no answer, and the honest answer is that a tool deleted it to add an unrelated line.\n\n⚪ WORKED AROUND, NOT FIXED, in the change that found it: the entry was inserted by hand in sorted position, diff +1, comments intact. That is not a fix, it is one person knowing. Make --update preserve every leading comment line, and add a test that regenerating a baseline with a header leaves the header byte-identical.\n\n⚠️ CHECK THE SIBLINGS BEFORE CLOSING. scripts/templates-baseline.txt and scripts/adoption-baselines.json have the same --update shape and may have the same hole; if they do, this row covers them too. And check the history: if a past --update already ate a comment block, some existing entries may have lost their justification years ago and nobody would know.",
+      "detail": "scripts/admin-client-baseline.txt is the frozen list of files allowed to import the RLS-bypassing service-role client (ADR-923). Above the list sits a 76-line comment block: the justification for each existing bypass, written per entry, naming the zero-policy table or the signed-out caller or the SECURITY DEFINER function that makes it the safe shape rather than the lazy one. It is the only place that reasoning exists.\n\nWhen the guard fails it prints the fix: 'run: node scripts/check-admin-client.mjs --update'. That command regenerates the file from a fresh scan and writes the list ALONE. Measured 2026-09-04 while adding one legitimate entry: the regenerated file was +2 / -76, and the 76 were the entire comment block.\n\n🔴 THE FAILURE MODE IS THE WORST SHAPE A SECURITY TOOL CAN HAVE. The command is the one the guard itself recommends, it is run by someone under CI pressure who wants to get green, its output passes the guard immediately, and the loss shows up in the diff as deletions in a file the reviewer is looking at for a single added path. The next person to ask 'why is lib/events/seed/store.ts allowed to bypass RLS?' finds no answer, and the honest answer is that a tool deleted it to add an unrelated line.\n\n⚪ WORKED AROUND, NOT FIXED, in the change that found it: the entry was inserted by hand in sorted position, diff +1, comments intact. That is not a fix, it is one person knowing. Make --update preserve every leading comment line, and add a test that regenerating a baseline with a header leaves the header byte-identical.\n\n⚠️ CHECK THE SIBLINGS BEFORE CLOSING. scripts/templates-baseline.txt and scripts/adoption-baselines.json have the same --update shape and may have the same hole; if they do, this row covers them too. And check the history: if a past --update already ate a comment block, some existing entries may have lost their justification years ago and nobody would know.\n\n── DONE 2026-09-04 (ADR-1200). `--update` now preserves the leading comment block verbatim via readHeader(), falling back to the default only when there is no header to keep (missing file, or a file that starts straight in on entries). Proven on the REAL file rather than a fixture: running the actual `node scripts/check-admin-client.mjs --update` against the committed baseline now produces a byte-identical 823 lines / 80 comment lines, where the row measured +2/-76. scripts/check-admin-client.test.ts covers the round-trip, blank lines inside the block, the missing-file fallback, and carries a MUTATION CONTROL that reconstructs the old behaviour and asserts it fails the same assertion.\n\nThe sibling in scripts/check-templates.mjs got the same treatment. It round-tripped by luck — its header is still byte-identical to its constant because nobody has hand-annotated an entry — so this fixes the shape before it has damage rather than after.\n\n🔴 THE SHREDDING IS REAL AND IS NOT FIXED BY THIS. A whole-file lexicographic sort has already run over the admin-client block: 78 of 79 adjacent comment pairs are in alphabetical order, the script's own five header lines sit scattered at lines 45/46/51/47/63 in exactly their lexicographic order, and the prose no longer parses (line 24 ends mid-sentence and its continuation is at line 3). The justifications are byte-present but no longer attached to the entries they justify, and `git log` on the file is 3 commits deep so the pre-sort original is unrecoverable here. Reassembly needs someone who knows the tenancy model; filed as SCAN-540.",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e \"const fs=require('fs');const S='scripts/check-admin-client.mjs',T='scripts/check-admin-client.test.ts';if(!fs.existsSync(S))process.exit(79);const s=fs.readFileSync(S,'utf8');const preserves=/preserve|leading comment|header/i.test(s);const proven=fs.existsSync(T)&&/comment/i.test(fs.readFileSync(T,'utf8'));process.exit(preserves&&proven?0:1)\"",
@@ -6194,6 +6192,40 @@
         "kind": "cmd",
         "cmd": "node -e \"const fs=require('fs');const s=fs.readFileSync('lib/billing/pricing-prices.ts','utf8');process.exit(/livemode|stripe_account/.test(s)?0:1)\"",
         "note": "Passes when a synced price row records the account or livemode it came from, so a foreign id can be named rather than guessed at."
+      }
+    },
+    {
+      "id": "OWN-048",
+      "title": "Spec every capability bundle, and re-review the 22-key function registry beside it",
+      "status": "open",
+      "lane": "owner",
+      "size": "M",
+      "source": {
+        "file": "lib/pricing/bundles.ts",
+        "ref": "ADR-1197 and ADR-1199, owner ruling 2026-09-04"
+      },
+      "detail": "Owner ruling: before any bundle ships, write a full spec per bundle and review the FUNCTION REGISTRY at the same time. The two are one decision. A bundle is defined by what it omits, so naming the omissions is a statement about lib/spaces/functions.ts — whether 22 keys are the right 22, whether any should merge, split or retire, and which are genuinely optional rather than structural.\n\nWHY THIS BLOCKS LIVE-149 RATHER THAN THE OTHER WAY AROUND. The mechanism is finished and proven: CAPABILITY_BUNDLES + nextBlobsForBundle + setSpaceBundle, with the three-state entitlement read underneath so a bundle can subtract a tool from a Space whose plan pays for it. What does not exist is curation, and wiring provision to a registry holding one pass-through row would put a permanent no-op branch in the Space-creation path, the highest-risk path in the product.\n\nTHE EVIDENCE TO BRING. Of 21 real operator Spaces roughly 18 are solo wellness practitioners, and coaches-and-healers is the only /for/ door that has produced a customer. That is the one bundle with anything behind it; every other would be a guess, which is exactly why the mechanism shipped without curation.\n\nDELIVERABLE: a row per bundle in lib/pricing/bundles.ts with its function list and any role floors, plus a recorded decision for each of the 22 function keys (keep / merge / retire / make structural). LIVE-149's provision call ships in the same change as the first curated bundle, never before it.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "CAPABILITY_BUNDLES holds more than the pass-through row, each bundle has a written spec, and every function key carries a recorded keep/merge/retire decision.",
+        "checked": "2026-09-04"
+      }
+    },
+    {
+      "id": "SCAN-540",
+      "title": "The RLS-bypass justifications are byte-present but no longer attached to the entries they justify",
+      "status": "open",
+      "lane": "hygiene",
+      "size": "M",
+      "source": {
+        "file": "scripts/admin-client-baseline.txt",
+        "ref": "ADR-1200"
+      },
+      "detail": "A whole-file lexicographic sort has run over scripts/admin-client-baseline.txt at some point, taking the 80-line comment block with it. Three independent proofs: 78 of the 79 adjacent comment pairs are in alphabetical order (the single exception is a hand-insert from 2026-09-04); the script's own five header lines, written in order 1-2-3-4-5, sit at lines 45/46/51/47/63, which is exactly their lexicographic order and no writer produces that; and the prose no longer parses — line 24 ends '...the autonomy ladder is' and its continuation sits at line 3.\n\nSo the reasoning for each RLS bypass is still in the file and no longer says which bypass it is about. Four commented lines that read like entries are also real live entries, i.e. surviving heads of shredded paragraphs.\n\nSCAN-537 stopped it getting worse (--update preserves the block now). This row is the repair, and it is NOT mechanical: reassembling 80 shredded lines into per-entry paragraphs needs someone who knows the tenancy model to decide which sentence belongs to which bypass. git log on the file is 3 commits deep and the 823 lines arrived in one commit, so the pre-sort original cannot be recovered from this repository.\n\nWorth considering alongside: make --update REFUSE when the header's line count would shrink, as belt and braces. That changes CLI behaviour, so it is a decision rather than a patch.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Each justification paragraph in scripts/admin-client-baseline.txt sits with the entry it explains, and the prose parses end to end.",
+        "checked": "2026-09-04"
       }
     }
   ]

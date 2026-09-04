@@ -196,6 +196,21 @@ export function loadBaseline(read = (f) => readFileSync(f, 'utf8')) {
   )
 }
 
+/** The leading comment block of the templates baseline, preserved verbatim (SCAN-537). Falls back
+ *  to BASELINE_HEADER when the file is missing or starts straight in on entries. */
+function readBaselineHeader() {
+  let src
+  try {
+    src = readFileSync(BASELINE_FILE, 'utf8')
+  } catch {
+    return BASELINE_HEADER
+  }
+  const lines = src.split('\n')
+  const end = lines.findIndex((l) => l.trim() !== '' && !l.startsWith('#'))
+  if (end <= 0) return BASELINE_HEADER
+  return lines.slice(0, end).join('\n') + '\n'
+}
+
 const BASELINE_HEADER =
   '# check:templates baseline — every in-app page.tsx that renders JSX and composes NO kit shell,\n' +
   '# in the page itself or any ancestor layout (PAGE-FRAMEWORK §3). A SET, not a count: a page\n' +
@@ -254,7 +269,12 @@ function main() {
       console.error('✗ templates baseline: --allow-raise needs --reason="..." (>= 12 chars).')
       process.exit(1)
     }
-    writeFileSync(BASELINE_FILE, BASELINE_HEADER + bare.join('\n') + '\n')
+    // PRESERVE any leading comment block rather than regenerating BASELINE_HEADER (SCAN-537).
+    // This file's header happens to round-trip today only because it is still byte-identical to the
+    // constant and nobody has hand-annotated an entry. The moment someone writes a per-entry reason
+    // here — which is the natural thing to do — the next --update would silently eat it, exactly as
+    // the admin-client baseline's did. Fixing the shape before it has damage is the cheap version.
+    writeFileSync(BASELINE_FILE, readBaselineHeader() + bare.join('\n') + '\n')
     console.log(`✓ templates baseline regenerated: ${bare.length} bare page(s)`)
     return
   }
