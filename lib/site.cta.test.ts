@@ -20,7 +20,14 @@ import path from 'node:path'
 // `/join` keeps its own arrival word ("Come in") and is not a call to action: it is the door, and
 // the visitor is already through it. In-app member surfaces are out of scope entirely.
 
-import { BETA_CTA_LABEL, OPERATOR_CTA_LABEL, APPROVED_CTA_LABELS, BETA_CTA_SECONDARY_LABEL } from './site'
+import {
+  BETA_CTA_LABEL,
+  BETA_CTA_HREF,
+  OPERATOR_CTA_LABEL,
+  OPERATOR_CTA_HREF,
+  APPROVED_CTA_LABELS,
+  BETA_CTA_SECONDARY_LABEL,
+} from './site'
 import { FUNNEL_CTA_LABEL } from './marketing/funnel-config'
 
 const TEMPLATES_DIR = path.join(process.cwd(), 'lib/page-editor/templates')
@@ -100,6 +107,34 @@ describe('the approved CTA set', () => {
       }
     }
     expect(offenders).toEqual([])
+  })
+
+  it('NO page\'s primary CTA links to the page it sits on', () => {
+    // The defect this caught, in development: pointing the operator verb at /pricing made the
+    // primary CTA on /pricing link to /pricing, on both the hero and the close. A self-link is a
+    // dead end wearing the most prominent control on the page. Both verbs route to /join now:
+    // signup is signup, and what differs is the WORD, because the word is what tells a reader the
+    // page was written for them.
+    //
+    // ⚠️ THIS SCAN SEES LITERALS ONLY. A template that writes `ctaPrimaryHref: OPERATOR_CTA_HREF`
+    // is invisible to it, which is every operator page — so this assertion did NOT catch the
+    // original defect; the one below it did, by pinning both verbs to one door. Verified by
+    // restoring the bug: only "both approved verbs route to the same door" went red. Kept because
+    // it covers the other half, a hand-written href, and named as half so nobody trusts it as whole.
+    const offenders: string[] = []
+    for (const file of templateFiles()) {
+      const slug = path.basename(file, '.ts')
+      const src = strip(readFileSync(file, 'utf8'))
+      for (const m of src.matchAll(/ctaPrimaryHref:\s*'([^']*)'/g)) {
+        if (m[1] === `/${slug}`) offenders.push(`${slug}.ts -> ${m[1]}`)
+      }
+    }
+    expect(offenders).toEqual([])
+  })
+
+  it('both approved verbs route to the same door, so neither can self-link', () => {
+    expect(OPERATOR_CTA_HREF).toBe(BETA_CTA_HREF)
+    expect(BETA_CTA_HREF.startsWith('/')).toBe(true)
   })
 
   it('the one exception is still the one exception', () => {

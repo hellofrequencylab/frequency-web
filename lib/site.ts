@@ -155,7 +155,13 @@ export const BETA_CTA_HREF = "/join";
 // "Find your people" is not new copy — it already ships as the eyebrow on /discover/circles and
 // /discover/places and in the Nearby quick links, so this makes the CTA agree with the site.
 export const OPERATOR_CTA_LABEL = "Start free";
-export const OPERATOR_CTA_HREF = "/pricing";
+// 🔴 THE SAME DOOR AS THE SEEKER'S, DELIBERATELY. The first version of this pointed at /pricing,
+// which made the primary CTA on /pricing link to /pricing — a self-link on the hero AND the close
+// of the page it sits on. Signup is signup: an operator needs an account before they can stand up
+// a Space, so both readers walk through /join. What differs is the WORD, because the word is what
+// tells a reader the page was written for them. Routing the two verbs to two destinations sounds
+// tidier and produces self-links on exactly the pages that carry the operator verb.
+export const OPERATOR_CTA_HREF = BETA_CTA_HREF;
 
 /** The approved set, for the guard and for anything that needs to iterate it. A marketing surface
  *  ships one of these two or it fails lib/site.cta.test.ts. `/join` keeps its own arrival word ("Come in"): it
