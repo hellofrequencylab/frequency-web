@@ -55,6 +55,46 @@ export function findImporters() {
     .sort()
 }
 
+const DEFAULT_HEADER =
+  '# check:admin-client baseline — every file allowed to import the RLS-bypassing service-role\n' +
+  '# client (lib/supabase/admin.ts). Frozen by the tenancy-walls ratchet (ADR-923): a new\n' +
+  '# importer fails CI unless added here in the same PR; converge files onto the session\n' +
+  '# client and regenerate with `node scripts/check-admin-client.mjs --update` so this list\n' +
+  '# only shrinks. Do not add entries by hand without a reason the reviewer can see.\n'
+
+/**
+ * The LEADING COMMENT BLOCK — every line above the first entry — PRESERVED verbatim.
+ *
+ * 🔴 WHY --update MUST NOT REGENERATE THIS HEADER. Above the list sits the per-entry justification
+ * for each RLS bypass: the zero-policy table, the signed-out caller, the SECURITY DEFINER function
+ * that makes each one the safe shape rather than the lazy one. It is the ONLY place that reasoning
+ * exists. `--update` used to write DEFAULT_HEADER and nothing else, so regenerating to add one
+ * legitimate entry measured +2 / −76 — and the 76 were the reasons.
+ *
+ * That is the worst shape a security tool can have. The command is the one the guard itself prints
+ * when it fails, it is run by someone under CI pressure who wants green, its output passes
+ * immediately, and the loss appears in the diff as deletions in a file the reviewer is scanning for
+ * a single added path. The next person to ask why a given file may bypass RLS finds no answer, and
+ * the honest answer is that a tool deleted it to add an unrelated line.
+ *
+ * Reads are already comment-blind (`loadBaseline` strips `#`), so only the WRITE was asymmetric.
+ */
+export function readHeader(read = (f) => readFileSync(f, 'utf8')) {
+  let src
+  try {
+    src = read(BASELINE)
+  } catch {
+    return DEFAULT_HEADER
+  }
+  const lines = src.split('\n')
+  // The header ends at the first line that is neither blank nor a comment — i.e. the first entry.
+  const end = lines.findIndex((l) => l.trim() !== '' && !l.startsWith('#'))
+  // end === 0: the file starts with an entry, there is no header to keep.
+  // end === -1: the file is all comments, so there is no list; seed the default.
+  if (end <= 0) return DEFAULT_HEADER
+  return lines.slice(0, end).join('\n') + '\n'
+}
+
 export function loadBaseline() {
   return new Set(
     readFileSync(BASELINE, 'utf8')
@@ -106,16 +146,8 @@ function main() {
       console.error('✗ admin-client baseline: --allow-raise needs --reason="..." (>= 12 chars).')
       process.exit(1)
     }
-    writeFileSync(
-      BASELINE,
-      '# check:admin-client baseline — every file allowed to import the RLS-bypassing service-role\n' +
-        '# client (lib/supabase/admin.ts). Frozen by the tenancy-walls ratchet (ADR-923): a new\n' +
-        '# importer fails CI unless added here in the same PR; converge files onto the session\n' +
-        '# client and regenerate with `node scripts/check-admin-client.mjs --update` so this list\n' +
-        '# only shrinks. Do not add entries by hand without a reason the reviewer can see.\n' +
-        importers.join('\n') +
-        '\n',
-    )
+    // PRESERVE the existing leading comment block (SCAN-537) rather than overwrite it.
+    writeFileSync(BASELINE, readHeader() + importers.join('\n') + '\n')
     console.log(`✓ admin-client baseline regenerated: ${importers.length} importer(s)`)
     return
   }

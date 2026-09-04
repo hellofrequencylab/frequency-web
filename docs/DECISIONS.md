@@ -35519,3 +35519,63 @@ beside it**. The two are one decision: a bundle is defined by what it omits, so 
 statement about `lib/spaces/functions.ts`. This blocks LIVE-149 rather than the reverse — the
 mechanism is finished and proven, and wiring provision to a registry holding one pass-through row
 would put a permanent no-op branch in the Space-creation path.
+
+## ADR-1200: the fix-it command the guard prints was deleting the reasons it exists to protect (2026-09-04)
+
+**Status:** accepted · **Closes:** SCAN-537 · **Opens:** SCAN-540 ·
+**Touches:** `scripts/check-admin-client.mjs`, `scripts/check-templates.mjs`,
+`scripts/check-admin-client.test.ts`
+
+### What was wrong
+
+`scripts/admin-client-baseline.txt` is the frozen list of files allowed to import the RLS-bypassing
+service-role client ([ADR-923](#adr-923)). Above the list sits an 80-line comment block carrying the
+justification for each bypass — the zero-policy table, the signed-out caller, the SECURITY DEFINER
+function that makes it the safe shape rather than the lazy one. **It is the only place that reasoning
+exists.**
+
+`--update` regenerated the file from a fresh scan and wrote a hard-coded five-line header. So adding
+one legitimate entry measured **+2 / −76**, and the 76 were the reasons.
+
+**This is the worst shape a security tool can have,** and the shape is the finding rather than the
+bug. The command is the one the guard itself PRINTS when it fails. It is run by someone under CI
+pressure who wants green. Its output passes the guard immediately. And the loss appears in the diff
+as deletions inside a file the reviewer is scanning for a single added path. Every step of that is
+designed to be trusted. Reads were already comment-blind (`loadBaseline` strips `#`); only the write
+was asymmetric, and asymmetry between read and write is where this class always lives.
+
+### The fix, and the proof
+
+`readHeader()` preserves every line above the first entry verbatim, falling back to the default only
+when there is nothing to keep. **Proven against the real file, not a fixture:** running the actual
+`node scripts/check-admin-client.mjs --update` against the committed baseline now yields a
+byte-identical 823 lines / 80 comment lines, at the exact command that used to cost 76.
+
+`scripts/check-templates.mjs` had the identical hole and got the identical fix. It round-tripped only
+by luck — its header is still byte-identical to its constant because nobody has hand-annotated an
+entry yet — so this fixes the shape *before* it has damage, which is the cheap version of the same
+repair.
+
+The test carries a **mutation control** that reconstructs the old behaviour and asserts it fails the
+same round-trip assertion, because a preservation test that would pass against a regressed script is
+worth nothing.
+
+### 🔴 What this does NOT fix
+
+**A whole-file lexicographic sort has already run over that comment block**, and the damage is done.
+Three independent proofs: 78 of the 79 adjacent comment pairs are in alphabetical order; the script's
+own five header lines, written 1-2-3-4-5, now sit at lines 45/46/51/47/63, which is precisely their
+lexicographic order and no writer produces that; and the prose no longer parses — line 24 ends
+*"...the autonomy ladder is"* and its continuation is at line 3.
+
+So the reasoning is byte-present and no longer says which bypass it is about. `git log` on the file is
+three commits deep and all 823 lines arrived at once, so the pre-sort original is **not recoverable
+from this repository**. Reassembly needs someone who knows the tenancy model to decide which sentence
+belongs to which entry; filed as **SCAN-540**.
+
+### The general form
+
+A tool that rewrites a file it does not fully parse will eventually delete the part it does not
+understand. `check-adoption.mjs` is immune to this by accident of format — its prose lives in a
+`_readme` array *inside* the JSON, so it round-trips through parse/stringify. That is the durable
+lesson: **comments-as-data survive a regenerator; comments-as-formatting do not.**

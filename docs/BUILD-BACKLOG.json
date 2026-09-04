@@ -71,8 +71,8 @@
             "LIVE-128",
             "SCAN-502",
             "SCAN-521",
-            "SCAN-537",
-            "HYG-049"
+            "HYG-049",
+            "SCAN-540"
           ]
         },
         {
@@ -6078,14 +6078,14 @@
     {
       "id": "SCAN-537",
       "title": "The sanctioned way to update the RLS-bypass baseline deletes the reasons for every bypass in it",
-      "status": "open",
+      "status": "done",
       "lane": "hygiene",
       "size": "S",
       "source": {
         "file": "docs/DECISIONS.md",
         "ref": "ADR-1197, found while fixing a CI failure"
       },
-      "detail": "scripts/admin-client-baseline.txt is the frozen list of files allowed to import the RLS-bypassing service-role client (ADR-923). Above the list sits a 76-line comment block: the justification for each existing bypass, written per entry, naming the zero-policy table or the signed-out caller or the SECURITY DEFINER function that makes it the safe shape rather than the lazy one. It is the only place that reasoning exists.\n\nWhen the guard fails it prints the fix: 'run: node scripts/check-admin-client.mjs --update'. That command regenerates the file from a fresh scan and writes the list ALONE. Measured 2026-09-04 while adding one legitimate entry: the regenerated file was +2 / -76, and the 76 were the entire comment block.\n\n🔴 THE FAILURE MODE IS THE WORST SHAPE A SECURITY TOOL CAN HAVE. The command is the one the guard itself recommends, it is run by someone under CI pressure who wants to get green, its output passes the guard immediately, and the loss shows up in the diff as deletions in a file the reviewer is looking at for a single added path. The next person to ask 'why is lib/events/seed/store.ts allowed to bypass RLS?' finds no answer, and the honest answer is that a tool deleted it to add an unrelated line.\n\n⚪ WORKED AROUND, NOT FIXED, in the change that found it: the entry was inserted by hand in sorted position, diff +1, comments intact. That is not a fix, it is one person knowing. Make --update preserve every leading comment line, and add a test that regenerating a baseline with a header leaves the header byte-identical.\n\n⚠️ CHECK THE SIBLINGS BEFORE CLOSING. scripts/templates-baseline.txt and scripts/adoption-baselines.json have the same --update shape and may have the same hole; if they do, this row covers them too. And check the history: if a past --update already ate a comment block, some existing entries may have lost their justification years ago and nobody would know.",
+      "detail": "scripts/admin-client-baseline.txt is the frozen list of files allowed to import the RLS-bypassing service-role client (ADR-923). Above the list sits a 76-line comment block: the justification for each existing bypass, written per entry, naming the zero-policy table or the signed-out caller or the SECURITY DEFINER function that makes it the safe shape rather than the lazy one. It is the only place that reasoning exists.\n\nWhen the guard fails it prints the fix: 'run: node scripts/check-admin-client.mjs --update'. That command regenerates the file from a fresh scan and writes the list ALONE. Measured 2026-09-04 while adding one legitimate entry: the regenerated file was +2 / -76, and the 76 were the entire comment block.\n\n🔴 THE FAILURE MODE IS THE WORST SHAPE A SECURITY TOOL CAN HAVE. The command is the one the guard itself recommends, it is run by someone under CI pressure who wants to get green, its output passes the guard immediately, and the loss shows up in the diff as deletions in a file the reviewer is looking at for a single added path. The next person to ask 'why is lib/events/seed/store.ts allowed to bypass RLS?' finds no answer, and the honest answer is that a tool deleted it to add an unrelated line.\n\n⚪ WORKED AROUND, NOT FIXED, in the change that found it: the entry was inserted by hand in sorted position, diff +1, comments intact. That is not a fix, it is one person knowing. Make --update preserve every leading comment line, and add a test that regenerating a baseline with a header leaves the header byte-identical.\n\n⚠️ CHECK THE SIBLINGS BEFORE CLOSING. scripts/templates-baseline.txt and scripts/adoption-baselines.json have the same --update shape and may have the same hole; if they do, this row covers them too. And check the history: if a past --update already ate a comment block, some existing entries may have lost their justification years ago and nobody would know.\n\n── DONE 2026-09-04 (ADR-1200). `--update` now preserves the leading comment block verbatim via readHeader(), falling back to the default only when there is no header to keep (missing file, or a file that starts straight in on entries). Proven on the REAL file rather than a fixture: running the actual `node scripts/check-admin-client.mjs --update` against the committed baseline now produces a byte-identical 823 lines / 80 comment lines, where the row measured +2/-76. scripts/check-admin-client.test.ts covers the round-trip, blank lines inside the block, the missing-file fallback, and carries a MUTATION CONTROL that reconstructs the old behaviour and asserts it fails the same assertion.\n\nThe sibling in scripts/check-templates.mjs got the same treatment. It round-tripped by luck — its header is still byte-identical to its constant because nobody has hand-annotated an entry — so this fixes the shape before it has damage rather than after.\n\n🔴 THE SHREDDING IS REAL AND IS NOT FIXED BY THIS. A whole-file lexicographic sort has already run over the admin-client block: 78 of 79 adjacent comment pairs are in alphabetical order, the script's own five header lines sit scattered at lines 45/46/51/47/63 in exactly their lexicographic order, and the prose no longer parses (line 24 ends mid-sentence and its continuation is at line 3). The justifications are byte-present but no longer attached to the entries they justify, and `git log` on the file is 3 commits deep so the pre-sort original is unrecoverable here. Reassembly needs someone who knows the tenancy model; filed as SCAN-540.",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e \"const fs=require('fs');const S='scripts/check-admin-client.mjs',T='scripts/check-admin-client.test.ts';if(!fs.existsSync(S))process.exit(79);const s=fs.readFileSync(S,'utf8');const preserves=/preserve|leading comment|header/i.test(s);const proven=fs.existsSync(T)&&/comment/i.test(fs.readFileSync(T,'utf8'));process.exit(preserves&&proven?0:1)\"",
@@ -6208,6 +6208,23 @@
       "verify": {
         "kind": "manual",
         "evidence": "CAPABILITY_BUNDLES holds more than the pass-through row, each bundle has a written spec, and every function key carries a recorded keep/merge/retire decision.",
+        "checked": "2026-09-04"
+      }
+    },
+    {
+      "id": "SCAN-540",
+      "title": "The RLS-bypass justifications are byte-present but no longer attached to the entries they justify",
+      "status": "open",
+      "lane": "hygiene",
+      "size": "M",
+      "source": {
+        "file": "scripts/admin-client-baseline.txt",
+        "ref": "ADR-1200"
+      },
+      "detail": "A whole-file lexicographic sort has run over scripts/admin-client-baseline.txt at some point, taking the 80-line comment block with it. Three independent proofs: 78 of the 79 adjacent comment pairs are in alphabetical order (the single exception is a hand-insert from 2026-09-04); the script's own five header lines, written in order 1-2-3-4-5, sit at lines 45/46/51/47/63, which is exactly their lexicographic order and no writer produces that; and the prose no longer parses — line 24 ends '...the autonomy ladder is' and its continuation sits at line 3.\n\nSo the reasoning for each RLS bypass is still in the file and no longer says which bypass it is about. Four commented lines that read like entries are also real live entries, i.e. surviving heads of shredded paragraphs.\n\nSCAN-537 stopped it getting worse (--update preserves the block now). This row is the repair, and it is NOT mechanical: reassembling 80 shredded lines into per-entry paragraphs needs someone who knows the tenancy model to decide which sentence belongs to which bypass. git log on the file is 3 commits deep and the 823 lines arrived in one commit, so the pre-sort original cannot be recovered from this repository.\n\nWorth considering alongside: make --update REFUSE when the header's line count would shrink, as belt and braces. That changes CLI behaviour, so it is a decision rather than a patch.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Each justification paragraph in scripts/admin-client-baseline.txt sits with the entry it explains, and the prose parses end to end.",
         "checked": "2026-09-04"
       }
     }
