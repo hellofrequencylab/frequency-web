@@ -52,9 +52,13 @@ select is(
 -- Every one of these is called exclusively through createAdminClient() (service role), which
 -- does not consult these grants. A grant to anon/authenticated is pure attack surface.
 
-select is(has_function_privilege('anon', 'public.members_near(numeric, numeric, integer, integer)', 'execute'), false,
+-- members_near gained a fifth argument (_viewer uuid) in 20270344000100, which DROPPED the
+-- four-argument signature and re-locked the new one. has_function_privilege() RAISES on a signature
+-- that does not exist (see the profile_zap_total note below), so this pin moved to the new
+-- signature in the same change — the lockdown it asserts is unchanged.
+select is(has_function_privilege('anon', 'public.members_near(numeric, numeric, integer, integer, uuid)', 'execute'), false,
   'anon cannot execute members_near (directory enumeration: unbounded _radius_m, no auth check)');
-select is(has_function_privilege('authenticated', 'public.members_near(numeric, numeric, integer, integer)', 'execute'), false,
+select is(has_function_privilege('authenticated', 'public.members_near(numeric, numeric, integer, integer, uuid)', 'execute'), false,
   'authenticated cannot execute members_near');
 
 select is(has_function_privilege('anon', 'public.record_qr_scan(uuid, uuid, text, text, double precision, double precision, text, text)', 'execute'), false,
