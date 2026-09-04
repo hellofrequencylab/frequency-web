@@ -35373,3 +35373,77 @@ comment is usually where the difference hides.
 ⚪ **This entry was written as ADR-1196 and renumbered to 1197 on merge**, having collided with the
 poster-band entry above it — two branches open on the same day each took the next free number. Noted
 because a reader following a code comment that predates the merge will land one entry short.
+
+## ADR-1198: payouts could never start, because a column that does not exist made every read a lie (2026-09-04)
+
+**Status:** accepted · **Touches:** `lib/billing/connect.ts`, `lib/profiles/account-email.test.ts` ·
+**Closes:** LIVE-152 · **Opens:** LIVE-153, SCAN-539, HYG-049 · **Reads:** [ADR-1093](#adr-1093)
+
+### What happened
+
+Host payouts were switched on in production at 19:58Z. The owner opened `/settings#payouts`, saw
+**"Set up payouts"**, clicked it, and got *"Stripe could not complete that just now."* Two symptoms,
+one cause, and the cause was not Stripe.
+
+`COLS` — the column list every Connect read shares — ended `…, email, display_name`. **`public.profiles`
+has never had an `email` column**; a member's address lives on `auth.users`. PostgREST rejects a select
+naming an unknown column, so every read through that constant returned `{ data: null, error: 42703 }`,
+and every caller destructured only `data`. A failed query and a profile with no connected account are
+both `null`. The code could not tell them apart, so it believed the wrong one.
+
+| Symptom | Mechanism |
+| :-- | :-- |
+| The card offered "Set up payouts" to an operator already onboarded | `getConnectStatus` read `accountId: null` for a profile holding `acct_1U47bWBBboHg5HWM` |
+| The click failed | `getOrCreateConnectedAccount` never saw that account, took the CREATE branch, and `accounts.create` threw |
+
+The production log names it exactly (`req_i1UvetWAbrrOM7`): *"You must complete your platform profile
+to use Connect and create live connected accounts."* That is a real Stripe fault — and it is an error
+about **a call that should never have been made**. Nothing on this path needed a new account.
+
+### The decisions
+
+1. **The column list is bound to the schema, not to a comment.** `CONNECT_COLUMNS` is now
+   `satisfies readonly ProfileColumn[]` against `Database['public']['Tables']['profiles']['Row']`, so
+   re-adding a phantom column is a **compile** error naming it (proven by mutation: `TS2322`). The
+   generated types already are the schema; the compiler is a cheaper and stricter gate than any test
+   that would need a live database to be honest.
+2. **A failed read is not an absent account, and the code now says which it has.**
+   `connectReadOutcome` is a pure three-way — `existing` / `create` / `unknown` — and `unknown`
+   throws rather than creating. Collapsing "I could not read this" into "there is nothing here" is
+   what turned a typo into a loop that tried to mint a duplicate Stripe account on every click. The
+   decision is separated out because mocking a Supabase client to reach it would test the mock
+   ([SCAN-532](#adr-1197)'s lesson, one directory over).
+3. **The guard that existed for this bug is widened to the real invariant.**
+   `lib/profiles/account-email.test.ts` was written for an earlier incarnation of exactly this
+   defect, and it missed this one through two blind spots: it matched **inline string** selects only,
+   so `.select(COLS)` was invisible; and it looked for the single name `email`, so any other wrong
+   column read as fine. It now checks **every named column against the generated types**. Its
+   fixture-bearing test files are excluded deliberately — `scripts/check-authz-guards.test.ts` embeds
+   `select('id, contact_email, …')` in template literals as input for the authz scanner, and a guard
+   that cries wolf on its own fixtures is the guard people learn to ignore.
+
+### What this does NOT fix, and the honest state of payouts
+
+⚠️ **The platform-profile error is real and is owner-only** (LIVE-153). The fix removes the reason the
+app was calling `accounts.create` at all, so an operator who already holds an account should now get
+an onboarding link. The **first new** operator will still hit the questionnaire until it is completed
+at `dashboard.stripe.com/connect/accounts/overview`. And [ADR-1093](#adr-1093)'s warning stands: the
+answers on file describe a **Standard** platform (direct charges, `fees_collector: account`) while this
+code creates **Express** accounts and uses **destination** charges everywhere. Answer to match the code.
+
+🔴 **The pattern is not confined to this file** (SCAN-539). A sweep found 83 reads that destructure
+`data` without `error`. Most degrade to an empty list. Seven do not: a moderated review un-hides, a
+canceled subscription never lapses a founding rate, a Crew seller is charged 10% instead of 8%, a
+paying member is denied their own member-only ticket, and a past-due member keeps full access. Note
+that several of these sit inside a `try/catch` documented as *"FAIL-SAFE on any error"* — **a PostgREST
+error does not throw**, so the catch never fires and the documented fail-safe is not engaged. A comment
+asserting a safety property is not the property.
+
+### The general form, because this repo keeps paying for it
+
+An unchecked `error` turns a **transport failure** into a **domain fact**. Every rule this ledger
+already carries points at it — a swallowed error is an invisible regression; a fail-safe needs a gate
+that notices it fired; a probe must measure the consequence rather than the shape. What is new here is
+how cheap the strongest fix was: the schema was already in the repo as generated types, so binding the
+string to it cost one `satisfies` clause and moved the whole class from "a test might catch it" to
+"it does not compile".
