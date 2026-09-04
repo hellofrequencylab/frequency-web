@@ -3,7 +3,7 @@ title: Billing
 description: Where your plan, payments, and invoices live, and how a cash agreement works.
 category: spaces
 order: 3
-updated: 2026-08-19
+updated: 2026-09-04
 audience: member
 featureKeys: [billing]
 status: published
@@ -30,6 +30,9 @@ Pick the plan you want on the billing page and follow the checkout. A few things
   so you keep what you bought.
 - Your plan is what unlocks your tools. If a tool is greyed out, the billing page tells you which
   plan turns it on.
+- Your plan is not the only switch. You can also turn a feature off for your own Space in **Manage,
+  then Menu and features**, and it stays off whether or not your plan pays for it. So if billing
+  says a tool is included and you still cannot find it, look there before you look at your plan.
 
 See [Plans and pricing](/help/spaces/plans-and-pricing) for what each plan costs and includes.
 
