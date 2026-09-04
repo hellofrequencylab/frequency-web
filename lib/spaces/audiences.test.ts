@@ -22,7 +22,7 @@ type ContactRow = {
 // network_contact_tags joined to its parent network_contact (PostgREST embed shape).
 type TagRow = {
   tag: string
-  network_contacts: { space_id: string; linked_contact_id: string | null }
+  network_contacts: { shared_space_id: string; linked_contact_id: string | null }
 }
 
 // space_segments: a saved AudienceFilter-shaped definition, scoped to a space (ADR-380).
@@ -169,13 +169,16 @@ function hubsBuilder() {
 }
 
 // network_contact_tags builder. Two shapes are used:
-//   resolveAudience tag path: .select(embed).eq('network_contacts.space_id', v).ilike('tag', t)
-//   listAudienceTags path:    .select(embed).eq('network_contacts.space_id', v)
+//   resolveAudience tag path: .select(embed).eq('network_contacts.shared_space_id', v).ilike('tag', t)
+//   listAudienceTags path:    .select(embed).eq('network_contacts.shared_space_id', v)
+//   🔴 The column is `shared_space_id` (20261171000000:32). This fake modelled a `space_id` that the
+//   real table never had, and six tests passed against the wrong name while production returned 42703
+//   on every call — a mock that agrees with the code instead of the database proves nothing.
 //                                          .not('network_contacts.linked_contact_id', 'is', null)
 function tagsBuilder() {
   const filters: { space_id?: string; tag?: string; requireLink?: boolean } = {}
   function rows() {
-    let data = db.tags.filter((t) => t.network_contacts.space_id === filters.space_id)
+    let data = db.tags.filter((t) => t.network_contacts.shared_space_id === filters.space_id)
     if (filters.tag) data = data.filter((t) => t.tag.toLowerCase() === filters.tag!.toLowerCase())
     if (filters.requireLink) data = data.filter((t) => t.network_contacts.linked_contact_id != null)
     return data
@@ -185,7 +188,7 @@ function tagsBuilder() {
       return api
     },
     eq(col: string, val: string) {
-      if (col === 'network_contacts.space_id') filters.space_id = val
+      if (col === 'network_contacts.shared_space_id') filters.space_id = val
       return api
     },
     async ilike(_col: string, val: string) {
@@ -253,7 +256,7 @@ function seedContact(
   })
 }
 function seedTag(tag: string, linkedContactId: string | null, spaceId = 'space-A') {
-  db.tags.push({ tag, network_contacts: { space_id: spaceId, linked_contact_id: linkedContactId } })
+  db.tags.push({ tag, network_contacts: { shared_space_id: spaceId, linked_contact_id: linkedContactId } })
 }
 function seedSegment(id: string, definition: unknown, spaceId = 'space-A') {
   db.segments.push({ id, definition, space_id: spaceId })
