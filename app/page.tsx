@@ -134,7 +134,7 @@ export default async function RootPage() {
           and asserting answers no visitor can read is what /pricing:309-313 forbids. */}
       <BlockDocJsonLd data={data} path="/" />
       {/* No ctaLabel override: the header falls back to BETA_CTA_LABEL, the one shared primary
-          (ADR-1196). The front door used to say "Join the beta" while every other marketing page said
+          (ADR-1197). The front door used to say "Join the beta" while every other marketing page said
           "Start a Circle", the niche doors said "Start free", /pricing said "Join free" and /join
           itself said "Come in" — five verbs for one entrance, and the loudest of them was on the page
           that sets the reader's expectation for all the others. */}

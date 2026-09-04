@@ -77,7 +77,7 @@ export function spaceBillingEntitlements(space: SpaceLike | null | undefined): E
  *  reserved `billing` object itself is NOT a capability key, so it never leaks into the map (only the
  *  keys INSIDE it do, unioned in).
  *
- *  🔴 THE TOP LEVEL HAS THREE STATES, NOT TWO, AND THE THIRD IS THE WHOLE POINT (ADR-1196):
+ *  🔴 THE TOP LEVEL HAS THREE STATES, NOT TWO, AND THE THIRD IS THE WHOLE POINT (ADR-1197):
  *    · ABSENT            -> the billing namespace decides. The common case; unchanged.
  *    · `true`            -> granted, whatever billing says. A hand-grant the resolver cannot revoke.
  *    · explicitly `false` -> REVOKED, whatever billing says. A hand-revoke the resolver cannot undo.

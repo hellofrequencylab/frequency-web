@@ -163,7 +163,7 @@ describe('the ModeProfile defaults', () => {
   // DERIVED from the live catalog, never a literal. The version of this test that hard-coded
   // `new Set(['marketing','ai','team','branding'])` passed for months while nine of ten presets
   // recommended add-ons ADR-472 had retired: the guard green-lit them by construction, which is the
-  // shape-not-truth failure this repo names in four ADRs, performed by a test (ADR-1196).
+  // shape-not-truth failure this repo names in four ADRs, performed by a test (ADR-1197).
   it('recommended add-ons are add-ons that can actually be bought', () => {
     const known = new Set<string>(ADDON_KEYS)
     for (const m of all) {

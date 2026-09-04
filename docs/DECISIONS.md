@@ -35203,7 +35203,66 @@ good faith, an operator flipped a flag months later, and the console went on ren
 until someone checked the database. Prefer a surface that DERIVES its claim from the switch over one
 that describes it, because only the first kind can go stale loudly.
 
-## ADR-1196: the three parts of a per-operator product were all built, and none of them were connected (2026-09-03)
+## ADR-1196: the phone cover crops again, and the band's shape is why that is not the old bug (2026-09-04)
+
+Owner report off a phone, the third on this one band: *"something got messed up with the mobile
+header view for events. it should be full bleed and adjusted with the focus picker."*
+
+The band **was** full bleed ([ADR-1184](#adr-1184) fixed that). What the capture shows is the other
+half: `object-contain` fits the artwork *inside* the box, so on a 412px phone the Meld cover — a 1:1
+poster — painted **221x221 in the middle of a 412x221 band**. The poster was whole, and small,
+between two blurred bars. And `object-position` is inert under `contain`, so the focal point the host
+set in the header controls — whose own hint reads *"Vertical matters most"* — decided nothing at all.
+
+**The phone band covers again, at the host's focal point** (`object-cover sm:object-contain`).
+
+🔴 **This does not reopen `LIVE-130`, and the reason is the band's SHAPE rather than the fit
+keyword.** `object-cover` scales to cover the shorter axis, so it shows the **full width** of any
+source narrower than its band. The band that sliced the Meld title in August was 380x306 — **1.24:1**,
+taller than wide relative to a poster. This one is 412x221 full bleed — **1.86:1** — because the
+poster ladder had already cut the phone rung one step. Of the 24 distinct production covers, 13 are
+1:1 and 6 are portrait (Luma and Partiful both tell hosts to upload a square cover), so **19 of 24
+now reach both edges whole** and lose height instead — the axis the picker aims.
+
+⚠️ **What it costs, stated rather than buried.** A source *wider* than 1.86:1 still crops
+horizontally: the 1400x600 flyer keeps **80%** of its width against the **53%** that produced the
+August report. Better, not whole. **The lever for that case is the height picker, and it points the
+opposite way from the intuition:**
+
+| Tier | Phone band | Aspect | What it protects |
+|---|---|---|---|
+| Short | 412x170 | 2.42:1 | wider than every cover in the survey — nothing lost sideways |
+| Standard | 412x221 | 1.86:1 | full width for the 19 square/portrait covers |
+| Tall | 412x306 | 1.35:1 | most height kept, so the widest flyers lose the most width |
+
+So Short is the *widest* band, not the smallest. That table is asserted in
+`components/media/poster-band.test.tsx` off the ladder itself, not typed beside it.
+
+⚪ **The desktop half is untouched and stays `contain`.** Its band is 1044x374 (2.79:1), where a crop
+showed a median 36% of the artwork and 23 of 24 covers lost more than a quarter — the measurement
+that settled `LIVE-131`. One fit per surface, each chosen on the geometry that surface
+actually has. The blurred backdrop moved to `hidden sm:block` for the same reason: it exists to fill
+letterbox bars, a covered phone band has none, and painting a second full-size image under an opaque
+one is a decode paid for nothing on the surface least able to afford it.
+
+🔴 **A probe on this seam was matching a COMMENT.** `LIVE-130`'s verify was
+`file.includes('object-contain sm:object-cover')` against the **unstripped** source — and that string
+had not been code since `LIVE-131`; it survived only in the header paragraph explaining what was
+wrong. The row was green against a file whose fit could have been anything. It now parses the phone
+rung out of the ladder and asserts the band is at least as wide as it is tall, which is the property
+the poster's title actually depends on. `LIVE-131`'s own note recorded *"the third probe on this
+sweep to match a comment instead of code"* and fixed itself by stripping comments first; the row
+directly above it was left matching the file. The tell is always the same — the probe reads the
+file, not the code.
+
+⚪ **Not visually confirmed on a re-rendered phone.** Proven at the markup, class and geometry layer,
+with three mutations watched go red (fit reverted to contain, backdrop returned to every width,
+`objectPosition` dropped) and both probes watched fail two ways. The follow-up that removes the trade
+entirely is unchanged: capture the cover's intrinsic aspect in the **browser** at upload and store it
+on `events.theme` beside `coverFocus`, which makes the band the poster's own shape at both widths —
+no bars, no crop. The component is shaped so that is a prop and a class, not a rewrite.
+
+## ADR-1197: the three parts of a per-operator product were all built, and none of them were connected (2026-09-03)
 
 A full repository and production audit ran on 2026-09-03 (routes, taxonomies, entitlements, positioning,
 backlog truth, duplication, and the live Supabase + Vercel state). The findings are filed as rows
@@ -35282,3 +35341,33 @@ retirement fails the build (SCAN-535).
 all, and 25 open rows — including four live production incidents — have no sequencing position. This is
 `check:one-list`'s own failure mode reappearing *inside* the one list: the rows are probed, the object
 that orders them is not. It gets a probe.
+
+🔴 **Renaming the site's one CTA made a navigation control unreachable on a phone, and every guard
+stayed green.** `BETA_CTA_LABEL` went from "Start a Circle" (14 characters) to "Find your people"
+(16). Two characters is about 18px at `--text-body-sm`, and 18px is exactly how far outside a 320px
+`/discover` viewport the mobile menu button ended up — on a `fixed` bar with `overflow-x-clip`, so
+not clipped-but-scrollable, *gone*. The `@overflow` gate caught it, three times, which is the system
+working; what did not work is everything cheaper than a nineteen-minute e2e run.
+
+Two things are worth keeping from it. The first is that **the fix went into the wrong component and
+looked right**: `components/layout/marketing-header.tsx` got a compact phone label, the commit
+message named `/discover`, and the geometry on `/discover` moved by zero pixels — because that page
+renders `SiteHeader` → `AuthButtons`, a different bar with a *tighter* phone row (it keeps "Sign in"
+below `sm`, which MarketingHeader hides). A fix aimed by reasoning rather than by reading the failing
+surface's own component tree is a guess with a commit message.
+
+The second is that **`components/layout/header-fit.test.ts` overstated its guarantee in prose, and
+the prose was believed.** Its opening says a bar with one designated give-way child "cannot be broken
+by an asset swap, a longer CTA label or a denser generation preset". That is true while the give-way
+child still has width to give. On SiteHeader below `sm` the fixed row — search glyph, Sign in, CTA,
+menu button, four gaps — already spends a 320px line, so the wordmark shrinks to nothing and the next
+pixel leaves the screen. The structure was intact the whole time; the structural assertions were
+therefore green the whole time. The file now carries a **character budget** alongside the structure,
+ceilinged at the widest label CI has actually measured fitting, and checks both public headers rather
+than the one that happened to get fixed. The general form is the one this ledger keeps re-learning:
+an invariant a test can state is not the same as the property a user needs, and where they differ the
+comment is usually where the difference hides.
+
+⚪ **This entry was written as ADR-1196 and renumbered to 1197 on merge**, having collided with the
+poster-band entry above it — two branches open on the same day each took the next free number. Noted
+because a reader following a code comment that predates the merge will land one entry short.

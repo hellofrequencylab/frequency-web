@@ -4,7 +4,7 @@
 > was describing a world that had already moved on.** `@measured/puck` is not in `package.json` in any
 > dependency block, which was step (4) of the recommendation. The audit of 2026-09-03 read this file as
 > live work and reported it as "a 266-line plan for a dependency that is not installed"; the truer
-> reading is that the plan succeeded and nobody came back to say so ([ADR-1196](DECISIONS.md)).
+> reading is that the plan succeeded and nobody came back to say so ([ADR-1197](DECISIONS.md)).
 >
 > ⚪ **`lib/spotlight/puck/` is NOT dead code, and the name is load-bearing.** `convert.ts`,
 > `resolve.ts` and `metadata.ts` are imported by `lib/page-editor/templates/linktree.ts`,

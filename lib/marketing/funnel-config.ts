@@ -142,7 +142,7 @@ export interface FunnelConfig {
 // ── SHARED constants (identical on every funnel; do not re-author per niche) ───────────────────────
 
 /** The one primary CTA label everywhere (Hero, Pricing, FinalCTA). */
-// DERIVED, not declared (ADR-1196). This was a third independent CTA constant sitting beside
+// DERIVED, not declared (ADR-1197). This was a third independent CTA constant sitting beside
 // BETA_CTA_LABEL and the home page's own override — the five-labels-for-one-entrance problem, one
 // third of it. The operator doors and the operator marketing pages now say the same word because
 // they read the same constant.
@@ -183,7 +183,7 @@ export const FUNNEL_FOOTER = {
   links: [
     // A door has to lead somewhere other than out. Before this the footer carried only legal
     // boilerplate and the header carried only the logo, so an operator who wanted the numbers
-    // before deciding had no route to them from the page selling them (ADR-1196, LIVE-147).
+    // before deciding had no route to them from the page selling them (ADR-1197, LIVE-147).
     { label: 'Pricing', href: '/pricing' },
     { label: 'Privacy', href: '/privacy' },
     { label: 'Terms', href: '/terms' },

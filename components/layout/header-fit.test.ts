@@ -110,7 +110,7 @@ describe('AuthButtons: the public auth cluster is pinned and thinned on a phone'
   })
 })
 
-// ── THE PHONE LABEL BUDGET (ADR-1196) ────────────────────────────────────────────────────────
+// ── THE PHONE LABEL BUDGET (ADR-1197) ────────────────────────────────────────────────────────
 //
 // 🔴 THE PARAGRAPH AT THE TOP OF THIS FILE OVERSTATES ITS OWN GUARANTEE, and the overstatement
 // cost two CI cycles. It says a single give-way child means the bar "cannot be broken by an asset

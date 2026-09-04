@@ -1,4 +1,4 @@
-// APPLY A CAPABILITY BUNDLE TO A SPACE — the IO half of PROG-BUNDLE (ADR-1196).
+// APPLY A CAPABILITY BUNDLE TO A SPACE — the IO half of PROG-BUNDLE (ADR-1197).
 //
 // Thin by design. Every decision lives in the PURE resolver `nextBlobsForBundle` (./bundles), which is
 // where the tests are; this file reads two jsonb columns, hands them to the resolver, and writes the

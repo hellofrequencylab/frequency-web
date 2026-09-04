@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 
-// THE FUNNEL -> WIZARD SEAM (ADR-1196, SCAN-533).
+// THE FUNNEL -> WIZARD SEAM (ADR-1197, SCAN-533).
 //
 // `lib/funnels/definitions.ts` builds `/spaces/new?mode=<type>:<variant>` so an operator arriving from
 // a `/for/<niche>` door lands pre-seeded in the Mode that door sold them. Until this file existed, one

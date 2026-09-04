@@ -84,7 +84,7 @@ describe('entitlement partition: billing namespace UNION read (the keystone · A
     expect(spaceHasEntitlement(space, 'crm')).toBe(true)
   })
 
-  // 🔴 THIS TEST USED TO ASSERT THE OPPOSITE, and that is why the defect shipped (ADR-1196). Its
+  // 🔴 THIS TEST USED TO ASSERT THE OPPOSITE, and that is why the defect shipped (ADR-1197). Its
   // previous name was "a billing key grants even when the top level is absent or explicitly false",
   // and it pinned a one-directional union: a plan grant beat a hand revoke. The consequence was that
   // `crm`, `email` and `program` — the three keys whose function key and entitlement key are the same

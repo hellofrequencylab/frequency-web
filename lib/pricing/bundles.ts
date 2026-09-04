@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// CAPABILITY BUNDLES — one named, curatable toolset per kind of operator (ADR-1196, PROG-BUNDLE).
+// CAPABILITY BUNDLES — one named, curatable toolset per kind of operator (ADR-1197, PROG-BUNDLE).
 //
 // THE GAP THIS CLOSES. The audit of 2026-09-03 found the three pieces of a per-operator product all
 // built and none of them connected:
@@ -113,7 +113,7 @@ export interface BundleBlobs {
  *
  * WHAT IT WRITES:
  *   · an explicit `false` at the TOP LEVEL for every function the bundle omits. Top-level `false` is
- *     the state that beats a plan grant (ADR-1196), so a bundle can subtract a tool from a Space whose
+ *     the state that beats a plan grant (ADR-1197), so a bundle can subtract a tool from a Space whose
  *     plan pays for it. Without that three-state read this whole module would be inert on paid Spaces.
  *   · a DELETE of the off-switch for every function the bundle includes, so re-applying a wider bundle
  *     genuinely restores the tool rather than leaving a stale `false` behind.

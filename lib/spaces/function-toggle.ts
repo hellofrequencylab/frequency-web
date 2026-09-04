@@ -1,4 +1,4 @@
-// THE PURE RESOLVER BEHIND THE OPERATOR "Features and access" SWITCH (ADR-1196).
+// THE PURE RESOLVER BEHIND THE OPERATOR "Features and access" SWITCH (ADR-1197).
 //
 // This file exists because the branch it replaces was unreachable from a test, and shipped wrong for
 // four of the twenty-two Space functions. `app/(main)/admin/spaces/[id]/actions.ts` is a `'use server'`
@@ -43,7 +43,7 @@ import type { SpaceFunctionDef } from './functions'
  * `entitlements.billing = false`, and `spaceBillingEntitlements` normalizes a non-object to `{}` — so
  * one toggle on a paid Space SILENTLY DESTROYS every plan grant it has: crm, email, reporting,
  * automation, team, multi_pipeline, program, space_full_website. Reproduced against the real reader
- * (ADR-1196, SCAN-536); the shipped action has always had this hole. The resolver refuses rather than
+ * (ADR-1197, SCAN-536); the shipped action has always had this hole. The resolver refuses rather than
  * returning the blob unchanged, because a fail-safe nobody can observe is an invisible regression:
  * the caller must surface it.
  *

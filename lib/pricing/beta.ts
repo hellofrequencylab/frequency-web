@@ -179,7 +179,7 @@ export interface BetaGraceConfig {
  *  comment here naming the live value would be a status claim in prose, and AGENTS.md forbids those
  *  because nothing re-reads them: the sentence that stood here was measured true on 2026-08-19
  *  (ADR-1087, ADR-1195) and was made false the same day it was cited, by #2347 moving the window to
- *  October. It is the third such expiry this module has paid for (ADR-1196). Read the row.
+ *  October. It is the third such expiry this module has paid for (ADR-1197). Read the row.
  *
  *  ⚪ WHAT IS DURABLE, and the reason this default is a date rather than `null`: it deliberately stays
  *  a WINDOW no matter what the live row holds. Following the live value to null would reverse the

@@ -40,7 +40,7 @@ export function MarketingHeader({
   /**
    * Overrides the header CTA label (still routes to BETA_CTA_HREF). The home splash
    * used to pass "Join the beta" so the front door read as a beta invite. It no longer does
-   * (ADR-1196): one entrance, one verb. The prop stays for a genuine campaign landing page
+   * (ADR-1197): one entrance, one verb. The prop stays for a genuine campaign landing page
    * keeps the builder-framed site-wide default ("Start a Circle", see lib/site).
    */
   ctaLabel?: string
@@ -212,7 +212,7 @@ export function MarketingHeader({
                 different component with a tighter phone row — it keeps "Sign in" below `sm`, which
                 this one hides. Fixing it here changed that page by zero pixels and cost a CI
                 cycle. The compact form stays on both; header-fit.test.ts now checks both.
-                (ADR-1196.) */}
+                (ADR-1197.) */}
             <span className="sm:hidden">{CTA_LABEL_COMPACT}</span>
             <span className="hidden sm:inline">{ctaLabel}</span>
           </Link>

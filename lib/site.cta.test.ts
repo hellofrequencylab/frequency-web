@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { readFileSync, readdirSync } from 'node:fs'
 import path from 'node:path'
 
-// THE APPROVED CALL-TO-ACTION SET (ADR-1196, owner ruling 2026-09-04).
+// THE APPROVED CALL-TO-ACTION SET (ADR-1197, owner ruling 2026-09-04).
 //
 // The 2026-09-03 audit counted FIVE labels for one entrance: "Start a Circle" on most marketing
 // pages, "Join the beta" hardcoded on the home page, "Start free" on the /for/<niche> doors, "Join
@@ -140,7 +140,7 @@ describe('the approved CTA set', () => {
 
   it('the compact header form is genuinely shorter than both approved verbs', () => {
     // It exists to buy back header width, so a compact label that is not shorter is a bug that
-    // would reintroduce the overflow it was added to fix (ADR-1196). Measured against BOTH verbs
+    // would reintroduce the overflow it was added to fix (ADR-1197). Measured against BOTH verbs
     // because the header is global chrome and can carry either.
     for (const label of APPROVED_CTA_LABELS) {
       expect({ compact: CTA_LABEL_COMPACT.length, than: label, len: label.length }).toEqual({
@@ -158,7 +158,7 @@ describe('the approved CTA set', () => {
     expect(APPROVED_CTA_LABELS as readonly string[]).not.toContain(CTA_LABEL_COMPACT)
     // And it lives only in the two public HEADERS, so it cannot leak into a page hero. Both are
     // named: the compact form first shipped in marketing-header.tsx alone, which is not the
-    // component /discover renders, so the overflow it was written to fix did not move (ADR-1196).
+    // component /discover renders, so the overflow it was written to fix did not move (ADR-1197).
     for (const rel of ['components/layout/marketing-header.tsx', 'components/layout/user-menu.tsx']) {
       expect({ file: rel, uses: readFileSync(path.join(process.cwd(), rel), 'utf8').includes('CTA_LABEL_COMPACT') })
         .toEqual({ file: rel, uses: true })

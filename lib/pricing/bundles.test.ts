@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 
-// THE BUNDLE DRIFT GUARD (ADR-1196, PROG-BUNDLE).
+// THE BUNDLE DRIFT GUARD (ADR-1197, PROG-BUNDLE).
 //
 // A bundle names function keys as strings. A typo, or a key retired from the registry, would silently
 // switch a tool OFF for a real operator — the bundle would simply not list it, and `nextBlobsForBundle`

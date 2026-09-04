@@ -95,7 +95,7 @@ export interface ModeProfile {
   /** The RECOMMENDED add-ons (suggested, never auto-on; entitlement stays the billing lane's job).
    *  TYPED to `AddonKey`, the live catalog union, so a retired add-on cannot be recommended: this
    *  field carried `marketing` / `team` / `branding` for months after ADR-472 folded all three into
-   *  plan depth, and nine of ten presets advertised a product with no Stripe price (ADR-1196). The
+   *  plan depth, and nine of ten presets advertised a product with no Stripe price (ADR-1197). The
    *  import is type-only, so this module stays runtime-pure. */
   recommendedAddons: readonly AddonKey[]
   /** The dashboard next-best-actions this Mode surfaces, in order. */
@@ -466,7 +466,7 @@ const WIZARD_CHOICES: readonly { type: SpaceType; variant: ModeVariant; label: s
   { type: 'business', variant: 'product', label: 'Product business', hint: 'Catalog and storefront' },
   { type: 'business', variant: 'membership', label: 'Studio or gym', hint: 'Classes and memberships' },
   { type: 'business', variant: 'ticketed', label: 'Event space', hint: 'Tickets and check in' },
-  // Added 2026-09-03 (ADR-1196). The community-builders niche funnel routes to `business:cohort`, and
+  // Added 2026-09-03 (ADR-1197). The community-builders niche funnel routes to `business:cohort`, and
   // the wizard did not offer it, so that door silently landed every arrival on `Coach / packages` —
   // the first choice. Label and hint are this profile's own `modeLabel` and `focusLabel`, not new copy.
   { type: 'business', variant: 'cohort', label: 'Coach', hint: 'Programs and enrollment' },

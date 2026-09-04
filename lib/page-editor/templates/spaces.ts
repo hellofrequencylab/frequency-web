@@ -51,7 +51,7 @@ import {
 //    movements, TWO dark beats (the ink capability band, the ink "why we do it this
 //    way"), the slat Marquee, then the ink close.
 //  • CTA SYSTEM: /spaces is an OPERATOR surface, so its primary is OPERATOR_CTA_LABEL ("Start
-//    free" -> /pricing, ADR-1196), not the seeker verb. It appears
+//    free" -> /pricing, ADR-1197), not the seeker verb. It appears
 //    at THREE moments — the hero, a mid-page CallToAction after the how-it-works
 //    steps (highest intent), and the ink close. Each primary carries ONE quiet
 //    secondary text link (BETA_CTA_SECONDARY_*). Never stack two buttons.

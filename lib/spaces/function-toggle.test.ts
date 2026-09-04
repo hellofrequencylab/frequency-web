@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 
-// The pure off-switch resolver (ADR-1196). These assertions are written THROUGH the reader —
+// The pure off-switch resolver (ADR-1197). These assertions are written THROUGH the reader —
 // `spaceFunctionEnabled` — rather than against the shape of the blob, because the defect this file
 // fixes was precisely a blob that looked written and read back the other way. A test that asserted
 // "the key was deleted" would have passed on the broken code.
@@ -38,7 +38,7 @@ describe('nextEntitlementsForFunctionToggle', () => {
   })
 
   it('turns OFF a plan-gated function even on a Space whose PLAN grants it', () => {
-    // The real-world case: a Business+ Space carrying billing.crm = true. Before ADR-1196 the
+    // The real-world case: a Business+ Space carrying billing.crm = true. Before ADR-1197 the
     // off-switch wrote the wrong key AND the union would have overridden it anyway.
     for (const fn of GATED) {
       const def = spaceFunctionDef(fn)!
@@ -70,7 +70,7 @@ describe('nextEntitlementsForFunctionToggle', () => {
   it('where the function key and entitlement key collide, OFF survives the entitlement cleanup', () => {
     // The regression this guard exists for: crm / email / program name one string twice, so an
     // unguarded `delete next[def.entitlement]` erases the `false` written the line before and the
-    // switch silently reverts to ON. Reproduced during development of this very file (ADR-1196).
+    // switch silently reverts to ON. Reproduced during development of this very file (ADR-1197).
     for (const def of SPACE_FUNCTIONS.filter((f) => f.entitlement === f.key)) {
       const { next, isOn } = toggle({}, def.key, false)
       expect({ fn: def.key, stored: next[def.key], isOn }).toEqual({

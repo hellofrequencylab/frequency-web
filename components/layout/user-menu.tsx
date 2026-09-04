@@ -41,7 +41,7 @@ export function AuthButtons({ dark = false }: { dark?: boolean }) {
     // spends the whole line, so past a certain label the wordmark has shrunk to nothing and the
     // deficit lands on the menu button instead. Renaming BETA_CTA_LABEL from 'Start a Circle' to
     // 'Find your people' — two characters — put that button 18px off a 320px /discover viewport
-    // (ADR-1196; the @overflow gate caught it, `header-fit.test.ts` now budgets it).
+    // (ADR-1197; the @overflow gate caught it, `header-fit.test.ts` now budgets it).
     <div className="flex shrink-0 items-center gap-1 sm:gap-2">
       <Link
         href="/sign-in"

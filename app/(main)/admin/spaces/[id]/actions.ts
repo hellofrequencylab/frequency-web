@@ -12,7 +12,7 @@ import { isSpaceRole, type SpaceRole } from '@/lib/spaces/membership'
 // "Features and access" grid on /admin/spaces/[id]. Two sparse, behavior-preserving merges into the
 // existing jsonb columns (no new write path beyond these):
 //   setSpaceFunctionEnabled — flip a function's ON switch, via the PURE resolver in
-//       lib/spaces/function-toggle.ts (ADR-1196). The OFF switch is ALWAYS the function key, because
+//       lib/spaces/function-toggle.ts (ADR-1197). The OFF switch is ALWAYS the function key, because
 //       that is the only key spaceFunctionEnabled reads; the entitlement key is a separate ADDITIVE
 //       grant that keeps the janitor override absolute (an operator may grant crm with no paid plan).
 //       Conflating the two is what made this action a silent no-op for crm / email / shop / program.
@@ -88,7 +88,7 @@ export async function setSpaceFunctionEnabled(
 
   // The decision lives in a PURE resolver (lib/spaces/function-toggle.ts) rather than here, because the
   // version written inline shipped wrong for four of the twenty-two functions and could not be reached
-  // by a test to prove it (ADR-1196). `null` means the flip is refused for data safety.
+  // by a test to prove it (ADR-1197). `null` means the flip is refused for data safety.
   const next = nextEntitlementsForFunctionToggle(blobs.entitlements, def, enabled)
   if (!next) {
     return fail('Plan and billing cannot be switched off. It shares a key with the billing record.')

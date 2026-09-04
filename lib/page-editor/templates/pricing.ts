@@ -67,7 +67,7 @@ const NONPROFIT_YEAR = formatLoadoutCents(CAT.nonprofit_seat.year.listCents)
 //    render verbatim (Member, Crew, Circle, Zaps, Gems, Vault, Vera). No em dashes.
 //    Sentence-case headings. Contractions always. Never narrate the reader's feelings.
 //  • CTA SYSTEM: /pricing is an OPERATOR surface, so its primary is the shared OPERATOR_CTA
-//    (ADR-1196), not the seeker verb. Label/href from
+//    (ADR-1197), not the seeker verb. Label/href from
 //    @/lib/site), with ONE quiet secondary text link beside it. The free Member tier
 //    cards keep their own "Start free" entry into the game; the page-level asks (hero
 //    and the ink close) carry the shared beta CTA so Pricing speaks the same language

@@ -34,7 +34,7 @@ export default async function NewSpacePage({
 
   const choices = listModeChoices()
 
-  // THE NICHE FUNNEL'S ANSWER, CARRIED THROUGH (ADR-1196). lib/funnels/definitions.ts builds
+  // THE NICHE FUNNEL'S ANSWER, CARRIED THROUGH (ADR-1197). lib/funnels/definitions.ts builds
   // `/spaces/new?mode=<type>:<variant>` so an operator arriving from /for/<niche> lands pre-seeded in
   // the Mode that door sold them. This page took no argument until now, so the hint was dropped and the
   // form fell back to `choices[0]` — every niche door landed on "Coach", and the visitor was asked to

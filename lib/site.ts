@@ -139,7 +139,7 @@ export const BETA_CTA_LABEL = "Find your people";
 export const BETA_CTA_HREF = "/join";
 
 // ── THE OPERATOR CALL TO ACTION ──────────────────────────────────────────────
-// The second half of the approved set (ADR-1196, owner ruling 2026-09-04). A site can carry more
+// The second half of the approved set (ADR-1197, owner ruling 2026-09-04). A site can carry more
 // than one verb; what it cannot carry is five for one entrance, invented per page. So the set is
 // exactly two, each named for the reader it addresses, and lib/site.cta.test.ts fails a marketing
 // surface that ships a third.
@@ -163,7 +163,7 @@ export const OPERATOR_CTA_LABEL = "Start free";
 // tidier and produces self-links on exactly the pages that carry the operator verb.
 export const OPERATOR_CTA_HREF = BETA_CTA_HREF;
 
-/** THE NARROW-HEADER FORM, and the reason it exists (ADR-1196).
+/** THE NARROW-HEADER FORM, and the reason it exists (ADR-1197).
  *
  *  🔴 A HEADER IS NOT A HERO, and this is where that stops being a style opinion. The marketing
  *  header's CTA is `shrink-0 whitespace-nowrap`, so it cannot give; the wordmark is the bar's ONE
@@ -192,7 +192,7 @@ export const APPROVED_CTA_LABELS = [BETA_CTA_LABEL, OPERATOR_CTA_LABEL] as const
 // a second button). For the Seeker who is not ready to host; routes into the same
 // open induction, which branches by intent.
 //
-// ⚠️ THE WORD "just" WAS REMOVED (2026-09-03, ADR-1196). It read "or just join as a
+// ⚠️ THE WORD "just" WAS REMOVED (2026-09-03, ADR-1197). It read "or just join as a
 // member", and it sat under every primary on the site — including the six SEO guides
 // whose readers arrived from "how to make friends as an adult". CONTENT-VOICE §2a
 // names the Seeker as reader one, and that sentence told reader one they were the
