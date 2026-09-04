@@ -5778,7 +5778,7 @@
     {
       "id": "SCAN-531",
       "title": "A plan grant overrides a hand revoke, so CRM cannot be subtracted from a paid Space",
-      "status": "open",
+      "status": "done",
       "lane": "live",
       "size": "S",
       "source": {
@@ -5795,7 +5795,7 @@
     {
       "id": "SCAN-532",
       "title": "The admin Features and access off-switch is a silent no-op for CRM, Email, Shop and Program",
-      "status": "open",
+      "status": "done",
       "lane": "live",
       "size": "S",
       "source": {
@@ -5829,7 +5829,7 @@
     {
       "id": "SCAN-534",
       "title": "The grace-window comment records a production state that is not production’s",
-      "status": "open",
+      "status": "done",
       "lane": "hygiene",
       "size": "XS",
       "source": {
@@ -5846,7 +5846,7 @@
     {
       "id": "SCAN-535",
       "title": "Nine of ten Mode presets recommend an add-on that cannot be bought",
-      "status": "open",
+      "status": "done",
       "lane": "live",
       "size": "XS",
       "source": {
@@ -5856,8 +5856,8 @@
       "detail": "lib/spaces/modes.ts declares `recommendedAddons` values of 'marketing', 'team', 'branding' and 'ai'. ADDON_ENTITLEMENT_KEYS (lib/pricing/plans.ts) has exactly one member, `ai`; marketing / team / branding were folded into plan depth by ADR-472 and sit in RETIRED_ADDON_ITEM_KEYS. The Mode settings page renders these straight to the operator as chips, so nine of the ten presets advertise a product with no Stripe price and no entitlement.\n\nThe guard that should have caught it is itself the defect: lib/spaces/modes.test.ts asserts membership against `new Set(['marketing','ai','team','branding'])` — a LITERAL, not a reference to ADDON_KEYS. It green-lights the three retired values by construction. This is the shape-not-truth failure the repo names in four ADRs, in a test.\n\nFix both: correct the data, and re-point the test at ADDON_KEYS so the next retirement fails the build instead of shipping.",
       "verify": {
         "kind": "cmd",
-        "cmd": "node -e \"const fs=require('fs');const m=fs.readFileSync('lib/spaces/modes.ts','utf8'),t=fs.readFileSync('lib/spaces/modes.test.ts','utf8').replace(/\\\\s+/g,' ');const stale=[...m.matchAll(/recommendedAddons:\\\\s*\\\\[([^\\\\]]*)\\\\]/g)].some(x=>/marketing|team|branding/.test(x[1]));const literal=/new Set\\\\(\\\\[ ?'(marketing|ai|team|branding)'/.test(t);process.exit(stale||literal?1:0)\"",
-        "note": "Passes when no Mode recommends a retired add-on AND the test derives its allowed set from ADDON_KEYS instead of a literal."
+        "cmd": "node -e \"const fs=require('fs');const strip=t=>t.replace(/\\\\/\\\\*[\\\\s\\\\S]*?\\\\*\\\\//g,'').replace(/^\\\\s*\\\\/\\\\/.*$/gm,'');const m=strip(fs.readFileSync('lib/spaces/modes.ts','utf8'));const t=strip(fs.readFileSync('lib/spaces/modes.test.ts','utf8')).replace(/\\\\s+/g,' ');const stale=[...m.matchAll(/recommendedAddons:\\\\s*\\\\[([^\\\\]]*)\\\\]/g)].some(x=>/marketing|team|branding/.test(x[1]));const literal=/new Set\\\\(\\\\[ ?'(marketing|ai|team|branding)'/.test(t);process.exit(stale||literal?1:0)\"",
+        "note": "Comments are stripped before the assertion, so an ADR reference that QUOTES the retired literal does not read as the literal. Passes when no Mode recommends a retired add-on AND the test derives its allowed set from ADDON_KEYS."
       }
     },
     {
@@ -6028,6 +6028,23 @@
         "kind": "manual",
         "evidence": "Vercel Web Analytics reports pageviews for the frequency-web production project.",
         "checked": "2026-09-03"
+      }
+    },
+    {
+      "id": "SCAN-536",
+      "title": "Turning off Plan and billing destroys every plan grant the Space has",
+      "status": "done",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "docs/DECISIONS.md",
+        "ref": "ADR-1196, found while fixing SCAN-532"
+      },
+      "detail": "FOUND BY A TEST WRITTEN FOR A DIFFERENT BUG, and it is the most severe of the set. The Space function `billing` (\"Plan and billing\") has a key byte-identical to BILLING_NAMESPACE, the reserved container every plan grant lives inside.\n\nThe shipped off-switch wrote `entitlements.billing = false`. spaceBillingEntitlements normalizes a non-object to {}, so ONE janitor toggle on a paid Space silently deleted crm, email, reporting, automation, team, multi_pipeline, program and space_full_website — every grant setSpacePlan had written. Reproduced against the real reader before the fix; the assertion is kept in the test file as a permanent record of what the write costs.\n\nThe collision is refused in BOTH directions: enabling would write `billing: true`, which destroys the grants exactly as thoroughly. The resolver returns null rather than silently returning the blob unchanged, because a fail-safe nobody can observe is an invisible regression (AGENTS.md); the action surfaces it as a plain message.\n\n⚠️ NOT FIXED HERE, and deliberately: the underlying namespace collision remains. A Space function may still be added whose key shadows a reserved container, and nothing fails the build. The refusal is a stop, not a cure. A durable fix stores off-switches under their own reserved prefix, which changes the read contract in every consumer and is its own piece of work.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const S='lib/spaces/function-toggle.ts',T='lib/spaces/function-toggle.test.ts';if(!fs.existsSync(S)||!fs.existsSync(T))process.exit(79);const s=fs.readFileSync(S,'utf8'),t=fs.readFileSync(T,'utf8');const refuses=/def.key === BILLING_NAMESPACE/.test(s)&&/\\| null/.test(s);const proven=/REPRODUCES the damage/.test(t)&&/toBeNull\\(\\)/.test(t);process.exit(refuses&&proven?0:1)\"",
+        "note": "Passes when the resolver refuses the reserved-namespace key and the test both reproduces the damage and proves the refusal."
       }
     }
   ]
