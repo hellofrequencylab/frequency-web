@@ -53,7 +53,7 @@ export interface MessagingConsoleData {
 
 // The composer is the working campaign editor; the console links out to it rather than
 // re-home it (do not delete the working editors, unify the listing over them).
-const CAMPAIGN_COMPOSER_HREF = '/admin/marketing/campaigns'
+const CAMPAIGN_COMPOSER_HREF = '/admin/crm/marketing'
 
 export async function getMessagingConsole(): Promise<MessagingConsoleData> {
   const [rawCampaigns, funnels] = await Promise.all([listCampaigns(), listFunnels()])

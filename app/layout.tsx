@@ -18,6 +18,7 @@ import { JsonLd } from "@/components/json-ld";
 import { organizationSchema, websiteSchema } from "@/lib/jsonld";
 import { GoogleAnalytics } from "@/components/analytics/google-analytics";
 import { WebVitals } from "@/components/analytics/web-vitals";
+import { Analytics } from "@vercel/analytics/next";
 
 // Nunito: closest Google Font to the Frequency brand logo's rounded, bold letterforms.
 // Weights: 400 body, 600 semibold, 700 bold, 800 extrabold, 900 black (headings/branding).
@@ -173,6 +174,13 @@ export default function RootLayout({
         {/* Anonymous Core Web Vitals capture (no cookies, no profile link — keeps the
             root layout static). Member-tied trackers stay in the (main) layout. */}
         <WebVitals />
+        {/* Vercel Web Analytics (OWN-047). The dashboard toggle only opens the endpoint — this
+            script is what sends a pageview, so the project reported zero for as long as it was
+            enabled without this. It covers the SIGNED-OUT funnel, which is the gap: the repo's own
+            nav.page_view events cover members well and see nothing of the ~20 public marketing
+            surfaces or the /for/* operator doors, which is where every acquisition decision is
+            made. Cookie-free and ~1KB, so it costs the shell budget nothing meaningful. */}
+        <Analytics />
         {children}
         {/* The anonymous live-chat widget (ADR-816) no longer mounts here: corner arbitration
             (docs/CHAT-SHELL-PLAN.md §2) gives each surface ONE bottom-right owner. The widget

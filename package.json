@@ -89,6 +89,7 @@
     "@tiptap/starter-kit": "^3.30.5",
     "@upstash/ratelimit": "^2.0.8",
     "@upstash/redis": "^1.38.3",
+    "@vercel/analytics": "^2.0.1",
     "astronomy-engine": "^2.1.19",
     "heic2any": "^0.0.4",
     "jsqr": "^1.4.0",

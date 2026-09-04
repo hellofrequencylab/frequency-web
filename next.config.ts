@@ -340,6 +340,86 @@ const nextConfig: NextConfig = {
       // meant. Still 308: the same bookmarks and the same already-sent notification emails, now
       // landing on the list of circles instead of one scroll away from a teaser.
       { source: '/spaces/:slug/community', destination: '/spaces/:slug/circles', permanent: true },
+
+      // ── HYG-043 / HYG-044: 41 redirect-only route files become config rules (ADR-1199) ──────────
+      //
+      // Each of these was a `page.tsx` whose entire body was a redirect. A route file costs a build
+      // entry and a line of the per-function budget to do what the edge does for free before the
+      // filesystem router is consulted. The standing rule this establishes: a consolidation is not
+      // finished until the thing it replaced is deleted — every previous one in this repo ADDED the
+      // new surface and left the old one running.
+      //
+      // Permanence is preserved exactly as each file had it, never "tidied": the 15 files that used
+      // `redirect()` (a 307) stay `permanent: false`, and the 15 that used `permanentRedirect()`
+      // (a 308) stay `permanent: true`. A 308 is cached by browsers effectively forever, so turning
+      // a 307 into one is not a cleanup, it is an irreversible decision made by accident.
+      //
+      // 🔴 SOURCES ARE EXACT WHERE A LIVE CHILD EXISTS. Redirects are checked BEFORE the filesystem
+      // router, so a careless `:path*` does not merely overlap a live route, it replaces it. Two here
+      // would be silent and total: `/spaces/:slug/settings` has 19 live sub-pages beneath it, and
+      // `/spaces/:slug/settings/services` has a live `new/` child. `lib/marketing/redirect-shadow.test.ts`
+      // now fails the build if any rule shadows a real route file.
+
+      // Admin CRM + Marketing reorg. All 307 — the mapping is still settling (same reasoning as the
+      // /crm and /marketing rules above, which these join rather than duplicate).
+      { source: '/admin/crm/deals', destination: '/admin/crm/pipeline', permanent: false },
+      { source: '/admin/crm/deals/:path*', destination: '/admin/crm/pipeline/:path*', permanent: false },
+      { source: '/admin/crm/graph', destination: '/admin/crm/intelligence', permanent: false },
+      { source: '/admin/crm/inbox', destination: '/admin/crm/conversations', permanent: false },
+      { source: '/admin/crm/playbooks', destination: '/admin/crm/intelligence', permanent: false },
+      { source: '/admin/crm/today', destination: '/admin/crm/intelligence', permanent: false },
+      { source: '/admin/demo/studio', destination: '/admin/demo', permanent: false },
+      { source: '/admin/marketing/campaigns', destination: '/admin/crm/marketing', permanent: false },
+      // Exact source only: messaging/ still has live actions.ts, control-panel/, funnels/ and new/.
+      { source: '/admin/marketing/messaging', destination: '/admin/crm/marketing', permanent: false },
+
+      // Member surfaces folded into the one-page settings suite and the network/commerce moves.
+      { source: '/connections/import', destination: '/network/contacts', permanent: false },
+      { source: '/marketplace/new', destination: '/classifieds', permanent: false },
+      // The four settings sections are anchors on /settings now. A fragment is legal in a config
+      // destination — Next passes it straight into the Location header.
+      { source: '/settings/account', destination: '/settings#account', permanent: false },
+      { source: '/settings/appearance', destination: '/settings#appearance', permanent: false },
+      { source: '/settings/connections', destination: '/settings#connections', permanent: false },
+      { source: '/settings/notifications', destination: '/settings#notifications', permanent: false },
+      { source: '/vault', destination: '/crew/store', permanent: false },
+
+      // The 15 retired marketing/SEO guides. All 308, as they already were: these slugs are indexed,
+      // linked from sent email, and are never coming back, so the signals should transfer for good.
+      // All 15 also come out of check-seo.mjs's INTENTIONALLY_EXCLUDED in this same change — that
+      // allowlist warns on an entry with no backing page, so leaving them would trade one stale
+      // record for another.
+      { source: '/build', destination: '/the-community', permanent: true },
+      { source: '/demo', destination: '/the-community', permanent: true },
+      { source: '/feel-less-awkward-in-groups', destination: '/how-to-be-more-social', permanent: true },
+      { source: '/find-like-minded-people', destination: '/friendship-as-an-adult', permanent: true },
+      { source: '/host-a-recurring-gathering', destination: '/how-to-build-community', permanent: true },
+      { source: '/how-it-works', destination: '/what-is-frequency', permanent: true },
+      { source: '/how-to-reconnect-with-old-friends', destination: '/friendship-as-an-adult', permanent: true },
+      { source: '/how-to-run-a-community-space', destination: '/how-to-build-community', permanent: true },
+      { source: '/lead-funnel-kit', destination: '/tools-for-community-builders', permanent: true },
+      { source: '/life-after-the-feed', destination: '/loneliness', permanent: true },
+      { source: '/meet-people-new-city', destination: '/friendship-as-an-adult', permanent: true },
+      { source: '/practice', destination: '/the-quest', permanent: true },
+      { source: '/social-life-without-drinking', destination: '/how-to-be-more-social', permanent: true },
+      { source: '/spread', destination: '/the-community', permanent: true },
+      { source: '/what-is-a-third-space', destination: '/loneliness', permanent: true },
+
+      // The param-only stubs (HYG-044). Read one at a time, not batch-converted: the four circle tab
+      // stubs do NOT share a destination — three go to whats-on and leaderboard goes to stats — which
+      // is exactly the kind of thing a sweep gets wrong.
+      { source: '/circles/:slug/:tab(events|journey|practice)', destination: '/circles/:slug/whats-on', permanent: true },
+      { source: '/circles/:slug/leaderboard', destination: '/circles/:slug/stats', permanent: true },
+      // crm/ keeps its directory: actions.ts is imported by ../manage/circle-member-viewer.tsx.
+      { source: '/circles/:slug/crm', destination: '/circles/:slug/manage', permanent: false },
+      // Same shape: crm/actions.ts is imported by ../event-member-viewer.tsx.
+      { source: '/events/:slug/manage/crm', destination: '/events/:slug/manage', permanent: false },
+      { source: '/spaces/:slug/crm/inbox', destination: '/spaces/:slug/crm/conversations', permanent: false },
+      // 🔴 EXACT, never :path* — 19 live sub-pages sit under /spaces/:slug/settings.
+      { source: '/spaces/:slug/settings', destination: '/spaces/:slug/manage', permanent: false },
+      { source: '/spaces/:slug/settings/enroll', destination: '/spaces/:slug/settings/offerings#enroll', permanent: false },
+      // 🔴 EXACT, never :path* — services/new/page.tsx is a live sibling.
+      { source: '/spaces/:slug/settings/services', destination: '/spaces/:slug/settings/shop', permanent: false },
     ]
   },
   images: {

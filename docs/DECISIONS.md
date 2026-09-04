@@ -35447,3 +35447,75 @@ that notices it fired; a probe must measure the consequence rather than the shap
 how cheap the strongest fix was: the schema was already in the repo as generated types, so binding the
 string to it cost one `satisfies` clause and moved the whole class from "a test might catch it" to
 "it does not compile".
+
+## ADR-1199: forty-one route files that existed only to leave, and the guard that makes deleting them safe (2026-09-04)
+
+**Status:** accepted · **Closes:** HYG-043, HYG-044, OWN-047 · **Opens:** OWN-048 ·
+**Touches:** `next.config.ts`, `scripts/check-seo.mjs`, `scripts/templates-baseline.txt`,
+`lib/marketing/redirect-shadow.test.ts`, `app/layout.tsx`
+
+### The change
+
+Forty-one `page.tsx` files whose entire body was a redirect are deleted and reissued as
+`next.config.ts` rules. A route file costs a build entry and a line of the per-function budget to do
+what the edge does for free, before the filesystem router is consulted at all.
+
+**Permanence is preserved exactly, never tidied.** The 15 files using `redirect()` (307) stay
+`permanent: false`; the 15 marketing guides using `permanentRedirect()` (308) stay `permanent: true`.
+A 308 is cached by browsers effectively forever, so promoting a 307 is not a cleanup — it is an
+irreversible decision made by accident.
+
+The standing rule this establishes: **a consolidation is not finished until the thing it replaced is
+deleted.** Every previous one in this repo added the new surface and left the old one running.
+
+### 🔴 The guard is the point, not the deletion
+
+Redirects are evaluated **before** the filesystem router, so a rule whose `source` matches a real page
+does not overlap it — it **replaces** it. Nothing notices: the file still exists, tsc is happy, every
+other test passes, and the page is unreachable in production. Two of the new rules sit directly above
+live subtrees: `/spaces/:slug/settings` has **19 live sub-pages** beneath it, and
+`/spaces/:slug/settings/services` has a live `new/` child. Both are written as exact sources, and
+until now that was an argument rather than a fact — a one-character edit adding `/:path*` would have
+shipped green.
+
+`lib/marketing/redirect-shadow.test.ts` generalises `funnel-redirects.test.ts` (which guards only
+`/for/<slug>`) to every rule against every route in `app/`. Widening the settings rule makes it name
+all 19 pages it would have taken out.
+
+⚠️ **The guard found two bugs in its own matcher before it found anything else**, and both would have
+made it pass while checking nothing: `:path*` left the source's own slash in front of its replacement
+and matched nothing, and then the generic `:name` rule matched the `?:` inside its own earlier output
+and produced an invalid group. It is now a segment-wise parser, because **a parser cannot re-read what
+it has already written**. The lesson generalises past this file: a detector built from chained
+`.replace()` calls over its own output is a detector whose failure mode is silence.
+
+### What the survey got wrong, measured after the edit
+
+The plan named **6** live inbound links pointing at soon-to-redirect paths. A post-edit sweep found
+**10** — `app/manage-emails`, `components/connections/resonance-matches.tsx`,
+`components/feed/romance-strip.tsx` and `components/widgets/crm/today.tsx` were missed. Each still
+worked, through an extra hop, which is exactly why nobody would have noticed. Reading a codebase
+produces a lower bound; a grep after the change produces the number.
+
+`scripts/admin-client-baseline.txt` needed no edit, contrary to the row's warning: every entry under
+these directories names an `actions.ts` sibling that survives, because `page.tsx` alone was deleted
+wherever a live sibling existed.
+
+### OWN-047, and why a toggle was only half of it
+
+Web Analytics was enabled on the Vercel project, which stopped the API erroring. It would still have
+reported **zero forever**: `@vercel/analytics` was not a dependency and `<Analytics />` was rendered
+nowhere. The dashboard switch opens the endpoint; the script is what fills it. Both halves now exist.
+
+This matters more than its size. The repo's own `nav.page_view` events cover signed-in behaviour well
+and see **nothing** of the ~20 public marketing surfaces or the `/for/*` operator doors — which is
+where every acquisition decision is made. Measurement starts now and does not backfill, so those
+judgements need a few weeks of data before they mean anything.
+
+### OWN-048, opened by owner ruling
+
+Before any bundle ships, each gets a written spec **and the 22-key function registry is re-reviewed
+beside it**. The two are one decision: a bundle is defined by what it omits, so naming omissions is a
+statement about `lib/spaces/functions.ts`. This blocks LIVE-149 rather than the reverse — the
+mechanism is finished and proven, and wiring provision to a registry holding one pass-through row
+would put a permanent no-op branch in the Space-creation path.

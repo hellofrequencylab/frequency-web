@@ -46,7 +46,6 @@ app/(main)/classifieds/[id]/edit/page.tsx
 app/(main)/classifieds/new/page.tsx
 app/(main)/classifieds/page.tsx
 app/(main)/connections/[id]/page.tsx
-app/(main)/connections/import/page.tsx
 app/(main)/connections/page.tsx
 app/(main)/crew/page.tsx
 app/(main)/edit/[slug]/page.tsx
@@ -75,7 +74,6 @@ app/(main)/settings/billing/page.tsx
 app/(main)/settings/profile/spotlight/page.tsx
 app/(main)/spaces/[slug]/edit-page/page.tsx
 app/(main)/spaces/[slug]/manage/page.tsx
-app/(main)/spaces/[slug]/settings/page.tsx
 app/(main)/spaces/[slug]/settings/services/new/page.tsx
 app/(main)/spaces/directory/page.tsx
 app/(main)/store/page.tsx

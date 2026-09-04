@@ -30,7 +30,7 @@ export async function RomanceStrip({ viewerProfileId }: { viewerProfileId: strin
           </span>
           Open to connection
         </h3>
-        <Link href="/settings/connections" className="text-meta font-medium text-primary-strong hover:underline">
+        <Link href="/settings#connections" className="text-meta font-medium text-primary-strong hover:underline">
           Manage
         </Link>
       </div>
