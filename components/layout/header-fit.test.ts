@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
+import { CTA_LABEL_COMPACT } from '@/lib/site'
 
 // ── THE HEADER FIT CONTRACT ──────────────────────────────────────────────────────────────────
 //
@@ -30,6 +31,11 @@ import { readFileSync } from 'node:fs'
 // designated give-way point cannot be broken by an asset swap, a longer CTA label or a denser
 // generation preset: the mark gets smaller and nothing leaves the screen. A layout that adds up
 // can be broken by any of the three, silently, on the surface with the least test coverage.
+//
+// ⚠️ READ §THE PHONE LABEL BUDGET AT THE FOOT OF THIS FILE BEFORE TRUSTING THE SENTENCE ABOVE.
+// "a longer CTA label" is only covered while a give-way child still has width left to give, and on
+// SiteHeader below `sm` it does not. That is a real hole, it was found the expensive way, and the
+// budget down there is the half of this contract the structure cannot express.
 //
 // These are SOURCE assertions on purpose. The failure is a layout fact and this repo has no
 // browser in `pnpm test`; the honest thing a unit test can hold is the invariant that produced the
@@ -101,6 +107,67 @@ describe('AuthButtons: the public auth cluster is pinned and thinned on a phone'
   it('keeps Sign in visible below sm', () => {
     expect(USER_MENU).not.toMatch(/href="\/sign-in"[\s\S]{0,160}hidden sm:/)
     expect(USER_MENU).toContain('px-2 py-1.5 rounded-lg transition-colors sm:px-3')
+  })
+})
+
+// ── THE PHONE LABEL BUDGET (ADR-1196) ────────────────────────────────────────────────────────
+//
+// 🔴 THE PARAGRAPH AT THE TOP OF THIS FILE OVERSTATES ITS OWN GUARANTEE, and the overstatement
+// cost two CI cycles. It says a single give-way child means the bar "cannot be broken by an asset
+// swap, a longer CTA label or a denser generation preset". That holds for MarketingHeader. It does
+// NOT hold for SiteHeader, because AuthButtons deliberately keeps BOTH links below `sm` (see the
+// note beside them): the fixed row there — search glyph, Sign in, the CTA, the mobile menu button
+// and four gaps — already spends a 320px line, so once the wordmark has shrunk to nothing there is
+// no give-way child left and the next pixel lands outside the viewport.
+//
+// That is not hypothetical. Renaming BETA_CTA_LABEL from 'Start a Circle' (14) to 'Find your
+// people' (16) — TWO characters — put the /discover mobile menu button 18px off a 320px viewport,
+// on a `fixed` bar with `overflow-x-clip`, i.e. unreachable. The structural assertions above all
+// stayed green through it, because nothing structural changed.
+//
+// So the label gets a BUDGET as well as a structure. A character count is a proxy for a width and
+// an honest one only because every label here renders in one face at one size (Nunito, semibold,
+// --text-body-sm); it is deliberately calibrated against a label CI has actually measured rather
+// than against a number someone liked:
+//
+//   'Start a Circle'   14 chars   the label green on main, at 320px, for months
+//   'Find your people' 16 chars   +2 chars = +18px of overflow  ⇒  ~9px per character
+//
+// The ceiling is therefore 14 — the widest label PROVEN to fit — and the compact form the phone
+// actually renders is well inside it. The pixel half stays the @overflow gate's job; this is the
+// two-minute half, so the next label change fails in `pnpm test` instead of nineteen minutes into
+// pr-compare.
+describe('the CTA label a PHONE renders is inside the width CI has proven', () => {
+  const PROVEN_PHONE_LABEL_CHARS = 'Start a Circle'.length
+
+  it('is short enough that the bar cannot run out of give-way', () => {
+    expect({ label: CTA_LABEL_COMPACT, chars: CTA_LABEL_COMPACT.length }).toEqual({
+      label: CTA_LABEL_COMPACT,
+      chars: CTA_LABEL_COMPACT.length,
+    })
+    expect(CTA_LABEL_COMPACT.length).toBeLessThanOrEqual(PROVEN_PHONE_LABEL_CHARS)
+  })
+
+  // BOTH public headers, because the defect was fixed in one of them and shipped from the other:
+  // the compact form went into MarketingHeader while the surface pr-compare was failing on
+  // (/discover) renders SiteHeader -> AuthButtons, so the geometry did not move by one pixel.
+  it('is the label BOTH public headers put below sm, not just the one', () => {
+    for (const [name, src] of [
+      ['marketing-header.tsx', MARKETING],
+      ['user-menu.tsx (AuthButtons, used by SiteHeader)', USER_MENU],
+    ] as const) {
+      expect({ file: name, compact: src.includes('<span className="sm:hidden">{CTA_LABEL_COMPACT}</span>') }).toEqual(
+        { file: name, compact: true },
+      )
+    }
+  })
+
+  it('never leaves the full label as the only one a phone can render', () => {
+    // The failure mode this closes: someone deletes the compact span and keeps the full one,
+    // which reads as a tidy-up and is the exact regression.
+    for (const src of [MARKETING, USER_MENU]) {
+      expect(src).toContain('<span className="hidden sm:inline">')
+    }
   })
 })
 

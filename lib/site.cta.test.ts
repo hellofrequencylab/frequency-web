@@ -156,12 +156,13 @@ describe('the approved CTA set', () => {
     // It must NOT join the approved set: the set is the two audience verbs, and the header's
     // narrow form is deliberately audience-neutral because the header rides both kinds of page.
     expect(APPROVED_CTA_LABELS as readonly string[]).not.toContain(CTA_LABEL_COMPACT)
-    // And it lives only in the header, so it cannot leak into a page hero.
-    const header = readFileSync(
-      path.join(process.cwd(), 'components/layout/marketing-header.tsx'),
-      'utf8',
-    )
-    expect(header).toContain('CTA_LABEL_COMPACT')
+    // And it lives only in the two public HEADERS, so it cannot leak into a page hero. Both are
+    // named: the compact form first shipped in marketing-header.tsx alone, which is not the
+    // component /discover renders, so the overflow it was written to fix did not move (ADR-1196).
+    for (const rel of ['components/layout/marketing-header.tsx', 'components/layout/user-menu.tsx']) {
+      expect({ file: rel, uses: readFileSync(path.join(process.cwd(), rel), 'utf8').includes('CTA_LABEL_COMPACT') })
+        .toEqual({ file: rel, uses: true })
+    }
     for (const file of templateFiles()) {
       expect(strip(readFileSync(file, 'utf8'))).not.toContain('CTA_LABEL_COMPACT')
     }

@@ -205,8 +205,14 @@ export function MarketingHeader({
           >
             {/* The compact form below `sm`: the bar's only flexible child is the wordmark, so a
                 long label spends its budget and then pushes the mobile menu button off a 320px
-                screen (ADR-1196, caught by pr-compare on /discover). A hero has room a header
-                does not. */}
+                screen. A hero has room a header does not.
+
+                ⚠️ THIS BAR IS NOT THE ONE THAT OVERFLOWED. The /discover failure pr-compare kept
+                reporting is SiteHeader -> AuthButtons (components/layout/user-menu.tsx), a
+                different component with a tighter phone row — it keeps "Sign in" below `sm`, which
+                this one hides. Fixing it here changed that page by zero pixels and cost a CI
+                cycle. The compact form stays on both; header-fit.test.ts now checks both.
+                (ADR-1196.) */}
             <span className="sm:hidden">{CTA_LABEL_COMPACT}</span>
             <span className="hidden sm:inline">{ctaLabel}</span>
           </Link>

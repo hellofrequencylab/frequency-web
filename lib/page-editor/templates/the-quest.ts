@@ -78,7 +78,7 @@ import {
 // MediaText of why the game points where it does) plus the slat Marquee and the
 // ink close, matching the coded page's own light↔dark cadence.
 //
-// CTA SYSTEM: the primary action is BETA_CTA_LABEL ("Start a Circle"), with its
+// CTA SYSTEM: the primary action is BETA_CTA_LABEL ("Find your people"), with its
 // quiet secondary (BETA_CTA_SECONDARY_LABEL, "or join as a member"). Never
 // stack two buttons; the secondary is a text link, not a button.
 // ─────────────────────────────────────────────────────────────────────────────
