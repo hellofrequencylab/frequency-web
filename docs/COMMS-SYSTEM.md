@@ -3,6 +3,8 @@
 > One conversation fabric for every in-house message: support, CRM outreach, leader-to-member notes,
 > and inbound replies. As easy as an Apple inbox, as trackable as a helpdesk. ADR-812.
 
+> **Status lives in [`docs/BUILD-BACKLOG.json`](BUILD-BACKLOG.json)** (run `pnpm backlog`). The locked, machine-enforced contract for this suite is [`CRM-COMMS-CONTRACT.md`](CRM-COMMS-CONTRACT.md) (ADR-817, `pnpm check:crm-parity`) and the build doc is [`CRM-MASTER-BUILD-PLAN.md`](CRM-MASTER-BUILD-PLAN.md); this file is the ADR-812 design rationale, and nothing live links to it (checked 2026-09-04).
+
 ## The one idea
 
 Collapse the two half-systems we had — the CRM inbox (conversation UX, no ticket chrome) and support

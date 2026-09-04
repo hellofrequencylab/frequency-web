@@ -8,6 +8,8 @@ covers the engine underneath.
 > Status: shipped + live on the apex `frequencylocal.com` (GoDaddy → Vercel). The
 > retired `go.findafreq.com` host 301-redirects here.
 
+> ⚠️ **SUPERSEDED** by [`FUNNELS.md`](FUNNELS.md) (the sign-up front door, ADR-1090) and [`MARKETING-BUILD-PLAN.md`](MARKETING-BUILD-PLAN.md) (the public site). Nine of the twenty-two code paths this doc cites no longer exist (`lib/beta-tokens.ts`, `lib/beta/*`, `components/marketing/beta-form.tsx` among them, checked 2026-09-04), so read it as the record of the beta-era funnel, not a map of the tree. Kept for history.
+
 ---
 
 ## 1. Public marketing site: `app/(marketing)/`

@@ -105,6 +105,15 @@ ARTIFACT. Full rules and the incident: [`docs/DEPLOY-SAFETY.md`](docs/DEPLOY-SAF
     the gate closest to firing at both ends, and `PACKED_PER_RAW` is accurate to within 2% on both.
     Re-derive it from paired readings before trusting a margin, and read `LIVE-123`
     for the page-data build failures measured in the same window.
+    ✅ **The current reading, stated once (2026-09-04): this gate is a BAND, not a trend.** On the
+    current mix the packed cache moves within roughly **1.27–1.39 GB** against a trim point near
+    **1.40 GB**; four paired readings (1.27/1.27, 1.28/1.27, 1.34/1.34, 1.39/1.42) put the estimate
+    within 2% of the upload line; and the series is **not trending** in either direction. It is still
+    the closest of the four gates to its line, so a trim is possible on any build and costs the NEXT
+    build a cold compile, but a trim is a normal event on this mix, not a regression. The paragraphs
+    above are the measurement record that produced that sentence: they disagree with each other
+    because each was written at a different point in the oscillation. Read them newest-last, and do
+    not lift a single one of them out as "the" number. No reading later than 2026-08-25 exists.
   - `check:shell-weight` ([ADR-1066](docs/DECISIONS.md)) — the CLIENT half: the app shell's eager
     first-load JS (**1012 KB across 22 chunks, production e3cec7af2, 2026-08-25 21:43Z** — one
     kilobyte and one chunk above the 1011 KB / 21 it read hours earlier, which was itself one kilobyte above the 1010 KB
@@ -237,17 +246,32 @@ tables, use the ✅/⏳/⚠️/🔴 status legend, never hardcode hex in UI.
 
 # Page framework — every interior page composes the kit (never hand-roll a layout)
 
-One shell, five templates, one chrome map. Full spec:
-[`docs/PAGE-FRAMEWORK.md`](docs/PAGE-FRAMEWORK.md) §3 + §8.
+One shell, eight page shells, one chrome map. Full spec:
+[`docs/PAGE-FRAMEWORK.md`](docs/PAGE-FRAMEWORK.md) §3 + §8. (This paragraph said "five templates"
+until 2026-09-04; `components/templates/index.ts` exports eight, `scripts/check-templates.mjs`
+counts eight, and PAGE-FRAMEWORK §8 reconciled the count on 2026-08-05. The text was behind the code.)
 
-- **Pick a template** from `@/components/templates` by *what the content is*, and fill its
-  slots — never re-declare a header, card, or grid:
-  **Stream** (a flow of items) · **Index** (a collection to browse) · **Detail** (one
-  entity: context band + tabs) · **Dashboard** (metric-led operator workspace) ·
-  **Focus** (a centered, no-rail compose/edit/settings surface).
-- **Register the rail** in one place — `lib/layout/page-chrome.ts` (`'global'` /
-  `'scoped'` / `'none'`). The shell reads it; pages never toggle the rail themselves.
-  Adding a Focus page = one line here, not an edit to `app-shell.tsx`.
+- **Pick a shell** from `@/components/templates` by *what the content is*, and fill its
+  slots — never re-declare a header, card, or grid. The eight, by their exported names:
+  **StreamTemplate** (a flow of items) · **IndexTemplate** (a collection to browse) ·
+  **DetailTemplate** (one entity: context band + tabs) · **DashboardTemplate** (metric-led
+  operator workspace) · **FocusTemplate** (a centered single-task body: compose, edit, settings) ·
+  **WizardShell** (a multi-step flow; the Studio's `SparkShell` is its analogue for a Spark) ·
+  **RailGrid** (the main-plus-rail column grid) · **AdminTemplate** (the operator workspace).
+  `EventDetailTemplate` and `ListingDetailTemplate` are entity *compositions* over Detail, not
+  shells; `PageHeading` / `PageHero` are shared header grammar, not shells.
+- **The right rail shows on every member page.** Owner directive 2026-06-20, reaffirmed
+  2026-07-28 (PAGE-FRAMEWORK §8.2). `lib/layout/page-chrome.ts` decides the rail in one pure
+  function, `railFor(pathname)`, and the shell reads it; pages never toggle the rail themselves.
+  **Adding a Focus page needs ZERO lines there**: a `FocusTemplate` body is centered and keeps the
+  global rail beside it. "Focus" is a body shape, not a chrome exemption. `FOCUS_NONE_PREFIXES`
+  and `SCOPED_PATTERNS` are both **empty by owner decision** — `'scoped'` still exists as a
+  mechanism in `railFor`, with zero entries, because the one route that used it (the Channel
+  detail page, ADR-885) was reverted the same night it deployed ("You dropped the right rail of
+  the website. Fix that."). ADR-885's title still says `'scoped'` came back; the code says it did
+  not, and the code wins (an amending ADR is being filed). Do not reach for `'none'` or `'scoped'`
+  to fix a crowded page; the only non-`'global'` routes are the full-viewport takeovers, `/admin/*`,
+  and the full-width editors, all already listed in `page-chrome.ts`.
 - **Compose, don't author:** headers come from `PageHeading`, stats from `StatCard`,
   browse cards from `EntityCard`/`PersonCard`, sections from `SectionHeader`, empties from
   `EmptyState`. No `text-[10/11px]` content type; semantic tokens only.
@@ -269,20 +293,37 @@ same guard locally and prints what to fix.
   `lib/studio/kernel/*`, adding a `FIELD_KIND` if it is a new control. Kernel change ⇒ every wizard.
 - **The kernel is pure and entity-blind.** No React/Next/Supabase, and never an import from
   `lib/studio/entities/`. If you want to reach sideways, you want a field kind instead.
-- A field's `placement` (`spark` / `inline` / `rail`) is the ONE seam between creating and editing
-  (ADR-450 §2), so the two can never drift.
+- A field's `placement` (`spark` / `inline` / `rail`) is the intended ONE seam between creating and
+  editing (the "one verb, two planes" model of ADR-450, spelled out in
+  [`docs/EDITING-SYSTEM.md`](docs/EDITING-SYSTEM.md) §2 — ADR-450 itself has no numbered sections).
+  ⚠️ **Today only the creating half consumes it.** `sparkFields()` drives the Spark; the edit-side
+  selectors `inlineFields()` / `railFields()` in `lib/studio/kernel/review-kernel.ts` have no
+  production call site (only their own test, verified 2026-09-04), so the edit rail is NOT yet
+  derived from placement and nothing currently prevents the two from drifting. Keep declaring
+  placement for all three (`FieldPlacement` is the three-value type in `lib/studio/kernel/manifest.ts`);
+  wiring the edit rail to it is an open backlog row, not a shipped guarantee.
 
 # Admin menu — a locked, machine-enforced contract (extend the catalog, never rewrite the rail)
 
 The operator admin menu + rail + `/manage` consoles all derive from ONE source. Do NOT hand-roll
 a per-scope menu, rewrite the rail to add an item, or reintroduce a parallel registry. Full spec:
-[`docs/MENU-CONTRACT.md`](docs/MENU-CONTRACT.md) (ADR-553). Enforced in CI by `pnpm check:menu` +
-the drift-guard tests, so a violation fails the build.
+[`docs/MENU-CONTRACT.md`](docs/MENU-CONTRACT.md) (ADR-553, **corrected by ADR-927 on 2026-08-04**
+to describe what the code actually does). Enforced in CI by `pnpm check:menu` + the drift-guard
+tests, so a violation fails the build — with one honest exception: 21 hand-declared rows are
+carried as **frozen debt** (`FROZEN_MENU_DEBT` in `scripts/check-menu.mjs`, MENU-CONTRACT
+§Frozen debt), a ratchet that may shrink and never grow.
 
-- **To add or change a menu item:** edit a row in `SPACE_MODULES`
-  (`lib/admin/modules/space-modules.ts`) or `ADMIN_MODULES` (`lib/admin/modules/registry.ts`).
-  The rail (`appsForScope`) and both consoles (`resolveSpaceMenu` / `resolveEntityConsole`) pick
-  it up. A tweak is a data edit, not a render edit.
+- **To add or change a menu item:** edit a row in one of the **four registered catalogs**, the
+  only places a menu row may be typed by hand (`REGISTERED_CATALOGS` in `scripts/check-menu.mjs`):
+  `SPACE_MODULES` (`lib/admin/modules/space-modules.ts`, the Space menu) · `ADMIN_MODULES`
+  (`lib/admin/modules/registry.ts`, every other scope) · `LAYOUT_MODULES` (`lib/widgets/modules.ts`,
+  the page/layout blocks) · `STUDIO_LEAVES` (`lib/nav/studio.ts`, the operator destinations,
+  ADR-848). The rail (`appsForScope`) and both consoles (`resolveSpaceMenu` / `resolveEntityConsole`)
+  pick it up. A tweak is a data edit, not a render edit. (This bullet named two catalogs until
+  2026-09-04; MENU-CONTRACT retired that count on 2026-08-04.)
 - **Never** touch the rail render (`components/layout/settings-panel.tsx`, `lib/apps/*`,
-  `components/layout/admin-bar/*`) to change what's IN the menu, and never re-declare a `*_MODULES`
-  catalog or a `*_SURFACES` registry elsewhere. If you think you need to, you don't — add a catalog row.
+  `components/layout/admin-bar/*`) to change what's IN the menu, and never re-declare a module
+  catalog or a `*_SURFACES` registry outside those four. A genuinely new catalog is rare and has
+  one supported path (MENU-CONTRACT §"A genuinely new catalog": register it in `REGISTERED_CATALOGS`
+  + `APP_LANES` and wire its `APPS` lane in the same PR); anything else you think you need is a
+  catalog row.

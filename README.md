@@ -15,7 +15,7 @@ Realtime, Storage) on Vercel, **Tailwind v4**.
 
 | Home | Audience | Contains |
 |---|---|---|
-| **GitHub** (`/docs`, `DEVELOPMENT-MAP.md`, this README) | **Developers** | architecture, schema, conventions, the build plan, everything technical |
+| **GitHub** (`/docs`, `AGENTS.md`, this README) | **Developers** | architecture, schema, conventions, the build plan, everything technical |
 | **Public help center** (`content/help/`, served at `/help`) | **Members** | how to use the product, in member language |
 | **Notion** | **Operators, hosts, training** | how to operate/moderate the product, host/admin guides, community policy |
 
@@ -56,13 +56,33 @@ mobile.
 
 ## Documentation map
 
-### Strategy & target architecture (the plan — read in this order)
-0. [DEVELOPMENT-MAP](docs/DEVELOPMENT-MAP.md): **the single source of truth for what we're
-   building and in what order.** Mission, the structural inventory (substrate/identity/
-   horizontals/13 verticals/surfaces), and the staged build list (harden → free beta → PMF
-   → mobile + money foundation → money verticals). **Supersedes** `ROADMAP.md` +
-   `BUILD-PHASES.md`. Start here for the *what/when*.
-0b. [PLATFORM-VISION](docs/PLATFORM-VISION.md): **the whole-system frame** (the *why*). One
+### Which plan is live (read this before anything else)
+
+The repo carries years of planning documents, and several of them describe themselves as the
+single source of truth. The live set is short, and [AGENTS.md](AGENTS.md) §"Which plan is live"
+is its authority; this section mirrors it:
+
+| Question | Where the answer lives |
+|---|---|
+| **Where does the work stand?** | [`docs/BUILD-BACKLOG.json`](docs/BUILD-BACKLOG.json) — the ONE list. Run **`pnpm backlog`** for the working view. Status never lives in prose ([ADR-1043](docs/DECISIONS.md)). |
+| **What ships next?** | [UX-MATURITY-PLAN](docs/UX-MATURITY-PLAN.md) (ADR-925; its §Sequencing table) + [BUILD-LIST](docs/BUILD-LIST.md) (ADR-921; the phase runway, including the parked phases). |
+| **Why was it decided?** | [DECISIONS](docs/DECISIONS.md) — the ADR record. A plan doc that contradicts an ADR is stale, not authoritative. |
+| **The editor, blocks, block registry** | [EDITOR-ARCHITECTURE](docs/EDITOR-ARCHITECTURE.md) (ADR-974…978), phases E0–E10. Read it before touching any of them. |
+
+The locked canons, each machine-enforced or gated: [NAMING](docs/NAMING.md) +
+[CONTENT-VOICE](docs/CONTENT-VOICE.md) (every word a human reads),
+[PAGE-FRAMEWORK](docs/PAGE-FRAMEWORK.md) (one shell, eight page shells, one chrome map),
+[STUDIO](docs/STUDIO.md) (creation wizards derive from a manifest),
+[MENU-CONTRACT](docs/MENU-CONTRACT.md) (the admin menu derives from four catalogs), and
+[DEPLOY-SAFETY](docs/DEPLOY-SAFETY.md) (merging `main` deploys to production; the artifact gates).
+
+Everything below this line is context. `DEVELOPMENT-MAP`, `BUILD-SEQUENCE`, `BUILD-PHASES`,
+`ROADMAP`, `CHECKLIST` and `BACKLOG` are **history** with superseded banners: worth reading for
+rationale, never for status. **When the code and a doc disagree, the code wins**, and the doc gets
+fixed in the same pass.
+
+### Strategy & target architecture (the frame — read in this order)
+0. [PLATFORM-VISION](docs/PLATFORM-VISION.md): **the whole-system frame** (the *why*). One
    community graph spanning a nonprofit (Foundation) + for-profit (Labs), one shared game,
    money hard-partitioned by entity, verticals (Programs/Marketplace/Collective/affiliate/
    donations/Lab Spaces) as
@@ -70,10 +90,10 @@ mobile.
 1. [IA-STRATEGY](docs/IA-STRATEGY.md) — information architecture: Circle + Interest
    as the only member-facing words; Hubs/Nexuses contextual; in-person designator;
    role + milestone "wake-up" gating. (Labs/demand-proving are out of website scope.)
-2. [PAGE-FRAMEWORK](docs/PAGE-FRAMEWORK.md) — one shell, 5 page templates
-   (Stream / Index / Detail / Dashboard / Focus), composable modules + slots, and
-   the on-page operator **Settings panel** (ADR-180/182). *(Reads "widget" =
-   module card UI — see its terminology note.)*
+2. [PAGE-FRAMEWORK](docs/PAGE-FRAMEWORK.md) — one shell, eight page shells
+   (Stream / Index / Detail / Dashboard / Focus / WizardShell / RailGrid / Admin, §8),
+   composable modules + slots, and the on-page operator **Settings panel** (ADR-180/182).
+   *(Reads "widget" = module card UI — see its terminology note.)*
 3. [SCALE-ARCHITECTURE](docs/SCALE-ARCHITECTURE.md) — the 5-layer lock-in-resistant
    model, RSC/PPR rendering, Postgres scaling seams, future-proofing.
 4. [CAPABILITIES-AND-MOBILE](docs/CAPABILITIES-AND-MOBILE.md) — one capability
@@ -84,41 +104,48 @@ mobile.
 6. [TECH-STRATEGY](docs/TECH-STRATEGY.md) — the capstone: recommended stack,
    decisions made, and the phased plan.
 7. [COMMS-CRM-ARCHITECTURE](docs/COMMS-CRM-ARCHITECTURE.md) — the **WAM North Star**,
-   the one event backbone, the comms spine, the CRM "Studio", and the AI agent
-   (governs **Phase 6**).
+   the one event backbone, the comms spine, the CRM "Studio", and the AI agent. Its
+   "Phase 6" frame is history; the live CRM docs are
+   [CRM-MASTER-BUILD-PLAN](docs/CRM-MASTER-BUILD-PLAN.md) + [CRM-COMMS-CONTRACT](docs/CRM-COMMS-CONTRACT.md).
 
 ### Executable plan
-- [**BUILD-LIST**](docs/BUILD-LIST.md) — **the master list.** The single, prioritized,
-  execute-from list for the whole platform (consolidates the scattered roadmaps);
-  the priority ladder + the PX extension-opportunities track live here.
+- [`docs/BUILD-BACKLOG.json`](docs/BUILD-BACKLOG.json) + **`pnpm backlog`** — **where the work
+  stands.** Every row states how it is proven; `pnpm check:backlog` runs the probes and fails both
+  ways (a stale `open` row and a regressed `done` row).
+- [**UX-MATURITY-PLAN**](docs/UX-MATURITY-PLAN.md) — **what ships next.** Eight lifts, each with
+  its gate and its number; the §Sequencing table is the order.
+- [**BUILD-LIST**](docs/BUILD-LIST.md) — **the phase runway** around it, including the phases the
+  owner has deliberately parked. Its rows defer status to the backlog.
 - [**OVERVIEW**](docs/OVERVIEW.md) — **north star.** The whole picture: IA,
   page framework, gamification, and the lock-in-resistant architecture.
 - [**START-HERE**](docs/START-HERE.md) — **new-developer orientation.** Run it locally,
   what to read in order, and how to ship a change. Open this first.
-- [**BUILD-PHASES**](docs/BUILD-PHASES.md) — **the working tracker.** Phase-by-phase
-  checklist (0→5), dependencies, and definition-of-done.
-- [**CHECKLIST**](docs/CHECKLIST.md) — owner action items: decisions + tech debt.
+- [BUILD-PHASES](docs/BUILD-PHASES.md), [CHECKLIST](docs/CHECKLIST.md),
+  [DEVELOPMENT-MAP](docs/DEVELOPMENT-MAP.md), [BUILD-SEQUENCE](docs/BUILD-SEQUENCE.md) — **history.**
+  Each carries a superseded banner; read for items no current plan absorbed, never for status.
 
 ### As-is engineering reference (current codebase)
 - [ARCHITECTURE](docs/ARCHITECTURE.md) — current stack, directory map, the RLS /
   admin-client authz model, server-action conventions, cron. **Read first before
   touching code.**
-- [GLOSSARY](docs/GLOSSARY.md) — domain language. [DATABASE](docs/DATABASE.md) —
-  tables, enums, migrations. [BACKLOG](docs/BACKLOG.md) — hygiene + env vars.
-- [DESIGN](docs/DESIGN.md) — the look and feel direction (warm editorial), the DAWN
-  token spec, and the design-stack rationale.
+- [GLOSSARY](docs/GLOSSARY.md) — domain language (names themselves are locked in
+  [NAMING](docs/NAMING.md)). [DATABASE](docs/DATABASE.md) — tables, enums, migrations.
+  [BACKLOG](docs/BACKLOG.md) — the 2026-06 hygiene + env-var list, superseded (banner at top).
+- [DESIGN-LANGUAGE](docs/DESIGN-LANGUAGE.md) — the design language and page-flow blueprint on
+  the DAWN tokens; [THEME-PROTOCOL](docs/THEME-PROTOCOL.md) — the theming operating manual.
+  [DESIGN](docs/DESIGN.md) is the original warm-editorial brief, kept for history.
 - [DECISIONS](docs/DECISIONS.md) — architecture decision records (ADRs).
   [DOCS-PROTOCOL](docs/DOCS-PROTOCOL.md) — how docs are routed (**technical → git,
   instructional → Notion**). Follow it on every change.
 - [BASELINE-ASSESSMENT](docs/BASELINE-ASSESSMENT.md) — the 2026-06 senior systems review
-  (front-end/theming, role-based admin, security, code health, data architecture) + the
-  phased cleanup roadmap to a hand-off-ready, dual-entity-scalable baseline (ADR-246).
-- [ROADMAP](ROADMAP.md) — product feature roadmap (P0–P7).
+  (front-end/theming, role-based admin, security, code health, data architecture) and the
+  cleanup roadmap it proposed (ADR-246). History: read it for the diagnosis, never for status.
+- [ROADMAP](ROADMAP.md) — the original product feature roadmap (P0–P7), superseded.
   [SEO-AEO-PLAN](SEO-AEO-PLAN.md) — discovery layer.
 
 > **As-is vs to-be:** `ARCHITECTURE.md`/`DATABASE.md`/`GLOSSARY.md` describe what
-> exists today. The six strategy docs + `BUILD-PHASES.md` describe where we're
-> going. They converge as the phases land.
+> exists today (`pnpm check:arch-doc` holds `ARCHITECTURE.md` to the tree). The strategy docs
+> describe where we're going; `BUILD-BACKLOG.json` records how far along it is.
 
 ---
 
@@ -191,15 +218,19 @@ team-grade setup) lives in [docs/WORKFLOW.md](docs/WORKFLOW.md).
 
 ---
 
-## How we work the phases
+## How we work the plan
 
-1. Start at [DEVELOPMENT-MAP](docs/DEVELOPMENT-MAP.md) for where we are and what's
-   built; take the ordered "what to build next" from
-   [BUILD-SEQUENCE](docs/BUILD-SEQUENCE.md). (`BUILD-PHASES.md` is superseded history.)
-2. Each work item lists a **definition of done** and the **strategy doc that governs it**.
-3. Update status in the same PR that lands the work (the repo file is the source of
-   truth — same convention as `ROADMAP.md`).
-4. Don't start work whose **dependencies** aren't met.
+1. Start at `pnpm backlog` ([`docs/BUILD-BACKLOG.json`](docs/BUILD-BACKLOG.json)) for where we
+   are and what is built; take the ordered "what to build next" from
+   [UX-MATURITY-PLAN](docs/UX-MATURITY-PLAN.md) §Sequencing and [BUILD-LIST](docs/BUILD-LIST.md).
+   (`DEVELOPMENT-MAP.md`, `BUILD-SEQUENCE.md` and `BUILD-PHASES.md` are superseded history.)
+2. Each backlog row states **how it will be proven** (its probe) and the **doc that governs it**
+   (`source.file`). A probe measures the consequence, never the row's own title.
+3. Close the row in the same PR that lands the work by making its probe pass — never by editing
+   prose and never by deleting the probe ([ADR-1043](docs/DECISIONS.md)). Re-test a row's
+   premise before working it; premises expire.
+4. Don't start work whose **dependencies** aren't met, and record any decision as an ADR in
+   [DECISIONS](docs/DECISIONS.md).
 
 ---
 

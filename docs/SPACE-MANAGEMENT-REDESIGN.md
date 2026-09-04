@@ -6,6 +6,8 @@ standard. Decision log: **ADR-796** (`docs/DECISIONS.md`). Basis: a 9-agent code
 system + two deep-research passes (competitor IA + feature-adoption). A presentation of this plan lives as an
 artifact; this doc is the source of truth that drives the phased build.
 
+> **Status lives in [`docs/BUILD-BACKLOG.json`](BUILD-BACKLOG.json)** (run `pnpm backlog`), not here: "source of truth" above means the ADR-796 design rationale, never the record of what is done. The `/manage` console's menu itself is governed by the locked [`MENU-CONTRACT.md`](MENU-CONTRACT.md) (ADR-553/927); this doc overlaps [`ENTITY-MANAGEMENT-OVERHAUL.md`](ENTITY-MANAGEMENT-OVERHAUL.md) on the same consoles and nothing live links here (checked 2026-09-04).
+
 ---
 
 ## 1. North star

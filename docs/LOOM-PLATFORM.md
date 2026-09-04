@@ -1,5 +1,7 @@
 # The Loom Platform — one asset + App control plane for the whole site
 
+> **Status lives in [`docs/BUILD-BACKLOG.json`](BUILD-BACKLOG.json)** (run `pnpm backlog`); the `LP#` legend below is the plan's shape, not a record of what is done. ⚠️ One more claim expired after the ADR-975 amendment below: `app_instances` (§3 and §5) did NOT get its writers in E0. It was **dropped** on 2026-08-19 by `supabase/migrations/20270316000000_drop_app_instances_until_e0.sql` (OWN-031); [`EDITOR-E0.md`](EDITOR-E0.md) records it. [`EDITOR-ARCHITECTURE.md`](EDITOR-ARCHITECTURE.md) is the forward spec that amends this plan.
+
 > **The Loom stops being an image library and becomes the site-wide control plane for
 > every asset AND every functional feature.** Every functional snippet on the site
 > (an editor module, a page widget, a rail card, a code-drawn graphic) becomes an **App**

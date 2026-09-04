@@ -8,6 +8,8 @@
 > v2 brainstorm, the code wins. When a decision below is ratified, record it as an ADR in
 > `DECISIONS.md` and link it back here.
 
+> ⚠️ **SUPERSEDED** by [`EVENTS-REWORK.md`](EVENTS-REWORK.md), the ratified plan of record (2026-06-14, ADR-254/255/256), which corrects this doc's build log (host messaging, a host Manage screen and a waitlist roster were logged as shipped with no table, migration or code) and says "where they disagree, this wins; the schema wins over both". The live build doc is [`EVENTS-SERIES-BUILD-PLAN.md`](EVENTS-SERIES-BUILD-PLAN.md); [`EVENTS-DESIGN.md`](EVENTS-DESIGN.md) owns the surfaces. Still a useful capability map. Kept for history.
+
 ---
 
 ## The answer up front

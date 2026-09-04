@@ -4,6 +4,8 @@
 > **minimal drill-down**; function condensed into **contextual pages + Growth-Studio-style dashboards**;
 > **right-column navigation removed**. This doc is the **map to approve**: nothing is built until it is.
 
+> ⚠️ **SUPERSEDED** by [`NAV-SYSTEM-REDESIGN.md`](NAV-SYSTEM-REDESIGN.md), which records this map as owner-approved on 2026-06-06 and shipped on 2026-07-01, and by the live canons [`PAGE-FRAMEWORK.md`](PAGE-FRAMEWORK.md) (chrome + shells) and [`IA-STRATEGY.md`](IA-STRATEGY.md) (the why). The "DRAFT, pending owner approval" title above is stale; the right rail was NOT removed (owner directive 2026-06-20, PAGE-FRAMEWORK §8.2). Kept for history.
+
 ## Principles
 
 1. **Left menu only.** The right rail carries no navigation (see §4).
