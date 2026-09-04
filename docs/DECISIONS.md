@@ -35586,6 +35586,25 @@ understand. `check-adoption.mjs` is immune to this by accident of format — its
 `_readme` array *inside* the JSON, so it round-trips through parse/stringify. That is the durable
 lesson: **comments-as-data survive a regenerator; comments-as-formatting do not.**
 
+
+## ADR-1203: directory privacy and member suspension were each enforced on one path — now the database enforces both on every path (2026-09-04)
+
+**Status.** Accepted. Continues the second-path finding of ADR-1198 (a column that did not exist) into the rules that live in code.
+
+**Context.** Two controls a member relies on were real on one path and decorative on the rest.
+
+- **Privacy.** `profiles.directory_visible`, `ghost_mode`, `discoverable_by` and `location_band` were enforced in exactly one reader, the `members_near` RPC, and bypassed by six: `/network`'s alphabetical directory, `/search`'s people query, the command-palette people search, and three sidebar rails — all service-role reads filtering on `is_active` alone. The RPC itself had two defects: it never read the target's `discovery_radius_m` (the "be findable within N" slider governed the viewer's own search radius, the opposite of its label, which ADR-186 §3 had specified correctly), and it required `discoverable_by = 'community'`, so the "My connections" tier silently meant "no one". Exactly one member had narrowed the slider, to 4,966 m; they had changed nothing about who could find them.
+- **Suspension.** `enforce_member_not_suspended` was attached to `posts` and `dispatches` only — and it opened with `if auth.role() = 'service_role' then return new`, while `app/(main)/feed/actions.ts` inserts posts through the admin client. The one trigger that existed was bypassed by the app's own compose path: enforcement on zero paths in practice. No policy and no TypeScript read the flag. Zero members were suspended at the time, so nothing had yet been let through; the next suspension would have been decorative.
+
+**Decision.**
+
+- **One predicate module per rule, mirroring the SQL clause by clause.** `lib/connections/directory-visibility.ts` cites the RPC's WHERE lines and is applied to all six listings, pinned by source-shape tests that count the sites. Migration `20270344000100` makes `members_near` honour the target's radius and the connections tier (an accepted friendship with `_viewer`), takes `_viewer` explicitly because service-role callers have no `auth.uid()`, and re-locks its grants. The one exemption — the season leaderboard rail, which has its own opt-out — is named in the test. The pgTAP pin on the browser lockdown moved to the new signature in the same change.
+- **The rule goes into the database, with no role bypass, and the ledger derives from the schema.** Migration `20270344000000` rewrites the trigger function without the `service_role` return, attaches it BEFORE INSERT to 32 member-write tables with each table's own actor column (a misattached column raises `undefined_column` on first write rather than passing NULL), and BEFORE UPDATE OF content columns where an edit is a fresh contribution. `lib/moderation/suspension-coverage.test.ts` derives the universe of actor-shaped tables from `lib/database.types.ts` so a new member-write table on neither the covered nor the exempt list is a red test. 47 tables are exempt with a reason each (reports and support must stay open to a suspended member; ledgers are system-authored; operator content is not member content).
+- **Types are regenerated, and drift is a finding.** `lib/database.types.ts` was regenerated from the live schema after the first migration and picked up drift nobody had regenerated for: `pages.space_id` is NOT NULL live, and two RPCs from applied migrations were absent while a code comment said their migration "is not applied yet".
+
+**Consequences.** Both migrations were applied to production via MCP before merge, in the deploy-safe order (the old code keeps working through argument defaults), with ledger versions reconciled to the repo filenames and the live state verified afterwards: 47 triggers across 32 tables, no `service_role` bypass, `members_near` on its five-argument signature. Rows SCAN-546, SCAN-547 and HYG-051 are `done` with consequence probes. Second paths this change did not close are named in the rows: the operator member-picker (arguably exempt) and the AI owner brief.
+
+
 ## ADR-1202: ADR-885 is amended — `'scoped'` did not come back, and the right rail shows on every member page (2026-09-04)
 
 **Status.** Accepted. Amends ADR-885 (whose body is left as written; this ledger is append-only).

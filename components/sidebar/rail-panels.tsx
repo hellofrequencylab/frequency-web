@@ -20,6 +20,7 @@ import { getRecentDispatchesForProfile } from '@/lib/dispatches'
 import { getOnboardingStatus, nextStepsEnabled } from '@/lib/onboarding/status'
 import { WidgetCard } from '@/components/modules/module-card'
 import { Counter } from '@/components/ui/counter'
+import { DIRECTORY_VISIBILITY_COLUMNS, isListableInDirectory } from '@/lib/connections/directory-visibility'
 
 // The rail's PAGE PANELS (ADR-161) — contextual stat cards keyed into the right rail
 // by route (lib/layout/rail-panels.ts). Each is an independent async server component
@@ -160,7 +161,9 @@ export async function MembersPanel({ profileId, circleIds }: { profileId: string
   const [onlineRes, circleRes] = await Promise.all([
     admin
       .from('profiles')
-      .select('id, display_name, handle, avatar_url, last_seen_at')
+      // The four privacy columns ride every member listing in this file: a rail is a directory
+      // too, and "Online now" is the one surface Ghost mode exists to stay off (ADR-TBD).
+      .select(`id, display_name, handle, avatar_url, last_seen_at, ${DIRECTORY_VISIBILITY_COLUMNS}`)
       .gte('last_seen_at', onlineCutoff)
       .neq('id', profileId)
       .order('last_seen_at', { ascending: false })
@@ -179,7 +182,7 @@ export async function MembersPanel({ profileId, circleIds }: { profileId: string
 
   const seen = new Set<string>()
   const dedupedAll: MemberRow[] = []
-  for (const p of (onlineRes.data ?? []) as { id: string; display_name: string; handle: string; avatar_url: string | null; last_seen_at: string | null }[]) {
+  for (const p of ((onlineRes.data ?? []) as { id: string; display_name: string; handle: string; avatar_url: string | null; last_seen_at: string | null }[]).filter(isListableInDirectory)) {
     if (seen.has(p.id)) continue
     seen.add(p.id)
     dedupedAll.push({ profile_id: p.id, joined_at: null, profile: p })
@@ -381,14 +384,14 @@ export async function WhoOnlinePanel({ profileId }: { profileId: string }) {
   const cutoff = new Date(new Date().getTime() - ONLINE_MS).toISOString()
   const { data } = await admin
     .from('profiles')
-    .select('id, display_name, handle, avatar_url')
+    .select(`id, display_name, handle, avatar_url, ${DIRECTORY_VISIBILITY_COLUMNS}`)
     .gte('last_seen_at', cutoff)
     .neq('id', profileId)
     .eq('is_active', true)
     .eq('is_system', false)
     .order('last_seen_at', { ascending: false })
     .limit(14)
-  const people = (data ?? []) as { id: string; display_name: string; handle: string; avatar_url: string | null }[]
+  const people = ((data ?? []) as { id: string; display_name: string; handle: string; avatar_url: string | null }[]).filter(isListableInDirectory)
   if (people.length === 0) return null
 
   return (
@@ -544,14 +547,14 @@ export async function ActiveNowPanel({ profileId }: { profileId: string }) {
   }
   const { data } = await admin
     .from('profiles')
-    .select('id, display_name, handle, avatar_url, last_seen_at')
+    .select(`id, display_name, handle, avatar_url, last_seen_at, ${DIRECTORY_VISIBILITY_COLUMNS}`)
     .gte('last_seen_at', cutoff)
     .neq('id', profileId)
     .eq('is_active', true)
     .eq('is_system', false)
     .order('last_seen_at', { ascending: false })
     .limit(6)
-  let people = (data ?? []) as Person[]
+  let people = ((data ?? []) as Person[]).filter(isListableInDirectory)
 
   // Always-populated rail (engagement best practice): when nobody is recently
   // active, fall back to the newest members so the "people" tile never vanishes —
@@ -560,13 +563,13 @@ export async function ActiveNowPanel({ profileId }: { profileId: string }) {
   if (fellBack) {
     const { data: newest } = await admin
       .from('profiles')
-      .select('id, display_name, handle, avatar_url, last_seen_at, created_at')
+      .select(`id, display_name, handle, avatar_url, last_seen_at, created_at, ${DIRECTORY_VISIBILITY_COLUMNS}`)
       .neq('id', profileId)
       .eq('is_active', true)
       .eq('is_system', false)
       .order('created_at', { ascending: false })
       .limit(6)
-    people = (newest ?? []) as Person[]
+    people = ((newest ?? []) as Person[]).filter(isListableInDirectory)
   }
   if (people.length === 0) return null
 
