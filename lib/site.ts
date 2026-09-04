@@ -124,8 +124,7 @@ export const MARKETING_NAV: NavLink[] = marketingFooterLinks().map((node) => ({
 
 // Primary acquisition CTA. The label is builder-framed ("Start a Circle") to speak
 // to the Latent Leader, the reader the whole growth model runs on (CONTENT-VOICE
-// §2b/§7b); the quiet secondary ("or just join as a member") is the lighter path
-// for the Seeker. The beta is OPEN — clicking the primary opens the default Funnel
+// §2b/§7b); the quiet secondary is the lighter path for the Seeker. The beta is OPEN — clicking the primary opens the default Funnel
 // induction directly (/join, the Funnels front door, ADR-1090; formerly
 // /onboarding/beta, which now 308s here). Signed-out visitors get the cinematic
 // welcome with sign-in embedded (app/join/(induction)/induction.tsx), not a cold
@@ -143,7 +142,15 @@ export const BETA_CTA_HREF = "/join";
 // The lighter secondary path, paired beside the primary as a quiet text link (never
 // a second button). For the Seeker who is not ready to host; routes into the same
 // open induction, which branches by intent.
-export const BETA_CTA_SECONDARY_LABEL = "or just join as a member";
+//
+// ⚠️ THE WORD "just" WAS REMOVED (2026-09-03, ADR-1196). It read "or just join as a
+// member", and it sat under every primary on the site — including the six SEO guides
+// whose readers arrived from "how to make friends as an adult". CONTENT-VOICE §2a
+// names the Seeker as reader one, and that sentence told reader one they were the
+// lesser option in the same breath as inviting them. The path is quieter than the
+// primary because it is a text link beside a button; the copy does not need to say so
+// as well. Do not put it back.
+export const BETA_CTA_SECONDARY_LABEL = "or join as a member";
 export const BETA_CTA_SECONDARY_HREF = BETA_CTA_HREF;
 
 // Org footer line. Donations / 501(c)(3) framework deferred — no fundraising

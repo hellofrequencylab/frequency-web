@@ -40,39 +40,24 @@
         {
           "name": "W0 · active now",
           "ids": [
-            "LIVE-072",
-            "LIVE-062",
-            "LIVE-066",
             "LIVE-053",
-            "LIVE-061",
-            "HYG-009",
-            "LIVE-069",
-            "LIVE-071",
-            "LIVE-073",
-            "LIVE-078",
-            "LIVE-080",
-            "LIVE-075",
-            "HYG-012",
-            "LIVE-090",
-            "LIVE-091",
-            "LIVE-092",
-            "LIVE-093",
-            "LIVE-094",
-            "LIVE-095",
-            "LIVE-096",
-            "LIVE-097",
-            "LIVE-098",
-            "HYG-013",
-            "LIVE-081",
-            "LIVE-113"
+            "LIVE-105",
+            "LIVE-123",
+            "LIVE-124",
+            "LIVE-142",
+            "LIVE-144",
+            "LIVE-147",
+            "LIVE-148",
+            "LIVE-149",
+            "HYG-042",
+            "HYG-043",
+            "HYG-044",
+            "HYG-046"
           ]
         },
         {
           "name": "W1 · content pipeline (5c/5d must land before Editor E3)",
-          "ids": [
-            "LIVE-007",
-            "LIVE-006"
-          ]
+          "ids": []
         },
         {
           "name": "W2 · foundation first",
@@ -80,13 +65,18 @@
             "DEF-HARDEN",
             "PROG-A1",
             "PROG-A3",
-            "PROG-DAWN2"
+            "HYG-023",
+            "HYG-027",
+            "HYG-029",
+            "LIVE-125",
+            "LIVE-128",
+            "SCAN-502",
+            "SCAN-521"
           ]
         },
         {
           "name": "W3 · Loom foundation (the media layer the editor projects from)",
           "ids": [
-            "PROG-D1",
             "PROG-D2",
             "PROG-D3"
           ]
@@ -122,17 +112,10 @@
             "PROG-P4",
             "PROG-P5",
             "PROG-P6",
-            "PROG-P9",
             "PROG-DAWN3",
-            "LIVE-068",
-            "LIVE-070",
-            "HYG-010",
-            "LIVE-079",
-            "LIVE-089",
-            "HYG-015",
-            "LIVE-100",
-            "LIVE-102",
-            "LIVE-101"
+            "LIVE-114",
+            "LIVE-117",
+            "LIVE-139"
           ]
         },
         {
@@ -142,7 +125,8 @@
             "PROG-SPOT",
             "PROG-A4",
             "DEF-DOMAIN",
-            "LIVE-067"
+            "LIVE-120",
+            "LIVE-122"
           ]
         },
         {
@@ -170,8 +154,15 @@
         {
           "name": "owner-timed",
           "ids": [
-            "LIVE-027",
-            "LIVE-060"
+            "LIVE-060",
+            "OWN-005",
+            "OWN-011",
+            "OWN-040",
+            "OWN-046",
+            "OWN-047",
+            "LIVE-127",
+            "SCAN-205",
+            "HYG-033"
           ]
         }
       ],
@@ -198,7 +189,8 @@
         "OWN-041",
         "OWN-042"
       ],
-      "rationale": "Foundation before surface: hardening and module boundaries (A1/A3) pay compounding dividends across every later wave. Loom D1-D3 precede the Editor because E2 projects the editor’s asset model onto the Loom. Content retirements (W1) must precede E3, which replaces EDITABLE_PAGES in the opposite direction. Re-theme and the DAWN mechanical sweeps follow the editor so swept surfaces are not rebuilt. Flagship apps (A4) and the domain backlog ride after boundaries + editor exist. Commerce verticals close, with Resonance’s launch GO still the owner’s. White label (E10/W6/P7), mobile, and texting park by name. White-label sites and the Etsy-grade store now close the runway, in that order (owner ruling 2026-08-24): everything else is to be functional and clean before either starts."
+      "rationale": "Foundation before surface: hardening and module boundaries (A1/A3) pay compounding dividends across every later wave. Loom D1-D3 precede the Editor because E2 projects the editor’s asset model onto the Loom. Content retirements (W1) must precede E3, which replaces EDITABLE_PAGES in the opposite direction. Re-theme and the DAWN mechanical sweeps follow the editor so swept surfaces are not rebuilt. Flagship apps (A4) and the domain backlog ride after boundaries + editor exist. Commerce verticals close, with Resonance’s launch GO still the owner’s. White label (E10/W6/P7), mobile, and texting park by name. White-label sites and the Etsy-grade store now close the runway, in that order (owner ruling 2026-08-24): everything else is to be functional and clean before either starts.",
+      "rule": "Every open or blocked row has a place here, and no finished row does; scripts/check-backlog.mjs proves both (HYG-047). PLACEMENT RULE, so the next person does not have to guess: lane \"owner\" goes to owner-timed whatever its id prefix, because nothing in the repo unblocks it. A live production incident or a repair ready to work goes to W0. Instrument and record debt goes to W2, the foundation wave, because a guard that cannot fire is the thing every later wave is measured by. Layout and theme work goes to W6, feature work to W7. A row that fits none of these is a sign the wave list needs a row, not that the row needs no wave. ⚠️ CLOSING A ROW MEANS PRUNING IT FROM ITS WAVE, in the same edit. The guard treats a finished row still sitting in the slate as drift, which is exactly what it is; that is how 39 of 77 ids came to be stale. Two edits per close is the price of the sequence staying true, and the guard will not let you forget the second one."
     }
   },
   "entries": [
@@ -5887,7 +5879,7 @@
         "file": "docs/DECISIONS.md",
         "ref": "ADR-1196, the 2026-09-03 repair and rework audit"
       },
-      "detail": "49 of 398 page.tsx files (12%) contain a redirect and render no JSX. Classified by whether they can move to next.config.ts:\n  * 30 are STATIC — they import only next/navigation, take no params or searchParams, and redirect to a string literal. 15 of those are the retired (marketing) SEO guides. These are route files, build entries and function-budget lines paying for what a config line does at the edge.\n  * 12 carry a route param but no other logic and are mechanically convertible to `:slug` patterns — deliberately OUT of scope here, they need a per-file read (see HYG-044).\n  * 7 carry real logic (auth lookup, cookie read, claim-token lookup) and must stay routes: /profile, /marketplace, /settings/profile/spotlight, /events/drafts, /friends, /people/[handle]/profile-preview/edit, /events/claim/[token].\n\nThis row covers the 30 static ones only. Every consolidation in this repo has so far ADDED the new surface and left the old one running; the standing rule this row establishes is that a consolidation is not finished until the thing it replaced is deleted.",
+      "detail": "49 of 398 page.tsx files (12%) contain a redirect and render no JSX. Classified by whether they can move to next.config.ts:\n  * 30 are STATIC — they import only next/navigation, take no params or searchParams, and redirect to a string literal. 15 of those are the retired (marketing) SEO guides. These are route files, build entries and function-budget lines paying for what a config line does at the edge.\n  * 12 carry a route param but no other logic and are mechanically convertible to `:slug` patterns — deliberately OUT of scope here, they need a per-file read (see HYG-044).\n  * 7 carry real logic (auth lookup, cookie read, claim-token lookup) and must stay routes: /profile, /marketplace, /settings/profile/spotlight, /events/drafts, /friends, /people/[handle]/profile-preview/edit, /events/claim/[token].\n\nThis row covers the 30 static ones only. Every consolidation in this repo has so far ADDED the new surface and left the old one running; the standing rule this row establishes is that a consolidation is not finished until the thing it replaced is deleted.\n\n⚠️ MEASURED 2026-09-03 BEFORE ATTEMPTING IT, AND THE JOB IS BIGGER THAN THE FILE COUNT. The 30 pages are mechanical, but four other files hold paired state that a deletion invalidates, and missing any one of them is how this job goes wrong quietly:\n  · scripts/check-seo.mjs INTENTIONALLY_EXCLUDED — 15 of the 30 are listed there with a verified reason. The guard WARNS on an entry with no backing page ('stale exclusion, remove it'), so the entries must go in the same change.\n  · lib/analytics/vitals-budgets.ts — budgets ~11 of the retired marketing routes. It is already stale prose about routes that 308 today; deleting the pages makes that visible rather than causing it.\n  · scripts/templates-baseline.txt and scripts/admin-client-baseline.txt — both name files under directories in this set. Note the admin ones name actions.ts SIBLINGS, not the page: deleting a page.tsx leaves a live actions.ts and a route-less directory, which needs a per-directory read rather than a sweep.\n  · lib/analytics/vitals-budgets.test.ts asserts '/how-it-works' specifically.\nThe extraction and the exact source -> destination -> permanence mapping for all 30 is done and verified; what remains is the paired bookkeeping. Do it as one change with all five files, not as a delete followed by guard chasing.",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e \"const fs=require('fs'),path=require('path');let n=0;(function w(d){for(const e of fs.readdirSync(d,{withFileTypes:true})){const p=path.join(d,e.name);if(e.isDirectory()){w(p);continue}if(e.name!=='page.tsx')continue;const s=fs.readFileSync(p,'utf8');if(!/\\\\b(permanentRedirect|redirect)\\\\s*\\\\(/.test(s))continue;const b=s.replace(/\\\\/\\\\*[\\\\s\\\\S]*?\\\\*\\\\//g,'').replace(/^\\\\s*\\\\/\\\\/.*$/gm,'');if(/<[A-Za-z]/.test(b))continue;const im=[...b.matchAll(/from '([^']+)'/g)].map(m=>m[1]);if(im.every(i=>i==='next/navigation')&&!/params|searchParams|await |async function/.test(b)&&/(permanentRedirect|redirect)\\\\(\\\\s*'[^']*'\\\\s*\\\\)/.test(b))n++}})('app');process.exit(n===0?0:1)\"",
@@ -5913,19 +5905,19 @@
     },
     {
       "id": "HYG-045",
-      "title": "A 266-line migration plan for a dependency that is not installed",
-      "status": "open",
+      "title": "A completed migration plan that still read as live work",
+      "status": "done",
       "lane": "hygiene",
       "size": "XS",
       "source": {
         "file": "docs/DECISIONS.md",
         "ref": "ADR-1196, the 2026-09-03 repair and rework audit"
       },
-      "detail": "docs/PUCK-MIGRATION-PLAN.md asserts that `@measured/puck` is \"pinned at ^0.20.2 in package.json\". It is not in package.json at all, in any dependency block. The plan describes migrating off a library the repo does not have.\n\nlib/spotlight/puck/ (convert.ts, resolve.ts, metadata.ts) does still exist as a compatibility shim over stored documents, so the NAME is still load-bearing in the data even though the package is gone. That is worth one line in an architecture doc; it is not worth a 266-line migration plan that a reader will act on.\n\nThe doc is on the frozen planning-doc allowlist, so deleting it also means removing its line from scripts/planning-docs.txt — check:one-list measures the set, and a deletion without the allowlist edit fails the build.",
+      "detail": "THE ROW AS FILED WAS WRONG ABOUT THE PREMISE, AND THE CORRECTION IS THE INTERESTING PART. It said docs/PUCK-MIGRATION-PLAN.md 'describes migrating off a library the repo does not have' and proposed deleting it.\n\nRe-read before acting: the plan's own recommendation is four steps ending '(4) delete the package'. The package IS gone from package.json. So the migration SUCCEEDED and nobody came back to say so. The audit read a finished plan as an abandoned one, because the only thing distinguishing the two was prose nobody updated — which is the failure this repo names in ADR-1043, arriving from the other direction.\n\n⚪ DELETION WOULD ALSO HAVE BEEN WRONG on its own terms. ADR-493 cites the file as its full plan and check:docs-links enforces relative .md links, so removing it breaks the ledger. The repo's established retirement mechanism for a doc is a superseded banner (18 docs carry one); deletion is the mechanism for CODE. Retiring a document and retiring a module are not the same act.\n\n🔴 AND lib/spotlight/puck/ IS NOT DEAD CODE. convert.ts / resolve.ts / metadata.ts are imported by lib/page-editor/templates/linktree.ts, components/spotlight/spotlight-shell.tsx and components/admin/modules/personal-appearance-module.tsx. They survive because the plan's central constraint was keeping the persisted { content, root } shape byte-for-byte so no stored document is migrated. The package left; the document shape, and therefore the name, stayed. The banner says so explicitly, because 'finish the migration by deleting that directory' is the obvious wrong next move for the next reader.",
       "verify": {
         "kind": "cmd",
-        "cmd": "node -e \"const fs=require('fs');const pkg=fs.readFileSync('package.json','utf8');const hasPuck=/@measured\\\\/puck/.test(pkg);if(hasPuck)process.exit(0);const doc=fs.existsSync('docs/PUCK-MIGRATION-PLAN.md');const listed=fs.existsSync('scripts/planning-docs.txt')&&/PUCK-MIGRATION-PLAN/.test(fs.readFileSync('scripts/planning-docs.txt','utf8'));process.exit(!doc&&!listed?0:1)\"",
-        "note": "Passes when the dependency is absent AND the plan and its allowlist entry are both gone. If the dependency is ever reinstalled the row passes trivially, which is correct."
+        "cmd": "node -e \"const fs=require('fs');const D='docs/PUCK-MIGRATION-PLAN.md';if(!fs.existsSync(D))process.exit(0);const d=fs.readFileSync(D,'utf8').split('\\\\n').slice(0,25).join(' ');process.exit(/Superseded/i.test(d)?0:1)\"",
+        "note": "Passes when the plan carries a superseded banner in its first 25 lines, or has been removed entirely. It does NOT assert the package is absent: a future reinstall would be a real decision, not a regression of this row."
       }
     },
     {
@@ -5948,14 +5940,14 @@
     {
       "id": "HYG-047",
       "title": "The slate inside the verified backlog is itself unverified, and half of it is stale",
-      "status": "open",
+      "status": "done",
       "lane": "hygiene",
       "size": "S",
       "source": {
         "file": "docs/DECISIONS.md",
         "ref": "ADR-1196, the 2026-09-03 repair and rework audit"
       },
-      "detail": "meta.slate.waves lists 77 ids. Their current statuses: 39 done, 35 open, 2 parked, and one id (LIVE-113) that does not exist in entries at all. So 51% of the sequenced slate is finished work still presented as the queue, and W0 (\"active now\") is 23 done, 1 missing and exactly 1 genuinely open.\n\nSeparately, 25 open/blocked rows are absent from the slate entirely and therefore have no sequencing position — including four live production incidents (LIVE-123 build stalls, LIVE-124 the 300s ceiling, LIVE-105 a dead deploy, LIVE-142 a firing serialization error) and OWN-046.\n\nThis is check:one-list's own failure mode reappearing INSIDE the one list: the rows are probed, the object that orders them is prose. Give the slate a probe: no done ids, no phantom ids, and every open row placed.",
+      "detail": "meta.slate.waves lists 77 ids. Their current statuses: 39 done, 35 open, 2 parked, and one id (LIVE-113) that does not exist in entries at all. So 51% of the sequenced slate is finished work still presented as the queue, and W0 (\"active now\") is 23 done, 1 missing and exactly 1 genuinely open.\n\nSeparately, 25 open/blocked rows are absent from the slate entirely and therefore have no sequencing position — including four live production incidents (LIVE-123 build stalls, LIVE-124 the 300s ceiling, LIVE-105 a dead deploy, LIVE-142 a firing serialization error) and OWN-046.\n\nThis is check:one-list's own failure mode reappearing INSIDE the one list: the rows are probed, the object that orders them is prose. Give the slate a probe: no done ids, no phantom ids, and every open row placed.\n\n── FIXED 2026-09-03. Removed 39 finished ids and the one phantom (LIVE-113) from the waves, and placed all 33 open rows that had no sequencing position, including the four live production incidents that had been sitting outside the queue entirely. W0 'active now' had been 23 done, 1 phantom and 1 genuinely open.\n\n⚪ THE PLACEMENT RULE IS NOW RECORDED IN meta.slate.rule rather than left implicit, because the drift was never that someone sequenced badly — it was that nothing said what the object was for, so nobody maintained it. A rule a reader can apply is the difference between a record that survives and one that rots politely.\n\n🔴 THE PROBE IS THE POINT, not the tidy-up. The slate was prose living inside the one file the repo trusts, and check:backlog now fails if a finished row is still sequenced, a phantom id appears, or an open row has no place. That is the same contract the ROWS have had since ADR-1043; the object that orders them simply never had it.",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e \"const d=require('./docs/BUILD-BACKLOG.json');const byId=new Map(d.entries.map(e=>[e.id,e]));const slate=[].concat(...(d.meta.slate&&d.meta.slate.waves||[]).map(w=>w.ids||[]));const phantom=slate.filter(i=>!byId.has(i));const done=slate.filter(i=>byId.get(i)&&byId.get(i).status==='done');const active=d.entries.filter(e=>e.status==='open'||e.status==='blocked').map(e=>e.id);const unplaced=active.filter(i=>!slate.includes(i));process.exit(phantom.length===0&&done.length===0&&unplaced.length===0?0:1)\"",
@@ -5965,18 +5957,18 @@
     {
       "id": "LIVE-146",
       "title": "One funnel entrance, five call-to-action labels",
-      "status": "open",
+      "status": "done",
       "lane": "live",
       "size": "S",
       "source": {
         "file": "docs/DECISIONS.md",
         "ref": "ADR-1196, the 2026-09-03 repair and rework audit"
       },
-      "detail": "BETA_CTA_LABEL in lib/site.ts is \"Start a Circle\" and is used across the marketing pages — except app/page.tsx overrides it to \"Join the beta\", the /for/* funnel doors say \"Start free\", /pricing says \"Join free\" / \"Join Crew\" / \"Start a Space\", and /join itself says \"Come in\". Five verbs for one entrance.\n\nTwo things make it worse than inconsistency. \"Start a Circle\" is the HARDEST ask on the site and it is the default CTA on pages whose readers arrived from \"how to make friends as an adult\". And the universal secondary is \"or just join as a member\" — the word `just` telling the majority of arriving traffic that they are the lesser option, on a site whose own voice canon names the Seeker as reader one.\n\nOne primary verb, one secondary that does not apologise, both single-sourced so a page cannot override them without the guard noticing.",
+      "detail": "BETA_CTA_LABEL in lib/site.ts is \"Start a Circle\" and is used across the marketing pages — except app/page.tsx overrides it to \"Join the beta\", the /for/* funnel doors say \"Start free\", /pricing says \"Join free\" / \"Join Crew\" / \"Start a Space\", and /join itself says \"Come in\". Five verbs for one entrance.\n\nTwo things make it worse than inconsistency. \"Start a Circle\" is the HARDEST ask on the site and it is the default CTA on pages whose readers arrived from \"how to make friends as an adult\". And the universal secondary is \"or just join as a member\" — the word `just` telling the majority of arriving traffic that they are the lesser option, on a site whose own voice canon names the Seeker as reader one.\n\nOne primary verb, one secondary that does not apologise, both single-sourced so a page cannot override them without the guard noticing.\n\n── FIXED 2026-09-03 (the two mechanical halves). The home page no longer overrides ctaLabel, so MarketingHeader falls back to BETA_CTA_LABEL and the front door says what every other marketing page says. And the shared secondary lost the word 'just': it now reads 'or join as a member'. The path is already quieter than the primary because it is a text link beside a button; the copy did not need to say so as well.\n\n⚠️ THE BIGGER CALL IS DELIBERATELY NOT MADE HERE, and it is a positioning decision rather than a consistency one: whether 'Start a Circle' should remain the site-wide primary at all. It is the hardest ask on the site, and it is the default CTA on six SEO guides whose readers arrived from 'how to make friends as an adult'. lib/site.ts documents the current choice as builder-framing aimed at the Latent Leader, 'the reader the whole growth model runs on'. Overriding a documented positioning rationale is a different act from removing an apology, and the production data points the other way again: the customers are operators, not circle hosts. Left for the owner with the evidence stated.\n\n⚪ NOTE FOR WHOEVER CHANGES THE LABEL: lib/site.ts warns that page templates baking the literal into a PUBLISHED DB doc need a re-publish to pick it up. The live home page is one of those (LIVE-148), so changing the constant will not change the front door on its own.",
       "verify": {
         "kind": "cmd",
-        "cmd": "node -e \"const fs=require('fs');const s=fs.readFileSync('lib/site.ts','utf8');const home=fs.readFileSync('app/page.tsx','utf8');const apologetic=/or just join/i.test(s);const overrides=/ctaLabel=\\\"[^\\\"]+\\\"/.test(home);process.exit(!apologetic&&!overrides?0:1)\"",
-        "note": "Passes when the secondary CTA no longer apologises and the home page stops hardcoding its own primary label."
+        "cmd": "node -e \"const fs=require('fs');const strip=t=>t.replace(/\\\\/\\\\*[\\\\s\\\\S]*?\\\\*\\\\//g,'').replace(/^\\\\s*\\\\/\\\\/.*$/gm,'').replace(/\\\\{\\\\/\\\\*[\\\\s\\\\S]*?\\\\*\\\\/\\\\}/g,'');const s=strip(fs.readFileSync('lib/site.ts','utf8'));const home=strip(fs.readFileSync('app/page.tsx','utf8'));const apologetic=/or just join/i.test(s);const overrides=/ctaLabel=\\\"[^\\\"]+\\\"/.test(home);process.exit(!apologetic&&!overrides?0:1)\"",
+        "note": "Comments and JSX comments are stripped first, so an ADR note that QUOTES the retired copy does not read as the copy. Passes when the secondary CTA no longer apologises in code and the home page stops hardcoding its own primary label."
       }
     },
     {

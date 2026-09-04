@@ -79,7 +79,7 @@ import {
 // ink close, matching the coded page's own light↔dark cadence.
 //
 // CTA SYSTEM: the primary action is BETA_CTA_LABEL ("Start a Circle"), with its
-// quiet secondary (BETA_CTA_SECONDARY_LABEL, "or just join as a member"). Never
+// quiet secondary (BETA_CTA_SECONDARY_LABEL, "or join as a member"). Never
 // stack two buttons; the secondary is a text link, not a button.
 // ─────────────────────────────────────────────────────────────────────────────
 

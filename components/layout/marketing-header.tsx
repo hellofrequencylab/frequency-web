@@ -39,7 +39,8 @@ export function MarketingHeader({
   isAuth?: boolean
   /**
    * Overrides the header CTA label (still routes to BETA_CTA_HREF). The home splash
-   * passes "Join the beta" so the front door reads as a beta invite; everywhere else
+   * used to pass "Join the beta" so the front door read as a beta invite. It no longer does
+   * (ADR-1196): one entrance, one verb. The prop stays for a genuine campaign landing page
    * keeps the builder-framed site-wide default ("Start a Circle", see lib/site).
    */
   ctaLabel?: string
