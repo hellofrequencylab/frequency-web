@@ -2,6 +2,11 @@ import { describe, it, expect } from 'vitest'
 import { readFileSync, readdirSync } from 'node:fs'
 import path from 'node:path'
 import {
+
+// The page source interpolates the shared constant; these pins look for that exact text. Built
+// from two halves so this file never contains `${` inside a plain string (CodeQL
+// js/template-syntax-in-string-literal reads that as a forgotten backtick).
+const INTERP = '$' + '{DIRECTORY_VISIBILITY_COLUMNS}'
   DIRECTORY_VISIBILITY_COLUMNS,
   acceptedConnectionIds,
   isListableInDirectory,
@@ -135,7 +140,7 @@ describe('/network consults the predicate', () => {
   })
 
   it('SELECTS the privacy columns by the shared constant, so none can be dropped alone', () => {
-    expect(PAGE).toContain('${DIRECTORY_VISIBILITY_COLUMNS}, nexus_regions!nexus_region_id ( name )')
+    expect(PAGE).toContain(INTERP + ', nexus_regions!nexus_region_id ( name )')
   })
 
   it('filters the directory BEFORE any downstream use (cards, Online now, counts)', () => {
@@ -165,7 +170,7 @@ describe('/search?tab=people consults the predicate', () => {
   })
 
   it('SELECTS the privacy columns by the shared constant', () => {
-    expect(PAGE).toContain('community_role, is_demo, ${DIRECTORY_VISIBILITY_COLUMNS}`')
+    expect(PAGE).toContain('community_role, is_demo, ' + INTERP + '`')
   })
 
   it('filters BEFORE the +1 truncation probe, so a hidden row never advertises "more"', () => {

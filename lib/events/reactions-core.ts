@@ -19,6 +19,9 @@
 // The fix is one boundary conversion: aggregate into the null-prototype map (still the right
 // tool for caller-supplied keys), then hand Flight a PLAIN object. The pinned test below asserts
 // the prototype, so the next refactor that "simplifies" it back is a red test.
+// (2026-09-04, same day: CodeQL flagged the object-keyed fold as remote property injection once it
+// lived in its own file, so the working map is now a Map and the boundary is Object.fromEntries —
+// same guarantee, no property write keyed by caller input anywhere.)
 
 // The Partiful-style reaction set (EVENTS-DESIGN §2.2/§8). The `'use server'` module can only
 // EXPORT async functions (types are erased and fine), so the runtime set lives here and is
@@ -58,22 +61,24 @@ export function aggregate(
   postIds: string[],
   myProfileId: string | null,
 ): Record<string, PostReactions> {
-  // Null-prototype map: a caller-supplied key can never reach Object.prototype, and
-  // we still skip the reserved names explicitly as a second barrier.
-  const out: Record<string, PostReactions> = Object.create(null)
+  // A Map, not an object: a caller-supplied key is never written as a PROPERTY NAME at all, so
+  // there is no prototype to reach (CodeQL js/remote-property-injection, raised on the object
+  // form of this fold when it moved here). The reserved names are still skipped as a second
+  // barrier, so the boundary object below can never carry one either.
+  const out = new Map<string, PostReactions>()
   for (const id of postIds) {
     if (UNSAFE_KEYS.has(id)) continue
-    out[id] = { counts: {}, mine: [] }
+    out.set(id, { counts: {}, mine: [] })
   }
 
   for (const row of rows) {
     if (!isBoopKind(row.kind)) continue
-    const bucket = out[row.post_id]
+    const bucket = out.get(row.post_id)
     if (!bucket) continue
     bucket.counts[row.kind] = (bucket.counts[row.kind] ?? 0) + 1
     if (myProfileId && row.profile_id === myProfileId) bucket.mine.push(row.kind)
   }
-  // The boundary conversion (see the header). Spread copies own enumerable keys onto a plain
-  // object; the reserved names were never written, so nothing here can reach a setter.
-  return { ...out }
+  // The boundary conversion (see the header): a PLAIN object for Flight, built from the Map's
+  // entries; the reserved names were never inserted, so nothing here can reach a setter.
+  return Object.fromEntries(out)
 }

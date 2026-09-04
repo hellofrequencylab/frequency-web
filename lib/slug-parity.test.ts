@@ -7,6 +7,14 @@ import { slugify } from './utils'
 import { slugifyName } from './importer/map'
 import { slugifyLabel } from './spaces/profile-pages'
 
+/** How many times `needle` appears in `hay`, by indexOf — RULE_BODY looks like a regex to a
+ *  reader (and to CodeQL js/string-instead-of-regex), and it must be matched as plain text. */
+function occurrences(hay: string, needle: string): number {
+  let n = 0
+  for (let i = hay.indexOf(needle); i !== -1; i = hay.indexOf(needle, i + needle.length)) n++
+  return n
+}
+
 // ONE SLUG RULE (B5 dead-code sweep D3, 2026-09-04).
 //
 // Twenty-odd private copies of "lowercase, hyphenate the rest, trim the hyphens" lived across the
@@ -159,7 +167,7 @@ describe('3. the copies that could not be imported here delegate instead (source
 
   it('the rule body lives in lib/utils.ts, once, with the accent fold in front of it', () => {
     const utils = read('lib/utils.ts')
-    expect(utils.split(RULE_BODY).length - 1).toBe(1)
+    expect(occurrences(utils, RULE_BODY)).toBe(1)
     expect(utils).toContain(".normalize('NFKD')")
     expect(utils).toContain('.replace(COMBINING_MARKS, \'\')')
     expect(utils.indexOf(".normalize('NFKD')")).toBeLessThan(utils.indexOf(RULE_BODY))

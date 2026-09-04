@@ -6313,8 +6313,8 @@
       "detail": "aggregate() built its result with Object.create(null) (correct for caller-supplied keys) and returned it across the server-to-client boundary. Flight throws 'Only plain objects ... Classes or null prototypes are not supported' - 60 occurrences, 20 users, 2026-06-27 to 2026-09-03 - and the client's empty catch swallowed it, so no reaction count ever rendered. Fixed 2026-09-04: the fold moved to lib/events/reactions-core.ts (so it can be tested without exporting a non-async symbol from the use-server module), still aggregates into the null-proto map, and returns a spread plain object; the test asserts the prototype; the client catch now reports.",
       "verify": {
         "kind": "cmd",
-        "cmd": "node -e \"const fs=require('fs');const c=fs.readFileSync('lib/events/reactions-core.ts','utf8');const r=fs.readFileSync('lib/events/reactions.ts','utf8');const t=fs.readFileSync('lib/events/reactions-core.test.ts','utf8');process.exit(c.includes('return { ...out }')&&!r.includes('Object.create(null)')&&t.includes('Object.getPrototypeOf(out)).toBe(Object.prototype)')?0:1)\"",
-        "note": "Passes when the fold converts to a plain object at the boundary, the server module builds no null-prototype value of its own, and a test asserts the prototype."
+        "cmd": "node -e \"const fs=require('fs');const c=fs.readFileSync('lib/events/reactions-core.ts','utf8');const r=fs.readFileSync('lib/events/reactions.ts','utf8');const t=fs.readFileSync('lib/events/reactions-core.test.ts','utf8');process.exit(c.includes('Object.fromEntries(out)')&&!r.includes('Object.create(null)')&&t.includes('Object.getPrototypeOf(out)).toBe(Object.prototype)')?0:1)\"",
+        "note": "Passes when the fold converts the Map to a plain object at the boundary with Object.fromEntries, the server module builds no null-prototype value of its own, and a test asserts the prototype."
       }
     },
     {

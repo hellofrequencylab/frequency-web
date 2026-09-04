@@ -2,6 +2,11 @@ import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
 
+// The page source interpolates the shared constant; these pins look for that exact text. Built
+// from two halves so this file never contains `${` inside a plain string (CodeQL
+// js/template-syntax-in-string-literal reads that as a forgotten backtick).
+const INTERP = '$' + '{DIRECTORY_VISIBILITY_COLUMNS}'
+
 // The predicate in ./directory-visibility.ts was applied to /network and /search first; these are
 // the OTHER member-to-member listings that had the same `is_active`-only shape. Pinned by source so
 // a fifth listing added with the old shape is a red test rather than a fifth privacy hole.
@@ -12,7 +17,7 @@ describe('every member listing selects the privacy columns and filters through t
   it('⌘K people search (app/api/search/route.ts) gates before the six-row trim', () => {
     const src = read('app/api/search/route.ts')
     expect(src).toContain(IMPORT)
-    expect(src).toContain('${DIRECTORY_VISIBILITY_COLUMNS}`)')
+    expect(src).toContain(INTERP + '`)')
     expect(src).toContain('.filter(isListableInDirectory).slice(0, 6)')
     expect(src).not.toMatch(/select\('id, display_name, handle, avatar_url, community_role, is_demo'\)/)
   })
