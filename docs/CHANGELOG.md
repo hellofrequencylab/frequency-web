@@ -12,6 +12,12 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ### Fixed
 
+- **An event's cover fills the screen on a phone again**: the artwork had been shrinking to fit
+  inside the header band, with a soft blur down both sides. It now runs edge to edge, and the
+  **Cover focus** control in an event's header settings decides which part of it stays in frame.
+  If a very wide flyer is losing its edges, set **Hero height** to Short. The shorter band is the
+  wider one, so it keeps the whole width of the artwork.
+
 - **A shared event link now shows the event's own artwork**: paste an event's link into a message and
   the preview leads with the cover the host uploaded. It used to lead with one only if the event had
   been captured by scanning a poster. Every other event, which is most of them, shared as a plain dark
