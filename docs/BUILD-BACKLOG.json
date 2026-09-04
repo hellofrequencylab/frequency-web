@@ -71,7 +71,8 @@
             "LIVE-125",
             "LIVE-128",
             "SCAN-502",
-            "SCAN-521"
+            "SCAN-521",
+            "SCAN-537"
           ]
         },
         {
@@ -6054,6 +6055,23 @@
         "kind": "cmd",
         "cmd": "node -e \"const fs=require('fs');const R='lib/pricing/bundles.ts',P='lib/spaces/provision.ts';if(!fs.existsSync(R)||!fs.existsSync(P))process.exit(79);const r=fs.readFileSync(R,'utf8');const curated=(r.match(/id: '/g)||[]).length>1;if(!curated)process.exit(1);process.exit(/setSpaceBundle/.test(fs.readFileSync(P,'utf8'))?0:1)\"",
         "note": "Stays failing while only the pass-through bundle exists. Passes when a curated bundle is registered AND provision applies one. Fails loudly if a curated bundle lands without the wiring."
+      }
+    },
+    {
+      "id": "SCAN-537",
+      "title": "The sanctioned way to update the RLS-bypass baseline deletes the reasons for every bypass in it",
+      "status": "open",
+      "lane": "hygiene",
+      "size": "S",
+      "source": {
+        "file": "docs/DECISIONS.md",
+        "ref": "ADR-1196, found while fixing a CI failure"
+      },
+      "detail": "scripts/admin-client-baseline.txt is the frozen list of files allowed to import the RLS-bypassing service-role client (ADR-923). Above the list sits a 76-line comment block: the justification for each existing bypass, written per entry, naming the zero-policy table or the signed-out caller or the SECURITY DEFINER function that makes it the safe shape rather than the lazy one. It is the only place that reasoning exists.\n\nWhen the guard fails it prints the fix: 'run: node scripts/check-admin-client.mjs --update'. That command regenerates the file from a fresh scan and writes the list ALONE. Measured 2026-09-04 while adding one legitimate entry: the regenerated file was +2 / -76, and the 76 were the entire comment block.\n\n🔴 THE FAILURE MODE IS THE WORST SHAPE A SECURITY TOOL CAN HAVE. The command is the one the guard itself recommends, it is run by someone under CI pressure who wants to get green, its output passes the guard immediately, and the loss shows up in the diff as deletions in a file the reviewer is looking at for a single added path. The next person to ask 'why is lib/events/seed/store.ts allowed to bypass RLS?' finds no answer, and the honest answer is that a tool deleted it to add an unrelated line.\n\n⚪ WORKED AROUND, NOT FIXED, in the change that found it: the entry was inserted by hand in sorted position, diff +1, comments intact. That is not a fix, it is one person knowing. Make --update preserve every leading comment line, and add a test that regenerating a baseline with a header leaves the header byte-identical.\n\n⚠️ CHECK THE SIBLINGS BEFORE CLOSING. scripts/templates-baseline.txt and scripts/adoption-baselines.json have the same --update shape and may have the same hole; if they do, this row covers them too. And check the history: if a past --update already ate a comment block, some existing entries may have lost their justification years ago and nobody would know.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const S='scripts/check-admin-client.mjs',T='scripts/check-admin-client.test.ts';if(!fs.existsSync(S))process.exit(79);const s=fs.readFileSync(S,'utf8');const preserves=/preserve|leading comment|header/i.test(s);const proven=fs.existsSync(T)&&/comment/i.test(fs.readFileSync(T,'utf8'));process.exit(preserves&&proven?0:1)\"",
+        "note": "Passes when --update preserves the leading comment block AND a test proves regeneration leaves it intact. A code-shape check alone would not be enough here, which is why the test file is required."
       }
     }
   ]
