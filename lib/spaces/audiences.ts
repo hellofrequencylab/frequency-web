@@ -19,7 +19,13 @@
 // (filter omitted or { tag: null }) = every contact in the Space that has an email.
 
 import { createAdminClient } from '@/lib/supabase/admin'
+import { log } from '@/lib/log'
 import { parsePlaceSelector, resolvePlaceTreeProfileIds } from '@/lib/messaging/place-tree'
+
+/** PostgREST errors on the untyped embed seams below come back as `{}` to tsc, so narrow at the
+ *  edge rather than casting each call site. */
+const errText = (e: unknown): string =>
+  typeof e === 'object' && e && 'message' in e ? String((e as { message?: unknown }).message) : String(e)
 
 // ── Types ─────────────────────────────────────────────────────────────────────────────────────
 
@@ -187,9 +193,20 @@ async function contactIdsWithTag(spaceId: string, tag: string): Promise<Set<stri
     // filter and the space filter both apply in one query.
     const { data, error } = await db
       .from('network_contact_tags')
-      .select('network_contacts!inner(linked_contact_id, space_id)')
-      .eq('network_contacts.space_id', spaceId)
+      // 🔴 THE COLUMN IS `shared_space_id`, NOT `space_id` (20261171000000:32). This read named a
+      // column that has never existed, so PostgREST returned 42703 every time and the fail-safe
+      // below turned it into an EMPTY SET. Because the tag is a NARROWING filter at resolveAudience,
+      // an empty set means every campaign, automation and drip targeting a tag audience resolved to
+      // ZERO recipients and reported success. tsc could not catch it: the row is read through an
+      // `as unknown as` cast, so the generated types — which are byte-identical to production — were
+      // never consulted on this path.
+      .select('network_contacts!inner(linked_contact_id, shared_space_id)')
+      .eq('network_contacts.shared_space_id', spaceId)
       .ilike('tag', tag)
+    // A fail-safe that returns "no matches" for "I could not look" is indistinguishable from a real
+    // empty audience. Say so in the log, per the standing rule that every fail-safe needs something
+    // that notices it fired.
+    if (error) log.error('spaces.audiences.tag_lookup_failed', { spaceId, tag, error: errText(error) })
     if (error || !data) return ids
     for (const row of data as unknown as { network_contacts?: { linked_contact_id?: string | null } }[]) {
       const cid = row.network_contacts?.linked_contact_id
@@ -476,9 +493,13 @@ export async function listAudienceTags(spaceId: string): Promise<string[]> {
     }
     const { data, error } = await db
       .from('network_contact_tags')
-      .select('tag, network_contacts!inner(space_id, linked_contact_id)')
-      .eq('network_contacts.space_id', spaceId)
+      // Same missing column as contactIdsWithTag above — see the note there. This one fed the tag
+      // PICKER, so a Space's own tag list came back empty and an operator could not select the
+      // audience that was silently resolving to nobody anyway.
+      .select('tag, network_contacts!inner(shared_space_id, linked_contact_id)')
+      .eq('network_contacts.shared_space_id', spaceId)
       .not('network_contacts.linked_contact_id', 'is', null)
+    if (error) log.error('spaces.audiences.tag_list_failed', { spaceId, error: errText(error) })
     if (error || !data) return []
     // De-dupe case-insensitively, keep the first-seen display form.
     const byLower = new Map<string, string>()
