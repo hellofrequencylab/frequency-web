@@ -259,7 +259,7 @@ jobs:
           # the whole life of that PR. `scripts/guard-wiring.test.ts` now fails when a check:*
           # script is wired nowhere, so that specific hole cannot reopen.
           #
-          # ── WHY THIS ARRAY IS 20 AND NOT 28 (2026-08-12) ────────────────────────────────────
+          # ── WHY THIS ARRAY IS 24 AND NOT 48 (2026-08-12; recounted 2026-09-04: 24 here + 4 postbuild + 16 vitest + 1 advisory + 2 maintenance.yml + 1 declared unwired = 48 check:* scripts) ──
           # Seven guards LEFT this array for vitest: elements · render-path · crm-parity · vocab ·
           # studio · creates, plus collective which moved to maintenance.yml (below). Each of the
           # six only READ SOURCE FILES AND ASSERTED A WIRING PROPERTY, which is a vitest test —
@@ -285,7 +285,7 @@ jobs:
           )
           # RUN IN PARALLEL, REPORT IN ORDER. The guards are independent node processes that only
           # read the tree, so nothing about them needed to be sequential — it just was. Run wall
-          # clock was the SUM of 26 guards plus 26 pnpm startups; it is now bounded by the
+          # clock was the SUM of 24 guards plus 24 pnpm startups; it is now bounded by the
           # slowest single guard (check:tokens, ~2.5s locally).
           #
           # Output still reads exactly as before. Each guard's stdout+stderr goes to its own file
@@ -294,7 +294,7 @@ jobs:
           # price of parallelising a loop like this, and it is the whole reason the loop is
           # readable when something breaks.
           #
-          # Concurrency is capped: the runner has 2 cores, and 26 concurrent node processes trade
+          # Concurrency is capped: the runner has 2 cores, and 24 concurrent node processes trade
           # a fast pass for an OOM on the one run that matters.
           out=$(mktemp -d)
           maxp=6

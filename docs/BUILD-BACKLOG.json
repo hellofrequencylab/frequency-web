@@ -72,7 +72,8 @@
             "SCAN-502",
             "SCAN-521",
             "HYG-049",
-            "SCAN-540"
+            "SCAN-540",
+            "HYG-052"
           ]
         },
         {
@@ -6278,6 +6279,40 @@
         "kind": "cmd",
         "cmd": "node -e \"const fs=require('fs');const r=(f)=>fs.existsSync(f)?fs.readFileSync(f,'utf8'):'';const t=r('lib/database.types.ts');process.exit(t.includes('_viewer?: string')&&t.includes('event_going_counts')&&t.includes('event_tier_price_summary')?0:1)\"",
         "note": "Passes when the types carry the regenerated RPC signatures."
+      }
+    },
+    {
+      "id": "SCAN-549",
+      "title": "Three CI guards could pass over nothing: check:client-boundary, check:workflows and check:phantom had no non-triviality floor and no fixture that must fail",
+      "status": "done",
+      "lane": "hygiene",
+      "size": "S",
+      "source": {
+        "file": "scripts/check-client-server-boundary.mjs",
+        "ref": "ADR-1205"
+      },
+      "detail": "check:client-boundary — the gate keeping the service-role client out of the browser bundle — printed a tick over any walk, including an empty one, and had no test sibling; workflows and phantom likewise. Closed 2026-09-04 with floors at ~70% of today's readings (ADR-962 idiom from check-one-list.mjs) and test siblings whose fixtures fail; ci.yml's guard counts corrected in place.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const r=(f)=>fs.existsSync(f)?fs.readFileSync(f,'utf8'):'';const ok=r('scripts/check-client-server-boundary.mjs').includes('MIN_CLIENT_ENTRYPOINTS')&&r('scripts/check-workflows.mjs').includes('MIN_WORKFLOWS')&&r('scripts/check-phantom-classes.mjs').includes('MIN_CANDIDATES')&&['scripts/check-client-server-boundary.test.ts','scripts/check-workflows.test.ts','scripts/check-phantom-classes.test.ts'].every(f=>fs.existsSync(f));process.exit(ok?0:1)\"",
+        "note": "Passes when each of the three guards carries a floor constant and has a test sibling."
+      }
+    },
+    {
+      "id": "HYG-052",
+      "title": "Nothing in CI regenerates or diffs lib/database.types.ts against the live schema; a report-only gen-types drift step is drafted and not wired",
+      "status": "open",
+      "lane": "hygiene",
+      "size": "S",
+      "source": {
+        "file": "lib/database.types.ts",
+        "ref": "ADR-1205"
+      },
+      "detail": "HYG-051 was found by hand. The #2351 technique (satisfies readonly Column[]) proves code agrees with the FILE, not that the file agrees with the DATABASE. A maintenance-workflow step (supabase gen types --project-id, then git diff --exit-code) is drafted in the audit scratchpad in the same token-gated set +e shape as its siblings; wire it after one real run proves the --project-id output byte-matches the CLI's --linked output, per the rule that a gate is wired in the same change as the run that proves it.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const r=(f)=>fs.existsSync(f)?fs.readFileSync(f,'utf8'):'';process.exit(/gen types/.test(r('.github/workflows/maintenance.yml'))?0:1)\"",
+        "note": "Passes when the maintenance workflow runs a gen-types drift step. Fails today."
       }
     },
     {
