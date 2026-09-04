@@ -4,7 +4,7 @@ import path from 'node:path'
 import { formatPriceCents } from './types'
 import { formatCents as formatDisplayCents } from '@/lib/pricing/display'
 import { formatLoadoutCents } from '@/lib/pricing/loadout'
-import { formatCents as formatLedgerCents } from '@/lib/finance/dashboard'
+import { formatLedgerCents } from '@/lib/finance/dashboard'
 
 // ONE PRICE FORMAT (B5 dead-code sweep D1, 2026-09-04).
 //
