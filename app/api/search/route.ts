@@ -1,3 +1,4 @@
+import { DIRECTORY_VISIBILITY_COLUMNS, isListableInDirectory } from '@/lib/connections/directory-visibility'
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -86,11 +87,16 @@ export async function GET(request: Request) {
   const [peopleRes, postsRes, eventsUpcomingRes, eventsPastRes, leads] = await Promise.all([
     admin
       .from('profiles')
-      .select('id, display_name, handle, avatar_url, community_role, is_demo')
+      // 🔴 Same service-role shape as /search and /network: `is_active` was the only filter, so a
+      // member who opted out of the directory or turned Ghost mode on was still findable here by
+      // name. The four privacy columns ride the select and each row goes through the shared
+      // predicate (lib/connections/directory-visibility.ts, ADR-TBD) BEFORE the palette's six-row
+      // trim, so a hidden row can never be one of the six. Fetch a wider page for the same reason.
+      .select(`id, display_name, handle, avatar_url, community_role, is_demo, ${DIRECTORY_VISIBILITY_COLUMNS}`)
       .or(`display_name.ilike.%${safeQ}%,handle.ilike.%${safeQ}%`)
       .eq('is_active', true)
       .order('display_name')
-      .limit(6),
+      .limit(18),
     // The admin client bypasses RLS, so search must scope results itself: only
     // PUBLIC posts (visibility enum is public|region|cluster|group — the others
     // are circle/region-scoped and must not surface to arbitrary searchers) and
@@ -127,7 +133,7 @@ export async function GET(request: Request) {
 
   return NextResponse.json({
     pages,
-    people: peopleRes.data ?? [],
+    people: ((peopleRes.data ?? []) as { id: string }[]).filter(isListableInDirectory).slice(0, 6),
     posts: postsRes.data ?? [],
     events,
     leads: leads ?? [],
