@@ -35202,3 +35202,62 @@ with the window, names the QR exception, and drops "from today".
 good faith, an operator flipped a flag months later, and the console went on rendering the old world
 until someone checked the database. Prefer a surface that DERIVES its claim from the switch over one
 that describes it, because only the first kind can go stale loudly.
+
+## ADR-1196: the phone cover crops again, and the band's shape is why that is not the old bug (2026-09-04)
+
+Owner report off a phone, the third on this one band: *"something got messed up with the mobile
+header view for events. it should be full bleed and adjusted with the focus picker."*
+
+The band **was** full bleed ([ADR-1184](#adr-1184) fixed that). What the capture shows is the other
+half: `object-contain` fits the artwork *inside* the box, so on a 412px phone the Meld cover — a 1:1
+poster — painted **221x221 in the middle of a 412x221 band**. The poster was whole, and small,
+between two blurred bars. And `object-position` is inert under `contain`, so the focal point the host
+set in the header controls — whose own hint reads *"Vertical matters most"* — decided nothing at all.
+
+**The phone band covers again, at the host's focal point** (`object-cover sm:object-contain`).
+
+🔴 **This does not reopen `LIVE-130`, and the reason is the band's SHAPE rather than the fit
+keyword.** `object-cover` scales to cover the shorter axis, so it shows the **full width** of any
+source narrower than its band. The band that sliced the Meld title in August was 380x306 — **1.24:1**,
+taller than wide relative to a poster. This one is 412x221 full bleed — **1.86:1** — because the
+poster ladder had already cut the phone rung one step. Of the 24 distinct production covers, 13 are
+1:1 and 6 are portrait (Luma and Partiful both tell hosts to upload a square cover), so **19 of 24
+now reach both edges whole** and lose height instead — the axis the picker aims.
+
+⚠️ **What it costs, stated rather than buried.** A source *wider* than 1.86:1 still crops
+horizontally: the 1400x600 flyer keeps **80%** of its width against the **53%** that produced the
+August report. Better, not whole. **The lever for that case is the height picker, and it points the
+opposite way from the intuition:**
+
+| Tier | Phone band | Aspect | What it protects |
+|---|---|---|---|
+| Short | 412x170 | 2.42:1 | wider than every cover in the survey — nothing lost sideways |
+| Standard | 412x221 | 1.86:1 | full width for the 19 square/portrait covers |
+| Tall | 412x306 | 1.35:1 | most height kept, so the widest flyers lose the most width |
+
+So Short is the *widest* band, not the smallest. That table is asserted in
+`components/media/poster-band.test.tsx` off the ladder itself, not typed beside it.
+
+⚪ **The desktop half is untouched and stays `contain`.** Its band is 1044x374 (2.79:1), where a crop
+showed a median 36% of the artwork and 23 of 24 covers lost more than a quarter — the measurement
+that settled `LIVE-131`. One fit per surface, each chosen on the geometry that surface
+actually has. The blurred backdrop moved to `hidden sm:block` for the same reason: it exists to fill
+letterbox bars, a covered phone band has none, and painting a second full-size image under an opaque
+one is a decode paid for nothing on the surface least able to afford it.
+
+🔴 **A probe on this seam was matching a COMMENT.** `LIVE-130`'s verify was
+`file.includes('object-contain sm:object-cover')` against the **unstripped** source — and that string
+had not been code since `LIVE-131`; it survived only in the header paragraph explaining what was
+wrong. The row was green against a file whose fit could have been anything. It now parses the phone
+rung out of the ladder and asserts the band is at least as wide as it is tall, which is the property
+the poster's title actually depends on. `LIVE-131`'s own note recorded *"the third probe on this
+sweep to match a comment instead of code"* and fixed itself by stripping comments first; the row
+directly above it was left matching the file. The tell is always the same — the probe reads the
+file, not the code.
+
+⚪ **Not visually confirmed on a re-rendered phone.** Proven at the markup, class and geometry layer,
+with three mutations watched go red (fit reverted to contain, backdrop returned to every width,
+`objectPosition` dropped) and both probes watched fail two ways. The follow-up that removes the trade
+entirely is unchanged: capture the cover's intrinsic aspect in the **browser** at upload and store it
+on `events.theme` beside `coverFocus`, which makes the band the poster's own shape at both widths —
+no bars, no crop. The component is shaped so that is a prop and a class, not a rewrite.

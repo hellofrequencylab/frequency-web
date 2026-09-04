@@ -37,16 +37,25 @@ export function coverHeightClass(height: CoverHeight): string {
 }
 
 // ── THE POSTER LADDER: the same tiers, one step shorter on a PHONE ───────────────────────────────
-// A band showing a contain-fitted poster (components/media/poster-band.tsx) does not need the
-// height a cropped one does. `object-cover` uses every pixel of the box, so the box IS the picture;
-// `object-contain` fits the artwork inside it, and any height the artwork does not use becomes
-// blurred backdrop. At the standard tier the Meld poster (1400x600) paints 380x163 on a 412px
-// phone, so the shipped 306px band would have been 47% picture and 53% filler.
+// A poster band is SHORTER than a scenery cover on a phone, and the reason survived the fit being
+// changed underneath it — with a different argument, which is why this note is rewritten rather
+// than deleted.
 //
-// The `sm:` half is IDENTICAL to COVER_HEIGHT_CLASS above, byte for byte, because from `sm` up the
-// poster band still crops at the operator's focal point and must keep the height it has always had.
-// Only the phone half moves, and it moves one rung down the ladder the tiers already describe
-// (204 -> 170, 306 -> 221, 408 -> 306 at this app's 17px root).
+// It was first cut one rung because the band CONTAINED: `object-contain` fits the artwork inside
+// the box and hands every unused pixel to the blurred backdrop, so at the standard tier the shipped
+// 306px band was 47% picture and 53% filler.
+//
+// The phone band now CROPS at the host's focal point (components/media/poster-band.tsx, 2026-09-04),
+// and the short rung is what makes that crop safe: a full-bleed 412px band at 221px is 1.86:1, and
+// `object-cover` shows the FULL WIDTH of any source narrower than its band. 19 of the 24 production
+// covers are square or portrait, so they reach both edges whole and lose only height — the axis the
+// focal picker aims. A TALLER phone band would be a narrower one, and would start cutting words off
+// the sides again. Short is not a saving here; it is the guarantee.
+//
+// The `sm:` half is IDENTICAL to COVER_HEIGHT_CLASS above, byte for byte, because the desktop band
+// still contains the whole poster and must keep the height it has always had. Only the phone half
+// moves, and it moves one rung down the ladder the tiers already describe (204 -> 170, 306 -> 221,
+// 408 -> 306 at this app's 17px root).
 //
 // 🔴 A SEPARATE MAP, NOT AN EDIT TO THE ONE ABOVE. COVER_HEIGHT_CLASS is shared with the Business
 // Space cover hero, which overlays its own title/eyebrow/actions lockup on the band — shortening
@@ -57,8 +66,9 @@ const POSTER_HEIGHT_CLASS: Record<CoverHeight, string> = {
   tall: 'h-72 sm:h-[36rem]',
 }
 
-/** The responsive height utility for a CONTAIN-fitted poster band. Same tiers, same desktop
- *  heights, one rung shorter on a phone. Pure + total. */
+/** The responsive height utility for a POSTER band. Same tiers, same desktop heights, one rung
+ *  shorter on a phone — which is both what keeps the desktop letterbox honest and what keeps the
+ *  phone crop horizontal-safe (see the ladder's note above). Pure + total. */
 export function posterHeightClass(height: CoverHeight): string {
   return POSTER_HEIGHT_CLASS[height]
 }

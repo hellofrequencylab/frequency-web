@@ -4,13 +4,24 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { PosterBand } from './poster-band'
 import { coverHeightClass, posterHeightClass, type CoverHeight } from '@/lib/layout/cover-height'
 
-// ── THE POSTER'S OWN TITLE WAS BEING CROPPED OFF THE PAGE ────────────────────────────────────────
+// ── THE PHONE BAND: FULL BLEED, CROPPED, AIMED BY THE HOST ──────────────────────────────────────
 //
-// 🔴 THE BUG (owner, 2026-08-31, off a phone capture of the Meld event page). The event cover is a
-// fixed-height box with `object-cover` on it. The Meld poster is 1400x600; the mobile band is
-// 380x306 at a 412px viewport and this app's 17px root. `object-cover` scales to cover the shorter
-// axis, so the poster is scaled by HEIGHT to 714x306 and then cropped by width to 380 — 53% of it,
-// including both halves of its own title, never reaches the screen.
+// 🔴 TWO OWNER REPORTS ON THE SAME BAND, IN OPPOSITE DIRECTIONS, AND BOTH ARE PINNED HERE.
+//
+// 2026-08-31: the band was a fixed-height box with `object-cover`. The Meld poster is 1400x600 and
+// the phone band was 380x306, so `object-cover` scaled by HEIGHT and cropped by WIDTH — 53% of the
+// poster reached the screen, and the missing half carried both ends of the event's name. The fix
+// was `object-contain`, first below `sm` and then at every width.
+//
+// 2026-09-04: *"it should be full bleed and adjusted with the focus picker."* Contain had made the
+// phone band a 221x221 square of poster in the middle of a 412x221 band — whole, and small, between
+// two blurred bars — and the host's focal point had nothing left to aim.
+//
+// THE PHONE BAND NOW COVERS AGAIN, AND THE FIRST REPORT DOES NOT COME BACK, because the band is a
+// different SHAPE than it was that day: short and wide (1.86:1 full bleed at the standard tier)
+// rather than 1.24:1. `object-cover` shows the full WIDTH of any source narrower than its band, and
+// 19 of the 24 production covers are square or portrait. That arithmetic is the load-bearing half
+// of the claim, so it is asserted here rather than asserted-to in a comment.
 //
 // This file is the sibling of components/vera/dock-tab-clearance.test.ts and works the same way: it
 // reads the source and renders the real component, so it fails on the SHAPE of the code rather than
@@ -27,6 +38,18 @@ function shownArea(w: number, h: number, bandW: number, bandH: number): number {
   return Math.min(1, bandW / (w * scale)) * Math.min(1, bandH / (h * scale))
 }
 
+/** What `object-cover` actually shows of a WxH source in a bandW x bandH box, as a fraction of the
+ *  source's WIDTH. 1 means the artwork reaches both edges and only its height is cut. */
+function shownWidth(w: number, h: number, bandW: number, bandH: number): number {
+  const scale = Math.max(bandW / w, bandH / h)
+  return Math.min(1, bandW / (w * scale))
+}
+
+// The phone geometry both reports were photographed on: a 412px viewport, FULL BLEED (the band
+// spans the whole width, not the content box), and this app's 17px root — so h-52 is 221px.
+const PHONE = 412
+const PHONE_BAND_PX: Record<CoverHeight, number> = { short: 170, standard: 221, tall: 306 }
+
 describe('the arithmetic that made this a bug and not a preference', () => {
   it('🔴 object-cover threw away 47% of the Meld poster on a phone, and its title with it', () => {
     // 1400x600 into the OLD standard band (h-72 = 18rem at a 17px root = 306px), on a 412px screen
@@ -39,11 +62,10 @@ describe('the arithmetic that made this a bug and not a preference', () => {
     expect(Math.min(1, 380 / (1400 * scale))).toBeLessThan(0.55)
   })
 
-  it('🔴 and desktop was the LOUDER number all along — which is why the crop is gone there too', () => {
-    // The same 24 covers against the 1044x374 desktop band. This assertion used to exist to argue
-    // the desktop half should WAIT; the arithmetic it pins is what eventually settled the opposite
-    // (LIVE-131). A 1:1 poster — 13 of the 24 — survived at under 40% of its area on the surface
-    // the owner believed was working, against 75%+ on the phone that was reported as broken.
+  it('🔴 and desktop was the LOUDER number all along — which is why the crop is gone there', () => {
+    // The same 24 covers against the 1044x374 desktop band. A 1:1 poster — 13 of the 24 — survived
+    // at under 40% of its area on the surface the owner believed was working, against 75%+ on the
+    // phone that was reported as broken. This is what keeps `sm:` on `contain`.
     expect(shownArea(1024, 1024, 1044, 374)).toBeLessThan(0.4)
     expect(shownArea(1024, 1024, 380, 306)).toBeGreaterThan(0.75)
     // And a PORTRAIT poster, the worst case, kept a quarter of itself on desktop.
@@ -51,26 +73,88 @@ describe('the arithmetic that made this a bug and not a preference', () => {
   })
 })
 
-describe('the treatment: the whole poster, at every width', () => {
+describe('the phone band is short and wide, which is what makes the crop safe', () => {
+  it('🔴 shows the FULL WIDTH of a square or portrait cover — 19 of the 24 in production', () => {
+    const bandH = PHONE_BAND_PX.standard
+    // 1:1 (13 of 24) and portrait (6 of 24). Nothing comes off the sides at all.
+    expect(shownWidth(1024, 1024, PHONE, bandH)).toBe(1)
+    expect(shownWidth(681, 1024, PHONE, bandH)).toBe(1)
+    // A 3:2 landscape PHOTO cover is narrower than the band too, so it also reaches both edges.
+    expect(shownWidth(1500, 1000, PHONE, bandH)).toBe(1)
+    // The loss for a square cover is entirely vertical — the axis the focal picker's hint calls out.
+    expect(shownArea(1024, 1024, PHONE, bandH)).toBeCloseTo(bandH / PHONE, 5)
+  })
+
+  it('🔴 and the 2026-08-31 poster keeps 80% of its width, against the 53% that was reported', () => {
+    // The one cover shape that still crops horizontally is one WIDER than the band (2.33:1 against
+    // 1.86:1). It is a real cost, and it is stated plainly in the component; what it must never do
+    // is return to the number that produced the report.
+    const kept = shownWidth(1400, 600, PHONE, PHONE_BAND_PX.standard)
+    expect(kept).toBeGreaterThan(0.79)
+    expect(kept).toBeGreaterThan(shownWidth(1400, 600, 380, 306) * 1.4)
+  })
+
+  it('the height picker is the lever for that trade — Short is the widest band, Tall the narrowest', () => {
+    const aspect = (tier: CoverHeight) => PHONE / PHONE_BAND_PX[tier]
+    expect(aspect('short')).toBeGreaterThan(aspect('standard'))
+    expect(aspect('standard')).toBeGreaterThan(aspect('tall'))
+    // Short (2.42:1) is wider than every cover in the survey, so it crops nothing horizontally —
+    // including the 2.33:1 flyer the standard tier trims.
+    expect(aspect('short')).toBeGreaterThan(1400 / 600)
+    expect(shownWidth(1400, 600, PHONE, PHONE_BAND_PX.short)).toBe(1)
+    // 🔴 The lever points the opposite way from the intuition: TALL keeps more height and LESS width.
+    expect(shownWidth(1400, 600, PHONE, PHONE_BAND_PX.tall)).toBeLessThan(
+      shownWidth(1400, 600, PHONE, PHONE_BAND_PX.standard),
+    )
+  })
+
+  it('the phone pixel heights above ARE the ladder, not numbers typed beside it', () => {
+    // Guards every assertion in this block against the ladder moving underneath it: h-40/h-52/h-72
+    // at a 17px root are 170/221/306px. Re-tune a tier and these expectations must be re-derived.
+    const REM = 17
+    const px = (cls: string): number => {
+      const first = cls.split(/\s+/)[0]
+      const arbitrary = first.match(/^h-\[([\d.]+)rem\]$/)
+      if (arbitrary) return parseFloat(arbitrary[1]) * REM
+      const scale = first.match(/^h-(\d+)$/)
+      if (scale) return (parseFloat(scale[1]) / 4) * REM
+      throw new Error(`unparsed height utility: ${first}`)
+    }
+    for (const tier of TIERS) {
+      expect(px(posterHeightClass(tier)), `tier ${tier}`).toBeCloseTo(PHONE_BAND_PX[tier], 0)
+    }
+  })
+})
+
+describe('the treatment: cropped and aimed on a phone, whole from sm up', () => {
   const markup = renderToStaticMarkup(
     <PosterBand src="https://example.test/p.png" heightClass={posterHeightClass('standard')} focus="49% 48%" />,
   )
 
-  it('🔴 fits the WHOLE poster, and never crops at any width', () => {
-    expect(markup).toContain('object-contain')
+  it('🔴 covers on a phone and contains from sm up — one fit per surface geometry', () => {
+    expect(markup).toContain('object-cover sm:object-contain')
     // The class it must never regain. `sm:object-cover` is precisely what left 23 of 24 covers
-    // losing more than a quarter of their artwork on desktop (LIVE-131).
-    expect(markup).not.toContain('object-cover')
+    // losing more than a quarter of their artwork on desktop (LIVE-131), and the 2026-09-04 report
+    // was about phones only.
+    expect(markup).not.toContain('sm:object-cover')
   })
 
-  it('fills the letterbox with the poster itself, at every width', () => {
-    // The blurred backdrop is what stops `contain` from reading as a rendering failure. It used to
-    // be `sm:hidden`, because the desktop band still cropped and had no bars to fill; now that it
-    // contains everywhere, the backdrop has to be everywhere too or desktop letterboxes onto bare
-    // page colour.
-    expect(markup).toContain('blur-2xl')
-    expect(markup).not.toContain('sm:hidden')
-    expect(markup).toContain('background-image:url(&quot;https://example.test/p.png&quot;)')
+  it("🔴 renders the host's focal point — the half of the report the crop exists to serve", () => {
+    // "adjusted with the focus picker". Under `contain` this attribute was inert; under the phone
+    // crop it decides which slice of the poster survives.
+    expect(markup).toContain('object-position:49% 48%')
+  })
+
+  it('fills the letterbox with the poster itself, at the width that HAS a letterbox', () => {
+    // The blurred backdrop is what stops `contain` from reading as a rendering failure, so it
+    // belongs exactly where bars can appear: from `sm` up, where the band contains. A covered phone
+    // band is opaque edge to edge, so a blurred copy under it is a decode paid for nothing on the
+    // surface least able to afford one.
+    const backdrop = markup.slice(markup.indexOf('<div', markup.indexOf('<div') + 1))
+    expect(backdrop).toContain('blur-2xl')
+    expect(backdrop).toContain('hidden')
+    expect(backdrop).toContain('sm:block')
+    expect(backdrop).toContain('background-image:url(&quot;https://example.test/p.png&quot;)')
   })
 
   it('the backdrop is inert — it is the poster again, so it carries nothing and takes no tap', () => {
@@ -88,9 +172,11 @@ describe('the poster ladder is the cover ladder with a shorter phone half', () =
     }
   })
 
-  it('and every tier IS shorter on a phone, which is the half the owner asked for', () => {
-    // "Make it shorter and more of a horizontal layout." A contain-fitted poster does not use the
-    // whole box, so the box has to come down or the saving is just blurred filler.
+  it('and every tier IS shorter on a phone, which is now what keeps the crop off the sides', () => {
+    // "Make it shorter and more of a horizontal layout" (2026-08-31). The rung was first cut
+    // because a contain-fitted poster did not use the whole box; it STAYS cut for a stronger
+    // reason, now that the phone band covers — a shorter band is a WIDER one, and `object-cover`
+    // only leaves the sides alone while the band is wider than the source.
     // Tailwind's `h-N` is N/4 rem while `h-[Xrem]` is X rem — the two ladders use both spellings
     // (h-72 is 18rem, not 72), so the comparison has to normalise before it means anything.
     const rem = (cls: string): number => {

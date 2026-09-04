@@ -1844,10 +1844,12 @@ export default async function EventDetailPage({
       // poster's cropped cover / full flyer (heroUrl); token placeholder when none.
       cover={
         heroUrl ? (
-          /* The whole poster on a phone, the shipped focal crop from `sm` up. The band used to be
-             a fixed-height box with `object-cover` on it, which sliced 47% off the width of the
-             Meld poster — its own title — on a 412px screen. components/media/poster-band.tsx
-             carries the measurement across all 24 production covers and the reasoning.
+          /* A full-bleed crop at the host's focal point on a phone, the whole poster from `sm` up.
+             The phone band is short and wide (1.86:1 at the standard tier against a 412px bleed),
+             so a square or portrait cover — 19 of the 24 in production — reaches both edges whole
+             and loses only height, which is the axis the focus picker aims.
+             components/media/poster-band.tsx carries the measurement across all 24 covers, the
+             tier-by-tier aspect table, and why the desktop half still contains.
              The uploaded cover is a PUBLIC URL the optimizer is configured for; a scanned
              poster's hero is a SIGNED URL from the private bucket (path `/object/sign/...`,
              outside next.config remotePatterns), so it must bypass the optimizer — matching
