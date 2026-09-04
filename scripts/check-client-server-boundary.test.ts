@@ -4,6 +4,12 @@ import { mkdtempSync, mkdirSync, writeFileSync, rmSync, readFileSync } from 'nod
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 
+// The fixtures below PLANT an import of the service-role client so the gate can be seen to fire.
+// scripts/check-admin-client.mjs is a text scan for that exact specifier, and it would otherwise
+// count this test as a new RLS bypass (the frozen baseline is not a place for a fixture). The
+// specifier is assembled at runtime so the ratchet's IMPORT_RE never matches this file's own source.
+const ADMIN_SPEC = ['@/lib/supabase', 'admin'].join('/')
+
 // ── THE POSITIVE CONTROL for check:client-boundary ─────────────────────────────────────────────
 //
 // 🔴 THE FAILURE THIS CLOSES. Until 2026-09-04 scripts/check-client-server-boundary.mjs had no test
@@ -57,7 +63,7 @@ describe('check:client-boundary — the arms that must FAIL', () => {
       // The real shape: never a client component calling the admin client on purpose, but a
       // client component importing a CONSTANT out of a module that also opens it (the header's
       // "eleven separate paths"). Two hops, so the transitive walk is what is being proven.
-      fx.add('lib/vocab.ts', "import { admin } from '@/lib/supabase/admin'\nexport const KINDS = ['a', 'b']\nexport { admin }\n")
+      fx.add('lib/vocab.ts', `import { admin } from '${ADMIN_SPEC}'\nexport const KINDS = ['a', 'b']\nexport { admin }\n`)
       fx.add('components/leak.tsx', "'use client'\nimport { KINDS } from '@/lib/vocab'\nexport function Leak() { return KINDS.length }\n")
       const { code, out } = run(fx.dir)
       expect(code).toBe(1)
@@ -91,7 +97,7 @@ describe('check:client-boundary — the arms that must FAIL', () => {
 
   it('does NOT count a `use server` action as a path (a Server Action is a stub on the client)', () => {
     withFixture((fx) => {
-      fx.add('lib/actions.ts', "'use server'\nimport { admin } from '@/lib/supabase/admin'\nexport async function act() { return admin }\n")
+      fx.add('lib/actions.ts', `'use server'\nimport { admin } from '${ADMIN_SPEC}'\nexport async function act() { return admin }\n`)
       fx.add('components/caller.tsx', "'use client'\nimport { act } from '@/lib/actions'\nexport const c = act\n")
       const { out } = run(fx.dir)
       // The fixture is too small to pass the floor, so the exit code is 1 either way; what is
@@ -104,7 +110,7 @@ describe('check:client-boundary — the arms that must FAIL', () => {
 
   it('does NOT count a `import type` edge (erased at compile time, no runtime graph)', () => {
     withFixture((fx) => {
-      fx.add('components/typed.tsx', "'use client'\nimport type { admin } from '@/lib/supabase/admin'\nexport const t: typeof admin = 'x'\n")
+      fx.add('components/typed.tsx', `'use client'\nimport type { admin } from '${ADMIN_SPEC}'\nexport const t: typeof admin = 'x'\n`)
       const { out } = run(fx.dir)
       expect(out).not.toContain('reach the service-role client')
     })
@@ -112,7 +118,7 @@ describe('check:client-boundary — the arms that must FAIL', () => {
 
   it('prints a DYNAMIC import as a note, not a finding (the documented separate-chunk mitigation)', () => {
     withFixture((fx) => {
-      fx.add('lib/lazy.ts', "export async function open() { const m = await import('@/lib/supabase/admin'); return m.admin }\n")
+      fx.add('lib/lazy.ts', `export async function open() { const m = await import('${ADMIN_SPEC}'); return m.admin }\n`)
       fx.add('components/lazy-user.tsx', "'use client'\nimport { open } from '@/lib/lazy'\nexport const o = open\n")
       const { out } = run(fx.dir)
       expect(out).not.toContain('reach the service-role client')

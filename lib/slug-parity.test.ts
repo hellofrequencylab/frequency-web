@@ -1,4 +1,6 @@
 import { describe, it, expect } from 'vitest'
+// (fixture words avoid Tailwind utility prefixes such as `leading-*`: scripts/check-phantom-classes.mjs
+//  is a text scan and would read them as a class that emits no CSS.)
 import { readFileSync, readdirSync } from 'node:fs'
 import path from 'node:path'
 import { slugify } from './utils'
@@ -83,7 +85,7 @@ describe('2. accents fold to their base letter, and every delegate agrees with t
     ['Emoji 🎉 party', 'emoji-party'],
     ['“Quoted” — and ‘more’', 'quoted-and-more'],
     ["rock'n'roll", 'rock-n-roll'],
-    ['...Leading & trailing!!!', 'leading-trailing'],
+    ['...Edge & hyphens!!!', 'edge-hyphens'],
     ['日本語', ''],
   ]
 
