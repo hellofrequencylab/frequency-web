@@ -35606,6 +35606,18 @@ lesson: **comments-as-data survive a regenerator; comments-as-formatting do not.
 
 
 
+## ADR-1205: three CI guards could pass over nothing; each now has a floor and a fixture that must fail (2026-09-04)
+
+**Status.** Accepted.
+
+**Context.** `check:client-boundary` — the gate keeping the service-role client out of the browser bundle — printed `✓ N client entry points, none reach the admin client` with no floor on N and no test sibling; if its root globs ever stopped matching, it would print a tick over an empty walk and CI would go green. `check:workflows` and `check:phantom` likewise had no proof they could fire. The rule they broke is the one `check-one-list.mjs` implements two files away and cites: a ✓ over nothing is the one thing a gate must never print (ADR-962). Two false statements sat inside the guard suite itself: `ci.yml`'s header explained "why this array is 20 and not 28" over an array of 24, and `check-menu.mjs` froze `rail-bank.ts` on the premise that no module opts into `placement: 'bank'` while nine rows do.
+
+**Decision.** Non-triviality floors at roughly 70% of today's readings, in the `check-one-list.mjs` idiom, and a test sibling per guard whose fixtures must fail: a planted client import of the admin client, an empty walk, a workflow step with neither `run` nor `uses`, a phantom class. The `ci.yml` counts read 24 and 48; the check-menu ledger entry states the actual `bank` state (one concept carried from module rows into `App.surfaces.editor.placement`). The two test fixtures are shaped so that text-scanning guards do not read them as findings: the boundary test assembles its planted import specifier at runtime so `check:admin-client`'s regex never matches the test's own source, rather than adding a test to a frozen baseline. Nothing in CI regenerates or diffs `lib/database.types.ts`; a report-only `gen types` drift step is drafted and not wired (HYG-052), per the rule that a gate is wired in the same change as the run that proves it.
+
+**Consequences.** SCAN-549 is `done`; HYG-052 is `open`.
+
+
+
 ## ADR-1206: four duplicated rules had started to disagree; one home each, and a parity test where two homes must remain (2026-09-04)
 
 **Status.** Accepted.

@@ -152,9 +152,15 @@ const FROZEN_MENU_DEBT = new Map([
         'journey / channel are typed here, per scope, and reach the rail without touching a catalog. This is ' +
         'the second per-scope menu ADR-927 found. It is deliberately NOT migrated in this pass: bank links are ' +
         'navigation hrefs, several are DB-id-keyed rather than slug-keyed, and ADR-515 already designed the ' +
-        'catalog path for them (`placement: "bank"`), which today no module opts into. MIGRATION: mint the rows ' +
-        'with `placement: "bank"` and delete baseBank. OWNER DECISION: doing so changes which quick links each ' +
-        'scope shows, so it is a product change, not a mechanical one.',
+        'catalog path for them (`placement: "bank"`). That path is LIVE, and it is ONE field, not two: a module ' +
+        'row\'s `placement` is carried by lib/apps/catalog.ts into `App.surfaces.editor.placement`, which ' +
+        'settings-panel reads and merges into the bank via bankForScope(extra). As of 2026-09-04 EIGHT rows ride ' +
+        'it (five account.* rows in registry.ts; space.reach, space.comms, space.billing in space-modules.ts). ' +
+        'What has NOT moved is the eleven FIXED links typed in baseBank itself. (This sentence once read "which ' +
+        'today no module opts into"; that premise expired without the ledger noticing, which is what ADR-1082 ' +
+        'says a status claim in prose does.) MIGRATION: mint the remaining rows with `placement: "bank"` and ' +
+        'delete baseBank. OWNER DECISION: doing so changes which quick links each scope shows, so it is a ' +
+        'product change, not a mechanical one.',
     },
   ],
   [
