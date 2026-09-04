@@ -37,8 +37,9 @@ export function deterministicWinback(name: string): WinbackDraft {
 }
 
 // Consent gate, factored out for testing: keep only candidates allowed to receive
-// a lifecycle email. `consents` is injected (the real one is
-// `shouldSend(id, 'email', 'lifecycle')`) so the test can stub it deterministically.
+// a lifecycle email. `consents` is injected (the real one is the unified send-gate,
+// `resolveSendGate(id, 'email', 'lifecycle')` in lib/studio/agent.ts — never the bare
+// preference read, which is not a consent check) so the test can stub it deterministically.
 export async function filterByConsent(
   candidates: WinbackCandidate[],
   consents: (profileId: string) => Promise<boolean>,

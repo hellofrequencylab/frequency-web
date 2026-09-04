@@ -612,7 +612,12 @@ export async function sendSpaceEmailDraftAsConversations(
     const muted = emailable ? await isContactTopicMuted({ email, spaceId, topic: 'marketing' }) : false
     let memberBlocked = false
     if (emailable && !muted && counterpart.profileId) {
-      memberBlocked = !(await resolveSendGate(counterpart.profileId, 'email', 'lifecycle', { email })).allowed
+      // The Space is the subject, so a member who muted THIS Space in /settings is skipped too:
+      // the gate only consults that mute when the send names its subject (meta-scan B9 D2).
+      memberBlocked = !(await resolveSendGate(counterpart.profileId, 'email', 'lifecycle', {
+        email,
+        subject: { subjectType: 'space', subjectId: spaceId },
+      })).allowed
     }
     if (!emailable || muted || memberBlocked) {
       skipped++

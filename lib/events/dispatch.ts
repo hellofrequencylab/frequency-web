@@ -4,7 +4,8 @@ import { routeNotification } from '@/lib/notifications/router'
 import { resolveEventDispatchAudience } from '@/lib/events/dispatch-audience'
 import { sendSms, isSmsProvisioned } from '@/lib/comms/sms'
 import { sendEventUpdateEmail } from '@/lib/email'
-import { shouldSend } from '@/lib/notification-preferences'
+import { resolveSendGate } from '@/lib/comms/send-gate'
+import type { PreferenceSubject } from '@/lib/notification-preferences'
 
 // Event Dispatches data layer (ADR-255 / EVENTS-REWORK A2).
 //
@@ -167,12 +168,39 @@ export async function composeEventDispatch(
 }
 
 /**
+ * The Space/Circle an Event Dispatch is "from", for the per-subject mute. A Circle-scoped event
+ * fans out to that Circle's members precisely BECAUSE they belong to it, so muting the Circle in
+ * /settings must quiet this send; the gate only honours that mute when the send names its subject
+ * (lib/comms/send-gate.ts `options.subject`), and both fan-outs below passed none (meta-scan B9 D2).
+ * Undefined for a non-Circle event: guests RSVP'd to it themselves, and there is nothing to mute.
+ */
+async function eventMuteSubject(
+  admin: ReturnType<typeof createAdminClient>,
+  eventId: string,
+): Promise<PreferenceSubject | undefined> {
+  try {
+    const { data } = await admin
+      .from('events')
+      .select('scope_type, scope_id')
+      .eq('id', eventId)
+      .maybeSingle()
+    if (data?.scope_type === 'circle' && data.scope_id) {
+      return { subjectType: 'circle', subjectId: data.scope_id }
+    }
+  } catch {
+    // no scope read — the fan-out still runs, gated on the global preference alone
+  }
+  return undefined
+}
+
+/**
  * Email the guest list for an Event Dispatch (ADR-255 email channel). Resolves the SAME
  * audience as the push fan-out (guests going/maybe/waitlist, unmuted, + the hosting Circle's
- * members), then per guest: the 'dispatches' EMAIL preference gate (shouldSend), the address
- * from the auth record, and the branded event-update template (which carries the dispatches
- * unsubscribe link; the outbox suppression guard also holds). Returns how many were emailed.
- * Best-effort: one bad recipient never aborts the batch.
+ * members), then per guest: the unified send-gate for 'dispatches' email (preference +
+ * suppression + the hosting Circle's mute), the address from the auth record, and the branded
+ * event-update template (which carries the dispatches unsubscribe link; the outbox suppression
+ * guard also holds). Returns how many were emailed. Best-effort: one bad recipient never aborts
+ * the batch.
  */
 export async function fanOutEventEmail(
   eventId: string,
@@ -191,6 +219,7 @@ export async function fanOutEventEmail(
   if (!ev) return 0
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://frequencylocal.com'
   const eventUrl = `${appUrl}/events/${ev.slug}`
+  const subject = await eventMuteSubject(admin, eventId)
 
   const { data: profs } = await admin
     .from('profiles')
@@ -202,9 +231,13 @@ export async function fanOutEventEmail(
   for (const p of profiles) {
     try {
       if (!p.auth_user_id) continue
-      if (!(await shouldSend(p.id, 'email', 'dispatches'))) continue
       const { data: { user } } = await admin.auth.admin.getUserById(p.auth_user_id)
       if (!user?.email) continue
+      // The ONE seam (ADR-169), not the bare preference read it replaced: that read skipped
+      // suppression and the per-Circle mute (meta-scan B9 H6), so a bounced address or a muted
+      // Circle still got the email. The address is resolved first so suppression can see it.
+      const gate = await resolveSendGate(p.id, 'email', 'dispatches', { email: user.email, subject })
+      if (!gate.allowed) continue
       await sendEventUpdateEmail({
         to: user.email,
         recipientName: p.display_name ?? 'there',
@@ -300,13 +333,15 @@ export async function fanOutEventPush(
   payload: PushPayload,
 ): Promise<number> {
   const recipients = await resolveEventDispatchAudience(eventId)
+  // The hosting Circle, so a member who muted it in /settings is not pushed (see eventMuteSubject).
+  const subject = await eventMuteSubject(createAdminClient(), eventId)
 
   let enqueued = 0
   for (const profileId of recipients) {
     try {
       const result = await routeNotification(
         'event.dispatch',
-        { profileId },
+        { profileId, subject },
         { title: payload.title, body: payload.body ?? '', url: payload.url ?? '/events', eventId },
       )
       enqueued += result.enqueuedCount

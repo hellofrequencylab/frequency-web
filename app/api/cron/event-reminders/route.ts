@@ -25,7 +25,7 @@ import {
   listUnsubscribeHeaders,
 } from '@/lib/email'
 import { buildUnsubscribeUrl } from '@/lib/unsubscribe-tokens'
-import { shouldSend } from '@/lib/notification-preferences'
+import { resolveSendGate } from '@/lib/comms/send-gate'
 import { sendPushToProfile } from '@/lib/push'
 import { sendSms } from '@/lib/comms/sms'
 import { recordContactInteraction } from '@/lib/crm/interactions'
@@ -233,8 +233,15 @@ async function processLead(lead: ReminderLead): Promise<{ events: number; sent: 
       const profile = profileMap.get(rsvp.profile_id)
       if (!profile || !profile.auth_user_id) continue
 
-      const wantsEmail = await shouldSend(profile.id, 'email', 'events')
-      const wantsPush  = await shouldSend(profile.id, 'push',  'events')
+      // Both legs decide through the ONE seam (ADR-169), not the bare preference reads they used:
+      // those skipped suppression, so a bounced address was still reminded (meta-scan B9 H6). The
+      // address is resolved first so suppression can see it. No subject: the member RSVP'd to this
+      // event themselves, so a Circle mute is not theirs to apply here. sendPushToProfile re-runs
+      // the push gate on its own; this pre-read only decides whether to stamp a full opt-out.
+      const { data: { user } } = await admin.auth.admin.getUserById(profile.auth_user_id)
+      const wantsEmail = !!user?.email
+        && (await resolveSendGate(profile.id, 'email', 'events', { email: user.email })).allowed
+      const wantsPush  = (await resolveSendGate(profile.id, 'push', 'events')).allowed
 
       if (!wantsEmail && !wantsPush) {
         // Fully opted out — stamp so we don't re-evaluate next run.
@@ -243,7 +250,6 @@ async function processLead(lead: ReminderLead): Promise<{ events: number; sent: 
       }
 
       if (wantsEmail) {
-        const { data: { user } } = await admin.auth.admin.getUserById(profile.auth_user_id)
         if (user?.email) {
           const eventUrl = `${appUrl}/events/${ev.slug}`
           if (lead === '7d') {

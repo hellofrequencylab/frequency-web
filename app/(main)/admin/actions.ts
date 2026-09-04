@@ -8,7 +8,8 @@ import { ok, fail, type ActionResult } from '@/lib/action-result'
 import { getCallerProfile, type CommunityRole } from '@/lib/auth'
 import type { Database } from '@/lib/database.types'
 import { sendDispatchNotificationEmail } from '@/lib/email'
-import { shouldSend } from '@/lib/notification-preferences'
+import { resolveSendGate } from '@/lib/comms/send-gate'
+import type { PreferenceSubject } from '@/lib/notification-preferences'
 import { sendPushToProfile } from '@/lib/push'
 import { slugify } from '@/lib/utils'
 import { recordEngagementEvent } from '@/lib/engagement/events'
@@ -786,22 +787,34 @@ export async function publishDispatch(id: string) {
       const { data: profiles } = await admin.from('profiles').select('id, display_name, auth_user_id').in('id', profileIds)
       if (!profiles?.length) return
 
+      // The Circle this Dispatch is from, so a member who muted it in /settings is skipped on both
+      // channels. The gate only consults the per-subject mute when the send names its subject
+      // (meta-scan B9 D2); a hub/nexus Dispatch has no mutable subject and passes none.
+      const subject: PreferenceSubject | undefined =
+        dispatch.audience_scope === 'circle' && dispatch.audience_id
+          ? { subjectType: 'circle', subjectId: dispatch.audience_id }
+          : undefined
+
       for (const profile of profiles) {
         if (!profile.auth_user_id) continue
 
-        if (await shouldSend(profile.id, 'email', 'dispatches')) {
-          const { data: { user } } = await admin.auth.admin.getUserById(profile.auth_user_id)
-          if (user?.email) {
-            await sendDispatchNotificationEmail({
-              to:                 user.email,
-              recipientName:      profile.display_name,
-              recipientProfileId: profile.id,
-              authorName,
-              dispatchTitle:      dispatch.title,
-              excerpt,
-              dispatchUrl,
-            })
-          }
+        // The ONE seam (ADR-169), not the bare preference read it replaced: that read skipped
+        // suppression and the per-Circle mute (meta-scan B9 H6). The address is resolved first so
+        // suppression can see it.
+        const { data: { user } } = await admin.auth.admin.getUserById(profile.auth_user_id)
+        const gate = user?.email
+          ? await resolveSendGate(profile.id, 'email', 'dispatches', { email: user.email, subject })
+          : null
+        if (user?.email && gate?.allowed) {
+          await sendDispatchNotificationEmail({
+            to:                 user.email,
+            recipientName:      profile.display_name,
+            recipientProfileId: profile.id,
+            authorName,
+            dispatchTitle:      dispatch.title,
+            excerpt,
+            dispatchUrl,
+          })
         }
 
         await sendPushToProfile(profile.id, {
@@ -809,7 +822,7 @@ export async function publishDispatch(id: string) {
           body:  excerpt || `New dispatch from ${authorName}`,
           url:   `/nearby/${dispatch.id}`,
           tag:   `dispatch-${dispatch.id}`,
-        }, 'dispatches')
+        }, 'dispatches', { subject })
       }
     } catch (err) {
       console.error('[publishDispatch] email fan-out failed:', err)
