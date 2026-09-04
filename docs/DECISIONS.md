@@ -35202,3 +35202,83 @@ with the window, names the QR exception, and drops "from today".
 good faith, an operator flipped a flag months later, and the console went on rendering the old world
 until someone checked the database. Prefer a surface that DERIVES its claim from the switch over one
 that describes it, because only the first kind can go stale loudly.
+
+## ADR-1196: the three parts of a per-operator product were all built, and none of them were connected (2026-09-03)
+
+A full repository and production audit ran on 2026-09-03 (routes, taxonomies, entitlements, positioning,
+backlog truth, duplication, and the live Supabase + Vercel state). The findings are filed as rows
+SCAN-531…535, PROG-BUNDLE, HYG-043…047, LIVE-146…148 and OWN-047. This entry records the decisions the
+audit forced, not the audit.
+
+🔴 **The headline finding is a wiring gap, not a missing feature.** Everything needed to hand a specific
+kind of operator a specific toolset exists and ships today, in three finished pieces that do not touch:
+
+| Piece | Where | State |
+|---|---|---|
+| The niche door | `lib/marketing/funnel-config.ts`, 5 configs each declaring `mode: { type, variant }` | Built. `getFunnelConfig` is consumed by the page render, `llms.txt` and `sitemap.ts` — **the mode never reaches signup** |
+| The curated toolset | `lib/spaces/modes.ts`, 10 operator presets | Built. `navEmphasis` reaches the console; **`defaultToggles` has zero runtime consumers** |
+| The composable gate | `spaces.entitlements` jsonb + 22 `SpaceFunctionKey`s behind `gate: { kind:'feature', fn }` | Built, and already gates the whole rail |
+
+`lib/funnels/definitions.ts` even builds `/spaces/new?mode=business:packages`, and
+`lib/funnels/routing.test.ts` asserts that URL is produced — but `app/(main)/spaces/new/page.tsx` takes
+no argument, so the parameter is dropped and the form defaults to the first choice. **A test proves the
+URL is built and nothing proves it is read.** That is the whole failure in one line.
+
+⚪ **DECIDED: ship the mechanism, not the curation** (owner, 2026-09-03). A pure `CapabilityBundle`
+registry, a `setSpaceBundle` writer and the funnel carry-through, seeded with one pass-through bundle
+that grants today's default set so **no existing Space changes behaviour**. The per-niche tool lists are
+data the owner authors afterwards with no further code change. The alternative — shipping three curated
+bundles now — would have committed two of them on zero evidence: of 21 real Spaces, roughly 18 are solo
+wellness practitioners and only the `coaches-and-healers` door has ever produced a customer.
+
+⚠️ **The bundle work is blocked by two defects in its own write path**, both verified against source:
+`spaceEntitlements` unions the billing namespace one-directionally, so a plan grant overrides a hand
+revoke for `crm`/`email`/`program` (SCAN-531); and the admin off-switch writes `def.entitlement` while
+the reader consults `def.key`, making it a silent no-op for those three plus `shop` (SCAN-532). Both are
+fixed first. The second is fixed by extracting a pure resolver rather than patching the branch in place,
+because **the defect exists precisely because that branch was unreachable from a test**.
+
+🔴 **`lib/pricing/loadout.ts` is not a bundle mechanism, despite the name.** It hard-codes
+`pushLine('business_base', true, 1)`, appends the single add-on, sums two amounts, and accepts a
+`seatQuantity` it does not use. Anyone reaching for "the bundle thing we already have" will find this and
+be wrong. Recorded here because the name will keep suggesting otherwise.
+
+⚪ **DECIDED: a consolidation is not finished until the thing it replaced is deleted.** The audit traced
+every production entry point and found 10 unreachable files of 3,438 (**0.19%**) and 4 dead tables of 271
+(**1.5%**). There is essentially no rot. What there is, is every generation of every subsystem still
+switched on: four schema generations of "a group of people", six messaging systems against a
+consolidation plan stalled at phase 2 of 4, nine block systems against a unifier whose cutover never ran,
+and `listings` beside `market_listings` with `/marketplace` existing as a 720-line cookie redirect
+between them. In 651 migrations exactly one thing has ever been properly deleted — the v1 `groups`
+schema, 650 migrations ago. **This is a retirement problem wearing the costume of a rot problem**, and the
+two have opposite fixes: rot is cleaned up once, retirement needs a rule that holds.
+
+⚠️ **Scope of the first retirement pass was set by measurement, not by appetite.** 49 of 398 pages
+(12%) are redirect-only. They are not one thing: **30** import only `next/navigation`, take no params and
+redirect to a literal — provably movable to `next.config.ts` (HYG-043). **12** carry a route param and
+nothing else, and are *probably* `:slug` rules but need a read each, so they are a separate row
+(HYG-044). **7** carry real logic — auth lookup, a cookie read, a claim-token lookup — and must stay
+routes. Batch-converting all 49 on the strength of the first number would have broken the last seven.
+
+🔴 **A comment describing a live database value went stale inside one day, in the file whose job is to be
+right about that value.** `lib/pricing/beta.ts` stated *"Production reads `{"until": null}`, so the grace
+window is GONE and `featureGatesLive()` is true: the ladder bites today."* It was accurate when written
+([ADR-1195](#adr-1195) measured exactly that). Then #2347 opened the window to `2026-10-01` and left the
+sentence standing. The fix is **not** to update the date: `AGENTS.md` forbids recording status in prose
+because prose cannot be verified, and the same sentence with a new date fails the same way on the next
+change. The production-state claim is removed and the mechanism description — which is durable — stays.
+This is the third time this repo has paid for a comment with an expiry date, and [ADR-1195](#adr-1195)
+closed with that exact warning **two commits before this one was written**.
+
+⚠️ **The guard that should have caught the retired add-ons was itself the defect.** Nine of ten Mode
+presets recommend `marketing` / `team` / `branding`, which `ADR-472` folded into plan depth and which no
+longer resolve to a purchasable item. `lib/spaces/modes.test.ts` validated them against
+`new Set(['marketing','ai','team','branding'])` — **a literal, not a reference to `ADDON_KEYS`** — so it
+green-lit the retired values by construction. The test is repointed at the real catalog so the next
+retirement fails the build (SCAN-535).
+
+⚪ **The slate inside the verified backlog is unverified prose, and half of it is stale** (HYG-047).
+`meta.slate.waves` lists 77 ids: 39 are already `done`, one (`LIVE-113`) does not exist in `entries` at
+all, and 25 open rows — including four live production incidents — have no sequencing position. This is
+`check:one-list`'s own failure mode reappearing *inside* the one list: the rows are probed, the object
+that orders them is not. It gets a probe.
