@@ -211,7 +211,7 @@ function packageScripts(): Record<string, string> {
  *  that cannot tell those apart is itself the vacuous-pass bug it was written to prevent.
  *
  *  ci.yml still names the seven guards that MOVED to vitest, in the comment explaining why the
- *  array is 20 and not 28 — so this stripping is what keeps those mentions from reading as wiring. */
+ *  array is 24 and not 48 — so this stripping is what keeps those mentions from reading as wiring. */
 function workflowText(): string {
   return readdirSync(WORKFLOW_DIR)
     .filter((f) => f.endsWith('.yml') || f.endsWith('.yaml'))
