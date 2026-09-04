@@ -13,7 +13,7 @@ Got a spreadsheet of people you want to keep track of? Upload it and they land i
 
 ## How do I import a CSV?
 
-Open **My Contacts**, choose **Import**, and follow the four steps. You can also go straight to **/connections/import**.
+Open **My Contacts**, choose **Import**, and follow the four steps. You can also go straight to **/network/contacts**.
 
 1. **Upload** your CSV. A CSV is the "comma separated values" file that Google Contacts, your email app, or a spreadsheet exports.
 2. **Check the columns.** Frequency reads your headers and lines each one up with a field like name, email, or phone. You confirm or fix any it got wrong.

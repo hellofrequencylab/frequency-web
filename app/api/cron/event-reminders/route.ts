@@ -388,7 +388,7 @@ async function sendWeekAheadEmail(params: {
     <p style="font-size:13px;color:#999;">
       You're receiving this because you RSVP'd to attend. Plans change, and that's okay.
       <a href="${eventUrl}" style="color:#999;">Update your RSVP</a> any time.
-      <a href="${appUrl}/settings/notifications" style="color:#999;">Manage preferences</a>
+      <a href="${appUrl}/settings#notifications" style="color:#999;">Manage preferences</a>
       · <a href="${unsubscribeUrl}" style="color:#999;">Unsubscribe from event reminders</a>.
     </p>
   `
@@ -404,7 +404,7 @@ ${proofLine}
 View event: ${eventUrl}
 
 Plans change, and that's okay. Update your RSVP any time.
-Manage preferences: ${appUrl}/settings/notifications
+Manage preferences: ${appUrl}/settings#notifications
 Unsubscribe from event reminders: ${unsubscribeUrl}
 `
 
