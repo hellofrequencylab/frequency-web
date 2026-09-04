@@ -466,6 +466,10 @@ const WIZARD_CHOICES: readonly { type: SpaceType; variant: ModeVariant; label: s
   { type: 'business', variant: 'product', label: 'Product business', hint: 'Catalog and storefront' },
   { type: 'business', variant: 'membership', label: 'Studio or gym', hint: 'Classes and memberships' },
   { type: 'business', variant: 'ticketed', label: 'Event space', hint: 'Tickets and check in' },
+  // Added 2026-09-03 (ADR-1196). The community-builders niche funnel routes to `business:cohort`, and
+  // the wizard did not offer it, so that door silently landed every arrival on `Coach / packages` —
+  // the first choice. Label and hint are this profile's own `modeLabel` and `focusLabel`, not new copy.
+  { type: 'business', variant: 'cohort', label: 'Coach', hint: 'Programs and enrollment' },
   { type: 'nonprofit', variant: 'donations', label: 'Nonprofit', hint: 'Programs and donations' },
 ]
 

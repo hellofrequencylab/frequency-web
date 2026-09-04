@@ -5812,14 +5812,14 @@
     {
       "id": "SCAN-533",
       "title": "The niche funnel builds ?mode= and the create-a-Space wizard never reads it",
-      "status": "open",
+      "status": "done",
       "lane": "live",
       "size": "XS",
       "source": {
         "file": "docs/DECISIONS.md",
         "ref": "ADR-1196, the 2026-09-03 repair and rework audit"
       },
-      "detail": "lib/funnels/definitions.ts builds operator destinations as `/spaces/new?mode=business:packages`, and lib/funnels/routing.test.ts asserts that URL is produced. But app/(main)/spaces/new/page.tsx takes NO argument — it is `export default async function NewSpacePage()` — so Next hands it searchParams that nothing reads, and CreateSpaceForm falls back to `choices[0]?.id`, which is 'Coach'.\n\nThe visible consequence: every operator arriving from a niche funnel is asked to re-declare the thing they just clicked, and if they accept the default they land on the wrong Mode regardless of which door they came through. The page's own comment claims the wizard \"auto-includes every operating model the registry offers (no hardcoded list here)\" while WIZARD_CHOICES is a hardcoded 7 of the registry's 10.\n\nThis is the first link of the funnel -> bundle chain (PROG-BUNDLE) and is worth fixing on its own.",
+      "detail": "lib/funnels/definitions.ts builds operator destinations as `/spaces/new?mode=business:packages`, and lib/funnels/routing.test.ts asserts that URL is produced. But app/(main)/spaces/new/page.tsx takes NO argument — it is `export default async function NewSpacePage()` — so Next hands it searchParams that nothing reads, and CreateSpaceForm falls back to `choices[0]?.id`, which is 'Coach'.\n\nThe visible consequence: every operator arriving from a niche funnel is asked to re-declare the thing they just clicked, and if they accept the default they land on the wrong Mode regardless of which door they came through. The page's own comment claims the wizard \"auto-includes every operating model the registry offers (no hardcoded list here)\" while WIZARD_CHOICES is a hardcoded 7 of the registry's 10.\n\nThis is the first link of the funnel -> bundle chain (PROG-BUNDLE) and is worth fixing on its own.\n\n── FIXED 2026-09-03, AND THE FIX FOUND A SECOND DEFECT IN THE SAME SEAM. Wiring searchParams was the easy half. NICHE_FUNNEL_DESTINATIONS routes `communities` to `business:cohort`, and WIZARD_CHOICES offered seven Modes that did not include it — so even once the parameter was read, that door would still have landed every arrival on 'Coach'. The cohort choice is added using the registry profile's OWN modeLabel and focusLabel rather than new copy, and app/(main)/spaces/new/mode-param.test.ts now fails the build if any niche destination names a Mode the wizard cannot show. Verified adversarially: removing the choice again makes the test name the exact broken pair.",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e \"const fs=require('fs');const P='app/(main)/spaces/new/page.tsx',T='app/(main)/spaces/new/mode-param.test.ts';if(!fs.existsSync(P))process.exit(79);const p=fs.readFileSync(P,'utf8');const reads=/searchParams/.test(p);const proven=fs.existsSync(T)&&/business:packages/.test(fs.readFileSync(T,'utf8'));process.exit(reads&&proven?0:1)\"",

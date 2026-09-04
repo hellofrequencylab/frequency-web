@@ -23,12 +23,30 @@ export const metadata = {
   robots: { index: false, follow: false },
 }
 
-export default async function NewSpacePage() {
+export default async function NewSpacePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ mode?: string | string[] }>
+}) {
   // Gate: only an authenticated member may create a space (the action re-checks server-side).
   const profileId = await getMyProfileId()
   if (!profileId) redirect('/sign-in')
 
   const choices = listModeChoices()
+
+  // THE NICHE FUNNEL'S ANSWER, CARRIED THROUGH (ADR-1196). lib/funnels/definitions.ts builds
+  // `/spaces/new?mode=<type>:<variant>` so an operator arriving from /for/<niche> lands pre-seeded in
+  // the Mode that door sold them. This page took no argument until now, so the hint was dropped and the
+  // form fell back to `choices[0]` — every niche door landed on "Coach", and the visitor was asked to
+  // re-declare the thing they had just clicked. A test in lib/funnels/routing.test.ts asserted the URL
+  // was BUILT; nothing asserted it was READ.
+  //
+  // The id format is `${type}:${variant}`, identical to ModeChoice.id, so the match is a lookup. An
+  // unknown or absent value falls back to the first choice exactly as before: this narrows nothing and
+  // cannot 404, because a stale funnel link must still land somewhere usable.
+  const raw = (await searchParams).mode
+  const requested = Array.isArray(raw) ? raw[0] : raw
+  const initialChoiceId = choices.find((c) => c.id === requested)?.id
 
   return (
     <FocusTemplate
@@ -55,7 +73,7 @@ export default async function NewSpacePage() {
         <ArrowRight className="h-4 w-4 shrink-0 text-primary-strong" aria-hidden />
       </Link>
 
-      <CreateSpaceForm choices={choices} />
+      <CreateSpaceForm choices={choices} initialChoiceId={initialChoiceId} />
     </FocusTemplate>
   )
 }
