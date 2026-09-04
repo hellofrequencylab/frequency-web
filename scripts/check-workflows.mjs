@@ -48,8 +48,15 @@ import { join } from 'node:path'
 const DIR = '.github/workflows'
 
 /** A repo this size never legitimately drops to a handful of workflows. If it does, the
- *  scan is broken (wrong cwd, bad filter) and a ✓ would be a lie. */
-const MIN_WORKFLOWS = 5
+ *  scan is broken (wrong cwd, bad filter) and a ✓ would be a lie.
+ *
+ *  Raised 5 -> 8 on 2026-09-04, ~70% of that day's reading (11 workflow files), so it sits where
+ *  the other floors in this suite sit: a genuine deletion has room, a half-read directory does
+ *  not. scripts/check-workflows.test.ts drives every arm — the runless step, the duplicate key,
+ *  this floor, the missing directory — against fixtures that must FAIL, and the block-scalar
+ *  false positive above against one that must PASS; until then this script had no sibling and
+ *  no proof outside its own header that it could fire. */
+const MIN_WORKFLOWS = 8
 
 /**
  * Blank out the BODY of every block scalar (`key: |`, `key: >`, with any chomp/indent
