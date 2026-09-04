@@ -10,6 +10,7 @@
 // Non Profit).
 
 import { ANNUAL_MONTHS_FREE } from '@/lib/billing/pricing-keys'
+import { formatPriceCents } from '@/lib/commerce/types'
 import type { PricingDefaults, TierPrice } from './settings'
 import { SPACE_PLAN_LABEL, type SpacePlan } from './plans'
 import { yearlyFromMonthly } from '@/lib/billing/pricing-keys'
@@ -24,16 +25,15 @@ export const PAID_SPACE_PLANS: readonly Exclude<SpacePlan, 'free'>[] = [
 ]
 
 /** Cents to a plain price label, e.g. 900 -> "$9", 950 -> "$9.50". Whole dollars drop the cents.
- *  USD only (mirrors the membership join card). PURE. */
+ *  USD only (mirrors the membership join card). PURE.
+ *
+ *  ONE rule, not seven. This body used to be a verbatim copy of the formatter in lib/commerce/types.ts,
+ *  and six more copies of it lived under five other names (B5 dead-code sweep, 2026-09-04). They
+ *  agreed by luck; the seventh, lib/finance/dashboard.ts, did not ("$25.00"). Every pricing surface
+ *  now delegates to formatPriceCents, so a change to the house price format lands everywhere at once.
+ *  The signature stays USD-only on purpose: pricing_settings has no currency column. */
 export function formatCents(cents: number): string {
-  const dollars = cents / 100
-  const whole = Number.isInteger(dollars)
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: whole ? 0 : 2,
-    maximumFractionDigits: 2,
-  }).format(dollars)
+  return formatPriceCents(cents)
 }
 
 /** One row in a price ladder the UI maps over (a member tier or a space plan). */

@@ -1,4 +1,5 @@
 import type { Data } from '@/lib/page-editor/types'
+import { slugify } from '@/lib/utils'
 import { isWellFormedSpaceDoc } from '@/lib/page-editor/templates/space'
 import { generateDefaultSpacePage } from '@/lib/page-editor/templates/space-default'
 
@@ -78,13 +79,9 @@ export function isValidPageSlug(slug: string): boolean {
 /** Derive a url-safe slug from a human label (lowercase, kebab, stripped). Empty when the
  *  label has no url-safe characters (the caller then rejects or asks for a slug). */
 export function slugifyLabel(label: string): string {
-  return label
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, MAX_SLUG_LEN)
-    .replace(/-+$/g, '')
+  // The shared rule (lib/utils.ts slugify) plus this module's cap and the re-strip of a hyphen the
+  // cut can leave behind; it used to carry its own copy of the rule, which folded no accents.
+  return slugify(label).slice(0, MAX_SLUG_LEN).replace(/-+$/g, '')
 }
 
 function asRecord(preferences: unknown): Record<string, unknown> | null {
