@@ -52,7 +52,8 @@
             "HYG-043",
             "HYG-044",
             "HYG-046",
-            "SCAN-538"
+            "SCAN-538",
+            "SCAN-539"
           ]
         },
         {
@@ -72,7 +73,8 @@
             "LIVE-128",
             "SCAN-502",
             "SCAN-521",
-            "SCAN-537"
+            "SCAN-537",
+            "HYG-049"
           ]
         },
         {
@@ -163,7 +165,8 @@
             "OWN-047",
             "LIVE-127",
             "SCAN-205",
-            "HYG-033"
+            "HYG-033",
+            "LIVE-153"
           ]
         }
       ],
@@ -6123,6 +6126,74 @@
         "kind": "cmd",
         "cmd": "node -e \"const fs=require('fs');const S='lib/site.ts',T='lib/site.cta.test.ts';if(!fs.existsSync(S)||!fs.existsSync(T))process.exit(79);const s=fs.readFileSync(S,'utf8');const two=/APPROVED_CTA_LABELS/.test(s)&&/OPERATOR_CTA_LABEL/.test(s);const f=fs.readFileSync('lib/marketing/funnel-config.ts','utf8');const derived=/FUNNEL_CTA_LABEL[^=]*=\\\\s*OPERATOR_CTA_LABEL/.test(f);process.exit(two&&derived?0:1)\"",
         "note": "Passes when the approved set exists as data AND the niche doors derive their label from it rather than declaring a third. The per-template sweep is enforced continuously by lib/site.cta.test.ts, which is the stronger half."
+      }
+    },
+    {
+      "id": "LIVE-152",
+      "title": "The Connect column list named a column that does not exist, so payouts could never start",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/billing/connect.ts",
+        "ref": "ADR-1198, the payouts activation of 2026-09-04"
+      },
+      "detail": "COLS - the column list every Stripe Connect read shares - ended `..., email, display_name`, and public.profiles has never had an `email` column (the address lives on auth.users). PostgREST rejects a select naming an unknown column, so EVERY read through that constant returned { data: null, error: 42703 }. Every caller destructured only `data`, and a failed query is indistinguishable from a profile with no connected account.\n\nTwo consequences, both live on the day payouts were first switched on:\n  1. getConnectStatus reported accountId null for a profile that HAD acct_1U47bWBBboHg5HWM, so /settings#payouts offered \"Set up payouts\" to an operator already onboarded.\n  2. getOrCreateConnectedAccount never saw the existing account and took the CREATE branch on every click. The production log for the failing click reads \"You must complete your platform profile to use Connect and create live connected accounts\" - an error about a call that should never have been made at all.\n\nFIXED: the list is now `satisfies readonly ProfileColumn[]` against the generated schema types, so re-adding a phantom column is a COMPILE error naming it (verified by mutation: TS2322). The create-or-reuse decision is extracted as the pure connectReadOutcome(), which refuses to decide when the read errored rather than treating null as \"no account\" - a failed read must never mint a duplicate Stripe account. lib/profiles/account-email.test.ts, the repo-wide guard written for this exact bug in an earlier incarnation, had two blind spots that let it through: it matched inline string selects only (missing `.select(COLS)`) and looked for the single name `email`. It now checks every named column against the generated types.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const c=fs.readFileSync('lib/billing/connect.ts','utf8');const g=fs.readFileSync('lib/profiles/account-email.test.ts','utf8');const bound=c.includes('satisfies readonly ProfileColumn[]');const pure=c.includes('export function connectReadOutcome');const refuses=/kind: 'unknown'/.test(c);const cols=g.includes('knownProfileColumns');process.exit(bound&&pure&&refuses&&cols?0:1)\"",
+        "note": "Passes when the column list is bound to the generated types, the create-or-reuse decision is pure and refuses on a failed read, and the repo-wide guard checks columns rather than one name."
+      }
+    },
+    {
+      "id": "LIVE-153",
+      "title": "The Stripe Connect platform profile is incomplete, so no connected account can be created",
+      "status": "open",
+      "lane": "owner",
+      "size": "S",
+      "source": {
+        "file": "docs/DECISIONS.md",
+        "ref": "ADR-1093 and ADR-1198"
+      },
+      "detail": "Production log, 2026-09-04 20:00:39Z, req_i1UvetWAbrrOM7:\n  [settings/billing startPayoutOnboarding] You must complete your platform profile to use Connect and create live connected accounts. Visit your dashboard at https://dashboard.stripe.com/connect/accounts/overview to answer the questionnaire.\n\nThis is the SAME error ADR-1093 recorded on 2026-08-20. LIVE-152 removes the reason the app was calling accounts.create at all (it should reuse the existing acct_), so this may no longer block onboarding for a profile that already has an account - but it WILL block the first new operator, and it is owner-only to fix: the questionnaire is a Stripe dashboard form.\n\nTHE ANSWERS MATTER AND WERE WRONG LAST TIME (ADR-1093, tracked as LIVE-074). The profile on file says direct charges, fees_collector: account, losses_collector: stripe, dashboard: full - the STANDARD responsibility set. The code creates EXPRESS accounts (lib/billing/connect.ts) and uses DESTINATION charges in all four channels (tips, tickets, memberships, commerce). Answer to match the code, not the previous answers.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "A connected account can be created end to end: /settings#payouts starts Stripe onboarding without a platform-profile error, and profiles.stripe_details_submitted flips true for the completing account.",
+        "checked": "2026-09-04"
+      }
+    },
+    {
+      "id": "SCAN-539",
+      "title": "Swallowed PostgREST errors silently reverse decisions in the money and permission paths",
+      "status": "open",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "lib/commerce/reviews.ts",
+        "ref": "ADR-1198, the sweep that followed LIVE-152"
+      },
+      "detail": "LIVE-152 was one instance of a pattern: `const { data } = await db()...` with `error` neither destructured nor checked. A PostgREST error arrives in `error`, not as a throw, so a try/catch documented as \"FAIL-SAFE on any error\" does not engage - the code silently takes the data-is-null branch instead.\n\n83 such reads exist. Most degrade to an empty list, which is harmless. These do not, ranked by how wrong the answer is:\n  1. lib/commerce/reviews.ts:173 - a failed read defaults status to 'visible', UN-HIDING a review an operator moderated. The comment three lines above says moderation must be durable \"else moderation is trivially reversible by the author\".\n  2. lib/billing/space-subscriptions.ts:155 - priorSubscriptionId null means a canceled subscription never lapses founding status, so a Space keeps a founding rate it stopped paying for.\n  3. lib/billing/tickets.ts:382 and lib/commerce/checkout.ts:75 - membership_tier null prices at the free rung, charging a Crew seller 10% instead of 8%.\n  4. lib/billing/checkout.ts:56,220 and space-plan-checkout.ts:246 and bundle-checkout.ts:65 - stripe_customer_id null mints a DUPLICATE Stripe customer per checkout; at :220 createBillingPortal tells a paying member they have no billing to manage.\n  5. lib/billing/tickets.ts:211 - tier defaults to 'free' behind the member_only gate, denying a paying Crew member their own ticket.\n  6. lib/pricing/gamification-access.ts:76 - a full-access paid member is downgraded to earn_only.\n  7. lib/pricing/dunning.ts:36 - fails OPEN: a past_due member never sees the recovery banner and keeps access.\n\nNot a mechanical sweep: each needs a direction decided (fail open or closed) and stated. Do the money ones first.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const f=['lib/commerce/reviews.ts','lib/billing/space-subscriptions.ts','lib/billing/tickets.ts','lib/billing/checkout.ts'];const bad=f.filter(p=>{const s=fs.readFileSync(p,'utf8');return !/const \\\\{ data, error \\\\}/.test(s)});process.exit(bad.length===0?0:1)\"",
+        "note": "Passes when the four highest-severity files destructure `error` at all. A coarse gate on purpose: it measures that someone looked, and each fix still has to choose a direction."
+      }
+    },
+    {
+      "id": "HYG-049",
+      "title": "A synced Stripe price id carries no account or livemode, so a foreign price is indistinguishable from a missing one",
+      "status": "open",
+      "lane": "hygiene",
+      "size": "S",
+      "source": {
+        "file": "lib/billing/pricing-prices.ts",
+        "ref": "ADR-1198"
+      },
+      "detail": "pricing_stripe_prices.stripe_price_id is a bare text column. Nothing records WHICH Stripe account or livemode minted it, and resolveStripePriceId does no validation - the id goes straight into checkout.sessions.create. If the platform's secret key is ever rotated to a different account (a new license, a test/live swap), every row silently points at a foreign price and Stripe answers \"No such price\", which is indistinguishable from a transient outage: viaStripe renders \"Stripe could not complete that just now\" on both.\n\nbillingEnabled() is only \"is STRIPE_SECRET_KEY set\" - it does not care which account. Verified 2026-09-04: all four plan rows (business_base and collective_base, month and year) are present and unarchived, synced 2026-08-19, so nothing is broken TODAY. The gap is that nothing would tell us if it were.\n\nADR-1085's own lesson applies - the guard belongs before the write rather than in a report afterwards: record the account id and livemode on the row at sync time and refuse to resolve a row minted by a different account than the live key.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const s=fs.readFileSync('lib/billing/pricing-prices.ts','utf8');process.exit(/livemode|stripe_account/.test(s)?0:1)\"",
+        "note": "Passes when a synced price row records the account or livemode it came from, so a foreign id can be named rather than guessed at."
       }
     }
   ]

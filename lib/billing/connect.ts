@@ -16,6 +16,7 @@
 
 import type Stripe from 'stripe'
 import type { SupabaseClient } from '@supabase/supabase-js'
+import type { Database } from '@/lib/database.types'
 import { stripe, appUrl, billingEnabled } from './stripe'
 import { hostPayoutsEnabledFlag } from '@/lib/platform-flags'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -54,17 +55,50 @@ export interface ConnectStatus {
   ready: boolean
 }
 
-interface ProfileConnectRow {
+export interface ProfileConnectRow {
   stripe_account_id: string | null
   stripe_charges_enabled: boolean | null
   stripe_payouts_enabled: boolean | null
   stripe_details_submitted: boolean | null
-  email?: string | null
   display_name?: string | null
 }
 
-const COLS =
-  'stripe_account_id, stripe_charges_enabled, stripe_payouts_enabled, stripe_details_submitted, email, display_name'
+/** Every column name on `public.profiles`, straight from the generated schema types. */
+type ProfileColumn = keyof Database['public']['Tables']['profiles']['Row']
+
+/**
+ * 🔴 THE COLUMN LIST IS TYPE-CHECKED AGAINST THE REAL SCHEMA, AND THAT IS THE WHOLE POINT.
+ *
+ * This list used to be a hand-written string that ended `…, email, display_name` — and
+ * `profiles.email` HAS NEVER EXISTED. PostgREST rejects a select naming an unknown column, so every
+ * read through this constant returned `{ data: null, error: <42703> }`; every caller destructured
+ * only `data` and read the null as a fact about the profile rather than a failed query. The damage
+ * was not cosmetic:
+ *
+ *   · `getConnectStatus` reported accountId: null for a profile that HAD a connected account, so the
+ *     settings card offered "Set up payouts" to someone already onboarded.
+ *   · `getOrCreateConnectedAccount` never saw the existing `acct_…`, so it took the create branch
+ *     EVERY time — minting a duplicate Express account per click, or throwing and surfacing as
+ *     "Stripe could not complete that just now."
+ *
+ * `satisfies readonly ProfileColumn[]` makes a repeat a COMPILE error rather than a silent runtime
+ * null: re-add `'email'` here and `pnpm exec tsc` fails naming it. A test could only have caught
+ * this against a live database; the generated types are already the schema, so the compiler is the
+ * cheaper and stricter gate.
+ *
+ * The Stripe `email` prefill that string was reaching for is gone rather than repaired: it was
+ * always `undefined` in practice, Stripe's hosted onboarding collects the address itself, and the
+ * real source is `auth.users.email` (a separate admin read), not this table.
+ */
+const CONNECT_COLUMNS = [
+  'stripe_account_id',
+  'stripe_charges_enabled',
+  'stripe_payouts_enabled',
+  'stripe_details_submitted',
+  'display_name',
+] as const satisfies readonly ProfileColumn[]
+
+const COLS = CONNECT_COLUMNS.join(', ')
 
 function db(): SupabaseClient {
   return createAdminClient()
@@ -85,9 +119,15 @@ export function toStatus(row: ProfileConnectRow | null): ConnectStatus {
   }
 }
 
-/** Read payout-readiness for a profile (UI). Never calls Stripe. */
+/** Read payout-readiness for a profile (UI). Never calls Stripe.
+ *
+ *  A read error still degrades to the empty status — a settings page must not throw an error
+ *  boundary over a payouts card — but it is LOGGED rather than swallowed. Reading a failed query as
+ *  "this profile has no account" is exactly how the `email` defect above stayed invisible, and
+ *  AGENTS.md's rule applies: every fail-safe needs something that notices it fired. */
 export async function getConnectStatus(profileId: string): Promise<ConnectStatus> {
-  const { data } = await db().from('profiles').select(COLS).eq('id', profileId).maybeSingle()
+  const { data, error } = await db().from('profiles').select(COLS).eq('id', profileId).maybeSingle()
+  if (error) console.error('[connect] getConnectStatus profile read failed', error.message)
   return toStatus(data as ProfileConnectRow | null)
 }
 
@@ -109,10 +149,14 @@ export async function getConnectReadyMap(profileIds: string[]): Promise<Record<s
   const ids = [...new Set(profileIds.filter(Boolean))]
   if (ids.length === 0) return {}
   if (!(await payoutsLive())) return {}
-  const { data } = await db()
+  const { data, error } = await db()
     .from('profiles')
     .select('id, stripe_charges_enabled, stripe_payouts_enabled')
     .in('id', ids)
+  // Fails CLOSED by design (an absent id reads as not-ready everywhere, which is the safe direction
+  // for "will this money land?"), but it says so now. Its three siblings were changed to notice a
+  // failed read in the same pass; leaving this one silent is how the file drifts back.
+  if (error) console.error('[connect] getConnectReadyMap profile read failed', error.message)
   const out: Record<string, boolean> = {}
   for (const row of (data ?? []) as {
     id: string
@@ -124,21 +168,52 @@ export async function getConnectReadyMap(profileIds: string[]): Promise<Record<s
   return out
 }
 
+/**
+ * What a profile read means for the create-or-reuse decision. PURE + total.
+ *
+ * 🔴 A FAILED READ AND AN ABSENT ACCOUNT ARE OPPOSITE INSTRUCTIONS, and collapsing them is the whole
+ * defect this function exists to prevent. Supabase hands back `data: null` in both cases: when the
+ * profile genuinely has no connected account ("make one"), and when the query itself failed ("you do
+ * not know yet"). The `email` typo above made every read the second kind while the caller read it as
+ * the first, so the create branch ran on every click — minting a duplicate Express account each
+ * time, each one orphaned from the profile that already had one.
+ *
+ * Separated out because the decision is the only interesting part and mocking a Supabase client to
+ * reach it would test the mock (SCAN-532's lesson, one directory over).
+ */
+export type ConnectReadOutcome =
+  | { kind: 'unknown'; message: string }
+  | { kind: 'existing'; accountId: string }
+  | { kind: 'create'; displayName: string | null }
+
+export function connectReadOutcome(
+  row: ProfileConnectRow | null,
+  error: { message: string } | null | undefined,
+): ConnectReadOutcome {
+  if (error) return { kind: 'unknown', message: error.message }
+  if (row?.stripe_account_id) return { kind: 'existing', accountId: row.stripe_account_id }
+  return { kind: 'create', displayName: row?.display_name ?? null }
+}
+
 /** The profile's connected-account id, creating an Express account if none exists. */
 export async function getOrCreateConnectedAccount(profileId: string): Promise<string | null> {
   if (!stripe) return null
-  const { data } = await db().from('profiles').select(COLS).eq('id', profileId).maybeSingle()
-  const row = data as ProfileConnectRow | null
-  if (row?.stripe_account_id) return row.stripe_account_id
+  const { data, error } = await db().from('profiles').select(COLS).eq('id', profileId).maybeSingle()
+
+  const outcome = connectReadOutcome(data as ProfileConnectRow | null, error)
+  // Fail loudly rather than create on a read we could not trust; `viaStripe` renders it inline.
+  if (outcome.kind === 'unknown') {
+    throw new Error(`Could not read the payout profile (${outcome.message}).`)
+  }
+  if (outcome.kind === 'existing') return outcome.accountId
 
   const account = await stripe.accounts.create({
     type: 'express',
-    email: row?.email ?? undefined,
     capabilities: {
       card_payments: { requested: true },
       transfers: { requested: true },
     },
-    business_profile: { name: row?.display_name ?? undefined },
+    business_profile: { name: outcome.displayName ?? undefined },
     // The webhook + persistAccount resolve an Account back to its owner by this.
     metadata: { profile_id: profileId },
   })
@@ -179,11 +254,12 @@ export async function persistAccount(account: Stripe.Account): Promise<ConnectSt
  *  complementing the async account.updated webhook). Returns the refreshed status. */
 export async function syncConnectedAccount(profileId: string): Promise<ConnectStatus> {
   if (!stripe) return toStatus(null)
-  const { data } = await db()
+  const { data, error } = await db()
     .from('profiles')
     .select('stripe_account_id')
     .eq('id', profileId)
     .maybeSingle()
+  if (error) throw new Error(`Could not read the payout profile (${error.message}).`)
   const accountId = (data as { stripe_account_id: string | null } | null)?.stripe_account_id
   if (!accountId) return toStatus(null)
   const account = await stripe.accounts.retrieve(accountId)
@@ -193,11 +269,12 @@ export async function syncConnectedAccount(profileId: string): Promise<ConnectSt
 /** Express dashboard login link so a connected host can manage payouts/bank/details. */
 export async function createDashboardLink(profileId: string): Promise<string | null> {
   if (!stripe) return null
-  const { data } = await db()
+  const { data, error } = await db()
     .from('profiles')
     .select('stripe_account_id')
     .eq('id', profileId)
     .maybeSingle()
+  if (error) throw new Error(`Could not read the payout profile (${error.message}).`)
   const accountId = (data as { stripe_account_id: string | null } | null)?.stripe_account_id
   if (!accountId) return null
   const link = await stripe.accounts.createLoginLink(accountId)
