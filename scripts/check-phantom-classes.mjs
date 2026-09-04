@@ -37,6 +37,12 @@ import { dirname, join, resolve } from 'node:path'
 // surface. Those were outside this gate entirely until 2026-08-05, so the green tick was not
 // evidence about them — the exact blind spot the DAWN pass then moved real tokens into.
 const ROOTS = ['app', 'components', 'lib']
+/** Non-triviality floor on the CANDIDATE count (ADR-962). The self-check further down proves the
+ *  compiler half works; nothing proved the EXTRACTOR half had looked. A regex that stopped
+ *  matching, a wrong cwd or a root that moved would each leave only the DECLARED list, and the
+ *  ✓ would read "19 classes checked" with the same confidence as "270". ~70% of the 2026-09-04
+ *  reading (270). Lower it only beside a real deletion, and name it — never to go green. */
+const MIN_CANDIDATES = 190
 /** Prefixes whose vocabulary is OURS — a miss here is a real token that does not exist.
  *  `ring` joined the list when tier glows moved onto ring utilities. */
 const OWNED = /^(?:bg|text|border|rounded|tracking|leading|shadow|lift|ring)-[a-z][a-z0-9-]*$/
@@ -159,6 +165,16 @@ if (phantom.length > 0) {
   console.error('  className is just a string to them — only the compiler knows the vocabulary.')
   console.error('  Fix by using the real token (see app/globals.css) or, if the token SHOULD')
   console.error('  exist, define it there and bridge it in @theme inline.')
+  process.exit(1)
+}
+
+// After the phantom report on purpose: a named phantom is the more actionable failure, and the
+// sibling test's fixtures are small enough to trip this floor while still proving that arm fires.
+if (candidates.length < MIN_CANDIDATES) {
+  console.error(`✗ Phantom classes: only ${candidates.length} candidate class(es) extracted, expected at least ${MIN_CANDIDATES}.`)
+  console.error('  A ✓ over nothing is the one thing a gate must never print (ADR-962). Either the extractor is')
+  console.error(`  broken (wrong cwd, a moved root, a regex that stopped matching) or the tree really shrank and`)
+  console.error('  MIN_CANDIDATES needs updating beside that deletion.')
   process.exit(1)
 }
 
