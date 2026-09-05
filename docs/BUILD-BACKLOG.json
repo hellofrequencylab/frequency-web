@@ -72,7 +72,8 @@
             "LIVE-173",
             "LIVE-171",
             "LIVE-175",
-            "LIVE-176"
+            "LIVE-176",
+            "LIVE-177"
           ]
         },
         {
@@ -8487,6 +8488,23 @@
       "verify": {
         "kind": "manual",
         "evidence": "2026-09-05: `pnpm exec vitest run scripts/backlog-contract.test.ts` on a 4-core container reports SCAN-510 at 7.18s against the 4.5s ceiling, alone and idle; the same run is green on the CI runner. Closes when the probe measures the same consequence under the ceiling on both.",
+        "checked": "2026-09-05"
+      }
+    },
+    {
+      "id": "LIVE-177",
+      "title": "Eight help articles were flagged for review by three scan-two splits, and all three merged without that review",
+      "status": "open",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "docs/SUPPORT-SYSTEM.md",
+        "ref": "§6 help-autodoc"
+      },
+      "detail": "The help-autodoc workflow (docs/SUPPORT-SYSTEM.md §6) reviews the help articles covering the areas a PR touches and posts an advisory comment naming the ones to check BEFORE merge. It is advisory and blocks nothing, and on the 2026-09-05 scan-two merge run it was not acted on: three splits merged carrying open advisories. E4 (#2370) flagged getting-started/how-to-rsvp.md and groups/events.md for guest seat claim and event access changes. D4a (#2374) flagged getting-started/your-feed.md, getting-started/notifications.md, groups/events.md, connecting/messages.md and safety/meeting-people-safely.md for feed loading, notification delivery, dispatch, group message creation and blocking. D6 (#2377) flagged groups/events.md, the-quest/zaps-and-gems.md and membership/partners.md for cancellation refunds, tips and partner offers. Eight distinct articles, all present in the tree. THE ADVISORY IS A PROMPT, NOT A FINDING: it says these articles COVER the changed areas, not that any is now wrong, so the work is to read each against the shipped behaviour and correct only what actually drifted. Three other splits (D1 #2372, D3 #2373, D4b #2375) got a clean bill from the same workflow, which is the control that says the flagging discriminates. ⚠️ Note what this row is NOT: it is not a case for making the advisory blocking. The gate is deliberately advisory because a copy judgement cannot be made by a workflow, and a blocking gate that cannot fire honestly gets routed around (ADR-970). What went wrong is that nobody read the comments, which is a process gap in the merge run, not a defect in the gate.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "2026-09-05: help-autodoc comments on #2370, #2374 and #2377 name eight distinct articles under content/help/, each of which exists in the tree; all three pull requests merged with the advisory unaddressed. Closes when each named article has been read against the shipped behaviour and either corrected or confirmed accurate.",
         "checked": "2026-09-05"
       }
     }
