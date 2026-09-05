@@ -213,7 +213,7 @@ function eventsTable(): EventsCountQuery {
 
 // A defensive ceiling so the query can never scan an unbounded table; filtering rides over this set.
 // A generous headroom for any realistic count of networked Spaces in the directory.
-const DISCOVERY_FETCH_LIMIT = 200
+export const DISCOVERY_FETCH_LIMIT = 200
 
 /** PostgREST `.or()` escaping: a value placed inside `ilike.*…*` must not carry the syntax
  *  characters that delimit the filter list (`,` `(` `)`) or the wildcard (`*`/`%`). Strip them so a

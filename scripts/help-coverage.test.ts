@@ -25,6 +25,7 @@ const article = (over: Partial<HelpArticle> = {}): HelpArticle => ({
   featureKeys: [],
   status: 'published',
   body: '',
+  faq: [],
   ...over,
 })
 

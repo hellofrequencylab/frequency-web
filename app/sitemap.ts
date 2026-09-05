@@ -12,7 +12,7 @@ import { getSeriesDisplayConfig } from "@/lib/events/series-config";
 import { listPublicJourneys } from "@/lib/journey-plans";
 import { listActivePartners } from "@/lib/partners/read";
 import { listPublicPractices } from "@/lib/practices";
-import { listNetworkedSpaces } from "@/lib/spaces/discovery";
+import { DISCOVERY_FETCH_LIMIT, listNetworkedSpaces } from "@/lib/spaces/discovery";
 import { listShopProducts, listMarketListings } from "@/lib/commerce/products";
 import { listHousingListings } from "@/lib/listings/housing";
 import { listListings as listClassifieds } from "@/lib/marketplace";
@@ -175,6 +175,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     })),
     // The entity Spaces directory (the networked profile network) + the indexable pricing page.
     { url: `${SITE_URL}/spaces`, changeFrequency: "daily", priority: 0.8 },
+    // The llms.txt pair. Convention-probing agents find these by path, but anything that
+    // discovers URLs from the sitemap did not — they were reachable only by guessing.
+    // Deliberately NOT advertised via a robots.txt directive: `Llms:` is not part of the
+    // robots grammar and a strict parser can discard the rest of the block after it.
+    { url: `${SITE_URL}/llms.txt`, changeFrequency: "weekly", priority: 0.5 },
+    { url: `${SITE_URL}/llms-full.txt`, changeFrequency: "weekly", priority: 0.5 },
     { url: `${SITE_URL}/pricing`, changeFrequency: "monthly", priority: 0.6 },
     // Operator funnel doors, /for/<niche> (ADR-591). A static registry (lib/marketing/funnel-config), so
     // the per-page URLs are safe to advertise here directly.
@@ -305,6 +311,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       // Classifieds (/classifieds/[id]) — active market_listings only.
       listClassifieds({ limit: COMMERCE_SITEMAP_CAP }).catch(() => []),
     ]);
+
+    // ⚠️ Four reads above are CAPPED but were not wrapped in atCap(), so they dropped URLs
+    // silently — the exact shape the cap note exists to prevent. The Spaces one matters most:
+    // its 200-row array also sizes the /discover/spaces/[type] hubs (via the >= 3 threshold) and
+    // EVERY podcast Show URL, so a truncation there quietly shrinks three sections. Wrapping is
+    // observability only; no behaviour changes until a cap is actually reached.
+    atCap(spaces, DISCOVERY_FETCH_LIMIT, "spaces", "listNetworkedSpaces");
+    atCap(partners, 500, "partners", "listActivePartners");
+    atCap(organizers, 500, "organizers", "public_organizer_handles");
+    atCap(spotlights, 1000, "spotlights", "the spotlight read in getSpotlightRoutes");
 
     // Density-gated city landing pages (GE11-2) — ONLY cities above the density
     // threshold (lib/analytics/density) get a per-city landing URL, so thin/empty

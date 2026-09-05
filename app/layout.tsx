@@ -98,6 +98,27 @@ export const metadata: Metadata = {
   description: SITE_DESCRIPTION,
   applicationName: SITE_NAME,
   manifest: "/manifest.json",
+  // Search + answer-engine presentation limits. Without these, every indexable page is served
+  // at Google's defaults: a THUMBNAIL image and a capped snippet. The whole per-entity OG card
+  // investment (events, spaces, circles, spotlight, help) only reaches a result page at full
+  // size if `max-image-preview: large` is set, and AI Overviews are multimodal.
+  //
+  // ⚠️ `robots` is a NESTED metadata field: a route segment that defines it OVERWRITES this
+  // wholesale rather than deep-merging (Next 16, generate-metadata docs). That is correct here —
+  // the pages that set `robots: { index: false }` are noindexed, so dropping the googleBot block
+  // on them changes nothing. But it means you cannot set half of this object in a child segment
+  // and expect the rest to survive.
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1,
+    },
+  },
   openGraph: {
     type: "website",
     siteName: SITE_NAME,
