@@ -963,7 +963,11 @@ export async function approveEventRsvp(
   const caps = await getEventCapabilities(eventId)
   if (!caps.has('event.editSettings')) return { error: 'Unauthorized' }
 
-  await approveRsvpById(eventId, rsvpId)
+  // 🔴 CORRECTION 2026-09-05 (scan-2 L5-10). The result used to be discarded and the notice sent
+  // unconditionally, so a refused update told the person "you're in" over a row that still said
+  // pending, and the button reported success. The notice and the success return now ride on `ok`.
+  const approved = await approveRsvpById(eventId, rsvpId)
+  if (!approved.ok) return { error: approved.error }
   // Same notice as the Manage console's approve path — a host admitting someone from either
   // surface must produce the same outcome for the person waiting.
   await sendRsvpApprovedNotice(eventId, rsvpId).catch(() => {})

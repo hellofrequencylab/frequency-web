@@ -114,6 +114,7 @@ const ALLOWLIST = [
   (p) => p === 'lib/email-studio/render.ts',
   (p) => p === 'lib/comms/email-template.ts',
   (p) => p === 'lib/comms/outbound-batch.ts',
+  (p) => p === 'lib/events/waitlist-notify.ts', // the promoted-seat email (ADR-1208), same medium
   (p) => p === 'lib/automations.ts',
   (p) => p === 'lib/nurture/runner.ts',
   (p) => p === 'lib/studio/agent.ts',

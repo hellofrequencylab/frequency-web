@@ -281,10 +281,23 @@ export async function approveEventPlacement(requestId: string): Promise<ActionRe
   if (!(await setEventPlacementColumn(admin, req.event_id, target))) {
     return fail(PLACEMENT_WRITE_FAILED)
   }
-  await admin
+  // 🔴 CORRECTION 2026-09-05 (scan-2 L5-10). This update's error used to be dropped and the
+  // requester told "placed" regardless, the same shape as approveEventRsvp in admin-actions.ts.
+  // The event columns above have already landed (setEventPlacementColumn surfaced its own error),
+  // so on a refused write here the event IS placed but the request still reads pending; say so
+  // rather than notify over a row that did not change, and leave the request for a retry.
+  const { error: requestError } = await admin
     .from('event_placement_requests')
     .update({ status: 'approved', responded_at: new Date().toISOString(), responded_by: actorId })
     .eq('id', requestId)
+  if (requestError) {
+    console.error('[event-placement] request approve failed', {
+      code: requestError.code,
+      message: requestError.message,
+      requestId,
+    })
+    return fail('The event was placed, but the request could not be marked approved. Try again.')
+  }
 
   const { data: ev } = await admin.from('events').select('title, slug').eq('id', req.event_id).maybeSingle()
   const event = ev as { title: string | null; slug: string } | null
