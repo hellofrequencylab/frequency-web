@@ -12,13 +12,17 @@ import type Stripe from 'stripe'
 //      a partial refund / a foreign charge / a redelivery changes nothing; a DB refusal THROWS.
 // The DB + ledger are mocked, mirroring lib/billing/supporter.test.ts.
 
-const { tipsUpdate, tipsEqArgs, tipsSelectRows, tipsUpdateError, recordFinancialTransaction } = vi.hoisted(() => ({
+const { tipsUpdate, tipsEqArgs, tipsSelectRows, tipsUpdateError, recordFinancialTransaction, notifyTipRecipient } = vi.hoisted(() => ({
   tipsUpdate: vi.fn(),
   tipsEqArgs: vi.fn(),
   tipsSelectRows: vi.fn(),
   tipsUpdateError: vi.fn(),
   recordFinancialTransaction: vi.fn(),
+  notifyTipRecipient: vi.fn(),
 }))
+// The recipient's notification (scan2 L9-05) is called once per FLIPPED row, from the same loop
+// as the ledger append, so it inherits the idempotency the tests below already prove.
+vi.mock('./tips-notify', () => ({ notifyTipRecipient }))
 
 vi.mock('@/lib/supabase/admin', () => ({
   createAdminClient: () => ({
@@ -70,6 +74,7 @@ beforeEach(() => {
   tipsUpdateError.mockReturnValue(null)
   tipsSelectRows.mockReturnValue([{ id: 'tip-1', platform_fee_cents: 0, from_profile_id: 'p1', currency: 'usd' }])
   recordFinancialTransaction.mockResolvedValue({ recorded: true })
+  notifyTipRecipient.mockResolvedValue(undefined)
 })
 
 describe('recordTipFromSession - the succeed path', () => {
@@ -78,6 +83,9 @@ describe('recordTipFromSession - the succeed path', () => {
     expect(tipsUpdate).toHaveBeenCalledTimes(1)
     expect(tipsUpdate.mock.calls[0][0]).toMatchObject({ status: 'succeeded', stripe_payment_intent_id: 'pi_tip_1' })
     expect(tipsEqArgs).toHaveBeenCalledWith(['stripe_checkout_session_id', 'cs_tip_1'], ['status', 'pending'])
+    // scan2 L9-05: the recipient is told once, with the flipped row.
+    expect(notifyTipRecipient).toHaveBeenCalledTimes(1)
+    expect(notifyTipRecipient.mock.calls[0][0]).toMatchObject({ id: 'tip-1' })
     expect(recordFinancialTransaction).toHaveBeenCalledTimes(1)
     expect(recordFinancialTransaction.mock.calls[0][0]).toMatchObject({
       entityId: LABS,
@@ -98,6 +106,7 @@ describe('recordTipFromSession - the succeed path', () => {
     tipsSelectRows.mockReturnValue([])
     await recordTipFromSession(tipSession())
     expect(recordFinancialTransaction).not.toHaveBeenCalled()
+    expect(notifyTipRecipient).not.toHaveBeenCalled()
   })
 
   it('ignores a session of another kind', async () => {

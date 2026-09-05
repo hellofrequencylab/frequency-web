@@ -3,7 +3,9 @@ import { getCallerProfile } from '@/lib/auth'
 import { getActivePersonas } from '@/lib/personas'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { FocusTemplate } from '@/components/templates'
+import { listOffersOfPartner } from '@/lib/partners/read'
 import { ListingForm } from './listing-form'
+import { OffersSection } from './offers-section'
 
 export const dynamic = 'force-dynamic'
 
@@ -18,9 +20,12 @@ export default async function PartnerListingPage() {
 
   const { data: listing } = await createAdminClient()
     .from('partners')
-    .select('name, category, city, description, address, website')
+    .select('id, name, category, city, description, address, website')
     .eq('contact_profile_id', me.id)
     .maybeSingle()
+
+  // Offers ride the listing (scan2 L9-04): none to show until the listing row exists.
+  const offers = listing ? await listOffersOfPartner(listing.id) : []
 
   return (
     <FocusTemplate
@@ -30,6 +35,7 @@ export default async function PartnerListingPage() {
       width="wide"
     >
       <ListingForm initial={listing ?? null} />
+      {listing && <OffersSection offers={offers} />}
     </FocusTemplate>
   )
 }

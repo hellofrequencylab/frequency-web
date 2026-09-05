@@ -10,6 +10,7 @@ import type { SendCategory } from '@/lib/comms/send-gate'
 import { RESEARCH_JOB_KIND, researchHandler } from '@/lib/importer/queue'
 import { BOOKING_REMINDER_KIND, runBookingReminder } from '@/lib/spaces/booking-notify'
 import { SPACE_CAMPAIGN_EMAIL_KIND, runSpaceCampaignEmail } from '@/lib/spaces/email'
+import { TICKET_REFUND_KIND, runTicketRefund } from '@/lib/events/cancellation'
 
 export const queueHandlers: Record<string, JobHandler> = {
   // Space campaign send (the drain half of deliverSpaceCampaign). NOT the generic 'email' kind:
@@ -23,6 +24,10 @@ export const queueHandlers: Record<string, JobHandler> = {
   // background job (docs/BUSINESS-IMPORTER.md §6.2). Lands the intake in 'review' with a
   // verified, ledgered draft; a soft failure is recorded on the row's status.
   [RESEARCH_JOB_KIND]: researchHandler,
+  // Ticket refund for a cancelled event (scan2 L6-04, LIVE-158). payload: { ticketId, eventId }.
+  // Idempotent on an already-refunded ticket; throws on a processor refusal so the drain retries
+  // and, past the cap, dead-letters instead of leaving a buyer charged in silence.
+  [TICKET_REFUND_KIND]: runTicketRefund,
   // Durable web push. payload: { profileId, payload: PushPayload, category: SendCategory }.
   push: async (p) => {
     const profileId = p.profileId as string

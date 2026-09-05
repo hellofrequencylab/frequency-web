@@ -13,6 +13,7 @@ import { recordEngagementEvent } from './events'
 import { currencyForSource } from './currency'
 import { trustSource } from '@/lib/trust'
 import { recordSpaceMemberActivity } from '@/lib/crm/interactions'
+import { isOfferLive } from '@/lib/partners/offers'
 import type { EngagementSource } from './events'
 
 // node.type → engagement source. Ghost nodes are a geo source.
@@ -140,16 +141,24 @@ export async function captureNode(attempt: CaptureAttempt): Promise<CaptureResul
   }
 
   // 5) Partner plaque → log a redemption + surface the unlocked offer.
+  // 2026-09-05 (scan2 L9-04): the redemption is attributed to an offer only when the partner has
+  // EXACTLY ONE live offer (active and not past valid_until). With none there is nothing to credit;
+  // with several the plaque does not say which one the member came for, so offer_id stays null
+  // rather than guessing the newest. listLiveOffers already counts a null-offer redemption toward
+  // the partner's current offer, so the member still sees it as unlocked.
   let offerTitle: string | null = null
   if (node.partner_id) {
-    const { data: offer } = await db
+    const { data: offers, error: offersError } = await db
       .from('partner_offers')
-      .select('id, title')
+      .select('id, title, valid_until, active')
       .eq('partner_id', node.partner_id)
       .eq('active', true)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle()
+    if (offersError) {
+      console.error('[capture] partner offers read failed', { message: offersError.message, partnerId: node.partner_id })
+    }
+    const nowIso = new Date().toISOString()
+    const live = (offers ?? []).filter((o) => isOfferLive(o, nowIso))
+    const offer = live.length === 1 ? live[0] : null
     await db.from('partner_redemptions').insert({
       partner_id: node.partner_id,
       offer_id: offer?.id ?? null,

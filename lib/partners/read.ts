@@ -7,6 +7,7 @@
 // (20240218000000) is applied + regenerated; untyped client view for now.
 
 import { createAdminClient } from '@/lib/supabase/admin'
+import { isOfferLive } from './offers'
 
 export interface PartnerSummary {
   id: string
@@ -67,11 +68,18 @@ export async function getPartnerView(slug: string): Promise<PartnerDetail | null
     .maybeSingle()
   if (!p) return null
 
-  const { data: offers } = await client
+  const { data: offers, error: offersError } = await client
     .from('partner_offers')
-    .select('id, title, description, member_terms, valid_until')
+    .select('id, title, description, member_terms, valid_until, active')
     .eq('partner_id', p.id)
     .eq('active', true)
+  if (offersError) console.error('[partners] offers read failed', { message: offersError.message, partnerId: p.id })
+
+  // 2026-09-05 (scan2 L9-04): an expired offer is not a member offer. Same rule listLiveOffers
+  // and the capture path apply (lib/partners/offers.ts), so the three never disagree.
+  const nowIso = new Date().toISOString()
+  const liveOffers = ((offers ?? []) as { id: string; title: string; description: string | null; member_terms: string | null; valid_until: string | null; active: boolean }[])
+    .filter((o) => isOfferLive(o, nowIso))
 
   return {
     id: p.id,
@@ -82,7 +90,7 @@ export async function getPartnerView(slug: string): Promise<PartnerDetail | null
     description: p.description,
     address: p.address,
     website: p.website,
-    offers: (offers ?? []).map((o: { id: string; title: string; description: string | null; member_terms: string | null; valid_until: string | null }) => ({
+    offers: liveOffers.map((o) => ({
       id: o.id,
       title: o.title,
       description: o.description,
@@ -105,11 +113,12 @@ export interface LiveOffer extends PartnerOffer {
 export async function listLiveOffers(profileId: string | null): Promise<LiveOffer[]> {
   const client = db()
   const nowIso = new Date().toISOString()
-  const { data: offers } = await client
+  const { data: offers, error } = await client
     .from('partner_offers')
-    .select('id, title, description, member_terms, valid_until, partner_id, partners!partner_id ( slug, name, city, status )')
+    .select('id, title, description, member_terms, valid_until, active, partner_id, partners!partner_id ( slug, name, city, status )')
     .eq('active', true)
     .order('created_at', { ascending: false })
+  if (error) console.error('[partners] live offers read failed', { message: error.message })
 
   type Row = {
     id: string
@@ -117,13 +126,12 @@ export async function listLiveOffers(profileId: string | null): Promise<LiveOffe
     description: string | null
     member_terms: string | null
     valid_until: string | null
+    active: boolean
     partner_id: string
     partners: { slug: string; name: string; city: string | null; status: string } | null
   }
   const live = ((offers ?? []) as Row[]).filter(
-    (o) =>
-      o.partners?.status === 'active' &&
-      (!o.valid_until || o.valid_until >= nowIso),
+    (o) => o.partners?.status === 'active' && isOfferLive(o, nowIso),
   )
 
   const mineByOffer = new Map<string, string>()
@@ -147,5 +155,31 @@ export async function listLiveOffers(profileId: string | null): Promise<LiveOffe
     validUntil: o.valid_until,
     partner: { slug: o.partners!.slug, name: o.partners!.name, city: o.partners!.city },
     redeemedAt: mineByOffer.get(o.id) ?? mineByPartner.get(o.partner_id) ?? null,
+  }))
+}
+
+export interface OwnedOffer extends PartnerOffer {
+  active: boolean
+}
+
+/** Every offer a partner owns, live or not, newest first: the listing form's Offers section
+ *  (scan2 L9-04). Callers authorise; this only reads. */
+export async function listOffersOfPartner(partnerId: string): Promise<OwnedOffer[]> {
+  const { data, error } = await db()
+    .from('partner_offers')
+    .select('id, title, description, member_terms, valid_until, active')
+    .eq('partner_id', partnerId)
+    .order('created_at', { ascending: false })
+  if (error) {
+    console.error('[partners] owned offers read failed', { message: error.message, partnerId })
+    return []
+  }
+  return (data ?? []).map((o) => ({
+    id: o.id,
+    title: o.title,
+    description: o.description,
+    memberTerms: o.member_terms,
+    validUntil: o.valid_until,
+    active: o.active,
   }))
 }

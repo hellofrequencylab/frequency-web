@@ -359,6 +359,11 @@ export const STUDIO_LEAVES: readonly StudioLeaf[] = [
   { id: 'crm-tasks', href: '/admin/crm/tasks', label: 'Tasks', desc: 'Your CRM follow-up list: queue a call-back, mark it done, or snooze it for later.', icon: 'ListTodo', min: 'janitor', staffDomain: 'marketing',
     world: 'growth', worldLabel: 'CRM: Tasks', worldOrder: 16,
     adminGroups: [{ domain: 'crm', section: 'Resonance' }], adminNav: { section: 'crm', heading: 'Engine' } },
+  // Signup leads (scan2 L9-03, 2026-09-05): the people who gave an email at /join and never finished.
+  // The induction writes `signup_leads` on every beat; this is the only surface that reads it back.
+  { id: 'crm-leads', href: '/admin/crm/leads', label: 'Signup leads', desc: 'People who gave an email at /join and never finished. See the beat they stopped at, reach out, or export the list.', icon: 'UserPlus', min: 'janitor', staffDomain: 'marketing',
+    world: 'growth', worldLabel: 'CRM: Signup leads', worldOrder: 16.5,
+    adminGroups: [{ domain: 'crm', section: 'Resonance' }], adminNav: { section: 'crm', heading: 'Engine' } },
   { id: 'segments', href: '/admin/segments', label: 'Segments', desc: 'Saved audiences by tag and trait.', icon: 'PieChart', min: 'janitor', staffDomain: 'insights', staffLevel: 'read',
     world: 'growth', worldLabel: 'CRM: Segments', worldOrder: 11,
     adminGroups: [{ domain: 'crm', section: 'Audiences' }] },

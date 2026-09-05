@@ -50,7 +50,10 @@ vi.mock('@/lib/queue/outbox', () => ({
   enqueue: (...args: unknown[]) => enqueue(...args),
 }))
 
+import { readdirSync, readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import {
+  AUTOMATION_TRIGGERS,
   isAutomationActionType,
   AUTOMATION_ACTION_TYPES,
   runAutomationsForEvent,
@@ -228,5 +231,51 @@ describe('evaluateConditions', () => {
     ]
     expect(evaluateConditions(all, ctx)).toBe(true)
     expect(evaluateConditions([...all, { field: 'missing', op: 'exists' }], ctx)).toBe(false)
+  })
+})
+
+// ── Every offered trigger has a recorder (scan2 L4-01) ───────────────────────────────────────
+// runAutomationsForEvent matches `trigger_event` by exact string against what
+// recordEngagementEvent writes, and nothing else feeds it. Three of the five triggers the
+// admin form offered ('circle_join', 'post_create', 'event_attend') had no call site recording
+// that string, so a rule on them listed as enabled and never fired. This walks app/ + lib/
+// (tests excluded, comments stripped) for a real recorder of each offered key: either a
+// direct `eventType: '<key>'` on recordEngagementEvent, or `track('<key>'` (track() records
+// the same string into the same ledger). Adding a trigger without a recorder fails here.
+function walk(dir: string, out: string[]): string[] {
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const name = entry.name
+    if (name === 'node_modules' || name.startsWith('.')) continue
+    const full = join(dir, name)
+    if (entry.isDirectory()) walk(full, out)
+    else if (/\.tsx?$/.test(name) && !/\.test\.tsx?$/.test(name)) out.push(full)
+  }
+  return out
+}
+
+function stripComments(src: string): string {
+  return src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:'"`])\/\/.*$/gm, '$1')
+}
+
+describe('AUTOMATION_TRIGGERS: every offered trigger is recorded somewhere', () => {
+  const sources = [...walk('app', []), ...walk('lib', [])]
+    .filter((f) => !f.endsWith('lib/automations.ts'))
+    .map((f) => stripComments(readFileSync(f, 'utf8')))
+    .join('\n')
+
+  for (const trigger of AUTOMATION_TRIGGERS) {
+    it(`'${trigger}' has a call site that records it`, () => {
+      const recorded =
+        sources.includes(`eventType: '${trigger}'`) || sources.includes(`track('${trigger}'`)
+      expect(recorded).toBe(true)
+    })
+  }
+
+  it('does not offer the gamification-only keys that never reach the ledger', () => {
+    const offered = AUTOMATION_TRIGGERS as readonly string[]
+    expect(offered).not.toContain('circle_join')
+    // 2026-09-05 (ADR-1212): event_attend is offered again because checkInEvent now records it on a verified
+    // check-in; the recorder walk above proves the pairing, so the pin here is only on circle_join.
+    expect(offered).toContain('event_attend')
   })
 })
