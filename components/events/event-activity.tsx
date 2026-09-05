@@ -120,8 +120,12 @@ export function EventActivity({
       .then((map) => {
         if (active) setReactions(map)
       })
-      .catch(() => {
-        // A reactions read miss just leaves the bars in their unbooped state.
+      .catch((err: unknown) => {
+        // A reactions read miss just leaves the bars in their unbooped state — but it must not be
+        // SILENT. This swallow hid a Flight serialization throw (a null-prototype map returned from
+        // the server action; see lib/events/reactions-core.ts) for 69 days across 20 members, during
+        // which no reaction count ever rendered. The fail-safe stays; it now says so.
+        console.error('[event-activity] reactions read failed', err)
       })
     return () => {
       active = false

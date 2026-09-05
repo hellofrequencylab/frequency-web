@@ -20,33 +20,13 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getMyProfileId } from '@/lib/auth'
 import { isEventCohost } from '@/lib/events/cohosts'
 
-// The Partiful-style reaction set (EVENTS-DESIGN §2.2/§8). This is a `'use server'`
-// module, so it can only EXPORT async functions (types are erased and fine). The
-// runtime set therefore lives here as a private const and is mirrored by the BOOPS
-// array the activity bar renders — keep the two in lockstep. Only these faces are
-// accepted server-side. `BoopKind` is exported as a type for the UI to share.
-const BOOP_KINDS = ['👋', '🔥', '🎉', '❤️', '😂'] as const
-export type BoopKind = (typeof BOOP_KINDS)[number]
-
-function isBoopKind(value: string): value is BoopKind {
-  return (BOOP_KINDS as readonly string[]).includes(value)
-}
-
-/** Per-post reaction state for the activity feed: how many of each face, and which
- *  faces the viewer themselves booped. `counts` only carries kinds with at least one
- *  reaction (a zero is absent, not shown). */
-export interface PostReactions {
-  /** kind → count (only kinds with count > 0). */
-  counts: Partial<Record<BoopKind, number>>
-  /** The kinds the current viewer has booped on this post. */
-  mine: BoopKind[]
-}
-
-interface ReactionRow {
-  post_id: string
-  kind: string
-  profile_id: string
-}
+// The reaction set, the per-post shape and the pure fold live in ./reactions-core (no database
+// in it), so they can be tested without exporting a non-async symbol from this `'use server'`
+// module — every export here is a public POST endpoint. The types are re-exported so the activity
+// bar keeps importing them from this path. See the core's header for the boundary defect the
+// split closes.
+import { aggregate, isBoopKind, type PostReactions } from './reactions-core'
+export type { BoopKind, PostReactions } from './reactions-core'
 
 /** Resolve the event a post belongs to (its event_id), or null if the post is gone.
  *  Used to authorize against the parent event. */
@@ -113,34 +93,6 @@ async function canReadEvent(
   return false
 }
 
-/** Fold reaction rows into per-post {counts, mine} for the given viewer. */
-// Post IDs that, used as an object key, would pollute the prototype chain. `postIds`
-// reaches this from a `'use server'` action (caller-controlled), so never write one
-// of these as a property name (CodeQL: remote property injection).
-const UNSAFE_KEYS = new Set(['__proto__', 'constructor', 'prototype'])
-
-function aggregate(
-  rows: ReactionRow[],
-  postIds: string[],
-  myProfileId: string | null,
-): Record<string, PostReactions> {
-  // Null-prototype map: a caller-supplied key can never reach Object.prototype, and
-  // we still skip the reserved names explicitly as a second barrier.
-  const out: Record<string, PostReactions> = Object.create(null)
-  for (const id of postIds) {
-    if (UNSAFE_KEYS.has(id)) continue
-    out[id] = { counts: {}, mine: [] }
-  }
-
-  for (const row of rows) {
-    if (!isBoopKind(row.kind)) continue
-    const bucket = out[row.post_id]
-    if (!bucket) continue
-    bucket.counts[row.kind] = (bucket.counts[row.kind] ?? 0) + 1
-    if (myProfileId && row.profile_id === myProfileId) bucket.mine.push(row.kind)
-  }
-  return out
-}
 
 /**
  * Load real reaction counts (+ the viewer's own booped kinds) for a set of posts in

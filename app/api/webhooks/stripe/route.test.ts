@@ -174,11 +174,53 @@ describe('stripe webhook — member ordering guard wiring', () => {
 
 describe('stripe webhook — consolidated payout-channel dispatch', () => {
   it('runs the member tier write AND all recorders on a plain member checkout', async () => {
-    H.event = plainEvent('checkout.session.completed', { metadata: { profile_id: 'p1', tier: 'crew' }, customer: 'cus_1' })
+    H.event = plainEvent('checkout.session.completed', { mode: 'subscription', metadata: { profile_id: 'p1', tier: 'crew' }, customer: 'cus_1' })
     const res = await post()
     expect(res.status).toBe(200)
     expect(H.rpcCalls).toHaveLength(1) // member tier set
     expect(H.calls).toEqual(['tip', 'ticket', 'supporter', 'order']) // every recorder fired
+  })
+
+  // 🔴 POSITIVE CONTROLS for the entitlement allowlist. Before the guard was `mode === 'subscription'
+  // && !metadata.kind`, a ONE-TIME Shop/Market checkout (mode:'payment', kind:'commerce_order',
+  // client_reference_id:<buyer>) matched none of the three named exclusions and granted the buyer the
+  // paid tier permanently — with no subscription that could ever cancel it. These two fixtures are
+  // the exact sessions lib/commerce/checkout.ts:182 and app/(main)/upgrade/actions.ts:201 create;
+  // both must run every recorder and must NEVER touch the member tier.
+  it('a one-time Shop/Market order (mode:payment, kind:commerce_order) never grants a membership tier', async () => {
+    H.event = plainEvent('checkout.session.completed', {
+      mode: 'payment',
+      client_reference_id: 'p1',
+      metadata: { kind: 'commerce_order', buyer_profile_id: 'p1' },
+      customer: 'cus_1',
+    })
+    const res = await post()
+    expect(res.status).toBe(200)
+    expect(H.rpcCalls).toHaveLength(0) // no setTier — this is the hole
+    expect(H.calls).toEqual(['tip', 'ticket', 'supporter', 'order']) // the order still records
+  })
+
+  it('a one-time Supporter contribution (mode:payment, its own kind) never grants a membership tier', async () => {
+    H.event = plainEvent('checkout.session.completed', {
+      mode: 'payment',
+      client_reference_id: 'p1',
+      metadata: { kind: 'supporter_contribution', profile_id: 'p1' },
+    })
+    const res = await post()
+    expect(res.status).toBe(200)
+    expect(H.rpcCalls).toHaveLength(0)
+    expect(H.calls).toEqual(['tip', 'ticket', 'supporter', 'order'])
+  })
+
+  it('a subscription session that carries ANY kind (a Space plan) is routed by the subscription events, not here', async () => {
+    H.event = plainEvent('checkout.session.completed', {
+      mode: 'subscription',
+      client_reference_id: 'space_1',
+      metadata: { kind: 'space_plan', space_id: 'space_1', plan: 'business' },
+    })
+    const res = await post()
+    expect(res.status).toBe(200)
+    expect(H.rpcCalls).toHaveLength(0)
   })
 
   it('IGNORES a legacy founders checkout: no grant, no tier write', async () => {
