@@ -97,7 +97,7 @@ export default function ComparisonsIndexPage() {
 
       <BetaCTA
         heading="The tool is not the point. The people you keep seeing are."
-        body="Frequency is free to join during the beta. Find a Circle near you and start showing up."
+        body="Frequency is free to join, and it stays free. Find a Circle near you and start showing up."
       />
     </>
   )
