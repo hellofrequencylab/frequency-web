@@ -5,16 +5,14 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import type { Database } from '@/lib/database.types'
-import { atLeastRole, type CommunityRole } from '@/lib/core/roles'
+import { atLeastRole, asWebRole, isStaff, type CommunityRole, type WebRole } from '@/lib/core/roles'
 import { assertCanCreate } from '@/lib/core/load-capabilities'
 import { startChapter } from '@/lib/channels/programs'
-
-type ChannelScope = 'hub' | 'nexus' | 'outpost'
 
 async function getMyProfile(): Promise<{
   id: string
   community_role: CommunityRole
+  webRole: WebRole
 } | null> {
   const supabase = await createClient()
   const {
@@ -24,11 +22,11 @@ async function getMyProfile(): Promise<{
   const admin = createAdminClient()
   const { data } = await admin
     .from('profiles')
-    .select('id, community_role')
+    .select('id, community_role, web_role')
     .eq('auth_user_id', user.id)
     .maybeSingle()
   if (!data || !data.community_role) return null
-  return { id: data.id, community_role: data.community_role }
+  return { id: data.id, community_role: data.community_role, webRole: asWebRole(data.web_role) }
 }
 
 async function getMyProfileId(): Promise<string | null> {
@@ -36,63 +34,23 @@ async function getMyProfileId(): Promise<string | null> {
   return profile?.id ?? null
 }
 
-// ─── Legacy hub/nexus-scoped channels (will be renamed to "focus groups" in Phase 3.6) ───
-
-export async function createChannel(formData: FormData) {
-  const name = (formData.get('name') as string | null)?.trim()
-  const description = (formData.get('description') as string | null)?.trim() || null
-  const scope = formData.get('scope') as ChannelScope | null
-  const scopeId = formData.get('scopeId') as string | null
-  const type = (formData.get('type') as string | null) ?? 'group'
-  const isPublic = formData.get('isPublic') !== 'false'
-
-  if (!name || !scope || !scopeId) return
-
-  const profile = await getMyProfile()
-  if (!profile) return
-
-  // Role → minimum scope allowed. Use the canonical ladder (lib/core/roles) so a Site
-  // Admin / Executive Admin (above mentor on the hierarchy) clears every threshold; the
-  // old hand-rolled array dropped 'admin', so an admin's index was -1 and every gate
-  // silently failed (admins could not create channels at all).
-  //   hub    → host+
-  //   nexus  → guide+
-  //   outpost→ mentor+
-  if (scope === 'hub' && !atLeastRole(profile.community_role, 'host')) return
-  if (scope === 'nexus' && !atLeastRole(profile.community_role, 'guide')) return
-  if (scope === 'outpost' && !atLeastRole(profile.community_role, 'mentor')) return
-
-  const supabase = await createClient()
-  const { data: channel, error } = await supabase
-    .from('channels')
-    .insert({
-      name,
-      description,
-      creator_id: profile.id,
-      creator_role: profile.community_role,
-      scope,
-      scope_id: scopeId,
-      type: type as Database['public']['Tables']['channels']['Insert']['type'],
-      is_public: isPublic,
-    })
-    .select('id')
-    .single()
-
-  if (error || !channel) {
-    console.error('createChannel error', error)
-    return
-  }
-
-  // Auto-join creator
-  await supabase.from('channel_memberships').insert({
-    channel_id: channel.id,
-    profile_id: profile.id,
-    status: 'active',
-  })
-
-  revalidatePath('/channels')
-  redirect(`/channels/${channel.id}`)
-}
+// ─── Legacy hub/nexus-scoped channels: RETIRED (L9-01, 2026-09-05) ───
+// `createChannel` used to live here. It inserted into the retired `channels` +
+// `channel_memberships` tables (0 rows in production) and redirected to
+// `/channels/<uuid>`, which the Channel page resolves ONLY against
+// `topical_channels`, so the operator "New Channel" flow on /admin/channels
+// ended on a 404 and the channel never reached members. The operator console
+// now uses `createTopicalChannel` below, the ONE creator; nothing writes the
+// legacy tables from this file anymore. `app/(main)/channels/actions.test.ts`
+// pins both facts. For the record, the retired gate read (kept verbatim so the
+// ladder lesson is not lost with the function):
+//   Role → minimum scope allowed. Use the canonical ladder (lib/core/roles) so a Site
+//   Admin / Executive Admin (above mentor on the hierarchy) clears every threshold; the
+//   old hand-rolled array dropped 'admin', so an admin's index was -1 and every gate
+//   silently failed (admins could not create channels at all).
+//     hub    → host+
+//     nexus  → guide+
+//     outpost→ mentor+
 
 // ─── Topical Channels (Hierarchy v3, global topical layer) ───
 
@@ -172,13 +130,18 @@ export async function startChapterAction(
 
 // Creates a new topical channel. Host+ only (these are global, so we keep
 // the bar above member/crew). After creation, sends the creator to the
-// channel they just spun up.
+// channel they just spun up. This is THE creator: the operator console on
+// /admin/channels calls it too (L9-01), which is why the gate also admits
+// platform STAFF on the web_role axis (ADR-208) - requireAdmin lets a staffer
+// with the 'community' capability onto that page whatever their community rung.
+// The ladder check uses the canonical rank (lib/core/roles) rather than a
+// hand-written list: the old array skipped the 'admin' rung, so a community
+// admin was refused while a mentor was let through.
 export async function createTopicalChannel(formData: FormData): Promise<void> {
   const me = await getMyProfile()
   if (!me) throw new Error('You need to be signed in.')
 
-  const allowed: CommunityRole[] = ['host', 'guide', 'mentor', 'janitor']
-  if (!allowed.includes(me.community_role)) {
+  if (!atLeastRole(me.community_role, 'host') && !isStaff(me.webRole)) {
     throw new Error('Channels can be created by hosts and above.')
   }
 

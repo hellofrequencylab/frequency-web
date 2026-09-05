@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getCallerProfile, getMyProfileId } from '@/lib/auth'
-import { atLeastRole } from '@/lib/core/roles'
+import { canReviewLibrarySubmission } from '@/lib/moderation/scope'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import type { ContentType } from '@/lib/library'
 
@@ -40,13 +40,24 @@ export async function submitToLibrary(type: 'practice' | 'journey', id: string):
 
 // Leadership review — a circle Host or any Guide+ approves/rejects into the pool.
 // Approve also flips the item public so the existing browse filters surface it.
+//
+// 🔴 The first line above is what this gate USED to admit, and it was the defect (L7-3). `host`
+// is self-granted (publishing a Circle runs `ensureHostOnOwnership`), and a Library submission has
+// no circle to scope a host to, so "Host or Guide+" meant any member who had published a circle
+// could publish or reject anyone's practice or journey platform-wide, through a client that
+// bypasses RLS. `practices` and `journey_plans` carry no UPDATE policy at all, so this line is the
+// only gate there is. Review is now platform staff (web_role admin/janitor, ADR-208) via
+// `canReviewLibrarySubmission` (lib/moderation/scope.ts). The queue page and block still show to
+// Host+; a host who clicks Approve gets the refusal below rather than a silent publish.
 export async function reviewContent(
   type: ContentType,
   id: string,
   decision: 'approve' | 'reject',
 ): Promise<ActionResult> {
   const caller = await getCallerProfile()
-  if (!caller || !atLeastRole(caller.community_role, 'host')) return fail('Only a Host or Guide+ can review.')
+  if (!caller || !canReviewLibrarySubmission(caller.webRole)) {
+    return fail('Only platform staff can review Library submissions.')
+  }
   const d = db()
   const approved = decision === 'approve'
   const review = { status: approved ? 'approved' : 'rejected', reviewed_by: caller.id, reviewed_at: new Date().toISOString() }

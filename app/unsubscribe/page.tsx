@@ -2,16 +2,23 @@
 // Token in the URL is the authorisation. On load, we immediately flip the
 // preference off and show confirmation; the user doesn't need to click
 // anything. (RFC 8058 mailbox providers require this no-click behaviour.)
+//
+// ⚠️ The three lines above are RETIRED (L2-01, 2026-09-05) and kept as the record of what went
+// wrong. "On load" meant "on any HTTP GET", and corporate link scanners plus mail-client
+// prefetchers GET every link in an email, so members were opted out without ever clicking. The
+// RFC 8058 requirement the parenthesis cites is for the `List-Unsubscribe-Post` ONE-CLICK flow,
+// where the mailbox provider POSTs to /api/unsubscribe; it never asked a landing PAGE to act on
+// GET. So now: a GET of this page only verifies the token and shows a confirm button
+// (confirm-unsubscribe.tsx), and `processUnsubscribe` runs solely from the server action the
+// click invokes. This file must never import that action: the page render path is GET.
 
-import Link from 'next/link'
-import { FocusTemplate } from '@/components/templates'
-import { processUnsubscribe } from './actions'
-import { isError } from '@/lib/action-result'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { verifySpaceUnsubscribeToken } from '@/lib/unsubscribe-tokens'
+import { verifyUnsubscribeToken, verifySpaceUnsubscribeToken } from '@/lib/unsubscribe-tokens'
 import { getContactPreferences, CONTACT_TOPICS } from '@/lib/comms/contact-preferences'
-import type { NotificationTopic } from '@/lib/notification-preferences'
+import type { NotificationCategory, NotificationTopic } from '@/lib/notification-preferences'
 import { PreferenceCenter, type ContactTopicState } from './preference-center'
+import { ConfirmUnsubscribe } from './confirm-unsubscribe'
+import { Layout, ManageLink } from './card'
 
 // Token-authorised transactional landing (reached from an email link, never crawled). Already in
 // robots.ts DISALLOW; this page-level noindex is defense-in-depth so the URL can never enter the index.
@@ -21,6 +28,7 @@ const CATEGORY_LABELS: Record<string, string> = {
   dispatches: 'Dispatches',
   events:     'event reminders',
   mentions:   'mention notifications',
+  comments:   'comment notifications',
   lifecycle:  'onboarding nudges',
 }
 
@@ -67,20 +75,18 @@ export default async function UnsubscribePage({
     </Layout>
   }
 
-  const result = await processUnsubscribe({ profileId: p, category: c, token: t })
-
-  if (isError(result)) {
-    return <Layout title="Couldn't process unsubscribe" description={result.error}>
+  // GET only VERIFIES. The same HMAC check `processUnsubscribe` runs (a token is minted over
+  // profileId + category, so an unknown category fails here too), but nothing is written: a bad
+  // link gets the invalid layout, a good one gets a button. The write happens in the action.
+  if (!verifyUnsubscribeToken(p, c as NotificationCategory, t)) {
+    return <Layout title="This link is invalid or expired." description="If you got here from an email, please reply to it and we'll help.">
       <ManageLink />
     </Layout>
   }
 
-  const label = CATEGORY_LABELS[result.data.category] ?? result.data.category
+  const label = CATEGORY_LABELS[c] ?? c
 
-  return <Layout title="You're unsubscribed." description={`You'll no longer receive ${label} from Frequency by email.`}>
-    <Body>You can re-enable this any time, and adjust other notification types, from your settings.</Body>
-    <ManageLink />
-  </Layout>
+  return <ConfirmUnsubscribe profileId={p} category={c} token={t} label={label} />
 }
 
 // Best-effort Space name for the preference-center copy. Falls back to a neutral label
@@ -97,46 +103,4 @@ async function loadSpaceName(spaceId: string): Promise<string> {
 }
 
 // ── Layout helpers ─────────────────────────────────────────────────────
-
-function Layout({
-  title,
-  description,
-  children,
-}: {
-  title: React.ReactNode
-  description?: React.ReactNode
-  children: React.ReactNode
-}) {
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-canvas px-6 py-12">
-      <div className="max-w-md w-full bg-surface border border-border rounded-card lift-1 p-8">
-        <Link
-          href="/"
-          className="inline-block text-lead font-black tracking-tight text-text mb-6"
-        >
-          frequency
-        </Link>
-        <FocusTemplate title={title} description={description} width="narrow" divider={false}>
-          <div className="space-y-3">{children}</div>
-        </FocusTemplate>
-      </div>
-    </div>
-  )
-}
-
-function Body({ children }: { children: React.ReactNode }) {
-  return <p className="text-body-sm text-muted leading-relaxed">{children}</p>
-}
-
-function ManageLink() {
-  return (
-    <div className="pt-3">
-      <Link
-        href="/settings#notifications"
-        className="inline-flex items-center gap-1.5 rounded-control bg-primary text-on-primary text-body-sm font-semibold px-4 py-2 hover:bg-primary-hover transition-colors"
-      >
-        Manage all preferences →
-      </Link>
-    </div>
-  )
-}
+// `Layout`, `Body` and `ManageLink` live in ./card.tsx now, shared with the client confirm step.

@@ -16,7 +16,7 @@ import { OpenAdminBarButton } from '@/components/admin/open-admin-bar-button'
 import { FriendButton, type FriendState } from './friend-button'
 import { BlockButton } from './block-button'
 import { hasBlocked } from '@/lib/blocking'
-import { MessageSquare, CalendarDays, Zap, Users, MapPin, Pencil, Trophy, Star, Contact, Heart, Gem, Flame, ArrowRight, UserCog } from 'lucide-react'
+import { MessageSquare, CalendarDays, Zap, Users, MapPin, Globe, Pencil, Trophy, Star, Contact, Heart, Gem, Flame, ArrowRight, UserCog } from 'lucide-react'
 import { parseVcard } from '@/lib/vcard'
 import { type CommunityRole, RoleBadge, FoundingBadge } from '@/lib/community-roles'
 import { getProfileCapabilities, getGlobalCapabilities } from '@/lib/core/load-capabilities'
@@ -58,6 +58,7 @@ import { ProfileAvatar } from '@/components/profile/profile-avatar'
 import { CosmeticBorder, CosmeticFlair, CosmeticTitle } from '@/components/profile/profile-cosmetics'
 import { ProfileSpotlightBlocks } from '@/components/profile/profile-spotlight-blocks'
 import { OwnerProfileLayoutPreview } from '@/components/profile/owner-profile-layout-preview'
+import { safeWebsite } from '@/lib/profiles/website'
 import { ShareRefProvider } from '@/components/qr/share-ref-context'
 import { QrShareDropdown } from '@/components/qr/qr-share-dropdown'
 
@@ -91,6 +92,7 @@ export default async function ProfilePage({
       display_name,
       handle,
       bio,
+      website,
       avatar_url,
       community_role,
       membership_tier,
@@ -131,6 +133,11 @@ export default async function ProfilePage({
 
   // header_image_url isn't in the generated types yet (new column) — read via cast.
   const headerImageUrl = (profile as { header_image_url?: string | null }).header_image_url ?? null
+  // The member's Website (Settings > Profile), rendered on the facts line as an external link.
+  // Until L9-02 the setting saved to profiles.website and nothing read it back. safeWebsite is
+  // the one seam: http(s) only (a stored `javascript:` value must never reach an href), a bare
+  // domain read as https, and the hostname as the label.
+  const website = safeWebsite(profile.website)
   // Where the header banner sits in its cropped hero window (owner's focal picker), stored on meta.headerFocal.
   const headerFocus = readProfileHeaderFocus((profile as { meta?: unknown }).meta)
   const avatarFocus = readProfileAvatarFocus((profile as { meta?: unknown }).meta)
@@ -542,6 +549,16 @@ export default async function ProfilePage({
               <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-body-sm text-muted">
                 {regionName && (
                   <span className="flex items-center gap-1"><MapPin className="h-3 w-3" /> {regionName}</span>
+                )}
+                {website && (
+                  <a
+                    href={website.href}
+                    target="_blank"
+                    rel="noopener noreferrer nofollow"
+                    className="flex items-center gap-1 text-primary-strong hover:underline"
+                  >
+                    <Globe className="h-3 w-3" aria-hidden /> {website.label}
+                  </a>
                 )}
                 <span className="flex items-center gap-1"><CalendarDays className="h-3 w-3" /> Joined {joinedDate}</span>
                 {/* The "{n} circles" item that used to sit here is GONE (ADR-895). It counted an

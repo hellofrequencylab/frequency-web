@@ -519,14 +519,24 @@ export async function joinViaInviteLink(token: string): Promise<{ circleId: stri
 }
 
 // ── Channels ──────────────────────────────────────────────────────────────────
+// These write `topical_channels`, the ONE channel table the member-facing pages read
+// (`/channels`, `/channels/[id]`). Until L9-01 (2026-09-05) they wrote the retired `channels`
+// table (0 rows in production), so hiding or renaming from /admin/channels changed nothing a
+// member could see. "Hidden" is `is_active = false`, the same flag the Channel page checks
+// before rendering (an inactive channel 404s) and the directory filters on. Both the id and the
+// slug paths are revalidated, since a channel page resolves under either handle.
 
 export async function archiveChannel(id: string) {
   await requireCommunityOps()
   const admin = createAdminClient()
-  const { error } = await admin.from('channels').update({ is_public: false }).eq('id', id)
+  const { data, error } = await admin
+    .from('topical_channels')
+    .update({ is_active: false })
+    .eq('id', id)
+    .select('slug')
+    .maybeSingle()
   if (error) throw new Error(error.message)
-  revalidatePath('/admin/channels')
-  revalidatePath('/channels')
+  revalidateTopicalChannel(id, data?.slug)
 }
 
 /** Edit a channel's name + description (visibility is handled by archive/unarchive). */
@@ -535,23 +545,35 @@ export async function updateChannel(id: string, fd: FormData) {
   const name = ((fd.get('name') as string) ?? '').trim()
   if (!name) throw new Error('Name is required')
   const admin = createAdminClient()
-  const { error } = await admin
-    .from('channels')
+  const { data, error } = await admin
+    .from('topical_channels')
     .update({ name, description: ((fd.get('description') as string) ?? '').trim() || null })
     .eq('id', id)
+    .select('slug')
+    .maybeSingle()
   if (error) throw new Error(error.message)
-  revalidatePath('/admin/channels')
-  revalidatePath('/channels')
+  revalidateTopicalChannel(id, data?.slug)
 }
 
 /** Restore a hidden channel to discovery. */
 export async function unarchiveChannel(id: string) {
   await requireCommunityOps()
   const admin = createAdminClient()
-  const { error } = await admin.from('channels').update({ is_public: true }).eq('id', id)
+  const { data, error } = await admin
+    .from('topical_channels')
+    .update({ is_active: true })
+    .eq('id', id)
+    .select('slug')
+    .maybeSingle()
   if (error) throw new Error(error.message)
+  revalidateTopicalChannel(id, data?.slug)
+}
+
+function revalidateTopicalChannel(id: string, slug?: string | null) {
   revalidatePath('/admin/channels')
   revalidatePath('/channels')
+  revalidatePath(`/channels/${id}`)
+  if (slug) revalidatePath(`/channels/${slug}`)
 }
 
 // ── Hubs ──────────────────────────────────────────────────────────────────────

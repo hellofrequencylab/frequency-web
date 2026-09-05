@@ -40,12 +40,30 @@ async function handler(req: NextRequest) {
 
   // Density-rollup step (Resonance Feed Phase 2, ADR-416): rebuild resonance_density_cells so the
   // adaptive-radius feed + the founder-vs-activity branch read fresh per-geocell activity. BEST-EFFORT
-  // + FAIL-SAFE: a missing function (pre-migration) or any error is swallowed inside the helper, so it
+  // + FAIL-SAFE: a missing function (pre-migration) or any error is caught inside the helper, so it
   // never breaks the steps above. Counts only, fuzzed cells only (no identities, no raw coordinates).
+  //
+  // Caught is not swallowed (finding R2, 2026-09-04): the helper returns the error message, this
+  // step logs it at ERROR level under its own `.failed` event, and the JSON carries `ok: false` for
+  // the step. The response stays 200 with `ok: true` at the top because the trait / edge / embedding
+  // steps above did complete; a 5xx here would fail-ping the heartbeat for work that succeeded. The
+  // rollup had been failing with sqlstate 21000 on every run since 2026-08-22 and this line was the
+  // one place it could have been seen; it read as info with cells: 0 (migration 20270345000000).
   const resonanceDensity = await refreshResonanceDensityCells()
-  log.info('cron.refresh_resonance_density', resonanceDensity)
+  const resonanceDensityStep = { ok: !resonanceDensity.error, ...resonanceDensity }
+  if (resonanceDensity.error) {
+    log.error('cron.refresh_resonance_density.failed', resonanceDensityStep)
+  } else {
+    log.info('cron.refresh_resonance_density', resonanceDensityStep)
+  }
 
-  return NextResponse.json({ ok: true, ...result, resonance, resonanceEmbeddings, resonanceDensity })
+  return NextResponse.json({
+    ok: true,
+    ...result,
+    resonance,
+    resonanceEmbeddings,
+    resonanceDensity: resonanceDensityStep,
+  })
 }
 
 export const GET = withCronHeartbeat('refresh-traits', handler)
