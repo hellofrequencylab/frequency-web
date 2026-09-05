@@ -42,7 +42,7 @@ async function grantGemsOnce(
     if (error.code === '23505') return false // already granted / lost the race
     // 2026-09-05 (scan2 R3): a non-duplicate claim error used to read as "already granted". Nothing was
     // claimed or paid; log at error level so the forfeited milestone is visible, and let a retry re-pay.
-    console.error(`[grantGemsOnce] reward_grants claim failed for ${ruleKey} (not paid, retryable):`, error.message)
+    console.error('[grantGemsOnce] reward_grants claim failed (not paid, retryable)', { ruleKey: ruleKey, error: error.message })
     return false
   }
   // The claim is the lock, but the GEMS must actually land. If the ledger insert fails,
@@ -120,7 +120,7 @@ export async function grantExtraCreditZaps(
   if (error) {
     if (error.code === '23505') return 0 // already granted / lost the race
     // 2026-09-05 (scan2 R3): see grantGemsOnce — a failed claim write is not a prior grant.
-    console.error(`[grantExtraCreditZaps] reward_grants claim failed for ${ruleKey} (not paid, retryable):`, error.message)
+    console.error('[grantExtraCreditZaps] reward_grants claim failed (not paid, retryable)', { ruleKey: ruleKey, error: error.message })
     return 0
   }
   const res = await awardZaps(profileId, amt, { actionType: 'journey_extra_credit', metadata: { rule: ruleKey, label } })

@@ -76,7 +76,7 @@ beforeEach(() => {
   zapAwards.length = 0
   errors.length = 0
   vi.spyOn(console, 'error').mockImplementation((...args: unknown[]) => {
-    errors.push(args.map(String).join(' '))
+    errors.push(args.map((x) => (typeof x === 'object' && x !== null ? JSON.stringify(x) : String(x))).join(' '))
   })
 })
 afterEach(() => vi.restoreAllMocks())

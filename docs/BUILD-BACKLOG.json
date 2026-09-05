@@ -7223,7 +7223,7 @@
       "lane": "live",
       "size": "S",
       "source": {
-        "file": "supabase/migrations",
+        "file": "lib/commerce/checkout.ts",
         "ref": "ADR-1209"
       },
       "detail": "Two guarded read-then-write paths shipped in phase C where a database function belongs: restoreCommerceStock (SCAN-574) restores stock with a compare-and-swap loop, and adjustTierSold (SCAN-578) bumps event_ticket_types.sold in a second request after the ticket flip. Add restore_commerce_stock_atomic(order_id) and a settle RPC that flips the ticket and bumps sold in one statement, then point the two call sites at them and record the grants in scripts/function-grants.txt.",

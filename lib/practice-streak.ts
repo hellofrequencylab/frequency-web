@@ -432,7 +432,7 @@ export async function recordPracticeStreak(
       // the duplicate. A transient error is NOT a prior payout: un-mark the mirror so the next log
       // re-detects the milestone and retries, and log it at error level rather than swallowing it.
       paid.delete(m.day)
-      console.error(`[recordPracticeStreak] reward_grants claim failed for ${ruleKey} (not paid, retried on the next log):`, claimErr.message)
+      console.error('[recordPracticeStreak] reward_grants claim failed (not paid, retried on the next log)', { ruleKey, error: claimErr.message })
       continue
     }
     if (m.zaps > 0) {

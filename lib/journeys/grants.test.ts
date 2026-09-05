@@ -123,7 +123,7 @@ describe('grantJourneyRewards — claim error handling (scan2 R3, 2026-09-05)', 
   it('a duplicate-key claim (23505) is "already granted": nothing paid, nothing logged (unchanged)', async () => {
     const errors: string[] = []
     const spy = vi.spyOn(console, 'error').mockImplementation((...a: unknown[]) => {
-      errors.push(a.map(String).join(' '))
+      errors.push(a.map((x) => (typeof x === 'object' && x !== null ? JSON.stringify(x) : String(x))).join(' '))
     })
     claimError = { code: '23505', message: 'duplicate key value violates unique constraint' }
     const granted = await grantJourneyRewards({ profileId: 'p1', events: [phaseEvent] })
@@ -136,7 +136,7 @@ describe('grantJourneyRewards — claim error handling (scan2 R3, 2026-09-05)', 
   it('a NON-duplicate claim error pays nothing, does NOT touch the ledger, and is logged at error level', async () => {
     const errors: string[] = []
     const spy = vi.spyOn(console, 'error').mockImplementation((...a: unknown[]) => {
-      errors.push(a.map(String).join(' '))
+      errors.push(a.map((x) => (typeof x === 'object' && x !== null ? JSON.stringify(x) : String(x))).join(' '))
     })
     claimError = { code: '57014', message: 'statement timeout' }
     const granted = await grantJourneyRewards({ profileId: 'p1', events: [phaseEvent] })

@@ -188,7 +188,7 @@ export async function grantConnectorOutcome(input: GrantConnectorInput): Promise
       if (claimErr.code === '23505') return { ...none, duplicate: true } // already paid / lost the race
       // 2026-09-05 (scan2 R3): this was `if (claimErr) return { ...none, duplicate: true }` — a transient
       // insert error was reported as "already paid" and the inviter's reward vanished with no log.
-      console.error(`[grantConnectorOutcome] reward_grants claim failed for ${ruleKey} (not paid, retryable):`, claimErr.message)
+      console.error('[grantConnectorOutcome] reward_grants claim failed (not paid, retryable)', { ruleKey: ruleKey, error: claimErr.message })
       return { ...none, failed: true }
     }
 

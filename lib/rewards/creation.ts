@@ -115,7 +115,7 @@ export async function awardCreationToken(
       // 2026-09-05 (scan2 R3): this used to be `if (error) return 0` — a timeout / RLS / network error
       // on the claim read as "already granted" and silently forfeited the token. Nothing was written,
       // so the next publish can re-pay; say so at error level instead of swallowing it.
-      console.error(`[awardCreationToken] reward_grants claim failed for ${ruleKey} (not granted, retryable):`, error.message)
+      console.error('[awardCreationToken] reward_grants claim failed (not granted, retryable)', { ruleKey: ruleKey, error: error.message })
       return 0
     }
 
@@ -195,7 +195,7 @@ async function claimAndPay(
     if (error.code === '23505') return false // already granted / lost the race
     // 2026-09-05 (scan2 R3): a non-duplicate claim error is a failed write, not a prior grant; log it
     // at error level so the forfeited leg is visible. Nothing was claimed, so a retry re-pays.
-    console.error(`[claimAndPay] reward_grants claim failed for ${ruleKey} (not paid, retryable):`, error.message)
+    console.error('[claimAndPay] reward_grants claim failed (not paid, retryable)', { ruleKey: ruleKey, error: error.message })
     return false
   }
   // The claim is the lock, but the payout must actually land. If pay() reports failure
