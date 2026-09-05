@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
 // The anonymous live chat (ADR-816) identifies a visitor by a capability TOKEN, but `startSupportChat`
 // takes a name + email straight from an unauthenticated form. The regression these tests lock down is
@@ -23,7 +23,10 @@ vi.mock('@/lib/comms/conversations', () => ({
   reopenConversationIfClosed: vi.fn(),
 }))
 
-vi.mock('@/lib/comms/chat-token', () => ({
+// PARTIAL mock: the token mint/verify are stubbed, but isSupportChatAvailable / chatSigningAvailable
+// stay REAL so the production-without-a-secret test below exercises the true predicate (scan2 L3-06).
+vi.mock('@/lib/comms/chat-token', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('./chat-token')>()),
   makeChatToken: (ref: string) => `token-for-${ref}`,
   verifyChatToken: () => true,
 }))
@@ -57,6 +60,8 @@ import { startSupportChat } from './support-chat'
 beforeEach(() => {
   vi.clearAllMocks()
   process.env.CRM_INBOX_OWNER_PROFILE_ID = 'owner-1'
+  // The dev fallback (signing-secret.ts) needs SOMETHING to sign with outside production.
+  process.env.SUPABASE_SERVICE_ROLE_KEY ??= 'service-role-key-for-tests-0123456789abcdef'
   openOrGetConversation.mockResolvedValue({ id: 'conv-1', ref: '1042', created: true })
   appendConversationMessage.mockResolvedValue({ id: 'msg-1' })
   getUserById.mockResolvedValue({ data: { user: { email: 'real-member@example.com' } } })
@@ -100,6 +105,63 @@ describe('startSupportChat — an unverified email must not key a thread', () =>
 
     // It must NOT fall back to the submitted address, which would reopen the same hole.
     expect(out).toBeNull()
+    expect(openOrGetConversation).not.toHaveBeenCalled()
+  })
+})
+
+// ── scan2 L3-06 (2026-09-05): the prerequisites are checked BEFORE anything is written ─────────────
+//
+// In production with CONVERSATION_TOKEN_SECRET unset, makeChatToken throws. Before the fix that throw
+// came AFTER openOrGetConversation + appendConversationMessage: one orphan conversation and one orphan
+// message per attempt, and a generic server-action error for the visitor instead of the action's
+// "Support is unavailable" copy (which a null return produces).
+
+describe('startSupportChat — runtime prerequisites are checked before the first write', () => {
+  const saved = new Map<string, string | undefined>()
+  const KEYS = ['NODE_ENV', 'CONVERSATION_TOKEN_SECRET', 'CRM_INBOX_OWNER_PROFILE_ID'] as const
+  function setEnv(patch: Partial<Record<(typeof KEYS)[number], string | undefined>>) {
+    for (const k of KEYS) if (!saved.has(k)) saved.set(k, process.env[k])
+    for (const [k, v] of Object.entries(patch)) {
+      if (v === undefined) delete (process.env as Record<string, string | undefined>)[k]
+      else (process.env as Record<string, string>)[k] = v
+    }
+  }
+  afterEach(() => {
+    for (const [k, v] of saved) {
+      if (v === undefined) delete (process.env as Record<string, string | undefined>)[k]
+      else (process.env as Record<string, string>)[k] = v
+    }
+    saved.clear()
+    vi.restoreAllMocks()
+  })
+
+  it('production with no secret: returns null and creates NO conversation row and NO message', async () => {
+    setEnv({ NODE_ENV: 'production', CONVERSATION_TOKEN_SECRET: undefined, CRM_INBOX_OWNER_PROFILE_ID: 'owner-1' })
+    const err = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    const out = await startSupportChat({ name: 'Visitor', email: 'visitor@example.com', message: 'hello' })
+
+    expect(out).toBeNull()
+    expect(openOrGetConversation).not.toHaveBeenCalled()
+    expect(appendConversationMessage).not.toHaveBeenCalled()
+    // The refusal is LOGGED (structured, no interpolated input), not swallowed.
+    expect(err).toHaveBeenCalled()
+    const [msg, detail] = err.mock.calls[0] as [string, Record<string, unknown>]
+    expect(msg).toContain('[support-chat]')
+    expect(detail.signing).toBe(false)
+    expect(detail.production).toBe(true)
+  })
+
+  it('production WITH the secret opens the thread as before', async () => {
+    setEnv({ NODE_ENV: 'production', CONVERSATION_TOKEN_SECRET: 'a-real-secret-of-at-least-32-bytes-long', CRM_INBOX_OWNER_PROFILE_ID: 'owner-1' })
+    const out = await startSupportChat({ name: 'Visitor', email: 'visitor@example.com', message: 'hello' })
+    expect(out).toEqual({ ref: '1042', token: 'token-for-1042' })
+    expect(openOrGetConversation).toHaveBeenCalledTimes(1)
+  })
+
+  it('a BLANK inbox owner counts as unset (L3-02) and nothing is written', async () => {
+    setEnv({ CRM_INBOX_OWNER_PROFILE_ID: '   ' })
+    expect(await startSupportChat({ name: 'V', email: 'v@example.com', message: 'hi' })).toBeNull()
     expect(openOrGetConversation).not.toHaveBeenCalled()
   })
 })

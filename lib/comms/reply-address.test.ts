@@ -1,9 +1,11 @@
-import { describe, it, expect, beforeAll } from 'vitest'
+import { describe, it, expect, beforeAll, afterEach, vi } from 'vitest'
 import {
   makeConversationToken,
   verifyConversationToken,
   buildConversationReplyAddress,
   parseConversationReplyAddress,
+  conversationSigningAvailable,
+  CONVERSATION_SIGNING_UNAVAILABLE_COPY,
   REPLY_DOMAIN,
 } from './reply-address'
 
@@ -80,5 +82,50 @@ describe('conversation reply-address codec', () => {
   it('verify fails closed on bad length / non-hex', () => {
     expect(verifyConversationToken(1, 'short')).toBe(false)
     expect(verifyConversationToken(1, 'z'.repeat(32))).toBe(false)
+  })
+})
+
+// ── scan2 L3-06 (2026-09-05): the pre-check every outbound conversation path runs before it writes ──
+
+describe('conversationSigningAvailable', () => {
+  const saved = new Map<string, string | undefined>()
+  function setEnv(patch: Record<string, string | undefined>) {
+    for (const k of Object.keys(patch)) if (!saved.has(k)) saved.set(k, process.env[k])
+    for (const [k, v] of Object.entries(patch)) {
+      if (v === undefined) delete (process.env as Record<string, string | undefined>)[k]
+      else (process.env as Record<string, string>)[k] = v
+    }
+  }
+  afterEach(() => {
+    for (const [k, v] of saved) {
+      if (v === undefined) delete (process.env as Record<string, string | undefined>)[k]
+      else (process.env as Record<string, string>)[k] = v
+    }
+    saved.clear()
+    vi.restoreAllMocks()
+  })
+
+  it('production without the secret: false, logged with a structured reason, and the builder it guards throws', () => {
+    setEnv({ NODE_ENV: 'production', CONVERSATION_TOKEN_SECRET: undefined })
+    const err = vi.spyOn(console, 'error').mockImplementation(() => {})
+    expect(conversationSigningAvailable()).toBe(false)
+    expect(err).toHaveBeenCalledTimes(1)
+    const [msg, detail] = err.mock.calls[0] as [string, { reason: string }]
+    expect(msg).toContain('[comms]')
+    expect(detail.reason).toContain('CONVERSATION_TOKEN_SECRET')
+    // The control: this is the 500 the pre-check exists to keep out of a send.
+    expect(() => buildConversationReplyAddress(1042)).toThrow(/CONVERSATION_TOKEN_SECRET/)
+  })
+
+  it('production with the secret: true, nothing logged', () => {
+    setEnv({ NODE_ENV: 'production', CONVERSATION_TOKEN_SECRET: 'test-conversation-secret-please-32-bytes' })
+    const err = vi.spyOn(console, 'error').mockImplementation(() => {})
+    expect(conversationSigningAvailable()).toBe(true)
+    expect(err).not.toHaveBeenCalled()
+  })
+
+  it('the member-safe copy is plain and carries no dash', () => {
+    expect(CONVERSATION_SIGNING_UNAVAILABLE_COPY).not.toMatch(/[\u2013\u2014]/)
+    expect(CONVERSATION_SIGNING_UNAVAILABLE_COPY).toMatch(/Nothing was sent/)
   })
 })

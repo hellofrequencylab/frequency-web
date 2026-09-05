@@ -14,7 +14,8 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import { enqueueEmail } from '@/lib/email'
 import { resolveSendGate, type SendGateReason } from '@/lib/comms/send-gate'
-import { buildConversationReplyAddress } from '@/lib/comms/reply-address'
+import { buildConversationReplyAddress, conversationSigningAvailable, CONVERSATION_SIGNING_UNAVAILABLE_COPY } from '@/lib/comms/reply-address'
+import { conversationFrom } from '@/lib/comms/from-address'
 import {
   getConversationById,
   appendConversationMessage,
@@ -59,11 +60,9 @@ const GATE_REASON_COPY: Record<SendGateReason, string> = {
 }
 
 /** The conversational sending identity (a separate subdomain so 1:1 mail never rides bulk reputation). */
-function conversationFrom(senderName: string | null): string {
-  const addr = process.env.EMAIL_CONVERSATION_FROM ?? process.env.EMAIL_FROM ?? 'people@people.frequencylocal.com'
-  const name = (senderName ?? 'Frequency').replace(/["\\<>]/g, '').trim() || 'Frequency'
-  return `${name} via Frequency <${addr}>`
-}
+// 2026-09-05 (scan2 L3-01): the local builder is gone; `conversationFrom` is imported from
+// lib/comms/from-address, which extracts the address out of EMAIL_FROM instead of nesting it and
+// treats a blank EMAIL_CONVERSATION_FROM as unset (L3-02).
 
 /** A profile's display name (for the "trail of senders" From line). Fail-safe: null. */
 async function profileName(profileId: string): Promise<string | null> {
@@ -114,6 +113,9 @@ export async function sendConversationReply(input: {
 
   // PUBLIC REPLY.
   if (!conv.externalEmail) return fail('We have no email address for this conversation.')
+  // 2026-09-05 (scan2 L3-06): the per-thread Reply-To needs a signing secret; check BEFORE queueing or
+  // enqueueing so a misconfigured server returns plain copy instead of a thrown 500 mid-send.
+  if (!conversationSigningAvailable()) return fail(CONVERSATION_SIGNING_UNAVAILABLE_COPY)
   // A 1:1 human reply inside an active conversation is TRANSACTIONAL, not a marketing blast — the member (or
   // lead) is in a conversation with us, so they are opted in by that context. We gate it as `transactional`,
   // which sends past preferences/consent and is stopped ONLY by the hard suppression list (a bounced or
