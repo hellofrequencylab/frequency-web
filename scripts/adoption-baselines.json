@@ -61,14 +61,14 @@
       "exclude": [
         "**/*.{test,spec}.{ts,tsx}"
       ],
-      "baseline": 2208,
+      "baseline": 2181,
       "frozen": {
-        "at": "2026-08-25",
-        "value": 2208,
-        "direction": "raised",
+        "at": "2026-09-05",
+        "value": 2181,
+        "direction": "lowered",
         "basis": "db695768f455",
-        "reason": "Route-level loading skeletons added by the HYG-010 residue sweep (#2267) mirror the LITERAL radii of the surfaces they stand in for: three rounded-3xl hero-band skeletons match PageHero's own rounded-3xl (rounded-card is 24px, the band is 32px, so the role token would mismatch and skin-shift a surface that does not), plus one rounded-xl bar skeleton. Banked on this branch because it owns the baseline file in flight; the underlying PageHero literal is P2-class debt, not new.",
-        "from": 2205
+        "reason": "Scan two phase A (#2360) retired the legacy admin New Channel composer (components/compose/new-channel-compose.tsx, deleted) and rebuilt the unsubscribe page on the kit card; phase B re-freezes the floor so the ratchet holds at the lower number",
+        "from": 2208
       },
       "history": [
         {
@@ -231,6 +231,13 @@
           "to": 2208,
           "direction": "raised",
           "reason": "Route-level loading skeletons added by the HYG-010 residue sweep (#2267) mirror the LITERAL radii of the surfaces they stand in for: three rounded-3xl hero-band skeletons match PageHero's own rounded-3xl (rounded-card is 24px, the band is 32px, so the role token would mismatch and skin-shift a surface that does not), plus one rounded-xl bar skeleton. Banked on this branch because it owns the baseline file in flight; the underlying PageHero literal is P2-class debt, not new."
+        },
+        {
+          "at": "2026-09-05",
+          "from": 2208,
+          "to": 2181,
+          "direction": "lowered",
+          "reason": "Scan two phase A (#2360) retired the legacy admin New Channel composer (components/compose/new-channel-compose.tsx, deleted) and rebuilt the unsubscribe page on the kit card; phase B re-freezes the floor so the ratchet holds at the lower number"
         }
       ]
     },
@@ -307,14 +314,14 @@
       "exclude": [
         "**/*.{test,spec}.{ts,tsx}"
       ],
-      "baseline": 51,
+      "baseline": 50,
       "frozen": {
-        "at": "2026-08-17",
-        "value": 51,
-        "direction": "rebased",
+        "at": "2026-09-05",
+        "value": 50,
+        "direction": "lowered",
         "basis": "9b2a23dd2c68",
-        "reason": "Instrument correction, not a sweep (DAWN Phase 9 / PROG-DAWN9). CORPUS_BASIS moves strip-comments@1 -> @2: the blanker now tracks string and template literals, so a file input accept glob whose last two characters are a slash and a star no longer opens a block comment running to the next JSDoc close. That had blanked 121627 characters of real markup in 101 files. 50 -> 51. The +1 is one real shadow literal in lib/onboarding/step-registry.tsx that the pseudo-comment had been hiding, not new code: measured on the COMMITTED tree the class goes 50 -> 51 across the corpus change alone, with no in-flight movement in the worktree. Debt the gate was blind to, now guarded.",
-        "from": 50
+        "reason": "Scan two phase A (#2360) retired the legacy admin New Channel composer (components/compose/new-channel-compose.tsx, deleted) and rebuilt the unsubscribe page on the kit card; phase B re-freezes the floor so the ratchet holds at the lower number",
+        "from": 51
       },
       "history": [
         {
@@ -358,6 +365,13 @@
           "to": 51,
           "direction": "rebased",
           "reason": "Instrument correction, not a sweep (DAWN Phase 9 / PROG-DAWN9). CORPUS_BASIS moves strip-comments@1 -> @2: the blanker now tracks string and template literals, so a file input accept glob whose last two characters are a slash and a star no longer opens a block comment running to the next JSDoc close. That had blanked 121627 characters of real markup in 101 files. 50 -> 51. The +1 is one real shadow literal in lib/onboarding/step-registry.tsx that the pseudo-comment had been hiding, not new code: measured on the COMMITTED tree the class goes 50 -> 51 across the corpus change alone, with no in-flight movement in the worktree. Debt the gate was blind to, now guarded."
+        },
+        {
+          "at": "2026-09-05",
+          "from": 51,
+          "to": 50,
+          "direction": "lowered",
+          "reason": "Scan two phase A (#2360) retired the legacy admin New Channel composer (components/compose/new-channel-compose.tsx, deleted) and rebuilt the unsubscribe page on the kit card; phase B re-freezes the floor so the ratchet holds at the lower number"
         }
       ]
     },
@@ -539,14 +553,14 @@
         "components/ui/button.tsx",
         "components/ui/icon-button.tsx"
       ],
-      "baseline": 423,
+      "baseline": 418,
       "frozen": {
-        "at": "2026-08-25",
-        "value": 423,
+        "at": "2026-09-05",
+        "value": 418,
         "direction": "lowered",
         "basis": "c478ed64ec1e",
-        "reason": "DAWN Phase 3, slice 2 (PROG-DAWN3, ADR-1124): the primary x md near-miss class. 40 raw <button>s across 31 files carried every token the Button primitive emits for primary x md and nothing its BASE does not already supply; each is now a bare <Button> with no className and no props, because primary x md IS the primitive's default pair. Each converted control GAINS lift-1 (two box-shadows), tap-target (the 44px touch floor under a coarse pointer), press and the focus ring - so the sweep MOVES RENDERED PIXELS by design; near-miss equality, never a no-op. 513 -> 423 on the merged tree. DISCLOSURE 1: only 40 of the 47 are this sweep's - the class already read 506 against its 513 floor on origin/main at de6c218cd, 7 sites having been retired by merged work that never re-froze. Those 7 are banked here rather than left floating. DISCLOSURE 2: the slice is deliberately NOT exhaustive for its class. 13 further primary x md sites in 9 files are import-reachable from a surface test/e2e/visual.spec.ts photographs, and are deferred to LIVE-114 so this PR cannot move a committed baseline. MERGED WITH SLICE 1 (2026-08-25): both slices measured from the same pre-merge floor and both banked the same pre-existing falls, so neither branch's number is the union's. Re-measured on the merged tree and set to what it reads there; the two history entries below chain the same arithmetic.",
-        "from": 513
+        "reason": "Scan two phase A (#2360) retired the legacy admin New Channel composer (components/compose/new-channel-compose.tsx, deleted) and rebuilt the unsubscribe page on the kit card; phase B re-freezes the floor so the ratchet holds at the lower number",
+        "from": 423
       },
       "history": [
         {
@@ -667,6 +681,13 @@
           "to": 423,
           "direction": "lowered",
           "reason": "DAWN Phase 3, slice 2 (PROG-DAWN3, ADR-1124): the primary x md near-miss class. 40 raw <button>s across 31 files carried every token the Button primitive emits for primary x md and nothing its BASE does not already supply; each is now a bare <Button> with no className and no props, because primary x md IS the primitive's default pair. Each converted control GAINS lift-1 (two box-shadows), tap-target (the 44px touch floor under a coarse pointer), press and the focus ring - so the sweep MOVES RENDERED PIXELS by design; near-miss equality, never a no-op. 463 -> 423 after merging slice 1. DISCLOSURE 1: only 40 of the 47 are this sweep's - the class already read 506 against its 513 floor on origin/main at de6c218cd, 7 sites having been retired by merged work that never re-froze. Those 7 are banked here rather than left floating. DISCLOSURE 2: the slice is deliberately NOT exhaustive for its class. 13 further primary x md sites in 9 files are import-reachable from a surface test/e2e/visual.spec.ts photographs, and are deferred to LIVE-114 so this PR cannot move a committed baseline."
+        },
+        {
+          "at": "2026-09-05",
+          "from": 423,
+          "to": 418,
+          "direction": "lowered",
+          "reason": "Scan two phase A (#2360) retired the legacy admin New Channel composer (components/compose/new-channel-compose.tsx, deleted) and rebuilt the unsubscribe page on the kit card; phase B re-freezes the floor so the ratchet holds at the lower number"
         }
       ]
     },
@@ -994,14 +1015,14 @@
         "components/ui/icon.tsx",
         "components/ui/icon-button.tsx"
       ],
-      "baseline": 118,
+      "baseline": 116,
       "frozen": {
-        "at": "2026-08-17",
-        "value": 118,
-        "direction": "rebased",
+        "at": "2026-09-05",
+        "value": 116,
+        "direction": "lowered",
         "basis": "8afdfcd88c01",
-        "reason": "Instrument correction, not a sweep (DAWN Phase 9 / PROG-DAWN9). CORPUS_BASIS moves strip-comments@1 -> @2: the blanker now tracks string and template literals, so a file input accept glob whose last two characters are a slash and a star no longer opens a block comment running to the next JSDoc close. That had blanked 121627 characters of real markup in 101 files. 115 -> 118. All three are in components/admin/email-studio/loom/loom-image-popup.tsx, whose file input opened the pseudo-comment; measured on the COMMITTED tree the class goes 115 -> 118 across the corpus change alone, with no in-flight movement in the worktree. Debt the gate was blind to, now guarded.",
-        "from": 115
+        "reason": "Scan two phase A (#2360) retired the legacy admin New Channel composer (components/compose/new-channel-compose.tsx, deleted) and rebuilt the unsubscribe page on the kit card; phase B re-freezes the floor so the ratchet holds at the lower number",
+        "from": 118
       },
       "history": [
         {
@@ -1052,6 +1073,13 @@
           "to": 118,
           "direction": "rebased",
           "reason": "Instrument correction, not a sweep (DAWN Phase 9 / PROG-DAWN9). CORPUS_BASIS moves strip-comments@1 -> @2: the blanker now tracks string and template literals, so a file input accept glob whose last two characters are a slash and a star no longer opens a block comment running to the next JSDoc close. That had blanked 121627 characters of real markup in 101 files. 115 -> 118. All three are in components/admin/email-studio/loom/loom-image-popup.tsx, whose file input opened the pseudo-comment; measured on the COMMITTED tree the class goes 115 -> 118 across the corpus change alone, with no in-flight movement in the worktree. Debt the gate was blind to, now guarded."
+        },
+        {
+          "at": "2026-09-05",
+          "from": 118,
+          "to": 116,
+          "direction": "lowered",
+          "reason": "Scan two phase A (#2360) retired the legacy admin New Channel composer (components/compose/new-channel-compose.tsx, deleted) and rebuilt the unsubscribe page on the kit card; phase B re-freezes the floor so the ratchet holds at the lower number"
         }
       ]
     },
@@ -1068,13 +1096,13 @@
       "exclude": [
         "**/*.{test,spec}.{ts,tsx}"
       ],
-      "baseline": 96,
+      "baseline": 94,
       "frozen": {
-        "at": "2026-08-17",
-        "value": 96,
-        "direction": "rebased",
+        "at": "2026-09-05",
+        "value": 94,
+        "direction": "lowered",
         "basis": "64ff33cabd79",
-        "reason": "Instrument correction, not a sweep (DAWN Phase 9 / PROG-DAWN9). CORPUS_BASIS moves strip-comments@1 -> @2: the blanker now tracks string and template literals, so a file input accept glob whose last two characters are a slash and a star no longer opens a block comment running to the next JSDoc close. That had blanked 121627 characters of real markup in 101 files. No site in this class sat inside a region the old blanker was eating: 96 before and 96 after, measured on the committed tree and again in the worktree. Only the fingerprint moves.",
+        "reason": "Scan two phase A (#2360) retired the legacy admin New Channel composer (components/compose/new-channel-compose.tsx, deleted) and rebuilt the unsubscribe page on the kit card; phase B re-freezes the floor so the ratchet holds at the lower number",
         "from": 96
       },
       "history": [
@@ -1105,6 +1133,13 @@
           "to": 96,
           "direction": "rebased",
           "reason": "Instrument correction, not a sweep (DAWN Phase 9 / PROG-DAWN9). CORPUS_BASIS moves strip-comments@1 -> @2: the blanker now tracks string and template literals, so a file input accept glob whose last two characters are a slash and a star no longer opens a block comment running to the next JSDoc close. That had blanked 121627 characters of real markup in 101 files. No site in this class sat inside a region the old blanker was eating: 96 before and 96 after, measured on the committed tree and again in the worktree. Only the fingerprint moves."
+        },
+        {
+          "at": "2026-09-05",
+          "from": 96,
+          "to": 94,
+          "direction": "lowered",
+          "reason": "Scan two phase A (#2360) retired the legacy admin New Channel composer (components/compose/new-channel-compose.tsx, deleted) and rebuilt the unsubscribe page on the kit card; phase B re-freezes the floor so the ratchet holds at the lower number"
         }
       ]
     },
@@ -1489,14 +1524,14 @@
       "exclude": [
         "**/*.{test,spec}.{ts,tsx}"
       ],
-      "baseline": 609,
+      "baseline": 588,
       "frozen": {
-        "at": "2026-08-19",
-        "value": 609,
-        "direction": "raised",
+        "at": "2026-09-05",
+        "value": 588,
+        "direction": "lowered",
         "basis": "b2a90e60b032",
-        "reason": "One admin field label added by #2167 in components/admin/spaces/manual-agreement-panel.tsx. It is text-2xs, and the exact shape 'text-2xs font-semibold uppercase tracking-wide text-muted' is an established convention across 110 files. Moving this one site onto the 0.75rem/0.18em eyebrow role would resize a dense form label and leave it inconsistent with its 109 siblings, which is the per-site judgment this class's own description calls for. Banked so the rise is dated and visible; it comes down with the convention-wide sweep, not a one-line rename.",
-        "from": 608
+        "reason": "Scan two phase A (#2360) retired the legacy admin New Channel composer (components/compose/new-channel-compose.tsx, deleted) and rebuilt the unsubscribe page on the kit card; phase B re-freezes the floor so the ratchet holds at the lower number",
+        "from": 609
       },
       "history": [
         {
@@ -1512,6 +1547,13 @@
           "to": 609,
           "direction": "raised",
           "reason": "One admin field label added by #2167 in components/admin/spaces/manual-agreement-panel.tsx. It is text-2xs, and the exact shape 'text-2xs font-semibold uppercase tracking-wide text-muted' is an established convention across 110 files. Moving this one site onto the 0.75rem/0.18em eyebrow role would resize a dense form label and leave it inconsistent with its 109 siblings, which is the per-site judgment this class's own description calls for. Banked so the rise is dated and visible; it comes down with the convention-wide sweep, not a one-line rename."
+        },
+        {
+          "at": "2026-09-05",
+          "from": 609,
+          "to": 588,
+          "direction": "lowered",
+          "reason": "Scan two phase A (#2360) retired the legacy admin New Channel composer (components/compose/new-channel-compose.tsx, deleted) and rebuilt the unsubscribe page on the kit card; phase B re-freezes the floor so the ratchet holds at the lower number"
         }
       ]
     }
