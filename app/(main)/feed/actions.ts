@@ -7,6 +7,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import type { Database } from '@/lib/database.types'
 import { getMyProfileId, getCallerProfile } from '@/lib/auth'
 import { processGamificationEvent, recordStreakActivity } from '@/lib/achievements'
+import { recordEngagementEvent } from '@/lib/engagement/events'
 import { awardGems } from '@/lib/gems'
 import { isReactionKey } from '@/lib/feed/reactions'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
@@ -174,6 +175,18 @@ export async function createPost(formData: FormData): Promise<ActionResult> {
   processGamificationEvent({ type: 'post_create', profileId }).catch((e) => console.error('[feed gamification]', e))
   recordStreakActivity(profileId, 'posting').catch((e) => console.error('[feed gamification]', e))
   awardGems(profileId, 'post_create').catch((e) => console.error('[feed gamification]', e))
+  // 2026-09-05 (scan2 L4-01): the ledger row the admin Automations `post_create` trigger matches
+  // on. The three calls above never reach engagement_events, so a rule on this trigger never
+  // fired. Keyed on the post id (exactly-once), best-effort like the rewards beside it.
+  if (post) {
+    recordEngagementEvent({
+      idempotencyKey: `post_create:${post.id}`,
+      source: 'web',
+      eventType: 'post_create',
+      actorProfileId: profileId,
+      context: { postId: post.id, scopeId, visibility, postType },
+    }).catch((e) => console.error('[feed engagement]', e))
+  }
 
   // Notify mentioned members (best-effort, non-blocking).
   if (post) await fanOutMentions(admin, post.id, body || '', profileId, 'a post')

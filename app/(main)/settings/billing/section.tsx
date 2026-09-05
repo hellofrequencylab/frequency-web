@@ -13,6 +13,7 @@ import { PastDueBanner } from '@/components/billing/past-due-banner'
 import { ManageBillingButton } from './manage-button'
 import { StartPayoutButton, ManagePayoutButton } from './payout-controls'
 import { BundleSeatsSection } from './bundle-seats-section'
+import { TipsReceivedSection } from './tips-received-section'
 
 // The Plan and billing SECTION of the unified Settings page (DAWN 2 screen pass). This
 // is the server half that used to be app/(main)/settings/billing/page.tsx, unchanged in
@@ -155,6 +156,12 @@ export async function PlanSection({
           )}
         </div>
       )}
+
+      {/* Tips received (scan2 L9-05): the one reader of a member's tips. Streams behind its own
+          <Suspense> and renders nothing for a member who has never been tipped. */}
+      <Suspense fallback={null}>
+        <TipsReceivedSection />
+      </Suspense>
 
       {/* Household bundle seats (ADR-370). Its own <Suspense> so the plan card never waits on the
           seat roster, and it renders nothing at all while the bundle flag is off. */}

@@ -19,6 +19,7 @@
 
 import {
   LayoutDashboard,
+  UserPlus,
   CircleDot,
   Radio,
   CalendarDays,
@@ -87,7 +88,7 @@ import {
 // lucide icon NAME → component. The Studio sub-tree stores icon names (framework-free);
 // this catalog resolves them back to the components its consumers render.
 const ICONS: Record<string, LucideIcon> = {
-  LayoutDashboard, CircleDot, Radio, CalendarDays, Megaphone, ClipboardList, BookOpen,
+  LayoutDashboard, UserPlus, CircleDot, Radio, CalendarDays, Megaphone, ClipboardList, BookOpen,
   Trophy, ShieldAlert, Building2, Network, Activity, Target, Sparkles, Telescope, PieChart,
   Bot, HelpCircle, Users, Shield, QrCode, Power, FileText, BadgeCheck, Lightbulb, ScrollText,
   LifeBuoy, ShoppingBag, Map, CreditCard, Gamepad2, SlidersHorizontal, TrendingUp, Rocket,

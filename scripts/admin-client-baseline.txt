@@ -465,6 +465,7 @@ lib/billing/space-subscription-items.ts
 lib/billing/space-subscriptions.ts
 lib/billing/supporter.ts
 lib/billing/tickets.ts
+lib/billing/tips-notify.ts
 lib/billing/tips.ts
 lib/blocking.ts
 lib/channels/programs.ts
@@ -538,6 +539,7 @@ lib/crm/people-search.ts
 lib/crm/person.ts
 lib/crm/pipeline.ts
 lib/crm/relationships.ts
+lib/crm/signup-leads.ts
 lib/crm/space-contact-detail.ts
 lib/crm/space-tasks.ts
 lib/crm/stages.ts

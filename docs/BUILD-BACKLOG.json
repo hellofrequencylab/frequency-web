@@ -55,7 +55,6 @@
             "LIVE-154",
             "LIVE-156",
             "LIVE-157",
-            "LIVE-158",
             "LIVE-159",
             "LIVE-160",
             "LIVE-161",
@@ -71,7 +70,8 @@
             "LIVE-174",
             "LIVE-172",
             "LIVE-173",
-            "LIVE-171"
+            "LIVE-171",
+            "LIVE-175"
           ]
         },
         {
@@ -7183,14 +7183,14 @@
     {
       "id": "LIVE-158",
       "title": "Ticket refunds on a cancelled event are never retried",
-      "status": "open",
+      "status": "done",
       "lane": "live",
       "size": "S",
       "source": {
         "file": "lib/events/cancellation.ts",
         "ref": "ADR-1209"
       },
-      "detail": "Scan two L6-04 (P1). A host cancels a ticketed event; refundAndNotifyForCancelledEvent runs after the cancel flip and any Stripe error or mid-loop crash leaves buyers charged, ticket rows succeeded, and nothing queued; the firstCancel guard makes a second cancel a no-op. Fix: enqueue one outbox job per succeeded ticket (or one per event that re-scans succeeded tickets) with the outbox's own retry, and let the cancel path only enqueue; surface the count still owed on the Manage page.",
+      "detail": "Scan two L6-04 (P1). A host cancels a ticketed event; refundAndNotifyForCancelledEvent runs after the cancel flip and any Stripe error or mid-loop crash leaves buyers charged, ticket rows succeeded, and nothing queued; the firstCancel guard makes a second cancel a no-op. Fix: enqueue one outbox job per succeeded ticket (or one per event that re-scans succeeded tickets) with the outbox's own retry, and let the cancel path only enqueue; surface the count still owed on the Manage page.\n\n2026-09-05 (phase D, ADR-1212): closed as SCAN-633. Cancellation enqueues one ticket_refund outbox job per succeeded ticket; the handler is idempotent and throws on refusal so the outbox retries; the Manage page shows the count still owed.",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e \"const fs=require('fs');const s=fs.readFileSync('lib/events/cancellation.ts','utf8');process.exit(/\\benqueue\\(/.test(s)?0:1)\"",
@@ -8351,6 +8351,125 @@
         "kind": "cmd",
         "cmd": "node -e \"const fs=require('fs');const R=(f)=>fs.readFileSync(f,'utf8');const C=(f)=>R(f).replace(/\\\\/\\\\*[\\\\s\\\\S]*?\\\\*\\\\//g,'').replace(/^\\\\s*\\\\/\\\\/.*$/gm,'');const p=require('path');const h=[];function w(d){for(const e of fs.readdirSync(d,{withFileTypes:true})){const f=p.join(d,e.name);if(e.isDirectory()){if(e.name!=='node_modules'&&!e.name.startsWith('.'))w(f)}else if(/\\\\.tsx?$/.test(e.name)&&!/\\\\.test\\\\./.test(e.name)){const s=C(f);if(/from\\\\('profiles'\\\\)[\\\\s\\\\S]{0,160}?\\\\.update\\\\(\\\\s*\\\\{[\\\\s\\\\S]{0,200}?\\\\bmeta\\\\s*:/.test(s))h.push(f)}}}w('lib');w('app');process.exit(h.length===0&&/export async function mergeProfileMeta/.test(C('lib/profiles/meta.ts'))?0:1)\"",
         "note": "Fails if any writer goes back to updating meta whole."
+      }
+    },
+    {
+      "id": "SCAN-630",
+      "title": "Three of the five Automations triggers could never fire",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/automations.ts",
+        "ref": "ADR-1212"
+      },
+      "detail": "Scan two, phase D (2026-09-05). L4-01. The runner matches trigger_event by exact string against engagement_events; circle_join, post_create and event_attend were never recorded. Closed: circle_join is renamed to the recorded circle.joined (migration 20270345001000 rewrites stored rules), post_create is recorded when a post is created, event_attend is recorded on a verified check-in, and a test walks app and lib to prove every offered trigger has a recorder.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const R=(f)=>fs.readFileSync(f,'utf8');const C=(f)=>R(f).replace(/\\\\/\\\\*[\\\\s\\\\S]*?\\\\*\\\\//g,'').replace(/^\\\\s*\\\\/\\\\/.*$/gm,'');const a=C('lib/automations.ts');process.exit(/'circle\\\\.joined'/.test(a)&&/'event_attend'/.test(a)&&/eventType: 'event_attend'/.test(C('app/(main)/events/actions.ts'))&&/eventType: 'post_create'/.test(C('app/(main)/feed/actions.ts'))?0:1)\"",
+        "note": "Fails if an offered trigger loses its recorder."
+      }
+    },
+    {
+      "id": "SCAN-631",
+      "title": "Welcome paid the welcomer and told the newcomer nothing",
+      "status": "done",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "lib/connections/welcomes.ts",
+        "ref": "ADR-1212"
+      },
+      "detail": "Scan two, phase D (2026-09-05). L9-06. The Pulse Welcome button inserted a welcomes row and awarded gems; the newcomer got no notification. Closed: after the insert lands, a welcome_received notification is written for the newcomer, then the gems.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const R=(f)=>fs.readFileSync(f,'utf8');const C=(f)=>R(f).replace(/\\\\/\\\\*[\\\\s\\\\S]*?\\\\*\\\\//g,'').replace(/^\\\\s*\\\\/\\\\/.*$/gm,'');process.exit(/welcome_received/.test(C('lib/connections/welcomes.ts'))?0:1)\"",
+        "note": "Fails if the notification is removed."
+      }
+    },
+    {
+      "id": "SCAN-632",
+      "title": "A tip was paid and the recipient was never told and could never see it",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/billing/tips-notify.ts",
+        "ref": "ADR-1212"
+      },
+      "detail": "Scan two, phase D (2026-09-05). L9-05. tips had no reader outside the billing module and no notify. Closed: the succeeded flip calls notifyTipRecipient (bell plus a transactional email, Someone when the tipper is anonymous), and a Tips received section on the billing settings page shows the total and the recent list.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const R=(f)=>fs.readFileSync(f,'utf8');const C=(f)=>R(f).replace(/\\\\/\\\\*[\\\\s\\\\S]*?\\\\*\\\\//g,'').replace(/^\\\\s*\\\\/\\\\/.*$/gm,'');process.exit(/export async function notifyTipRecipient/.test(C('lib/billing/tips-notify.ts'))&&/notifyTipRecipient\\\\(/.test(C('lib/billing/tips.ts'))&&/TipsReceivedSection/.test(R('app/(main)/settings/billing/section.tsx'))?0:1)\"",
+        "note": "Fails if the notify call or the section is removed."
+      }
+    },
+    {
+      "id": "SCAN-633",
+      "title": "Ticket refunds on a cancelled event ran inline once and were never retried",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/events/cancellation.ts",
+        "ref": "ADR-1212"
+      },
+      "detail": "Scan two, phase D (2026-09-05). L6-04 (LIVE-158). Cancellation enqueues one ticket_refund outbox job per succeeded ticket; the handler runs the real refund idempotently and throws on refusal so the outbox retries, and the Manage page shows how many refunds are still owed.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const R=(f)=>fs.readFileSync(f,'utf8');const C=(f)=>R(f).replace(/\\\\/\\\\*[\\\\s\\\\S]*?\\\\*\\\\//g,'').replace(/^\\\\s*\\\\/\\\\/.*$/gm,'');process.exit(/\\\\[TICKET_REFUND_KIND\\\\]: runTicketRefund/.test(R('lib/queue/handlers.ts'))&&!/await refundTicket\\\\(ticket\\\\.id/.test(C('lib/events/cancellation.ts'))?0:1)\"",
+        "note": "Fails if the refund goes inline again."
+      }
+    },
+    {
+      "id": "SCAN-634",
+      "title": "Signup leads were captured at /join and read by nothing",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/crm/signup-leads.ts",
+        "ref": "ADR-1212"
+      },
+      "detail": "Scan two, phase D (2026-09-05). L9-03. Closed: an abandoned-leads reader with a CSV export, a staff-only admin page under /admin/crm/leads composed on AdminTemplate, and one catalog row in STUDIO_LEAVES. The recovery cron the table was built for is LIVE-170.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const R=(f)=>fs.readFileSync(f,'utf8');const C=(f)=>R(f).replace(/\\\\/\\\\*[\\\\s\\\\S]*?\\\\*\\\\//g,'').replace(/^\\\\s*\\\\/\\\\/.*$/gm,'');process.exit(/href: '\\\\/admin\\\\/crm\\\\/leads'/.test(R('lib/nav/studio.ts'))&&fs.existsSync('app/(main)/admin/crm/leads/page.tsx')?0:1)\"",
+        "note": "Fails if the page or its catalog row is removed."
+      }
+    },
+    {
+      "id": "SCAN-635",
+      "title": "Partner offers could never exist, so the partner pages promised member offers that were always empty",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "app/(main)/partners/listing/actions.ts",
+        "ref": "ADR-1212"
+      },
+      "detail": "Scan two, phase D (2026-09-05). L9-04. partner_offers had no writer anywhere. Closed: an Offers section on the partner listing form writes through saveOffer with the listing's authorization, listLiveOffers and the partner view filter by active and valid_until, and a partner-node capture attributes offer_id only when the partner has exactly one live offer.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const R=(f)=>fs.readFileSync(f,'utf8');const C=(f)=>R(f).replace(/\\\\/\\\\*[\\\\s\\\\S]*?\\\\*\\\\//g,'').replace(/^\\\\s*\\\\/\\\\/.*$/gm,'');process.exit(/from\\\\('partner_offers'\\\\)[\\\\s\\\\S]*?\\\\.insert\\\\(/.test(C('app/(main)/partners/listing/actions.ts'))&&/export function isOfferLive/.test(C('lib/partners/offers.ts'))?0:1)\"",
+        "note": "Fails if the writer or the liveness rule is removed."
+      }
+    },
+    {
+      "id": "LIVE-175",
+      "title": "The packed-cache estimate ran low on all three paired readings of 2026-09-05, and the upload reached 1.41 GB",
+      "status": "open",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "scripts/check-cache-budget.mjs",
+        "ref": "PACKED_PER_RAW"
+      },
+      "detail": "Scan two, phase D6 (2026-09-05), measured on the merge run itself. check:cache-budget predicts packed size as raw x PACKED_PER_RAW = 0.53, and ADR-1113 settled that constant on paired readings accurate to 1% and rounded toward firing the trim EARLY. Three paired readings the same day all ran the other way: 1.31 predicted / 1.31 uploaded (main at 08e6169), 1.36 / 1.38 (main at 67ada96), and 1.35 / 1.41 (main at e2d6107). The last is 94% of the 1.50 GB ceiling and at the trim point, and a 4% low estimate is the direction that costs a BUILD rather than a CPU minute, because the trim fires after the cache is already over. The mix has moved: .next/cache grew 1428 to 1522 MiB across the day while node_modules held at 921 MiB, so the cache is more compiler-heavy than the mix 0.53 was derived on. Re-derive the constant from these readings (the implied ratio is near 0.55) and raise it, which fires the trim earlier; do NOT lower it. The change belongs in its own PR with the green build that proves it, per the rule that a threshold ships beside its measurement.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "2026-09-05: three paired readings from production build logs (dpl_Cas653f4, dpl_6gcnzawu, dpl_AUFhqsQt): predicted 1.31/1.36/1.35 GB against uploaded 1.31/1.38/1.41 GB. Closes when a re-derived PACKED_PER_RAW ships with a paired reading that agrees within 1% on the current mix.",
+        "checked": "2026-09-05"
       }
     }
   ]

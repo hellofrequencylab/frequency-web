@@ -14,12 +14,22 @@ import { SITE_URL } from '@/lib/site'
 
 // Event types operators can trigger on (matches engagement_events.event_type +
 // the gamification events that flow through the ledger).
+// 2026-09-05 (scan2 L4-01): the sentence above was only half true. The runner matches
+// `automation_rules.trigger_event` by exact string against what recordEngagementEvent writes,
+// and gamification-ledger keys never reach that ledger on their own. Three of the five offered
+// triggers had NO recorder: `circle_join` (a Circle join records `circle.joined` via track()),
+// `post_create` (only processGamificationEvent + awardGems ran), and `event_attend` (same, at
+// RSVP and check-in). A rule saved on one of them listed as enabled and never fired. The list
+// now holds only strings a call site records: `circle_join` is renamed to the recorded key
+// (stored rows migrated in 20270345001000_automation_trigger_keys.sql), `post_create` is now
+// recorded by createPost (app/(main)/feed/actions.ts), and `event_attend` is withdrawn until a
+// recorder exists. lib/automations.test.ts pins every entry to a recorder in app/ or lib/.
 export const AUTOMATION_TRIGGERS = [
   'practice.verified',
+  'event_attend', // recorded by checkInEvent on a verified check-in (2026-09-05, scan2 L4-01)
   'node_capture',
-  'circle_join',
+  'circle.joined',
   'post_create',
-  'event_attend',
 ] as const
 
 // Actions a rule can fire. `email_actor` emails the event's actor (consent-checked,

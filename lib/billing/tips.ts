@@ -27,6 +27,7 @@ import { stripe, appUrl } from './stripe'
 import { getConnectStatus, payoutsLive } from './connect'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { recordFinancialTransaction, ENTITY_ID } from '@/lib/finance/record'
+import { notifyTipRecipient } from './tips-notify'
 
 // The amounts live in ./tips-core (dependency-free) so client components can read them
 // without dragging this module's admin client + Stripe SDK into the browser (LIVE-037).
@@ -151,14 +152,20 @@ export async function recordTipFromSession(session: Stripe.Checkout.Session): Pr
     .update({ status: 'succeeded', succeeded_at: new Date().toISOString(), stripe_payment_intent_id: paymentIntentId })
     .eq('stripe_checkout_session_id', session.id)
     .eq('status', 'pending')
-    .select('id, platform_fee_cents, from_profile_id, currency')
+    .select('id, platform_fee_cents, from_profile_id, currency, to_profile_id, amount_cents, message')
   const rows = (updated ?? []) as {
     id: string
     platform_fee_cents: number
     from_profile_id: string | null
     currency: string
+    to_profile_id: string
+    amount_cents: number
+    message: string | null
   }[]
   for (const row of rows) {
+    // 2026-09-05 (scan2 L9-05): tell the recipient. Runs once per flipped row, so a redelivered
+    // event (zero rows flipped) never notifies twice. Best-effort like the ledger append below.
+    await notifyTipRecipient(row).catch(() => {})
     // A tip is a Connect destination charge — the gross transfers to the recipient; the
     // entity's (Labs, for-profit) revenue is the platform application fee. Idempotent per
     // tip; best-effort so a ledger hiccup never fails the webhook.

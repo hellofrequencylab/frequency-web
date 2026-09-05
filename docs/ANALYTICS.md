@@ -151,8 +151,13 @@ Every key action in the member journey emits a named event. Initial set:
 | `post.created` | a post is published | scope, type |
 | `invite.sent` / `invite.accepted` | invite lifecycle | channel |
 | `session.active` | meaningful session start | — |
+| `qr.referral_activated` | a referred member activates and the referrer is credited | referrer |
 
-(Extends as features land; the taxonomy lives in one module so it's reviewable.)
+(Extends as features land; the taxonomy lives in one module so it's reviewable. The table above is
+the prose copy; `lib/analytics/events.ts` is the module, and it is the source of truth when the two
+disagree. 2026-09-05, scan two: `qr.referral_activated` had been in the module since the referral
+credit shipped and was missing from this table, which is the direction of drift a reader notices
+last, because a taxonomy that is short reads as complete.)
 
 ## Admin dashboard (Studio)
 
