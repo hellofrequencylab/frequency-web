@@ -24,7 +24,8 @@ export async function completeJourneyLessonAction(
   const planId = loaded.plan.id
 
   const before = await getJourneyTree(slug, caller.id)
-  await completeLesson(caller.id, planId, itemId)
+  const ticked = await completeLesson(caller.id, planId, itemId)
+  if (!ticked.ok) return fail(ticked.error)
   const after = await getJourneyTree(slug, caller.id)
 
   const events =
@@ -83,7 +84,8 @@ export async function uncompleteJourneyLessonAction(
   const loaded = await getPlan(slug)
   if (!loaded) return fail('Journey not found.')
 
-  await uncompleteLesson(caller.id, itemId)
+  const unticked = await uncompleteLesson(caller.id, itemId)
+  if (!unticked.ok) return fail(unticked.error)
 
   revalidatePath(`/journeys/${slug}/learn`)
   return ok(null)

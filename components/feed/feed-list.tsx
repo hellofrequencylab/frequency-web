@@ -21,6 +21,8 @@ import { PostCard, type FeedPost, type RawPost } from './post-card'
 import { upcomingEventFloor } from '@/lib/events/upcoming-floor'
 import { dayInZone, HOME_TZ } from '@/lib/time/zone'
 import { EmptyState } from '@/components/ui/empty-state'
+import { buttonClasses } from '@/components/ui/button'
+import { readFeedRpc, type FeedLoad } from '@/lib/feed/load-feed'
 
 // Day bucketing for the Story lens (matches /journal's grouping voice).
 //
@@ -164,6 +166,7 @@ export async function FeedList({
   emptyMessage = 'Nothing posted yet. Be the first to share something.',
   viewerRole,
   nearby = null,
+  retryHref,
 }: {
   circleIds?: string[]
   myProfileId: string | null
@@ -176,6 +179,8 @@ export async function FeedList({
   viewerRole?: string
   /** The member's location for the 'nearby' lens (location-aware feed, ADR-088). */
   nearby?: { lat: number; lng: number; radiusM: number } | null
+  /** Where "Try again" points when the feed RPC fails (the page's own path). Omit for no link. */
+  retryHref?: string
 }) {
   const admin = createAdminClient()
 
@@ -188,7 +193,11 @@ export async function FeedList({
 
   // ── Posts ──────────────────────────────────────────────────────────────────
 
-  let rawPosts: RawPost[] = []
+  // 2026-09-05 (scan2 L5-03): both RPC reads below used to be `const { data } = ...; data ?? []`,
+  // so a failed call (timeout, RLS refusal, missing function) rendered the EMPTY state for every
+  // member and logged nothing. They now go through readFeedRpc, which reads `error`, logs it with
+  // the RPC name, and yields a discriminated result; an 'error' renders FeedError, never FeedEmpty.
+  let loaded: FeedLoad<RawPost> = { kind: 'ok', items: [] }
 
   if (myProfileId) {
     if (!showPublicLayer && circleIds.length > 0) {
@@ -200,12 +209,14 @@ export async function FeedList({
       // members-only 'group' posts) while still returning a member's group/cluster
       // posts that the crew+ posts RLS policy would otherwise drop.
       const supabase = (await createClient())
-      const { data } = await supabase.rpc('scoped_feed_for_viewer', {
-        _scope_ids: circleIds,
-        _sort: fetchSort,
-        _limit: 30,
-      })
-      rawPosts = (data as RawPost[] | null) ?? []
+      loaded = readFeedRpc<RawPost>(
+        'scoped_feed_for_viewer',
+        await supabase.rpc('scoped_feed_for_viewer', {
+          _scope_ids: circleIds,
+          _sort: fetchSort,
+          _limit: 30,
+        }),
+      )
     } else {
       // Main feed (RLS convergence, migration 20240309000000): the reach model —
       // public + group in my circles + cluster reachable via a shared hub or a
@@ -226,10 +237,14 @@ export async function FeedList({
         rpcArgs._lng = nearby.lng
         rpcArgs._radius_m = nearby.radiusM
       }
-      const { data } = await supabase.rpc('feed_for_viewer', rpcArgs)
-      rawPosts = (data as RawPost[] | null) ?? []
+      loaded = readFeedRpc<RawPost>('feed_for_viewer', await supabase.rpc('feed_for_viewer', rpcArgs))
     }
   }
+
+  if (loaded.kind === 'error') {
+    return <FeedError retryHref={retryHref} />
+  }
+  let rawPosts: RawPost[] = loaded.items
 
   // Member-level beta-content toggle: drop seeded demo posts for an opted-out
   // viewer (the global demo_mode already removes them when it's off). Reused
@@ -513,6 +528,26 @@ function EventFeedCard({ event: e }: { event: { id: string; title: string; start
 // — every one of them is already written as "Statement. Next step." — so it is split on the first
 // sentence boundary into the kit's title + description. A message with no boundary is used whole
 // as the title, which is what the old single-paragraph card did.
+// The feed's ERROR pane (scan2 L5-03, 2026-09-05): the kit's `error` variant, so a failed RPC
+// reads as "could not load", never as "nothing here yet". The retry is a link to the page's own
+// path, which re-runs the Server Component and its RPC.
+function FeedError({ retryHref }: { retryHref?: string }) {
+  return (
+    <EmptyState
+      variant="error"
+      title="The feed could not load."
+      description="Try again in a moment."
+      action={
+        retryHref ? (
+          <Link href={retryHref} className={buttonClasses('secondary', 'sm')}>
+            Try again
+          </Link>
+        ) : undefined
+      }
+    />
+  )
+}
+
 function FeedEmpty({ message }: { message: string }) {
   const split = message.match(/^(.+?[.!?])\s+(.+)$/)
   return (

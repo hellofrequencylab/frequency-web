@@ -52,3 +52,14 @@ export function mapNotificationRow(r: NotificationRpcRow): NotificationItem {
       : null,
   }
 }
+
+// ── Load results (scan2 L5-03, 2026-09-05) ─────────────────────────────────────────────────
+// The bell's two reads used to fold a failed RPC into "no notifications" and "0 unread". The list
+// loader now returns a discriminated result, and the count loader returns UNREAD_COUNT_UNAVAILABLE
+// (a negative sentinel, because the count travels through the app shell as a plain number) so the
+// bell can render no badge and say the count could not load, instead of a zero that is not real.
+
+export type NotificationsLoad = { kind: 'ok'; items: NotificationItem[] } | { kind: 'error' }
+
+/** `getUnreadCount()` returns this when the count RPC fails: no badge, and never a false zero. */
+export const UNREAD_COUNT_UNAVAILABLE = -1

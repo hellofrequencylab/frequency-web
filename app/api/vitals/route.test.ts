@@ -20,6 +20,11 @@ const db = vi.hoisted(() => ({
   tables: [] as string[],
   inserts: [] as Record<string, unknown>[][],
   fail: false,
+  /** What a RESOLVED insert carries. supabase-js resolves `{ error }`; it never rejects on a DB error. */
+  result: { error: null as { message: string } | null },
+}))
+const logged = vi.hoisted(() => ({
+  error: [] as { event: string; fields?: Record<string, unknown> }[],
 }))
 
 vi.mock('@/lib/supabase/admin', () => ({
@@ -31,11 +36,22 @@ vi.mock('@/lib/supabase/admin', () => ({
           db.inserts.push(rows)
           // The route chains `.then(undefined, () => {})`, so the mock has to be a real thenable —
           // and a rejecting one is how the fail-safe below is exercised.
-          return db.fail ? Promise.reject(new Error('interaction_events is down')) : Promise.resolve({ error: null })
+          // 2026-09-05 (scan2 L2-08): the route now awaits and READS `{ error }`. The rejecting arm
+          // stays for the transport case; `db.result` is the resolved-error case the old chain
+          // never saw, and the one supabase-js actually produces.
+          return db.fail ? Promise.reject(new Error('interaction_events is down')) : Promise.resolve(db.result)
         },
       }
     },
   }),
+}))
+
+vi.mock('@/lib/log', () => ({
+  log: {
+    info: () => {},
+    warn: () => {},
+    error: (event: string, fields?: Record<string, unknown>) => logged.error.push({ event, fields }),
+  },
 }))
 
 import { POST } from './route'
@@ -76,6 +92,8 @@ beforeEach(() => {
   db.tables.length = 0
   db.inserts.length = 0
   db.fail = false
+  db.result = { error: null }
+  logged.error.length = 0
 })
 
 describe('what a vitals row must never carry', () => {
@@ -161,5 +179,30 @@ describe('the fail-safe posture: telemetry never surfaces an error', () => {
     const res = await POST(sealedRequest({ sessionId: 's', events: [vital()] }))
     expect(res.status).toBe(204)
     expect(await res.text()).toBe('')
+    // 2026-09-05 (scan2 L2-08): leaks nothing to the CLIENT. The logs get the whole story.
+    expect(logged.error).toHaveLength(1)
+    expect(logged.error[0].fields).toMatchObject({ table: 'interaction_events', error: 'interaction_events is down' })
+  })
+
+  // Scan two L2-08 (2026-09-05): `.then(undefined, () => {})` only ever handled a rejection, and
+  // supabase-js resolves `{ error }`, so a failing insert was dropped with nothing in the logs. The
+  // resolved-error shape is the one that matters, and it must land in the log at error level with
+  // the table name while the beacon still gets its 204.
+  it('logs a RESOLVED { error } at error level with the table name, and still answers 204', async () => {
+    db.result = { error: { message: 'permission denied for table interaction_events' } }
+    const res = await POST(sealedRequest({ sessionId: 's', events: [vital()] }))
+    expect(res.status).toBe(204)
+    expect(await res.text()).toBe('')
+    expect(logged.error).toEqual([
+      {
+        event: 'vitals.insert_failed',
+        fields: { table: 'interaction_events', rows: 1, error: 'permission denied for table interaction_events' },
+      },
+    ])
+  })
+
+  it('logs nothing when the write succeeds', async () => {
+    await POST(sealedRequest({ sessionId: 's', events: [vital()] }))
+    expect(logged.error).toEqual([])
   })
 })

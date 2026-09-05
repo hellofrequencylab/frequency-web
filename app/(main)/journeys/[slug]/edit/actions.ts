@@ -28,6 +28,7 @@ import {
 import { getGlobalCapabilities } from '@/lib/core/load-capabilities'
 import { WARMUP_MESSAGE_MAX } from '@/lib/on-air'
 import { toPortable, type PortableJourney } from '@/lib/journeys/portable'
+import { log } from '@/lib/log'
 
 type BlockUpdate = Database['public']['Tables']['journey_plan_items']['Update']
 
@@ -403,11 +404,19 @@ export async function composeJourneyAction(
   const { aiUsed, title } = await composeIntoPhase({ admin, planId: a.planId, phaseId, description: desc, profileId: a.profileId })
 
   // Name an untitled Journey from Vera's suggestion.
+  // 2026-09-05 (scan2 L5-13): the title write reads its { error }. The week is already composed
+  // by then, so the page is still revalidated and the author is told the one thing that did not
+  // land, instead of a silent "saved" over a still-untitled Journey.
   if (title) {
     const loaded = await getPlan(slug)
     const current = (loaded?.plan.title ?? '').trim().toLowerCase()
     if (!current || current === 'untitled journey' || current === 'untitled') {
-      await admin.from('journey_plans').update({ title }).eq('id', a.planId)
+      const { error } = await admin.from('journey_plans').update({ title }).eq('id', a.planId)
+      if (error) {
+        log.error('journeys.vera_title_write_failed', { planId: a.planId, error: error.message })
+        done(slug)
+        return fail('Vera filled the week, but the title did not save. Name the journey by hand.')
+      }
     }
   }
 
@@ -469,7 +478,10 @@ type PlanUpdate = Database['public']['Tables']['journey_plans']['Update']
 /** Vera "apply the change" (ADR-302): the author types a plain-language change; Vera reads the whole
  *  Journey and returns constrained edit ops, which we re-validate (every id must belong to this plan)
  *  and apply in place. Powers the editor's "tell Vera what to change" box on a populated Journey. */
-export async function applyVeraChangeAction(slug: string, request: string): Promise<ActionResult<{ applied: number }>> {
+export async function applyVeraChangeAction(
+  slug: string,
+  request: string,
+): Promise<ActionResult<{ applied: number; failed: number[] }>> {
   const a = await authorPlan(slug)
   if (!a) return fail('Only the author can edit this journey.')
   const req = request.trim().slice(0, 1000)
@@ -513,41 +525,62 @@ export async function applyVeraChangeAction(slug: string, request: string): Prom
   const validIds = new Set(items.map((b) => b.id))
   const phaseIds = new Set(phases.map((p) => p.id))
   const pillarIds = await pillarIdsBySlug()
+  // 2026-09-05 (scan2 L5-13): `applied` used to count an op BEFORE its write was known to have
+  // landed. Every op now reads its { error }; only landed ops count, and the ones that were refused
+  // come back by index in `failed` so the editor can say what Vera did not manage to change.
   let applied = 0
+  const failed: number[] = []
+  const settle = (index: number, error: { message: string } | null) => {
+    if (!error) {
+      applied++
+      return
+    }
+    failed.push(index)
+    log.error('journeys.vera_op_write_failed', { planId: a.planId, index, error: error.message })
+  }
 
-  for (const op of ops) {
+  for (const [index, op] of ops.entries()) {
     if (op.op === 'identity') {
       const upd: PlanUpdate = {}
       if (op.title) upd.title = op.title
       if (op.subtitle !== undefined) upd.summary = op.subtitle || null
       if (op.intro !== undefined) upd.intro = op.intro || null
-      if (Object.keys(upd).length) { await admin.from('journey_plans').update(upd).eq('id', a.planId); applied++ }
+      if (Object.keys(upd).length) {
+        const { error } = await admin.from('journey_plans').update(upd).eq('id', a.planId)
+        settle(index, error)
+      }
     } else if (op.op === 'phase') {
       if (!phaseIds.has(op.id)) continue
       const upd: BlockUpdate = {}
       if (op.title) upd.title = op.title
       if (op.focus !== undefined) upd.body = op.focus || null
-      if (Object.keys(upd).length) { await admin.from('journey_plan_items').update(upd).eq('id', op.id).eq('plan_id', a.planId); applied++ }
+      if (Object.keys(upd).length) {
+        const { error } = await admin.from('journey_plan_items').update(upd).eq('id', op.id).eq('plan_id', a.planId)
+        settle(index, error)
+      }
     } else if (op.op === 'practice') {
       if (!validIds.has(op.id) || phaseIds.has(op.id)) continue
       const upd: BlockUpdate = {}
       if (op.title) upd.title = op.title
       if (op.body !== undefined) upd.body = op.body || null
-      if (Object.keys(upd).length) { await admin.from('journey_plan_items').update(upd).eq('id', op.id).eq('plan_id', a.planId); applied++ }
+      if (Object.keys(upd).length) {
+        const { error } = await admin.from('journey_plan_items').update(upd).eq('id', op.id).eq('plan_id', a.planId)
+        settle(index, error)
+      }
     } else if (op.op === 'add_practice') {
       if (!phaseIds.has(op.phaseId)) continue
       const sort = await nextSortOrder(admin, a.planId, op.phaseId)
-      await admin.from('journey_plan_items').insert({ plan_id: a.planId, parent_id: op.phaseId, block_type: 'practice', title: op.title, body: op.body, domain_id: pillarIds[op.pillar] ?? null, sort_order: sort, required: true })
-      applied++
+      const { error } = await admin.from('journey_plan_items').insert({ plan_id: a.planId, parent_id: op.phaseId, block_type: 'practice', title: op.title, body: op.body, domain_id: pillarIds[op.pillar] ?? null, sort_order: sort, required: true })
+      settle(index, error)
     } else if (op.op === 'remove') {
       if (!validIds.has(op.id)) continue
-      await admin.from('journey_plan_items').delete().eq('id', op.id).eq('plan_id', a.planId)
-      applied++
+      const { error } = await admin.from('journey_plan_items').delete().eq('id', op.id).eq('plan_id', a.planId)
+      settle(index, error)
     }
   }
 
   done(slug)
-  return ok({ applied })
+  return ok({ applied, failed })
 }
 
 export async function updateBlockAction(
@@ -730,8 +763,34 @@ export async function moveBlockAction(slug: string, itemId: string, dir: 'up' | 
   const swapIdx = dir === 'up' ? idx - 1 : idx + 1
   if (idx < 0 || swapIdx < 0 || swapIdx >= list.length) return ok() // already at the edge
   const neighbor = list[swapIdx]
-  await admin.from('journey_plan_items').update({ sort_order: neighbor.sort_order }).eq('id', s.id)
-  await admin.from('journey_plan_items').update({ sort_order: s.sort_order }).eq('id', neighbor.id)
+  // 2026-09-05 (scan2 L5-13): the swap is two updates and there is no swap RPC, so both are
+  // checked. A refused FIRST write leaves the tree as it was; a refused SECOND write would leave
+  // both siblings on the neighbor's sort_order (a duplicate the tree cannot order), so the first is
+  // put back before the refusal is returned. A failed revert is logged loudly.
+  const { error: firstErr } = await admin
+    .from('journey_plan_items')
+    .update({ sort_order: neighbor.sort_order })
+    .eq('id', s.id)
+  if (firstErr) return fail('Could not move that step.')
+  const { error: secondErr } = await admin
+    .from('journey_plan_items')
+    .update({ sort_order: s.sort_order })
+    .eq('id', neighbor.id)
+  if (secondErr) {
+    const { error: revertErr } = await admin
+      .from('journey_plan_items')
+      .update({ sort_order: s.sort_order })
+      .eq('id', s.id)
+    if (revertErr) {
+      log.error('journeys.move_revert_failed', {
+        planId: a.planId,
+        itemId: s.id,
+        neighborId: neighbor.id,
+        error: revertErr.message,
+      })
+    }
+    return fail('Could not move that step.')
+  }
   done(slug)
   return ok()
 }

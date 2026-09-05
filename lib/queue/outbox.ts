@@ -4,7 +4,7 @@
 // them. A cron drains the queue with retries + exponential backoff. Server-only.
 
 import { createAdminClient } from '@/lib/supabase/admin'
-import type { Json } from '@/lib/database.types'
+import type { Database, Json } from '@/lib/database.types'
 
 export interface QueueJob {
   id: string
@@ -261,28 +261,45 @@ function db() {
   return createAdminClient()
 }
 
+/** Postgres unique_violation. The only code enqueue reads: it is what a repeated dedupeKey raises. */
+const UNIQUE_VIOLATION = '23505'
+
 /** Enqueue a job. `runAfter` delays first execution; `maxAttempts` defaults to 5; `lane` marks a
- *  fan-out as bulk so it can never take the quota a transactional message is waiting for. */
+ *  fan-out as bulk so it can never take the quota a transactional message is waiting for.
+ *
+ *  `dedupeKey` (scan two L2-02, migration 20270345000700) makes the enqueue idempotent: the key is
+ *  unique on notification_queue where set, so a second enqueue carrying the same key does not land
+ *  and resolves `{ enqueued: false }` instead of throwing. Callers that send once per period pass a
+ *  key naming the period (`weekly-digest:<profile_id>:<ISO week>`) so a re-fired or retried run
+ *  cannot double-send. Keyless calls behave exactly as before and always report `enqueued: true`. */
 export async function enqueue(
   kind: string,
   payload: Record<string, unknown>,
-  opts?: { runAfter?: Date; maxAttempts?: number; lane?: JobLane },
-): Promise<void> {
+  opts?: { runAfter?: Date; maxAttempts?: number; lane?: JobLane; dedupeKey?: string },
+): Promise<{ enqueued: boolean }> {
   // Callers treat enqueue as durable (the whole point of the outbox is that a
   // provider outage can't drop the side-effect). supabase-js returns { error }
   // rather than throwing, so an unchecked failure would silently lose the job with
   // no log, no retry, no dead-letter. Throw so the caller sees the failure.
-  const { error } = await db()
-    .from('notification_queue')
-    .insert({
-      kind,
-      // The lane rides in the payload (no lane column, no migration). Only stamped for bulk:
-      // transactional is the default everywhere, so an unstamped row reads correctly.
-      payload: (opts?.lane === 'bulk' ? { ...payload, [LANE_KEY]: 'bulk' } : payload) as Json,
-      run_after: (opts?.runAfter ?? new Date()).toISOString(),
-      max_attempts: opts?.maxAttempts ?? 5,
-    })
-  if (error) throw new Error(`enqueue(${kind}) failed: ${error.message}`)
+  const row = {
+    kind,
+    // The lane rides in the payload (no lane column, no migration). Only stamped for bulk:
+    // transactional is the default everywhere, so an unstamped row reads correctly.
+    payload: (opts?.lane === 'bulk' ? { ...payload, [LANE_KEY]: 'bulk' } : payload) as Json,
+    run_after: (opts?.runAfter ?? new Date()).toISOString(),
+    max_attempts: opts?.maxAttempts ?? 5,
+    // Only stamped when given, so a keyless row is byte-identical to what it was before the
+    // column existed. dedupe_key is not in the generated types yet (regenerate after applying
+    // 20270345000700), hence the cast through the table's Insert type (ADR-246 convention).
+    ...(opts?.dedupeKey ? { dedupe_key: opts.dedupeKey } : {}),
+  } as unknown as Database['public']['Tables']['notification_queue']['Insert']
+  const { error } = await db().from('notification_queue').insert(row)
+  if (error) {
+    // A repeated key is the idempotency working, not a failure: the earlier row is the send.
+    if (opts?.dedupeKey && error.code === UNIQUE_VIOLATION) return { enqueued: false }
+    throw new Error(`enqueue(${kind}) failed: ${error.message}`)
+  }
+  return { enqueued: true }
 }
 
 /**

@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { mergeProfileMeta } from '@/lib/profiles/meta'
 import { awardGems } from '@/lib/gems'
 import { recordStreakActivity } from '@/lib/achievements'
 import { resolveMemberDay } from '@/lib/member-day'
@@ -52,11 +53,19 @@ export async function dailyCheckIn(clientTimezone?: string): Promise<DailyCheckI
   const dayStreak = meta.daily_checkin_date === previousDay(today) ? prev + 1 : 1
 
   // Stamp date + streak FIRST (idempotency guard) so a double-load can't double-pay.
+  // 2026-09-05 (scan2 L5-06 / L6-09): the stamp is a server-side merge of ONLY the two check-in keys,
+  // so it can never revert a practice-streak day or a walkthrough stamp written in the same second,
+  // and it is CHECKED: a stamp that did not land pays nothing, because an unstamped day would pay
+  // again on the next load. The gem is the side effect; the stamp is the guard.
   const admin = createAdminClient()
-  await admin
-    .from('profiles')
-    .update({ meta: { ...meta, daily_checkin_date: today, daily_checkin_streak: dayStreak } })
-    .eq('id', profile.id)
+  const { error: stampErr } = await mergeProfileMeta(admin, profile.id, {
+    daily_checkin_date: today,
+    daily_checkin_streak: dayStreak,
+  })
+  if (stampErr) {
+    console.error('[dailyCheckIn] check-in stamp failed, paying nothing', { profileId: profile.id, error: stampErr })
+    return null
+  }
 
   const gem = await awardGems(profile.id, 'daily_login')
   await recordStreakActivity(profile.id, 'login').catch(() => null) // weekly active streak too

@@ -2,7 +2,58 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { refundTicket } from '@/lib/billing/tickets'
 import { sendEventCancelledEmail, sendGuestEventCancelledEmail } from '@/lib/email'
 import { resolveSendGate } from '@/lib/comms/send-gate'
+import { enqueue, type JobHandler } from '@/lib/queue/outbox'
 import { formatEventWhen } from '@/lib/time/zone'
+
+// ── The refund is a QUEUED job, not an inline call (scan2 L6-04, LIVE-158) ─────────────────────
+// Until 2026-09-05 refundAndNotifyForCancelledEvent called refundTicket() in a loop, after the
+// cancel flip had already committed. A Stripe error, a connected-account balance short of the
+// refund, or a crash mid-loop left the buyer charged for a cancelled event, the ticket row
+// `succeeded`, and nothing queued: the firstCancel guard makes a second cancel a no-op, so there
+// was no way to retry short of the Stripe dashboard. Now cancellation enqueues ONE outbox job per
+// succeeded ticket and the drain (lib/queue/handlers.ts) runs runTicketRefund, which is
+// idempotent (refundTicket returns ok on an already-refunded ticket without touching Stripe) and
+// THROWS on a processor error so the outbox's own retry + dead-letter covers it. The Manage page
+// reads countRefundsOwed to show what is still outstanding.
+
+export const TICKET_REFUND_KIND = 'ticket_refund'
+
+/** Outbox handler for `ticket_refund`. payload: { ticketId, eventId }. A ticket already refunded
+ *  is a clean no-op; a processor refusal throws so the job retries and, past the cap, dead-letters
+ *  onto the operator surface instead of vanishing. Never marks a failed refund done. */
+export const runTicketRefund: JobHandler = async (payload) => {
+  const ticketId = typeof payload.ticketId === 'string' ? payload.ticketId : ''
+  const eventId = typeof payload.eventId === 'string' ? payload.eventId : ''
+  if (!ticketId || !eventId) throw new Error('ticket_refund job missing ticketId or eventId')
+  const r = await refundTicket(ticketId, eventId)
+  if (r.error) throw new Error(`ticket_refund: ${r.error}`)
+}
+
+/** How many succeeded tickets a CANCELLED event still holds, i.e. refunds still owed. Zero for a
+ *  live event, and zero (logged) on a failed read so the number is never invented. */
+export async function countRefundsOwed(eventId: string): Promise<number> {
+  const admin = createAdminClient()
+  const { data: ev, error: evErr } = await admin
+    .from('events')
+    .select('is_cancelled')
+    .eq('id', eventId)
+    .maybeSingle()
+  if (evErr) {
+    console.error('[cancelEvent] refunds-owed event read failed', { eventId, error: evErr.message })
+    return 0
+  }
+  if (!ev?.is_cancelled) return 0
+  const { count, error } = await admin
+    .from('event_tickets')
+    .select('id', { count: 'exact', head: true })
+    .eq('event_id', eventId)
+    .eq('status', 'succeeded')
+  if (error) {
+    console.error('[cancelEvent] refunds-owed count failed', { eventId, error: error.message })
+    return 0
+  }
+  return count ?? 0
+}
 
 interface CancelTicketRow {
   id: string
@@ -44,7 +95,12 @@ async function resolveRecipient(
  *     other transactional event email.
  *  Callers MUST invoke this only on the live → cancelled transition (guarding the
  *  update so a re-cancel returns zero rows), so it's not re-run (no double-email) on
- *  a repeated cancel. */
+ *  a repeated cancel.
+ *
+ *  2026-09-05 (scan2 L6-04): the second bullet is retired. Refunds no longer run here at all;
+ *  each succeeded ticket becomes one `ticket_refund` outbox job (see the header), so a failure
+ *  is retried by the drain rather than "logged + collected" and forgotten. The buyer email is
+ *  still enqueued here, per buyer, exactly as before. */
 export async function refundAndNotifyForCancelledEvent(eventId: string): Promise<void> {
   const admin = createAdminClient()
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://frequencylocal.com'
@@ -67,11 +123,15 @@ export async function refundAndNotifyForCancelledEvent(eventId: string): Promise
   // ── 1. Refund every succeeded ticket (idempotent + frees inventory) ──────────
   // `event_tickets` isn't in the generated DB types yet → untyped-client cast
   // (the lib/billing/* convention).
-  const { data: ticketData } = await (admin)
+  // 2026-09-05 (scan2 L6-04): event_tickets IS in lib/database.types.ts now; the cast below is
+  // harmless and left as is. "refund" here now means "enqueue the refund job". The read is
+  // checked for its error: a failed read must not look like an event with no tickets.
+  const { data: ticketData, error: ticketErr } = await (admin)
     .from('event_tickets')
     .select('id, buyer_profile_id')
     .eq('event_id', eventId)
     .eq('status', 'succeeded')
+  if (ticketErr) console.error('[cancelEvent] ticket read failed', { eventId, error: ticketErr.message })
   const tickets = (ticketData ?? []) as CancelTicketRow[]
 
   const refundedBuyerIds = new Set<string>()
@@ -79,24 +139,21 @@ export async function refundAndNotifyForCancelledEvent(eventId: string): Promise
 
   for (const ticket of tickets) {
     try {
-      const r = await refundTicket(ticket.id, eventId)
-      if (r.error) {
-        failures.push({ ticketId: ticket.id, error: r.error })
-        console.error('[cancelEvent] refund failed', { eventId, ticketId: ticket.id, error: r.error })
-        continue
-      }
+      await enqueue(TICKET_REFUND_KIND, { ticketId: ticket.id, eventId })
       if (ticket.buyer_profile_id) refundedBuyerIds.add(ticket.buyer_profile_id)
     } catch (err) {
+      // enqueue throws when the outbox insert is refused. The ticket stays `succeeded`, so it
+      // still shows on the Manage page as a refund owed; nothing here pretends otherwise.
       failures.push({ ticketId: ticket.id, error: String(err) })
-      console.error('[cancelEvent] refund threw', { eventId, ticketId: ticket.id, err })
+      console.error('[cancelEvent] refund enqueue failed', { eventId, ticketId: ticket.id, err })
     }
   }
 
   if (failures.length) {
-    console.error('[cancelEvent] refund summary', {
+    console.error('[cancelEvent] refund enqueue summary', {
       eventId,
       total: tickets.length,
-      refunded: tickets.length - failures.length,
+      queued: tickets.length - failures.length,
       failed: failures.length,
     })
   }

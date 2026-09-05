@@ -14,7 +14,7 @@ import {
   type RsvpStatus,
   type ApprovalStatus,
 } from '@/lib/events/rsvp-depth'
-import { composeEventDispatch } from '@/lib/events/dispatch'
+import { composeEventDispatch, type ComposeEventDispatchResult } from '@/lib/events/dispatch'
 import { sendRsvpApprovedNotice } from '@/lib/events/guest-rsvp-email'
 import { findOrCreateDirectConversation } from '@/lib/messages/direct-conversation'
 import { isBlockedBetween } from '@/lib/blocking'
@@ -731,7 +731,7 @@ export async function postEventDispatch(
     /** Email the guest list too (ADR-255 email channel; per-guest preference-gated). */
     toEmail?: boolean
   },
-): Promise<ActionResult<void>> {
+): Promise<ActionResult<{ status: 'ok' | 'send-failed' }>> {
   const profileId = await getMyProfileId()
   if (!profileId) return fail('Sign in to post an update.')
 
@@ -751,8 +751,14 @@ export async function postEventDispatch(
     if (!access.canMessage) return fail(eventCrmLockedError())
   }
 
+  // 2026-09-05 (scan2 L5-05): the result used to be dropped, so a failed page-side write still
+  // returned ok() and a thrown fan-out returned "could not post" for an update that WAS posted.
+  // The data layer now reports a status, and this returns it: a failed write is a failure with
+  // nothing sent; a failed send after the write is ok with status 'send-failed' so the composer
+  // can say the update is on the page and the send did not go out.
+  let res: ComposeEventDispatchResult
   try {
-    await composeEventDispatch({
+    res = await composeEventDispatch({
       eventId,
       authorId: profileId,
       title: args.title?.trim() || null,
@@ -767,7 +773,10 @@ export async function postEventDispatch(
     console.error('[postEventDispatch]', e)
     return fail('Could not post your update. Please try again.')
   }
+  if (res.status === 'write-failed') {
+    return fail('Could not post your update. Please try again.')
+  }
 
   revalidateEvent(slug)
-  return ok()
+  return ok({ status: res.status })
 }

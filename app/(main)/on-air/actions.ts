@@ -8,6 +8,8 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getMyProfileId } from '@/lib/auth'
+// Aliased: completeSession already binds a local `log` (the LogPracticeResult).
+import { log as serverLog } from '@/lib/log'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import { logPractice, getPracticesToLogToday, getPracticeDepthContext, type LogPracticeResult } from '@/lib/practices'
 import { getPracticeStreak } from '@/lib/practice-streak'
@@ -130,6 +132,11 @@ export async function completeSession(
   // Movement sit tags its mode (movement:<walk|yoga|play|workout>) into the free-text
   // `mode` column so it reads back distinct from a Mindless sit; everything else
   // (economy, timer-proof) treats it as the timed sit it is.
+  // 2026-09-05 (scan2 L5-08): "Errors never block the log" is retired. The history row is the
+  // record the Airtime stat and the member's history are summed from, so a refused insert now
+  // STOPS the finish before any economy runs (no Zaps, no streak, no airtime reveal). The member
+  // sees the existing "That did not save" screen, which replays the same args on retry, and the
+  // active timer row below is left in place so that retry keeps its attribution basis.
   const sessionMode = input.movementMode ? `movement:${input.movementMode}` : input.mode
   // The Journal / Just Log reflection rides on the history row (nullable, trimmed + capped).
   // Only these note-bearing modes can carry one; anything else stores null.
@@ -144,7 +151,18 @@ export async function completeSession(
   }
   // `note` is newer than the generated types (ADR-246); the cast keeps the base fields
   // type-checked while still sending the column. Regenerate lib/database.types.ts to drop it.
-  await admin.from('practice_sessions').insert({ ...sessionRow, note } as typeof sessionRow)
+  const { error: sessionError } = await admin
+    .from('practice_sessions')
+    .insert({ ...sessionRow, note } as typeof sessionRow)
+  if (sessionError) {
+    serverLog.error('on_air.session_write_failed', {
+      profileId,
+      practiceId: input.practiceId,
+      mode: sessionMode,
+      error: sessionError.message,
+    })
+    return fail('Could not log this sit. Try again.')
+  }
 
   // Attribution basis for the streak day (ADR-801): a sit left running past midnight belongs to the day
   // it STARTED, not the finalize day. The client's input.startedAt is spoofable (a crafted request could

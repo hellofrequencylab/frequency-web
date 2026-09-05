@@ -95,6 +95,27 @@ export async function recordWelcome(newcomerId: string): Promise<WelcomeResult> 
     return { awarded: false, gems: 0, error: insErr.message }
   }
 
+  // 2026-09-05 (scan2 L9-06): the greeting has to REACH the newcomer. Until now the row landed,
+  // the presser was paid, and the person being welcomed saw nothing. The bell renders the actor's
+  // name in front of `body`, so this reads "<name> welcomed you to Frequency" and links to the
+  // welcomer's profile (reference_type 'profile' resolves through the actor's handle). Best-effort
+  // and read for its error: a refused notification must not undo a welcome that already landed.
+  const { error: notifyErr } = await db.from('notifications').insert({
+    recipient_id: newcomerId,
+    actor_id: me.id,
+    type: 'welcome_received',
+    reference_type: 'profile',
+    reference_id: me.id,
+    body: 'welcomed you to Frequency',
+  })
+  if (notifyErr) {
+    console.error('[welcomes] newcomer notification insert failed', {
+      newcomerId,
+      welcomerId: me.id,
+      error: notifyErr.message,
+    })
+  }
+
   const settings = await getConnectionSettings()
   const r = await awardGems(me.id, 'achievement', settings.rewardWelcome, {
     reason: 'welcome',

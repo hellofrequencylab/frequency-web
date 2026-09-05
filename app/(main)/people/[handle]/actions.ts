@@ -45,18 +45,23 @@ export async function moderateUpdateProfile(
 
 // Block / unblock a member (self only). Blocking also unfriends and stops DMs
 // in both directions (lib/blocking.ts).
-export async function blockProfileAction(profileId: string): Promise<{ ok: boolean }> {
+// 2026-09-05 (scan2 L5-12): both used to return { ok: true } and revalidate no matter what the
+// write did. They now read the write's result: a refused write is a failure with member copy, and
+// nothing is revalidated into a state that is not real.
+export async function blockProfileAction(profileId: string): Promise<ModerateProfileResult> {
   const myId = await getMyProfileId()
-  if (!myId || myId === profileId) return { ok: false }
-  await blockUser(myId, profileId)
+  if (!myId || myId === profileId) return { ok: false, error: 'Block did not save. Try again.' }
+  const res = await blockUser(myId, profileId)
+  if (!res.ok) return { ok: false, error: res.error }
   revalidatePath('/people')
   return { ok: true }
 }
 
-export async function unblockProfileAction(profileId: string): Promise<{ ok: boolean }> {
+export async function unblockProfileAction(profileId: string): Promise<ModerateProfileResult> {
   const myId = await getMyProfileId()
-  if (!myId) return { ok: false }
-  await unblockUser(myId, profileId)
+  if (!myId) return { ok: false, error: 'Unblock did not save. Try again.' }
+  const res = await unblockUser(myId, profileId)
+  if (!res.ok) return { ok: false, error: res.error }
   revalidatePath('/people')
   return { ok: true }
 }

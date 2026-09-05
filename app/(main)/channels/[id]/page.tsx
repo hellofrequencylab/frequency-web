@@ -21,6 +21,7 @@ import { TuneInButton, TunedInButton } from '../channel-toggle'
 import { Composer } from '@/components/feed/composer'
 import { FeedList } from '@/components/feed/feed-list'
 import type { RawPost } from '@/components/feed/post-card'
+import { readFeedRpc } from '@/lib/feed/load-feed'
 import { NewCircleCompose } from '@/components/compose/new-circle-compose'
 import { OpenAdminBarButton } from '@/components/admin/open-admin-bar-button'
 import { canCreate, getChannelCapabilities } from '@/lib/core/load-capabilities'
@@ -123,14 +124,31 @@ async function ForumPreview({
   feedHref: string
 }) {
   let posts: RawPost[] = []
+  // 2026-09-05 (scan2 L5-03): the RPC error is read, so an outage renders "could not load" here
+  // instead of "No posts yet" (readFeedRpc logs it with the RPC name).
+  let loadFailed = false
   if (myProfileId) {
     const supabase = await createClient()
-    const { data } = await supabase.rpc('scoped_feed_for_viewer', {
-      _scope_ids: [channelId],
-      _sort: 'recent',
-      _limit: 3,
-    })
-    posts = (data as RawPost[] | null) ?? []
+    const loaded = readFeedRpc<RawPost>(
+      'scoped_feed_for_viewer',
+      await supabase.rpc('scoped_feed_for_viewer', {
+        _scope_ids: [channelId],
+        _sort: 'recent',
+        _limit: 3,
+      }),
+    )
+    if (loaded.kind === 'error') loadFailed = true
+    else posts = loaded.items
+  }
+
+  if (loadFailed) {
+    return (
+      <div className="rounded-card border border-danger/30 bg-surface/60 px-4 py-3">
+        <p className="text-meta text-muted leading-relaxed">
+          The feed could not load. Try again in a moment.
+        </p>
+      </div>
+    )
   }
 
   if (posts.length === 0) {
@@ -612,6 +630,7 @@ export default async function ChannelPage({
                   circleIds={[channel.id]}
                   showPublicLayer={false}
                   myProfileId={myProfileId}
+                  retryHref={feedHref}
                   emptyMessage={
                     isTunedIn
                       ? 'No posts yet. Start the conversation.'

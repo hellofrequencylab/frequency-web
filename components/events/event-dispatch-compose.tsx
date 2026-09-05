@@ -61,7 +61,9 @@ export function EventDispatchCompose({
         setError(res.error)
         return
       }
-      setError('')
+      // 2026-09-05 (scan2 L5-05, ADR-1212): the page record landed but the send did not; say so and
+      // still clear the box, because the post is on the page.
+      setError(res.data.status === 'send-failed' ? 'Posted to the event page. The send did not go out; try again.' : '')
       setTitle('')
       setBody('')
       setToDispatch(false)

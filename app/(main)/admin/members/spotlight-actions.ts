@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
+import { mergeProfileMeta } from '@/lib/profiles/meta'
 import { logAdminAction } from '@/lib/admin/audit'
 import { isJanitor, asWebRole } from '@/lib/core/roles'
 import { parseInput, z, uuid } from '@/lib/validation'
@@ -49,12 +50,12 @@ export async function toggleSpotlightEnabled(profileId: string, enabled: boolean
     .maybeSingle()
   if (!target) throw new Error('Member not found')
 
-  const nextMeta = withSpotlightEnabled((target as { meta?: unknown }).meta, on)
-  const { error } = await admin
-    .from('profiles')
-    .update({ meta: nextMeta as never })
-    .eq('id', pid)
-  if (error) throw new Error(error.message)
+  // 2026-09-05 (scan2 L6-09): "Read-modify-write of the opaque meta blob" above is retired for the
+  // WRITE half. The read still supplies the spotlight sub-object; only the `spotlight` key is merged
+  // server-side, so a streak or check-in landing in the same second is never reverted.
+  const { spotlight } = withSpotlightEnabled((target as { meta?: unknown }).meta, on)
+  const { error } = await mergeProfileMeta(admin, pid, { spotlight })
+  if (error) throw new Error(error)
 
   await logAdminAction({
     actorId: caller.id,
@@ -81,15 +82,14 @@ export async function resetSpotlightToDefault(profileId: string): Promise<void> 
   if (!target) throw new Error('Member not found')
 
   const base = ((target as { meta?: unknown }).meta ?? {}) as { spotlight?: Record<string, unknown> }
-  const nextMeta = {
-    ...base,
+  // 2026-09-05 (scan2 L6-09): the `spotlight` key merges server-side; profile_theme is a top-level
+  // column outside the RPC's allowlist, so it is a second, checked update after the merge landed.
+  const { error } = await mergeProfileMeta(admin, pid, {
     spotlight: { ...(base.spotlight ?? {}), layout: null, background: null, published: false },
-  }
-  const { error } = await admin
-    .from('profiles')
-    .update({ meta: nextMeta as never, profile_theme: null })
-    .eq('id', pid)
-  if (error) throw new Error(error.message)
+  })
+  if (error) throw new Error(error)
+  const { error: themeErr } = await admin.from('profiles').update({ profile_theme: null }).eq('id', pid)
+  if (themeErr) throw new Error(themeErr.message)
 
   await logAdminAction({ actorId: caller.id, action: 'spotlight.reset', targetType: 'profile', targetId: pid })
   revalidatePath('/admin/members')
@@ -106,9 +106,9 @@ export async function forceUnpublishSpotlight(profileId: string): Promise<void> 
   if (!target) throw new Error('Member not found')
 
   const base = ((target as { meta?: unknown }).meta ?? {}) as { spotlight?: Record<string, unknown> }
-  const nextMeta = { ...base, spotlight: { ...(base.spotlight ?? {}), published: false } }
-  const { error } = await admin.from('profiles').update({ meta: nextMeta as never }).eq('id', pid)
-  if (error) throw new Error(error.message)
+  // 2026-09-05 (scan2 L6-09): only the `spotlight` key is merged server-side.
+  const { error } = await mergeProfileMeta(admin, pid, { spotlight: { ...(base.spotlight ?? {}), published: false } })
+  if (error) throw new Error(error)
 
   await logAdminAction({ actorId: caller.id, action: 'spotlight.force_unpublish', targetType: 'profile', targetId: pid })
   revalidatePath('/admin/members')

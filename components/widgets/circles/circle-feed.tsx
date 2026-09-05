@@ -50,7 +50,7 @@ export const CircleFeed = async () => {
           )
         )}
         <Suspense fallback={null}>
-          <FeedList circleIds={[circle.id]} showPublicLayer={false} myProfileId={myProfileId} viewerRole={canManage ? 'host' : isCrew ? 'crew' : 'member'} emptyMessage="No posts yet. Be the first to share something." />
+          <FeedList circleIds={[circle.id]} showPublicLayer={false} myProfileId={myProfileId} viewerRole={canManage ? 'host' : isCrew ? 'crew' : 'member'} emptyMessage="No posts yet. Be the first to share something." retryHref={`/circles/${circle.slug}`} />
         </Suspense>
       </section>
     </TeaserGate>

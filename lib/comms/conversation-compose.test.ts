@@ -15,8 +15,10 @@ vi.mock('@/lib/comms/conversations', () => ({
 const enqueueEmail = vi.fn()
 vi.mock('@/lib/email', () => ({ enqueueEmail: (a: unknown) => enqueueEmail(a) }))
 
+const signingAvailable = vi.fn(() => true)
 vi.mock('@/lib/comms/reply-address', () => ({
   buildConversationReplyAddress: (ref: string) => `reply+${ref}-hmac@reply.test`,
+  conversationSigningAvailable: () => signingAvailable(),
 }))
 
 const batchWindow = vi.fn(() => 0)
@@ -44,6 +46,7 @@ const BASE = {
 beforeEach(() => {
   vi.clearAllMocks()
   batchWindow.mockReturnValue(0)
+  signingAvailable.mockReturnValue(true)
   openOrGetConversation.mockResolvedValue({ id: 'conv-1', ref: '1042', created: true })
   appendConversationMessage.mockResolvedValue({ id: 'msg-1' })
   queueOutboundMessage.mockResolvedValue(true)
@@ -62,6 +65,18 @@ describe('startConversationMessage', () => {
     }
     expect(openOrGetConversation).not.toHaveBeenCalled()
     expect(enqueueEmail).not.toHaveBeenCalled()
+  })
+
+  it('scan2 L3-06: when reply addresses cannot be signed, nothing is opened, queued, or sent', async () => {
+    signingAvailable.mockReturnValue(false)
+    expect(await startConversationMessage(BASE)).toBeNull()
+    expect(openOrGetConversation).not.toHaveBeenCalled()
+    expect(enqueueEmail).not.toHaveBeenCalled()
+    expect(appendConversationMessage).not.toHaveBeenCalled()
+    // Batch mode too: a queued row would only throw later, at flush.
+    batchWindow.mockReturnValue(10)
+    expect(await startConversationMessage(BASE)).toBeNull()
+    expect(queueOutboundMessage).not.toHaveBeenCalled()
   })
 
   it('immediate mode: sends with the reply-token Reply-To + Message-ID, then appends with a mirror', async () => {

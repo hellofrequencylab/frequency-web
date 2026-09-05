@@ -9,7 +9,7 @@ import { type ActionResult, ok, fail, isError } from '@/lib/action-result'
 import { rateLimitOk } from '@/lib/rate-limit'
 import { resolveSendGate } from '@/lib/comms/send-gate'
 import { sendEventUpdateEmail } from '@/lib/email'
-import { composeEventDispatch } from '@/lib/events/dispatch'
+import { composeEventDispatch, describeDispatchOutcome } from '@/lib/events/dispatch'
 import { listEventCrmMemberIds } from '@/lib/events/crm-roster'
 import {
   loadEventCrmAccess,
@@ -420,12 +420,12 @@ export async function sendEventBroadcast(
           toDispatch: true,
           eventUrl: `/events/${event.slug}`,
         })
-        dispatched = !!(res.eventDispatchId || res.dispatchId)
-        results.push(
-          dispatched
-            ? { channel: 'dispatch', ok: true, detail: 'Posted to the event page and sent as a Dispatch to the whole event audience.' }
-            : { channel: 'dispatch', ok: false, detail: 'Could not post the Dispatch. Try again.' },
-        )
+        // 2026-09-05 (scan2 L5-05): the label used to say "posted and sent" whenever an id came
+        // back, while the fan-out had already run whether or not the records existed. The data
+        // layer now writes first and reports a status; the page revalidates whenever the page
+        // record exists, and the copy says exactly which half happened.
+        dispatched = res.status !== 'write-failed'
+        results.push({ channel: 'dispatch', ...describeDispatchOutcome(res) })
       } catch {
         results.push({ channel: 'dispatch', ok: false, detail: 'Could not post the Dispatch. Try again.' })
       }

@@ -9,12 +9,13 @@
 
 import webpush from 'web-push'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { envString } from '@/lib/env/string'
 import { resolveSendGate, type SendCategory } from '@/lib/comms/send-gate'
 import type { PreferenceSubject } from '@/lib/notification-preferences'
 
 const PUBLIC_KEY  = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
 const PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY
-const SUBJECT     = process.env.VAPID_SUBJECT ?? 'mailto:hello@frequencylocal.com'
+const SUBJECT     = envString('VAPID_SUBJECT', 'mailto:hello@frequencylocal.com')
 
 /** Is push SENDING armed in this deployment? Booleanized, never the key itself.
  *

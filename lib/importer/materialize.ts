@@ -32,6 +32,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { createAdminClient } from '@/lib/supabase/admin'
+import { mergeProfileMeta } from '@/lib/profiles/meta'
 import { getSpaceById, loadRootSpaceId } from '@/lib/spaces/store'
 import { insertSpaceLibraryImage, fileAssetsIntoSpacesCollection } from '@/lib/library/store'
 import { withImageOrder } from './media-order'
@@ -638,9 +639,12 @@ async function dressSpotlight(profileId: string, profile: BusinessProfile): Prom
       .eq('id', profileId)
       .maybeSingle()
     const currentMeta = (data as { meta?: unknown } | null)?.meta
-    let nextMeta = withMemberGridLayout(currentMeta, safe)
-    nextMeta = withSpotlightEnabled(nextMeta, true)
-    const { error } = await adminFrom('profiles').update({ meta: nextMeta }).eq('id', profileId)
+    // 2026-09-05 (scan2 L6-09): "the direct, id-bound write" above now merges ONLY the two keys this
+    // dressing owns (`entityGrid`, and the `spotlight` sub-object with enabled flipped) server-side,
+    // instead of spreading the whole read back over the row.
+    const { entityGrid } = withMemberGridLayout({}, safe)
+    const { spotlight } = withSpotlightEnabled(currentMeta, true)
+    const { error } = await mergeProfileMeta(createAdminClient(), profileId, { entityGrid, spotlight })
     return !error
   } catch {
     return false

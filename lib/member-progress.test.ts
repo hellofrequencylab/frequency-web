@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest'
-import { deriveStage, gatesFor, nextStage, MEMBER_STAGES, type ProgressSignals } from './member-progress'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { deriveStage, gatesFor, nextStage, acknowledgeStage, MEMBER_STAGES, type ProgressSignals } from './member-progress'
 
 const base: ProgressSignals = {
   activationComplete: true,
@@ -61,5 +61,46 @@ describe('nextStage', () => {
     expect(nextStage('newcomer')?.key).toBe('finding_feet')
     expect(nextStage('established')?.key).toBe('anchor')
     expect(nextStage('anchor')).toBeNull()
+  })
+})
+
+// ── acknowledgeStage (scan2 L6-09): the write is a merge of ONLY progressStage ──────────────────
+// The read above the write decides (never move backwards); the write no longer spreads that read
+// back over the row, so a sibling key written meanwhile is never reverted.
+const ackMocks = vi.hoisted(() => ({ rpc: vi.fn(), meta: {} as Record<string, unknown>, updates: [] as unknown[] }))
+vi.mock('@/lib/supabase/admin', () => ({
+  createAdminClient: () => ({
+    rpc: ackMocks.rpc,
+    from: () => ({
+      select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: { meta: ackMocks.meta }, error: null }) }) }),
+      update: (p: unknown) => {
+        ackMocks.updates.push(p)
+        return { eq: async () => ({ error: null }) }
+      },
+    }),
+  }),
+}))
+
+describe('acknowledgeStage', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    ackMocks.updates.length = 0
+    ackMocks.rpc.mockResolvedValue({ data: {}, error: null })
+    ackMocks.meta = { progressStage: 1, practiceStreak: { current: 9 } }
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+  })
+
+  it('merges only progressStage and never writes profiles through .from()', async () => {
+    await acknowledgeStage('p1', 2)
+    expect(ackMocks.updates).toEqual([])
+    expect(ackMocks.rpc).toHaveBeenCalledWith('merge_profile_meta', { p_profile_id: 'p1', p_patch: { progressStage: 2 } })
+  })
+
+  it('never moves backwards, and logs a failed merge without throwing', async () => {
+    await acknowledgeStage('p1', 1)
+    expect(ackMocks.rpc).not.toHaveBeenCalled()
+    ackMocks.rpc.mockResolvedValue({ data: null, error: { message: 'boom' } })
+    await expect(acknowledgeStage('p1', 3)).resolves.toBeUndefined()
+    expect(console.error).toHaveBeenCalledWith(expect.stringContaining('[acknowledgeStage]'), { profileId: 'p1', error: 'boom' })
   })
 })

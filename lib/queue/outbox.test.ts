@@ -118,6 +118,8 @@ type Rpc = { data: unknown; error: { message: string } | null }
 let rpcResult: Rpc = { data: [], error: null }
 const rpcCalls: Array<{ fn: string; args: Record<string, unknown> }> = []
 const updates: Array<Record<string, unknown>> = []
+const inserts: Array<Record<string, unknown>> = []
+let insertResult: { error: { code?: string; message: string } | null } = { error: null }
 
 vi.mock('@/lib/supabase/admin', () => ({
   createAdminClient: () => ({
@@ -132,11 +134,15 @@ vi.mock('@/lib/supabase/admin', () => ({
           return { error: null }
         },
       }),
+      insert: async (row: Record<string, unknown>) => {
+        inserts.push(row)
+        return insertResult
+      },
     }),
   }),
 }))
 
-import { processQueue, DEAD_LETTER_STATUS } from '@/lib/queue/outbox'
+import { processQueue, enqueue, DEAD_LETTER_STATUS } from '@/lib/queue/outbox'
 
 const job = (over: Partial<Record<string, unknown>> = {}) => ({
   id: 'j1', kind: 'push', payload: { to: 'p1' }, attempts: 0, max_attempts: 5, ...over,
@@ -146,6 +152,42 @@ beforeEach(() => {
   rpcResult = { data: [], error: null }
   rpcCalls.length = 0
   updates.length = 0
+  inserts.length = 0
+  insertResult = { error: null }
+})
+
+// ── enqueue: the optional dedupe key (scan two L2-02, migration 20270345000700) ───────────────
+// A once-per-period sender passes a key naming the period; the column is unique where set, so the
+// second insert raises 23505 and enqueue reports `enqueued: false` instead of a second job.
+describe('enqueue (dedupeKey)', () => {
+  it('writes no dedupe_key when none is given, and reports enqueued: true', async () => {
+    const r = await enqueue('email', { to: 'a@b.c' })
+    expect(r).toEqual({ enqueued: true })
+    expect(inserts).toHaveLength(1)
+    expect('dedupe_key' in inserts[0]).toBe(false)
+    expect(inserts[0]).toMatchObject({ kind: 'email', payload: { to: 'a@b.c' }, max_attempts: 5 })
+  })
+
+  it('stamps dedupe_key on the row when given', async () => {
+    await enqueue('email', { to: 'a@b.c' }, { dedupeKey: 'weekly-digest:p1:2026-W36' })
+    expect(inserts[0]).toMatchObject({ dedupe_key: 'weekly-digest:p1:2026-W36' })
+  })
+
+  it('reads a unique violation on the key as "already queued": enqueued: false, no throw', async () => {
+    insertResult = { error: { code: '23505', message: 'duplicate key value violates unique constraint "notification_queue_dedupe_key_uidx"' } }
+    await expect(enqueue('email', { to: 'a@b.c' }, { dedupeKey: 'weekly-digest:p1:2026-W36' })).resolves.toEqual({ enqueued: false })
+  })
+
+  it('still throws on every other insert error, keyed or not', async () => {
+    insertResult = { error: { code: '42703', message: 'column dedupe_key does not exist' } }
+    await expect(enqueue('email', { to: 'a@b.c' }, { dedupeKey: 'k' })).rejects.toThrow(/enqueue\(email\) failed: column dedupe_key/)
+    await expect(enqueue('email', { to: 'a@b.c' })).rejects.toThrow(/enqueue\(email\) failed/)
+  })
+
+  it('a 23505 WITHOUT a key is not a dedupe; it throws like any other error', async () => {
+    insertResult = { error: { code: '23505', message: 'duplicate key value violates unique constraint "notification_queue_pkey"' } }
+    await expect(enqueue('email', { to: 'a@b.c' })).rejects.toThrow(/enqueue\(email\) failed/)
+  })
 })
 
 describe('processQueue (wiring)', () => {

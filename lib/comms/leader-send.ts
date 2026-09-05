@@ -12,8 +12,9 @@ import { getLedCircles } from '@/app/(main)/lead/load-led-circles'
 import { resolveSegment, type Recipient } from '@/lib/studio/campaigns'
 import { resolveSendGate } from '@/lib/comms/send-gate'
 import { enqueueEmail } from '@/lib/email'
-import { buildConversationReplyAddress } from '@/lib/comms/reply-address'
+import { buildConversationReplyAddress, conversationSigningAvailable } from '@/lib/comms/reply-address'
 import { openOrGetConversation, appendConversationMessage, newConversationMessageId } from '@/lib/comms/conversations'
+import { conversationFrom } from '@/lib/comms/from-address'
 
 /**
  * The leader's downline as send recipients: every active member of every circle the leader stewards
@@ -53,10 +54,10 @@ export interface LeaderSendResult {
 
 /** The leader's conversational sending identity: "<Name> via Frequency <people@…>" (DKIM-aligned; never
  *  the leader's raw mailbox). Mirrors the workspace reply From. */
+// 2026-09-05 (scan2 L3-01): the address is now taken OUT of EMAIL_FROM by the shared helper, so the
+// documented `Frequency <noreply@…>` form no longer nests inside a second `< >`.
 function leaderFrom(name: string | null): string {
-  const addr = process.env.EMAIL_CONVERSATION_FROM ?? process.env.EMAIL_FROM ?? 'people@people.frequencylocal.com'
-  const clean = (name ?? 'Frequency').replace(/["\\<>]/g, '').trim() || 'Frequency'
-  return `${clean} via Frequency <${addr}>`
+  return conversationFrom(name)
 }
 
 async function profileDisplayName(profileId: string): Promise<string | null> {
@@ -99,6 +100,10 @@ export async function sendLeaderMessageToDownline(
 
   const recipients = await segmentForLeaderDownline(leaderId)
   if (recipients.length === 0) return { total: 0, sent: 0, skipped: 0 }
+  // 2026-09-05 (scan2 L3-06): without a signing secret (production, CONVERSATION_TOKEN_SECRET unset) the
+  // per-thread Reply-To throws. Refuse BEFORE any conversation is opened, as N skipped recipients (the
+  // tally the confirmation UI already understands); the predicate logs the cause.
+  if (!conversationSigningAvailable()) return { total: recipients.length, sent: 0, skipped: recipients.length }
 
   const senderName = await profileDisplayName(leaderId)
   const from = leaderFrom(senderName)

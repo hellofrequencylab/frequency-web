@@ -308,6 +308,7 @@ app/api/cron/event-reminders/route.ts
 app/api/cron/journey-prompt/route.ts
 app/api/cron/lifecycle-triggers/route.ts
 app/api/cron/publish-scheduled/route.ts
+app/api/cron/weekly-digest/route.ts
 app/api/entry-points/[slug]/flyer/route.ts
 app/api/observe/route.ts
 app/api/qr/route.ts
@@ -316,6 +317,7 @@ app/api/search-scopes/route.ts
 app/api/search/route.ts
 app/api/vitals/route.ts
 app/api/wallet/google/route.ts
+app/api/webhooks/resend/route.ts
 app/api/webhooks/stripe/route.ts
 app/api/zap-prompt/route.ts
 app/events/[slug]/event.ics/route.ts
@@ -463,6 +465,7 @@ lib/billing/space-subscription-items.ts
 lib/billing/space-subscriptions.ts
 lib/billing/supporter.ts
 lib/billing/tickets.ts
+lib/billing/tips-notify.ts
 lib/billing/tips.ts
 lib/blocking.ts
 lib/channels/programs.ts
@@ -536,6 +539,7 @@ lib/crm/people-search.ts
 lib/crm/person.ts
 lib/crm/pipeline.ts
 lib/crm/relationships.ts
+lib/crm/signup-leads.ts
 lib/crm/space-contact-detail.ts
 lib/crm/space-tasks.ts
 lib/crm/stages.ts

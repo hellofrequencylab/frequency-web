@@ -47,7 +47,7 @@ export function BlockButton({
             // showed "Unblock" as done even when the action reported failure.
             try {
               const res = await unblockProfileAction(profileId)
-              if (!res.ok) { setError('Could not unblock this member. Please try again.'); return }
+              if (!res.ok) { setError(res.error ?? 'Could not unblock this member. Please try again.'); return }
               setIsBlocked(false)
               router.refresh()
             } catch {
@@ -77,7 +77,8 @@ export function BlockButton({
             start(async () => {
               try {
                 const res = await blockProfileAction(profileId)
-                if (!res.ok) { setError('Could not block this member. Please try again.'); return }
+                // scan2 L5-12: the action's own copy ("Block did not save. Try again.") when it has one.
+                if (!res.ok) { setError(res.error ?? 'Could not block this member. Please try again.'); return }
                 setIsBlocked(true)
                 setConfirming(false)
                 router.refresh()

@@ -10,6 +10,7 @@
 import { randomUUID } from 'crypto'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { Json, Tables, TablesUpdate } from '@/lib/database.types'
+import { envString } from '@/lib/env/string'
 import {
   recordContactInteraction,
   normalizeInteractionScope,
@@ -22,11 +23,16 @@ export type MessageDirection = 'inbound' | 'outbound' | 'internal'
 export type MessageAuthorKind = 'member' | 'staff' | 'leader' | 'vera' | 'system' | 'contact'
 
 /** The Message-ID domain (the verified sending domain). Threading identity, not a routable address. */
-const MESSAGE_ID_HOST = process.env.EMAIL_MESSAGE_ID_HOST ?? 'send.frequencylocal.com'
+// 2026-09-05 (scan2 L3-02): read per call through envString, so a BLANK EMAIL_MESSAGE_ID_HOST (the
+// `.env.example` shape) falls back to the default instead of producing `<conv.1.uuid@>`, which breaks
+// threading in mail clients.
+function messageIdHost(): string {
+  return envString('EMAIL_MESSAGE_ID_HOST', 'send.frequencylocal.com')
+}
 
 /** A stable RFC5322 Message-ID for an outbound conversation message: `<conv.<ref>.<uuid>@host>`. */
 export function newConversationMessageId(ref: string | number): string {
-  return `<conv.${ref}.${randomUUID()}@${MESSAGE_ID_HOST}>`
+  return `<conv.${ref}.${randomUUID()}@${messageIdHost()}>`
 }
 
 /** The typed admin client — the comms_* spine tables are covered by the generated Database types

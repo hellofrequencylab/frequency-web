@@ -13,6 +13,7 @@ import { TICKETING_ENABLED } from '@/lib/events/ticketing'
 import { EVENT_HUB_SECTIONS, asEventHubSection, type EventHubSection } from './hub'
 import { EventMemberViewer } from './event-member-viewer'
 import { EventBroadcastSection } from './broadcast-section'
+import { RefundsOwedNotice } from './refunds-owed'
 import {
   HomeStatsStrip,
   RsvpBreakdownSection,
@@ -135,6 +136,10 @@ export default async function ManageEventPage({
 
       {section === 'home' && (
         <>
+          {/* Refunds still owed on a cancelled event (scan2 L6-04). Nothing for a live event. */}
+          <Suspense fallback={null}>
+            <RefundsOwedNotice eventId={event.id} />
+          </Suspense>
           <Suspense fallback={<Skeleton className="h-20 rounded-xl" />}>
             <HomeStatsStrip eventId={event.id} slug={event.slug} />
           </Suspense>

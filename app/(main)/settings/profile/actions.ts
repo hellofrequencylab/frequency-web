@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { mergeProfileMeta, removeProfileMetaKeys } from '@/lib/profiles/meta'
 import type { Database } from '@/lib/database.types'
 import { sanitizeProfileInput } from '@/lib/profile-input'
 import { uploadProfileImage } from '@/lib/storage/profile-images'
@@ -40,12 +41,12 @@ export async function setSpotlightPublished(published: boolean): Promise<void> {
     throw new Error('Your Spotlight page is not turned on yet.')
   }
 
-  const nextMeta = withSpotlightPublished(meta, published)
-  const { error } = await supabase
-    .from('profiles')
-    .update({ meta: nextMeta as never })
-    .eq('auth_user_id', user.id)
-  if (error) throw new Error(error.message)
+  // 2026-09-05 (scan2 L6-09): "Read-modify-write of the isolated spotlight sub-object" above now means
+  // the WRITE merges ONLY the `spotlight` key server-side (merge_profile_meta checks auth.uid() owns the
+  // row, so the session client keeps its self-scoping). Sibling keys are never carried back.
+  const { spotlight } = withSpotlightPublished(meta, published)
+  const { error } = await mergeProfileMeta(supabase, (me as { id: string }).id, { spotlight })
+  if (error) throw new Error(error)
 
   revalidatePath('/settings/profile')
   const handle = (me as { handle?: string }).handle
@@ -81,11 +82,9 @@ export async function setMySpotlightEnabled(enabled: boolean): Promise<void> {
   let nextMeta = withSpotlightEnabled(meta, enabled)
   if (!enabled) nextMeta = withSpotlightPublished(nextMeta, false)
 
-  const { error } = await supabase
-    .from('profiles')
-    .update({ meta: nextMeta as never })
-    .eq('auth_user_id', user.id)
-  if (error) throw new Error(error.message)
+  // 2026-09-05 (scan2 L6-09): only the `spotlight` key is merged server-side.
+  const { error } = await mergeProfileMeta(supabase, (me as { id: string }).id, { spotlight: nextMeta.spotlight })
+  if (error) throw new Error(error)
 
   revalidatePath('/settings/profile')
   const handle = (me as { handle?: string }).handle
@@ -111,14 +110,16 @@ export async function setProfileHeaderFocus(focus: string): Promise<void> {
     .maybeSingle()
   if (!me) throw new Error('Profile not found')
 
-  const meta = (me as { meta?: unknown }).meta
-  const nextMeta = writeProfileHeaderFocus(meta, focus)
-
-  const { error } = await supabase
-    .from('profiles')
-    .update({ meta: nextMeta as never })
-    .eq('auth_user_id', user.id)
-  if (error) throw new Error(error.message)
+  // 2026-09-05 (scan2 L6-09): "Read-modify-write of the isolated `headerFocal` meta key" above now runs
+  // the helper over an EMPTY base to learn what it wants (the key, or its absence at the centered
+  // default), then writes ONLY that: a merge of `headerFocal`, or a delete of it. No sibling key is
+  // ever carried back, so a streak or check-in landing mid-drag is never reverted.
+  const patch = writeProfileHeaderFocus({}, focus)
+  const profileId = (me as { id: string }).id
+  const { error } = 'headerFocal' in patch
+    ? await mergeProfileMeta(supabase, profileId, { headerFocal: patch.headerFocal })
+    : await removeProfileMetaKeys(supabase, profileId, ['headerFocal'])
+  if (error) throw new Error(error)
 
   revalidatePath('/settings/profile')
   const handle = (me as { handle?: string }).handle
@@ -142,17 +143,23 @@ export async function setProfileAvatarFocus(focus: string): Promise<void> {
     .maybeSingle()
   if (!me) throw new Error('Profile not found')
 
-  const meta = (me as { meta?: unknown }).meta
-  const nextMeta = writeProfileAvatarFocus(meta, focus)
-  const update: Record<string, unknown> = { meta: nextMeta }
+  // 2026-09-05 (scan2 L6-09): same shape as setProfileHeaderFocus: the helper over an empty base says
+  // merge-or-delete `avatarFocal`, and ONLY that key is written. The avatar_url mirror is a top-level
+  // column outside the RPC's allowlist, so it is a second, checked update once the meta write landed.
+  const patch = writeProfileAvatarFocus({}, focus)
+  const profileId = (me as { id: string }).id
+  const { error } = 'avatarFocal' in patch
+    ? await mergeProfileMeta(supabase, profileId, { avatarFocal: patch.avatarFocal })
+    : await removeProfileMetaKeys(supabase, profileId, ['avatarFocal'])
+  if (error) throw new Error(error)
   const currentAvatar = (me as { avatar_url?: string | null }).avatar_url
-  if (currentAvatar) update.avatar_url = withAvatarFocusFragment(currentAvatar, focus)
-
-  const { error } = await supabase
-    .from('profiles')
-    .update(update as never)
-    .eq('auth_user_id', user.id)
-  if (error) throw new Error(error.message)
+  if (currentAvatar) {
+    const { error: avatarErr } = await supabase
+      .from('profiles')
+      .update({ avatar_url: withAvatarFocusFragment(currentAvatar, focus) })
+      .eq('auth_user_id', user.id)
+    if (avatarErr) throw new Error(avatarErr.message)
+  }
 
   revalidatePath('/settings/profile')
   const handle = (me as { handle?: string }).handle
@@ -255,17 +262,36 @@ export async function updateProfile(data: {
   // isolated keys are set/dropped without disturbing any other meta key. The writers normalize (defense in
   // depth) and drop the centered default so a plain profile stays sparse. Combined into a single meta write
   // so the second key can't clobber the first.
+  // 2026-09-05 (scan2 L6-09): "one read-modify-write" above is retired. The helpers run over an EMPTY
+  // base to learn which of the touched keys should be set and which dropped (their centered / 'none'
+  // defaults), and ONLY those keys are merged or removed server-side AFTER the column update below
+  // lands. No sibling meta key is ever carried back from a read.
+  let metaPatch: Record<string, unknown> | null = null
+  let metaDrop: string[] = []
+  let metaProfileId: string | null = null
   if (data.headerFocal !== undefined || data.avatarFocal !== undefined || data.headerOverlayStyle !== undefined) {
     const { data: cur } = await supabase
       .from('profiles')
-      .select('meta, avatar_url')
+      .select('id, avatar_url')
       .eq('auth_user_id', user.id)
       .maybeSingle()
-    let nextMeta: unknown = (cur as { meta?: unknown } | null)?.meta
-    if (data.headerFocal !== undefined) nextMeta = writeProfileHeaderFocus(nextMeta, data.headerFocal)
-    if (data.avatarFocal !== undefined) nextMeta = writeProfileAvatarFocus(nextMeta, data.avatarFocal)
-    if (data.headerOverlayStyle !== undefined) nextMeta = writeProfileOverlay(nextMeta, data.headerOverlayStyle, data.headerOverlayColor ?? null)
-    ;(update as Record<string, unknown>).meta = nextMeta
+    metaProfileId = (cur as { id?: string } | null)?.id ?? null
+    let patch: Record<string, unknown> = {}
+    const touched: string[] = []
+    if (data.headerFocal !== undefined) {
+      patch = writeProfileHeaderFocus(patch, data.headerFocal)
+      touched.push('headerFocal')
+    }
+    if (data.avatarFocal !== undefined) {
+      patch = writeProfileAvatarFocus(patch, data.avatarFocal)
+      touched.push('avatarFocal')
+    }
+    if (data.headerOverlayStyle !== undefined) {
+      patch = writeProfileOverlay(patch, data.headerOverlayStyle, data.headerOverlayColor ?? null)
+      touched.push('headerOverlayStyle', 'headerOverlayColor')
+    }
+    metaPatch = patch
+    metaDrop = touched.filter((k) => !(k in patch))
     // Mirror the avatar focal into the stored URL's #fp fragment (ADR-829): the base is the
     // URL this save is setting, else the stored one. Cleared avatars (null) carry nothing.
     if (data.avatarFocal !== undefined) {
@@ -287,6 +313,17 @@ export async function updateProfile(data: {
   if (error) {
     if (error.code === '23505') throw new Error('That handle is already taken.')
     throw new Error(error.message)
+  }
+
+  if (metaPatch && metaProfileId) {
+    if (Object.keys(metaPatch).length) {
+      const { error: metaErr } = await mergeProfileMeta(supabase, metaProfileId, metaPatch)
+      if (metaErr) throw new Error(metaErr)
+    }
+    if (metaDrop.length) {
+      const { error: dropErr } = await removeProfileMetaKeys(supabase, metaProfileId, metaDrop)
+      if (dropErr) throw new Error(dropErr)
+    }
   }
 
   revalidatePath('/settings/profile')

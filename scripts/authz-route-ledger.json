@@ -114,9 +114,9 @@
     },
     "app/api/vitals/route.ts": {
       "verdict": "public",
-      "reason": "Core Web Vitals field sink, anonymous by design: vitals describe the page and device, not a member. Writes through the admin client but never resolves or stores a profile_id (rows land with profile_id NULL and surface NULL), which is what keeps it outside the `analytics` consent scope. Batch cap + normalizer bound each request. Re-read 2026-08-17 after LIVE-036 replaced the inline props literal with vitalProps(v): the change adds `vp`, the viewport BUCKET, which is a property of the page view and not of the person (ADR-922). Nothing about the boundary moved - the handler still takes no session, reads no headers or cookies, and writes profile_id null on every row whatever the payload claims, which app/api/vitals/route.test.ts now asserts with an attacker-shaped payload. The `public` verdict holds.",
-      "checked": "2026-08-17",
-      "digest": "62f049e7a048f56a"
+      "reason": "Core Web Vitals field sink, anonymous by design: vitals describe the page and device, not a member. Writes through the admin client but never resolves or stores a profile_id (rows land with profile_id NULL and surface NULL), which is what keeps it outside the `analytics` consent scope. Batch cap + normalizer bound each request. Re-read 2026-08-17 after LIVE-036 replaced the inline props literal with vitalProps(v): the change adds `vp`, the viewport BUCKET, which is a property of the page view and not of the person (ADR-922). Nothing about the boundary moved - the handler still takes no session, reads no headers or cookies, and writes profile_id null on every row whatever the payload claims, which app/api/vitals/route.test.ts now asserts with an attacker-shaped payload. The `public` verdict holds. Re-read 2026-09-05 (scan2 L2-08, ADR-1212): the insert's { error } is now read and logged with the table name instead of dropped; the route still reads no headers or cookies, still writes profile_id null, still answers 204. Verdict unchanged.",
+      "checked": "2026-09-05",
+      "digest": "db49708aadc76e60"
     },
     "app/auth/callback/route.ts": {
       "verdict": "token-credential",

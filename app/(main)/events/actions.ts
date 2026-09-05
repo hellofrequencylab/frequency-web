@@ -1578,6 +1578,15 @@ export async function checkInEvent(eventId: string): Promise<CheckInResult> {
     verifiedAt: new Date(),
   })
   if (!recorded) return { ok: true, alreadyCheckedIn: true }
+  // 2026-09-05 (scan2 L4-01, ADR-1212): the Automations form offers event_attend; nothing recorded that
+  // string, so a rule on it could never fire. A verified check-in is the attendance moment.
+  recordEngagementEvent({
+    idempotencyKey: `event_attend:${eventId}:${myProfileId}`,
+    source: 'web',
+    eventType: 'event_attend',
+    actorProfileId: myProfileId,
+    context: { eventId },
+  }).catch(() => {})
 
   // Verified practice always earns zaps (regardless of channel) + a streak tick.
   let zapsAwarded = 0

@@ -292,7 +292,30 @@ export async function startGroupConversation(
   for (const id of others) {
     memberRows.push({ room_id: room.id as string, profile_id: id, is_admin: false })
   }
-  await admin.from('room_members').insert(memberRows)
+  // 2026-09-05 (scan2 L5-07): this insert used to be unchecked, so a refused members write left a
+  // room with no members (the creator included) and sent the creator to /messages/r/<id>, where
+  // room-member gating shows nothing. Read the error; on failure take the room row back and fail
+  // instead of redirecting into a room the creator cannot see.
+  const { error: membersError } = await admin.from('room_members').insert(memberRows)
+  if (membersError) {
+    console.error('[startGroupConversation] room_members insert failed', {
+      roomId: room.id,
+      code: membersError.code,
+      message: membersError.message,
+    })
+    const { error: undoError } = await admin.from('rooms').delete().eq('id', room.id as string)
+    if (undoError) {
+      // The delete was refused too; the empty room stays behind, and the log names it so it can
+      // be cleaned up (`select r.id from rooms r left join room_members m on m.room_id = r.id
+      // where m.room_id is null`).
+      console.error('[startGroupConversation] empty room could not be removed', {
+        roomId: room.id,
+        code: undoError.code,
+        message: undoError.message,
+      })
+    }
+    throw new Error('Could not create the group chat. Try again.')
+  }
 
   revalidatePath('/messages')
   return { id: room.id as string }

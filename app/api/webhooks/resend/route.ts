@@ -2,14 +2,36 @@
 // hard bounces + spam complaints. Configure in the Resend dashboard with this URL and
 // set RESEND_WEBHOOK_SECRET (the "whsec_..." signing secret). Signature is verified
 // Svix-style with Node crypto (no svix dependency).
+//
+// EXACTLY ONCE (scan2 L2-05, 2026-09-05). Resend redelivers until it gets a 2xx, and every delivery
+// used to append its own email_events row, so a retry over-counted opens, clicks, bounces and
+// complaints for every reader of that table. The route now CLAIMS the svix-id in
+// email_webhook_events (20270345000800) right after the signature check, exactly as the Stripe
+// webhook claims stripe_webhook_events: a duplicate answers 200 and does nothing, any other claim
+// error answers 500 so Resend retries into a working claim. The steps after the claim are ordered
+// so the email_events row is appended LAST, and a 503 is only ever sent BEFORE that append (with
+// the claim released so the retry re-processes) or when the append itself failed (nothing was
+// written). Nothing after a successful append can turn into a retry.
 
 import { NextResponse } from 'next/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { recordEmailEvent, suppress } from '@/lib/suppression'
 import { verifyResendSignature, isFreshTimestamp } from '@/lib/webhook-verify'
 import { handleSpaceSendWebhook, handleSpaceSendEngagement } from '@/lib/spaces/email'
 import { mapResendEventToInteraction, type ResendTimelineEventType } from '@/lib/spaces/email-timeline'
 
 export const dynamic = 'force-dynamic'
+
+/** The idempotency ledger, through the service-role client. The table landed in 20270345000800; the
+ *  generated types are regenerated after apply, so the seam is typed by hand here. */
+interface WebhookEventsTable {
+  insert: (row: { event_id: string; type: string }) => Promise<{ error: { code?: string; message?: string } | null }>
+  delete: () => { eq: (c: 'event_id', v: string) => Promise<{ error: { message?: string } | null }> }
+}
+function webhookEvents(): WebhookEventsTable {
+  const db = createAdminClient() as unknown as { from: (t: 'email_webhook_events') => WebhookEventsTable }
+  return db.from('email_webhook_events')
+}
 
 export async function POST(req: Request) {
   const secret = process.env.RESEND_WEBHOOK_SECRET
@@ -46,6 +68,20 @@ export async function POST(req: Request) {
   }
 
   const type = (event.type ?? '').replace(/^email\./, '') || 'unknown'
+
+  // CLAIM the svix-id before any side effect (scan2 L2-05). 23505 = already processed: ack and do
+  // nothing. Any other claim error: 500, so Resend redelivers once the ledger can be written. Nothing
+  // to release on that path, no row was inserted. Values go in the structured argument, never the
+  // format string, so a header can never forge a log line.
+  const claim = await webhookEvents().insert({ event_id: id, type })
+  if (claim.error) {
+    if (claim.error.code === '23505') {
+      return NextResponse.json({ ok: true, duplicate: true })
+    }
+    console.error('[resend-webhook] idempotency claim failed', { type, code: claim.error.code ?? 'n/a' })
+    return NextResponse.json({ ok: false, error: 'claim failed' }, { status: 500 })
+  }
+
   const to = Array.isArray(event.data?.to) ? event.data?.to[0] : event.data?.to
   // Email Studio stamps the campaign id on send (X-Campaign-Id header + campaign_id tag); Resend
   // echoes both back here. Read it so recordEmailEvent can attribute the event EXACTLY. Purely
@@ -66,6 +102,9 @@ export async function POST(req: Request) {
   // Any failure is logged and returns 503 so Resend redelivers (suppress() is
   // idempotent; a redelivered event row is acceptable). Without this, an
   // unhandled throw became an unlogged 500 and the integrity signal was lost.
+  // 2026-09-05 (scan2 L2-05): "a redelivered event row is acceptable" is retired. A suppression
+  // failure now 503s BEFORE the email_events append, with the claim released, so the redelivery
+  // re-runs suppression and appends exactly one row.
   const errors: string[] = []
 
   if (type === 'bounced' || type === 'complained') {
@@ -85,6 +124,17 @@ export async function POST(req: Request) {
     }
   }
 
+  // Suppression failed: release the claim and 503 BEFORE anything is appended, so the redelivery
+  // re-runs suppression and the email_events row is written exactly once, by the delivery that works.
+  if (errors.length > 0) {
+    console.error('[resend-webhook] processing failed', { type, errors })
+    await releaseClaim(id)
+    return NextResponse.json({ ok: false, error: 'processing failed' }, { status: 503 })
+  }
+
+  // The email_events append, LAST of the retry-able steps (scan2 L2-05). If it fails nothing was
+  // written, so releasing the claim and asking for a redelivery is safe; if it succeeds nothing
+  // below can turn into a retry.
   try {
     await recordEmailEvent({
       email: to,
@@ -94,7 +144,9 @@ export async function POST(req: Request) {
       campaignId,
     })
   } catch (err) {
-    errors.push(`recordEmailEvent: ${err instanceof Error ? err.message : String(err)}`)
+    console.error('[resend-webhook] recordEmailEvent failed', { type, error: err instanceof Error ? err.message : String(err) })
+    await releaseClaim(id)
+    return NextResponse.json({ ok: false, error: 'processing failed' }, { status: 503 })
   }
 
   // CRM TIMELINE (ADR-378): project opened / clicked / bounced / complained onto the unified
@@ -113,12 +165,20 @@ export async function POST(req: Request) {
     }
   }
 
-  if (errors.length > 0) {
-    console.error('[resend-webhook] processing failed', errors.join('; '))
-    return NextResponse.json({ ok: false, error: 'processing failed' }, { status: 503 })
-  }
-
   return NextResponse.json({ ok: true })
+}
+
+/** Release a claimed svix-id so Resend's redelivery is processed rather than answered as a duplicate.
+ *  Called only BEFORE the email_events append (or after an append that failed), so a re-run appends
+ *  at most one row. Best-effort: if the release itself fails, the retry is acked as a duplicate and
+ *  the loss is logged rather than silent. */
+async function releaseClaim(eventId: string): Promise<void> {
+  try {
+    const { error } = await webhookEvents().delete().eq('event_id', eventId)
+    if (error) console.error('[resend-webhook] claim release failed', { error: error.message ?? 'n/a' })
+  } catch (err) {
+    console.error('[resend-webhook] claim release threw', { error: err instanceof Error ? err.message : String(err) })
+  }
 }
 
 /** A plain uuid shape check, so a malformed value can never poison a campaign's analytics. */

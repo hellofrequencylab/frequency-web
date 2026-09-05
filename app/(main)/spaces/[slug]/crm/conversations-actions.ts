@@ -19,7 +19,7 @@ import { enqueueEmail } from '@/lib/email'
 import { resolveSendGate } from '@/lib/comms/send-gate'
 import { canEmailContact } from '@/lib/crm/contact-consent'
 import { isContactTopicMuted } from '@/lib/comms/contact-preferences'
-import { buildConversationReplyAddress } from '@/lib/comms/reply-address'
+import { buildConversationReplyAddress, conversationSigningAvailable, CONVERSATION_SIGNING_UNAVAILABLE_COPY } from '@/lib/comms/reply-address'
 import {
   getConversationById,
   appendConversationMessage,
@@ -150,6 +150,9 @@ export async function sendSpaceConversationReplyAction(
     })
     if (!queued) return fail('Could not queue the reply. Try again.')
   } else {
+    // 2026-09-05 (scan2 L3-06, ADR-1212): the reply-to is signed; in production without the secret the
+    // builder throws from inside the send. Check first and answer in member-safe copy.
+    if (!conversationSigningAvailable()) return fail(CONVERSATION_SIGNING_UNAVAILABLE_COPY)
     const { html: emailHtml, text: emailText } = renderReplyEmail(body, signature)
     const messageId = newConversationMessageId(conv.ref)
     try {

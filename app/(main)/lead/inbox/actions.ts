@@ -13,7 +13,8 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import { enqueueEmail } from '@/lib/email'
 import { resolveSendGate } from '@/lib/comms/send-gate'
-import { buildConversationReplyAddress } from '@/lib/comms/reply-address'
+import { buildConversationReplyAddress, conversationSigningAvailable, CONVERSATION_SIGNING_UNAVAILABLE_COPY } from '@/lib/comms/reply-address'
+import { conversationFrom } from '@/lib/comms/from-address'
 import {
   getConversationById,
   appendConversationMessage,
@@ -49,10 +50,10 @@ async function profileName(profileId: string): Promise<string | null> {
   }
 }
 
+// 2026-09-05 (scan2 L3-01): the leader's From is built by the shared lib/comms/from-address helper
+// (address extracted from EMAIL_FROM, never nested; blank env treated as unset).
 function leaderFrom(name: string | null): string {
-  const addr = process.env.EMAIL_CONVERSATION_FROM ?? process.env.EMAIL_FROM ?? 'people@people.frequencylocal.com'
-  const clean = (name ?? 'Frequency').replace(/["\\<>]/g, '').trim() || 'Frequency'
-  return `${clean} via Frequency <${addr}>`
+  return conversationFrom(name)
 }
 
 function replySubject(subject: string | null): string {
@@ -94,6 +95,9 @@ export async function sendLeaderReply(input: {
   }
 
   if (!conv.externalEmail) return fail('We have no email address for this conversation.')
+  // 2026-09-05 (scan2 L3-06): the per-thread Reply-To needs a signing secret; check BEFORE queueing or
+  // enqueueing so a misconfigured server returns plain copy instead of a thrown 500 mid-send.
+  if (!conversationSigningAvailable()) return fail(CONVERSATION_SIGNING_UNAVAILABLE_COPY)
   if (conv.memberProfileId) {
     // A 1:1 reply in an active conversation is transactional — send unless the address is hard-suppressed.
     const gate = await resolveSendGate(conv.memberProfileId, 'email', 'transactional', { email: conv.externalEmail })
