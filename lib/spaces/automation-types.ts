@@ -14,10 +14,17 @@ import type { AudienceFilter } from '@/lib/spaces/audiences'
  *  phrased in operator terms. Free-text in the DB (no enum) so adding a trigger needs no migration; the
  *  validator gates writes to this known list. Today these are the shape the UI offers; the runner that
  *  fires them off Space CRM events is a follow-on (the rule is persisted + editable now). */
+// 2026-09-05 (scan2 L4-02): the runner exists (lib/spaces/drip-enroll.ts fireSpaceTrigger) and is
+// wired at exactly two emitters: 'contact.created' (lib/connections/crm-sync.ts) and 'member.joined'
+// (lib/spaces/memberships.ts). 'contact.tagged' and 'deal.stage_changed' were offered here with no
+// emitter anywhere, so a rule on either could never fire. Both are removed from the offered list
+// rather than wired: a contact gains a tag at several write seams (lib/connections/store.ts, the CRM
+// import commit) and a deal changes stage at four sites in lib/crm/stages.ts plus the root CRM
+// actions, so there is no single call site to wire and test. space_automation_rules held zero rows
+// on either value when this was measured, so no stored rule is orphaned by the trim. To offer a new
+// trigger, add its fireSpaceTrigger call first; automation.test.ts fails a trigger with no emitter.
 export const SPACE_AUTOMATION_TRIGGERS = [
   'contact.created', // a new contact enters this Space's CRM
-  'contact.tagged', // a contact gains a tag
-  'deal.stage_changed', // a contact/deal moves pipeline stage
   'member.joined', // someone joins a membership tier
 ] as const
 export type SpaceAutomationTrigger = (typeof SPACE_AUTOMATION_TRIGGERS)[number]

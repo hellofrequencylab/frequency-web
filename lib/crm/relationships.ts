@@ -68,16 +68,8 @@ function toRecord(row: RelationshipRow): ContactRelationship | null {
 
 // ── IO reads (fail-safe, service-role) ──────────────────────────────────────────
 
-/**
- * The ACTIVE assignable relationships stored for one contact. FAIL-SAFE: any error, a missing table
- * (pre-migration), or an unknown-kind row degrades to [] (unknown kinds are silently dropped). The
- * caller (a staff-gated CRM surface) is the read authority.
- */
-export async function listRelationships(contactId: string | null): Promise<ContactRelationship[]> {
-  if (!contactId) return []
-  const byContact = await listRelationshipsForContacts([contactId])
-  return byContact.get(contactId) ?? []
-}
+// 2026-09-05 (scan2 L9-13): the single-contact wrapper listRelationships(contactId) was removed; every
+// reader calls listRelationshipsForContacts directly.
 
 /**
  * BATCH read: the ACTIVE assignable relationships for a SET of contacts, keyed by contact id. ONE

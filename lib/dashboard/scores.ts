@@ -571,14 +571,5 @@ export async function listMembersByFilter(
   }
 }
 
-/**
- * The full scored member roster, lowest health first: the list-first front door of the Resonance
- * CRM (docs/NEXT-GEN-CRM.md). A thin wrapper over listMembersByFilter({ kind: 'all' }) so the
- * default member list and every drill share one query shape. FAIL-SAFE to an empty list. Pass a
- * `spaceId` to scope to a Space's reachable members; omit it for the platform. The caller gates.
- */
-export async function listAllScoredMembers(
-  opts: { spaceId?: string | null; limit?: number } = {},
-): Promise<MemberListRow[]> {
-  return listMembersByFilter({ kind: 'all' }, opts)
-}
+// 2026-09-05 (scan2 L9-13): the listAllScoredMembers wrapper was removed; the list-first front door is
+// listMembersByFilter({ kind: 'all' }, opts), which every caller already used directly.

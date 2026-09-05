@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 // THE DASHBOARD MEMBER-LIST READER (Resonance Engine Phase 2 · ADR-383). Locks the LIST-FIRST
 // front door (docs/NEXT-GEN-CRM.md): listAllScoredMembers / listMembersByFilter({ kind: 'all' })
+// 2026-09-05 (scan2 L9-13): the listAllScoredMembers wrapper is gone; the suite calls the filter form.
 // returns EVERY scored member, lowest health first, with NO column filter (the `all` roster does
 // not call .eq()), while a tier / lifecycle drill still filters. FAIL-SAFE: any read error or an
 // invalid filter resolves to an empty list, never a throw.
@@ -81,7 +82,7 @@ vi.mock('@/lib/supabase/admin', () => ({
   }),
 }))
 
-import { listAllScoredMembers, listMembersByFilter } from './scores'
+import { listMembersByFilter } from './scores'
 
 beforeEach(() => {
   db.scores = [
@@ -98,16 +99,16 @@ beforeEach(() => {
   eqCalls.length = 0
 })
 
-describe('listAllScoredMembers (the list-first front door)', () => {
+describe('listMembersByFilter({ kind: all }) (the list-first front door)', () => {
   it('returns every scored member, lowest health first, with no column filter', async () => {
-    const rows = await listAllScoredMembers()
+    const rows = await listMembersByFilter({ kind: 'all' })
     expect(rows.map((r) => r.profileId)).toEqual(['p-low', 'p-mid', 'p-high'])
     // The `all` roster must NOT filter by a tier / lifecycle column.
     expect(eqCalls.some(([col]) => col === 'resonance_tier' || col === 'lifecycle_stage')).toBe(false)
   })
 
   it('stitches names + a contact id, and keeps a member with no stitched contact', async () => {
-    const rows = await listAllScoredMembers()
+    const rows = await listMembersByFilter({ kind: 'all' })
     const low = rows.find((r) => r.profileId === 'p-low')!
     expect(low.name).toBe('Ada Low')
     expect(low.contactId).toBe('c-low')
@@ -119,15 +120,9 @@ describe('listAllScoredMembers (the list-first front door)', () => {
     expect(high.name).toBe('This member')
   })
 
-  it('is the same as listMembersByFilter({ kind: all })', async () => {
-    const viaWrapper = await listAllScoredMembers()
-    const viaFilter = await listMembersByFilter({ kind: 'all' })
-    expect(viaFilter.map((r) => r.profileId)).toEqual(viaWrapper.map((r) => r.profileId))
-  })
-
   it('fails safe to an empty list when the matview is absent', async () => {
     db.throwOnScores = true
-    expect(await listAllScoredMembers()).toEqual([])
+    expect(await listMembersByFilter({ kind: 'all' })).toEqual([])
   })
 
   it('surfaces a brand-new member missing from the matview (completeness union)', async () => {
@@ -136,7 +131,7 @@ describe('listAllScoredMembers (the list-first front door)', () => {
       ...db.contacts,
       { id: 'c-new', profile_id: 'p-new', display_name: 'New Member', email: 'new@example.com' },
     ]
-    const rows = await listAllScoredMembers()
+    const rows = await listMembersByFilter({ kind: 'all' })
     expect(rows.map((r) => r.profileId)).toContain('p-new') // appears despite no matview row
     const nu = rows.find((r) => r.profileId === 'p-new')!
     expect(nu.lifecycleStage).toBe('new') // labeled new, not defaulted to at_risk

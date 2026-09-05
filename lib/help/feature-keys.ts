@@ -53,7 +53,9 @@ export const FEATURE_KEYS: FeatureKey[] = [
 
   // ── Comms ───────────────────────────────────────────────────────────────────
   { key: 'messages', label: 'Direct messages & rooms', area: 'comms', routes: ['/messages'], core: true },
-  { key: 'notifications', label: 'Notifications', area: 'comms', routes: ['/notifications'], core: true },
+  // 2026-09-05 (scan2 L4-05): /notifications has no page (only actions.ts); the member-facing
+  // notification settings live under /settings/notifications, so both prefixes are listed.
+  { key: 'notifications', label: 'Notifications', area: 'comms', routes: ['/notifications', '/settings/notifications'], core: true },
   { key: 'friends', label: 'Friends', area: 'comms', routes: ['/friends'], core: true },
 
   // ── Engagement (gamification) ────────────────────────────────────────────────
@@ -70,7 +72,9 @@ export const FEATURE_KEYS: FeatureKey[] = [
   { key: 'onboarding', label: 'Getting started / onboarding', area: 'account', routes: ['/feed'], core: true },
 
   // ── Membership ──────────────────────────────────────────────────────────────
-  { key: 'vault', label: 'The Vault (membership)', area: 'membership', routes: ['/vault', '/upgrade'], core: true },
+  // 2026-09-05 (scan2 L4-05): '/vault' matched no file under app/ (there is no such route); the
+  // membership surface is /upgrade. feature-keys.test.ts fails any route prefix with no app/ file.
+  { key: 'vault', label: 'The Vault (membership)', area: 'membership', routes: ['/upgrade'], core: true },
 
   // ── Added 2026-08-10 (ADR-970). These ten keys were already in use by PUBLISHED
   //    articles and simply had no registry row, so `pnpm help:coverage` reported them as
@@ -78,6 +82,11 @@ export const FEATURE_KEYS: FeatureKey[] = [
   //    not resolve. Every route below was verified to exist before it was written down;
   //    `location` and `resonance` have no route of their own and point at the surfaces that
   //    actually own them (the Connections settings section). Names follow docs/NAMING.md.
+  //    2026-09-05 (scan2 L4-05): routes are PREFIXES for the drift signal (lib/help/drift.ts
+  //    affectedFeatureKeys matches a changed file's route equal to or beneath them). /hubs and
+  //    /nexuses have no index page by design; their [slug] pages and admin-actions.ts sit beneath
+  //    the prefix, and app/(main)/settings/connections/ holds the location + resonance section, so
+  //    those four rows are correct as written and were re-verified rather than repointed.
   { key: 'on-air', label: 'On Air sessions', area: 'content', routes: ['/on-air'], core: true },
   { key: 'journeys', label: 'Journeys', area: 'content', routes: ['/journeys'], core: true },
   { key: 'challenges', label: 'Season challenges', area: 'engagement', routes: ['/crew/challenges'], core: true },

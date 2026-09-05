@@ -125,11 +125,8 @@ export async function getSpaceSeatRow(spaceId: string): Promise<{ seatQuantity: 
   }
 }
 
-/** Read a Space's LICENSED seat count (spaces.seat_quantity). FAIL-SAFE to 0 (the base allowance
- *  still applies via licensedSeats). */
-export async function getSpaceSeatQuantity(spaceId: string): Promise<number> {
-  return (await getSpaceSeatRow(spaceId)).seatQuantity
-}
+// 2026-09-05 (scan2 L9-13): the getSpaceSeatQuantity wrapper was removed; readers take seatQuantity off
+// getSpaceSeatRow (lib/billing/operator-seats.ts does).
 
 /** Count the USED operator seats of a Space in ONE query: the ACTIVE members whose role consumes a
  *  seat (admin / moderator / editor). Viewers, suspended, and invited rows are excluded server-side.

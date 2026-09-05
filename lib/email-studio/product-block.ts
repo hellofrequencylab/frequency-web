@@ -17,15 +17,18 @@ import 'server-only'
 //
 // Server-only (reads the RLS-deny-all email_templates via the admin client, behind app-code authz). Voice
 // canon: no em dashes in any copy this module emits.
+//
+// 2026-09-05 (scan2 L4-04, L9-09): job 2 above is gone. renderTransactionalTemplate had no caller (the
+// welcome and invite senders in lib/email.ts deliberately never imported this server-only module), and
+// the "seeder" that was to write the matching email_templates row never existed, so the editable
+// transactional path was dead at both ends. It was removed together with lib/email-studio/presets.ts
+// (the transactional presets and EMAIL_PRESETS, imported by nothing outside their own test). Every
+// transactional sender renders its hardcoded copy; nothing here reads email_templates any more. Only
+// job 1 (resolveProductRefs + productVarsFromLayout, consumed by lib/email-studio/send.ts) remains.
 
-import { createAdminClient } from '@/lib/supabase/admin'
 import { getProduct } from '@/lib/commerce/products'
 import { formatPriceCents } from '@/lib/commerce/types'
-import { sanitizeEntityLayout, type EntityLayout } from '@/lib/entity-blocks/layout'
-import { compileEmailDoc } from './shell'
-import { applyMergeTags } from './render'
-import { transactionalPresetByKey } from './presets'
-import { MERGE_TAG_DEFAULT_FALLBACKS, type EmailDoc } from './types'
+import type { EntityLayout } from '@/lib/entity-blocks/layout'
 
 // ── 1. Product card resolution ─────────────────────────────────────────────────────────────────────────────
 
@@ -93,64 +96,4 @@ export function productVarsFromLayout(layout: EntityLayout): Record<string, stri
   if (typeof bag.price === 'string' && bag.price.trim()) vars['product.price'] = bag.price
   if (typeof bag.url === 'string' && bag.url.trim()) vars['product.url'] = bag.url
   return vars
-}
-
-// ── 2. Transactional editable-template seam ──────────────────────────────────────────────────────────────
-
-/** What a transactional sender needs to enqueue an email rendered from an editable template. */
-export interface TransactionalRender {
-  subject: string
-  html: string
-  text: string
-}
-
-/**
- * Render an in-house transactional email from its EDITABLE template, or return null when none exists yet.
- *
- * Looks up the `email_templates` row whose name matches the transactional preset for `key` (seeded via the
- * Templates gallery, then editable in the WYSIWYG). When found, compiles its block tree through the SAME
- * themed shell + merge-tag pipeline the campaign sender uses, applying the caller's per-recipient `vars` (and
- * the shared default fallbacks). When absent, returns null so the caller keeps its hardcoded string.
- *
- * Fail-safe by construction: unknown key, missing row, empty layout, or any thrown error all yield null, so
- * wiring a sender through this can never break the send. `vars` values are HTML-escaped in the html pass.
- */
-export async function renderTransactionalTemplate(
-  key: string,
-  vars: Record<string, string> = {},
-  opts: { unsubscribeUrl?: string; fallbacks?: Record<string, string> } = {},
-): Promise<TransactionalRender | null> {
-  const preset = transactionalPresetByKey(key)
-  if (!preset) return null
-  try {
-    const db = createAdminClient()
-    const { data } = await db
-      .from('email_templates')
-      .select('block_json, subject, preheader')
-      .eq('name', preset.name)
-      .maybeSingle()
-    if (!data) return null // not seeded / not yet made editable — caller uses the hardcoded copy
-
-    const layout = sanitizeEntityLayout((data as { block_json: unknown }).block_json, 'email')
-    if (!layout || !(layout.rows?.length)) return null
-
-    const resolvedLayout = await resolveProductRefs(layout)
-    const doc: EmailDoc = {
-      layout: resolvedLayout,
-      subject: (data as { subject: string | null }).subject?.trim() || preset.subject,
-      preheader: (data as { preheader: string | null }).preheader ?? preset.preheader,
-    }
-    const compiled = compileEmailDoc(doc, { unsubscribeUrl: opts.unsubscribeUrl })
-    if (!compiled.html) return null
-
-    const fallbacks = { ...MERGE_TAG_DEFAULT_FALLBACKS, ...(opts.fallbacks ?? {}) }
-    const allVars = { ...vars, ...productVarsFromLayout(resolvedLayout) }
-    const html = applyMergeTags(compiled.html, allVars, { fallbacks })
-    const text = applyMergeTags(compiled.text, allVars, { fallbacks, escape: false })
-    const subject = applyMergeTags(compiled.subject, allVars, { fallbacks, escape: false })
-    return { subject, html, text }
-  } catch (err) {
-    console.error('[email-studio] renderTransactionalTemplate failed, using hardcoded copy:', err)
-    return null
-  }
 }

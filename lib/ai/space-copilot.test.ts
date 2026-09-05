@@ -10,10 +10,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import {
   stripEmDashes,
   fallbackBio,
-  fallbackOfferingBlurb,
   fallbackTagline,
   draftSpaceBio,
-  draftOfferingBlurb,
   suggestTagline,
   type SpaceContext,
 } from './space-copilot'
@@ -70,18 +68,6 @@ describe('deterministic fallbacks (AI off → still useful copy)', () => {
     noEmDash(bio)
   })
 
-  it('fallbackOfferingBlurb prefers the owner details, else the title, else the brand', () => {
-    expect(fallbackOfferingBlurb(PRACTITIONER, { text: 'a 30 minute reset' })).toContain('30 minute reset')
-    expect(fallbackOfferingBlurb(PRACTITIONER, { title: 'Reset Session' })).toContain('Reset Session')
-    const bare = fallbackOfferingBlurb(PRACTITIONER, {})
-    expect(bare).toContain('Still Point')
-    ;[
-      fallbackOfferingBlurb(PRACTITIONER, { text: 'a 30 minute reset — by appointment' }),
-      fallbackOfferingBlurb(PRACTITIONER, { title: 'Reset Session' }),
-      bare,
-    ].forEach(noEmDash)
-  })
-
   it('fallbackTagline is short, plain, and type-aware', () => {
     const tag = fallbackTagline({ type: 'business' })
     expect(tag.length).toBeGreaterThan(0)
@@ -101,13 +87,6 @@ describe('public drafters fall back deterministically when AI is off (no network
     noEmDash(bio)
   })
 
-  it('draftOfferingBlurb returns the grounded fallback', async () => {
-    const offering = { title: 'Reset Session', text: 'a 30 minute breathing reset' }
-    const blurb = await draftOfferingBlurb(PRACTITIONER, offering)
-    expect(blurb).toBe(fallbackOfferingBlurb(PRACTITIONER, offering))
-    noEmDash(blurb)
-  })
-
   it('suggestTagline returns a short single line with no trailing period or long dash', async () => {
     const tag = await suggestTagline(PRACTITIONER)
     expect(tag.split('\n')).toHaveLength(1)
@@ -118,7 +97,6 @@ describe('public drafters fall back deterministically when AI is off (no network
 
   it('never throws on an empty Space', async () => {
     await expect(draftSpaceBio({})).resolves.toBeTypeOf('string')
-    await expect(draftOfferingBlurb({}, {})).resolves.toBeTypeOf('string')
     await expect(suggestTagline({})).resolves.toBeTypeOf('string')
   })
 })
