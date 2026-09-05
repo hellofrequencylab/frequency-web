@@ -3,12 +3,19 @@
 // bulk-inserts them into interaction_events. Member-tied (anonymous posts dropped, like
 // /api/track); consent-gated server-side (analytics scope, ADR-069) — a member who
 // opted out of analytics is silently not recorded. Returns 204; never blocks the UI.
+//
+// 2026-09-05 (scan2 L2-08): the insert result is read. `.then(undefined, () => {})` handled a
+// rejection, but supabase-js resolves `{ error }` and never rejects, so a failing insert (column
+// drift, RLS, quota) was dropped with nothing in the logs: a silent, total loss of first-party
+// analytics. The error is now logged at error level with the table name; the beacon still gets
+// its 204, because a beacon must never retry.
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { hasConsent } from '@/lib/consent/consent'
 import { normalizeBatch } from '@/lib/analytics/interaction-events'
+import { log } from '@/lib/log'
 
 export const dynamic = 'force-dynamic'
 
@@ -49,10 +56,17 @@ export async function POST(req: NextRequest) {
   }))
 
   // Service-role bulk insert (RLS blocks client writes). Fire-and-forget.
-  await (createAdminClient())
-    .from('interaction_events')
-    .insert(rows)
-    .then(undefined, () => {})
+  // 2026-09-05 (scan2 L2-08): fire-and-forget the RESPONSE, never the error. supabase-js resolves
+  // `{ error }`; the catch arm stays only for a transport that rejects outright.
+  let insertError: { message: string } | null = null
+  try {
+    ;({ error: insertError } = await createAdminClient().from('interaction_events').insert(rows))
+  } catch (err) {
+    insertError = { message: err instanceof Error ? err.message : String(err) }
+  }
+  if (insertError) {
+    log.error('observe.insert_failed', { table: 'interaction_events', rows: rows.length, error: insertError.message })
+  }
 
   return new NextResponse(null, { status: 204 })
 }

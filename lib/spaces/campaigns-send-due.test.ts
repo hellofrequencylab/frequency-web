@@ -8,6 +8,9 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 //      contacts and delivers via the SYSTEM send seam; success stamps 'sent', an empty audience or a
 //      send error stamps 'failed'.
 //   3. FAIL-SAFE: a per-campaign error never throws out of the pass.
+//   4. LEASE + RESUME (scan2 L6-10): the claim stamps sending_started_at; a 'sending' row whose lease
+//      expired is re-claimed and RESUMED, sending only to recipients with no outreach_sends row yet.
+//      A fresh 'sending' row is left alone. A failed send records why in send_error.
 
 // ── Mocks ────────────────────────────────────────────────────────────────────────────────────────
 
@@ -21,10 +24,12 @@ let sendResult: { data: { sent: number; suppressed: number; failed: number } } |
   data: { sent: 1, suppressed: 0, failed: 0 },
 }
 const sendCalls: string[] = []
+const sentRecipients: { contactId: string; email: string }[][] = []
 vi.mock('./email', () => ({
   SPACE_UNSUBSCRIBE_PLACEHOLDER: '%%U%%',
-  sendSpaceCampaignSystem: async (spaceId: string) => {
+  sendSpaceCampaignSystem: async (spaceId: string, input: { recipients: { contactId: string; email: string }[] }) => {
     sendCalls.push(spaceId)
+    sentRecipients.push(input.recipients)
     return sendResult
   },
 }))
@@ -53,19 +58,34 @@ interface Row {
   status: string
   scheduled_for: string
   audience_filter: unknown
+  sending_started_at?: string | null
+  send_error?: string | null
 }
-const store: { rows: Row[] } = { rows: [] }
+interface LedgerRow {
+  campaign_id: string
+  contact_id: string | null
+  email: string
+  status: string
+}
+const store: { rows: Row[]; ledger: LedgerRow[]; ledgerError: boolean } = { rows: [], ledger: [], ledgerError: false }
 const stamps: { id: string; status: string }[] = []
 
 function campaignsBuilder() {
   let mode: 'select' | 'update' = 'select'
   const eqs: Record<string, string> = {}
+  const lts: Record<string, string> = {}
+  let staleBefore: string | null = null
   let updatePatch: Record<string, unknown> = {}
+  const matches = (r: Row) =>
+    r.id === eqs.id &&
+    (eqs.status === undefined || r.status === eqs.status) &&
+    Object.entries(lts).every(([col, val]) => {
+      const cur = (r as unknown as Record<string, string | null | undefined>)[col]
+      return typeof cur === 'string' && cur < val
+    })
   // Apply a pending update (used by both the claim's maybeSingle and the stamp's awaited eq).
   function applyUpdate(): { id: string } | null {
-    const row = store.rows.find(
-      (r) => r.id === eqs.id && (eqs.status === undefined || r.status === eqs.status),
-    )
+    const row = store.rows.find(matches)
     if (!row) return null
     Object.assign(row, updatePatch)
     return { id: row.id }
@@ -78,6 +98,15 @@ function campaignsBuilder() {
       eqs[col] = val
       return api
     },
+    lt(col: string, val: string) {
+      lts[col] = val
+      return api
+    },
+    // The due read's `status.eq.scheduled,and(status.eq.sending,sending_started_at.lt.<iso>)`.
+    or(filters: string) {
+      staleBefore = /sending_started_at\.lt\.([^)]+)\)/.exec(filters)?.[1] ?? null
+      return api
+    },
     lte() {
       return api
     },
@@ -85,8 +114,15 @@ function campaignsBuilder() {
       return api
     },
     limit() {
-      // terminal for the due-list read
-      const due = store.rows.filter((r) => r.status === 'scheduled')
+      // terminal for the due-list read: scheduled, plus a 'sending' row whose lease is stale
+      const due = store.rows.filter(
+        (r) =>
+          r.status === 'scheduled' ||
+          (r.status === 'sending' &&
+            staleBefore !== null &&
+            typeof r.sending_started_at === 'string' &&
+            r.sending_started_at < staleBefore),
+      )
       return Promise.resolve({ data: due, error: null })
     },
     update(patch: Record<string, unknown>) {
@@ -111,9 +147,37 @@ function campaignsBuilder() {
   return api
 }
 
+// The outreach_sends ledger the RESUME path reads: rows for one campaign, any status but 'failed'.
+function ledgerBuilder() {
+  const eqs: Record<string, string> = {}
+  const neqs: Record<string, string> = {}
+  const api: Record<string, unknown> = {
+    select() {
+      return api
+    },
+    eq(col: string, val: string) {
+      eqs[col] = val
+      return api
+    },
+    neq(col: string, val: string) {
+      neqs[col] = val
+      return api
+    },
+    range(from: number, to: number) {
+      if (store.ledgerError) return Promise.resolve({ data: null, error: { message: 'ledger down' } })
+      const rows = store.ledger
+        .filter((r) => r.campaign_id === eqs.campaign_id && (neqs.status === undefined || r.status !== neqs.status))
+        .slice(from, to + 1)
+      return Promise.resolve({ data: rows, error: null })
+    },
+  }
+  return api
+}
+
 vi.mock('@/lib/supabase/admin', () => ({
   createAdminClient: () => ({
     from: (t: string) => {
+      if (t === 'outreach_sends') return ledgerBuilder()
       if (t === 'campaigns') return campaignsBuilder()
       // the stampStatus helper re-enters .from('campaigns').update(...).eq('id', ...)
       return campaignsBuilder()
@@ -127,11 +191,18 @@ vi.mock('@/lib/supabase/admin', () => ({
 // through the claim's maybeSingle, and assert on final row status.
 
 import { sendDueCampaigns } from './campaigns-send-due'
+import { SENDING_LEASE_MS } from '@/lib/messaging/status'
+
+const STALE = new Date(Date.now() - SENDING_LEASE_MS - 60_000).toISOString()
+const FRESH = new Date(Date.now() - 60_000).toISOString()
 
 beforeEach(() => {
   store.rows = []
+  store.ledger = []
+  store.ledgerError = false
   stamps.length = 0
   sendCalls.length = 0
+  sentRecipients.length = 0
   globalSendCalls.length = 0
   globalSendResult = { data: { recipientCount: 1 } }
   audience = [{ contactId: 'c1', email: 'a@x.com' }]
@@ -161,6 +232,79 @@ describe('sendDueCampaigns', () => {
     expect(res.sent).toBe(1)
     expect(sendCalls).toEqual(['space-A'])
     expect(row.status).toBe('sent')
+  })
+
+  it('the claim stamps the lease (sending_started_at) and clears send_error', async () => {
+    const row = seed({ send_error: 'an old failure' })
+    sendResult = { error: 'kill switch off' } // stop after the claim so the stamp is observable
+    await sendDueCampaigns()
+    expect(typeof row.sending_started_at).toBe('string')
+    expect(new Date(row.sending_started_at as string).getTime()).toBeGreaterThan(Date.now() - 5_000)
+    expect(row.status).toBe('failed')
+    expect(row.send_error).toBe('kill switch off') // the failure is recorded, not just logged
+  })
+
+  it('a stale sending row is re-claimed and RESUMED without re-sending to recipients already in the ledger', async () => {
+    const row = seed({ status: 'sending', sending_started_at: STALE })
+    audience = [
+      { contactId: 'c1', email: 'a@x.com' },
+      { contactId: 'c2', email: 'b@x.com' },
+      { contactId: 'c3', email: 'c@x.com' },
+    ]
+    store.ledger = [
+      { campaign_id: 'cmp-1', contact_id: 'c1', email: 'a@x.com', status: 'sent' },
+      { campaign_id: 'cmp-1', contact_id: null, email: 'B@x.com', status: 'queued' }, // matched by email
+      { campaign_id: 'cmp-1', contact_id: 'c3', email: 'c@x.com', status: 'failed' }, // retried
+    ]
+    const res = await sendDueCampaigns()
+    expect(res.due).toBe(1)
+    expect(res.claimed).toBe(1)
+    expect(res.sent).toBe(1)
+    expect(sentRecipients).toEqual([[{ contactId: 'c3', email: 'c@x.com' }]])
+    expect(row.status).toBe('sent')
+    expect(row.sending_started_at as string > STALE).toBe(true) // the lease was re-stamped
+  })
+
+  it('a stale sending row whose fan-out had finished is stamped sent without sending', async () => {
+    const row = seed({ status: 'sending', sending_started_at: STALE })
+    store.ledger = [{ campaign_id: 'cmp-1', contact_id: 'c1', email: 'a@x.com', status: 'sent' }]
+    const res = await sendDueCampaigns()
+    expect(res.sent).toBe(1)
+    expect(sendCalls).toEqual([])
+    expect(row.status).toBe('sent')
+  })
+
+  it('a FRESH sending row (a live sender) is left alone', async () => {
+    const row = seed({ status: 'sending', sending_started_at: FRESH })
+    const res = await sendDueCampaigns()
+    expect(res.due).toBe(0)
+    expect(sendCalls).toEqual([])
+    expect(row.status).toBe('sending')
+  })
+
+  it('a sending row with no lease (claimed before the column existed) is not re-claimed', async () => {
+    const row = seed({ status: 'sending', sending_started_at: null })
+    const res = await sendDueCampaigns()
+    expect(res.due).toBe(0)
+    expect(row.status).toBe('sending')
+  })
+
+  it('an unreadable ledger on resume sends NOTHING and leaves the row for the next lease', async () => {
+    const row = seed({ status: 'sending', sending_started_at: STALE })
+    store.ledgerError = true
+    const res = await sendDueCampaigns()
+    expect(res.claimed).toBe(1)
+    expect(res.sent).toBe(0)
+    expect(res.failed).toBe(0)
+    expect(sendCalls).toEqual([])
+    expect(row.status).toBe('sending')
+  })
+
+  it('a stale GLOBAL sending row is not fed to the Email Studio sender (it owns its own claim)', async () => {
+    seed({ space_id: null, status: 'sending', sending_started_at: STALE })
+    const res = await sendDueCampaigns()
+    expect(globalSendCalls).toEqual([])
+    expect(res.claimed).toBe(0)
   })
 
   it('idempotent: a second pass finds no scheduled row and sends nothing', async () => {

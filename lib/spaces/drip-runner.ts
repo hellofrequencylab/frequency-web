@@ -10,6 +10,11 @@
 // matches the (still-'enrolled') row and gets it back; the other's WHERE no longer matches and returns
 // nothing. The winner alone proceeds to send. After the send it advances (back to 'enrolled' with the
 // next step + due time) or completes ('done'); on a consent/unsubscribe stop it marks 'stopped'.
+// 2026-09-05 (scan2 L6-10): the claim now stamps sending_started_at (a LEASE, SENDING_LEASE_MINUTES in
+// lib/messaging/status.ts). A 'sending' row whose lease has expired is a dead sender: the pass re-claims
+// it (re-asserting status='sending' AND the stale stamp, so two passes still cannot both win) and resumes.
+// If the ledger already holds a send to this contact from after the stale lease started, the step went
+// out before the crash and the enrollment only ADVANCES; otherwise the step is sent.
 //
 // The send goes through the SAME system seam the scheduled-campaign cron uses (sendSpaceCampaignSystem,
 // lib/spaces/email.ts), which re-runs EVERY anti-spam gate (email function enabled, kill-switch, daily
@@ -21,6 +26,7 @@ import { sendSpaceCampaignSystem, SPACE_UNSUBSCRIBE_PLACEHOLDER } from '@/lib/sp
 import { normalizeDelayHours } from '@/lib/spaces/automation'
 import { isError } from '@/lib/action-result'
 import { log, briefError } from '@/lib/log'
+import { SENDING_LEASE_MS } from '@/lib/messaging/status'
 
 /** What one drip-fire pass reports. */
 export interface DripRunResult {
@@ -44,6 +50,10 @@ interface DueEnrollmentRow {
   contact_id: string
   email: string
   current_step: number
+  /** 'enrolled' (a fresh claim) or 'sending' (a stale lease being re-claimed, scan2 L6-10). */
+  status: string
+  /** The stale lease's start, on a re-claimed row; the resume check reads sends from this instant. */
+  sending_started_at: string | null
 }
 
 /** One drip step, as read for a send. */
@@ -86,13 +96,17 @@ export async function runDueSpaceDrips(limit = 200): Promise<DripRunResult> {
   const empty: DripRunResult = { due: 0, claimed: 0, sent: 0, completed: 0, stopped: 0 }
   const db = createAdminClient() as unknown as { from: (t: string) => Record<string, (...a: unknown[]) => unknown> }
   const nowIso = new Date().toISOString()
+  // A 'sending' row claimed before this instant is a dead sender (scan2 L6-10): eligible to re-claim.
+  const staleBefore = new Date(Date.now() - SENDING_LEASE_MS).toISOString()
 
   // Find due enrollments (status enrolled, next_run_at reached). Read-only; the claim below is the gate.
+  // 2026-09-05 (scan2 L6-10): ALSO a 'sending' row whose lease expired. A NULL lease (a row claimed
+  // before the column existed) is never matched by `lt`, so a pre-lease stranded row is left alone.
   let dueRows: DueEnrollmentRow[] = []
   try {
     const q = db.from('space_drip_enrollments') as unknown as {
       select: (c: string) => {
-        eq: (c: string, v: string) => {
+        or: (f: string) => {
           lte: (c: string, v: string) => {
             order: (c: string, o: { ascending: boolean }) => {
               limit: (n: number) => Promise<{ data: DueEnrollmentRow[] | null; error: unknown }>
@@ -102,8 +116,8 @@ export async function runDueSpaceDrips(limit = 200): Promise<DripRunResult> {
       }
     }
     const { data, error } = await q
-      .select('id, space_id, sequence_id, contact_id, email, current_step')
-      .eq('status', 'enrolled')
+      .select('id, space_id, sequence_id, contact_id, email, current_step, status, sending_started_at')
+      .or(`status.eq.enrolled,and(status.eq.sending,sending_started_at.lt.${staleBefore})`)
       .lte('next_run_at', nowIso)
       .order('next_run_at', { ascending: true })
       .limit(limit)
@@ -133,9 +147,14 @@ export async function runDueSpaceDrips(limit = 200): Promise<DripRunResult> {
 
     // CLAIM: flip enrolled -> sending, re-asserting status='enrolled' so only one pass wins. A null
     // returned row means another pass already claimed it (or it changed status); skip it.
+    // 2026-09-05 (scan2 L6-10): a RESUME re-asserts status='sending' AND the stale stamp instead.
+    const resumed = row.status === 'sending'
+    // The STALE lease's start, captured before the claim re-stamps it: the resume check reads sends
+    // from this instant.
+    const staleLeaseStart = row.sending_started_at
     let won = false
     try {
-      won = await claimEnrollment(db, row.id)
+      won = await claimEnrollment(db, row.id, resumed ? staleBefore : null)
     } catch (err) {
       log.error('cron.space_drips.claim_threw', { id: row.id, error: briefError(err) })
       continue
@@ -156,24 +175,42 @@ export async function runDueSpaceDrips(limit = 200): Promise<DripRunResult> {
         continue
       }
 
+      // RESUME (scan2 L6-10): the dead sender may have sent this step before it died. The seam writes
+      // an outreach_sends row for this contact the moment a send is committed, so a row created at or
+      // after the stale lease started means the step went out: advance without sending again.
+      // FAIL-CLOSED: an unreadable ledger neither sends nor advances; the fresh lease expires and the
+      // next pass retries. (A double send is the one outcome worse than a late one.)
+      let alreadySent = false
+      if (resumed) {
+        const seen = await ledgerHasSendSince(db, row.space_id, row.contact_id, staleLeaseStart)
+        if (seen === null) {
+          log.error('cron.space_drips.resume_ledger_unreadable', { id: row.id })
+          continue
+        }
+        alreadySent = seen
+        log.info('cron.space_drips.resumed', { id: row.id, alreadySent })
+      }
+
       // Send the step through the system seam (all anti-spam gates + consent). One recipient: this
       // contact. The seam skips a suppressed/unconsented recipient (logged), so a non-consenting
       // contact simply doesn't receive this step; we still advance so the sequence progresses (the
       // NEXT step re-checks consent). A hard seam error stops the enrollment.
-      const res = await sendSpaceCampaignSystem(row.space_id, {
-        subject: step.subject,
-        html: renderStepHtml(step.body),
-        recipients: [{ contactId: row.contact_id, email: row.email }],
-      })
-      if (isError(res)) {
-        // The seam refused entirely (kill-switch off, plan lost email, cap hit). STOP this enrollment
-        // so it is not retried forever; the operator re-enables + re-enrolls. Logged for visibility.
-        await markStatus(db, row.id, 'stopped')
-        stopped++
-        log.error('cron.space_drips.send_refused', { id: row.id, error: res.error })
-        continue
+      if (!alreadySent) {
+        const res = await sendSpaceCampaignSystem(row.space_id, {
+          subject: step.subject,
+          html: renderStepHtml(step.body),
+          recipients: [{ contactId: row.contact_id, email: row.email }],
+        })
+        if (isError(res)) {
+          // The seam refused entirely (kill-switch off, plan lost email, cap hit). STOP this enrollment
+          // so it is not retried forever; the operator re-enables + re-enrolls. Logged for visibility.
+          await markStatus(db, row.id, 'stopped')
+          stopped++
+          log.error('cron.space_drips.send_refused', { id: row.id, error: res.error })
+          continue
+        }
+        if (res.data.sent > 0) sent++
       }
-      if (res.data.sent > 0) sent++
 
       // Advance to the next enabled step after the one we just sent, or complete.
       const next = enabled.find((s) => s.step_order > step.step_order) ?? null
@@ -199,27 +236,66 @@ export async function runDueSpaceDrips(limit = 200): Promise<DripRunResult> {
 // ── IO helpers (untyped admin-client seam; space_drip_enrollments not in generated types yet) ──────
 
 /** CLAIM one enrollment: conditional 'enrolled' -> 'sending', re-asserting status='enrolled'. Returns
- *  true iff THIS pass won the claim (exactly one concurrent pass can). */
+ *  true iff THIS pass won the claim (exactly one concurrent pass can).
+ *  2026-09-05 (scan2 L6-10): the claim stamps the lease (sending_started_at). With `staleBefore` set it is
+ *  a RESUME claim: re-asserts status='sending' AND sending_started_at < staleBefore, so of two passes
+ *  that both saw the expired lease only the first update matches (the winner's fresh stamp is not `lt`). */
 async function claimEnrollment(
   db: { from: (t: string) => Record<string, (...a: unknown[]) => unknown> },
   id: string,
+  staleBefore: string | null,
 ): Promise<boolean> {
+  type Terminal = {
+    select: (c: string) => { maybeSingle: () => Promise<{ data: { id: string } | null; error: unknown }> }
+  }
   const q = db.from('space_drip_enrollments') as unknown as {
     update: (p: Record<string, unknown>) => {
       eq: (c: string, v: string) => {
+        eq: (c: string, v: string) => Terminal & { lt: (c: string, v: string) => Terminal }
+      }
+    }
+  }
+  const byId = q.update({ status: 'sending', sending_started_at: new Date().toISOString() }).eq('id', id)
+  const guarded = staleBefore
+    ? byId.eq('status', 'sending').lt('sending_started_at', staleBefore)
+    : byId.eq('status', 'enrolled')
+  const { data, error } = await guarded.select('id').maybeSingle()
+  return !error && !!data
+}
+
+/** Whether the outreach_sends ledger holds a committed send (any status but 'failed') to `contactId`
+ *  in `spaceId` created at or after `sinceIso`, the stale lease's start. True means the dead sender got
+ *  the step out before it died. Null on a read error or a missing lease start (the caller treats null
+ *  as "cannot resume"). Reads the ledger only; it never writes. */
+async function ledgerHasSendSince(
+  db: { from: (t: string) => Record<string, (...a: unknown[]) => unknown> },
+  spaceId: string,
+  contactId: string,
+  sinceIso: string | null,
+): Promise<boolean | null> {
+  if (!sinceIso) return null
+  const q = db.from('outreach_sends') as unknown as {
+    select: (c: string) => {
+      eq: (c: string, v: string) => {
         eq: (c: string, v: string) => {
-          select: (c: string) => { maybeSingle: () => Promise<{ data: { id: string } | null; error: unknown }> }
+          gte: (c: string, v: string) => {
+            neq: (c: string, v: string) => {
+              limit: (n: number) => Promise<{ data: { id: string }[] | null; error: unknown }>
+            }
+          }
         }
       }
     }
   }
   const { data, error } = await q
-    .update({ status: 'sending' })
-    .eq('id', id)
-    .eq('status', 'enrolled')
     .select('id')
-    .maybeSingle()
-  return !error && !!data
+    .eq('space_id', spaceId)
+    .eq('contact_id', contactId)
+    .gte('created_at', sinceIso)
+    .neq('status', 'failed')
+    .limit(1)
+  if (error) return null
+  return (data ?? []).length > 0
 }
 
 /** Read a sequence's steps, SPACE-scoped, ascending. FAIL-SAFE to []. */
@@ -282,5 +358,7 @@ async function markStatus(
   } catch {
     // best-effort: a status write failure is non-critical (the row stays 'sending' and is not re-scanned
     // by the due query, which only reads 'enrolled').
+    // 2026-09-05 (scan2 L6-10): the sentence above is retired. The row stays 'sending' under its lease,
+    // and the due query re-scans it once the lease expires, so a lost stamp is retried, not stranded.
   }
 }

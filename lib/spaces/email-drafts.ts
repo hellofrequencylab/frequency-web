@@ -200,7 +200,7 @@ export async function listSpaceEmailMessagingItems(spaceId: string): Promise<Mes
       id: r.id,
       name: r.subject ?? '',
       segment: 'Your contacts',
-      status: campaignStatusToMessaging(r.status ?? 'draft'),
+      status: campaignStatusToMessaging(r.status ?? 'draft', (r as { sending_started_at?: string | null }).sending_started_at ?? null),
       recipientCount: r.recipient_count ?? 0,
       sentAt: r.sent_at ?? null,
       href: '',
