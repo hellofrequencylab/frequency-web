@@ -31,7 +31,7 @@ describe('createHandleSearch', () => {
   })
 
   it('encodes and trims the query, and answers an empty query without a request', async () => {
-    const fetchImpl = vi.fn(async () => jsonResponse({ profiles: [] }))
+    const fetchImpl = vi.fn(async (_url: string, _init?: RequestInit) => jsonResponse({ profiles: [] }))
     const search = createHandleSearch(fetchImpl)
     expect(await search('   ')).toEqual([])
     expect(fetchImpl).not.toHaveBeenCalled()

@@ -35766,3 +35766,20 @@ Two things were re-tested and NOT changed. The host-payout failure logged at 20:
 - **The safeupdate pin lands with a loud skip.** The pgTAP test loads the hook in a DO block, runs a positive control when it loads, and skips with the sqlstate when it cannot, never passing vacuously.
 
 **Consequences.** Rows SCAN-579 to SCAN-581 are `done`; LIVE-155 (the share-card crash) is `done` with a real-render probe; LIVE-162 (two features share the `fq_lead` cookie name) is `open`. Both migrations were applied to production immediately before merge and ledger-reconciled. `test/contract/signup-leads-rpc-gate.test.ts` still pins the original 20270215000000 text and now says so.
+
+## ADR-1211: scan two, phase E — a guard that can see nothing must not read as green, and a test must pin code, not prose (2026-09-05)
+
+**Status.** Accepted. Continues ADR-1210 (phase F). Extends ADR-1002 and ADR-1003 (measure the artifact) with a rule for the guards themselves.
+
+**Context.** The 2026-09-05 scan's hygiene lanes found the repo's safety net thinner than its count suggested. Four guard scripts had no floor and no test, so a renamed trace layout would have printed zero functions carrying `sharp` and exited 0; the six traced-artifact fan-out checks ran nowhere; 34 source-shape assertions matched a comment as readily as the code they pinned (deleting the code left them green, proven on four); the capability loader every authz check reads had 82 importers, ten mocks and no executing test; nothing in CI compared `.from()` and `.rpc()` chains to the generated schema, which is how the phantom column of ADR-1207 lived for weeks. Around them sat env and registry drift: every Vercel preview counted as production for GA and the rate limiter, the example env switched every dark feature on with junk keys, eight flags were read but never seeded, two automation triggers and a transactional-template path promised what nothing delivered, and fifteen exported functions had no caller.
+
+**Decision.**
+
+- **A guard carries a non-triviality floor and a planted-violation test.** `check:schema-contract` joins CI (2500 files, 3000 chains, exit 2 below the floor, an empty dated allowlist whose stale entries fail); `check-grants`, `check-og-trace`, `check-build-budget` and `check-collective` gain floors and spawn tests on fixtures; `check-studio` and `check-crm-parity` take a root so a negative control can exist. `check:build-fanout` is the fifth postbuild gate and, per ADR-1002, is not trusted until its first production reading is read.
+- **A source-shape test matches comment-stripped source or a call token.** `test/source-shape.ts` is the one helper; the 34 assertions use it; deliberate doc-pins say so on the line above.
+- **"Production" means `VERCEL_ENV === 'production'`.** `NODE_ENV` decides only when Vercel's variable is absent.
+- **The example env is dark by default.** A key that switches a feature on ships blank; a test keeps it blank.
+- **A registry offers only what fires, and a flag a reader consults has a row.** Migration 20270345000400 seeds the eight; the automation list, the help feature keys, the analytics taxonomy and the page-chrome catalog match the code; the dead template path and fifteen dead exports are gone, and `setSpaceBundle` stays because a done row and an owner ruling require it.
+- **Member P3s close where they are.** Consent is never granted by omission; nine mention pickers share one fetch helper; the guest-seat claim and push registration read their errors; migration 20270345000500 makes the Circle cap fire on reactivation and keeps the counter honest; event allowances count by the real instant.
+
+**Consequences.** Rows SCAN-582 to SCAN-610 are `done`; OWN-058 and LIVE-163 to LIVE-169 are `open`. Both migrations are applied to production immediately before merge and ledger-reconciled. AGENTS.md and DEPLOY-SAFETY now say five postbuild gates. The build-fanout gate's first real reading is the next thing to read after this merges.
