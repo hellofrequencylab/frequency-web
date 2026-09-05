@@ -6,7 +6,7 @@ import { HelpMarkdown } from '@/components/help/help-markdown'
 import { DetailTemplate } from '@/components/templates'
 import { resolveDetailHero } from '@/lib/layout/detail-hero'
 import { JsonLd } from '@/components/json-ld'
-import { articleSchema, breadcrumbSchema } from '@/lib/jsonld'
+import { articleSchema, breadcrumbSchema, faqSchema } from '@/lib/jsonld'
 
 type Params = { params: Promise<{ category: string; slug: string }> }
 
@@ -68,6 +68,10 @@ export default async function HelpArticlePage({ params }: Params) {
           { name: cat.title, path: `/help/${cat.slug}` },
           { name: article.title, path: helpHref(cat.slug, article.slug) },
         ]),
+        // FAQPage when the article carries a "Questions people ask" section. `article.faq` is
+        // DERIVED from the rendered body (lib/help/content-core.ts), so this node cannot disagree
+        // with what the page shows. Articles without an FAQ contribute nothing.
+        ...(article.faq.length > 0 ? [faqSchema(article.faq)] : []),
       ]}
     />
     <DetailTemplate

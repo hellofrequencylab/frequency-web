@@ -53,6 +53,22 @@ export async function resolveMemberDay(
   clientTimezone?: string | null,
   now: Date = new Date(),
 ): Promise<string> {
+  return (await resolveMemberDayAndZone(profileId, clientTimezone, now)).day
+}
+
+/** The same resolution, returning the ZONE it chose alongside the day key.
+ *
+ *  Anything that both keys on the member's day AND has a side effect the database windows by day
+ *  needs both halves, or the two disagree at the edges. `daily_login` was exactly that: the
+ *  check-in guard keyed on this local day while `award_gems_atomic` capped on the UTC day, so a
+ *  member west of UTC checking in during their evening and again the next morning fell inside one
+ *  UTC day and was silently paid nothing the second time. Pass the zone through so the database
+ *  can window on the SAME day the guard used. */
+export async function resolveMemberDayAndZone(
+  profileId: string,
+  clientTimezone?: string | null,
+  now: Date = new Date(),
+): Promise<{ day: string; timezone: string }> {
   let homeTz: string | null = null
   try {
     const { data } = await createAdminClient()
@@ -66,5 +82,20 @@ export async function resolveMemberDay(
   }
   // home_timezone wins (server-resolved, un-spoofable); else the client's IANA tz;
   // else UTC. memberDay validates the chosen tz and falls back to UTC if it's bad.
-  return memberDay(homeTz ?? clientTimezone ?? null, now)
+  const chosen = homeTz ?? clientTimezone ?? null
+  const day = memberDay(chosen, now)
+  // Report the zone memberDay actually USED, not the one requested: it falls back to UTC on an
+  // invalid tz, and a caller windowing on a zone the day key was not computed in would reintroduce
+  // the very mismatch this exists to close.
+  return { day, timezone: isValidZone(chosen) ? (chosen as string) : 'UTC' }
+}
+
+function isValidZone(tz: string | null | undefined): boolean {
+  if (!tz) return false
+  try {
+    new Intl.DateTimeFormat('en-US', { timeZone: tz })
+    return true
+  } catch {
+    return false
+  }
 }

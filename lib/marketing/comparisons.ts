@@ -61,7 +61,7 @@ export const COMPARISONS: Comparison[] = [
       { dimension: 'What it is', them: 'A one-off invite for a single event.', us: 'A standing Circle that meets again and again.' },
       { dimension: 'After the event', them: 'The thread goes quiet until the next party.', us: 'The same faces come back next week.' },
       { dimension: 'Finding people', them: 'You invite people you already know.', us: 'You find neighbors by what you care about.' },
-      { dimension: 'Cost', them: 'Free.', us: 'Free to join during the beta.' },
+      { dimension: 'Cost', them: 'Free.', us: 'Free to join, always.' },
     ],
     forReader:
       'You throw a good party, but the friendships never quite stick after. You want the repeat, not just the night.',
@@ -79,7 +79,7 @@ export const COMPARISONS: Comparison[] = [
       { dimension: 'Where it leads', them: 'Out, to your other profiles.', us: 'In, to Circles and events near you.' },
       { dimension: 'The goal', them: 'A click.', us: 'A face you see again in person.' },
       { dimension: 'On what you sell', them: 'Fees can apply to tips and sales.', us: '0% on tips, always, and 0% on your own bookings.' },
-      { dimension: 'Cost', them: 'Free, with paid tiers.', us: 'Free to join during the beta.' },
+      { dimension: 'Cost', them: 'Free, with paid tiers.', us: 'Free to join, always.' },
     ],
     forReader:
       'You have the followers and the links. You are missing the part where it turns into people you actually know.',
@@ -99,7 +99,7 @@ export const COMPARISONS: Comparison[] = [
       { dimension: 'Who it is for', them: 'You and one other person.', us: 'A small group that meets as a Circle.' },
       { dimension: 'The pattern', them: 'A new slot every time.', us: 'The same day, every week or every other week.' },
       { dimension: 'On a paid booking', them: 'Paid bookings sit behind paid tiers.', us: 'Paid bookings on a free account, at 0% on your own bookings.' },
-      { dimension: 'Cost', them: 'Free, with paid tiers.', us: 'Free to join during the beta.' },
+      { dimension: 'Cost', them: 'Free, with paid tiers.', us: 'Free to join, always.' },
     ],
     forReader:
       'You can book a meeting in seconds. You still want a standing thing with a few people that does not need re-booking.',
@@ -119,7 +119,7 @@ export const COMPARISONS: Comparison[] = [
       { dimension: 'Getting in', them: 'You buy a ticket.', us: 'You find a Circle and show up.' },
       { dimension: 'After the event', them: 'It ends; the next one is unrelated.', us: 'The same group meets again.' },
       { dimension: 'On what you sell', them: 'A fee on every ticket you sell.', us: '0% on your own bookings, always.' },
-      { dimension: 'Cost', them: 'Free and paid listings; fees on tickets.', us: 'Free to join during the beta.' },
+      { dimension: 'Cost', them: 'Free and paid listings; fees on tickets.', us: 'Free to join, always.' },
     ],
     forReader:
       'You have been to plenty of events. You want the few that turn into people you keep seeing, not another ticket stub.',
@@ -139,7 +139,7 @@ export const COMPARISONS: Comparison[] = [
       { dimension: 'What it rewards', them: 'Posting and engagement.', us: 'Showing up in real life.' },
       { dimension: 'Who runs it', them: 'One creator and their audience.', us: 'Neighbors who host a Circle, with the format handed to them.' },
       { dimension: 'On what you sell', them: 'Fees can apply to what you sell.', us: '0% on your own bookings, always.' },
-      { dimension: 'Cost', them: 'Paid, per creator.', us: 'Free to join during the beta.' },
+      { dimension: 'Cost', them: 'Paid, per creator.', us: 'Free to join, always.' },
     ],
     forReader:
       'You are in a few online communities already. What you are short on is people you can sit across a table from.',
@@ -218,7 +218,7 @@ export function comparisonCopy(c: Comparison): ComparisonCopy {
       : []),
     {
       q: `Is Frequency free?`,
-      a: `Yes. Frequency is free to join during the beta. You can browse Circles and events near you, join one, host your own gathering, and take RSVPs without paying anything. Selling tickets and taking payments is free on every tier; what a paid tier buys is a lower rate on the sales the network introduces. Frequency takes 0% on your own bookings, always.`,
+      a: `Yes. Frequency is free to join, and it stays free. You can browse Circles and events near you, join one, host your own gathering, and take RSVPs without paying anything. Selling tickets and taking payments is free on every tier; what a paid tier buys is a lower rate on the sales the network introduces. Frequency takes 0% on your own bookings, always.`,
     },
     {
       q: `Who is Frequency for?`,

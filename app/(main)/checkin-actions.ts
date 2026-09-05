@@ -5,7 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { mergeProfileMeta } from '@/lib/profiles/meta'
 import { awardGems } from '@/lib/gems'
 import { recordStreakActivity } from '@/lib/achievements'
-import { resolveMemberDay } from '@/lib/member-day'
+import { resolveMemberDayAndZone } from '@/lib/member-day'
 
 // Daily check-in — the return loop that gets members coming back (BACKLOG §F).
 // First authenticated visit each day: pay the daily-login gems + tick the login
@@ -44,7 +44,7 @@ export async function dailyCheckIn(clientTimezone?: string): Promise<DailyCheckI
   if (!profile) return null
 
   const meta = (profile.meta ?? {}) as Record<string, unknown>
-  const today = await resolveMemberDay(profile.id, clientTimezone)
+  const { day: today, timezone } = await resolveMemberDayAndZone(profile.id, clientTimezone)
   if (meta.daily_checkin_date === today) return null // already checked in today
 
   // Consecutive-day streak: bump if yesterday (member-local) was the last
@@ -67,7 +67,11 @@ export async function dailyCheckIn(clientTimezone?: string): Promise<DailyCheckI
     return null
   }
 
-  const gem = await awardGems(profile.id, 'daily_login')
+  // Pay on the SAME day this function guarded on. Without the day/zone the RPC caps on the UTC
+  // day, and since the guard above is the member's LOCAL day the two disagreed: an evening
+  // check-in and the next morning's land in one UTC day, so the second was silently worth 0 Gems
+  // while the streak still incremented.
+  const gem = await awardGems(profile.id, 'daily_login', undefined, undefined, { day: today, timezone })
   await recordStreakActivity(profile.id, 'login').catch(() => null) // weekly active streak too
 
   return { gems: gem.awarded ? gem.amount : 0, dayStreak }

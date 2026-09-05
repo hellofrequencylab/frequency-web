@@ -588,12 +588,27 @@ seeded (a non-default menu), so it is unchanged pre-seed. Tables are not in
 
   ```sql
   update supabase_migrations.schema_migrations
-  set version = '<repo filename prefix>'
-  where version = '<wall-clock stamp>' and name = '<shared name>';
+  set version = '<repo filename prefix>', name = '<repo filename, WITHOUT its version prefix>'
+  where version = '<wall-clock stamp>' and name = '<the name the ledger actually holds>';
   ```
 
   Nothing re-runs and no DDL is involved. Skipping it is what makes `db push` see the file as
   unapplied, which is the hazard the ban above exists to avoid. Reconcile, then re-check parity.
+
+  ⚠️ **Set BOTH columns, and never assume the ledger's `name` is the bare name.** This snippet set
+  only `version` until 2026-09-05, and the version is only half of what `apply_migration` gets
+  wrong. It also writes the WHOLE FILENAME — version prefix included — into `name`, so a file
+  shipped as `20270345001100_redeem_locks_the_item_not_the_buyer.sql` lands as version
+  `20260905172410`, name `20270345001100_redeem_locks_the_item_not_the_buyer`. Repairing the
+  version alone leaves the two sides agreeing on WHICH versions ran and disagreeing about which
+  migration each one IS, and `check:migrations` fails on that second column just as hard — which is
+  how this correction was found.
+
+  🔴 **The repair belongs on the LEDGER, not on the filename.** Renaming the repo file to the
+  wall-clock stamp also silences the guard, and it is the wrong half: the filename version is what
+  the repo sorts and replays by, so a `20260905*` name on a repo stamped `20270345*` moves that
+  migration ~250 rows earlier on the next `db reset` — the mis-sort hazard the `apply_migration`
+  ban exists to prevent, reintroduced by the repair. The guard's failure text says this; heed it.
 - 🔴 **Applying to prod makes every branch that lacks the file go red, and that is the gate
   working.** `check:migrations --require-ledger` reads the LIVE ledger, so it compares a
   *branch-local* file set against a *project-global* row set. The instant a migration is applied,

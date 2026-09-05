@@ -110,9 +110,10 @@ Context header band + context tabs + body + **scope-aware** right rail.
 > **Update (§8, ADR-1046):** Focus and Dashboard are now **real templates** too:
 > `FocusTemplate` (a centered, single-task compose/edit/settings surface) and
 > `DashboardTemplate` (the metric-led operator workspace). With **`WizardShell`** (the
-> multi-step flow shell), **`RailGrid`** (a filter rail beside a fluid card grid), and
-> **`AdminTemplate`** (the `/admin/*` workspace), the kit is now **eight shells**, all
-> sharing one `PageHeading`. See §8 for the full kit + the declarative rail map
+> multi-step flow shell) and **`AdminTemplate`** (the `/admin/*` workspace), the kit is
+> **seven shells**, all sharing one `PageHeading`. (This line said "eight" and counted
+> **`RailGrid`** until 2026-09-05; `RailGrid` is a column grid composed *inside* a shell,
+> not a shell — see the §8 reconciliation.) See §8 for the full kit + the declarative rail map
 > (`lib/layout/page-chrome.ts`).
 
 ### How templates map to Next.js
@@ -340,27 +341,32 @@ forces a big-bang rewrite.
 
 ---
 
-## 8. The kit today: eight shells + one chrome map (build a page)
+## 8. The kit today: seven shells + one chrome map (build a page)
 
 > **Update 2026-06-05 (ADR-1046):** the template kit is now complete and the
 > shell's rail treatment is **declarative**. "Focus" and "Dashboard" are no longer
 > informal: they're real templates next to Stream / Index / Detail. A page is now
 > *two lines of decision*: pick a template, register a rail.
 >
-> **Reconciliation (2026-08-05):** earlier prose in this doc said "three", then "eight",
-> then "nine". The canonical count today is **eight page shells**, all exported from
+> **Reconciliation (2026-09-05, superseding 2026-08-05):** earlier prose said "three", then
+> "eight", then "nine", then "eight" again. 🔴 **The 2026-08-05 count of eight was wrong: it
+> included `RailGrid`, which is not a shell.** `scripts/check-templates.mjs` lists `RailGrid`
+> under `PIECES` — "deliberately NOT shells" — so a page whose only layout import is `RailGrid`
+> FAILS that gate. The canonical count is **seven page shells**, all exported from
 > [`@/components/templates`](../components/templates/index.ts) and all on the one
-> `PageHeading` grammar: **Stream · Index · Detail · Dashboard · Focus · WizardShell ·
-> RailGrid · Admin**. Two of the old nine — `HeaderSidebarTemplate` and
+> `PageHeading` grammar: **Stream · Index · Detail · Dashboard · Focus · WizardShell · Admin**.
+> `RailGrid` is a column grid you compose *inside* a shell (§8.1.2).
+> ⚠️ Do not re-derive this number from the barrel's export count: the barrel exports 14 value
+> components, and `check-templates.mjs`'s `SHELLS` holds 11 because it answers a different
+> question ("does this page own a layout", so it counts compositions and aliases too). Two of the old nine — `HeaderSidebarTemplate` and
 > `TwoColumnTemplate` — were **deleted**: neither was ever composed by a single page in
 > `app/` or `components/`, so they were a documented canon with no referent. Their shapes
 > survive where they are actually used: the in-body sidebar is `DetailTemplate`'s `sidebar`
 > slot, and two peer columns are a grid inside whichever shell the content is (§3).
-> `RailGrid` had shipped in the table but was missing from the prose count; it is counted
-> now. `PageHeading` and `PageHero` are shared header grammar, not shells, so neither is
-> counted; nor are the entity **compositions** in §8.1.1.
+> `PageHeading` and `PageHero` are shared header grammar, not shells, so neither is
+> counted; nor are the entity **compositions** in §8.1.1, nor `RailGrid` (§8.1.2).
 
-### 8.1 The eight shells: `@/components/templates`
+### 8.1 The seven shells: `@/components/templates`
 
 | Shell | Import | Use it for | Header / slots |
 |---|---|---|---|
@@ -898,7 +904,7 @@ only; the action is the authority, since the admin client bypasses RLS).
 Pages are for *reading*; the **Studio** is the one window for *making*. Anywhere
 there's something to create or edit (a journey today; circles, practices, events
 next), the same launchable window opens, so authoring feels identical everywhere,
-the way the five templates make reading feel identical.
+the way the shells (§8.1) make reading feel identical.
 
 - **Shell:** `components/studio/studio-window.tsx`, an overlay panel (full-screen on
   mobile) with shared chrome (eyebrow, Esc/backdrop close, scroll-lock), a body the

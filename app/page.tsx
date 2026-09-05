@@ -5,7 +5,6 @@ import { BlockDocJsonLd } from '@/lib/page-editor/block-seo'
 import { config } from '@/lib/page-editor/config'
 import { getPublishedData } from '@/lib/page-editor/data'
 import { getTemplate, isWellFormed } from '@/lib/page-editor/templates'
-import { createClient } from '@/lib/supabase/server'
 import { MarketingHeader } from '@/components/layout/marketing-header'
 import { MarketingFooter } from '@/components/layout/marketing-footer'
 import { getMenu, getMenuSettings } from '@/lib/menus/read'
@@ -97,6 +96,12 @@ const EMPTY: Data = { content: [], root: {} }
 // counts stay OFF (no `metadata={{ live }}`): the home document carries the honest, qualitative
 // founding framing, never invented numbers.
 //
+// ISR. The front door is the same document for every visitor, so it is rebuilt at most hourly
+// rather than on every request — the same `revalidate` the 21 marketing pages and the 22
+// /discover pages already declare. Nothing here reads cookies/headers/searchParams; if you add
+// such a read, this whole page silently goes dynamic again and the queries come back.
+export const revalidate = 3600
+
 // ⚠️ Do NOT add a coded section to this file. `scripts/render-path-bodies.txt` records `home 0` and
 // `check:render-path` matches it EXACTLY, so a second top-level component here fails the build. New
 // marketing structure on this page belongs in a BLOCK (lib/page-editor/config.tsx).
@@ -106,14 +111,20 @@ export default async function RootPage() {
   // the previous "marketing for everyone" rule this comment used to state), and the redirect runs
   // before the route is entered so the document below is never rendered for a member.
   //
-  // We still read `user`, and it is not dead: `/?preview` is the page editor's "View home" door
-  // (app/(main)/pages/home/page.tsx) and the ONE way a signed-in operator gets here. On that path
-  // the header must render the member's chrome — logo into /feed, no "Sign in" — rather than
-  // telling the operator who just edited the page that they are a stranger to it.
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  // ⚠️ This function reads NO request data on purpose, so `revalidate` below can take effect.
+  // It used to `await createClient()` + `auth.getUser()`; `createClient` calls `cookies()`, a
+  // request-time API, which opted the front door out of static rendering entirely — every
+  // anonymous visit and every crawler hit re-ran the full query set (3 menu reads = 13 queries,
+  // then the published document) on demand. That is LIVE-012 reproduced: `app/discover` and
+  // `app/(marketing)` both fixed exactly this and both carry a guard, and `app/page.tsx` is in
+  // neither group so neither guard covered it.
+  //
+  // The auth read existed for `/?preview`, the page editor's "View home" door and the one way a
+  // signed-in operator reaches this component. That requirement is unchanged and still met:
+  // `MarketingHeader` takes `detectClientAuth` and upgrades the logo link + nav mode from the
+  // local Supabase session cookie after hydration (no network call), which is the same mechanism
+  // the 21 marketing pages already rely on. The page BODY and all SEO output are identical for
+  // signed-in and signed-out viewers, so there is nothing viewer-specific to cache wrongly.
 
   // DB-backed nav megas for the header (lib/menus); fall back to code defaults on any miss, so
   // safe pre-migration.
@@ -138,7 +149,7 @@ export default async function RootPage() {
           "Start a Circle", the niche doors said "Start free", /pricing said "Join free" and /join
           itself said "Come in" — five verbs for one entrance, and the loudest of them was on the page
           that sets the reader's expectation for all the others. */}
-      <MarketingHeader overHero isAuth={!!user} headerMenu={headerMenu} menuTimings={menuTimings} />
+      <MarketingHeader overHero detectClientAuth headerMenu={headerMenu} menuTimings={menuTimings} />
       <main id="main">
         <BlockRender config={config} data={data} />
       </main>

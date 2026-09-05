@@ -120,12 +120,14 @@ export function isSafeRoute(pathname: string): boolean {
   return typeof pathname === 'string' && /^\/(?:[A-Za-z0-9_-]+(?:\/[A-Za-z0-9_-]+)*)?$/.test(pathname)
 }
 
-// FULL-WIDTH DASHBOARD surfaces — member-side operator workspaces that compose <DashboardTemplate>
-// and genuinely need the full center width because their body SCROLLS HORIZONTALLY and would fight a
-// right rail. These keep the global LEFT menu but drop the member RIGHT rail, like /admin's own
-// dashboard. Today the ONLY one is a Space's own CRM board (/spaces/<slug>/crm), a paid per-Space
-// pipeline workspace (CRM-STRATEGY P3) with a horizontal stage board, distinct from the Focus
-// settings/crm notes surface. Pattern match (one slug deep).
+// FULL-WIDTH surfaces — member-side surfaces that keep the global LEFT menu but drop the member
+// RIGHT rail, because their body uses the whole width and would fight a rail.
+//
+// ⚠️ The variable name is historical. This list holds the two full-width EDITORS
+// (/spaces/<slug>/edit-page and /spaces/<slug>/marketing), NOT a dashboard. The Space CRM board is
+// NOT here — it was removed by owner directive and `railFor` returns 'global' for it, which
+// `page-chrome.test.ts` asserts. This header claimed the CRM board was "the ONLY one" until
+// 2026-09-05, contradicting both the note below it and the test.
 //
 // NOTE (ADR-471, owner directive: "the right rail shows on every page"): the entity OWNER CONSOLES
 // (/{entity}/[id]/manage, ADR-441/469) are NO LONGER here. They are a vertical GRID of section cards,

@@ -51,6 +51,66 @@ export interface HelpArticle {
   featureKeys: string[]
   status: HelpStatus
   body: string
+  /** Q&A pairs DERIVED from the body's FAQ section, for FAQPage schema (CONTENT-VOICE §8b:
+   *  "FAQPage schema on every article with an FAQ"). Empty for articles without one.
+   *
+   *  Derived, never hand-kept: a second list would drift from the prose it claims to mirror,
+   *  and a FAQPage that disagrees with the visible page is a structured-data violation rather
+   *  than a cosmetic bug. `extractFaq` reads the rendered body, so the schema is true by
+   *  construction. */
+  faq: { q: string; a: string }[]
+}
+
+/** Pull `### Question?` / answer pairs out of an article's FAQ section.
+ *
+ *  Shape it matches (all 16 FAQ-bearing articles today): an `##` heading whose text starts with
+ *  Questions / Common questions / FAQ / Frequently asked, then one `###` per question, each
+ *  followed by prose up to the next heading. Stops at the next `##` so a later section is never
+ *  swallowed. Returns [] when there is no FAQ section, which is the common case.
+ *
+ *  Deliberately conservative: a `###` that is not a question (no trailing `?`) is skipped rather
+ *  than guessed at, because a wrong Question node is worse than a missing one. */
+export function extractFaq(body: string): { q: string; a: string }[] {
+  const lines = body.split('\n')
+  const start = lines.findIndex((l) =>
+    /^##\s+(questions|common questions|faq|frequently asked)/i.test(l.trim()),
+  )
+  if (start === -1) return []
+
+  const out: { q: string; a: string }[] = []
+  let q: string | null = null
+  let buf: string[] = []
+  const flush = () => {
+    if (!q) return
+    // Strip markdown emphasis/links/code so the schema carries the words a reader sees.
+    const a = buf
+      .join(' ')
+      .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
+      .replace(/[*_`]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim()
+    if (a) out.push({ q, a })
+    q = null
+    buf = []
+  }
+
+  for (const line of lines.slice(start + 1)) {
+    const t = line.trim()
+    if (/^##\s/.test(t) && !/^###/.test(t)) break // next top-level section ends the FAQ
+    const h3 = t.match(/^###\s+(.*\?)\s*$/)
+    if (h3) {
+      flush()
+      q = h3[1].replace(/[*_`]/g, '').trim()
+      continue
+    }
+    if (/^#{1,6}\s/.test(t)) {
+      flush()
+      continue
+    }
+    if (q && t) buf.push(t)
+  }
+  flush()
+  return out
 }
 
 export interface HelpCategory {
@@ -129,6 +189,7 @@ async function readArticle(category: string, file: string): Promise<HelpArticle>
     featureKeys: arr(data.featureKeys),
     status: (str(data.status, 'published') as HelpStatus) === 'draft' ? 'draft' : 'published',
     body: content,
+    faq: extractFaq(content),
   }
 }
 

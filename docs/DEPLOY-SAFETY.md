@@ -249,8 +249,11 @@ keyword apart in review and 1.6 MB apart in the artifact.
 > outage was gates that passed while the artifact was broken; this would be a gate that fails while
 > the artifact is fine, and it kills deploys just as dead. So each went to `--warn-only` first, printed
 > green on real production artifacts, and was promoted in the same change as the build that proved it
-> (LIVE-029 / LIVE-035 / LIVE-048; ADR-1064, ADR-1066, ADR-1086). `postbuild` today is all four:
-> `check:build-budget && check:og-trace && check:cache-budget && check:shell-weight`, and
+> (LIVE-029 / LIVE-035 / LIVE-048; ADR-1064, ADR-1066, ADR-1086). ⚠️ **`postbuild` today runs FIVE**
+> — `package.json`'s `postbuild` script is the authority, quote it rather than restating it:
+> `check-build-budget && check-og-trace && check-cache-budget && check-shell-weight &&
+> check-build-fanout`. This sentence said "all four" until 2026-09-05, the third restatement of
+> this list to drift; `check:build-fanout` joined on 2026-09-05 (ADR-1211). And
 > `scripts/check-cache-budget-warn-only.test.ts` + `check-shell-weight-warn-only.test.ts` fail a
 > re-added `--warn-only` as a silent demotion. It reads
 `entryJSFiles['[project]/app/(main)/layout']` from the client-reference manifests, which **is** the
@@ -282,10 +285,12 @@ chunks. That is not a new trick; it is how dc47b89 proved the bug was real, by f
 
 1. `pnpm build` locally, then read the `postbuild` output. **Every** gate must be ✅ —
    `check:build-budget` (rule 1), `check:og-trace` (rule 6), `check:shell-weight` (rule 11),
-   `check:cache-budget` (rule 10). A ⚠️ trim line from the last one is not a failure, but it is
-   telling you the cache is at its ceiling.
+   `check:cache-budget` (rule 10), `check:build-fanout` (ADR-1211). That is **five**; if you count
+   four, your copy of this list is stale — check `package.json`'s `postbuild`. A ⚠️ trim line from
+   `check:cache-budget` is not a failure, but it is telling you the cache is at its ceiling.
 2. `pnpm exec tsc --noEmit` · `pnpm lint` · `pnpm test` (which now carries six of the contract
-   guards directly — ADR-1011) · the 24 guards in `ci.yml`'s `guards=( )` array.
+   guards directly — ADR-1011) · every guard in `ci.yml`'s `guards=( )` array (the workflow prints
+   `${#guards[@]}` rather than a hardcoded count, because the hardcoded one drifted twice).
 3. Migrations: is every file in `supabase/migrations/` actually applied, and does the applied ledger
    contain nothing the repo lacks? A revert can leave the DB **ahead of** the code.
 4. After merge: **watch the production deployment reach READY.** A merge is a deploy.

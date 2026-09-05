@@ -15,7 +15,7 @@ export const revalidate = 3600
 
 const TITLE = 'Find your people by city'
 const DESCRIPTION =
-  'The cities where Frequency is taking root: local Circles meeting and real-world events happening near you. Browse by city, free to join during the beta.'
+  'The cities where Frequency is taking root: local Circles meeting and real-world events happening near you. Browse by city. Free to join, always.'
 
 export function generateMetadata(): Metadata {
   const canonical = '/discover/cities'
@@ -104,7 +104,7 @@ export default async function DiscoverCitiesIndexPage() {
 
       <BetaCTA
         heading="Your city is built one room at a time."
-        body="Frequency is free to join during the beta. Find a Circle near you, or start the first one."
+        body="Frequency is free to join, and it stays free. Find a Circle near you, or start the first one."
       />
     </>
   )

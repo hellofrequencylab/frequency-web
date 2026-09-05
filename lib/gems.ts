@@ -49,6 +49,15 @@ export async function awardGems(
   action: GemAction,
   overrideAmount?: number,
   metadata?: Record<string, unknown>,
+  /** The member's own day for the daily-cap window, as {day: 'YYYY-MM-DD', timezone: IANA}.
+   *
+   *  OMIT IT and the cap uses the UTC day, which is right for anything not keyed on a member's
+   *  local day. PASS IT whenever the CALLER already guarded on a member day, or the two disagree
+   *  at the edges: `daily_login` guarded on the member's local day and capped on the UTC day, so
+   *  an evening check-in and the next morning's fell inside one UTC day and the second silently
+   *  paid nothing. Get it from `resolveMemberDayAndZone`, which reports the zone it actually
+   *  used. */
+  day?: { day: string; timezone: string },
 ): Promise<AwardResult> {
   const admin = createAdminClient()
 
@@ -70,7 +79,7 @@ export async function awardGems(
   // so the call is cast (repo convention for not-yet-typed DB objects).
   const rpc = admin.rpc.bind(admin) as unknown as (
     name: 'award_gems_atomic',
-    args: { _profile: string; _action: string; _amount: number; _daily_cap: number | null; _metadata: Record<string, unknown> },
+    args: { _profile: string; _action: string; _amount: number; _daily_cap: number | null; _metadata: Record<string, unknown>; _day_key?: string | null; _timezone?: string | null },
   ) => Promise<{ data: { awarded?: boolean; capped?: boolean } | null; error: { message: string } | null }>
 
   const { data, error } = await rpc('award_gems_atomic', {
@@ -79,6 +88,10 @@ export async function awardGems(
     _amount: amount,
     _daily_cap: config.daily_cap ?? null,
     _metadata: metadata ?? {},
+    // null/null keeps the RPC's UTC-day window, which is its default and every other caller's
+    // behaviour. Only a caller that resolved a member day narrows it to that member's day.
+    _day_key: day?.day ?? null,
+    _timezone: day?.timezone ?? null,
   })
 
   if (error) {

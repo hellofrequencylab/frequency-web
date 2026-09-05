@@ -275,7 +275,7 @@ jobs:
           # "it moved to vitest" cannot become a story nobody checks.
           # Do NOT re-add them here — they would then run twice and could rot in one place.
           #
-          # This array is for SOURCE-only guards. All FOUR artifact gates deliberately live in
+          # This array is for SOURCE-only guards. All FIVE artifact gates deliberately live in
           # `postbuild` instead, because CI never builds —
           # Vercel does. See docs/DEPLOY-SAFETY.md and ADR-1003.
           # 2026-09-05 (scan2 PE-1): schema-contract joined this array, so it is now 25 here, not 24;

@@ -87,7 +87,14 @@ const showsBatch = vi.fn(async (ids: string[]) => {
 })
 
 vi.mock('@/lib/airwaves/shows', () => ({ listPublicShowsBySpace: (ids: string[]) => showsBatch(ids) }))
-vi.mock('@/lib/spaces/discovery', () => ({ listNetworkedSpaces: async () => SPACES }))
+vi.mock('@/lib/spaces/discovery', () => ({
+  listNetworkedSpaces: async () => SPACES,
+  // The sitemap imports the cap so it can say WHICH reader to page when a section truncates,
+  // rather than retyping 200. A factory mock must carry it: omit an export the module under
+  // test imports and the import throws, which reads here as an empty sitemap rather than an
+  // error.
+  DISCOVERY_FETCH_LIMIT: 200,
+}))
 
 // Everything else returns empty, so the assertions below are about the podcast + Space sections and
 // the static block — not about fixture noise from a dozen unrelated verticals.

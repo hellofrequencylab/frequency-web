@@ -49,7 +49,7 @@ export async function generateMetadata({
         hub.circles.length === 1 ? 'Circle' : 'Circles'
       } and ${hub.events.length} upcoming ${
         hub.events.length === 1 ? 'event' : 'events'
-      } near you. Free to join during the beta. Show up in person.`
+      } near you. Free to join, always. Show up in person.`
     : `Local Circles and real-world events in ${city} on Frequency.`
   const canonical = `/discover/cities/${citySlug}`
   return {
@@ -219,7 +219,7 @@ export default async function DiscoverCityPage({
 
       <BetaCTA
         heading={`Your people are already gathering in ${city}`}
-        body="Frequency is free to join during the beta. Sign up, find a Circle near you, and start showing up this week."
+        body="Frequency is free to join, and it stays free. Sign up, find a Circle near you, and start showing up this week."
       />
 
       <div className="px-6 pb-16 text-center">

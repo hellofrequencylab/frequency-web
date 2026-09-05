@@ -7,7 +7,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 const mocks = vi.hoisted(() => ({
   awardGems: vi.fn(),
   recordStreakActivity: vi.fn(),
-  resolveMemberDay: vi.fn(),
+  resolveMemberDayAndZone: vi.fn(),
   rpc: vi.fn(),
   profile: { id: 'p1', meta: {} as Record<string, unknown> } as { id: string; meta: Record<string, unknown> } | null,
 }))
@@ -30,14 +30,14 @@ vi.mock('@/lib/supabase/admin', () => ({
 }))
 vi.mock('@/lib/gems', () => ({ awardGems: mocks.awardGems }))
 vi.mock('@/lib/achievements', () => ({ recordStreakActivity: mocks.recordStreakActivity }))
-vi.mock('@/lib/member-day', () => ({ resolveMemberDay: mocks.resolveMemberDay }))
+vi.mock('@/lib/member-day', () => ({ resolveMemberDayAndZone: mocks.resolveMemberDayAndZone }))
 
 import { dailyCheckIn } from './checkin-actions'
 
 beforeEach(() => {
   vi.clearAllMocks()
   mocks.profile = { id: 'p1', meta: { practiceStreak: { current: 4 }, daily_checkin_date: '2026-09-04', daily_checkin_streak: 2 } }
-  mocks.resolveMemberDay.mockResolvedValue('2026-09-05')
+  mocks.resolveMemberDayAndZone.mockResolvedValue({ day: '2026-09-05', timezone: 'America/Los_Angeles' })
   mocks.awardGems.mockResolvedValue({ awarded: true, amount: 5 })
   mocks.recordStreakActivity.mockResolvedValue(null)
   mocks.rpc.mockResolvedValue({ data: {}, error: null })
@@ -53,7 +53,13 @@ describe('dailyCheckIn stamps through merge_profile_meta with only its own keys'
     expect(args.p_profile_id).toBe('p1')
     // ONLY the two check-in keys: the practiceStreak read at the top must never ride along.
     expect(args.p_patch).toEqual({ daily_checkin_date: '2026-09-05', daily_checkin_streak: 3 })
-    expect(mocks.awardGems).toHaveBeenCalledWith('p1', 'daily_login')
+    // The day/zone must reach awardGems, or the cap falls back to the UTC day while the guard
+    // above keys on the member's LOCAL day. That mismatch silently paid 0 Gems for one check-in
+    // in every adjacent local-day pair west of UTC (migration 20270345001200).
+    expect(mocks.awardGems).toHaveBeenCalledWith('p1', 'daily_login', undefined, undefined, {
+      day: '2026-09-05',
+      timezone: 'America/Los_Angeles',
+    })
     expect(res).toEqual({ gems: 5, dayStreak: 3 })
   })
 

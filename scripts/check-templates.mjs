@@ -10,8 +10,12 @@
 // THE HOLE A NAIVE GREP FALLS INTO. `grep -l "@/components/templates"` is NOT evidence of composing
 // a template. That barrel also exports PIECES — PageHeading, PageHero, WizardProgress, AdminSection,
 // RailGrid — and a page can import a piece, hand-roll its own layout around it, and score compliant.
-// SHELLS below lists the eight real shells (plus two aliases reached by path); the pieces are named
-// in PIECES purely so a future reader does not "fix" the omission.
+// SHELLS below lists the 11 names that OWN A LAYOUT: the 7 authoring shells, the 2 entity
+// compositions, SparkShell, and 2 aliases reached by path. That is deliberately WIDER than the
+// authoring menu in AGENTS.md, because this gate answers "does this page own a layout", not
+// "which shell should I pick". (This comment said "the eight real shells" until 2026-09-05, which
+// was wrong twice over: the list holds 11, and AGENTS.md's eight wrongly counted RailGrid.)
+// The pieces are named in PIECES purely so a future reader does not "fix" the omission.
 //
 // TWO WAYS TO BE COMPLIANT, and both are legitimate:
 //   · the page itself composes a shell

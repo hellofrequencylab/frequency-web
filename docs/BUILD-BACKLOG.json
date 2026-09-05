@@ -73,7 +73,16 @@
             "LIVE-171",
             "LIVE-175",
             "LIVE-176",
-            "LIVE-177"
+            "LIVE-177",
+            "LIVE-178",
+            "LIVE-179",
+            "LIVE-180",
+            "LIVE-181",
+            "LIVE-182",
+            "LIVE-183",
+            "LIVE-184",
+            "LIVE-185",
+            "LIVE-186"
           ]
         },
         {
@@ -8467,7 +8476,7 @@
         "file": "scripts/check-cache-budget.mjs",
         "ref": "PACKED_PER_RAW"
       },
-      "detail": "Scan two, phase D6 (2026-09-05), measured on the merge run itself. check:cache-budget predicts packed size as raw x PACKED_PER_RAW = 0.53, and ADR-1113 settled that constant on paired readings accurate to 1% and rounded toward firing the trim EARLY. Three paired readings the same day all ran the other way: 1.31 predicted / 1.31 uploaded (main at 08e6169), 1.36 / 1.38 (main at 67ada96), and 1.35 / 1.41 (main at e2d6107). The last is 94% of the 1.50 GB ceiling and at the trim point, and a 4% low estimate is the direction that costs a BUILD rather than a CPU minute, because the trim fires after the cache is already over. The mix has moved: .next/cache grew 1428 to 1522 MiB across the day while node_modules held at 921 MiB, so the cache is more compiler-heavy than the mix 0.53 was derived on. Re-derive the constant from these readings (the implied ratio is near 0.55) and raise it, which fires the trim earlier; do NOT lower it. The change belongs in its own PR with the green build that proves it, per the rule that a threshold ships beside its measurement. CONFIRMED THE SAME DAY: the deploy of the last scan-two split (main at de8177e, 14:26Z) measured 3.06 GiB raw, about 1.74 GB packed, over both the 1.40 GB trim point and Vercel's 1.50 GB hard ceiling, and check:cache-budget trimmed .next/cache/turbopack (2208 MiB) to get under it, uploading 256.68 MB. The gate did its job: a cold compile on the next build instead of Vercel discarding the whole cache including node_modules. That settles the premise here as real rather than noise, and it is the first recorded trim since the gate was wired. POST-TRIM READING, THE SAME DAY, AND IT IS THE ONE THAT SETS THE BASELINE THIS ROW CLOSES AGAINST: the next production build (main at 24f8eb9, 14:47Z, dpl_Duf514HXs8q6AkkXD9PQRjhKoxBJ) predicted 1.26 GB and uploaded 1.26 GB, EXACT, on 2.21 GiB raw (node_modules 921 MiB + .next/cache 1342 MiB). So the constant is not wrong on the resting mix; it is wrong on the LOADED one, which is the only mix where the trim point matters. Any re-derivation has to be paired against a loaded reading, not this one, or it will measure the mix that was never in question. The cold compile the trim was expected to cost did not show up as a slow build either: this one completed in 2m with the cache restored from the trimmed deploy.",
+      "detail": "Scan two, phase D6 (2026-09-05), measured on the merge run itself. check:cache-budget predicts packed size as raw x PACKED_PER_RAW = 0.53, and ADR-1113 settled that constant on paired readings accurate to 1% and rounded toward firing the trim EARLY. Three paired readings the same day all ran the other way: 1.31 predicted / 1.31 uploaded (main at 08e6169), 1.36 / 1.38 (main at 67ada96), and 1.35 / 1.41 (main at e2d6107). The last is 94% of the 1.50 GB ceiling and at the trim point, and a 4% low estimate is the direction that costs a BUILD rather than a CPU minute, because the trim fires after the cache is already over. The mix has moved: .next/cache grew 1428 to 1522 MiB across the day while node_modules held at 921 MiB, so the cache is more compiler-heavy than the mix 0.53 was derived on. Re-derive the constant from these readings (the implied ratio is near 0.55) and raise it, which fires the trim earlier; do NOT lower it. The change belongs in its own PR with the green build that proves it, per the rule that a threshold ships beside its measurement. CONFIRMED THE SAME DAY: the deploy of the last scan-two split (main at de8177e, 14:26Z) measured 3.06 GiB raw, about 1.74 GB packed, over both the 1.40 GB trim point and Vercel's 1.50 GB hard ceiling, and check:cache-budget trimmed .next/cache/turbopack (2208 MiB) to get under it, uploading 256.68 MB. The gate did its job: a cold compile on the next build instead of Vercel discarding the whole cache including node_modules. That settles the premise here as real rather than noise, and it is the first recorded trim since the gate was wired. POST-TRIM READING, THE SAME DAY, AND IT IS THE ONE THAT SETS THE BASELINE THIS ROW CLOSES AGAINST: the next production build (main at 24f8eb9, 14:47Z, dpl_Duf514HXs8q6AkkXD9PQRjhKoxBJ) predicted 1.26 GB and uploaded 1.26 GB, EXACT, on 2.21 GiB raw (node_modules 921 MiB + .next/cache 1342 MiB). So the constant is not wrong on the resting mix; it is wrong on the LOADED one, which is the only mix where the trim point matters. Any re-derivation has to be paired against a loaded reading, not this one, or it will measure the mix that was never in question. The cold compile the trim was expected to cost did not show up as a slow build either: this one completed in 2m with the cache restored from the trimmed deploy. ── THIRD PAIRED READING, 2026-09-05, PREVIEW not production (#2382, dpl 7R6iFqJiXJXNoGnELyf6znDaKe2H): predicted 1.37 GB, uploaded 1.39 GB, on 2.41 GiB raw (node_modules 921 MiB + .next/cache 1544 MiB). Within 1.5%, so the constant still holds on a resting mix — but note the DIRECTION: the exact reading above was at 2.21 GiB raw, and at 2.41 GiB the estimate now runs 1.5% LOW. That is the same direction as the loaded-mix miss this row is about, which is weak evidence that the underestimate scales with raw size rather than being specific to a loaded mix. Still NOT a re-derivation: it is not a loaded reading, and this is a preview artifact rather than a production one. Recorded so the next person re-deriving has three paired points instead of two.",
       "verify": {
         "kind": "manual",
         "evidence": "2026-09-05: three paired readings from production build logs (predicted 1.31/1.36/1.35 GB against uploaded 1.31/1.38/1.41 GB), then a fourth build that measured 1.74 GB packed and TRIMMED (dpl_GV9ipbH7kiE6zF8HJxwHRq4j3VHW). Closes when a re-derived PACKED_PER_RAW ships with a paired reading that agrees within 1% on the current mix. A fifth, post-trim reading (main at 24f8eb9, 14:47Z) was EXACT at 1.26/1.26 GB on the resting mix, which is why the close condition names a LOADED reading specifically.",
@@ -8505,6 +8514,159 @@
       "verify": {
         "kind": "manual",
         "evidence": "2026-09-05: help-autodoc comments on #2370, #2374 and #2377 name eight distinct articles under content/help/, each of which exists in the tree; all three pull requests merged with the advisory unaddressed. Closes when each named article has been read against the shipped behaviour and either corrected or confirmed accurate.",
+        "checked": "2026-09-05"
+      }
+    },
+    {
+      "id": "LIVE-178",
+      "title": "Every authenticated page load makes four auth round trips and three identical profile reads",
+      "status": "open",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "docs/BUILD-BACKLOG.json",
+        "ref": "sweep 3, 2026-09-05"
+      },
+      "detail": "Sweep 3, measured by reading the call graph. supabase.auth.getUser() is NOT a local JWT decode: @supabase/auth-js issues GET /auth/v1/user whenever a session exists, and there is no cross-instance memo. Four call sites fire per signed-in page load and three are duplicates: proxy.ts:91, app/(main)/layout.tsx:204 (its own client), lib/auth.ts getCachedUser (React cache()d, reached from inside the layout wave), and app/(main)/feed/page.tsx:50. Calls 1-2-4 are strictly serial: middleware, then layout, then page. The same duplication hits the profile row: layout.tsx:271, resolveCaller, and feed/page.tsx:67 read it three times by the same key. React cache() dedupes only what goes THROUGH getCachedUser, and two of the three build their own client. Bound: 3 redundant auth round trips on the critical path, roughly 60-180ms of TTFB at a 20-60ms same-region RTT, plus 2 redundant selects. THE FIX is to route every server-side identity read through lib/auth.ts. THREE HAZARDS, all real: (1) the layout's select reads more columns than resolveCaller, so that select must grow; (2) the layout deliberately wants realRole while resolveCaller returns the view-as-adjusted role, and resolveCaller already exposes realRole/realWebRole, so use those and do NOT collapse the two; (3) if the proxy's identity is forwarded as a header it MUST be stripped from inbound requests or it is an auth bypass. NOT DONE IN SWEEP 3 deliberately: the site has 6 visitors in three months, so there is no traffic to justify touching auth ordering, and hazard (3) makes a careless version a security bug rather than a slow page.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "2026-09-05: read the call graph end to end and confirmed against @supabase/auth-js GoTrueClient._getUser, which always issues a request when a session exists. Closes when one request makes one auth call and one profiles read, with the realRole distinction preserved and no trusted inbound identity header.",
+        "checked": "2026-09-05"
+      }
+    },
+    {
+      "id": "LIVE-179",
+      "title": "/feed runs five sequential database waves where three would do, and executes the my_orbit graph RPC twice",
+      "status": "open",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "docs/BUILD-BACKLOG.json",
+        "ref": "sweep 3, 2026-09-05"
+      },
+      "detail": "Sweep 3. components/feed/feed-list.tsx awaits at :240 (feed_for_viewer), :252 (a cookie read, no round trip), :264 (getViewerResonanceMap), :280 (buildScopeContextResolver), :328 (dispatches + nearest event) and :339 (resolveDispatchViewer). Steps 1, 3, 5 and 6 are MUTUALLY INDEPENDENT: 3 and 6 depend only on myProfileId and a cookie boolean, both props, and are awaited after step 1 purely by position. Only step 4 genuinely depends on step 1. So four round trips are paid where two would do. Separately getMyOrbit is NOT request-cached, and both lib/feed/viewer-resonance.ts:40 and feed-list.tsx:100 call getMyOrbit(200), so my_orbit -- a 3-way self-join over memberships and event_rsvps -- runs TWICE per feed render. getViewerResonanceMap's own comment claims 'two cheap, request-cached reads', describing a cache that does not exist. Also pickLeadDispatch may await viewerHasActiveRsvp once per candidate serially, up to 8. FIX in three parts: wrap getMyOrbit in React cache() (one line, viewer-scoped, per-request lifetime is exactly right); hoist 1/3/5/6 into one Promise.all keeping 4 and 7 dependent; pre-resolve candidate RSVP state with a single .in() read. PRESERVE the sort === 'relevant' guard on step 3 or every lens pays for the resonance map, and the hideDemoEvents cookie must still resolve before the dispatch branch.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "2026-09-05: read feed-list.tsx and lib/connections/resonance.ts; getMyOrbit carries no cache() wrapper. Closes when the feed renders in at most three waves and my_orbit runs once per render.",
+        "checked": "2026-09-05"
+      }
+    },
+    {
+      "id": "LIVE-180",
+      "title": "/events/[slug] reads the same events row twice and two Space rows in two serial round trips",
+      "status": "open",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "docs/BUILD-BACKLOG.json",
+        "ref": "sweep 3, 2026-09-05"
+      },
+      "detail": "Sweep 3. app/(main)/events/[slug]/page.tsx:296 selects 17 columns from events by slug; :364 then selects 23 MORE columns from the SAME row by id, in a second round trip, only because those columns are newer than the generated types (the file says so at :317). Everything after blocks on it. Separately :416 reads the hosting Space and :441 the venue Space serially, though both ids are derived together at :404. That is 2 removable round trips out of an 8-to-11 wave chain, on a route with three recorded production incidents (LIVE-142, SCAN-545). FIX: merge the two events selects into one (the second's cast pattern applies to the combined list) and the two spaces reads into one .in('id',[host,venue]). LOW RISK: identical data, same client, same filters. A THIRD win exists but is riskier: getMyProfileId is already cached and could start in the first wave instead of being derived at :611/:696, collapsing two more waves -- but the visibility gate at :585 imports it lazily inside the !canManage branch on purpose, so the read may be hoisted while the GATE ORDER must not move.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "2026-09-05: read the file end to end. Closes when the page issues one events read and one spaces read.",
+        "checked": "2026-09-05"
+      }
+    },
+    {
+      "id": "LIVE-181",
+      "title": "Global nav chrome costs 17 uncached queries per member page view, and nothing caches across requests",
+      "status": "open",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "docs/BUILD-BACKLOG.json",
+        "ref": "sweep 3, 2026-09-05"
+      },
+      "detail": "Sweep 3. getMenu (lib/menus/read.ts:235) issues one query for the menus row, awaits it, then three more in parallel: 4 queries in 2 serial waves. The member shell calls it four times plus getMenuSettings, so 17 queries of global nav chrome per member page view, and 2 of the shell's ~5 serial waves. These rows are space_id IS NULL globals, identical for every viewer, changing only when an operator edits a menu. A grep for unstable_cache, 'use cache', cacheTag and revalidateTag returns only comments and negative assertions: the repo has ZERO cross-request caching today, and next.config.ts does not set cacheComponents so the 'use cache' directive is unavailable without enabling it. FIX in order: (1) React cache() so one request never repeats a surface -- cheap, no risk, and it also fixes layout.tsx:221 re-reading header and settings on the public-chrome branch; (2) unstable_cache keyed by surface + space_id, tagged, with revalidateTag fired from the menu editor's write path; (3) collapse getMenu's own two waves via a nested select. 🔴 STEP 2 IS A PRIVILEGE-LEAK RISK and is why this is a row rather than a patch: the reads use the SERVICE-ROLE client and the menu is filtered per viewer DOWNSTREAM by canSeeMenuItem. Caching a role-filtered menu would serve one member's items to another. Prove the filtering happens after the cache boundary, and include spaceId in the key or one Space's nav leaks into another's.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "2026-09-05: read lib/menus/read.ts and the four call sites; confirmed no cross-request cache exists anywhere in the repo. Closes when nav chrome is off the per-request path with role filtering provably after the cache boundary.",
+        "checked": "2026-09-05"
+      }
+    },
+    {
+      "id": "LIVE-182",
+      "title": "Public Circle URLs are raw UUIDs although circles.slug is NOT NULL and the reader already returns it",
+      "status": "open",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "docs/BUILD-BACKLOG.json",
+        "ref": "sweep 3, 2026-09-05"
+      },
+      "detail": "Sweep 3 (SEO). app/sitemap.ts:377 advertises /discover/circles/<uuid>, and app/discover/circles/[id]/page.tsx keys its canonical, openGraph.url, hero and breadcrumb on circle.id; lib/jsonld.ts:252,275 build circleSchema urls from it too. The slug is ALREADY IN HAND: circles.slug is a non-null string in the generated types, public_circles returns it, and PublicCircle carries it -- it is read on every one of these pages and thrown away. The member-side route is /circles/<slug>, so the two halves disagree, which lib/nav/public-twin.ts:84 already records as extra work. This is the exact defect LIVE-052 closed for practices; Circles were not carried along. A UUID carries no keyword signal, is unquotable in an AI answer, and is the string a citation, a QR print run and a share link all freeze. FIX: add public_circle_by_slug or widen the by-id RPC to match on slug when the param is not a UUID (getPublicPractice already does exactly this), rename the segment to [idOrSlug], switch the sitemap, canonical, OG url, breadcrumb and both schema builders to the slug, and 308 the UUID form so existing links and printed QR codes survive. Only 3 public Circles exist today, which is precisely why it is cheap NOW and expensive once indexed.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "2026-09-05: confirmed circles.slug non-null in lib/database.types.ts and returned by public_circles on production. Closes when /discover/circles/<slug> is canonical and the UUID form 308s to it.",
+        "checked": "2026-09-05"
+      }
+    },
+    {
+      "id": "LIVE-183",
+      "title": "All 57 help articles ship an Article node with no image and no datePublished, and share one OG card",
+      "status": "open",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "docs/BUILD-BACKLOG.json",
+        "ref": "sweep 3, 2026-09-05"
+      },
+      "detail": "Sweep 3 (SEO). app/(help)/help/[category]/[slug]/page.tsx calls articleSchema with title, description, path and updated only. lib/jsonld.ts emits image and datePublished only when passed, so all 57 nodes carry neither; Google lists image as REQUIRED for the Article rich result and datePublished as recommended. The frontmatter cannot supply the date: across all 57 the key set is title, description, category, order, updated, audience, featureKeys, status (+ role on 7). There is an updated, no published. Separately app/(help)/opengraph-image.tsx is a ROUTE-GROUP file with a fixed wordmark and the literal 'HELP CENTER', taking no params, so all 57 articles, 10 categories and /help/changelog share one identical card. Same defect SCAN-201 and SCAN-202 closed for podcast Shows and city hubs; help was not included. FIX in one PR: backfill a published date from git log --diff-filter=A and pass it through; pass image pointing at a per-article OG route; add app/(help)/help/[category]/[slug]/opengraph-image.tsx reading params, reusing cardResponse + loadNunito, keeping the group card as the fallback for /help and the category indexes. ⚠️ BUDGET IT: a new per-entity OG route costs check:og-trace headroom, which read 18 + 64 of 100 on the last production build.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "2026-09-05: counted 57 articles and their frontmatter keys; read the article page and the route-group opengraph-image. Closes when help articles carry image + datePublished and a per-article card.",
+        "checked": "2026-09-05"
+      }
+    },
+    {
+      "id": "LIVE-184",
+      "title": "Seven public Space profile tabs are indexable and canonical but advertised nowhere",
+      "status": "open",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "docs/BUILD-BACKLOG.json",
+        "ref": "sweep 3, 2026-09-05"
+      },
+      "detail": "Sweep 3 (SEO). app/(main)/spaces/[slug]/(profile)/ holds seven crawlable tabs beside the profile root: book, calendar, circles, collaborators, reviews, shop and [page]. Each has generateMetadata routed through spaceProfileMetadata, which stamps a per-tab title and its own canonical, and none sets robots.index false -- so all seven are indexable. app/sitemap.ts advertises only /spaces/<slug> plus the podcasts routes, and scripts/check-seo.mjs cannot see them because Scan C walks static routes while these sit under [slug]. About 7 tabs x 20 networked Spaces = ~140 indexable URLs reachable only by crawl-through, and /shop and /calendar carry exactly the commercial and local-intent content a local answer-engine query wants. FIX: expand spaceRoutes to emit the tabs a Space actually HAS, gated the way the pages gate themselves (storefront published + shop feature on, >=1 review, >=1 circle) so an empty tab never gets a URL -- the pattern podcastRoutes already uses -- at priority 0.5 under the profile's 0.6. If a tab is deliberately unwanted the alternative is teaching spaceProfileMetadata to noindex it; declaring nothing is the state to leave behind either way.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "2026-09-05: listed the seven tab directories and confirmed each routes through spaceProfileMetadata without noindex. Closes when the tabs a Space has are advertised or deliberately noindexed.",
+        "checked": "2026-09-05"
+      }
+    },
+    {
+      "id": "LIVE-185",
+      "title": "The Journey Gem bonus still pays a retired ladder, and three help articles describe a different number",
+      "status": "open",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "docs/BUILD-BACKLOG.json",
+        "ref": "sweep 3, 2026-09-05"
+      },
+      "detail": "Sweep 3 (content). lib/quest/complete.ts:275 pays JOURNEY_GEM_BONUS of {25,50,100}, which docs/NAMING.md's Economy section declares RETIRED by ADR-305. A member finishing a third Journey is paid 200 Gems while /the-quest and three help articles describe 100. 🔴 THIS IS AN OWNER RULING, not a doc edit and not a code edit, which is why sweep 3 recorded it rather than picking a side: lowering the payout is a live economy change that members have already been paid under, and raising the documented number ratifies a ladder the naming canon says was retired. Whichever way it goes, the code, NAMING.md, /the-quest and the three help articles must land in the same change, because today a member can read two different numbers for the same action.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "2026-09-05: read lib/quest/complete.ts against docs/NAMING.md's Economy section. Closes when one number is paid and documented everywhere, by owner decision.",
+        "checked": "2026-09-05"
+      }
+    },
+    {
+      "id": "LIVE-186",
+      "title": "The app-space-console visual baseline is stale again, at 158px, and PRs keep merging past the red",
+      "status": "open",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "docs/BUILD-BACKLOG.json",
+        "ref": "sweep 3, 2026-09-05"
+      },
+      "detail": "FOUND 2026-09-05 from a pr-compare failure on #2382. All four /spaces/danieltyack/manage checks (desktop+mobile x dawn-light+dawn-dark) fail with 'Expected an image 390px by 2859px, received 390px by 3017px' - the live page is 158px taller than the committed baseline. ⚠️ NOT that PR's: the identical failure, same route and the same exact 2859 to 3017 pair, is in the pr-compare log of claude/scan2-d6 (run 33971217197), a backend-only PR touching check-ins, refunds and tips that renders none of this route - and that PR merged into main anyway. Playwright retried twice with byte-identical pixel counts, so it is deterministic, not a flake. ── THIS IS SCAN-507 RECURRING, WHICH IS THE POINT. SCAN-507 closed 2026-08-25 after the owner dispatched e2e-manual.yml (update_baselines + capture_shell) to recapture these same four PNGs at 3133 to 3154px; #2329 recaptured again to the current 2859. Three weeks later the same surface is 158px out. SCAN-507's own detail named the consequence and it has now come true a second time: 'a check that is red for a reason nobody owns trains everyone to ignore it, and then it reads as coverage' (ADR-970). At least eight PRs merged red on this in one day (scan2 D1/D3/D4a/D4b/D5b/D6/E4/E3b). ── WHY IT KEEPS RECURRING, which is the part worth fixing rather than re-photographing: this baseline is a fullPage shot of a surface whose body is LIVE PRODUCTION DATA - a Space console whose card count grows as the account's Space gains content. visual.spec.ts already knows this shape; its own note on Surface.viewportOnly says 'a full-page baseline of a live, shared stream measures WHEN it was taken, not how it looks', and that reasoning applies to this surface, but the surface is not marked viewportOnly. So recapture is a repeating owner chore with no end state, and every gap between chores is a red check everyone learns to merge past. THE OPTIONS, for an owner ruling rather than a patch: (a) mark app-space-console viewportOnly so it photographs the first screen and stops measuring the content count, which is what that note prescribes, at the cost of below-fold coverage; (b) seed a fixed fixture Space for the shell surfaces so the page stops depending on live data; (c) keep recapturing on a schedule and accept the red windows. ⚠️ Related but NOT the same row: LIVE-125 (open) is about the gate being blind to control-sized changes on tall pages; this row is about the baseline going stale by data drift. Note also that pr-compare is not a required check (LIVE-049), so none of this blocks a merge - which is exactly why it has been ignored eight times.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "2026-09-05: pr-compare on #2382 (job 101352123073) and on claude/scan2-d6 (job 101320645573) fail the same four app-space-console checks at 2859 vs 3017px. Recapture is an owner-dispatched e2e-manual.yml run (update_baselines + capture_shell), per SCAN-507; no code change closes it. Closes when the owner picks one of the three options and the four checks pass on a PR that did not itself recapture them.",
         "checked": "2026-09-05"
       }
     }

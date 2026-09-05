@@ -200,7 +200,7 @@ export default async function ComparisonPage({
 
       <BetaCTA
         heading="Skip the one-off. Find the room that meets again."
-        body="Frequency is free to join during the beta. Find a Circle near you, show up, and come back."
+        body="Frequency is free to join, and it stays free. Find a Circle near you, show up, and come back."
       />
     </>
   )
