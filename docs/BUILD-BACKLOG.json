@@ -7719,7 +7719,7 @@
       "detail": "Scan two, phase E (2026-09-05). L5-17. Each site called res.json() inside a timer with no try, no res.ok and no cancel flag, so a 500 page or an auth redirect broke the popup and a slow old response overwrote a newer one. Closed: createHandleSearch checks res.ok, parses inside try/catch, aborts and ignores stale responses, never throws; the nine sites use it (dock-chat already had its own guards and a parity test pinning its URL).",
       "verify": {
         "kind": "cmd",
-        "cmd": "node -e \"const fs=require('fs');const {execSync}=require('child_process');const files=execSync('grep -rl /api/search-handles components --include=*.tsx').toString().trim().split('\\n');const raw=files.filter(f=>!f.endsWith('dock-chat.tsx')&&/fetch\\(.\\/api\\/search-handles/.test(fs.readFileSync(f,'utf8')));process.exit(raw.length===0&&/export function createHandleSearch/.test(fs.readFileSync('lib/mentions/search-handles-client.ts','utf8'))?0:1)\"",
+        "cmd": "node -e \"const fs=require('fs'),pa=require('path');function*w(d){for(const e of fs.readdirSync(d,{withFileTypes:true})){const f=pa.join(d,e.name);if(e.isDirectory()){if(e.name!=='node_modules'&&!e.name.startsWith('.'))yield*w(f)}else yield f}}const raw=[...w('components')].filter(f=>/\\\\.tsx$/.test(f)&&!f.endsWith('dock-chat.tsx')&&/fetch\\\\(.\\\\/api\\\\/search-handles/.test(fs.readFileSync(f,'utf8')));process.exit(raw.length===0&&/export function createHandleSearch/.test(fs.readFileSync('lib/mentions/search-handles-client.ts','utf8'))?0:1)\"",
         "note": "Fails if a picker goes back to a raw fetch or the helper is removed."
       }
     },
@@ -7849,13 +7849,13 @@
       "lane": "live",
       "size": "XS",
       "source": {
-        "file": "supabase/migrations",
+        "file": "lib/email-studio/product-block.ts",
         "ref": "ADR-1211"
       },
       "detail": "RLS deny-all, no insert anywhere, and the one reader (renderTransactionalTemplate) is deleted. Drop it in a migration (and its table-grants and rls-deny-all lines) or record why it stays.",
       "verify": {
         "kind": "cmd",
-        "cmd": "node -e \"const fs=require('fs');const {execSync}=require('child_process');const hits=execSync('grep -rl \\\"email_templates\\\" supabase/migrations lib scripts/table-grants.txt scripts/rls-deny-all.txt || true').toString().trim();process.exit(/drop table if exists public\\\\.email_templates/.test(execSync('cat supabase/migrations/*.sql').toString())&&!/lib\\\\//.test(hits)?0:1)\"",
+        "cmd": "node -e \"const fs=require('fs'),pa=require('path');function*w(d){for(const e of fs.readdirSync(d,{withFileTypes:true})){const f=pa.join(d,e.name);if(e.isDirectory()){if(e.name!=='node_modules'&&!e.name.startsWith('.'))yield*w(f)}else yield f}}const mig=[...w('supabase/migrations')].some(f=>f.endsWith('.sql')&&/drop table if exists public\\\\.email_templates/.test(fs.readFileSync(f,'utf8')));const lib=[...w('lib')].some(f=>/\\\\.tsx?$/.test(f)&&/email_templates/.test(fs.readFileSync(f,'utf8').replace(/\\\\/\\\\/.*$/gm,'')));process.exit(mig&&!lib?0:1)\"",
         "note": "Passes once a migration drops the table and no lib code names it."
       }
     },
@@ -7872,7 +7872,7 @@
       "detail": "Scan two L3-08 (b). The three readers are server layouts. Renaming it in code without renaming the Vercel variable in the same window would hide the widget on the next deploy, so this is a two-step change: add SUPPORT_CHAT in Vercel, switch the readers to prefer it with a fallback to the old name, then remove the old variable and the fallback.",
       "verify": {
         "kind": "cmd",
-        "cmd": "node -e \"const fs=require('fs');const {execSync}=require('child_process');process.exit(execSync('grep -rl \\\"NEXT_PUBLIC_SUPPORT_CHAT\\\" app lib components || true').toString().trim()===''?0:1)\"",
+        "cmd": "node -e \"const fs=require('fs'),pa=require('path');function*w(d){for(const e of fs.readdirSync(d,{withFileTypes:true})){const f=pa.join(d,e.name);if(e.isDirectory()){if(e.name!=='node_modules'&&!e.name.startsWith('.'))yield*w(f)}else yield f}}const hits=['app','lib','components'].flatMap(d=>[...w(d)]).filter(f=>/\\\\.tsx?$/.test(f)&&/NEXT_PUBLIC_SUPPORT_CHAT/.test(fs.readFileSync(f,'utf8')));process.exit(hits.length===0?0:1)\"",
         "note": "Passes once no reader names the prefixed variable."
       }
     },
@@ -7889,7 +7889,7 @@
       "detail": "beta_referral_contest, beta_ends_at, plan_whitelabel_enabled, plan_practitioner_enabled and plan_organization_enabled have live rows and no reader (tier_supporter_enabled is read for display only). Either the readers never shipped (write them) or the rows are dead (delete them in a migration). Owner ruling on the plan flags; the beta pair can go.",
       "verify": {
         "kind": "cmd",
-        "cmd": "node -e \"const fs=require('fs');const {execSync}=require('child_process');const src=execSync('grep -rho \\\"beta_referral_contest\\\\\\\\|beta_ends_at\\\\\\\\|plan_whitelabel_enabled\\\\\\\\|plan_practitioner_enabled\\\\\\\\|plan_organization_enabled\\\" lib app components || true').toString();const mig=execSync('cat supabase/migrations/*.sql').toString();process.exit(src.trim()!==''||/delete from public\\\\.platform_flags[\\\\s\\\\S]*beta_referral_contest/.test(mig)?0:1)\"",
+        "cmd": "node -e \"const fs=require('fs'),pa=require('path');function*w(d){for(const e of fs.readdirSync(d,{withFileTypes:true})){const f=pa.join(d,e.name);if(e.isDirectory()){if(e.name!=='node_modules'&&!e.name.startsWith('.'))yield*w(f)}else yield f}}const keys=/beta_referral_contest|beta_ends_at|plan_whitelabel_enabled|plan_practitioner_enabled|plan_organization_enabled/;const read=['app','lib','components'].flatMap(d=>[...w(d)]).some(f=>/\\\\.tsx?$/.test(f)&&keys.test(fs.readFileSync(f,'utf8').replace(/\\\\/\\\\/.*$/gm,'')));const del=[...w('supabase/migrations')].some(f=>f.endsWith('.sql')&&/delete from public\\\\.platform_flags[\\\\s\\\\S]*beta_referral_contest/.test(fs.readFileSync(f,'utf8')));process.exit(read||del?0:1)\"",
         "note": "Passes once the flags are read somewhere or deleted by a migration."
       }
     },
@@ -7940,7 +7940,7 @@
       "detail": "Scan two L3-08 (c) and (d), not addressed in phase E: four Supabase client constructions read the env with a non-null assertion rather than a checked read, and two variables carry the canonical site URL. Route both through lib/env/string.ts (phase D) and document the URL pair once.",
       "verify": {
         "kind": "cmd",
-        "cmd": "node -e \"const fs=require('fs');const {execSync}=require('child_process');const n=execSync('grep -rn \\\"process.env.NEXT_PUBLIC_SUPABASE_URL!\\\" lib app || true').toString().trim().split(\\\"\\\\n\\\").filter(Boolean).length;process.exit(n===0?0:1)\"",
+        "cmd": "node -e \"const fs=require('fs'),pa=require('path');function*w(d){for(const e of fs.readdirSync(d,{withFileTypes:true})){const f=pa.join(d,e.name);if(e.isDirectory()){if(e.name!=='node_modules'&&!e.name.startsWith('.'))yield*w(f)}else yield f}}const n=['app','lib'].flatMap(d=>[...w(d)]).filter(f=>/\\\\.tsx?$/.test(f)&&fs.readFileSync(f,'utf8').includes('process.env.NEXT_PUBLIC_SUPABASE_URL!')).length;process.exit(n===0?0:1)\"",
         "note": "Passes once no Supabase client reads the URL with a non-null assertion."
       }
     },

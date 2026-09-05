@@ -121,7 +121,10 @@ select is(
 );
 
 -- ── 4. mark_signup_lead_converted: profile ownership AND the token ──────────────────────────────
--- profiles.auth_user_id carries no FK to auth.users, so a bare uuid stands in for the session.
+-- profiles.auth_user_id references auth.users in the CI database (the first run of this file proved
+-- it: profiles_auth_user_id_fkey), so the session user is seeded there first, as the sibling tests do.
+insert into auth.users (id, email) values
+  ('00000000-0000-4000-e600-0000000000a1', 'l76-converter@test.local');
 insert into public.profiles (id, display_name, handle, auth_user_id) values
   ('00000000-0000-4000-e600-0000000000c1', 'Converter', 'l76_converter', '00000000-0000-4000-e600-0000000000a1');
 
