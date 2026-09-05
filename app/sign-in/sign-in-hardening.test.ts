@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
+import { sourceWithoutComments } from '@/test/source-shape'
 import { SIGN_IN_ERRORS, SIGN_IN_ERROR_FALLBACK, signInErrorMessage } from './errors'
 
 // LIVE-043 — the three defects on the front door, pinned so they cannot come back.
@@ -105,7 +106,9 @@ describe('a second press cannot invalidate the first magic link', () => {
   it('the button reports pending from the form it is inside', () => {
     const submit = read('app/sign-in/submit.tsx')
     expect(submit).toMatch(/^'use client'/)
-    expect(submit).toContain('useFormStatus')
+    // Matched on comment- and import-free source (scan2 L8-04): the name also sits in a comment and
+    // in the import line of the pinned file, so a bare toContain stayed green with the call deleted.
+    expect(sourceWithoutComments('app/sign-in/submit.tsx', { imports: true })).toContain('useFormStatus()')
     // INTERACTION-STATES §4 rule 4 (disable = re-entrancy guard) via Button's `loading`, which
     // also leaves the label alone (§4 rule 3, no width change).
     expect(submit).toMatch(/loading=\{pending\}/)

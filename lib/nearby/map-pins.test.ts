@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { readFileSync } from 'node:fs'
+import { sourceWithoutComments } from '@/test/source-shape'
 import { join } from 'node:path'
 import { APPROX_MAX_ERROR_M, APPROX_GRID_DEG } from '@/lib/maps/approximate'
 // The SAME formatter the loader builds the WHEN row with, so the expectation cannot be a weekday
@@ -33,6 +34,9 @@ import { formatEventDate } from '@/lib/utils'
 // scatter pins into the next county and nothing would notice. The same pair guards Spaces whose
 // owner chose `approximate`.
 const SRC = readFileSync(join(process.cwd(), 'lib/nearby/map-pins.ts'), 'utf8')
+// The same file with comments and import lines blanked (scan2 L8-04): map-pins.ts explains every
+// column and constant it uses in prose, so a name pinned on SRC can be satisfied by the explanation.
+const CODE = sourceWithoutComments(join(process.cwd(), 'lib/nearby/map-pins.ts'), { imports: true })
 
 describe('the map filters events on every axis the table carries', () => {
   const REQUIRED: [fragment: string, why: string][] = [
@@ -68,8 +72,10 @@ describe('the map filters events on every axis the table carries', () => {
     // It stopped being a filter and became an input. A SELECT that drops it would hand every row
     // `hide_address: undefined`, the `=== true` test would fail open, and every withheld address
     // would publish at full precision. This is the cheapest possible tripwire for that.
-    expect(SRC).toContain('hide_address')
-    expect(SRC).toContain('row.hide_address === true')
+    // The SELECT string itself: the column has to be in the query, not merely in the row type or
+    // the four comments that discuss it.
+    expect(CODE).toMatch(/\.select\(\s*`[^`]*\bhide_address\b[^`]*`/)
+    expect(CODE).toContain('row.hide_address === true')
   })
 
   it('renders a pin date through the shared formatter, which pins timeZone UTC', () => {
@@ -78,7 +84,7 @@ describe('the map filters events on every axis the table carries', () => {
     // the viewer's UTC offset. That shipped once already and printed three different dates for one
     // event across the ⌘K overlay, /search and the event page (see the note above formatEventDate
     // in lib/utils.ts). A pin's date must agree with the card beside it.
-    expect(SRC).toContain('formatEventDate')
+    expect(CODE).toContain('formatEventDate(')
     expect(SRC).not.toMatch(/toLocaleDateString\(/)
   })
 
@@ -94,7 +100,7 @@ describe('the map filters events on every axis the table carries', () => {
     // Reading only the display cap and folding afterwards would hand the map a handful of
     // gatherings out of a region that has many: one daily series can eat 61 rows of the budget.
     expect(SRC).toContain('EVENT_ROW_CAP')
-    expect(SRC).toContain('SERIES_WIDE_READ')
+    expect(CODE).toContain('EVENT_ROW_CAP = SERIES_WIDE_READ')
   })
 })
 
@@ -148,8 +154,8 @@ describe('the loader cannot take the page down', () => {
   })
 
   it('caps each layer, so a growing region cannot ship a hung tab', () => {
-    expect(SRC).toContain('PER_LAYER_CAP')
-    expect(SRC).toContain('.limit(PER_LAYER_CAP)')
+    expect(CODE).toMatch(/const PER_LAYER_CAP = \d+/)
+    expect(CODE).toContain('.limit(PER_LAYER_CAP)')
   })
 
   it('prefixes pin ids by layer, because three tables can hold the same uuid', () => {

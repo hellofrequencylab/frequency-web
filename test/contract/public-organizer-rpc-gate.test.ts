@@ -162,18 +162,21 @@ describe('(D) ADR-899: the callers document the narrowed contract (docs move wit
       'utf8',
     )
     expect(page).not.toContain('public/unlisted')
+    // Doc-pin (scan2 L8-05): this pins a COMMENT in the source on purpose, as documentation, not behaviour.
     expect(page).toContain('ADR-899')
   })
 
   it('the sitemap no longer advertises "public/unlisted"', () => {
     const sitemap = readFileSync(join(ROOT, 'app/sitemap.ts'), 'utf8')
     expect(sitemap).not.toContain('public/unlisted')
+    // Doc-pin (scan2 L8-05): this pins a COMMENT in the source on purpose, as documentation, not behaviour.
     expect(sitemap).toContain('ADR-899')
   })
 
   it('lib/people/associations.ts no longer claims the RPC "filters only is_cancelled + visibility"', () => {
     const assoc = readFileSync(join(ROOT, 'lib/people/associations.ts'), 'utf8')
     expect(assoc).not.toContain('that RPC filters only')
+    // Doc-pin (scan2 L8-05): this pins a COMMENT in the source on purpose, as documentation, not behaviour.
     expect(assoc).toContain('ADR-899')
   })
 })

@@ -5,7 +5,7 @@
   "packageManager": "pnpm@10.33.0",
   "scripts": {
     "prebuild": "node scripts/copy-maplibre-worker.mjs",
-    "postbuild": "node scripts/check-build-budget.mjs && node scripts/check-og-trace.mjs && node scripts/check-cache-budget.mjs && node scripts/check-shell-weight.mjs",
+    "postbuild": "node scripts/check-build-budget.mjs && node scripts/check-og-trace.mjs && node scripts/check-cache-budget.mjs && node scripts/check-shell-weight.mjs && node scripts/check-build-fanout.mjs",
     "predev": "node scripts/copy-maplibre-worker.mjs",
     "dev": "next dev",
     "build": "next build",
@@ -52,6 +52,7 @@
     "check:seo": "node scripts/check-seo.mjs",
     "check:og-trace": "node scripts/check-og-trace.mjs",
     "check:build-budget": "node scripts/check-build-budget.mjs",
+    "check:build-fanout": "node scripts/check-build-fanout.mjs",
     "check:cache-budget": "node scripts/check-cache-budget.mjs",
     "check:shell-weight": "node scripts/check-shell-weight.mjs",
     "check:stored-blocks": "node scripts/check-stored-blocks.mjs",

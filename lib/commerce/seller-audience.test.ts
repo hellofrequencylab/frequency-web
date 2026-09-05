@@ -85,6 +85,7 @@ describe('the relationship check outranks every cookie', () => {
   it('names the trade-off it accepts out loud', () => {
     // A third party referring an existing follower earns no network credit. That is a real cost and
     // a deliberate choice (the owner's rule is absolute); a future reader must not "fix" it blind.
+    // Doc-pin (scan2 L8-05): this pins a COMMENT in the source on purpose, as documentation, not behaviour.
     expect(SOURCE).toMatch(/referral-credit case is knowingly given up|no network credit/)
   })
 })
