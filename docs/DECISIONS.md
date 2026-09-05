@@ -35705,3 +35705,22 @@ Two things were re-tested and NOT changed. The host-payout failure logged at 20:
 - **Owner questions are rows, not guesses.** OWN-050 to OWN-057 and LIVE-155 carry the Stripe webhook registration, `EMAIL_CONVERSATION_FROM`, the four env gates, the Connect platform profile, the Host ruling, partner offers, the tips surface, signup leads, and the share-card crash, each with the evidence it was read from and the date.
 
 **Consequences.** Rows SCAN-551 to SCAN-556 are `done` with consequence probes; LIVE-156 (the scan-intro lead unsubscribe still acts on GET) is `open` and mirrors SCAN-552's fix. The migration was applied to production via MCP before merge and the ledger reconciled to the repo filename; the function now carries `where true` live. The `authz-route-ledger` digest for the unsubscribe route was re-recorded with the reason amended. Phases B to F follow in the order the scan report set: RSVP integrity, money paths, crons and silent failures, guards and hygiene, then the migration for the anonymous SECURITY DEFINER surface.
+
+## ADR-1210: scan two, phase F — the anonymous SECURITY DEFINER surface proves what it writes, and the share card is total over its inputs (2026-09-05)
+
+**Status.** Accepted. Continues ADR-1209 (phase C); closes the pgTAP half ADR-1207 deferred.
+
+**Context.** Two findings from the 2026-09-05 scan sat on the anonymous RPC surface, and one production crash had never been root-caused.
+
+- **A draft or removed event accepted guest RSVPs, and a known guest could be renamed.** `capture_guest_rsvp` checked `visibility` and `is_cancelled` but not `status` or `removed_at`, and its resubmit branch let the caller's name win, so anyone who knew a guest's email could rewrite their stored name.
+- **A signup lead was writable by anyone holding its id.** `capture_signup_lead` returned the row id to the browser and `update_signup_lead` / `mark_signup_lead_converted` required nothing else.
+- **`TypeError: u2 is not iterable` on the Space share card** (two production hits, one Space). Traced to Satori's data-URL image resolver, which has no arm for `image/webp` or `image/avif` and spreads an unassigned size variable; `fetchRemoteImage` had inlined the origin's `content-type` verbatim, and one Space's logo is stored as webp.
+
+**Decision.**
+
+- **The guard list matches the row's lifecycle.** Migration 20270345000600 refuses a non-published or removed event with the same opaque receipt every other rejection returns, and the stored guest name wins on resubmit. The receipt stays opaque on purpose: a distinguishable answer would be the attendance oracle the function's own header names.
+- **A write needs a proof the browser holds.** Migration 20270345000610 mints a claim token per capture, stores its SHA-256 (the row being seen must not be the write capability), returns `{id, claim_token}`, and requires the token on update and convert. Rows captured before the column are writable by the service role only. The old signatures are dropped, so the migration and the induction actions ship in one release with a PostgREST schema reload.
+- **The image type comes from the bytes.** `lib/og/remote-image.ts` sniffs png, gif, jpeg (Satori's own SOF walk mirrored) and sized svg, emits only those, and returns null for anything else. Do not widen it to webp on the assumption Satori will size it: the data-URL branch has no default arm.
+- **The safeupdate pin lands with a loud skip.** The pgTAP test loads the hook in a DO block, runs a positive control when it loads, and skips with the sqlstate when it cannot, never passing vacuously.
+
+**Consequences.** Rows SCAN-579 to SCAN-581 are `done`; LIVE-155 (the share-card crash) is `done` with a real-render probe; LIVE-162 (two features share the `fq_lead` cookie name) is `open`. Both migrations were applied to production immediately before merge and ledger-reconciled. `test/contract/signup-leads-rpc-gate.test.ts` still pins the original 20270215000000 text and now says so.

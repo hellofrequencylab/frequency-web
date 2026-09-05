@@ -113,6 +113,13 @@ export default async function Image({ params }: { params: Promise<{ slug: string
 
   // Cover: the real upload (remote, fetched + inlined, fail-safe) or the page hero's own deterministic
   // placeholder. Logo: the real upload or an initials chip (the BrandAnchor fallback, accent-toned).
+  // 2026-09-05 (scan2 L10 R5, LIVE-155): "fail-safe" was not true for a webp upload. fetchRemoteImage
+  // passed the origin's content-type straight into the data URL, and Satori's data-URL resolver can
+  // size only png / gif / jpeg; a `data:image/webp` src made it spread an unassigned variable
+  // (`TypeError: u2 is not iterable`), which is the production crash on one Space whose logo is
+  // stored as image/webp. The guard now lives at the read site (lib/og/remote-image.ts): the type
+  // comes from the bytes, and any type Satori cannot size returns null, so the placeholder cover or
+  // the initials chip below carries the card. Proven by opengraph-image.test.tsx beside this file.
   const [remoteCover, logo, mark] = await Promise.all([
     space.coverImageUrl ? fetchRemoteImage(space.coverImageUrl) : Promise.resolve(null),
     space.brandLogoUrl ? fetchRemoteImage(space.brandLogoUrl) : Promise.resolve(null),
