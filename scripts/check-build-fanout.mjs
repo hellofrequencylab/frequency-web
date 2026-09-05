@@ -26,7 +26,7 @@
 // same way check:build-budget and check:og-trace do. Importable: the measuring and judging halves
 // are exported so the fixture test can drive them without a build.
 // ─────────────────────────────────────────────────────────────────────────────
-import { readFileSync, existsSync, globSync, statSync } from 'node:fs'
+import { readFileSync, existsSync, globSync, openSync, fstatSync, closeSync } from 'node:fs'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
 
@@ -79,6 +79,27 @@ export function sanctionedPublic(f) {
 const toPosix = (p) => p.split(path.sep).join('/')
 
 /**
+ * The chunk's text when it is larger than ICON_CHUNK_MIN_BYTES, else null. One descriptor for the
+ * size test and the read, so there is no path re-resolution between them; any failure reads as null.
+ * @param {string} abs
+ * @returns {string | null}
+ */
+function readChunkIfLarge(abs) {
+  let fd
+  try {
+    fd = openSync(abs, 'r')
+    if (fstatSync(fd).size <= ICON_CHUNK_MIN_BYTES) return null
+    return readFileSync(fd, 'utf8')
+  } catch {
+    return null
+  } finally {
+    if (fd !== undefined) {
+      try { closeSync(fd) } catch { /* already closed */ }
+    }
+  }
+}
+
+/**
  * Read every function trace under `<root>/.next/server` and count what this gate cares about.
  * Pure over the file system: no printing, no exit. Returns `null` when there is nothing to read.
  */
@@ -118,14 +139,11 @@ export function measureFanout(root) {
   }
   for (const rel of chunkFiles) {
     const abs = path.join(chunkDir, rel)
-    let src
-    try {
-      const st = statSync(abs)
-      if (st.size <= ICON_CHUNK_MIN_BYTES) continue
-      src = readFileSync(abs, 'utf8')
-    } catch {
-      continue
-    }
+    // 2026-09-05 (scan2, CodeQL js/file-system-race): size and content come off ONE open handle,
+    // so the file the size test saw is the file the read returns. A stat by path followed by a
+    // read by path is the check-then-use window CodeQL flags; a vanished chunk is still skipped.
+    const src = readChunkIfLarge(abs)
+    if (src === null) continue
     if (ICON_GLYPHS.every((g) => src.includes(g))) iconChunks.add(toPosix(abs))
   }
 
