@@ -26,12 +26,9 @@ export function formatJourneyPrompt(p: { journeyTitle: string; practiceTitle: st
  * (nothing to nudge). Picks the first Journey with a not-yet-done lesson, in order.
  */
 export async function getDailyJourneyPrompt(profileId: string): Promise<JourneyPrompt | null> {
-  let progress
-  try {
-    progress = await getMemberJourneyProgress(profileId)
-  } catch {
-    return null
-  }
+  // 2026-09-05 (scan2 L2-04, ADR-1212): this used to catch and return null, so a loader outage read as
+  // "nothing due" in the cron. The throw now reaches the caller, which counts and logs it.
+  const progress = await getMemberJourneyProgress(profileId)
   for (const p of progress) {
     if (!p.nextLesson) continue
     return { planId: p.planId, journeyTitle: p.title, practiceTitle: p.nextLesson.title, timeNote: '' }

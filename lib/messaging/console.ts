@@ -67,7 +67,7 @@ export async function getMessagingConsole(): Promise<MessagingConsoleData> {
       id: c.id,
       name: c.subject,
       segment: c.segment,
-      status: campaignStatusToMessaging(c.status),
+      status: campaignStatusToMessaging(c.status, (c as { sending_started_at?: string | null }).sending_started_at ?? null),
       recipientCount: c.recipientCount,
       sentAt: c.sentAt,
       href: CAMPAIGN_COMPOSER_HREF,

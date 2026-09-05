@@ -66,7 +66,9 @@
             "LIVE-167",
             "LIVE-164",
             "LIVE-163",
-            "LIVE-168"
+            "LIVE-168",
+            "LIVE-170",
+            "LIVE-174"
           ]
         },
         {
@@ -7938,6 +7940,142 @@
         "kind": "cmd",
         "cmd": "node -e \"const fs=require('fs');const s=fs.readFileSync('components/onboarding/sequence-runner.tsx','utf8').replace(/\\\\/\\\\/.*$/gm,'');process.exit(/emailOptIn/.test(s)?0:1)\"",
         "note": "Passes once the sequence binding carries emailOptIn."
+      }
+    },
+    {
+      "id": "SCAN-611",
+      "title": "The weekly digest and the journey prompt had no run-level idempotency; a re-fire double-sent to everyone",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/queue/outbox.ts",
+        "ref": "ADR-1212"
+      },
+      "detail": "Scan two, phase D (2026-09-05). L2-02. Neither cron read a sent-this-period marker, enqueueEmail had no dedupe key, and a throw mid-loop aborted after N members had been sent. Closed: migration 20270345000700 adds dedupe_key (partial unique) to notification_queue and notifications and a cron_run_markers table; enqueue takes an optional dedupeKey and returns whether it landed (23505 is the other run); the digest claims a marker per member per ISO week before sending and releases it on a throw; the prompt row carries a per-day key; both loops catch per member and return { sent, skipped, failed }, answering 500 when failed > 0 so the heartbeat sees it.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const R=(f)=>fs.readFileSync(f,'utf8');const C=(f)=>R(f).replace(/\\\\/\\\\*[\\\\s\\\\S]*?\\\\*\\\\//g,'').replace(/^\\\\s*\\\\/\\\\/.*$/gm,'');const o=C('lib/queue/outbox.ts');const w=C('app/api/cron/weekly-digest/route.ts');const j=C('app/api/cron/journey-prompt/route.ts');process.exit(/dedupeKey/.test(o)&&/cron_run_markers/.test(w)&&/dedupe_key/.test(j)?0:1)\"",
+        "note": "Fails if the outbox loses its key or either cron stops claiming."
+      }
+    },
+    {
+      "id": "SCAN-612",
+      "title": "Lifecycle check-ins were stamped sent whether or not the insert landed, and a catch-up sent three at once",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "app/api/cron/lifecycle-triggers/route.ts",
+        "ref": "ADR-1212"
+      },
+      "detail": "Scan two, phase D (2026-09-05). L2-03. lifecycle_dayN_sent was set in an unconditional update after an insert whose error was only logged; a membership qualifying for Day 1, 3 and 7 in one pass got all three in the same second. Closed: the flag is stamped only after a clean insert, a failed insert is counted failed and left for the next run, and one pass sends only the latest due window, stamping the earlier flags as superseded.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const R=(f)=>fs.readFileSync(f,'utf8');const C=(f)=>R(f).replace(/\\\\/\\\\*[\\\\s\\\\S]*?\\\\*\\\\//g,'').replace(/^\\\\s*\\\\/\\\\/.*$/gm,'');const r=C('app/api/cron/lifecycle-triggers/route.ts');process.exit(/superseded/.test(r)&&fs.existsSync('app/api/cron/lifecycle-triggers/route.test.ts')?0:1)\"",
+        "note": "Fails if the supersession or the test is removed."
+      }
+    },
+    {
+      "id": "SCAN-613",
+      "title": "The journey-prompt cron swallowed every loader and push failure and reported ok",
+      "status": "done",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "app/api/cron/journey-prompt/route.ts",
+        "ref": "ADR-1212"
+      },
+      "detail": "Scan two, phase D (2026-09-05). L2-04. .catch(() => null) on the loader and .catch(() => 0) on the push made a total outage read as nobody due. Closed: both are logged at error level with the member id and counted, the response carries ok: false when the loader failed for everyone, and getDailyJourneyPrompt no longer catches and returns null itself.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const R=(f)=>fs.readFileSync(f,'utf8');const C=(f)=>R(f).replace(/\\\\/\\\\*[\\\\s\\\\S]*?\\\\*\\\\//g,'').replace(/^\\\\s*\\\\/\\\\/.*$/gm,'');const l=C('lib/journey-prompt.ts');process.exit(!/catch\\\\s*\\\\{\\\\s*return null/.test(l)&&/loaderFailed/.test(C('app/api/cron/journey-prompt/route.ts'))?0:1)\"",
+        "note": "Fails if the loader swallows again or the cron stops reporting loader failure."
+      }
+    },
+    {
+      "id": "SCAN-614",
+      "title": "/api/observe and /api/vitals dropped every insert failure and answered 204",
+      "status": "done",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "app/api/observe/route.ts",
+        "ref": "ADR-1212"
+      },
+      "detail": "Scan two, phase D (2026-09-05). L2-08. .then(undefined, () => {}) handles a rejection, but supabase-js resolves { error }, so a broken interaction_events insert was a silent total loss of first-party analytics. Closed: both routes read the error, log it with the table name, and still answer 204 (a beacon must never retry).",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const R=(f)=>fs.readFileSync(f,'utf8');const C=(f)=>R(f).replace(/\\\\/\\\\*[\\\\s\\\\S]*?\\\\*\\\\//g,'').replace(/^\\\\s*\\\\/\\\\/.*$/gm,'');process.exit(/insert_failed/.test(C('app/api/observe/route.ts'))&&/insert_failed/.test(C('app/api/vitals/route.ts'))?0:1)\"",
+        "note": "Fails if either route stops reading the insert error."
+      }
+    },
+    {
+      "id": "SCAN-615",
+      "title": "The Resend webhook had no event-id dedupe and retried into duplicate rows",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "app/api/webhooks/resend/route.ts",
+        "ref": "ADR-1212"
+      },
+      "detail": "Scan two, phase D (2026-09-05). L2-05. svix-id was verified and never stored; every retry appended the same event again, over-counting opens, clicks and bounces for four readers and the Vera circuit breaker. Closed: migration 20270345000800 adds email_webhook_events; the route claims the id right after the signature (23505 answers 200 duplicate, any other claim error 500s), the row is appended last, and a later failure never 503s after a successful append.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const R=(f)=>fs.readFileSync(f,'utf8');const C=(f)=>R(f).replace(/\\\\/\\\\*[\\\\s\\\\S]*?\\\\*\\\\//g,'').replace(/^\\\\s*\\\\/\\\\/.*$/gm,'');process.exit(/email_webhook_events/.test(C('app/api/webhooks/resend/route.ts'))&&fs.existsSync('app/api/webhooks/resend/route.test.ts')?0:1)\"",
+        "note": "Fails if the claim leaves the webhook."
+      }
+    },
+    {
+      "id": "SCAN-616",
+      "title": "A campaign or drip enrollment whose sender crashed stayed at sending forever and read as live",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/spaces/campaigns-send-due.ts",
+        "ref": "ADR-1212"
+      },
+      "detail": "Scan two, phase D (2026-09-05). L6-10. The claim was race-safe but had no lease, no reclaim and no resume, and status.ts mapped sending to live. Closed: migration 20270345000800 adds sending_started_at (and send_error) to campaigns and space_drip_enrollments; the runners re-claim a sending row older than fifteen minutes and resume without re-sending to recipients already in the outreach_sends ledger (fail closed on an unreadable ledger); a terminal failure records failed; status.ts maps an expired lease to stalled, and the console and Space drafts pass the timestamp.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const R=(f)=>fs.readFileSync(f,'utf8');const C=(f)=>R(f).replace(/\\\\/\\\\*[\\\\s\\\\S]*?\\\\*\\\\//g,'').replace(/^\\\\s*\\\\/\\\\/.*$/gm,'');process.exit(/sending_started_at/.test(C('lib/spaces/campaigns-send-due.ts'))&&/sending_started_at/.test(C('lib/spaces/drip-runner.ts'))&&/'stalled'/.test(C('lib/messaging/status.ts'))?0:1)\"",
+        "note": "Fails if either runner loses the lease or the stalled state is removed."
+      }
+    },
+    {
+      "id": "LIVE-170",
+      "title": "Abandoned signup leads are now visible; nobody is followed up",
+      "status": "open",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "app/api/cron/lifecycle-triggers/route.ts",
+        "ref": "ADR-1212"
+      },
+      "detail": "SCAN-634 gave signup_leads a reader. The recovery job the table was built for is still missing: a cron that emails a lead with converted_at null, step_reached at least 2 and updated_at older than 24 hours, once (a recovery_sent_at column via migration), transactional copy only, registered in vercel.json. Probe: the route exists and a test proves a converted or already-mailed lead is skipped.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const R=(f)=>fs.readFileSync(f,'utf8');const C=(f)=>R(f).replace(/\\\\/\\\\*[\\\\s\\\\S]*?\\\\*\\\\//g,'').replace(/^\\\\s*\\\\/\\\\/.*$/gm,'');process.exit(fs.existsSync('app/api/cron/signup-lead-recovery/route.ts')?0:1)\"",
+        "note": "Passes once the recovery cron exists."
+      }
+    },
+    {
+      "id": "LIVE-174",
+      "title": "cron_run_markers has no purge",
+      "status": "open",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "app/api/cron/enforce-retention/route.ts",
+        "ref": "ADR-1212"
+      },
+      "detail": "SCAN-611's weekly-digest marker table grows by one row per member per week. Add it to enforce-retention (rows older than 60 days), or move the digest to the outbox dedupe key once enqueueEmail takes one (then drop the table).",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const R=(f)=>fs.readFileSync(f,'utf8');const C=(f)=>R(f).replace(/\\\\/\\\\*[\\\\s\\\\S]*?\\\\*\\\\//g,'').replace(/^\\\\s*\\\\/\\\\/.*$/gm,'');process.exit(/cron_run_markers/.test(C('app/api/cron/enforce-retention/route.ts'))?0:1)\"",
+        "note": "Passes once the retention cron names the table."
       }
     }
   ]
