@@ -24,8 +24,11 @@ import { resolveSendGate } from '@/lib/comms/send-gate'
 import { isSuppressed } from '@/lib/suppression'
 import { enqueueEmail, listUnsubscribeHeaders } from '@/lib/email'
 import { bulkRunAfter } from '@/lib/queue/outbox'
-import { buildConversationReplyAddress } from '@/lib/comms/reply-address'
+import { buildConversationReplyAddress, conversationSigningAvailable } from '@/lib/comms/reply-address'
 import { openOrGetConversation, appendConversationMessage, newConversationMessageId } from '@/lib/comms/conversations'
+import { conversationFrom } from '@/lib/comms/from-address'
+import { envString } from '@/lib/env/string'
+import { isSendingLeaseStale } from '@/lib/messaging/status'
 import { buildUnsubscribeUrl, buildSpaceUnsubscribeUrl, buildManageEmailsUrl } from '@/lib/unsubscribe-tokens'
 import { loadRootSpaceId } from '@/lib/spaces/store'
 import { assertApproved } from '@/lib/outbound/approvals'
@@ -45,7 +48,8 @@ import type { EntityLayout } from '@/lib/entity-blocks/layout'
 
 /** The platform default From (mirrors lib/email.ts EMAIL_FROM). The address inside `< >` is the verified
  *  sending identity; only the display name in front of it is operator-settable. */
-const DEFAULT_FROM = process.env.EMAIL_FROM ?? 'Frequency <noreply@send.frequencylocal.com>'
+// 2026-09-05 (scan2 L3-02): blank counts as unset.
+const DEFAULT_FROM = envString('EMAIL_FROM', 'Frequency <noreply@send.frequencylocal.com>')
 
 /**
  * Sanitize an operator-set From display name so it can never break (or inject into) an email From header.
@@ -309,6 +313,84 @@ interface CampaignSendRow {
 
 const SEND_COLS = 'id, subject, preheader, block_json, segment, status, phase_id, sent_at, scheduled_for'
 
+// ── The send lease (scan2 L5-04, 2026-09-05) ────────────────────────────────────
+// A campaign is claimed to 'sending' before the recipient loop and must NEVER be left there once
+// sendCampaignNow returns: success writes 'sent', any failure writes 'failed' with the count queued
+// so far and the error. The one way a row can still sit at 'sending' is a process that died mid-loop
+// (a function timeout), and for that the claim stamps `sending_started_at`, the SAME lease column the
+// scheduled-send cron and the drip runner use (scan2 L6-10, migration 20270345000800, the shared
+// isSendingLeaseStale / SENDING_LEASE_MS in lib/messaging/status.ts), so the console's 'stalled'
+// reading and this refusal agree. A 'sending' row whose stamp is older than the lease is treated as
+// abandoned and may be re-sent. A row with NO stamp is treated as in flight (fail closed), exactly as
+// the cron treats it: pre-migration the column does not exist, and a row stranded before the column
+// existed is moved by hand (the note at the bottom of that migration).
+
+/** Whether a 'sending' row's lease has run out. Untyped read of `sending_started_at` (the generated
+ *  types are regenerated separately, ADR-246). FAIL CLOSED: unreadable / missing / pre-migration = in
+ *  flight. */
+async function sendLeaseExpired(campaignId: string, now: number = Date.now()): Promise<boolean> {
+  try {
+    const db = createAdminClient()
+    const col: string = 'sending_started_at'
+    const { data, error } = await db.from('campaigns').select(col).eq('id', campaignId).maybeSingle()
+    if (error || !data) return false
+    const v = (data as unknown as Record<string, unknown>)[col]
+    return typeof v === 'string' && isSendingLeaseStale(v, now)
+  } catch {
+    return false
+  }
+}
+
+/** Best-effort write of the lease / error columns (`sending_started_at`, `send_error`), untyped because
+ *  they are newer than the generated types. Pre-migration the update errors and the send goes on
+ *  without a lease, exactly as before. Never throws. */
+async function stampSendColumns(campaignId: string, patch: Record<string, unknown>): Promise<boolean> {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const db = createAdminClient() as unknown as { from: (t: string) => any }
+    const { error } = await db.from('campaigns').update(patch).eq('id', campaignId)
+    return !error
+  } catch {
+    return false
+  }
+}
+
+/** Record a send that did not complete: status 'failed', `recipient_count` = how many emails were
+ *  queued before it stopped, and the error on `send_error`. The status write is what gets the row out
+ *  of 'sending', so it is tried twice before giving up; the error note is best-effort. */
+async function recordSendFailed(campaignId: string, queuedSoFar: number, message: string): Promise<boolean> {
+  const db = createAdminClient()
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    const { error } = await db
+      .from('campaigns')
+      .update({ status: 'failed', recipient_count: queuedSoFar })
+      .eq('id', campaignId)
+    if (!error) {
+      await stampSendColumns(campaignId, { send_error: message.slice(0, 500) })
+      return true
+    }
+    console.error('[email-studio] could not record the failed send', { campaignId, attempt, error: error.message })
+  }
+  return false
+}
+
+/** Operator copy for a send that stopped part-way: what was queued, what the status is now, and what
+ *  sending again does. Exported for the test. Plain voice, no em dashes. */
+export function sendStoppedCopy(queued: number, recorded: boolean): string {
+  const status = recorded
+    ? 'The campaign is marked failed.'
+    : 'The campaign status could not be updated, so it may still show as sending.'
+  if (queued === 0) return `The send stopped before any email was queued. ${status} Fix the cause and send again.`
+  const n = queued === 1 ? '1 email was' : `${queued} emails were`
+  return `The send stopped after ${n} queued. ${status} Sending again reaches the whole audience, including the people already queued.`
+}
+
+/** Operator copy for the rarer case: every email was queued but the 'sent' write failed. */
+export function sentUnrecordedCopy(queued: number, recorded: boolean): string {
+  const status = recorded ? 'It is marked failed with a note instead.' : 'It may still show as sending.'
+  return `All ${queued} emails were queued, but the campaign could not be marked sent. ${status} Do not send it again: those emails already went out.`
+}
+
 async function loadCampaign(campaignId: string): Promise<CampaignSendRow | null> {
   const db = createAdminClient()
   const { data } = await db.from('campaigns').select(SEND_COLS).eq('id', campaignId).maybeSingle()
@@ -497,6 +579,11 @@ export async function scheduleCampaign(
  * send-gate (suppression + consent + preference) before enqueuing a per-recipient email on
  * the durable outbox, with merge tags + one-click unsubscribe headers applied. Marks the
  * row 'sending' up front (so a double click cannot re-enter) then 'sent' with the count.
+ * 2026-09-05 (scan2 L5-04): and NEVER leaves it at 'sending' on return. A failure after the claim
+ * writes 'failed' with the count queued so far and the error; a failed 'sent' write is reported to
+ * the operator instead of being discarded with an `ok`. The "already sending" refusal below applies
+ * only while the send lease (SENDING_LEASE_MS, lib/messaging/status.ts) is live, so a row abandoned
+ * by a dead process is re-sendable instead of stuck.
  */
 export async function sendCampaignNow(campaignId: string): Promise<ActionResult<{ recipientCount: number }>> {
   const row = await loadCampaign(campaignId)
@@ -504,9 +591,13 @@ export async function sendCampaignNow(campaignId: string): Promise<ActionResult<
 
   // Idempotency: never double-send.
   if (row.status === 'sent' || row.sent_at) return fail('This campaign has already been sent.')
-  if (row.status === 'sending') return fail('This campaign is already sending.')
+  if (row.status === 'sending' && !(await sendLeaseExpired(campaignId))) {
+    return fail('This campaign is already sending.')
+  }
 
-  const next = nextCampaignStatus(row.status, 'send')
+  // An abandoned 'sending' row (lease expired) is re-claimed in place; the state machine has no
+  // sending -> sending edge on purpose, so the re-claim is explicit here.
+  const next = row.status === 'sending' ? 'sending' : nextCampaignStatus(row.status, 'send')
   if (!next) return fail(`A ${row.status} campaign cannot be sent.`)
 
   // THE GOVERNING RULE for a spine-tracked campaign: refuse unless the spine has approved this row.
@@ -550,11 +641,17 @@ export async function sendCampaignNow(campaignId: string): Promise<ActionResult<
   // the recipient enqueue byte-for-byte identical to today. Requires an owner (the campaign creator) to
   // hang the sender trail on; if that cannot be resolved we fall back to broadcast so a send is never
   // blocked. The conversational From is a display-name swap onto the verified conversational identity.
+  // 2026-09-05 (scan2 L3-06): conversation mode also needs the reply-address signing secret; without it
+  // (production, CONVERSATION_TOKEN_SECRET unset) buildConversationReplyAddress throws mid-loop. Fall back
+  // to broadcast the same way a missing owner does, so the send still lands (the predicate logs it).
   const replyMode = await loadCampaignReplyMode(campaignId)
   const ownerProfileId = replyMode === 'conversation' ? await loadCampaignCreatorProfileId(campaignId) : null
-  const conversationMode = replyMode === 'conversation' && !!ownerProfileId
-  const conversationFrom = conversationMode
-    ? buildCampaignFrom(await loadCampaignFromName(campaignId), process.env.EMAIL_CONVERSATION_FROM ?? DEFAULT_FROM)
+  const conversationMode = replyMode === 'conversation' && !!ownerProfileId && conversationSigningAvailable()
+  // 2026-09-05 (scan2 L3-01 + L3-02): the conversational From comes from the shared helper, which takes
+  // the ADDRESS out of EMAIL_CONVERSATION_FROM / EMAIL_FROM (either form, blank = unset) and puts the
+  // campaign's display name in front of it, quoted when RFC 5322 needs it. Brand form (no "via").
+  const conversationFromHeader = conversationMode
+    ? conversationFrom(sanitizeFromName(await loadCampaignFromName(campaignId)) || null, { via: false })
     : fromHeader
 
   const db = createAdminClient()
@@ -573,6 +670,8 @@ export async function sendCampaignNow(campaignId: string): Promise<ActionResult<
   if (!claimed || (claimed as unknown[]).length === 0) {
     return fail('This campaign is already sending.')
   }
+  // The lease: the moment this send took the row (scan2 L5-04). Best-effort, untyped, pre-migration no-op.
+  await stampSendColumns(campaignId, { sending_started_at: new Date().toISOString(), send_error: null })
 
   let count = 0
   // One clock for the whole fan-out, so the drip (bulkRunAfter below) is measured from when the
@@ -661,7 +760,7 @@ export async function sendCampaignNow(campaignId: string): Promise<ActionResult<
         // recipient so the send still lands (the reply just won't thread).
         if (conv) {
           const messageId = newConversationMessageId(conv.ref)
-          emailFrom = conversationFrom
+          emailFrom = conversationFromHeader
           emailReplyTo = buildConversationReplyAddress(conv.ref)
           emailHeaders = { 'Message-ID': messageId, 'X-Campaign-Id': campaignId }
           await appendConversationMessage({
@@ -705,20 +804,42 @@ export async function sendCampaignNow(campaignId: string): Promise<ActionResult<
       count++
     }
   } catch (err) {
-    console.error('[email-studio] sendCampaignNow send loop failed:', err)
+    const message = err instanceof Error ? err.message : String(err)
+    console.error('[email-studio] sendCampaignNow send loop failed', { campaignId, queuedSoFar: count, error: message })
     // The atomic claim above already flipped the row to 'sending'. A failure AFTER the claim (the
     // likely one: resolveSegment / loadContactNames throwing before any recipient is enqueued) must
     // NOT strand the row in 'sending' — it could then never be re-sent (sendCampaignNow refuses a
     // 'sending' row, and there is no 'sending' -> draft/scheduled transition). Reset the status back to
     // the pre-claim value so the campaign is re-sendable. Best-effort; nothing is ever marked 'sent'.
-    await db.from('campaigns').update({ status: row.status }).eq('id', campaignId)
-    return fail('The send did not complete. No status was changed to sent.')
+    // 2026-09-05 (scan2 L5-04): that reset was fire-and-forget (its result discarded) and it erased
+    // the evidence: a send that had already queued N emails went back to 'draft' as if nothing
+    // happened. It is now recorded as 'failed' (re-sendable: failed -> send) with the count queued so
+    // far on recipient_count and the error on send_error, the write is checked and retried, and the
+    // operator copy says exactly what happened.
+    const recorded = await recordSendFailed(campaignId, count, message)
+    return fail(sendStoppedCopy(count, recorded))
   }
 
-  await db
+  // 2026-09-05 (scan2 L5-04): this write's result used to be discarded, so a failed update returned
+  // `ok` while the row stayed at 'sending' forever (and could never be re-sent). Check it; if it fails,
+  // get the row out of 'sending' the other way and tell the operator the truth.
+  const { error: sentError } = await db
     .from('campaigns')
     .update({ status: 'sent', recipient_count: count, sent_at: new Date().toISOString() })
     .eq('id', campaignId)
+  if (sentError) {
+    console.error('[email-studio] sendCampaignNow could not mark the campaign sent', {
+      campaignId,
+      queued: count,
+      error: sentError.message,
+    })
+    const recorded = await recordSendFailed(
+      campaignId,
+      count,
+      `Queued ${count} emails but could not record the sent status: ${sentError.message}`,
+    )
+    return fail(sentUnrecordedCopy(count, recorded))
+  }
 
   return ok({ recipientCount: count })
 }

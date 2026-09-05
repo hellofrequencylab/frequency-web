@@ -14,14 +14,16 @@ import {
   getConversationByRef,
   reopenConversationIfClosed,
 } from '@/lib/comms/conversations'
-import { makeChatToken, verifyChatToken } from '@/lib/comms/chat-token'
+import { makeChatToken, verifyChatToken, isSupportChatAvailable, chatSigningAvailable } from '@/lib/comms/chat-token'
+import { envStringOrNull } from '@/lib/env/string'
 import { cleanConversationBody } from '@/lib/comms/message-body'
 import { escapeLike } from '@/lib/search-sanitize'
 import { loadRootSpaceId } from '@/lib/spaces/store'
 
 /** The platform profile that owns an anonymous chat thread (same env the inbound webhook uses). */
 function inboxOwner(): string | null {
-  return process.env.CRM_INBOX_OWNER_PROFILE_ID ?? null
+  // 2026-09-05 (scan2 L3-02): blank counts as unset.
+  return envStringOrNull('CRM_INBOX_OWNER_PROFILE_ID')
 }
 
 /** Resolve-or-create the PLATFORM-lane contact for a visitor email, so the chat threads onto a real
@@ -103,6 +105,19 @@ export async function startSupportChat(input: {
 }): Promise<{ ref: string; token: string } | null> {
   const owner = inboxOwner()
   if (!owner) return null
+  // 2026-09-05 (scan2 L3-06): check that the capability token CAN be minted BEFORE anything is written.
+  // In production with CONVERSATION_TOKEN_SECRET unset, makeChatToken (below) throws; before this check
+  // that throw came AFTER openOrGetConversation + appendConversationMessage, leaving one orphan
+  // conversation and message per attempt and showing the visitor a generic server-action error instead
+  // of the action's "Support is unavailable" copy (which a null return produces).
+  if (!isSupportChatAvailable()) {
+    console.error('[support-chat] refused: prerequisites missing', {
+      inboxOwner: true,
+      signing: chatSigningAvailable(),
+      production: process.env.NODE_ENV === 'production',
+    })
+    return null
+  }
   const memberProfileId = input.memberProfileId ?? null
 
   // A member-bound request takes its EMAIL from the signed-in profile, never from the caller. The email

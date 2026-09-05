@@ -14,15 +14,27 @@ import 'server-only'
 // response, or unparseable body all resolve to `null`. Callers decide what a miss
 // means (leave geog NULL on save; show no suggestions in autocomplete).
 
+import { envNumber, envStringOrNull } from '@/lib/env/string'
+
 const NOMINATIM_SEARCH_URL = 'https://nominatim.openstreetmap.org/search'
 
 // Nominatim's usage policy asks for an app + contact identifier. Sourced from env
 // when set, with a sane project default so it's never empty.
-const CONTACT =
-  process.env.GEOCODER_CONTACT_EMAIL ??
-  process.env.NEXT_PUBLIC_APP_URL ??
-  'https://frequencylocal.com'
-export const NOMINATIM_USER_AGENT = `Frequency/1.0 (${CONTACT})`
+// 2026-09-05 (scan2 L3-02): "never empty" was false for the `.env.example` shape. `@next/env`
+// loads `GEOCODER_CONTACT_EMAIL=` as '', which `??` keeps, so the header read `Frequency/1.0 ()`
+// and the policy the comment above says is satisfied was not. Blank now counts as unset and the
+// chain falls through to NEXT_PUBLIC_APP_URL, then the project URL, as documented.
+export function nominatimContact(): string {
+  return (
+    envStringOrNull('GEOCODER_CONTACT_EMAIL') ??
+    envStringOrNull('NEXT_PUBLIC_APP_URL') ??
+    'https://frequencylocal.com'
+  )
+}
+export function nominatimUserAgent(): string {
+  return `Frequency/1.0 (${nominatimContact()})`
+}
+export const NOMINATIM_USER_AGENT = nominatimUserAgent()
 
 const DEFAULT_MIN_INTERVAL_MS = 1100
 const REQUEST_TIMEOUT_MS = 5000
@@ -30,9 +42,12 @@ const REQUEST_TIMEOUT_MS = 5000
 // The minimum spacing between our own Nominatim calls. Read per-call from env so a
 // test can drop it to 0 (the cascade fires up to three sequential passes and we
 // don't want unit tests waiting real seconds); defaults to a polite ~1.1s otherwise.
-function minIntervalMs(): number {
-  const v = Number(process.env.NOMINATIM_MIN_INTERVAL_MS)
-  return Number.isFinite(v) && v >= 0 ? v : DEFAULT_MIN_INTERVAL_MS
+// 2026-09-05 (scan2 L3-02): `Number('') === 0` passed the old `v >= 0` guard, so a BLANK
+// NOMINATIM_MIN_INTERVAL_MS (the `.env.example` shape) removed the spacing entirely and the
+// three-pass cascade hit Nominatim with zero delay. envNumber keeps the 1100 ms default for
+// unset / blank / non-numeric; only an explicit `0` is a deliberate 0.
+export function nominatimMinIntervalMs(): number {
+  return envNumber('NOMINATIM_MIN_INTERVAL_MS', DEFAULT_MIN_INTERVAL_MS, { min: 0 })
 }
 
 let lastRequestAt = 0
@@ -43,7 +58,7 @@ let queue: Promise<unknown> = Promise.resolve()
  *  once. Each task's own failure is isolated — it never poisons the chain. */
 export function rateLimited<T>(fn: () => Promise<T>): Promise<T> {
   const run = queue.then(async () => {
-    const wait = minIntervalMs() - (Date.now() - lastRequestAt)
+    const wait = nominatimMinIntervalMs() - (Date.now() - lastRequestAt)
     if (wait > 0) await new Promise((r) => setTimeout(r, wait))
     lastRequestAt = Date.now()
     return fn()
@@ -89,7 +104,7 @@ export async function nominatimSearch(
         method: 'GET',
         headers: {
           // Required by Nominatim's usage policy; Accept-Language keeps names English.
-          'User-Agent': NOMINATIM_USER_AGENT,
+          'User-Agent': nominatimUserAgent(),
           'Accept-Language': 'en',
           Accept: 'application/json',
         },

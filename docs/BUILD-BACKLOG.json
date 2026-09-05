@@ -68,7 +68,8 @@
             "LIVE-163",
             "LIVE-168",
             "LIVE-170",
-            "LIVE-174"
+            "LIVE-174",
+            "LIVE-172"
           ]
         },
         {
@@ -8076,6 +8077,91 @@
         "kind": "cmd",
         "cmd": "node -e \"const fs=require('fs');const R=(f)=>fs.readFileSync(f,'utf8');const C=(f)=>R(f).replace(/\\\\/\\\\*[\\\\s\\\\S]*?\\\\*\\\\//g,'').replace(/^\\\\s*\\\\/\\\\/.*$/gm,'');process.exit(/cron_run_markers/.test(C('app/api/cron/enforce-retention/route.ts'))?0:1)\"",
         "note": "Passes once the retention cron names the table."
+      }
+    },
+    {
+      "id": "SCAN-617",
+      "title": "Six conversation From headers nested angle brackets and were rejected by the provider",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/comms/from-address.ts",
+        "ref": "ADR-1212"
+      },
+      "detail": "Scan two, phase D (2026-09-05). L3-01. With EMAIL_CONVERSATION_FROM unset and EMAIL_FROM in its documented Name <addr> form, every conversational reply was built as Name via Frequency <Frequency <addr>> and never reached the member. Closed: conversationFrom extracts the address from either form and builds one RFC 5322 From with proper quoting; all six builders use it.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const R=(f)=>fs.readFileSync(f,'utf8');const C=(f)=>R(f).replace(/\\\\/\\\\*[\\\\s\\\\S]*?\\\\*\\\\//g,'').replace(/^\\\\s*\\\\/\\\\/.*$/gm,'');const h=C('lib/comms/from-address.ts');const sites=['lib/comms/leader-send.ts','lib/comms/outbound-batch.ts','lib/comms/conversation-compose.ts','lib/comms/inbound.ts','lib/email-studio/send.ts','app/(main)/admin/crm/conversations/actions.ts','app/(main)/lead/inbox/actions.ts'];process.exit(/export function conversationFrom/.test(h)&&sites.every(f=>/from-address/.test(R(f)))?0:1)\"",
+        "note": "Fails if any builder stops using the helper."
+      }
+    },
+    {
+      "id": "SCAN-618",
+      "title": "Blank env values passed as set: an empty From address, a broken Message-ID and a zero Nominatim interval",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/env/string.ts",
+        "ref": "ADR-1212"
+      },
+      "detail": "Scan two, phase D (2026-09-05). L3-02. @next/env loads KEY= as an empty string, which is not nullish, and Number('') is 0, so a copied .env.example produced From: <>, Message-ID @>, a policy-violating User-Agent and no spacing between geocoder calls. Closed: envString and envNumber treat blank and whitespace as unset and reject NaN; the From builders, the Message-ID host, the Nominatim contact and interval, the reply domain, the inbox owner and the Email Studio From read through them.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const R=(f)=>fs.readFileSync(f,'utf8');const C=(f)=>R(f).replace(/\\\\/\\\\*[\\\\s\\\\S]*?\\\\*\\\\//g,'').replace(/^\\\\s*\\\\/\\\\/.*$/gm,'');process.exit(/export function envNumber/.test(C('lib/env/string.ts'))&&/envNumber\\\\(/.test(C('lib/events/nominatim.ts'))&&/envString\\\\(/.test(C('lib/comms/conversations.ts'))?0:1)\"",
+        "note": "Fails if the helpers or their named call sites are reverted."
+      }
+    },
+    {
+      "id": "SCAN-619",
+      "title": "Support chat opened the conversation and wrote the first message before discovering it could not sign the token",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/comms/support-chat.ts",
+        "ref": "ADR-1212"
+      },
+      "detail": "Scan two, phase D (2026-09-05). L3-06. In production without CONVERSATION_TOKEN_SECRET, startSupportChat left one orphan conversation and message per attempt and the visitor saw a generic failure; the same throw sat under every conversation reply-to. Closed: isSupportChatAvailable and conversationSigningAvailable are checked before any write, the three layouts mount the widget only when both the build flag and the runtime check pass, and every outbound conversation path (leader send, compose, inbound forward, CRM and lead inbox replies, Space CRM replies) refuses in member-safe copy instead of throwing.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const R=(f)=>fs.readFileSync(f,'utf8');const C=(f)=>R(f).replace(/\\\\/\\\\*[\\\\s\\\\S]*?\\\\*\\\\//g,'').replace(/^\\\\s*\\\\/\\\\/.*$/gm,'');process.exit(/isSupportChatAvailable\\\\(\\\\)/.test(C('app/(help)/layout.tsx'))&&/conversationSigningAvailable\\\\(\\\\)/.test(C('app/(main)/spaces/[slug]/crm/conversations-actions.ts'))&&/export function conversationSigningAvailable/.test(C('lib/comms/reply-address.ts'))?0:1)\"",
+        "note": "Fails if a layout or a reply path stops checking before it writes."
+      }
+    },
+    {
+      "id": "SCAN-620",
+      "title": "An Email Studio campaign that sent could stay at sending forever with no way to re-send",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/email-studio/send.ts",
+        "ref": "ADR-1212"
+      },
+      "detail": "Scan two, phase D (2026-09-05). L5-04. The final update to sent was unchecked and the refusal to re-send a sending row had no way out. Closed: sendCampaignNow claims with the shared sending_started_at lease, moves to sent only on a checked write, records failed with the count sent so far and the error on any failure, and the refusal applies only while a lease is live; a re-send reaches the whole audience again and the copy says so (LIVE-172).",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const R=(f)=>fs.readFileSync(f,'utf8');const C=(f)=>R(f).replace(/\\\\/\\\\*[\\\\s\\\\S]*?\\\\*\\\\//g,'').replace(/^\\\\s*\\\\/\\\\/.*$/gm,'');process.exit(/sending_started_at/.test(C('lib/email-studio/send.ts'))&&fs.existsSync('lib/email-studio/send-lifecycle.test.ts')?0:1)\"",
+        "note": "Fails if the lease or the lifecycle test is removed."
+      }
+    },
+    {
+      "id": "LIVE-172",
+      "title": "A re-sent Email Studio campaign reaches the recipients already queued",
+      "status": "open",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "lib/email-studio/send.ts",
+        "ref": "ADR-1212"
+      },
+      "detail": "SCAN-620 records a failed send with the count sent so far and lets the operator re-send; nothing skips the recipients already queued, and the copy says so. Add a per-recipient ledger check (the Space campaign runner's outreach_sends pattern) before each enqueue.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const R=(f)=>fs.readFileSync(f,'utf8');const C=(f)=>R(f).replace(/\\\\/\\\\*[\\\\s\\\\S]*?\\\\*\\\\//g,'').replace(/^\\\\s*\\\\/\\\\/.*$/gm,'');process.exit(/outreach_sends|already sent|alreadySent/.test(C('lib/email-studio/send.ts'))?0:1)\"",
+        "note": "Passes once the send path skips recipients already delivered."
       }
     }
   ]

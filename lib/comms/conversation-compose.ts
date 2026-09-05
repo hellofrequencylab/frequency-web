@@ -21,9 +21,10 @@ import {
   type AppendMessageInput,
 } from '@/lib/comms/conversations'
 import type { InteractionScopeRef } from '@/lib/crm/interactions'
-import { buildConversationReplyAddress } from '@/lib/comms/reply-address'
+import { buildConversationReplyAddress, conversationSigningAvailable } from '@/lib/comms/reply-address'
 import { renderReplyEmail } from '@/lib/comms/email-template'
 import { conversationBatchWindowMinutes, queueOutboundMessage } from '@/lib/comms/outbound-batch'
+import { conversationFrom } from '@/lib/comms/from-address'
 
 // SINGLE-SOURCE sentinel (check:crm-parity): the compose block below — open conversation + reply
 // address + first outbound — must never be re-inlined into a surface.
@@ -31,10 +32,10 @@ import { conversationBatchWindowMinutes, queueOutboundMessage } from '@/lib/comm
 
 /** The Space's conversational sending identity: the brand name on the verified conversational
  *  address. Shared by every space-side compose surface (the console dialog + the member composer). */
+// 2026-09-05 (scan2 L3-01): the brand form of the shared From helper (no "via Frequency" suffix, the
+// address extracted from EMAIL_FROM rather than nested inside it, blank env treated as unset).
 export function spaceConversationFrom(brandName: string): string {
-  const addr = process.env.EMAIL_CONVERSATION_FROM ?? process.env.EMAIL_FROM ?? 'people@people.frequencylocal.com'
-  const clean = (brandName || 'Frequency').replace(/["\\<>]/g, '').trim() || 'Frequency'
-  return `${clean} <${addr}>`
+  return conversationFrom(brandName, { via: false })
 }
 
 export interface StartConversationMessageInput {
@@ -82,6 +83,10 @@ export async function startConversationMessage(
   const body = (input.body ?? '').trim()
   if (!email || !email.includes('@') || !subject || !body) return null
   if (!input.contactId && !input.profileId) return null // the conversation CHECK needs a counterparty
+  // 2026-09-05 (scan2 L3-06): the per-thread Reply-To needs a signing secret; in production without one
+  // buildConversationReplyAddress THROWS. Check first, so a misconfigured server opens no thread and
+  // records no message it can never send (the predicate logs the refusal).
+  if (!conversationSigningAvailable()) return null
 
   const conv = await openOrGetConversation({
     kind: 'crm',

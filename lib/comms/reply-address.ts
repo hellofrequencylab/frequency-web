@@ -11,15 +11,43 @@
 
 import { createHmac, timingSafeEqual } from 'crypto'
 import { signingSecret } from '@/lib/signing-secret'
+import { envString } from '@/lib/env/string'
 
 /** The inbound reply subdomain. Its MX points at the provider's inbound; a catch-all route posts to the
  *  inbound-email webhook. Kept out of the apex so bulk/human mail identities stay separate. */
-export const REPLY_DOMAIN = process.env.CONVERSATION_REPLY_DOMAIN ?? 'reply.frequencylocal.com'
+// 2026-09-05 (scan2 L3-02): read through envString so a BLANK CONVERSATION_REPLY_DOMAIN falls back to the
+// default instead of producing `reply+…@` addresses.
+export const REPLY_DOMAIN = envString('CONVERSATION_REPLY_DOMAIN', 'reply.frequencylocal.com')
 
 // In production: set CONVERSATION_TOKEN_SECRET to a 32+ byte random string. In dev: fall back to the
 // service-role key prefix so tests work (locally-issued addresses won't validate against prod-issued ones).
 // Fail closed in production rather than silently coupling every reply address to the service-role key.
 const getSecret = (): string => signingSecret('reply-address', ['CONVERSATION_TOKEN_SECRET'])
+
+/** The member/operator-safe copy for a send refused because reply addresses cannot be signed. Plain voice. */
+export const CONVERSATION_SIGNING_UNAVAILABLE_COPY =
+  'Reply email is not set up on this server yet, so this message cannot go out. Nothing was sent.'
+
+/**
+ * Whether outbound conversation mail can be signed at all (scan2 L3-06, 2026-09-05). In production with
+ * CONVERSATION_TOKEN_SECRET unset, `getSecret` THROWS, and before this check that throw fired from deep
+ * inside a send, after the conversation row and the outbound message had already been written, and
+ * surfaced to the member as a generic server-action failure. Callers run this BEFORE they open a
+ * conversation or append a message, and return CONVERSATION_SIGNING_UNAVAILABLE_COPY when it is false.
+ * The refusal is logged here, once per call, so the misconfiguration is visible in the runtime log
+ * rather than swallowed by a caller's catch. Never throws.
+ */
+export function conversationSigningAvailable(): boolean {
+  try {
+    getSecret()
+    return true
+  } catch (err) {
+    console.error('[comms] conversation reply addresses cannot be signed; outbound conversation mail is refused', {
+      reason: err instanceof Error ? err.message : String(err),
+    })
+    return false
+  }
+}
 
 /** Who a reply address belongs to. `member` = the counterpart's reply-to (routes INBOUND onto the thread) —
  *  the default, and the ONLY role most of the system uses. `house` = the operator/leader's reply-to on a

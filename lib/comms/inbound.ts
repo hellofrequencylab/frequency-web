@@ -23,6 +23,7 @@ import {
   parseConversationReplyAddress,
   verifyConversationToken,
   buildConversationReplyAddress,
+  conversationSigningAvailable,
 } from '@/lib/comms/reply-address'
 import {
   getConversationByRef,
@@ -33,6 +34,7 @@ import {
   conversationScopeRef,
   type ConversationRow,
 } from '@/lib/comms/conversations'
+import { conversationFrom } from '@/lib/comms/from-address'
 
 /** The normalized inbound message the router works from — a superset of the legacy {from,subject,text}. */
 export interface ParsedInboundMessage {
@@ -454,11 +456,8 @@ function emailBridgeEnabled(): boolean {
 }
 
 /** The conversational sending identity (matches the reply actions' From: "<Name> via Frequency <addr>"). */
-function conversationFrom(name: string | null): string {
-  const addr = process.env.EMAIL_CONVERSATION_FROM ?? process.env.EMAIL_FROM ?? 'people@people.frequencylocal.com'
-  const clean = (name ?? 'Frequency').replace(/["\\<>]/g, '').trim() || 'Frequency'
-  return `${clean} via Frequency <${addr}>`
-}
+// 2026-09-05 (scan2 L3-01): the local builder is gone; `conversationFrom` is imported from
+// lib/comms/from-address, which extracts the address out of EMAIL_FROM instead of nesting it.
 
 /** `Re:`-prefix a subject once (mirrors the reply actions). */
 function bridgeReplySubject(subject: string | null): string {
@@ -496,6 +495,9 @@ async function resolveAgent(profileId: string | null): Promise<{ email: string; 
  *  Reply-To is the HOUSE address, so when the agent hits reply in their mail app it routes back OUTBOUND to
  *  the member (routeHouseReplyOutbound). Best-effort; never throws. */
 async function forwardInboundToHouse(conv: ConversationRow, parsed: ParsedInboundMessage): Promise<void> {
+  // 2026-09-05 (scan2 L3-06): the house Reply-To needs a signing secret; skip (logged by the predicate)
+  // rather than throw into the catch below.
+  if (!conversationSigningAvailable()) return
   try {
     const agent = await resolveAgent(conv.assignedTo ?? conv.ownerProfileId)
     if (!agent) return
@@ -525,6 +527,10 @@ async function routeHouseReplyOutbound(conv: ConversationRow, parsed: ParsedInbo
   const agent = await resolveAgent(agentId)
   const authorKind = conv.kind === 'leader' ? 'leader' : 'staff'
   const body = parsed.text ?? '(no message body)'
+  // 2026-09-05 (scan2 L3-06): the member Reply-To below needs a signing secret. Refuse BEFORE the
+  // outbound is recorded: `error` makes the webhook answer 503, so the provider redelivers once the
+  // secret is set, instead of a message being recorded on the thread that was never sent.
+  if (!conversationSigningAvailable()) return { status: 'error', conversationId: conv.id, ref: conv.ref }
 
   // Record the outbound FIRST, keyed on the agent's inbound Message-ID: a redelivery hits the unique index
   // and returns `duplicate`, so we never send the member a second copy.

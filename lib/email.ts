@@ -14,13 +14,14 @@
 
 import { Resend } from 'resend'
 import { buildUnsubscribeUrl } from '@/lib/unsubscribe-tokens'
+import { envString } from '@/lib/env/string'
 import { enqueue, type JobLane } from '@/lib/queue/outbox'
 import { isSuppressed } from '@/lib/suppression'
 // Email Studio (Phase 4) transactional seam: renders an in-house email from its EDITABLE template when an
 // operator has seeded + edited one, else returns null so the hardcoded copy below stands. Additive + fail-safe.
 
 const apiKey  = process.env.RESEND_API_KEY
-const FROM    = process.env.EMAIL_FROM ?? 'Frequency <noreply@send.frequencylocal.com>'
+const FROM    = envString('EMAIL_FROM', 'Frequency <noreply@send.frequencylocal.com>')
 
 // Headers required by Gmail/Yahoo bulk-sender policies (RFC 8058).
 // `apiUrl` is the POST endpoint mailbox providers call when a user hits

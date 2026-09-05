@@ -15,6 +15,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { enqueueEmail } from '@/lib/email'
 import { buildConversationReplyAddress } from '@/lib/comms/reply-address'
+import { conversationFrom } from '@/lib/comms/from-address'
 import { renderCoalescedEmail } from '@/lib/comms/email-template'
 import {
   getConversationById,
@@ -45,9 +46,9 @@ export function conversationDigestWindowMinutes(): number {
 }
 
 /** The default conversational From when a queued message somehow lost its `batch_from` (defensive). */
+// 2026-09-05 (scan2 L3-01): built by the shared helper (address extracted from EMAIL_FROM, blank = unset).
 function defaultConversationFrom(): string {
-  const addr = process.env.EMAIL_CONVERSATION_FROM ?? process.env.EMAIL_FROM ?? 'people@people.frequencylocal.com'
-  return `Frequency <${addr}>`
+  return conversationFrom(null)
 }
 
 /** Plain-text reply → minimal safe HTML (mirrors the reply actions' bodyToHtml). No external template. */
