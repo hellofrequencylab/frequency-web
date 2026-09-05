@@ -32,6 +32,7 @@
 //    no migration, no new table.
 
 import { createAdminClient } from '@/lib/supabase/admin'
+import { mergeProfileMeta } from '@/lib/profiles/meta'
 import { resolveMemberDay } from '@/lib/member-day'
 import { awardZaps } from '@/lib/zaps'
 import { STREAK_MILESTONES, STREAK_FREEZE_CAP, FULL_DAYS_PER_FREEZE, streakProgress } from '@/lib/streak'
@@ -413,6 +414,10 @@ export async function recordPracticeStreak(
   // updated (so the mirror is right), but the claim, not meta, is the source of truth for "already paid",
   // which also self-heals a meta lost-update (a later log re-detects the milestone, the claim blocks the
   // double-pay). A failed award RELEASES the claim so a later log can retry (claim-then-pay self-heal).
+  // 2026-09-05 (scan2 L6-09): "lock-free read-modify-write on profiles.meta" above is half retired. The
+  // WRITE at the bottom is now a server-side merge of the practiceStreak key alone (mergeProfileMeta),
+  // so it can no longer clobber another writer's key; two same-day logs can still both read a
+  // `milestonesPaid` without the new checkpoint, which is exactly what the claim rows cover.
   let banked = 0
   let topMilestone: number | null = null
   for (const m of STREAK_MILESTONES) {
@@ -492,31 +497,38 @@ export async function recordPracticeStreak(
   const restStillRelevant = stored.rest && dayDiff(today, stored.rest.through) <= 0
   const nextRest = restStillRelevant ? stored.rest ?? null : null
 
-  const nextMeta = {
-    ...meta,
-    practiceStreak: {
-      freezeTokens,
-      frozenDates: prunedFrozen,
-      milestonesPaid: [...paid].sort((a, b) => a - b),
-      longest,
-      fullDayFreezesApplied: fullDayApplied,
-      rest: nextRest,
-      current,
-      // The last day a practice was actually logged (the attributed day for an overnight sit, ADR-801),
-      // not necessarily the real `today` when they differ. A mirror; the derived read is authoritative.
-      lastDay: writtenDay,
-      updatedAt: new Date().toISOString(),
-    } satisfies StoredStreak,
-  }
+  const nextStreak = {
+    freezeTokens,
+    frozenDates: prunedFrozen,
+    milestonesPaid: [...paid].sort((a, b) => a - b),
+    longest,
+    fullDayFreezesApplied: fullDayApplied,
+    rest: nextRest,
+    current,
+    // The last day a practice was actually logged (the attributed day for an overnight sit, ADR-801),
+    // not necessarily the real `today` when they differ. A mirror; the derived read is authoritative.
+    lastDay: writtenDay,
+    updatedAt: new Date().toISOString(),
+  } satisfies StoredStreak
 
   // Write through an untyped handle: `meta` is jsonb and the current_streak /
   // longest_streak columns are the headline mirror (cast pattern per
   // lib/practices.ts / feed/page.tsx). The nested RestWindow is a named type, so
   // it is widened to Json for the jsonb column.
-  await (admin)
-    .from('profiles')
-    .update({ meta: nextMeta as unknown as Json, current_streak: current, longest_streak: longest })
-    .eq('id', profileId)
+  // 2026-09-05 (scan2 L6-09): the handle above is retired. This used to spread the whole `meta` read at
+  // the top of the function back over the row, so a check-in or walkthrough stamp written during the
+  // computation was reverted. Now ONLY the practiceStreak key is merged server-side (plus the two
+  // mirror columns in the same statement), and the result is read: a merge that did not land is
+  // logged, and the claim rows above remain the source of truth for what was paid.
+  const { error: writeErr } = await mergeProfileMeta(
+    admin,
+    profileId,
+    { practiceStreak: nextStreak as unknown as Json },
+    { current_streak: current, longest_streak: longest },
+  )
+  if (writeErr) {
+    console.error('[recordPracticeStreak] practiceStreak merge failed (mirror not updated)', { profileId, error: writeErr })
+  }
 }
 
 // --- un-log recompute (today-only; WEBSITE-CHANGES-PLAN §3 B.1 / D4) --------
@@ -573,25 +585,29 @@ export async function recomputePracticeStreakAfterUnlog(
   const { current } = derivePracticeStreak(logged, frozen, today)
   const longest = Math.max(stored.longest, current) // never lower a banked record
 
-  const nextMeta = {
-    ...meta,
-    practiceStreak: {
-      freezeTokens: stored.freezeTokens,
-      frozenDates: stored.frozenDates,
-      milestonesPaid: stored.milestonesPaid,
-      longest,
-      fullDayFreezesApplied: stored.fullDayFreezesApplied ?? 0,
-      rest: stored.rest ?? null,
-      current,
-      lastDay: today,
-      updatedAt: new Date().toISOString(),
-    } satisfies StoredStreak,
-  }
+  const nextStreak = {
+    freezeTokens: stored.freezeTokens,
+    frozenDates: stored.frozenDates,
+    milestonesPaid: stored.milestonesPaid,
+    longest,
+    fullDayFreezesApplied: stored.fullDayFreezesApplied ?? 0,
+    rest: stored.rest ?? null,
+    current,
+    lastDay: today,
+    updatedAt: new Date().toISOString(),
+  } satisfies StoredStreak
 
-  await admin
-    .from('profiles')
-    .update({ meta: nextMeta as unknown as Json, current_streak: current, longest_streak: longest })
-    .eq('id', profileId)
+  // 2026-09-05 (scan2 L6-09): merge of the practiceStreak key only (plus the mirror columns), never
+  // the whole blob. A failed merge is logged; the derived read stays authoritative.
+  const { error: writeErr } = await mergeProfileMeta(
+    admin,
+    profileId,
+    { practiceStreak: nextStreak as unknown as Json },
+    { current_streak: current, longest_streak: longest },
+  )
+  if (writeErr) {
+    console.error('[recomputePracticeStreakAfterUnlog] practiceStreak merge failed (mirror not updated)', { profileId, error: writeErr })
+  }
 }
 
 // --- auto-freeze streak-save (Resonance Engine Phase 5 · ADR-386) ----------
@@ -614,7 +630,7 @@ export interface SaveStreakResult {
   /** The freeze reserve after the call. */
   freezeTokens: number
   /** Why nothing happened, when saved is false (for the audit line). */
-  reason: 'saved' | 'not_at_risk' | 'no_freeze' | 'already_covered' | 'broken'
+  reason: 'saved' | 'not_at_risk' | 'no_freeze' | 'already_covered' | 'broken' | 'write_failed'
 }
 
 /**
@@ -662,21 +678,24 @@ export async function saveStreakWithFreeze(
   const freezeTokens = stored.freezeTokens - 1
   const nextFrozen = [...new Set([...stored.frozenDates, today])].filter((d) => dayDiff(today, d) <= WINDOW_DAYS)
 
-  const nextMeta = {
-    ...meta,
-    practiceStreak: {
-      ...(meta.practiceStreak as Record<string, unknown> | undefined),
-      freezeTokens,
-      frozenDates: nextFrozen,
-      milestonesPaid: stored.milestonesPaid,
-      longest: stored.longest,
-      fullDayFreezesApplied: stored.fullDayFreezesApplied ?? 0,
-      rest: stored.rest ?? null,
-      updatedAt: new Date().toISOString(),
-    } satisfies StoredStreak,
-  }
+  const nextStreak = {
+    ...(meta.practiceStreak as Record<string, unknown> | undefined),
+    freezeTokens,
+    frozenDates: nextFrozen,
+    milestonesPaid: stored.milestonesPaid,
+    longest: stored.longest,
+    fullDayFreezesApplied: stored.fullDayFreezesApplied ?? 0,
+    rest: stored.rest ?? null,
+    updatedAt: new Date().toISOString(),
+  } satisfies StoredStreak
 
-  await admin.from('profiles').update({ meta: nextMeta as unknown as Json }).eq('id', profileId)
+  // 2026-09-05 (scan2 L6-09): merge of the practiceStreak key only. A save that did not land is
+  // reported as not saved (write_failed), so no audit line or Undo is offered for a spend that never happened.
+  const { error: writeErr } = await mergeProfileMeta(admin, profileId, { practiceStreak: nextStreak as unknown as Json })
+  if (writeErr) {
+    console.error('[saveStreakWithFreeze] practiceStreak merge failed (no freeze spent)', { profileId, error: writeErr })
+    return { saved: false, bridgedDay: null, freezeTokens: stored.freezeTokens, reason: 'write_failed' }
+  }
   return { saved: true, bridgedDay: today, freezeTokens, reason: 'saved' }
 }
 
@@ -707,21 +726,23 @@ export async function revertStreakSave(
   const nextFrozen = stored.frozenDates.filter((d) => d !== day)
   const freezeTokens = Math.min(STREAK_FREEZE_CAP, stored.freezeTokens + 1)
 
-  const nextMeta = {
-    ...meta,
-    practiceStreak: {
-      ...(meta.practiceStreak as Record<string, unknown> | undefined),
-      freezeTokens,
-      frozenDates: nextFrozen,
-      milestonesPaid: stored.milestonesPaid,
-      longest: stored.longest,
-      fullDayFreezesApplied: stored.fullDayFreezesApplied ?? 0,
-      rest: stored.rest ?? null,
-      updatedAt: new Date().toISOString(),
-    } satisfies StoredStreak,
-  }
+  const nextStreak = {
+    ...(meta.practiceStreak as Record<string, unknown> | undefined),
+    freezeTokens,
+    frozenDates: nextFrozen,
+    milestonesPaid: stored.milestonesPaid,
+    longest: stored.longest,
+    fullDayFreezesApplied: stored.fullDayFreezesApplied ?? 0,
+    rest: stored.rest ?? null,
+    updatedAt: new Date().toISOString(),
+  } satisfies StoredStreak
 
-  await admin.from('profiles').update({ meta: nextMeta as unknown as Json }).eq('id', profileId)
+  // 2026-09-05 (scan2 L6-09): merge of the practiceStreak key only; a failed merge is not a revert.
+  const { error: writeErr } = await mergeProfileMeta(admin, profileId, { practiceStreak: nextStreak as unknown as Json })
+  if (writeErr) {
+    console.error('[revertStreakSave] practiceStreak merge failed (nothing reverted)', { profileId, error: writeErr })
+    return { reverted: false }
+  }
   return { reverted: true }
 }
 
@@ -761,21 +782,22 @@ export async function grantStreakFreeze(profileId: string): Promise<GrantFreezeR
 
   const freezeTokens = Math.min(STREAK_FREEZE_CAP, stored.freezeTokens + 1)
 
-  const nextMeta = {
-    ...meta,
-    practiceStreak: {
-      ...(meta.practiceStreak as Record<string, unknown> | undefined),
-      freezeTokens,
-      frozenDates: stored.frozenDates,
-      milestonesPaid: stored.milestonesPaid,
-      longest: stored.longest,
-      fullDayFreezesApplied: stored.fullDayFreezesApplied ?? 0,
-      rest: stored.rest ?? null,
-      updatedAt: new Date().toISOString(),
-    } satisfies StoredStreak,
-  }
+  const nextStreak = {
+    ...(meta.practiceStreak as Record<string, unknown> | undefined),
+    freezeTokens,
+    frozenDates: stored.frozenDates,
+    milestonesPaid: stored.milestonesPaid,
+    longest: stored.longest,
+    fullDayFreezesApplied: stored.fullDayFreezesApplied ?? 0,
+    rest: stored.rest ?? null,
+    updatedAt: new Date().toISOString(),
+  } satisfies StoredStreak
 
-  await admin.from('profiles').update({ meta: nextMeta as unknown as Json }).eq('id', profileId)
+  // 2026-09-05 (scan2 L6-09): merge of the practiceStreak key only. A failed merge THROWS: the store's
+  // fulfilment (lib/store/fulfillment.ts) counts a throw as not granted and refunds the Gems, which is
+  // the only honest outcome for a token that was never banked.
+  const { error: writeErr } = await mergeProfileMeta(admin, profileId, { practiceStreak: nextStreak as unknown as Json })
+  if (writeErr) throw new Error(`grantStreakFreeze: practiceStreak merge failed: ${writeErr}`)
   return { granted: true, freezeTokens, atCap: false }
 }
 
@@ -807,21 +829,21 @@ export async function setStreakPause(
   const meta = (prof?.meta ?? {}) as Record<string, unknown>
   const stored = readStored(meta)
 
-  const nextMeta = {
-    ...meta,
-    practiceStreak: {
-      ...meta.practiceStreak as Record<string, unknown> | undefined,
-      freezeTokens: stored.freezeTokens,
-      frozenDates: stored.frozenDates,
-      milestonesPaid: stored.milestonesPaid,
-      longest: stored.longest,
-      fullDayFreezesApplied: stored.fullDayFreezesApplied ?? 0,
-      rest,
-      updatedAt: new Date().toISOString(),
-    } satisfies StoredStreak,
-  }
+  const nextStreak = {
+    ...meta.practiceStreak as Record<string, unknown> | undefined,
+    freezeTokens: stored.freezeTokens,
+    frozenDates: stored.frozenDates,
+    milestonesPaid: stored.milestonesPaid,
+    longest: stored.longest,
+    fullDayFreezesApplied: stored.fullDayFreezesApplied ?? 0,
+    rest,
+    updatedAt: new Date().toISOString(),
+  } satisfies StoredStreak
 
-  await (admin).from('profiles').update({ meta: nextMeta as unknown as Json }).eq('id', profileId)
+  // 2026-09-05 (scan2 L6-09): merge of the practiceStreak key only. A failed merge throws so the action
+  // (app/(main)/crew/leaderboard/streak-actions.ts) reports it instead of revalidating a rest that never started.
+  const { error: writeErr } = await mergeProfileMeta(admin, profileId, { practiceStreak: nextStreak as unknown as Json })
+  if (writeErr) throw new Error(`setStreakPause: practiceStreak merge failed: ${writeErr}`)
   return { rest }
 }
 
@@ -848,19 +870,18 @@ export async function clearStreakPause(
   for (const d of pauseCoveredDays(stored.rest, today)) frozen.add(d)
   const prunedFrozen = [...frozen].filter((d) => dayDiff(today, d) <= WINDOW_DAYS)
 
-  const nextMeta = {
-    ...meta,
-    practiceStreak: {
-      ...meta.practiceStreak as Record<string, unknown> | undefined,
-      freezeTokens: stored.freezeTokens,
-      frozenDates: prunedFrozen,
-      milestonesPaid: stored.milestonesPaid,
-      longest: stored.longest,
-      fullDayFreezesApplied: stored.fullDayFreezesApplied ?? 0,
-      rest: null,
-      updatedAt: new Date().toISOString(),
-    } satisfies StoredStreak,
-  }
+  const nextStreak = {
+    ...meta.practiceStreak as Record<string, unknown> | undefined,
+    freezeTokens: stored.freezeTokens,
+    frozenDates: prunedFrozen,
+    milestonesPaid: stored.milestonesPaid,
+    longest: stored.longest,
+    fullDayFreezesApplied: stored.fullDayFreezesApplied ?? 0,
+    rest: null,
+    updatedAt: new Date().toISOString(),
+  } satisfies StoredStreak
 
-  await (admin).from('profiles').update({ meta: nextMeta as unknown as Json }).eq('id', profileId)
+  // 2026-09-05 (scan2 L6-09): merge of the practiceStreak key only; a failed merge throws (see setStreakPause).
+  const { error: writeErr } = await mergeProfileMeta(admin, profileId, { practiceStreak: nextStreak as unknown as Json })
+  if (writeErr) throw new Error(`clearStreakPause: practiceStreak merge failed: ${writeErr}`)
 }

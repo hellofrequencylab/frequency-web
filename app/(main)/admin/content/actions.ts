@@ -81,7 +81,8 @@ export async function setJourneyStatusAction(id: string, status: PlanStatus): Pr
   }
   if (!['pending', 'approved', 'rejected'].includes(status)) return fail('Unknown status.')
   try {
-    await setPlanStatus(id, status)
+    const r = await setPlanStatus(id, status)
+    if (!r.ok) return fail(r.error)
   } catch (e) {
     return fail(e instanceof Error ? e.message : 'Could not update the journey.')
   }
@@ -98,7 +99,8 @@ export async function deleteJourneyPlanAction(id: string): Promise<ActionResult>
     return fail('You need curation access for this.')
   }
   try {
-    await deletePlan(id)
+    const r = await deletePlan(id)
+    if (!r.ok) return fail(r.error)
   } catch (e) {
     return fail(e instanceof Error ? e.message : 'Could not delete the journey.')
   }
@@ -118,7 +120,8 @@ export async function setJourneyOfficialAction(
     return fail('You need curation access for this.')
   }
   try {
-    await setPlanOfficial(id, { official, questId })
+    const r = await setPlanOfficial(id, { official, questId })
+    if (!r.ok) return fail(r.error)
   } catch (e) {
     return fail(e instanceof Error ? e.message : 'Could not update the journey.')
   }

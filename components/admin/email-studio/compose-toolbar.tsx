@@ -27,6 +27,7 @@ export function ComposeToolbar({
   onTogglePreview,
   showPreviewToggle = true,
   sendTest = sendTestEmail,
+  saveNote = null,
 }: {
   campaignId: string
   subject: string
@@ -44,6 +45,9 @@ export function ComposeToolbar({
   onTogglePreview: () => void
   /** The trio layout shows the preview permanently on the right, so it hides this toggle. */
   showPreviewToggle?: boolean
+  /** A field autosave that did not land (scan2 L5-11): the refusal, the value still ON FILE for each field
+   *  that did not save, and a retry. Null (or omitted) when everything typed has landed. */
+  saveNote?: { message: string; onFile: Array<{ label: string; value: string }>; onRetry: () => void } | null
   /** The test-send action ("Send test to me"). Defaults to the admin Email Studio's sendTestEmail; a per-Space
    *  editor injects its own space-scoped, brand-compiling test-send (sendSpaceTestEmail). */
   sendTest?: (campaignId: string) => Promise<ActionResult<{ to: string }>>
@@ -123,6 +127,17 @@ export function ComposeToolbar({
             The name recipients see this email is from. Leave it blank to send as Frequency. The sending address stays the same.
           </span>
         </label>
+        {saveNote && (
+          <div role="status" className="space-y-0.5 text-2xs">
+            <p className="font-medium text-danger">Not saved. {saveNote.message}</p>
+            <p className="text-muted">
+              Still on file: {saveNote.onFile.map((f) => `${f.label} "${f.value}"`).join(', ')}.{' '}
+              <button type="button" onClick={saveNote.onRetry} className="font-semibold text-text underline">
+                Try again
+              </button>
+            </p>
+          </div>
+        )}
         {onReplyMode && (
           <div className="block sm:col-span-2">
             <span className="mb-1 block text-2xs font-semibold uppercase tracking-wide text-muted">Replies</span>

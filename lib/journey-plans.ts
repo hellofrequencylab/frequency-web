@@ -176,6 +176,28 @@ function slugify(title: string): string {
 
 const touch = () => ({ updated_at: new Date().toISOString() })
 
+// 2026-09-05 (scan2 L5-13): every mutation below used to be Promise<void> with its write unread, so
+// an author saw "saved" and found the change missing on reload. Each now reads its { error } and
+// returns a JourneyWriteResult the caller surfaces. The updated_at bump after a landed content write
+// stays best-effort (logged): the content is on file, and a stale timestamp is not a lost edit.
+
+/** The result of a Journey mutation: ok, or the refusal the caller should show. */
+export type JourneyWriteResult = { ok: true } | { ok: false; error: string }
+
+const WRITE_OK: JourneyWriteResult = { ok: true }
+export const JOURNEY_WRITE_FAILED = 'That change did not save. Try again.'
+
+function writeFailed(op: string, id: string, error: { message: string }): JourneyWriteResult {
+  log.error('journeys.write_failed', { op, id, error: error.message })
+  return { ok: false, error: JOURNEY_WRITE_FAILED }
+}
+
+/** Bump a plan's updated_at after one of its rows changed. Logged when refused, never a failure. */
+async function touchPlan(client: SupabaseClient, planId: string): Promise<void> {
+  const { error } = await client.from('journey_plans').update(touch()).eq('id', planId)
+  if (error) log.warn('journeys.touch_failed', { planId, error: error.message })
+}
+
 // --- Reads ----------------------------------------------------------------
 
 /** A member's own plans, newest-touched first. */
@@ -292,11 +314,12 @@ export async function planSpaceId(planId: string): Promise<string | null> {
  *  Journey, or a Space id to hand it to that Space's page + manager. Caller enforces authz (the
  *  author for a pull-to-personal, an operator of the target Space to hand it over). space_id is
  *  reached untyped (ADR-246). */
-export async function setPlanSpace(planId: string, spaceId: string): Promise<void> {
-  await db()
+export async function setPlanSpace(planId: string, spaceId: string): Promise<JourneyWriteResult> {
+  const { error } = await db()
     .from('journey_plans')
     .update({ space_id: spaceId, ...touch() } as never)
     .eq('id', planId)
+  return error ? writeFailed('setPlanSpace', planId, error) : WRITE_OK
 }
 
 export interface PlanAuthor {
@@ -401,7 +424,7 @@ export async function addItem(input: {
   domainId?: string | null
   note?: string | null
   cadence?: string | null
-}): Promise<void> {
+}): Promise<JourneyWriteResult> {
   const client = db()
   const { data: last } = await client
     .from('journey_plan_items')
@@ -412,7 +435,7 @@ export async function addItem(input: {
     .maybeSingle()
   const nextOrder = ((last as { sort_order: number } | null)?.sort_order ?? -1) + 1
 
-  await client.from('journey_plan_items').upsert(
+  const { error } = await client.from('journey_plan_items').upsert(
     {
       plan_id: input.planId,
       practice_id: input.practiceId,
@@ -423,7 +446,9 @@ export async function addItem(input: {
     },
     { onConflict: 'plan_id,practice_id' },
   )
-  await client.from('journey_plans').update(touch()).eq('id', input.planId)
+  if (error) return writeFailed('addItem', input.planId, error)
+  await touchPlan(client, input.planId)
+  return WRITE_OK
 }
 
 /** Update a single item's per-journey controls (note, cadence override). */
@@ -431,19 +456,26 @@ export async function updateItem(
   planId: string,
   practiceId: string,
   patch: { note?: string | null; cadence?: string | null },
-): Promise<void> {
+): Promise<JourneyWriteResult> {
   const client = db()
   const update: Record<string, unknown> = {}
   if ('note' in patch && patch.note !== undefined) update.note = patch.note?.trim() || null
   if ('cadence' in patch && patch.cadence !== undefined) update.cadence = patch.cadence?.trim() || null
-  if (Object.keys(update).length === 0) return
-  await client.from('journey_plan_items').update(update).eq('plan_id', planId).eq('practice_id', practiceId)
-  await client.from('journey_plans').update(touch()).eq('id', planId)
+  if (Object.keys(update).length === 0) return WRITE_OK
+  const { error } = await client
+    .from('journey_plan_items')
+    .update(update)
+    .eq('plan_id', planId)
+    .eq('practice_id', practiceId)
+  if (error) return writeFailed('updateItem', planId, error)
+  await touchPlan(client, planId)
+  return WRITE_OK
 }
 
 /** Set a plan's review status (draft/pending/approved/rejected). Caller enforces authz. */
-export async function setPlanStatus(planId: string, status: PlanStatus): Promise<void> {
-  await db().from('journey_plans').update({ status, ...touch() }).eq('id', planId)
+export async function setPlanStatus(planId: string, status: PlanStatus): Promise<JourneyWriteResult> {
+  const { error } = await db().from('journey_plans').update({ status, ...touch() }).eq('id', planId)
+  return error ? writeFailed('setPlanStatus', planId, error) : WRITE_OK
 }
 
 /** Flag a plan official + link it to a Quest. Promoting a plan to official also approves
@@ -454,11 +486,12 @@ export async function setPlanStatus(planId: string, status: PlanStatus): Promise
 export async function setPlanOfficial(
   planId: string,
   opts: { official: boolean; questId?: string | null },
-): Promise<void> {
+): Promise<JourneyWriteResult> {
   const update: Record<string, unknown> = { official: opts.official }
   if (opts.questId !== undefined) update.quest_id = opts.questId || null
   if (opts.official) update.status = 'approved'
-  await db().from('journey_plans').update({ ...update, ...touch() }).eq('id', planId)
+  const { error } = await db().from('journey_plans').update({ ...update, ...touch() }).eq('id', planId)
+  return error ? writeFailed('setPlanOfficial', planId, error) : WRITE_OK
 }
 
 /** ISO-date guard for the Quest play-window. Accepts a yyyy-mm-dd (the date input's
@@ -481,7 +514,7 @@ function normalizeWindowDate(value: string | null | undefined): string | null {
 export async function setPlanWindow(
   planId: string,
   opts: { startsAt?: string | null; endsAt?: string | null },
-): Promise<void> {
+): Promise<JourneyWriteResult> {
   const update: Record<string, unknown> = {}
   let start: string | null = null
   let hasStart = false
@@ -497,8 +530,9 @@ export async function setPlanWindow(
     if (end && hasStart && start && end < start) end = null
     update.window_ends_at = end
   }
-  if (Object.keys(update).length === 0) return
-  await db().from('journey_plans').update({ ...update, ...touch() }).eq('id', planId)
+  if (Object.keys(update).length === 0) return WRITE_OK
+  const { error } = await db().from('journey_plans').update({ ...update, ...touch() }).eq('id', planId)
+  return error ? writeFailed('setPlanWindow', planId, error) : WRITE_OK
 }
 
 /** Edit a plan's own fields (identity + intro). Caller enforces ownership. */
@@ -520,7 +554,7 @@ export async function updatePlan(
     dripIntervalDays?: number
     certificateEnabled?: boolean
   },
-): Promise<void> {
+): Promise<JourneyWriteResult> {
   const update: Record<string, unknown> = {}
   if (patch.title !== undefined) update.title = patch.title.trim().slice(0, 120) || 'Untitled journey'
   if (patch.summary !== undefined) update.summary = patch.summary?.trim().slice(0, 280) || null
@@ -548,14 +582,21 @@ export async function updatePlan(
   if (patch.dripIntervalDays !== undefined)
     update.drip_interval_days = Math.min(30, Math.max(1, Math.round(patch.dripIntervalDays)))
   if (patch.certificateEnabled !== undefined) update.certificate_enabled = patch.certificateEnabled
-  if (Object.keys(update).length === 0) return
-  await db().from('journey_plans').update({ ...update, ...touch() }).eq('id', planId)
+  if (Object.keys(update).length === 0) return WRITE_OK
+  const { error } = await db().from('journey_plans').update({ ...update, ...touch() }).eq('id', planId)
+  return error ? writeFailed('updatePlan', planId, error) : WRITE_OK
 }
 
-export async function removeItem(planId: string, practiceId: string): Promise<void> {
+export async function removeItem(planId: string, practiceId: string): Promise<JourneyWriteResult> {
   const client = db()
-  await client.from('journey_plan_items').delete().eq('plan_id', planId).eq('practice_id', practiceId)
-  await client.from('journey_plans').update(touch()).eq('id', planId)
+  const { error } = await client
+    .from('journey_plan_items')
+    .delete()
+    .eq('plan_id', planId)
+    .eq('practice_id', practiceId)
+  if (error) return writeFailed('removeItem', planId, error)
+  await touchPlan(client, planId)
+  return WRITE_OK
 }
 
 // --- Lesson/section blocks (ADR-244) — keyed by item id, not practice ---------
@@ -577,7 +618,7 @@ export async function addBlock(
     .limit(1)
     .maybeSingle()
   const nextOrder = ((last as { sort_order: number } | null)?.sort_order ?? -1) + 1
-  const { data } = await client
+  const { data, error } = await client
     .from('journey_plan_items')
     .insert({
       plan_id: planId,
@@ -588,7 +629,11 @@ export async function addBlock(
     })
     .select('id')
     .single()
-  await client.from('journey_plans').update(touch()).eq('id', planId)
+  if (error) {
+    writeFailed('addBlock', planId, error)
+    return null
+  }
+  await touchPlan(client, planId)
   return (data as { id: string } | null)?.id ?? null
 }
 
@@ -596,24 +641,26 @@ export async function addBlock(
 export async function updateBlock(
   itemId: string,
   patch: { title?: string | null; body?: string | null },
-): Promise<void> {
+): Promise<JourneyWriteResult> {
   const client = db()
   const update: Record<string, unknown> = {}
   if (patch.title !== undefined) update.title = patch.title?.trim() || null
   if (patch.body !== undefined) update.body = patch.body?.trim() || null
-  if (Object.keys(update).length === 0) return
-  await client.from('journey_plan_items').update(update).eq('id', itemId)
+  if (Object.keys(update).length === 0) return WRITE_OK
+  const { error } = await client.from('journey_plan_items').update(update).eq('id', itemId)
+  return error ? writeFailed('updateBlock', itemId, error) : WRITE_OK
 }
 
 /** Delete a block by id. */
-export async function removeBlock(itemId: string): Promise<void> {
-  await db().from('journey_plan_items').delete().eq('id', itemId)
+export async function removeBlock(itemId: string): Promise<JourneyWriteResult> {
+  const { error } = await db().from('journey_plan_items').delete().eq('id', itemId)
+  return error ? writeFailed('removeBlock', itemId, error) : WRITE_OK
 }
 
 /** Persist a new order (array of practice ids in the desired sequence). */
-export async function reorderItems(planId: string, practiceIdsInOrder: string[]): Promise<void> {
+export async function reorderItems(planId: string, practiceIdsInOrder: string[]): Promise<JourneyWriteResult> {
   const client = db()
-  await Promise.all(
+  const results = await Promise.all(
     practiceIdsInOrder.map((practiceId, i) =>
       client
         .from('journey_plan_items')
@@ -622,11 +669,14 @@ export async function reorderItems(planId: string, practiceIdsInOrder: string[])
         .eq('practice_id', practiceId),
     ),
   )
-  await client.from('journey_plans').update(touch()).eq('id', planId)
+  const failed = results.find((r) => r.error)
+  if (failed?.error) return writeFailed('reorderItems', planId, failed.error)
+  await touchPlan(client, planId)
+  return WRITE_OK
 }
 
 /** Make a plan visible in the open library (first publish stamps published_at). */
-export async function publishPlan(planId: string): Promise<void> {
+export async function publishPlan(planId: string): Promise<JourneyWriteResult> {
   const client = db()
   const { data: existing } = await client
     .from('journey_plans')
@@ -635,7 +685,7 @@ export async function publishPlan(planId: string): Promise<void> {
     .maybeSingle()
   const existingRow = existing as { published_at: string | null; author_id: string | null } | null
   const firstPublish = !existingRow?.published_at
-  await client
+  const { error } = await client
     .from('journey_plans')
     .update({
       visibility: 'public',
@@ -643,6 +693,7 @@ export async function publishPlan(planId: string): Promise<void> {
       ...touch(),
     })
     .eq('id', planId)
+  if (error) return writeFailed('publishPlan', planId, error)
 
   // Creation token (Rewards Economy v3, ADR-305): the small Gem token on FIRST publish
   // only (firstPublish = published_at was previously null). Idempotent + best-effort: keyed
@@ -655,10 +706,12 @@ export async function publishPlan(planId: string): Promise<void> {
       // a reward failure must never block publishing
     }
   }
+  return WRITE_OK
 }
 
-export async function setPlanVisibility(planId: string, visibility: PlanVisibility): Promise<void> {
-  await db().from('journey_plans').update({ visibility, ...touch() }).eq('id', planId)
+export async function setPlanVisibility(planId: string, visibility: PlanVisibility): Promise<JourneyWriteResult> {
+  const { error } = await db().from('journey_plans').update({ visibility, ...touch() }).eq('id', planId)
+  return error ? writeFailed('setPlanVisibility', planId, error) : WRITE_OK
 }
 
 // --- Vera quality gate (the Quest's "Gate + coach", ADR-Quest) -------------
@@ -678,8 +731,8 @@ export interface StoredVeraReview {
  *  `approved` verdict makes a Journey ranked-eligible; anything else (rejected / pending /
  *  the fail-closed states) clears it. Idempotent + admin-only — the caller has already
  *  established authorship; this never reads client-supplied eligibility. */
-export async function applyVeraReview(planId: string, review: StoredVeraReview): Promise<void> {
-  await db()
+export async function applyVeraReview(planId: string, review: StoredVeraReview): Promise<JourneyWriteResult> {
+  const { error } = await db()
     .from('journey_plans')
     .update({
       vera_review: review as unknown as Record<string, unknown>,
@@ -687,6 +740,7 @@ export async function applyVeraReview(planId: string, review: StoredVeraReview):
       ...touch(),
     })
     .eq('id', planId)
+  return error ? writeFailed('applyVeraReview', planId, error) : WRITE_OK
 }
 
 /** Read a Journey's last stored Vera review (for re-rendering the coaching). Null if none. */
@@ -1091,10 +1145,11 @@ async function retireAllJourneyRowsForPlan(planId: string): Promise<void> {
   }
 }
 
-export async function deletePlan(planId: string): Promise<void> {
+export async function deletePlan(planId: string): Promise<JourneyWriteResult> {
   await retireAllJourneyRowsForPlan(planId)
   const { error } = await db().from('journey_plans').delete().eq('id', planId)
   if (error) log.error('journeys.delete_plan_failed', { planId, error: error.message })
+  return error ? { ok: false, error: JOURNEY_WRITE_FAILED } : WRITE_OK
 }
 
 // --- Demo cleanup ---------------------------------------------------------
@@ -1165,15 +1220,17 @@ export async function getCompletedLessonIds(profileId: string, planId: string): 
 }
 
 /** Mark a lesson/check block complete for a member (idempotent on profile+item). */
-export async function completeLesson(profileId: string, planId: string, itemId: string): Promise<void> {
-  await db()
+export async function completeLesson(profileId: string, planId: string, itemId: string): Promise<JourneyWriteResult> {
+  const { error } = await db()
     .from('journey_lesson_progress')
     .upsert({ profile_id: profileId, plan_id: planId, item_id: itemId }, { onConflict: 'profile_id,item_id' })
+  return error ? writeFailed('completeLesson', itemId, error) : WRITE_OK
 }
 
 /** Undo a lesson completion (toggle off). */
-export async function uncompleteLesson(profileId: string, itemId: string): Promise<void> {
-  await db().from('journey_lesson_progress').delete().eq('profile_id', profileId).eq('item_id', itemId)
+export async function uncompleteLesson(profileId: string, itemId: string): Promise<JourneyWriteResult> {
+  const { error } = await db().from('journey_lesson_progress').delete().eq('profile_id', profileId).eq('item_id', itemId)
+  return error ? writeFailed('uncompleteLesson', itemId, error) : WRITE_OK
 }
 
 /** Everything the (discovery) Journey page needs for one plan by slug: the plan + items, plus

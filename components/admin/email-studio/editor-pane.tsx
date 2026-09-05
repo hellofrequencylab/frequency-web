@@ -51,6 +51,21 @@ const useIsoLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : use
 
 const SAVE_DEBOUNCE_MS = 600
 
+/** The compose fields whose autosave result is tracked (what is on file vs. what is typed). */
+type SavedFields = { subject: string; preheader: string; fromName: string; replyMode: 'broadcast' | 'conversation' }
+type SavedFieldKey = keyof SavedFields
+const FIELD_LABELS: Record<SavedFieldKey, string> = {
+  subject: 'Subject',
+  preheader: 'Preheader',
+  fromName: 'From name',
+  replyMode: 'Replies',
+}
+/** The on-file value as the toolbar names it: the reply mode by its button label, a blank field as such. */
+function fieldDisplay(key: SavedFieldKey, value: string): string {
+  if (key === 'replyMode') return value === 'conversation' ? 'Conversation' : 'Announcement'
+  return value.trim() ? value : '(blank)'
+}
+
 /** Seeds the shared store from the loaded layout the INSTANT the pane mounts (layout effect → wins the
  *  store's first-seed race), so authored content + style are present before the arranger paints. */
 function LayoutSeeder({ layout }: { layout: EntityLayout }) {
@@ -118,6 +133,56 @@ export function EmailEditorPane({
   const [replyMode, setReplyMode] = useState<'broadcast' | 'conversation'>(campaign.replyMode ?? 'broadcast')
   const [previewOpen, setPreviewOpen] = useState(false)
 
+  // 2026-09-05 (scan2 L5-11): the field autosaves used to discard the action's { error }, so a failed save
+  // left the operator typing against text that never landed and sending the previous subject. Every field
+  // save now reads its result: `lastSaved` is what is ON FILE (seeded from the loaded row, advanced only by a
+  // save that landed), and `saveFailure` names the fields whose latest value did not land, so the toolbar can
+  // show "Not saved" beside the on-file value and offer a retry that resends the CURRENT value of those fields.
+  const [lastSaved, setLastSaved] = useState<SavedFields>({
+    subject: campaign.subject,
+    preheader: campaign.preheader,
+    fromName: campaign.fromName ?? '',
+    replyMode: campaign.replyMode ?? 'broadcast',
+  })
+  const [saveFailure, setSaveFailure] = useState<{ message: string; keys: SavedFieldKey[] } | null>(null)
+
+  const persistFields = useCallback(
+    async (patch: Partial<SavedFields>) => {
+      const keys = Object.keys(patch) as SavedFieldKey[]
+      const res = await saveCampaign(id, patch)
+      if (res?.error) {
+        const message = res.error
+        setSaveFailure((prev) => ({ message, keys: Array.from(new Set([...(prev?.keys ?? []), ...keys])) }))
+        return
+      }
+      setLastSaved((prev) => ({ ...prev, ...patch }))
+      setSaveFailure((prev) => {
+        if (!prev) return null
+        const left = prev.keys.filter((k) => !keys.includes(k))
+        return left.length ? { ...prev, keys: left } : null
+      })
+    },
+    [id, saveCampaign],
+  )
+  const retryFieldSave = useCallback(() => {
+    if (!saveFailure) return
+    const current: SavedFields = { subject, preheader, fromName, replyMode }
+    const patch: Partial<SavedFields> = {}
+    for (const k of saveFailure.keys) Object.assign(patch, { [k]: current[k] })
+    void persistFields(patch)
+  }, [saveFailure, persistFields, subject, preheader, fromName, replyMode])
+  const saveNote = useMemo(
+    () =>
+      saveFailure
+        ? {
+            message: saveFailure.message,
+            onFile: saveFailure.keys.map((k) => ({ label: FIELD_LABELS[k], value: fieldDisplay(k, lastSaved[k]) })),
+            onRetry: retryFieldSave,
+          }
+        : null,
+    [saveFailure, lastSaved, retryFieldSave],
+  )
+
   // The arranger's injected persist: the store hands the freshest BuilderLayout here (debounced), and this
   // re-sanitizes + writes block_json server-side.
   const save = useCallback<SaveLayout>(
@@ -131,10 +196,10 @@ export function EmailEditorPane({
     (patch: { subject?: string; preheader?: string; fromName?: string }) => {
       if (fieldTimer.current) clearTimeout(fieldTimer.current)
       fieldTimer.current = setTimeout(() => {
-        void saveCampaign(id, patch)
+        void persistFields(patch)
       }, SAVE_DEBOUNCE_MS)
     },
-    [id, saveCampaign],
+    [persistFields],
   )
   useEffect(() => () => {
     if (fieldTimer.current) clearTimeout(fieldTimer.current)
@@ -166,9 +231,9 @@ export function EmailEditorPane({
   const onReplyMode = useCallback(
     (value: 'broadcast' | 'conversation') => {
       setReplyMode(value)
-      void saveCampaign(id, { replyMode: value })
+      void persistFields({ replyMode: value })
     },
-    [id, saveCampaign],
+    [persistFields],
   )
 
   // The pre-fetched seed for the builder (skips its own rail fetch): matches this campaign so the owner/kind
@@ -211,6 +276,7 @@ export function EmailEditorPane({
             onFromName={onFromName}
             replyMode={replyMode}
             onReplyMode={onReplyMode}
+            saveNote={saveNote}
             previewOpen
             onTogglePreview={() => {}}
             showPreviewToggle={false}
@@ -243,6 +309,7 @@ export function EmailEditorPane({
             onFromName={onFromName}
             replyMode={replyMode}
             onReplyMode={onReplyMode}
+            saveNote={saveNote}
             previewOpen
             onTogglePreview={() => {}}
             showPreviewToggle={false}
@@ -280,6 +347,7 @@ export function EmailEditorPane({
           onFromName={onFromName}
           replyMode={replyMode}
           onReplyMode={onReplyMode}
+          saveNote={saveNote}
           previewOpen={previewOpen}
           onTogglePreview={() => setPreviewOpen((v) => !v)}
           sendTest={sendTest}

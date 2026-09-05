@@ -11,6 +11,7 @@
 // member has been celebrated for — call acknowledgeAmplitudeLevel after showing.
 
 import { createAdminClient } from '@/lib/supabase/admin'
+import { mergeProfileMeta } from '@/lib/profiles/meta'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { amplitudeLevel, AMPLITUDE_MILESTONES, AMPLITUDE_MILESTONE_LABELS } from '@/lib/amplitude'
 
@@ -71,8 +72,7 @@ export async function acknowledgeAmplitudeLevel(profileId: string, level: number
   const meta = ((prof as { meta: Record<string, unknown> | null } | null)?.meta ?? {}) as Record<string, unknown>
   const seen = Number((meta.amplitudeLevelSeen as number | undefined) ?? 0)
   if (level <= seen) return
-  await admin
-    .from('profiles')
-    .update({ meta: { ...meta, amplitudeLevelSeen: level } })
-    .eq('id', profileId)
+  // 2026-09-05 (scan2 L6-09): the read above decides; the write merges ONLY amplitudeLevelSeen server-side.
+  const { error } = await mergeProfileMeta(admin, profileId, { amplitudeLevelSeen: level })
+  if (error) console.error('[acknowledgeAmplitudeLevel] merge failed', { profileId, error })
 }

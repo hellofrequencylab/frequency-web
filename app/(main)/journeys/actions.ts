@@ -27,6 +27,8 @@ import {
   type PageWidgetConfig,
   type StoredVeraReview,
   type JourneyMeeting,
+  type JourneyWriteResult,
+  JOURNEY_WRITE_FAILED,
 } from '@/lib/journey-plans'
 import { getSeasonalQuests } from '@/lib/quests'
 import { checkJourneyPublish } from '@/lib/journeys/publish-gate'
@@ -248,7 +250,8 @@ export async function reassignJourneyOwner(
   const targetSpaceId = allowed.get(target)
   if (targetSpaceId === undefined) return fail('You cannot move this journey there.')
 
-  await setPlanSpace(planId, targetSpaceId)
+  const moved = await setPlanSpace(planId, targetSpaceId)
+  if (!moved.ok) return fail(moved.error)
   revalidatePath('/journeys/mine')
   revalidatePath('/journeys', 'layout')
   return ok()
@@ -274,7 +277,8 @@ export async function saveJourneyMeta(
   },
 ): Promise<ActionResult> {
   if (!(await assertOwner(planId))) return fail('Not allowed.')
-  await updatePlan(planId, patch)
+  const saved = await updatePlan(planId, patch)
+  if (!saved.ok) return fail(saved.error)
   revalidatePath('/journeys', 'layout')
   return ok()
 }
@@ -447,10 +451,12 @@ export async function setJourneyVisibility(
   if (!gate.ok) return fail(gate.message ?? 'That is a paid feature.')
 
   if (visibility === 'public') {
-    await publishPlan(planId)
+    const published = await publishPlan(planId)
+    if (!published.ok) return fail(published.error)
     // Mentor+ (guide/mentor) auto-approve moderation; everyone else enters the queue.
     const status: PlanStatus = canMakeOfficial(caller.community_role) ? 'approved' : 'pending'
-    await setPlanStatus(planId, status)
+    const moderated = await setPlanStatus(planId, status)
+    if (!moderated.ok) return fail(moderated.error)
     // Vera's rank gate. Best-effort: it never throws (fail-closed verdicts), and we persist
     // the result through the admin client (members can't self-approve). A failed review must
     // not block publishing — the Journey is already live above.
@@ -459,7 +465,8 @@ export async function setJourneyVisibility(
     return ok({ status, review, next: await launchPathFor(planId) })
   }
 
-  await setPlanVisibility(planId, visibility)
+  const hidden = await setPlanVisibility(planId, visibility)
+  if (!hidden.ok) return fail(hidden.error)
   revalidatePath('/journeys', 'layout')
   // Unlisted is still published (shared by link), so it launches too; private is a step back to the
   // draft, where the publisher stays where they were.
@@ -478,7 +485,8 @@ export async function setJourneyVisibility(
  *  the author remove their own Journey straight from the editor. */
 export async function deleteJourney(planId: string): Promise<ActionResult> {
   if (!(await assertOwner(planId))) return fail('Not allowed.')
-  await deletePlan(planId)
+  const deleted = await deletePlan(planId)
+  if (!deleted.ok) return fail(deleted.error)
   revalidatePath('/journeys', 'layout')
   return ok()
 }
@@ -525,7 +533,8 @@ export async function setJourneyRewards(
   completionGems: number,
 ): Promise<ActionResult> {
   if (!(await assertOwner(planId))) return fail('Not allowed.')
-  await updatePlan(planId, { completionGems })
+  const saved = await updatePlan(planId, { completionGems })
+  if (!saved.ok) return fail(saved.error)
   revalidatePath('/journeys', 'layout')
   return ok()
 }
@@ -536,7 +545,8 @@ export async function setJourneyDelivery(
   patch: { certificateEnabled?: boolean; dripIntervalDays?: number },
 ): Promise<ActionResult> {
   if (!(await assertOwner(planId))) return fail('Not allowed.')
-  await updatePlan(planId, patch)
+  const saved = await updatePlan(planId, patch)
+  if (!saved.ok) return fail(saved.error)
   revalidatePath('/journeys', 'layout')
   return ok()
 }
@@ -547,7 +557,8 @@ export async function setJourneyPageConfig(
   pageConfig: PageWidgetConfig[] | null,
 ): Promise<ActionResult> {
   if (!(await assertOwner(planId))) return fail('Not allowed.')
-  await updatePlan(planId, { pageConfig })
+  const saved = await updatePlan(planId, { pageConfig })
+  if (!saved.ok) return fail(saved.error)
   revalidatePath('/journeys', 'layout')
   return ok()
 }
@@ -566,7 +577,8 @@ export async function setJourneyOfficial(
   const author = await planAuthorId(planId)
   if (!author || author !== caller.id) return fail('Not allowed.')
   if (!canMakeOfficial(caller.community_role)) return fail('Only Guides and Mentors can flag a Journey official.')
-  await setPlanOfficial(planId, opts)
+  const flagged = await setPlanOfficial(planId, opts)
+  if (!flagged.ok) return fail(flagged.error)
   revalidatePath('/journeys', 'layout')
   return ok()
 }
@@ -586,7 +598,8 @@ export async function setJourneyWindow(
   const author = await planAuthorId(planId)
   if (!author || author !== caller.id) return fail('Not allowed.')
   if (!canMakeOfficial(caller.community_role)) return fail('Only Guides and Mentors can set a play window.')
-  await setPlanWindow(planId, opts)
+  const windowed = await setPlanWindow(planId, opts)
+  if (!windowed.ok) return fail(windowed.error)
   revalidatePath('/journeys', 'layout')
   return ok()
 }
@@ -721,20 +734,26 @@ async function journeyRedrawState(planId: string): Promise<{
 /** Write a redraw (or an undo) back: the identity fields on the plan row, the arc as one row
  *  update per week. ONE writer for both directions, so an undo can only restore paths a redraw
  *  was allowed to touch. */
-async function writeJourneyRedraw(planId: string, state: JourneyRedrawState): Promise<void> {
+async function writeJourneyRedraw(planId: string, state: JourneyRedrawState): Promise<JourneyWriteResult> {
   const meta: { title?: string; summary?: string | null; intro?: string | null } = {}
   if (state.title !== undefined) meta.title = state.title
   if (state.summary !== undefined) meta.summary = state.summary
   if (state.intro !== undefined) meta.intro = state.intro
-  if (Object.keys(meta).length) await updatePlan(planId, meta)
+  if (Object.keys(meta).length) {
+    const saved = await updatePlan(planId, meta)
+    if (!saved.ok) return saved
+  }
 
   if (state.arc?.length) {
     const admin = createAdminClient()
     for (const week of state.arc) {
       const update: BlockUpdate = { title: week.title.slice(0, 200), body: week.focus.slice(0, 2000) || null }
-      await admin.from('journey_plan_items').update(update).eq('id', week.id).eq('plan_id', planId)
+      // 2026-09-05 (scan2 L5-13): each week write reads its { error }; the first refusal is returned.
+      const { error } = await admin.from('journey_plan_items').update(update).eq('id', week.id).eq('plan_id', planId)
+      if (error) return { ok: false, error: JOURNEY_WRITE_FAILED }
     }
   }
+  return { ok: true }
 }
 
 /** Re-steer a Journey that already exists: pick a mood, say how to approach it, pin what to
@@ -847,7 +866,8 @@ export async function redrawJourneyAction(
     }
   }
 
-  await writeJourneyRedraw(planId, write)
+  const written = await writeJourneyRedraw(planId, write)
+  if (!written.ok) return fail(written.error)
   revalidatePath('/journeys', 'layout')
   revalidatePath(`/journeys/${state.slug}`)
 
@@ -867,13 +887,14 @@ export async function restoreJourneyAction(
   const state = await journeyRedrawState(planId)
   if (!state) return fail('Journey not found.')
   const known = new Set(state.weeks.map((w) => w.id))
-  await writeJourneyRedraw(planId, {
+  const restored = await writeJourneyRedraw(planId, {
     ...(typeof before.title === 'string' ? { title: before.title } : {}),
     ...(typeof before.summary === 'string' ? { summary: before.summary } : {}),
     ...(typeof before.intro === 'string' ? { intro: before.intro } : {}),
     // Only weeks that still belong to THIS plan; a stale or forged id can never write a row.
     ...(Array.isArray(before.arc) ? { arc: before.arc.filter((w) => known.has(w.id)) } : {}),
   })
+  if (!restored.ok) return fail(restored.error)
   revalidatePath('/journeys', 'layout')
   revalidatePath(`/journeys/${state.slug}`)
   return ok()

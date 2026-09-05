@@ -59,7 +59,8 @@ export async function saveGuideProgressAction(
   if (!isGuidePhase(complete)) return fail('Not a guide phase.')
   const stored = await loadPageConfig(planId)
   const next = markPhaseComplete(readWizardState(stored), complete)
-  await updatePlan(planId, { pageConfig: writeWizardState(stored, next) })
+  const saved = await updatePlan(planId, { pageConfig: writeWizardState(stored, next) })
+  if (!saved.ok) return fail(saved.error)
   revalidateGuide(slug)
   return ok()
 }
@@ -127,13 +128,14 @@ export async function applyGuideTemplateAction(
   // Record the choice on the wizard state (progress metadata, not content).
   const stored = await loadPageConfig(planId)
   const state = readWizardState(stored) ?? newWizardState()
-  await updatePlan(planId, {
+  const recorded = await updatePlan(planId, {
     pageConfig: writeWizardState(stored, {
       ...state,
       choices: { ...state.choices, templateId },
       updatedAt: new Date().toISOString(),
     }),
   })
+  if (!recorded.ok) return fail(recorded.error)
 
   revalidateGuide(slug)
   revalidatePath(`/journeys/${slug}/learn`)
@@ -152,12 +154,15 @@ export async function saveGuideScheduleAction(
   input: { startsAt: string | null; endsAt: string | null; dripIntervalDays: number },
 ): Promise<ActionResult> {
   if (!(await assertEditor(planId))) return fail('Not allowed.')
-  await setPlanWindow(planId, { startsAt: input.startsAt, endsAt: input.endsAt })
-  await updatePlan(planId, { dripIntervalDays: input.dripIntervalDays })
+  const windowed = await setPlanWindow(planId, { startsAt: input.startsAt, endsAt: input.endsAt })
+  if (!windowed.ok) return fail(windowed.error)
+  const dripped = await updatePlan(planId, { dripIntervalDays: input.dripIntervalDays })
+  if (!dripped.ok) return fail(dripped.error)
 
   const stored = await loadPageConfig(planId)
   const next = markPhaseComplete(readWizardState(stored), 'schedule')
-  await updatePlan(planId, { pageConfig: writeWizardState(stored, next) })
+  const marked = await updatePlan(planId, { pageConfig: writeWizardState(stored, next) })
+  if (!marked.ok) return fail(marked.error)
 
   revalidateGuide(slug)
   revalidatePath(`/journeys/${slug}/learn`)
