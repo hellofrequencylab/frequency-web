@@ -390,7 +390,6 @@ export async function createEvent(formData: FormData): Promise<ActionResult<{ sl
     slug = base + '-' + Math.random().toString(36).slice(2, 6)
   }
 
-  const supabase = await createClient()
   // Stamp the owning Space. A 'space' scope stamps the CHOSEN space (already ownership-checked
   // above, so it goes live there instantly); every other flow defaults to the root space, so the
   // single-tenant path keeps behaving exactly as today.
@@ -398,7 +397,23 @@ export async function createEvent(formData: FormData): Promise<ActionResult<{ sl
   // Cast: capacity/visibility/category/energy_tag/space_id are newer than the generated
   // DB types (lib/database.types.ts) — repo convention for not-yet-regenerated
   // columns (see lib/billing/*).
-  const { data: inserted, error } = await (supabase)
+  //
+  // 🔴 THE INSERT RUNS ON THE ADMIN CLIENT, ON PURPOSE. This write used to go through the SESSION
+  // client, and live RLS on `events` carries a policy PAIR that no ordinary caller can satisfy:
+  //   • PERMISSIVE  `get_my_role() >= 'host' AND host_id = me`  — every `member` profile fails it;
+  //   • RESTRICTIVE `events_space_writable_ins` = `private.can_write_space_content(space_id)` — the
+  //     root arm of that helper is staff-only, and `stampEventSpaceId` stamps the ROOT space for
+  //     every non-Space create above, so every `host` profile fails it too.
+  // Only platform staff could create an event from /events/new; everyone else got "Could not
+  // create the event" from a page that says creation is open to any signed-in member. The
+  // sibling create paths (lib/circles/events.ts, lib/journeys/runs.ts,
+  // app/(main)/admin/events/actions.ts) already write through the admin client for the same
+  // reason. The authority is the app-level checks above, not the row policy: `host_id` is the
+  // VERIFIED caller (getMyProfileId), `space_id` / `host_space_id` come from the re-derived
+  // ownership (circle.editSettings / listSpaceEventCreatorIds), `scope_id` from the caller's own
+  // region, and the Journey link is authorized before we get here. Nothing in this payload is
+  // taken from the form as an identity, so the service role widens nothing a caller can write.
+  const { data: inserted, error } = await admin
     .from('events').insert({
       title,
       description,

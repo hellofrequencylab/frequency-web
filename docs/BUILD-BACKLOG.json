@@ -52,7 +52,8 @@
             "HYG-046",
             "SCAN-538",
             "SCAN-539",
-            "LIVE-154"
+            "LIVE-154",
+            "LIVE-155"
           ]
         },
         {
@@ -168,7 +169,15 @@
             "HYG-033",
             "LIVE-153",
             "OWN-048",
-            "OWN-049"
+            "OWN-049",
+            "OWN-050",
+            "OWN-051",
+            "OWN-052",
+            "OWN-053",
+            "OWN-054",
+            "OWN-055",
+            "OWN-056",
+            "OWN-057"
           ]
         }
       ],
@@ -6485,6 +6494,159 @@
         "kind": "cmd",
         "cmd": "node -e \"const fs=require('fs'),path=require('path');const roots=['lib','components','app'];let hit=false;const walk=d=>{for(const e of fs.readdirSync(d,{withFileTypes:true})){const f=path.join(d,e.name);if(e.isDirectory()){if(!/node_modules|\\\\.next/.test(f))walk(f)}else if(/\\\\.tsx?$/.test(f)&&!/\\\\.test\\\\./.test(f)&&!/review-kernel\\\\.ts$/.test(f)){const s=fs.readFileSync(f,'utf8');if(/\\\\b(railFields|inlineFields)\\\\(/.test(s))hit=true}}};roots.forEach(walk);process.exit(hit?0:1)\"",
         "note": "Passes when a non-test module outside the kernel calls railFields() or inlineFields(), i.e. an edit surface actually derives its fields from placement. Fails today."
+      }
+    },
+    {
+      "id": "OWN-050",
+      "title": "Register the Stripe webhook endpoint for this deployment (zero events have ever arrived)",
+      "status": "open",
+      "lane": "owner",
+      "size": "XS",
+      "source": {
+        "file": "app/api/webhooks/stripe/route.ts",
+        "ref": "ADR-1207"
+      },
+      "detail": "Scan two (2026-09-05, runtime lane): stripe_webhook_events has held 0 rows for the life of the table and no request reached /api/webhooks/stripe in the 24h read, while checkout, tiers, orders, tips, Supporter contributions and Connect all depend on that webhook to record a completed payment. Either nothing has ever been paid for, or the endpoint is not registered for frequencylocal.com in the Stripe dashboard (Developers > Webhooks). If it is missing, every paid flow completes on Stripe and never lands in the ledger. Check the endpoint exists, points at https://frequencylocal.com/api/webhooks/stripe, subscribes to checkout.session.completed, checkout.session.async_payment_succeeded, checkout.session.async_payment_failed, charge.refunded, customer.subscription.*, and that STRIPE_WEBHOOK_SECRET in Vercel matches it. Then send a test event from the dashboard and confirm one row appears in stripe_webhook_events.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "2026-09-05: select count(*) from stripe_webhook_events = 0; Vercel runtime logs, production, 24h, query 'webhooks/stripe' = no requests. Closes when a dashboard test event produces a stripe_webhook_events row.",
+        "checked": "2026-09-05"
+      }
+    },
+    {
+      "id": "OWN-051",
+      "title": "Set EMAIL_CONVERSATION_FROM in Vercel to a bare verified address on the conversational subdomain",
+      "status": "open",
+      "lane": "owner",
+      "size": "XS",
+      "source": {
+        "file": "lib/comms/conversation-compose.ts",
+        "ref": "ADR-1207"
+      },
+      "detail": "Six conversational From builders (CRM replies, leader replies, Space conversations, the inbound bridge, batched replies) read EMAIL_CONVERSATION_FROM and fall back to EMAIL_FROM. EMAIL_FROM is documented in the 'Frequency <noreply@...>' form, so the fallback yields a nested 'Name via Frequency <Frequency <noreply@...>>' header that Resend rejects or the receiver bounces. Phase D of the scan-two repairs makes the code extract the bare address whatever the shape; this row is the config half: set EMAIL_CONVERSATION_FROM to the bare verified address (people@people.frequencylocal.com or whichever domain is verified in Resend) in Production and Preview. No conversational email has been sent yet (comms_messages has 0 rows), so this is latent until the first reply.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "2026-09-05: .env.example line 242 ships the key blank; the six builders wrap the fallback in angle brackets without extracting; comms_messages count = 0. Closes when the Vercel env lists the key with a bare address and one test reply lands with a single From.",
+        "checked": "2026-09-05"
+      }
+    },
+    {
+      "id": "OWN-052",
+      "title": "Confirm the production values of the four feature gates that decide whether shipped features are on",
+      "status": "open",
+      "lane": "owner",
+      "size": "XS",
+      "source": {
+        "file": ".env.example",
+        "ref": "ADR-1207"
+      },
+      "detail": "Four environment gates turn whole shipped features on or off and their production values are not visible from the repo: NEXT_PUBLIC_SUPPORT_CHAT ('1' mounts the live-chat widget, and it is a BUILD-time flag with no runtime check of CONVERSATION_TOKEN_SECRET, so '1' without the secret 500s the chat token route), SMS_PROVISIONING_ENABLED (Twilio number provisioning for Spaces), CONVERSATION_EMAIL_BRIDGE (inbound email replies into conversations), AI_DISABLED (kills Vera and every generation path). Read each in the Vercel project settings for Production, decide which should be on, and note the four values here so the next scan can compare code defaults against intent. If NEXT_PUBLIC_SUPPORT_CHAT is '1', CONVERSATION_TOKEN_SECRET must also be set.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "2026-09-05: scan-two lanes L3 and L9 list the read sites; Vercel get_project exposes no env names to an agent. Closes when the four values are recorded in this row's detail with the date.",
+        "checked": "2026-09-05"
+      }
+    },
+    {
+      "id": "OWN-053",
+      "title": "Complete the Stripe Connect platform profile so host payout onboarding can start",
+      "status": "open",
+      "lane": "owner",
+      "size": "XS",
+      "source": {
+        "file": "app/(main)/settings/billing/actions.ts",
+        "ref": "ADR-1207"
+      },
+      "detail": "Vercel error group, 2026-09-04 20:00:39Z, route /settings: '[settings/billing startPayoutOnboarding] You must complete your platform profile to use Connect and create live connected accounts. Visit your dashboard at https://dashboard.stripe.com/connect/accounts/overview to answer the questionnaire.' The code surfaces this to the member (that is correct); the fix is a one-time questionnaire in the Stripe dashboard. Until it is done, no host can begin payout onboarding and the Payouts card on /settings/billing dead-ends.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "2026-09-05: error group present with count 1, user 1, req_i1UvetWAbrrOM7. Closes when a host reaches the Stripe-hosted onboarding page from /settings/billing.",
+        "checked": "2026-09-05"
+      }
+    },
+    {
+      "id": "OWN-054",
+      "title": "Ruling: what platform-wide moderation, if any, should a self-granted Host carry?",
+      "status": "open",
+      "lane": "owner",
+      "size": "XS",
+      "source": {
+        "file": "app/(main)/feed/actions.ts",
+        "ref": "ADR-1207"
+      },
+      "detail": "Scan two (L7-1..4): 'host' is self-granted (publishing a Circle runs ensureHostOnOwnership), and four admin-client actions treated it as a platform moderator: delete any post, pin/unpin any post, publish or reject any member's practice or journey into the public library, grant or revoke any achievement. RLS scopes a host to the Circles they host. Phase A scoped the four actions to match RLS: author, staff (web_role admin/janitor), or a host inside a Circle they host. If a curated moderator role is wanted (a trusted member who can moderate the whole feed or the library without being staff), say so and it becomes a new web_role rather than a side effect of publishing a Circle.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "2026-09-05: 4 non-staff hosts, 110 posts, 2 janitors live. Closes when the owner either accepts the scoped behaviour (mark done) or names the role to add.",
+        "checked": "2026-09-05"
+      }
+    },
+    {
+      "id": "OWN-055",
+      "title": "Ruling: Partner offers has no writer; build the partner-offer form or remove the member-offers promise",
+      "status": "open",
+      "lane": "owner",
+      "size": "S",
+      "source": {
+        "file": "lib/engagement/capture.ts",
+        "ref": "ADR-1207"
+      },
+      "detail": "Scan two (L9-04): partner_offers has 0 rows and no code path inserts into it, so every partner page's 'member offers' section is always empty and each capture redemption is recorded with offer_id null. Two honest options: (a) an operator form under /admin/partners that writes partner_offers (one Studio manifest, one action, one list), or (b) remove the offers section and the redemption offer_id join until offers are a real product. Pick one; the code half is one small PR either way.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "2026-09-05: select count(*) from partner_offers = 0; grep for .from('partner_offers').insert finds nothing. Closes with the ruling recorded and the matching row filed in the live lane.",
+        "checked": "2026-09-05"
+      }
+    },
+    {
+      "id": "OWN-056",
+      "title": "Ruling: where a tip shows up for the person who received it",
+      "status": "open",
+      "lane": "owner",
+      "size": "S",
+      "source": {
+        "file": "lib/billing/tips.ts",
+        "ref": "ADR-1207"
+      },
+      "detail": "Scan two (L9-05): startTipCheckout inserts a pending tips row, the webhook flips it to succeeded, and nothing else ever reads the tips table: the recipient is not notified and has no earnings view. Phase D adds the notification ('Someone tipped you'). This row is the product half: should tips appear on the member's /settings/billing payouts card, on the Spotlight, in a Space's earnings, or only in the notification? Say where and it becomes one read on that surface.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "2026-09-05: grep for .from('tips').select outside the webhook path finds nothing; tips count = 0 live. Closes with the surface named.",
+        "checked": "2026-09-05"
+      }
+    },
+    {
+      "id": "OWN-057",
+      "title": "Ruling: what happens to a signup lead captured at /join that never becomes a member",
+      "status": "open",
+      "lane": "owner",
+      "size": "S",
+      "source": {
+        "file": "app/(main)/events/guest-rsvp-actions.ts",
+        "ref": "ADR-1207"
+      },
+      "detail": "Scan two (L9-03): the induction calls capture_signup_lead / update_signup_lead / mark_signup_lead_converted, and no code reads signup_leads afterwards: no recovery email, no nurture enrolment, no admin view. One live row today. Decide: a 'finish signing up' email after N hours (one nurture sequence), an operator list under /admin/growth, or drop the capture. The capture also has an anon SECDEF rewrite path (L7-6) that Phase E locks down regardless.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "2026-09-05: grep for .from('signup_leads').select in app/ lib/ finds no reader; count = 1 live. Closes with the ruling recorded.",
+        "checked": "2026-09-05"
+      }
+    },
+    {
+      "id": "LIVE-155",
+      "title": "The Space share card crashes for one space: TypeError u2 is not iterable on /spaces/[slug]/opengraph-image",
+      "status": "open",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "app/(main)/spaces/[slug]/opengraph-image.tsx",
+        "ref": "ADR-1207"
+      },
+      "detail": "Vercel error group: 'TypeError: u2 is not iterable', route /spaces/[slug]/opengraph-image-tt3pwa, 2 hits (2026-08-05 and 2026-08-29), 1 space. Scan two read every iteration site on the route and its helpers (loadNunito falls back to a bundled face, readHeroConfig guards its input shape, getSpaceVisibility and getSpaceBySlug return objects); none iterates a data-shaped value, so the crash is not root-caused from source. Next step is the full stack from the Vercel digest for that error group, or replaying the route against the same slug with the fonts and preferences that space carries. When it renders, the crawler gets the neutral fallback card; when it throws, the share preview is a text card.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "2026-09-05: get_runtime_errors 7d shows the group with last seen 2026-08-29. Closes when a 7-day read after the fix returns no occurrence.",
+        "checked": "2026-09-05"
       }
     }
   ]

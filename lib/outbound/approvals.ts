@@ -211,7 +211,7 @@ export async function markReady(ref: ApprovableRef): Promise<ActionResult> {
   const from = await readApprovalStatus(ref)
   const { error } = await outboundDb()
     .from(TABLE[ref.type])
-    .update({ approval_status: 'ready', updated_at: new Date().toISOString() })
+    .update({ approval_status: 'ready' })
     .eq('id', ref.id)
   if (error) return fail('Could not mark this ready.')
   await logOutboundAction({
@@ -243,7 +243,6 @@ export async function approve(
     approval_status: scheduled ? 'scheduled' : 'approved',
     approved_by: gate.profileId,
     approved_at: now,
-    updated_at: now,
   }
   if (scheduled) patch.scheduled_for = opts.scheduledFor
   const { error } = await outboundDb().from(TABLE[ref.type]).update(patch).eq('id', ref.id)
@@ -266,7 +265,7 @@ export async function pause(ref: ApprovableRef): Promise<ActionResult> {
   const from = await readApprovalStatus(ref)
   const { error } = await outboundDb()
     .from(TABLE[ref.type])
-    .update({ approval_status: 'paused', updated_at: new Date().toISOString() })
+    .update({ approval_status: 'paused' })
     .eq('id', ref.id)
   if (error) return fail('Could not pause this.')
   await logOutboundAction({
@@ -287,7 +286,7 @@ export async function cancel(ref: ApprovableRef): Promise<ActionResult> {
   const from = await readApprovalStatus(ref)
   const { error } = await outboundDb()
     .from(TABLE[ref.type])
-    .update({ approval_status: 'cancelled', updated_at: new Date().toISOString() })
+    .update({ approval_status: 'cancelled' })
     .eq('id', ref.id)
   if (error) return fail('Could not cancel this.')
   await logOutboundAction({
@@ -345,7 +344,7 @@ export async function armPhase(phaseId: string): Promise<ActionResult<{ approved
   for (const item of items) {
     const { error } = await db
       .from(TABLE[item.type])
-      .update({ approval_status: 'approved', approved_by: gate.profileId, approved_at: now, updated_at: now })
+      .update({ approval_status: 'approved', approved_by: gate.profileId, approved_at: now })
       .eq('id', item.id)
     if (error) continue
     approved++
