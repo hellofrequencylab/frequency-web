@@ -31,7 +31,7 @@ export const SPACE_B = 'space-B'
 /**
  * Assert a recorded query bound itself to a single Space. By default this is the canonical
  * `.eq('space_id', spaceId)` filter; pass `{ column }` for a reader that binds through a different
- * scoping column (e.g. a join filter `network_contacts.space_id`, or a primary-key `id` on the
+ * scoping column (e.g. a join filter `network_contacts.shared_space_id`, or a primary-key `id` on the
  * `spaces` table itself - the row IS the Space, so `.eq('id', spaceId)` is the correct binding).
  *
  * Fails with a precise message naming the missing filter, so a regression reads as a leak, not a
