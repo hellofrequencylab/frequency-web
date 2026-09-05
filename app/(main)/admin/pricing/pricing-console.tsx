@@ -261,7 +261,7 @@ function CatalogItemRow({
       </div>
       <p className="text-2xs text-muted">
         Member is charged {centsToDollars(dollarsToCents(monthlyFounding)) && formatDollars(monthlyFounding)} a month
-        {' '}({formatDollars(monthlyList)} list), or {formatCentsLabel(derivedYearlyFounding)} a year.
+        {' '}({formatDollars(monthlyList)} list), or {formatCents(derivedYearlyFounding)} a year.
       </p>
       {error && <p className="text-meta text-danger">{error}</p>}
     </div>
@@ -330,7 +330,7 @@ function SeatConfigRow({ bundledFloor, seatItem }: { bundledFloor: number; seatI
         </div>
       </div>
       <p className="text-2xs text-muted">
-        Each seat is {formatCentsLabel(seatItem.monthlyFoundingCents)} a month ({formatCentsLabel(seatItem.monthlyListCents)}{' '}
+        Each seat is {formatCents(seatItem.monthlyFoundingCents)} a month ({formatCents(seatItem.monthlyListCents)}{' '}
         list). The floor bills at least {floor || '1'} seats.
       </p>
       {error && <p className="text-meta text-danger">{error}</p>}
@@ -798,19 +798,11 @@ function AnnouncementEndsAtRow({ initial }: { initial: string }) {
   )
 }
 
-/** A dollar string -> a clean "$X" / "$X.YY" label (for the helper lines). */
+/** A dollar string -> a clean "$X" / "$X.YY" label (for the helper lines). Reads through the same
+ *  formatCents every member-facing price surface uses, so the console previews EXACTLY what ships;
+ *  it used to carry its own copy of the body. */
 function formatDollars(v: string): string {
-  return formatCentsLabel(dollarsToCents(v))
-}
-function formatCentsLabel(cents: number): string {
-  const dollars = cents / 100
-  const whole = Number.isInteger(dollars)
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: whole ? 0 : 2,
-    maximumFractionDigits: 2,
-  }).format(dollars)
+  return formatCents(dollarsToCents(v))
 }
 
 // ── Switches: master billing_live (prominent) + per-tier/plan + per-role gamification ─────

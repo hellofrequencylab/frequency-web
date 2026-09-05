@@ -8,6 +8,7 @@ import { buttonClasses } from '@/components/ui/button'
 import { EntityCard } from '@/components/cards/entity-card'
 import { EmptyState } from '@/components/ui/empty-state'
 import { StatusChip } from '@/components/admin/status'
+import { relativeTime } from '@/lib/utils'
 import type { IntakeStatus } from '@/lib/events/seed/intake'
 import type { StagedEventListItem } from './actions'
 
@@ -82,7 +83,7 @@ export function IntakeList({ items }: { items: StagedEventListItem[] }) {
                 <StatusChip tone={meta.tone} size="sm">
                   {meta.glyph} {meta.label}
                 </StatusChip>
-                <span className="text-2xs text-muted">{timeAgo(it.updatedAt)}</span>
+                <span className="text-2xs text-muted">{relativeTime(it.updatedAt)}</span>
               </>
             }
           />
@@ -92,13 +93,3 @@ export function IntakeList({ items }: { items: StagedEventListItem[] }) {
   )
 }
 
-function timeAgo(iso: string): string {
-  const then = new Date(iso).getTime()
-  if (!Number.isFinite(then)) return ''
-  const mins = Math.round((Date.now() - then) / 60000)
-  if (mins < 1) return 'just now'
-  if (mins < 60) return `${mins}m ago`
-  const hrs = Math.round(mins / 60)
-  if (hrs < 24) return `${hrs}h ago`
-  return `${Math.round(hrs / 24)}d ago`
-}
