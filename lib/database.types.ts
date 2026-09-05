@@ -593,6 +593,8 @@ export type Database = {
           reply_mode: string
           scheduled_for: string | null
           segment: string
+          send_error: string | null
+          sending_started_at: string | null
           sent_at: string | null
           space_id: string | null
           status: string
@@ -619,6 +621,8 @@ export type Database = {
           reply_mode?: string
           scheduled_for?: string | null
           segment?: string
+          send_error?: string | null
+          sending_started_at?: string | null
           sent_at?: string | null
           space_id?: string | null
           status?: string
@@ -645,6 +649,8 @@ export type Database = {
           reply_mode?: string
           scheduled_for?: string | null
           segment?: string
+          send_error?: string | null
+          sending_started_at?: string | null
           sent_at?: string | null
           space_id?: string | null
           status?: string
@@ -2741,6 +2747,21 @@ export type Database = {
           },
         ]
       }
+      cron_run_markers: {
+        Row: {
+          created_at: string
+          key: string
+        }
+        Insert: {
+          created_at?: string
+          key: string
+        }
+        Update: {
+          created_at?: string
+          key?: string
+        }
+        Relationships: []
+      }
       crew_completions: {
         Row: {
           completed_at: string | null
@@ -3501,6 +3522,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      email_webhook_events: {
+        Row: {
+          event_id: string
+          received_at: string
+          type: string | null
+        }
+        Insert: {
+          event_id: string
+          received_at?: string
+          type?: string | null
+        }
+        Update: {
+          event_id?: string
+          received_at?: string
+          type?: string | null
+        }
+        Relationships: []
       }
       email_events: {
         Row: {
@@ -8649,6 +8688,7 @@ export type Database = {
         Row: {
           attempts: number
           created_at: string
+          dedupe_key: string | null
           id: string
           kind: string
           last_error: string | null
@@ -8661,6 +8701,7 @@ export type Database = {
         Insert: {
           attempts?: number
           created_at?: string
+          dedupe_key?: string | null
           id?: string
           kind: string
           last_error?: string | null
@@ -8673,6 +8714,7 @@ export type Database = {
         Update: {
           attempts?: number
           created_at?: string
+          dedupe_key?: string | null
           id?: string
           kind?: string
           last_error?: string | null
@@ -8689,6 +8731,7 @@ export type Database = {
           actor_id: string | null
           body: string | null
           created_at: string | null
+          dedupe_key: string | null
           id: string
           read_at: string | null
           recipient_id: string
@@ -8700,6 +8743,7 @@ export type Database = {
           actor_id?: string | null
           body?: string | null
           created_at?: string | null
+          dedupe_key?: string | null
           id?: string
           read_at?: string | null
           recipient_id: string
@@ -8711,6 +8755,7 @@ export type Database = {
           actor_id?: string | null
           body?: string | null
           created_at?: string | null
+          dedupe_key?: string | null
           id?: string
           read_at?: string | null
           recipient_id?: string
@@ -11961,6 +12006,7 @@ export type Database = {
       signup_leads: {
         Row: {
           attribution: Json
+          claim_token_hash: string | null
           converted_at: string | null
           converted_profile_id: string | null
           created_at: string
@@ -11977,6 +12023,7 @@ export type Database = {
         }
         Insert: {
           attribution?: Json
+          claim_token_hash?: string | null
           converted_at?: string | null
           converted_profile_id?: string | null
           created_at?: string
@@ -11993,6 +12040,7 @@ export type Database = {
         }
         Update: {
           attribution?: Json
+          claim_token_hash?: string | null
           converted_at?: string | null
           converted_profile_id?: string | null
           created_at?: string
@@ -12548,6 +12596,7 @@ export type Database = {
           id: string
           last_sent_at: string | null
           next_run_at: string
+          sending_started_at: string | null
           sequence_id: string
           space_id: string
           status: string
@@ -12561,6 +12610,7 @@ export type Database = {
           id?: string
           last_sent_at?: string | null
           next_run_at: string
+          sending_started_at?: string | null
           sequence_id: string
           space_id: string
           status?: string
@@ -12574,6 +12624,7 @@ export type Database = {
           id?: string
           last_sent_at?: string | null
           next_run_at?: string
+          sending_started_at?: string | null
           sequence_id?: string
           space_id?: string
           status?: string

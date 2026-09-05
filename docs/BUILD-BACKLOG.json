@@ -55,7 +55,6 @@
             "LIVE-154",
             "LIVE-156",
             "LIVE-157",
-            "LIVE-158",
             "LIVE-159",
             "LIVE-160",
             "LIVE-161",
@@ -66,7 +65,12 @@
             "LIVE-166",
             "LIVE-167",
             "LIVE-168",
-            "LIVE-169"
+            "LIVE-169",
+            "LIVE-170",
+            "LIVE-171",
+            "LIVE-172",
+            "LIVE-173",
+            "LIVE-174"
           ]
         },
         {
@@ -7178,14 +7182,14 @@
     {
       "id": "LIVE-158",
       "title": "Ticket refunds on a cancelled event are never retried",
-      "status": "open",
+      "status": "done",
       "lane": "live",
       "size": "S",
       "source": {
         "file": "lib/events/cancellation.ts",
         "ref": "ADR-1209"
       },
-      "detail": "Scan two L6-04 (P1). A host cancels a ticketed event; refundAndNotifyForCancelledEvent runs after the cancel flip and any Stripe error or mid-loop crash leaves buyers charged, ticket rows succeeded, and nothing queued; the firstCancel guard makes a second cancel a no-op. Fix: enqueue one outbox job per succeeded ticket (or one per event that re-scans succeeded tickets) with the outbox's own retry, and let the cancel path only enqueue; surface the count still owed on the Manage page.",
+      "detail": "Scan two L6-04 (P1). A host cancels a ticketed event; refundAndNotifyForCancelledEvent runs after the cancel flip and any Stripe error or mid-loop crash leaves buyers charged, ticket rows succeeded, and nothing queued; the firstCancel guard makes a second cancel a no-op. Fix: enqueue one outbox job per succeeded ticket (or one per event that re-scans succeeded tickets) with the outbox's own retry, and let the cancel path only enqueue; surface the count still owed on the Manage page.\n\n2026-09-05 (phase D, ADR-1212): closed as SCAN-633. Cancellation enqueues one ticket_refund outbox job per succeeded ticket; the handler is idempotent and throws on refusal so the outbox retries; the Manage page shows the count still owed.",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e \"const fs=require('fs');const s=fs.readFileSync('lib/events/cancellation.ts','utf8');process.exit(/\\benqueue\\(/.test(s)?0:1)\"",
@@ -7938,6 +7942,516 @@
         "kind": "cmd",
         "cmd": "node -e \"const fs=require('fs');const {execSync}=require('child_process');const n=execSync('grep -rn \\\"process.env.NEXT_PUBLIC_SUPABASE_URL!\\\" lib app || true').toString().trim().split(\\\"\\\\n\\\").filter(Boolean).length;process.exit(n===0?0:1)\"",
         "note": "Passes once no Supabase client reads the URL with a non-null assertion."
+      }
+    },
+    {
+      "id": "SCAN-611",
+      "title": "The weekly digest and the journey prompt had no run-level idempotency; a re-fire double-sent to everyone",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/queue/outbox.ts",
+        "ref": "ADR-1212"
+      },
+      "detail": "Scan two, phase D (2026-09-05). L2-02. Neither cron read a sent-this-period marker, enqueueEmail had no dedupe key, and a throw mid-loop aborted after N members had been sent. Closed: migration 20270345000700 adds dedupe_key (partial unique) to notification_queue and notifications and a cron_run_markers table; enqueue takes an optional dedupeKey and returns whether it landed (23505 is the other run); the digest claims a marker per member per ISO week before sending and releases it on a throw; the prompt row carries a per-day key; both loops catch per member and return { sent, skipped, failed }, answering 500 when failed > 0 so the heartbeat sees it.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const R=(f)=>fs.readFileSync(f,'utf8');const C=(f)=>R(f).replace(/\\\\/\\\\*[\\\\s\\\\S]*?\\\\*\\\\//g,'').replace(/^\\\\s*\\\\/\\\\/.*$/gm,'');const o=C('lib/queue/outbox.ts');const w=C('app/api/cron/weekly-digest/route.ts');const j=C('app/api/cron/journey-prompt/route.ts');process.exit(/dedupeKey/.test(o)&&/cron_run_markers/.test(w)&&/dedupe_key/.test(j)?0:1)\"",
+        "note": "Fails if the outbox loses its key or either cron stops claiming."
+      }
+    },
+    {
+      "id": "SCAN-612",
+      "title": "Lifecycle check-ins were stamped sent whether or not the insert landed, and a catch-up sent three at once",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "app/api/cron/lifecycle-triggers/route.ts",
+        "ref": "ADR-1212"
+      },
+      "detail": "Scan two, phase D (2026-09-05). L2-03. lifecycle_dayN_sent was set in an unconditional update after an insert whose error was only logged; a membership qualifying for Day 1, 3 and 7 in one pass got all three in the same second. Closed: the flag is stamped only after a clean insert, a failed insert is counted failed and left for the next run, and one pass sends only the latest due window, stamping the earlier flags as superseded.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const R=(f)=>fs.readFileSync(f,'utf8');const C=(f)=>R(f).replace(/\\\\/\\\\*[\\\\s\\\\S]*?\\\\*\\\\//g,'').replace(/^\\\\s*\\\\/\\\\/.*$/gm,'');const r=C('app/api/cron/lifecycle-triggers/route.ts');process.exit(/superseded/.test(r)&&fs.existsSync('app/api/cron/lifecycle-triggers/route.test.ts')?0:1)\"",
+        "note": "Fails if the supersession or the test is removed."
+      }
+    },
+    {
+      "id": "SCAN-613",
+      "title": "The journey-prompt cron swallowed every loader and push failure and reported ok",
+      "status": "done",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "app/api/cron/journey-prompt/route.ts",
+        "ref": "ADR-1212"
+      },
+      "detail": "Scan two, phase D (2026-09-05). L2-04. .catch(() => null) on the loader and .catch(() => 0) on the push made a total outage read as nobody due. Closed: both are logged at error level with the member id and counted, the response carries ok: false when the loader failed for everyone, and getDailyJourneyPrompt no longer catches and returns null itself.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const R=(f)=>fs.readFileSync(f,'utf8');const C=(f)=>R(f).replace(/\\\\/\\\\*[\\\\s\\\\S]*?\\\\*\\\\//g,'').replace(/^\\\\s*\\\\/\\\\/.*$/gm,'');const l=C('lib/journey-prompt.ts');process.exit(!/catch\\\\s*\\\\{\\\\s*return null/.test(l)&&/loaderFailed/.test(C('app/api/cron/journey-prompt/route.ts'))?0:1)\"",
+        "note": "Fails if the loader swallows again or the cron stops reporting loader failure."
+      }
+    },
+    {
+      "id": "SCAN-614",
+      "title": "/api/observe and /api/vitals dropped every insert failure and answered 204",
+      "status": "done",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "app/api/observe/route.ts",
+        "ref": "ADR-1212"
+      },
+      "detail": "Scan two, phase D (2026-09-05). L2-08. .then(undefined, () => {}) handles a rejection, but supabase-js resolves { error }, so a broken interaction_events insert was a silent total loss of first-party analytics. Closed: both routes read the error, log it with the table name, and still answer 204 (a beacon must never retry).",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const R=(f)=>fs.readFileSync(f,'utf8');const C=(f)=>R(f).replace(/\\\\/\\\\*[\\\\s\\\\S]*?\\\\*\\\\//g,'').replace(/^\\\\s*\\\\/\\\\/.*$/gm,'');process.exit(/insert_failed/.test(C('app/api/observe/route.ts'))&&/insert_failed/.test(C('app/api/vitals/route.ts'))?0:1)\"",
+        "note": "Fails if either route stops reading the insert error."
+      }
+    },
+    {
+      "id": "SCAN-615",
+      "title": "The Resend webhook had no event-id dedupe and retried into duplicate rows",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "app/api/webhooks/resend/route.ts",
+        "ref": "ADR-1212"
+      },
+      "detail": "Scan two, phase D (2026-09-05). L2-05. svix-id was verified and never stored; every retry appended the same event again, over-counting opens, clicks and bounces for four readers and the Vera circuit breaker. Closed: migration 20270345000800 adds email_webhook_events; the route claims the id right after the signature (23505 answers 200 duplicate, any other claim error 500s), the row is appended last, and a later failure never 503s after a successful append.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const R=(f)=>fs.readFileSync(f,'utf8');const C=(f)=>R(f).replace(/\\\\/\\\\*[\\\\s\\\\S]*?\\\\*\\\\//g,'').replace(/^\\\\s*\\\\/\\\\/.*$/gm,'');process.exit(/email_webhook_events/.test(C('app/api/webhooks/resend/route.ts'))&&fs.existsSync('app/api/webhooks/resend/route.test.ts')?0:1)\"",
+        "note": "Fails if the claim leaves the webhook."
+      }
+    },
+    {
+      "id": "SCAN-616",
+      "title": "A campaign or drip enrollment whose sender crashed stayed at sending forever and read as live",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/spaces/campaigns-send-due.ts",
+        "ref": "ADR-1212"
+      },
+      "detail": "Scan two, phase D (2026-09-05). L6-10. The claim was race-safe but had no lease, no reclaim and no resume, and status.ts mapped sending to live. Closed: migration 20270345000800 adds sending_started_at (and send_error) to campaigns and space_drip_enrollments; the runners re-claim a sending row older than fifteen minutes and resume without re-sending to recipients already in the outreach_sends ledger (fail closed on an unreadable ledger); a terminal failure records failed; status.ts maps an expired lease to stalled, and the console and Space drafts pass the timestamp.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const R=(f)=>fs.readFileSync(f,'utf8');const C=(f)=>R(f).replace(/\\\\/\\\\*[\\\\s\\\\S]*?\\\\*\\\\//g,'').replace(/^\\\\s*\\\\/\\\\/.*$/gm,'');process.exit(/sending_started_at/.test(C('lib/spaces/campaigns-send-due.ts'))&&/sending_started_at/.test(C('lib/spaces/drip-runner.ts'))&&/'stalled'/.test(C('lib/messaging/status.ts'))?0:1)\"",
+        "note": "Fails if either runner loses the lease or the stalled state is removed."
+      }
+    },
+    {
+      "id": "SCAN-617",
+      "title": "Six conversation From headers nested angle brackets and were rejected by the provider",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/comms/from-address.ts",
+        "ref": "ADR-1212"
+      },
+      "detail": "Scan two, phase D (2026-09-05). L3-01. With EMAIL_CONVERSATION_FROM unset and EMAIL_FROM in its documented Name <addr> form, every conversational reply was built as Name via Frequency <Frequency <addr>> and never reached the member. Closed: conversationFrom extracts the address from either form and builds one RFC 5322 From with proper quoting; all six builders use it.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const R=(f)=>fs.readFileSync(f,'utf8');const C=(f)=>R(f).replace(/\\\\/\\\\*[\\\\s\\\\S]*?\\\\*\\\\//g,'').replace(/^\\\\s*\\\\/\\\\/.*$/gm,'');const h=C('lib/comms/from-address.ts');const sites=['lib/comms/leader-send.ts','lib/comms/outbound-batch.ts','lib/comms/conversation-compose.ts','lib/comms/inbound.ts','lib/email-studio/send.ts','app/(main)/admin/crm/conversations/actions.ts','app/(main)/lead/inbox/actions.ts'];process.exit(/export function conversationFrom/.test(h)&&sites.every(f=>/from-address/.test(R(f)))?0:1)\"",
+        "note": "Fails if any builder stops using the helper."
+      }
+    },
+    {
+      "id": "SCAN-618",
+      "title": "Blank env values passed as set: an empty From address, a broken Message-ID and a zero Nominatim interval",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/env/string.ts",
+        "ref": "ADR-1212"
+      },
+      "detail": "Scan two, phase D (2026-09-05). L3-02. @next/env loads KEY= as an empty string, which is not nullish, and Number('') is 0, so a copied .env.example produced From: <>, Message-ID @>, a policy-violating User-Agent and no spacing between geocoder calls. Closed: envString and envNumber treat blank and whitespace as unset and reject NaN; the From builders, the Message-ID host, the Nominatim contact and interval, the reply domain, the inbox owner and the Email Studio From read through them.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const R=(f)=>fs.readFileSync(f,'utf8');const C=(f)=>R(f).replace(/\\\\/\\\\*[\\\\s\\\\S]*?\\\\*\\\\//g,'').replace(/^\\\\s*\\\\/\\\\/.*$/gm,'');process.exit(/export function envNumber/.test(C('lib/env/string.ts'))&&/envNumber\\\\(/.test(C('lib/events/nominatim.ts'))&&/envString\\\\(/.test(C('lib/comms/conversations.ts'))?0:1)\"",
+        "note": "Fails if the helpers or their named call sites are reverted."
+      }
+    },
+    {
+      "id": "SCAN-619",
+      "title": "Support chat opened the conversation and wrote the first message before discovering it could not sign the token",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/comms/support-chat.ts",
+        "ref": "ADR-1212"
+      },
+      "detail": "Scan two, phase D (2026-09-05). L3-06. In production without CONVERSATION_TOKEN_SECRET, startSupportChat left one orphan conversation and message per attempt and the visitor saw a generic failure; the same throw sat under every conversation reply-to. Closed: isSupportChatAvailable and conversationSigningAvailable are checked before any write, the three layouts mount the widget only when both the build flag and the runtime check pass, and every outbound conversation path (leader send, compose, inbound forward, CRM and lead inbox replies, Space CRM replies) refuses in member-safe copy instead of throwing.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const R=(f)=>fs.readFileSync(f,'utf8');const C=(f)=>R(f).replace(/\\\\/\\\\*[\\\\s\\\\S]*?\\\\*\\\\//g,'').replace(/^\\\\s*\\\\/\\\\/.*$/gm,'');process.exit(/isSupportChatAvailable\\\\(\\\\)/.test(C('app/(help)/layout.tsx'))&&/conversationSigningAvailable\\\\(\\\\)/.test(C('app/(main)/spaces/[slug]/crm/conversations-actions.ts'))&&/export function conversationSigningAvailable/.test(C('lib/comms/reply-address.ts'))?0:1)\"",
+        "note": "Fails if a layout or a reply path stops checking before it writes."
+      }
+    },
+    {
+      "id": "SCAN-620",
+      "title": "An Email Studio campaign that sent could stay at sending forever with no way to re-send",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/email-studio/send.ts",
+        "ref": "ADR-1212"
+      },
+      "detail": "Scan two, phase D (2026-09-05). L5-04. The final update to sent was unchecked and the refusal to re-send a sending row had no way out. Closed: sendCampaignNow claims with the shared sending_started_at lease, moves to sent only on a checked write, records failed with the count sent so far and the error on any failure, and the refusal applies only while a lease is live; a re-send reaches the whole audience again and the copy says so (LIVE-172).",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const R=(f)=>fs.readFileSync(f,'utf8');const C=(f)=>R(f).replace(/\\\\/\\\\*[\\\\s\\\\S]*?\\\\*\\\\//g,'').replace(/^\\\\s*\\\\/\\\\/.*$/gm,'');process.exit(/sending_started_at/.test(C('lib/email-studio/send.ts'))&&fs.existsSync('lib/email-studio/send-lifecycle.test.ts')?0:1)\"",
+        "note": "Fails if the lease or the lifecycle test is removed."
+      }
+    },
+    {
+      "id": "SCAN-621",
+      "title": "A failing feed or notifications RPC rendered the empty state",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/feed/load-feed.ts",
+        "ref": "ADR-1212"
+      },
+      "detail": "Scan two, phase D (2026-09-05). L5-03. Members read nothing here yet for an outage on /feed, every Circle and Channel page and the bell. Closed: readFeedRpc returns a discriminated result, the feed list and the channel preview render an error pane with a retry link, the notifications loader returns kind error and the count loader a negative sentinel, and the bell shows Notifications could not load with no false zero.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const R=(f)=>fs.readFileSync(f,'utf8');const C=(f)=>R(f).replace(/\\\\/\\\\*[\\\\s\\\\S]*?\\\\*\\\\//g,'').replace(/^\\\\s*\\\\/\\\\/.*$/gm,'');process.exit(/export function readFeedRpc/.test(C('lib/feed/load-feed.ts'))&&/UNREAD_COUNT_UNAVAILABLE/.test(C('lib/notifications-map.ts'))&&/could not load/.test(R('components/layout/notification-bell.tsx'))?0:1)\"",
+        "note": "Fails if a loader goes back to reading data ?? []."
+      }
+    },
+    {
+      "id": "SCAN-622",
+      "title": "A host's event update fanned out push, email and SMS before the page record existed",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/events/dispatch.ts",
+        "ref": "ADR-1212"
+      },
+      "detail": "Scan two, phase D (2026-09-05). L5-05. Both insert errors were discarded and the fan-out ran regardless; the guest-side action ignored the result. Closed: the page record and the Dispatch row are written and checked first, the fan-out runs only with both ids, a failed page write after a Dispatch row removes that row, the action and the Manage line report ok, write-failed or send-failed, and the two composers show the send-failed copy.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const R=(f)=>fs.readFileSync(f,'utf8');const C=(f)=>R(f).replace(/\\\\/\\\\*[\\\\s\\\\S]*?\\\\*\\\\//g,'').replace(/^\\\\s*\\\\/\\\\/.*$/gm,'');process.exit(/export function describeDispatchOutcome/.test(C('lib/events/dispatch.ts'))&&/send-failed/.test(C('components/events/event-dispatch-compose.tsx'))?0:1)\"",
+        "note": "Fails if the outcome stops being reported."
+      }
+    },
+    {
+      "id": "SCAN-623",
+      "title": "Creating a group chat could leave a room with no members, including the creator",
+      "status": "done",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "app/(main)/messages/actions.ts",
+        "ref": "ADR-1212"
+      },
+      "detail": "Scan two, phase D (2026-09-05). L5-07. The members insert was unchecked and the caller was sent to a room they could not see. Closed: a refused members insert deletes the room row (a refused delete is logged with the id) and the action fails with member copy instead of redirecting.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const R=(f)=>fs.readFileSync(f,'utf8');const C=(f)=>R(f).replace(/\\\\/\\\\*[\\\\s\\\\S]*?\\\\*\\\\//g,'').replace(/^\\\\s*\\\\/\\\\/.*$/gm,'');process.exit(/from\\\\('rooms'\\\\)\\\\.delete\\\\(\\\\)/.test(C('app/(main)/messages/actions.ts'))?0:1)\"",
+        "note": "Fails if the undo is removed."
+      }
+    },
+    {
+      "id": "SCAN-624",
+      "title": "Block reported success when the block did not save",
+      "status": "done",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "lib/blocking.ts",
+        "ref": "ADR-1212"
+      },
+      "detail": "Scan two, phase D (2026-09-05). L5-12. blockUser returned void with both writes discarded and the action revalidated into a blocked state that was not real. Closed: block and unblock return a result, the action returns the error and does not revalidate on failure, and the button shows it.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const R=(f)=>fs.readFileSync(f,'utf8');const C=(f)=>R(f).replace(/\\\\/\\\\*[\\\\s\\\\S]*?\\\\*\\\\//g,'').replace(/^\\\\s*\\\\/\\\\/.*$/gm,'');process.exit(/Block did not save/.test(C('lib/blocking.ts'))?0:1)\"",
+        "note": "Fails if the write result is dropped again."
+      }
+    },
+    {
+      "id": "SCAN-625",
+      "title": "A finished On Air sit whose history row failed to write still ran the whole economy",
+      "status": "done",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "app/(main)/on-air/actions.ts",
+        "ref": "ADR-1212"
+      },
+      "detail": "Scan two, phase D (2026-09-05). L5-08. The practice_sessions insert was unchecked and zaps, streak and airtime reveal followed. Closed: the insert is read first; a refused write returns the existing could-not-log failure before the timer delete, the practice log, the streak and the reveal.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const R=(f)=>fs.readFileSync(f,'utf8');const C=(f)=>R(f).replace(/\\\\/\\\\*[\\\\s\\\\S]*?\\\\*\\\\//g,'').replace(/^\\\\s*\\\\/\\\\/.*$/gm,'');process.exit(/Could not log this sit/.test(C('app/(main)/on-air/actions.ts'))&&fs.existsSync('app/(main)/on-air/actions.test.ts')?0:1)\"",
+        "note": "Fails if the insert result is dropped again."
+      }
+    },
+    {
+      "id": "SCAN-626",
+      "title": "Claiming a demo Circle could pay 140 Zaps and leave the claimer as host but not a member",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "app/(main)/circles/[slug]/claim-actions.ts",
+        "ref": "ADR-1212"
+      },
+      "detail": "Scan two, phase D (2026-09-05). L5-09. Only the circles update was checked; the membership and practice writes were discarded before the rewards. Closed: every write is checked, an undo stack reverts what landed on a failed step (circle back to demo under the prior host, membership deleted or restored, retired practices re-activated), and Zaps and the claim log run only after all three landed.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const R=(f)=>fs.readFileSync(f,'utf8');const C=(f)=>R(f).replace(/\\\\/\\\\*[\\\\s\\\\S]*?\\\\*\\\\//g,'').replace(/^\\\\s*\\\\/\\\\/.*$/gm,'');process.exit(/undo/.test(C('app/(main)/circles/[slug]/claim-actions.ts'))&&fs.existsSync('app/(main)/circles/[slug]/claim-actions.test.ts')?0:1)\"",
+        "note": "Fails if the undo stack or its test is removed."
+      }
+    },
+    {
+      "id": "SCAN-627",
+      "title": "Email Studio subject, preheader, From name and reply mode autosaved with the result thrown away",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "components/admin/email-studio/editor-pane.tsx",
+        "ref": "ADR-1212"
+      },
+      "detail": "Scan two, phase D (2026-09-05). L5-11. On a failed save the operator kept typing against text that never landed and sent the previous subject. Closed: the action reads every write (the From name and reply mode writes were still best-effort against a migration that had long landed), the editor tracks what is on file, and the toolbar shows a Not saved line with the on-file value and a retry.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const R=(f)=>fs.readFileSync(f,'utf8');const C=(f)=>R(f).replace(/\\\\/\\\\*[\\\\s\\\\S]*?\\\\*\\\\//g,'').replace(/^\\\\s*\\\\/\\\\/.*$/gm,'');process.exit(/saveNote/.test(R('components/admin/email-studio/compose-toolbar.tsx'))&&fs.existsSync('app/(main)/admin/email-studio/actions.test.ts')?0:1)\"",
+        "note": "Fails if the save note is removed."
+      }
+    },
+    {
+      "id": "SCAN-628",
+      "title": "Journey editing returned ok after unchecked writes",
+      "status": "done",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "lib/journey-plans.ts",
+        "ref": "ADR-1212"
+      },
+      "detail": "Scan two, phase D (2026-09-05). L5-13. Reorder was two unchecked updates (duplicate sort_order on a half failure), the Vera title and every bulk op counted applied before the write was known, and every lib/journey-plans.ts mutation was Promise<void>. Closed: reorder reverts the first write when the second is refused, bulk ops count only landed ops and return the failures by index, seventeen mutations return JourneyWriteResult, and every caller (journeys, guide, learn, admin content) surfaces the refusal. The journey create path is LIVE-173.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const R=(f)=>fs.readFileSync(f,'utf8');const C=(f)=>R(f).replace(/\\\\/\\\\*[\\\\s\\\\S]*?\\\\*\\\\//g,'').replace(/^\\\\s*\\\\/\\\\/.*$/gm,'');process.exit(/export type JourneyWriteResult/.test(C('lib/journey-plans.ts'))&&/failed: number\\\\[\\\\]/.test(C('app/(main)/journeys/[slug]/edit/actions.ts'))&&/if \\\\(!r\\\\.ok\\\\) return fail\\\\(r\\\\.error\\\\)/.test(C('app/(main)/admin/content/actions.ts'))?0:1)\"",
+        "note": "Fails if the mutations go back to void or a caller drops the result."
+      }
+    },
+    {
+      "id": "SCAN-629",
+      "title": "Twelve writers rewrote profiles.meta whole from a stale read; one write primitive now merges a key",
+      "status": "done",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "lib/profiles/meta.ts",
+        "ref": "ADR-1212"
+      },
+      "detail": "Scan two, phase D (2026-09-05). L6-09 and L5-06. Every writer did select meta, spread, update whole, so two writers in the same second clobbered each other (the daily check-in reverting a practice streak was the concrete interleaving). Closed: migration 20270345000900 adds merge_profile_meta (shallow top-level merge, owner-or-service-role check inside, optional current_streak and longest_streak columns) and remove_profile_meta_keys; lib/profiles/meta.ts is the one client entry; eighteen writer files across practice streak, check-in, celebrations, walkthroughs, spotlight, profile settings, onboarding, induction and attribution merge only their own key, and the check-in pays the gem only when the stamp landed. The spotlight and tour keys are still shared by several writers (LIVE-171).",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const R=(f)=>fs.readFileSync(f,'utf8');const C=(f)=>R(f).replace(/\\\\/\\\\*[\\\\s\\\\S]*?\\\\*\\\\//g,'').replace(/^\\\\s*\\\\/\\\\/.*$/gm,'');const p=require('path');const h=[];function w(d){for(const e of fs.readdirSync(d,{withFileTypes:true})){const f=p.join(d,e.name);if(e.isDirectory()){if(e.name!=='node_modules'&&!e.name.startsWith('.'))w(f)}else if(/\\\\.tsx?$/.test(e.name)&&!/\\\\.test\\\\./.test(e.name)){const s=C(f);if(/from\\\\('profiles'\\\\)[\\\\s\\\\S]{0,160}?\\\\.update\\\\(\\\\s*\\\\{[\\\\s\\\\S]{0,200}?\\\\bmeta\\\\s*:/.test(s))h.push(f)}}}w('lib');w('app');process.exit(h.length===0&&/export async function mergeProfileMeta/.test(C('lib/profiles/meta.ts'))?0:1)\"",
+        "note": "Fails if any writer goes back to updating meta whole."
+      }
+    },
+    {
+      "id": "SCAN-630",
+      "title": "Three of the five Automations triggers could never fire",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/automations.ts",
+        "ref": "ADR-1212"
+      },
+      "detail": "Scan two, phase D (2026-09-05). L4-01. The runner matches trigger_event by exact string against engagement_events; circle_join, post_create and event_attend were never recorded. Closed: circle_join is renamed to the recorded circle.joined (migration 20270345001000 rewrites stored rules), post_create is recorded when a post is created, event_attend is recorded on a verified check-in, and a test walks app and lib to prove every offered trigger has a recorder.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const R=(f)=>fs.readFileSync(f,'utf8');const C=(f)=>R(f).replace(/\\\\/\\\\*[\\\\s\\\\S]*?\\\\*\\\\//g,'').replace(/^\\\\s*\\\\/\\\\/.*$/gm,'');const a=C('lib/automations.ts');process.exit(/'circle\\\\.joined'/.test(a)&&/'event_attend'/.test(a)&&/eventType: 'event_attend'/.test(C('app/(main)/events/actions.ts'))&&/eventType: 'post_create'/.test(C('app/(main)/feed/actions.ts'))?0:1)\"",
+        "note": "Fails if an offered trigger loses its recorder."
+      }
+    },
+    {
+      "id": "SCAN-631",
+      "title": "Welcome paid the welcomer and told the newcomer nothing",
+      "status": "done",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "lib/connections/welcomes.ts",
+        "ref": "ADR-1212"
+      },
+      "detail": "Scan two, phase D (2026-09-05). L9-06. The Pulse Welcome button inserted a welcomes row and awarded gems; the newcomer got no notification. Closed: after the insert lands, a welcome_received notification is written for the newcomer, then the gems.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const R=(f)=>fs.readFileSync(f,'utf8');const C=(f)=>R(f).replace(/\\\\/\\\\*[\\\\s\\\\S]*?\\\\*\\\\//g,'').replace(/^\\\\s*\\\\/\\\\/.*$/gm,'');process.exit(/welcome_received/.test(C('lib/connections/welcomes.ts'))?0:1)\"",
+        "note": "Fails if the notification is removed."
+      }
+    },
+    {
+      "id": "SCAN-632",
+      "title": "A tip was paid and the recipient was never told and could never see it",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/billing/tips-notify.ts",
+        "ref": "ADR-1212"
+      },
+      "detail": "Scan two, phase D (2026-09-05). L9-05. tips had no reader outside the billing module and no notify. Closed: the succeeded flip calls notifyTipRecipient (bell plus a transactional email, Someone when the tipper is anonymous), and a Tips received section on the billing settings page shows the total and the recent list.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const R=(f)=>fs.readFileSync(f,'utf8');const C=(f)=>R(f).replace(/\\\\/\\\\*[\\\\s\\\\S]*?\\\\*\\\\//g,'').replace(/^\\\\s*\\\\/\\\\/.*$/gm,'');process.exit(/export async function notifyTipRecipient/.test(C('lib/billing/tips-notify.ts'))&&/notifyTipRecipient\\\\(/.test(C('lib/billing/tips.ts'))&&/TipsReceivedSection/.test(R('app/(main)/settings/billing/section.tsx'))?0:1)\"",
+        "note": "Fails if the notify call or the section is removed."
+      }
+    },
+    {
+      "id": "SCAN-633",
+      "title": "Ticket refunds on a cancelled event ran inline once and were never retried",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/events/cancellation.ts",
+        "ref": "ADR-1212"
+      },
+      "detail": "Scan two, phase D (2026-09-05). L6-04 (LIVE-158). Cancellation enqueues one ticket_refund outbox job per succeeded ticket; the handler runs the real refund idempotently and throws on refusal so the outbox retries, and the Manage page shows how many refunds are still owed.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const R=(f)=>fs.readFileSync(f,'utf8');const C=(f)=>R(f).replace(/\\\\/\\\\*[\\\\s\\\\S]*?\\\\*\\\\//g,'').replace(/^\\\\s*\\\\/\\\\/.*$/gm,'');process.exit(/\\\\[TICKET_REFUND_KIND\\\\]: runTicketRefund/.test(R('lib/queue/handlers.ts'))&&!/await refundTicket\\\\(ticket\\\\.id/.test(C('lib/events/cancellation.ts'))?0:1)\"",
+        "note": "Fails if the refund goes inline again."
+      }
+    },
+    {
+      "id": "SCAN-634",
+      "title": "Signup leads were captured at /join and read by nothing",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/crm/signup-leads.ts",
+        "ref": "ADR-1212"
+      },
+      "detail": "Scan two, phase D (2026-09-05). L9-03. Closed: an abandoned-leads reader with a CSV export, a staff-only admin page under /admin/crm/leads composed on AdminTemplate, and one catalog row in STUDIO_LEAVES. The recovery cron the table was built for is LIVE-170.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const R=(f)=>fs.readFileSync(f,'utf8');const C=(f)=>R(f).replace(/\\\\/\\\\*[\\\\s\\\\S]*?\\\\*\\\\//g,'').replace(/^\\\\s*\\\\/\\\\/.*$/gm,'');process.exit(/href: '\\\\/admin\\\\/crm\\\\/leads'/.test(R('lib/nav/studio.ts'))&&fs.existsSync('app/(main)/admin/crm/leads/page.tsx')?0:1)\"",
+        "note": "Fails if the page or its catalog row is removed."
+      }
+    },
+    {
+      "id": "SCAN-635",
+      "title": "Partner offers could never exist, so the partner pages promised member offers that were always empty",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "app/(main)/partners/listing/actions.ts",
+        "ref": "ADR-1212"
+      },
+      "detail": "Scan two, phase D (2026-09-05). L9-04. partner_offers had no writer anywhere. Closed: an Offers section on the partner listing form writes through saveOffer with the listing's authorization, listLiveOffers and the partner view filter by active and valid_until, and a partner-node capture attributes offer_id only when the partner has exactly one live offer.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const R=(f)=>fs.readFileSync(f,'utf8');const C=(f)=>R(f).replace(/\\\\/\\\\*[\\\\s\\\\S]*?\\\\*\\\\//g,'').replace(/^\\\\s*\\\\/\\\\/.*$/gm,'');process.exit(/from\\\\('partner_offers'\\\\)[\\\\s\\\\S]*?\\\\.insert\\\\(/.test(C('app/(main)/partners/listing/actions.ts'))&&/export function isOfferLive/.test(C('lib/partners/offers.ts'))?0:1)\"",
+        "note": "Fails if the writer or the liveness rule is removed."
+      }
+    },
+    {
+      "id": "LIVE-170",
+      "title": "Abandoned signup leads are now visible; nobody is followed up",
+      "status": "open",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "app/api/cron",
+        "ref": "ADR-1212"
+      },
+      "detail": "SCAN-634 gave signup_leads a reader. The recovery job the table was built for is still missing: a cron that emails a lead with converted_at null, step_reached at least 2 and updated_at older than 24 hours, once (a recovery_sent_at column via migration), transactional copy only, registered in vercel.json. Probe: the route exists and a test proves a converted or already-mailed lead is skipped.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const R=(f)=>fs.readFileSync(f,'utf8');const C=(f)=>R(f).replace(/\\\\/\\\\*[\\\\s\\\\S]*?\\\\*\\\\//g,'').replace(/^\\\\s*\\\\/\\\\/.*$/gm,'');process.exit(fs.existsSync('app/api/cron/signup-lead-recovery/route.ts')?0:1)\"",
+        "note": "Passes once the recovery cron exists."
+      }
+    },
+    {
+      "id": "LIVE-171",
+      "title": "The spotlight and tour keys in profiles.meta are shared by several writers and still race inside the key",
+      "status": "open",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "lib/profiles/meta.ts",
+        "ref": "ADR-1212"
+      },
+      "detail": "SCAN-629 gives every writer its own top-level key, but spotlight (janitor toggle and reset, owner publish, enable, theme, background, demo dressing) and tour (two writers in one file) are shared; those writers read the sub-object and replace the key whole, so a race INSIDE the key remains. Either split the sub-keys into top-level keys or add a jsonb_set path merge to the RPC.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const m=fs.readFileSync('supabase/migrations/20270345000900_merge_profile_meta_rpc.sql','utf8').replace(/--.*$/gm,'');process.exit(/p_path|jsonb_set\\(/.test(m)?0:1)\"",
+        "note": "Passes once the RPC can merge a nested path (or the keys are split and this row is re-pointed)."
+      }
+    },
+    {
+      "id": "LIVE-172",
+      "title": "A re-sent Email Studio campaign reaches the recipients already queued",
+      "status": "open",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "lib/email-studio/send.ts",
+        "ref": "ADR-1212"
+      },
+      "detail": "SCAN-620 records a failed send with the count sent so far and lets the operator re-send; nothing skips the recipients already queued, and the copy says so. Add a per-recipient ledger check (the Space campaign runner's outreach_sends pattern) before each enqueue.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const R=(f)=>fs.readFileSync(f,'utf8');const C=(f)=>R(f).replace(/\\\\/\\\\*[\\\\s\\\\S]*?\\\\*\\\\//g,'').replace(/^\\\\s*\\\\/\\\\/.*$/gm,'');process.exit(/outreach_sends|already sent|alreadySent/.test(C('lib/email-studio/send.ts'))?0:1)\"",
+        "note": "Passes once the send path skips recipients already delivered."
+      }
+    },
+    {
+      "id": "LIVE-173",
+      "title": "The journey create path still inserts children unchecked",
+      "status": "open",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "app/(main)/journeys/create-actions.ts",
+        "ref": "ADR-1212"
+      },
+      "detail": "SCAN-628 covered editing. app/(main)/journeys/create-actions.ts (four insert sites) and lib/journeys/compose.ts insertChildren still discard the child inserts' errors, so a journey can be created with missing weeks or items and reported as created.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const R=(f)=>fs.readFileSync(f,'utf8');const C=(f)=>R(f).replace(/\\\\/\\\\*[\\\\s\\\\S]*?\\\\*\\\\//g,'').replace(/^\\\\s*\\\\/\\\\/.*$/gm,'');const s=C('lib/journeys/compose.ts');process.exit(/insertChildren[\\\\s\\\\S]{0,1200}?error/.test(s)?0:1)\"",
+        "note": "Passes once insertChildren reads its insert errors."
+      }
+    },
+    {
+      "id": "LIVE-174",
+      "title": "cron_run_markers has no purge",
+      "status": "open",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "app/api/cron/enforce-retention/route.ts",
+        "ref": "ADR-1212"
+      },
+      "detail": "SCAN-611's weekly-digest marker table grows by one row per member per week. Add it to enforce-retention (rows older than 60 days), or move the digest to the outbox dedupe key once enqueueEmail takes one (then drop the table).",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const R=(f)=>fs.readFileSync(f,'utf8');const C=(f)=>R(f).replace(/\\\\/\\\\*[\\\\s\\\\S]*?\\\\*\\\\//g,'').replace(/^\\\\s*\\\\/\\\\/.*$/gm,'');process.exit(/cron_run_markers/.test(C('app/api/cron/enforce-retention/route.ts'))?0:1)\"",
+        "note": "Passes once the retention cron names the table."
       }
     }
   ]

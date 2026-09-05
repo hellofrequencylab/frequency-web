@@ -19,6 +19,7 @@ import { getOrCreateDispatch } from '@/lib/vera-dispatch'
 import { getNextGathering } from '@/lib/quest/next-gathering'
 import { buildSessionDispatch, modeHasNote, statSessionLabel } from '@/lib/on-air'
 import { loadOnAirSessionData, type OnAirSessionData } from '@/lib/on-air/session-data'
+import { mergeProfileMeta } from '@/lib/profiles/meta'
 import type { DispatchKind, OnAirPrefs, RevealPayload, SessionMode } from '@/lib/on-air'
 
 /** Map a completed session to the Dispatch opener kind (task D). A Movement sit
@@ -254,10 +255,10 @@ export async function completeSession(
           ? input.warmupSec
           : prior.warmupSec,
     }
-    await admin
-      .from('profiles')
-      .update({ meta: { ...meta, onAir: prefs, onAirTotalSeconds: totalSeconds } })
-      .eq('id', profileId)
+    // 2026-09-05 (scan2 L6-09, ADR-1212): merge only this writer's two keys; the whole-blob update
+    // clobbered whatever another writer (streak, check-in) had put in meta a moment earlier.
+    const { error: prefsErr } = await mergeProfileMeta(admin, profileId, { onAir: prefs, onAirTotalSeconds: totalSeconds })
+    if (prefsErr) serverLog.warn('on_air.prefs_merge_failed', { profileId, error: prefsErr })
   } catch {
     // prefs + counter are a nicety, never a blocker
   }

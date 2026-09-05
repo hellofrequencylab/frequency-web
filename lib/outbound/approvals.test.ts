@@ -112,6 +112,8 @@ const CAMPAIGN_COLUMNS = [
   'reply_mode',
   'scheduled_for',
   'segment',
+  'send_error', // 2026-09-05 (scan2 L6-10, ADR-1212): the send lease and its error
+  'sending_started_at',
   'sent_at',
   'space_id',
   'status',

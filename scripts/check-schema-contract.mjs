@@ -66,6 +66,7 @@ export const MIN_RPC_CALLS = 60
  *    { file: 'lib/x.ts', table: 'campaigns', column: 'updated_at', kind: 'update',
  *      added: '2026-09-05', reason: 'why it cannot be fixed in this change', owner: 'SCAN-xxx' }
  *  `kind` is optional (matches any). An entry that matches nothing fails the guard. */
+/** @type {Array<{ file: string, table: string, column: string | null, kind?: string, added: string, reason: string, owner: string }>} */
 export const ALLOWLIST = [
   // Phase F (#2363) adds p_claim_token to both RPCs in migration 20270345000610, which is applied to
   // production only at F's merge; lib/database.types.ts is regenerated then and these two entries
