@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { mergeProfileMeta } from '@/lib/profiles/meta'
 import { awardGems } from '@/lib/gems'
 import { getProfileChores } from '@/lib/onboarding/profile-chores'
 
@@ -39,10 +40,16 @@ export async function claimChoresReward(): Promise<ChoresRewardResult> {
   const meta = (row?.meta ?? {}) as Record<string, unknown>
   const choresMeta = (meta.chores ?? {}) as Record<string, unknown>
   if (choresMeta.rewarded === true) return { awarded: false, amount: 0, already: true }
-  await admin
-    .from('profiles')
-    .update({ meta: { ...meta, chores: { ...choresMeta, rewarded: true, rewarded_at: new Date().toISOString() } } })
-    .eq('id', profileId)
+  // 2026-09-05 (scan2 L6-09): "merge, never blind-overwrite" above now holds at the database: ONLY the
+  // `chores` key is merged server-side, and the merge is checked. The flag is the guard for the Gems
+  // below, so an unstamped flag pays nothing (it would pay again on the next claim otherwise).
+  const { error } = await mergeProfileMeta(admin, profileId, {
+    chores: { ...choresMeta, rewarded: true, rewarded_at: new Date().toISOString() },
+  })
+  if (error) {
+    console.error('[claimChoresReward] chores stamp failed, paying nothing', { profileId, error })
+    return { awarded: false, amount: 0 }
+  }
 
   const result = await awardGems(profileId, 'welcome_member', undefined, { reason: 'profile_chores' })
   return { awarded: result.awarded, amount: result.amount }

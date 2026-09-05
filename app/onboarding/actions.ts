@@ -4,6 +4,7 @@ import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import type { Database } from '@/lib/database.types'
 import { createClient } from '@/lib/supabase/server'
+import { mergeProfileMeta } from '@/lib/profiles/meta'
 import { sendWelcomeEmail } from '@/lib/email'
 import { sanitizeProfileInput } from '@/lib/profile-input'
 import { recordConsent } from '@/lib/consent/consent'
@@ -48,9 +49,12 @@ export async function completeOnboarding(data: {
   const curMeta = ((cur?.meta as Record<string, unknown> | null) ?? {})
   const onboarded = curMeta.onboarding_completed === true
 
-  const update: Database['public']['Tables']['profiles']['Update'] = {
-    meta: { ...curMeta, onboarding_completed: true },
-  }
+  // 2026-09-05 (scan2 L6-09): "MERGE meta" above now happens at the database. The identity columns go
+  // in the checked update below (handle uniqueness decides that outcome); `onboarding_completed` is
+  // then merged server-side as its own key, so beta/tour state is preserved without being read and
+  // written back. A merge that fails throws before any welcome side effect runs; the next pass sees
+  // `onboarded` false and only fills blanks, so nothing is lost by retrying.
+  const update: Database['public']['Tables']['profiles']['Update'] = {}
   if (!onboarded) {
     update.display_name = displayName
     update.handle = handle
@@ -78,6 +82,11 @@ export async function completeOnboarding(data: {
       throw new Error('That handle was just taken. Go back and choose another.')
     }
     throw new Error(error.message)
+  }
+
+  if (updated?.id) {
+    const { error: metaErr } = await mergeProfileMeta(supabase, updated.id, { onboarding_completed: true })
+    if (metaErr) throw new Error(metaErr)
   }
 
   // Credit the referrer if this member arrived via a scanned referral code, and

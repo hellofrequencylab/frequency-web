@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { getMyProfileId } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { mergeProfileMeta } from '@/lib/profiles/meta'
 
 // The onboarding guide can't be dismissed — but a member can force a step complete
 // via an obscured escape hatch (a deliberately low-prominence control). That writes
@@ -24,9 +25,12 @@ export async function forceOnboardingStep(formData: FormData) {
   const forced = new Set(onboarding.forced ?? [])
   forced.add(stepKey)
 
-  await admin
-    .from('profiles')
-    .update({ meta: { ...meta, onboarding: { ...onboarding, forced: [...forced] } } } as never)
-    .eq('id', profileId)
+  // 2026-09-05 (scan2 L6-09): only the `onboarding` key is merged server-side; a failed merge is logged
+  // and the feed is not repainted for a step that did not land.
+  const { error } = await mergeProfileMeta(admin, profileId, { onboarding: { ...onboarding, forced: [...forced] } })
+  if (error) {
+    console.error('[forceOnboardingStep] onboarding merge failed', { profileId, stepKey, error })
+    return
+  }
   revalidatePath('/feed')
 }

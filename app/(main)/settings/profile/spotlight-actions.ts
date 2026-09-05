@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { mergeProfileMeta, removeProfileMetaKeys } from '@/lib/profiles/meta'
 import {
   readSpotlightEnabled,
   withSpotlightTheme,
@@ -45,18 +46,21 @@ export async function saveMemberGridLayout(rawLayout: unknown): Promise<{ error?
 
   const { data: me } = await supabase
     .from('profiles')
-    .select('handle, meta')
+    .select('id, handle, meta')
     .eq('auth_user_id', user.id)
     .maybeSingle()
   if (!me) return { error: 'Profile not found' }
 
   const safe = sanitizeEntityLayout(rawLayout, 'member')
-  const nextMeta = withMemberGridLayout((me as { meta?: unknown }).meta, safe)
-  const { error } = await supabase
-    .from('profiles')
-    .update({ meta: nextMeta as never })
-    .eq('auth_user_id', user.id)
-  if (error) return { error: error.message }
+  // 2026-09-05 (scan2 L6-09): the helper over an EMPTY base says whether `entityGrid` is set or dropped
+  // (an empty layout deletes it), and ONLY that key is merged or removed server-side. The RPC checks
+  // auth.uid() owns the row, so the write stays session-scoped.
+  const patch = withMemberGridLayout({}, safe)
+  const profileId = (me as { id: string }).id
+  const { error } = 'entityGrid' in patch
+    ? await mergeProfileMeta(supabase, profileId, { entityGrid: patch.entityGrid })
+    : await removeProfileMetaKeys(supabase, profileId, ['entityGrid'])
+  if (error) return { error }
 
   // The builder lives inline on the member's own profile (/people/<handle>), so revalidate THERE so the
   // server-rendered layout reconciles on the member's next visit (the live preview already repaints from
@@ -145,7 +149,7 @@ export async function setSpotlightTheme(rawTheme: unknown): Promise<{ error?: st
 
   const { data: me } = await supabase
     .from('profiles')
-    .select('handle, meta')
+    .select('id, handle, meta')
     .eq('auth_user_id', user.id)
     .maybeSingle()
   if (!me) return { error: 'Profile not found' }
@@ -154,12 +158,11 @@ export async function setSpotlightTheme(rawTheme: unknown): Promise<{ error?: st
   }
 
   const safe = validateSpotlightTheme(rawTheme)
-  const nextMeta = withSpotlightTheme((me as { meta?: unknown }).meta, safe)
-  const { error } = await supabase
-    .from('profiles')
-    .update({ meta: nextMeta as never })
-    .eq('auth_user_id', user.id)
-  if (error) return { error: error.message }
+  // 2026-09-05 (scan2 L6-09): only the `spotlight` key is merged server-side (the read supplies its
+  // sibling fields: enabled, published, background). Sibling meta keys are never carried back.
+  const { spotlight } = withSpotlightTheme((me as { meta?: unknown }).meta, safe)
+  const { error } = await mergeProfileMeta(supabase, (me as { id: string }).id, { spotlight })
+  if (error) return { error }
 
   revalidateSpotlight((me as { handle?: string | null }).handle ?? null)
   return {}
@@ -178,7 +181,7 @@ export async function setSpotlightBackground(rawBackground: unknown): Promise<{ 
 
   const { data: me } = await supabase
     .from('profiles')
-    .select('handle, meta')
+    .select('id, handle, meta')
     .eq('auth_user_id', user.id)
     .maybeSingle()
   if (!me) return { error: 'Profile not found' }
@@ -187,12 +190,10 @@ export async function setSpotlightBackground(rawBackground: unknown): Promise<{ 
   }
 
   const safe = validateSpotlightBackground(rawBackground, user.id)
-  const nextMeta = withSpotlightBackground((me as { meta?: unknown }).meta, safe)
-  const { error } = await supabase
-    .from('profiles')
-    .update({ meta: nextMeta as never })
-    .eq('auth_user_id', user.id)
-  if (error) return { error: error.message }
+  // 2026-09-05 (scan2 L6-09): only the `spotlight` key is merged server-side.
+  const { spotlight } = withSpotlightBackground((me as { meta?: unknown }).meta, safe)
+  const { error } = await mergeProfileMeta(supabase, (me as { id: string }).id, { spotlight })
+  if (error) return { error }
 
   revalidateSpotlight((me as { handle?: string | null }).handle ?? null)
   return {}

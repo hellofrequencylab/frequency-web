@@ -8318,6 +8318,40 @@
         "cmd": "node -e \"const fs=require('fs');const m=fs.readFileSync('supabase/migrations/20270345000900_merge_profile_meta_rpc.sql','utf8').replace(/--.*$/gm,'');process.exit(/p_path|jsonb_set\\(/.test(m)?0:1)\"",
         "note": "Passes once the RPC can merge a nested path (or the keys are split and this row is re-pointed)."
       }
+    },
+    {
+      "id": "SCAN-625",
+      "title": "A finished On Air sit whose history row failed to write still ran the whole economy",
+      "status": "done",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "app/(main)/on-air/actions.ts",
+        "ref": "ADR-1212"
+      },
+      "detail": "Scan two, phase D (2026-09-05). L5-08. The practice_sessions insert was unchecked and zaps, streak and airtime reveal followed. Closed: the insert is read first; a refused write returns the existing could-not-log failure before the timer delete, the practice log, the streak and the reveal.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const R=(f)=>fs.readFileSync(f,'utf8');const C=(f)=>R(f).replace(/\\\\/\\\\*[\\\\s\\\\S]*?\\\\*\\\\//g,'').replace(/^\\\\s*\\\\/\\\\/.*$/gm,'');process.exit(/Could not log this sit/.test(C('app/(main)/on-air/actions.ts'))&&fs.existsSync('app/(main)/on-air/actions.test.ts')?0:1)\"",
+        "note": "Fails if the insert result is dropped again."
+      }
+    },
+    {
+      "id": "SCAN-629",
+      "title": "Twelve writers rewrote profiles.meta whole from a stale read; one write primitive now merges a key",
+      "status": "done",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "lib/profiles/meta.ts",
+        "ref": "ADR-1212"
+      },
+      "detail": "Scan two, phase D (2026-09-05). L6-09 and L5-06. Every writer did select meta, spread, update whole, so two writers in the same second clobbered each other (the daily check-in reverting a practice streak was the concrete interleaving). Closed: migration 20270345000900 adds merge_profile_meta (shallow top-level merge, owner-or-service-role check inside, optional current_streak and longest_streak columns) and remove_profile_meta_keys; lib/profiles/meta.ts is the one client entry; eighteen writer files across practice streak, check-in, celebrations, walkthroughs, spotlight, profile settings, onboarding, induction and attribution merge only their own key, and the check-in pays the gem only when the stamp landed. The spotlight and tour keys are still shared by several writers (LIVE-171).",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const R=(f)=>fs.readFileSync(f,'utf8');const C=(f)=>R(f).replace(/\\\\/\\\\*[\\\\s\\\\S]*?\\\\*\\\\//g,'').replace(/^\\\\s*\\\\/\\\\/.*$/gm,'');const p=require('path');const h=[];function w(d){for(const e of fs.readdirSync(d,{withFileTypes:true})){const f=p.join(d,e.name);if(e.isDirectory()){if(e.name!=='node_modules'&&!e.name.startsWith('.'))w(f)}else if(/\\\\.tsx?$/.test(e.name)&&!/\\\\.test\\\\./.test(e.name)){const s=C(f);if(/from\\\\('profiles'\\\\)[\\\\s\\\\S]{0,160}?\\\\.update\\\\(\\\\s*\\\\{[\\\\s\\\\S]{0,200}?\\\\bmeta\\\\s*:/.test(s))h.push(f)}}}w('lib');w('app');process.exit(h.length===0&&/export async function mergeProfileMeta/.test(C('lib/profiles/meta.ts'))?0:1)\"",
+        "note": "Fails if any writer goes back to updating meta whole."
+      }
     }
   ]
 }

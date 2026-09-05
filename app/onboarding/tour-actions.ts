@@ -2,6 +2,7 @@
 
 import type { Json } from '@/lib/database.types'
 import { createClient } from '@/lib/supabase/server'
+import { mergeProfileMeta } from '@/lib/profiles/meta'
 import { recordEngagementEvent } from '@/lib/engagement/events'
 
 // Persist a tour interaction into profiles.meta.tour and emit an analytics event
@@ -37,10 +38,14 @@ export async function recordTourEvent(tipId: string, kind: TourEventKind) {
     lastShownAt: new Date().toISOString(),
   }
 
-  await supabase
-    .from('profiles')
-    .update({ meta: { ...meta, tour: nextTour } })
-    .eq('id', profile.id)
+  // 2026-09-05 (scan2 L6-09): only the `tour` key is merged server-side (the RPC checks auth.uid() owns
+  // the row, so the member scoping above holds). A failed merge is logged and the analytics event is
+  // not emitted for a tip that was not actually marked seen.
+  const { error } = await mergeProfileMeta(supabase, profile.id, { tour: nextTour })
+  if (error) {
+    console.error('[recordTourEvent] tour merge failed', { profileId: profile.id, error })
+    return
+  }
 
   // Activation-funnel analytics (best-effort; no rewards — no gamificationEvent).
   void recordEngagementEvent({
@@ -73,15 +78,14 @@ export async function setSpotlightTourState(state: SpotlightState, atStop = 0) {
   const meta = (profile.meta as Meta | null) ?? {}
   const tour = (meta.tour as Record<string, Json> | undefined) ?? {}
 
-  await supabase
-    .from('profiles')
-    .update({
-      meta: {
-        ...meta,
-        tour: { ...tour, spotlight: { status: state, atStop, at: new Date().toISOString() } },
-      },
-    })
-    .eq('id', profile.id)
+  // 2026-09-05 (scan2 L6-09): only the `tour` key is merged server-side (see recordTourEvent).
+  const { error } = await mergeProfileMeta(supabase, profile.id, {
+    tour: { ...tour, spotlight: { status: state, atStop, at: new Date().toISOString() } },
+  })
+  if (error) {
+    console.error('[setSpotlightTourState] tour merge failed', { profileId: profile.id, error })
+    return
+  }
 
   void recordEngagementEvent({
     idempotencyKey: `tour-spotlight:${profile.id}:${state}:${atStop}`,
