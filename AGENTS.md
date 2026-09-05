@@ -22,7 +22,9 @@ ARTIFACT. Full rules and the incident: [`docs/DEPLOY-SAFETY.md`](docs/DEPLOY-SAF
   `buildCommand: pnpm build` so a dashboard edit cannot silently take the lifecycle away. **Five
   gates run there and fail the build** (four wired and proven on real artifacts as of #2194,
   2026-08-19 — LIVE-035/LIVE-048/LIVE-029 closed; the fifth, `check:build-fanout`, joined on
-  2026-09-05 (ADR-1211) and awaits its first production reading):
+  2026-09-05 (ADR-1211); its first real artifact, 2026-09-05 12:19Z, read **456 functions**, 2 icon
+  chunks in 3 functions, 6 site photos at the 6 ceiling, and the floor moved 450 to 400 beside that
+  reading because the 496 it was set against was three weeks stale):
   - `check:build-budget` — total per-function output under 8 GB; **6.66 GB across 497 functions on
     the PRODUCTION build of `main` at e3cec7af2, 2026-08-25 21:43Z (#2308)** — the first FALL in the
     series, by 0.01 GB and one function, after the two rises below. Previously **measured 6.67 GB across 498

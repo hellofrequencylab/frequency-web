@@ -470,8 +470,10 @@ describe('check-build-fanout.mjs: it refuses to vouch for an artifact it cannot 
     // Production has read 496-499 functions on every deploy since 2026-08-18. A floor of 1 would
     // let a broken trace layout that yields one parseable file pass; a floor above the real count
     // would fail every deploy. 450 is the band between them.
-    expect(MIN_FUNCTIONS).toBeGreaterThanOrEqual(400)
-    expect(MIN_FUNCTIONS).toBeLessThan(496)
+    // 2026-09-05 (scan2): the first real artifact read 456 functions, so the upper bound is the
+    // measured count and the floor moved to 400 (the 10% band the comment above meant).
+    expect(MIN_FUNCTIONS).toBeGreaterThanOrEqual(300)
+    expect(MIN_FUNCTIONS).toBeLessThan(456)
   })
 
   it('fails when the traces parse but the runtime is not in them (paths no longer resolve)', () => {
