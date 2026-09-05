@@ -71,7 +71,8 @@
             "LIVE-172",
             "LIVE-173",
             "LIVE-171",
-            "LIVE-175"
+            "LIVE-175",
+            "LIVE-176"
           ]
         },
         {
@@ -8465,10 +8466,27 @@
         "file": "scripts/check-cache-budget.mjs",
         "ref": "PACKED_PER_RAW"
       },
-      "detail": "Scan two, phase D6 (2026-09-05), measured on the merge run itself. check:cache-budget predicts packed size as raw x PACKED_PER_RAW = 0.53, and ADR-1113 settled that constant on paired readings accurate to 1% and rounded toward firing the trim EARLY. Three paired readings the same day all ran the other way: 1.31 predicted / 1.31 uploaded (main at 08e6169), 1.36 / 1.38 (main at 67ada96), and 1.35 / 1.41 (main at e2d6107). The last is 94% of the 1.50 GB ceiling and at the trim point, and a 4% low estimate is the direction that costs a BUILD rather than a CPU minute, because the trim fires after the cache is already over. The mix has moved: .next/cache grew 1428 to 1522 MiB across the day while node_modules held at 921 MiB, so the cache is more compiler-heavy than the mix 0.53 was derived on. Re-derive the constant from these readings (the implied ratio is near 0.55) and raise it, which fires the trim earlier; do NOT lower it. The change belongs in its own PR with the green build that proves it, per the rule that a threshold ships beside its measurement.",
+      "detail": "Scan two, phase D6 (2026-09-05), measured on the merge run itself. check:cache-budget predicts packed size as raw x PACKED_PER_RAW = 0.53, and ADR-1113 settled that constant on paired readings accurate to 1% and rounded toward firing the trim EARLY. Three paired readings the same day all ran the other way: 1.31 predicted / 1.31 uploaded (main at 08e6169), 1.36 / 1.38 (main at 67ada96), and 1.35 / 1.41 (main at e2d6107). The last is 94% of the 1.50 GB ceiling and at the trim point, and a 4% low estimate is the direction that costs a BUILD rather than a CPU minute, because the trim fires after the cache is already over. The mix has moved: .next/cache grew 1428 to 1522 MiB across the day while node_modules held at 921 MiB, so the cache is more compiler-heavy than the mix 0.53 was derived on. Re-derive the constant from these readings (the implied ratio is near 0.55) and raise it, which fires the trim earlier; do NOT lower it. The change belongs in its own PR with the green build that proves it, per the rule that a threshold ships beside its measurement. CONFIRMED THE SAME DAY: the deploy of the last scan-two split (main at de8177e, 14:26Z) measured 3.06 GiB raw, about 1.74 GB packed, over both the 1.40 GB trim point and Vercel's 1.50 GB hard ceiling, and check:cache-budget trimmed .next/cache/turbopack (2208 MiB) to get under it, uploading 256.68 MB. The gate did its job: a cold compile on the next build instead of Vercel discarding the whole cache including node_modules. That settles the premise here as real rather than noise, and it is the first recorded trim since the gate was wired.",
       "verify": {
         "kind": "manual",
-        "evidence": "2026-09-05: three paired readings from production build logs (dpl_Cas653f4, dpl_6gcnzawu, dpl_AUFhqsQt): predicted 1.31/1.36/1.35 GB against uploaded 1.31/1.38/1.41 GB. Closes when a re-derived PACKED_PER_RAW ships with a paired reading that agrees within 1% on the current mix.",
+        "evidence": "2026-09-05: three paired readings from production build logs (predicted 1.31/1.36/1.35 GB against uploaded 1.31/1.38/1.41 GB), then a fourth build that measured 1.74 GB packed and TRIMMED (dpl_GV9ipbH7kiE6zF8HJxwHRq4j3VHW). Closes when a re-derived PACKED_PER_RAW ships with a paired reading that agrees within 1% on the current mix.",
+        "checked": "2026-09-05"
+      }
+    },
+    {
+      "id": "LIVE-176",
+      "title": "SCAN-510's probe reads every TypeScript file in the tree and burns 7.2s of CPU, over the 4.5s per-probe ceiling",
+      "status": "open",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "docs/BUILD-BACKLOG.json",
+        "ref": "SCAN-510"
+      },
+      "detail": "Measured on 2026-09-05 during the scan-two merge run, on a 4-core container at load 0.95: scripts/backlog-contract.test.ts fails with `The single probe SCAN-510 burned 7.18s of CPU, over the 4.5s per-probe ceiling` (14.77s under load). It passes on the CI runner, which is why no PR is red, so this is a signal only a slower machine surfaces. The probe is right about WHAT it measures: four deleted contest files must stay gone, and no file may mention the five contest identifiers. It is the HOW that costs: after the four existsSync checks it walks the repo and reads about 4,400 .ts/.tsx files, regexing each one, so its cost grows with the repo forever. This is the exact class LIVE-034 converted nine other rows away from, and that row's own message says raising the ceiling is not the fix. Convert it to an in-process consequence measure the way those nine did, without narrowing what it covers: a reintroduction anywhere still has to fail it, so restricting the walk to app/, lib/ and components/ buys speed by giving up coverage and is not the answer either.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "2026-09-05: `pnpm exec vitest run scripts/backlog-contract.test.ts` on a 4-core container reports SCAN-510 at 7.18s against the 4.5s ceiling, alone and idle; the same run is green on the CI runner. Closes when the probe measures the same consequence under the ceiling on both.",
         "checked": "2026-09-05"
       }
     }

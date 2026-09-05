@@ -116,7 +116,23 @@ ARTIFACT. Full rules and the incident: [`docs/DEPLOY-SAFETY.md`](docs/DEPLOY-SAF
     build a cold compile, but a trim is a normal event on this mix, not a regression. The paragraphs
     above are the measurement record that produced that sentence: they disagree with each other
     because each was written at a different point in the oscillation. Read them newest-last, and do
-    not lift a single one of them out as "the" number. No reading later than 2026-08-25 exists.
+    not lift a single one of them out as "the" number.
+    🔴 **THE BAND BROKE ON 2026-09-05, AND THE GATE TRIMMED.** The sentence that closed this
+    paragraph until then, "No reading later than 2026-08-25 exists", is retired: the scan-two repair
+    run put sixteen deploys through in one day and produced six readings plus the first trim this
+    file has ever recorded. Predicted against uploaded, in order: 1.31/1.31, 1.36/1.38, 1.35/1.41,
+    then a build that measured **3.06 GiB raw, about 1.74 GB packed** and TRIMMED. So two things the
+    paragraphs above got right and one they got wrong. Right: a trim is a normal event on this mix,
+    and it cost the next build a cold compile, exactly as described. Right: the estimate stays close
+    to the upload line. **Wrong: the series is not only a band.** Under many deploys in one day the
+    compiler cache accumulates faster than it decays, it left the 1.27 to 1.39 range, and it reached
+    a size Vercel would have rejected WHOLE, node_modules included, had the gate not dropped
+    turbopack first. Read the band as the resting state and this as what a busy day does to it.
+    ⚠️ The other half is the estimate's DIRECTION: all three paired readings that day ran LOW
+    (1.35 predicted against 1.41 uploaded is 4%), i.e. the trim fires LATE, which is the direction
+    that costs a build rather than a CPU minute. `PACKED_PER_RAW` was settled rounded toward firing
+    EARLY, so on this mix it no longer does what ADR-1113 chose it to do. `LIVE-175` carries the
+    re-derivation; do not change the constant without a paired reading that proves the new one.
   - `check:shell-weight` ([ADR-1066](docs/DECISIONS.md)) — the CLIENT half: the app shell's eager
     first-load JS (**1012 KB across 22 chunks, production e3cec7af2, 2026-08-25 21:43Z** — one
     kilobyte and one chunk above the 1011 KB / 21 it read hours earlier, which was itself one kilobyte above the 1010 KB
