@@ -6711,7 +6711,7 @@
         "file": "lib/resonance/density.ts",
         "ref": "ADR-1207"
       },
-      "detail": "Scan two R2. refresh_resonance_density_cells() opened with delete with no WHERE; the PostgREST authenticator role preloads safeupdate (pg_roles.rolconfig), so every REST call failed with sqlstate 21000 since 2026-08-22 (postgres_logs 2026-09-04 02:31Z), density.ts swallowed it to {cells:0} and the cron logged info. Closed: migration 20270345000000 (applied 2026-09-05, ledger reconciled) rewrites the delete as `where true`; density.ts returns the error; the cron logs it at error level with ok:false on the step; pgTAP pins the function under the loaded hook.",
+      "detail": "Scan two R2. refresh_resonance_density_cells() opened with delete with no WHERE; the PostgREST authenticator role preloads safeupdate (pg_roles.rolconfig), so every REST call failed with sqlstate 21000 since 2026-08-22 (postgres_logs 2026-09-04 02:31Z), density.ts swallowed it to {cells:0} and the cron logged info. Closed: migration 20270345000000 (applied 2026-09-05, ledger reconciled) rewrites the delete as `where true`; density.ts returns the error; the cron logs it at error level with ok:false on the step. A pgTAP pin under a loaded safeupdate hook is deferred to phase E until `load` is proven allowed in the CI database.",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e \"const fs=require('fs');const m=fs.readFileSync('supabase/migrations/20270345000000_density_refresh_safeupdate.sql','utf8');const d=fs.readFileSync('lib/resonance/density.ts','utf8');process.exit(/delete from public\\.resonance_density_cells where true;/.test(m)&&!/return \\{ cells: 0 \\}/.test(d)&&/error/.test(d)?0:1)\"",
