@@ -10,6 +10,7 @@
 import { revalidatePath } from 'next/cache'
 import {
   createSpaceEmailTemplate as createSpaceEmailTemplateImpl,
+  updateSpaceEmailTemplate as updateSpaceEmailTemplateImpl,
   deleteSpaceEmailTemplate as deleteSpaceEmailTemplateImpl,
 } from '@/lib/spaces/email-templates'
 import { type ActionResult } from '@/lib/action-result'
@@ -29,6 +30,25 @@ export async function createSpaceEmailTemplate(
   body: string,
 ): Promise<ActionResult<{ id: string }>> {
   const res = await createSpaceEmailTemplateImpl(spaceId, name, subject, body)
+  if (!('error' in res)) revalidateEmail(slug)
+  return res
+}
+
+/**
+ * Re-save a template's name, subject and body. Gated on canEditProfile AND the template belonging to
+ * the Space (see the implementation). 2026-09-05 (scan2 L9-08): updateSpaceEmailTemplate had no
+ * importer, so tweaking a saved template meant delete and recreate. The picker calls this with the
+ * composer's current subject + body, so "update" means "make the template say what I have written".
+ */
+export async function updateSpaceEmailTemplate(
+  spaceId: string,
+  slug: string,
+  id: string,
+  name: string,
+  subject: string,
+  body: string,
+): Promise<ActionResult> {
+  const res = await updateSpaceEmailTemplateImpl(spaceId, id, name, subject, body)
   if (!('error' in res)) revalidateEmail(slug)
   return res
 }

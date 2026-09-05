@@ -11,6 +11,12 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { cleanConversationBody } from '@/lib/comms/message-body'
 import { splitQuotedReply } from '@/lib/comms/quoted-reply'
 import { healMissingBodies } from '@/lib/comms/inbound'
+import {
+  mapAssignmentHistory,
+  assignmentProfileIds,
+  type AssignmentRow,
+  type ConversationAssignmentEntry,
+} from '@/lib/comms/assignment-history'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function db(): { from: (t: string) => any } {
@@ -114,6 +120,9 @@ export interface ConversationThread {
   contextRefs: ConversationContextRef[]
   lastActivityAt: string
   messages: ConversationThreadMessage[]
+  /** The assignment trail (comms_assignments), newest first. 2026-09-05 (scan2 L9-10): the first reader
+   *  of that append-only table; read through the same admin client as the thread itself. */
+  assignments: ConversationAssignmentEntry[]
 }
 
 const CONV_COLS =
@@ -384,6 +393,27 @@ async function loadLatestSnippets(conversationIds: string[]): Promise<Map<string
   return map
 }
 
+/** Load a conversation's assignment trail, newest first (bounded). Same service-role read as the thread,
+ *  staff-gated at the call site: the table's RLS lets only the two parties of a row see it, and the
+ *  workspace is the operator's view of the WHOLE trail. Fail-safe: empty, and the supabase error is read. */
+async function loadAssignmentRows(conversationId: string): Promise<AssignmentRow[]> {
+  try {
+    const { data, error } = await db()
+      .from('comms_assignments')
+      .select('id, assigned_to, assigned_by, reason, created_at')
+      .eq('conversation_id', conversationId)
+      .order('created_at', { ascending: false })
+      .limit(50)
+    if (error) {
+      console.error('[comms/workspace] loadAssignmentRows failed:', error.message)
+      return []
+    }
+    return (data as AssignmentRow[] | null) ?? []
+  } catch {
+    return []
+  }
+}
+
 /**
  * Load one full conversation thread (the reader pane): the conversation header + every message (internal
  * notes included — this is the staff view), oldest first, each attributed to its real sender. Staff-gated
@@ -406,12 +436,15 @@ export async function getWorkspaceThread(
       if (row.space_id !== rootId) return null
     }
 
-    const { data: msgData } = await db()
-      .from('comms_messages')
-      .select(MSG_COLS)
-      .eq('conversation_id', id)
-      .order('created_at', { ascending: true })
-      .limit(500)
+    const [{ data: msgData }, assignmentRows] = await Promise.all([
+      db()
+        .from('comms_messages')
+        .select(MSG_COLS)
+        .eq('conversation_id', id)
+        .order('created_at', { ascending: true })
+        .limit(500),
+      loadAssignmentRows(id),
+    ])
     const msgs = (msgData as MsgRow[] | null) ?? []
 
     // HEAL-ON-LOAD (best-effort): recover the bodies of inbound emails that recorded WITHOUT one
@@ -440,6 +473,7 @@ export async function getWorkspaceThread(
       row.member_profile_id,
       row.assigned_to,
       ...msgs.map((m) => m.author_id),
+      ...assignmentProfileIds(assignmentRows),
     ].filter(Boolean) as string[]
     const contactIds = [row.contact_id, ...msgs.map((m) => m.author_contact_id)].filter(Boolean) as string[]
     const [profiles, contacts, space, contextRefs] = await Promise.all([
@@ -494,6 +528,7 @@ export async function getWorkspaceThread(
       contextRefs,
       lastActivityAt: row.last_activity_at,
       messages,
+      assignments: mapAssignmentHistory(assignmentRows, profiles),
     }
   } catch {
     return null

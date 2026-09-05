@@ -64,7 +64,8 @@
             "LIVE-166",
             "LIVE-169",
             "LIVE-167",
-            "LIVE-164"
+            "LIVE-164",
+            "LIVE-163"
           ]
         },
         {
@@ -188,7 +189,8 @@
             "OWN-054",
             "OWN-055",
             "OWN-056",
-            "OWN-057"
+            "OWN-057",
+            "OWN-058"
           ]
         }
       ],
@@ -7539,7 +7541,7 @@
         "file": "scripts/check-build-fanout.mjs",
         "ref": "ADR-1211"
       },
-      "detail": "Scan two, phase E (2026-09-05). L8-01. scripts/build-fanout.test.ts guarded them with describe.skipIf(!HAS_BUILD), CI never builds and postbuild ran only four .mjs gates. Closed: scripts/check-build-fanout.mjs carries the six checks (heic2any in no trace, icon collections in at most 8 functions, no unsanctioned public/ file, site photos in at most 6, no function over 14 public files, placeholders ship) with a 450-function floor, runs fifth in postbuild, and the vitest file exercises it on a fixture tree with planted violations. It has NOT yet seen a real artifact: read its output on the first production deploy (functions read ~496-499; icon chunks at least 1). 2026-09-05 (scan2, first real artifact, preview afd733e of #2367): 456 functions read, the app-page runtime in 455, icon collections 2 chunks carried by 3 functions (budget 8), heic2any 0, public/ 0 unsanctioned, site photos 6 (AT the 6 ceiling), worst function 10 public files (max 14), placeholders ship. The 496-499 prediction came from a tree three weeks older; the floor sat six deletions under the real count and was lowered to 400 beside this reading (E3a).",
+      "detail": "Scan two, phase E (2026-09-05). L8-01. scripts/build-fanout.test.ts guarded them with describe.skipIf(!HAS_BUILD), CI never builds and postbuild ran only four .mjs gates. Closed: scripts/check-build-fanout.mjs carries the six checks (heic2any in no trace, icon collections in at most 8 functions, no unsanctioned public/ file, site photos in at most 6, no function over 14 public files, placeholders ship) with a 450-function floor, runs fifth in postbuild, and the vitest file exercises it on a fixture tree with planted violations. It has NOT yet seen a real artifact: read its output on the first production deploy (functions read ~496-499; icon chunks at least 1).",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e \"const fs=require('fs');const p=JSON.parse(fs.readFileSync('package.json','utf8')).scripts;const s=fs.readFileSync('scripts/check-build-fanout.mjs','utf8');process.exit(/check-build-fanout\\\\.mjs\\\\s*(&&|$)/.test(p.postbuild)&&/MIN_FUNCTIONS\\\\s*=\\\\s*\\\\d/.test(s)?0:1)\"",
@@ -7680,6 +7682,108 @@
         "kind": "cmd",
         "cmd": "node -e \"const fs=require('fs'),pa=require('path');function*w(d){for(const e of fs.readdirSync(d,{withFileTypes:true})){const f=pa.join(d,e.name);if(e.isDirectory()){if(e.name!=='node_modules'&&!e.name.startsWith('.'))yield*w(f)}else yield f}}const mig=[...w('supabase/migrations')].some(f=>f.endsWith('.sql')&&/drop table if exists public\\\\.email_templates/.test(fs.readFileSync(f,'utf8')));const lib=[...w('lib')].some(f=>/\\\\.tsx?$/.test(f)&&/email_templates/.test(fs.readFileSync(f,'utf8').replace(/\\\\/\\\\/.*$/gm,'')));process.exit(mig&&!lib?0:1)\"",
         "note": "Passes once a migration drops the table and no lib code names it."
+      }
+    },
+    {
+      "id": "SCAN-600",
+      "title": "Space profile telemetry had no reader, and the Donate card counted a click per mount",
+      "status": "done",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "lib/spaces/analytics.ts",
+        "ref": "ADR-1211"
+      },
+      "detail": "Scan two, phase E (2026-09-05). L9-07. space.profile_view and space.cta_click were written and read by nothing, and the Donate card fired cta_click in a mount effect. Closed: the tracker records on the first real click only; getSpaceProfileStats counts the two events per Space over a window; the Space Home dashboard shows Profile views and Button clicks behind their own Suspense.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const t=fs.readFileSync('components/spaces/donations/donate-cta-tracker.tsx','utf8').replace(/\\\\/\\\\*[\\\\s\\\\S]*?\\\\*\\\\//g,'').replace(/^\\\\s*\\\\/\\\\/.*$/gm,'');const d=fs.readFileSync('components/spaces/dashboard/space-dashboard.tsx','utf8');process.exit(!/useEffect/.test(t)&&/getSpaceProfileStats\\\\(/.test(d)?0:1)\"",
+        "note": "Fails if the tracker fires on mount again or the dashboard stops reading the stats."
+      }
+    },
+    {
+      "id": "SCAN-601",
+      "title": "Space segments and Space email templates could be created and deleted but not edited",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/spaces/segments-actions.ts",
+        "ref": "ADR-1211"
+      },
+      "detail": "Scan two, phase E (2026-09-05). L9-08. updateSpaceSegment and updateSpaceEmailTemplate existed with no importer and no affordance. Closed: server actions with the create actions' authorization, an edit mode in the audience picker (rename keeps the stored definition, re-read server-side) and the template picker (update with the composer's current draft), with jsdom tests.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');process.exit(/export async function updateSpaceSegment\\\\(/.test(fs.readFileSync('lib/spaces/segments-actions.ts','utf8'))&&/export async function updateSpaceEmailTemplate\\\\(/.test(fs.readFileSync('lib/spaces/email-templates-actions.ts','utf8'))&&/updateSpaceSegment/.test(fs.readFileSync('components/spaces/email/audience-picker.tsx','utf8'))?0:1)\"",
+        "note": "Fails if the edit actions or the picker's edit mode are removed."
+      }
+    },
+    {
+      "id": "SCAN-602",
+      "title": "Conversation assignment history was written and never shown",
+      "status": "done",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "lib/comms/workspace.ts",
+        "ref": "ADR-1211"
+      },
+      "detail": "Scan two, phase E (2026-09-05). L9-10. comms_assignments had one insert and no reader. Closed: getWorkspaceThread loads the trail (bounded, error read) beside the messages and the conversation workspace renders it as a details band, latest hand-off as the summary.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const w=fs.readFileSync('lib/comms/workspace.ts','utf8').replace(/^\\\\s*\\\\/\\\\/.*$/gm,'');const c=fs.readFileSync('components/admin/crm/conversation-workspace.tsx','utf8');process.exit(/\\\\.from\\\\('comms_assignments'\\\\)/.test(w)&&/assignmentSentence\\\\(/.test(c)?0:1)\"",
+        "note": "Fails if the trail stops being read or rendered."
+      }
+    },
+    {
+      "id": "SCAN-603",
+      "title": "The two full-page settings editors now resolve through the surface-href builders",
+      "status": "done",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "lib/admin/entity-surface-hrefs.ts",
+        "ref": "ADR-1211"
+      },
+      "detail": "Scan two, phase E (2026-09-05). L9-11. Nothing pointed at /circles/[slug]/settings or /events/[slug]/settings. Closed for the builders: circle.settings and event.settings resolve. The door itself (a Settings item in the rail bank) would raise FROZEN_MENU_DEBT, which the ledger says may never rise, and both manage pages already carry an in-page Settings tab, so whether to add the rail link is OWN-058.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');process.exit(/circle\\\\.settings/.test(fs.readFileSync('lib/admin/entity-surface-hrefs.ts','utf8').replace(/\\\\/\\\\/.*$/gm,''))?0:1)\"",
+        "note": "Fails if the builders stop resolving the settings editors."
+      }
+    },
+    {
+      "id": "OWN-058",
+      "title": "Decide the door for the two full-page settings editors",
+      "status": "open",
+      "lane": "owner",
+      "size": "XS",
+      "source": {
+        "file": "lib/admin/rail-bank.ts",
+        "ref": "ADR-1211"
+      },
+      "detail": "SCAN-603 made circle.settings and event.settings resolve through the href builders, but adding a Settings item to the rail bank raised FROZEN_MENU_DEBT from 11 to 13 and check:menu refused it (the ledger says the count may never rise). Both manage pages already carry an in-page Settings tab, so the full-page editors are reachable by URL and duplicate an existing door. Owner picks one: (a) add the two rail items and raise the frozen count with a reason, (b) mint circle.edit / event.edit link rows in ADMIN_MODULES (the channel.edit precedent) and add them to the closed linkOut set in registry.test.ts, or (c) leave the URL-only editors as they are and retire them later.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const b=fs.readFileSync('lib/admin/rail-bank.ts','utf8');const r=fs.readFileSync('lib/admin/modules/registry.ts','utf8');process.exit(/\\\\/settings`/.test(b)||/circle\\\\.edit|event\\\\.edit/.test(r)?0:1)\"",
+        "note": "Passes once either door exists (rail item or registry link rows)."
+      }
+    },
+    {
+      "id": "LIVE-163",
+      "title": "Two granted RPCs are called by nothing: search_practices_hybrid and housing_lifestyle_agreement",
+      "status": "open",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/practices.ts",
+        "ref": "ADR-1211"
+      },
+      "detail": "Scan two L9-12. Both are defined, granted (scripts/function-grants.txt) and never called; practice search never takes the hybrid RRF path the function was built for. Wiring search_practices_hybrid into searchLibraryPractices is not one call (an embedText round-trip per query, an id hydration that would re-sort away the RRF order, exact-count paging over an id set), so it needs a design pass; housing_lifestyle_agreement needs an owner ruling to drop. Either wire, or drop both in a migration and remove their grants lines.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const g=fs.readFileSync('scripts/function-grants.txt','utf8');const p=fs.readFileSync('lib/practices.ts','utf8');process.exit((/rpc\\\\('search_practices_hybrid'/.test(p)||!/^search_practices_hybrid\\\\b/m.test(g))&&!/^housing_lifestyle_agreement\\\\b/m.test(g)?0:1)\"",
+        "note": "Passes once the hybrid search is called or dropped, and the housing function is dropped."
       }
     }
   ]
