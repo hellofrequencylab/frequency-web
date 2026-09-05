@@ -210,7 +210,7 @@ export function scanSchemaContract({ root = REPO_ROOT, typesFile } = {}) {
           if (e.name === 'node_modules' || e.name.startsWith('.')) continue
           walk(p)
         } else if (EXT.has(path.extname(e.name))) {
-          if (/\.test\.|\.spec\.|\.d\.ts$/.test(e.name)) continue
+          if (/(\.test\.|\.spec\.)/.test(e.name) || /\.d\.ts$/.test(e.name)) continue
           if (p === TYPES_FILE) continue
           out.push(p)
         }

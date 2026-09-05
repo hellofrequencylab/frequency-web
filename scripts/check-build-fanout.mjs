@@ -108,19 +108,25 @@ export function measureFanout(root) {
   // The icon collections, found by content among the big server chunks.
   const chunkDir = path.join(serverDir, 'chunks')
   const iconChunks = new Set()
-  if (existsSync(chunkDir)) {
-    for (const rel of globSync('**/*.js', { cwd: chunkDir })) {
-      const abs = path.join(chunkDir, rel)
-      let big = false
-      try {
-        big = statSync(abs).size > ICON_CHUNK_MIN_BYTES
-      } catch {
-        big = false
-      }
-      if (!big) continue
-      const src = readFileSync(abs, 'utf8')
-      if (ICON_GLYPHS.every((g) => src.includes(g))) iconChunks.add(toPosix(abs))
+  // Read in one step under try/catch: a chunk that vanishes between the listing and the read is
+  // skipped, never a crash, and there is no check-then-use window on the size test.
+  let chunkFiles = []
+  try {
+    chunkFiles = globSync('**/*.js', { cwd: chunkDir })
+  } catch {
+    chunkFiles = []
+  }
+  for (const rel of chunkFiles) {
+    const abs = path.join(chunkDir, rel)
+    let src
+    try {
+      const st = statSync(abs)
+      if (st.size <= ICON_CHUNK_MIN_BYTES) continue
+      src = readFileSync(abs, 'utf8')
+    } catch {
+      continue
     }
+    if (ICON_GLYPHS.every((g) => src.includes(g))) iconChunks.add(toPosix(abs))
   }
 
   const publicOffenders = new Set()

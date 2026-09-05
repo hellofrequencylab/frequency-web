@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { writeFileSync, mkdirSync } from 'node:fs'
+import { writeFileSync, mkdtempSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { sourceWithoutComments, stripComments, stripImports } from './source-shape'
@@ -95,8 +95,8 @@ describe('stripImports', () => {
 })
 
 describe('sourceWithoutComments', () => {
-  const dir = join(tmpdir(), 'source-shape-test')
-  mkdirSync(dir, { recursive: true })
+  // A fresh private directory per run (mkdtemp), never a fixed name another process could pre-create.
+  const dir = mkdtempSync(join(tmpdir(), 'source-shape-test-'))
   const file = join(dir, 'sample.ts')
   writeFileSync(
     file,
