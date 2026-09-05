@@ -1524,14 +1524,14 @@
       "exclude": [
         "**/*.{test,spec}.{ts,tsx}"
       ],
-      "baseline": 588,
+      "baseline": 589,
       "frozen": {
         "at": "2026-09-05",
-        "value": 588,
-        "direction": "lowered",
+        "value": 589,
+        "direction": "raised",
         "basis": "b2a90e60b032",
-        "reason": "Scan two phase A (#2360) retired the legacy admin New Channel composer (components/compose/new-channel-compose.tsx, deleted) and rebuilt the unsubscribe page on the kit card; phase B re-freezes the floor so the ratchet holds at the lower number",
-        "from": 609
+        "reason": "2026-09-05 (scan two, D6): +1 from the Tips received section, the first surface a member can see a tip on (L9-05). The label is the icon-plus-small-caps idiom its two sibling sections in settings/billing already use, and there is no component to adopt: SectionHeader is the h2 title-and-count header for a browse section, not an in-card label. Banked as one site rather than invented as a component in a repair PR.",
+        "from": 588
       },
       "history": [
         {
@@ -1554,6 +1554,13 @@
           "to": 588,
           "direction": "lowered",
           "reason": "Scan two phase A (#2360) retired the legacy admin New Channel composer (components/compose/new-channel-compose.tsx, deleted) and rebuilt the unsubscribe page on the kit card; phase B re-freezes the floor so the ratchet holds at the lower number"
+        },
+        {
+          "at": "2026-09-05",
+          "from": 588,
+          "to": 589,
+          "direction": "raised",
+          "reason": "2026-09-05 (scan two, D6): +1 from the Tips received section, the first surface a member can see a tip on (L9-05). The label is the icon-plus-small-caps idiom its two sibling sections in settings/billing already use, and there is no component to adopt: SectionHeader is the h2 title-and-count header for a browse section, not an in-card label. Banked as one site rather than invented as a component in a repair PR."
         }
       ]
     }

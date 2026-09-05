@@ -10,7 +10,7 @@ export async function RefundsOwedNotice({ eventId }: { eventId: string }) {
   return (
     <p
       role="status"
-      className="inline-flex items-center gap-2 rounded-xl border border-warning/50 bg-warning-bg/30 px-4 py-2.5 text-body-sm font-medium text-text"
+      className="inline-flex items-center gap-2 rounded-card border border-warning/50 bg-warning-bg/30 px-4 py-2.5 text-body-sm font-medium text-text"
     >
       <AlertTriangle className="h-4 w-4 text-warning" aria-hidden />
       {owed === 1 ? '1 refund still owed.' : `${owed} refunds still owed.`}{' '}
