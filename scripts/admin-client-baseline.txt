@@ -598,6 +598,8 @@ lib/events/store.ts
 lib/events/ticket-space-access.ts
 lib/events/ticket-tiers.ts
 lib/events/tier-prices.ts
+lib/events/waitlist-notify.test.ts
+lib/events/waitlist-notify.ts
 lib/feed/density.ts
 lib/feed/feed-people.ts
 lib/feed/post-origin.ts

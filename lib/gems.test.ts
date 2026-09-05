@@ -1,4 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 
 // awardGems delegates the cap-check + insert to the award_gems_atomic RPC (migration
 // 20260929000000), which serializes per (profile, action) under an advisory lock so the
@@ -12,6 +14,35 @@ let rpcResult: { data: { awarded?: boolean; capped?: boolean } | null; error: { 
   error: null,
 }
 const rpcCalls: Array<{ name: string; args: Record<string, unknown> }> = []
+
+// ── A faithful award_gems_atomic simulator, switched on per test ─────────────────────────────
+//
+// The scripted `rpcResult` above says whatever a test tells it to, which is right for the
+// wiring tests. The event_rsvp cap tests below need the RPC's real CONTRACT instead: count this
+// profile's rows for this action since UTC midnight, refuse at the cap, otherwise insert
+// (20260929000000). This is not the proof the SQL is right; it is here so the TypeScript half is
+// exercised against what the RPC actually does with `_daily_cap`. Same shape as lib/zaps.test.ts.
+let rpcMode: 'scripted' | 'simulate' = 'scripted'
+const ledger: Array<{ profile_id: string; action_type: string; created_at: number }> = []
+let nowMs = Date.UTC(2026, 8, 5, 12, 0, 0)
+
+function simulateAwardGemsAtomic(args: Record<string, unknown>) {
+  const profile = args._profile as string
+  const action = args._action as string
+  const amount = args._amount as number
+  const cap = args._daily_cap as number | null
+  if (!(amount > 0)) return { data: { awarded: false, capped: false }, error: null }
+  if (cap !== null && cap !== undefined) {
+    const d = new Date(nowMs)
+    const dayStart = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate())
+    const used = ledger.filter(
+      (r) => r.profile_id === profile && r.action_type === action && r.created_at >= dayStart,
+    ).length
+    if (used >= cap) return { data: { awarded: false, capped: true }, error: null }
+  }
+  ledger.push({ profile_id: profile, action_type: action, created_at: nowMs })
+  return { data: { awarded: true, capped: false }, error: null }
+}
 
 // The mock client is deliberately `this`-SENSITIVE, mirroring the real SupabaseClient: from()
 // and rpc() both begin by reading `this.rest` (LIVE-053 / LIVE-061, production digest
@@ -28,7 +59,7 @@ function makeAdminClient() {
       }),
       rpc: async (name: string, args: Record<string, unknown>) => {
         rpcCalls.push({ name, args })
-        return rpcResult
+        return rpcMode === 'simulate' ? simulateAwardGemsAtomic(args) : rpcResult
       },
     },
     from(table: string) {
@@ -50,6 +81,9 @@ beforeEach(() => {
   configRow = { gems_amount: 3, daily_cap: 5, is_active: true }
   rpcResult = { data: { awarded: true, capped: false }, error: null }
   rpcCalls.length = 0
+  rpcMode = 'scripted'
+  ledger.length = 0
+  nowMs = Date.UTC(2026, 8, 5, 12, 0, 0)
 })
 
 describe('awardGems', () => {
@@ -116,5 +150,78 @@ describe('awardGems', () => {
     expect(rpcCalls).toHaveLength(1)
     expect(rpcCalls[0].name).toBe('award_gems_atomic')
     expect(rpcCalls[0].args._action).toBe('daily_login')
+  })
+})
+
+// ── event_rsvp is capped at one award per member per UTC day (scan2 L6-06) ────────────────────
+//
+// The first-RSVP gem was seeded with `daily_cap = null` (20240120000000, re-asserted by
+// 20260605100000), and award_gems_atomic only counts against a cap when `_daily_cap is not null`.
+// So a double-submitted first RSVP (two tabs, a retried fetch, a slow-network double POST), whose
+// two requests both read "no existing row" and both reach awardGems, paid 5 gems twice.
+// 20270345000100 sets the cap to 1. These tests read the cap OUT OF THAT MIGRATION rather than
+// hard-coding it, then run the engine against the RPC's real contract with that value: the second
+// award in a UTC day is refused, and the control (the old null cap) shows it is the cap doing it.
+
+const EVENT_RSVP_CAP_MIGRATION = join(
+  'supabase', 'migrations', '20270345000100_event_capacity_trigger_locks_the_event_row.sql',
+)
+
+/** The cap the migration writes for event_rsvp, parsed from its `update public.gem_config` statement. */
+function eventRsvpCapFromMigration(): number {
+  const sql = readFileSync(EVENT_RSVP_CAP_MIGRATION, 'utf8')
+  const m = sql.match(
+    /update\s+public\.gem_config\s+set\s+daily_cap\s*=\s*(\d+)\s+where\s+action_type\s*=\s*'event_rsvp'/i,
+  )
+  if (!m) throw new Error(`${EVENT_RSVP_CAP_MIGRATION} no longer sets gem_config.daily_cap for event_rsvp`)
+  return Number(m[1])
+}
+
+describe("event_rsvp daily cap (scan2 L6-06): a double-submitted first RSVP pays once", () => {
+  it('the migration caps event_rsvp at exactly 1 per member per UTC day', () => {
+    expect(eventRsvpCapFromMigration()).toBe(1)
+  })
+
+  it('with the migrated cap, the second award in the same UTC day is refused', async () => {
+    rpcMode = 'simulate'
+    configRow = { gems_amount: 5, daily_cap: eventRsvpCapFromMigration(), is_active: true }
+
+    const first = await awardGems('p1', 'event_rsvp')
+    const second = await awardGems('p1', 'event_rsvp')
+
+    expect(first).toEqual({ awarded: true, amount: 5, capped: false })
+    expect(second).toEqual({ awarded: false, amount: 0, capped: true })
+    expect(ledger.filter((r) => r.profile_id === 'p1' && r.action_type === 'event_rsvp')).toHaveLength(1)
+    // The cap reached the RPC as 1 on both calls, which is what makes the RPC count at all.
+    expect(rpcCalls.map((c) => c.args._daily_cap)).toEqual([1, 1])
+  })
+
+  it('CONTROL: the pre-migration null cap pays twice, so the cap is what closes the double payment', async () => {
+    rpcMode = 'simulate'
+    configRow = { gems_amount: 5, daily_cap: null, is_active: true }
+
+    await awardGems('p1', 'event_rsvp')
+    await awardGems('p1', 'event_rsvp')
+
+    expect(ledger.filter((r) => r.profile_id === 'p1' && r.action_type === 'event_rsvp')).toHaveLength(2)
+  })
+
+  it('the cap is per member: another member RSVPing the same day is still paid', async () => {
+    rpcMode = 'simulate'
+    configRow = { gems_amount: 5, daily_cap: eventRsvpCapFromMigration(), is_active: true }
+
+    await awardGems('p1', 'event_rsvp')
+    const other = await awardGems('p2', 'event_rsvp')
+    expect(other).toEqual({ awarded: true, amount: 5, capped: false })
+  })
+
+  it('the cap rolls over at UTC midnight: the next day pays again', async () => {
+    rpcMode = 'simulate'
+    configRow = { gems_amount: 5, daily_cap: eventRsvpCapFromMigration(), is_active: true }
+
+    await awardGems('p1', 'event_rsvp')
+    nowMs = Date.UTC(2026, 8, 6, 0, 0, 1)
+    const nextDay = await awardGems('p1', 'event_rsvp')
+    expect(nextDay).toEqual({ awarded: true, amount: 5, capped: false })
   })
 })

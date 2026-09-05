@@ -54,7 +54,8 @@
             "SCAN-539",
             "LIVE-154",
             "LIVE-155",
-            "LIVE-156"
+            "LIVE-156",
+            "LIVE-157"
           ]
         },
         {
@@ -6767,6 +6768,193 @@
         "kind": "cmd",
         "cmd": "node -e \"const fs=require('fs');const files=['app/(main)/channels/actions.ts','app/(main)/admin/actions.ts','app/(main)/admin/channels/load-channels.ts'];const legacy=files.some(f=>/\\.from\\('channels'\\)/.test(fs.readFileSync(f,'utf8')));const page=fs.readFileSync('app/(main)/people/[handle]/page.tsx','utf8');process.exit(!legacy&&!fs.existsSync('components/compose/new-channel-compose.tsx')&&/website/.test(page)&&fs.existsSync('lib/profiles/website.test.ts')?0:1)\"",
         "note": "Fails if the channels console writes the legacy table again, the dead compose returns, or the profile stops reading website."
+      }
+    },
+    {
+      "id": "SCAN-557",
+      "title": "A refused RSVP write was reported as \"You're going\" with gems, streak, email, SMS and a CRM lead",
+      "status": "done",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "app/(main)/events/actions.ts",
+        "ref": "ADR-1208"
+      },
+      "detail": "Scan two L5-01 (2026-09-05). Every event_rsvps write in setRsvpStatus discarded its result, so a write the database refused (a suspended member under trg_event_rsvps_block_suspended, a capacity trigger, RLS) still ran the going side effects: gems, attendance streak, confirmation email and SMS, CRM lead, and the page kept showing Going unlit. Closed: every event_rsvps insert and update reads { error }; setRsvpStatus returns an ActionResult error and runs no side effect on a refused write; rsvp-error-paths.test.ts drives each write through a refusing client and asserts nothing downstream fires.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const s=fs.readFileSync('app/(main)/events/actions.ts','utf8');const bare=/^\\s*await\\s+(supabase|db)\\s*\\.from\\('event_rsvps'\\)\\s*\\.(insert|update)\\(/m.test(s);const t=fs.existsSync('app/(main)/events/rsvp-error-paths.test.ts');process.exit(!bare&&t?0:1)\"",
+        "note": "Fails if any event_rsvps write in the events actions goes back to discarding its result, or the refusal-path test is removed."
+      }
+    },
+    {
+      "id": "SCAN-558",
+      "title": "A waitlisted person promoted into a freed seat was never told",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/events/waitlist-notify.ts",
+        "ref": "ADR-1208"
+      },
+      "detail": "Scan two L5-02. Both promotion sites (a going member stepping back, a host removing a seat) moved the next waitlisted row to going and stopped; four email templates and the RSVP copy promised we would let them know. Closed: notifyPromotedSeat sends the member a notification plus email, and a guest (no account) their email and SMS, from both sites; a failed notice logs and never unwinds the promotion. Pinned by waitlist-notify.test.ts and a call-site count in rsvp-error-paths.test.ts.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const s=fs.readFileSync('app/(main)/events/actions.ts','utf8');const n=(s.match(/notifyPromotedSeat\\(promoted, eventId\\)/g)||[]).length;process.exit(n>=2&&fs.existsSync('lib/events/waitlist-notify.ts')?0:1)\"",
+        "note": "Fails if either promotion site stops calling the notifier."
+      }
+    },
+    {
+      "id": "SCAN-559",
+      "title": "Two members RSVPing at once to the last seat both got going; the capacity trigger held no lock",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "supabase/migrations/20270345000100_event_capacity_trigger_locks_the_event_row.sql",
+        "ref": "ADR-1208"
+      },
+      "detail": "Scan two L6-01. enforce_event_rsvp_capacity counted going rows and compared to events.capacity with no lock, so two concurrent inserts both read N-1 and both landed (reproduced with two sessions in L6-repro-rsvp-race.sql). Closed: migration 20270345000100 (applied 2026-09-05, ledger reconciled) reads the event row `for update`, serialising concurrent RSVPs on one event; the sibling circle guard already did this. The second writer now lands on the waitlist as the app expects.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const m=fs.readFileSync('supabase/migrations/20270345000100_event_capacity_trigger_locks_the_event_row.sql','utf8');process.exit(/select capacity into cap from public\\.events where id = NEW\\.event_id for update;/.test(m)?0:1)\"",
+        "note": "Fails if the migration's capacity read loses its row lock."
+      }
+    },
+    {
+      "id": "SCAN-560",
+      "title": "A double-submitted first RSVP paid the event_rsvp gems twice and sent two confirmations",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "app/(main)/events/actions.ts",
+        "ref": "ADR-1208"
+      },
+      "detail": "Scan two L6-06. Two requests both read existing = null; the second insert hit the partial unique index, its error was discarded, both re-read the single going row and both fired the going side effects; gem_config.event_rsvp had daily_cap null so award_gems paid both. Closed: the insert error is read, so the losing request fires nothing (rsvp-error-paths.test.ts: a refused first insert fires nothing), and migration 20270345000100 sets daily_cap = 1 on event_rsvp so the ledger guard pays a first RSVP once per day regardless. lib/gems.test.ts pins the cap read.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const m=fs.readFileSync('supabase/migrations/20270345000100_event_capacity_trigger_locks_the_event_row.sql','utf8');const t=fs.readFileSync('app/(main)/events/rsvp-error-paths.test.ts','utf8');process.exit(/set daily_cap = 1/.test(m)&&/refused first insert fires nothing/.test(t)?0:1)\"",
+        "note": "Fails if the daily cap is dropped from the migration or the losing-insert test is removed."
+      }
+    },
+    {
+      "id": "SCAN-561",
+      "title": "Host Approve told the waiting person they were in while the row stayed pending",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/events/rsvp-depth.ts",
+        "ref": "ADR-1208"
+      },
+      "detail": "Scan two L5-10. approveRsvpById discarded the update result and every caller (admin console, Manage console) sent the approved notice and returned ok; approveEventPlacement did the same on the placement request row. Closed: approveRsvpById returns { ok } | { ok: false, error }, selecting the matched id so a stale or foreign row id is a failure too; both RSVP approve actions and the placement approve action gate the notice and the success return on the result. Tests: rsvp-depth, admin-actions, placement-actions.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const files=['app/(main)/events/admin-actions.ts','app/(main)/events/[slug]/manage/actions.ts'];const bare=files.some(f=>/^\\s*await approveRsvpById\\(/m.test(fs.readFileSync(f,'utf8')));const d=fs.readFileSync('lib/events/rsvp-depth.ts','utf8');process.exit(!bare&&/ApproveRsvpResult/.test(d)?0:1)\"",
+        "note": "Fails if a caller awaits approveRsvpById and discards the result again, or the result type disappears."
+      }
+    },
+    {
+      "id": "SCAN-562",
+      "title": "A signed-out guest RSVP always reported success, even when no seat was written",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "app/(marketing)/rsvp/[token]/actions.ts",
+        "ref": "ADR-1208"
+      },
+      "detail": "Scan two L5-14. captureEventGuest discarded both event_guests write results and the page reply was identical either way, so a failed insert left no seat, no host-side guest and no connector reward, and nobody learned. Closed: both writes read { error } and log it; the guest action returns { ok: false, error } with member copy on a failed write or a throw; the form shows it. Tests in lib/events/guests.test.ts and the action test.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const g=fs.readFileSync('lib/events/guests.ts','utf8');const a=fs.readFileSync('app/(marketing)/rsvp/[token]/actions.ts','utf8');process.exit(/captureEventGuest\\] event_guests update failed/.test(g)&&/ok: false; error: string/.test(a)?0:1)\"",
+        "note": "Fails if the guest write stops reporting its error or the action loses its failure shape."
+      }
+    },
+    {
+      "id": "SCAN-563",
+      "title": "An approval-gated event admitted directly when the gate read failed",
+      "status": "done",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "lib/events/rsvp-depth.ts",
+        "ref": "ADR-1208"
+      },
+      "detail": "Scan two L5-15. eventRequiresApproval returned false on any read error, documented as the fail-safe direction; it is the direction that bypasses the host's gate and, with L5-01, ran the you're-in side effects. Closed: the read destructures { data, error } and returns true on error or a missing row, logging the read; the original comment stays with a dated correction underneath. rsvp-depth.test.ts pins the read-error case.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const d=fs.readFileSync('lib/events/rsvp-depth.ts','utf8');const m=d.match(/export async function eventRequiresApproval[\\s\\S]*?\\n\\}/);process.exit(m&&/if \\(error \\|\\| !data\\)/.test(m[0])&&/return true/.test(m[0])?0:1)\"",
+        "note": "Fails if the approval gate read goes back to admitting on error."
+      }
+    },
+    {
+      "id": "SCAN-564",
+      "title": "Event reminders were sent before they were stamped, so a crash or overlapping run re-sent them",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "app/api/cron/event-reminders/route.ts",
+        "ref": "ADR-1208"
+      },
+      "detail": "Scan two L6-17. Each RSVP was pushed, emailed and texted and only then stamped reminder_*_sent_at; a crash between the two, or two overlapping 15-minute runs on a large event, sent the same reminder twice. Closed: claimReminder takes the stamp first as a conditional update (`is(column, null)` returning the id) and only a run that won the claim sends; a lost claim skips the row. route.test.ts drives two runs over one row and counts one send.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const r=fs.readFileSync('app/api/cron/event-reminders/route.ts','utf8');const claim=r.indexOf('async function claimReminder');process.exit(claim>0&&(r.match(/await claimReminder\\(/g)||[]).length>=2&&fs.existsSync('app/api/cron/event-reminders/route.test.ts')?0:1)\"",
+        "note": "Fails if the reminder cron stops claiming before it sends."
+      }
+    },
+    {
+      "id": "SCAN-565",
+      "title": "A Space ticket tier could be overbooked: the count lived in JS with no database guard",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "supabase/migrations/20270345000200_space_ticket_tier_capacity_guard.sql",
+        "ref": "ADR-1208"
+      },
+      "detail": "Scan two L6-07. rsvpToTier counted going rows in the app and inserted; two members reserving the last spot both succeeded. Closed: migration 20270345000200 (applied 2026-09-05, ledger reconciled) adds enforce_space_ticket_tier_capacity, a BEFORE INSERT trigger that locks the tier row and raises 23514 tier_full when the count would exceed capacity; lib/spaces/tickets.ts maps that error to the member message. Grant verdict recorded in scripts/function-grants.txt.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const m=fs.readFileSync('supabase/migrations/20270345000200_space_ticket_tier_capacity_guard.sql','utf8');const t=fs.readFileSync('lib/spaces/tickets.ts','utf8');const g=fs.readFileSync('scripts/function-grants.txt','utf8');process.exit(/for update/.test(m)&&/isTierFull\\(error\\)/.test(t)&&/enforce_space_ticket_tier_capacity/.test(g)?0:1)\"",
+        "note": "Fails if the tier guard loses its lock, the app stops mapping tier_full, or the grant verdict is dropped."
+      }
+    },
+    {
+      "id": "SCAN-566",
+      "title": "The QR door dropped both outcomes and sent the scanner to the event page with no message",
+      "status": "done",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "app/q/[slug]/route.ts",
+        "ref": "ADR-1208"
+      },
+      "detail": "Scan two L5-21. The event QR route ignored setRsvpStatus's refusal and checkInEvent's { ok: false, reason } and redirected silently. Closed: the route reads both results, carries ?door=<reason> (the CheckInFailReason values plus rsvp_refused and failed) on the redirect, warn-logs each with the event id, and never throws. Rendering the flag on the event page is LIVE-157.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const r=fs.readFileSync('app/q/[slug]/route.ts','utf8');process.exit(/door=/.test(r)&&/rsvp_refused/.test(r)&&fs.existsSync('app/q/[slug]/route.test.ts')?0:1)\"",
+        "note": "Fails if the door stops carrying the reason on its redirect."
+      }
+    },
+    {
+      "id": "LIVE-157",
+      "title": "The event page does not yet read the ?door= reason the QR route now carries",
+      "status": "open",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "app/(main)/events/[slug]/page.tsx",
+        "ref": "ADR-1208"
+      },
+      "detail": "SCAN-566 made the QR door report why a scan did not check the scanner in (?door=window_closed, not_going, pending, checkin_off, signed_out, rsvp_refused, failed). The event page reads ticket, session_id, claimed and claim from its search params and nothing else, so the reason rides the URL and is shown to nobody. Render one line per reason in member voice (NAMING.md, CONTENT-VOICE.md) near the RSVP control.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const p=fs.readFileSync('app/(main)/events/[slug]/page.tsx','utf8');process.exit(/\\.door\\b|['\\\"]door['\\\"]/.test(p)?0:1)\"",
+        "note": "Passes once the event page reads a door search param (a property or string key named door, not the word in prose)."
       }
     }
   ]

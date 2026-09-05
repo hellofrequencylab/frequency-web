@@ -98,4 +98,22 @@ describe('promoteFromWaitlist — promotion may not bypass the approval gate', (
     eventRow = { capacity: 10 }
     expect(await promoteFromWaitlist('ev-1')).toBeNull()
   })
+
+  // The return contract lib/events/waitlist-notify.ts consumes (scan2 L5-02): a promoted GUEST
+  // seat comes back as a seat with the guest identity set, never as null. `null` means "nobody
+  // was promoted"; a seat with profileId null and guestEmail set means "a guest was", and the
+  // notifier keys the email leg off exactly that.
+  it('returns a guest seat with guestEmail set and profileId null, distinct from "nobody promoted"', async () => {
+    countResult = 1
+    waitlistRow = { id: 'r-2', profile_id: null, guest_email: 'guest@example.com' }
+    const seat = await promoteFromWaitlist('ev-1')
+    expect(seat).toEqual({ rsvpId: 'r-2', profileId: null, guestEmail: 'guest@example.com' })
+  })
+
+  it('returns a member seat with profileId set and guestEmail null', async () => {
+    countResult = 1
+    waitlistRow = { id: 'r-3', profile_id: 'p-3', guest_email: null }
+    const seat = await promoteFromWaitlist('ev-1')
+    expect(seat).toEqual({ rsvpId: 'r-3', profileId: 'p-3', guestEmail: null })
+  })
 })

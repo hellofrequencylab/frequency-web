@@ -106,13 +106,27 @@ export async function approveRsvp(eventId: string, profileId: string): Promise<v
  *  a host admitting someone should be identifying the SEAT, and the row id is the one identifier
  *  every seat carries. The event id is still matched so a row id from another event cannot be
  *  approved through this path. */
-export async function approveRsvpById(eventId: string, rsvpId: string): Promise<void> {
+/** What approving a seat came back with. `ok: false` means the row is NOT approved: the caller
+ *  must not tell the person waiting, and must not report success. */
+export type ApproveRsvpResult = { ok: true } | { ok: false; error: string }
+
+// 🔴 CORRECTION 2026-09-05 (scan-2 L5-10). This used to return `Promise<void>` and never read the
+// update's `error`, so both callers went on to send the "you're in" notice unconditionally: a person
+// could be told they were approved while the row still said pending, and the host's console reported
+// success it had not measured. The update now reads its error and selects the row it touched, so a
+// refused write and a predicate that matched nothing (wrong event, stale id) are both reported as
+// `ok: false`. Every "approved" notice and every success return is gated on `ok`.
+export async function approveRsvpById(eventId: string, rsvpId: string): Promise<ApproveRsvpResult> {
   const admin = createAdminClient()
-  await admin
+  const { data, error } = await admin
     .from('event_rsvps')
     .update({ approval_status: 'approved' })
     .eq('event_id', eventId)
     .eq('id', rsvpId)
+    .select('id')
+  if (error) return { ok: false, error: error.message || 'The approval could not be saved.' }
+  if (!data || data.length === 0) return { ok: false, error: 'That request could not be found.' }
+  return { ok: true }
 }
 
 /** Does this event make people wait for the host?
@@ -122,14 +136,27 @@ export async function approveRsvpById(eventId: string, rsvpId: string): Promise<
  *  shipped in 20260625020000, but nothing could ever set a request to 'pending', so the queue was
  *  permanently empty. Reads false on any error — the fail-safe direction is admitting someone, not
  *  silently holding them in a queue nobody knows to look at. */
+// 🔴 CORRECTION 2026-09-05 (scan-2 L5-15). The paragraph above is wrong about the fail-safe
+// direction, and this reader now does the OPPOSITE of what it says: it returns TRUE on a read error
+// or a missing row. Admitting on a failed read is the unsafe direction for the one thing this gate
+// protects. An approval-gated event hides its venue until the host says yes; a member admitted past
+// the gate on a flaky read has already been shown the address and told they are in, and neither
+// can be un-seen. A request that lands as pending on the same flaky read can be approved a minute
+// later, and the host sees it in the queue. So the cost of failing closed is a short wait; the cost
+// of failing open is a disclosed venue. app/(main)/events/actions.ts carried a local fail-closed
+// copy first (eventRequiresApprovalOrClosed); this is the same rule for every remaining caller.
 export async function eventRequiresApproval(eventId: string): Promise<boolean> {
   const admin = createAdminClient()
-  const { data } = await (admin as unknown as UntypedSingle)
+  const { data, error } = await (admin as unknown as UntypedSingle)
     .from('events')
     .select('rsvp_requires_approval')
     .eq('id', eventId)
     .maybeSingle()
-  return (data as { rsvp_requires_approval: boolean | null } | null)?.rsvp_requires_approval === true
+  if (error || !data) {
+    console.error('[events approval gate read]', error ?? 'no row')
+    return true
+  }
+  return (data as { rsvp_requires_approval: boolean | null }).rsvp_requires_approval === true
 }
 
 /** One seat waiting on the host. `profileId` is null for a signed-out guest, which is why
