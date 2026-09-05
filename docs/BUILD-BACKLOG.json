@@ -70,7 +70,8 @@
             "LIVE-174",
             "LIVE-172",
             "LIVE-173",
-            "LIVE-171"
+            "LIVE-171",
+            "LIVE-175"
           ]
         },
         {
@@ -8452,6 +8453,23 @@
         "kind": "cmd",
         "cmd": "node -e \"const fs=require('fs');const R=(f)=>fs.readFileSync(f,'utf8');const C=(f)=>R(f).replace(/\\\\/\\\\*[\\\\s\\\\S]*?\\\\*\\\\//g,'').replace(/^\\\\s*\\\\/\\\\/.*$/gm,'');process.exit(/from\\\\('partner_offers'\\\\)[\\\\s\\\\S]*?\\\\.insert\\\\(/.test(C('app/(main)/partners/listing/actions.ts'))&&/export function isOfferLive/.test(C('lib/partners/offers.ts'))?0:1)\"",
         "note": "Fails if the writer or the liveness rule is removed."
+      }
+    },
+    {
+      "id": "LIVE-175",
+      "title": "The packed-cache estimate ran low on all three paired readings of 2026-09-05, and the upload reached 1.41 GB",
+      "status": "open",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "scripts/check-cache-budget.mjs",
+        "ref": "PACKED_PER_RAW"
+      },
+      "detail": "Scan two, phase D6 (2026-09-05), measured on the merge run itself. check:cache-budget predicts packed size as raw x PACKED_PER_RAW = 0.53, and ADR-1113 settled that constant on paired readings accurate to 1% and rounded toward firing the trim EARLY. Three paired readings the same day all ran the other way: 1.31 predicted / 1.31 uploaded (main at 08e6169), 1.36 / 1.38 (main at 67ada96), and 1.35 / 1.41 (main at e2d6107). The last is 94% of the 1.50 GB ceiling and at the trim point, and a 4% low estimate is the direction that costs a BUILD rather than a CPU minute, because the trim fires after the cache is already over. The mix has moved: .next/cache grew 1428 to 1522 MiB across the day while node_modules held at 921 MiB, so the cache is more compiler-heavy than the mix 0.53 was derived on. Re-derive the constant from these readings (the implied ratio is near 0.55) and raise it, which fires the trim earlier; do NOT lower it. The change belongs in its own PR with the green build that proves it, per the rule that a threshold ships beside its measurement.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "2026-09-05: three paired readings from production build logs (dpl_Cas653f4, dpl_6gcnzawu, dpl_AUFhqsQt): predicted 1.31/1.36/1.35 GB against uploaded 1.31/1.38/1.41 GB. Closes when a re-derived PACKED_PER_RAW ships with a paired reading that agrees within 1% on the current mix.",
+        "checked": "2026-09-05"
       }
     }
   ]
