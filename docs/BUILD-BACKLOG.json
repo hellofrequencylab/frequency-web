@@ -81,7 +81,8 @@
             "LIVE-182",
             "LIVE-183",
             "LIVE-184",
-            "LIVE-185"
+            "LIVE-185",
+            "LIVE-186"
           ]
         },
         {
@@ -8649,6 +8650,23 @@
       "verify": {
         "kind": "manual",
         "evidence": "2026-09-05: read lib/quest/complete.ts against docs/NAMING.md's Economy section. Closes when one number is paid and documented everywhere, by owner decision.",
+        "checked": "2026-09-05"
+      }
+    },
+    {
+      "id": "LIVE-186",
+      "title": "The app-space-console visual baseline is stale again, at 158px, and PRs keep merging past the red",
+      "status": "open",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "docs/BUILD-BACKLOG.json",
+        "ref": "sweep 3, 2026-09-05"
+      },
+      "detail": "FOUND 2026-09-05 from a pr-compare failure on #2382. All four /spaces/danieltyack/manage checks (desktop+mobile x dawn-light+dawn-dark) fail with 'Expected an image 390px by 2859px, received 390px by 3017px' - the live page is 158px taller than the committed baseline. ⚠️ NOT that PR's: the identical failure, same route and the same exact 2859 to 3017 pair, is in the pr-compare log of claude/scan2-d6 (run 33971217197), a backend-only PR touching check-ins, refunds and tips that renders none of this route - and that PR merged into main anyway. Playwright retried twice with byte-identical pixel counts, so it is deterministic, not a flake. ── THIS IS SCAN-507 RECURRING, WHICH IS THE POINT. SCAN-507 closed 2026-08-25 after the owner dispatched e2e-manual.yml (update_baselines + capture_shell) to recapture these same four PNGs at 3133 to 3154px; #2329 recaptured again to the current 2859. Three weeks later the same surface is 158px out. SCAN-507's own detail named the consequence and it has now come true a second time: 'a check that is red for a reason nobody owns trains everyone to ignore it, and then it reads as coverage' (ADR-970). At least eight PRs merged red on this in one day (scan2 D1/D3/D4a/D4b/D5b/D6/E4/E3b). ── WHY IT KEEPS RECURRING, which is the part worth fixing rather than re-photographing: this baseline is a fullPage shot of a surface whose body is LIVE PRODUCTION DATA - a Space console whose card count grows as the account's Space gains content. visual.spec.ts already knows this shape; its own note on Surface.viewportOnly says 'a full-page baseline of a live, shared stream measures WHEN it was taken, not how it looks', and that reasoning applies to this surface, but the surface is not marked viewportOnly. So recapture is a repeating owner chore with no end state, and every gap between chores is a red check everyone learns to merge past. THE OPTIONS, for an owner ruling rather than a patch: (a) mark app-space-console viewportOnly so it photographs the first screen and stops measuring the content count, which is what that note prescribes, at the cost of below-fold coverage; (b) seed a fixed fixture Space for the shell surfaces so the page stops depending on live data; (c) keep recapturing on a schedule and accept the red windows. ⚠️ Related but NOT the same row: LIVE-125 (open) is about the gate being blind to control-sized changes on tall pages; this row is about the baseline going stale by data drift. Note also that pr-compare is not a required check (LIVE-049), so none of this blocks a merge - which is exactly why it has been ignored eight times.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "2026-09-05: pr-compare on #2382 (job 101352123073) and on claude/scan2-d6 (job 101320645573) fail the same four app-space-console checks at 2859 vs 3017px. Recapture is an owner-dispatched e2e-manual.yml run (update_baselines + capture_shell), per SCAN-507; no code change closes it. Closes when the owner picks one of the three options and the four checks pass on a PR that did not itself recapture them.",
         "checked": "2026-09-05"
       }
     }
