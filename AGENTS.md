@@ -25,119 +25,35 @@ ARTIFACT. Full rules and the incident: [`docs/DEPLOY-SAFETY.md`](docs/DEPLOY-SAF
   2026-09-05 (ADR-1211); its first real artifact, 2026-09-05 12:19Z, read **456 functions**, 2 icon
   chunks in 3 functions, 6 site photos at the 6 ceiling, and the floor moved 450 to 400 beside that
   reading because the 496 it was set against was three weeks stale):
-  - `check:build-budget` — total per-function output under 8 GB; **6.66 GB across 497 functions on
-    the PRODUCTION build of `main` at e3cec7af2, 2026-08-25 21:43Z (#2308)** — the first FALL in the
-    series, by 0.01 GB and one function, after the two rises below. Previously **measured 6.67 GB across 498
-    functions on the PRODUCTION build of `main` at c8b5ee97, 2026-08-25 09:50Z** (the deploy carrying
-    all four meta-scan phases), after 6.55 GB / 496 fns the same day (#2280 and #2285, two independent
-    previews), 6.02 GB / 496 fns (#2245, 2026-08-24), 6.03 GB / 497 fns (#2243, same day), 6.04 GB /
-    499 fns (2026-08-18), 5.81 GB (2026-08-13) and 5.59 GB before that. This sentence once read "two
-    consecutive readings have now fallen"; ⚠️ **that is long retired — the series has now risen twice
-    in one day, +0.53 GB and then +0.12 GB.** At **83%** of its ceiling the headroom is still real,
-    and the trend is still the thing to watch rather than the number. Largest single cost, named by
-    the gate itself: **1510 MB of libvips (17.4 MB × 87 functions)** — which is `sharp`, so this gate
-    and `check:og-trace` below are measuring two faces of one thing.
-  - `check:og-trace` — **69 incidental functions of a 100 budget, HELD across three consecutive
-    production deploys (c8b5ee97, 1386abe6c, e3cec7af2), 2026-08-25**, up from 67
-    on 2026-08-24. ⚠️ Read the number carefully: the budget counts the functions that carry `sharp`
-    WITHOUT rasterising a card (69), not the total that carry it (18 rasterisers + 69 = 87). The +2
-    is the two per-entity OG routes added by meta-scan phase 2 (#2289) — that PR's own body said
-    "headroom is unchanged at 67/100", which was wrong by exactly the routes it added. Two more cards
-    cost two more; the budget is a fan-out ceiling, not a card ceiling.
-  - `check:cache-budget` ([ADR-1064](docs/DECISIONS.md), [ADR-1086](docs/DECISIONS.md)) — the build
-    cache under Vercel's packed 1.50 GB ceiling, trimming only a named compiler-cache list when over.
-    It earned its wiring the hard way: the first version **killed two builds** (raw-vs-packed
-    threshold ~2:1 off, and a biggest-first trim that deleted the **incremental fetch cache**,
-    hanging *Collecting page data* until `BUILD_EXCEEDED_MAXIMUM_TIME` at 46 minutes, against a
-    59-second control). Both defects are fixed and **proven by mutation tests** that reconstruct the
-    exact bad trim (#2194); `PACKED_PER_RAW` was **settled at 0.53 by a paired real reading**
-    (measured 0.5254 beside the same build's upload line, rounded toward firing early). A re-added
-    `--warn-only` fails CI as a silent demotion. ✅ **The ratio is mix-dependent, and it was re-measured
-    on 2026-08-24 (`HYG-015` closed, [ADR-1113](docs/DECISIONS.md)): the answer is "real but
-    immaterial".** Five paired readings that day — three printing an estimate beside their own
-    `Uploading build cache` line (1.26/1.25, 1.26/1.25, 1.28/1.27 GB), plus two production uploads on
-    the same composition — put the implied ratio at **0.524–0.526 against a constant of 0.53**, i.e.
-    accurate to 1% and rounded toward firing the trim early. The 2× gap is genuine for the OTHER mix:
-    with `.next/cache` trimmed to nothing, node_modules alone packs near 0.264. It changes nothing,
-    and the reason is structural rather than lucky — near the threshold the cache is compiler-heavy by
-    definition, because being compiler-heavy is what makes it big enough to approach the threshold at
-    all, and that is the mix 0.53 was derived on. So one constant is adequate by construction.
-    🔴 **Do not lower it toward 0.264**: that measures on one mix and applies to another, which is the
-    error this row exists to prevent, performed in reverse. The probe holds it in a two-sided
-    0.52–0.54 band.
-    🔴 **RE-MEASURED TWICE ON 2026-08-25, AND THE TWO READINGS DISAGREE — WHICH IS THE POINT.** The
-    sentence above that used to close this paragraph ("the ratio only alters behaviour near the
-    1.38 GB trim point, and 0.52 GB sits 62% below it") has been **removed**, because on one of those
-    readings it was false, and reassurance that is only sometimes true is worse than none.
-    - **#2280, mid-merge-run: 1.39 GB packed against a 1.40 GB trim point** — 99% of the line it
-      trims at. On that mix the trim is **not a rare event**: the cache oscillates across the line and
-      every trim costs the NEXT build a cold compile (113s against a 46s warm control, same day). The
-      paired reading also had the estimate running **LOW** — 1.39 predicted, **1.42** uploaded — i.e.
-      firing slightly *late*, the direction that costs a build rather than a CPU minute.
-    - **`main` at c8b5ee97, production, 09:51Z: 1.27 GB packed** (2.24 GiB raw — node_modules 934 MiB
-      + `.next/cache` 1359 MiB), **85% of the 1.50 GB ceiling and comfortably under the trim point**.
-      And the paired reading is **EXACT**: the gate predicted 1.27 GB and `Uploading build cache`
-      reported **1.27 GB**.
-    - 🔴 **`main` at e3cec7af2, production, 21:43Z: 1.34 GB predicted, `Uploading build cache [1.34 GB]`
-      — a FOURTH paired reading and the second EXACT one.** But read the direction, not just the
-      accuracy: this is **+0.07 GB in twelve hours** (1.27 → 1.34), and the raw `.next/cache` grew
-      1359 → 1476 MiB while node_modules held at 934 MiB, so the growth is entirely compiler cache.
-      At **89% of the 1.50 GB ceiling** and roughly **96% of the trim point**, this gate is now much
-      the closest of the four to firing, and the next build on this trajectory trims — which costs the
-      build after it a cold compile (113s against a 46s warm control). The other three gates moved by
-      0.01 GB, zero, and 1 KB across the same window.
-      🔵 **AND THEN IT WENT BACK DOWN TWELVE MINUTES LATER: 1.27 GB on the 21:55Z preview** (turbopack
-      1370 MiB against the 1476 MiB above), so read this column as a BAND, not a trend line. The
-      sentence that stood here — "this one is the series to watch" — was written off two readings in
-      one direction and is retired; a third reading in the other direction is what a band looks like,
-      and drawing a trend through two points is how a normal oscillation gets mistaken for a climb.
-      The honest statement is the range: this gate moves within roughly 1.27–1.39 GB on the current
-      mix, its trim point is near 1.40, and it is still the closest of the four to firing — but it is
-      not climbing toward it. ⚠️ A REFUTATION RIDES ON THIS: the growth here was proposed as a cause
-      for the `Collecting page data` stalls (LIVE-123) and TESTED the same night. The build one minute
-      before a captured 41-minute stall logged no trim at all. The mechanism does not operate; the
-      cache is off that suspect list.
-    - **`main` at 1386abe6c, production, 12:35Z: 1.28 GB predicted, 1.27 GB uploaded** (2.24 GiB raw —
-      node_modules 934 MiB + `.next/cache` 1362 MiB), again **85%** of the ceiling. A THIRD paired
-      reading on the same mix, accurate to 1%. The other three gates read IDENTICALLY to c8b5ee97 on
-      this build — build-budget 6.67 GB / 498 fns, og-trace 69/100, shell-weight 1011 KB / 21 chunks —
-      so the series is flat across two consecutive production deploys rather than still climbing.
-    ✅ **Both are real, and the disagreement is the mix-dependence this paragraph already describes —
-    not a defect in either measurement.** So the honest statement is the range, not a single figure:
-    this gate sits between 85% and 99% of its trim point depending on what the cache is holding, it is
-    the gate closest to firing at both ends, and `PACKED_PER_RAW` is accurate to within 2% on both.
-    Re-derive it from paired readings before trusting a margin, and read `LIVE-123`
-    for the page-data build failures measured in the same window.
-    ✅ **The current reading, stated once (2026-09-04): this gate is a BAND, not a trend.** On the
-    current mix the packed cache moves within roughly **1.27–1.39 GB** against a trim point near
-    **1.40 GB**; four paired readings (1.27/1.27, 1.28/1.27, 1.34/1.34, 1.39/1.42) put the estimate
-    within 2% of the upload line; and the series is **not trending** in either direction. It is still
-    the closest of the four gates to its line, so a trim is possible on any build and costs the NEXT
-    build a cold compile, but a trim is a normal event on this mix, not a regression. The paragraphs
-    above are the measurement record that produced that sentence: they disagree with each other
-    because each was written at a different point in the oscillation. Read them newest-last, and do
-    not lift a single one of them out as "the" number.
-    🔴 **THE BAND BROKE ON 2026-09-05, AND THE GATE TRIMMED.** The sentence that closed this
-    paragraph until then, "No reading later than 2026-08-25 exists", is retired: the scan-two repair
-    run put sixteen deploys through in one day and produced six readings plus the first trim this
-    file has ever recorded. Predicted against uploaded, in order: 1.31/1.31, 1.36/1.38, 1.35/1.41,
-    then a build that measured **3.06 GiB raw, about 1.74 GB packed** and TRIMMED. So two things the
-    paragraphs above got right and one they got wrong. Right: a trim is a normal event on this mix,
-    and it cost the next build a cold compile, exactly as described. Right: the estimate stays close
-    to the upload line. **Wrong: the series is not only a band.** Under many deploys in one day the
-    compiler cache accumulates faster than it decays, it left the 1.27 to 1.39 range, and it reached
-    a size Vercel would have rejected WHOLE, node_modules included, had the gate not dropped
-    turbopack first. Read the band as the resting state and this as what a busy day does to it.
-    ⚠️ The other half is the estimate's DIRECTION: all three paired readings that day ran LOW
-    (1.35 predicted against 1.41 uploaded is 4%), i.e. the trim fires LATE, which is the direction
-    that costs a build rather than a CPU minute. `PACKED_PER_RAW` was settled rounded toward firing
-    EARLY, so on this mix it no longer does what ADR-1113 chose it to do. `LIVE-175` carries the
-    re-derivation; do not change the constant without a paired reading that proves the new one.
+  - `check:build-budget` — total per-function output under 8 GB. **6.27 GB across 456 functions**
+    (production `18c997f`, 2026-09-05), 78% of ceiling, and flat across the three most recent
+    production deploys. Largest single cost, named by the gate itself: ~1456 MB of libvips
+    (17.8 MB x 82 functions) — that is `sharp`, so this gate and `check:og-trace` measure two
+    faces of one thing. Watch the trend, not the number; the reading history lives in the PR
+    bodies and `scratchpad`, not here.
+  - `check:og-trace` — **18 rasterising routes + 64 incidental of a 100 budget** (same deploy).
+    ⚠️ Read it carefully: the budget counts functions carrying `sharp` WITHOUT rasterising a card
+    (64), not the total that carry it (82). It is a fan-out ceiling, not a card ceiling — each new
+    per-entity OG route costs one.
+  - `check:cache-budget` ([ADR-1064](docs/DECISIONS.md), [ADR-1086](docs/DECISIONS.md)) — keeps the
+    build cache under Vercel's packed 1.50 GB ceiling, trimming only a named compiler-cache list
+    when over. Packed size is estimated as `raw x PACKED_PER_RAW` (0.53, ADR-1113). **Current
+    state: a BAND, not a trend** — on the resting mix the packed cache moves within roughly
+    1.27-1.39 GB against a trim point near 1.40, and paired readings put the estimate within 2% of
+    the upload line. A trim is a normal event, and it costs the NEXT build a cold compile.
+    🔴 Two things to know before you touch the constant. (1) **Under many deploys in one day the
+    band breaks**: 2026-09-05 put sixteen through and the last measured 3.06 GiB raw / ~1.74 GB
+    packed and TRIMMED — the first recorded trim, and it saved a cache Vercel would have rejected
+    whole. (2) On that loaded mix the estimate ran **LOW**, so the trim fires LATE, which costs a
+    build rather than a CPU minute — the opposite of what ADR-1113 rounded it for. Do NOT lower it
+    toward 0.264 (that measures one mix and applies it to another, in reverse). `LIVE-175` carries
+    the re-derivation and the full measurement record; do not change the constant without a paired
+    reading on a LOADED mix that proves the new value.
   - `check:shell-weight` ([ADR-1066](docs/DECISIONS.md)) — the CLIENT half: the app shell's eager
     first-load JS (**1012 KB across 22 chunks, production e3cec7af2, 2026-08-25 21:43Z** — one
     kilobyte and one chunk above the 1011 KB / 21 it read hours earlier, which was itself one kilobyte above the 1010 KB
     it read on two artifacts a week earlier, ceiling 1,400 KB — **72%**, the most headroom of the
-    four) plus named fingerprints for admin module bodies that must stay behind `next/dynamic` (all 8
+    five) plus named fingerprints for admin module bodies that must stay behind `next/dynamic` (all 8
     lazy, positive control present, 493 client-reference manifests read). Promoted from `--warn-only`
     in #2188 after two green production readings; the source-shape test pins the promoted state.
     ✅ **ARM C joined it on 2026-08-25 ([ADR-1140](docs/DECISIONS.md), `SCAN-506`) and does NOT run
@@ -265,32 +181,45 @@ tables, use the ✅/⏳/⚠️/🔴 status legend, never hardcode hex in UI.
 
 # Page framework — every interior page composes the kit (never hand-roll a layout)
 
-One shell, eight page shells, one chrome map. Full spec:
-[`docs/PAGE-FRAMEWORK.md`](docs/PAGE-FRAMEWORK.md) §3 + §8. (This paragraph said "five templates"
-until 2026-09-04; `components/templates/index.ts` exports eight, `scripts/check-templates.mjs`
-counts eight, and PAGE-FRAMEWORK §8 reconciled the count on 2026-08-05. The text was behind the code.)
+One shell, seven page shells, one chrome map. Full spec:
+[`docs/PAGE-FRAMEWORK.md`](docs/PAGE-FRAMEWORK.md) §3 + §8. ⚠️ **Do not restate a count here — this
+paragraph has now been wrong twice.** It said "five templates" until 2026-09-04 and then "eight"
+until 2026-09-05, and the eight wrongly included `RailGrid`. The authoring menu below is seven;
+`scripts/check-templates.mjs` is the enforced list and is deliberately WIDER (11 names) because it
+answers a different question — "does this page compose anything that owns a layout", so it also
+counts the two entity compositions, `SparkShell`, and two path-reached aliases. Read `SHELLS` there
+for what CI enforces; read the menu here for what to pick.
 
 - **Pick a shell** from `@/components/templates` by *what the content is*, and fill its
-  slots — never re-declare a header, card, or grid. The eight, by their exported names:
+  slots — never re-declare a header, card, or grid. The seven, by their exported names:
   **StreamTemplate** (a flow of items) · **IndexTemplate** (a collection to browse) ·
   **DetailTemplate** (one entity: context band + tabs) · **DashboardTemplate** (metric-led
   operator workspace) · **FocusTemplate** (a centered single-task body: compose, edit, settings) ·
   **WizardShell** (a multi-step flow; the Studio's `SparkShell` is its analogue for a Spark) ·
-  **RailGrid** (the main-plus-rail column grid) · **AdminTemplate** (the operator workspace).
+  **AdminTemplate** (the operator workspace).
   `EventDetailTemplate` and `ListingDetailTemplate` are entity *compositions* over Detail, not
-  shells; `PageHeading` / `PageHero` are shared header grammar, not shells.
+  shells; `PageHeading` / `PageHero` are shared header grammar, not shells. 🔴 **`RailGrid` is NOT
+  a shell** — it is the main-plus-rail column grid, a layout primitive you use *inside* a shell.
+  `check-templates.mjs` lists it under `PIECES` ("deliberately NOT shells"), so a page whose only
+  layout import is `RailGrid` fails that gate. This doc listed it as a shell until 2026-09-05.
 - **The right rail shows on every member page.** Owner directive 2026-06-20, reaffirmed
   2026-07-28 (PAGE-FRAMEWORK §8.2). `lib/layout/page-chrome.ts` decides the rail in one pure
-  function, `railFor(pathname)`, and the shell reads it; pages never toggle the rail themselves.
+  function, `railFor(pathname)`, and pages never toggle the rail themselves. ⚠️ `railFor` is the
+  code DEFAULT, not the final answer: the shell resolves
+  `mergeChrome(railFor(pathname), overrides, pathname)`, so a stored operator override saved at
+  `/admin/page-layout` (table `page_chrome_overrides`) can beat it. **Chasing a missing rail in
+  production? Read that table before you read this file** — the code alone cannot tell you.
   **Adding a Focus page needs ZERO lines there**: a `FocusTemplate` body is centered and keeps the
   global rail beside it. "Focus" is a body shape, not a chrome exemption. `FOCUS_NONE_PREFIXES`
   and `SCOPED_PATTERNS` are both **empty by owner decision** — `'scoped'` still exists as a
   mechanism in `railFor`, with zero entries, because the one route that used it (the Channel
   detail page, ADR-885) was reverted the same night it deployed ("You dropped the right rail of
   the website. Fix that."). ADR-885's title still says `'scoped'` came back; the code says it did
-  not, and the code wins (an amending ADR is being filed). Do not reach for `'none'` or `'scoped'`
-  to fix a crowded page; the only non-`'global'` routes are the full-viewport takeovers, `/admin/*`,
-  and the full-width editors, all already listed in `page-chrome.ts`.
+  not, and the code wins — [ADR-1202](docs/DECISIONS.md) amends it (filed 2026-09-04; this line
+  read "an amending ADR is being filed" until 2026-09-05, a standing to-do for work already done).
+  Do not reach for `'none'` or `'scoped'` to fix a crowded page; the only non-`'global'` routes
+  **in code** are the full-viewport takeovers, `/admin/*`, and the full-width editors, all listed
+  in `page-chrome.ts` — which is the enumeration to read, rather than any restatement of it.
 - **Compose, don't author:** headers come from `PageHeading`, stats from `StatCard`,
   browse cards from `EntityCard`/`PersonCard`, sections from `SectionHeader`, empties from
   `EmptyState`. No `text-[10/11px]` content type; semantic tokens only.

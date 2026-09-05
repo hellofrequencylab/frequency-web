@@ -21,7 +21,10 @@ const WORKFLOW_DIR = path.join(ROOT, '.github', 'workflows')
 
 /** Scripts that deliberately run nowhere. Every entry needs a REASON, and the list should shrink.
  *
- *  ✅ EMPTY as of 2026-08-12, and that is the intended steady state. Its only occupant was
+ *  ⚠️ ONE entry as of 2026-09-05 (`check:mail-dns`); empty is the intended steady state and this
+ *  list should shrink back to it. (This line read "✅ EMPTY" while the map below held an entry —
+ *  a comment asserting a count directly above the thing it miscounts.) The list was genuinely
+ *  empty on 2026-08-12, when its only occupant was
  *  `check:research-freshness`, which ran in no workflow and whose own output ended "Nothing a PR
  *  can fix, which is why this exits 0" — it could not fail — while FOUR docs claimed it warned in
  *  CI. It was deleted rather than wired (ADR-1011). Prefer that outcome to a long-lived entry

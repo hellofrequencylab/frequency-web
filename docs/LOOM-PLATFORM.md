@@ -87,7 +87,7 @@ Four pillars, one spine:
 - **B. The standardized admin bar** — the settings drawer becomes one capability-driven bar
   whose modular menu is the App catalog, appearing anywhere the viewer can edit.
 - **C. Template-everywhere** — every page composes a shell; every interior feature is a block.
-- **D. The unified `App` contract** — collapse the three registries and bridge the two
+- **D. The unified `App` contract** — collapse the ~~three~~ **six** registries (🔴 corrected 2026-09-05; the amendment at the head of this doc said this was fixed inline and it was not) and bridge the two
   capability systems behind one catalog that A/B/C all read.
 
 ---

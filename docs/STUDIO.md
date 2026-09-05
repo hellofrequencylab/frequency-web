@@ -6,7 +6,7 @@
 >
 > Authority: running code + `supabase/migrations/` > this doc. Companion: ADR-142,
 > ADR-143, **ADR-986**; [PAGE-FRAMEWORK.md](PAGE-FRAMEWORK.md) §9,
-> [EDITING-SYSTEM.md](EDITING-SYSTEM.md) (ADR-450 §2 is this kernel's consumer).
+> [EDITING-SYSTEM.md](EDITING-SYSTEM.md) (ADR-450 is this kernel's consumer).
 >
 > **Status legend:** ✅ built · ⏳ in progress · 📐 designed, not built · 🔴 gap.
 
@@ -28,7 +28,7 @@ way only, and `pnpm check:studio` fails the build if it ever reverses.
 |---|---|---|
 | **Kernel** | `lib/studio/kernel/*`: field kinds, the field model, provenance + the clearance gate, moods, the manifest type. PURE and entity-blind | ✅ built (ADR-986) |
 | **Catalog** | `lib/studio/registry.ts`: entity → manifest. The one place an entity is registered | ✅ built (ADR-986) |
-| **Manifests** | `lib/studio/entities/*`: one declaration per entity | ✅ **9 declared**: circle · event · journey · practice · space · business · listing · product · service |
+| **Manifests** | `lib/studio/entities/*`: one declaration per entity | ✅ **15 declared** (was written as 9 until 2026-09-05, which omitted `housing` and all five catalog-only rows). Ten carry a wizard: circle · event · journey · practice · space · business · listing · **housing** · product · service. Five are **catalog-only** (owner decision 2026-08-11 — declared so the catalog is complete and Create can list them, deliberately given no wizard, and they declare no `accepts`/`steer` so nothing can render a drop zone or mood dial): channel · room · hub · nexus · broadcast. `STUDIO_ENTITIES` in `lib/studio/registry.ts` is the authority; count it rather than trusting this cell. |
 | **Shell** | `StudioWindow`: overlay panel, chrome, Esc/backdrop close, scroll-lock, sticky footer | ✅ built (ADR-142) |
 | **Builder kit** | identity, fields, autosave, footer, launcher, sortable, in `components/studio/kit/` | ✅ built (ADR-143) |
 | **Spark kit** | `components/studio/spark/*`: the shell, the doors, the shared drop zone, one renderer per field kind | ✅ built (ADR-986) |
