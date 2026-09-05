@@ -36,8 +36,14 @@ import { pathToFileURL } from 'node:url'
  *  knows how to judge: production has read 496-499 functions on every deploy since 2026-08-18
  *  (AGENTS.md, Deploy safety), so 450 is roughly 10% of route deletions below the real count. A
  *  count under it means the trace layout changed or the build did not finish, and every count
- *  below would be a false zero. Lower it only beside a measured production reading. */
-export const MIN_FUNCTIONS = 450
+ *  below would be a false zero. Lower it only beside a measured production reading.
+ *
+ *  2026-09-05 (scan2, the measured reading): the first real artifact this gate saw (preview
+ *  afd733e, then production) read 456 functions, not 496-499; the 496 figure came from a tree
+ *  three weeks older, and every production build on 2026-09-05 has read 456. A floor of 450 sat
+ *  six route deletions under the real count, so 400 is the same 10% band the paragraph above
+ *  intended, measured rather than assumed. A broken trace layout still reads as zero. */
+export const MIN_FUNCTIONS = 400
 
 /** The app-page runtime is in essentially every function. If fewer than this share carry it, the
  *  traces did not parse and every count below is a false zero. */
