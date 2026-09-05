@@ -115,7 +115,7 @@ const SCOPED_TABLES: Record<string, string[]> = {
   contacts: ['space_id'],
   crm_deals: ['space_id'],
   crm_activities: ['space_id', 'deal_id'], // activities bind via deal_id (the deal is space-scoped) + space_id
-  network_contact_tags: ['network_contacts.space_id'],
+  network_contact_tags: ['network_contacts.shared_space_id'],
   qr_codes: ['space_id'],
   nodes: ['space_id'],
   captures: ['node_id'], // captures are read through a node that is itself space-scoped

@@ -31,8 +31,8 @@ import { NextResponse } from 'next/server'
 import type Stripe from 'stripe'
 import { stripe, STRIPE_WEBHOOK_SECRET, tierForPrice } from '@/lib/billing/stripe'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { routeSpaceSubscription, subscriptionKind } from '@/lib/billing/space-subscriptions'
-import { isBundleMetadata, reconcileBundleSubscription } from '@/lib/billing/bundle-seats'
+import { routeSpaceSubscription } from '@/lib/billing/space-subscriptions'
+import { reconcileBundleSubscription } from '@/lib/billing/bundle-seats'
 import { grantBetaFounding } from '@/lib/billing/beta-founding'
 import { foundingPaymentSignal } from '@/lib/billing/founding-payment'
 import { lapseFoundingStatus } from '@/lib/founding/status'
@@ -146,14 +146,30 @@ export async function POST(req: Request) {
         // entitlement is not something to leave standing "just in case" behind a metadata string an
         // operator could set by hand in the Stripe dashboard. A stray legacy session now falls through
         // to the guard below and is ignored.
-        if (!subscriptionKind(s.metadata) && !isBundleMetadata(s.metadata) && s.metadata?.kind !== 'founders') {
+        // 🔴 ALLOWLIST, NOT A DENYLIST. This guard used to name the kinds that must NOT grant a
+        // membership — space plan/membership, bundle, founders — and grant to everything else. That
+        // is backwards, and it shipped a hole: a ONE-TIME Shop/Market checkout carries
+        // kind:'commerce_order' and client_reference_id:<buyer>, matched none of the three
+        // exclusions, and fell through to setTier(buyer,'crew','active'). Buying an $8 item granted
+        // the paid tier permanently, with no subscription that could ever cancel it — and since
+        // membership_tier picks the payout take-rate rung, one purchase moved a seller's rung. The
+        // same was true of the $4.99 Supporter contribution (mode:'payment', its own kind).
+        //
+        // The correct condition is the one lib/billing/checkout.ts:122 already applied on the
+        // read side, whose comment claimed to "mirror the webhook's routing" — it did not, because
+        // the webhook never had it. There is exactly ONE creator of a member entitlement:
+        // createCheckoutSession (lib/billing/checkout.ts:81), mode:'subscription' with NO `kind` in
+        // its metadata (profile_id/tier/billing_period/pwyw_amount_cents only). Every other one of
+        // the eight session creators is either mode:'payment' or carries a `kind`. So state the
+        // requirement positively and a new checkout kind is excluded by DEFAULT instead of needing
+        // to be remembered here.
+        if (s.mode === 'subscription' && !s.metadata?.kind) {
           // A Space plan/membership checkout's entitlement write is done by the
-          // subscription.created/updated event, so skip the member tier path for those kinds.
-          //
-          // A HOUSEHOLD / CIRCLE BUNDLE is skipped here for the same reason and one sharper one: the
-          // buyer is not buying a personal membership, they are buying SEATS. Falling through would
-          // flip the payer's own membership_tier and stamp last_stripe_event_at off a bundle payment,
-          // seat nobody, and leave the real seating (lib/billing/bundle-seats.ts) looking stale.
+          // subscription.created/updated event, and a HOUSEHOLD / CIRCLE BUNDLE buys SEATS, not a
+          // personal membership — both carry a `kind`, so both are excluded by the condition above.
+          // Falling through on a bundle would flip the payer's own membership_tier and stamp
+          // last_stripe_event_at off a bundle payment, seat nobody, and leave the real seating
+          // (lib/billing/bundle-seats.ts) looking stale.
           const profileId = s.metadata?.profile_id ?? s.client_reference_id ?? null
           const tier = s.metadata?.tier === 'supporter' ? 'supporter' : 'crew'
           const customerId = typeof s.customer === 'string' ? s.customer : s.customer?.id
