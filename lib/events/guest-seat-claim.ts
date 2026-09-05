@@ -57,7 +57,8 @@ import { eventInstant, resolveZone } from '@/lib/time/zone'
  * `Database` type at four chained call sites here.
  */
 export type SessionClient = {
-  rpc: (fn: string, args: Record<string, unknown>) => Promise<unknown>
+  /** supabase-js resolves `{ error }` and never throws, so the RPC's outcome is READ, not caught. */
+  rpc: (fn: string, args: Record<string, unknown>) => Promise<{ error?: { message?: string } | null } | null | void>
   from: (table: string) => {
     select: (cols: string) => {
       eq: (col: string, val: unknown) => {
@@ -140,11 +141,19 @@ export async function claimGuestSeatsOnSignIn(
   session: SessionClient,
   profileId: string,
 ): Promise<string | null> {
-  try {
-    await session.rpc('claim_guest_rsvps', { p_profile_id: profileId })
-  } catch {
-    // Swallowed on purpose: the RPC is void and fail-closed by design (a caller who does not own the
-    // profile, or whose address is unconfirmed, gets a silent no-op rather than an error).
+  // Swallowed on purpose: the RPC is void and fail-closed by design (a caller who does not own the
+  // profile, or whose address is unconfirmed, gets a silent no-op rather than an error).
+  //
+  // 2026-09-05 (scan2 L5-19): the sentence above described a try/catch that could never enter its
+  // catch. supabase-js resolves `{ error }` and does not throw, so a refused or failed RPC (a
+  // permission denial, a missing function after a migration drift, a transport error) arrived here
+  // as a resolved value and the reads below then reported "nothing to claim" with no trace. The
+  // outcome is now READ. The behaviour is unchanged on purpose: still a fail-closed no-op, still
+  // never a blocker on sign-in, but a failure is logged so it can be seen.
+  const rpcResult = await session.rpc('claim_guest_rsvps', { p_profile_id: profileId })
+  const rpcError = rpcResult && typeof rpcResult === 'object' && 'error' in rpcResult ? rpcResult.error : null
+  if (rpcError) {
+    console.error('[guest-seat-claim] claim_guest_rsvps failed', { profileId, message: rpcError.message })
     return null
   }
 

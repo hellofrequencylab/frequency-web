@@ -1,6 +1,7 @@
 'use client'
 
-import { useCallback, useEffect, useState, useTransition } from 'react'
+import { useCallback, useEffect, useMemo, useState, useTransition } from 'react'
+import { createHandleSearch } from '@/lib/mentions/search-handles-client'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { Select } from '@/components/ui/select'
@@ -60,6 +61,7 @@ export function CircleMoveModule() {
   /** Handing it to a person: the handle typed, the matches found, and who is being confirmed. */
   const [query, setQuery] = useState('')
   const [hits, setHits] = useState<PersonHit[]>([])
+  const searchHandles = useMemo(() => createHandleSearch(), [])
   const [offerTo, setOfferTo] = useState<PersonHit | null>(null)
 
   // One read, re-run after a write that changes what the control should offer: sending or
@@ -124,10 +126,8 @@ export function CircleMoveModule() {
       setHits([])
       return
     }
-    fetch(`/api/search-handles?q=${encodeURIComponent(q.trim())}`)
-      .then((r) => r.json())
-      .then((j) => setHits(j.profiles ?? []))
-      .catch(() => setHits([]))
+    // Never throws; null is a stale response for a query already typed past.
+    searchHandles(q).then((found) => { if (found) setHits(found) })
   }
 
   function sendOffer() {

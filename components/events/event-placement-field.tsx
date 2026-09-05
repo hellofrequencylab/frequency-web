@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect, useTransition, useRef, useCallback } from 'react'
+import { useState, useEffect, useTransition, useRef, useCallback, useMemo } from 'react'
+import { createHandleSearch } from '@/lib/mentions/search-handles-client'
 import Image from 'next/image'
 import { MapPin, Check, Clock, Building2, Users, Crown, X } from 'lucide-react'
 import {
@@ -216,6 +217,7 @@ function TransferHostControl({ eventId, slug }: { eventId: string; slug: string 
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
   const [hits, setHits] = useState<HandleHit[]>([])
+  const searchHandles = useMemo(() => createHandleSearch<HandleHit>(), [])
   const [choice, setChoice] = useState<HandleHit | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
@@ -228,15 +230,11 @@ function TransferHostControl({ eventId, slug }: { eventId: string; slug: string 
         setHits([])
         return
       }
-      try {
-        const res = await fetch(`/api/search-handles?q=${encodeURIComponent(q.trim())}`)
-        const json = await res.json()
-        setHits(json.profiles ?? [])
-      } catch {
-        setHits([])
-      }
+      // Never throws; null is a stale response for a query already typed past.
+      const found = await searchHandles(q)
+      if (found) setHits(found)
     }, 150)
-  }, [])
+  }, [searchHandles])
 
   function confirm() {
     if (!choice) return

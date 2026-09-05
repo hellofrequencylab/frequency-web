@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useTransition, useRef, useEffect, useCallback, type ReactNode } from 'react'
+import { useState, useTransition, useRef, useEffect, useCallback, useMemo, type ReactNode } from 'react'
+import { createHandleSearch } from '@/lib/mentions/search-handles-client'
 import { Dialog } from '@/components/ui/dialog'
 import Image from 'next/image'
 import { Megaphone, ImagePlus, X, PenLine, Bold, Italic, List, Link2, Maximize2, Minimize2, ChevronDown, ChevronUp, Camera, type LucideIcon } from 'lucide-react'
@@ -127,6 +128,7 @@ export function Composer({
   const [mentionQuery, setMentionQuery] = useState<string | null>(null)
   const [mentionStart, setMentionStart] = useState<number>(0)
   const [suggestions, setSuggestions] = useState<HandleResult[]>([])
+  const searchHandles = useMemo(() => createHandleSearch<HandleResult>(), [])
   const [activeSuggestion, setActiveSuggestion] = useState(0)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -288,12 +290,13 @@ export function Composer({
     if (debounceRef.current) clearTimeout(debounceRef.current)
     debounceRef.current = setTimeout(async () => {
       if (!q) { setSuggestions([]); return }
-      const res = await fetch(`/api/search-handles?q=${encodeURIComponent(q)}`)
-      const json = await res.json()
-      setSuggestions(json.profiles ?? [])
+      // null = a stale response for a query the member has typed past: leave the list alone.
+      const hits = await searchHandles(q)
+      if (!hits) return
+      setSuggestions(hits)
       setActiveSuggestion(0)
     }, 150)
-  }, [])
+  }, [searchHandles])
 
   function handleChange(e: React.ChangeEvent<HTMLTextAreaElement>) {
     const val = e.target.value

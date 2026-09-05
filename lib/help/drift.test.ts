@@ -9,7 +9,9 @@ describe('fileToRoute', () => {
     expect(fileToRoute('app/(main)/circles/[slug]/page.tsx')).toBe('/circles/[slug]')
   })
   it('handles nested route handlers', () => {
-    expect(fileToRoute('app/(help)/help/ask/route.ts')).toBe('/help/ask')
+    // 2026-09-05 (scan2 L2-09): this case used app/(help)/help/ask/route.ts until that handler was
+    // deleted (no caller). Any grouped route handler exercises the same path; this one is live.
+    expect(fileToRoute('app/(main)/people/[handle]/vcard/route.ts')).toBe('/people/[handle]/vcard')
   })
   it('returns null for non-app files', () => {
     expect(fileToRoute('lib/help/content.ts')).toBeNull()

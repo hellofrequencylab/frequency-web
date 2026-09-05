@@ -21,6 +21,7 @@ import { featureGatesLive } from '@/lib/pricing/settings'
 import { asSpacePlan } from '@/lib/pricing/plans'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import { resolveHostingSpaceIdFromRow } from './host-space'
+import { isUpcomingByInstant, MAX_TZ_OFFSET_MS } from '@/lib/pricing/member-meter-usage'
 
 /** One upcoming event of the Space with its current members-ticket state.
  *  audience: 'none' = no members ticket; 'members' = any active membership; else a tier id. */
@@ -54,19 +55,25 @@ export async function listSpaceEventAccess(
     const admin = createAdminClient()
     const { data: events } = await admin
       .from('events')
-      .select('id, slug, title, starts_at, status, is_cancelled')
+      .select('id, slug, title, starts_at, time_zone, status, is_cancelled')
       .or(`host_space_id.eq.${spaceId},and(host_space_id.is.null,space_id.eq.${spaceId})`)
-      .gte('starts_at', new Date().toISOString())
+      // 2026-09-05 (scan2 L6-14, ADR-1211): widened by the largest zone offset and re-filtered by the real
+      // instant below; raw starts_at is the event's wall clock, not an instant.
+      .gte('starts_at', new Date(Date.now() - MAX_TZ_OFFSET_MS).toISOString())
       .order('starts_at', { ascending: true })
-      .limit(24)
+      .limit(48)
     const rows = ((events ?? []) as unknown as {
       id: string
       slug: string
       title: string
       starts_at: string
+      time_zone: string | null
       status: string | null
       is_cancelled: boolean | null
-    }[]).filter((e) => (e.status ?? 'published') === 'published' && !e.is_cancelled)
+    }[])
+      .filter((e) => (e.status ?? 'published') === 'published' && !e.is_cancelled)
+      .filter((e) => isUpcomingByInstant(e))
+      .slice(0, 24)
     if (rows.length === 0) return ok({ rows: [] })
 
     const { data: gates } = await admin

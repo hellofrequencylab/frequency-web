@@ -65,7 +65,8 @@
             "LIVE-169",
             "LIVE-167",
             "LIVE-164",
-            "LIVE-163"
+            "LIVE-163",
+            "LIVE-168"
           ]
         },
         {
@@ -7784,6 +7785,159 @@
         "kind": "cmd",
         "cmd": "node -e \"const fs=require('fs');const g=fs.readFileSync('scripts/function-grants.txt','utf8');const p=fs.readFileSync('lib/practices.ts','utf8');process.exit((/rpc\\\\('search_practices_hybrid'/.test(p)||!/^search_practices_hybrid\\\\b/m.test(g))&&!/^housing_lifestyle_agreement\\\\b/m.test(g)?0:1)\"",
         "note": "Passes once the hybrid search is called or dropped, and the housing function is dropped."
+      }
+    },
+    {
+      "id": "SCAN-595",
+      "title": "POST /help/ask ran an AI call per request and had no caller",
+      "status": "done",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "components/admin/admin-footer.tsx",
+        "ref": "ADR-1211"
+      },
+      "detail": "Scan two, phase E (2026-09-05). L2-09. Nothing fetched the route; the Ask Vera tier goes through app/(main)/support/actions.ts. Closed: the route is deleted, the footer comment corrected, the path-mapping test repointed, the authz ledger entry removed.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');process.exit(fs.existsSync('app/(help)/help/ask/route.ts')||/help\\\\/ask\\\\/route\\\\.ts/.test(fs.readFileSync('scripts/authz-route-ledger.json','utf8'))?1:0)\"",
+        "note": "Passes while the route and its ledger entry stay gone."
+      }
+    },
+    {
+      "id": "SCAN-604",
+      "title": "Marketing consent was recorded as granted when the caller omitted the field",
+      "status": "done",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "app/onboarding/actions.ts",
+        "ref": "ADR-1211"
+      },
+      "detail": "Scan two, phase E (2026-09-05). L5-16. emailOptIn ?? true sat on the consent write; the only omitting caller was the staff preview, but the cutover to it was planned. Closed: consent is granted only on an explicit true, with a test; the sequence-runner comment records that the cutover needs an opt-in step (LIVE-168).",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');process.exit(/emailOptIn === true/.test(fs.readFileSync('app/onboarding/actions.ts','utf8'))?0:1)\"",
+        "note": "Fails if consent is granted by omission again."
+      }
+    },
+    {
+      "id": "SCAN-605",
+      "title": "Nine mention pickers threw an unhandled rejection on a non-JSON search response",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/mentions/search-handles-client.ts",
+        "ref": "ADR-1211"
+      },
+      "detail": "Scan two, phase E (2026-09-05). L5-17. Each site called res.json() inside a timer with no try, no res.ok and no cancel flag, so a 500 page or an auth redirect broke the popup and a slow old response overwrote a newer one. Closed: createHandleSearch checks res.ok, parses inside try/catch, aborts and ignores stale responses, never throws; the nine sites use it (dock-chat already had its own guards and a parity test pinning its URL).",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs'),pa=require('path');function*w(d){for(const e of fs.readdirSync(d,{withFileTypes:true})){const f=pa.join(d,e.name);if(e.isDirectory()){if(e.name!=='node_modules'&&!e.name.startsWith('.'))yield*w(f)}else yield f}}const raw=[...w('components')].filter(f=>/\\\\.tsx$/.test(f)&&!f.endsWith('dock-chat.tsx')&&/fetch\\\\(.\\\\/api\\\\/search-handles/.test(fs.readFileSync(f,'utf8')));process.exit(raw.length===0&&/export function createHandleSearch/.test(fs.readFileSync('lib/mentions/search-handles-client.ts','utf8'))?0:1)\"",
+        "note": "Fails if a picker goes back to a raw fetch or the helper is removed."
+      }
+    },
+    {
+      "id": "SCAN-606",
+      "title": "Editing a dispatch with malformed poll options threw a raw SyntaxError",
+      "status": "done",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "app/(main)/admin/actions.ts",
+        "ref": "ADR-1211"
+      },
+      "detail": "Scan two, phase E (2026-09-05). L5-18. The only unguarded JSON.parse in the operator dispatch path (updateDispatch, not the events manage console the scan named). Closed: parsed inside a guard with a shape check and an operator-facing message.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');process.exit(/Poll options could not be read/.test(fs.readFileSync('app/(main)/admin/actions.ts','utf8'))?0:1)\"",
+        "note": "Fails if the guard is removed."
+      }
+    },
+    {
+      "id": "SCAN-607",
+      "title": "The guest-seat claim wrapped an RPC in a try/catch that could never catch",
+      "status": "done",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "lib/events/guest-seat-claim.ts",
+        "ref": "ADR-1211"
+      },
+      "detail": "Scan two, phase E (2026-09-05). L5-19. supabase-js resolves { error }, so a failed claim_guest_rsvps was never seen and the reads that followed reported nothing to claim. Closed: the result is read, logged with the profile id, and the fail-closed no-op kept; the comment carries a dated correction; the test drives a resolved error.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');process.exit(/claim_guest_rsvps failed/.test(fs.readFileSync('lib/events/guest-seat-claim.ts','utf8'))?0:1)\"",
+        "note": "Fails if the error read is removed."
+      }
+    },
+    {
+      "id": "SCAN-608",
+      "title": "Push registration failed silently after the browser said subscribed",
+      "status": "done",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "components/push/registration.tsx",
+        "ref": "ADR-1211"
+      },
+      "detail": "Scan two, phase E (2026-09-05). L5-20. Two .catch(() => {}) swallowed a failed subscription save. Closed: a fresh subscribe whose save is refused is unsubscribed again and the member sees one status line with a Dismiss; an existing-subscription re-sync failure is logged only, because that path runs on every load.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');process.exit(/PUSH_SAVE_FAILED_COPY/.test(fs.readFileSync('components/push/registration.tsx','utf8'))?0:1)\"",
+        "note": "Fails if the status line is removed."
+      }
+    },
+    {
+      "id": "SCAN-609",
+      "title": "The Circle member cap ignored reactivation and the counter disagreed with it",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "supabase/migrations/20270345000500_circle_member_cap_counts_reactivation.sql",
+        "ref": "ADR-1211"
+      },
+      "detail": "Scan two, phase E (2026-09-05). L6-13. The cap trigger fired on INSERT only and the count trigger incremented on any insert and decremented on delete only, so two dormant members reactivating together could exceed the cap. Closed: the cap fires before insert or update of status (transition into active only, circle row locked), a new trg_sync_circle_member_count keeps active-only accounting on insert, status change and delete, the old triggers are unwired, a one-time resync runs, and settleExistingMembership maps the raise to the existing full message. pgTAP proves the UPDATE path raises at cap. Latent today: no app path writes pending or inactive.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const m=fs.readFileSync('supabase/migrations/20270345000500_circle_member_cap_counts_reactivation.sql','utf8').replace(/--.*$/gm,'');process.exit(/before insert or update of status on public\\\\.memberships/.test(m)&&/trg_sync_circle_member_count/.test(m)&&/trg_sync_circle_member_count\\\\s+internal/.test(fs.readFileSync('scripts/function-grants.txt','utf8'))?0:1)\"",
+        "note": "Fails if the trigger loses its UPDATE arm or the grants verdict is dropped."
+      }
+    },
+    {
+      "id": "SCAN-610",
+      "title": "Event allowances compared a wall-clock starts_at to the real now, dropping events up to 14 hours early or late",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/pricing/member-meter-usage.ts",
+        "ref": "ADR-1211"
+      },
+      "detail": "Scan two, phase E (2026-09-05). L6-14. starts_at stores the event's wall clock in UTC parts, so a Los Angeles 7 pm event left the creator's allowance at noon local and a Sydney 9 am event stayed until the evening. Closed: memberActiveEvents, the createEvent cap and the Space upcoming-events access list read a band widened by the largest zone offset and filter by eventInstant, the way the reminder crons do; tests cover both boundaries.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const u=fs.readFileSync('lib/pricing/member-meter-usage.ts','utf8');const a=fs.readFileSync('app/(main)/events/actions.ts','utf8').replace(/\\\\/\\\\/.*$/gm,'');const s=fs.readFileSync('lib/events/space-event-access.ts','utf8').replace(/\\\\/\\\\/.*$/gm,'');process.exit(/export function isUpcomingByInstant/.test(u)&&/isUpcomingByInstant\\\\(/.test(a)&&/isUpcomingByInstant\\\\(/.test(s)?0:1)\"",
+        "note": "Fails if any of the three gates goes back to raw starts_at."
+      }
+    },
+    {
+      "id": "LIVE-168",
+      "title": "The onboarding sequence runner has no opt-in step, so its cutover would record consent withheld for everyone",
+      "status": "open",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "components/onboarding/sequence-runner.tsx",
+        "ref": "ADR-1211"
+      },
+      "detail": "SCAN-604 stopped consent being granted by omission. The staff-only sequence preview binding omits emailOptIn, and the comment in the file plans a production cutover to it; that cutover now needs an explicit opt-in step in the sequence before it ships, or every member routed through it is recorded as declining marketing email.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const s=fs.readFileSync('components/onboarding/sequence-runner.tsx','utf8').replace(/\\\\/\\\\/.*$/gm,'');process.exit(/emailOptIn/.test(s)?0:1)\"",
+        "note": "Passes once the sequence binding carries emailOptIn."
       }
     }
   ]
