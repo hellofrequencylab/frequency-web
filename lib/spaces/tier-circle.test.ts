@@ -129,7 +129,6 @@ vi.mock('./entitlements', () => ({
 import {
   syncTierCircleAccess,
   setTierCircle,
-  hasActiveSpaceMembership,
   tierLinksForCircle,
 } from './tier-circle'
 
@@ -419,22 +418,6 @@ describe('setTierCircle (the operator action core)', () => {
       ['p1', CIRCLE_B],
       ['p2', CIRCLE_A],
     ])
-  })
-})
-
-describe('hasActiveSpaceMembership (the canonical reader)', () => {
-  it('true for an active row; the optional tier filter narrows it', async () => {
-    state.spaceMemberships.push({
-      id: 'sm1',
-      space_id: SPACE,
-      member_profile_id: MEMBER,
-      tier_id: TIER_A,
-      status: 'active',
-    })
-    expect(await hasActiveSpaceMembership(SPACE, MEMBER)).toBe(true)
-    expect(await hasActiveSpaceMembership(SPACE, MEMBER, TIER_A)).toBe(true)
-    expect(await hasActiveSpaceMembership(SPACE, MEMBER, TIER_B)).toBe(false)
-    expect(await hasActiveSpaceMembership(OTHER_SPACE, MEMBER)).toBe(false)
   })
 })
 

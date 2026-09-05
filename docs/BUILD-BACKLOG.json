@@ -63,7 +63,8 @@
             "LIVE-165",
             "LIVE-166",
             "LIVE-169",
-            "LIVE-167"
+            "LIVE-167",
+            "LIVE-164"
           ]
         },
         {
@@ -2129,13 +2130,14 @@
       "lane": "live",
       "size": "XS",
       "source": {
-        "file": "lib/email-studio/presets.ts",
+        "file": "lib/email.ts",
         "ref": "FOUNDING_BUSINESS_INVITE"
       },
       "detail": "FOUNDING_BUSINESS (lib/beta/launch-emails.ts, mirrored in lib/beta/email-templates.ts) is seeded into Email Studio as a campaign offering local businesses \"A Founding Business gets its own Space to post events and offers and the lowest rate we will ever set, kept for good. Take the year before September 1\". ADR-1067 removed the Business founding rate, so there is no price behind that promise: Business is a flat $29/mo, $290/yr, and the only beta rate in the catalog is Collective's unlisted $49/$490. Nothing is mis-sold TODAY because these are seeded drafts rather than sends, and the campaign links to /pricing rather than to a checkout at a named rate. But if it goes out as written it offers a founding rate the catalog cannot charge. Owner decides which: retire the email, or repoint the offer at Collective (whose rate IS grantable, and whose September 1 framing already matches). The badge and Space copy are reusable either way. NOT a code fix to guess at - the email is an offer, and which offer to make is the owner's call.\n\n── 2026-08-19, AND THIS ROW'S CLOSE WAS INCOMPLETE. It was scoped to lib/beta/launch-emails.ts and lib/beta/email-templates.ts, and the exact sentence it reported removing was alive VERBATIM in a third file the close never looked at: lib/email-studio/presets.ts, in a preset named FOUNDING_BUSINESS_INVITE ('the lowest rate we will ever set, kept for good'). Its probe could never have caught it, because both files it read are now deleted and it returns indeterminate. The copy is fixed and the probe re-pointed at the file that actually carries the offer. The lesson is the row's own: a close scoped to the files you happened to grep is not a close, and the mitigation everyone reached for (nothing imports EMAIL_PRESETS outside its test) is the same dormancy this row judged unacceptable when it was filed.",
       "verify": {
         "kind": "cmd",
-        "cmd": "node -e \"const fs=require('fs');const P='lib/email-studio/presets.ts';if(!fs.existsSync(P))process.exit(79);if(/lowest rate we will ever set/.test(fs.readFileSync(P,'utf8'))){console.error('the retired Business founding rate is back in presets.ts');process.exit(1)}process.exit(0)\""
+        "cmd": "node -e \"const fs=require('fs'),pa=require('path');function*w(d){for(const n of fs.readdirSync(d)){const f=pa.join(d,n);if(fs.statSync(f).isDirectory())yield*w(f);else if(/\\.tsx?$/.test(f))yield f}}for(const f of w('lib')){if(/lowest rate we will ever set/.test(fs.readFileSync(f,'utf8'))){console.error('the retired Business founding rate is back in '+f);process.exit(1)}}process.exit(0)\"",
+        "note": "2026-09-05: lib/email-studio/presets.ts was deleted (scan2 L4-04); the probe now greps every lib/ file for the retired copy."
       },
       "notes": "Closed 2026-08-17 on the owner's instruction, which had already been given three times and which I should have applied without asking: founding beta pricing is removed except the one unlisted Collective offer. FOUNDING_BUSINESS is out of BETA_LAUNCH_EMAILS (so the seeder never writes it into `campaigns`) and the matching plain-text template is out of email-templates.ts. The constant is KEPT and exported as RETIRED_FOUNDING_BUSINESS_EMAIL: the Founding Business PROGRAM - badge, 25-per-city cap, take-rate buy-down - is recognition rather than a discount and is not retired, so the copy stays available to rewrite without a founding RATE in it. The probe strips line comments before judging, because the retirement note quotes the promise it removed and documentation is not an offer; it caught that on its first run."
     },
@@ -2615,13 +2617,14 @@
       "lane": "live",
       "size": "S",
       "source": {
-        "file": "lib/email-studio/presets.ts",
+        "file": "lib/email.ts",
         "ref": "FOUNDING_MEMBER / FOUNDING_BUSINESS_INVITE"
       },
       "detail": "CLOSED 2026-08-19. Filed when clearing the grace window (ADR-1087) also ended the beta founder push: grantBetaFounding reads the same row, so with beta_grace null every grant returns 'no_window' and no subscription earns a Founding badge automatically any more.\n\nTHE ROW WAS AIMED AT THE WRONG FILE, and an audit caught it the same day. Deleting lib/beta/launch-emails.ts with the Command Center did NOT remove the offer: the identical sentences were alive in a THIRD file, lib/email-studio/presets.ts, inside presets named FOUNDING_MEMBER and FOUNDING_BUSINESS_INVITE. That is the same third-file miss that made OWN-025's close incomplete, and it is the reason this probe now reads presets.ts.\n\nFIXED BY MAKING THE COPY TRUE rather than by deleting the presets, because the Founding badge itself still exists and is still grantable by hand (royaltemple carries one by owner decision). Two sentences changed: the member preset no longer says 'Take the year before September 1 and a small mark goes on your profile', and the business preset no longer offers 'the lowest rate we will ever set, kept for good' (ADR-1067 removed the Business founding rate outright, so that rate could not be charged at all).",
       "verify": {
         "kind": "cmd",
-        "cmd": "node -e \"const fs=require('fs');const P='lib/email-studio/presets.ts';if(!fs.existsSync(P))process.exit(79);const s=fs.readFileSync(P,'utf8');const bad=[];if(/before September 1/.test(s))bad.push('presets.ts still dates an offer to September 1');if(/lowest rate we will ever set/.test(s))bad.push('presets.ts still offers the lowest rate we will ever set, which ADR-1067 removed');if(bad.length){console.error(bad.join('; '));process.exit(1)}process.exit(0)\""
+        "cmd": "node -e \"const fs=require('fs'),pa=require('path');function*w(d){for(const n of fs.readdirSync(d)){const f=pa.join(d,n);if(fs.statSync(f).isDirectory())yield*w(f);else if(/\\.tsx?$/.test(f))yield f}}for(const f of w('lib')){if(/lowest rate we will ever set/.test(fs.readFileSync(f,'utf8'))){console.error('the retired Business founding rate is back in '+f);process.exit(1)}}process.exit(0)\"",
+        "note": "2026-09-05: lib/email-studio/presets.ts was deleted (scan2 L4-04); the probe now greps every lib/ file for the retired copy."
       }
     },
     {
@@ -7592,6 +7595,91 @@
         "kind": "cmd",
         "cmd": "node -e \"const fs=require('fs');const {execSync}=require('child_process');const n=parseInt(execSync('grep -rl \\\"sourceWithoutComments(\\\" --include=*.test.ts --include=*.test.tsx app components lib scripts test | wc -l').toString());process.exit(n>=40?0:1)\"",
         "note": "Passes once at least 40 test files use the helper (20 today)."
+      }
+    },
+    {
+      "id": "SCAN-596",
+      "title": "The Space automation form offered two triggers that never fire",
+      "status": "done",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "lib/spaces/automation-types.ts",
+        "ref": "ADR-1211"
+      },
+      "detail": "Scan two, phase E (2026-09-05). L4-02. fireSpaceTrigger is called for contact.created and member.joined only; contact.tagged and deal.stage_changed had no emitter (a tag lands at three sites and a deal stage at five, so wiring was not one call). Closed: the offered list is the two that fire, and a source-shape test walks lib/ (comments stripped) and fails if any offered trigger has no fireSpaceTrigger call.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const s=fs.readFileSync('lib/spaces/automation-types.ts','utf8').replace(/\\\\/\\\\/.*$/gm,'');const m=/SPACE_AUTOMATION_TRIGGERS = \\\\[([\\\\s\\\\S]*?)\\\\]/.exec(s);process.exit(m&&!/contact\\\\.tagged|deal\\\\.stage_changed/.test(m[1])?0:1)\"",
+        "note": "Fails if an unfired trigger is offered again."
+      }
+    },
+    {
+      "id": "SCAN-597",
+      "title": "The editable transactional-template path was dead at both ends and is removed",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/email-studio/product-block.ts",
+        "ref": "ADR-1211"
+      },
+      "detail": "Scan two, phase E (2026-09-05). L4-04 and L9-09. renderTransactionalTemplate had no caller, email_templates had no writer, EMAIL_PRESETS was imported only by its own test, and the preset copy told the operator the text was editable here. Closed: presets.ts and the render path are deleted; the welcome and invite senders' deferral comments carry a dated correction; OWN-025 and LIVE-057 now probe every lib/ file for the retired copy. Dropping the email_templates table is LIVE-164.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const s=fs.readFileSync('lib/email-studio/product-block.ts','utf8').replace(/\\\\/\\\\*[\\\\s\\\\S]*?\\\\*\\\\//g,'').replace(/^\\\\s*\\\\/\\\\/.*$/gm,'');process.exit(!fs.existsSync('lib/email-studio/presets.ts')&&!/from\\\\('email_templates'\\\\)|renderTransactionalTemplate\\\\(/.test(s)?0:1)\"",
+        "note": "Fails if the dead path comes back."
+      }
+    },
+    {
+      "id": "SCAN-598",
+      "title": "Help feature keys pointed at routes that do not exist, so drift never flagged their articles",
+      "status": "done",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "lib/help/feature-keys.ts",
+        "ref": "ADR-1211"
+      },
+      "detail": "Scan two, phase E (2026-09-05). L4-05. /vault matched nothing under app/ and the member notification settings under /settings/notifications never marked the notifications article. Closed: vault routes to /upgrade, notifications lists both prefixes, and a test asserts every route on every key matches at least one file under app/. The four keys the scan also named already matched (its tool counted page files only).",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');process.exit(fs.existsSync('lib/help/feature-keys.test.ts')&&/\\\\/settings\\\\/notifications/.test(fs.readFileSync('lib/help/feature-keys.ts','utf8'))?0:1)\"",
+        "note": "Fails if the route test or the settings prefix is removed."
+      }
+    },
+    {
+      "id": "SCAN-599",
+      "title": "Fifteen exported async lib functions with no importer and no caller are deleted",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/spaces/function-access.ts",
+        "ref": "ADR-1211"
+      },
+      "detail": "Scan two, phase E (2026-09-05). L9-13. Each caller search was re-run before deletion (app, lib, components, scripts, supabase/functions, string and dynamic forms). Deleted: draftOfferingBlurb, listAttachmentsOfRecording, listRelationships, listAllScoredMembers, listAcceptedSharesForSpace, setEventIntakeInputs, saveSplashOverride, resolvePlaceSelectorProfileIds, memberInRecovery, resolveViewerGamification, spaceCanRunPlaybooksLive, spaceCanSeeResonanceLive, spaceCanUseResonanceAiLive, getSpaceSeatQuantity, hasActiveSpaceMembership. Kept on purpose: setSpaceBundle (a done row's probe and an owner ruling require it). Wired instead of deleted: updateSpaceSegment, updateSpaceEmailTemplate (SCAN-601). Left to their owning phases: spaceIsPaying, listMakerProducts, getCurrentLegPracticeIds, listSpaceRules.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const M={'lib/ai/space-copilot.ts':['draftOfferingBlurb'],'lib/airwaves/recordings.ts':['listAttachmentsOfRecording'],'lib/crm/relationships.ts':['listRelationships'],'lib/dashboard/scores.ts':['listAllScoredMembers'],'lib/events/event-share.ts':['listAcceptedSharesForSpace'],'lib/events/seed/store.ts':['setEventIntakeInputs'],'lib/funnels/overrides.ts':['saveSplashOverride'],'lib/messaging/place-tree.ts':['resolvePlaceSelectorProfileIds'],'lib/pricing/dunning.ts':['memberInRecovery'],'lib/pricing/gamification-access.ts':['resolveViewerGamification'],'lib/spaces/function-access.ts':['spaceCanRunPlaybooksLive','spaceCanSeeResonanceLive','spaceCanUseResonanceAiLive'],'lib/spaces/seats.ts':['getSpaceSeatQuantity'],'lib/spaces/tier-circle.ts':['hasActiveSpaceMembership']};let bad=0;for(const [f,ns] of Object.entries(M)){const s=fs.readFileSync(f,'utf8');for(const n of ns)if(new RegExp('export\\\\\\\\s+async\\\\\\\\s+function\\\\\\\\s+'+n+'\\\\\\\\b').test(s))bad++}process.exit(bad?1:0)\"",
+        "note": "Fails if any deleted export returns without a caller."
+      }
+    },
+    {
+      "id": "LIVE-164",
+      "title": "The email_templates table has no writer and, since SCAN-597, no reader",
+      "status": "open",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "lib/email-studio/product-block.ts",
+        "ref": "ADR-1211"
+      },
+      "detail": "RLS deny-all, no insert anywhere, and the one reader (renderTransactionalTemplate) is deleted. Drop it in a migration (and its table-grants and rls-deny-all lines) or record why it stays.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs'),pa=require('path');function*w(d){for(const e of fs.readdirSync(d,{withFileTypes:true})){const f=pa.join(d,e.name);if(e.isDirectory()){if(e.name!=='node_modules'&&!e.name.startsWith('.'))yield*w(f)}else yield f}}const mig=[...w('supabase/migrations')].some(f=>f.endsWith('.sql')&&/drop table if exists public\\\\.email_templates/.test(fs.readFileSync(f,'utf8')));const lib=[...w('lib')].some(f=>/\\\\.tsx?$/.test(f)&&/email_templates/.test(fs.readFileSync(f,'utf8').replace(/\\\\/\\\\/.*$/gm,'')));process.exit(mig&&!lib?0:1)\"",
+        "note": "Passes once a migration drops the table and no lib code names it."
       }
     }
   ]

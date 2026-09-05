@@ -62,15 +62,8 @@ export async function getSplashOverride(slug: string): Promise<Partial<FunnelSpl
   return row?.splash ?? null
 }
 
-export async function saveSplashOverride(
-  slug: string,
-  splash: Partial<FunnelSplash>,
-  by: string | null,
-): Promise<void> {
-  await db()
-    .from('sequence_overrides')
-    .upsert({ slug, splash, data: { splash }, updated_at: new Date().toISOString(), updated_by: by }, { onConflict: 'slug' })
-}
+// 2026-09-05 (scan2 L9-13): saveSplashOverride was removed; no editor wrote a splash override on its own
+// (the whole-override writer below is the one in use).
 
 /** The full override for a slug (data column, with the legacy splash folded in). */
 export async function getFunnelOverride(slug: string): Promise<FunnelOverride | null> {

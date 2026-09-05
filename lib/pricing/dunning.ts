@@ -48,12 +48,8 @@ export async function resolveMemberPaymentState(profileId: string | null | undef
   }
 }
 
-/** Is the member in a recovery state (past_due or canceled) that should surface a banner? Convenience
- *  over resolveMemberPaymentState — false while billing is OFF (dark until launch). */
-export async function memberInRecovery(profileId: string | null | undefined): Promise<boolean> {
-  const state = await resolveMemberPaymentState(profileId)
-  return state === 'past_due' || state === 'canceled'
-}
+// 2026-09-05 (scan2 L9-13): the memberInRecovery convenience was removed; the past-due banner reads
+// resolveMemberPaymentState directly.
 
 /** The PURE proration note for a plan change between two monthly prices (cents). A member switching
  *  plans mid-cycle is charged/credited the difference; this is the plain-voice line that says so, so

@@ -15,6 +15,8 @@
 // runs it on every real send and schedule — the em dash refuses the send (the hard rule), the rest
 // surface as warnings through the send panel's voice preflight — and the preset suite
 // (presets.test.ts) holds every shipped email preset to the hard rule, so no operator can start
+// 2026-09-05 (scan2 L4-04): lib/email-studio/presets.ts and presets.test.ts were removed (no consumer
+// outside their own test). The hard rule now applies through campaignAuthoredCopy on every real send.
 // from a template we would refuse. Pure and unit-tested, no imports, safe anywhere.
 
 export interface VoiceViolation {
