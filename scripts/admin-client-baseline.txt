@@ -550,7 +550,6 @@ lib/dispatches.ts
 lib/elements/store.ts
 lib/email-studio/analytics.ts
 lib/email-studio/loom-actions.ts
-lib/email-studio/product-block.ts
 lib/email-studio/send.ts
 lib/engagement/capture.ts
 lib/engagement/events.ts
@@ -750,6 +749,7 @@ lib/rewards/gifts.ts
 lib/rewards/spark.ts
 lib/seasons.ts
 lib/spaces/ai-usage.ts
+lib/spaces/analytics.ts
 lib/spaces/audiences.ts
 lib/spaces/automation.ts
 lib/spaces/booking-notify.ts
