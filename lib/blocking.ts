@@ -19,22 +19,51 @@ export interface BlockedProfile {
   avatar_url: string | null
 }
 
-export async function blockUser(blockerId: string, blockedId: string): Promise<void> {
-  if (blockerId === blockedId) return
+/** The outcome of a block or unblock write (scan2 L5-12): `ok: false` means the row did NOT change. */
+export type BlockWriteResult = { ok: true } | { ok: false; error: string }
+
+// 2026-09-05 (scan2 L5-12): both writes below used to be discarded and the function returned void,
+// so the caller reported success and revalidated into a blocked state that was not real. The block
+// row is the write that matters; its `error` is read and returned. The unfriend is a consequence:
+// its failure is logged, not surfaced, because the block itself is in place.
+export async function blockUser(blockerId: string, blockedId: string): Promise<BlockWriteResult> {
+  if (blockerId === blockedId) return { ok: false, error: 'You cannot block yourself.' }
   const client = db()
-  await client
+  const { error } = await client
     .from('blocked_users')
     .upsert(
       { blocker_id: blockerId, blocked_id: blockedId },
       { onConflict: 'blocker_id,blocked_id', ignoreDuplicates: true },
     )
+  if (error) {
+    console.error('[blocking] blocked_users upsert failed', { code: error.code, message: error.message })
+    return { ok: false, error: 'Block did not save. Try again.' }
+  }
   // Blocking implies unfriending: drop any friendship row (canonical ordering).
   const [a, b] = blockerId < blockedId ? [blockerId, blockedId] : [blockedId, blockerId]
-  await client.from('friendships').delete().match({ user_a_id: a, user_b_id: b })
+  const { error: unfriendError } = await client
+    .from('friendships')
+    .delete()
+    .match({ user_a_id: a, user_b_id: b })
+  if (unfriendError) {
+    console.error('[blocking] friendships delete failed after block', {
+      code: unfriendError.code,
+      message: unfriendError.message,
+    })
+  }
+  return { ok: true }
 }
 
-export async function unblockUser(blockerId: string, blockedId: string): Promise<void> {
-  await db().from('blocked_users').delete().match({ blocker_id: blockerId, blocked_id: blockedId })
+export async function unblockUser(blockerId: string, blockedId: string): Promise<BlockWriteResult> {
+  const { error } = await db()
+    .from('blocked_users')
+    .delete()
+    .match({ blocker_id: blockerId, blocked_id: blockedId })
+  if (error) {
+    console.error('[blocking] blocked_users delete failed', { code: error.code, message: error.message })
+    return { ok: false, error: 'Unblock did not save. Try again.' }
+  }
+  return { ok: true }
 }
 
 /** True if either user has blocked the other. */
