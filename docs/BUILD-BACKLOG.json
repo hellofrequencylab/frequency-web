@@ -166,7 +166,8 @@
             "SCAN-205",
             "HYG-033",
             "LIVE-153",
-            "OWN-048"
+            "OWN-048",
+            "OWN-049"
           ]
         }
       ],
@@ -6398,6 +6399,40 @@
         "kind": "cmd",
         "cmd": "node -e \"const fs=require('fs');const c=fs.readFileSync('lib/events/reactions-core.ts','utf8');const r=fs.readFileSync('lib/events/reactions.ts','utf8');const t=fs.readFileSync('lib/events/reactions-core.test.ts','utf8');process.exit(c.includes('Object.fromEntries(out)')&&!r.includes('Object.create(null)')&&t.includes('Object.getPrototypeOf(out)).toBe(Object.prototype)')?0:1)\"",
         "note": "Passes when the fold converts the Map to a plain object at the boundary with Object.fromEntries, the server module builds no null-prototype value of its own, and a test asserts the prototype."
+      }
+    },
+    {
+      "id": "SCAN-548",
+      "title": "Ten notification switches had no reader, a Circle/Space mute muted nothing, and twelve sends bypassed the consent seam",
+      "status": "done",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "lib/notifications/wired.ts",
+        "ref": "ADR-1204"
+      },
+      "detail": "Five in-app categories (the router evaluated the gate and discarded the result), four Mentions/Replies cells with no emitter, and email_practice were shown as live switches and read by nothing. isSubjectTopicMuted was reachable only through resolveSendGate's subject and no send site constructed one. Twelve sends called shouldSend directly. Closed 2026-09-04: wired.ts declares which (category, channel) pairs are read and both forms render from it (switches hidden, keys kept); nine dispatch sites pass a PreferenceSubject; every send goes through resolveSendGate, pinned by a seam test.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const r=(f)=>fs.existsSync(f)?fs.readFileSync(f,'utf8'):'';const seam=fs.existsSync('lib/comms/send-gate-seam.test.ts');const wired=fs.existsSync('lib/notifications/wired.ts')&&fs.existsSync('lib/notifications/wired.test.ts');const subj=/subject/.test(r('lib/spaces/dispatch.ts'));process.exit(seam&&wired&&subj?0:1)\"",
+        "note": "Passes when the wired-pairs ledger and its test exist, the seam test exists, and the Space dispatch fan-out passes a subject."
+      }
+    },
+    {
+      "id": "OWN-049",
+      "title": "Should a Circle or Space mute also silence RSVP confirmations, guest-approval confirmations, cancellation notices and RSVP reminders?",
+      "status": "open",
+      "lane": "owner",
+      "size": "XS",
+      "source": {
+        "file": "lib/events/dispatch.ts",
+        "ref": "ADR-1204"
+      },
+      "detail": "When mutes were wired to a subject (SCAN-548), the RSVP lifecycle sends were deliberately left unmuted: the member asked for them by RSVPing, and a Circle mute swallowing a cancellation notice would strand someone at a venue. Outreach and broadcast platform lanes have no single subject in scope either. If a mute should mean all of it, say so and the four sites get a subject.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "lib/events/dispatch.ts passes a subject on push and email; the RSVP confirmation, approval, cancellation and reminder sends do not, by design (W6 report, 2026-09-04).",
+        "checked": "2026-09-04"
       }
     },
     {
