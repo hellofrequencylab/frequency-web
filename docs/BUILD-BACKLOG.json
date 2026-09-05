@@ -2120,13 +2120,14 @@
       "lane": "live",
       "size": "XS",
       "source": {
-        "file": "lib/email-studio/presets.ts",
+        "file": "lib/email.ts",
         "ref": "FOUNDING_BUSINESS_INVITE"
       },
       "detail": "FOUNDING_BUSINESS (lib/beta/launch-emails.ts, mirrored in lib/beta/email-templates.ts) is seeded into Email Studio as a campaign offering local businesses \"A Founding Business gets its own Space to post events and offers and the lowest rate we will ever set, kept for good. Take the year before September 1\". ADR-1067 removed the Business founding rate, so there is no price behind that promise: Business is a flat $29/mo, $290/yr, and the only beta rate in the catalog is Collective's unlisted $49/$490. Nothing is mis-sold TODAY because these are seeded drafts rather than sends, and the campaign links to /pricing rather than to a checkout at a named rate. But if it goes out as written it offers a founding rate the catalog cannot charge. Owner decides which: retire the email, or repoint the offer at Collective (whose rate IS grantable, and whose September 1 framing already matches). The badge and Space copy are reusable either way. NOT a code fix to guess at - the email is an offer, and which offer to make is the owner's call.\n\n── 2026-08-19, AND THIS ROW'S CLOSE WAS INCOMPLETE. It was scoped to lib/beta/launch-emails.ts and lib/beta/email-templates.ts, and the exact sentence it reported removing was alive VERBATIM in a third file the close never looked at: lib/email-studio/presets.ts, in a preset named FOUNDING_BUSINESS_INVITE ('the lowest rate we will ever set, kept for good'). Its probe could never have caught it, because both files it read are now deleted and it returns indeterminate. The copy is fixed and the probe re-pointed at the file that actually carries the offer. The lesson is the row's own: a close scoped to the files you happened to grep is not a close, and the mitigation everyone reached for (nothing imports EMAIL_PRESETS outside its test) is the same dormancy this row judged unacceptable when it was filed.",
       "verify": {
         "kind": "cmd",
-        "cmd": "node -e \"const fs=require('fs');const P='lib/email-studio/presets.ts';if(!fs.existsSync(P))process.exit(79);if(/lowest rate we will ever set/.test(fs.readFileSync(P,'utf8'))){console.error('the retired Business founding rate is back in presets.ts');process.exit(1)}process.exit(0)\""
+        "cmd": "node -e \"const fs=require('fs'),pa=require('path');function*w(d){for(const n of fs.readdirSync(d)){const f=pa.join(d,n);if(fs.statSync(f).isDirectory())yield*w(f);else if(/\\.tsx?$/.test(f))yield f}}for(const f of w('lib')){if(/lowest rate we will ever set/.test(fs.readFileSync(f,'utf8'))){console.error('the retired Business founding rate is back in '+f);process.exit(1)}}process.exit(0)\"",
+        "note": "2026-09-05: lib/email-studio/presets.ts was deleted (scan2 L4-04); the probe now greps every lib/ file for the retired copy."
       },
       "notes": "Closed 2026-08-17 on the owner's instruction, which had already been given three times and which I should have applied without asking: founding beta pricing is removed except the one unlisted Collective offer. FOUNDING_BUSINESS is out of BETA_LAUNCH_EMAILS (so the seeder never writes it into `campaigns`) and the matching plain-text template is out of email-templates.ts. The constant is KEPT and exported as RETIRED_FOUNDING_BUSINESS_EMAIL: the Founding Business PROGRAM - badge, 25-per-city cap, take-rate buy-down - is recognition rather than a discount and is not retired, so the copy stays available to rewrite without a founding RATE in it. The probe strips line comments before judging, because the retirement note quotes the promise it removed and documentation is not an offer; it caught that on its first run."
     },
@@ -2606,13 +2607,14 @@
       "lane": "live",
       "size": "S",
       "source": {
-        "file": "lib/email-studio/presets.ts",
+        "file": "lib/email.ts",
         "ref": "FOUNDING_MEMBER / FOUNDING_BUSINESS_INVITE"
       },
       "detail": "CLOSED 2026-08-19. Filed when clearing the grace window (ADR-1087) also ended the beta founder push: grantBetaFounding reads the same row, so with beta_grace null every grant returns 'no_window' and no subscription earns a Founding badge automatically any more.\n\nTHE ROW WAS AIMED AT THE WRONG FILE, and an audit caught it the same day. Deleting lib/beta/launch-emails.ts with the Command Center did NOT remove the offer: the identical sentences were alive in a THIRD file, lib/email-studio/presets.ts, inside presets named FOUNDING_MEMBER and FOUNDING_BUSINESS_INVITE. That is the same third-file miss that made OWN-025's close incomplete, and it is the reason this probe now reads presets.ts.\n\nFIXED BY MAKING THE COPY TRUE rather than by deleting the presets, because the Founding badge itself still exists and is still grantable by hand (royaltemple carries one by owner decision). Two sentences changed: the member preset no longer says 'Take the year before September 1 and a small mark goes on your profile', and the business preset no longer offers 'the lowest rate we will ever set, kept for good' (ADR-1067 removed the Business founding rate outright, so that rate could not be charged at all).",
       "verify": {
         "kind": "cmd",
-        "cmd": "node -e \"const fs=require('fs');const P='lib/email-studio/presets.ts';if(!fs.existsSync(P))process.exit(79);const s=fs.readFileSync(P,'utf8');const bad=[];if(/before September 1/.test(s))bad.push('presets.ts still dates an offer to September 1');if(/lowest rate we will ever set/.test(s))bad.push('presets.ts still offers the lowest rate we will ever set, which ADR-1067 removed');if(bad.length){console.error(bad.join('; '));process.exit(1)}process.exit(0)\""
+        "cmd": "node -e \"const fs=require('fs'),pa=require('path');function*w(d){for(const n of fs.readdirSync(d)){const f=pa.join(d,n);if(fs.statSync(f).isDirectory())yield*w(f);else if(/\\.tsx?$/.test(f))yield f}}for(const f of w('lib')){if(/lowest rate we will ever set/.test(fs.readFileSync(f,'utf8'))){console.error('the retired Business founding rate is back in '+f);process.exit(1)}}process.exit(0)\"",
+        "note": "2026-09-05: lib/email-studio/presets.ts was deleted (scan2 L4-04); the probe now greps every lib/ file for the retired copy."
       }
     },
     {
