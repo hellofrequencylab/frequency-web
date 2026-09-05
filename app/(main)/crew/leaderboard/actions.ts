@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { mergeProfileMeta } from '@/lib/profiles/meta'
 import { getMyProfileId } from '@/lib/auth'
 
 // Leaderboard opt-out action — a one-tap "hide me from the board" preference.
@@ -45,17 +46,15 @@ export async function setLeaderboardVisibility(
   const profileId = await getMyProfileId()
   if (!profileId) return { ok: false, hidden }
 
+  // 2026-09-05 (scan2 L6-09): "read-modify-write the whole meta blob" above is retired. One key, merged
+  // server-side, no read needed; a failed merge reports ok:false instead of repainting a toggle that did
+  // not land.
   const admin = createAdminClient()
-  const { data: prof } = await admin
-    .from('profiles')
-    .select('meta')
-    .eq('id', profileId)
-    .maybeSingle()
-
-  const meta = ((prof as { meta: Record<string, unknown> | null } | null)?.meta ?? {}) as Record<string, unknown>
-  const nextMeta = { ...meta, leaderboardOptOut: hidden }
-
-  await admin.from('profiles').update({ meta: nextMeta }).eq('id', profileId)
+  const { error } = await mergeProfileMeta(admin, profileId, { leaderboardOptOut: hidden })
+  if (error) {
+    console.error('[setLeaderboardVisibility] merge failed', { profileId, error })
+    return { ok: false, hidden }
+  }
 
   revalidatePath('/crew/leaderboard')
   const also = safeBoardPath(boardPath)

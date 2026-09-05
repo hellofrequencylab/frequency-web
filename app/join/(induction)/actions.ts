@@ -12,6 +12,7 @@ import { redirect } from 'next/navigation'
 import { cookies } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { mergeProfileMeta } from '@/lib/profiles/meta'
 import { uploadProfileImage } from '@/lib/storage/profile-images'
 import { sendWelcomeEmail } from '@/lib/email'
 import { sanitizeProfileInput } from '@/lib/profile-input'
@@ -299,13 +300,17 @@ export interface InductionData {
   heardAbout: string
 }
 
-async function readMeta(supabase: Awaited<ReturnType<typeof createClient>>, authUserId: string): Promise<Meta> {
+async function readMeta(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  authUserId: string,
+): Promise<{ id: string | null; meta: Meta }> {
+  // 2026-09-05 (scan2 L6-09): also returns the profile id, which the meta merge below is keyed by.
   const { data } = await supabase
     .from('profiles')
-    .select('meta')
+    .select('id, meta')
     .eq('auth_user_id', authUserId)
     .single()
-  return (data?.meta as Meta) ?? {}
+  return { id: (data?.id as string | undefined) ?? null, meta: (data?.meta as Meta) ?? {} }
 }
 
 /**
@@ -332,9 +337,13 @@ async function writeInduction(data: InductionData): Promise<void> {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('Unauthorized')
 
-  const meta = await readMeta(supabase, user.id)
+  const { id: metaProfileId, meta } = await readMeta(supabase, user.id)
   const beta = (meta.beta as Meta) ?? {}
 
+  // 2026-09-05 (scan2 L6-09): the identity columns and the meta keys used to go in ONE update that
+  // spread the whole meta read back over the row. Now the columns go first (handle uniqueness decides
+  // that outcome), then ONLY the induction keys are merged server-side. The read above still supplies
+  // the prior persona / beta values these keys fall back to; no other key is carried back.
   const { error } = await supabase
     .from('profiles')
     .update({
@@ -342,28 +351,6 @@ async function writeInduction(data: InductionData): Promise<void> {
       handle,
       bio: bio || null,
       avatar_url: avatarUrl || null,
-      meta: {
-        ...meta,
-        onboarding_completed: true,
-        // First-touch acquisition record (utm / referrer / landing / channel).
-        acquisition: (acquisition as unknown as Json),
-        // WHO they said they are at intake (ADR-125) — the spine the site + Vera read
-        // to tailor the experience. Cookie wins; falls back to any prior value.
-        persona: personaSlug ?? ((meta.persona as string | undefined) ?? null),
-        // Every persona they picked (the picker is multi-select); primary is `persona`.
-        personas: (allPersonas.length ? allPersonas : ((meta.personas as Json) ?? null)) as Json,
-        beta: {
-          ...beta,
-          version: FUNNEL_INDUCTION_VERSION,
-          intent: intent || null,
-          interests: interests || null,
-          heard_about: heardAbout || null,
-          // The audience sequence they arrived through — recorded for segmentation.
-          sequence: seqSlug ?? (beta.sequence as string | undefined) ?? null,
-          location: location ? { label: location, lat: data.lat, lng: data.lng } : null,
-          completed_at: new Date().toISOString(),
-        },
-      },
     })
     .eq('auth_user_id', user.id)
 
@@ -374,6 +361,30 @@ async function writeInduction(data: InductionData): Promise<void> {
     }
     throw new Error(error.message)
   }
+
+  if (!metaProfileId) throw new Error('Profile not found')
+  const { error: metaErr } = await mergeProfileMeta(supabase, metaProfileId, {
+    onboarding_completed: true,
+    // First-touch acquisition record (utm / referrer / landing / channel).
+    acquisition: (acquisition as unknown as Json),
+    // WHO they said they are at intake (ADR-125) — the spine the site + Vera read
+    // to tailor the experience. Cookie wins; falls back to any prior value.
+    persona: personaSlug ?? ((meta.persona as string | undefined) ?? null),
+    // Every persona they picked (the picker is multi-select); primary is `persona`.
+    personas: (allPersonas.length ? allPersonas : ((meta.personas as Json) ?? null)) as Json,
+    beta: {
+      ...beta,
+      version: FUNNEL_INDUCTION_VERSION,
+      intent: intent || null,
+      interests: interests || null,
+      heard_about: heardAbout || null,
+      // The audience sequence they arrived through — recorded for segmentation.
+      sequence: seqSlug ?? (beta.sequence as string | undefined) ?? null,
+      location: location ? { label: location, lat: data.lat, lng: data.lng } : null,
+      completed_at: new Date().toISOString(),
+    },
+  })
+  if (metaErr) throw new Error(metaErr)
 
   // The inviter's name (when this member arrived via a personal code), for the
   // welcome email's utility-framed "say hi" line. Set after attribution below.
@@ -578,8 +589,9 @@ async function mergeInduction(data: InductionData): Promise<void> {
   const newLocation = data.location.trim().slice(0, 160)
   const mergedInterests = mergeCsv(typeof beta.interests === 'string' ? beta.interests : '', newInterests)
 
+  // 2026-09-05 (scan2 L6-09): these are the induction keys only, merged server-side below; the whole
+  // `meta` read is no longer spread back over the row.
   const mergedMeta: Meta = {
-    ...meta,
     onboarding_completed: true,
     // New persona choice wins; never blanks an existing one (ADR-125).
     persona: personaSlug ?? ((meta.persona as string | undefined) ?? null),
@@ -599,16 +611,17 @@ async function mergeInduction(data: InductionData): Promise<void> {
 
   // Only set top-level fields when the new value is non-empty (never blank out
   // existing data). Handle is identity + unique, so it is never changed on a merge.
-  const { error } = await supabase
-    .from('profiles')
-    .update({
-      ...(newDisplayName ? { display_name: newDisplayName } : {}),
-      ...(newBio ? { bio: newBio } : {}),
-      ...(newAvatar ? { avatar_url: newAvatar } : {}),
-      meta: mergedMeta,
-    })
-    .eq('auth_user_id', user.id)
-  if (error) throw new Error(error.message)
+  const columns = {
+    ...(newDisplayName ? { display_name: newDisplayName } : {}),
+    ...(newBio ? { bio: newBio } : {}),
+    ...(newAvatar ? { avatar_url: newAvatar } : {}),
+  }
+  if (Object.keys(columns).length) {
+    const { error } = await supabase.from('profiles').update(columns).eq('auth_user_id', user.id)
+    if (error) throw new Error(error.message)
+  }
+  const { error: metaErr } = await mergeProfileMeta(supabase, profile.id as string, mergedMeta)
+  if (metaErr) throw new Error(metaErr)
 
   // Fold the merged interests/intent/place into Vera's memory (best-effort).
   const interestList = mergedInterests.split(',').map((s) => s.trim()).filter(Boolean).slice(0, 10)

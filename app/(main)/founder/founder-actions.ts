@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { mergeProfileMeta } from '@/lib/profiles/meta'
 import { awardGems } from '@/lib/gems'
 import { getFounderTasks, type FounderTaskKey } from '@/lib/onboarding/founder-tasks'
 import { FOUNDER_REWARD } from '@/lib/onboarding/founder-config'
@@ -52,10 +53,15 @@ export async function claimFounderRewards(): Promise<FounderClaimResult> {
 
   // Stamp the flags FIRST so a double-call can't double-pay; worst case we miss a
   // reward rather than grant it twice.
-  await admin
-    .from('profiles')
-    .update({ meta: { ...meta, founder: { rewarded: [...rewarded], badge: !!founder.badge || tasks.complete } } })
-    .eq('id', profileId)
+  // 2026-09-05 (scan2 L6-09): only the `founder` key is merged server-side, and the merge is checked: an
+  // unstamped flag pays nothing, because it would pay again on the next claim.
+  const { error } = await mergeProfileMeta(admin, profileId, {
+    founder: { rewarded: [...rewarded], badge: !!founder.badge || tasks.complete },
+  })
+  if (error) {
+    console.error('[claimFounderRewards] founder stamp failed, paying nothing', { profileId, error })
+    return empty
+  }
 
   let gemsAwarded = 0
 
