@@ -132,7 +132,10 @@ export async function approveEventRsvpFromManage(
   rsvpId: string,
 ) {
   if (!(await authorizeManager(eventId))) return
-  await approveRsvpById(eventId, rsvpId)
+  // 2026-09-05 (scan2 L5-10): the approve write's result is read, and a refused or unmatched
+  // write sends no notice; "you're in" on top of a row still marked pending is the trap in reverse.
+  const approved = await approveRsvpById(eventId, rsvpId)
+  if (!approved.ok) return
   // Tell them. Without this the gate is a trap: they asked, were told to wait, and nothing ever
   // arrives — a member would find out by reopening the page on the off chance, and a guest, who has
   // no account to reopen anything with, would never find out at all.

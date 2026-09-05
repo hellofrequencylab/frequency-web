@@ -18,6 +18,12 @@
 // `succeeded` (idempotent) and appends the Foundation ledger entry; the success redirect also
 // reconciles via recordSupporterContributionFromSessionId, so a contribution is never lost if
 // the webhook isn't wired yet. Server-only (service-role writes).
+//
+// Refund (2026-09-05, L2-07): a contribution refunded from the Stripe dashboard fires
+// charge.refunded; recordSupporterContributionRefundFromCharge flips the `succeeded` row to
+// `refunded` (keyed on the payment intent, idempotent) and reverses the Foundation `donation`
+// with a negative `refund` row through the same ledger seam. Before this there was no refund
+// path: the row stayed `succeeded` and the Foundation ledger kept the money.
 
 import type Stripe from 'stripe'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -173,4 +179,61 @@ export async function recordSupporterContributionFromSessionId(
   if (session.metadata?.kind !== SUPPORTER_CONTRIBUTION_KIND || session.payment_status !== 'paid') return null
   const res = await recordSupporterContributionFromSession(session)
   return res?.amountCents ?? null
+}
+
+/**
+ * Flip a `succeeded` contribution to `refunded` and reverse the Foundation donation (idempotent;
+ * succeeded → refunded only, keyed on the PaymentIntent). Mirrors recordTicketRefund
+ * (lib/billing/tickets.ts): a negative 'refund' row on the same entity for the FULL amount the
+ * succeed path booked, keyed `supporter_contribution-refund:<id>` so a redelivered
+ * charge.refunded appends nothing twice.
+ *
+ * The status flip is NOT best-effort: a refund the DB refuses to record would otherwise be acked
+ * 200 and lost, so the error is thrown and the webhook releases its claim + 500s (Stripe
+ * redelivers). The ledger append stays best-effort, as on the succeed path. The Supporter badge
+ * (profiles.is_supporter) is deliberately left alone: it is the member's ongoing opt-in state,
+ * not a receipt for one contribution, and other contributions may stand.
+ */
+export async function recordSupporterContributionRefund(paymentIntentId: string | null): Promise<void> {
+  if (!paymentIntentId) return
+  const { data: updated, error } = await contribDb()
+    .from('supporter_contributions')
+    .update({ status: 'refunded', refunded_at: new Date().toISOString() })
+    .eq('stripe_payment_intent_id', paymentIntentId)
+    .eq('status', 'succeeded')
+    .select('id, amount_cents, profile_id, currency')
+  if (error) {
+    const message = (error as { message?: string }).message ?? String(error)
+    throw new Error(`[supporter] refund flip failed (pi=${paymentIntentId}): ${message}`)
+  }
+  const rows = (updated ?? []) as {
+    id: string
+    amount_cents: number
+    profile_id: string | null
+    currency: string
+  }[]
+  for (const row of rows) {
+    await recordFinancialTransaction({
+      entityId: ENTITY_ID.foundation,
+      revenueType: 'refund',
+      amountCents: -(row.amount_cents ?? 0),
+      profileId: row.profile_id,
+      currency: row.currency,
+      stripePaymentIntentId: paymentIntentId,
+      sourceTable: 'supporter_contributions',
+      sourceId: row.id,
+      idempotencyKey: `supporter_contribution-refund:${row.id}`,
+    }).catch(() => {})
+  }
+}
+
+/** Resolve a `charge.refunded` event's PaymentIntent and reconcile the contribution behind it.
+ *  Only a FULL refund unwinds it (the partial-refund guard recordTicketRefundFromCharge applies).
+ *  No-ops on a charge that isn't a contribution: no metadata is consulted, the `succeeded` row
+ *  match on the intent id is the whole filter. */
+export async function recordSupporterContributionRefundFromCharge(charge: Stripe.Charge): Promise<void> {
+  if ((charge.amount_refunded ?? 0) < (charge.amount ?? 0)) return
+  const paymentIntentId =
+    typeof charge.payment_intent === 'string' ? charge.payment_intent : charge.payment_intent?.id ?? null
+  await recordSupporterContributionRefund(paymentIntentId)
 }

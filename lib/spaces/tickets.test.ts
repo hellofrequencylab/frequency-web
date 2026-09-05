@@ -75,6 +75,9 @@ const db = {
   deletes: [] as string[],
   // A switch to simulate the partial-unique-index rejection on a second going RSVP.
   failNextInsert: false,
+  // A switch to make the next insert resolve `{ data: null, error }` with an arbitrary Postgres error
+  // (the shape supabase-js hands back when a trigger raises), e.g. the capacity guard's tier_full.
+  failNextInsertWith: null as { code: string; message: string } | null,
 }
 
 function tiersBuilder() {
@@ -169,6 +172,11 @@ function rsvpsBuilder() {
           db.failNextInsert = false
           return { data: null, error: { code: '23505', message: 'duplicate key' } }
         }
+        if (db.failNextInsertWith) {
+          const error = db.failNextInsertWith
+          db.failNextInsertWith = null
+          return { data: null, error }
+        }
         const row = {
           id: `r${db.rsvps.length}`,
           reserved_at: '2026-06-20T00:00:00.000Z',
@@ -231,6 +239,7 @@ import {
   rsvpToTier,
   cancelRsvp,
   listSpaceRsvps,
+  isTierFull,
   type TicketTier,
 } from './tickets'
 
@@ -246,6 +255,7 @@ beforeEach(() => {
   db.inserts = []
   db.deletes = []
   db.failNextInsert = false
+  db.failNextInsertWith = null
 })
 
 function tier(over: Partial<TicketTier> = {}): TicketTier {
@@ -504,6 +514,43 @@ describe('rsvpToTier (action)', () => {
     if ('error' in r) expect(r.error).toMatch(/full/i)
     // No new RSVP recorded.
     expect(db.rsvps.filter((x) => x.tier_id === 'tcap')).toHaveLength(1)
+  })
+
+  // L6-07: the JS count is the fast path; the DB trigger (enforce_space_ticket_tier_capacity,
+  // 20270345000200) is the guard when two reservations race for the last spot. The loser's insert
+  // comes back as a raise with sqlstate 23514 / message 'tier_full', and the member must read the
+  // same "full" line the pre-check shows, not "you already have a spot".
+  it('maps the capacity trigger raise (23514 tier_full) onto the "full" message', async () => {
+    seedRsvpTier('tcap', { name: 'Limited', kind: 'rsvp', capacity: 1 })
+    // The JS count sees 0 going (the other member's row landed after this count), so it passes.
+    db.failNextInsertWith = {
+      code: '23514',
+      message: 'tier_full',
+    }
+    const r = await rsvpToTier('space-1', 'tcap')
+    expect('error' in r).toBe(true)
+    if ('error' in r) {
+      expect(r.error).toMatch(/full/i)
+      expect(r.error).not.toMatch(/already have a spot/i)
+    }
+    expect(db.rsvps.filter((x) => x.tier_id === 'tcap')).toHaveLength(0)
+  })
+
+  it('does NOT read an unrelated CHECK violation (23514 without tier_full) as a full tier', async () => {
+    db.failNextInsertWith = { code: '23514', message: 'new row violates check constraint "space_ticket_rsvps_status_check"' }
+    const r = await rsvpToTier('space-1', 't0')
+    expect('error' in r).toBe(true)
+    if ('error' in r) {
+      expect(r.error).toMatch(/could not reserve/i)
+      expect(r.error).not.toMatch(/full/i)
+    }
+  })
+
+  it('isTierFull recognises only the trigger raise', () => {
+    expect(isTierFull({ code: '23514', message: 'tier_full' })).toBe(true)
+    expect(isTierFull({ code: '23505', message: 'tier_full' })).toBe(false)
+    expect(isTierFull({ code: '23514', message: 'other' })).toBe(false)
+    expect(isTierFull(null)).toBe(false)
   })
 
   it('a cancelled prior RSVP does NOT block a re-RSVP', async () => {

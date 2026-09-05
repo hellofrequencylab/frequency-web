@@ -35706,6 +35706,48 @@ Two things were re-tested and NOT changed. The host-payout failure logged at 20:
 
 **Consequences.** Rows SCAN-551 to SCAN-556 are `done` with consequence probes; LIVE-156 (the scan-intro lead unsubscribe still acts on GET) is `open` and mirrors SCAN-552's fix. The migration was applied to production via MCP before merge and the ledger reconciled to the repo filename; the function now carries `where true` live. The `authz-route-ledger` digest for the unsubscribe route was re-recorded with the reason amended. Phases B to F follow in the order the scan report set: RSVP integrity, money paths, crons and silent failures, guards and hygiene, then the migration for the anonymous SECURITY DEFINER surface.
 
+## ADR-1208: scan two, phase B — an RSVP write is read before anything is promised on it (2026-09-05)
+
+**Status.** Accepted. Continues ADR-1207 (phase A of the scan-two repairs) and ADR-1198 (the read-without-error sweep).
+
+**Context.** The 2026-09-05 evidence-first scan traced the RSVP path from the button to the row and found the same defect in ten places: the code promised an outcome before it knew whether the database had accepted the write, and the database itself had two races it was supposed to close.
+
+- **A refused RSVP was celebrated.** Every `event_rsvps` write in `setRsvpStatus` discarded its result, so a write the database refused (a suspended member under `trg_event_rsvps_block_suspended`, a capacity trigger, RLS) still paid gems, ticked the attendance streak, sent the confirmation email and SMS, captured a CRM lead, and left the page showing Going unlit.
+- **A promoted waitlist seat told nobody**, while four email templates promised "we'll let you know".
+- **Two concurrent RSVPs to the last seat both landed.** `enforce_event_rsvp_capacity` counted and compared with no lock, reproduced with two SQL sessions. A double-submitted first RSVP paid the `event_rsvp` gems twice because the duplicate insert's error was discarded and `gem_config.event_rsvp` had no daily cap.
+- **Approve, guest RSVP, the approval gate, reminders, the QR door and Space ticket tiers** each had the same shape: an unchecked write, a default-allow on a failed read, a send before a stamp, or a count in JavaScript where the database holds no guard.
+
+**Decision.**
+
+- **Read the write, then act.** Every `event_rsvps`, `event_guests`, `event_placement_requests` and approval write in the events actions reads `{ error }`; a refused write returns an error to the member and runs no side effect. A duplicate first RSVP (23505) is the other request winning and runs nothing. `approveRsvpById` selects the matched id and returns `{ ok }`; every approved notice is gated on it.
+- **Fail closed on a gate read.** `eventRequiresApproval` returns `true` on a read error or a missing row: a pending request can be approved later; a disclosed venue cannot be un-seen. The original comment stays, with the dated correction under it.
+- **The database holds the lock.** Migration 20270345000100 makes the capacity trigger read the event row `for update` and sets `daily_cap = 1` on `event_rsvp`; migration 20270345000200 adds `enforce_space_ticket_tier_capacity`, which locks the tier row and raises `23514 tier_full`, mapped to member copy in `lib/spaces/tickets.ts`. Both applied to production before merge and ledger-reconciled.
+- **Claim, then send.** The reminder cron stamps `reminder_*_sent_at` as a conditional update before it sends and only a run that won the claim sends. A crash after the claim loses one reminder rather than doubling it; that is the cheaper failure.
+- **Say what happened.** `notifyPromotedSeat` tells a promoted member (notification plus email) or guest (email plus SMS) from both promotion sites. The QR door carries `?door=<reason>` on its redirect and logs each refusal; the event page rendering it is LIVE-157.
+
+**Consequences.** Rows SCAN-557 to SCAN-566 are `done` with consequence probes; LIVE-157 is `open`. Nine new test files pin the refusal paths, the promotion notifier, the claim-before-send, the tier guard mapping and the door reasons. The Manage console's Approve, the admin Approve and the placement Approve now all return an error the UI can show instead of a notice the row contradicts. Phase C (money paths) follows.
+
+## ADR-1209: scan two, phase C — money is recorded before it is taken, and every claim reads its own error (2026-09-05)
+
+**Status.** Accepted. Continues ADR-1208 (phase B) and ADR-1198 (the read-without-error sweep).
+
+**Context.** The 2026-09-05 evidence-first scan followed each money path from the button to the ledger and found thirteen places where the order of operations, or an unread error, could take a payment without a record, drop a change forever, pay twice, or pay nothing:
+
+- **Checkout before order.** `createCommerceCheckout` created the Stripe session, inserted the order with the error discarded, and returned the URL regardless; a buyer could pay for an order that did not exist.
+- **Watermark before reconcile.** `routeSpaceSubscription` advanced `spaces.last_plan_event_at` and then reconciled; a throw made Stripe's retry read as stale and the Space stayed on the old plan.
+- **Send before claim.** The conversation batch cron enqueued and then marked sent; an overlapping run emailed the same reply twice.
+- **Unhandled money events.** `checkout.session.async_payment_succeeded` was not handled, so a delayed-notification payment was never recorded; `charge.refunded` reached tickets and orders but never tips or Supporter contributions; a partial refund had no path; a refunded order never restored stock; a webhook dedupe claim that failed for any reason but a duplicate ran the event unclaimed.
+- **Unread claims.** Eight `reward_grants` claim sites read every insert error as "already granted"; the referral award claimed before it paid and the release cron re-tried every paid pair every run; the streak-freeze fulfilment dropped the grant result and kept the Gems; the ticket tier's `sold` bump discarded its RPC result.
+
+**Decision.**
+
+- **Record, then charge.** The pending order and its items are written and checked before the Stripe session exists; the session carries the order id; a failure marks the order failed, expires the session, and returns an error rather than a URL.
+- **A claim that precedes a side effect can be released.** The Space plan claim carries the previous watermark and a failed reconcile puts it back with a conditional update, then rethrows so Stripe retries into a working claim. The batch flush claims each row with a conditional update carrying a run token, sends only when it holds the whole burst, and releases on any failure; a claim older than ten minutes is taken over with a warning.
+- **One recorder for a paid session.** `recordPaidCheckout` runs for both `completed` and `async_payment_succeeded`; each recorder's once-only guard makes the second delivery a no-op. `charge.refunded` reaches tips and Supporter contributions through migration 20270345000300 (status `refunded`, `refunded_at`); a partial commerce refund keeps its settled status, records the split in metadata and reverses the ledger pro rata; a full refund restores stock once. A webhook claim error that is not a duplicate is a 500.
+- **23505 is the only silent branch.** Every `reward_grants` claim site branches on the duplicate code; anything else logs the rule key and pays nothing. The referral award stamps its paid amount last, re-examines a stale zero claim before deciding, and the release scan skips settled pairs before any insert. The streak freeze succeeds only on a real grant and otherwise deletes the debit row and says so. The `sold` bump is read, retried once, and logged.
+
+**Consequences.** Rows SCAN-567 to SCAN-578 are `done` with consequence probes. Four rows stay `open`: LIVE-158 (cancelled-event ticket refunds are not retried, the one P1 this phase did not reach because its file belonged to phase B), LIVE-159 (same-second plan events), LIVE-160 (the earnings summary and partial refunds), LIVE-161 (the stock-restore and settle RPCs that replace two guarded read-then-write loops). Failed orders now appear in order lists the way cancelled ones do. Phase D (crons, webhooks and silent failures) follows.
+
 ## ADR-1210: scan two, phase F — the anonymous SECURITY DEFINER surface proves what it writes, and the share card is total over its inputs (2026-09-05)
 
 **Status.** Accepted. Continues ADR-1209 (phase C); closes the pgTAP half ADR-1207 deferred.

@@ -12,6 +12,8 @@
 // Idempotency: event_rsvps.reminder_{7d,24h,2h}_sent_at stamps per attendee
 // so re-running creates no duplicates. Notification preferences gate each
 // send (email_events). Welcome to the embodied-practice retention loop.
+// The stamp is taken BEFORE the send as a conditional claim (claimReminder), so
+// two overlapping runs, or a crash after the send, cannot send twice (L6-17).
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -75,8 +77,11 @@ function leadOffsetMs(lead: '24h' | '2h'): number {
   return lead === '24h' ? 24 * 60 * 60 * 1000 : 2 * 60 * 60 * 1000
 }
 
+/** The three per-attendee stamp columns, named so the claim's `.is(column, null)` is typed. */
+type SentColumn = 'reminder_7d_sent_at' | 'reminder_24h_sent_at' | 'reminder_2h_sent_at'
+
 // The reminder_*_sent_at idempotency column for each touch.
-function sentColumnFor(lead: ReminderLead): string {
+function sentColumnFor(lead: ReminderLead): SentColumn {
   if (lead === '7d')  return 'reminder_7d_sent_at'
   if (lead === '24h') return 'reminder_24h_sent_at'
   return 'reminder_2h_sent_at'
@@ -85,12 +90,46 @@ function sentColumnFor(lead: ReminderLead): string {
 // `sentColumn` is one of the three reminder timestamp columns (a dynamic key), so the
 // patch is cast to the typed Update. The same now() stamp closes idempotency for all
 // three reminder touches identically.
-async function stampReminder(rsvpId: string, sentColumn: string): Promise<void> {
+//
+// CLAIM, THEN SEND (meta-scan L6-17). This used to run AFTER the send, which made the reminder
+// at-least-once: a crash between the send and the stamp, or two overlapping 15-minute runs on a
+// large event, re-sent the same push, email and SMS. Now the stamp IS the claim: the update is
+// conditional on the column still being null and returns the row it touched, so of two runs racing
+// on one RSVP exactly one sees a row come back and only that one sends. The other finds nothing to
+// claim and skips. A claim that fails (an error, or no row) means do not send.
+//
+// The claim is never undone on a send failure. A reminder is the one message where sending twice is
+// worse than sending zero times (the member has the event on their calendar either way), so the
+// correct direction is at-most-once: the failure is logged at error level and the row stays stamped.
+async function claimReminder(rsvpId: string, sentColumn: SentColumn): Promise<boolean> {
   const db = createAdminClient()
-  await db
+  const { data, error } = await db
     .from('event_rsvps')
     .update({ [sentColumn]: new Date().toISOString() } as Database['public']['Tables']['event_rsvps']['Update'])
     .eq('id', rsvpId)
+    .is(sentColumn, null)
+    .select('id')
+  if (error) {
+    log.error('cron.event_reminders.claim_failed', { rsvpId, sentColumn, error: error.message })
+    return false
+  }
+  return Array.isArray(data) && data.length > 0
+}
+
+/** One send leg, isolated: a failure is logged at error level and never re-opens the claim. */
+async function deliver(label: string, rsvpId: string, lead: ReminderLead, send: () => Promise<unknown>): Promise<boolean> {
+  try {
+    await send()
+    return true
+  } catch (e) {
+    log.error('cron.event_reminders.send_failed', {
+      leg: label,
+      rsvpId,
+      lead,
+      error: e instanceof Error ? e.message : String(e),
+    })
+    return false
+  }
 }
 
 // The when-line comes from the shared, tested formatter (lib/events/follower-reminders):
@@ -210,23 +249,25 @@ async function processLead(lead: ReminderLead): Promise<{ events: number; sent: 
       // ── The guest leg. Email only: push needs a registered device and SMS needs an A2P consent
       // record, and a guest has neither. Stamped like every other path so it is sent once.
       if (!rsvp.profile_id) {
+        // Claimed even with no address to send to, so an unreachable row is not re-read forever.
+        // (This line used to read "Stamped": the stamp is now taken BEFORE the send, as the claim.)
+        if (!(await claimReminder(rsvp.id, sentColumn))) continue
         if (rsvp.guest_email) {
           // Gated the same way the event page gates it: a guest is never `viewerRegistered`, so a
           // hidden-address event gives them the city line and not the venue (ADR-825/854).
           const guestLocation = ev.hide_address === true ? null : ev.location
-          await sendGuestEventReminderEmail({
-            to:           rsvp.guest_email,
+          const guestEmail = rsvp.guest_email
+          const delivered = await deliver('guest_email', rsvp.id, lead, () => sendGuestEventReminderEmail({
+            to:           guestEmail,
             guestName:    rsvp.guest_name,
             eventTitle:   ev.title,
             whenLabel:    formatRelative(lead),
             whenAbsolute: formatAbsolute(ev.starts_at, ev.time_zone),
             location:     guestLocation,
             eventUrl:     `${appUrl}/events/${ev.slug}`,
-          })
-          sent += 1
+          }))
+          if (delivered) sent += 1
         }
-        // Stamped even with no address to send to, so an unreachable row is not re-read forever.
-        await stampReminder(rsvp.id, sentColumn)
         continue
       }
 
@@ -245,12 +286,18 @@ async function processLead(lead: ReminderLead): Promise<{ events: number; sent: 
 
       if (!wantsEmail && !wantsPush) {
         // Fully opted out — stamp so we don't re-evaluate next run.
-        await stampReminder(rsvp.id, sentColumn)
+        await claimReminder(rsvp.id, sentColumn)
         continue
       }
 
+      // The claim comes AFTER the gate reads (they are read-only, and a read failure before the
+      // claim costs nothing) and BEFORE every send below. Another run holding this row skips it.
+      if (!(await claimReminder(rsvp.id, sentColumn))) continue
+      let delivered = false
+
       if (wantsEmail) {
         if (user?.email) {
+          const to = user.email
           const eventUrl = `${appUrl}/events/${ev.slug}`
           if (lead === '7d') {
             // The ~1-week touch needs gentle, non-urgent copy. sendEventReminderEmail
@@ -258,8 +305,8 @@ async function processLead(lead: ReminderLead): Promise<{ events: number; sent: 
             // both of which are wrong + time-pressured for a week-out note — so we
             // queue through the same underlying enqueueEmail + events-category
             // unsubscribe plumbing it uses, with warm, blameless copy.
-            await sendWeekAheadEmail({
-              to:                 user.email,
+            delivered = (await deliver('email', rsvp.id, lead, () => sendWeekAheadEmail({
+              to,
               recipientName:      profile.display_name,
               recipientProfileId: profile.id,
               eventTitle:         ev.title,
@@ -267,10 +314,10 @@ async function processLead(lead: ReminderLead): Promise<{ events: number; sent: 
               location:           ev.location,
               eventUrl,
               warmProof,
-            })
+            }))) || delivered
           } else {
-            await sendEventReminderEmail({
-              to:                 user.email,
+            delivered = (await deliver('email', rsvp.id, lead, () => sendEventReminderEmail({
+              to,
               recipientName:      profile.display_name,
               recipientProfileId: profile.id,
               eventTitle:         ev.title,
@@ -279,7 +326,7 @@ async function processLead(lead: ReminderLead): Promise<{ events: number; sent: 
               location:           ev.location,
               eventUrl,
               lead,
-            })
+            }))) || delivered
           }
         }
       }
@@ -295,12 +342,12 @@ async function processLead(lead: ReminderLead): Promise<{ events: number; sent: 
       const pushBase = lead === '7d' && warmProof
         ? `${formatRelative(lead)} · ${warmProof}`
         : formatRelative(lead)
-      await sendPushToProfile(profile.id, {
+      delivered = (await deliver('push', rsvp.id, lead, () => sendPushToProfile(profile.id, {
         title: pushTitle,
         body:  ev.location ? `${pushBase} · ${ev.location}` : pushBase,
         url:   `/events/${ev.slug}`,
         tag:   `event-${ev.id}-${lead}`,
-      }, 'events')
+      }, 'events'))) || delivered
 
       // SMS reminder leg (ADR-256). sendSms runs the FULL per-member gate
       // (provisioning -> consent -> SMS prefs -> quiet hours), so it sends nothing
@@ -335,9 +382,8 @@ async function processLead(lead: ReminderLead): Promise<{ events: number; sent: 
         console.error('[event-reminders sms]', e)
       }
 
-      await stampReminder(rsvp.id, sentColumn)
-
-      sent++
+      // The stamp used to sit here, after the sends. It is now the claim above: see claimReminder.
+      if (delivered) sent++
     }
   }
 

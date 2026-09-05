@@ -105,8 +105,13 @@ export async function captureEventGuest(input: EventGuestInput): Promise<EventGu
       .limit(1)
       .maybeSingle()
     const existingGuestId = (existingGuest as { id?: string } | null)?.id ?? null
+    // The write RESULT is read on both branches (meta-scan L5-14). supabase-js resolves `{ error }`
+    // rather than throwing, so a failed insert used to leave guestId null with nothing logged, and a
+    // failed update used to report the stale row's id as if the new RSVP status had landed. Either
+    // way the caller (the /rsvp/<token> action) told the guest "you're on the list". Now guestId is
+    // set only when the row genuinely reflects this submission, and a failure is logged.
     if (existingGuestId) {
-      await db
+      const { error } = await db
         .from('event_guests')
         .update({
           display_name: displayName ?? undefined,
@@ -115,9 +120,13 @@ export async function captureEventGuest(input: EventGuestInput): Promise<EventGu
           meta,
         })
         .eq('id', existingGuestId)
-      result.guestId = existingGuestId
+      if (error) {
+        console.error('[captureEventGuest] event_guests update failed', { eventId, guestId: existingGuestId, error })
+      } else {
+        result.guestId = existingGuestId
+      }
     } else {
-      const { data } = await db
+      const { data, error } = await db
         .from('event_guests')
         .insert({
           event_id: eventId,
@@ -131,10 +140,15 @@ export async function captureEventGuest(input: EventGuestInput): Promise<EventGu
         })
         .select('id')
         .maybeSingle()
-      result.guestId = (data as { id?: string } | null)?.id ?? null
+      if (error) {
+        console.error('[captureEventGuest] event_guests insert failed', { eventId, error })
+      } else {
+        result.guestId = (data as { id?: string } | null)?.id ?? null
+      }
     }
-  } catch {
+  } catch (e) {
     // Isolated: a guest-list failure must not stop the personal-book leg.
+    console.error('[captureEventGuest] event_guests leg threw', { eventId, error: e instanceof Error ? e.message : String(e) })
   }
 
   // ── Leg 2 (PRIORITY): the INVITER's personal book (network_contacts) ─────────
