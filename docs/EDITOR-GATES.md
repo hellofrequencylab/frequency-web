@@ -11,6 +11,8 @@
 > [ADR-974](DECISIONS.md) · [ADR-977](DECISIONS.md). Models to copy: `scripts/check-menu.mjs`,
 > `check-elements.mjs`, `check-render-path.mjs`, `check-adoption.mjs`.
 
+> **Status lives in [`docs/BUILD-BACKLOG.json`](BUILD-BACKLOG.json)** (the E0 rows; run `pnpm backlog`). ⚠️ **This is a forward spec, not a description of live gates**: as of 2026-09-04 none of the five scripts it names (`check-blocks.mjs`, `check-doc-safety.mjs`, `check-surface-binding.mjs`, `check-loom-integrity.mjs`, `check-email-blocks.mjs`), nor `scripts/block-baselines.json` or `lib/loom/store.ts`, exists in the tree. "Four pass on today's tree" means they WOULD pass once written.
+
 ---
 
 ## 0. Why AST, not regex, not runtime

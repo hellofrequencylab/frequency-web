@@ -5,7 +5,10 @@
 > understands the place. This is the "why" behind layout/nav decisions. It does
 > **not** build onboarding yet. It defines the model onboarding will plug into.
 >
-> Pairs with [GLOSSARY.md](GLOSSARY.md) (domain terms) and [ROADMAP.md](../ROADMAP.md).
+> Pairs with [GLOSSARY.md](GLOSSARY.md) (domain terms). It used to pair with `ROADMAP.md`, which is
+> superseded; the live plan is [UX-MATURITY-PLAN.md](UX-MATURITY-PLAN.md) + [BUILD-LIST.md](BUILD-LIST.md).
+
+> **Status lives in [`docs/BUILD-BACKLOG.json`](BUILD-BACKLOG.json)** (run `pnpm backlog`). The ✅ SHIPPED marks below are dated notes of what landed when, not the record of what is done; the chrome and shell rules they describe are locked in [PAGE-FRAMEWORK.md](PAGE-FRAMEWORK.md).
 
 ---
 

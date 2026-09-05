@@ -10,6 +10,8 @@ wrongly claimed. That document is about what a *creator* charges *their own* cus
 pay-what-you-want, sliding scale). This one is about what a creator pays *Frequency*. Two different
 pricing systems that share a vocabulary; conflating them is exactly the mistake to avoid.
 
+> ⚠️ **Correction (2026-09-04): on WHAT a tier costs, [`PRICING.md`](PRICING.md) is now the reference, not this file.** Its ladder (ADR-1060) matches the code exactly (`lib/pricing/founding.ts`, `lib/pricing/pricing.test.ts`), so the "this document wins" clause above no longer holds for numbers; the strategy and tier map here still stand. The verification rows near the end that call the plan ladder "one line to fix (`spacePlanPriceCents`)" describe a bug that was fixed: `app/(main)/spaces/[slug]/settings/billing/plan-ladder.tsx` calls it. Status lives in [`docs/BUILD-BACKLOG.json`](BUILD-BACKLOG.json).
+
 ---
 
 ## The answer up front

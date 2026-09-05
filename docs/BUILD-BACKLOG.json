@@ -74,7 +74,8 @@
             "SCAN-521",
             "HYG-049",
             "SCAN-540",
-            "HYG-052"
+            "HYG-052",
+            "HYG-050"
           ]
         },
         {
@@ -6467,6 +6468,23 @@
         "kind": "cmd",
         "cmd": "node -e \"const fs=require('fs');const r=(f)=>fs.existsSync(f)?fs.readFileSync(f,'utf8'):'';process.exit(/it\\.fails\\(/.test(r('lib/events/recurrence-parity.test.ts'))?1:0)\"",
         "note": "Passes when the parity test no longer carries an it.fails marker, i.e. the strip and the mirrors agree. Fails today."
+      }
+    },
+    {
+      "id": "HYG-050",
+      "title": "The Studio edit rail does not derive from field placement: inlineFields() and railFields() have no production consumer",
+      "status": "open",
+      "lane": "hygiene",
+      "size": "M",
+      "source": {
+        "file": "lib/studio/kernel/review-kernel.ts",
+        "ref": "ADR-450 (the one verb, two planes model); AGENTS.md correction of 2026-09-04"
+      },
+      "detail": "AGENTS.md said a field's placement (spark / inline / rail) is the ONE seam between creating and editing, so the two can never drift. Verified 2026-09-04: only sparkFields() is consumed (by the Spark). inlineFields() and railFields() in the review kernel appear only in their own test, so of 272 field paths the 40 inline, 3 rail and 179 defaulting to rail sit on planes nothing renders, and nothing prevents an edit rail from drifting from the manifest. The contract is right; the wiring is not there. Close this by making the entity edit rail (and the inline editors) read their field set from railFields()/inlineFields() of the registered manifest, so a manifest change is the whole change on both planes, as STUDIO.md promises.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs'),path=require('path');const roots=['lib','components','app'];let hit=false;const walk=d=>{for(const e of fs.readdirSync(d,{withFileTypes:true})){const f=path.join(d,e.name);if(e.isDirectory()){if(!/node_modules|\\\\.next/.test(f))walk(f)}else if(/\\\\.tsx?$/.test(f)&&!/\\\\.test\\\\./.test(f)&&!/review-kernel\\\\.ts$/.test(f)){const s=fs.readFileSync(f,'utf8');if(/\\\\b(railFields|inlineFields)\\\\(/.test(s))hit=true}}};roots.forEach(walk);process.exit(hit?0:1)\"",
+        "note": "Passes when a non-test module outside the kernel calls railFields() or inlineFields(), i.e. an edit surface actually derives its fields from placement. Fails today."
       }
     }
   ]

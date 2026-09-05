@@ -10,6 +10,8 @@ URLs, and the UI. See [DATABASE.md](DATABASE.md) for the tables behind these.
 > canon words map to them; where it once *defined* a name, it now points to NAMING.md.
 > If a term here and NAMING.md ever disagree, NAMING.md wins.
 
+> ⚠️ **Code paths in this glossary are partly stale** (checked 2026-09-04): six of the twelve `lib/` modules it names (`lib/practice-shelf.ts`, `lib/practice-streaks-job.ts`, `lib/coop-pulse.ts`, `lib/awards/witnessed.ts`, `lib/journey-arc.ts`, `lib/journey-coop.ts`) are no longer in the tree. Trust the term, verify the path; [`ARCHITECTURE.md`](ARCHITECTURE.md) is the doc held to the tree by `pnpm check:arch-doc`. Status of any work lives in [`docs/BUILD-BACKLOG.json`](BUILD-BACKLOG.json).
+
 ## The community hierarchy
 
 Frequency models a **global topical layer** on top of a **place-based tree**.

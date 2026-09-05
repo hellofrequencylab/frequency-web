@@ -6,6 +6,8 @@
 > signup stats onto restyled tabs+stats cards now, and stage the two new styles
 > (Feature, Demographic) as honest "planned" placeholders until built.
 
+> ⚠️ **SUPERSEDED** by [`FUNNELS.md`](FUNNELS.md). The feature is named **Funnels** and lives at `/join` ([`NAMING.md`](NAMING.md) §Funnels, ADR-1090); "Splash Funnels" is a retired proper noun that must not appear in member-facing copy. The style registry and `kind` field this doc introduced (ADR-617/619) are recorded there. The "Living dev plan" line below is no longer maintained. Kept for history.
+
 **Status:** ✅ Phase 0 shipped (ADR-617). ✅ Feature style live — the breathwork feature funnel ships (ADR-619). ⏳ Phase 1 analytics partial (entered + captured events live; bounce dashboard pending). Decision records: `docs/DECISIONS.md` ADR-617, ADR-619.
 Living dev plan — update the phase table and open items as work lands.
 

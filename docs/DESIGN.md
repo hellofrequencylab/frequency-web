@@ -3,7 +3,9 @@
 The look and feel brief for Frequency. Names the style, diagnoses what felt "templated,"
 sets the principles + token spec, and answers the design-stack question. Pairs with the
 DAWN token system in `app/globals.css` and the component conventions in
-[ARCHITECTURE.md](ARCHITECTURE.md). Living doc.
+[ARCHITECTURE.md](ARCHITECTURE.md). The original brief (no ADR, no date).
+
+> ⚠️ **SUPERSEDED** by [`DESIGN-LANGUAGE.md`](DESIGN-LANGUAGE.md) (the design language and page-flow blueprint on the shipped DAWN tokens), with [`PAGE-FRAMEWORK.md`](PAGE-FRAMEWORK.md) for shells and chrome and [`THEME-PROTOCOL.md`](THEME-PROTOCOL.md) for theming. Where a token value here disagrees with `app/globals.css`, the stylesheet wins. Kept for history.
 
 ## The style, in a sentence
 

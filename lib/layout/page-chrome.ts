@@ -273,7 +273,8 @@ export function railFor(pathname: string): Rail {
   if (isFocusFlow) return 'none'
 
   // Entity-detail surfaces with their OWN in-body scope rail: a whole subtree (SCOPED_PREFIXES)
-  // or a single exact route shape (SCOPED_PATTERNS — today the Channel detail page).
+  // or a single exact route shape (SCOPED_PATTERNS — empty: the Channel detail page's entry was
+  // reverted the same night it shipped, ADR-1202; see the note above that array).
   const isScopedDetail =
     SCOPED_PREFIXES.some((s) => pathname.startsWith(s) && pathname.length > s.length) ||
     SCOPED_PATTERNS.some((re) => re.test(pathname))

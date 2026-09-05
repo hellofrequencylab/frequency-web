@@ -5,6 +5,8 @@
 > It does **not** replace it. Decisions here are recorded as ADR-024…028 in
 > [DECISIONS.md](DECISIONS.md).
 
+> ⚠️ **SUPERSEDED** as a plan: "Phase 6 of BUILD-PHASES" is a retired frame (`BUILD-PHASES.md` is itself superseded). The live CRM and comms docs are [`CRM-MASTER-BUILD-PLAN.md`](CRM-MASTER-BUILD-PLAN.md) (the build, status in the backlog) and [`CRM-COMMS-CONTRACT.md`](CRM-COMMS-CONTRACT.md) (the locked contract, ADR-817). The WAM north star and the event-backbone rationale below still read well. Kept for history.
+
 ## 0. North Star — Weekly Active Members (WAM)
 
 The one number every layer optimizes for: **members completing ≥1 *verified
