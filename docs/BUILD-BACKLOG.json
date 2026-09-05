@@ -8051,7 +8051,7 @@
       "lane": "live",
       "size": "S",
       "source": {
-        "file": "app/api/cron",
+        "file": "app/api/cron/lifecycle-triggers/route.ts",
         "ref": "ADR-1212"
       },
       "detail": "SCAN-634 gave signup_leads a reader. The recovery job the table was built for is still missing: a cron that emails a lead with converted_at null, step_reached at least 2 and updated_at older than 24 hours, once (a recovery_sent_at column via migration), transactional copy only, registered in vercel.json. Probe: the route exists and a test proves a converted or already-mailed lead is skipped.",
