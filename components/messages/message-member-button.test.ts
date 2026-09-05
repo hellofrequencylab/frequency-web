@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
+import { sourceWithoutComments } from '@/test/source-shape'
 
 // ── Drift guard: chat consolidation (ADR-896) ─────────────────────────────────────────────
 // The owner's report was that "Reconnect with …" navigated to a chat page. Three separate call
@@ -118,7 +119,11 @@ describe('nothing hand-builds a DM thread URL', () => {
   }
 
   it('dmThreadHref reads the flag rather than assuming either answer', () => {
-    expect(dmDestination).toContain('chatDmRoutesRetiredFlag')
+    // Matched on comment- and import-free source (scan2 L8-04): the name also sits in a comment and
+    // in the import line of the pinned file, so a bare toContain stayed green with the call deleted.
+    expect(sourceWithoutComments('lib/messages/dm-destination.ts', { imports: true })).toContain(
+      'await chatDmRoutesRetiredFlag()',
+    )
     expect(dmDestination).toContain('dockThreadPath')
     expect(dmDestination).toContain('`/messages/${conversationId}`')
   })

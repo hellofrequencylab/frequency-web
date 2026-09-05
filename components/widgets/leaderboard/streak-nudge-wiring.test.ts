@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
+import { sourceWithoutComments } from '@/test/source-shape'
 
 // ── Wiring guard: the one-tap streak nudge reaches the leaderboard (ADR-386 · LIVE-062 batch 5) ──
 // `nudgeStreakMate` (streak-actions.ts) and the pure selector `circleMatesToNudge` shipped with
@@ -76,7 +77,9 @@ describe('the nudge button calls the action and follows its contract', () => {
 
   it('collapses after one tap, so one mate cannot be poked twice from one render', () => {
     expect(button).toContain('if (pending || sent) return')
-    expect(button).toContain('Nudged')
+    // Matched on comment-free source (scan2 L8-04): the needle also sits in a comment of the pinned
+    // file, so a bare toContain stayed green with the code deleted.
+    expect(sourceWithoutComments('components/widgets/leaderboard/nudge-mate-button.tsx')).toContain('Nudged')
   })
 })
 

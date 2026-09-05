@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
+import { sourceWithoutComments } from '@/test/source-shape'
 import {
   compositeOverSrgb,
   contrastRatio,
@@ -330,7 +331,9 @@ describe('per-zone wiring (source-level drift guard)', () => {
   })
 
   it('tags the cover image so the sensor can never sample the avatar', () => {
-    expect(hero).toContain('data-hero-cover')
+    // Matched on comment-free source (scan2 L8-04): the needle also sits in a comment of the pinned
+    // file, so a bare toContain stayed green with the code deleted.
+    expect(sourceWithoutComments('components/templates/page-hero.tsx')).toContain('data-hero-cover=""')
     expect(sensor).toContain("img[data-hero-cover]")
     expect(sensor).toContain('coverImage ? el.querySelector')
   })

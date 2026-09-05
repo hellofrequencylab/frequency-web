@@ -19,9 +19,10 @@ ARTIFACT. Full rules and the incident: [`docs/DEPLOY-SAFETY.md`](docs/DEPLOY-SAF
 - **The artifact is gated in `postbuild`, not CI** — CI never builds, Vercel does. **`postbuild` is
   proven to run**: a real production log ([ADR-1081](docs/DECISIONS.md)) shows `Running "pnpm run
   build"`, then `prebuild`, then `postbuild` printing its gates. `vercel.json` now pins
-  `buildCommand: pnpm build` so a dashboard edit cannot silently take the lifecycle away. **Four
-  gates run there and fail the build** (all wired and proven on real artifacts as of #2194,
-  2026-08-19 — LIVE-035/LIVE-048/LIVE-029 closed):
+  `buildCommand: pnpm build` so a dashboard edit cannot silently take the lifecycle away. **Five
+  gates run there and fail the build** (four wired and proven on real artifacts as of #2194,
+  2026-08-19 — LIVE-035/LIVE-048/LIVE-029 closed; the fifth, `check:build-fanout`, joined on
+  2026-09-05 (ADR-1211) and awaits its first production reading):
   - `check:build-budget` — total per-function output under 8 GB; **6.66 GB across 497 functions on
     the PRODUCTION build of `main` at e3cec7af2, 2026-08-25 21:43Z (#2308)** — the first FALL in the
     series, by 0.01 GB and one function, after the two rises below. Previously **measured 6.67 GB across 498

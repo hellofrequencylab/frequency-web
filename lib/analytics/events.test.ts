@@ -14,6 +14,14 @@ describe('analytics taxonomy', () => {
     expect(isTrackedEvent('totally.madeup')).toBe(false)
   })
 
+  // 2026-09-05 (scan2 L4-03). The referral-activation moment is emitted by lib/qr/referral.ts and
+  // was silently dropped by track() because the name was never registered. Server-only: a client
+  // POST must not be able to mint a referral credit event.
+  it('registers qr.referral_activated as a server-only lifecycle event', () => {
+    expect(isTrackedEvent('qr.referral_activated')).toBe(true)
+    expect(isClientEvent('qr.referral_activated')).toBe(false)
+  })
+
   it('isClientEvent blocks server-authoritative events from client emit', () => {
     expect(isClientEvent('nav.page_view')).toBe(true)
     expect(isClientEvent('feature.used')).toBe(true)

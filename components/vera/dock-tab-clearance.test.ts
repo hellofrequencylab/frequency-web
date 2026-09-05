@@ -167,6 +167,7 @@ describe('everything that must clear the lane reads the one token', () => {
     // full-bleed bar to rediscover that from a phone capture, which is exactly how this file's
     // three earlier entries were each learned.
     expect(existsSync('app/(main)/events/[slug]/rsvp-bottom-bar.tsx')).toBe(false)
+    // Doc-pin (scan2 L8-05): this pins a COMMENT in the source on purpose, as documentation, not behaviour.
     expect(contract).toContain('//     SLOT 0c -')
     expect(contract).toContain('7. A FULL-BLEED OPAQUE BAR TAKES THE LANE AS PADDING')
   })
@@ -185,11 +186,13 @@ describe('the mobile stacking contract records slot 0b', () => {
     // Rule 1 of the contract is "name your slot before you pick a number". Slot 0b existed on
     // every phone for weeks with no slot and no number, which is exactly how it ended up 31px
     // inside the content column.
+    // Doc-pin (scan2 L8-05): this pins a COMMENT in the source on purpose, as documentation, not behaviour.
     expect(contract).toContain('//     SLOT 0b -')
     expect(contract).toContain('var(--dock-tab-rise)')
   })
 
   it('and rule 3 now points at the lane rather than at the catch', () => {
+    // Doc-pin (scan2 L8-05): this pins a COMMENT in the source on purpose, as documentation, not behaviour.
     expect(contract).toContain('max(var(--tab-bar-lift), var(--dock-tab-rise))')
     expect(contract).not.toContain('3. Clear 115.5px, not 93.5px')
   })
@@ -199,6 +202,7 @@ describe('the mobile stacking contract records slot 0b', () => {
     // edge for weeks with no slot of its own — it was borrowing slot 1's number, which is how it
     // got the lane's top instead of the lane. Both halves of the fix are named here so the next
     // full-bleed bar inherits the distinction instead of rediscovering it.
+    // Doc-pin (scan2 L8-05): this pins a COMMENT in the source on purpose, as documentation, not behaviour.
     expect(contract).toContain('//     SLOT 0c -')
     expect(contract).toContain('7. A FULL-BLEED OPAQUE BAR TAKES THE LANE AS PADDING')
     expect(contract).toContain('var(--lane-rise)')

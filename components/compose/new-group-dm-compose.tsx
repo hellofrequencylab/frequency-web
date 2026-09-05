@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useTransition, useEffect } from 'react'
+import { useState, useTransition, useEffect, useMemo } from 'react'
+import { createHandleSearch } from '@/lib/mentions/search-handles-client'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { UsersRound, Search, X, Clock, UserPlus } from 'lucide-react'
@@ -39,6 +40,7 @@ export function NewGroupDMCompose({
   const [name, setName] = useState(defaultName)
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<HandleResult[]>([])
+  const searchHandles = useMemo(() => createHandleSearch<HandleResult>(), [])
   const [recipients, setRecipients] = useState<HandleResult[]>(defaultRecipients)
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
@@ -63,14 +65,13 @@ export function NewGroupDMCompose({
   useEffect(() => {
     if (!query.trim()) return
     const timer = setTimeout(async () => {
-      const res = await fetch(`/api/search-handles?q=${encodeURIComponent(query)}`)
-      const json = await res.json()
-      setResults((json.profiles ?? []).filter((p: HandleResult) =>
-        !recipients.some(r => r.id === p.id)
-      ))
+      // Never throws; null is a stale response for a query already typed past.
+      const found = await searchHandles(query)
+      if (!found) return
+      setResults(found.filter((p) => !recipients.some(r => r.id === p.id)))
     }, 200)
     return () => clearTimeout(timer)
-  }, [query, recipients])
+  }, [query, recipients, searchHandles])
 
   function addRecipient(p: HandleResult) {
     if (recipients.length + 1 >= GROUP_DM_CAP) {

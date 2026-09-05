@@ -64,6 +64,15 @@ describe('hrefForEntitySurface', () => {
     expect(hrefForEntitySurface('channel.settings', { kind: 'channel', id: 'movement' })).toBeNull()
   })
 
+  it('resolves circle.settings / event.settings to the full-page settings editors (scan2 L9-11)', () => {
+    // Both pages existed and were gated, but no builder resolved to them; the event.* prefix fallback
+    // sent event.settings to /manage. The explicit cases win over the fallback, slug-keyed, null without one.
+    expect(hrefForEntitySurface('circle.settings', { kind: 'circle', id: 'sunrise-sit' })).toBe('/circles/sunrise-sit/settings')
+    expect(hrefForEntitySurface('event.settings', { kind: 'event', id: 'summer-social' })).toBe('/events/summer-social/settings')
+    expect(hrefForEntitySurface('circle.settings', { kind: 'circle' })).toBeNull()
+    expect(hrefForEntitySurface('event.settings', { kind: 'event' })).toBeNull()
+  })
+
   it('resolves event/hub/nexus core-entity surfaces to their owner manage console (ADR-515 bank seam)', () => {
     // These consoles are full owner workspaces, so a `placement: 'bank'` surface resolves its bank href here.
     expect(hrefForEntitySurface('event.people', { kind: 'event', id: 'x' })).toBe('/events/x/manage')

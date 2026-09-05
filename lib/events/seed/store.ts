@@ -176,10 +176,8 @@ export async function saveEventDraft(
   return update(id, { draft: input.draft, ledger: input.ledger })
 }
 
-/** Persist the intake INPUTS jsonb (consent, source notes). Bound to `id`. */
-export async function setEventIntakeInputs(id: string, inputs: EventIntakeInputs): Promise<boolean> {
-  return update(id, { inputs })
-}
+// 2026-09-05 (scan2 L9-13): setEventIntakeInputs was removed; inputs are written once at intake
+// (createEventSeed) and nothing re-set them afterwards.
 
 /** Stamp the applied outcome (target_event_id + applied_at). Bound to `id`. Called by the
  *  apply after the event writer runs; the status moves to 'applied' separately. */

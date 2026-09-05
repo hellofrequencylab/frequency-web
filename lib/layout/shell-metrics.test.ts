@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
+import { sourceWithoutComments } from '@/test/source-shape'
 import { join } from 'node:path'
 import {
   LEFT_RAIL,
@@ -27,6 +28,9 @@ import {
 // without updating shell-metrics.ts — which is exactly how the two would silently desync again.
 
 const shell = readFileSync('components/layout/app-shell.tsx', 'utf8')
+// The same file with its comments blanked (scan2 L8-04): app-shell.tsx quotes its own class strings
+// in prose, so a class pinned on `shell` can be satisfied by the sentence about it.
+const shellCode = sourceWithoutComments('components/layout/app-shell.tsx')
 
 describe('the root font size is not 16px, which is why units matter here', () => {
   it('globals.css sets a non-default root, so rem != 16px', () => {
@@ -47,7 +51,7 @@ describe('the numbers still match the shell', () => {
   })
 
   it('the left rail is still w-48 and still hides below md', () => {
-    expect(shell).toContain('hidden md:flex w-48 shrink-0')
+    expect(shellCode).toContain('hidden md:flex w-48 shrink-0')
     expect(LEFT_RAIL).toBe(12) // w-48 = 12rem
   })
 
@@ -74,7 +78,7 @@ describe('the numbers still match the shell', () => {
     // original `18 // rem` conversion (correct only at 16px/rem) made the claim column 18px too
     // narrow at lg — while THIS test, asserting 18, stayed green. Keeping the unit is what fixes it.
     expect(RIGHT_RAIL_PX).toBe(288)
-    expect(shell).toContain('lg:ml-3')
+    expect(shellCode).toContain('lg:ml-3')
     expect(RIGHT_RAIL_ML).toBe(0.75) // ml-3
   })
 
@@ -140,7 +144,8 @@ describe('the claim page consumes it instead of restating it', () => {
 
 describe('the fold control is ON its tab, so the clearance problem cannot come back', () => {
   const metrics = readFileSync(join(process.cwd(), 'lib/layout/shell-metrics.ts'), 'utf8')
-  const control = readFileSync(join(process.cwd(), 'components/layout/rail-fold-control.tsx'), 'utf8')
+  // Comment-free (scan2 L8-04): the control's header discusses `absolute` positioning in prose.
+  const control = sourceWithoutComments(join(process.cwd(), 'components/layout/rail-fold-control.tsx'))
 
   it('no rail pins a control above the dock bar any more', () => {
     // 🔴 WHAT THIS REPLACES. The control was `sticky` at the rail's foot and DockBar is `fixed
@@ -163,7 +168,9 @@ describe('the fold control is ON its tab, so the clearance problem cannot come b
     // (`fixed bottom-0`), both of which are already containing blocks. It therefore travels with
     // the tab through every state the old control had to dodge: the Vault panel unfurling, the
     // profile dock's quick actions rising, the bar riding up to meet the rail's end.
-    expect(control).toContain('absolute')
+    // The class list of the pressable box, on comment-free source (scan2 L8-04): `absolute` is also a
+    // word in two comments of the pinned file.
+    expect(control).toMatch(/const TICK_BOX =\s*'[^']*\babsolute\b/)
     // Its parent in the shell is the account dock's own box, immediately after that box opens.
     expect(shell).toContain('bg-chrome/95 px-2 pt-1 backdrop-blur-sm">\n                  {/* The LEFT rail')
     expect(shell).toContain('<RailFoldTick\n                    side="left"')

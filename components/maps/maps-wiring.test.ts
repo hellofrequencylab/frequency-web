@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { readFileSync, readdirSync, statSync } from 'node:fs'
+import { sourceWithoutComments } from '@/test/source-shape'
 import { join } from 'node:path'
 
 // DRIFT GUARD for the map seam (ADR-901).
@@ -124,7 +125,9 @@ describe('the seam degrades instead of breaking', () => {
   const loader = readFileSync('lib/maps/google-loader.ts', 'utf8')
 
   it('renders MapLibre whenever the provider is not google', () => {
-    expect(canvas).toContain('mapProvider()')
+    // Matched on comment-free source (scan2 L8-04): the needle also sits in a comment of the pinned
+    // file, so a bare toContain stayed green with the code deleted.
+    expect(sourceWithoutComments('components/maps/map-canvas.tsx')).toContain("mapProvider() === 'google'")
     expect(canvas).toContain('<MapLibreCanvas')
     expect(canvas).toContain('<GoogleCanvas')
   })
@@ -146,7 +149,9 @@ describe('the seam degrades instead of breaking', () => {
     // lets `new maps.Map()` succeed, and reports itself ONLY through `window.gm_authFailure`.
     // Nothing rejects, so without this subscription the member is left on Google's grey
     // "can't load Google Maps correctly" tile instead of the MapLibre map we already ship.
-    expect(loader).toContain('gm_authFailure')
+    // Matched on comment-free source (scan2 L8-04): the needle also sits in a comment of the pinned
+    // file, so a bare toContain stayed green with the code deleted.
+    expect(sourceWithoutComments('lib/maps/google-loader.ts')).toContain('g.gm_authFailure = () =>')
     expect(loader).toContain('onGoogleMapsAuthFailure')
     expect(google).toContain('onGoogleMapsAuthFailure')
   })
@@ -188,7 +193,11 @@ describe('a map failure announces itself', () => {
 
   it('the seam logs which provider it fell back from, and why', () => {
     expect(canvas).toContain("mapDiag('maps.provider_fallback'")
-    expect(canvas).toContain('reason')
+    // The `reason` FIELD of that call, on comment-free source (scan2 L8-04): the bare word is prose
+    // in the comment right above the call, so a bare toContain pinned the explanation.
+    expect(sourceWithoutComments('components/maps/map-canvas.tsx')).toMatch(
+      /mapDiag\('maps\.provider_fallback',\s*\{[^}]*\breason,/,
+    )
   })
 
   it('MapLibre reports its own failures instead of dying quietly', () => {
@@ -207,15 +216,21 @@ describe('a map failure announces itself', () => {
   it('never prints the key itself', () => {
     // A browsable key is public by construction, but a console line travels into screenshots
     // and pasted transcripts. `keyPresent` is a boolean, on purpose.
-    expect(loader).toContain('keyPresent')
-    expect(diag).toContain('keyPresent')
+    // 2026-09-05 (scan2 L8-05): the boolean lives in lib/maps/google-loader.ts. diagnostics.ts names
+    // `keyPresent` only in its header comment, so the old `expect(diag)` half pinned prose; this pins
+    // the field as it is built, on comment-free source.
+    expect(sourceWithoutComments('lib/maps/google-loader.ts')).toContain(
+      'keyPresent: Boolean(googleMapsBrowserKey())',
+    )
     for (const src of [diag, canvas, maplibre, loader]) {
       expect(src).not.toMatch(/mapDiag\([^)]*googleMapsBrowserKey\(\)\s*[,}]/)
     }
   })
 
   it('is deduped, so a failing tile host cannot flood the console', () => {
-    expect(diag).toContain('dedupeKey')
+    // Matched on comment-free source (scan2 L8-04): the needle also sits in a comment of the pinned
+    // file, so a bare toContain stayed green with the code deleted.
+    expect(sourceWithoutComments('lib/maps/diagnostics.ts')).toContain('dedupeKey ?? event')
     expect(diag).toContain('reported.has')
   })
 })
@@ -226,7 +241,9 @@ describe('popup bodies are DOM, not HTML strings', () => {
     // textContent, so there is no HTML parse step to subvert — and therefore no escapeHtml
     // helper to forget to call.
     const popup = readFileSync('components/maps/popup-content.ts', 'utf8')
-    expect(popup).toContain('textContent')
+    // Matched on comment-free source (scan2 L8-04): the needle also sits in a comment of the pinned
+    // file, so a bare toContain stayed green with the code deleted.
+    expect(sourceWithoutComments('components/maps/popup-content.ts')).toContain('.textContent =')
     expect(popup).not.toContain('innerHTML')
 
     for (const rel of ['components/maps/maplibre-canvas.tsx', 'components/maps/google-canvas.tsx']) {

@@ -21,6 +21,11 @@ import type { AppGate } from '@/lib/apps/types'
 // ADDITIVE: the live /onboarding route still uses OnboardingForm; the production cutover is a
 // separate, verified step. The staff-only /onboarding/sequence-preview route renders this in
 // `preview` mode (no completeOnboarding side-effect) so a flow can be walked and verified first.
+//
+// 2026-09-05 (scan2 L5-16): the binding below does NOT pass `emailOptIn`, and completeOnboarding
+// now records an omitted field as consent WITHHELD (it used to default to granted). Before this
+// runner is cut over to production, the sequence needs an opt-in step whose value reaches the
+// binding, or every member it onboards is recorded as opted out of marketing email.
 
 /** The terminal actions a sequence may name by key (Layer-1 binding; do not reimplement). */
 const SEQUENCE_ACTIONS: Record<string, (draft: OnboardingDraft) => Promise<unknown>> = {

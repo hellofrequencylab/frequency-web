@@ -153,6 +153,7 @@ describe('every non-attending reader goes through the rule', () => {
     // the same carve-out `publicVisibleLocation`'s docstring names — a caller that CAN prove
     // attendance may show the venue. Pinned so a future sweep that sees two shapes and "tidies" them
     // into one has to read the reason first.
+    // Doc-pin (scan2 L8-05): this pins a COMMENT in the source on purpose, as documentation, not behaviour.
     expect(src).toContain('not subject to the guest address gate')
     expect(src).toContain('ADR-825')
   })

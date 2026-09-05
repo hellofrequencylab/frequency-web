@@ -104,8 +104,5 @@ export async function resolvePlaceTreeProfileIds(selector: PlaceSelector): Promi
   }
 }
 
-/** Convenience: parse + resolve in one call. FAIL-SAFE to [] when the string is not a place selector. */
-export async function resolvePlaceSelectorProfileIds(raw: unknown): Promise<string[]> {
-  const sel = parsePlaceSelector(raw)
-  return sel ? resolvePlaceTreeProfileIds(sel) : []
-}
+// 2026-09-05 (scan2 L9-13): the parse-and-resolve convenience resolvePlaceSelectorProfileIds was removed;
+// every caller parses with parsePlaceSelector and resolves with resolvePlaceTreeProfileIds itself.

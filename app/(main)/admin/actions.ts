@@ -731,7 +731,16 @@ export async function updateDispatch(id: string, fd: FormData) {
 
   // Replace poll options on update
   if (dispatch_type === 'poll' && pollOptionsRaw) {
-    const options: string[] = JSON.parse(pollOptionsRaw)
+    // 2026-09-05 (scan2 L5-18): a malformed field used to surface as a raw SyntaxError. The
+    // operator gets a plain sentence instead, and a non-array payload is treated the same way.
+    let options: string[]
+    try {
+      const parsed: unknown = JSON.parse(pollOptionsRaw)
+      if (!Array.isArray(parsed) || !parsed.every((o) => typeof o === 'string')) throw new Error('shape')
+      options = parsed
+    } catch {
+      throw new Error('Poll options could not be read. Check the list and try again.')
+    }
     const validOptions = options.map(s => s.trim()).filter(Boolean)
     if (validOptions.length >= 2) {
       await admin.from('dispatch_poll_options').delete().eq('dispatch_id', id)

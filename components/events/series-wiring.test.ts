@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
+import { sourceWithoutComments } from '@/test/source-shape'
 import { SERIES_COLUMNS } from '@/lib/events/series'
 
 // The series fold (ADR-897) is a POST-QUERY fold: it is a silent no-op on any read whose SELECT
@@ -42,7 +43,9 @@ describe('the /events index folds repeating series', () => {
   })
 
   it('over-fetches, since the fold spends the LIMIT on rows it then discards', () => {
-    expect(indexData).toContain('SERIES_WIDE_READ')
+    // Matched on comment- and import-free source (scan2 L8-04): the name also sits in a comment and
+    // in the import line of the pinned file, so a bare toContain stayed green with the call deleted.
+    expect(sourceWithoutComments('app/(main)/events/index-data.ts', { imports: true })).toContain('.limit(SERIES_WIDE_READ)')
     // The pre-fold literals must be gone: 200 rows is ~3 daily series.
     expect(indexData).not.toContain('publicQuery.limit(200)')
     expect(indexData).not.toContain('circleQuery.limit(40)')

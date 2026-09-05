@@ -123,6 +123,7 @@ describe('the finance ledger is a different rule by decision, not by drift', () 
     expect(formatPriceCents(2500)).toBe('$25')
     // The disagreement must stay documented at the definition, so the next sweep does not "fix" it.
     const src = read('lib/finance/dashboard.ts')
+    // Doc-pin (scan2 L8-05): this pins a COMMENT in the source on purpose, as documentation, not behaviour.
     expect(src).toContain('SAME NAME, DIFFERENT RULE')
   })
 })

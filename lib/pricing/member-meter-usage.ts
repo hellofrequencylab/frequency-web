@@ -27,6 +27,30 @@
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import { veraMessagesToday } from '@/lib/ai/vera/usage-gate'
+import { eventInstant, resolveZone } from '@/lib/time/zone'
+
+/** The widest an IANA zone sits from UTC (UTC+14 / UTC-12), so a raw `starts_at` band padded by
+ *  this much can never miss an event whose TRUE instant is inside the window. The same constant the
+ *  reminder crons use (app/api/cron/event-reminders/route.ts). */
+export const MAX_TZ_OFFSET_MS = 14 * 60 * 60 * 1000
+
+/** The columns an "is this event still upcoming" decision needs. */
+export interface UpcomingEventRow {
+  starts_at: string
+  time_zone: string | null
+}
+
+/**
+ * Is this event still ahead of `now`, by its REAL instant? `starts_at` stores the host's wall-clock
+ * as UTC parts (lib/time/zone.ts), so comparing it to a real `now()` is wrong by the event's zone
+ * offset: a Los Angeles 7 pm event read as already started at noon local, a Sydney 9 am event read
+ * as still upcoming until early evening local (scan2 L6-14, 2026-09-05). Resolve through the
+ * event's own zone first, the way the reminder crons do. An unparseable row is NOT upcoming.
+ */
+export function isUpcomingByInstant(row: UpcomingEventRow, now: Date = new Date()): boolean {
+  const inst = eventInstant(row.starts_at, resolveZone(row.time_zone))
+  return !!inst && inst.getTime() >= now.getTime()
+}
 
 /** The real usage behind each personal (tier-axis) meter, keyed by feature key. A key is absent when
  *  its count could not be resolved, so the surface shows the ladder without inventing a number. */
@@ -107,18 +131,25 @@ export async function memberPublishedPractices(profileId: string): Promise<numbe
  * 'cancelled' would be a no-op that also counted every draft. Both clauses are stated exactly the way
  * lib/events/follower-reminders.ts states them. `is_cancelled` is nullable, so `.eq(false)` drops a
  * null row: that UNDER-counts, which for a display-only nudge is the right direction to fail.
+ *
+ * 2026-09-05 (scan2 L6-14): "still upcoming" is decided by the event's REAL instant, not by the raw
+ * `starts_at` wall-clock. The query widens the band by MAX_TZ_OFFSET_MS so no candidate is missed,
+ * then isUpcomingByInstant keeps the rows whose resolved instant is ahead of now. This is the one
+ * read here that pulls rows rather than a head count, because the decision cannot be made in SQL
+ * against the stored convention; a host's own live events are a handful.
  */
-export async function memberActiveEvents(profileId: string): Promise<number | null> {
+export async function memberActiveEvents(profileId: string, now: Date = new Date()): Promise<number | null> {
   try {
-    const { count } = await createAdminClient()
+    const { data, error } = await createAdminClient()
       .from('events')
-      .select('id', { count: 'exact', head: true })
+      .select('starts_at, time_zone')
       .eq('host_id', profileId)
       .eq('status', 'published')
       .eq('is_cancelled', false)
       .is('removed_at', null)
-      .gte('starts_at', new Date().toISOString())
-    return typeof count === 'number' ? count : null
+      .gte('starts_at', new Date(now.getTime() - MAX_TZ_OFFSET_MS).toISOString())
+    if (error || !Array.isArray(data)) return null
+    return (data as unknown as UpcomingEventRow[]).filter((row) => isUpcomingByInstant(row, now)).length
   } catch {
     return null
   }

@@ -47,36 +47,10 @@ function table(name: string): Chain {
 
 // ── The canonical active-membership reader ──────────────────────────────────────────────────────
 
-/**
- * Does this profile hold an ACTIVE membership in this Space (optionally: in this specific tier)?
- * THE canonical reader for "is a member right now" — new code should call this instead of
- * re-writing the query (today the same shape is copy-pasted in lib/billing/tickets.ts and the
- * events page; those callers are deliberately left as-is, other work is in flight there).
- *
- * status='active' ONLY. Note that a past_due membership currently KEEPS status 'active' (the finer
- * Stripe state lives in payment_status; only a cancellation flips status) — so past_due members
- * still count as members here. That matches every existing consumer and is kept deliberately.
- * FAIL-SAFE to false.
- */
-export async function hasActiveSpaceMembership(
-  spaceId: string,
-  profileId: string,
-  tierId?: string,
-): Promise<boolean> {
-  if (!spaceId || !profileId) return false
-  try {
-    let q = table('space_memberships')
-      .select('id')
-      .eq('space_id', spaceId)
-      .eq('member_profile_id', profileId)
-      .eq('status', 'active')
-    if (tierId) q = q.eq('tier_id', tierId)
-    const { data } = await q.limit(1)
-    return (data ?? []).length > 0
-  } catch {
-    return false
-  }
-}
+// 2026-09-05 (scan2 L9-13): hasActiveSpaceMembership, documented above as the canonical reader, had no
+// caller: every consumer (lib/billing/tickets.ts, the events page) still runs its own query. It was
+// removed rather than left as an unused promise; the next reader that needs the shape writes it where
+// it is called.
 
 // ── The tenancy invariant: a linked tier and the circle it feeds live in the SAME Space ─────────
 

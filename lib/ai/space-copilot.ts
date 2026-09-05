@@ -46,15 +46,6 @@ export interface SpaceContext {
   profileId?: string | null
 }
 
-/** One offering a Space lists (a service, program, package). Either a structured entry or just
- *  free text the owner typed — both are accepted and grounded, nothing else is invented. */
-export interface OfferingContext {
-  /** The offering's name/title. */
-  title?: string | null
-  /** Any free-text the owner gave about it (a description, notes, a price line). */
-  text?: string | null
-}
-
 // ── Plain-language labels for each Space type (so the model frames the copy right) ──────────
 const TYPE_LABEL: Record<SpaceType, string> = {
   root: 'space',
@@ -152,45 +143,10 @@ export function fallbackBio(ctx: SpaceContext): string {
   return stripEmDashes(`${lead} ${close}`)
 }
 
-// ── Offering blurb ────────────────────────────────────────────────────────────────────────────
-
-const OFFERING_SYSTEM = `${BASE_RULES}
-
-Task: write a short BLURB for one thing this Space offers (a service, program, session, or package). One or two plain sentences (max ~40 words). Say what it is and who it helps, concretely. Do not state a price or a result you were not given.`
-
-/**
- * Draft a short blurb for one of a Space's offerings, grounded in the Space + offering context.
- * Same guarantees as draftSpaceBio (Haiku, ledgered, never throws, em-dash-free).
- */
-export async function draftOfferingBlurb(ctx: SpaceContext, offering: OfferingContext): Promise<string> {
-  const facts = [
-    `Space name: ${brandLabel(ctx)}.`,
-    `Kind of space: ${typeLabel(ctx.type)}.`,
-    offering.title ? `Offering name: ${clean(offering.title, 120)}.` : '',
-    offering.text ? `Offering details (owner's words): ${clean(offering.text, 600)}` : '',
-  ]
-    .filter(Boolean)
-    .join('\n')
-
-  const text = await draft({
-    system: OFFERING_SYSTEM,
-    user: `FACTS (the only material you may use):\n${facts}\n\nWrite the short blurb for this offering.`,
-    maxTokens: 160,
-    profileId: ctx.profileId,
-    spaceId: ctx.spaceId,
-  })
-  return text ?? fallbackOfferingBlurb(ctx, offering)
-}
-
-/** Deterministic offering blurb for when Vera is off. */
-export function fallbackOfferingBlurb(ctx: SpaceContext, offering: OfferingContext): string {
-  const title = clean(offering.title, 100)
-  const details = clean(offering.text, 200)
-  const brand = brandLabel(ctx)
-  if (details) return stripEmDashes(details)
-  if (title) return stripEmDashes(`${title}, from ${brand}. Reach out to learn more or to book a spot.`)
-  return stripEmDashes(`An offering from ${brand}. Reach out to learn more or to book a spot.`)
-}
+// ── Offering blurb ─────────────────────────────────────────────────────────────────────────────
+// 2026-09-05 (scan2 L9-13): draftOfferingBlurb, its OFFERING_SYSTEM prompt, fallbackOfferingBlurb and
+// the OfferingContext shape were removed. The action that called them was deleted earlier and no
+// surface asked for an offering blurb; only this module's test reached them.
 
 // ── Tagline ───────────────────────────────────────────────────────────────────────────────────
 

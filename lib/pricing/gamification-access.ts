@@ -108,17 +108,8 @@ export async function gamificationFullAllowed(tier: EntitlementTier | null | und
   }
 }
 
-/** Convenience: the viewer's full-gamification gate AND their resolved access, in one pass. A
- *  surface that needs both (e.g. the leaderboard compete affordance) calls this once. FAIL-SAFE. */
-export async function resolveViewerGamification(
-  tier: EntitlementTier | null | undefined,
-): Promise<{ access: GamificationAccess; full: boolean }> {
-  const [access, full] = await Promise.all([
-    resolveViewerGamificationAccess(),
-    gamificationFullAllowed(tier),
-  ])
-  return { access, full }
-}
+// 2026-09-05 (scan2 L9-13): the resolveViewerGamification convenience (access + full in one call) was
+// removed; the leaderboard and crew context call the two readers above directly.
 
 // Re-export the pure resolver so a caller that already has a profile in hand can resolve without IO.
 export { resolveGamificationAccess }

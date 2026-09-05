@@ -4,10 +4,12 @@ import {
   Activity,
   BadgeDollarSign,
   CalendarClock,
+  Eye,
   HeartPulse,
   Inbox,
   Mail,
   MessageSquare,
+  MousePointerClick,
   Sparkles,
   Ticket,
   UserPlus,
@@ -26,6 +28,7 @@ import { listActiveSpaceMemberIds } from '@/lib/spaces/resonance-roster'
 import { listWorkspaceConversations } from '@/lib/comms/workspace'
 import { listContactInteractions, type ContactInteraction } from '@/lib/crm/interactions'
 import { listEventsForSpace } from '@/lib/events/store'
+import { getSpaceProfileStats } from '@/lib/spaces/analytics'
 
 // THE SPACE COMMAND-CENTER HOME (ADR-796). The default landing of the /manage console: at-a-glance revenue,
 // members, what needs attention, the latest activity, and what's coming up — with inline links to act. Every
@@ -63,6 +66,10 @@ export async function SpaceDashboard({
       <div className="space-y-8">
         <Suspense fallback={<StatRowSkeleton />}>
           <DashboardStats spaceId={spaceId} slug={slug} />
+        </Suspense>
+
+        <Suspense fallback={<StatRowSkeleton count={2} />}>
+          <DashboardProfileStats spaceId={spaceId} slug={slug} />
         </Suspense>
 
         <Suspense fallback={<BlockSkeleton />}>
@@ -132,6 +139,36 @@ async function DashboardStats({ spaceId, slug }: { spaceId: string; slug: string
         href={`/spaces/${slug}/crm`}
       />
     </div>
+  )
+}
+
+// ── The profile row: views + button clicks over the trailing 30 days ────────────────────────────────
+// 2026-09-05 (scan2 L9-07): the first reader of the space.profile_view / space.cta_click telemetry the
+// profile has recorded since Epic 1.11. Same ledger, same admin client, gated by the console's manage
+// gate like every other band here. Two tiles, not a new page.
+async function DashboardProfileStats({ spaceId, slug }: { spaceId: string; slug: string }) {
+  const stats = await getSpaceProfileStats(spaceId, 30)
+  return (
+    <section className="space-y-3">
+      <SectionHeader title="Your profile, last 30 days" href={`/spaces/${slug}`} action="Open profile" />
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <StatCard
+          label="Profile views"
+          value={stats.profileViews}
+          icon={Eye}
+          detail={stats.profileViews === 0 ? 'No views yet' : 'one per person per day'}
+          title="People who opened your profile, counted once per person per day"
+        />
+        <StatCard
+          label="Button clicks"
+          value={stats.ctaClicks}
+          icon={MousePointerClick}
+          detail={stats.ctaClicks === 0 ? 'No clicks yet' : 'taps on your button'}
+          href={`/spaces/${slug}/manage/mode`}
+          title="Taps on the button your profile leads with. Opens the setting that picks what it does."
+        />
+      </div>
+    </section>
   )
 }
 
@@ -292,10 +329,10 @@ function formatWhen(iso: string | null): string {
 }
 
 // ── Skeletons (dimension-matched, no CLS) ────────────────────────────────────────────────────────────
-function StatRowSkeleton() {
+function StatRowSkeleton({ count = 4 }: { count?: number }) {
   return (
     <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-      {[0, 1, 2, 3].map((i) => (
+      {Array.from({ length: count }, (_, i) => i).map((i) => (
         <Skeleton key={i} className="h-20 rounded-card" />
       ))}
     </div>

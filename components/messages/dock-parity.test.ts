@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
+import { sourceWithoutComments } from '@/test/source-shape'
 
 // ── Drift guard: dock parity for rename, leave and the roster (ADR-896 acceptance) ────────
 // `chat_dm_routes_retired` was gated on the dock carrying the three capabilities that used to
@@ -31,7 +32,11 @@ describe('the files under test are non-trivial (guards a vacuous pass)', () => {
 
 describe('the dock and the page share one implementation of every capability', () => {
   it('rename is the page action, reused unchanged', () => {
-    expect(dockChat).toContain('renameConversation')
+    // Matched on comment- and import-free source (scan2 L8-04): the name also sits in a comment and
+    // in the import line of the pinned file, so a bare toContain stayed green with the call deleted.
+    expect(sourceWithoutComments('components/messages/dock-chat.tsx', { imports: true })).toContain(
+      'await renameConversation(',
+    )
     expect(dmPage).toContain('ConversationRenameButton')
     expect(readFileSync('components/messages/conversation-rename-button.tsx', 'utf8'))
       .toContain('renameConversation')
@@ -247,7 +252,11 @@ describe('the layer behaves as a bottom sheet on a phone, not a desktop panel', 
   it('the rename input does not trigger the iOS focus zoom', () => {
     // Safari zooms the viewport for any input under 16px; inside a 68dvh sheet the
     // zoom-and-restore jump is worse than on a full page.
-    expect(details).toContain('text-body')
+    // The rename INPUT's class list, on comment-free source (scan2 L8-04): `text-body` is also the
+    // first word of the comment explaining it, so a bare toContain pinned the explanation.
+    expect(sourceWithoutComments('components/messages/dock-thread-details.tsx')).toMatch(
+      /<input[\s\S]{0,1500}?className="[^"]* text-body [^"]*sm:text-body-sm"/,
+    )
     expect(details).toContain('sm:text-body-sm')
   })
 
@@ -406,7 +415,11 @@ describe('"Message someone" starts a DM without leaving the page', () => {
   })
 
   it('opens the conversation in place through the shared action', () => {
-    expect(dockChat).toContain('openDirectConversation')
+    // Matched on comment- and import-free source (scan2 L8-04): the name also sits in a comment and
+    // in the import line of the pinned file, so a bare toContain stayed green with the call deleted.
+    expect(sourceWithoutComments('components/messages/dock-chat.tsx', { imports: true })).toContain(
+      'await openDirectConversation(',
+    )
     expect(dockChat).toContain('openDm(res.conversationId')
   })
 

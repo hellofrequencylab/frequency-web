@@ -368,20 +368,8 @@ export async function listSharesForEvent(eventId: string): Promise<EventShareVie
   }
 }
 
-/** Accepted shares TO a space (the events another host brought here). Target space resolved. FAIL-SAFE. */
-export async function listAcceptedSharesForSpace(spaceId: string): Promise<ShareRow[]> {
-  if (!spaceId) return []
-  try {
-    const { data } = await createAdminClient()
-      .from('event_space_shares')
-      .select('*')
-      .eq('space_id', spaceId)
-      .eq('status', 'accepted')
-    return (data ?? []) as ShareRow[]
-  } catch {
-    return []
-  }
-}
+// 2026-09-05 (scan2 L9-13): listAcceptedSharesForSpace (accepted shares TO a space) was removed; no
+// surface listed them.
 
 /**
  * Pending share requests a TARGET SPACE's steward must act on — a host invited this space to co-host

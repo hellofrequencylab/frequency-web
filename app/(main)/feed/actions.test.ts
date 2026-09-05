@@ -54,6 +54,7 @@ describe('createPost gates the circle scope', () => {
     // If this ever became a caller-scoped client the policy would enforce the rule itself. It does
     // not, so the comment and the check are load-bearing.
     expect(src).toContain('createAdminClient()')
+    // Doc-pin (scan2 L8-05): this pins a COMMENT in the source on purpose, as documentation, not behaviour.
     expect(src).toContain('The admin client bypasses RLS')
   })
 })

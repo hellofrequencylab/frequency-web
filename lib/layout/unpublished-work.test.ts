@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { readFileSync } from 'node:fs'
+import { sourceWithoutComments } from '@/test/source-shape'
 import {
   hasUnpublishedWork,
   setUnpublishedWork,
@@ -99,7 +100,9 @@ describe('both warnings are actually wired', () => {
   })
 
   it('CLOSE THE PANEL: EVERY dismissal path is guarded, not just the X button', () => {
-    expect(bar).toContain('hasUnpublishedWork()')
+    // Matched on comment-free source (scan2 L8-04): the needle also sits in a comment of the pinned
+    // file, so a bare toContain stayed green with the code deleted.
+    expect(sourceWithoutComments('components/layout/admin-bar/admin-bar.tsx')).toContain('hasUnpublishedWork()')
     expect(bar).toContain('UNPUBLISHED_WARNING')
 
     // 1. The X button on the desktop rail and on the mobile sheet.

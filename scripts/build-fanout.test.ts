@@ -1,6 +1,19 @@
-import { describe, it, expect } from 'vitest'
-import { readFileSync, readdirSync, statSync, existsSync, globSync } from 'node:fs'
+import { describe, it, expect, afterAll } from 'vitest'
+import { readFileSync, readdirSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { join, dirname, resolve, relative } from 'node:path'
+import { tmpdir } from 'node:os'
+import { execFileSync } from 'node:child_process'
+import {
+  measureFanout,
+  evaluate,
+  sanctionedPublic,
+  MIN_FUNCTIONS,
+  MAX_ICON_FUNCTIONS,
+  MAX_SITE_PHOTOS,
+  MAX_PUBLIC_PER_FUNCTION,
+  ICON_CHUNK_MIN_BYTES,
+  ICON_GLYPHS,
+} from './check-build-fanout.mjs'
 
 // ─────────────────────────────────────────────────────────────────────────────────────────────
 // FAN-OUT GUARD: the two heaviest client-only datasets must not be reachable from every route.
@@ -28,6 +41,13 @@ import { join, dirname, resolve, relative } from 'node:path'
 // runs where a build exists — CI never builds, Vercel does — and is the only half that MEASURES.
 // Neither is redundant: the source half cannot see a bundler rename that silently voids the
 // tracing exclude, and the trace half cannot run on a PR.
+//
+// 2026-09-05 (scan2 L8-01): the trace half used to live HERE under `describe.skipIf(!HAS_BUILD)`,
+// and ran nowhere: CI never builds and postbuild ran only the four .mjs gates, so vitest printed
+// "6 skipped" on every PR and no build ever judged the artifact. It is now
+// scripts/check-build-fanout.mjs, a postbuild gate with the same thresholds. The bottom of this
+// file drives that gate against fixture trees (a clean build, each planted violation, a build too
+// small to trust) so the gate itself has a test on every PR.
 //
 // House archetype: components/maps/maps-wiring.test.ts (read the source, assert the wiring, assert
 // non-triviality first so a moved or emptied file cannot pass vacuously).
@@ -269,137 +289,223 @@ describe('every path read out of public/ is a literal, so the tracer never globs
   })
 })
 
-// ── The measuring half. Reads what the last `pnpm build` actually wrote. ─────────────────────
+// ── The measuring half now lives in scripts/check-build-fanout.mjs and runs in postbuild. ──────
+// What follows proves the gate: a clean fixture passes, every planted violation fails with its own
+// message, and a fixture too small to be a real build fails BEFORE any count is believed.
 
-const SERVER_DIR = join(ROOT, '.next', 'server')
-const HAS_BUILD = existsSync(SERVER_DIR) && globSync('**/*.nft.json', { cwd: SERVER_DIR }).length > 0
-
-describe.skipIf(!HAS_BUILD)('the traced artifact agrees (needs a `pnpm build`)', () => {
-  const traces = globSync('**/*.nft.json', { cwd: SERVER_DIR })
-
-  /** function trace -> the absolute files it carries */
-  const carried = traces.map((rel) => {
-    const traceFile = join(SERVER_DIR, rel)
-    let files: string[] = []
-    try {
-      files = JSON.parse(readFileSync(traceFile, 'utf8')).files ?? []
-    } catch {
-      files = []
-    }
-    const base = dirname(traceFile)
-    return { fn: rel, files: files.map((f) => resolve(base, f)) }
-  })
-
-  /** How many functions carry a file this predicate accepts. */
-  const countCarrying = (match: (abs: string) => boolean) =>
-    carried.filter((c) => c.files.some(match)).length
-
-  it('is non-trivial (a broken read must not pass this suite vacuously)', () => {
-    expect(traces.length).toBeGreaterThan(100)
-    // A control: the app-page runtime is in essentially every function. If this is not widely
-    // carried, the traces did not parse and every count below is a false zero.
-    expect(countCarrying((f) => f.includes('app-page-turbo.runtime.prod'))).toBeGreaterThan(
-      traces.length / 2,
+/** A fixture `.next/server` tree. Every function carries the app-page runtime unless told not to,
+ *  so the parse control passes; `extra` adds files to one function by index. */
+function plantBuild(opts: {
+  functions: number
+  runtime?: boolean
+  iconChunk?: boolean
+  iconCarriers?: number
+  extra?: Record<number, string[]>
+}): string {
+  const root = mkdtempSync(join(tmpdir(), 'build-fanout-'))
+  const server = join(root, '.next', 'server')
+  mkdirSync(join(server, 'chunks'), { recursive: true })
+  // Trace paths are relative to the trace file: app/<route>/page.js.nft.json sits three levels
+  // under .next/server, so the repo root is five `..` away.
+  const up = '../../../../../'
+  if (opts.iconChunk !== false) {
+    // Big enough to be opened, and carrying both glyph families the gate looks for.
+    writeFileSync(
+      join(server, 'chunks', 'icons-abc123.js'),
+      `${ICON_GLYPHS.join(' ')} ${'x'.repeat(ICON_CHUNK_MIN_BYTES + 1024)}`,
     )
-  })
-
-  it('the icon collections are carried by a handful of functions, not hundreds', () => {
-    // The chunk name is a content hash, so it has to be found by CONTENT. Only server chunks big
-    // enough to BE the collections are opened (~6.9MB), which keeps this to a couple of reads.
-    const chunkDir = join(SERVER_DIR, 'chunks')
-    const big = existsSync(chunkDir)
-      ? globSync('**/*.js', { cwd: chunkDir })
-          .map((r) => join(chunkDir, r))
-          .filter((abs) => {
-            try {
-              return statSync(abs).size > 2 * 1024 * 1024
-            } catch {
-              return false
-            }
-          })
-      : []
-    const iconChunks = new Set(
-      big.filter((abs) => {
-        const src = readFileSync(abs, 'utf8')
-        // Two glyph names that only exist in the installed sets, from two different families.
-        return src.includes('flower-lotus') && src.includes('a-arrow-down')
-      }),
-    )
-    expect(iconChunks.size).toBeGreaterThan(0) // the data must still be SOMEWHERE
-    const fns = countCarrying((f) => iconChunks.has(f))
-    // Measured before: 337. The floor is not 1 — components/ui/icon.tsx legitimately renders in
-    // two pages (admin library, onboarding sequence preview) on top of the route handler. Raising
-    // this number means a new server surface pulled in ~6.9MB times every route beneath it.
-    expect(fns).toBeLessThanOrEqual(8)
-  })
-
-  it('heic2any is in no function trace at all', () => {
-    // Measured before: 381 functions x 1.29MB = 491MB. It runs only in a browser, so the correct
-    // number is zero. A non-zero count means the tracing exclude stopped matching.
-    expect(countCarrying((f) => /heic2any/i.test(f))).toBe(0)
-  })
-
-  // ── public/ is a WEB directory. Almost none of it belongs in a serverless function. ─────────
-  //
-  // Measured before the literal readers landed: 62 functions carrying all 69 files, 12.25MB each,
-  // 770.4MB of public/ across the build. After: the numbers in each assertion below. The glob had
-  // a distinctive signature — a function that carries `public/maplibre` or the PWA icon set is a
-  // function that got handed the whole directory, because no server code reads either.
-
-  /** Everything a function is allowed to carry out of public/, and the reason it may. */
-  const SANCTIONED_PUBLIC = (f: string) =>
-    // the OG faces (lib/og/load-nunito.ts + the narrowed next.config.ts include keys)
-    f.includes('/public/fonts/') ||
-    // the help + root card's photo, read by a literal path in both
-    f.endsWith('/public/images/hero.jpg') ||
-    // the watermark and the six cover placeholders, read by lib/og/local-image.ts
-    f.endsWith('/public/images/Frequency-Logo-Round-Icon-white.png') ||
-    /\/public\/images\/site\/[^/]+\.jpg$/.test(f)
-
-  it('no function carries a file from public/ that nothing reads from disk', () => {
-    const offenders = new Set<string>()
-    for (const c of carried) {
-      for (const f of c.files) {
-        if (f.includes('/public/') && !SANCTIONED_PUBLIC(f)) offenders.add(relative(ROOT, f))
-      }
+  }
+  const iconCarriers = opts.iconCarriers ?? 3
+  for (let i = 0; i < opts.functions; i++) {
+    const dir = join(server, 'app', `route-${i}`)
+    mkdirSync(dir, { recursive: true })
+    const files: string[] = []
+    if (opts.runtime !== false) files.push(`${up}node_modules/next/dist/compiled/next-server/app-page-turbo.runtime.prod.js`)
+    if (i < iconCarriers) files.push('../../chunks/icons-abc123.js')
+    if (i === 0) {
+      // The one card function: fonts, the six covers and the mark. Sanctioned, and it makes the
+      // "placeholders still ship" control pass.
+      files.push(`${up}public/fonts/Nunito-Regular.ttf`)
+      files.push(`${up}public/images/Frequency-Logo-Round-Icon-white.png`)
+      for (const cover of ['community-dinner', 'a', 'b', 'c', 'd', 'e']) files.push(`${up}public/images/site/${cover}.jpg`)
     }
-    // Measured before: 56 files, led by public/maplibre (a browser bundle), the seven PWA icons,
-    // and 37 stock photographs no card can select. Adding a row to SANCTIONED_PUBLIC above is a
-    // real decision: it costs that file's size times every function under the segment that reads
-    // it. Measure with scripts/check-build-budget.mjs before you do.
-    expect([...offenders].sort()).toEqual([])
+    for (const f of opts.extra?.[i] ?? []) files.push(f)
+    writeFileSync(join(dir, 'page.js.nft.json'), JSON.stringify({ version: 1, files }))
+  }
+  return root
+}
+
+const MJS = resolve(ROOT, 'scripts/check-build-fanout.mjs')
+/** Run the CLI against a fixture root and report exit code + combined output. */
+function runGate(root: string): { code: number; out: string } {
+  try {
+    const out = execFileSync(process.execPath, [MJS, '--root', root], { encoding: 'utf8', stdio: 'pipe' })
+    return { code: 0, out }
+  } catch (e) {
+    const err = e as { status: number; stdout: string; stderr: string }
+    return { code: err.status, out: `${err.stdout}\n${err.stderr}` }
+  }
+}
+
+const fixtures: string[] = []
+const fixture = (opts: Parameters<typeof plantBuild>[0]) => {
+  const root = plantBuild(opts)
+  fixtures.push(root)
+  return root
+}
+afterAll(() => {
+  for (const f of fixtures) rmSync(f, { recursive: true, force: true })
+})
+
+/** Enough functions to clear the floor. The floor itself is proven separately below. */
+const ENOUGH = MIN_FUNCTIONS + 10
+const up = '../../../../../'
+
+describe('check-build-fanout.mjs: a clean artifact passes', () => {
+  it('measures what it says it measures, and the CLI exits 0', () => {
+    const root = fixture({ functions: ENOUGH })
+    const m = measureFanout(root)!
+    expect(m.functions).toBe(ENOUGH)
+    expect(m.runtimeCarriers).toBe(ENOUGH)
+    expect(m.iconChunks).toBe(1)
+    expect(m.iconFunctions).toBe(3)
+    expect(m.heicFunctions).toBe(0)
+    expect(m.publicOffenders).toEqual([])
+    expect(m.sitePhotos.length).toBe(6)
+    expect(m.coverCarriers).toBe(1)
+    expect(m.markCarriers).toBe(1)
+    expect(m.worstPublic.count).toBe(8)
+    expect(evaluate(m).failures).toEqual([])
+
+    const { code, out } = runGate(root)
+    expect(code).toBe(0)
+    expect(out).toContain('✅ check:build-fanout')
+    expect(out).toContain(`${ENOUGH} functions read`)
   })
 
-  it('the cover placeholders reach only the cards, and only as themselves', () => {
-    // Non-triviality first: the placeholders must still SHIP. A fix that merely stopped tracing
-    // them would pass the assertion above and serve share cards with a blank background.
-    expect(
-      countCarrying((f) => f.endsWith('/public/images/site/community-dinner.jpg')),
-    ).toBeGreaterThan(0)
-    expect(
-      countCarrying((f) => f.endsWith('/public/images/Frequency-Logo-Round-Icon-white.png')),
-    ).toBeGreaterThan(0)
+  it('sanctions exactly the public/ files the OG cards read by literal path', () => {
+    for (const ok of [
+      '/repo/public/fonts/Nunito-Regular.ttf',
+      '/repo/public/images/hero.jpg',
+      '/repo/public/images/Frequency-Logo-Round-Icon-white.png',
+      '/repo/public/images/site/community-dinner.jpg',
+    ]) expect(sanctionedPublic(ok), ok).toBe(true)
+    for (const bad of [
+      '/repo/public/maplibre/maplibre-gl-csp-worker.js',
+      '/repo/public/icons/icon-192.png',
+      '/repo/public/images/site/nested/photo.jpg',
+      '/repo/public/images/site/photo.png',
+    ]) expect(sanctionedPublic(bad), bad).toBe(false)
+  })
+})
 
-    // The six placeholders are the ONLY site photos in any trace. Measured before: 43 of them, the
-    // signature of the directory glob rather than of six literal reads.
-    const sitePhotos = new Set<string>()
-    for (const c of carried) {
-      for (const f of c.files) {
-        if (f.includes('/public/images/site/')) sitePhotos.add(relative(ROOT, f))
-      }
-    }
-    expect(sitePhotos.size).toBeLessThanOrEqual(6)
+describe('check-build-fanout.mjs: every planted violation fails, with its own message', () => {
+  it('heic2any in one trace', () => {
+    const root = fixture({ functions: ENOUGH, extra: { 5: [`${up}.next/server/chunks/node_modules_heic2any_dist_x.js`] } })
+    const { failures } = evaluate(measureFanout(root))
+    expect(failures.length).toBe(1)
+    expect(failures[0]).toContain('heic2any is in 1 function trace(s)')
+    expect(runGate(root).code).toBe(1)
   })
 
-  it('no function carries more than a handful of public/ files', () => {
-    // The blunt instrument, and the one that cannot be fooled by a rename: a glob shows up as a
-    // file COUNT no set of literal reads would produce. Measured before: 69 distinct files in the
-    // claim-link functions; after: 10 (3 faces + 6 covers + the mark). A trace can list the same
-    // file twice, so count what a function actually CARRIES. The ceiling is 5 fonts + 6 covers +
-    // the mark + hero.jpg, with a little room.
-    const worst = Math.max(
-      ...carried.map((c) => new Set(c.files.filter((f) => f.includes('/public/'))).size),
-    )
-    expect(worst).toBeLessThanOrEqual(14)
+  it('the icon collections carried by one function too many', () => {
+    const root = fixture({ functions: ENOUGH, iconCarriers: MAX_ICON_FUNCTIONS + 1 })
+    const { failures } = evaluate(measureFanout(root))
+    expect(failures.length).toBe(1)
+    expect(failures[0]).toContain(`carried by ${MAX_ICON_FUNCTIONS + 1} function(s) (budget ${MAX_ICON_FUNCTIONS})`)
+    expect(runGate(root).code).toBe(1)
+  })
+
+  it('a public/ file nothing reads (the directory-glob signature)', () => {
+    const root = fixture({ functions: ENOUGH, extra: { 7: [`${up}public/maplibre/maplibre-gl-csp-worker.js`] } })
+    const { failures } = evaluate(measureFanout(root))
+    expect(failures.length).toBe(1)
+    expect(failures[0]).toContain('1 file(s) from public/ are carried')
+    expect(failures[0]).toContain('public/maplibre/maplibre-gl-csp-worker.js')
+    expect(runGate(root).code).toBe(1)
+  })
+
+  it('a seventh site photo', () => {
+    const root = fixture({ functions: ENOUGH, extra: { 0: [`${up}public/images/site/seventh.jpg`] } })
+    const { failures } = evaluate(measureFanout(root))
+    expect(failures.length).toBe(1)
+    expect(failures[0]).toContain(`${MAX_SITE_PHOTOS + 1} distinct site photos`)
+    expect(runGate(root).code).toBe(1)
+  })
+
+  it('one function carrying more public/ files than any set of literal reads produces', () => {
+    // Fonts are sanctioned one by one, so a pile of them trips only the per-function count.
+    const fonts = Array.from({ length: MAX_PUBLIC_PER_FUNCTION + 1 }, (_, i) => `${up}public/fonts/face-${i}.ttf`)
+    const root = fixture({ functions: ENOUGH, extra: { 9: fonts } })
+    const { failures } = evaluate(measureFanout(root))
+    expect(failures.length).toBe(1)
+    expect(failures[0]).toContain(`app/route-9/page.js.nft.json carries ${MAX_PUBLIC_PER_FUNCTION + 1} public/ files`)
+    expect(runGate(root).code).toBe(1)
+  })
+
+  it('the placeholders no longer shipping (a fix that only stopped tracing them)', () => {
+    const root = fixture({ functions: ENOUGH })
+    const m = measureFanout(root)!
+    const { failures } = evaluate({ ...m, coverCarriers: 0 })
+    expect(failures.length).toBe(1)
+    expect(failures[0]).toContain('no longer SHIP')
+  })
+})
+
+describe('check-build-fanout.mjs: it refuses to vouch for an artifact it cannot read', () => {
+  it('fails under the function floor even when every count is clean', () => {
+    const root = fixture({ functions: 40 })
+    const m = measureFanout(root)!
+    expect(m.heicFunctions).toBe(0)
+    expect(m.publicOffenders).toEqual([])
+    const { failures } = evaluate(m)
+    expect(failures.length).toBe(1)
+    expect(failures[0]).toContain(`only 40 function trace(s) read, under the ${MIN_FUNCTIONS} floor`)
+    const { code, out } = runGate(root)
+    expect(code).toBe(1)
+    expect(out).toContain('🔴 check:build-fanout')
+  })
+
+  it('the floor sits a little under the real count, not at 1', () => {
+    // Production has read 496-499 functions on every deploy since 2026-08-18. A floor of 1 would
+    // let a broken trace layout that yields one parseable file pass; a floor above the real count
+    // would fail every deploy. 450 is the band between them.
+    expect(MIN_FUNCTIONS).toBeGreaterThanOrEqual(400)
+    expect(MIN_FUNCTIONS).toBeLessThan(496)
+  })
+
+  it('fails when the traces parse but the runtime is not in them (paths no longer resolve)', () => {
+    const root = fixture({ functions: ENOUGH, runtime: false })
+    const { failures } = evaluate(measureFanout(root))
+    expect(failures.some((f) => f.includes('the app-page runtime is carried by 0'))).toBe(true)
+  })
+
+  it('fails when no chunk carries the icon data at all (the data must still ship somewhere)', () => {
+    const root = fixture({ functions: ENOUGH, iconChunk: false, iconCarriers: 0 })
+    const { failures } = evaluate(measureFanout(root))
+    expect(failures.length).toBe(1)
+    expect(failures[0]).toContain('no server chunk carries the icon collections')
+  })
+
+  it('fails with no .next/server at all, from both the API and the CLI', () => {
+    const root = mkdtempSync(join(tmpdir(), 'build-fanout-empty-'))
+    fixtures.push(root)
+    expect(measureFanout(root)).toBeNull()
+    expect(evaluate(null).failures[0]).toContain('no .next/server traces')
+    expect(runGate(root).code).toBe(1)
+  })
+})
+
+describe('check-build-fanout.mjs is wired where it can run', () => {
+  it('runs in postbuild, blocking, beside the four gates that measure the same artifact', () => {
+    // CI never builds, so postbuild is the only place a trace gate can measure anything
+    // (DEPLOY-SAFETY.md, ADR-1003). A gate that exists but is not here is L8-01 all over again:
+    // the same five checks, skipped on every PR and run on no build.
+    const pkg = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8')) as { scripts: Record<string, string> }
+    const postbuild = pkg.scripts.postbuild ?? ''
+    expect(postbuild).toContain('scripts/check-build-fanout.mjs')
+    const args = /check-build-fanout\.mjs([^&|;]*)/.exec(postbuild)?.[1] ?? ''
+    expect(args.trim(), 'the gate must run bare: a --warn-only here is a silent demotion').toBe('')
+    expect(pkg.scripts['check:build-fanout']).toBe('node scripts/check-build-fanout.mjs')
   })
 })
