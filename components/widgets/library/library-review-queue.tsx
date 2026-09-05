@@ -1,5 +1,5 @@
 import { getCallerProfile } from '@/lib/auth'
-import { atLeastRole } from '@/lib/core/roles'
+import { isStaff } from '@/lib/core/roles'
 import { EmptyState } from '@/components/ui/empty-state'
 import { getInitials, relativeTime } from '@/lib/utils'
 import { getPendingReview, typeLabel } from '@/lib/library'
@@ -11,9 +11,12 @@ import { Inbox } from 'lucide-react'
 // to Host+ (returns null for anyone below, the module contract), so the page's redirect stays the
 // real gate and an operator placing this block never leaks the queue to a member. The empty state is
 // part of the block, so a placed queue always renders a clear "nothing to review" rather than blank.
+// (2026-09-05, scan two L7-3: the gate moved from community Host+ to the STAFF axis, web_role
+// admin/janitor, to match reviewContent in library/actions.ts; a self-granted Host no longer sees
+// a queue whose Approve would refuse.)
 export async function LibraryReviewQueue() {
   const caller = await getCallerProfile()
-  if (!caller || !atLeastRole(caller.community_role, 'host')) return null
+  if (!caller || !isStaff(caller.webRole)) return null
 
   const pending = await getPendingReview()
 

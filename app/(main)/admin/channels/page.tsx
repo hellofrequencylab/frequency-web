@@ -1,20 +1,24 @@
 import { requireAdmin } from '@/lib/admin/guard'
 import { AdminTemplate, AdminSection } from '@/components/templates'
-import { NewChannelCompose } from '@/components/compose/new-channel-compose'
+// THE live create dialog (the same one /channels shows hosts). It posts to createTopicalChannel,
+// which writes `topical_channels` and redirects to `/channels/<slug>`, the URL the Channel page
+// resolves. The console used to mount a separate legacy form that wrote the retired `channels`
+// table and redirected to a uuid the page could not resolve (L9-01, 2026-09-05).
+import { NewChannelCompose } from '@/app/(main)/channels/new-channel-compose'
 import { getChannelsAdminData } from './load-channels'
 import { ChannelsAdminList } from './channels-admin-list'
 
 
 export default async function AdminChannelsPage() {
-  const { profileId } = await requireAdmin('host', { staff: 'community' })
-  const { scopeOptions, visible, hidden } = await getChannelsAdminData(profileId)
+  await requireAdmin('host', { staff: 'community' })
+  const { pillars, visible, hidden } = await getChannelsAdminData()
 
   return (
     <AdminTemplate
       title="Channels"
       eyebrow="Community"
-      description="Manage channels across your scope. Archiving hides from discovery."
-      actions={scopeOptions.length > 0 ? <NewChannelCompose scopeOptions={scopeOptions} /> : undefined}
+      description="Every Channel members can tune into. Hiding one pulls it out of discovery and off its page until you restore it."
+      actions={<NewChannelCompose pillars={pillars} />}
       width="default"
     >
       <AdminSection>

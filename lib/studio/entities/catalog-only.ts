@@ -17,6 +17,8 @@
 //
 // Paths mirror the FormData keys the existing create actions read, which are also the column names:
 //   channel  -> app/(main)/channels/actions.ts createChannel
+//               (2026-09-05, scan two L9-01: createChannel is retired; the live creator is
+//               createTopicalChannel in the same file, writing topical_channels)
 //   room     -> app/(main)/messages/rooms/actions.ts createRoom
 //   hub      -> app/(main)/admin/actions.ts createHub
 //   nexus    -> app/(main)/admin/actions.ts createNexus
@@ -27,7 +29,8 @@
 
 import type { EntityManifest, FieldOption } from '@/lib/studio/kernel/manifest'
 
-/** Mirrors the channel type toggle in components/compose/new-channel-compose.tsx. */
+/** Mirrors the channel type toggle that lived in components/compose/new-channel-compose.tsx
+ *  (deleted 2026-09-05, scan two L9-01; the live form is app/(main)/channels/new-channel-compose). */
 const CHANNEL_TYPES: readonly FieldOption[] = [
   { value: 'group', label: 'Group' },
   { value: 'event', label: 'Event' },

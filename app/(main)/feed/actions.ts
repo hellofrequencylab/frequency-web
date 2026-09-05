@@ -10,6 +10,7 @@ import { processGamificationEvent, recordStreakActivity } from '@/lib/achievemen
 import { awardGems } from '@/lib/gems'
 import { isReactionKey } from '@/lib/feed/reactions'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
+import { canModeratePost } from '@/lib/moderation/scope'
 import { log } from '@/lib/log'
 import {
   assembleThread,
@@ -183,6 +184,44 @@ export async function createPost(formData: FormData): Promise<ActionResult> {
   return ok()
 }
 
+// The ids of the circles this profile hosts (`circles.host_id = profileId`): the set the
+// `posts` policies scope a host's moderation to. One indexed read; fail-safe to an empty list so
+// a failed read denies rather than admits.
+async function hostedCircleIds(
+  admin: ReturnType<typeof createAdminClient>,
+  profileId: string,
+): Promise<string[]> {
+  const { data } = await admin.from('circles').select('id').eq('host_id', profileId)
+  return (data ?? []).map((c) => c.id)
+}
+
+// May the caller delete, pin, or unpin this post? The one moderation gate for the three actions
+// below (L7-1): read the post's author + scope, read the caller's hosted circles, and ask the pure
+// `canModeratePost` (lib/moderation/scope.ts), which mirrors the policies the admin client skips:
+// the author, platform staff (web_role), or a host INSIDE a circle they host. Returns null when
+// the post does not exist, which the callers treat the same as a denial.
+async function canCallerModeratePost(
+  admin: ReturnType<typeof createAdminClient>,
+  caller: NonNullable<Awaited<ReturnType<typeof getCallerProfile>>>,
+  postId: string,
+): Promise<boolean> {
+  const { data: post } = await admin
+    .from('posts')
+    .select('author_id, scope_id')
+    .eq('id', postId)
+    .maybeSingle()
+  if (!post) return false
+  // The author needs no circle lookup; only a would-be moderator pays for the second read.
+  const hosted = post.author_id === caller.id ? [] : await hostedCircleIds(admin, caller.id)
+  return canModeratePost({
+    callerId: caller.id,
+    communityRole: caller.community_role,
+    webRole: caller.webRole,
+    post,
+    hostedCircleIds: hosted,
+  })
+}
+
 export async function deletePost(postId: string) {
   const caller = await getCallerProfile()
   if (!caller) redirect('/sign-in')
@@ -191,13 +230,18 @@ export async function deletePost(postId: string) {
   // (and admin tiers) may delete any post for moderation. The menu offers the
   // same set, so the server must honor it — otherwise a host deleting someone
   // else's post silently no-ops.
+  //
+  // 🔴 "ANY post" above was the defect (L7-1). `host` is self-granted (publishing a Circle runs
+  // `ensureHostOnOwnership`), so `HOST_PLUS.includes(community_role)` let any member who had ever
+  // published a circle delete any post on the platform. The policy this client bypasses says
+  // `author_id = me OR (host+ AND scope_id IN (circles I host))`; `canCallerModeratePost` is that
+  // predicate, with platform staff (web_role) as the only platform-wide arm. The menu still offers
+  // Delete to every host+, so a host outside their circle now gets the same silent no-op an author
+  // gets on someone else's post, which is the shape this action always had for a denial.
   const admin = createAdminClient()
-  const canModerate = HOST_PLUS.includes(caller.community_role)
+  if (!(await canCallerModeratePost(admin, caller, postId))) return
 
-  let query = admin.from('posts').delete().eq('id', postId)
-  if (!canModerate) query = query.eq('author_id', caller.id)
-
-  const { error } = await query
+  const { error } = await admin.from('posts').delete().eq('id', postId)
 
   if (error) {
     console.error('[deletePost]', error.message)
@@ -455,22 +499,23 @@ export async function toggleReaction(
   return ok({ active: activate, count: count ?? 0 })
 }
 
+// Pin / unpin share deletePost's gate (L7-2): the UPDATE policy `posts: author update or host pins
+// in circle` has the same predicate as the DELETE one, so the same helper answers both. A silent
+// return on denial is the shape these two always had.
 export async function pinPost(postId: string) {
-  const profileId = await getMyProfileId()
-  if (!profileId) return
+  const caller = await getCallerProfile()
+  if (!caller) return
   const admin = createAdminClient()
-  const { data: profile } = await admin.from('profiles').select('community_role').eq('id', profileId).maybeSingle()
-  if (!profile || !HOST_PLUS.includes(profile.community_role ?? '')) return
+  if (!(await canCallerModeratePost(admin, caller, postId))) return
   await admin.from('posts').update({ is_pinned: true }).eq('id', postId)
   revalidatePath('/feed')
 }
 
 export async function unpinPost(postId: string) {
-  const profileId = await getMyProfileId()
-  if (!profileId) return
+  const caller = await getCallerProfile()
+  if (!caller) return
   const admin = createAdminClient()
-  const { data: profile } = await admin.from('profiles').select('community_role').eq('id', profileId).maybeSingle()
-  if (!profile || !HOST_PLUS.includes(profile.community_role ?? '')) return
+  if (!(await canCallerModeratePost(admin, caller, postId))) return
   await admin.from('posts').update({ is_pinned: false }).eq('id', postId)
   revalidatePath('/feed')
 }

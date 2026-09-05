@@ -3,9 +3,9 @@
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { getMyProfileId } from '@/lib/auth'
+import { getMyProfileId, getCallerProfile } from '@/lib/auth'
 import { getStaffMember } from '@/lib/staff'
-import { staffCan } from '@/lib/core/staff-roles'
+import { canAdministerAchievements } from '@/lib/moderation/scope'
 import type { AchievementCategory, AchievementTier, StreakType } from '@/lib/gamification'
 import type { Database } from '@/lib/database.types'
 
@@ -195,29 +195,35 @@ export async function checkRecentUnlocks(sinceIso: string) {
 // Admin: manually award an achievement to a profile
 // ---------------------------------------------------------------------------
 
+// The one gate for awardAchievement + revokeAchievement (L7-4). Staff only, on either staff axis:
+// platform staff (web_role admin/janitor) or a team_members role holding `community` at write.
+// Throws the same 'Unauthorized' the two actions always threw on denial.
+//
+// 🔴 It USED to admit `community_role in (host, guide, mentor, admin, janitor)` first, and that was
+// the defect: `host` is self-granted (publishing a Circle runs `ensureHostOnOwnership`), a badge is
+// platform-wide with no circle to scope a host to, and the write goes through a client that
+// bypasses RLS. So any member who had published a circle could grant or revoke any badge on any
+// profile. The community ladder no longer opens this; `canAdministerAchievements`
+// (lib/moderation/scope.ts) is the decision.
+async function requireAchievementAdmin(): Promise<string> {
+  const caller = await getCallerProfile()
+  if (!caller) throw new Error('Not authenticated')
+  // Also admit a community-domain staffer (a staff role holding the 'community' capability),
+  // matching the page gate requireAdmin('host', { staff: 'community' }). Mirrors feed/report-actions.
+  const staff = await getStaffMember().catch(() => null)
+  if (!canAdministerAchievements({ webRole: caller.webRole, staffRole: staff?.role })) {
+    throw new Error('Unauthorized')
+  }
+  return caller.id
+}
+
 export async function awardAchievement(profileId: string, achievementId: string) {
-  const myProfileId = await getMyProfileId()
-  if (!myProfileId) throw new Error('Not authenticated')
+  // Check caller is host+
+  // (That line is the pre-L7-4 rule, kept for the record; the gate is now staff-only, see
+  // requireAchievementAdmin above.)
+  await requireAchievementAdmin()
 
   const admin = createAdminClient()
-
-  // Check caller is host+
-  const { data: caller } = await admin
-    .from('profiles')
-    .select('community_role')
-    .eq('id', myProfileId)
-    .maybeSingle()
-
-  const role = (caller as Pick<ProfileRow, 'community_role'> | null)?.community_role ?? 'member'
-  if (!['host', 'guide', 'mentor', 'admin', 'janitor'].includes(role)) {
-    // Also admit a community-domain staffer (community_role 'member' but a staff
-    // role holding the 'community' capability), matching the page gate
-    // requireAdmin('host', { staff: 'community' }). Mirrors feed/report-actions.
-    const staff = await getStaffMember().catch(() => null)
-    if (!staffCan(staff?.role, 'community', 'write')) {
-      throw new Error('Unauthorized')
-    }
-  }
 
   // Check not already earned
   const { data: existing } = await admin
@@ -243,26 +249,13 @@ export async function awardAchievement(profileId: string, achievementId: string)
 // ---------------------------------------------------------------------------
 
 export async function revokeAchievement(profileId: string, achievementId: string) {
-  const myProfileId = await getMyProfileId()
-  if (!myProfileId) throw new Error('Not authenticated')
+  // Also admit a community-domain staffer, matching the page gate
+  // requireAdmin('host', { staff: 'community' }). Mirrors feed/report-actions.
+  // (Both arms of that sentence now live in requireAchievementAdmin; the community_role arm that
+  // used to sit beside them is gone, L7-4.)
+  await requireAchievementAdmin()
 
   const admin = createAdminClient()
-
-  const { data: caller } = await admin
-    .from('profiles')
-    .select('community_role')
-    .eq('id', myProfileId)
-    .maybeSingle()
-
-  const role = (caller as Pick<ProfileRow, 'community_role'> | null)?.community_role ?? 'member'
-  if (!['host', 'guide', 'mentor', 'admin', 'janitor'].includes(role)) {
-    // Also admit a community-domain staffer, matching the page gate
-    // requireAdmin('host', { staff: 'community' }). Mirrors feed/report-actions.
-    const staff = await getStaffMember().catch(() => null)
-    if (!staffCan(staff?.role, 'community', 'write')) {
-      throw new Error('Unauthorized')
-    }
-  }
 
   await admin
     .from('user_achievements')

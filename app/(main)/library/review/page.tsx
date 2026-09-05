@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { ChevronLeft } from 'lucide-react'
 import { getCallerProfile } from '@/lib/auth'
-import { atLeastRole } from '@/lib/core/roles'
+import { isStaff } from '@/lib/core/roles'
 import { FocusTemplate } from '@/components/templates'
 import { PageModules } from '@/components/widgets/page-modules'
 
@@ -13,9 +13,12 @@ export const dynamic = 'force-dynamic'
 // queue block self-fetches the pending submissions and is Host-gated (returns null below Host), so
 // the page's redirect stays the real gate. The page keeps only the guard + the Focus header + the
 // back-link footer and renders <PageModules>.
+// (2026-09-05, scan two L7-3: the gate moved from community Host+ to the STAFF axis, web_role
+// admin/janitor, to match reviewContent in library/actions.ts; a self-granted Host no longer sees
+// a queue whose Approve would refuse.)
 export default async function LibraryReviewPage() {
   const caller = await getCallerProfile()
-  if (!caller || !atLeastRole(caller.community_role, 'host')) redirect('/library')
+  if (!caller || !isStaff(caller.webRole)) redirect('/library')
 
   return (
     <FocusTemplate

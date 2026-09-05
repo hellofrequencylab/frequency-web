@@ -53,7 +53,8 @@
             "SCAN-538",
             "SCAN-539",
             "LIVE-154",
-            "LIVE-155"
+            "LIVE-155",
+            "LIVE-156"
           ]
         },
         {
@@ -6647,6 +6648,125 @@
         "kind": "manual",
         "evidence": "2026-09-05: get_runtime_errors 7d shows the group with last seen 2026-08-29. Closes when a 7-day read after the fix returns no occurrence.",
         "checked": "2026-09-05"
+      }
+    },
+    {
+      "id": "SCAN-551",
+      "title": "Event creation from the member form was denied by RLS for 56 of 58 accounts",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "app/(main)/events/actions.ts",
+        "ref": "ADR-1207"
+      },
+      "detail": "Scan two R1 (2026-09-05). createEvent inserted through the session client; the events policy pair (permissive get_my_role() >= 'host', restrictive events_space_writable_ins = can_write_space_content(space_id) whose root arm is staff-only since 20260902000000) denied every member and every non-staff host, and the page said creation was open to any member. Impersonating a host and a member in SQL denied both; Vercel logged the 42501 twice. Closed: the insert runs on the admin client after the action's own ownership checks, like the three sibling create paths; a source-shape test pins the receiver and a behavioural test proves a host's create reaches the insert with host_id from the verified caller.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const s=fs.readFileSync('app/(main)/events/actions.ts','utf8');const bad=/await\\s*\\(?\\s*supabase\\s*\\)?\\s*\\.from\\('events'\\)\\s*\\.insert\\(/.test(s);const test=fs.existsSync('app/(main)/events/create-event-client.test.ts');process.exit(!bad&&test?0:1)\"",
+        "note": "Fails if the events insert in createEvent goes back through the session client or the pinning test is removed."
+      }
+    },
+    {
+      "id": "SCAN-552",
+      "title": "A GET of a member's unsubscribe link performed the unsubscribe",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "app/unsubscribe/page.tsx",
+        "ref": "ADR-1207"
+      },
+      "detail": "Scan two L2-01. The footer link unsubscribed during page render and the List-Unsubscribe header URL's GET forwarded to POST, so mail-client prefetchers and corporate link scanners opted members out silently. Closed: the page verifies the token and renders a confirm button; the write is a server-action POST; the API GET redirects to the page; the RFC 8058 one-click POST is unchanged. Thirteen tests pin it. Sibling left open: app/u/scan/route.ts still writes consent_state='unsubscribed' on GET (scan-intro lead emails), filed as LIVE-156.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const r=fs.readFileSync('app/api/unsubscribe/route.ts','utf8');const m=r.match(/export async function GET[\\s\\S]*?\\n\\}/);const getActs=m&&/(processUnsubscribe|processSpaceUnsubscribe|\\bPOST\\s*\\()/.test(m[0]);const page=fs.readFileSync('app/unsubscribe/page.tsx','utf8').split('\\n').filter(l=>!/^\\s*\\/\\//.test(l)).join('\\n');process.exit(!getActs&&!/processUnsubscribe/.test(page)?0:1)\"",
+        "note": "Fails if the API GET acts again or the page's render path calls the action."
+      }
+    },
+    {
+      "id": "SCAN-553",
+      "title": "Campaign approvals wrote a phantom campaigns.updated_at, so no campaign could leave draft",
+      "status": "done",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "lib/outbound/approvals.ts",
+        "ref": "ADR-1207"
+      },
+      "detail": "Scan two L1-01. Five approval transitions (markReady, approve, pause, cancel, armPhase) wrote updated_at on campaigns; the column does not exist (types, migrations and the live information_schema agree), so PostgREST rejected every transition and 12 live campaigns sat in draft. The untyped builder in lib/outbound/db.ts hid it from the compiler. Closed: the key is gone and a test extracts every campaigns write key in the file (including keys assigned through a patch object) and asserts each is a Row column; mutation re-adding updated_at fails it at both sites.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const s=fs.readFileSync('lib/outbound/approvals.ts','utf8');const t=fs.readFileSync('lib/outbound/approvals.test.ts','utf8');process.exit(!/updated_at/.test(s)&&/L1-01/.test(t)?0:1)\"",
+        "note": "Fails if updated_at returns to approvals.ts or the write-key guard test is removed."
+      }
+    },
+    {
+      "id": "SCAN-554",
+      "title": "The Resonance density rollup never refreshed through its cron: a bare DELETE tripped safeupdate every night",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/resonance/density.ts",
+        "ref": "ADR-1207"
+      },
+      "detail": "Scan two R2. refresh_resonance_density_cells() opened with delete with no WHERE; the PostgREST authenticator role preloads safeupdate (pg_roles.rolconfig), so every REST call failed with sqlstate 21000 since 2026-08-22 (postgres_logs 2026-09-04 02:31Z), density.ts swallowed it to {cells:0} and the cron logged info. Closed: migration 20270345000000 (applied 2026-09-05, ledger reconciled) rewrites the delete as `where true`; density.ts returns the error; the cron logs it at error level with ok:false on the step; pgTAP pins the function under the loaded hook.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const m=fs.readFileSync('supabase/migrations/20270345000000_density_refresh_safeupdate.sql','utf8');const d=fs.readFileSync('lib/resonance/density.ts','utf8');process.exit(/delete from public\\.resonance_density_cells where true;/.test(m)&&!/return \\{ cells: 0 \\}/.test(d)&&/error/.test(d)?0:1)\"",
+        "note": "Fails if the migration loses its where clause or density.ts goes back to swallowing the error."
+      }
+    },
+    {
+      "id": "LIVE-156",
+      "title": "The scan-intro lead unsubscribe still acts on GET (app/u/scan/route.ts)",
+      "status": "open",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "app/u/scan/route.ts",
+        "ref": "ADR-1207"
+      },
+      "detail": "Same class as SCAN-552, different route: the lead unsubscribe link in scan-intro emails writes consent_state='unsubscribed' from its GET handler, so a link scanner unsubscribes the lead. Fix as SCAN-552: render a confirm step on GET, act on POST (or a signed one-click POST from the header only).",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const r=fs.readFileSync('app/u/scan/route.ts','utf8');const m=r.match(/export async function GET[\\s\\S]*?\\n\\}/);process.exit(m&&/unsubscribed/.test(m[0])?1:0)\"",
+        "note": "Passes once the GET handler no longer writes the unsubscribed state."
+      }
+    },
+    {
+      "id": "SCAN-555",
+      "title": "A self-granted Host could delete, pin, library-review and badge anything platform-wide through the admin client",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/moderation/scope.ts",
+        "ref": "ADR-1207"
+      },
+      "detail": "Scan two L7-1..4. host is granted by publishing a Circle (ensureHostOnOwnership); deletePost/pinPost/unpinPost, reviewContent and awardAchievement/revokeAchievement ran through the admin client and gated on the community ladder, while the posts policies scope a host to circles they host and library writes have no policy at all. Closed: lib/moderation/scope.ts holds the predicates (author, staff web_role, or host inside a hosted circle for posts; staff-only for library review and achievements); the feed actions read author_id and scope_id and the caller's hosted circles first; the two library-review UI gates moved to the staff axis. 42 tests. Left cosmetic: components/context-actions.tsx still offers Pin/Delete to every host+ (a no-op outside their circle).",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const f=fs.readFileSync('app/(main)/feed/actions.ts','utf8');const l=fs.readFileSync('app/(main)/library/actions.ts','utf8');const g=fs.readFileSync('app/(main)/crew/gamification-actions.ts','utf8');const n=(s,re)=>(s.match(re)||[]).length;process.exit(n(f,/canCallerModeratePost\\(admin, caller, postId\\)/g)===3&&/canReviewLibrarySubmission\\(caller\\.webRole\\)/.test(l)&&n(g,/await requireAchievementAdmin\\(\\)/g)===2&&fs.existsSync('lib/moderation/scope.test.ts')?0:1)\"",
+        "note": "Fails if any of the three actions drops its scope check or the helper's test is removed."
+      }
+    },
+    {
+      "id": "SCAN-556",
+      "title": "Admin New Channel wrote the retired channels table and landed on a 404; the profile Website field was saved and shown to no one",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "app/(main)/admin/channels/load-channels.ts",
+        "ref": "ADR-1207"
+      },
+      "detail": "Scan two L9-01 and L9-02. The operator console created, listed, hid and showed rows in channels/channel_memberships (0 rows live) and redirected to /channels/<uuid>, which reads only topical_channels; the legacy createChannel and its compose component were the only writers and are removed, the console now reads and writes topical_channels and redirects to the slug the [id] page resolves. profiles.website was written by the settings form and read by nothing; the public profile now renders it through lib/profiles/website.ts safeWebsite (http(s) only, hostname label, noopener noreferrer nofollow). 41 tests.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const files=['app/(main)/channels/actions.ts','app/(main)/admin/actions.ts','app/(main)/admin/channels/load-channels.ts'];const legacy=files.some(f=>/\\.from\\('channels'\\)/.test(fs.readFileSync(f,'utf8')));const page=fs.readFileSync('app/(main)/people/[handle]/page.tsx','utf8');process.exit(!legacy&&!fs.existsSync('components/compose/new-channel-compose.tsx')&&/website/.test(page)&&fs.existsSync('lib/profiles/website.test.ts')?0:1)\"",
+        "note": "Fails if the channels console writes the legacy table again, the dead compose returns, or the profile stops reading website."
       }
     }
   ]

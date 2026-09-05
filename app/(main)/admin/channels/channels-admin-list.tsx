@@ -2,9 +2,11 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { Hash, EyeOff, Eye, Pencil, Check, X } from 'lucide-react'
 import { archiveChannel, unarchiveChannel, updateChannel } from '../actions'
-import { StatusChip, type StatusTone } from '@/components/admin/status'
+import { StatusChip } from '@/components/admin/status'
+import { channelCategoryLabel } from '@/lib/channels/categories'
 import { DangerModal } from '@/components/admin/danger-modal'
 import { EmptyState } from '@/components/ui/empty-state'
 import type { ChannelRow } from './load-channels'
@@ -14,12 +16,12 @@ import { Button } from '@/components/ui/button'
 // Channel list shared by the /admin/channels page and the in-place Spaces·Channels module
 // (ADR-138). Each public channel now edits in place (name + description) and can be hidden;
 // hidden ones tuck behind a disclosure with a restore. Speaks the shared StatusChip vocabulary.
-
-const TYPE_TONE: Record<string, StatusTone> = {
-  group: 'info',
-  event: 'warning',
-  thread: 'neutral',
-}
+//
+// The rows are TOPICAL channels (L9-01, 2026-09-05): the chips read the category (the closed
+// vocabulary in lib/channels/categories.ts, off-list values shown as-is) and the Pillar, in place
+// of the retired hub/nexus "type" and "scope" the dead `channels` table carried. The name links
+// to the channel's page by SLUG, the handle the page resolves. The TYPE_TONE map that sat here
+// (group / event / thread) went with the table.
 
 
 function ChannelItem({ ch }: { ch: ChannelRow }) {
@@ -87,13 +89,11 @@ function ChannelItem({ ch }: { ch: ChannelRow }) {
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-body-sm font-medium text-text">{ch.name}</span>
-          <StatusChip tone={TYPE_TONE[ch.type] ?? 'info'} size="sm">
-            <span className="capitalize">{ch.type}</span>
-          </StatusChip>
-          <StatusChip tone="neutral" size="sm">
-            <span className="capitalize">{ch.scope}</span>
-          </StatusChip>
+          <Link href={`/channels/${ch.slug}`} className="text-body-sm font-medium text-text hover:underline">
+            {ch.name}
+          </Link>
+          <StatusChip tone="info" size="sm">{channelCategoryLabel(ch.category)}</StatusChip>
+          <StatusChip tone="neutral" size="sm">{ch.pillar?.name ?? 'Unsorted'}</StatusChip>
         </div>
         {ch.description && <p className="mt-0.5 truncate text-meta text-subtle">{ch.description}</p>}
       </div>

@@ -58,6 +58,8 @@ export function buildUnsubscribeUrl(params: {
 // this person, and the /manage-emails page verifies it before showing the per-category toggles. Distinct
 // from buildUnsubscribeUrl only in the PATH (/manage-emails vs /unsubscribe): the unsubscribe path opts the
 // member out on load (RFC 8058 no-click), the manage path lets them adjust categories + resubscribe.
+// (2026-09-05, scan two L2-01: "on load" is retired. A GET of /unsubscribe now renders a confirm
+// button and only the POST acts, so link scanners and prefetchers can no longer opt a member out.)
 export function buildManageEmailsUrl(params: {
   baseUrl:   string
   profileId: string

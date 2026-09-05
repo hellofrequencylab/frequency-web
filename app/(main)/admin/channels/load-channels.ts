@@ -1,67 +1,52 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 
+// The row the operator list renders: a TOPICAL channel (the live table), never the retired
+// `channels` table. `slug` is what the Channel page resolves, so the list can link straight in.
 export type ChannelRow = {
   id: string
   name: string
+  slug: string
+  category: string
   description: string | null
-  type: string
-  scope: string
-  is_public: boolean
+  is_active: boolean
   created_at: string
-  creator: { display_name: string } | null
+  pillar: { name: string } | null
 }
 
-export type ChannelScopeOption = { scope: 'hub' | 'nexus' | 'outpost'; scopeId: string; label: string }
+export type PillarOption = { id: string; name: string }
 
-// "Manage channels in scope" data for the in-place Spaces·Channels module (ADR-138)
-// and the /admin/channels page (which adopts this loader). Derives the New Channel
-// scope options from the admin's primary circle, then splits channels public/hidden.
-export async function getChannelsAdminData(profileId: string) {
+// "Manage channels" data for the /admin/channels page (and the in-place Spaces·Channels
+// module, ADR-138). Reads `topical_channels`, the ONE channel table the member-facing pages
+// read (`/channels` and `/channels/[id]`), and splits the rows into shown / hidden on
+// `is_active`, the same flag the Channel page checks before it renders.
+//
+// Until L9-01 (2026-09-05) this read the retired `channels` table (0 rows in production),
+// so the console listed nothing while members could see every live channel, and derived
+// hub/nexus/outpost "scope options" for a New Channel form that wrote to the same dead
+// table. Topical channels are global and sort under a Pillar, so the create dialog needs the
+// Pillar options instead; they load here alongside the rows.
+export async function getChannelsAdminData() {
   const admin = createAdminClient()
 
-  const scopeOptions: ChannelScopeOption[] = []
-  const { data: membership } = await admin
-    .from('memberships')
-    .select(
-      `circle:circles!circle_id (
-        hub:hubs!hub_id ( id, name, nexus:nexuses!nexus_id ( id, name, outpost:outposts!outpost_id ( id, name ) ) )
-      )`,
-    )
-    .eq('profile_id', profileId)
-    .eq('status', 'active')
-    .order('joined_at', { ascending: true })
-    .limit(1)
-    .maybeSingle()
+  const [{ data: pillarsData }, { data: channels }] = await Promise.all([
+    admin
+      .from('pillars')
+      .select('id, name')
+      .eq('is_active', true)
+      .order('display_order', { ascending: true }),
+    admin
+      .from('topical_channels')
+      .select(
+        `id, name, slug, category, description, is_active, created_at,
+         pillar:pillars!pillar_id ( name )`,
+      )
+      .order('created_at', { ascending: false }),
+  ])
 
-  if (membership) {
-    const m = membership as unknown as {
-      circle: {
-        hub: {
-          id: string
-          name: string
-          nexus: { id: string; name: string; outpost: { id: string; name: string } | null } | null
-        } | null
-      } | null
-    }
-    const hub = m.circle?.hub
-    const nexus = hub?.nexus
-    const outpost = nexus?.outpost
-    if (hub) scopeOptions.push({ scope: 'hub', scopeId: hub.id, label: `Hub: ${hub.name}` })
-    if (nexus) scopeOptions.push({ scope: 'nexus', scopeId: nexus.id, label: `Nexus: ${nexus.name}` })
-    if (outpost) scopeOptions.push({ scope: 'outpost', scopeId: outpost.id, label: `Outpost: ${outpost.name}` })
-  }
-
-  const { data: channels } = await admin
-    .from('channels')
-    .select(
-      `id, name, description, type, scope, is_public, created_at,
-       creator:profiles!creator_id ( display_name )`,
-    )
-    .order('created_at', { ascending: false })
-
+  const pillars = (pillarsData ?? []) as PillarOption[]
   const typedChannels = (channels ?? []) as unknown as ChannelRow[]
-  const visible = typedChannels.filter((c) => c.is_public)
-  const hidden = typedChannels.filter((c) => !c.is_public)
+  const visible = typedChannels.filter((c) => c.is_active)
+  const hidden = typedChannels.filter((c) => !c.is_active)
 
-  return { scopeOptions, visible, hidden }
+  return { pillars, visible, hidden }
 }

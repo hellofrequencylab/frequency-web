@@ -40,6 +40,16 @@ export async function POST(req: NextRequest) {
 }
 
 // Some clients also send a GET probe before the POST — accept it.
+//
+// ⚠️ "Accept it" used to mean "forward it to POST", which made a GET ACT (L2-01, 2026-09-05):
+// corporate link scanners and mail-client prefetchers GET the List-Unsubscribe URL, and every one
+// of those fetches silently opted a member out. RFC 8058 one-click is POST-only by definition
+// (`List-Unsubscribe-Post: List-Unsubscribe=One-Click`), so nothing standards-conformant ever
+// needed GET to act. A GET now gets a 302 to the /unsubscribe confirm page with the SAME query,
+// so a human who clicks the header URL in an older client lands on a button, and a scanner
+// following the redirect still only sees a page. Nothing is written on this path.
 export async function GET(req: NextRequest) {
-  return POST(req)
+  const target = req.nextUrl.clone()
+  target.pathname = '/unsubscribe'
+  return NextResponse.redirect(target, 302)
 }
