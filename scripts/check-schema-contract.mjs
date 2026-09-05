@@ -66,13 +66,7 @@ export const MIN_RPC_CALLS = 60
  *    { file: 'lib/x.ts', table: 'campaigns', column: 'updated_at', kind: 'update',
  *      added: '2026-09-05', reason: 'why it cannot be fixed in this change', owner: 'SCAN-xxx' }
  *  `kind` is optional (matches any). An entry that matches nothing fails the guard. */
-export const ALLOWLIST = [
-  // Phase F (#2363) adds p_claim_token to both RPCs in migration 20270345000610, which is applied to
-  // production only at F's merge; lib/database.types.ts is regenerated then and these two entries
-  // become stale and MUST be removed in the same change (a stale entry fails this guard).
-  { file: 'app/join/(induction)/lead-actions.ts', table: 'update_signup_lead', column: 'p_claim_token', kind: 'rpc-arg', added: '2026-09-05', reason: 'argument arrives with migration 20270345000610 (phase F, stacked under this PR); types regenerate at its merge', owner: 'SCAN-580' },
-  { file: 'app/join/(induction)/lead-actions.ts', table: 'mark_signup_lead_converted', column: 'p_claim_token', kind: 'rpc-arg', added: '2026-09-05', reason: 'argument arrives with migration 20270345000610 (phase F, stacked under this PR); types regenerate at its merge', owner: 'SCAN-580' },
-]
+export const ALLOWLIST = []
 
 /** Walk `root` against `typesFile` and return the raw report. Pure: no exit, no console. */
 export function scanSchemaContract({ root = REPO_ROOT, typesFile } = {}) {
