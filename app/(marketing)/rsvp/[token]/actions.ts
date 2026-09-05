@@ -7,6 +7,9 @@ import { captureEventGuest, type GuestRsvpStatus } from '@/lib/events/guests'
 
 export type RsvpResult = { ok: true } | { ok: false; error: string }
 
+/** The reply when the guest-list write did not happen. Plain, and about us rather than the reader. */
+const WRITE_FAILED: RsvpResult = { ok: false, error: 'We could not save your spot. Please try again.' }
+
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/
 const RSVP_STATUSES: GuestRsvpStatus[] = ['going', 'maybe', 'declined']
 
@@ -19,6 +22,14 @@ const RSVP_STATUSES: GuestRsvpStatus[] = ['going', 'maybe', 'declined']
 // NOT reveal whether the token was valid, whether the person already existed, or whether
 // any write leg landed. The only non-success replies are a malformed email (UX) and a
 // rate-limit (abuse). Nothing here ever exposes the inviter's other contacts.
+//
+// ONE MORE NON-SUCCESS REPLY (meta-scan L5-14): a valid token whose GUEST-LIST write did not
+// land. The reply used to be success regardless, so a guest read "You're on the list" while
+// the host had no guest and the seat did not exist. The guest leg is deduped on (event, email),
+// so an existing person is an update, not a failure: `guestId` is null only when the database
+// write itself failed, which says nothing about any person. A bad token still gets the generic
+// success (no capture, no leak of token validity), and the marketing + personal-book legs stay
+// best-effort and never change the reply.
 export async function submitEventGuest(input: {
   token: string
   displayName: string
@@ -51,14 +62,24 @@ export async function submitEventGuest(input: {
   if (invite) {
     // The orchestrator is fail-safe by contract; the marketing leg is best-effort. We never
     // branch the reply on its result, so the response stays identical regardless.
-    await captureEventGuest({
-      inviterProfileId: invite.inviterProfileId,
-      eventId: invite.eventId,
-      displayName,
-      email,
-      phone,
-      rsvpStatus,
-    }).catch(() => {})
+    // (Amended, L5-14: the reply branches on exactly ONE thing, whether the guest-list row was
+    // written. The personal-book and marketing legs still never change it.)
+    let guestId: string | null = null
+    try {
+      const result = await captureEventGuest({
+        inviterProfileId: invite.inviterProfileId,
+        eventId: invite.eventId,
+        displayName,
+        email,
+        phone,
+        rsvpStatus,
+      })
+      guestId = result.guestId
+    } catch (e) {
+      console.error('[rsvp] captureEventGuest threw', { eventId: invite.eventId, error: e instanceof Error ? e.message : String(e) })
+      guestId = null
+    }
+    if (!guestId) return WRITE_FAILED
   }
 
   return { ok: true }

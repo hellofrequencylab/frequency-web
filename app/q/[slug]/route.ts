@@ -13,6 +13,8 @@ import {
 } from '@/lib/attribution/first-touch'
 import { joinCircle } from '@/app/(main)/circles/actions'
 import { checkInEvent, setRsvpStatus } from '@/app/(main)/events/actions'
+import type { CheckInFailReason } from '@/app/(main)/events/actions'
+import { log, briefError } from '@/lib/log'
 import { listActiveVariants, pickVariant } from '@/lib/entry-points/ab'
 import { referralsEnabled } from '@/lib/platform-flags'
 import { normalizeSplash, primarySplashLink } from '@/lib/qr/splash'
@@ -351,8 +353,40 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
       // Routing it through `setRsvpStatus` means the door and the page enforce one rule, because
       // they run the same code. It is idempotent for someone already going, and it upgrades a
       // maybe or a withdrawal, which is the honest reading of standing at the door with the code.
-      await setRsvpStatus(code.event_id, 'going').catch(() => {})
-      await checkInEvent(code.event_id).catch(() => {})
+      //
+      // 🔴 CORRECTION 2026-09-05 (scan-2 L5-21). Both results used to be dropped: a refused RSVP
+      // write (`{ error }`) and a refused check-in (`{ ok: false, reason }`) both landed the scanner
+      // on the event page with nothing to say, so someone standing at the door with the code was
+      // told nothing at all. The outcome now rides to the event page as `?door=<reason>`, where the
+      // reasons are checkInEvent's own (`signed_out` / `unavailable` / `window_closed` /
+      // `checkin_off` / `not_going` / `pending`) plus `rsvp_refused` (the RSVP write itself was
+      // refused) and `failed` (an action threw). The page does NOT render the flag yet; it reads
+      // `ticket` / `session_id` / `claimed` / `claim` only. Rendering `door` is the page owner's
+      // row. A thrown action is logged at warn and never 500s the door.
+      // A refused RSVP wins over the check-in reason that follows from it (a refused seat reads
+      // `not_going` at the door, which is the consequence, not the cause).
+      let door: DoorOutcome | null = null
+      try {
+        const rsvp = await setRsvpStatus(code.event_id, 'going')
+        if (rsvp && 'error' in rsvp) {
+          door = 'rsvp_refused'
+          log.warn('qr.door.rsvp_refused', { eventId: code.event_id, error: rsvp.error })
+        }
+      } catch (err) {
+        door = 'failed'
+        log.warn('qr.door.rsvp_threw', { eventId: code.event_id, error: briefError(err) })
+      }
+      try {
+        const checkIn = await checkInEvent(code.event_id)
+        if (!checkIn.ok && !door) {
+          door = checkIn.reason ?? 'unavailable'
+          log.warn('qr.door.checkin_refused', { eventId: code.event_id, reason: door })
+        }
+      } catch (err) {
+        if (!door) door = 'failed'
+        log.warn('qr.door.checkin_threw', { eventId: code.event_id, error: briefError(err) })
+      }
+      return withReferral(to(door ? `/events/${ev.slug}?door=${door}` : `/events/${ev.slug}`))
     }
     return withReferral(to(`/events/${ev.slug}`))
   }
@@ -375,6 +409,11 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
 
   return unavailable
 }
+
+/** The reason the door could not do what the scan asked, or null when both the RSVP and the
+ *  check-in went through: checkInEvent's own `CheckInFailReason` values plus two of the door's.
+ *  Rides to the event page as `?door=`; not exported, because a route file may only export handlers. */
+type DoorOutcome = CheckInFailReason | 'rsvp_refused' | 'failed'
 
 async function ownerHandle(
   admin: ReturnType<typeof createAdminClient>,

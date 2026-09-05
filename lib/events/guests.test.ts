@@ -22,6 +22,9 @@ const store = {
   contacts: [] as Row[],
   nextId: 1,
   fail: {} as Record<string, boolean>,
+  // supabase-js does not throw on a failed write: it resolves `{ data: null, error }`. `fail` above
+  // models a THROWN leg; `softFail` models the resolved-error shape the real client hands back.
+  softFail: {} as Record<string, boolean>,
 }
 
 function tableArr(table: string): Row[] {
@@ -40,12 +43,14 @@ function builder(table: string) {
 
   const doInsert = () => {
     if (store.fail[`${table}_insert`]) throw new Error(`${table} insert failed`)
+    if (store.softFail[`${table}_insert`]) return { data: null, error: { code: '42501', message: `${table} insert denied` } }
     const row: Row = { id: `${table[0]}${store.nextId++}`, created_at: '2026-07-17T00:00:00Z', ...payload }
     tableArr(table).push(row)
     return { data: { id: row.id }, error: null }
   }
   const doUpdate = () => {
     if (store.fail[`${table}_update`]) throw new Error(`${table} update failed`)
+    if (store.softFail[`${table}_update`]) return { data: null, error: { code: '42501', message: `${table} update denied` } }
     for (const r of tableArr(table).filter(match)) Object.assign(r, payload)
     return { data: null, error: null }
   }
@@ -114,6 +119,7 @@ beforeEach(() => {
   store.contacts = []
   store.nextId = 1
   store.fail = {}
+  store.softFail = {}
 })
 
 const base = { inviterProfileId: INVITER, eventId: EVENT, displayName: 'Sam Guest', email: 'Sam@Example.com' }
@@ -193,6 +199,45 @@ describe('captureEventGuest — failure isolation', () => {
     expect(res.ok).toBe(false) // a priority leg failed
     expect(store.network_contacts).toHaveLength(1) // personal leg is isolated
     expect(res.networkContactId).not.toBeNull()
+  })
+
+  // L5-14: the guest-list insert used to leave `error` unread, so a resolved `{ data: null, error }`
+  // (the shape supabase-js actually returns) produced guestId null with nothing logged and the
+  // /rsvp/<token> action told the guest "you're on the list". Now the error is read and logged.
+  it('reports guestId null and logs when the guest-list insert resolves { error } (no throw)', async () => {
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    try {
+      store.softFail.event_guests_insert = true
+      const res = await captureEventGuest({ ...base })
+      expect(res.guestId).toBeNull()
+      expect(res.ok).toBe(false)
+      expect(store.event_guests).toHaveLength(0)
+      expect(store.network_contacts).toHaveLength(1) // still isolated
+      expect(errorSpy).toHaveBeenCalledWith(
+        '[captureEventGuest] event_guests insert failed',
+        expect.objectContaining({ eventId: EVENT }),
+      )
+    } finally {
+      errorSpy.mockRestore()
+    }
+  })
+
+  it('does NOT report the stale row id when the dedupe UPDATE resolves { error }', async () => {
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    try {
+      await captureEventGuest({ ...base, rsvpStatus: 'maybe' })
+      expect(store.event_guests).toHaveLength(1)
+      store.softFail.event_guests_update = true
+      const res = await captureEventGuest({ ...base, rsvpStatus: 'going' })
+      expect(res.guestId).toBeNull() // the new RSVP status did not land, so no id is claimed for it
+      expect(store.event_guests[0]!.rsvp_status).toBe('maybe')
+      expect(errorSpy).toHaveBeenCalledWith(
+        '[captureEventGuest] event_guests update failed',
+        expect.objectContaining({ eventId: EVENT }),
+      )
+    } finally {
+      errorSpy.mockRestore()
+    }
   })
 
   it('keeps the capture ok when only the best-effort marketing leg fails', async () => {

@@ -204,6 +204,24 @@ function rsvpsTable(): RsvpQuery {
 const TIER_COLS = 'id, space_id, name, kind, capacity, description, sort, is_active'
 const RSVP_COLS = 'id, space_id, tier_id, member_profile_id, status, reserved_at'
 
+/** The one member-facing line for a full tier, shown by the JS pre-check AND by the DB guard. */
+const TIER_FULL_MESSAGE = 'This ticket is full. Try another tier.'
+
+/** The shape supabase-js hands back for a Postgres error: sqlstate in `code`, the raise text in `message`. */
+type PgError = { code?: string | null; message?: string | null }
+
+/** enforce_space_ticket_tier_capacity (20270345000200) raises 'tier_full' with errcode check_violation
+ *  (sqlstate 23514). Both halves are checked so an unrelated CHECK failure is not read as a full tier. */
+export function isTierFull(error: unknown): boolean {
+  const e = (error ?? {}) as PgError
+  return e.code === '23514' && (e.message ?? '').includes('tier_full')
+}
+
+/** The partial unique index space_ticket_rsvps_one_going_per_member (sqlstate 23505). */
+function isUniqueViolation(error: unknown): boolean {
+  return ((error ?? {}) as PgError).code === '23505'
+}
+
 /** Map a DB tier row to the app's TicketTier (kind/capacity re-normalized defensively). */
 function mapTierRow(r: TierRow): TicketTier {
   const kind: TicketKind = KINDS.includes(r.kind as TicketKind) ? (r.kind as TicketKind) : 'free'
@@ -417,6 +435,9 @@ export async function getMyRsvp(spaceId: string): Promise<MyRsvp | null> {
  * is real + active + an 'rsvp' tier of THIS Space (a 'free' tier needs no reservation), checks
  * capacity, then inserts a going RSVP. A friendly fail if the member already holds a going RSVP on this
  * tier (the partial unique index is the final guard against a race). Returns ActionResult. NO money.
+ * Capacity has a DB guard too: enforce_space_ticket_tier_capacity (20270345000200) locks the tier row
+ * and raises tier_full when two reservations race for the last spot; the raise maps onto the same
+ * "This ticket is full" message the JS count shows.
  */
 export async function rsvpToTier(spaceId: string, tierId: string): Promise<ActionResult> {
   const profileId = await getMyProfileId()
@@ -437,9 +458,12 @@ export async function rsvpToTier(spaceId: string, tierId: string): Promise<Actio
   if (existing) return fail('You already have a spot here.')
 
   // Capacity gate: a limited tier cannot exceed its spots. NULL capacity = unlimited.
+  // This is the FAST PATH, not the guard: two members racing for the last spot both pass this count.
+  // The guard is enforce_space_ticket_tier_capacity (20270345000200), a BEFORE trigger that locks the
+  // tier row and raises tier_full; the insert below maps that onto the same message.
   if (tier.capacity != null) {
     const going = await countGoingRsvps(tierId)
-    if (going >= tier.capacity) return fail('This ticket is full. Try another tier.')
+    if (going >= tier.capacity) return fail(TIER_FULL_MESSAGE)
   }
 
   let rsvpRowId: string | null = null
@@ -456,9 +480,15 @@ export async function rsvpToTier(spaceId: string, tierId: string): Promise<Actio
       .select(RSVP_COLS)
       .maybeSingle()
     if (error) {
+      // The capacity trigger lost the race for the last spot: the tier filled between the count
+      // above and this insert. Same words the pre-check shows, because it is the same outcome.
+      if (isTierFull(error)) return fail(TIER_FULL_MESSAGE)
       // The partial unique index rejects a second going row for the same member on this tier:
       // translate the race into the friendly message rather than a raw DB error.
-      return fail('You already have a spot here.')
+      if (isUniqueViolation(error)) return fail('You already have a spot here.')
+      // Anything else is a real write failure, and "you already have a spot" would be untrue.
+      console.error('[rsvpToTier] insert failed', { spaceId, tierId, error })
+      return fail('Could not reserve right now. Try again.')
     }
     rsvpRowId = data?.id ?? null
   } catch {
