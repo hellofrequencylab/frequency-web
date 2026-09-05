@@ -11961,6 +11961,7 @@ export type Database = {
       signup_leads: {
         Row: {
           attribution: Json
+          claim_token_hash: string | null
           converted_at: string | null
           converted_profile_id: string | null
           created_at: string
@@ -11977,6 +11978,7 @@ export type Database = {
         }
         Insert: {
           attribution?: Json
+          claim_token_hash?: string | null
           converted_at?: string | null
           converted_profile_id?: string | null
           created_at?: string
@@ -11993,6 +11995,7 @@ export type Database = {
         }
         Update: {
           attribution?: Json
+          claim_token_hash?: string | null
           converted_at?: string | null
           converted_profile_id?: string | null
           created_at?: string
@@ -15683,7 +15686,7 @@ export type Database = {
           p_source?: string
           p_step?: number
         }
-        Returns: string
+        Returns: Json
       }
       challenge_outcomes: {
         Args: never
@@ -16144,8 +16147,8 @@ export type Database = {
       }
       longtransactionsenabled: { Args: never; Returns: boolean }
       mark_signup_lead_converted: {
-        Args: { p_lead_id: string; p_profile_id: string }
-        Returns: undefined
+        Args: { p_claim_token?: string; p_lead_id: string; p_profile_id: string }
+        Returns: boolean
       }
       match_help_chunks: {
         Args: {
@@ -17318,6 +17321,7 @@ export type Database = {
       unlockrows: { Args: { "": string }; Returns: number }
       update_signup_lead: {
         Args: {
+          p_claim_token?: string
           p_display_name?: string
           p_first_name?: string
           p_handle?: string
@@ -17326,7 +17330,7 @@ export type Database = {
           p_payload?: Json
           p_step?: number
         }
-        Returns: undefined
+        Returns: boolean
       }
       updategeometrysrid: {
         Args: {

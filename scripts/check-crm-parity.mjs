@@ -19,7 +19,10 @@ import { readFileSync, readdirSync, existsSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, join, relative } from 'node:path'
 
-const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
+/** The tree every export measures by default. Every export also takes a `root` argument (scan2
+ *  L8-03, 2026-09-05) so the test can point the SAME detector at a fixture tree with a planted
+ *  violation and prove `importsAll` still matches today's import syntax. */
+export const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 
 // ── The three conversation reply/AI surfaces that must stay in lock-step. Adding a NEW CRM surface means
 // adding it here (and wiring it to the shared modules) — that is the contract. ──
@@ -60,10 +63,10 @@ const SINGLE_SOURCE = [
 const SEARCH_DIRS = ['app', 'lib', 'components']
 const CODE_EXT = ['.ts', '.tsx']
 
-const read = (p) => { try { return readFileSync(join(ROOT, p), 'utf8') } catch { return null } }
+const read = (root, p) => { try { return readFileSync(join(root, p), 'utf8') } catch { return null } }
 
 /** Every code file under the search dirs (skips build/vendor dirs). */
-function walkCodeFiles() {
+function walkCodeFiles(root) {
   const out = []
   const walk = (abs) => {
     let entries
@@ -75,7 +78,7 @@ function walkCodeFiles() {
       else if (CODE_EXT.some((x) => e.name.endsWith(x))) out.push(p)
     }
   }
-  for (const d of SEARCH_DIRS) walk(join(ROOT, d))
+  for (const d of SEARCH_DIRS) walk(join(root, d))
   return out
 }
 
@@ -104,8 +107,8 @@ function importsAll(src, module, symbols, anyOf = false) {
  *
  *  Returned as a MESSAGE rather than an exit so the CLI and scripts/check-crm-parity.test.ts
  *  enforce the identical floor. Null when the corpus is real. */
-export function surfaceFloorFailure() {
-  const missing = SURFACES.filter((s) => !existsSync(join(ROOT, s)))
+export function surfaceFloorFailure(root = ROOT) {
+  const missing = SURFACES.filter((s) => !existsSync(join(root, s)))
   if (SURFACES.length > 0 && missing.length === 0) return null
   return (
     `\n✗ check:crm-parity — refusing to pass over a corpus it could not read.\n` +
@@ -117,12 +120,12 @@ export function surfaceFloorFailure() {
 }
 
 /** Run every check. Returns { violations: string[] } — pure, so a test can assert on it. */
-export function checkCrmParity() {
+export function checkCrmParity(root = ROOT) {
   const violations = []
 
   // 1) Each surface routes through every shared module.
   for (const surface of SURFACES) {
-    const src = read(surface)
+    const src = read(root, surface)
     if (src == null) {
       violations.push(`Surface not found (did a path change? update SURFACES): ${surface}`)
       continue
@@ -139,9 +142,9 @@ export function checkCrmParity() {
   }
 
   // 2) Single-source logic isn't re-inlined anywhere else.
-  const files = walkCodeFiles()
+  const files = walkCodeFiles(root)
   for (const { sentinel, owner, what } of SINGLE_SOURCE) {
-    const hits = files.filter((abs) => (readFileSync(abs, 'utf8')).includes(sentinel)).map((abs) => relative(ROOT, abs).replace(/\\/g, '/'))
+    const hits = files.filter((abs) => (readFileSync(abs, 'utf8')).includes(sentinel)).map((abs) => relative(root, abs).replace(/\\/g, '/'))
     const ownerHit = hits.includes(owner)
     const strays = hits.filter((h) => h !== owner)
     if (!ownerHit) {

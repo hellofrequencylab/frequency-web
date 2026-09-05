@@ -39,6 +39,7 @@
     "check:link-truncate": "node scripts/check-link-truncate.mjs",
     "check:templates": "node scripts/check-templates.mjs",
     "check:phantom": "node scripts/check-phantom-classes.mjs",
+    "check:schema-contract": "node scripts/check-schema-contract.mjs",
     "check:bridge": "node scripts/check-bridge.mjs",
     "check:contrast": "node scripts/check-contrast.mjs",
     "check:adoption": "node scripts/check-adoption.mjs",

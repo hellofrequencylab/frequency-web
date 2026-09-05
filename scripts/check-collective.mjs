@@ -25,6 +25,17 @@ import { join } from 'node:path'
 // wired once they appear anywhere) are: ──
 const NEW_SPACE_TIERS = ['collective', 'independent']
 
+// ── NON-TRIVIALITY FLOORS (scan2 L8-02, 2026-09-05) ──
+// Phase 0 already fails on a missing north star, but every tripwire below is a WALK, and a walk over
+// a directory that is not there returns zero hits and reads as "✓ no stale $49" / "✓ only history".
+// Measured 2026-09-05: 223 markdown files under docs/, 4,356 code+md files under content/lib/
+// components/app. The floors sit well under those so ordinary churn never trips them and a walk
+// that lost its roots always does. Exit 2 ("guard saw nothing") is distinct from an off-plan
+// inconsistency (1). Raise them only when the real counts move, never to make a red run green.
+const MIN_DOCS_FILES = 100
+const MIN_CODE_FILES = 2000
+const WALKED = { docs: 0, code: 0 }
+
 let hardFail = 0
 const line = (s) => console.log(s)
 const ok = (s) => line(`  ✓ ${s}`)
@@ -37,6 +48,7 @@ const has = (p) => existsSync(p)
 
 function grepCount(dir, re, exts) {
   let n = 0
+  let files = 0
   const hits = []
   const walk = (d) => {
     let entries
@@ -48,12 +60,13 @@ function grepCount(dir, re, exts) {
       else if (exts.some((x) => e.name.endsWith(x))) {
         const txt = read(p)
         if (!txt) continue
+        files++
         txt.split('\n').forEach((l, i) => { if (re.test(l)) { n++; hits.push(`${p}:${i + 1}`) } })
       }
     }
   }
   walk(dir)
-  return { n, hits }
+  return { n, hits, files }
 }
 
 line('\n── Community Collective phase gate ──────────────────────────────────────────\n')
@@ -153,6 +166,7 @@ line('\nGuardrails · Legacy & off-plan tripwires')
 {
   // Hard fail: the retired "no tier names" lock must not be reasserted as live canon anywhere in code/docs prose.
   const noTierNames = grepCount('docs', /no tier names/i, ['.md'])
+  WALKED.docs = noTierNames.files
   // Allowed only where it is explicitly described as RETIRED/superseded (NAMING + the ADRs).
   const badNoTierNames = noTierNames.hits.filter((h) => {
     const [file, ln] = h.split(':'); const txt = read(file); if (!txt) return false
@@ -174,8 +188,10 @@ line('\nGuardrails · Legacy & off-plan tripwires')
   // not just lib/marketing (an earlier too-narrow scan let a live "$49" in the funnel graphic slip through).
   const priceRoots = ['content', 'lib', 'components', 'app']
   const seenHits = new Set()
-  const priceHits = priceRoots
-    .flatMap((root) => grepCount(root, /\$49\b/, ['.md', '.ts', '.tsx']).hits)
+  const priceScans = priceRoots.map((root) => grepCount(root, /\$49\b/, ['.md', '.ts', '.tsx']))
+  WALKED.code = priceScans.reduce((sum, s) => sum + s.files, 0)
+  const priceHits = priceScans
+    .flatMap((s) => s.hits)
     .filter((h) => {
       if (seenHits.has(h)) return false // dedupe overlapping roots
       seenHits.add(h)
@@ -214,9 +230,19 @@ line('\nMigrations · CHECK-constraint coverage')
   } else ok('no item_key CHECK gap detected')
 }
 
+// ── Corpus · did the tripwires walk a real tree? ──
+line('\nCorpus · tripwire walks')
+const corpusShort = WALKED.docs < MIN_DOCS_FILES || WALKED.code < MIN_CODE_FILES
+if (corpusShort) line(`  ✗ walked ${WALKED.docs} docs file(s) (floor ${MIN_DOCS_FILES}) and ${WALKED.code} code file(s) (floor ${MIN_CODE_FILES}): the tripwires above saw nothing they can vouch for`)
+else ok(`tripwires walked ${WALKED.docs} docs file(s) and ${WALKED.code} code file(s)`)
+
 line('\n─────────────────────────────────────────────────────────────────────────────')
 if (hardFail > 0) {
   console.error(`\n✖ phase gate: ${hardFail} inconsistency/off-plan issue(s). Fix before the phase is done.\n`)
   process.exit(1)
+}
+if (corpusShort) {
+  console.error('\n✖ phase gate saw nothing it can vouch for: the tripwire walks came back near-empty. A clean verdict over an empty tree is not a pass.\n')
+  process.exit(2)
 }
 console.log('\n✓ phase gate: no inconsistencies or off-plan drift. ⏳ = phase not started, ⚠ = tracked follow-up.\n')

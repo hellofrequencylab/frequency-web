@@ -11,6 +11,14 @@ import {
   MANAGED_ROUTES,
 } from './page-chrome'
 
+// 2026-09-05 (scan2 L4-06): the catalog registered '/referral' ("Referral contest") with no page
+// under app/. A managed surface that cannot be opened is a dead row in the operator's picker.
+describe('MANAGED_ROUTES carries no route without a page', () => {
+  it('no longer lists /referral', () => {
+    expect(MANAGED_ROUTES.some((r) => r.route === '/referral')).toBe(false)
+  })
+})
+
 describe('railFor — the single source of truth for page chrome', () => {
   it('keeps the global rail on browse / stream / index pages', () => {
     for (const p of [
