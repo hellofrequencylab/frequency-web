@@ -55,7 +55,7 @@ describe('dailyCheckIn stamps through merge_profile_meta with only its own keys'
     expect(args.p_patch).toEqual({ daily_checkin_date: '2026-09-05', daily_checkin_streak: 3 })
     // The day/zone must reach awardGems, or the cap falls back to the UTC day while the guard
     // above keys on the member's LOCAL day. That mismatch silently paid 0 Gems for one check-in
-    // in every adjacent local-day pair west of UTC (migration 20260905172708).
+    // in every adjacent local-day pair west of UTC (migration 20270345001200).
     expect(mocks.awardGems).toHaveBeenCalledWith('p1', 'daily_login', undefined, undefined, {
       day: '2026-09-05',
       timezone: 'America/Los_Angeles',
