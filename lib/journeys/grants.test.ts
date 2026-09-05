@@ -17,6 +17,8 @@ const store: Store = { reward_grants: [], gem_transactions: [] }
 
 // When true, the next gem_transactions insert returns an error (simulating a transient DB failure).
 let failGemTx = false
+// scan2 R3 (2026-09-05): when set, the reward_grants CLAIM insert returns this error instead of inserting.
+let claimError: { code: string; message: string } | null = null
 
 function from(table: string) {
   if (!store[table]) store[table] = []
@@ -30,6 +32,9 @@ function from(table: string) {
     if (op === 'insert') {
       if (table === 'gem_transactions' && failGemTx) {
         return { data: null, error: { message: 'transient ledger failure', code: 'XX000' } }
+      }
+      if (table === 'reward_grants' && claimError) {
+        return { data: null, error: claimError }
       }
       const rows = Array.isArray(insertPayload) ? insertPayload : [insertPayload!]
       for (const r of rows) store[table].push({ ...r })
@@ -76,6 +81,7 @@ function reset() {
   store.reward_grants = []
   store.gem_transactions = []
   failGemTx = false
+  claimError = null
 }
 
 beforeEach(reset)
@@ -109,6 +115,40 @@ describe('grantJourneyRewards — claimed-but-unpaid (E3)', () => {
     const retry = await grantJourneyRewards({ profileId: 'u1', events: [phaseEvent] })
     expect(retry).toHaveLength(1)
     expect(store.reward_grants).toHaveLength(1)
+    expect(store.gem_transactions).toHaveLength(1)
+  })
+})
+
+describe('grantJourneyRewards — claim error handling (scan2 R3, 2026-09-05)', () => {
+  it('a duplicate-key claim (23505) is "already granted": nothing paid, nothing logged (unchanged)', async () => {
+    const errors: string[] = []
+    const spy = vi.spyOn(console, 'error').mockImplementation((...a: unknown[]) => {
+      errors.push(a.map((x) => (typeof x === 'object' && x !== null ? JSON.stringify(x) : String(x))).join(' '))
+    })
+    claimError = { code: '23505', message: 'duplicate key value violates unique constraint' }
+    const granted = await grantJourneyRewards({ profileId: 'p1', events: [phaseEvent] })
+    expect(granted).toHaveLength(0)
+    expect(store.gem_transactions).toHaveLength(0)
+    expect(errors).toHaveLength(0)
+    spy.mockRestore()
+  })
+
+  it('a NON-duplicate claim error pays nothing, does NOT touch the ledger, and is logged at error level', async () => {
+    const errors: string[] = []
+    const spy = vi.spyOn(console, 'error').mockImplementation((...a: unknown[]) => {
+      errors.push(a.map((x) => (typeof x === 'object' && x !== null ? JSON.stringify(x) : String(x))).join(' '))
+    })
+    claimError = { code: '57014', message: 'statement timeout' }
+    const granted = await grantJourneyRewards({ profileId: 'p1', events: [phaseEvent] })
+    expect(granted).toHaveLength(0)
+    expect(store.gem_transactions).toHaveLength(0)
+    expect(store.reward_grants).toHaveLength(0)
+    expect(errors.some((e) => e.includes('reward_grants claim failed') && e.includes('statement timeout'))).toBe(true)
+    spy.mockRestore()
+    // Retryable: once the blip clears the same event pays.
+    claimError = null
+    const again = await grantJourneyRewards({ profileId: 'p1', events: [phaseEvent] })
+    expect(again).toHaveLength(1)
     expect(store.gem_transactions).toHaveLength(1)
   })
 })

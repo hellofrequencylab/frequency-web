@@ -12,6 +12,13 @@
 //    membership_tier (Space subscriptions route to their own reconcilers first).
 //  - invoice.paid — record membership dues on the Foundation ledger.
 //  - charge.refunded — flip a refunded ticket / commerce order and free capacity.
+//    (2026-09-05, L2-07: also a refunded TIP and a refunded SUPPORTER CONTRIBUTION — both had
+//    no refund path at all, so a dashboard refund left the row `succeeded` and the ledger
+//    revenue standing.)
+//  - checkout.session.async_payment_succeeded (2026-09-05, L2-06) — a DELAYED-notification
+//    payment (ACH debit, Cash App Pay, bank redirects) arrives at `completed` with
+//    payment_status 'unpaid' (every recorder no-ops) and is only PAID when this event fires.
+//    It routes through the same recorders as `completed`, each idempotent on the session id.
 // Unhandled events are acked 200 so Stripe stops retrying.
 //
 // Configure ONE endpoint in the Stripe dashboard pointing at this URL
@@ -37,10 +44,13 @@ import { grantBetaFounding } from '@/lib/billing/beta-founding'
 import { foundingPaymentSignal } from '@/lib/billing/founding-payment'
 import { lapseFoundingStatus } from '@/lib/founding/status'
 import { persistAccount } from '@/lib/billing/connect'
-import { recordTipFromSession } from '@/lib/billing/tips'
+import { recordTipFromSession, recordTipRefundFromCharge } from '@/lib/billing/tips'
 import { recordTicketFromSession, recordTicketRefundFromCharge } from '@/lib/billing/tickets'
 import { recordMembershipDuesFromInvoice } from '@/lib/billing/checkout'
-import { recordSupporterContributionFromSession } from '@/lib/billing/supporter'
+import {
+  recordSupporterContributionFromSession,
+  recordSupporterContributionRefundFromCharge,
+} from '@/lib/billing/supporter'
 import {
   recordCommerceOrderFromSession,
   recordCommerceRefundFromCharge,
@@ -73,11 +83,28 @@ export async function POST(req: Request) {
   // event was already processed (a Stripe retry or in-tolerance replay) — ack without
   // re-running. Any other claim error is transient → fall through and process anyway
   // (re-processing is safe; every handler below is idempotent).
+  //
+  // 🔴 CORRECTION 2026-09-05 (L2-10): the paragraph above is retired. "Fall through and process
+  // anyway" processed the event WITHOUT a claim, so the Stripe retry of that same event (a
+  // retry is exactly what a transient DB error produces, because the handler's own writes
+  // tend to fail on the same outage) was processed a second time — and while every recorder is
+  // idempotent on its own row, a second membership-tier write, a second Connect sync and a
+  // second best-effort ledger append are not free. The dedupe degraded silently: nothing
+  // logged, nothing counted. Now any claim error that is NOT the duplicate signal is logged at
+  // error level and returns 500 so Stripe redelivers once the claim can be written. Nothing to
+  // release: no row was inserted.
   const claim = await admin
     .from('stripe_webhook_events')
     .insert({ event_id: event.id, type: event.type })
-  if (claim.error?.code === '23505') {
-    return NextResponse.json({ received: true, duplicate: true })
+  if (claim.error) {
+    if (claim.error.code === '23505') {
+      return NextResponse.json({ received: true, duplicate: true })
+    }
+    console.error(
+      `[stripe-webhook] idempotency claim failed (type=${event.type}, id=${event.id}, code=${claim.error.code ?? 'n/a'}):`,
+      claim.error,
+    )
+    return NextResponse.json({ received: false, error: 'claim failed' }, { status: 500 })
   }
 
   // membership_tier is the SOLE paid source of truth (ADR-207/225). A paid transition
@@ -123,6 +150,16 @@ export async function POST(req: Request) {
     // A stale event returns { applied:false } WITHOUT an error (correct state preserved) and
     // is acked normally; only a real DB error throws.
     if (error) throw new Error(`setTier(${profileId}) failed: ${error.message}`)
+  }
+
+  // The payout-channel recorders, in the order they have always run. ONE list, consumed by both
+  // `checkout.session.completed` and `checkout.session.async_payment_succeeded` (L2-06), so a
+  // recorder added to one cannot be forgotten by the other.
+  const recordPaidCheckout = async (s: Stripe.Checkout.Session) => {
+    await recordTipFromSession(s)
+    await recordTicketFromSession(s)
+    await recordSupporterContributionFromSession(s)
+    await recordCommerceOrderFromSession(s)
   }
 
   // A transient handler failure must NOT leave the claim row behind (the next Stripe retry
@@ -178,10 +215,25 @@ export async function POST(req: Request) {
         }
         // Payout-channel recorders (formerly /api/webhooks/stripe). Each no-ops on a
         // session that isn't its kind, so they are safe to run for every checkout.
-        await recordTipFromSession(s)
-        await recordTicketFromSession(s)
-        await recordSupporterContributionFromSession(s)
-        await recordCommerceOrderFromSession(s)
+        // (2026-09-05, L2-06: each ALSO no-ops on payment_status !== 'paid', so a delayed-method
+        // session that completes 'unpaid' records nothing here and records ONCE when
+        // async_payment_succeeded below delivers the same session as 'paid'.)
+        await recordPaidCheckout(s)
+        break
+      }
+
+      case 'checkout.session.async_payment_succeeded': {
+        // L2-06 (2026-09-05). The failure half of a delayed-notification payment was handled
+        // (async_payment_failed → abandon the order); the SUCCESS half was not, so a buyer paying
+        // by ACH debit / Cash App Pay / a bank redirect was charged and their order / ticket /
+        // tip / contribution stayed `pending` forever. Stripe delivers the SAME Checkout Session
+        // here, now with payment_status 'paid', so the same recorders run; each flips only its
+        // own `pending` row keyed on the session id, so `completed` (unpaid) + this event record
+        // exactly once and a redelivery is a no-op. The member-tier branch is deliberately NOT
+        // repeated: a subscription-mode session's entitlement is reconciled by the
+        // customer.subscription.* events as the invoice settles.
+        const s = event.data.object as Stripe.Checkout.Session
+        await recordPaidCheckout(s)
         break
       }
 
@@ -287,8 +339,15 @@ export async function POST(req: Request) {
         // A ticket / commerce charge was refunded (host action). Flip the record to
         // `refunded` and free the tier's capacity; no-ops if it isn't ours or was already
         // recorded (idempotent).
-        await recordTicketRefundFromCharge(event.data.object as Stripe.Charge)
-        await recordCommerceRefundFromCharge(event.data.object as Stripe.Charge)
+        // 2026-09-05 (L2-07): a TIP and a SUPPORTER CONTRIBUTION refunded from the Stripe
+        // dashboard now reconcile too. Each recorder matches on the charge's payment_intent
+        // against its own `succeeded` row, so a charge that isn't its kind is a harmless no-op
+        // and running all four for every refund is safe (the same principle as `completed`).
+        const charge = event.data.object as Stripe.Charge
+        await recordTicketRefundFromCharge(charge)
+        await recordCommerceRefundFromCharge(charge)
+        await recordTipRefundFromCharge(charge)
+        await recordSupporterContributionRefundFromCharge(charge)
         break
       }
 
@@ -302,6 +361,8 @@ export async function POST(req: Request) {
     // duplicate), then signal failure so Stripe redelivers. The DELETE is bounded to this
     // event id; if the claim was never written (a transient claim error fell through above)
     // the delete is simply a no-op.
+    // (2026-09-05, L2-10: a claim error no longer falls through — it returns 500 before this
+    // try — so on this path the claim row always exists and the delete always has work to do.)
     console.error(`[stripe-webhook] handler failed (type=${event.type}, id=${event.id}):`, err)
     await admin.from('stripe_webhook_events').delete().eq('event_id', event.id)
     return NextResponse.json({ received: false, error: 'processing failed' }, { status: 500 })

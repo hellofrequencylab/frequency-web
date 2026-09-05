@@ -12,6 +12,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 //   • an update with no cookie is a silent no-op and never reaches the database;
 //   • a malformed address never writes at all;
 //   • nothing in the return value distinguishes a new address from a known one.
+// 2026-09-05 (scan2 L7-6): the cookie now carries `<id>.<claim token>` (migration 20270345000610),
+// every later beat sends the token beside the id, and a cookie in the old bare-id shape never
+// reaches the database. The live SQL is pinned in supabase/tests/signup_lead_claim_token.test.sql.
 
 const jar = new Map<string, string>()
 const setCookie = vi.fn((name: string, value: string) => {
@@ -36,8 +39,9 @@ vi.mock('@/lib/attribution/server', () => ({
 
 // Params are declared (rather than an arg-less stub) so `rpc.mock.calls[n][1]` is typed as the
 // args object the assertions below read.
+const CAPTURED = { id: 'lead-1', claim_token: 'tok-1' }
 const rpc = vi.fn(async (_fn: string, _args: Record<string, unknown>) => ({
-  data: 'lead-1' as unknown,
+  data: CAPTURED as unknown,
   error: null as { message: string } | null,
 }))
 vi.mock('@/lib/supabase/server', () => ({ createClient: async () => ({ rpc }) }))
@@ -48,7 +52,7 @@ import { captureLead, updateLead, markLeadConverted } from './lead-actions'
 beforeEach(() => {
   jar.clear()
   vi.clearAllMocks()
-  rpc.mockResolvedValue({ data: 'lead-1', error: null })
+  rpc.mockResolvedValue({ data: CAPTURED, error: null })
   vi.mocked(rateLimitOk).mockResolvedValue(true)
   // The fail-open branch is exercised separately; by default pretend Upstash is configured so the
   // limiter is actually consulted.
@@ -57,7 +61,7 @@ beforeEach(() => {
 })
 
 describe('captureLead', () => {
-  it('calls the capture RPC and parks the returned id in an httpOnly fq_lead cookie', async () => {
+  it('calls the capture RPC and parks the returned id AND claim token in an httpOnly fq_lead cookie', async () => {
     const res = await captureLead({ email: ' Jo@Example.COM ', step: 2, source: 'beta_induction' })
     expect(res).toEqual({ ok: true })
 
@@ -70,10 +74,18 @@ describe('captureLead', () => {
 
     expect(setCookie).toHaveBeenCalledWith(
       'fq_lead',
-      'lead-1',
+      'lead-1.tok-1',
       expect.objectContaining({ httpOnly: true, sameSite: 'lax', path: '/', maxAge: 60 * 60 * 24 * 30 }),
     )
-    expect(jar.get('fq_lead')).toBe('lead-1')
+    expect(jar.get('fq_lead')).toBe('lead-1.tok-1')
+  })
+
+  it('🔴 sets no cookie when the RPC returns the pre-token shape (a bare id) or half a claim', async () => {
+    for (const data of ['lead-1', { id: 'lead-1' }, { claim_token: 'tok-1' }, { id: '', claim_token: 'tok-1' }, null]) {
+      rpc.mockResolvedValue({ data, error: null })
+      expect(await captureLead({ email: 'jo@example.com', step: 2 })).toEqual({ ok: false })
+    }
+    expect(setCookie).not.toHaveBeenCalled()
   })
 
   it('splits a display name into first / last for the follow-up greeting', async () => {
@@ -130,26 +142,46 @@ describe('updateLead', () => {
     expect(rpc).not.toHaveBeenCalled()
   })
 
-  it('updates the row the cookie names, without re-sending the email', async () => {
-    jar.set('fq_lead', 'lead-9')
+  it('updates the row the cookie names, sending the claim token beside the id and never the email', async () => {
+    jar.set('fq_lead', 'lead-9.tok-9')
+    rpc.mockResolvedValue({ data: true, error: null })
     expect(await updateLead({ step: 4, displayName: 'Ada Lovelace', handle: 'ada' })).toEqual({ ok: true })
     expect(rpc).toHaveBeenCalledWith(
       'update_signup_lead',
-      expect.objectContaining({ p_lead_id: 'lead-9', p_step: 4, p_handle: 'ada' }),
+      expect.objectContaining({ p_lead_id: 'lead-9', p_claim_token: 'tok-9', p_step: 4, p_handle: 'ada' }),
     )
     expect(rpc.mock.calls[0]![1], 'an update must not carry an address').not.toHaveProperty('p_email')
+  })
+
+  it('🔴 a cookie in the old bare-id shape never reaches the database', async () => {
+    jar.set('fq_lead', 'lead-9')
+    expect(await updateLead({ step: 4, displayName: 'Ada' })).toEqual({ ok: false })
+    expect(rpc).not.toHaveBeenCalled()
+  })
+
+  it('reports not-ok when the database says the pair opened no row', async () => {
+    jar.set('fq_lead', 'lead-9.tok-wrong')
+    rpc.mockResolvedValue({ data: false, error: null })
+    expect(await updateLead({ step: 4 })).toEqual({ ok: false })
   })
 })
 
 describe('markLeadConverted', () => {
-  it('stamps the row and consumes the cookie, so a shared browser cannot reuse it', async () => {
-    jar.set('fq_lead', 'lead-9')
-    rpc.mockResolvedValue({ data: null, error: null })
+  it('stamps the row with the claim token and consumes the cookie, so a shared browser cannot reuse it', async () => {
+    jar.set('fq_lead', 'lead-9.tok-9')
+    rpc.mockResolvedValue({ data: true, error: null })
     expect(await markLeadConverted('profile-1')).toEqual({ ok: true })
     expect(rpc).toHaveBeenCalledWith(
       'mark_signup_lead_converted',
-      { p_lead_id: 'lead-9', p_profile_id: 'profile-1' },
+      { p_lead_id: 'lead-9', p_profile_id: 'profile-1', p_claim_token: 'tok-9' },
     )
+    expect(setCookie).toHaveBeenCalledWith('fq_lead', '', expect.objectContaining({ maxAge: 0 }))
+  })
+
+  it('reports not-ok, and still clears the cookie, when the token opened no row', async () => {
+    jar.set('fq_lead', 'lead-9.tok-stale')
+    rpc.mockResolvedValue({ data: false, error: null })
+    expect(await markLeadConverted('profile-1')).toEqual({ ok: false })
     expect(setCookie).toHaveBeenCalledWith('fq_lead', '', expect.objectContaining({ maxAge: 0 }))
   })
 

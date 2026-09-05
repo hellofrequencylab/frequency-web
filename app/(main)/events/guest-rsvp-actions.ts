@@ -31,6 +31,15 @@ import { sendGuestRsvpReceipt } from '@/lib/events/guest-rsvp-email'
 //
 // The capture function is built to match: it returns a FRESH random uuid on every path except a
 // malformed address, so even a direct PostgREST caller reading the raw return value learns nothing.
+//
+// ── THE ONE EXCEPTION: A WRITE THAT DID NOT HAPPEN (meta-scan L5-14) ─────────────────────────────
+// "Identical reply" covers every outcome the FUNCTION decides. It never covered the function not
+// running at all: PostgREST down, a network fault, a malformed event id. Those used to be swallowed
+// into the same success, so a guest read "Check your email" while no seat existed, no email was
+// sent, and the host never saw them. That is not anti-enumeration, it is a lie with a good alibi.
+// The `error` half of the RPC reply (never the `data` half, which is the receipt) is now read, and
+// an error renders the form's existing error line and skips the receipt email. An infrastructure
+// failure says nothing about any person, so the oracle stays closed.
 
 export type GuestRsvpResult = { ok: true } | { ok: false; error: string }
 
@@ -51,6 +60,9 @@ const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/
 
 /** The reply every good-faith submission gets, whatever actually happened underneath. */
 const GENERIC_OK: GuestRsvpResult = { ok: true }
+
+/** The reply when the write itself did not happen. Plain, and about us rather than the reader. */
+const WRITE_FAILED: GuestRsvpResult = { ok: false, error: 'We could not save your spot. Please try again.' }
 
 export async function submitGuestRsvp(input: {
   eventId: string
@@ -80,15 +92,27 @@ export async function submitGuestRsvp(input: {
 
   try {
     const supabase = await createClient()
-    // The return value is deliberately DISCARDED. It is an opaque receipt by construction, and
+    // The RECEIPT (`data`) is deliberately DISCARDED. It is an opaque receipt by construction, and
     // branching on it — even to decide a message — is how an anti-enumeration property gets lost
-    // one helpful improvement at a time.
-    await (supabase as unknown as UntypedRpc).rpc('capture_guest_rsvp', {
+    // one helpful improvement at a time. `error` is a different thing: it means the function did
+    // not run, so there is no seat to be quiet about.
+    const { error } = await (supabase as unknown as UntypedRpc).rpc('capture_guest_rsvp', {
       p_event_id: input.eventId,
       p_email: email,
       p_name: name,
     })
+    if (error) {
+      console.error('[guest-rsvp] capture_guest_rsvp failed', { eventId: input.eventId, error: error.message })
+      return WRITE_FAILED
+    }
+  } catch (e) {
+    // A thrown RPC (network, PostgREST unreachable) is the same non-write as an `error` reply: the
+    // seat does not exist, so the reader must not be told to check their email for it.
+    console.error('[guest-rsvp] capture_guest_rsvp threw', { eventId: input.eventId, error: e instanceof Error ? e.message : String(e) })
+    return WRITE_FAILED
+  }
 
+  try {
     // The receipt. Awaited rather than floated because a server action's process can be torn down
     // the moment it returns, and a dropped promise here means a guest who submitted a form and
     // heard nothing at all — this email is the ONLY record they have. It cannot change the reply:
@@ -108,6 +132,9 @@ export async function submitGuestRsvp(input: {
     // Swallowed on purpose. A thrown RPC (network, PostgREST, a bad event id shaped like a uuid)
     // must not produce a different reply from a successful one, or the error itself becomes the
     // oracle the function was written to avoid.
+    // (This block now guards only the receipt email: the seat is already written by the time it
+    // runs, so "we could not save your spot" would be false here. The capture RPC's own failure is
+    // handled above, where it IS a non-write.)
   }
 
   return GENERIC_OK

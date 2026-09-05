@@ -10,7 +10,7 @@ import { canCashIn, deriveTier } from '@/lib/core/entitlement'
 import type { EntitlementTier } from '@/lib/core/entitlement'
 import { featureAllowed } from '@/lib/pricing/gates'
 import { featureGatesLive } from '@/lib/pricing/settings'
-import { classifyRedemption, UNDELIVERABLE_MESSAGE } from '@/lib/store/fulfillment'
+import { classifyRedemption, fulfillStreakFreeze, UNDELIVERABLE_MESSAGE } from '@/lib/store/fulfillment'
 import { isUndeliverable } from '@/lib/store/cosmetics'
 import { computeSpendableBalance, fetchGiftsSent } from '@/lib/store/balance'
 import { RANK_ORDER, rankIndex } from '@/lib/season-ranks'
@@ -189,7 +189,9 @@ export async function redeemItem(itemId: string): Promise<ActionResult<{ pending
   // (migration 20260726000000) and not yet in the generated Database types, so we widen to
   // the un-parametrised SupabaseClient. Drop after `supabase gen types` is re-run.
   const rpc: SupabaseClient = createAdminClient()
-  const { error } = await rpc.rpc('redeem_store_item_atomic', {
+  // L6-12 (2026-09-05): `data` is the new store_redemptions row id the RPC returns; the streak-freeze
+  // arm below needs it to reverse the debit if the token cannot be banked.
+  const { data: redemptionId, error } = await rpc.rpc('redeem_store_item_atomic', {
     _profile: profileId,
     _item: itemId,
     _cost: item.gem_cost,
@@ -211,9 +213,33 @@ export async function redeemItem(itemId: string): Promise<ActionResult<{ pending
   // Buy-a-freeze sink (ADR-305): the Gems are now charged (the store_redemptions row
   // above is the debit). Bank the freeze token. The cap was pre-checked before charging;
   // grantStreakFreeze re-checks the cap and is a no-op if it raced to the cap meanwhile.
+  // L6-12 (2026-09-05): the sentence above ("is a no-op if it raced to the cap") described the bug, not a
+  // safeguard: the no-op meant the member paid and got nothing while this returned ok. The grant's result
+  // is now checked (fulfillStreakFreeze); on any non-grant the debit row is deleted (the same single unit
+  // the RPC wrote, so the Gems come back in one statement) and the action FAILS with copy that says where
+  // the Gems are. The SKU is untracked stock (no `stock`), so deleting the row is the whole refund.
   if (item.slug === 'streak-freeze') {
     const { grantStreakFreeze } = await import('@/lib/practice-streak')
-    await grantStreakFreeze(profileId).catch(() => {})
+    const outcome = await fulfillStreakFreeze({
+      grant: () => grantStreakFreeze(profileId),
+      refund: async () => {
+        if (typeof redemptionId !== 'string' || !redemptionId) {
+          return { error: { message: 'redeem_store_item_atomic returned no redemption id' } }
+        }
+        const { error: refundErr } = await admin.from('store_redemptions').delete().eq('id', redemptionId)
+        return { error: refundErr }
+      },
+    })
+    if (!outcome.ok) {
+      console.error('[redeemItem] streak freeze not delivered', {
+        profileId,
+        redemptionId,
+        atCap: outcome.atCap,
+        refunded: outcome.refunded,
+      })
+      if (outcome.refunded) revalidatePath('/', 'layout')
+      return fail(outcome.message)
+    }
     // Spending changes the spendable balance shown in the global shell header on EVERY
     // route, so revalidate the root layout — not just /crew — or the stat boxes stay stale.
     revalidatePath('/', 'layout')

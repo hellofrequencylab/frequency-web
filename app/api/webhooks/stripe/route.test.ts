@@ -17,6 +17,10 @@ const H = vi.hoisted(() => ({
   rpcCalls: [] as Array<{ name: string; args: Record<string, unknown> }>,
   deleteCalls: [] as string[],
   calls: [] as string[], // recorder / connect handlers invoked, in order
+  // Every Checkout Session a payout-channel recorder was handed, with the payment_status it
+  // carried (L2-06): the real recorders no-op on anything but 'paid', so "records once" at the
+  // route level means "exactly one PAID delivery per recorder".
+  sessions: [] as Array<{ recorder: string; id: string; paymentStatus: string | undefined }>,
 }))
 
 vi.mock('@/lib/billing/stripe', () => ({
@@ -31,22 +35,29 @@ vi.mock('@/lib/billing/space-subscriptions', () => ({
 vi.mock('@/lib/billing/connect', () => ({
   persistAccount: async () => { H.calls.push('account') },
 }))
+const seen = (recorder: string, s: Stripe.Checkout.Session) => {
+  H.calls.push(recorder)
+  H.sessions.push({ recorder, id: s.id, paymentStatus: s.payment_status })
+}
 vi.mock('@/lib/billing/tips', () => ({
-  recordTipFromSession: async () => { H.calls.push('tip') },
+  recordTipFromSession: async (s: Stripe.Checkout.Session) => { seen('tip', s) },
+  recordTipRefundFromCharge: async () => { H.calls.push('tipRefund') },
 }))
 vi.mock('@/lib/billing/tickets', () => ({
-  recordTicketFromSession: async () => { H.calls.push('ticket') },
+  recordTicketFromSession: async (s: Stripe.Checkout.Session) => { seen('ticket', s) },
   recordTicketRefundFromCharge: async () => { H.calls.push('ticketRefund') },
 }))
 vi.mock('@/lib/billing/checkout', () => ({
   recordMembershipDuesFromInvoice: async () => { H.calls.push('dues') },
 }))
 vi.mock('@/lib/billing/supporter', () => ({
-  recordSupporterContributionFromSession: async () => { H.calls.push('supporter') },
+  recordSupporterContributionFromSession: async (s: Stripe.Checkout.Session) => { seen('supporter', s) },
+  recordSupporterContributionRefundFromCharge: async () => { H.calls.push('supporterRefund') },
 }))
 vi.mock('@/lib/commerce/checkout', () => ({
-  recordCommerceOrderFromSession: async () => { H.calls.push('order') },
+  recordCommerceOrderFromSession: async (s: Stripe.Checkout.Session) => { seen('order', s) },
   recordCommerceRefundFromCharge: async () => { H.calls.push('orderRefund') },
+  abandonCommerceOrderFromSession: async () => { H.calls.push('abandon') },
 }))
 vi.mock('@/lib/supabase/admin', () => ({
   createAdminClient: () => ({
@@ -116,6 +127,7 @@ beforeEach(() => {
   H.rpcCalls = []
   H.deleteCalls = []
   H.calls = []
+  H.sessions = []
 })
 
 describe('stripe webhook — member ordering guard wiring', () => {
@@ -248,10 +260,12 @@ describe('stripe webhook — consolidated payout-channel dispatch', () => {
     expect(H.calls).toEqual(['dues'])
   })
 
-  it('routes charge.refunded to both ticket and commerce refund recorders', async () => {
+  it('routes charge.refunded to the ticket, commerce, tip AND supporter refund recorders', async () => {
+    // L2-07 (2026-09-05): this assertion read ['ticketRefund', 'orderRefund'] — a tip or a
+    // Supporter contribution refunded from the Stripe dashboard reached no recorder at all.
     H.event = plainEvent('charge.refunded')
     await post()
-    expect(H.calls).toEqual(['ticketRefund', 'orderRefund'])
+    expect(H.calls).toEqual(['ticketRefund', 'orderRefund', 'tipRefund', 'supporterRefund'])
   })
 
   it('acks an unhandled event type with 200', async () => {
@@ -259,6 +273,101 @@ describe('stripe webhook — consolidated payout-channel dispatch', () => {
     const res = await post()
     expect(res.status).toBe(200)
     expect(H.calls).toHaveLength(0)
+  })
+})
+
+// DELAYED-NOTIFICATION PAYMENTS (L2-06, 2026-09-05). ACH debit / Cash App Pay / bank redirects
+// complete the Checkout Session 'unpaid' and only settle later, on async_payment_succeeded. The
+// route used to handle the failure half (async_payment_failed) and not the success half, so the
+// buyer was charged and the order / ticket / tip / contribution stayed `pending` forever.
+describe('stripe webhook — checkout.session.async_payment_succeeded', () => {
+  const paidDeliveries = (recorder: string) =>
+    H.sessions.filter((x) => x.recorder === recorder && x.paymentStatus === 'paid')
+
+  it('routes a paid async session through every payout-channel recorder, exactly once each', async () => {
+    H.event = plainEvent('checkout.session.async_payment_succeeded', {
+      id: 'cs_async_1',
+      mode: 'payment',
+      payment_status: 'paid',
+      metadata: { kind: 'commerce_order', buyer_profile_id: 'p1' },
+    })
+    const res = await post()
+    expect(res.status).toBe(200)
+    expect(H.calls).toEqual(['tip', 'ticket', 'supporter', 'order']) // the SAME list `completed` runs
+    for (const r of ['tip', 'ticket', 'supporter', 'order']) {
+      expect(paidDeliveries(r)).toEqual([{ recorder: r, id: 'cs_async_1', paymentStatus: 'paid' }])
+    }
+    expect(H.rpcCalls).toHaveLength(0) // never a member-tier write from this event
+    expect(H.calls).not.toContain('abandon') // and never the failure branch
+  })
+
+  it('completed (unpaid) followed by async_payment_succeeded (paid) is ONE paid delivery per recorder', async () => {
+    // The recorders' own `payment_status !== 'paid'` guards (pinned in lib/billing/tips.test.ts
+    // and lib/billing/supporter.test.ts) make the unpaid delivery a no-op; what THIS route owns is
+    // handing the same session to the same recorders on both events, so the paid one is counted
+    // once and the pending row is flipped once, keyed on the session id.
+    H.event = plainEvent('checkout.session.completed', {
+      id: 'cs_async_2',
+      mode: 'payment',
+      payment_status: 'unpaid',
+      metadata: { kind: 'tip', from_profile_id: 'p1', to_profile_id: 'p2' },
+    })
+    expect((await post()).status).toBe(200)
+    H.event = plainEvent('checkout.session.async_payment_succeeded', {
+      id: 'cs_async_2',
+      mode: 'payment',
+      payment_status: 'paid',
+      metadata: { kind: 'tip', from_profile_id: 'p1', to_profile_id: 'p2' },
+    })
+    expect((await post()).status).toBe(200)
+    for (const r of ['tip', 'ticket', 'supporter', 'order']) {
+      expect(H.sessions.filter((x) => x.recorder === r)).toHaveLength(2) // handed both events
+      expect(paidDeliveries(r)).toHaveLength(1) // recorded once
+    }
+    expect(H.rpcCalls).toHaveLength(0)
+  })
+
+  it('async_payment_failed still routes ONLY to the abandon path (the success half does not leak in)', async () => {
+    H.event = plainEvent('checkout.session.async_payment_failed', { id: 'cs_async_3', payment_status: 'unpaid' })
+    expect((await post()).status).toBe(200)
+    expect(H.calls).toEqual(['abandon'])
+    expect(H.sessions).toHaveLength(0)
+  })
+})
+
+// IDEMPOTENCY CLAIM (L2-10, 2026-09-05). Only sqlstate 23505 is the "already processed" signal.
+// Any OTHER claim error used to fall through and process the event unclaimed, so the Stripe
+// retry that follows a transient outage processed the same event twice, silently.
+describe('stripe webhook — idempotency claim failures', () => {
+  it('returns 500 and runs NO handler on a non-duplicate claim error, so Stripe retries', async () => {
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    try {
+      H.claimError = { code: '57014' } // statement timeout — not a duplicate
+      H.event = subEvent('customer.subscription.updated', { status: 'active', created: 5000, metadata: { tier: 'crew' } })
+      const res = await post()
+      expect(res.status).toBe(500)
+      expect((await res.json()).duplicate).toBeUndefined() // not mistaken for a replay
+      expect(H.rpcCalls).toHaveLength(0) // handler never ran unclaimed
+      expect(H.calls).toHaveLength(0)
+      expect(H.deleteCalls).toHaveLength(0) // nothing was claimed, nothing to release
+      expect(errorSpy).toHaveBeenCalledTimes(1)
+      expect(String(errorSpy.mock.calls[0][0])).toContain('claim failed')
+    } finally {
+      errorSpy.mockRestore()
+    }
+  })
+
+  it('a claim error WITHOUT a code (grant revoked, connection reset) is also a 500, never a fall-through', async () => {
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    try {
+      H.claimError = { message: 'permission denied for table stripe_webhook_events' } as { code?: string }
+      H.event = plainEvent('checkout.session.completed', { mode: 'payment', metadata: { kind: 'tip' } })
+      const res = await post()
+      expect(res.status).toBe(500)
+      expect(H.calls).toHaveLength(0)
+    } finally {
+      errorSpy.mockRestore()
+    }
   })
 })
 

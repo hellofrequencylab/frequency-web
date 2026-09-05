@@ -111,6 +111,74 @@ export async function queueOutboundMessage(input: {
   return !!appended && 'id' in appended
 }
 
+/** scan2 L6-05 (2026-09-05): how long a flush may hold a burst before the next run treats the claim as
+ *  abandoned (the claimant crashed between claim and mark-sent) and takes it over. Well above the
+ *  cron's own runtime; a crash is the only way a claim reaches this age. */
+export const BATCH_CLAIM_STALE_MINUTES = 10
+
+/** Metadata keys the claim lives in. The claim is stamped into `comms_messages.metadata` rather than a
+ *  `delivery_status = 'sending'` because the column's CHECK constraint (20261210000000_conversations_spine)
+ *  enumerates queued/sent/delivered/opened/clicked/bounced/failed/received and nothing else; a status claim
+ *  needs a migration, a metadata claim does not. The conditional UPDATE is still per-row atomic. */
+const CLAIMED_AT_KEY = 'batch_claimed_at'
+const CLAIM_TOKEN_KEY = 'batch_claim_token'
+
+/** Claim one queued row for this run: a conditional UPDATE that only lands if the row is still `queued`
+ *  and either unclaimed or held by a claim older than the stale window. Returns true iff THIS run now holds
+ *  the row. `null`-data / no rows = another run holds it (or it was sent meanwhile). Throws on IO error. */
+async function claimQueuedRow(
+  db: { from: (t: string) => any }, // eslint-disable-line @typescript-eslint/no-explicit-any
+  row: QueuedRow,
+  token: string,
+  nowIso: string,
+  staleBeforeIso: string,
+): Promise<boolean> {
+  const metadata = { ...(row.metadata ?? {}), [CLAIMED_AT_KEY]: nowIso, [CLAIM_TOKEN_KEY]: token }
+  const res = await db
+    .from('comms_messages')
+    .update({ metadata })
+    .eq('id', row.id)
+    .eq('delivery_status', 'queued')
+    .or(`metadata->>${CLAIMED_AT_KEY}.is.null,metadata->>${CLAIMED_AT_KEY}.lt.${staleBeforeIso}`)
+    .select('id')
+  if (res?.error) throw res.error
+  return Array.isArray(res?.data) && res.data.length > 0
+}
+
+/** Give back rows THIS run claimed but will not send (a partial claim, or the enqueue failed), so the next
+ *  pass retries at once instead of waiting out the stale window. Conditional on the token so a claim taken
+ *  over by a later run is never clobbered. Best-effort. */
+async function releaseClaimedRows(
+  db: { from: (t: string) => any }, // eslint-disable-line @typescript-eslint/no-explicit-any
+  rows: QueuedRow[],
+  token: string,
+): Promise<void> {
+  for (const row of rows) {
+    try {
+      const metadata = { ...(row.metadata ?? {}) }
+      delete metadata[CLAIMED_AT_KEY]
+      delete metadata[CLAIM_TOKEN_KEY]
+      await db
+        .from('comms_messages')
+        .update({ metadata })
+        .eq('id', row.id)
+        .eq(`metadata->>${CLAIM_TOKEN_KEY}`, token)
+    } catch {
+      /* best-effort: an unreleased claim is reclaimed after BATCH_CLAIM_STALE_MINUTES */
+    }
+  }
+}
+
+/** When a queued row already carries a claim (the previous claimant died mid-flush), say so in the log
+ *  before taking it over; the claim's age is the evidence. PURE. */
+function priorClaimOf(row: QueuedRow): { at: string; token: string | null } | null {
+  const m = row.metadata && typeof row.metadata === 'object' ? row.metadata : null
+  const at = m ? m[CLAIMED_AT_KEY] : null
+  if (typeof at !== 'string' || !at) return null
+  const token = m ? m[CLAIM_TOKEN_KEY] : null
+  return { at, token: typeof token === 'string' ? token : null }
+}
+
 interface QueuedRow {
   id: string
   conversation_id: string
@@ -123,7 +191,15 @@ interface QueuedRow {
 /** Flush settled outbound bursts: for each conversation with queued outbound messages whose NEWEST queued
  *  message is older than the window (the burst has gone quiet), send one coalesced email and flip those
  *  messages to `sent`. No-op when the feature is off. FAIL-SAFE: a per-conversation error is logged and the
- *  work is left queued for the next pass. */
+ *  work is left queued for the next pass.
+ *
+ *  2026-09-05 correction (scan2 L6-05): "left queued for the next pass" used to be the WHOLE concurrency
+ *  story — the rows were read, emailed, and only then marked sent, with no claim in between, so two
+ *  overlapping cron runs (or a crash between enqueueEmail and mark-sent) emailed the external contact the
+ *  same burst twice under two Message-IDs. Each burst is now CLAIMED row-by-row (newest first, a conditional
+ *  UPDATE per row) before anything is enqueued, and only a run holding EVERY row of the burst sends; a run
+ *  that loses any row releases what it took and skips. A claim older than BATCH_CLAIM_STALE_MINUTES is
+ *  treated as abandoned and taken over (logged). */
 export async function flushConversationBatches(): Promise<{ conversations: number; emails: number; messages: number }> {
   const window = conversationBatchWindowMinutes()
   // The window governs the DEBOUNCE only, not whether we drain. When it is 0 (feature off, or just turned
@@ -157,6 +233,10 @@ export async function flushConversationBatches(): Promise<{ conversations: numbe
     else byConv.set(cid, [m])
   }
 
+  const runToken = `flush:${Date.now().toString(36)}:${Math.random().toString(36).slice(2, 10)}`
+  const nowIso = new Date().toISOString()
+  const staleBeforeIso = new Date(Date.now() - BATCH_CLAIM_STALE_MINUTES * 60_000).toISOString()
+
   let conversations = 0
   let emails = 0
   let messages = 0
@@ -167,6 +247,35 @@ export async function flushConversationBatches(): Promise<{ conversations: numbe
 
     const ordered = [...msgs].sort((a, b) => (Date.parse(a.occurred_at) || 0) - (Date.parse(b.occurred_at) || 0))
     const ids = ordered.map((m) => m.id)
+
+    // CLAIM (scan2 L6-05): take every row of the burst, NEWEST FIRST, so two overlapping runs contend on
+    // the same row first and exactly one of them proceeds. Stop at the first row another run holds.
+    const claimed: QueuedRow[] = []
+    let lostRow = false
+    try {
+      for (const row of [...ordered].reverse()) {
+        const prior = priorClaimOf(row)
+        if (prior && prior.at < staleBeforeIso) {
+          console.warn(
+            `[comms] flushConversationBatches reclaiming a stale batch claim (conversation ${cid}, message ${row.id}, claimed ${prior.at} by ${prior.token ?? 'unknown'})`,
+          )
+        }
+        if (!(await claimQueuedRow(db, row, runToken, nowIso, staleBeforeIso))) {
+          lostRow = true
+          break
+        }
+        claimed.push(row)
+      }
+    } catch (err) {
+      console.error('[comms] flushConversationBatches claim failed:', err)
+      await releaseClaimedRows(db, claimed, runToken)
+      continue
+    }
+    if (lostRow) {
+      // Another run holds (part of) this burst: it sends, we don't. Hand back anything we took.
+      await releaseClaimedRows(db, claimed, runToken)
+      continue
+    }
 
     const conv = await getConversationById(cid)
     if (!conv || !conv.externalEmail) {
@@ -200,6 +309,7 @@ export async function flushConversationBatches(): Promise<{ conversations: numbe
       })
     } catch (err) {
       console.error('[comms] flushConversationBatches enqueue failed:', err)
+      await releaseClaimedRows(db, claimed, runToken) // hand the claim back → retried next pass
       continue // leave queued → retried next pass
     }
     conversations++

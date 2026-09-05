@@ -23,7 +23,7 @@ import { canEditJourney } from '@/lib/journeys/authoring'
 import { cancelAudit } from '@/lib/events/event-lifecycle'
 import { refundAndNotifyForCancelledEvent } from '@/lib/events/cancellation'
 import { getCapacityInfo, promoteFromWaitlist } from '@/lib/events/capacity'
-import { eventRequiresApproval } from '@/lib/events/rsvp-depth'
+import { notifyPromotedSeat } from '@/lib/events/waitlist-notify'
 import { stampEventSpaceId } from '@/lib/events/store'
 import { spaceIdForCircle } from '@/lib/circles/store'
 import { wallClockToIso, dateToWallClockIso } from '@/lib/events/datetime'
@@ -881,15 +881,66 @@ async function fireEventValidation(eventId: string, rsvperId: string): Promise<v
 // from what actually landed. Side-effects (gems, host payout, confirmation + ICS) must
 // branch on THIS value, never the intent — otherwise a demoted guest is paid + emailed
 // as if confirmed. Best-effort: a read failure returns null so the caller falls back.
+//
+// 🔴 CORRECTION 2026-09-05 (scan-2 L5-01): the caller no longer falls back. "Fall back to the
+// intent" meant that when NO row existed (an insert the DB refused, e.g. a suspended member's
+// via trg_event_rsvps_block_suspended), `null` was read as "going": gems paid, streak ticked,
+// the "You're going" email + SMS sent and a CRM lead captured, for an RSVP that was never
+// stored. Every write now reads its own `error` first, and a null here after a write that
+// reported success is treated as "the row cannot be read", which fires NOTHING. A missing
+// confirmation email is recoverable; a paid gem for a seat that does not exist is not.
 async function readRsvpStatus(eventId: string, profileId: string): Promise<string | null> {
   const admin = createAdminClient()
-  const { data } = await admin
+  const { data, error } = await admin
     .from('event_rsvps')
     .select('status')
     .eq('event_id', eventId)
     .eq('profile_id', profileId)
     .maybeSingle()
+  if (error) {
+    console.error('[events rsvp status read]', error)
+    return null
+  }
   return (data as { status: string } | null)?.status ?? null
+}
+
+// Member-facing copy for a refused RSVP write. The DB's own reason stays in the server log; the
+// member sees one plain sentence. The suspension trigger (migration 20270344000000) is the one
+// refusal a member can do something about, so it gets its own line.
+const RSVP_WRITE_FAILED = 'Could not save your RSVP. Please try again.'
+const RSVP_SUSPENDED = 'Your account is suspended, so you cannot RSVP right now.'
+
+function rsvpWriteFailure(error: { message?: string } | null | undefined): ActionResult<never> {
+  console.error('[events rsvp write]', error)
+  const msg = error?.message ?? ''
+  return fail(/suspend/i.test(msg) ? RSVP_SUSPENDED : RSVP_WRITE_FAILED)
+}
+
+// Does this event make people wait for the host? Reads `events.rsvp_requires_approval`
+// (20270303000000) and FAILS CLOSED: an error, or no row at all, answers `true`.
+//
+// 🔴 CORRECTION 2026-09-05 (scan-2 L5-15). This replaces `eventRequiresApproval` from
+// lib/events/rsvp-depth.ts at every RSVP write in this file. That reader's comment calls
+// admitting on a failed read "the fail-safe direction". It is not, for the one thing the gate
+// exists to protect: an approval-gated event hides its venue until the host says yes, and an
+// admission cannot be un-seen. A request that lands as pending on a flaky read can be approved a
+// minute later; a member admitted past the host's gate has already been told they are in and
+// shown the address. The row's own `eventOpenForRsvp` read has just confirmed the event exists,
+// so a null row here IS a read failure, not an unknown event.
+async function eventRequiresApprovalOrClosed(eventId: string): Promise<boolean> {
+  const admin = createAdminClient()
+  // rsvp_requires_approval postdates the generated types (ADR-246), so the read is untyped.
+  // eslint-disable-next-line no-restricted-syntax -- events.rsvp_requires_approval not in generated types yet (ADR-246 exception)
+  const { data, error } = await (admin as unknown as SupabaseClient)
+    .from('events')
+    .select('rsvp_requires_approval')
+    .eq('id', eventId)
+    .maybeSingle()
+  if (error || !data) {
+    console.error('[events approval gate read]', error ?? 'no row')
+    return true
+  }
+  return (data as { rsvp_requires_approval: boolean | null }).rsvp_requires_approval === true
 }
 
 // The event's host. Used to deny attendance gamification credit to the host of
@@ -1094,11 +1145,17 @@ export async function toggleRSVP(eventId: string) {
     if (existing.status === 'going' || existing.status === 'waitlist') {
       // Withdraw. If we freed a confirmed seat, pull the next person off the
       // waitlist (warm proof of momentum, never fake scarcity).
-      await supabase.from('event_rsvps').update({ status: 'not_going' }).eq('id', existing.id)
+      const { error } = await supabase.from('event_rsvps').update({ status: 'not_going' }).eq('id', existing.id)
+      // A refused withdrawal leaves the seat held: nothing below may pretend it was freed. This
+      // is a <form action> with no channel back to the page, so the outcome is logged, not shown.
+      if (error) { rsvpWriteFailure(error); return }
       // Withdrawing pulls their "RSVP'd" entry out of the activity feed.
       await syncRsvpActivityPost(eventId, myProfileId, false)
       if (existing.status === 'going') {
-        await promoteFromWaitlist(eventId).catch((e) => { console.error('[events waitlist]', e); return null })
+        // The promoted seat is returned so its holder can be TOLD (scan-2 L5-02): every waitlist
+        // email promises "we'll let you know", and a silent promotion breaks that promise.
+        const promoted = await promoteFromWaitlist(eventId).catch((e) => { console.error('[events waitlist]', e); return null })
+        if (promoted) await notifyPromotedSeat(promoted, eventId).catch((e) => console.error('[events waitlist notify]', e))
       }
     } else {
       // Re-join is a JOIN, so the host's booking window applies to it. Withdrawing above never
@@ -1117,8 +1174,8 @@ export async function toggleRSVP(eventId: string) {
           ? false
           : existing.approval_status === 'pending'
             ? true
-            : await eventRequiresApproval(eventId)
-      await supabase
+            : await eventRequiresApprovalOrClosed(eventId)
+      const { error } = await supabase
         .from('event_rsvps')
         .update({
           status: next,
@@ -1127,13 +1184,19 @@ export async function toggleRSVP(eventId: string) {
             : {}),
         })
         .eq('id', existing.id)
+      // A refused write is the end of the story: no gems, no feed line, no email, no lead
+      // (scan-2 L5-01). Logged only; a <form action> has nowhere to show the message.
+      if (error) { rsvpWriteFailure(error); return }
       // The capacity trigger has the final say (a concurrent fill demotes 'going' →
       // 'waitlist'), so branch the side-effects on the PERSISTED status, not the
       // app's intent — otherwise a waitlisted guest gets gems / a host payout / a
       // "you're going" confirmation they shouldn't.
       const stored = await readRsvpStatus(eventId, myProfileId)
       // On a read failure (null) fall back to the intent; otherwise trust the row.
-      const effective: 'going' | 'waitlist' = (stored ?? next) === 'going' ? 'going' : 'waitlist'
+      // CORRECTION 2026-09-05 (scan-2 L5-01): no fallback. A row that cannot be read back is
+      // not a seat, and nothing that means "you are in" may fire on the intent alone.
+      if (!stored) { console.error('[events rsvp] row unreadable after update', { eventId, myProfileId }); return }
+      const effective: 'going' | 'waitlist' = stored === 'going' ? 'going' : 'waitlist'
       // Nothing that means "you are in" fires while the request is pending (mirrors the
       // first-RSVP arm below): no gems/payout, no feed line, no "you're going" email.
       if (!needsApproval) {
@@ -1157,16 +1220,22 @@ export async function toggleRSVP(eventId: string) {
     // The host's approval gate (20270303000000). A pending seat is a REQUEST, not an admission,
     // so it is written the same way a guest's is (capture_guest_rsvp keys on the same column) and
     // the side-effects below are held back until the host says yes.
-    const needsApproval = await eventRequiresApproval(eventId)
-    await supabase.from('event_rsvps').insert({
+    const needsApproval = await eventRequiresApprovalOrClosed(eventId)
+    const { error } = await supabase.from('event_rsvps').insert({
       event_id: eventId,
       profile_id: myProfileId,
       status: next,
       approval_status: needsApproval ? 'pending' : 'none',
     })
+    // The insert the DB refuses (a suspended member, a constraint) used to fall through to the
+    // side-effects below with no row behind them (scan-2 L5-01). It stops here now.
+    if (error) { rsvpWriteFailure(error); return }
     // Branch on the PERSISTED status (the trigger may demote to waitlist), not intent.
     const stored = await readRsvpStatus(eventId, myProfileId)
-    const effective: 'going' | 'waitlist' = (stored ?? next) === 'going' ? 'going' : 'waitlist'
+    // CORRECTION 2026-09-05 (scan-2 L5-01): a null here used to fall back to `next`. It no longer
+    // does; an unreadable row fires nothing.
+    if (!stored) { console.error('[events rsvp] row unreadable after insert', { eventId, myProfileId }); return }
+    const effective: 'going' | 'waitlist' = stored === 'going' ? 'going' : 'waitlist'
     // Nothing that means "you are in" fires while a request is pending: no seat-confirming email,
     // no feed line, no gems. Telling someone they are going and then making them wait for a host
     // is worse than either outcome on its own.
@@ -1211,11 +1280,18 @@ export async function toggleRSVP(eventId: string) {
 // the broader /events layout sweep. `opts.message` is the member's optional note,
 // which rides along as the body of their "RSVP'd" activity-feed entry (a Going
 // RSVP posts / updates that entry; anything else removes it).
+//
+// Returns (added 2026-09-05, scan-2 L5-01): `{ error }` when a write was attempted and the DB
+// refused it (the member's row did NOT change and NO side-effect fired), `{ data: undefined }`
+// when the request was honoured (a write landed, or the row already said so), and void when the
+// action never got as far as a row (signed out, or the event is closed to this move). Callers
+// that ignore the value keep working; the QR door and
+// the RSVP control can now show the refusal instead of a lit "Going" over an absent row.
 export async function setRsvpStatus(
   eventId: string,
   intent: 'going' | 'maybe' | 'not_going',
   opts?: { slug?: string; message?: string },
-) {
+): Promise<ActionResult<void> | void> {
   const myProfileId = await getMyProfileId()
   if (!myProfileId) return
   const gate = await eventOpenForRsvp(eventId)
@@ -1274,31 +1350,43 @@ export async function setRsvpStatus(
           ? false
           : existing?.approval_status === 'pending'
             ? true
-            : await eventRequiresApproval(eventId)
-      if (existing) {
-        await supabase
-          .from('event_rsvps')
-          .update({
+            : await eventRequiresApprovalOrClosed(eventId)
+      // 🔴 Both writes read their `error` (scan-2 L5-01). They used to be awaited and discarded,
+      // so a refused insert (the suspended-member trigger, a constraint, a future policy) fell
+      // straight through to readRsvpStatus, which found no row, and the `stored ?? next`
+      // fallback below then treated the INTENT as the seat: gems, streak, "You're going" email
+      // + SMS and a CRM lead, with no RSVP row and the page still showing the member as not
+      // going. Repeatable per tap, capped only by the daily gem cap.
+      const { error: writeError } = existing
+        ? await supabase
+            .from('event_rsvps')
+            .update({
+              status: next,
+              ...(needsApproval && existing.approval_status !== 'pending'
+                ? { approval_status: 'pending' }
+                : {}),
+            })
+            .eq('id', existing.id)
+        : await supabase.from('event_rsvps').insert({
+            event_id: eventId,
+            profile_id: myProfileId,
             status: next,
-            ...(needsApproval && existing.approval_status !== 'pending'
-              ? { approval_status: 'pending' }
-              : {}),
+            approval_status: needsApproval ? 'pending' : 'none',
           })
-          .eq('id', existing.id)
-      } else {
-        await supabase.from('event_rsvps').insert({
-          event_id: eventId,
-          profile_id: myProfileId,
-          status: next,
-          approval_status: needsApproval ? 'pending' : 'none',
-        })
-      }
+      if (writeError) return rsvpWriteFailure(writeError)
       // Branch the side-effects on the PERSISTED status: the capacity trigger may have
       // demoted this 'going' write to 'waitlist', and a waitlisted guest must not get
       // the gems / host payout / "you're going" confirmation. Fall back to intent on a
       // read failure.
+      // CORRECTION 2026-09-05 (scan-2 L5-01): there is no fallback any more. A row that cannot
+      // be read back after a write that reported success is a server fault, and the honest
+      // answer to the member is "try again", not a lit Going with gems behind it.
       const stored = await readRsvpStatus(eventId, myProfileId)
-      const effective: 'going' | 'waitlist' = (stored ?? next) === 'going' ? 'going' : 'waitlist'
+      if (!stored) {
+        console.error('[events rsvp] row unreadable after write', { eventId, myProfileId })
+        return fail(RSVP_WRITE_FAILED)
+      }
+      const effective: 'going' | 'waitlist' = stored === 'going' ? 'going' : 'waitlist'
       if (!needsApproval) {
         if (effective === 'going') onGoing(!existing)
         // Post the "RSVP'd" entry (with the note) only for a confirmed seat.
@@ -1321,24 +1409,31 @@ export async function setRsvpStatus(
     if (existing) {
       if (existing.status !== intent) {
         // plus_ones only mean anything for a confirmed seat — clear on stepping back.
-        await db
+        const { error } = await db
           .from('event_rsvps')
           .update({ status: intent, plus_ones: 0 })
           .eq('id', existing.id)
+        // A refused step-back means the seat is STILL HELD: promoting the next waitlisted person
+        // on top of it would overbook the room (scan-2 L5-01).
+        if (error) return rsvpWriteFailure(error)
       }
     } else {
-      await db.from('event_rsvps').insert({
+      const { error } = await db.from('event_rsvps').insert({
         event_id: eventId,
         profile_id: myProfileId,
         status: intent,
         plus_ones: 0,
       })
+      if (error) return rsvpWriteFailure(error)
     }
     // Moving to maybe / not_going is no longer "going" → pull their feed entry.
     await syncRsvpActivityPost(eventId, myProfileId, false)
     // Freed a confirmed seat → pull the next person off the waitlist.
     if (heldSeat) {
-      await promoteFromWaitlist(eventId).catch((e) => { console.error('[events waitlist]', e); return null })
+      // And TELL them (scan-2 L5-02): promoteFromWaitlist returns the seat it moved precisely so
+      // the holder, member or signed-out guest, can be notified. Both call sites dropped it.
+      const promoted = await promoteFromWaitlist(eventId).catch((e) => { console.error('[events waitlist]', e); return null })
+      if (promoted) await notifyPromotedSeat(promoted, eventId).catch((e) => console.error('[events waitlist notify]', e))
     }
     // A MAYBE is buying intent: segment into the hosting Space's CRM for the follow-up
     // funnel (fire-and-forget). An explicit Can't go just files — no capture.
@@ -1353,6 +1448,7 @@ export async function setRsvpStatus(
   revalidatePath('/spaces', 'layout')
   // Reflect the change on the event's own detail page right away when we know its slug.
   if (opts?.slug) revalidatePath(`/events/${opts.slug}`)
+  return ok()
 }
 
 // Capacity-neutral headcount the host cares about: how many guests a confirmed
@@ -1388,10 +1484,12 @@ export async function setRsvpPlusOnes(eventId: string, plusOnes: number) {
   const current = (existing as { plus_ones?: number | null }).plus_ones ?? 0
   if (n > current && (!gate.open || !gate.windowOpen)) return
 
-  await supabase
+  const { error } = await supabase
     .from('event_rsvps')
     .update({ plus_ones: n })
     .eq('id', existing.id)
+  // Nothing changed, so nothing to refresh (scan-2 L5-01: every event_rsvps write reads its error).
+  if (error) { rsvpWriteFailure(error); return }
 
   revalidatePath('/events', 'layout')
   revalidatePath('/feed')
@@ -1401,10 +1499,24 @@ export async function setRsvpPlusOnes(eventId: string, plusOnes: number) {
   revalidatePath('/spaces', 'layout')
 }
 
+/** Why a check-in was refused (added 2026-09-05, scan-2 L5-21). `checkInEvent` used to answer a
+ *  bare `{ ok: false }` for five different situations, so the QR door (app/q/[slug]/route.ts)
+ *  could only redirect in silence. The reason is a fixed token, never copy: each surface writes
+ *  its own sentence in the member's voice. */
+export type CheckInFailReason =
+  | 'signed_out'
+  | 'unavailable'
+  | 'window_closed'
+  | 'checkin_off'
+  | 'not_going'
+  | 'pending'
+
 export interface CheckInResult {
   ok: boolean
   alreadyCheckedIn?: boolean
   zapsAwarded?: number
+  /** Present only when `ok` is false. */
+  reason?: CheckInFailReason
 }
 
 // Verified-practice check-in (the North-Star `practice.verified` event). Server-
@@ -1414,7 +1526,7 @@ export interface CheckInResult {
 // (RSVP = gems web-action; check-in = zaps verified practice; see ADR-021/024.)
 export async function checkInEvent(eventId: string): Promise<CheckInResult> {
   const myProfileId = await getMyProfileId()
-  if (!myProfileId) return { ok: false }
+  if (!myProfileId) return { ok: false, reason: 'signed_out' }
 
   const admin = createAdminClient()
   // time_zone is newer than the generated DB types, so a plain typed select of it yields a
@@ -1438,12 +1550,12 @@ export async function checkInEvent(eventId: string): Promise<CheckInResult> {
   // member marked going could check in to a gathering that ended in March and collect Zaps, a
   // streak tick and verified-member standing for it (ADR-1175).
   const evCheckInTz = resolveZone(ev?.time_zone)
-  if (!ev || ev.is_cancelled) return { ok: false }
-  if (!checkInWindowOpen(ev.starts_at, ev.ends_at, evCheckInTz)) return { ok: false }
+  if (!ev || ev.is_cancelled) return { ok: false, reason: 'unavailable' }
+  if (!checkInWindowOpen(ev.starts_at, ev.ends_at, evCheckInTz)) return { ok: false, reason: 'window_closed' }
   // The host's switch (lib/events/checkin-enabled.ts). Enforced HERE and not only in the UI:
   // a control that hides the button while the action still records attendance and pays Zaps is
   // not a switch, it is a coat of paint. Defaults on, so no existing event changes.
-  if (!readEventCheckInEnabled(ev.theme)) return { ok: false }
+  if (!readEventCheckInEnabled(ev.theme)) return { ok: false, reason: 'checkin_off' }
 
   // 🔴 `status` ALONE IS NOT A SEAT. The host's approval gate writes a pending request as
   // status='going' + approval_status='pending' (see the insert above), so selecting `status` only
@@ -1457,7 +1569,8 @@ export async function checkInEvent(eventId: string): Promise<CheckInResult> {
     .eq('event_id', eventId)
     .eq('profile_id', myProfileId)
     .maybeSingle()
-  if (rsvp?.status !== 'going' || isPendingApproval(rsvp)) return { ok: false }
+  if (rsvp?.status !== 'going') return { ok: false, reason: 'not_going' }
+  if (isPendingApproval(rsvp)) return { ok: false, reason: 'pending' }
 
   // "Showed up" verification (ADR-420): physically checking in at a real event is the
   // baseline real-person signal. Idempotent (only sets verified_at once) + fail-safe.

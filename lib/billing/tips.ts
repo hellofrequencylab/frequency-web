@@ -9,6 +9,12 @@
 // recordTipFromSession flips the row to `succeeded` (idempotent); the success
 // redirect also reconciles via recordTipFromSessionId, so a tip is never lost if
 // the webhook isn't wired yet (mirrors the membership checkout pattern).
+//
+// Refund (2026-09-05, L2-07): a tip refunded from the Stripe dashboard fires charge.refunded;
+// recordTipRefundFromCharge flips the `succeeded` row to `refunded` (keyed on the payment
+// intent, idempotent) and reverses the ledger entry through the same seam the ticket refund
+// uses. Before this the tip had no refund path at all: the row stayed `succeeded`, the
+// recipient's tip total and the ledger revenue never moved.
 
 // ── `import 'server-only'` IS THE POINT OF THE LINE BELOW, NOT DECORATION (LIVE-037) ──────────
 // The header above already said "Server-only." A comment enforces nothing: tip-button.tsx
@@ -75,6 +81,8 @@ export async function createTipCheckout(opts: {
   // listing, no discovery surface, and nothing for Frequency to have sourced. Passing 0 as an
   // explicit application fee (rather than omitting it) keeps the destination charge shape identical
   // to the other channels, so the webhook + refund paths need no special case.
+  // (2026-09-05 correction, L2-07: "the refund path" did not exist for tips until
+  // recordTipRefundFromCharge below; the shape argument was right, the path was missing.)
   const fee = 0
   const message = opts.message?.trim().slice(0, 280) || null
 
@@ -181,4 +189,57 @@ export async function recordTipFromSessionId(sessionId: string): Promise<number 
   if (session.metadata?.kind !== 'tip' || session.payment_status !== 'paid') return null
   await recordTipFromSession(session)
   return session.amount_total ?? null
+}
+
+/**
+ * Flip a `succeeded` tip to `refunded` and reverse its ledger entry (idempotent; succeeded →
+ * refunded only, keyed on the PaymentIntent). Mirrors recordTicketRefund (lib/billing/tickets.ts):
+ * a negative 'refund' row on the same entity, keyed `tip-refund:<id>` so a redelivered
+ * charge.refunded appends nothing twice. The reversed amount is the platform fee the succeed
+ * path booked (0 since ADR-913), so the ledger stays an exact net of what was recorded.
+ *
+ * The status flip is NOT best-effort: a refund the DB refuses to record would otherwise be
+ * acked 200 and lost, so the error is thrown and the webhook releases its claim + 500s (Stripe
+ * redelivers). The ledger append stays best-effort, as on the succeed path.
+ */
+export async function recordTipRefund(paymentIntentId: string | null): Promise<void> {
+  if (!paymentIntentId) return
+  const { data: updated, error } = await db()
+    .from('tips')
+    .update({ status: 'refunded', refunded_at: new Date().toISOString() })
+    .eq('stripe_payment_intent_id', paymentIntentId)
+    .eq('status', 'succeeded')
+    .select('id, platform_fee_cents, from_profile_id, currency')
+  if (error) throw new Error(`[tips] refund flip failed (pi=${paymentIntentId}): ${error.message}`)
+  const rows = (updated ?? []) as {
+    id: string
+    platform_fee_cents: number
+    from_profile_id: string | null
+    currency: string
+  }[]
+  for (const row of rows) {
+    await recordFinancialTransaction({
+      entityId: ENTITY_ID.labs,
+      revenueType: 'refund',
+      amountCents: -(row.platform_fee_cents ?? 0),
+      profileId: row.from_profile_id,
+      currency: row.currency,
+      stripePaymentIntentId: paymentIntentId,
+      sourceTable: 'tips',
+      sourceId: row.id,
+      idempotencyKey: `tip-refund:${row.id}`,
+    }).catch(() => {})
+  }
+}
+
+/** Resolve a `charge.refunded` event's PaymentIntent and reconcile the tip behind it. Only a
+ *  FULL refund unwinds the tip (a partial refund must not flip the row or reverse the full fee,
+ *  the same guard recordTicketRefundFromCharge applies). No-ops on a charge that isn't a tip:
+ *  the kind tag lives on the PaymentIntent, not the Charge, so no metadata is consulted and the
+ *  `succeeded` tip match on the intent id is the whole filter. */
+export async function recordTipRefundFromCharge(charge: Stripe.Charge): Promise<void> {
+  if ((charge.amount_refunded ?? 0) < (charge.amount ?? 0)) return
+  const paymentIntentId =
+    typeof charge.payment_intent === 'string' ? charge.payment_intent : charge.payment_intent?.id ?? null
+  await recordTipRefund(paymentIntentId)
 }
