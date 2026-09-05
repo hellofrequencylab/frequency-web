@@ -37,6 +37,7 @@ import { MERGE_TAG_VARIABLES, MERGE_TAG_DEFAULT_FALLBACKS } from '@/lib/email-st
 import { sendRawEmail } from '@/lib/email'
 import { BUILTIN_SEGMENTS, TRAIT_SEGMENT_PREFIX } from '@/lib/studio/campaigns'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
+import { log } from '@/lib/log'
 
 /** The console that LISTS campaigns, revalidated after every act that changes the list (create /
  *  delete / test / discard). Was /admin/beta, the Beta Command Center's Campaign tab, which is gone. */
@@ -370,21 +371,29 @@ export async function saveEmailCampaign(
   // The friendly From NAME persists on its own additive column via a BEST-EFFORT write: the column is new and
   // may not exist pre-migration, so failing here must never block the subject / preheader / layout save (nor
   // the fromName-only autosave). Sanitized so a stored name can never break the From header; blank clears it.
+  // 2026-09-05 (scan2 L5-11): "best-effort" is retired. Both columns have shipped (migrations
+  // 20261166000000_campaign_from_name and 20261210000000_conversations_spine), so a refused write here is a
+  // real failure the editor must hear about, not a pre-migration blank. Every write below reads its
+  // { error } and the FIRST refusal is returned, so the operator never keeps typing against a From name or
+  // reply mode that did not land. A patch that carries only one field still gets its own answer.
   if (typeof patch.fromName === 'string') {
     const clean = sanitizeFromName(patch.fromName)
-    await db
+    const { error } = await db
       .from('campaigns')
       .update({ from_name: clean || null } as unknown as Database['public']['Tables']['campaigns']['Update'])
       .eq('id', id)
+    if (error) return { error: 'Could not save the From name. Try again.' }
   }
 
   // Reply mode (Broadcast vs Conversation) rides the same additive-column, best-effort write pattern: a
   // failure here must never block the subject / preheader / layout save.
+  // 2026-09-05 (scan2 L5-11): see above, the write is checked and a refusal is returned.
   if (patch.replyMode === 'broadcast' || patch.replyMode === 'conversation') {
-    await db
+    const { error } = await db
       .from('campaigns')
       .update({ reply_mode: patch.replyMode } as unknown as Database['public']['Tables']['campaigns']['Update'])
       .eq('id', id)
+    if (error) return { error: 'Could not save the reply setting. Try again.' }
   }
 
   if (patch.layout) {
@@ -413,7 +422,10 @@ export async function saveEmailCampaign(
   if (Object.keys(update).length === 0) return {}
 
   const { error } = await db.from('campaigns').update(update).eq('id', id)
-  if (error) return { error: 'Could not save your email. Try again.' }
+  if (error) {
+    log.error('email_studio.save_failed', { campaignId: id, fields: Object.keys(update), error: error.message })
+    return { error: 'Could not save your email. Try again.' }
+  }
 
   // Intentionally no revalidatePath — see the note above: revalidating from this per-keystroke autosave would
   // force a seeded navigation that remounts / refocuses the open composer.

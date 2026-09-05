@@ -97,9 +97,23 @@ function makeBuilder(table: string) {
   return builder
 }
 
+// merge_profile_meta (scan2 L6-09): dressSpotlight merges ONLY its two keys server-side instead of
+// writing the whole meta blob. The fake applies the same shallow top-level merge over the profiles
+// row and records every patch so the test can pin which keys were sent.
+const metaMerges: Array<{ profileId: string; patch: Record<string, unknown> }> = []
+async function fakeMergeProfileMeta(name: string, args: { p_profile_id: string; p_patch: Record<string, unknown> }) {
+  if (name !== 'merge_profile_meta') return { data: null, error: { message: `unknown rpc ${name}` } }
+  const row = H.tables.profiles.find((p) => p.id === args.p_profile_id) as { meta?: Record<string, unknown> } | undefined
+  if (!row) return { data: null, error: { message: 'profile not found' } }
+  row.meta = { ...(row.meta ?? {}), ...args.p_patch }
+  metaMerges.push({ profileId: args.p_profile_id, patch: args.p_patch })
+  return { data: row.meta, error: null }
+}
+
 vi.mock('@/lib/supabase/admin', () => ({
   createAdminClient: () => ({
     from: (t: string) => makeBuilder(t),
+    rpc: fakeMergeProfileMeta,
   }),
 }))
 
@@ -321,6 +335,9 @@ describe('materializeBusiness — Spotlight demo dressing (optional)', () => {
     expect(res.seeded?.spotlightDressed).toBe(true)
     const owner = H.tables.profiles.find((p) => p.id === 'owner-1')!
     const meta = owner.meta as Record<string, unknown>
+    // The dressing sent ONLY its two keys through merge_profile_meta (scan2 L6-09).
+    const merge = metaMerges.find((m) => m.profileId === 'owner-1')!
+    expect(Object.keys(merge.patch).sort()).toEqual(['entityGrid', 'spotlight'])
     expect((meta.spotlight as Record<string, unknown>).enabled).toBe(true)
     const grid = meta.entityGrid as { rows?: Array<{ cells: string[][] }>; content?: Record<string, unknown> }
     expect(grid.rows?.[0].cells[0]).toEqual(['links'])

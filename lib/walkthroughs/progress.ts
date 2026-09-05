@@ -1,6 +1,7 @@
 import 'server-only'
 import type { Json } from '@/lib/database.types'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { mergeProfileMeta } from '@/lib/profiles/meta'
 import { awardZaps } from '@/lib/zaps'
 import { getWalkthrough } from '@/lib/walkthroughs'
 import { readProgressMap, type WalkthroughProgress } from '@/lib/walkthroughs/runtime'
@@ -11,6 +12,10 @@ import { readProgressMap, type WalkthroughProgress } from '@/lib/walkthroughs/ru
 // best-effort (read meta, merge the one slug, write back) and never throws: a failed
 // timestamp must never break the feed. completeWalkthrough also pays the walkthrough's
 // total step zaps exactly once (guarded on the prior completedAt being absent).
+// 2026-09-05 (scan2 L6-09): "write back" no longer means the whole blob. Each writer reads meta to
+// merge its one slug into the `walkthroughs` map, then merges ONLY that key server-side
+// (mergeProfileMeta), so a streak or check-in written in the same second is never reverted.
+// completeWalkthrough reads the merge result and pays the zaps only when the stamp landed.
 
 type Meta = Record<string, Json>
 
@@ -43,10 +48,8 @@ async function patchProgress(profileId: string, slug: string, patch: Walkthrough
     if (meta === null) return
     const map = readProgressMap(meta)
     const next = { ...map, [slug]: { ...(map[slug] ?? {}), ...patch } }
-    await admin
-      .from('profiles')
-      .update({ meta: { ...meta, walkthroughs: next } as Json })
-      .eq('id', profileId)
+    const { error } = await mergeProfileMeta(admin, profileId, { walkthroughs: next as Json })
+    if (error) console.error('[patchProgress] walkthroughs merge failed', { profileId, slug, error })
   } catch {
     // best-effort
   }
@@ -73,10 +76,8 @@ export async function markWalkthroughPending(profileId: string, slug: string): P
     if (map[slug]?.completedAt || map[slug]?.dismissedAt) return // already toured / opted out
     if (map[slug]?.pendingAt) return // already pending — don't reset the clock
     const next = { ...map, [slug]: { ...(map[slug] ?? {}), pendingAt: new Date().toISOString() } }
-    await admin
-      .from('profiles')
-      .update({ meta: { ...meta, walkthroughs: next } as Json })
-      .eq('id', profileId)
+    const { error } = await mergeProfileMeta(admin, profileId, { walkthroughs: next as Json })
+    if (error) console.error('[markWalkthroughPending] walkthroughs merge failed', { profileId, slug, error })
   } catch {
     // best-effort
   }
@@ -103,10 +104,13 @@ export async function completeWalkthrough(profileId: string, slug: string): Prom
 
     const completedAt = new Date().toISOString()
     const next = { ...map, [slug]: { ...(map[slug] ?? {}), completedAt } }
-    await admin
-      .from('profiles')
-      .update({ meta: { ...meta, walkthroughs: next } as Json })
-      .eq('id', profileId)
+    const { error } = await mergeProfileMeta(admin, profileId, { walkthroughs: next as Json })
+    if (error) {
+      // The stamp is the once-only guard for the zaps below. Unstamped means unpaid, so the next
+      // completion can retry rather than pay twice.
+      console.error('[completeWalkthrough] walkthroughs merge failed (zaps not paid)', { profileId, slug, error })
+      return
+    }
 
     // Award the walkthrough's total step zaps, only when there's something to give.
     const wt = await getWalkthrough(slug)

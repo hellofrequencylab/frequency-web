@@ -6,6 +6,7 @@
 // areas (owner decision, 2026-06-06).
 
 import { createAdminClient } from '@/lib/supabase/admin'
+import { mergeProfileMeta } from '@/lib/profiles/meta'
 import { getOnboardingStatus, type OnboardingStatus } from '@/lib/onboarding/status'
 import { getPracticeStreak, type PracticeStreakState } from '@/lib/practice-streak'
 import { getMemberJourneyProgress, type MemberJourneyProgress } from '@/lib/journeys/progress'
@@ -219,8 +220,9 @@ export async function acknowledgeStage(profileId: string, stageIndex: number): P
   const meta = (profile?.meta ?? {}) as Record<string, unknown>
   const seen = Number((meta.progressStage as number | undefined) ?? -1)
   if (stageIndex <= seen) return
-  await (admin)
-    .from('profiles')
-    .update({ meta: { ...meta, progressStage: stageIndex } })
-    .eq('id', profileId)
+  // 2026-09-05 (scan2 L6-09): the read above decides; the write merges ONLY progressStage server-side, so
+  // a stale read can no longer carry a sibling key backwards. A failed merge is logged (the celebration
+  // may fire once more).
+  const { error } = await mergeProfileMeta(admin, profileId, { progressStage: stageIndex })
+  if (error) console.error('[acknowledgeStage] merge failed', { profileId, error })
 }

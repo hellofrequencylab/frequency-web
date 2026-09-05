@@ -5,6 +5,7 @@
 // left untagged (they show as "unattributed" in the rollup, not mislabeled 'direct').
 
 import { createAdminClient } from '@/lib/supabase/admin'
+import { mergeProfileMeta } from '@/lib/profiles/meta'
 import { assignTag } from '@/lib/traits/tags'
 import { ACQUISITION_CHANNELS, channelTag, type AcquisitionChannel } from './channels'
 
@@ -105,7 +106,15 @@ export async function backfillAcquisition(): Promise<BackfillResult> {
       stamped_at: new Date().toISOString(),
       backfilled: true,
     }
-    await db.from('profiles').update({ meta: { ...meta, acquisition: record } }).eq('id', p.id)
+    // 2026-09-05 (scan2 L6-09): only the `acquisition` key is merged server-side. The `meta` read here
+    // comes from one list query over every member, so it is minutes stale by the last row; spreading it
+    // back would have reverted every key those members wrote meanwhile. A failed merge is not counted.
+    const { error } = await mergeProfileMeta(db, p.id, { acquisition: record })
+    if (error) {
+      console.error('[backfillAcquisition] acquisition merge failed', { profileId: p.id, error })
+      skipped++
+      continue
+    }
     tagged++
   }
 

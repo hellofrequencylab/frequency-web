@@ -35,6 +35,9 @@ export function readSpotlightPublished(meta: unknown): boolean {
  * (see app/(main)/checkin-actions.ts); this keeps that pattern but isolates the
  * spotlight sub-object so streak/checkin/persona keys are preserved verbatim.
  * Turning Spotlight off never auto-unpublishes here — callers decide.
+ *
+ * 2026-09-05 (scan2 L6-09, ADR-1212): the read-modify-write pattern this comment describes is retired;
+ * every profiles.meta writer now merges only its own key through merge_profile_meta (lib/profiles/meta.ts).
  */
 export function withSpotlightEnabled(meta: unknown, enabled: boolean): Record<string, unknown> {
   const base = (meta ?? {}) as SpotlightMeta

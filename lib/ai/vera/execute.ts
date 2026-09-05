@@ -183,7 +183,9 @@ async function saveStreak(operatorId: string, args: Record<string, unknown>): Pr
           ? 'Their streak is already safe today.'
           : res.reason === 'broken'
             ? 'Their streak has already reset, so a freeze cannot bridge it.'
-            : 'Their streak is not at risk right now.'
+            : res.reason === 'write_failed'
+              ? 'The save did not land. Try again in a moment.'
+              : 'Their streak is not at risk right now.'
     return { ok: false, error: why }
   }
 

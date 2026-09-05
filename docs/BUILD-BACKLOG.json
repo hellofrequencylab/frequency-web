@@ -69,7 +69,9 @@
             "LIVE-168",
             "LIVE-170",
             "LIVE-174",
-            "LIVE-172"
+            "LIVE-172",
+            "LIVE-173",
+            "LIVE-171"
           ]
         },
         {
@@ -8230,6 +8232,91 @@
         "kind": "cmd",
         "cmd": "node -e \"const fs=require('fs');const R=(f)=>fs.readFileSync(f,'utf8');const C=(f)=>R(f).replace(/\\\\/\\\\*[\\\\s\\\\S]*?\\\\*\\\\//g,'').replace(/^\\\\s*\\\\/\\\\/.*$/gm,'');process.exit(/Block did not save/.test(C('lib/blocking.ts'))?0:1)\"",
         "note": "Fails if the write result is dropped again."
+      }
+    },
+    {
+      "id": "SCAN-626",
+      "title": "Claiming a demo Circle could pay 140 Zaps and leave the claimer as host but not a member",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "app/(main)/circles/[slug]/claim-actions.ts",
+        "ref": "ADR-1212"
+      },
+      "detail": "Scan two, phase D (2026-09-05). L5-09. Only the circles update was checked; the membership and practice writes were discarded before the rewards. Closed: every write is checked, an undo stack reverts what landed on a failed step (circle back to demo under the prior host, membership deleted or restored, retired practices re-activated), and Zaps and the claim log run only after all three landed.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const R=(f)=>fs.readFileSync(f,'utf8');const C=(f)=>R(f).replace(/\\\\/\\\\*[\\\\s\\\\S]*?\\\\*\\\\//g,'').replace(/^\\\\s*\\\\/\\\\/.*$/gm,'');process.exit(/undo/.test(C('app/(main)/circles/[slug]/claim-actions.ts'))&&fs.existsSync('app/(main)/circles/[slug]/claim-actions.test.ts')?0:1)\"",
+        "note": "Fails if the undo stack or its test is removed."
+      }
+    },
+    {
+      "id": "SCAN-627",
+      "title": "Email Studio subject, preheader, From name and reply mode autosaved with the result thrown away",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "components/admin/email-studio/editor-pane.tsx",
+        "ref": "ADR-1212"
+      },
+      "detail": "Scan two, phase D (2026-09-05). L5-11. On a failed save the operator kept typing against text that never landed and sent the previous subject. Closed: the action reads every write (the From name and reply mode writes were still best-effort against a migration that had long landed), the editor tracks what is on file, and the toolbar shows a Not saved line with the on-file value and a retry.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const R=(f)=>fs.readFileSync(f,'utf8');const C=(f)=>R(f).replace(/\\\\/\\\\*[\\\\s\\\\S]*?\\\\*\\\\//g,'').replace(/^\\\\s*\\\\/\\\\/.*$/gm,'');process.exit(/saveNote/.test(R('components/admin/email-studio/compose-toolbar.tsx'))&&fs.existsSync('app/(main)/admin/email-studio/actions.test.ts')?0:1)\"",
+        "note": "Fails if the save note is removed."
+      }
+    },
+    {
+      "id": "SCAN-628",
+      "title": "Journey editing returned ok after unchecked writes",
+      "status": "done",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "lib/journey-plans.ts",
+        "ref": "ADR-1212"
+      },
+      "detail": "Scan two, phase D (2026-09-05). L5-13. Reorder was two unchecked updates (duplicate sort_order on a half failure), the Vera title and every bulk op counted applied before the write was known, and every lib/journey-plans.ts mutation was Promise<void>. Closed: reorder reverts the first write when the second is refused, bulk ops count only landed ops and return the failures by index, seventeen mutations return JourneyWriteResult, and every caller (journeys, guide, learn, admin content) surfaces the refusal. The journey create path is LIVE-173.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const R=(f)=>fs.readFileSync(f,'utf8');const C=(f)=>R(f).replace(/\\\\/\\\\*[\\\\s\\\\S]*?\\\\*\\\\//g,'').replace(/^\\\\s*\\\\/\\\\/.*$/gm,'');process.exit(/export type JourneyWriteResult/.test(C('lib/journey-plans.ts'))&&/failed: number\\\\[\\\\]/.test(C('app/(main)/journeys/[slug]/edit/actions.ts'))&&/if \\\\(!r\\\\.ok\\\\) return fail\\\\(r\\\\.error\\\\)/.test(C('app/(main)/admin/content/actions.ts'))?0:1)\"",
+        "note": "Fails if the mutations go back to void or a caller drops the result."
+      }
+    },
+    {
+      "id": "LIVE-173",
+      "title": "The journey create path still inserts children unchecked",
+      "status": "open",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "app/(main)/journeys/create-actions.ts",
+        "ref": "ADR-1212"
+      },
+      "detail": "SCAN-628 covered editing. app/(main)/journeys/create-actions.ts (four insert sites) and lib/journeys/compose.ts insertChildren still discard the child inserts' errors, so a journey can be created with missing weeks or items and reported as created.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const R=(f)=>fs.readFileSync(f,'utf8');const C=(f)=>R(f).replace(/\\\\/\\\\*[\\\\s\\\\S]*?\\\\*\\\\//g,'').replace(/^\\\\s*\\\\/\\\\/.*$/gm,'');const s=C('lib/journeys/compose.ts');process.exit(/insertChildren[\\\\s\\\\S]{0,1200}?error/.test(s)?0:1)\"",
+        "note": "Passes once insertChildren reads its insert errors."
+      }
+    },
+    {
+      "id": "LIVE-171",
+      "title": "The spotlight and tour keys in profiles.meta are shared by several writers and still race inside the key",
+      "status": "open",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "lib/profiles/meta.ts",
+        "ref": "ADR-1212"
+      },
+      "detail": "SCAN-629 gives every writer its own top-level key, but spotlight (janitor toggle and reset, owner publish, enable, theme, background, demo dressing) and tour (two writers in one file) are shared; those writers read the sub-object and replace the key whole, so a race INSIDE the key remains. Either split the sub-keys into top-level keys or add a jsonb_set path merge to the RPC.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const m=fs.readFileSync('supabase/migrations/20270345000900_merge_profile_meta_rpc.sql','utf8').replace(/--.*$/gm,'');process.exit(/p_path|jsonb_set\\(/.test(m)?0:1)\"",
+        "note": "Passes once the RPC can merge a nested path (or the keys are split and this row is re-pointed)."
       }
     }
   ]

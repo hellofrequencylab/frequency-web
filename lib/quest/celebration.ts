@@ -17,6 +17,7 @@
 // another rank-up. Reusing the same seen-marker path so it still shows once.
 
 import { createAdminClient } from '@/lib/supabase/admin'
+import { mergeProfileMeta } from '@/lib/profiles/meta'
 import { getCurrentSeason, getUpcomingSeason } from '@/lib/seasons'
 import { rankForCompletion, type SeasonRank } from '@/lib/season-ranks'
 
@@ -178,13 +179,11 @@ export async function readUnseenCompletion(profileId: string): Promise<UnseenCom
  * the call site, never the client. Best-effort.
  */
 export async function recordCompletionSeen(profileId: string, completionId: string): Promise<void> {
+  // 2026-09-05 (scan2 L6-09): "read-modify-write of the whole meta blob" above is retired. The whole-blob
+  // write is what clobbered sibling keys (a stale read carried them back). Now ONLY the marker key is
+  // merged server-side; no read is needed to write one key. A failed merge is logged and the moment
+  // may show once more, which the caller (crew/seen-actions.ts) already accepts.
   const admin = createAdminClient()
-  const { data: prof } = await admin
-    .from('profiles')
-    .select('meta')
-    .eq('id', profileId)
-    .maybeSingle()
-  const meta = ((prof as { meta: Record<string, unknown> | null } | null)?.meta ?? {}) as Record<string, unknown>
-  const nextMeta = { ...meta, [SEEN_MARKER_KEY]: completionId }
-  await admin.from('profiles').update({ meta: nextMeta }).eq('id', profileId)
+  const { error } = await mergeProfileMeta(admin, profileId, { [SEEN_MARKER_KEY]: completionId })
+  if (error) console.error('[recordCompletionSeen] merge failed', { profileId, error })
 }
