@@ -529,7 +529,9 @@ export const MANAGED_ROUTES: readonly ManagedRoute[] = [
   // surface that keeps the GLOBAL community rail (falls through to 'global' in railFor);
   // this catalog entry registers it as an explicitly managed surface. The route 404s while
   // platform_flags.beta_referral_contest is off, so the rail decision is moot until it is live.
-  { route: '/referral', label: 'Referral contest', area: 'Member' },
+  // 2026-09-05 (scan2 L4-06): the entry that followed this comment is gone. No page has ever
+  // existed under app/ for /referral, and the flag it was said to wait on is read by nothing, so
+  // the catalog was registering a surface an operator could "reframe" but never open.
   { route: '/lead', label: 'Leadership', area: 'Member' },
   { route: '/lead/inbox', label: 'Leader inbox', area: 'Member' },
   { route: '/lead/training-library', label: 'Leader Training', area: 'Member' },

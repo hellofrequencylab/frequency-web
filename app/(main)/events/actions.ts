@@ -7,6 +7,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getMyProfileId } from '@/lib/auth'
 import { getEventCapabilities, getCircleCapabilities } from '@/lib/core/load-capabilities'
 import { memberWithinLeadershipAllowance, EVENT_CREATE_CAP_MESSAGE } from '@/lib/pricing/member-leadership'
+import { isUpcomingByInstant, MAX_TZ_OFFSET_MS } from '@/lib/pricing/member-meter-usage'
 import type { EntitlementTier } from '@/lib/core/entitlement'
 import { slugify } from '@/lib/utils'
 import { processGamificationEvent, recordStreakActivity } from '@/lib/achievements'
@@ -208,13 +209,20 @@ async function memberEventAllowanceOk(
       .maybeSingle()
     const tier = ((p as { membership_tier: string | null } | null)?.membership_tier ??
       'free') as EntitlementTier
-    const { count } = await admin
+    // 2026-09-05 (scan2 L6-14, ADR-1211): starts_at is the event's wall clock stored in UTC parts, so a raw
+    // comparison against now() dropped a Los Angeles evening event from the allowance at noon local and kept
+    // a Sydney morning event until the evening. Read a band widened by the largest zone offset and count by
+    // the real instant, the way the reminder crons already do.
+    const { data: upcomingRows } = await admin
       .from('events')
-      .select('id', { count: 'exact', head: true })
+      .select('starts_at, time_zone')
       .eq('host_id', profileId)
       .is('space_id', null)
-      .gte('starts_at', new Date().toISOString())
-    if (await memberWithinLeadershipAllowance('event_create', tier, count ?? 0)) return { ok: true }
+      .gte('starts_at', new Date(Date.now() - MAX_TZ_OFFSET_MS).toISOString())
+    const count = ((upcomingRows ?? []) as { starts_at: string; time_zone: string | null }[]).filter((r) =>
+      isUpcomingByInstant(r),
+    ).length
+    if (await memberWithinLeadershipAllowance('event_create', tier, count)) return { ok: true }
     return { ok: false, message: EVENT_CREATE_CAP_MESSAGE }
   } catch {
     return { ok: true }

@@ -11,10 +11,12 @@
 import { revalidatePath } from 'next/cache'
 import {
   createSpaceSegment as createSpaceSegmentImpl,
+  updateSpaceSegment as updateSpaceSegmentImpl,
   deleteSpaceSegment as deleteSpaceSegmentImpl,
+  listSpaceSegments,
 } from '@/lib/spaces/segments'
 import type { AudienceFilter } from '@/lib/spaces/audiences'
-import { type ActionResult } from '@/lib/action-result'
+import { fail, type ActionResult } from '@/lib/action-result'
 
 // The Space email surface lives at /spaces/<slug>/settings/email. We revalidate it so the saved-segment
 // list in the picker reflects a create / update / delete.
@@ -30,6 +32,31 @@ export async function createSpaceSegment(
   definition: AudienceFilter,
 ): Promise<ActionResult<{ id: string }>> {
   const res = await createSpaceSegmentImpl(spaceId, name, definition)
+  if (!('error' in res)) revalidateEmail(slug)
+  return res
+}
+
+/**
+ * Rename a saved segment, keeping its stored definition. Gated on canEditProfile AND the segment
+ * belonging to the Space (see the implementation). 2026-09-05 (scan2 L9-08): updateSpaceSegment had
+ * no importer, so a mistyped name meant delete and recreate (and re-point every automation). The
+ * picker only knows a saved segment by id + name, so the definition is re-read here, space-scoped,
+ * rather than trusted from the client; pass `definition` to redefine as well as rename.
+ */
+export async function updateSpaceSegment(
+  spaceId: string,
+  slug: string,
+  id: string,
+  name: string,
+  definition?: AudienceFilter,
+): Promise<ActionResult> {
+  let next = definition
+  if (!next) {
+    const existing = (await listSpaceSegments(spaceId)).find((s) => s.id === id)
+    if (!existing) return fail('Segment not found.')
+    next = existing.definition
+  }
+  const res = await updateSpaceSegmentImpl(spaceId, id, name, next)
   if (!('error' in res)) revalidateEmail(slug)
   return res
 }

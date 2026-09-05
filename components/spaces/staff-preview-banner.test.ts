@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
+import { sourceWithoutComments } from '@/test/source-shape'
 
 // ── Wiring guard: the way OUT of a staff Space preview (LIVE-062 batch 3) ────────────────
 // previewAsSpace (wired on /admin/spaces) sets the entity view-as cookie for 8 hours, and
@@ -49,7 +50,9 @@ describe('the exit button calls the action and follows its contract', () => {
 
   it('composes the button kit and keeps the copy plain', () => {
     expect(button).toContain("buttonClasses('secondary', 'sm'")
-    expect(button).toContain('Exit preview')
+    // Matched on comment-free source (scan2 L8-04): the needle also sits in a comment of the pinned
+    // file, so a bare toContain stayed green with the code deleted.
+    expect(sourceWithoutComments('components/spaces/exit-space-preview-button.tsx')).toContain('Exit preview')
   })
 })
 

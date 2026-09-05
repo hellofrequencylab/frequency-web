@@ -43,6 +43,7 @@ describe('the Around You page filters events on every axis the table carries', (
   it('states that the admin client bypasses RLS, so the next reader knows why the filters are here', () => {
     // Deliberately NOT an assertion that the old "anon-readable" sentence is absent: this file's
     // own comment quotes that sentence to explain the bug, so such a check would fail on itself.
+    // Doc-pin (scan2 L8-05): this pins a COMMENT in the source on purpose, as documentation, not behaviour.
     expect(SRC).toContain('bypasses RLS')
   })
 })

@@ -236,7 +236,8 @@ keyword apart in review and 1.6 MB apart in the artifact.
 
 > ✅ **BOTH ARE NOW IN `postbuild`, BLOCKING (2026-08-19).** This block used to open "🔴 IT IS NOT IN
 > `postbuild` YET" and it stayed there after the fact was no longer true, contradicting this file's own
-> merge checklist eleven lines below, which already required all four gates to print ✅. That is the
+> merge checklist eleven lines below, which already required all four gates to print ✅ (five since
+> 2026-09-05, when `check:build-fanout` joined, ADR-1211). That is the
 > dangerous direction for this particular doc: a standing red warning that a **blocking** gate is
 > unwired is what talks someone into "fixing" a red build by deleting a gate.
 >

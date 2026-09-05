@@ -204,6 +204,8 @@ export async function sendWelcomeEmail(params: {
   // (lib/email-studio/send.ts, a server-only path) are unaffected. To make a transactional email editable,
   // resolve the template in the SERVER-side caller and pass the rendered subject/html/text in, rather than
   // importing product-block from here. Tracked in docs/EMAIL-EDITOR-PLAN.md.
+  // 2026-09-05 (scan2 L4-04): renderTransactionalTemplate and the transactional presets were removed; the
+  // hardcoded copy is the only path, and no editable seam is tracked here any more.
   await enqueueEmail({
     to,
     subject: `Welcome to Frequency, ${displayName}`,

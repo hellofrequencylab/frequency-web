@@ -20,15 +20,7 @@
 // the instant checkout opened. FAIL-SAFE: any error degrades to the pure resolver, never to a lockout.
 
 import type { SpaceRole } from './membership'
-import {
-  type SpaceLike,
-  spaceAiDepth,
-  spaceCanRunPlaybooks,
-  spaceCanSeeResonance,
-  spaceCanUseResonanceAi,
-  AI_DEPTH_KEYS,
-  type AiDepthTier,
-} from './entitlements'
+import { type SpaceLike, spaceAiDepth, type AiDepthTier } from './entitlements'
 import { spaceFunctionAccess, spaceFunctionDef, type SpaceFunctionKey } from './functions'
 import { featureAllowed } from '@/lib/pricing/gates'
 import { asSpacePlan } from '@/lib/pricing/plans'
@@ -130,65 +122,11 @@ export async function spaceCanHostCollaborators(
 // AI-depth capability is a paid LEVER, so any error degrades to the free WEDGE (no depth), never an
 // over-grant. The free wedge is never gated, so a degrade never locks a member out of the loop.
 
-/** The AI-depth entitlement key → the pricing feature-gate key. Kept in lock-step with FEATURE_GATES
- *  (lib/pricing/gates.ts) §5 space features. */
-const AI_DEPTH_FEATURE_KEY: Record<string, string> = {
-  [AI_DEPTH_KEYS.playbooks]: 'space_crm_playbooks',
-  [AI_DEPTH_KEYS.resonance]: 'space_crm_resonance',
-  [AI_DEPTH_KEYS.resonanceAi]: 'space_crm_resonance_ai',
-}
-
-/** Resolve ONE AI-depth capability live: the pure entitlement read (DEFAULT-DENY) AND the
- *  featureAllowed plan-ladder check, BOTH required. FAIL-CLOSED: an error degrades to the pure read
- *  result (the entitlement the blob already grants), which is itself default-deny, so a misread never
- *  over-grants a paid lever. */
-async function aiDepthCapabilityLive(
-  space: ({ plan?: string | null } & SpaceLike) | null | undefined,
-  pureHas: boolean,
-  featureKey: string,
-  plan?: string | null,
-): Promise<boolean> {
-  // The pure entitlement gate first (default-deny). If the blob does not grant it, it is OFF.
-  if (!pureHas) return false
-  try {
-    const gatesLive = await featureGatesLive()
-    return await featureAllowed(featureKey, { plan: asSpacePlan(plan ?? space?.plan ?? null) }, { gatesLive })
-  } catch {
-    // FAIL-CLOSED for a paid lever: degrade to the pure read (which already passed). The pure read is
-    // itself default-deny, so this can only ever GRANT what the entitlements blob already grants.
-    return pureHas
-  }
-}
-
-/** May a Space run GOVERNED AUTO-EXECUTION of safe playbooks, LIVE (entitlement + plan ladder)? The
- *  depth half only; the autonomy slider (autoExecutionAllowed, Phase 3) still gates how much runs. */
-export async function spaceCanRunPlaybooksLive(
-  space: ({ plan?: string | null } & SpaceLike) | null | undefined,
-  plan?: string | null,
-): Promise<boolean> {
-  return aiDepthCapabilityLive(space, spaceCanRunPlaybooks(space), AI_DEPTH_FEATURE_KEY[AI_DEPTH_KEYS.playbooks]!, plan)
-}
-
-/** May a Space see the read-only RESONANCE surface, LIVE (entitlement + plan ladder)? The top rung
- *  (resonance_ai) implies it, so a Space with only `crm.resonance_ai` still resolves true. */
-export async function spaceCanSeeResonanceLive(
-  space: ({ plan?: string | null } & SpaceLike) | null | undefined,
-  plan?: string | null,
-): Promise<boolean> {
-  // The mid rung is implied by the top rung; the pure reader already folds that in.
-  const featureKey = spaceCanUseResonanceAi(space)
-    ? AI_DEPTH_FEATURE_KEY[AI_DEPTH_KEYS.resonanceAi]!
-    : AI_DEPTH_FEATURE_KEY[AI_DEPTH_KEYS.resonance]!
-  return aiDepthCapabilityLive(space, spaceCanSeeResonance(space), featureKey, plan)
-}
-
-/** May a Space use the FULL Resonance Graph + managed matching (the top rung), LIVE? */
-export async function spaceCanUseResonanceAiLive(
-  space: ({ plan?: string | null } & SpaceLike) | null | undefined,
-  plan?: string | null,
-): Promise<boolean> {
-  return aiDepthCapabilityLive(space, spaceCanUseResonanceAi(space), AI_DEPTH_FEATURE_KEY[AI_DEPTH_KEYS.resonanceAi]!, plan)
-}
+// 2026-09-05 (scan2 L9-13): the three LIVE per-capability wrappers this section described
+// (spaceCanRunPlaybooksLive, spaceCanSeeResonanceLive, spaceCanUseResonanceAiLive), their private
+// aiDepthCapabilityLive helper and the AI_DEPTH_FEATURE_KEY map were removed: no surface called them.
+// The pure readers in ./entitlements remain the AI-depth authority; lib/pricing/gate-meter-drift.test.ts
+// already lists the three gate keys as decorative (no enforcement call site).
 
 /** The Space's resolved AI-depth tier (the pure reader, re-exported here so the cockpit can read the
  *  whole ladder in one call). FAIL-CLOSED to the free `wedge`. The LIVE per-capability gates above

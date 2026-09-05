@@ -14592,6 +14592,7 @@ export type Database = {
           currency: string
           id: string
           profile_id: string | null
+          refunded_at: string | null
           status: string
           stripe_checkout_session_id: string | null
           stripe_payment_intent_id: string | null
@@ -14603,6 +14604,7 @@ export type Database = {
           currency?: string
           id?: string
           profile_id?: string | null
+          refunded_at?: string | null
           status?: string
           stripe_checkout_session_id?: string | null
           stripe_payment_intent_id?: string | null
@@ -14614,6 +14616,7 @@ export type Database = {
           currency?: string
           id?: string
           profile_id?: string | null
+          refunded_at?: string | null
           status?: string
           stripe_checkout_session_id?: string | null
           stripe_payment_intent_id?: string | null
@@ -14720,6 +14723,7 @@ export type Database = {
           id: string
           message: string | null
           platform_fee_cents: number
+          refunded_at: string | null
           status: string
           stripe_checkout_session_id: string | null
           stripe_payment_intent_id: string | null
@@ -14734,6 +14738,7 @@ export type Database = {
           id?: string
           message?: string | null
           platform_fee_cents?: number
+          refunded_at?: string | null
           status?: string
           stripe_checkout_session_id?: string | null
           stripe_payment_intent_id?: string | null
@@ -14748,6 +14753,7 @@ export type Database = {
           id?: string
           message?: string | null
           platform_fee_cents?: number
+          refunded_at?: string | null
           status?: string
           stripe_checkout_session_id?: string | null
           stripe_payment_intent_id?: string | null

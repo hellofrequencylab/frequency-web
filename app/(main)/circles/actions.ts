@@ -246,6 +246,12 @@ type MembershipConflict = 'already_active' | 'reactivated' | 'full' | 'error'
  * pre-check above waved this join through. Two different numbers; the active count is the one the
  * cap means.
  *
+ * 2026-09-05 (scan2 L6-13): both sentences above are now history. Migration 20270345000500 makes
+ * the cap trigger fire on UPDATE OF status as well as INSERT (locking the circle row, so two dormant
+ * members reactivating together serialize), and makes member_count follow status transitions so it
+ * counts ACTIVE rows only. The JS count below is still a fast-fail pre-check; the DB is the hard
+ * guarantee, and its raise on the update is mapped to 'full' exactly as the insert path maps it.
+ *
  * The access gate ran before the insert and does not run again here: it reads active membership
  * (`isMember`), so a dormant row was never a key to a closed circle. Nothing below can widen it.
  */
@@ -285,6 +291,9 @@ async function settleExistingMembership(
     .update({ status: 'active' })
     .eq('id', existing.id)
   if (updateError) {
+    // The DB guard now fires on this update too (20270345000500): a lost race arrives as the same
+    // typed raise the insert path names.
+    if (updateError.code === 'P0001' && (updateError.message ?? '').includes('circle_full')) return 'full'
     console.error('[joinCircle] membership reactivate failed', {
       code: updateError.code, message: updateError.message, circleId, profileId,
     })

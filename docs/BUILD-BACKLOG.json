@@ -53,13 +53,20 @@
             "SCAN-538",
             "SCAN-539",
             "LIVE-154",
-            "LIVE-155",
             "LIVE-156",
             "LIVE-157",
             "LIVE-158",
             "LIVE-159",
             "LIVE-160",
-            "LIVE-161"
+            "LIVE-161",
+            "LIVE-162",
+            "LIVE-163",
+            "LIVE-164",
+            "LIVE-165",
+            "LIVE-166",
+            "LIVE-167",
+            "LIVE-168",
+            "LIVE-169"
           ]
         },
         {
@@ -183,7 +190,8 @@
             "OWN-054",
             "OWN-055",
             "OWN-056",
-            "OWN-057"
+            "OWN-057",
+            "OWN-058"
           ]
         }
       ],
@@ -2125,13 +2133,14 @@
       "lane": "live",
       "size": "XS",
       "source": {
-        "file": "lib/email-studio/presets.ts",
+        "file": "lib/email.ts",
         "ref": "FOUNDING_BUSINESS_INVITE"
       },
       "detail": "FOUNDING_BUSINESS (lib/beta/launch-emails.ts, mirrored in lib/beta/email-templates.ts) is seeded into Email Studio as a campaign offering local businesses \"A Founding Business gets its own Space to post events and offers and the lowest rate we will ever set, kept for good. Take the year before September 1\". ADR-1067 removed the Business founding rate, so there is no price behind that promise: Business is a flat $29/mo, $290/yr, and the only beta rate in the catalog is Collective's unlisted $49/$490. Nothing is mis-sold TODAY because these are seeded drafts rather than sends, and the campaign links to /pricing rather than to a checkout at a named rate. But if it goes out as written it offers a founding rate the catalog cannot charge. Owner decides which: retire the email, or repoint the offer at Collective (whose rate IS grantable, and whose September 1 framing already matches). The badge and Space copy are reusable either way. NOT a code fix to guess at - the email is an offer, and which offer to make is the owner's call.\n\n── 2026-08-19, AND THIS ROW'S CLOSE WAS INCOMPLETE. It was scoped to lib/beta/launch-emails.ts and lib/beta/email-templates.ts, and the exact sentence it reported removing was alive VERBATIM in a third file the close never looked at: lib/email-studio/presets.ts, in a preset named FOUNDING_BUSINESS_INVITE ('the lowest rate we will ever set, kept for good'). Its probe could never have caught it, because both files it read are now deleted and it returns indeterminate. The copy is fixed and the probe re-pointed at the file that actually carries the offer. The lesson is the row's own: a close scoped to the files you happened to grep is not a close, and the mitigation everyone reached for (nothing imports EMAIL_PRESETS outside its test) is the same dormancy this row judged unacceptable when it was filed.",
       "verify": {
         "kind": "cmd",
-        "cmd": "node -e \"const fs=require('fs');const P='lib/email-studio/presets.ts';if(!fs.existsSync(P))process.exit(79);if(/lowest rate we will ever set/.test(fs.readFileSync(P,'utf8'))){console.error('the retired Business founding rate is back in presets.ts');process.exit(1)}process.exit(0)\""
+        "cmd": "node -e \"const fs=require('fs'),pa=require('path');function*w(d){for(const n of fs.readdirSync(d)){const f=pa.join(d,n);if(fs.statSync(f).isDirectory())yield*w(f);else if(/\\.tsx?$/.test(f))yield f}}for(const f of w('lib')){if(/lowest rate we will ever set/.test(fs.readFileSync(f,'utf8'))){console.error('the retired Business founding rate is back in '+f);process.exit(1)}}process.exit(0)\"",
+        "note": "2026-09-05: lib/email-studio/presets.ts was deleted (scan2 L4-04); the probe now greps every lib/ file for the retired copy."
       },
       "notes": "Closed 2026-08-17 on the owner's instruction, which had already been given three times and which I should have applied without asking: founding beta pricing is removed except the one unlisted Collective offer. FOUNDING_BUSINESS is out of BETA_LAUNCH_EMAILS (so the seeder never writes it into `campaigns`) and the matching plain-text template is out of email-templates.ts. The constant is KEPT and exported as RETIRED_FOUNDING_BUSINESS_EMAIL: the Founding Business PROGRAM - badge, 25-per-city cap, take-rate buy-down - is recognition rather than a discount and is not retired, so the copy stays available to rewrite without a founding RATE in it. The probe strips line comments before judging, because the retirement note quotes the promise it removed and documentation is not an offer; it caught that on its first run."
     },
@@ -2611,13 +2620,14 @@
       "lane": "live",
       "size": "S",
       "source": {
-        "file": "lib/email-studio/presets.ts",
+        "file": "lib/email.ts",
         "ref": "FOUNDING_MEMBER / FOUNDING_BUSINESS_INVITE"
       },
       "detail": "CLOSED 2026-08-19. Filed when clearing the grace window (ADR-1087) also ended the beta founder push: grantBetaFounding reads the same row, so with beta_grace null every grant returns 'no_window' and no subscription earns a Founding badge automatically any more.\n\nTHE ROW WAS AIMED AT THE WRONG FILE, and an audit caught it the same day. Deleting lib/beta/launch-emails.ts with the Command Center did NOT remove the offer: the identical sentences were alive in a THIRD file, lib/email-studio/presets.ts, inside presets named FOUNDING_MEMBER and FOUNDING_BUSINESS_INVITE. That is the same third-file miss that made OWN-025's close incomplete, and it is the reason this probe now reads presets.ts.\n\nFIXED BY MAKING THE COPY TRUE rather than by deleting the presets, because the Founding badge itself still exists and is still grantable by hand (royaltemple carries one by owner decision). Two sentences changed: the member preset no longer says 'Take the year before September 1 and a small mark goes on your profile', and the business preset no longer offers 'the lowest rate we will ever set, kept for good' (ADR-1067 removed the Business founding rate outright, so that rate could not be charged at all).",
       "verify": {
         "kind": "cmd",
-        "cmd": "node -e \"const fs=require('fs');const P='lib/email-studio/presets.ts';if(!fs.existsSync(P))process.exit(79);const s=fs.readFileSync(P,'utf8');const bad=[];if(/before September 1/.test(s))bad.push('presets.ts still dates an offer to September 1');if(/lowest rate we will ever set/.test(s))bad.push('presets.ts still offers the lowest rate we will ever set, which ADR-1067 removed');if(bad.length){console.error(bad.join('; '));process.exit(1)}process.exit(0)\""
+        "cmd": "node -e \"const fs=require('fs'),pa=require('path');function*w(d){for(const n of fs.readdirSync(d)){const f=pa.join(d,n);if(fs.statSync(f).isDirectory())yield*w(f);else if(/\\.tsx?$/.test(f))yield f}}for(const f of w('lib')){if(/lowest rate we will ever set/.test(fs.readFileSync(f,'utf8'))){console.error('the retired Business founding rate is back in '+f);process.exit(1)}}process.exit(0)\"",
+        "note": "2026-09-05: lib/email-studio/presets.ts was deleted (scan2 L4-04); the probe now greps every lib/ file for the retired copy."
       }
     },
     {
@@ -6641,18 +6651,18 @@
     {
       "id": "LIVE-155",
       "title": "The Space share card crashes for one space: TypeError u2 is not iterable on /spaces/[slug]/opengraph-image",
-      "status": "open",
+      "status": "done",
       "lane": "live",
       "size": "S",
       "source": {
         "file": "app/(main)/spaces/[slug]/opengraph-image.tsx",
         "ref": "ADR-1207"
       },
-      "detail": "Vercel error group: 'TypeError: u2 is not iterable', route /spaces/[slug]/opengraph-image-tt3pwa, 2 hits (2026-08-05 and 2026-08-29), 1 space. Scan two read every iteration site on the route and its helpers (loadNunito falls back to a bundled face, readHeroConfig guards its input shape, getSpaceVisibility and getSpaceBySlug return objects); none iterates a data-shaped value, so the crash is not root-caused from source. Next step is the full stack from the Vercel digest for that error group, or replaying the route against the same slug with the fonts and preferences that space carries. When it renders, the crawler gets the neutral fallback card; when it throws, the share preview is a text card.",
+      "detail": "Vercel error group: 'TypeError: u2 is not iterable', route /spaces/[slug]/opengraph-image-tt3pwa, 2 hits (2026-08-05 and 2026-08-29), 1 space. Scan two read every iteration site on the route and its helpers (loadNunito falls back to a bundled face, readHeroConfig guards its input shape, getSpaceVisibility and getSpaceBySlug return objects); none iterates a data-shaped value, so the crash is not root-caused from source. Next step is the full stack from the Vercel digest for that error group, or replaying the route against the same slug with the fonts and preferences that space carries. When it renders, the crawler gets the neutral fallback card; when it throws, the share preview is a text card.\n\n2026-09-05 (scan2 PF-2, ADR-1210): ROOT-CAUSED. Satori's data-URL image resolver has no arm for image/webp or image/avif and spreads an unassigned size variable (the minified u2). fetchRemoteImage copied the origin content-type into the data URL; the one crashing Space (being-wholistic-collective) stores its logo as image/webp, the only webp among 40 Space covers and logos. lib/og/remote-image.ts now sniffs the bytes and emits only png/gif/jpeg/sized svg; a real-render test reproduces the exact error text on the pre-fix body and passes on the fix.",
       "verify": {
-        "kind": "manual",
-        "evidence": "2026-09-05: get_runtime_errors 7d shows the group with last seen 2026-08-29. Closes when a 7-day read after the fix returns no occurrence.",
-        "checked": "2026-09-05"
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const s=fs.readFileSync('lib/og/remote-image.ts','utf8').replace(/\\/\\/.*$/gm,'');process.exit(/sniffInlineImageType\\(buf\\)/.test(s)&&fs.existsSync('app/(main)/spaces/[slug]/opengraph-image.test.tsx')?0:1)\"",
+        "note": "Fails if the read-site sniff is removed or the real-render route test is deleted; the vitest file itself reproduces the production error on the pre-fix body."
       }
     },
     {
@@ -6716,7 +6726,7 @@
         "file": "lib/resonance/density.ts",
         "ref": "ADR-1207"
       },
-      "detail": "Scan two R2. refresh_resonance_density_cells() opened with delete with no WHERE; the PostgREST authenticator role preloads safeupdate (pg_roles.rolconfig), so every REST call failed with sqlstate 21000 since 2026-08-22 (postgres_logs 2026-09-04 02:31Z), density.ts swallowed it to {cells:0} and the cron logged info. Closed: migration 20270345000000 (applied 2026-09-05, ledger reconciled) rewrites the delete as `where true`; density.ts returns the error; the cron logs it at error level with ok:false on the step. A pgTAP pin under a loaded safeupdate hook is deferred to phase E until `load` is proven allowed in the CI database.",
+      "detail": "Scan two R2. refresh_resonance_density_cells() opened with delete with no WHERE; the PostgREST authenticator role preloads safeupdate (pg_roles.rolconfig), so every REST call failed with sqlstate 21000 since 2026-08-22 (postgres_logs 2026-09-04 02:31Z), density.ts swallowed it to {cells:0} and the cron logged info. Closed: migration 20270345000000 (applied 2026-09-05, ledger reconciled) rewrites the delete as `where true`; density.ts returns the error; the cron logs it at error level with ok:false on the step. A pgTAP pin under a loaded safeupdate hook is deferred to phase E until `load` is proven allowed in the CI database. 2026-09-05 (phase F): the pgTAP pin landed as SCAN-581.",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e \"const fs=require('fs');const m=fs.readFileSync('supabase/migrations/20270345000000_density_refresh_safeupdate.sql','utf8');const d=fs.readFileSync('lib/resonance/density.ts','utf8');process.exit(/delete from public\\.resonance_density_cells where true;/.test(m)&&!/return \\{ cells: 0 \\}/.test(d)&&/error/.test(d)?0:1)\"",
@@ -7231,6 +7241,703 @@
         "kind": "cmd",
         "cmd": "node -e \"const fs=require('fs');const g=fs.readFileSync('scripts/function-grants.txt','utf8');process.exit(/restore_commerce_stock_atomic/.test(g)?0:1)\"",
         "note": "Passes once the stock-restore RPC exists and carries a grant verdict."
+      }
+    },
+    {
+      "id": "SCAN-579",
+      "title": "An anonymous caller could guest-RSVP a draft or removed event and rename any known guest",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "supabase/migrations/20270345000600_guest_rsvp_rpc_checks_status_and_owner.sql",
+        "ref": "ADR-1210"
+      },
+      "detail": "Scan two L7-5 (2026-09-05). capture_guest_rsvp checked visibility and is_cancelled but not status or removed_at, and its resubmit branch let the caller's name overwrite the stored one, so anyone who knew a guest's email could rename them. Closed: migration 20270345000600 (create or replace, ACL restated) refuses a non-published or removed event with the same opaque receipt every other rejection returns, and the stored name wins on resubmit (a null is still filled in). The receipt stays opaque on purpose: a distinguishable answer would be the attendance oracle the function's own header names. pgTAP: draft refused, removed refused, second submit with a different name changes nothing.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const m=fs.readFileSync('supabase/migrations/20270345000600_guest_rsvp_rpc_checks_status_and_owner.sql','utf8').replace(/--.*$/gm,'');process.exit(/status is distinct from 'published'/.test(m)&&/removed_at is not null/.test(m)&&/coalesce\\(r\\.guest_name, excluded\\.guest_name\\)/.test(m)&&fs.existsSync('supabase/tests/guest_rsvp_refuses_draft_removed_and_rename.test.sql')?0:1)\"",
+        "note": "Fails if the guard or the stored-name-wins branch leaves the migration, or its pgTAP file is removed."
+      }
+    },
+    {
+      "id": "SCAN-580",
+      "title": "Anyone holding a signup_leads id could rewrite that lead with no proof of ownership",
+      "status": "done",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "app/join/(induction)/lead-actions.ts",
+        "ref": "ADR-1210"
+      },
+      "detail": "Scan two L7-6. update_signup_lead and mark_signup_lead_converted took the row id alone; capture_signup_lead handed that id to the browser. Closed: migration 20270345000610 mints a claim token per capture, stores its SHA-256 in signup_leads.claim_token_hash, returns {id, claim_token}, and requires the token on update and convert (wrong or missing changes nothing and returns false); rows captured before the column stay writable by the service role only. The old signatures are dropped, so the migration and lead-actions.ts ship in one release. The induction cookie carries id.token and a bare id never reaches the database. pgTAP (19 assertions) and lead-actions.test.ts pin it.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const m=fs.readFileSync('supabase/migrations/20270345000610_signup_lead_updates_need_a_claim_token.sql','utf8');const a=fs.readFileSync('app/join/(induction)/lead-actions.ts','utf8').replace(/\\/\\/.*$/gm,'');process.exit(/claim_token_hash/.test(m)&&/p_claim_token/.test(m)&&/p_claim_token/.test(a)&&fs.existsSync('supabase/tests/signup_lead_claim_token.test.sql')?0:1)\"",
+        "note": "Fails if the token stops being required by the migration or stops being sent by the induction actions."
+      }
+    },
+    {
+      "id": "SCAN-581",
+      "title": "The density rollup is now pinned under the safeupdate hook it used to fail on",
+      "status": "done",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "supabase/tests/refresh_resonance_density_cells_safeupdate.test.sql",
+        "ref": "ADR-1210"
+      },
+      "detail": "The pgTAP half of SCAN-554 that phase A deferred (the PR size gate, and load being unproven in the CI database). The test loads safeupdate inside a DO block; when the library loads it runs a positive control (a bare DELETE on a temp table raises 21000) and asserts refresh_resonance_density_cells() lives and returns an integer; when it cannot load, all three assertions skip loudly with the sqlstate, never pass vacuously and never fail the suite.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const t=fs.readFileSync('supabase/tests/refresh_resonance_density_cells_safeupdate.test.sql','utf8');process.exit(/load ''safeupdate''/.test(t)&&/lives_ok\\(/.test(t)&&/skip\\('safeupdate could not be loaded/.test(t)?0:1)\"",
+        "note": "Fails if the pin loses its load, its lives_ok, or its loud skip."
+      }
+    },
+    {
+      "id": "LIVE-162",
+      "title": "Two different things share the fq_lead cookie name",
+      "status": "open",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "lib/crm/lead-capture.ts",
+        "ref": "ADR-1210"
+      },
+      "detail": "lib/crm/lead-capture.ts LEAD_GRAB_COOKIE and app/join/(induction)/lead-actions.ts LEAD_COOKIE are both 'fq_lead': one is a Space QR lead grab (JSON), the other the signup lead claim (now id.token after SCAN-580). Neither mis-parses the other today, but on a shared browser one overwrites the other. Rename one (fq_lead_grab for the QR path is the smaller change) and keep both readers tolerant of the old name for a release.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const a=/LEAD_GRAB_COOKIE = '([^']+)'/.exec(fs.readFileSync('lib/crm/lead-capture.ts','utf8'));const b=/LEAD_COOKIE = '([^']+)'/.exec(fs.readFileSync('app/join/(induction)/lead-actions.ts','utf8'));process.exit(a&&b&&a[1]!==b[1]?0:1)\"",
+        "note": "Passes once the two cookie names differ."
+      }
+    },
+    {
+      "id": "SCAN-582",
+      "title": "A schema-contract guard: every .from()/.rpc() chain is checked against lib/database.types.ts in CI",
+      "status": "done",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "scripts/check-schema-contract.mjs",
+        "ref": "ADR-1211"
+      },
+      "detail": "Scan two, phase E (2026-09-05). The L1 scanner that found the phantom campaigns.updated_at (ADR-1207) is now scripts/check-schema-contract.mjs, wired as check:schema-contract in package.json and the ci.yml guards list. It walks app, lib, components, scripts and supabase/functions, checks tables, columns, insert and update keys and rpc names against the generated types, exits 1 on a phantom with file:line, exits 2 when it saw fewer than 2500 files or 3000 chains (a guard that sees nothing must not read as green), counts dynamic-table and runtime-built payloads as named skips, and carries an empty dated allowlist whose stale entries fail. The live tree is clean. A planted-violation test spawns it on a fixture carrying the exact L1-01 shape.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const s=fs.readFileSync('scripts/check-schema-contract.mjs','utf8');const w=fs.readFileSync('.github/workflows/ci.yml','utf8').split('\\\\n').filter(l=>!/^\\\\s*#/.test(l)).join('\\\\n');const g=/guards=\\\\(([\\\\s\\\\S]*?)\\\\)/.exec(w);process.exit(/MIN_FILES\\\\s*=\\\\s*\\\\d/.test(s)&&/MIN_CHAINS\\\\s*=\\\\s*\\\\d/.test(s)&&g&&g[1].split(/\\\\s+/).includes('schema-contract')&&/check:schema-contract/.test(fs.readFileSync('package.json','utf8'))&&fs.existsSync('scripts/check-schema-contract.test.ts')?0:1)\"",
+        "note": "Fails if the guard loses its floors, its CI wiring, or its planted-violation test."
+      }
+    },
+    {
+      "id": "SCAN-583",
+      "title": "The six traced-artifact fan-out checks ran nowhere; they are now a postbuild gate",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "scripts/check-build-fanout.mjs",
+        "ref": "ADR-1211"
+      },
+      "detail": "Scan two, phase E (2026-09-05). L8-01. scripts/build-fanout.test.ts guarded them with describe.skipIf(!HAS_BUILD), CI never builds and postbuild ran only four .mjs gates. Closed: scripts/check-build-fanout.mjs carries the six checks (heic2any in no trace, icon collections in at most 8 functions, no unsanctioned public/ file, site photos in at most 6, no function over 14 public files, placeholders ship) with a 450-function floor, runs fifth in postbuild, and the vitest file exercises it on a fixture tree with planted violations. It has NOT yet seen a real artifact: read its output on the first production deploy (functions read ~496-499; icon chunks at least 1).",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const p=JSON.parse(fs.readFileSync('package.json','utf8')).scripts;const s=fs.readFileSync('scripts/check-build-fanout.mjs','utf8');process.exit(/check-build-fanout\\\\.mjs\\\\s*(&&|$)/.test(p.postbuild)&&/MIN_FUNCTIONS\\\\s*=\\\\s*\\\\d/.test(s)?0:1)\"",
+        "note": "Fails if the gate leaves postbuild or loses its floor."
+      }
+    },
+    {
+      "id": "SCAN-584",
+      "title": "Four guard scripts could match nothing and exit 0; they now have floors and spawn tests",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "scripts/check-og-trace.mjs",
+        "ref": "ADR-1211"
+      },
+      "detail": "Scan two, phase E (2026-09-05). L8-02. check-grants, check-og-trace, check-build-budget and check-collective had no test that imported or spawned them and no non-triviality floor, so a renamed .nft.json layout would report zero functions carrying sharp and 0 GB and pass. Closed: each has a floor (150 live tables; 200 traces and 5 rasterisers; 200 traces and 1 GB; 100 doc and 2000 code files) that exits 2, and a test that spawns it against a fixture with one planted violation and one clean case. Real-tree verdicts are byte-identical before and after.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const ok=['scripts/check-grants.mjs','scripts/check-og-trace.mjs','scripts/check-build-budget.mjs','scripts/check-collective.mjs'].every(f=>/MIN_[A-Z_]+\\\\s*=\\\\s*\\\\d/.test(fs.readFileSync(f,'utf8'))&&fs.existsSync(f.replace(/\\\\.mjs$/,'.test.ts')));process.exit(ok?0:1)\"",
+        "note": "Fails if any of the four loses its floor or its spawn test."
+      }
+    },
+    {
+      "id": "SCAN-585",
+      "title": "check-studio and check-crm-parity take a root and have planted-violation controls",
+      "status": "done",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "scripts/check-studio.mjs",
+        "ref": "ADR-1211"
+      },
+      "detail": "Scan two, phase E (2026-09-05). L8-03. runCheck() and checkCrmParity() took no root argument, so their tests had a corpus floor and a live-tree-is-clean arm but no negative control; a kernel importing from lib/studio/entities/ would be caught only if the detector regex still matched today's syntax, and nothing checked that. Closed: both take a root (default unchanged), and each test plants the violation in the live import syntax and asserts the exact findings.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');process.exit(/export function runCheck\\\\(root/.test(fs.readFileSync('scripts/check-studio.mjs','utf8'))&&/export function checkCrmParity\\\\(root/.test(fs.readFileSync('scripts/check-crm-parity.mjs','utf8'))?0:1)\"",
+        "note": "Fails if either check drops its root parameter."
+      }
+    },
+    {
+      "id": "SCAN-586",
+      "title": "34 source-shape assertions matched a comment as readily as the code; they now match comment-stripped source",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "test/source-shape.ts",
+        "ref": "ADR-1211"
+      },
+      "detail": "Scan two, phase E (2026-09-05). L8-04 and L8-05. Deleting the pinned code left the test green because the needle also appeared in a comment or an import of the pinned file (proven on four, including the sole assertion that the /events loader reads the horizon setting). Closed: test/source-shape.ts provides sourceWithoutComments (a length-preserving scanner validated against TypeScript's own comment ranges over 3,396 files) and every one of the 34 assertions matches stripped source or a call token; the maps diagnostics test pins the boolean in google-loader.ts rather than a comment; deliberate doc-pins carry a one-line label.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const h=fs.readFileSync('test/source-shape.ts','utf8');const m=fs.readFileSync('components/maps/maps-wiring.test.ts','utf8');process.exit(/export function sourceWithoutComments\\\\(/.test(h)&&m.includes('keyPresent: Boolean(googleMapsBrowserKey())')&&!m.includes(\\\"expect(diag).toContain('keyPresent')\\\")?0:1)\"",
+        "note": "Fails if the helper is removed or the maps test goes back to pinning prose."
+      }
+    },
+    {
+      "id": "SCAN-587",
+      "title": "The capability loader and the support store had importers, mocks, and no executing test",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/core/load-capabilities.test.ts",
+        "ref": "ADR-1211"
+      },
+      "detail": "Scan two, phase E (2026-09-05). L8-06. lib/core/load-capabilities.ts (82 importers, mocked by 10 tests, executed by none) and lib/support/store.ts (mocked by 24, executed by none) now have executing tests (24 and 23 cases) driven by a table-aware fake client that records table and chain, covering anonymous, member, Circle admin, host, staff, the guide walk, the draft boundary, Space delegation and three fail-closed read errors; and ticket create, reads, writes, staff reply, filters with LIKE escaping and a refused storage write.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');process.exit(fs.existsSync('lib/core/load-capabilities.test.ts')&&fs.existsSync('lib/support/store.test.ts')?0:1)\"",
+        "note": "Fails if either executing test is removed."
+      }
+    },
+    {
+      "id": "SCAN-588",
+      "title": "Every Vercel preview counted as the production deployment for GA and the rate limiter",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/rate-limit.ts",
+        "ref": "ADR-1211"
+      },
+      "detail": "Scan two, phase E (2026-09-05). L3-03. NODE_ENV is production on previews too, so the GA tag and its server mirror fired from every preview and the e2e workflow, and a preview without KV denied the 29 default-policy call sites. Closed: both read VERCEL_ENV first and fall back to NODE_ENV only when it is unset; tests set VERCEL_ENV=preview with NODE_ENV=production and prove GA stays off and the limiter allows.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');process.exit(/VERCEL_ENV/.test(fs.readFileSync('lib/rate-limit.ts','utf8').replace(/\\\\/\\\\/.*$/gm,''))&&/VERCEL_ENV/.test(fs.readFileSync('lib/analytics/ga-server.ts','utf8').replace(/\\\\/\\\\/.*$/gm,''))?0:1)\"",
+        "note": "Fails if either gate goes back to NODE_ENV alone."
+      }
+    },
+    {
+      "id": "SCAN-589",
+      "title": "Four Stripe knobs the code never read were documented as live, and the example fee was 10 where the code charges 3",
+      "status": "done",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": ".env.example",
+        "ref": "ADR-1211"
+      },
+      "detail": "Scan two, phase E (2026-09-05). L3-04. STRIPE_PRICE_CREW and STRIPE_MEMBERSHIP_AMOUNT were read only by two functions with no non-test caller; STRIPE_PRICE_SUPPORTER and STRIPE_SUPPORTER_AMOUNT were read nowhere; STRIPE_PLATFORM_FEE_PCT shipped as 10 against a code default of 3. Closed: the four keys and the two dead helpers are gone, the example says 3.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const e=fs.readFileSync('.env.example','utf8');const s=fs.readFileSync('lib/billing/stripe.ts','utf8').split('\\n').filter(l=>!/^\\s*(\\/\\/|\\*|\\/\\*)/.test(l)).join('\\n');process.exit(!/^(STRIPE_PRICE_CREW|STRIPE_MEMBERSHIP_AMOUNT|STRIPE_PRICE_SUPPORTER|STRIPE_SUPPORTER_AMOUNT)=/m.test(e)&&/^STRIPE_PLATFORM_FEE_PCT=3$/m.test(e)&&!/STRIPE_PRICE_CREW|STRIPE_MEMBERSHIP_AMOUNT/.test(s)?0:1)\"",
+        "note": "Fails if a dead knob returns to the example or the code."
+      }
+    },
+    {
+      "id": "SCAN-590",
+      "title": "Copying .env.example switched every dark-unless-set feature on with junk credentials",
+      "status": "done",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": ".env.example",
+        "ref": "ADR-1211"
+      },
+      "detail": "Scan two, phase E (2026-09-05). L3-05. Placeholder values were truthy, so billingEnabled(), aiEnabled(), the Resend send path and the Google Wallet signer all read as configured and threw or called out with bad keys. Closed: eleven such keys ship blank with the placeholder in the comment above, and scripts/env-example.test.ts asserts they stay blank.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const e=fs.readFileSync('.env.example','utf8');process.exit(/^STRIPE_SECRET_KEY=$/m.test(e)&&/^ANTHROPIC_API_KEY=$/m.test(e)&&/^RESEND_API_KEY=$/m.test(e)&&fs.existsSync('scripts/env-example.test.ts')?0:1)\"",
+        "note": "Fails if a dark key regains a placeholder value or the example test is removed."
+      }
+    },
+    {
+      "id": "SCAN-591",
+      "title": "Eight platform flags were read but never seeded, and the marketplace readers failed open",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "supabase/migrations/20270345000400_seed_missing_platform_flags.sql",
+        "ref": "ADR-1211"
+      },
+      "detail": "Scan two, phase E (2026-09-05). L3-07 and L4-07. auto_popups_enabled, next_steps_enabled, referrals_enabled, sms_enabled, vera_autonomy_enabled, vera_breaker_armed, host_payouts_enabled and chat_dm_routes_retired had no seed row anywhere, so readers ran on hardcoded defaults an operator could not see; the four marketplace area readers published an area on a read error. Closed: the migration seeds the eight with their reader defaults (on conflict do nothing, behaviour-neutral), lib/marketplace/visibility.ts reads the error and hides on failure, and a test asserts every flag key read in the three reader modules is seeded by some migration. The scan's claim that the Vera flags had no setter had expired: app/(main)/admin/ai has both.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const m=fs.readFileSync('supabase/migrations/20270345000400_seed_missing_platform_flags.sql','utf8');const v=fs.readFileSync('lib/marketplace/visibility.ts','utf8').replace(/\\\\/\\\\/.*$/gm,'');process.exit(/vera_autonomy_enabled/.test(m)&&/vera_breaker_armed/.test(m)&&/error/.test(v)?0:1)\"",
+        "note": "Fails if the seed migration loses a flag or the marketplace reader stops reading the error."
+      }
+    },
+    {
+      "id": "SCAN-592",
+      "title": "Twenty-two keys the scripts and CI read were absent from .env.example",
+      "status": "done",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": ".env.example",
+        "ref": "ADR-1211"
+      },
+      "detail": "Scan two, phase E (2026-09-05). L3-08 (a, b). SENTRY_DSN, the Vercel system variables and a labelled scripts-and-CI block (VERCEL_AUTOMATION_BYPASS_SECRET, SUPABASE_PROJECT_REF, the perf and spend keys, PW_*) are documented. NEXT_PUBLIC_SUPPORT_CHAT keeps its prefix (LIVE-165: renaming it in code without renaming the Vercel variable in the same window would hide the widget on the next deploy).",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const e=fs.readFileSync('.env.example','utf8');process.exit(/^VERCEL_AUTOMATION_BYPASS_SECRET=$/m.test(e)&&/^SUPABASE_PROJECT_REF=$/m.test(e)?0:1)\"",
+        "note": "Fails if the scripts-and-CI block is removed."
+      }
+    },
+    {
+      "id": "SCAN-593",
+      "title": "track('qr.referral_activated') was dropped by the taxonomy, so the referral moment never reached GA4",
+      "status": "done",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "lib/analytics/events.ts",
+        "ref": "ADR-1211"
+      },
+      "detail": "Scan two, phase E (2026-09-05). L4-03. The site emitted the name and isTrackedEvent refused it. Closed: registered as a lifecycle event, server-only; first-party was never affected because the same site also writes referral.activated through recordEngagementEvent.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');process.exit(/name: 'qr\\\\.referral_activated'/.test(fs.readFileSync('lib/analytics/events.ts','utf8'))?0:1)\"",
+        "note": "Fails if the name leaves the taxonomy."
+      }
+    },
+    {
+      "id": "SCAN-594",
+      "title": "The page-chrome catalog registered /referral, a route with no page",
+      "status": "done",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "lib/layout/page-chrome.ts",
+        "ref": "ADR-1211"
+      },
+      "detail": "Scan two, phase E (2026-09-05). L4-06. No app/**/referral page exists and the flag it was gated on is read by nothing. Closed: the entry is gone (the comment stays with a dated correction); railFor semantics are untouched.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const s=fs.readFileSync('lib/layout/page-chrome.ts','utf8').replace(/\\\\/\\\\/.*$/gm,'');process.exit(/['\\\"]\\\\/referral['\\\"]/.test(s)?1:0)\"",
+        "note": "Fails if the dead entry returns."
+      }
+    },
+    {
+      "id": "SCAN-595",
+      "title": "POST /help/ask ran an AI call per request and had no caller",
+      "status": "done",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "components/admin/admin-footer.tsx",
+        "ref": "ADR-1211"
+      },
+      "detail": "Scan two, phase E (2026-09-05). L2-09. Nothing fetched the route; the Ask Vera tier goes through app/(main)/support/actions.ts. Closed: the route is deleted, the footer comment corrected, the path-mapping test repointed, the authz ledger entry removed.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');process.exit(fs.existsSync('app/(help)/help/ask/route.ts')||/help\\\\/ask\\\\/route\\\\.ts/.test(fs.readFileSync('scripts/authz-route-ledger.json','utf8'))?1:0)\"",
+        "note": "Passes while the route and its ledger entry stay gone."
+      }
+    },
+    {
+      "id": "SCAN-596",
+      "title": "The Space automation form offered two triggers that never fire",
+      "status": "done",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "lib/spaces/automation-types.ts",
+        "ref": "ADR-1211"
+      },
+      "detail": "Scan two, phase E (2026-09-05). L4-02. fireSpaceTrigger is called for contact.created and member.joined only; contact.tagged and deal.stage_changed had no emitter (a tag lands at three sites and a deal stage at five, so wiring was not one call). Closed: the offered list is the two that fire, and a source-shape test walks lib/ (comments stripped) and fails if any offered trigger has no fireSpaceTrigger call.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const s=fs.readFileSync('lib/spaces/automation-types.ts','utf8').replace(/\\\\/\\\\/.*$/gm,'');const m=/SPACE_AUTOMATION_TRIGGERS = \\\\[([\\\\s\\\\S]*?)\\\\]/.exec(s);process.exit(m&&!/contact\\\\.tagged|deal\\\\.stage_changed/.test(m[1])?0:1)\"",
+        "note": "Fails if an unfired trigger is offered again."
+      }
+    },
+    {
+      "id": "SCAN-597",
+      "title": "The editable transactional-template path was dead at both ends and is removed",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/email-studio/product-block.ts",
+        "ref": "ADR-1211"
+      },
+      "detail": "Scan two, phase E (2026-09-05). L4-04 and L9-09. renderTransactionalTemplate had no caller, email_templates had no writer, EMAIL_PRESETS was imported only by its own test, and the preset copy told the operator the text was editable here. Closed: presets.ts and the render path are deleted; the welcome and invite senders' deferral comments carry a dated correction; OWN-025 and LIVE-057 now probe every lib/ file for the retired copy. Dropping the email_templates table is LIVE-164.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const s=fs.readFileSync('lib/email-studio/product-block.ts','utf8').replace(/\\\\/\\\\*[\\\\s\\\\S]*?\\\\*\\\\//g,'').replace(/^\\\\s*\\\\/\\\\/.*$/gm,'');process.exit(!fs.existsSync('lib/email-studio/presets.ts')&&!/from\\\\('email_templates'\\\\)|renderTransactionalTemplate\\\\(/.test(s)?0:1)\"",
+        "note": "Fails if the dead path comes back."
+      }
+    },
+    {
+      "id": "SCAN-598",
+      "title": "Help feature keys pointed at routes that do not exist, so drift never flagged their articles",
+      "status": "done",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "lib/help/feature-keys.ts",
+        "ref": "ADR-1211"
+      },
+      "detail": "Scan two, phase E (2026-09-05). L4-05. /vault matched nothing under app/ and the member notification settings under /settings/notifications never marked the notifications article. Closed: vault routes to /upgrade, notifications lists both prefixes, and a test asserts every route on every key matches at least one file under app/. The four keys the scan also named already matched (its tool counted page files only).",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');process.exit(fs.existsSync('lib/help/feature-keys.test.ts')&&/\\\\/settings\\\\/notifications/.test(fs.readFileSync('lib/help/feature-keys.ts','utf8'))?0:1)\"",
+        "note": "Fails if the route test or the settings prefix is removed."
+      }
+    },
+    {
+      "id": "SCAN-599",
+      "title": "Fifteen exported async lib functions with no importer and no caller are deleted",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/spaces/function-access.ts",
+        "ref": "ADR-1211"
+      },
+      "detail": "Scan two, phase E (2026-09-05). L9-13. Each caller search was re-run before deletion (app, lib, components, scripts, supabase/functions, string and dynamic forms). Deleted: draftOfferingBlurb, listAttachmentsOfRecording, listRelationships, listAllScoredMembers, listAcceptedSharesForSpace, setEventIntakeInputs, saveSplashOverride, resolvePlaceSelectorProfileIds, memberInRecovery, resolveViewerGamification, spaceCanRunPlaybooksLive, spaceCanSeeResonanceLive, spaceCanUseResonanceAiLive, getSpaceSeatQuantity, hasActiveSpaceMembership. Kept on purpose: setSpaceBundle (a done row's probe and an owner ruling require it). Wired instead of deleted: updateSpaceSegment, updateSpaceEmailTemplate (SCAN-601). Left to their owning phases: spaceIsPaying, listMakerProducts, getCurrentLegPracticeIds, listSpaceRules.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const M={'lib/ai/space-copilot.ts':['draftOfferingBlurb'],'lib/airwaves/recordings.ts':['listAttachmentsOfRecording'],'lib/crm/relationships.ts':['listRelationships'],'lib/dashboard/scores.ts':['listAllScoredMembers'],'lib/events/event-share.ts':['listAcceptedSharesForSpace'],'lib/events/seed/store.ts':['setEventIntakeInputs'],'lib/funnels/overrides.ts':['saveSplashOverride'],'lib/messaging/place-tree.ts':['resolvePlaceSelectorProfileIds'],'lib/pricing/dunning.ts':['memberInRecovery'],'lib/pricing/gamification-access.ts':['resolveViewerGamification'],'lib/spaces/function-access.ts':['spaceCanRunPlaybooksLive','spaceCanSeeResonanceLive','spaceCanUseResonanceAiLive'],'lib/spaces/seats.ts':['getSpaceSeatQuantity'],'lib/spaces/tier-circle.ts':['hasActiveSpaceMembership']};let bad=0;for(const [f,ns] of Object.entries(M)){const s=fs.readFileSync(f,'utf8');for(const n of ns)if(new RegExp('export\\\\\\\\s+async\\\\\\\\s+function\\\\\\\\s+'+n+'\\\\\\\\b').test(s))bad++}process.exit(bad?1:0)\"",
+        "note": "Fails if any deleted export returns without a caller."
+      }
+    },
+    {
+      "id": "SCAN-600",
+      "title": "Space profile telemetry had no reader, and the Donate card counted a click per mount",
+      "status": "done",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "lib/spaces/analytics.ts",
+        "ref": "ADR-1211"
+      },
+      "detail": "Scan two, phase E (2026-09-05). L9-07. space.profile_view and space.cta_click were written and read by nothing, and the Donate card fired cta_click in a mount effect. Closed: the tracker records on the first real click only; getSpaceProfileStats counts the two events per Space over a window; the Space Home dashboard shows Profile views and Button clicks behind their own Suspense.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const t=fs.readFileSync('components/spaces/donations/donate-cta-tracker.tsx','utf8').replace(/\\\\/\\\\*[\\\\s\\\\S]*?\\\\*\\\\//g,'').replace(/^\\\\s*\\\\/\\\\/.*$/gm,'');const d=fs.readFileSync('components/spaces/dashboard/space-dashboard.tsx','utf8');process.exit(!/useEffect/.test(t)&&/getSpaceProfileStats\\\\(/.test(d)?0:1)\"",
+        "note": "Fails if the tracker fires on mount again or the dashboard stops reading the stats."
+      }
+    },
+    {
+      "id": "SCAN-601",
+      "title": "Space segments and Space email templates could be created and deleted but not edited",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/spaces/segments-actions.ts",
+        "ref": "ADR-1211"
+      },
+      "detail": "Scan two, phase E (2026-09-05). L9-08. updateSpaceSegment and updateSpaceEmailTemplate existed with no importer and no affordance. Closed: server actions with the create actions' authorization, an edit mode in the audience picker (rename keeps the stored definition, re-read server-side) and the template picker (update with the composer's current draft), with jsdom tests.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');process.exit(/export async function updateSpaceSegment\\\\(/.test(fs.readFileSync('lib/spaces/segments-actions.ts','utf8'))&&/export async function updateSpaceEmailTemplate\\\\(/.test(fs.readFileSync('lib/spaces/email-templates-actions.ts','utf8'))&&/updateSpaceSegment/.test(fs.readFileSync('components/spaces/email/audience-picker.tsx','utf8'))?0:1)\"",
+        "note": "Fails if the edit actions or the picker's edit mode are removed."
+      }
+    },
+    {
+      "id": "SCAN-602",
+      "title": "Conversation assignment history was written and never shown",
+      "status": "done",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "lib/comms/workspace.ts",
+        "ref": "ADR-1211"
+      },
+      "detail": "Scan two, phase E (2026-09-05). L9-10. comms_assignments had one insert and no reader. Closed: getWorkspaceThread loads the trail (bounded, error read) beside the messages and the conversation workspace renders it as a details band, latest hand-off as the summary.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const w=fs.readFileSync('lib/comms/workspace.ts','utf8').replace(/^\\\\s*\\\\/\\\\/.*$/gm,'');const c=fs.readFileSync('components/admin/crm/conversation-workspace.tsx','utf8');process.exit(/\\\\.from\\\\('comms_assignments'\\\\)/.test(w)&&/assignmentSentence\\\\(/.test(c)?0:1)\"",
+        "note": "Fails if the trail stops being read or rendered."
+      }
+    },
+    {
+      "id": "SCAN-603",
+      "title": "The two full-page settings editors now resolve through the surface-href builders",
+      "status": "done",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "lib/admin/entity-surface-hrefs.ts",
+        "ref": "ADR-1211"
+      },
+      "detail": "Scan two, phase E (2026-09-05). L9-11. Nothing pointed at /circles/[slug]/settings or /events/[slug]/settings. Closed for the builders: circle.settings and event.settings resolve. The door itself (a Settings item in the rail bank) would raise FROZEN_MENU_DEBT, which the ledger says may never rise, and both manage pages already carry an in-page Settings tab, so whether to add the rail link is OWN-058.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');process.exit(/circle\\\\.settings/.test(fs.readFileSync('lib/admin/entity-surface-hrefs.ts','utf8').replace(/\\\\/\\\\/.*$/gm,''))?0:1)\"",
+        "note": "Fails if the builders stop resolving the settings editors."
+      }
+    },
+    {
+      "id": "SCAN-604",
+      "title": "Marketing consent was recorded as granted when the caller omitted the field",
+      "status": "done",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "app/onboarding/actions.ts",
+        "ref": "ADR-1211"
+      },
+      "detail": "Scan two, phase E (2026-09-05). L5-16. emailOptIn ?? true sat on the consent write; the only omitting caller was the staff preview, but the cutover to it was planned. Closed: consent is granted only on an explicit true, with a test; the sequence-runner comment records that the cutover needs an opt-in step (LIVE-168).",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');process.exit(/emailOptIn === true/.test(fs.readFileSync('app/onboarding/actions.ts','utf8'))?0:1)\"",
+        "note": "Fails if consent is granted by omission again."
+      }
+    },
+    {
+      "id": "SCAN-605",
+      "title": "Nine mention pickers threw an unhandled rejection on a non-JSON search response",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/mentions/search-handles-client.ts",
+        "ref": "ADR-1211"
+      },
+      "detail": "Scan two, phase E (2026-09-05). L5-17. Each site called res.json() inside a timer with no try, no res.ok and no cancel flag, so a 500 page or an auth redirect broke the popup and a slow old response overwrote a newer one. Closed: createHandleSearch checks res.ok, parses inside try/catch, aborts and ignores stale responses, never throws; the nine sites use it (dock-chat already had its own guards and a parity test pinning its URL).",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const {execSync}=require('child_process');const files=execSync('grep -rl /api/search-handles components --include=*.tsx').toString().trim().split('\\n');const raw=files.filter(f=>!f.endsWith('dock-chat.tsx')&&/fetch\\(.\\/api\\/search-handles/.test(fs.readFileSync(f,'utf8')));process.exit(raw.length===0&&/export function createHandleSearch/.test(fs.readFileSync('lib/mentions/search-handles-client.ts','utf8'))?0:1)\"",
+        "note": "Fails if a picker goes back to a raw fetch or the helper is removed."
+      }
+    },
+    {
+      "id": "SCAN-606",
+      "title": "Editing a dispatch with malformed poll options threw a raw SyntaxError",
+      "status": "done",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "app/(main)/admin/actions.ts",
+        "ref": "ADR-1211"
+      },
+      "detail": "Scan two, phase E (2026-09-05). L5-18. The only unguarded JSON.parse in the operator dispatch path (updateDispatch, not the events manage console the scan named). Closed: parsed inside a guard with a shape check and an operator-facing message.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');process.exit(/Poll options could not be read/.test(fs.readFileSync('app/(main)/admin/actions.ts','utf8'))?0:1)\"",
+        "note": "Fails if the guard is removed."
+      }
+    },
+    {
+      "id": "SCAN-607",
+      "title": "The guest-seat claim wrapped an RPC in a try/catch that could never catch",
+      "status": "done",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "lib/events/guest-seat-claim.ts",
+        "ref": "ADR-1211"
+      },
+      "detail": "Scan two, phase E (2026-09-05). L5-19. supabase-js resolves { error }, so a failed claim_guest_rsvps was never seen and the reads that followed reported nothing to claim. Closed: the result is read, logged with the profile id, and the fail-closed no-op kept; the comment carries a dated correction; the test drives a resolved error.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');process.exit(/claim_guest_rsvps failed/.test(fs.readFileSync('lib/events/guest-seat-claim.ts','utf8'))?0:1)\"",
+        "note": "Fails if the error read is removed."
+      }
+    },
+    {
+      "id": "SCAN-608",
+      "title": "Push registration failed silently after the browser said subscribed",
+      "status": "done",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "components/push/registration.tsx",
+        "ref": "ADR-1211"
+      },
+      "detail": "Scan two, phase E (2026-09-05). L5-20. Two .catch(() => {}) swallowed a failed subscription save. Closed: a fresh subscribe whose save is refused is unsubscribed again and the member sees one status line with a Dismiss; an existing-subscription re-sync failure is logged only, because that path runs on every load.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');process.exit(/PUSH_SAVE_FAILED_COPY/.test(fs.readFileSync('components/push/registration.tsx','utf8'))?0:1)\"",
+        "note": "Fails if the status line is removed."
+      }
+    },
+    {
+      "id": "SCAN-609",
+      "title": "The Circle member cap ignored reactivation and the counter disagreed with it",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "supabase/migrations/20270345000500_circle_member_cap_counts_reactivation.sql",
+        "ref": "ADR-1211"
+      },
+      "detail": "Scan two, phase E (2026-09-05). L6-13. The cap trigger fired on INSERT only and the count trigger incremented on any insert and decremented on delete only, so two dormant members reactivating together could exceed the cap. Closed: the cap fires before insert or update of status (transition into active only, circle row locked), a new trg_sync_circle_member_count keeps active-only accounting on insert, status change and delete, the old triggers are unwired, a one-time resync runs, and settleExistingMembership maps the raise to the existing full message. pgTAP proves the UPDATE path raises at cap. Latent today: no app path writes pending or inactive.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const m=fs.readFileSync('supabase/migrations/20270345000500_circle_member_cap_counts_reactivation.sql','utf8').replace(/--.*$/gm,'');process.exit(/before insert or update of status on public\\\\.memberships/.test(m)&&/trg_sync_circle_member_count/.test(m)&&/trg_sync_circle_member_count\\\\s+internal/.test(fs.readFileSync('scripts/function-grants.txt','utf8'))?0:1)\"",
+        "note": "Fails if the trigger loses its UPDATE arm or the grants verdict is dropped."
+      }
+    },
+    {
+      "id": "SCAN-610",
+      "title": "Event allowances compared a wall-clock starts_at to the real now, dropping events up to 14 hours early or late",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/pricing/member-meter-usage.ts",
+        "ref": "ADR-1211"
+      },
+      "detail": "Scan two, phase E (2026-09-05). L6-14. starts_at stores the event's wall clock in UTC parts, so a Los Angeles 7 pm event left the creator's allowance at noon local and a Sydney 9 am event stayed until the evening. Closed: memberActiveEvents, the createEvent cap and the Space upcoming-events access list read a band widened by the largest zone offset and filter by eventInstant, the way the reminder crons do; tests cover both boundaries.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const u=fs.readFileSync('lib/pricing/member-meter-usage.ts','utf8');const a=fs.readFileSync('app/(main)/events/actions.ts','utf8').replace(/\\\\/\\\\/.*$/gm,'');const s=fs.readFileSync('lib/events/space-event-access.ts','utf8').replace(/\\\\/\\\\/.*$/gm,'');process.exit(/export function isUpcomingByInstant/.test(u)&&/isUpcomingByInstant\\\\(/.test(a)&&/isUpcomingByInstant\\\\(/.test(s)?0:1)\"",
+        "note": "Fails if any of the three gates goes back to raw starts_at."
+      }
+    },
+    {
+      "id": "OWN-058",
+      "title": "Decide the door for the two full-page settings editors",
+      "status": "open",
+      "lane": "owner",
+      "size": "XS",
+      "source": {
+        "file": "lib/admin/rail-bank.ts",
+        "ref": "ADR-1211"
+      },
+      "detail": "SCAN-603 made circle.settings and event.settings resolve through the href builders, but adding a Settings item to the rail bank raised FROZEN_MENU_DEBT from 11 to 13 and check:menu refused it (the ledger says the count may never rise). Both manage pages already carry an in-page Settings tab, so the full-page editors are reachable by URL and duplicate an existing door. Owner picks one: (a) add the two rail items and raise the frozen count with a reason, (b) mint circle.edit / event.edit link rows in ADMIN_MODULES (the channel.edit precedent) and add them to the closed linkOut set in registry.test.ts, or (c) leave the URL-only editors as they are and retire them later.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const b=fs.readFileSync('lib/admin/rail-bank.ts','utf8');const r=fs.readFileSync('lib/admin/modules/registry.ts','utf8');process.exit(/\\\\/settings`/.test(b)||/circle\\\\.edit|event\\\\.edit/.test(r)?0:1)\"",
+        "note": "Passes once either door exists (rail item or registry link rows)."
+      }
+    },
+    {
+      "id": "LIVE-163",
+      "title": "Two granted RPCs are called by nothing: search_practices_hybrid and housing_lifestyle_agreement",
+      "status": "open",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/practices.ts",
+        "ref": "ADR-1211"
+      },
+      "detail": "Scan two L9-12. Both are defined, granted (scripts/function-grants.txt) and never called; practice search never takes the hybrid RRF path the function was built for. Wiring search_practices_hybrid into searchLibraryPractices is not one call (an embedText round-trip per query, an id hydration that would re-sort away the RRF order, exact-count paging over an id set), so it needs a design pass; housing_lifestyle_agreement needs an owner ruling to drop. Either wire, or drop both in a migration and remove their grants lines.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const g=fs.readFileSync('scripts/function-grants.txt','utf8');const p=fs.readFileSync('lib/practices.ts','utf8');process.exit((/rpc\\\\('search_practices_hybrid'/.test(p)||!/^search_practices_hybrid\\\\b/m.test(g))&&!/^housing_lifestyle_agreement\\\\b/m.test(g)?0:1)\"",
+        "note": "Passes once the hybrid search is called or dropped, and the housing function is dropped."
+      }
+    },
+    {
+      "id": "LIVE-164",
+      "title": "The email_templates table has no writer and, since SCAN-597, no reader",
+      "status": "open",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "supabase/migrations",
+        "ref": "ADR-1211"
+      },
+      "detail": "RLS deny-all, no insert anywhere, and the one reader (renderTransactionalTemplate) is deleted. Drop it in a migration (and its table-grants and rls-deny-all lines) or record why it stays.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const {execSync}=require('child_process');const hits=execSync('grep -rl \\\"email_templates\\\" supabase/migrations lib scripts/table-grants.txt scripts/rls-deny-all.txt || true').toString().trim();process.exit(/drop table if exists public\\\\.email_templates/.test(execSync('cat supabase/migrations/*.sql').toString())&&!/lib\\\\//.test(hits)?0:1)\"",
+        "note": "Passes once a migration drops the table and no lib code names it."
+      }
+    },
+    {
+      "id": "LIVE-165",
+      "title": "NEXT_PUBLIC_SUPPORT_CHAT is read only by server layouts; the public prefix buys nothing",
+      "status": "open",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "app/(marketing)/layout.tsx",
+        "ref": "ADR-1211"
+      },
+      "detail": "Scan two L3-08 (b). The three readers are server layouts. Renaming it in code without renaming the Vercel variable in the same window would hide the widget on the next deploy, so this is a two-step change: add SUPPORT_CHAT in Vercel, switch the readers to prefer it with a fallback to the old name, then remove the old variable and the fallback.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const {execSync}=require('child_process');process.exit(execSync('grep -rl \\\"NEXT_PUBLIC_SUPPORT_CHAT\\\" app lib components || true').toString().trim()===''?0:1)\"",
+        "note": "Passes once no reader names the prefixed variable."
+      }
+    },
+    {
+      "id": "LIVE-166",
+      "title": "Five platform_flags rows are seeded and read by nothing",
+      "status": "open",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "lib/platform-flags.ts",
+        "ref": "ADR-1211"
+      },
+      "detail": "beta_referral_contest, beta_ends_at, plan_whitelabel_enabled, plan_practitioner_enabled and plan_organization_enabled have live rows and no reader (tier_supporter_enabled is read for display only). Either the readers never shipped (write them) or the rows are dead (delete them in a migration). Owner ruling on the plan flags; the beta pair can go.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const {execSync}=require('child_process');const src=execSync('grep -rho \\\"beta_referral_contest\\\\\\\\|beta_ends_at\\\\\\\\|plan_whitelabel_enabled\\\\\\\\|plan_practitioner_enabled\\\\\\\\|plan_organization_enabled\\\" lib app components || true').toString();const mig=execSync('cat supabase/migrations/*.sql').toString();process.exit(src.trim()!==''||/delete from public\\\\.platform_flags[\\\\s\\\\S]*beta_referral_contest/.test(mig)?0:1)\"",
+        "note": "Passes once the flags are read somewhere or deleted by a migration."
+      }
+    },
+    {
+      "id": "LIVE-167",
+      "title": "51 import-only source-shape assertions still lean on eslint's unused-import rule",
+      "status": "open",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "test/source-shape.ts",
+        "ref": "ADR-1211"
+      },
+      "detail": "SCAN-586 fixed the 34 comment-shadowed assertions and added sourceWithoutComments. The remaining 51 (scan2 l8-shape.json, class import) match an import line only, so deleting the call but keeping the import is caught by eslint's unused-import rule rather than the test. Converting them to sourceWithoutComments(path, { imports: true }) plus a call token is mechanical with the helper.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const {execSync}=require('child_process');const n=parseInt(execSync('grep -rl \\\"sourceWithoutComments(\\\" --include=*.test.ts --include=*.test.tsx app components lib scripts test | wc -l').toString());process.exit(n>=40?0:1)\"",
+        "note": "Passes once at least 40 test files use the helper (20 today)."
+      }
+    },
+    {
+      "id": "LIVE-168",
+      "title": "The onboarding sequence runner has no opt-in step, so its cutover would record consent withheld for everyone",
+      "status": "open",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "components/onboarding/sequence-runner.tsx",
+        "ref": "ADR-1211"
+      },
+      "detail": "SCAN-604 stopped consent being granted by omission. The staff-only sequence preview binding omits emailOptIn, and the comment in the file plans a production cutover to it; that cutover now needs an explicit opt-in step in the sequence before it ships, or every member routed through it is recorded as declining marketing email.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const s=fs.readFileSync('components/onboarding/sequence-runner.tsx','utf8').replace(/\\\\/\\\\/.*$/gm,'');process.exit(/emailOptIn/.test(s)?0:1)\"",
+        "note": "Passes once the sequence binding carries emailOptIn."
+      }
+    },
+    {
+      "id": "LIVE-169",
+      "title": "Env contract residue: bare Supabase reads and two canonical-URL variables",
+      "status": "open",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": ".env.example",
+        "ref": "ADR-1211"
+      },
+      "detail": "Scan two L3-08 (c) and (d), not addressed in phase E: four Supabase client constructions read the env with a non-null assertion rather than a checked read, and two variables carry the canonical site URL. Route both through lib/env/string.ts (phase D) and document the URL pair once.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const {execSync}=require('child_process');const n=execSync('grep -rn \\\"process.env.NEXT_PUBLIC_SUPABASE_URL!\\\" lib app || true').toString().trim().split(\\\"\\\\n\\\").filter(Boolean).length;process.exit(n===0?0:1)\"",
+        "note": "Passes once no Supabase client reads the URL with a non-null assertion."
       }
     }
   ]

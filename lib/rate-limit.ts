@@ -20,7 +20,12 @@ const redis = url && token ? new Redis({ url, token }) : null
 // Are we running in a real production deployment? If so, an UNCONFIGURED limiter must FAIL CLOSED
 // (deny) rather than silently no-op — a missing Upstash integration in prod would otherwise leave
 // abuse-prone public endpoints wide open. In dev/test/preview we still no-op so local flows work.
-const IS_PRODUCTION = process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production'
+// 2026-09-05 (scan2 L3-03): the line above was only half true. Next forces NODE_ENV=production on
+// every Vercel build, PREVIEWS included, so `NODE_ENV === 'production'` denied the default-policy
+// call sites on any preview without KV. "Production deployment" is VERCEL_ENV === 'production';
+// NODE_ENV is consulted only when VERCEL_ENV is unset (a local build, a non-Vercel host).
+const DEPLOY_ENV = process.env.VERCEL_ENV || process.env.NODE_ENV
+const IS_PRODUCTION = DEPLOY_ENV === 'production'
 
 // One Ratelimit per (limit, window) config — reused across requests.
 const limiters = new Map<string, Ratelimit>()

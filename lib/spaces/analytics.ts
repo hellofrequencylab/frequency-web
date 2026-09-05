@@ -21,10 +21,64 @@
 
 import { cache } from 'react'
 import { recordEngagementEvent } from '@/lib/engagement/events'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 /** The ledger event types this surface emits, in the existing dotted `space.*` taxonomy. */
 const PROFILE_VIEW = 'space.profile_view'
 const CTA_CLICK = 'space.cta_click'
+
+// 2026-09-05 (scan2 L9-07): the two recorders above had no reader. The header says "a later operator
+// read can slice ... the same way the engagement dashboard already slices props"; that read is
+// getSpaceProfileStats below, rendered on the Space Home dashboard (components/spaces/dashboard).
+// It counts rows for ONE space rather than calling engagement_prop_counts: that RPC returns the top
+// N spaces by count, so a space outside the top N would read as zero, which is the wrong answer for
+// "how did THIS profile perform". Same ledger, same admin client, same `context.spaceId` key.
+
+/** The per-space profile read-out the Space Home dashboard shows. Counts are over the trailing
+ *  window; a profile view is already one bucket per (viewer, day) at write time. */
+export interface SpaceProfileStats {
+  windowDays: number
+  profileViews: number
+  ctaClicks: number
+}
+
+/** Count one event type for one space since `since`. Fail-safe: 0 on any error (and the error is
+ *  logged, never thrown into the dashboard). */
+async function countSpaceEvents(eventType: string, spaceId: string, since: string): Promise<number> {
+  const { count, error } = await createAdminClient()
+    .from('engagement_events')
+    .select('id', { count: 'exact', head: true })
+    .eq('event_type', eventType)
+    .eq('context->>spaceId', spaceId)
+    .gte('created_at', since)
+  if (error) {
+    console.error(`[spaces/analytics] count ${eventType} failed:`, error.message)
+    return 0
+  }
+  return count ?? 0
+}
+
+/**
+ * Read how a Space profile performed over the trailing window: profile views (one per viewer per
+ * day) and primary-button clicks. Server-only (admin client); the caller gates on manage access,
+ * exactly as every other read on the Space Home dashboard does. Fail-safe: zeros, never a throw.
+ */
+export async function getSpaceProfileStats(spaceId: string, windowDays = 30): Promise<SpaceProfileStats> {
+  const days = Number.isFinite(windowDays) && windowDays > 0 ? Math.floor(windowDays) : 30
+  const empty: SpaceProfileStats = { windowDays: days, profileViews: 0, ctaClicks: 0 }
+  if (!spaceId) return empty
+  try {
+    const since = new Date(Date.now() - days * 86_400_000).toISOString()
+    const [profileViews, ctaClicks] = await Promise.all([
+      countSpaceEvents(PROFILE_VIEW, spaceId, since),
+      countSpaceEvents(CTA_CLICK, spaceId, since),
+    ])
+    return { windowDays: days, profileViews, ctaClicks }
+  } catch (err) {
+    console.error('[spaces/analytics] getSpaceProfileStats failed:', err)
+    return empty
+  }
+}
 
 /**
  * Record one profile-VIEW of a Space, deduped to once per (space, viewer, day).

@@ -12,6 +12,11 @@ import { staffCan } from '@/lib/core/staff-roles'
 //
 // FAIL-OPEN: a missing flag row or a read error reads as PUBLISHED. The marketplace went
 // live in #1052, so absence = visible; a transient DB hiccup must never blank a live area.
+// 2026-09-05 (scan2 L3-07): half of that is corrected. A MISSING ROW still reads as published
+// (absence = visible, as above). A READ ERROR now reads as HIDDEN for every area: an outage must
+// not publish an area an operator un-published, which is the direction every other operator
+// switch in lib/platform-flags.ts already fails. Note also that supabase-js resolves `{ error }`
+// and never throws, so the try/catch below was decorative; the error is now read.
 
 export type MarketArea = 'market' | 'housing' | 'makers' | 'shop'
 
@@ -45,22 +50,28 @@ export function areaFlagKey(area: MarketArea): string {
   return `marketplace_${area}_published`
 }
 
-/** Published state per area. Defaults TRUE on a missing row / read error (fail-open). */
+/** Every area hidden: the answer on a read error, so an outage cannot publish anything. */
+const ALL_HIDDEN: Readonly<Record<MarketArea, boolean>> = { market: false, housing: false, makers: false, shop: false }
+
+/** Published state per area. Defaults TRUE on a missing row (fail-open) and FALSE on a read
+ *  error (fail-closed, scan2 L3-07). Operators still see hidden areas via isMarketplaceOperator. */
 export const marketplaceVisibility = cache(async (): Promise<Record<MarketArea, boolean>> => {
   const out: Record<MarketArea, boolean> = { market: true, housing: true, makers: true, shop: true }
   try {
     const admin = createAdminClient()
-    const { data } = await admin
+    const { data, error } = await admin
       .from('platform_flags')
       .select('key, value')
       .in('key', MARKET_AREAS.map(areaFlagKey))
+    if (error) return { ...ALL_HIDDEN }
     const byKey = new Map(((data ?? []) as { key: string; value: boolean }[]).map((r) => [r.key, r.value]))
     for (const area of MARKET_AREAS) {
       const v = byKey.get(areaFlagKey(area))
       if (typeof v === 'boolean') out[area] = v
     }
   } catch {
-    /* fail-open: everything stays visible */
+    // 2026-09-05 (scan2 L3-07): fail-closed. This used to leave everything visible.
+    return { ...ALL_HIDDEN }
   }
   return out
 })

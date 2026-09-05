@@ -221,12 +221,14 @@ describe('(D) ADR-903: the join shape is preserved and the predicates sit where 
 describe('(E) ADR-903: the callers document the narrowed contract (docs move with the SQL)', () => {
   it('lib/discover.ts no longer describes the RPCs as location-redaction only', () => {
     const discover = readFileSync(join(ROOT, 'lib/discover.ts'), 'utf8')
+    // Doc-pin (scan2 L8-05): this pins a COMMENT in the source on purpose, as documentation, not behaviour.
     expect(discover).toContain('ADR-903')
   })
 
   it('app/sitemap.ts no longer claims the RPC "filters only is_cancelled + starts_at"', () => {
     const sitemap = readFileSync(join(ROOT, 'app/sitemap.ts'), 'utf8')
     expect(sitemap).not.toContain('it filters only')
+    // Doc-pin (scan2 L8-05): this pins a COMMENT in the source on purpose, as documentation, not behaviour.
     expect(sitemap).toContain('ADR-903')
   })
 
@@ -234,6 +236,7 @@ describe('(E) ADR-903: the callers document the narrowed contract (docs move wit
     const seo = readFileSync(join(ROOT, 'lib/events/series-seo.ts'), 'utf8')
     // The reader still does NOT use the RPC (it needs columns the RPC never projected), so the
     // header must keep naming it — series-seo.test.ts asserts that too.
+    // Doc-pin (scan2 L8-05): this pins a COMMENT in the source on purpose, as documentation, not behaviour.
     expect(seo).toContain('public_events')
     expect(seo).toContain('ADR-903')
   })

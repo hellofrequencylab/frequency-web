@@ -1,6 +1,7 @@
 'use client'
 
-import { useCallback, useEffect, useId, useRef, useState, useTransition } from 'react'
+import { useCallback, useEffect, useId, useMemo, useRef, useState, useTransition } from 'react'
+import { createHandleSearch } from '@/lib/mentions/search-handles-client'
 import Image from 'next/image'
 import Link from 'next/link'
 import { UserPlus, Check, X } from 'lucide-react'
@@ -35,6 +36,7 @@ type HandleHit = { id: string; handle: string; display_name: string; avatar_url:
 export function EventCohostChooser({ eventId, slug }: { eventId: string; slug: string }) {
   const [query, setQuery] = useState('')
   const [hits, setHits] = useState<HandleHit[]>([])
+  const searchHandles = useMemo(() => createHandleSearch<HandleHit>(), [])
   const [error, setError] = useState<string | null>(null)
   const [invited, setInvited] = useState<string | null>(null)
   const [current, setCurrent] = useState<EditorCohostRow[]>([])
@@ -74,15 +76,11 @@ export function EventCohostChooser({ eventId, slug }: { eventId: string; slug: s
         setHits([])
         return
       }
-      try {
-        const res = await fetch(`/api/search-handles?q=${encodeURIComponent(q.trim())}`)
-        const json = await res.json()
-        setHits(json.profiles ?? [])
-      } catch {
-        setHits([])
-      }
+      // Never throws; null is a stale response for a query already typed past.
+      const found = await searchHandles(q)
+      if (found) setHits(found)
     }, 150)
-  }, [])
+  }, [searchHandles])
 
   function invite(handle: string) {
     setError(null)

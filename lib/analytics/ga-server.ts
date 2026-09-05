@@ -5,12 +5,21 @@
 //
 // Inert unless BOTH ids are set AND NODE_ENV==='production' — matching the client
 // tag, so preview/dev traffic never hits the property.
+// 2026-09-05 (scan2 L3-03): NODE_ENV is 'production' on every Vercel build, previews included, so
+// that gate let preview deploys and the e2e workflow's synthetic traffic into the GA4 property.
+// The gate is now VERCEL_ENV === 'production', with NODE_ENV consulted only when VERCEL_ENV is
+// unset (local / non-Vercel). Same rule as the client tag and lib/rate-limit.ts.
 
 const GA_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID
 const GA_SECRET = process.env.GA_API_SECRET
 
+/** The deployment we are running in: Vercel's VERCEL_ENV when present, NODE_ENV otherwise. */
+function deployEnv(): string | undefined {
+  return process.env.VERCEL_ENV || process.env.NODE_ENV
+}
+
 export function gaServerEnabled(): boolean {
-  return !!(GA_ID && GA_SECRET && process.env.NODE_ENV === 'production')
+  return !!(GA_ID && GA_SECRET && deployEnv() === 'production')
 }
 
 /** GA4 event names must be snake_case — our taxonomy uses dots (qr.scanned). */

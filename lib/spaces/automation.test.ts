@@ -366,3 +366,46 @@ describe('automation templates catalog', () => {
     }
   })
 })
+
+// ── Every offered trigger has a live emitter (source shape, scan2 L4-02) ──────────────────────────
+// SPACE_AUTOMATION_TRIGGERS is the list an operator can pick from; fireSpaceTrigger is the only
+// runner. A trigger on the list with no `fireSpaceTrigger(<space>, '<trigger>'` call anywhere in
+// lib/ is a rule that can never fire. Comments are stripped first so prose cannot satisfy the match.
+
+import { readdirSync, readFileSync } from 'node:fs'
+import { join } from 'node:path'
+
+function walkTs(dir: string, out: string[] = []): string[] {
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const name = entry.name
+    const full = join(dir, name)
+    if (entry.isDirectory()) walkTs(full, out)
+    else if (/\.tsx?$/.test(name) && !/\.test\.tsx?$/.test(name)) out.push(full)
+  }
+  return out
+}
+
+function stripComments(src: string): string {
+  return src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:'"`])\/\/.*$/gm, '$1')
+}
+
+describe('every offered trigger is fired somewhere (scan2 L4-02)', () => {
+  const libRoot = join(__dirname, '..')
+  const fired = new Set<string>()
+  for (const file of walkTs(libRoot)) {
+    const code = stripComments(readFileSync(file, 'utf8'))
+    for (const m of code.matchAll(/fireSpaceTrigger\(\s*[^,()]+,\s*'([a-z_.]+)'/g)) fired.add(m[1]!)
+  }
+
+  it('found the two known emitters (detector control)', () => {
+    expect(fired.has('contact.created')).toBe(true)
+    expect(fired.has('member.joined')).toBe(true)
+  })
+
+  it.each([...SPACE_AUTOMATION_TRIGGERS])('%s has a fireSpaceTrigger call site', (trigger) => {
+    expect(
+      fired.has(trigger),
+      `${trigger} is offered in SPACE_AUTOMATION_TRIGGERS but no fireSpaceTrigger(space, '${trigger}') call exists under lib/. Wire the emitter before offering the trigger.`,
+    ).toBe(true)
+  })
+})

@@ -41,6 +41,9 @@ export const ANALYTICS_EVENTS: readonly AnalyticsEventDef[] = [
   // ── QR platform (server-authoritative; the /q resolver + actions) ────────────
   { name: 'qr.scanned', category: 'engagement', description: 'A dynamic code was scanned (props.purpose, props.destination).', clientEmittable: false },
   { name: 'qr.referral_signup', category: 'lifecycle', description: 'A new member attributed to a referral code (props.referrer).', clientEmittable: false },
+  // 2026-09-05 (scan2 L4-03): lib/qr/referral.ts has emitted this since the referral reward shipped,
+  // and track() dropped it as unregistered, so the activation moment never reached the GA4 mirror.
+  { name: 'qr.referral_activated', category: 'lifecycle', description: 'A referred member activated and the referrer was credited (props.referrer).', clientEmittable: false },
   { name: 'qr.gift_zap', category: 'engagement', description: 'A member sent a zap via a gift code (props.to).', clientEmittable: false },
   { name: 'qr.code_designed', category: 'feature', description: 'A member saved a code design (props.kind).', clientEmittable: true },
 ] as const

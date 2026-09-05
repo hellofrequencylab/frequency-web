@@ -13,6 +13,12 @@
 //
 // Crew is the ONLY sellable member tier (ADR-878). STRIPE_PRICE_SUPPORTER / STRIPE_SUPPORTER_AMOUNT are
 // no longer read anywhere: setting them in the env buys a Supporter checkout exactly nothing.
+// 2026-09-05 (scan2 L3-04): the same is now true of STRIPE_PRICE_CREW and STRIPE_MEMBERSHIP_AMOUNT.
+// The header above still lists them; they were read only by priceFor() and membershipAmount(),
+// and neither had a caller outside its own test. Checkout mints a pay-what-you-want price from the
+// amount the member chose (lib/billing/checkout.ts), so a catalog price id was never consulted.
+// Both helpers are deleted and both keys are gone from .env.example. STRIPE_PRICE_CREW is NOT
+// required to go live; STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET and NEXT_PUBLIC_APP_URL are.
 
 import Stripe from 'stripe'
 import type { EntitlementTier } from '@/lib/core/entitlement'
@@ -29,28 +35,10 @@ if (SECRET && !process.env.STRIPE_WEBHOOK_SECRET) {
 }
 export const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET ?? ''
 
-/** Explicit price id for a paid tier, if the owner configured one. Optional — when
- *  absent, checkout builds an inline price (see createMembershipCheckout).
- *
- *  Crew is the only sellable member tier (ADR-878), and since 2026-08-24 the only paid label on
- *  EntitlementTier at all, so 'free' resolves to null and cannot start a purchase. */
-export function priceFor(tier: EntitlementTier): string | null {
-  if (tier === 'crew') return process.env.STRIPE_PRICE_CREW ?? null
-  return null
-}
-
 /** Billing is live as soon as a Stripe key is present (the connector sets it). A price
  *  id is optional — checkout falls back to an inline price. */
 export function billingEnabled(): boolean {
   return !!stripe
-}
-
-/** Monthly amount in cents for the Crew inline-price fallback (default $10), overridable via
- *  STRIPE_MEMBERSHIP_AMOUNT. There is one sellable member tier, so there is one amount (ADR-878). */
-export function membershipAmount(): number {
-  const n = Number(process.env.STRIPE_MEMBERSHIP_AMOUNT)
-  if (Number.isFinite(n) && n > 0) return Math.round(n)
-  return 1000
 }
 
 /** The tier a Stripe price id maps back to (for the webhook). Always Crew: Crew is the only member

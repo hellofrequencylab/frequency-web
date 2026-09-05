@@ -27,6 +27,8 @@ export async function completeOnboarding(data: {
   avatarUrl: string
   regionId: string
   /** The member's email opt-in choice from onboarding (defaults on). Recorded to the consent ledger. */
+  // 2026-09-05 (scan2 L5-16): "defaults on" is retired. Marketing consent is never granted by
+  // omission: an absent field records `granted = false`. Only an explicit `true` opts in.
   emailOptIn?: boolean
 }) {
   const { displayName, handle, bio, avatarUrl } = sanitizeProfileInput(data)
@@ -93,8 +95,10 @@ export async function completeOnboarding(data: {
     // Record the member's email opt-in choice (ONLY on the first pass, so a later opt-out is never
     // clobbered by a repeat onboarding). `email_lifecycle` already defaults granted; this captures the
     // marketing/community-news scope they chose on the compelling opt-in card. Never blocks onboarding.
+    // 2026-09-05 (scan2 L5-16): `emailOptIn ?? true` recorded consent as GRANTED whenever a caller
+    // omitted the field. Consent is an affirmative act, so only an explicit `true` grants it.
     if (!onboarded) {
-      await recordConsent(updated.id, 'email_marketing', data.emailOptIn ?? true, 'onboarding').catch(() => {})
+      await recordConsent(updated.id, 'email_marketing', data.emailOptIn === true, 'onboarding').catch(() => {})
     }
     await applyReferralAttribution(updated.id)
     await applyEntryPointConversion(updated.id).catch(() => {})

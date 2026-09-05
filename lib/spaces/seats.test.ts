@@ -48,7 +48,7 @@ import {
   licensedSeats,
   seatsRemaining,
   seatLimitReached,
-  getSpaceSeatQuantity,
+  getSpaceSeatRow,
   usedSeats,
   getSeatUsage,
   checkSeatForOperatorInvite,
@@ -109,18 +109,18 @@ describe('IO reads (FAIL-SAFE)', () => {
     vi.clearAllMocks()
   })
 
-  it('getSpaceSeatQuantity reads spaces.seat_quantity, clamps to >= 0', async () => {
+  it('getSpaceSeatRow reads spaces.seat_quantity, clamps to >= 0', async () => {
     seatQuantityMaybeSingle.mockResolvedValue({ data: { seat_quantity: 4 } })
-    expect(await getSpaceSeatQuantity('s1')).toBe(4)
+    expect((await getSpaceSeatRow('s1')).seatQuantity).toBe(4)
     seatQuantityMaybeSingle.mockResolvedValue({ data: { seat_quantity: -2 } })
-    expect(await getSpaceSeatQuantity('s1')).toBe(0)
+    expect((await getSpaceSeatRow('s1')).seatQuantity).toBe(0)
   })
 
-  it('getSpaceSeatQuantity fails safe to 0 on a missing row / error', async () => {
+  it('getSpaceSeatRow fails safe to 0 on a missing row / error', async () => {
     seatQuantityMaybeSingle.mockResolvedValue({ data: null })
-    expect(await getSpaceSeatQuantity('s1')).toBe(0)
+    expect((await getSpaceSeatRow('s1')).seatQuantity).toBe(0)
     seatQuantityMaybeSingle.mockRejectedValue(new Error('db down'))
-    expect(await getSpaceSeatQuantity('s1')).toBe(0)
+    expect((await getSpaceSeatRow('s1')).seatQuantity).toBe(0)
   })
 
   it('usedSeats returns the active-operator count, fails safe to 0', async () => {

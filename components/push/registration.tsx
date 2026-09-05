@@ -10,9 +10,21 @@
 // Important: never prompts on every page load — `Notification.permission`
 // gates the actual permission request. Once a user denies, the browser
 // refuses further prompts anyway (gated by user agent policy).
+//
+// 2026-09-05 (scan2 L5-20): the subscription save used to fail silently (`.catch(() => {})`
+// twice), so a member who granted permission and whose browser then showed "subscribed" received
+// nothing and had no way to know. saveSubscription returns an ActionResult and does not throw on
+// a failed write, so its outcome is READ. On a FRESH subscribe that fails to land, the browser
+// subscription is torn down again (so the browser never claims a subscribed state the server does
+// not hold) and the member sees one plain line. The re-sync of an EXISTING subscription is logged
+// on failure rather than announced: the member is most likely already subscribed server-side, and
+// telling them push is off on every page load would be wrong more often than right.
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
+import { isError } from '@/lib/action-result'
 import { saveSubscription } from './actions'
+
+export const PUSH_SAVE_FAILED_COPY = 'Push could not be turned on. Try again.'
 
 const PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
 
@@ -26,6 +38,8 @@ function urlBase64ToUint8Array(base64: string): Uint8Array {
 }
 
 export function PushRegistration() {
+  const [saveFailed, setSaveFailed] = useState(false)
+
   useEffect(() => {
     if (typeof window === 'undefined') return
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) return
@@ -41,12 +55,13 @@ export function PushRegistration() {
       if (existing) {
         // Already subscribed — re-POST so the server stays in sync if rows
         // were ever lost (no-op if endpoint already known).
-        await saveSubscription({
+        const synced = await saveSubscription({
           endpoint:   existing.endpoint,
           p256dh:     b64Key(existing, 'p256dh'),
           auth:       b64Key(existing, 'auth'),
           userAgent:  navigator.userAgent,
-        }).catch(() => {})
+        }).catch((e: unknown) => ({ error: e instanceof Error ? e.message : 'save failed' }))
+        if (isError(synced)) console.error('[push] subscription re-sync failed', synced.error)
         return
       }
 
@@ -61,12 +76,20 @@ export function PushRegistration() {
         applicationServerKey: urlBase64ToUint8Array(PUBLIC_KEY!) as BufferSource,
       })
 
-      await saveSubscription({
+      const saved = await saveSubscription({
         endpoint:  sub.endpoint,
         p256dh:    b64Key(sub, 'p256dh'),
         auth:      b64Key(sub, 'auth'),
         userAgent: navigator.userAgent,
-      }).catch(() => {})
+      }).catch((e: unknown) => ({ error: e instanceof Error ? e.message : 'save failed' }))
+      if (isError(saved)) {
+        console.error('[push] subscription save failed', saved.error)
+        // The server holds no row for this endpoint, so the browser must not keep claiming one:
+        // a subscribed browser with no server row is exactly the "subscribed, receives nothing"
+        // state this closes. Tearing it down also lets the next visit ask again.
+        await sub.unsubscribe().catch(() => {})
+        if (!cancelled) setSaveFailed(true)
+      }
     }
 
     setup().catch(() => {
@@ -79,7 +102,18 @@ export function PushRegistration() {
     }
   }, [])
 
-  return null
+  if (!saveFailed) return null
+  return (
+    <p
+      role="status"
+      className="fixed bottom-4 left-4 z-50 max-w-xs rounded-card border border-border bg-surface-elevated px-3 py-2 text-body-sm text-subtle shadow-pop"
+    >
+      {PUSH_SAVE_FAILED_COPY}{' '}
+      <button type="button" onClick={() => setSaveFailed(false)} className="ml-1 font-semibold text-primary-strong underline">
+        Dismiss
+      </button>
+    </p>
+  )
 }
 
 function b64Key(sub: PushSubscription, name: 'p256dh' | 'auth'): string {

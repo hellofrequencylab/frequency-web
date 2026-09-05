@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
+import { sourceWithoutComments } from '@/test/source-shape'
 import { join } from 'node:path'
 import { isOccurrenceIndexed, seriesRobots, suppressPastNoindex, type SeriesSeoFacts } from './series-seo'
 import { DEFAULT_INDEXED_OCCURRENCES } from './series'
@@ -168,6 +169,7 @@ describe('series-seo source shape', () => {
   })
 
   it('never reaches for the loose public_events RPC (named in the header, never called)', () => {
+    // Doc-pin (scan2 L8-05): this pins the header COMMENT on purpose; the two `.not` lines below pin the code.
     expect(src).toContain('public_events') // the header explains WHY it is not used
     expect(src).not.toContain('.rpc(')
     expect(src).not.toContain('getPublicEvents')
@@ -190,7 +192,11 @@ describe('sitemap wiring', () => {
   const sitemap = readFileSync(join(process.cwd(), 'app/sitemap.ts'), 'utf8')
 
   it('builds event entries from listSitemapEventEntries, not getPublicEvents', () => {
-    expect(sitemap).toContain('listSitemapEventEntries')
+    // Matched on comment- and import-free source (scan2 L8-04): the name also sits in a comment and
+    // in the import line of the pinned file, so a bare toContain stayed green with the call deleted.
+    expect(sourceWithoutComments(join(process.cwd(), 'app/sitemap.ts'), { imports: true })).toContain(
+      'listSitemapEventEntries({',
+    )
     // The RPC filters ONLY is_cancelled + starts_at, so going back to it re-advertises unlisted,
     // draft and moderator-removed events. Both the call and the import must stay gone.
     expect(sitemap).not.toContain('getPublicEvents(')
@@ -229,7 +235,11 @@ describe('embeddings wiring (ADR-897 E1 + E2 ship together or not at all)', () =
     expect(embeddings).toContain('event_id: key')
     // parent_event_id in the SELECT is what makes seriesKey mean anything. Without it every
     // occurrence reads as its own series and the de-duplication silently stops.
-    expect(embeddings).toContain('parent_event_id')
+    // The SELECT constant itself, on comment-free source (scan2 L8-04): the column is also named in
+    // two comments and the row type, none of which put it in the query.
+    expect(sourceWithoutComments(join(process.cwd(), 'lib/events/embeddings.ts'))).toMatch(
+      /const EMBED_SELECT = '[^']*\bparent_event_id\b[^']*'/,
+    )
   })
 
   it('keeps the READER fanning out, or narrowing the writer is a silent 45% signal loss', () => {
@@ -261,7 +271,11 @@ describe('event page robots wiring', () => {
 
   it('reads the series facts off the row generateMetadata already fetched', () => {
     expect(page).toContain('seriesSeoFacts')
-    expect(page).toContain('suppressPastNoindex')
+    // Matched on comment- and import-free source (scan2 L8-04): the name also sits in a comment and
+    // in the import line of the pinned file, so a bare toContain stayed green with the call deleted.
+    expect(
+      sourceWithoutComments(join(process.cwd(), 'app/(main)/events/[slug]/page.tsx'), { imports: true }),
+    ).toContain('!suppressPastNoindex(facts)')
     expect(page).toContain('seriesRobots')
   })
 
@@ -283,7 +297,11 @@ describe('event page robots wiring', () => {
   it('applies the same two rules on the /discover twin', () => {
     const twin = readFileSync(join(process.cwd(), 'app/discover/events/[slug]/page.tsx'), 'utf8')
     expect(twin).toContain('seriesRobots(facts, indexedOccurrences)')
-    expect(twin).toContain('suppressPastNoindex')
+    // Matched on comment- and import-free source (scan2 L8-04): the name also sits in a comment and
+    // in the import line of the pinned file, so a bare toContain stayed green with the call deleted.
+    expect(
+      sourceWithoutComments(join(process.cwd(), 'app/discover/events/[slug]/page.tsx'), { imports: true }),
+    ).toContain('!suppressPastNoindex(facts)')
     // A canonical is only a HINT; the directive is what keeps date twenty out of the index.
     expect(twin).toContain('canonical: `/events/${event.slug}`')
   })

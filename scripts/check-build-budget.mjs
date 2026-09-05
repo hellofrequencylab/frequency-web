@@ -63,6 +63,16 @@ const BUDGET_GB = 8
 // Print anything that costs more than this on its own, so a failure names its cause immediately.
 const REPORT_OVER_MB = 100
 
+// ── NON-TRIVIALITY FLOORS (scan2 L8-02, 2026-09-05) ──────────────────────────────────────────
+// Measured on production e3cec7af2 (2026-08-25): 6.66 GB across 497 functions, and ADR-1008 records
+// an irreducible vendor floor near 1.5 GB. Without these, a trace layout whose `files` paths no
+// longer resolve (every stat fails, every size is 0) prints "0.00 GB across N functions, under the
+// budget" and exits 0, which is the 2026-08-11 incident with a green light on it. A budget gate that
+// reads zero has not measured the artifact. Exit 2 ("guard saw nothing") is distinct from a real
+// breach (1) on purpose. Raise them only when the real numbers move, never to make a red build green.
+const MIN_TRACES = 200
+const MIN_TOTAL_GB = 1
+
 if (!existsSync(SERVER_DIR)) {
   console.error('check:build-budget — no .next/server. This runs after a build.')
   process.exit(1)
@@ -144,6 +154,17 @@ if (total > budgetBytes) {
   }
   console.error('')
   process.exit(1)
+}
+
+if (traces.length < MIN_TRACES || total < MIN_TOTAL_GB * GB) {
+  console.error(
+    `\n🔴 check:build-budget saw nothing it can vouch for: ${gb(total)} GB (floor ${MIN_TOTAL_GB} GB) across ` +
+      `${traces.length} function(s) (floor ${MIN_TRACES}).\n` +
+      `   A deploy this size does not exist; the vendor floor alone is ~1.5 GB (ADR-1008). Either the\n` +
+      `   traced paths no longer resolve from their .nft.json, the trace layout under .next/server\n` +
+      `   changed, or the build did not finish. A zero reading is not a pass.\n`,
+  )
+  process.exit(2)
 }
 
 console.log(

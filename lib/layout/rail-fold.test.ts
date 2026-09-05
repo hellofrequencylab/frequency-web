@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
+import { sourceWithoutComments } from '@/test/source-shape'
 import {
   DEFAULT_RAIL_FOLDS,
   RAIL_FOLD_COOKIE,
@@ -347,7 +348,9 @@ describe('the tick is micro in INK and full-size in TARGET', () => {
     // The checkbox lesson (components/ui/checkbox.tsx): a min-size on an element that IS the
     // visible box grows the BOX. `tap-target` here is on the <button>; the mark is a decorative
     // span inside it, free to be 4.25 x 10.625px while the target is 32 / 44 / up to 56.
-    expect(control).toContain('tap-target')
+    // Matched on comment-free source (scan2 L8-04): the needle also sits in a comment of the pinned
+    // file, so a bare toContain stayed green with the code deleted.
+    expect(sourceWithoutComments('components/layout/rail-fold-control.tsx')).toContain('tap-target')
     expect(control).toMatch(/const TICK_BOX =[\s\S]{0,200}tap-target/)
     // The mark must NOT carry the floor, or the ink grows with the generation.
     expect(control).not.toMatch(/const TICK_MARK_BASE =[\s\S]{0,200}tap-target/)

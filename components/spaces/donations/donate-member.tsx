@@ -79,7 +79,9 @@ export async function DonateMember({
     <div className="space-y-4">
       {/* Record one space.cta_click on mount (Epic 1.11): the Donate engine has no action button yet,
           so this keeps the CTA telemetry the placeholder list used to fire. Fail-safe + fire-and-forget. */}
-      {ask.id && <DonateCtaTracker spaceId={spaceId} />}
+      {/* 2026-09-05 (scan2 L9-07): no longer on mount. The tracker wraps the amount picker below and
+          records the click on the member's first real interaction with it, so a page view is a view
+          and a click is a click on the Space Home dashboard. */}
       <div className="rounded-card border border-border bg-surface p-5 lift-1">
         <h3 className="text-body font-bold leading-tight text-text">{ask.fundLabel}</h3>
         {ask.description && (
@@ -91,7 +93,13 @@ export async function DonateMember({
           <div className="mt-2">
             {/* Pricing Options P2 buyer control: quick-pick chips + a custom gift field. DISPLAY only,
                 no charge (giving is not wired up yet, per the note below). */}
-            <PriceInput price={donationPrice} idPrefix={`donate-${spaceId}`} />
+            {ask.id ? (
+              <DonateCtaTracker spaceId={spaceId}>
+                <PriceInput price={donationPrice} idPrefix={`donate-${spaceId}`} />
+              </DonateCtaTracker>
+            ) : (
+              <PriceInput price={donationPrice} idPrefix={`donate-${spaceId}`} />
+            )}
           </div>
         </div>
       </div>

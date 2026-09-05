@@ -28,7 +28,43 @@ vi.mock('@/lib/engagement/events', () => ({
   recordEngagementEvent: (input: LedgerInput) => recordEngagementEvent(input),
 }))
 
-import { recordSpaceProfileView, recordSpaceCtaClick } from './analytics'
+// ── Mock the admin client for the READER (scan2 L9-07): a chainable count query over a tiny in-memory
+// ledger, so getSpaceProfileStats can be checked for the exact filters it binds and the number it returns.
+type LedgerRow = { event_type: string; context: Record<string, unknown>; created_at: string }
+const ledger: LedgerRow[] = []
+let countError: { message: string } | null = null
+const countQueries: Array<{ eventType?: string; spaceId?: string; since?: string }> = []
+vi.mock('@/lib/supabase/admin', () => ({
+  createAdminClient: () => ({
+    from: (table: string) => {
+      if (table !== 'engagement_events') throw new Error(`unexpected table ${table}`)
+      const q: { eventType?: string; spaceId?: string; since?: string } = {}
+      countQueries.push(q)
+      const api = {
+        select: () => api,
+        eq: (col: string, val: string) => {
+          if (col === 'event_type') q.eventType = val
+          if (col === 'context->>spaceId') q.spaceId = val
+          return api
+        },
+        gte: (col: string, val: string) => {
+          if (col === 'created_at') q.since = val
+          return api
+        },
+        then: (resolve: (v: { count: number | null; error: { message: string } | null }) => void) => {
+          if (countError) return resolve({ count: null, error: countError })
+          const n = ledger.filter(
+            (r) => r.event_type === q.eventType && r.context.spaceId === q.spaceId && r.created_at >= (q.since ?? ''),
+          ).length
+          return resolve({ count: n, error: null })
+        },
+      }
+      return api
+    },
+  }),
+}))
+
+import { recordSpaceProfileView, recordSpaceCtaClick, getSpaceProfileStats } from './analytics'
 
 const lastCall = (): LedgerInput => {
   const calls = recordEngagementEvent.mock.calls
@@ -110,6 +146,51 @@ describe('recordSpaceCtaClick', () => {
     })
     const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
     await expect(recordSpaceCtaClick('space-1')).resolves.toBeUndefined()
+    errSpy.mockRestore()
+  })
+})
+
+// ── The reader (scan2 L9-07): the first consumer of the two recorders above ─────────────────────
+describe('getSpaceProfileStats', () => {
+  beforeEach(() => {
+    ledger.length = 0
+    countQueries.length = 0
+    countError = null
+  })
+
+  it('counts profile views and CTA clicks for ONE space over the trailing window', async () => {
+    const now = Date.now()
+    const recent = new Date(now - 2 * 86_400_000).toISOString()
+    const stale = new Date(now - 45 * 86_400_000).toISOString()
+    ledger.push(
+      { event_type: 'space.profile_view', context: { spaceId: 'space-1' }, created_at: recent },
+      { event_type: 'space.profile_view', context: { spaceId: 'space-1' }, created_at: recent },
+      { event_type: 'space.profile_view', context: { spaceId: 'space-1' }, created_at: stale }, // outside 30d
+      { event_type: 'space.profile_view', context: { spaceId: 'space-2' }, created_at: recent }, // other space
+      { event_type: 'space.cta_click', context: { spaceId: 'space-1' }, created_at: recent },
+      { event_type: 'feature.used', context: { spaceId: 'space-1' }, created_at: recent }, // other type
+    )
+    const stats = await getSpaceProfileStats('space-1', 30)
+    expect(stats).toEqual({ windowDays: 30, profileViews: 2, ctaClicks: 1 })
+    // Both counts bind the event type, the space, and the window (never an unbounded ledger scan).
+    expect(countQueries.map((q) => q.eventType).sort()).toEqual(['space.cta_click', 'space.profile_view'])
+    for (const q of countQueries) {
+      expect(q.spaceId).toBe('space-1')
+      expect(q.since).toBeTruthy()
+    }
+  })
+
+  it('is a guarded no-op for an empty spaceId (no query, zeros)', async () => {
+    const stats = await getSpaceProfileStats('')
+    expect(stats).toEqual({ windowDays: 30, profileViews: 0, ctaClicks: 0 })
+    expect(countQueries).toHaveLength(0)
+  })
+
+  it('reads the supabase error and falls back to zero rather than throwing into the dashboard', async () => {
+    countError = { message: 'relation is on fire' }
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    await expect(getSpaceProfileStats('space-1')).resolves.toEqual({ windowDays: 30, profileViews: 0, ctaClicks: 0 })
+    expect(errSpy).toHaveBeenCalled()
     errSpy.mockRestore()
   })
 })

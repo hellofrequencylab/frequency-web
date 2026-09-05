@@ -76,6 +76,9 @@ describe('(B) 🔴 capture_signup_lead cannot be used to test whether an address
   const def = definitionBlock(SQL, 'capture_signup_lead')
   const body = bodyBlock(SQL, 'capture_signup_lead')
 
+  // 2026-09-05 (scan2 L7-6, ADR-1210): this pins the ORIGINAL 20270215000000 text. Migration 20270345000610 replaced
+  // the function so it returns {id, claim_token} and update/convert take the token; the original body is the
+  // superseded definition this contract test still reads, so its prose below describes that version.
   it('returns a bare uuid — never the row, never a record, never a flag', () => {
     expect(def, 'capture_signup_lead definition not found').not.toBe('')
     expect(def).toMatch(/\)\s*returns uuid\b/)

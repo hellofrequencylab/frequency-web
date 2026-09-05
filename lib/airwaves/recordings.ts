@@ -459,23 +459,8 @@ export async function listAttachmentsFor(
   }
 }
 
-/** Every host a Recording is attached to (the forward lookup, for the owner's "used in N places" view
- *  and cascade previews). FAIL-SAFE to []. */
-export async function listAttachmentsOfRecording(recordingId: string): Promise<RecordingAttachment[]> {
-  const rid = (recordingId ?? '').trim()
-  if (!rid) return []
-  try {
-    const { data } = await db()
-      .from('recording_attachments')
-      .select(ATTACHMENT_SELECT)
-      .eq('recording_id', rid)
-      .order('sort_order', { ascending: true })
-      .limit(500)
-    return ((data as Array<Record<string, unknown>> | null) ?? []).map(mapAttachment)
-  } catch {
-    return []
-  }
-}
+// 2026-09-05 (scan2 L9-13): listAttachmentsOfRecording (the forward lookup for a "used in N places"
+// view) was removed; no surface called it.
 
 // Re-export the pure price-precedence helper so callers resolving an attach's effective price have one
 // import site for the whole seam.

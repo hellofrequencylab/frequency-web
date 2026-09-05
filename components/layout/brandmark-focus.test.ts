@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
+import { sourceWithoutComments } from '@/test/source-shape'
 
 // ── THE FIRST TAB STOP MUST PAINT SOMETHING ──────────────────────────────────────────────────
 //
@@ -136,7 +137,9 @@ describe('the wordmark is reached by that generic rule, not by a style of its ow
     // `next/link` renders an anchor, which is what `:where(… a …):focus-visible` matches. If the
     // wordmark ever became a <div role="link"> the generic ring would stop reaching it.
     expect(BRAND).toContain("import Link from 'next/link'")
-    expect(BRAND).toContain('brandmark-link')
+    // Matched on comment-free source (scan2 L8-04): the needle also sits in a comment of the pinned
+    // file, so a bare toContain stayed green with the code deleted.
+    expect(sourceWithoutComments(ROOT + 'components/layout/brand-mark.tsx')).toContain('brandmark-link')
   })
 
   it('declares no bespoke focus styling that could drift from the token', () => {

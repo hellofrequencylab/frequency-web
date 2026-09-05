@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
+import { sourceWithoutComments } from '@/test/source-shape'
 import { join } from 'node:path'
 import {
   accessModeOptions,
@@ -228,6 +229,7 @@ describe('the read-path ratchet — every service-role circle read that feeds a 
     it(`${file} filters on the discoverability axis (${why})`, () => {
       const src = read(file)
       expect(src).toMatch(/\.eq\('unlisted', false\)/)
+      // Doc-pin (scan2 L8-05): the ADR marker is a comment in the source, pinned on purpose.
       expect(src).toContain('ADR-1015')
     })
   }
@@ -246,7 +248,11 @@ describe('the read-path ratchet — every service-role circle read that feeds a 
 
   it('the feed origin chip drops a hidden circle it would otherwise name', () => {
     const src = read('lib/feed/post-origin.ts')
-    expect(src).toContain('isListedCircle')
+    // The CALL, on comment- and import-free source (scan2 L8-04): the import line alone would
+    // otherwise satisfy this with the filter deleted.
+    expect(sourceWithoutComments(join(root, 'lib/feed/post-origin.ts'), { imports: true })).toContain(
+      '!isListedCircle(c.unlisted)',
+    )
     expect(src).toContain('myHiddenIds')
   })
 
