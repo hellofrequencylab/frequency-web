@@ -54,7 +54,7 @@ function builder(table: string) {
 }
 
 /** A stand-in for the session-scoped Supabase client the route hands in. */
-function sessionClient(rpc = vi.fn().mockResolvedValue({})): { client: SessionClient; rpc: typeof rpc } {
+function sessionClient(rpc = vi.fn().mockResolvedValue({ error: null })): { client: SessionClient; rpc: typeof rpc } {
   return {
     rpc,
     client: { rpc, from: (t: string) => builder(t) } as unknown as SessionClient,
@@ -175,9 +175,22 @@ describe('claimGuestSeatsOnSignIn', () => {
     expect(await claimGuestSeatsOnSignIn(sessionClient().client, 'p1')).toBeNull()
   })
 
-  it('returns null and never throws when the RPC fails', async () => {
-    const { client } = sessionClient(vi.fn().mockRejectedValue(new Error('nope')))
+  it('reads the RPC outcome: a resolved { error } is logged, and the reads never run (scan2 L5-19)', async () => {
+    // supabase-js never throws; a failed RPC RESOLVES with { error }. The old try/catch could not
+    // see this, so the reads ran anyway and reported "nothing to claim" with no trace.
+    seedLiveClaim()
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const { client } = sessionClient(vi.fn().mockResolvedValue({ error: { message: 'permission denied' } }))
     await expect(claimGuestSeatsOnSignIn(client, 'p1')).resolves.toBeNull()
+    expect(errorSpy).toHaveBeenCalledOnce()
+    expect(errorSpy.mock.calls[0]?.[1]).toMatchObject({ profileId: 'p1', message: 'permission denied' })
+    errorSpy.mockRestore()
+  })
+
+  it('treats a void RPC result as success (the function returns nothing on a no-op claim)', async () => {
+    seedLiveClaim()
+    const { client } = sessionClient(vi.fn().mockResolvedValue(undefined))
+    await expect(claimGuestSeatsOnSignIn(client, 'p1')).resolves.toBe('/events/tonight')
   })
 
   it('returns null and never throws when a read is refused', async () => {

@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useTransition, useEffect } from 'react'
+import { useState, useTransition, useEffect, useMemo } from 'react'
+import { createHandleSearch } from '@/lib/mentions/search-handles-client'
 import Image from 'next/image'
 import { UserPlus, Check, Search } from 'lucide-react'
 import { getInitials } from '@/lib/utils'
@@ -19,6 +20,7 @@ export function InviteToRoomButton({ roomId }: { roomId: string }) {
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<HandleResult[]>([])
+  const searchHandles = useMemo(() => createHandleSearch<HandleResult>(), [])
   const [selected, setSelected] = useState<HandleResult | null>(null)
   const [invited, setInvited] = useState<Set<string>>(new Set())
   const [error, setError] = useState<string | null>(null)
@@ -40,12 +42,12 @@ export function InviteToRoomButton({ roomId }: { roomId: string }) {
   useEffect(() => {
     if (!query.trim()) return
     const timer = setTimeout(async () => {
-      const res = await fetch(`/api/search-handles?q=${encodeURIComponent(query)}`)
-      const json = await res.json()
-      setResults(json.profiles ?? [])
+      // Never throws; null is a stale response for a query already typed past.
+      const found = await searchHandles(query)
+      if (found) setResults(found)
     }, 200)
     return () => clearTimeout(timer)
-  }, [query])
+  }, [query, searchHandles])
 
   function submit(e: React.FormEvent) {
     e.preventDefault()

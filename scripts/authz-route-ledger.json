@@ -46,12 +46,6 @@
     "self-scoped": "Acts only on the caller's own session; there is no other principal it could act on."
   },
   "entries": {
-    "app/(help)/help/ask/route.ts": {
-      "verdict": "public",
-      "reason": "Public 'Ask Vera' help endpoint — the help centre itself is public. Reads no caller identity and returns only RAG answers over published help content. Per-IP rate limited (denial-of-wallet, not authz).",
-      "checked": "2026-08-17",
-      "digest": "b410904535f4dcf9"
-    },
     "app/(main)/e/c/[token]/route.ts": {
       "verdict": "token-credential",
       "reason": "Email click-tracking redirect. decodeSendToken HMAC-authenticates the token and verifyClickUrl binds the exact destination to it, so `u` cannot be swapped even by a holder of a real token. Fail-safe: anything short of all checks redirects to the site root.",

@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useMemo, useState, useTransition } from 'react'
+import { createHandleSearch } from '@/lib/mentions/search-handles-client'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { UsersRound, Plus, Route, ArrowRight } from 'lucide-react'
@@ -77,6 +78,7 @@ export function SpaceCirclesManager({
   /** Handing off to another person: the handle typed, and the matches found. */
   const [handoffQuery, setHandoffQuery] = useState('')
   const [handoffHits, setHandoffHits] = useState<{ id: string; handle: string; display_name: string }[]>([])
+  const searchHandles = useMemo(() => createHandleSearch(), [])
   /** Attaching one of the steward's own circles (ADR-857): panel open, choices, choice. */
   const [attaching, setAttaching] = useState(false)
   const [attachable, setAttachable] = useState<{ id: string; name: string; slug: string }[] | null>(null)
@@ -197,10 +199,8 @@ export function SpaceCirclesManager({
       setHandoffHits([])
       return
     }
-    fetch(`/api/search-handles?q=${encodeURIComponent(q.trim())}`)
-      .then((r) => r.json())
-      .then((j) => setHandoffHits(j.profiles ?? []))
-      .catch(() => setHandoffHits([]))
+    // Never throws; null is a stale response for a query already typed past.
+    searchHandles(q).then((found) => { if (found) setHandoffHits(found) })
   }
 
   function handOff(circleId: string, circleName: string, toProfileId: string, toName: string) {

@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useTransition, useRef, useCallback } from 'react'
+import { useState, useTransition, useRef, useCallback, useMemo } from 'react'
+import { createHandleSearch } from '@/lib/mentions/search-handles-client'
 import Image from 'next/image'
 import Link from 'next/link'
 import { X, UserPlus, Crown } from 'lucide-react'
@@ -151,6 +152,7 @@ function RemoveCohostButton({
 function AddCohost({ eventId, slug }: { eventId: string; slug: string }) {
   const [query, setQuery] = useState('')
   const [hits, setHits] = useState<HandleHit[]>([])
+  const searchHandles = useMemo(() => createHandleSearch<HandleHit>(), [])
   const [error, setError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -162,15 +164,11 @@ function AddCohost({ eventId, slug }: { eventId: string; slug: string }) {
         setHits([])
         return
       }
-      try {
-        const res = await fetch(`/api/search-handles?q=${encodeURIComponent(q.trim())}`)
-        const json = await res.json()
-        setHits(json.profiles ?? [])
-      } catch {
-        setHits([])
-      }
+      // Never throws; null is a stale response for a query already typed past.
+      const found = await searchHandles(q)
+      if (found) setHits(found)
     }, 150)
-  }, [])
+  }, [searchHandles])
 
   function invite(handle: string) {
     setError(null)
@@ -249,6 +247,7 @@ function TransferHost({ eventId, slug }: { eventId: string; slug: string }) {
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
   const [hits, setHits] = useState<HandleHit[]>([])
+  const searchHandles = useMemo(() => createHandleSearch<HandleHit>(), [])
   const [pick, setPick] = useState<HandleHit | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
@@ -261,15 +260,11 @@ function TransferHost({ eventId, slug }: { eventId: string; slug: string }) {
         setHits([])
         return
       }
-      try {
-        const res = await fetch(`/api/search-handles?q=${encodeURIComponent(q.trim())}`)
-        const json = await res.json()
-        setHits(json.profiles ?? [])
-      } catch {
-        setHits([])
-      }
+      // Never throws; null is a stale response for a query already typed past.
+      const found = await searchHandles(q)
+      if (found) setHits(found)
     }, 150)
-  }, [])
+  }, [searchHandles])
 
   function confirm() {
     if (!pick) return

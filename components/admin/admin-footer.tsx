@@ -113,6 +113,10 @@ export function AdminFooter({ role, webRole = 'none', staffRole = null }: AdminF
             {/* /help/ask is a POST-only route handler (the AI ask endpoint) with no page.tsx,
                 so navigating to it returned 405 — every click on this link was a dead end.
                 /help carries the real report affordance and is already linked above. */}
+            {/* 2026-09-05 (scan2 L2-09): that route no longer exists. Nothing in the repo ever
+                called POST /help/ask; the Ask Vera tier goes through the support action instead
+                (app/(main)/support/actions.ts), so the handler was deleted rather than left as a
+                public, per-request AI cost with no caller. */}
             <FootLink href="/help" icon={Bug}>
               Report a problem
             </FootLink>
