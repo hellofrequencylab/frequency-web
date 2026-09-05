@@ -222,6 +222,7 @@ trg_decrement_member_count           public
 trg_decrement_reply_count            internal
 trg_hub_auto_activate                public
 trg_increment_circle_member_count    public
+trg_sync_circle_member_count         internal
 trg_increment_member_count           public
 trg_increment_reply_count            internal
 trg_nexus_auto_activate              public
