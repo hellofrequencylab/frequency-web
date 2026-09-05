@@ -112,8 +112,27 @@ function from(table: string) {
   return api
 }
 
+// 2026-09-05 (scan2 L6-09): the streak writers no longer UPDATE profiles.meta directly; they call
+// merge_profile_meta, so a fake with only `from` leaves every streak write silently unapplied and the
+// assertions below pass against a row nothing touched. This arm is the SQL function's own contract
+// (20270345000900): a shallow top-level merge, `meta = coalesce(meta,'{}') || p_patch`, plus the two
+// mirror columns when p_columns carries them, and nothing else.
+async function rpc(name: string, args: Record<string, unknown>) {
+  if (name !== 'merge_profile_meta') return { data: null, error: { message: `unstubbed rpc: ${name}` } }
+  const row = store.profiles.find((p) => p.id === args.p_profile_id)
+  if (!row) return { data: null, error: { message: 'profile not found' } }
+  const merged = { ...((row.meta as Record<string, unknown> | null) ?? {}), ...(args.p_patch as Record<string, unknown>) }
+  row.meta = merged
+  const cols = args.p_columns as Record<string, number> | null | undefined
+  if (cols) {
+    if (cols.current_streak !== undefined) row.current_streak = cols.current_streak
+    if (cols.longest_streak !== undefined) row.longest_streak = cols.longest_streak
+  }
+  return { data: merged, error: null }
+}
+
 vi.mock('@/lib/supabase/admin', () => ({
-  createAdminClient: () => ({ from: (t: string) => from(t) }),
+  createAdminClient: () => ({ from: (t: string) => from(t), rpc }),
 }))
 
 // Keep the heavy, best-effort side effects out of the unit under test.
