@@ -90,10 +90,43 @@ const ACTIVATION_EVENTS = ['circle.joined', 'practice.adopted', 'practice.verifi
 // local beta never hits it; an automated farm does. Layered on the activation gate.
 const REFERRAL_DAILY_CAP = 25
 
+/** scan2 L6-11 (2026-09-05): a `referral.activated:*` claim still carrying `amount = 0` after this many
+ *  minutes is a run that died between the claim insert and the Zap award (the award stamps the paid
+ *  amount onto the claim as its last step). The next run re-pays it instead of reading it as "already
+ *  paid" forever. Far above one run's duration; only a crash gets a claim to this age. */
+export const REFERRAL_CLAIM_STALE_MINUTES = 10
+
+/** The rule_key of the referrer's payout claim for one referred member (the exactly-once lock). PURE. */
+export function referralRuleKey(referredProfileId: string): string {
+  return `referral.activated:${referredProfileId}`
+}
+
+/** scan2 L6-11: decide whether an existing claim row is SETTLED (paid, or a fresh in-flight claim
+ *  another run holds) or STALE (a zero-amount claim older than the stale window: the claimant died
+ *  before paying, so it is re-payable). PURE, so the cron's scan and the release share one rule. */
+export function referralClaimState(
+  claim: { amount: number | null; granted_at: string | null },
+  nowMs = Date.now(),
+): 'paid' | 'in_flight' | 'stale' {
+  if ((claim.amount ?? 0) > 0) return 'paid'
+  const at = claim.granted_at ? Date.parse(claim.granted_at) : NaN
+  if (!Number.isFinite(at)) return 'stale'
+  return nowMs - at >= REFERRAL_CLAIM_STALE_MINUTES * 60_000 ? 'stale' : 'in_flight'
+}
+
 /** Pay the referrer for `referredProfileId` IFF that member has activated and the
  *  reward hasn't been granted yet. Idempotent (reward_grants is UNIQUE on rule_key +
  *  profile_id, so the payout is exactly-once per pair). Returns true only on a fresh
- *  payout. Best-effort; never throws. */
+ *  payout. Best-effort; never throws.
+ *
+ *  2026-09-05 correction (scan2 L6-11): "exactly-once" above used to be "at-most-once". The claim row
+ *  was inserted with amount 0 and never updated, and a duplicate-key error on a later run was read as
+ *  "already paid" — so a crash between the claim insert and awardZapsForAction left the referrer
+ *  claimed-but-unpaid for good. The award now STAMPS the paid amount onto the claim as its final step,
+ *  and a duplicate claim is re-examined: paid (amount > 0) or fresh (another run mid-flight) → skip;
+ *  zero-amount and older than REFERRAL_CLAIM_STALE_MINUTES → the claimant died, re-take it and pay.
+ *  Before re-paying, the Zap ledger is checked for an `invite_accepted` row written just after the
+ *  stale claim (the award landed but the stamp did not): that case is stamped, not paid twice. */
 export async function releaseReferralReward(referredProfileId: string): Promise<boolean> {
   try {
     const db = createAdminClient()
@@ -127,15 +160,60 @@ export async function releaseReferralReward(referredProfileId: string): Promise<
 
     // Claim-then-pay: the UNIQUE (rule_key, profile_id) index makes this payout
     // exactly-once for the (referrer, referred) pair.
-    const ruleKey = `referral.activated:${referredProfileId}`
+    const ruleKey = referralRuleKey(referredProfileId)
+    const claimedAtIso = new Date().toISOString()
     const { error: claimErr } = await db.from('reward_grants').insert({
       rule_key: ruleKey,
       profile_id: ref,
       reward_kind: 'zaps',
       amount: 0,
       detail: 'Someone you invited got started',
+      granted_at: claimedAtIso,
     })
-    if (claimErr) return false // already paid (or a transient error — retried next run)
+    if (claimErr) {
+      // 2026-09-05 (scan2 L6-11 / R3): this line used to be `return false // already paid (or a
+      // transient error — retried next run)`. Only a duplicate key (23505) means "already claimed";
+      // anything else is a failed write that must be visible, not read as a payout.
+      if (claimErr.code !== '23505') {
+        console.error('[referral] reward_grants claim failed (nothing paid; retried next run):', claimErr.message)
+        return false
+      }
+      const { data: existing } = await db
+        .from('reward_grants')
+        .select('amount, granted_at')
+        .eq('rule_key', ruleKey)
+        .eq('profile_id', ref)
+        .maybeSingle()
+      const prior = existing as { amount: number | null; granted_at: string | null } | null
+      if (!prior || referralClaimState(prior) !== 'stale') return false // paid, or another run is mid-flight
+      // Did the dead run's award land before it died? An invite_accepted ledger row for this referrer
+      // written in the two minutes after the stale claim is that award (the claim always precedes it).
+      const priorAtMs = Date.parse(prior.granted_at ?? '') || 0
+      const { count: landed } = await db
+        .from('zap_transactions')
+        .select('id', { count: 'exact', head: true })
+        .eq('profile_id', ref)
+        .eq('action_type', 'invite_accepted')
+        .gte('created_at', new Date(priorAtMs).toISOString())
+        .lt('created_at', new Date(priorAtMs + 2 * 60_000).toISOString())
+      if (landed) {
+        // Paid but never stamped: settle the claim (amount > 0 = paid) and do NOT pay again.
+        await db.from('reward_grants').update({ amount: 1 }).eq('rule_key', ruleKey).eq('profile_id', ref).eq('amount', 0)
+        console.warn(`[referral] stale claim ${ruleKey} for ${ref} had a landed award; stamped, not re-paid`)
+        return false
+      }
+      // Re-take the stale claim: a conditional UPDATE so two runs cannot both re-pay it.
+      const { data: retaken } = await db
+        .from('reward_grants')
+        .update({ granted_at: claimedAtIso })
+        .eq('rule_key', ruleKey)
+        .eq('profile_id', ref)
+        .eq('amount', 0)
+        .lt('granted_at', new Date(Date.now() - REFERRAL_CLAIM_STALE_MINUTES * 60_000).toISOString())
+        .select('rule_key')
+      if (!retaken || retaken.length === 0) return false // another run re-took it first
+      console.warn(`[referral] re-paying stale claimed-but-unpaid referral ${ruleKey} for ${ref} (claimed ${prior.granted_at})`)
+    }
 
     // The claim is the lock, but the Zaps must actually land. If awardZapsForAction fails
     // (awarded:false) or throws, release the claim so the cron re-pays on a later run instead of
@@ -145,6 +223,13 @@ export async function releaseReferralReward(referredProfileId: string): Promise<
       await db.from('reward_grants').delete().eq('rule_key', ruleKey).eq('profile_id', ref)
       return false
     }
+    // Stamp the paid amount: the durable "this claim is paid" marker (scan2 L6-11). A crash before this
+    // line leaves amount 0, which a later run re-examines (see above) rather than trusting forever.
+    await db
+      .from('reward_grants')
+      .update({ amount: Math.max(1, zapRes.amount) })
+      .eq('rule_key', ruleKey)
+      .eq('profile_id', ref)
     await recordEngagementEvent({
       idempotencyKey: `referral_reward:${ref}:${referredProfileId}`,
       source: 'system',
@@ -173,8 +258,15 @@ export async function releaseReferralReward(referredProfileId: string): Promise<
 
 /** Cron runner: release referral rewards for recently-activated referred members.
  *  Idempotent + bounded (last 30 days, capped), so it is safe to run on a schedule —
- *  re-processing an already-paid pair is a no-op. */
-export async function runReferralRelease(): Promise<{ released: number; checked: number }> {
+ *  re-processing an already-paid pair is a no-op.
+ *
+ *  2026-09-05 correction (scan2 R4): "a no-op" used to mean "a duplicate-key 409 on every run, forever"
+ *  — the scan never excluded pairs already holding a `referral.activated:*` grant, so one paid pair
+ *  produced 49 duplicate-key errors a day in the logs, one per run, hiding real errors. The scan now
+ *  looks the candidates' claims up in one query and skips every SETTLED pair (paid, or a fresh claim
+ *  another run holds); only unclaimed pairs and stale zero-amount claims (L6-11) reach the release.
+ *  `settled` reports how many were skipped that way. */
+export async function runReferralRelease(): Promise<{ released: number; checked: number; settled: number }> {
   const db = createAdminClient()
   const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
   const { data: events } = await db
@@ -185,17 +277,36 @@ export async function runReferralRelease(): Promise<{ released: number; checked:
     .not('actor_profile_id', 'is', null)
     .limit(3000)
   const actorIds = [...new Set((events ?? []).map((e) => (e as { actor_profile_id: string }).actor_profile_id))]
-  if (actorIds.length === 0) return { released: 0, checked: 0 }
+  if (actorIds.length === 0) return { released: 0, checked: 0, settled: 0 }
   const { data: referred } = await db
     .from('profiles')
     .select('id')
     .in('id', actorIds)
     .not('referred_by_profile_id', 'is', null)
+  const candidates = (referred ?? []) as { id: string }[]
+  if (candidates.length === 0) return { released: 0, checked: 0, settled: 0 }
+
+  // R4: one lookup of the candidates' existing claims; settled pairs never reach the insert.
+  const settledKeys = new Set<string>()
+  const { data: claims } = await db
+    .from('reward_grants')
+    .select('rule_key, amount, granted_at')
+    .in(
+      'rule_key',
+      candidates.map((r) => referralRuleKey(r.id)),
+    )
+  for (const c of (claims ?? []) as { rule_key: string; amount: number | null; granted_at: string | null }[]) {
+    if (referralClaimState(c) !== 'stale') settledKeys.add(c.rule_key)
+  }
+
   let released = 0
-  for (const r of (referred ?? []) as { id: string }[]) {
+  let checked = 0
+  for (const r of candidates) {
+    if (settledKeys.has(referralRuleKey(r.id))) continue
+    checked++
     if (await releaseReferralReward(r.id)) released++
   }
-  return { released, checked: (referred ?? []).length }
+  return { released, checked, settled: settledKeys.size }
 }
 
 /** The referrer behind the current visitor's `fq_ref` cookie, for the personalized

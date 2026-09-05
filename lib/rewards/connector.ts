@@ -131,6 +131,9 @@ export interface GrantConnectorResult {
   duplicate?: boolean
   /** True when skipped because the inviter hit the per-day cap. */
   capped?: boolean
+  /** True when the claim write itself failed for a NON-duplicate reason (scan2 R3, 2026-09-05): nothing
+   *  was paid and nothing was claimed, so the same call can be retried. Distinct from `duplicate`. */
+  failed?: boolean
   zaps: number
   gems: number
 }
@@ -181,7 +184,13 @@ export async function grantConnectorOutcome(input: GrantConnectorInput): Promise
       amount: reward.zaps,
       detail: `connector:${outcome}`,
     })
-    if (claimErr) return { ...none, duplicate: true } // already paid / lost the race
+    if (claimErr) {
+      if (claimErr.code === '23505') return { ...none, duplicate: true } // already paid / lost the race
+      // 2026-09-05 (scan2 R3): this was `if (claimErr) return { ...none, duplicate: true }` — a transient
+      // insert error was reported as "already paid" and the inviter's reward vanished with no log.
+      console.error('[grantConnectorOutcome] reward_grants claim failed (not paid, retryable)', { ruleKey: ruleKey, error: claimErr.message })
+      return { ...none, failed: true }
+    }
 
     const meta = { rule: ruleKey, outcome, ...(input.meta ?? {}) }
     let paidZaps = 0

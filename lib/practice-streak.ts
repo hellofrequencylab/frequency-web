@@ -426,7 +426,15 @@ export async function recordPracticeStreak(
       detail: 'Streak milestone',
     })
     paid.add(m.day) // reflect in the meta mirror regardless of who won the claim
-    if (claimErr) continue // a concurrent/prior run already claimed + paid this checkpoint
+    if (claimErr) {
+      if (claimErr.code === '23505') continue // a concurrent/prior run already claimed + paid this checkpoint
+      // 2026-09-05 (scan2 R3): "regardless of who won the claim" above assumed the only claim error is
+      // the duplicate. A transient error is NOT a prior payout: un-mark the mirror so the next log
+      // re-detects the milestone and retries, and log it at error level rather than swallowing it.
+      paid.delete(m.day)
+      console.error('[recordPracticeStreak] reward_grants claim failed (not paid, retried on the next log)', { ruleKey, error: claimErr.message })
+      continue
+    }
     if (m.zaps > 0) {
       const res = await awardZaps(profileId, m.zaps, {
         actionType: 'streak_milestone',

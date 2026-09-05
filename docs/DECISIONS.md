@@ -35726,3 +35726,24 @@ Two things were re-tested and NOT changed. The host-payout failure logged at 20:
 - **Say what happened.** `notifyPromotedSeat` tells a promoted member (notification plus email) or guest (email plus SMS) from both promotion sites. The QR door carries `?door=<reason>` on its redirect and logs each refusal; the event page rendering it is LIVE-157.
 
 **Consequences.** Rows SCAN-557 to SCAN-566 are `done` with consequence probes; LIVE-157 is `open`. Nine new test files pin the refusal paths, the promotion notifier, the claim-before-send, the tier guard mapping and the door reasons. The Manage console's Approve, the admin Approve and the placement Approve now all return an error the UI can show instead of a notice the row contradicts. Phase C (money paths) follows.
+
+## ADR-1209: scan two, phase C — money is recorded before it is taken, and every claim reads its own error (2026-09-05)
+
+**Status.** Accepted. Continues ADR-1208 (phase B) and ADR-1198 (the read-without-error sweep).
+
+**Context.** The 2026-09-05 evidence-first scan followed each money path from the button to the ledger and found thirteen places where the order of operations, or an unread error, could take a payment without a record, drop a change forever, pay twice, or pay nothing:
+
+- **Checkout before order.** `createCommerceCheckout` created the Stripe session, inserted the order with the error discarded, and returned the URL regardless; a buyer could pay for an order that did not exist.
+- **Watermark before reconcile.** `routeSpaceSubscription` advanced `spaces.last_plan_event_at` and then reconciled; a throw made Stripe's retry read as stale and the Space stayed on the old plan.
+- **Send before claim.** The conversation batch cron enqueued and then marked sent; an overlapping run emailed the same reply twice.
+- **Unhandled money events.** `checkout.session.async_payment_succeeded` was not handled, so a delayed-notification payment was never recorded; `charge.refunded` reached tickets and orders but never tips or Supporter contributions; a partial refund had no path; a refunded order never restored stock; a webhook dedupe claim that failed for any reason but a duplicate ran the event unclaimed.
+- **Unread claims.** Eight `reward_grants` claim sites read every insert error as "already granted"; the referral award claimed before it paid and the release cron re-tried every paid pair every run; the streak-freeze fulfilment dropped the grant result and kept the Gems; the ticket tier's `sold` bump discarded its RPC result.
+
+**Decision.**
+
+- **Record, then charge.** The pending order and its items are written and checked before the Stripe session exists; the session carries the order id; a failure marks the order failed, expires the session, and returns an error rather than a URL.
+- **A claim that precedes a side effect can be released.** The Space plan claim carries the previous watermark and a failed reconcile puts it back with a conditional update, then rethrows so Stripe retries into a working claim. The batch flush claims each row with a conditional update carrying a run token, sends only when it holds the whole burst, and releases on any failure; a claim older than ten minutes is taken over with a warning.
+- **One recorder for a paid session.** `recordPaidCheckout` runs for both `completed` and `async_payment_succeeded`; each recorder's once-only guard makes the second delivery a no-op. `charge.refunded` reaches tips and Supporter contributions through migration 20270345000300 (status `refunded`, `refunded_at`); a partial commerce refund keeps its settled status, records the split in metadata and reverses the ledger pro rata; a full refund restores stock once. A webhook claim error that is not a duplicate is a 500.
+- **23505 is the only silent branch.** Every `reward_grants` claim site branches on the duplicate code; anything else logs the rule key and pays nothing. The referral award stamps its paid amount last, re-examines a stale zero claim before deciding, and the release scan skips settled pairs before any insert. The streak freeze succeeds only on a real grant and otherwise deletes the debit row and says so. The `sold` bump is read, retried once, and logged.
+
+**Consequences.** Rows SCAN-567 to SCAN-578 are `done` with consequence probes. Four rows stay `open`: LIVE-158 (cancelled-event ticket refunds are not retried, the one P1 this phase did not reach because its file belonged to phase B), LIVE-159 (same-second plan events), LIVE-160 (the earnings summary and partial refunds), LIVE-161 (the stock-restore and settle RPCs that replace two guarded read-then-write loops). Failed orders now appear in order lists the way cancelled ones do. Phase D (crons, webhooks and silent failures) follows.

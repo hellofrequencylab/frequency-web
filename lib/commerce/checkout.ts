@@ -44,6 +44,9 @@ interface ProductRow {
 const PRODUCT_COLS =
   'id, owner_kind, owner_profile_id, owner_space_id, entity_id, title, price_cents, currency, stock, status'
 
+/** Member-facing copy for a checkout that could not start. One string so every failure arm agrees. */
+const CHECKOUT_START_FAILED = 'Could not start checkout. Please try again.'
+
 export interface CommerceCheckoutResult {
   url?: string
   error?: string
@@ -179,36 +182,19 @@ export async function createCommerceCheckout(input: CheckoutInput): Promise<Comm
     return { error: 'Payments aren’t turned on yet.' }
   }
 
-  const session = await stripe.checkout.sessions.create({
-    mode: 'payment',
-    line_items: lines.map((l) => ({
-      quantity: l.qty,
-      price_data: {
-        currency: (l.product.currency || 'usd').toLowerCase(),
-        unit_amount: l.unitCents,
-        product_data: { name: l.title },
-      },
-    })),
-    ...(charge.sellerStripeAccountId
-      ? {
-          payment_intent_data: {
-            application_fee_amount: charge.platformFeeCents,
-            transfer_data: { destination: charge.sellerStripeAccountId },
-            on_behalf_of: charge.sellerStripeAccountId,
-            metadata: { kind: 'commerce_order', buyer_profile_id: input.buyerProfileId },
-          },
-        }
-      : {}),
-    client_reference_id: input.buyerProfileId,
-    metadata: { kind: 'commerce_order', buyer_profile_id: input.buyerProfileId },
-    success_url: `${appUrl()}/orders?ok=1&session_id={CHECKOUT_SESSION_ID}`,
-    // Cancel back to the surface the buyer was purchasing from, never the free peer board
-    // (`/marketplace` redirects to Classifieds). Frequency Store → /store; Market + Space
-    // shops both browse under the Market umbrella.
-    cancel_url: `${appUrl()}${seller.owner_kind === 'platform' ? '/store' : '/market'}`,
-  })
-
-  const { data: orderRow } = await db()
+  // L6-03 (2026-09-05): the ORDER is written BEFORE the Stripe session, and every write is checked.
+  // The previous order was session → order insert (error discarded) → items insert (error discarded)
+  // → return the URL regardless, so a failed insert (constraint, RLS, transient) or a process kill
+  // between the two left a payable session with NO order behind it: the buyer paid, the webhook found
+  // zero 'pending' rows to flip, and there was nothing to fulfil or refund from the operator UI. The
+  // tips and tickets rails already check their pending insert and expire the session on failure;
+  // commerce was the outlier. Now: pending order → items → Stripe session (carrying order_id in its
+  // metadata) → session id stored on the order. Any failure marks the order 'failed' (a status the
+  // table already has; 'cancelled' is reserved for an abandoned/expired session) and returns the
+  // action's error shape instead of a URL. The webhook contract is UNCHANGED: recordCommerceOrderFromSession
+  // still finds the row by stripe_checkout_session_id + status='pending', and abandonCommerceOrderFromSession
+  // the same way; order_id in the session metadata is carried for reconciliation, not looked up.
+  const { data: orderRow, error: orderErr } = await db()
     .from('commerce_orders')
     .insert({
       buyer_profile_id: input.buyerProfileId,
@@ -226,30 +212,108 @@ export async function createCommerceCheckout(input: CheckoutInput): Promise<Comm
       status: 'pending',
       shipping: input.shipping ?? {},
       seller_stripe_account_id: charge.sellerStripeAccountId,
-      stripe_checkout_session_id: session.id,
     })
     .select('id')
     .maybeSingle()
-
   const orderId = (orderRow as { id?: string } | null)?.id
-  if (orderId) {
-    await db().from('commerce_order_items').insert(
-      lines.map((l) => ({
-        order_id: orderId,
-        product_id: l.product.id,
-        // variant_id drives the per-variant stock decrement in decrement_commerce_stock_atomic
-        // (Etsy-Grade Phase 2); null for a plain item, which decrements product stock as before.
-        variant_id: l.variant?.id ?? null,
-        title: l.title,
-        qty: l.qty,
-        unit_cents: l.unitCents,
-        subtotal_cents: l.unitCents * l.qty,
-      })),
-    )
+  if (orderErr || !orderId) {
+    console.error('[commerce] pending order insert failed', { error: orderErr?.message ?? 'no id returned' })
+    return { error: CHECKOUT_START_FAILED }
   }
 
-  if (!session.url) return { error: 'Could not start checkout.' }
+  const { error: itemsErr } = await db().from('commerce_order_items').insert(
+    lines.map((l) => ({
+      order_id: orderId,
+      product_id: l.product.id,
+      // variant_id drives the per-variant stock decrement in decrement_commerce_stock_atomic
+      // (Etsy-Grade Phase 2); null for a plain item, which decrements product stock as before.
+      variant_id: l.variant?.id ?? null,
+      title: l.title,
+      qty: l.qty,
+      unit_cents: l.unitCents,
+      subtotal_cents: l.unitCents * l.qty,
+    })),
+  )
+  if (itemsErr) {
+    console.error('[commerce] order items insert failed', { orderId, error: itemsErr.message })
+    await markPendingOrderFailed(orderId, 'items_insert_failed')
+    return { error: CHECKOUT_START_FAILED }
+  }
+
+  let session: Stripe.Checkout.Session
+  try {
+    session = await stripe.checkout.sessions.create({
+      mode: 'payment',
+      line_items: lines.map((l) => ({
+        quantity: l.qty,
+        price_data: {
+          currency: (l.product.currency || 'usd').toLowerCase(),
+          unit_amount: l.unitCents,
+          product_data: { name: l.title },
+        },
+      })),
+      ...(charge.sellerStripeAccountId
+        ? {
+            payment_intent_data: {
+              application_fee_amount: charge.platformFeeCents,
+              transfer_data: { destination: charge.sellerStripeAccountId },
+              on_behalf_of: charge.sellerStripeAccountId,
+              metadata: { kind: 'commerce_order', buyer_profile_id: input.buyerProfileId, order_id: orderId },
+            },
+          }
+        : {}),
+      client_reference_id: input.buyerProfileId,
+      metadata: { kind: 'commerce_order', buyer_profile_id: input.buyerProfileId, order_id: orderId },
+      success_url: `${appUrl()}/orders?ok=1&session_id={CHECKOUT_SESSION_ID}`,
+      // Cancel back to the surface the buyer was purchasing from, never the free peer board
+      // (`/marketplace` redirects to Classifieds). Frequency Store → /store; Market + Space
+      // shops both browse under the Market umbrella.
+      cancel_url: `${appUrl()}${seller.owner_kind === 'platform' ? '/store' : '/market'}`,
+    })
+  } catch (err) {
+    console.error('[commerce] stripe session create failed', { orderId, err })
+    await markPendingOrderFailed(orderId, 'stripe_session_failed')
+    return { error: CHECKOUT_START_FAILED }
+  }
+
+  // Link the session to the order (checked). Without this link the webhook cannot find the row, so
+  // if it fails the session is expired (best-effort, like tips/tickets) so it can never be paid into
+  // a void, and the order is marked failed.
+  const { data: linked, error: linkErr } = await db()
+    .from('commerce_orders')
+    .update({ stripe_checkout_session_id: session.id })
+    .eq('id', orderId)
+    .eq('status', 'pending')
+    .select('id')
+  if (linkErr || !(linked ?? []).length || !session.url) {
+    console.error('[commerce] session link failed', { orderId, sessionId: session.id, error: linkErr?.message ?? null })
+    try {
+      await stripe.checkout.sessions.expire(session.id)
+    } catch {
+      // best-effort: an unexpired session simply lapses on its own; we still refuse the URL
+    }
+    await markPendingOrderFailed(orderId, linkErr || !(linked ?? []).length ? 'session_link_failed' : 'no_session_url')
+    return { error: CHECKOUT_START_FAILED }
+  }
+
   return { url: session.url, orderId }
+}
+
+/** Mark a never-paid pending order 'failed' so nothing dangles (L6-03). Guarded on status='pending' so it
+ *  can never touch a row the webhook has already settled. The reason lands in metadata for the operator;
+ *  the row is still pending at this point (no session is linked yet, or it was just expired), so nothing
+ *  else writes its metadata and a whole-value write cannot clobber a settle marker. Fail-soft: a failure
+ *  here leaves a 'pending' row that no session can ever pay, which is inert. */
+async function markPendingOrderFailed(orderId: string, reason: string): Promise<void> {
+  try {
+    await db()
+      .from('commerce_orders')
+      .update({ status: 'failed', metadata: { checkout_failure: reason } })
+      .eq('id', orderId)
+      .eq('status', 'pending')
+  } catch (err) {
+    console.error('[commerce] could not mark order failed', { orderId, reason, err })
+  }
 }
 
 /** Settle the order behind a completed Checkout session (idempotent). Platform
@@ -382,14 +446,25 @@ export async function refundCommerceOrder(orderId: string): Promise<{ ok?: true;
   if (!stripe) return { error: 'Payments aren’t turned on yet.' }
   const { data } = await db()
     .from('commerce_orders')
-    .select('id, owner_kind, status, amount_cents, stripe_payment_intent_id')
+    .select('id, owner_kind, status, amount_cents, stripe_payment_intent_id, refunded_at')
     .eq('id', orderId)
     .maybeSingle()
   const order = data as
-    | { id: string; owner_kind: string; status: string; amount_cents: number; stripe_payment_intent_id: string | null }
+    | {
+        id: string
+        owner_kind: string
+        status: string
+        amount_cents: number
+        stripe_payment_intent_id: string | null
+        refunded_at: string | null
+      }
     | null
   if (!order) return { error: 'Order not found.' }
   if (order.status === 'refunded') return { ok: true }
+  // L6-08 (2026-09-05): a PARTIAL refund keeps its settled status (the schema has no partial state; see
+  // recordCommerceRefund) but stamps refunded_at, so this guard is what stops a second call from refunding
+  // the retained fee on top. Idempotent: the order has already been refunded as far as it will be.
+  if (order.refunded_at) return { ok: true }
   if (order.status !== 'paid' && order.status !== 'fulfilled') return { error: 'Only a paid order can be refunded.' }
   if (!order.stripe_payment_intent_id) return { error: 'This order has no charge to refund.' }
 
@@ -408,34 +483,105 @@ export async function refundCommerceOrder(orderId: string): Promise<{ ok?: true;
     console.error('[commerce] refund failed', { orderId, err })
     return { error: 'Refund failed at the payment processor.' }
   }
-  await recordCommerceRefund(order.stripe_payment_intent_id)
+  // L6-08 (2026-09-05): record what was ACTUALLY refunded. Before this the partial amount went to Stripe
+  // and the recorder was then told nothing, so it flipped the order to 'refunded' and reversed the whole
+  // revenue: the ledger under-reported by the retained fee and the order read as fully refunded to
+  // buyer and seller. The partial path releases the booking slot (this IS the policy-cancel).
+  await recordCommerceRefund(
+    order.stripe_payment_intent_id,
+    partialAmount != null ? { refundedCents: partialAmount, releaseBooking: true } : undefined,
+  )
   return { ok: true }
 }
 
-/** Flip a refunded order + reverse the ledger entry (idempotent; paid → refunded). */
-export async function recordCommerceRefund(paymentIntentId: string | null): Promise<void> {
+export interface CommerceRefundOptions {
+  /** Cents actually returned to the buyer. Omit for a full refund; a value >= amount_cents is full. */
+  refundedCents?: number
+  /** Release the booking slot behind a PARTIAL refund (the policy-cancel path). A full refund always
+   *  releases it; a partial one arriving from the webhook alone (a dashboard goodwill refund) does not,
+   *  because a partial refund by itself does not say the appointment was cancelled. */
+  releaseBooking?: boolean
+}
+
+interface RefundedOrderRow {
+  id: string
+  owner_kind: 'platform' | 'profile' | 'space'
+  entity_id: string
+  amount_cents: number
+  platform_fee_cents: number
+  buyer_profile_id: string | null
+  currency: string
+  metadata: Record<string, unknown> | null
+}
+
+const REFUND_ROW_COLS = 'id, owner_kind, entity_id, amount_cents, platform_fee_cents, buyer_profile_id, currency, metadata'
+
+/** What a partial refund leaves in commerce_orders.metadata.refund (L6-08). The schema's status check
+ *  (`pending|paid|fulfilled|cancelled|refunded|failed`, migration 20260815000000) has NO partial state and
+ *  this lane adds no migration, so the order KEEPS its settled status (the sale partly stands: the seller
+ *  kept the fee), `refunded_at` is stamped, and the amounts live here. The full path reads
+ *  `revenue_reversed_cents` back so a later top-up to a full refund reverses only the remainder. */
+export interface PartialRefundRecord {
+  kind: 'partial'
+  refunded_cents: number
+  retained_cents: number
+  revenue_reversed_cents: number
+  recorded_at: string
+}
+
+/** The platform's recorded revenue for an order: the full amount for a first-party sale, the
+ *  application fee for a destination charge (seller gross is off-ledger). */
+function recordedRevenueCents(row: Pick<RefundedOrderRow, 'owner_kind' | 'amount_cents' | 'platform_fee_cents'>): number {
+  return row.owner_kind === 'platform' ? row.amount_cents : row.platform_fee_cents
+}
+
+/** Record a refund against the order behind a PaymentIntent (idempotent).
+ *  - FULL (no `refundedCents`, or >= amount_cents): paid/fulfilled → refunded, reverse the ledger for the
+ *    revenue not already reversed by an earlier partial, release the booking, and restore tracked stock.
+ *  - PARTIAL (`refundedCents` < amount_cents): status unchanged, refunded_at stamped once, ledger reversal
+ *    pro-rated to the refunded share, booking released only when the caller says so. Stock is NOT restored
+ *    on a partial refund: the goods were not returned, and the only partial path in the product is the
+ *    booking policy, which has no stock. */
+export async function recordCommerceRefund(
+  paymentIntentId: string | null,
+  opts: CommerceRefundOptions = {},
+): Promise<void> {
   if (!paymentIntentId) return
+  if (opts.refundedCents != null) {
+    const { data } = await db()
+      .from('commerce_orders')
+      .select('id, amount_cents')
+      .eq('stripe_payment_intent_id', paymentIntentId)
+      .in('status', ['paid', 'fulfilled'])
+      .maybeSingle()
+    const target = data as { id: string; amount_cents: number } | null
+    if (!target) return // nothing settled behind this charge (not ours, or already fully refunded)
+    if (opts.refundedCents < target.amount_cents) {
+      await recordPartialCommerceRefund(target.id, paymentIntentId, opts.refundedCents, opts.releaseBooking === true)
+      return
+    }
+  }
+  await recordFullCommerceRefund(paymentIntentId)
+}
+
+/** Flip a refunded order + reverse the ledger entry (idempotent; paid → refunded). */
+async function recordFullCommerceRefund(paymentIntentId: string): Promise<void> {
   const { data: updated } = await db()
     .from('commerce_orders')
     .update({ status: 'refunded', refunded_at: new Date().toISOString() })
     .eq('stripe_payment_intent_id', paymentIntentId)
     .in('status', ['paid', 'fulfilled'])
-    .select('id, owner_kind, entity_id, amount_cents, platform_fee_cents, buyer_profile_id, currency')
-  const rows = (updated ?? []) as {
-    id: string
-    owner_kind: 'platform' | 'profile' | 'space'
-    entity_id: string
-    amount_cents: number
-    platform_fee_cents: number
-    buyer_profile_id: string | null
-    currency: string
-  }[]
+    .select(REFUND_ROW_COLS)
+  const rows = (updated ?? []) as RefundedOrderRow[]
   for (const row of rows) {
-    const revenue = row.owner_kind === 'platform' ? row.amount_cents : row.platform_fee_cents
+    const revenue = recordedRevenueCents(row)
+    // A partial refund recorded earlier already reversed part of this revenue (L6-08); reverse the rest.
+    const partial = (row.metadata?.refund ?? null) as Partial<PartialRefundRecord> | null
+    const alreadyReversed = partial?.kind === 'partial' ? Math.max(0, Number(partial.revenue_reversed_cents) || 0) : 0
     await recordFinancialTransaction({
       entityId: row.entity_id,
       revenueType: 'refund',
-      amountCents: -revenue,
+      amountCents: -Math.max(0, revenue - alreadyReversed),
       profileId: row.buyer_profile_id,
       currency: row.currency,
       stripePaymentIntentId: paymentIntentId,
@@ -446,13 +592,126 @@ export async function recordCommerceRefund(paymentIntentId: string | null): Prom
 
     // Bookable services (Phase 4, ADR-596): release the slot behind a refunded service order. Fail-soft.
     await cancelBookingByOrder(row.id)
+
+    // L6-16 (2026-09-05): give the goods back to the shelf. Tickets free their tier on refund
+    // (adjustTierSold(-qty)); commerce never re-incremented stock, so a refunded item stayed sold out.
+    await restoreCommerceStock(row).catch((err) => {
+      console.error('[commerce] stock restore failed', { orderId: row.id, err })
+    })
   }
 }
 
+/** Record a PARTIAL refund once (L6-08): stamp refunded_at + metadata.refund under a `refunded_at is null`
+ *  guard, reverse the pro-rated revenue, and release the booking when asked. Both the server action and
+ *  the charge.refunded webhook arrive here for the same refund; the guard makes the second a no-op. */
+async function recordPartialCommerceRefund(
+  orderId: string,
+  paymentIntentId: string,
+  refundedCents: number,
+  releaseBooking: boolean,
+): Promise<void> {
+  const { data } = await db().from('commerce_orders').select(REFUND_ROW_COLS).eq('id', orderId).maybeSingle()
+  const row = data as RefundedOrderRow | null
+  if (!row) return
+  const refunded = Math.max(0, Math.min(row.amount_cents, Math.round(refundedCents)))
+  const revenue = recordedRevenueCents(row)
+  // Pro-rate: Stripe refunds the application fee in the same proportion on a partial refund with
+  // refund_application_fee, and a platform sale's revenue IS the amount, so the share is exact there.
+  const reversed = row.amount_cents > 0 ? Math.min(revenue, Math.round((revenue * refunded) / row.amount_cents)) : 0
+  const record: PartialRefundRecord = {
+    kind: 'partial',
+    refunded_cents: refunded,
+    retained_cents: row.amount_cents - refunded,
+    revenue_reversed_cents: reversed,
+    recorded_at: new Date().toISOString(),
+  }
+  const { data: stamped } = await db()
+    .from('commerce_orders')
+    .update({ refunded_at: record.recorded_at, metadata: { ...(row.metadata ?? {}), refund: record } })
+    .eq('id', orderId)
+    .in('status', ['paid', 'fulfilled'])
+    .is('refunded_at', null)
+    .select('id')
+  if (!(stamped ?? []).length) return // already recorded (idempotent)
+
+  await recordFinancialTransaction({
+    entityId: row.entity_id,
+    revenueType: 'refund',
+    amountCents: -reversed,
+    profileId: row.buyer_profile_id,
+    currency: row.currency,
+    stripePaymentIntentId: paymentIntentId,
+    sourceTable: 'commerce_orders',
+    sourceId: row.id,
+    idempotencyKey: `commerce_order-refund:${row.id}:partial`,
+  }).catch(() => {})
+
+  if (releaseBooking) await cancelBookingByOrder(row.id)
+}
+
+/** Re-increment tracked stock for a FULLY refunded order (L6-16). Mirrors decrement_commerce_stock_atomic
+ *  (migration 20261132000000): a variant-selected item restores the VARIANT's stock, a plain item the
+ *  PRODUCT's, and an untracked row (stock null) is skipped. Only runs when the decrement actually
+ *  happened (metadata.inventory_decremented) and once per order (metadata.inventory_restored); the
+ *  status flip that calls this is itself exactly-once, so a replayed webhook never re-enters.
+ *
+ *  WHY compare-and-swap and not an RPC: no restore RPC exists (the decrement RPC is keyed on the order's
+ *  items with a one-way marker and has no inverse) and this lane adds no migration, so the increment is
+ *  a guarded single-statement update (`set stock = current + qty where id = ? and stock = current`)
+ *  retried on a lost race, never an unguarded read-then-write. Lift into a `restore_commerce_stock_atomic`
+ *  RPC when the next stock migration lands. */
+async function restoreCommerceStock(order: Pick<RefundedOrderRow, 'id' | 'metadata'>): Promise<void> {
+  const meta = order.metadata ?? {}
+  if (meta.inventory_decremented !== true) return // never decremented (pre-enforcement order, or the decrement failed soft)
+  if (meta.inventory_restored === true) return
+  const { data } = await db()
+    .from('commerce_order_items')
+    .select('product_id, variant_id, qty')
+    .eq('order_id', order.id)
+  const items = (data ?? []) as { product_id: string | null; variant_id: string | null; qty: number }[]
+  for (const it of items) {
+    const qty = Math.max(0, Math.floor(Number(it.qty) || 0))
+    if (!qty) continue
+    if (it.variant_id) await restoreStockRow('commerce_variants', it.variant_id, qty)
+    else if (it.product_id) await restoreStockRow('commerce_products', it.product_id, qty)
+  }
+  await db()
+    .from('commerce_orders')
+    .update({ metadata: { ...meta, inventory_restored: true } })
+    .eq('id', order.id)
+}
+
+const STOCK_RESTORE_ATTEMPTS = 5
+
+async function restoreStockRow(table: 'commerce_products' | 'commerce_variants', id: string, qty: number): Promise<void> {
+  for (let attempt = 0; attempt < STOCK_RESTORE_ATTEMPTS; attempt++) {
+    const { data } = await db().from(table).select('stock').eq('id', id).maybeSingle()
+    const current = (data as { stock: number | null } | null)?.stock
+    if (current == null) return // untracked: nothing was decremented, nothing to give back
+    const { data: updated } = await db()
+      .from(table)
+      .update({ stock: current + qty })
+      .eq('id', id)
+      .eq('stock', current)
+      .select('id')
+    if ((updated ?? []).length) return
+  }
+  console.error('[commerce] stock restore lost the compare-and-swap race', { table, id, qty })
+}
+
 /** Resolve the refund's PaymentIntent from a charge.refunded event and reconcile.
- *  No-ops unless a matching paid commerce order exists (mirrors tickets). */
+ *  No-ops unless a matching paid commerce order exists (mirrors tickets). L6-08 (2026-09-05): a
+ *  partial refund (amount_refunded < amount) is recorded AS partial, never as a full one; the ticket
+ *  twin returns early instead, but commerce issues partials itself (the booking policy), so the
+ *  recorder has to understand them. The status flip only happens once the charge is fully refunded. */
 export async function recordCommerceRefundFromCharge(charge: Stripe.Charge): Promise<void> {
   const paymentIntentId =
     typeof charge.payment_intent === 'string' ? charge.payment_intent : charge.payment_intent?.id ?? null
+  const amount = charge.amount ?? 0
+  const refunded = charge.amount_refunded ?? 0
+  if (refunded < amount) {
+    await recordCommerceRefund(paymentIntentId, { refundedCents: refunded })
+    return
+  }
   await recordCommerceRefund(paymentIntentId)
 }

@@ -110,7 +110,14 @@ export async function awardCreationToken(
       amount,
       detail: `Creation token: ${assetType}`,
     })
-    if (error) return 0 // already granted / lost the race
+    if (error) {
+      if (error.code === '23505') return 0 // already granted / lost the race
+      // 2026-09-05 (scan2 R3): this used to be `if (error) return 0` — a timeout / RLS / network error
+      // on the claim read as "already granted" and silently forfeited the token. Nothing was written,
+      // so the next publish can re-pay; say so at error level instead of swallowing it.
+      console.error('[awardCreationToken] reward_grants claim failed (not granted, retryable)', { ruleKey: ruleKey, error: error.message })
+      return 0
+    }
 
     // The claim is the lock, but the Gems must actually land. If the ledger write fails (or is
     // capped / inactive → awarded:false), releasing the claim lets a later publish re-pay this
@@ -184,7 +191,13 @@ async function claimAndPay(
     amount,
     detail,
   })
-  if (error) return false // already granted / lost the race
+  if (error) {
+    if (error.code === '23505') return false // already granted / lost the race
+    // 2026-09-05 (scan2 R3): a non-duplicate claim error is a failed write, not a prior grant; log it
+    // at error level so the forfeited leg is visible. Nothing was claimed, so a retry re-pays.
+    console.error('[claimAndPay] reward_grants claim failed (not paid, retryable)', { ruleKey: ruleKey, error: error.message })
+    return false
+  }
   // The claim is the lock, but the payout must actually land. If pay() reports failure
   // (or throws), release the claim so a later use can re-pay this leg — otherwise the
   // lock is permanent and the currency is never credited (claimed-but-unpaid).

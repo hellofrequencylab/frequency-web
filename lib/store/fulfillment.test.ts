@@ -1,5 +1,11 @@
-import { describe, it, expect } from 'vitest'
-import { classifyRedemption } from './fulfillment'
+import { describe, it, expect, vi } from 'vitest'
+import {
+  classifyRedemption,
+  fulfillStreakFreeze,
+  STREAK_FREEZE_AT_CAP_MESSAGE,
+  STREAK_FREEZE_GRANT_FAILED_MESSAGE,
+  STREAK_FREEZE_REFUND_FAILED_MESSAGE,
+} from './fulfillment'
 
 // ⚠️ THIS FILE CHANGED SHAPE FOR LIVE-013, and the change is the point. The old expectations
 // asserted that `{ type: 'border', value: 'aurora' }` classifies as a delivered cosmetic. It
@@ -84,5 +90,69 @@ describe('classifyRedemption — never charge Gems for what we cannot deliver (A
   it('handles null / undefined / non-object metadata as pending', () => {
     expect(classifyRedemption(null)).toEqual({ kind: 'pending' })
     expect(classifyRedemption(undefined)).toEqual({ kind: 'pending' })
+  })
+})
+
+// ── L6-12 (2026-09-05): a streak freeze that cannot be banked is not a sale ────────────────────
+// Before this, redeemItem charged the Gems, called grantStreakFreeze with its result discarded, and
+// returned ok: a member at the cap paid 50 Gems for nothing. The helper is IO-free (the grant and the
+// refund are injected), so the outcome table is pinned here without a database.
+
+function deps(grant: () => Promise<{ granted: boolean; atCap: boolean }>, refundError: { message: string } | null | 'throw' = null) {
+  const refund = vi.fn(async () => {
+    if (refundError === 'throw') throw new Error('delete blew up')
+    return { error: refundError }
+  })
+  return { grant: vi.fn(grant), refund }
+}
+
+describe('fulfillStreakFreeze — never keep Gems for a freeze that was not banked (L6-12)', () => {
+  it('a granted token is a completed sale; the refund path is never touched', async () => {
+    const d = deps(async () => ({ granted: true, atCap: false }))
+    await expect(fulfillStreakFreeze(d)).resolves.toEqual({ ok: true })
+    expect(d.refund).not.toHaveBeenCalled()
+  })
+
+  it('at the cap: the debit is reversed and the member is told the Gems are back', async () => {
+    const d = deps(async () => ({ granted: false, atCap: true }))
+    await expect(fulfillStreakFreeze(d)).resolves.toEqual({
+      ok: false,
+      refunded: true,
+      atCap: true,
+      message: STREAK_FREEZE_AT_CAP_MESSAGE,
+    })
+    expect(d.refund).toHaveBeenCalledTimes(1)
+  })
+
+  it('a grant that throws counts as not granted: refund, then fail', async () => {
+    const d = deps(async () => {
+      throw new Error('meta write failed')
+    })
+    await expect(fulfillStreakFreeze(d)).resolves.toEqual({
+      ok: false,
+      refunded: true,
+      atCap: false,
+      message: STREAK_FREEZE_GRANT_FAILED_MESSAGE,
+    })
+    expect(d.refund).toHaveBeenCalledTimes(1)
+  })
+
+  it('a refund that fails (returned error or a throw) is reported as NOT refunded, never as ok', async () => {
+    const returned = deps(async () => ({ granted: false, atCap: true }), { message: 'rls' })
+    await expect(fulfillStreakFreeze(returned)).resolves.toEqual({
+      ok: false,
+      refunded: false,
+      atCap: true,
+      message: STREAK_FREEZE_REFUND_FAILED_MESSAGE,
+    })
+    const thrown = deps(async () => ({ granted: false, atCap: false }), 'throw')
+    await expect(fulfillStreakFreeze(thrown)).resolves.toMatchObject({ ok: false, refunded: false })
+  })
+
+  it('every member-facing message says where the Gems are and carries no em dash', () => {
+    for (const m of [STREAK_FREEZE_AT_CAP_MESSAGE, STREAK_FREEZE_GRANT_FAILED_MESSAGE, STREAK_FREEZE_REFUND_FAILED_MESSAGE]) {
+      expect(m).not.toContain('—')
+      expect(m).toMatch(/Gems/)
+    }
   })
 })
