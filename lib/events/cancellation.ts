@@ -1,7 +1,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { refundTicket } from '@/lib/billing/tickets'
 import { sendEventCancelledEmail, sendGuestEventCancelledEmail } from '@/lib/email'
-import { shouldSend } from '@/lib/notification-preferences'
+import { resolveSendGate } from '@/lib/comms/send-gate'
 import { formatEventWhen } from '@/lib/time/zone'
 
 interface CancelTicketRow {
@@ -102,11 +102,15 @@ export async function refundAndNotifyForCancelledEvent(eventId: string): Promise
   }
 
   // ── 2. Notify refunded buyers (best-effort, never blocks/rolls back a refund) ─
+  // Both legs below gate through the ONE seam (ADR-169), not the bare preference read they used:
+  // that read skipped suppression, so a bounced address was still written to (meta-scan B9 H6).
+  // The address is resolved first so suppression can see it. No subject: a cancellation of an
+  // event the member RSVP'd to is about their own seat, not a Circle they may have muted.
   for (const buyerId of refundedBuyerIds) {
     try {
-      if (!(await shouldSend(buyerId, 'email', 'events'))) continue
       const recipient = await resolveRecipient(admin, buyerId)
       if (!recipient) continue
+      if (!(await resolveSendGate(buyerId, 'email', 'events', { email: recipient.email })).allowed) continue
       await sendEventCancelledEmail({
         to: recipient.email,
         recipientName: recipient.name,
@@ -144,9 +148,9 @@ export async function refundAndNotifyForCancelledEvent(eventId: string): Promise
   for (const profileId of rsvpProfileIds) {
     if (refundedBuyerIds.has(profileId)) continue
     try {
-      if (!(await shouldSend(profileId, 'email', 'events'))) continue
       const recipient = await resolveRecipient(admin, profileId)
       if (!recipient) continue
+      if (!(await resolveSendGate(profileId, 'email', 'events', { email: recipient.email })).allowed) continue
       await sendEventCancelledEmail({
         to: recipient.email,
         recipientName: recipient.name,

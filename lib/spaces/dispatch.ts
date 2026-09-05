@@ -1,5 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { routeNotification } from '@/lib/notifications/router'
+import type { PreferenceSubject } from '@/lib/notification-preferences'
 import { listActiveSpaceMemberIds } from '@/lib/spaces/resonance-roster'
 
 // Space Dispatches data layer (ADR-858, the Space message center).
@@ -108,12 +109,20 @@ async function fanOutSpaceDispatchPush(
 ): Promise<number> {
   const recipients = (await listActiveSpaceMemberIds(spaceId)).filter((id) => id !== authorId)
 
+  // 🔴 THE SUBJECT IS WHAT MAKES "MUTE A CIRCLE OR SPACE" DO ANYTHING. The gate only consults a
+  // member's per-subject mute when the send names its subject (lib/comms/send-gate.ts
+  // `options.subject`), and this fan-out passed a bare `{ profileId }` while `spaceId` sat one
+  // line up — so the settings card wrote 21 mute rows per Space and every Dispatch from that Space
+  // still arrived at full volume (meta-scan B9 D2, the SCAN-528 shape). Pinned by
+  // lib/notifications/subject-routing.test.ts.
+  const subject: PreferenceSubject = { subjectType: 'space', subjectId: spaceId }
+
   let enqueued = 0
   for (const profileId of recipients) {
     try {
       const result = await routeNotification(
         'event.dispatch',
-        { profileId },
+        { profileId, subject },
         { title: payload.title, body: payload.body, url: payload.url },
       )
       enqueued += result.enqueuedCount

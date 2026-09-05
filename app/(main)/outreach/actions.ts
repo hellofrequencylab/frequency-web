@@ -5,7 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getCallerProfile } from '@/lib/auth'
 import { atLeastRole, type CommunityRole } from '@/lib/core/roles'
 import { sendDispatchNotificationEmail } from '@/lib/email'
-import { shouldSend } from '@/lib/notification-preferences'
+import { resolveSendGate } from '@/lib/comms/send-gate'
 import { sendPushToProfile } from '@/lib/push'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 
@@ -88,20 +88,21 @@ export async function sendOutreach(message: string): Promise<ActionResult<{ sent
   for (const p of profiles ?? []) {
     if (!p.auth_user_id) continue
     let notified = false
-    if (await shouldSend(p.id, 'email', 'dispatches')) {
-      const { data: { user } } = await admin.auth.admin.getUserById(p.auth_user_id)
-      if (user?.email) {
-        await sendDispatchNotificationEmail({
-          to: user.email,
-          recipientName: p.display_name,
-          recipientProfileId: p.id,
-          authorName,
-          dispatchTitle: `A note from ${authorName}`,
-          excerpt: body,
-          dispatchUrl: `${appUrl}/feed`,
-        })
-        notified = true
-      }
+    // The ONE seam (ADR-169), not the bare preference read it replaced, which skipped suppression
+    // (meta-scan B9 H6). Address first so suppression can see it. No subject: the recipient set is
+    // the union of every scope this steward leads, deduplicated, so no single Circle names it.
+    const { data: { user } } = await admin.auth.admin.getUserById(p.auth_user_id)
+    if (user?.email && (await resolveSendGate(p.id, 'email', 'dispatches', { email: user.email })).allowed) {
+      await sendDispatchNotificationEmail({
+        to: user.email,
+        recipientName: p.display_name,
+        recipientProfileId: p.id,
+        authorName,
+        dispatchTitle: `A note from ${authorName}`,
+        excerpt: body,
+        dispatchUrl: `${appUrl}/feed`,
+      })
+      notified = true
     }
     const pushSent = await sendPushToProfile(p.id, {
       title: `✉️ ${authorName}`,

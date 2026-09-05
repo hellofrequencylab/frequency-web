@@ -41,9 +41,9 @@ Frequency helps you find people nearby, and you're always in control of how visi
 
 Under **Settings → Notifications** you decide exactly what Frequency sends and where it reaches you. Nothing here is all-or-nothing.
 
-- **Topics**: turn each kind on or off on its own, and per place (in-app, email, push). Topics include Dispatches, events, mentions, replies and comments on your own posts, **practice reminders**, and the occasional marketing note about Frequency.
+- **Topics**: turn each kind on or off on its own, and per channel. Dispatches and events reach you by email and push; **practice reminders** reach you in the app and by push; onboarding nudges after you join a Circle come by email and push. A switch only appears where something actually sends through it, so if a row is missing for a topic, nothing is sent for it yet.
 - **Practice reminders**: one nudge a day at most, at the time you usually practice, and only on days a practice is still waiting. It also carries the note when a commitment completes. On for the app by default; push is opt-in and it never comes by email.
-- **Mute one Circle or Space**: quiet a single [Circle](/help/getting-started/what-is-a-circle) or Space without leaving it. There is one switch per place you belong to, and it silences that place on every channel. You stay a member and see everything when you open the app; you just stop hearing from that one. Your topic switches above are not affected.
+- **Mute one Circle or Space**: quiet a single [Circle](/help/getting-started/what-is-a-circle) or Space without leaving it. There is one switch per place you belong to, and it silences that place on every channel. You stay a member and see everything when you open the app; you just stop hearing from that one. Confirmations, reminders and cancellation notices for events you RSVP'd to still reach you, because you asked for those by answering. Your topic switches above are not affected.
 - **Marketing and memory**: separate switches control marketing email and whether Vera remembers your details between chats. Both are yours to turn off any time.
 
 Everything sends as it happens. There is no digest option today.

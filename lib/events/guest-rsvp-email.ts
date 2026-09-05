@@ -2,7 +2,7 @@ import 'server-only'
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import { sendGuestRsvpConfirmationEmail, sendEventRsvpConfirmationEmail } from '@/lib/email'
-import { shouldSend } from '@/lib/notification-preferences'
+import { resolveSendGate } from '@/lib/comms/send-gate'
 // The same module the member-side sendRsvpConfirmation reads it from. Not a client component
 // despite living under components/ — the builder is a pure URL function.
 import { buildGoogleCalendarUrl } from '@/components/events/add-to-calendar'
@@ -234,8 +234,6 @@ export async function sendRsvpApprovedNotice(eventId: string, rsvpId: string): P
     // confirmation the RSVP itself would have sent had there been no gate — same template, same
     // preference category, same suppression.
     if (rsvp.profile_id) {
-      if (!(await shouldSend(rsvp.profile_id, 'email', 'events'))) return
-
       const { data: profile } = await admin
         .from('profiles')
         .select('display_name, auth_user_id')
@@ -244,6 +242,10 @@ export async function sendRsvpApprovedNotice(eventId: string, rsvpId: string): P
       if (!profile?.auth_user_id) return
       const { data: { user } } = await admin.auth.admin.getUserById(profile.auth_user_id)
       if (!user?.email) return
+      // The ONE seam (ADR-169), not the bare preference read it replaced, which skipped suppression
+      // (meta-scan B9 H6). Address first so suppression can see it. No subject: this confirms the
+      // member's own seat, not a Circle they may have muted.
+      if (!(await resolveSendGate(rsvp.profile_id, 'email', 'events', { email: user.email })).allowed) return
 
       // A member is not subject to the guest address gate: they are registered now, which is the
       // exact condition ADR-825 unlocks a withheld address on.

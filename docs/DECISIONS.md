@@ -35641,6 +35641,22 @@ Two things were re-tested and NOT changed. The host-payout failure logged at 20:
 
 **Consequences.** The five rows below are `done` with consequence probes. The generalisable lesson is the one ADR-1174 through ADR-1176 already drew and this audit found under-applied: every rule that had reached SQL held; every rule that stayed in application code was bypassed by a second path. The remaining instances of the same shape — member suspension enforced on 2 of ~22 write paths, three privacy controls not consulted by `/network` and `/search`, notification preferences with no reader, Space-tier capacity absent from the paid checkout — are being worked in the same series and will land under their own rows. Two gates this audit found unable to fire (`check:client-boundary` has no non-triviality floor and no test sibling, while guarding the service-role client from the browser bundle) are in that series as well.
 
+
+## ADR-1204: ten notification switches had no reader, a mute muted nothing, and twelve sends bypassed the consent seam (2026-09-04)
+
+**Status.** Accepted. Continues the second-path finding of ADR-1198 (a column that did not exist) into the rules that live in code.
+
+**Context.** Ten of eighteen switches on `/settings/notifications` had no reader: five in-app categories (the router evaluated the gate and discarded the result — "no in-app outbox handler yet"), four Mentions/Replies cells for which no emitter exists, and `email_practice`. "Mute a Circle or Space" wrote 21 rows per mute and no send site ever constructed the `PreferenceSubject` those rows are keyed on. Twelve sends called `shouldSend` directly, skipping the ADR-169 seam that adds consent and subject mutes. A member was being shown controls that did nothing, which is worse than a missing control: they stop watching the thing they think is handled (SCAN-528's lesson).
+
+**Decision.**
+
+- **A member is never shown a control that does nothing.** `lib/notifications/wired.ts` declares which (category, channel) pairs a send site reads; the settings form and `/manage-emails` render from it; a tree-walking test fails both ways. The ten inert switches are hidden, not deleted — a future emitter re-enables its row by declaring the pair. No choke point existed for the 29 direct `notifications` inserts, so wiring the in-app gate at one point was not available; hiding is the honest option until it is.
+- **Every send goes through `resolveSendGate`.** `lib/comms/send-gate-seam.test.ts` pins that `shouldSend(` appears only in its definition and the seam, so a new bypass is a red test. Nine dispatch sites now pass a subject so a Space or Circle mute mutes.
+- **RSVP confirmations, guest-approval confirmations, cancellation notices and RSVP reminders are deliberately NOT subject-muted** — the member asked for them by RSVPing, and a mute swallowing a cancellation would strand someone at a venue. Whether a mute should mean "all of it" is an owner ruling (OWN-049).
+
+**Consequences.** SCAN-548 is `done` with a consequence probe; OWN-049 is `open`. `docs/ARCHITECTURE.md` names `resolveSendGate` as the seam. Two history docs still describe `shouldSend` as the idiom and stay as written.
+
+
 ## ADR-1202: ADR-885 is amended — `'scoped'` did not come back, and the right rail shows on every member page (2026-09-04)
 
 **Status.** Accepted. Amends ADR-885 (whose body is left as written; this ledger is append-only).

@@ -21,8 +21,8 @@ Notifications keep you in the loop without you having to check constantly: a rep
 
 Head to **Settings → Notifications** to choose what you hear about and how it reaches you. You're in control:
 
-- **Pick topics.** Turn each kind on or off on its own, and per place (in-app, email, push): Dispatches, events, mentions, replies and comments on your own posts, and the occasional note about Frequency.
-- **Mute one place.** Quiet a single Circle or Space without leaving it. One switch per place you belong to, and it silences that place on every channel. Your topic switches stay as they are, and you still see everything when you open the app.
+- **Pick topics.** Turn each kind on or off on its own, and per channel: Dispatches and events by email and push, practice reminders in the app and by push, onboarding nudges after you join a Circle by email and push. A switch only appears where something actually sends through it.
+- **Mute one place.** Quiet a single Circle or Space without leaving it. One switch per place you belong to, and it silences that place on every channel. Your topic switches stay as they are, and you still see everything when you open the app. Confirmations, reminders and cancellation notices for events you RSVP'd to still reach you.
 - Everything sends as it happens. There is no digest option today.
 - Every email includes an unsubscribe link, and we honor it everywhere.
 - Prefer calm? Keep in-app on and email light; you'll still see everything when you open the app.
