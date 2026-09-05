@@ -15,6 +15,9 @@
 // Every write goes through a SECURITY DEFINER function, so the table itself stays fail-closed to
 // anon (RLS on, zero policies). The functions return an opaque id or nothing at all — a capture must
 // never reveal whether an address is already a member.
+// 2026-09-05 (scan2 L7-6): the capture now returns {id, claim_token} in one fixed shape, and the
+// two later doors return a boolean that only the holder of that token can turn true. Neither says
+// anything about the address; see migration 20270345000610.
 
 import { cookies, headers } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
@@ -24,11 +27,41 @@ import type { Json } from '@/lib/database.types'
 
 /** The id of the lead row this browser is building, so later beats update it instead of
  *  re-capturing. httpOnly: the id is the capability that authorises an update. */
+// 2026-09-05 (scan2 L7-6): the id is no longer the capability. The cookie now carries
+// `<lead id>.<claim token>`, and the claim token (minted by capture_signup_lead, stored hashed,
+// migration 20270345000610) is what update_signup_lead / mark_signup_lead_converted require. A
+// cookie in the old bare-id shape names a row that no token can open, so it is treated as absent.
 const LEAD_COOKIE = 'fq_lead'
 const LEAD_COOKIE_MAX_AGE = 60 * 60 * 24 * 30 // 30 days — a funnel abandoned today is worth mailing next week
 
 /** Same shape app/(marketing)/subscribe/actions.ts validates with. */
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/
+
+/** What capture_signup_lead returns since 20270345000610: the row id and the one-time proof. */
+interface LeadClaim {
+  id: string
+  claimToken: string
+}
+
+/** The cookie value is `<id>.<claim token>`. Two non-empty halves, or nothing: a bare id from
+ *  before the token existed cannot open its row, so it is not worth a round trip. */
+function readLeadClaim(value: string | undefined): LeadClaim | null {
+  if (!value) return null
+  const dot = value.indexOf('.')
+  if (dot <= 0) return null
+  const id = value.slice(0, dot)
+  const claimToken = value.slice(dot + 1)
+  if (!id || !claimToken || claimToken.includes('.')) return null
+  return { id, claimToken }
+}
+
+/** The RPC's jsonb return, read defensively: both fields must be non-empty strings. */
+function parseLeadClaim(data: unknown): LeadClaim | null {
+  if (!data || typeof data !== 'object') return null
+  const { id, claim_token: claimToken } = data as { id?: unknown; claim_token?: unknown }
+  if (typeof id !== 'string' || !id || typeof claimToken !== 'string' || !claimToken) return null
+  return { id, claimToken }
+}
 
 /** Which funnel the visitor is in. Mirrors the migration's `source` check constraint. */
 export type LeadSource = 'beta_induction' | 'feature_funnel'
@@ -116,10 +149,10 @@ export async function captureLead(
       // How they first reached us (ADR-095), from the same cookies the member record reads.
       p_attribution: await resolveAcquisition(),
     })
-    const leadId = typeof data === 'string' ? data : null
-    if (error || !leadId) return { ok: false }
+    const claim = error ? null : parseLeadClaim(data)
+    if (!claim) return { ok: false }
 
-    ;(await cookies()).set(LEAD_COOKIE, leadId, {
+    ;(await cookies()).set(LEAD_COOKIE, `${claim.id}.${claim.claimToken}`, {
       httpOnly: true,
       sameSite: 'lax',
       secure: process.env.NODE_ENV === 'production',
@@ -140,15 +173,17 @@ export async function captureLead(
  * us nothing we could follow up on, so there is nothing to update and nothing to report.
  */
 export async function updateLead(input: { step?: number } & LeadFields): Promise<LeadResult> {
-  const leadId = (await cookies()).get(LEAD_COOKIE)?.value
-  if (!leadId) return { ok: false }
+  const claim = readLeadClaim((await cookies()).get(LEAD_COOKIE)?.value)
+  if (!claim) return { ok: false }
 
   const names = splitName(input.displayName)
 
   try {
     const supabase = await createClient()
-    const { error } = await (supabase as unknown as UntypedRpc).rpc('update_signup_lead', {
-      p_lead_id: leadId,
+    // Returns boolean since 20270345000610: false means the (id, token) pair opened no row.
+    const { data, error } = await (supabase as unknown as UntypedRpc).rpc('update_signup_lead', {
+      p_lead_id: claim.id,
+      p_claim_token: claim.claimToken,
       p_step: input.step ?? null,
       p_first_name: input.firstName ?? names.firstName ?? null,
       p_last_name: input.lastName ?? names.lastName ?? null,
@@ -156,7 +191,7 @@ export async function updateLead(input: { step?: number } & LeadFields): Promise
       p_handle: input.handle ?? null,
       p_payload: input.payload ?? {},
     })
-    return error ? { ok: false } : { ok: true }
+    return error || data !== true ? { ok: false } : { ok: true }
   } catch {
     return { ok: false }
   }
@@ -170,20 +205,23 @@ export async function updateLead(input: { step?: number } & LeadFields): Promise
  * profile, so a stolen lead id cannot attach itself to someone else's account.
  */
 export async function markLeadConverted(profileId: string): Promise<LeadResult> {
-  const leadId = (await cookies()).get(LEAD_COOKIE)?.value
-  if (!leadId || !profileId) return { ok: false }
+  const claim = readLeadClaim((await cookies()).get(LEAD_COOKIE)?.value)
+  if (!claim || !profileId) return { ok: false }
 
   try {
     const supabase = await createClient()
-    const { error } = await (supabase as unknown as UntypedRpc).rpc('mark_signup_lead_converted', {
-      p_lead_id: leadId,
+    // Returns boolean since 20270345000610: true only when the caller owns the profile AND the
+    // claim token opens the row.
+    const { data, error } = await (supabase as unknown as UntypedRpc).rpc('mark_signup_lead_converted', {
+      p_lead_id: claim.id,
       p_profile_id: profileId,
+      p_claim_token: claim.claimToken,
     })
     if (error) return { ok: false }
     // Consume-and-clear, the same lifecycle fq_beta_seq and fq_pending_induction follow: this row
     // is finished, and on a shared or kiosk browser the NEXT person's funnel must not update it.
     ;(await cookies()).set(LEAD_COOKIE, '', { path: '/', maxAge: 0 })
-    return { ok: true }
+    return data === true ? { ok: true } : { ok: false }
   } catch {
     return { ok: false }
   }

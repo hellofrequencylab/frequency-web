@@ -53,13 +53,13 @@
             "SCAN-538",
             "SCAN-539",
             "LIVE-154",
-            "LIVE-155",
             "LIVE-156",
             "LIVE-157",
             "LIVE-158",
             "LIVE-159",
             "LIVE-160",
-            "LIVE-161"
+            "LIVE-161",
+            "LIVE-162"
           ]
         },
         {
@@ -6641,18 +6641,18 @@
     {
       "id": "LIVE-155",
       "title": "The Space share card crashes for one space: TypeError u2 is not iterable on /spaces/[slug]/opengraph-image",
-      "status": "open",
+      "status": "done",
       "lane": "live",
       "size": "S",
       "source": {
         "file": "app/(main)/spaces/[slug]/opengraph-image.tsx",
         "ref": "ADR-1207"
       },
-      "detail": "Vercel error group: 'TypeError: u2 is not iterable', route /spaces/[slug]/opengraph-image-tt3pwa, 2 hits (2026-08-05 and 2026-08-29), 1 space. Scan two read every iteration site on the route and its helpers (loadNunito falls back to a bundled face, readHeroConfig guards its input shape, getSpaceVisibility and getSpaceBySlug return objects); none iterates a data-shaped value, so the crash is not root-caused from source. Next step is the full stack from the Vercel digest for that error group, or replaying the route against the same slug with the fonts and preferences that space carries. When it renders, the crawler gets the neutral fallback card; when it throws, the share preview is a text card.",
+      "detail": "Vercel error group: 'TypeError: u2 is not iterable', route /spaces/[slug]/opengraph-image-tt3pwa, 2 hits (2026-08-05 and 2026-08-29), 1 space. Scan two read every iteration site on the route and its helpers (loadNunito falls back to a bundled face, readHeroConfig guards its input shape, getSpaceVisibility and getSpaceBySlug return objects); none iterates a data-shaped value, so the crash is not root-caused from source. Next step is the full stack from the Vercel digest for that error group, or replaying the route against the same slug with the fonts and preferences that space carries. When it renders, the crawler gets the neutral fallback card; when it throws, the share preview is a text card.\n\n2026-09-05 (scan2 PF-2, ADR-1210): ROOT-CAUSED. Satori's data-URL image resolver has no arm for image/webp or image/avif and spreads an unassigned size variable (the minified u2). fetchRemoteImage copied the origin content-type into the data URL; the one crashing Space (being-wholistic-collective) stores its logo as image/webp, the only webp among 40 Space covers and logos. lib/og/remote-image.ts now sniffs the bytes and emits only png/gif/jpeg/sized svg; a real-render test reproduces the exact error text on the pre-fix body and passes on the fix.",
       "verify": {
-        "kind": "manual",
-        "evidence": "2026-09-05: get_runtime_errors 7d shows the group with last seen 2026-08-29. Closes when a 7-day read after the fix returns no occurrence.",
-        "checked": "2026-09-05"
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const s=fs.readFileSync('lib/og/remote-image.ts','utf8').replace(/\\/\\/.*$/gm,'');process.exit(/sniffInlineImageType\\(buf\\)/.test(s)&&fs.existsSync('app/(main)/spaces/[slug]/opengraph-image.test.tsx')?0:1)\"",
+        "note": "Fails if the read-site sniff is removed or the real-render route test is deleted; the vitest file itself reproduces the production error on the pre-fix body."
       }
     },
     {
@@ -6716,7 +6716,7 @@
         "file": "lib/resonance/density.ts",
         "ref": "ADR-1207"
       },
-      "detail": "Scan two R2. refresh_resonance_density_cells() opened with delete with no WHERE; the PostgREST authenticator role preloads safeupdate (pg_roles.rolconfig), so every REST call failed with sqlstate 21000 since 2026-08-22 (postgres_logs 2026-09-04 02:31Z), density.ts swallowed it to {cells:0} and the cron logged info. Closed: migration 20270345000000 (applied 2026-09-05, ledger reconciled) rewrites the delete as `where true`; density.ts returns the error; the cron logs it at error level with ok:false on the step. A pgTAP pin under a loaded safeupdate hook is deferred to phase E until `load` is proven allowed in the CI database.",
+      "detail": "Scan two R2. refresh_resonance_density_cells() opened with delete with no WHERE; the PostgREST authenticator role preloads safeupdate (pg_roles.rolconfig), so every REST call failed with sqlstate 21000 since 2026-08-22 (postgres_logs 2026-09-04 02:31Z), density.ts swallowed it to {cells:0} and the cron logged info. Closed: migration 20270345000000 (applied 2026-09-05, ledger reconciled) rewrites the delete as `where true`; density.ts returns the error; the cron logs it at error level with ok:false on the step. A pgTAP pin under a loaded safeupdate hook is deferred to phase E until `load` is proven allowed in the CI database. 2026-09-05 (phase F): the pgTAP pin landed as SCAN-581.",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e \"const fs=require('fs');const m=fs.readFileSync('supabase/migrations/20270345000000_density_refresh_safeupdate.sql','utf8');const d=fs.readFileSync('lib/resonance/density.ts','utf8');process.exit(/delete from public\\.resonance_density_cells where true;/.test(m)&&!/return \\{ cells: 0 \\}/.test(d)&&/error/.test(d)?0:1)\"",
@@ -7231,6 +7231,74 @@
         "kind": "cmd",
         "cmd": "node -e \"const fs=require('fs');const g=fs.readFileSync('scripts/function-grants.txt','utf8');process.exit(/restore_commerce_stock_atomic/.test(g)?0:1)\"",
         "note": "Passes once the stock-restore RPC exists and carries a grant verdict."
+      }
+    },
+    {
+      "id": "SCAN-579",
+      "title": "An anonymous caller could guest-RSVP a draft or removed event and rename any known guest",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "supabase/migrations/20270345000600_guest_rsvp_rpc_checks_status_and_owner.sql",
+        "ref": "ADR-1210"
+      },
+      "detail": "Scan two L7-5 (2026-09-05). capture_guest_rsvp checked visibility and is_cancelled but not status or removed_at, and its resubmit branch let the caller's name overwrite the stored one, so anyone who knew a guest's email could rename them. Closed: migration 20270345000600 (create or replace, ACL restated) refuses a non-published or removed event with the same opaque receipt every other rejection returns, and the stored name wins on resubmit (a null is still filled in). The receipt stays opaque on purpose: a distinguishable answer would be the attendance oracle the function's own header names. pgTAP: draft refused, removed refused, second submit with a different name changes nothing.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const m=fs.readFileSync('supabase/migrations/20270345000600_guest_rsvp_rpc_checks_status_and_owner.sql','utf8').replace(/--.*$/gm,'');process.exit(/status is distinct from 'published'/.test(m)&&/removed_at is not null/.test(m)&&/coalesce\\(r\\.guest_name, excluded\\.guest_name\\)/.test(m)&&fs.existsSync('supabase/tests/guest_rsvp_refuses_draft_removed_and_rename.test.sql')?0:1)\"",
+        "note": "Fails if the guard or the stored-name-wins branch leaves the migration, or its pgTAP file is removed."
+      }
+    },
+    {
+      "id": "SCAN-580",
+      "title": "Anyone holding a signup_leads id could rewrite that lead with no proof of ownership",
+      "status": "done",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "app/join/(induction)/lead-actions.ts",
+        "ref": "ADR-1210"
+      },
+      "detail": "Scan two L7-6. update_signup_lead and mark_signup_lead_converted took the row id alone; capture_signup_lead handed that id to the browser. Closed: migration 20270345000610 mints a claim token per capture, stores its SHA-256 in signup_leads.claim_token_hash, returns {id, claim_token}, and requires the token on update and convert (wrong or missing changes nothing and returns false); rows captured before the column stay writable by the service role only. The old signatures are dropped, so the migration and lead-actions.ts ship in one release. The induction cookie carries id.token and a bare id never reaches the database. pgTAP (19 assertions) and lead-actions.test.ts pin it.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const m=fs.readFileSync('supabase/migrations/20270345000610_signup_lead_updates_need_a_claim_token.sql','utf8');const a=fs.readFileSync('app/join/(induction)/lead-actions.ts','utf8').replace(/\\/\\/.*$/gm,'');process.exit(/claim_token_hash/.test(m)&&/p_claim_token/.test(m)&&/p_claim_token/.test(a)&&fs.existsSync('supabase/tests/signup_lead_claim_token.test.sql')?0:1)\"",
+        "note": "Fails if the token stops being required by the migration or stops being sent by the induction actions."
+      }
+    },
+    {
+      "id": "SCAN-581",
+      "title": "The density rollup is now pinned under the safeupdate hook it used to fail on",
+      "status": "done",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "supabase/tests/refresh_resonance_density_cells_safeupdate.test.sql",
+        "ref": "ADR-1210"
+      },
+      "detail": "The pgTAP half of SCAN-554 that phase A deferred (the PR size gate, and load being unproven in the CI database). The test loads safeupdate inside a DO block; when the library loads it runs a positive control (a bare DELETE on a temp table raises 21000) and asserts refresh_resonance_density_cells() lives and returns an integer; when it cannot load, all three assertions skip loudly with the sqlstate, never pass vacuously and never fail the suite.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const t=fs.readFileSync('supabase/tests/refresh_resonance_density_cells_safeupdate.test.sql','utf8');process.exit(/load ''safeupdate''/.test(t)&&/lives_ok\\(/.test(t)&&/skip\\('safeupdate could not be loaded/.test(t)?0:1)\"",
+        "note": "Fails if the pin loses its load, its lives_ok, or its loud skip."
+      }
+    },
+    {
+      "id": "LIVE-162",
+      "title": "Two different things share the fq_lead cookie name",
+      "status": "open",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "lib/crm/lead-capture.ts",
+        "ref": "ADR-1210"
+      },
+      "detail": "lib/crm/lead-capture.ts LEAD_GRAB_COOKIE and app/join/(induction)/lead-actions.ts LEAD_COOKIE are both 'fq_lead': one is a Space QR lead grab (JSON), the other the signup lead claim (now id.token after SCAN-580). Neither mis-parses the other today, but on a shared browser one overwrites the other. Rename one (fq_lead_grab for the QR path is the smaller change) and keep both readers tolerant of the old name for a release.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const a=/LEAD_GRAB_COOKIE = '([^']+)'/.exec(fs.readFileSync('lib/crm/lead-capture.ts','utf8'));const b=/LEAD_COOKIE = '([^']+)'/.exec(fs.readFileSync('app/join/(induction)/lead-actions.ts','utf8'));process.exit(a&&b&&a[1]!==b[1]?0:1)\"",
+        "note": "Passes once the two cookie names differ."
       }
     }
   ]
