@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { readFileSync } from 'node:fs'
+import { sourceWithoutComments } from '@/test/source-shape'
 import {
   DEFAULT_CARDS_PER_SERIES,
   DEFAULT_RAIL_DATES,
@@ -230,7 +231,11 @@ describe('the knob reaches the surfaces it claims to tune', () => {
     expect(adminAction).toContain("requireAdmin('janitor')")
     expect(adminAction).toContain('saveSeriesDisplayConfig(')
     // The knob genuinely reaches every surface, so the save purges the whole layout.
-    expect(adminAction).toContain("revalidatePath('/', 'layout')")
+    // Matched on comment-free source (scan2 L8-04): the needle also sits in a comment of the pinned
+    // file, so a bare toContain stayed green with the code deleted.
+    expect(sourceWithoutComments('app/(main)/admin/events/series-actions.ts')).toContain(
+      "revalidatePath('/', 'layout')",
+    )
   })
 
   it('adds NO parallel admin-menu catalog (MENU-CONTRACT: /admin/events is already registered)', () => {

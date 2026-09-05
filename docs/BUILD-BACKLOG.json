@@ -62,7 +62,8 @@
             "LIVE-162",
             "LIVE-165",
             "LIVE-166",
-            "LIVE-169"
+            "LIVE-169",
+            "LIVE-167"
           ]
         },
         {
@@ -7523,6 +7524,74 @@
         "kind": "cmd",
         "cmd": "node -e \"const fs=require('fs'),pa=require('path');function*w(d){for(const e of fs.readdirSync(d,{withFileTypes:true})){const f=pa.join(d,e.name);if(e.isDirectory()){if(e.name!=='node_modules'&&!e.name.startsWith('.'))yield*w(f)}else yield f}}const n=['app','lib'].flatMap(d=>[...w(d)]).filter(f=>/\\\\.tsx?$/.test(f)&&fs.readFileSync(f,'utf8').includes('process.env.NEXT_PUBLIC_SUPABASE_URL!')).length;process.exit(n===0?0:1)\"",
         "note": "Passes once no Supabase client reads the URL with a non-null assertion."
+      }
+    },
+    {
+      "id": "SCAN-583",
+      "title": "The six traced-artifact fan-out checks ran nowhere; they are now a postbuild gate",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "scripts/check-build-fanout.mjs",
+        "ref": "ADR-1211"
+      },
+      "detail": "Scan two, phase E (2026-09-05). L8-01. scripts/build-fanout.test.ts guarded them with describe.skipIf(!HAS_BUILD), CI never builds and postbuild ran only four .mjs gates. Closed: scripts/check-build-fanout.mjs carries the six checks (heic2any in no trace, icon collections in at most 8 functions, no unsanctioned public/ file, site photos in at most 6, no function over 14 public files, placeholders ship) with a 450-function floor, runs fifth in postbuild, and the vitest file exercises it on a fixture tree with planted violations. It has NOT yet seen a real artifact: read its output on the first production deploy (functions read ~496-499; icon chunks at least 1).",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const p=JSON.parse(fs.readFileSync('package.json','utf8')).scripts;const s=fs.readFileSync('scripts/check-build-fanout.mjs','utf8');process.exit(/check-build-fanout\\\\.mjs\\\\s*(&&|$)/.test(p.postbuild)&&/MIN_FUNCTIONS\\\\s*=\\\\s*\\\\d/.test(s)?0:1)\"",
+        "note": "Fails if the gate leaves postbuild or loses its floor."
+      }
+    },
+    {
+      "id": "SCAN-586",
+      "title": "34 source-shape assertions matched a comment as readily as the code; they now match comment-stripped source",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "test/source-shape.ts",
+        "ref": "ADR-1211"
+      },
+      "detail": "Scan two, phase E (2026-09-05). L8-04 and L8-05. Deleting the pinned code left the test green because the needle also appeared in a comment or an import of the pinned file (proven on four, including the sole assertion that the /events loader reads the horizon setting). Closed: test/source-shape.ts provides sourceWithoutComments (a length-preserving scanner validated against TypeScript's own comment ranges over 3,396 files) and every one of the 34 assertions matches stripped source or a call token; the maps diagnostics test pins the boolean in google-loader.ts rather than a comment; deliberate doc-pins carry a one-line label.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const h=fs.readFileSync('test/source-shape.ts','utf8');const m=fs.readFileSync('components/maps/maps-wiring.test.ts','utf8');process.exit(/export function sourceWithoutComments\\\\(/.test(h)&&m.includes('keyPresent: Boolean(googleMapsBrowserKey())')&&!m.includes(\\\"expect(diag).toContain('keyPresent')\\\")?0:1)\"",
+        "note": "Fails if the helper is removed or the maps test goes back to pinning prose."
+      }
+    },
+    {
+      "id": "SCAN-587",
+      "title": "The capability loader and the support store had importers, mocks, and no executing test",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/core/load-capabilities.test.ts",
+        "ref": "ADR-1211"
+      },
+      "detail": "Scan two, phase E (2026-09-05). L8-06. lib/core/load-capabilities.ts (82 importers, mocked by 10 tests, executed by none) and lib/support/store.ts (mocked by 24, executed by none) now have executing tests (24 and 23 cases) driven by a table-aware fake client that records table and chain, covering anonymous, member, Circle admin, host, staff, the guide walk, the draft boundary, Space delegation and three fail-closed read errors; and ticket create, reads, writes, staff reply, filters with LIKE escaping and a refused storage write.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');process.exit(fs.existsSync('lib/core/load-capabilities.test.ts')&&fs.existsSync('lib/support/store.test.ts')?0:1)\"",
+        "note": "Fails if either executing test is removed."
+      }
+    },
+    {
+      "id": "LIVE-167",
+      "title": "51 import-only source-shape assertions still lean on eslint's unused-import rule",
+      "status": "open",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "test/source-shape.ts",
+        "ref": "ADR-1211"
+      },
+      "detail": "SCAN-586 fixed the 34 comment-shadowed assertions and added sourceWithoutComments. The remaining 51 (scan2 l8-shape.json, class import) match an import line only, so deleting the call but keeping the import is caught by eslint's unused-import rule rather than the test. Converting them to sourceWithoutComments(path, { imports: true }) plus a call token is mechanical with the helper.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const {execSync}=require('child_process');const n=parseInt(execSync('grep -rl \\\"sourceWithoutComments(\\\" --include=*.test.ts --include=*.test.tsx app components lib scripts test | wc -l').toString());process.exit(n>=40?0:1)\"",
+        "note": "Passes once at least 40 test files use the helper (20 today)."
       }
     }
   ]

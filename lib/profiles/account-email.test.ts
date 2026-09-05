@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { readFileSync, readdirSync } from 'node:fs'
+import { sourceWithoutComments } from '@/test/source-shape'
 import { join } from 'node:path'
 
 // `public.profiles` has NO `email` column — a member's address lives in `auth.users`, reached via
@@ -158,7 +159,9 @@ describe('a profiles select made through a constant is not invisible', () => {
   // repo's own pattern for a shared column list — but it has to carry its own proof, and the only
   // one that works without a live database is binding it to the generated types.
   it('lib/billing/connect.ts binds its column constant to the schema types', () => {
-    const src = readFileSync(join(process.cwd(), 'lib/billing/connect.ts'), 'utf8')
+    // Matched on comment-free source (scan2 L8-04): the needle also sits in a comment of the pinned
+    // file, so a bare toContain stayed green with the code deleted.
+    const src = sourceWithoutComments(join(process.cwd(), 'lib/billing/connect.ts'))
     expect(src).toContain('satisfies readonly ProfileColumn[]')
   })
 

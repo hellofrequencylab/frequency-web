@@ -76,6 +76,7 @@ describe('the C3.5 table retention stands recorded (the ruling KEEPS the table)'
 
   it('the reader site carries the retention note where getSpaceUpdates used to live', () => {
     const raw = readFileSync('lib/spaces/content-data.ts', 'utf8')
+    // Doc-pin (scan2 L8-05): this pins a COMMENT in the source on purpose, as documentation, not behaviour.
     expect(raw).toMatch(/space_updates TABLE stays, per C3\.5/)
   })
 })

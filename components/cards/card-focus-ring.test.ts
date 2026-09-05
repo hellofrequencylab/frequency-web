@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeAll } from 'vitest'
 import { compile } from 'tailwindcss'
 import { readFileSync } from 'node:fs'
+import { sourceWithoutComments } from '@/test/source-shape'
 import { dirname, join, resolve } from 'node:path'
 
 // THE CARD FOCUS RING, MEASURED IN THE CASCADE — the consequence half of Lift 8b's RowCard item
@@ -140,12 +141,16 @@ describe('the kit spends it', () => {
   const read = (f: string) => readFileSync(f, 'utf8')
 
   it('RowCard puts the ring on the surface that navigates', () => {
-    expect(read('components/cards/row-card.tsx')).toContain('ring-focus')
+    // Matched on comment-free source (scan2 L8-04): the needle also sits in a comment of the pinned
+    // file, so a bare toContain stayed green with the code deleted.
+    expect(sourceWithoutComments('components/cards/row-card.tsx')).toContain('ring-focus')
   })
 
   it('EntityCard no longer writes the ring utilities that never painted', () => {
     const src = read('components/cards/entity-card.tsx')
-    expect(src).toContain('ring-focus')
+    // Matched on comment-free source (scan2 L8-04): the needle also sits in a comment of the pinned
+    // file, so a bare toContain stayed green with the code deleted.
+    expect(sourceWithoutComments('components/cards/entity-card.tsx')).toContain('ring-focus')
     expect(src).not.toContain('has-[:focus-visible]:ring-2')
   })
 })
