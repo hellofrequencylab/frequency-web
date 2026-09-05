@@ -8163,6 +8163,74 @@
         "cmd": "node -e \"const fs=require('fs');const R=(f)=>fs.readFileSync(f,'utf8');const C=(f)=>R(f).replace(/\\\\/\\\\*[\\\\s\\\\S]*?\\\\*\\\\//g,'').replace(/^\\\\s*\\\\/\\\\/.*$/gm,'');process.exit(/outreach_sends|already sent|alreadySent/.test(C('lib/email-studio/send.ts'))?0:1)\"",
         "note": "Passes once the send path skips recipients already delivered."
       }
+    },
+    {
+      "id": "SCAN-621",
+      "title": "A failing feed or notifications RPC rendered the empty state",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/feed/load-feed.ts",
+        "ref": "ADR-1212"
+      },
+      "detail": "Scan two, phase D (2026-09-05). L5-03. Members read nothing here yet for an outage on /feed, every Circle and Channel page and the bell. Closed: readFeedRpc returns a discriminated result, the feed list and the channel preview render an error pane with a retry link, the notifications loader returns kind error and the count loader a negative sentinel, and the bell shows Notifications could not load with no false zero.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const R=(f)=>fs.readFileSync(f,'utf8');const C=(f)=>R(f).replace(/\\\\/\\\\*[\\\\s\\\\S]*?\\\\*\\\\//g,'').replace(/^\\\\s*\\\\/\\\\/.*$/gm,'');process.exit(/export function readFeedRpc/.test(C('lib/feed/load-feed.ts'))&&/UNREAD_COUNT_UNAVAILABLE/.test(C('lib/notifications-map.ts'))&&/could not load/.test(R('components/layout/notification-bell.tsx'))?0:1)\"",
+        "note": "Fails if a loader goes back to reading data ?? []."
+      }
+    },
+    {
+      "id": "SCAN-622",
+      "title": "A host's event update fanned out push, email and SMS before the page record existed",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/events/dispatch.ts",
+        "ref": "ADR-1212"
+      },
+      "detail": "Scan two, phase D (2026-09-05). L5-05. Both insert errors were discarded and the fan-out ran regardless; the guest-side action ignored the result. Closed: the page record and the Dispatch row are written and checked first, the fan-out runs only with both ids, a failed page write after a Dispatch row removes that row, the action and the Manage line report ok, write-failed or send-failed, and the two composers show the send-failed copy.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const R=(f)=>fs.readFileSync(f,'utf8');const C=(f)=>R(f).replace(/\\\\/\\\\*[\\\\s\\\\S]*?\\\\*\\\\//g,'').replace(/^\\\\s*\\\\/\\\\/.*$/gm,'');process.exit(/export function describeDispatchOutcome/.test(C('lib/events/dispatch.ts'))&&/send-failed/.test(C('components/events/event-dispatch-compose.tsx'))?0:1)\"",
+        "note": "Fails if the outcome stops being reported."
+      }
+    },
+    {
+      "id": "SCAN-623",
+      "title": "Creating a group chat could leave a room with no members, including the creator",
+      "status": "done",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "app/(main)/messages/actions.ts",
+        "ref": "ADR-1212"
+      },
+      "detail": "Scan two, phase D (2026-09-05). L5-07. The members insert was unchecked and the caller was sent to a room they could not see. Closed: a refused members insert deletes the room row (a refused delete is logged with the id) and the action fails with member copy instead of redirecting.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const R=(f)=>fs.readFileSync(f,'utf8');const C=(f)=>R(f).replace(/\\\\/\\\\*[\\\\s\\\\S]*?\\\\*\\\\//g,'').replace(/^\\\\s*\\\\/\\\\/.*$/gm,'');process.exit(/from\\\\('rooms'\\\\)\\\\.delete\\\\(\\\\)/.test(C('app/(main)/messages/actions.ts'))?0:1)\"",
+        "note": "Fails if the undo is removed."
+      }
+    },
+    {
+      "id": "SCAN-624",
+      "title": "Block reported success when the block did not save",
+      "status": "done",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "lib/blocking.ts",
+        "ref": "ADR-1212"
+      },
+      "detail": "Scan two, phase D (2026-09-05). L5-12. blockUser returned void with both writes discarded and the action revalidated into a blocked state that was not real. Closed: block and unblock return a result, the action returns the error and does not revalidate on failure, and the button shows it.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const R=(f)=>fs.readFileSync(f,'utf8');const C=(f)=>R(f).replace(/\\\\/\\\\*[\\\\s\\\\S]*?\\\\*\\\\//g,'').replace(/^\\\\s*\\\\/\\\\/.*$/gm,'');process.exit(/Block did not save/.test(C('lib/blocking.ts'))?0:1)\"",
+        "note": "Fails if the write result is dropped again."
+      }
     }
   ]
 }

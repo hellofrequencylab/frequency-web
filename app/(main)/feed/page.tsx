@@ -384,6 +384,7 @@ export default async function FeedPage({
             myProfileId={myProfileId}
             sort={sort}
             viewerRole={myRole}
+            retryHref={`/feed?sort=${sort}`}
             nearby={hasHome && homeLat != null && homeLng != null ? { lat: homeLat, lng: homeLng, radiusM: effectiveRadiusM } : null}
             emptyMessage={hasCircle
               ? 'Your circle’s quiet right now. Share what’s on your mind.'

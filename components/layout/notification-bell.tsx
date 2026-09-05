@@ -33,10 +33,16 @@ const TYPE_ICON: Record<string, string> = {
 // Routing lives in lib/notifications/href (pure + unit-tested); the bell only renders it.
 
 export function NotificationBell({ initialUnread }: { initialUnread: number }) {
+  // 2026-09-05 (scan2 L5-03): a negative initial count is the loader saying the count RPC failed
+  // (UNREAD_COUNT_UNAVAILABLE). It is not a zero: no badge is drawn, the control says so, and
+  // opening the panel does not "mark all read" a count that was never read.
+  const countUnavailable = initialUnread < 0
   const [open, setOpen] = useState(false)
-  const [unread, setUnread] = useState(initialUnread)
+  const [unread, setUnread] = useState(countUnavailable ? 0 : initialUnread)
   const [notifications, setNotifications] = useState<NotificationItem[]>([])
   const [loaded, setLoaded] = useState(false)
+  // True when the list RPC failed on the last open; the panel says so and the next open retries.
+  const [loadFailed, setLoadFailed] = useState(false)
   const [isPending, startTransition] = useTransition()
   const ref = useRef<HTMLDivElement>(null)
 
@@ -61,8 +67,13 @@ export function NotificationBell({ initialUnread }: { initialUnread: number }) {
       }
       if (!loaded) {
         startTransition(async () => {
-          const items = await getMyNotifications()
-          setNotifications(items)
+          const res = await getMyNotifications()
+          if (res.kind === 'error') {
+            setLoadFailed(true)
+            return
+          }
+          setLoadFailed(false)
+          setNotifications(res.items)
           setLoaded(true)
         })
       }
@@ -89,10 +100,10 @@ export function NotificationBell({ initialUnread }: { initialUnread: number }) {
           check that would have caught it. Announcing the disclosure is what earns the coverage. */}
       <button
         onClick={handleOpen}
-        aria-label="Notifications"
+        aria-label={countUnavailable ? 'Notifications. The unread count could not load.' : 'Notifications'}
         aria-expanded={open}
         aria-haspopup="dialog"
-        title="Notifications"
+        title={countUnavailable ? 'Notifications could not load' : 'Notifications'}
         // `p-1.5` below sm makes this a 34px square — the same size as the Friends link beside it,
         // instead of 4px wider for no reason. On the mobile header every pinned pixel comes out of
         // the wordmark (see brand-mark.tsx), and matching a neighbour is free.
@@ -143,10 +154,16 @@ export function NotificationBell({ initialUnread }: { initialUnread: number }) {
               list would keep its full height and push the panel past the cap. Same floor rule as
               the `min-w-0` on the header and tab bar (ADR-1035), one axis over. */}
           <div className="max-h-96 max-sm:max-h-none max-sm:min-h-0 max-sm:flex-1 overflow-y-auto divide-y divide-border">
-            {!loaded && (
+            {!loaded && !loadFailed && (
               <div className="py-8 text-center">
                 <div className="w-5 h-5 border-2 border-primary-bg border-t-primary rounded-full animate-spin mx-auto" />
               </div>
+            )}
+
+            {loadFailed && (
+              <p className="py-8 text-center text-body-sm text-danger">
+                Notifications could not load. Close this and open it again in a moment.
+              </p>
             )}
 
             {loaded && notifications.length === 0 && (

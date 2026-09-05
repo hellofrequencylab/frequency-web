@@ -42,7 +42,18 @@ export interface ComposeEventDispatchArgs {
   eventUrl?: string
 }
 
+/**
+ * How the compose ended (scan2 L5-05, 2026-09-05).
+ *   'ok'           every requested record was written and every requested channel went out.
+ *   'write-failed' the page-side record (or the Dispatch row) could not be written; NOTHING was
+ *                  sent. A Dispatch row written before the page record failed is removed again.
+ *   'send-failed'  the records exist (the update is on the event page) but a fan-out threw, so
+ *                  some or all of the push / email / SMS did not go out.
+ */
+export type ComposeEventDispatchStatus = 'ok' | 'write-failed' | 'send-failed'
+
 export interface ComposeEventDispatchResult {
+  status: ComposeEventDispatchStatus
   /** The event_dispatches row id (the page update). */
   eventDispatchId: string | null
   /** The dispatches row id, when to_dispatch was on. */
@@ -61,6 +72,13 @@ export interface ComposeEventDispatchResult {
  * Compose-once, fan-out-by-channel. Records the page update, optionally publishes
  * a Dispatch + enqueues push fan-out to the non-muted event audience, and no-ops
  * SMS. Best-effort on fan-out: a failed enqueue never undoes the page post.
+ *
+ * 2026-09-05 (scan2 L5-05): the two inserts below used to be read as `const { data }` with no
+ * `error`, and the fan-out ran unconditionally after them, so a host's update could be pushed,
+ * emailed and texted to the whole audience while the page-side record was never written. The
+ * order is now write, read `{ error }`, and only then fan out; a failed write returns
+ * `status: 'write-failed'` and sends nothing, and a fan-out that throws after the write returns
+ * `status: 'send-failed'` so the caller can say the page post landed but the send did not.
  */
 export async function composeEventDispatch(
   args: ComposeEventDispatchArgs,
@@ -74,6 +92,7 @@ export async function composeEventDispatch(
   const body = args.body.trim()
 
   const result: ComposeEventDispatchResult = {
+    status: 'ok',
     eventDispatchId: null,
     dispatchId: null,
     enqueued: 0,
@@ -91,7 +110,7 @@ export async function composeEventDispatch(
   //    `dispatch_type` carries the event badge the feed renders.
   let dispatchId: string | null = null
   if (toDispatch) {
-    const { data: disp } = await admin
+    const { data: disp, error: dispError } = await admin
       .from('dispatches')
       .insert({
         author_id: args.authorId,
@@ -108,14 +127,23 @@ export async function composeEventDispatch(
       })
       .select('id')
       .maybeSingle()
-    dispatchId = disp?.id ?? null
+    if (dispError || !disp?.id) {
+      console.error('[event-dispatch] dispatches insert failed', {
+        eventId: args.eventId,
+        code: dispError?.code ?? null,
+        message: dispError?.message ?? null,
+      })
+      result.status = 'write-failed'
+      return result
+    }
+    dispatchId = disp.id
     result.dispatchId = dispatchId
   }
 
   // 2. Record the page update (the base action). Always written so the event page
   //    has the update timeline, even for a page-only update.
   if (toPage || !toDispatch) {
-    const { data: ed } = await admin
+    const { data: ed, error: edError } = await admin
       .from('event_dispatches')
       .insert({
         event_id: args.eventId,
@@ -130,41 +158,91 @@ export async function composeEventDispatch(
       })
       .select('id')
       .maybeSingle()
-    result.eventDispatchId = ed?.id ?? null
-  }
-
-  // 3. Fan out push to the non-muted event audience when this rode the Dispatch
-  //    rail. Page-only updates do not push (they're pull, shown on the page).
-  if (toDispatch) {
-    result.enqueued = await fanOutEventPush(args.eventId, {
-      title: title ?? 'Event update',
-      body,
-      url: args.eventUrl ?? `/events`,
-    })
-  }
-
-  // 4. "Email guests" (ADR-255 email channel): the same audience the push fan-out reaches,
-  //    each guest gated by their 'dispatches' EMAIL preference + the suppression guard inside
-  //    the send. Best-effort; a bad recipient never aborts the batch.
-  if (toEmail) {
-    result.emailSent = await fanOutEventEmail(args.eventId, title, body)
-  }
-
-  // 5. "Text the group" (ADR-255). Recorded on the row above. When the legal track is
-  //    live (provisioned), text each consented audience member; sendSms enforces consent
-  //    + SMS prefs + quiet hours PER member, so this only resolves WHO. When NOT
-  //    provisioned this is a no-op log — fully fail-closed (ADR-256).
-  if (toSms) {
-    if (!isSmsProvisioned()) {
-      // Fail-closed (ADR-256): SMS is not provisioned, so this is a no-op. Log a STATIC line with no
-      // user-provided value, which avoids the log-injection class entirely (CodeQL).
-      console.info('[event-dispatch] to_sms requested but SMS is gated (ADR-256); not sent')
-    } else {
-      result.smsSent = await fanOutEventSms(args.eventId, title ?? 'Event update', body)
+    if (edError || !ed?.id) {
+      console.error('[event-dispatch] event_dispatches insert failed', {
+        eventId: args.eventId,
+        dispatchId,
+        code: edError?.code ?? null,
+        message: edError?.message ?? null,
+      })
+      // The Dispatch row written a moment ago has no page record to point at; take it back so the
+      // rail does not carry an event update the event page never shows. Best-effort.
+      if (dispatchId) {
+        const { error: undoError } = await admin.from('dispatches').delete().eq('id', dispatchId)
+        if (undoError) {
+          console.error('[event-dispatch] orphan dispatches row could not be removed', {
+            dispatchId,
+            code: undoError.code,
+            message: undoError.message,
+          })
+        }
+      }
+      result.status = 'write-failed'
+      result.dispatchId = null
+      return result
     }
+    result.eventDispatchId = ed.id
+  }
+
+  // Every record is written from here on. A fan-out that throws is reported as 'send-failed'
+  // rather than thrown: the page post is real, and the caller must be able to say so.
+  try {
+    // 3. Fan out push to the non-muted event audience when this rode the Dispatch
+    //    rail. Page-only updates do not push (they're pull, shown on the page).
+    if (toDispatch) {
+      result.enqueued = await fanOutEventPush(args.eventId, {
+        title: title ?? 'Event update',
+        body,
+        url: args.eventUrl ?? `/events`,
+      })
+    }
+
+    // 4. "Email guests" (ADR-255 email channel): the same audience the push fan-out reaches,
+    //    each guest gated by their 'dispatches' EMAIL preference + the suppression guard inside
+    //    the send. Best-effort; a bad recipient never aborts the batch.
+    if (toEmail) {
+      result.emailSent = await fanOutEventEmail(args.eventId, title, body)
+    }
+
+    // 5. "Text the group" (ADR-255). Recorded on the row above. When the legal track is
+    //    live (provisioned), text each consented audience member; sendSms enforces consent
+    //    + SMS prefs + quiet hours PER member, so this only resolves WHO. When NOT
+    //    provisioned this is a no-op log — fully fail-closed (ADR-256).
+    if (toSms) {
+      if (!isSmsProvisioned()) {
+        // Fail-closed (ADR-256): SMS is not provisioned, so this is a no-op. Log a STATIC line with no
+        // user-provided value, which avoids the log-injection class entirely (CodeQL).
+        console.info('[event-dispatch] to_sms requested but SMS is gated (ADR-256); not sent')
+      } else {
+        result.smsSent = await fanOutEventSms(args.eventId, title ?? 'Event update', body)
+      }
+    }
+  } catch (e) {
+    console.error('[event-dispatch] fan-out failed after the records were written', {
+      eventId: args.eventId,
+      eventDispatchId: result.eventDispatchId,
+      dispatchId: result.dispatchId,
+      message: e instanceof Error ? e.message : String(e),
+    })
+    result.status = 'send-failed'
   }
 
   return result
+}
+
+/**
+ * The Manage broadcast's per-channel line for a compose result (scan2 L5-05). Pure, so the
+ * copy is pinned by a test: "posted and sent" only when both happened; a failed write is a plain
+ * failure; a failed send after the write says the page post landed and the send did not.
+ */
+export function describeDispatchOutcome(res: ComposeEventDispatchResult): { ok: boolean; detail: string } {
+  if (res.status === 'ok') {
+    return { ok: true, detail: 'Posted to the event page and sent as a Dispatch to the whole event audience.' }
+  }
+  if (res.status === 'send-failed') {
+    return { ok: false, detail: 'Posted to the event page. The send did not go out; try again.' }
+  }
+  return { ok: false, detail: 'Could not post the Dispatch. Try again.' }
 }
 
 /**

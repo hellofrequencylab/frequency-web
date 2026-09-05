@@ -5,7 +5,8 @@ import { createClient } from '@/lib/supabase/server'
 import { getMyProfileId } from '@/lib/auth'
 import {
   mapNotificationRow,
-  type NotificationItem,
+  UNREAD_COUNT_UNAVAILABLE,
+  type NotificationsLoad,
   type NotificationRpcRow,
 } from '@/lib/notifications-map'
 
@@ -19,14 +20,22 @@ import {
 // types until `supabase gen types` is re-run, so this casts to an untyped handle
 // for the `.rpc()` calls (same convention as lib/seasons.ts / lib/studio/*).
 
-export async function getMyNotifications(): Promise<NotificationItem[]> {
+// 2026-09-05 (scan2 L5-03): both reads below used to drop `error` (`data ?? []`, `data ?? 0`), so an
+// RPC failure showed the member an empty list and a zero badge. They now read it, log it with the
+// RPC name (structured argument, nothing interpolated), and report it: the list as
+// `{ kind: 'error' }`, the count as UNREAD_COUNT_UNAVAILABLE.
+export async function getMyNotifications(): Promise<NotificationsLoad> {
   const profileId = await getMyProfileId()
-  if (!profileId) return []
+  if (!profileId) return { kind: 'ok', items: [] }
 
   const supabase = (await createClient())
-  const { data } = await supabase.rpc('my_notifications', { _limit: 30 })
+  const { data, error } = await supabase.rpc('my_notifications', { _limit: 30 })
+  if (error) {
+    console.error('[notifications] rpc failed', { rpc: 'my_notifications', code: error.code, message: error.message })
+    return { kind: 'error' }
+  }
 
-  return ((data as NotificationRpcRow[] | null) ?? []).map(mapNotificationRow)
+  return { kind: 'ok', items: ((data as NotificationRpcRow[] | null) ?? []).map(mapNotificationRow) }
 }
 
 export async function markAllRead() {
@@ -48,7 +57,11 @@ export async function getUnreadCount(): Promise<number> {
   if (!profileId) return 0
 
   const supabase = (await createClient())
-  const { data } = await supabase.rpc('my_unread_notification_count')
+  const { data, error } = await supabase.rpc('my_unread_notification_count')
+  if (error) {
+    console.error('[notifications] rpc failed', { rpc: 'my_unread_notification_count', code: error.code, message: error.message })
+    return UNREAD_COUNT_UNAVAILABLE
+  }
 
   return (data as number | null) ?? 0
 }

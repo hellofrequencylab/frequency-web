@@ -230,6 +230,8 @@ export function EventActivity({
           setError(res.error)
           return
         }
+        // 2026-09-05 (scan2 L5-05, ADR-1212): the page record landed but the send did not.
+        if (res.data.status === 'send-failed') setError('Posted to the event page. The send did not go out; try again.')
         setBody('')
         setTitle('')
         setAsDispatch(false)
