@@ -182,10 +182,10 @@ describe('audiences: contact + tag reads bind the Space', () => {
     expectSpaceScoped(rec(), SPACE_A)
   })
 
-  it('listAudienceTags binds the Space via the joined network_contacts.space_id', async () => {
+  it('listAudienceTags binds the Space via the joined network_contacts.shared_space_id', async () => {
     const { listAudienceTags } = await import('@/lib/spaces/audiences')
     await listAudienceTags(SPACE_A)
-    expectSpaceScoped(rec(), SPACE_A, { column: 'network_contacts.space_id' })
+    expectSpaceScoped(rec(), SPACE_A, { column: 'network_contacts.shared_space_id' })
   })
 })
 

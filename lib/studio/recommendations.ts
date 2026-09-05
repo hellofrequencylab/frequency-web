@@ -208,7 +208,10 @@ export async function getStudioSignal(): Promise<StudioSignal> {
     admin.from('ai_help_queries').select('question').eq('deflected', true).gte('created_at', since),
     admin.from('help_chunks').select('id', { count: 'exact', head: true }),
     admin.rpc('interaction_surface_stats', { _days: 30, _limit: 30 }),
-    admin.from('member_traits').select('id', { count: 'exact', head: true }).eq('trait_key', 'churn_risk').eq('value_text', 'high'),
+    // `member_traits` has no `id` column — its PK is (profile_id, trait_key), which the very next
+    // line gets right. Selecting a non-existent column made this count fail and read 0 forever
+    // against 1,255 live rows, so the retention_churn recommendation could never fire.
+    admin.from('member_traits').select('profile_id', { count: 'exact', head: true }).eq('trait_key', 'churn_risk').eq('value_text', 'high'),
     admin.from('member_traits').select('profile_id', { count: 'exact', head: true }).eq('trait_key', 'churn_risk'),
     aiEnabledFlag(),
   ])

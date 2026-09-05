@@ -30,6 +30,7 @@ import { coerceVisibilityForScope } from '@/lib/events/options'
 import { HOME_TZ, isValidTimeZone, isEventPast, zoneAbbrev, resolveZone } from '@/lib/time/zone'
 import { readEventCheckInEnabled } from '@/lib/events/checkin-enabled'
 import { checkInWindowOpen } from '@/lib/events/checkin-window'
+import { isPendingApproval } from '@/lib/events/admission'
 import { rsvpWindowStateFromDetails } from '@/lib/events/rsvp-window'
 import { embedEvent } from '@/lib/events/embeddings'
 import { saveEventLocation, type AttendanceMode } from '@/lib/events/geocode'
@@ -1418,13 +1419,19 @@ export async function checkInEvent(eventId: string): Promise<CheckInResult> {
   // not a switch, it is a coat of paint. Defaults on, so no existing event changes.
   if (!readEventCheckInEnabled(ev.theme)) return { ok: false }
 
+  // 🔴 `status` ALONE IS NOT A SEAT. The host's approval gate writes a pending request as
+  // status='going' + approval_status='pending' (see the insert above), so selecting `status` only
+  // let an unapproved requester check in through the printed QR door (app/q/[slug]/route.ts) and
+  // collect practice.verified, Zaps, an attendance-streak tick and permanent verified-member
+  // standing — the exact side effects the approval gate holds back everywhere else. Same rule, same
+  // module, as the venue disclosure on the event page: lib/events/admission.ts.
   const { data: rsvp } = await admin
     .from('event_rsvps')
-    .select('status')
+    .select('status, approval_status')
     .eq('event_id', eventId)
     .eq('profile_id', myProfileId)
     .maybeSingle()
-  if (rsvp?.status !== 'going') return { ok: false }
+  if (rsvp?.status !== 'going' || isPendingApproval(rsvp)) return { ok: false }
 
   // "Showed up" verification (ADR-420): physically checking in at a real event is the
   // baseline real-person signal. Idempotent (only sets verified_at once) + fail-safe.

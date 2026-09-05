@@ -6316,6 +6316,91 @@
       }
     },
     {
+      "id": "SCAN-541",
+      "title": "The Stripe webhook granted the paid member tier to any completed checkout that was not one of three named kinds, including a one-time Shop order",
+      "status": "done",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "app/api/webhooks/stripe/route.ts",
+        "ref": "ADR-1201"
+      },
+      "detail": "checkout.session.completed gated the setTier write on a denylist (space plan/membership, bundle, founders). A commerce order (mode 'payment', kind 'commerce_order', client_reference_id = buyer) matched none and fell through to setTier(buyer, 'crew', 'active') - a paid tier with no subscription to cancel it, and the payout take-rate rung follows membership_tier. lib/billing/checkout.ts:122 already had the allowlist (mode 'subscription' and no kind) and claimed to mirror the webhook. Production had processed zero real webhook events, so nothing was lost; the first sale would have fired it. Fixed 2026-09-04 by stating the requirement positively; three positive controls pin commerce, supporter and space-plan sessions to zero tier writes.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const r=fs.readFileSync('app/api/webhooks/stripe/route.ts','utf8');const t=fs.readFileSync('app/api/webhooks/stripe/route.test.ts','utf8');const allow=r.includes(\\\"s.mode === 'subscription' && !s.metadata?.kind\\\");const deny=/!subscriptionKind\\(s\\.metadata\\)/.test(r);const ctl=(t.match(/never grants a membership tier/g)||[]).length>=2;process.exit(allow&&!deny&&ctl?0:1)\"",
+        "note": "Passes when the tier write is gated on the positive allowlist, the old denylist is gone, and at least two must-fail fixtures (commerce order, supporter contribution) exist in the webhook test."
+      }
+    },
+    {
+      "id": "SCAN-542",
+      "title": "A pending approval request disclosed the hidden venue and could check in: two readers tested status alone",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/events/admission.ts",
+        "ref": "ADR-1201"
+      },
+      "detail": "The approval gate writes a request as status 'going' + approval_status 'pending' and held back every side effect, but app/(main)/events/[slug]/page.tsx decided viewerRegistered on status alone (myApprovalStatus was resolved 500 lines earlier and unused), so tapping Request to join on a hide_address event rendered venue name, street, postal, pin and maps link before the host decided; checkInEvent selected only status, so a pending requester could check in through the QR door. The rule now lives in lib/events/admission.ts beside the four query-layer readers that already applied .neq('approval_status','pending').",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const p=fs.readFileSync('app/(main)/events/[slug]/page.tsx','utf8');const a=fs.readFileSync('app/(main)/events/actions.ts','utf8');const fn=a.slice(a.indexOf('export async function checkInEvent('));const page=p.includes('isAdmitted({ status: myRsvpStatus, approval_status: myApprovalStatus })')&&!/viewerRegistered = myRsvpStatus === 'going'/.test(p);const door=fn.includes(\\\".select('status, approval_status')\\\")&&fn.includes('isPendingApproval(rsvp)');process.exit(page&&door?0:1)\"",
+        "note": "Passes when the venue read consults both columns through isAdmitted and the old status-only read is gone, and checkInEvent selects approval_status and refuses a pending seat."
+      }
+    },
+    {
+      "id": "SCAN-543",
+      "title": "Tag audiences filtered on network_contacts.space_id, a column that never existed, so every tag-targeted campaign resolved to zero recipients and reported success",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/spaces/audiences.ts",
+        "ref": "ADR-1201"
+      },
+      "detail": "The real column is shared_space_id (20261171000000). PostgREST returned 42703, the fail-safe swallowed it into an empty set, and because the tag is a narrowing filter in resolveAudience, campaigns, automations and drips targeting a tag sent to nobody. tsc could not see it through the as-unknown-as cast on the embed. Six tests in lib/spaces/audiences.test.ts passed against a fake that modelled the phantom column; the tenancy contract and the security-definer ledger asserted it too. Fixed 2026-09-04: column names are bound to the generated types with satisfies (the ADR-1198 technique), the fake and both contracts name the real column, and the swallow logs.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const s=fs.readFileSync('lib/spaces/audiences.ts','utf8');const t=fs.readFileSync('lib/spaces/audiences.test.ts','utf8');const bound=s.includes('satisfies readonly NetworkContactColumn[]');const phantom=/network_contacts\\.space_id['\\)]/.test(s)||/network_contacts\\.space_id['\\)]/.test(t);const logs=s.includes('spaces.audiences.tag_lookup_failed');process.exit(bound&&!phantom&&logs?0:1)\"",
+        "note": "Passes when the embed columns are type-checked against the schema, neither the module nor its fake names the phantom column, and the fail-safe logs when it fires."
+      }
+    },
+    {
+      "id": "SCAN-544",
+      "title": "The churn-risk recommendation counted member_traits.id, which does not exist, so it read 0 forever against 1,255 live rows",
+      "status": "done",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "lib/studio/recommendations.ts",
+        "ref": "ADR-1201"
+      },
+      "detail": "member_traits has no id column; its primary key is (profile_id, trait_key), which the very next line in the same Promise.all used correctly. The head:true count failed with 42703 and retention.highChurn stayed 0, so the retention_churn card never fired honestly. Fixed 2026-09-04 by counting profile_id.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const s=fs.readFileSync('lib/studio/recommendations.ts','utf8');process.exit(/from\\('member_traits'\\)\\.select\\('id'/.test(s)?1:0)\"",
+        "note": "Passes when no member_traits read selects the nonexistent id column."
+      }
+    },
+    {
+      "id": "SCAN-545",
+      "title": "getEventPostReactions returned a null-prototype object from a server action, which React Flight refuses; the event page threw for 20 of 57 members for 69 days",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/events/reactions-core.ts",
+        "ref": "ADR-1201"
+      },
+      "detail": "aggregate() built its result with Object.create(null) (correct for caller-supplied keys) and returned it across the server-to-client boundary. Flight throws 'Only plain objects ... Classes or null prototypes are not supported' - 60 occurrences, 20 users, 2026-06-27 to 2026-09-03 - and the client's empty catch swallowed it, so no reaction count ever rendered. Fixed 2026-09-04: the fold moved to lib/events/reactions-core.ts (so it can be tested without exporting a non-async symbol from the use-server module), still aggregates into the null-proto map, and returns a spread plain object; the test asserts the prototype; the client catch now reports.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const c=fs.readFileSync('lib/events/reactions-core.ts','utf8');const r=fs.readFileSync('lib/events/reactions.ts','utf8');const t=fs.readFileSync('lib/events/reactions-core.test.ts','utf8');process.exit(c.includes('Object.fromEntries(out)')&&!r.includes('Object.create(null)')&&t.includes('Object.getPrototypeOf(out)).toBe(Object.prototype)')?0:1)\"",
+        "note": "Passes when the fold converts the Map to a plain object at the boundary with Object.fromEntries, the server module builds no null-prototype value of its own, and a test asserts the prototype."
+      }
+    },
+    {
       "id": "HYG-050",
       "title": "The Studio edit rail does not derive from field placement: inlineFields() and railFields() have no production consumer",
       "status": "open",

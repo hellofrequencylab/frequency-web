@@ -80,6 +80,7 @@ import { OpenAdminBarButton } from '@/components/admin/open-admin-bar-button'
 import { nextOccurrence } from '@/lib/events/recurrence'
 import { TICKETING_ENABLED } from '@/lib/events/ticketing'
 import { mapsSearchUrl, eventMapsQuery } from '@/lib/events/maps-link'
+import { isAdmitted } from '@/lib/events/admission'
 
 type AttendanceMode = 'in_person' | 'online' | 'hybrid'
 
@@ -1196,7 +1197,12 @@ export default async function EventDetailPage({
   // street, postal, precise pin, maps link, and the free-text location line, which often carries
   // the street) renders only for a REGISTERED viewer — a going/waitlist RSVP or a ticket — or a
   // manager. Everyone else gets city-level location plus an honest share-after-RSVP note.
-  const viewerRegistered = myRsvpStatus === 'going' || myRsvpStatus === 'waitlist' || ownsTicket
+  // 🔴 A PENDING REQUEST IS NOT REGISTRATION. This read was `myRsvpStatus === 'going' || ... ` and
+  // ignored `myApprovalStatus`, resolved 500 lines above — so on an approval-gated event, tapping
+  // "Request to join" disclosed the hidden venue instantly, before the host decided, and a decline
+  // could not take it back. The rule now lives in lib/events/admission.ts beside the four query-layer
+  // readers that already applied it (capacity, connectors, going-counts).
+  const viewerRegistered = isAdmitted({ status: myRsvpStatus, approval_status: myApprovalStatus }) || ownsTicket
   const addressHidden = extra?.hide_address === true && !canManage && !viewerRegistered
 
   // Exact-venue point (§5): the event's OWN geog, shown as a precise mini-map. Only
