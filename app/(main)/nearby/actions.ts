@@ -5,6 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getCallerProfile } from '@/lib/auth'
 import { sendDispatchNotificationEmail } from '@/lib/email'
 import { resolveSendGate } from '@/lib/comms/send-gate'
+import type { PreferenceSubject } from '@/lib/notification-preferences'
 import { sendPushToProfile } from '@/lib/push'
 import { atLeastRole } from '@/lib/core/roles'
 import { resolvePlaceTreeProfileIds, type PlaceType } from '@/lib/messaging/place-tree'
@@ -121,6 +122,14 @@ export async function createAndPublishDispatch(fd: FormData) {
       const { data: profiles } = await admin.from('profiles').select('id, display_name, auth_user_id').in('id', profileIds)
       if (!profiles?.length) return
 
+      // The Circle this Dispatch is from, so a member who muted it in /settings is skipped on both
+      // channels. The gate only consults the per-subject mute when the send names its subject
+      // (meta-scan B9 D2); a hub/nexus/global Dispatch has no mutable subject and passes none.
+      const subject: PreferenceSubject | undefined =
+        !isGlobal && audience_scope === 'circle' && audience_id
+          ? { subjectType: 'circle', subjectId: audience_id }
+          : undefined
+
       // Per-recipient ledger (CRM Phase 5): record the send-gate outcome for each channel so the
       // Dispatch appears in the messaging control panel. Writing it is fire-safe (never breaks a send).
       const recipientRows: DispatchRecipientRow[] = []
@@ -133,7 +142,7 @@ export async function createAndPublishDispatch(fd: FormData) {
         // consent-revoked address is honored here too.
         const { data: { user } } = await admin.auth.admin.getUserById(profile.auth_user_id)
         const email = user?.email ?? null
-        const gate = await resolveSendGate(profile.id, 'email', 'dispatches', { email })
+        const gate = await resolveSendGate(profile.id, 'email', 'dispatches', { email, subject })
         if (gate.allowed && email) {
           try {
             await sendDispatchNotificationEmail({ to: email, recipientName: profile.display_name, recipientProfileId: profile.id, authorName, dispatchTitle: title, excerpt, dispatchUrl })
@@ -152,7 +161,7 @@ export async function createAndPublishDispatch(fd: FormData) {
           body:  excerpt || `New dispatch from ${authorName}`,
           url:   `/nearby/${dispatch.id}`,
           tag:   `dispatch-${dispatch.id}`,
-        }, 'dispatches')
+        }, 'dispatches', { subject })
         recipientRows.push({ dispatch_id: dispatch.id, profile_id: profile.id, channel: 'push', status: pushed > 0 ? 'sent' : 'skipped', reason: pushed > 0 ? null : 'no delivery (gate off or no subscription)', email: null })
       }
 

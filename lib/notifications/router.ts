@@ -147,6 +147,11 @@ export async function routeNotification<E extends NotificationEvent>(
 //   ⏳ booking confirm / cancel  — lib/spaces/booking-notify.ts (transactional email)
 //   ⏳ email-studio broadcast    — lib/email-studio/send.ts (marketing; owned by email-studio)
 //   ⏳ mentions / comments in-app — needs an 'inapp' outbox handler first (channel groundwork)
+//       ⚠️ Until then the in-app switches (other than Practice reminders) and both Mentions /
+//       Replies rows are HIDDEN from the settings grid by lib/notifications/wired.ts, because a
+//       switch nothing reads is a lie (meta-scan B9 D1/D6). Shipping the handler, or any mention /
+//       reply email or push emitter, means flipping that map in the same commit; its test walks
+//       the tree for readers and fails until the map agrees.
 //
 // PATTERN for each: add the event to `NotificationEvent` + `NotificationContexts` + a
 // `NOTIFICATION_REGISTRY` row (category/channels/render), then replace the site's hand-rolled

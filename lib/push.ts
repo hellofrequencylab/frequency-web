@@ -10,6 +10,7 @@
 import webpush from 'web-push'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { resolveSendGate, type SendCategory } from '@/lib/comms/send-gate'
+import type { PreferenceSubject } from '@/lib/notification-preferences'
 
 const PUBLIC_KEY  = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
 const PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY
@@ -59,10 +60,14 @@ export async function sendPushToProfile(
   profileId: string,
   payload:   PushPayload,
   category:  SendCategory,
+  // The Space/Circle this push is about, when the caller has one in scope. Without it the gate
+  // cannot honour "Mute a Circle or Space" (the per-subject mute is only consulted when a subject
+  // is supplied — lib/comms/send-gate.ts), which is how that card wrote 21 rows nothing read.
+  options: { subject?: PreferenceSubject } = {},
 ): Promise<number> {
   if (!configure()) return 0
 
-  const gate = await resolveSendGate(profileId, 'push', category)
+  const gate = await resolveSendGate(profileId, 'push', category, { subject: options.subject })
   if (!gate.allowed) return 0
 
   const admin = createAdminClient()

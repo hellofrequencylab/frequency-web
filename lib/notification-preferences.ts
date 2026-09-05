@@ -215,9 +215,12 @@ export function isFrequencyDeferred(
   return channel === 'email' && frequency !== 'realtime'
 }
 
-// Channel × category gate. Used at send sites:
-//
-//   if (!await shouldSend(recipientId, 'email', 'dispatches')) return
+// Channel × category preference read. The ONE caller is the unified send-gate
+// (lib/comms/send-gate.ts `resolveSendGate`), which layers suppression, consent and the
+// per-Space/Circle mute on top of this bit. This comment used to recommend calling it at
+// send sites directly, and twelve did (meta-scan B9 H6): each got the preference bit and
+// nothing else, which is why "Mute a Circle or Space" had no reachable enforcement point.
+// A send site wants `resolveSendGate`; lib/comms/send-gate-seam.test.ts fails a new bypass.
 //
 // Returns false on any error so a broken pref read never accidentally
 // spams a user. (False-positive opt-out > false-negative opt-in.)

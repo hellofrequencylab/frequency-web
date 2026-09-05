@@ -7,7 +7,7 @@ import { getMyProfileId } from '@/lib/auth'
 import { getEventCapabilities } from '@/lib/core/load-capabilities'
 import { type ActionResult, ok, fail, isError } from '@/lib/action-result'
 import { rateLimitOk } from '@/lib/rate-limit'
-import { shouldSend } from '@/lib/notification-preferences'
+import { resolveSendGate } from '@/lib/comms/send-gate'
 import { sendEventUpdateEmail } from '@/lib/email'
 import { composeEventDispatch } from '@/lib/events/dispatch'
 import { listEventCrmMemberIds } from '@/lib/events/crm-roster'
@@ -262,7 +262,10 @@ async function sendEmailChannel(args: {
   let skipped = 0
   for (const r of emailable) {
     try {
-      if (!(await shouldSend(r.profileId, 'email', 'dispatches'))) {
+      // The ONE seam (ADR-169), not the bare preference read it replaced, which skipped
+      // suppression (meta-scan B9 H6). No subject: this lane exists only when there is no host
+      // Space, and the row read above carries no Circle scope to name.
+      if (!(await resolveSendGate(r.profileId, 'email', 'dispatches', { email: r.email })).allowed) {
         skipped++
         continue
       }

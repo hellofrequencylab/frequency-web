@@ -93,6 +93,17 @@ describe('composeSpaceDispatch (the publish half)', () => {
     expect(pushedTo).not.toContain(AUTHOR)
   })
 
+  it('names the Space as the subject, so "Mute a Circle or Space" actually mutes it', async () => {
+    // 🔴 This fan-out passed a bare `{ profileId }` while `spaceId` was its own argument (meta-scan
+    // B9 D2). The gate only consults a member's per-subject mute when the send names its subject,
+    // so the settings card wrote 21 rows per mute that nothing read. The recipient now carries it.
+    await composeSpaceDispatch({ spaceId: SPACE, authorId: AUTHOR, body: 'Doors open at 7.' })
+    expect(routeNotification.mock.calls[0][1]).toEqual({
+      profileId: MEMBER,
+      subject: { subjectType: 'space', subjectId: SPACE },
+    })
+  })
+
   it('requires a body: an empty body returns null without inserting', async () => {
     const res = await composeSpaceDispatch({ spaceId: SPACE, authorId: AUTHOR, body: '   ' })
     expect(res).toEqual({ dispatchId: null, enqueued: 0 })

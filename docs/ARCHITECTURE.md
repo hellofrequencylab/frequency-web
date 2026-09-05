@@ -209,7 +209,7 @@ Every handler is wrapped twice, and both wrappers are contract-checked:
   `evaluateSendGate` in `lib/comms/send-gate.ts` (ADR-169), which folds together notification
   preferences, the consent ledger (`lib/consent/consent.ts`) and the suppression list
   (`lib/suppression.ts`). Use it rather than checking the three by hand.
-- **Preferences:** `lib/notification-preferences.ts` → `shouldSend(profileId, channel, category)`.
+- **Preferences:** `lib/notification-preferences.ts` holds the per-category bits; the ONE seam every send site asks is `resolveSendGate` in `lib/comms/` (consent + suppression + subject mutes + the bit), never `shouldSend` directly (`lib/comms/send-gate-seam.test.ts` pins that, 2026-09-04).
   Channels: `email` / `inapp` / `push`. Categories: `dispatches`, `events`, `mentions`,
   `lifecycle`, `comments`, `practice` (plus consent-governed `marketing`, which is *not* a
   preference category). Each category also carries a frequency: `realtime` / `daily_digest` /
