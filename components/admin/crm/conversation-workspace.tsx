@@ -6,7 +6,7 @@
 
 import Link from 'next/link'
 import type { ReactNode } from 'react'
-import { Inbox, Lock } from 'lucide-react'
+import { Inbox, Lock, UserCheck } from 'lucide-react'
 import { EmptyState } from '@/components/ui/empty-state'
 import type { ActionResult } from '@/lib/action-result'
 import { ConversationComposer } from './conversation-composer'
@@ -23,6 +23,7 @@ import {
   type ConversationStatus,
 } from '@/lib/comms/labels'
 import { makeChatToken } from '@/lib/comms/chat-token'
+import { assignmentSentence } from '@/lib/comms/assignment-history'
 import type {
   ConversationListRow,
   ConversationThread,
@@ -254,6 +255,7 @@ function ThreadReader({
       </div>
 
       <ContextBand thread={thread} />
+      <AssignmentHistory thread={thread} />
 
       {liveChat ? (
         <>
@@ -315,6 +317,35 @@ function ContextBand({ thread }: { thread: ConversationThread }) {
         ),
       )}
     </div>
+  )
+}
+
+/** The assignment trail (scan2 L9-10): every hand-off this thread has had, newest first, folded
+ *  behind a one-line summary so the reader pane stays about the messages. Rendered only when there
+ *  is a trail; a thread nobody has assigned yet says nothing here. */
+function AssignmentHistory({ thread }: { thread: ConversationThread }) {
+  if (!thread.assignments?.length) return null
+  const latest = thread.assignments[0]
+  return (
+    <details className="border-b border-border px-3 py-1.5">
+      <summary className="flex cursor-pointer items-center gap-1.5 text-2xs text-muted">
+        <UserCheck className="h-3 w-3 shrink-0" aria-hidden />
+        <span className="truncate">
+          {assignmentSentence(latest)} · {when(latest.createdAt)}
+        </span>
+        <span className="ml-auto shrink-0 tabular-nums">
+          {thread.assignments.length} {thread.assignments.length === 1 ? 'hand-off' : 'hand-offs'}
+        </span>
+      </summary>
+      <ul className="mt-1.5 space-y-1 pb-1">
+        {thread.assignments.map((a) => (
+          <li key={a.id} className="flex items-baseline justify-between gap-2 text-2xs text-muted">
+            <span className="truncate text-text">{assignmentSentence(a)}</span>
+            <span className="shrink-0">{when(a.createdAt)}</span>
+          </li>
+        ))}
+      </ul>
+    </details>
   )
 }
 

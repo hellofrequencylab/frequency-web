@@ -2,12 +2,13 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { FileText, Save, Trash2 } from 'lucide-react'
+import { FileText, Save, Trash2, Pencil } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/field'
 import { Select } from '@/components/ui/select'
 import {
   createSpaceEmailTemplate,
+  updateSpaceEmailTemplate,
   deleteSpaceEmailTemplate,
 } from '@/lib/spaces/email-templates-actions'
 import { isError } from '@/lib/action-result'
@@ -15,6 +16,10 @@ import { isError } from '@/lib/action-result'
 // TEMPLATE PICKER (ADR-380). Lets the owner reuse a saved subject + body: pick a template to PREFILL
 // the composer (onLoadTemplate(subject, body) sets the composer's state), save the current draft as a
 // new named template, and delete a template. All writes go through canEditProfile-gated server actions.
+//
+// 2026-09-05 (scan2 L9-08): with a template selected, the save row becomes the EDIT row: the name is
+// editable and Update template writes the composer's current subject + body back onto that template
+// through updateSpaceEmailTemplate. One component, two modes, no delete + recreate to fix a typo.
 //
 // Copy passes CONTENT-VOICE: plain, concrete, no narrated feelings, no em/en dashes.
 
@@ -43,12 +48,29 @@ export function TemplatePicker({
   const [newName, setNewName] = useState('')
   const [pending, start] = useTransition()
   const [error, setError] = useState<string | null>(null)
+  // Edit mode (scan2 L9-08): the selected template's name, editable in place.
+  const [editName, setEditName] = useState('')
 
   function handleLoad(id: string) {
     setSelectedId(id)
     setError(null)
     const t = templates.find((x) => x.id === id)
+    setEditName(t?.name ?? '')
     if (t) onLoadTemplate(t.subject, t.body)
+  }
+
+  function handleUpdate() {
+    const name = editName.trim()
+    if (!selectedId || !name || disabled || pending) return
+    setError(null)
+    start(async () => {
+      const res = await updateSpaceEmailTemplate(spaceId, slug, selectedId, name, currentSubject, currentBody)
+      if (isError(res)) {
+        setError(res.error)
+        return
+      }
+      router.refresh()
+    })
   }
 
   function handleSave() {
@@ -76,6 +98,7 @@ export function TemplatePicker({
         return
       }
       setSelectedId('')
+      setEditName('')
       router.refresh()
     })
   }
@@ -125,7 +148,33 @@ export function TemplatePicker({
         </div>
       )}
 
-      {!disabled && (
+      {/* 2026-09-05 (scan2 L9-08): with a template selected, this row edits that template instead. */}
+      {!disabled && selected && (
+        <div className="flex flex-wrap items-end gap-2 border-t border-border pt-3">
+          <label className="flex flex-col gap-1">
+            <span className="text-meta font-medium text-muted">Update this template with your draft</span>
+            <Input
+              value={editName}
+              onChange={(e) => setEditName(e.target.value)}
+              placeholder="Name this template"
+              maxLength={80}
+              className="max-w-xs"
+              aria-label="Template name"
+            />
+          </label>
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            onClick={handleUpdate}
+            disabled={!editName.trim() || pending}
+          >
+            <Pencil className="h-3.5 w-3.5" aria-hidden /> Update template
+          </Button>
+        </div>
+      )}
+
+      {!disabled && !selected && (
         <div className="flex flex-wrap items-end gap-2 border-t border-border pt-3">
           <label className="flex flex-col gap-1">
             <span className="text-meta font-medium text-muted">Save this draft as a template</span>

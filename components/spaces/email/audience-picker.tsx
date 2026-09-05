@@ -2,12 +2,12 @@
 
 import { useEffect, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Users, Save, Trash2 } from 'lucide-react'
+import { Users, Save, Trash2, Pencil } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/field'
 import { Select } from '@/components/ui/select'
 import { countSpaceAudience } from '@/lib/spaces/campaigns-actions'
-import { createSpaceSegment, deleteSpaceSegment } from '@/lib/spaces/segments-actions'
+import { createSpaceSegment, updateSpaceSegment, deleteSpaceSegment } from '@/lib/spaces/segments-actions'
 import type { AudienceFilter } from '@/lib/spaces/audiences'
 import { isError } from '@/lib/action-result'
 
@@ -20,6 +20,10 @@ import { isError } from '@/lib/action-result'
 // ADR-380 adds saved segments: a "Saved segments" optgroup in the same select (selecting one sets
 // filter = { segmentId }), plus a small management row to SAVE the current filter as a named segment
 // and DELETE a saved one. Both go through canEditProfile-gated server actions.
+//
+// 2026-09-05 (scan2 L9-08): the same management row is now the EDIT row when a saved segment is
+// selected: it shows the segment's name, and Save name calls updateSpaceSegment (the definition is
+// kept server-side). One component, two modes, so a mistyped name is a rename, not a delete + recreate.
 //
 // Copy passes CONTENT-VOICE: plain, concrete, no narrated feelings, no em/en dashes.
 
@@ -53,6 +57,9 @@ export function AudiencePicker({
   const [newName, setNewName] = useState('')
   const [savePending, startSave] = useTransition()
   const [manageError, setManageError] = useState<string | null>(null)
+  // Edit mode (scan2 L9-08): a rename draft keyed to the segment it was typed for. Deriving the field
+  // value from (draft, selection) means a new selection shows its own name with no effect and no reset.
+  const [editDraft, setEditDraft] = useState<{ id: string; name: string } | null>(null)
 
   // Re-resolve the live count whenever the filter changes (tag OR segment). The server action is the
   // source of truth (and the same resolver the send uses), so the number the owner sees is the number
@@ -121,6 +128,24 @@ export function AudiencePicker({
     ? segments.find((s) => s.id === filter.segmentId)
     : null
 
+  const editName =
+    selectedSegment && editDraft?.id === selectedSegment.id ? editDraft.name : (selectedSegment?.name ?? '')
+
+  function handleRenameSegment() {
+    if (!selectedSegment || disabled || savePending) return
+    const name = editName.trim()
+    if (!name || name === selectedSegment.name) return
+    setManageError(null)
+    startSave(async () => {
+      const res = await updateSpaceSegment(spaceId, slug, selectedSegment.id, name)
+      if (isError(res)) {
+        setManageError(res.error)
+        return
+      }
+      router.refresh()
+    })
+  }
+
   return (
     <div className="space-y-3 rounded-card border border-border bg-surface p-5 lift-1">
       <div>
@@ -173,29 +198,55 @@ export function AudiencePicker({
       </p>
 
       {/* Save the current filter as a reusable segment. Hidden in read-only (staff preview). */}
+      {/* 2026-09-05 (scan2 L9-08): with a saved segment selected, this row edits that segment instead. */}
       {!disabled && (
         <div className="space-y-2 border-t border-border pt-3">
-          <div className="flex flex-wrap items-end gap-2">
-            <label className="flex flex-col gap-1">
-              <span className="text-meta font-medium text-muted">Save this as a segment</span>
-              <Input
-                value={newName}
-                onChange={(e) => setNewName(e.target.value)}
-                placeholder="Name this audience"
-                maxLength={80}
-                className="max-w-xs"
-              />
-            </label>
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              onClick={handleSaveSegment}
-              disabled={!newName.trim() || savePending}
-            >
-              <Save className="h-3.5 w-3.5" aria-hidden /> Save segment
-            </Button>
-          </div>
+          {selectedSegment ? (
+            <div className="flex flex-wrap items-end gap-2">
+              <label className="flex flex-col gap-1">
+                <span className="text-meta font-medium text-muted">Rename this segment</span>
+                <Input
+                  value={editName}
+                  onChange={(e) => setEditDraft({ id: selectedSegment.id, name: e.target.value })}
+                  placeholder="Name this audience"
+                  maxLength={80}
+                  className="max-w-xs"
+                  aria-label="Segment name"
+                />
+              </label>
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={handleRenameSegment}
+                disabled={!editName.trim() || editName.trim() === selectedSegment.name || savePending}
+              >
+                <Pencil className="h-3.5 w-3.5" aria-hidden /> Save name
+              </Button>
+            </div>
+          ) : (
+            <div className="flex flex-wrap items-end gap-2">
+              <label className="flex flex-col gap-1">
+                <span className="text-meta font-medium text-muted">Save this as a segment</span>
+                <Input
+                  value={newName}
+                  onChange={(e) => setNewName(e.target.value)}
+                  placeholder="Name this audience"
+                  maxLength={80}
+                  className="max-w-xs"
+                />
+              </label>
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={handleSaveSegment}
+                disabled={!newName.trim() || savePending}
+              >
+                <Save className="h-3.5 w-3.5" aria-hidden /> Save segment
+              </Button>
+            </div>
+          )}
 
           {selectedSegment && (
             <button
