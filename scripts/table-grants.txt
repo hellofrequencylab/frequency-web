@@ -72,6 +72,7 @@ content_ratings                      internal
 conversation_participants            authenticated
 conversations                        authenticated
 creator_tips                         internal
+cron_run_markers                     internal
 crew_completions                     authenticated
 crew_tasks                           public
 crm_activities                       authenticated
@@ -87,6 +88,7 @@ dispatch_recipients                  authenticated
 dispatches                           authenticated
 element_settings                     internal
 email_events                         internal
+email_webhook_events                 internal
 email_suppressions                   internal
 email_templates                      internal
 engagement_events                    authenticated
