@@ -49,7 +49,13 @@ async function grantGemsOnce(
   const { error } = await admin
     .from('reward_grants')
     .insert({ rule_key: ruleKey, profile_id: profileId, reward_kind: 'gems', amount, detail: label })
-  if (error) return false // already granted / lost the race
+  if (error) {
+    if (error.code === '23505') return false // already granted / lost the race
+    // 2026-09-05 (scan2 R3): a non-duplicate claim error used to read as "already granted". Nothing was
+    // claimed or paid; log at error level so the forfeited Gems are visible, and let a retry re-pay.
+    console.error(`[expression.grantGemsOnce] reward_grants claim failed for ${ruleKey} (not paid, retryable):`, error.message)
+    return false
+  }
   // The claim is the lock, but the GEMS must actually land. If the ledger insert fails,
   // release the claim so a retry can re-pay (else: claimed-but-unpaid permanently).
   const { error: txErr } = await admin.from('gem_transactions').insert({
@@ -143,6 +149,10 @@ export async function completeExpressionChallenge(
             // Nothing was awarded — release the claim so a retry can pay.
             await admin.from('reward_grants').delete().eq('rule_key', circleKey).eq('profile_id', profileId)
           }
+        } else if (claimErr.code !== '23505') {
+          // 2026-09-05 (scan2 R3): `if (!claimErr)` alone read every claim error as "already paid". A
+          // non-duplicate error is a failed write: nothing claimed, nothing paid, a re-submit re-pays.
+          console.error(`[completeExpressionChallenge] reward_grants claim failed for ${circleKey} (not paid, retryable):`, claimErr.message)
         }
       } else {
         const granted = await grantGemsOnce(

@@ -55,7 +55,11 @@
             "LIVE-154",
             "LIVE-155",
             "LIVE-156",
-            "LIVE-157"
+            "LIVE-157",
+            "LIVE-158",
+            "LIVE-159",
+            "LIVE-160",
+            "LIVE-161"
           ]
         },
         {
@@ -6955,6 +6959,278 @@
         "kind": "cmd",
         "cmd": "node -e \"const fs=require('fs');const p=fs.readFileSync('app/(main)/events/[slug]/page.tsx','utf8');process.exit(/\\.door\\b|['\\\"]door['\\\"]/.test(p)?0:1)\"",
         "note": "Passes once the event page reads a door search param (a property or string key named door, not the word in prose)."
+      }
+    },
+    {
+      "id": "SCAN-567",
+      "title": "A buyer could pay Stripe for a Market or Store order that did not exist",
+      "status": "done",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "lib/commerce/checkout.ts",
+        "ref": "ADR-1209"
+      },
+      "detail": "Scan two L6-03 (2026-09-05). createCommerceCheckout created the Stripe session first, inserted the commerce_orders row with the error discarded, and returned the checkout URL regardless; a failed insert or a kill between the two took the money with no order, no items, no ledger row and nothing to fulfil. Closed: the pending order and its items are inserted and checked first, the Stripe session is created with the order id in both metadata slots, and a conditional update links the session id; any failure marks the order failed with the reason, expires the Stripe session if one exists, and returns an error instead of a URL. checkout.test.ts proves a failed order insert never creates a session.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const s=fs.readFileSync('lib/commerce/checkout.ts','utf8');const ins=s.search(/\\.from\\('commerce_orders'\\)\\s*\\.insert\\(/);const ses=s.indexOf('sessions.create(');process.exit(ins>0&&ses>ins&&fs.existsSync('lib/commerce/checkout.test.ts')?0:1)\"",
+        "note": "Fails if the Stripe session is created before the order row again, or the checkout test is removed."
+      }
+    },
+    {
+      "id": "SCAN-568",
+      "title": "A Space plan change that failed once was dropped forever: the watermark advanced before the reconcile",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/billing/space-subscriptions.ts",
+        "ref": "ADR-1209"
+      },
+      "detail": "Scan two L6-02. routeSpaceSubscription claimed the event's created into spaces.last_plan_event_at and then reconciled; when the reconcile threw, Stripe's retry of the same event was read as stale and acked, and the Space stayed on the old plan while Stripe showed the new one applied. Closed: the claim carries the previous watermark; a throw releases it with a conditional update (only if the mark is still this event's) and rethrows so the webhook still 500s and the retry reconciles. A newer event that claimed in between keeps its mark. Same-second created siblings dropped by the strict comparison are LIVE-159.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const s=fs.readFileSync('lib/billing/space-subscriptions.ts','utf8');process.exit(/async function releaseSpacePlanEvent\\(/.test(s)&&/await releaseSpacePlanEvent\\(spaceId, claim\\.eventIso, claim\\.previousIso\\)/.test(s)&&fs.existsSync('lib/billing/space-subscriptions-route.test.ts')?0:1)\"",
+        "note": "Fails if the reconcile failure stops releasing the watermark."
+      }
+    },
+    {
+      "id": "SCAN-569",
+      "title": "Two overlapping runs of the conversation batch cron emailed the same reply twice",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/comms/outbound-batch.ts",
+        "ref": "ADR-1209"
+      },
+      "detail": "Scan two L6-05. flushConversationBatches read every queued outbound message, enqueued one email per conversation, and only then marked them sent; no claim step and no dedupe key, so an overlapping run or a crash between enqueue and mark-sent sent the burst again. Closed: each burst is claimed row by row with a conditional update (delivery_status still queued, no live claim) carrying a run token in metadata; only a run holding every row sends, a loser releases what it took, a claim older than ten minutes is taken over with a warning, and an enqueue failure releases the claim. The claim lives in metadata because the delivery_status check has no sending value; moving it to a column is a later migration.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const s=fs.readFileSync('lib/comms/outbound-batch.ts','utf8');process.exit((s.match(/\\.eq\\('delivery_status', 'queued'\\)/g)||[]).length>=2&&/BATCH_CLAIM_STALE_MINUTES/.test(s)&&fs.existsSync('lib/comms/outbound-batch-claim.test.ts')?0:1)\"",
+        "note": "Fails if the batch flush stops claiming rows before it sends."
+      }
+    },
+    {
+      "id": "SCAN-570",
+      "title": "A delayed-notification payment (ACH, bank redirect) completed in Stripe and was never recorded",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "app/api/webhooks/stripe/route.ts",
+        "ref": "ADR-1209"
+      },
+      "detail": "Scan two L2-06. Every completion recorder required payment_status paid at checkout.session.completed, and the webhook did not handle checkout.session.async_payment_succeeded, so a session paid later by a delayed method was never flipped from pending. Closed: one recordPaidCheckout runs for both events, so the later arrival records the ticket, order, tip or contribution exactly as an immediate card payment does; the recorders' own once-only guards make a second delivery a no-op.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const s=fs.readFileSync('app/api/webhooks/stripe/route.ts','utf8');process.exit(/case 'checkout\\.session\\.async_payment_succeeded'/.test(s)&&(s.match(/await recordPaidCheckout\\(s\\)/g)||[]).length>=2?0:1)\"",
+        "note": "Fails if the webhook stops handling async_payment_succeeded through the shared recorder."
+      }
+    },
+    {
+      "id": "SCAN-571",
+      "title": "A refunded tip or Supporter contribution stayed succeeded with its revenue booked",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/billing/tips.ts",
+        "ref": "ADR-1209"
+      },
+      "detail": "Scan two L2-07. charge.refunded reconciled tickets and commerce orders only; tips and supporter_contributions had no refund path and their status checks had no refunded value. Closed: migration 20270345000300 (applied 2026-09-05, ledger reconciled) widens both status checks and adds refunded_at; recordTipRefund and recordSupporterContributionRefund flip succeeded to refunded once, stamp refunded_at and reverse the revenue row; the webhook routes charge.refunded to both by payment intent. Tests in tips.test.ts and supporter.test.ts.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const w=fs.readFileSync('app/api/webhooks/stripe/route.ts','utf8');const m=fs.readFileSync('supabase/migrations/20270345000300_tips_and_supporter_contributions_can_be_refunded.sql','utf8');process.exit(/recordTipRefundFromCharge\\(charge\\)/.test(w)&&/recordSupporterContributionRefundFromCharge\\(charge\\)/.test(w)&&/'refunded'/.test(m)?0:1)\"",
+        "note": "Fails if charge.refunded stops reaching the tip or supporter recorder."
+      }
+    },
+    {
+      "id": "SCAN-572",
+      "title": "A partial refund of a commerce order was either ignored or booked as a full one",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/commerce/checkout.ts",
+        "ref": "ADR-1209"
+      },
+      "detail": "Scan two L6-08. The refund recorder had one path (flip to refunded, reverse the whole revenue row). Closed: a partial keeps its settled status, stamps refunded_at once, writes metadata.refund with the refunded, retained and reversed amounts, and reverses the ledger pro rata on its own idempotency key; a later top-up to full reverses only the remainder; refundCommerceOrder treats a set refunded_at as already refunded so no second Stripe refund is issued. The Space earnings widget still counts a partially refunded order at full gross (LIVE-160).",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const s=fs.readFileSync('lib/commerce/checkout.ts','utf8');process.exit(/kind: 'partial'/.test(s)&&/refund:.{1,40}:partial/.test(s)?0:1)\"",
+        "note": "Fails if the partial refund path or its ledger key is removed."
+      }
+    },
+    {
+      "id": "SCAN-573",
+      "title": "A streak freeze bought at the token cap debited the Gems and delivered nothing",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/store/fulfillment.ts",
+        "ref": "ADR-1209"
+      },
+      "detail": "Scan two L6-12. The streak-freeze fulfilment ran grantFreezeToken with its result dropped (.catch(() => {})), so a member at the cap, or a failed grant, paid and got nothing while the action said delivered. Closed: fulfillStreakFreeze succeeds only on a real grant; on at-cap, a false return or a throw it deletes the store_redemptions row the RPC returned (the debit itself) and returns a failure that says where the Gems are; if the refund also fails the message says so. Five tests in fulfillment.test.ts.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const f=fs.readFileSync('lib/store/fulfillment.ts','utf8');const a=fs.readFileSync('app/(main)/crew/store/actions.ts','utf8');process.exit(/export async function fulfillStreakFreeze\\(/.test(f)&&/fulfillStreakFreeze\\(/.test(a)&&!/grantFreezeToken\\([^)]*\\)\\.catch\\(\\(\\) => \\{\\}\\)/.test(a)?0:1)\"",
+        "note": "Fails if the store action goes back to dropping the grant result."
+      }
+    },
+    {
+      "id": "SCAN-574",
+      "title": "A refunded commerce order never restored the stock it had decremented",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/commerce/checkout.ts",
+        "ref": "ADR-1209"
+      },
+      "detail": "Scan two L6-16. The full-refund flip left commerce_products.stock and the variant stock where the sale had put them. Closed: restoreCommerceStock runs on the full flip when metadata.inventory_decremented is set and inventory_restored is not, restoring the variant or the product per item with a guarded compare-and-swap (five attempts, logged on exhaustion) and stamping inventory_restored so a second charge.refunded changes nothing. A restore_commerce_stock_atomic RPC to replace the CAS is LIVE-161.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const s=fs.readFileSync('lib/commerce/checkout.ts','utf8');process.exit(/async function restoreCommerceStock\\(/.test(s)&&/inventory_restored/.test(s)?0:1)\"",
+        "note": "Fails if the refund flip stops restoring stock."
+      }
+    },
+    {
+      "id": "SCAN-575",
+      "title": "A Stripe webhook whose dedupe claim failed for any reason but a duplicate was processed unclaimed",
+      "status": "done",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "app/api/webhooks/stripe/route.ts",
+        "ref": "ADR-1209"
+      },
+      "detail": "Scan two L2-10. Only 23505 on the stripe_webhook_events insert was read; any other claim error (grant revoked, connection error) was ignored and the event ran without a claim, so a Stripe retry ran it twice. Closed: a non-23505 claim error logs with the event type and id and returns 500 so Stripe retries into a working claim.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const s=fs.readFileSync('app/api/webhooks/stripe/route.ts','utf8');process.exit(/idempotency claim failed/.test(s)&&/error: 'claim failed' \\}, \\{ status: 500 \\}/.test(s)?0:1)\"",
+        "note": "Fails if a failed claim goes back to being ignored."
+      }
+    },
+    {
+      "id": "SCAN-576",
+      "title": "A referral could be claimed and never paid, and the release cron re-tried every paid pair every run",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/qr/referral.ts",
+        "ref": "ADR-1209"
+      },
+      "detail": "Scan two L6-11 and R4. The referral award claimed its reward_grants row with amount 0 and paid afterwards; a crash between the two left a claimed, unpaid referrer forever, and the 30-minute release scan relied on the unique-key 409 to skip paid pairs (49 duplicate-key errors a day for one pair). Closed: the award stamps the paid amount on the claim as its last step; a 23505 re-examines the claim (paid or in flight skips, a stale zero claim checks the zap ledger and either stamps or re-takes and pays); the scan looks up all candidates' claims in one query and skips settled pairs before any insert. Ten tests in referral.test.ts.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const s=fs.readFileSync('lib/qr/referral.ts','utf8');process.exit(/export function referralClaimState\\(/.test(s)&&/settled/.test(s)&&fs.existsSync('lib/qr/referral.test.ts')?0:1)\"",
+        "note": "Fails if the claim-state check or the settled skip is removed."
+      }
+    },
+    {
+      "id": "SCAN-577",
+      "title": "Any reward_grants insert error was read as \"already granted\" at eight claim sites",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/rewards/creation.ts",
+        "ref": "ADR-1209"
+      },
+      "detail": "Scan two R3. awardCreationToken, grantConnectorOutcome, recordPracticeStreak, the journey grants, the quest expression grant and their siblings treated every insert error as a duplicate and paid nothing silently, so a timeout or RLS refusal read as \"already paid\". Closed: each site branches on error.code 23505 (the same silent duplicate path) versus anything else (an error log naming the rule key, nothing paid, the practice-streak mirror un-marked). Tests in creation.test.ts, connector-grant.test.ts and grants.test.ts.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const files=['lib/rewards/creation.ts','lib/rewards/connector.ts','lib/practice-streak.ts','lib/journeys/grants.ts','lib/quest/expression.ts'];const ok=files.every(f=>/'23505'/.test(fs.readFileSync(f,'utf8')));const bad=files.some(f=>/^\\s*if \\((error|claimErr)\\) return/m.test(fs.readFileSync(f,'utf8')));process.exit(ok&&!bad?0:1)\"",
+        "note": "Fails if any claim site goes back to the swallow-everything shape."
+      }
+    },
+    {
+      "id": "SCAN-578",
+      "title": "The ticket tier's sold counter drifted silently when adjust_ticket_sold failed",
+      "status": "done",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "lib/billing/tickets.ts",
+        "ref": "ADR-1209"
+      },
+      "detail": "Scan two L6-15. The sold bump after a settle or refund discarded the RPC result. Closed: adjustTierSold reads it, retries once, and logs the tier, delta and ticket id on failure so the drift is visible; true one-statement atomicity needs a settle RPC (LIVE-161) and the comment says so with the reconcile SQL.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const s=fs.readFileSync('lib/billing/tickets.ts','utf8');process.exit(/adjust_ticket_sold failed/.test(s)&&fs.existsSync('lib/billing/tickets-settle.test.ts')?0:1)\"",
+        "note": "Fails if the sold bump goes back to discarding its result."
+      }
+    },
+    {
+      "id": "LIVE-158",
+      "title": "Ticket refunds on a cancelled event are never retried",
+      "status": "open",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/events/cancellation.ts",
+        "ref": "ADR-1209"
+      },
+      "detail": "Scan two L6-04 (P1). A host cancels a ticketed event; refundAndNotifyForCancelledEvent runs after the cancel flip and any Stripe error or mid-loop crash leaves buyers charged, ticket rows succeeded, and nothing queued; the firstCancel guard makes a second cancel a no-op. Fix: enqueue one outbox job per succeeded ticket (or one per event that re-scans succeeded tickets) with the outbox's own retry, and let the cancel path only enqueue; surface the count still owed on the Manage page.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const s=fs.readFileSync('lib/events/cancellation.ts','utf8');process.exit(/\\benqueue\\(/.test(s)?0:1)\"",
+        "note": "Passes once the cancellation refund path enqueues a retried outbox job (enqueue from lib/queue/outbox) instead of refunding inline."
+      }
+    },
+    {
+      "id": "LIVE-159",
+      "title": "Space plan events with the same created second are dropped by the strict watermark",
+      "status": "open",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/billing/space-subscriptions.ts",
+        "ref": "ADR-1209"
+      },
+      "detail": "SCAN-568 fixed the lost retry. Still open: claim_space_plan_event accepts only a strictly newer created, so a customer.subscription.created and .updated pair from the same second keeps the first and drops the second. Needs the RPC to take an ordering tiebreaker (event id or Stripe's sequence) rather than a looser comparison, which would make the out-of-order case worse.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "lib/billing/space-subscriptions.ts claimSpacePlanEvent still compares created alone; no tiebreaker column on spaces.",
+        "checked": "2026-09-05"
+      }
+    },
+    {
+      "id": "LIVE-160",
+      "title": "The Space earnings summary counts a partially refunded order at full gross",
+      "status": "open",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "lib/commerce/orders.ts",
+        "ref": "ADR-1209"
+      },
+      "detail": "SCAN-572 records a partial refund in commerce_orders.metadata.refund and reverses the ledger pro rata, but spaceEarningsSummary reads status only, so the widget overstates by the refunded share. Read metadata.refund.refunded_cents and subtract. Also from the same change: listOrdersForBuyer and listOrdersForSeller filter out pending only, so the new failed rows from SCAN-567 appear in order lists the way cancelled rows already do; decide whether failed belongs there.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const s=fs.readFileSync('lib/commerce/orders.ts','utf8');process.exit(/refunded_cents/.test(s)?0:1)\"",
+        "note": "Passes once the earnings summary reads the partial refund amount."
+      }
+    },
+    {
+      "id": "LIVE-161",
+      "title": "Commerce stock restore and the ticket settle need one-statement RPCs",
+      "status": "open",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "supabase/migrations",
+        "ref": "ADR-1209"
+      },
+      "detail": "Two guarded read-then-write paths shipped in phase C where a database function belongs: restoreCommerceStock (SCAN-574) restores stock with a compare-and-swap loop, and adjustTierSold (SCAN-578) bumps event_ticket_types.sold in a second request after the ticket flip. Add restore_commerce_stock_atomic(order_id) and a settle RPC that flips the ticket and bumps sold in one statement, then point the two call sites at them and record the grants in scripts/function-grants.txt.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const g=fs.readFileSync('scripts/function-grants.txt','utf8');process.exit(/restore_commerce_stock_atomic/.test(g)?0:1)\"",
+        "note": "Passes once the stock-restore RPC exists and carries a grant verdict."
       }
     }
   ]

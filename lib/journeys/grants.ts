@@ -38,7 +38,13 @@ async function grantGemsOnce(
   const { error } = await admin
     .from('reward_grants')
     .insert({ rule_key: ruleKey, profile_id: profileId, reward_kind: 'gems', amount, detail: label })
-  if (error) return false // already granted / lost the race
+  if (error) {
+    if (error.code === '23505') return false // already granted / lost the race
+    // 2026-09-05 (scan2 R3): a non-duplicate claim error used to read as "already granted". Nothing was
+    // claimed or paid; log at error level so the forfeited milestone is visible, and let a retry re-pay.
+    console.error(`[grantGemsOnce] reward_grants claim failed for ${ruleKey} (not paid, retryable):`, error.message)
+    return false
+  }
   // The claim is the lock, but the GEMS must actually land. If the ledger insert fails,
   // release the claim so a retry can re-pay (else: claimed-but-unpaid permanently).
   const { error: txErr } = await admin.from('gem_transactions').insert({
@@ -111,7 +117,12 @@ export async function grantExtraCreditZaps(
   const { error } = await admin
     .from('reward_grants')
     .insert({ rule_key: ruleKey, profile_id: profileId, reward_kind: 'zaps', amount: amt, detail: label.slice(0, 200) })
-  if (error) return 0 // already granted / lost the race
+  if (error) {
+    if (error.code === '23505') return 0 // already granted / lost the race
+    // 2026-09-05 (scan2 R3): see grantGemsOnce — a failed claim write is not a prior grant.
+    console.error(`[grantExtraCreditZaps] reward_grants claim failed for ${ruleKey} (not paid, retryable):`, error.message)
+    return 0
+  }
   const res = await awardZaps(profileId, amt, { actionType: 'journey_extra_credit', metadata: { rule: ruleKey, label } })
   if (!res.awarded) {
     // Release the claim so a retry can pay. Without this the reward_grants row blocks every

@@ -68,3 +68,73 @@ export function classifyRedemption(metadata: unknown, item?: RedemptionItem): Re
  *  where the Gems went (nowhere) rather than narrating how the member feels about it. */
 export const UNDELIVERABLE_MESSAGE =
   'This one is not ready to wear yet, so we are not taking Gems for it. Your Gems stay safe.'
+
+// ── Streak freeze: the grant is part of the sale (L6-12, 2026-09-05) ─────────────────────────────
+//
+// The 'streak-freeze' SKU is the one store item whose fulfilment is a second write AFTER the Gems are
+// charged (redeem_store_item_atomic debits; grantStreakFreeze banks the token). Before this the grant's
+// result was thrown away (`.catch(() => {})`, return `ok`), so a member at the freeze cap, or one who
+// lost the cap race between the pre-check and the charge, paid 50 Gems and received nothing while the
+// action reported success. The rule of this module applies to the second write too: never keep Gems
+// for something we did not deliver. This helper decides the outcome from the grant result; the IO
+// (the real grant, the refund of the debit row) is injected so it stays unit-testable beside
+// classifyRedemption and imports nothing from Supabase.
+
+export interface StreakFreezeGrantOutcome {
+  /** A freeze token was banked. */
+  granted: boolean
+  /** The grant was refused because the member is already holding the most freezes allowed. */
+  atCap: boolean
+}
+
+export interface StreakFreezeFulfillmentDeps {
+  /** Bank the token (lib/practice-streak grantStreakFreeze). A throw counts as not granted. */
+  grant: () => Promise<StreakFreezeGrantOutcome>
+  /** Reverse the debit through the same unit the charge wrote: delete the store_redemptions row the
+   *  RPC returned. Resolves `{ error: null }` when the Gems are back. */
+  refund: () => Promise<{ error: { message: string } | null }>
+}
+
+export type StreakFreezeFulfillment =
+  | { ok: true }
+  /** Not delivered. `refunded` says whether the Gems made it back; the message says so to the member. */
+  | { ok: false; refunded: boolean; atCap: boolean; message: string }
+
+/** Member-facing copy. Plain, no em dashes, and each one says where the Gems are. */
+export const STREAK_FREEZE_AT_CAP_MESSAGE =
+  'You already have the most streak freezes you can hold, so nothing was banked. Your Gems are back in your Vault.'
+export const STREAK_FREEZE_GRANT_FAILED_MESSAGE =
+  'We could not bank that freeze. Your Gems are back in your Vault.'
+export const STREAK_FREEZE_REFUND_FAILED_MESSAGE =
+  'We could not bank that freeze, and we could not return your Gems automatically. Reach out and we will put them back.'
+
+/**
+ * Settle a streak-freeze purchase AFTER the Gems are charged: grant the token, and if the grant did
+ * not happen (at cap, a false return, or a throw), refund the debit and report a failure. The action
+ * must return `ok` ONLY on `{ ok: true }`; every other branch is a refusal with honest copy.
+ */
+export async function fulfillStreakFreeze(deps: StreakFreezeFulfillmentDeps): Promise<StreakFreezeFulfillment> {
+  let outcome: StreakFreezeGrantOutcome
+  try {
+    outcome = await deps.grant()
+  } catch {
+    outcome = { granted: false, atCap: false }
+  }
+  if (outcome.granted) return { ok: true }
+
+  let refundError: { message: string } | null
+  try {
+    refundError = (await deps.refund()).error
+  } catch (err) {
+    refundError = { message: err instanceof Error ? err.message : String(err) }
+  }
+  if (refundError) {
+    return { ok: false, refunded: false, atCap: outcome.atCap, message: STREAK_FREEZE_REFUND_FAILED_MESSAGE }
+  }
+  return {
+    ok: false,
+    refunded: true,
+    atCap: outcome.atCap,
+    message: outcome.atCap ? STREAK_FREEZE_AT_CAP_MESSAGE : STREAK_FREEZE_GRANT_FAILED_MESSAGE,
+  }
+}

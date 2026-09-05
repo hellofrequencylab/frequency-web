@@ -331,20 +331,78 @@ function writeErrorMessage(error: WriteError): string {
  *  (spaces.last_plan_event_at) in ONE conditional UPDATE. Returns false for a STALE event (an older
  *  event delivered after a newer one already applied), which the caller must skip — otherwise the
  *  set-to-target reconcile would revert plan/add-ons/seats to stale values. FAIL-OPEN on any RPC
- *  error (e.g. the migration not applied yet): proceeding is exactly today's unguarded behavior. */
-async function claimSpacePlanEvent(spaceId: string, eventCreatedSec: number): Promise<boolean> {
+ *  error (e.g. the migration not applied yet): proceeding is exactly today's unguarded behavior.
+ *
+ *  2026-09-05 correction (scan2 L6-02): the sentence "returns false" above is now a three-way result.
+ *  The claim used to be a bare boolean, and the watermark it stamped could never be un-stamped: if the
+ *  reconcile that FOLLOWED the claim threw, the webhook returned 500, Stripe retried the SAME event
+ *  with the SAME `created`, and the RPC's strictly-newer test read that retry as stale — the plan
+ *  change was dropped forever while Stripe showed it applied. The claim now also carries the
+ *  watermark it replaced (`previous`), read just before the RPC, so the router can roll the stamp back
+ *  (releaseSpacePlanEvent) when the reconcile fails and the retry claims cleanly. */
+type SpacePlanClaim =
+  | { kind: 'claimed'; eventIso: string; previousIso: string | null }
+  | { kind: 'stale' }
+  | { kind: 'unguarded' } // RPC unavailable / errored: fail-open, nothing was stamped, nothing to roll back
+
+type SpacesWatermarkClient = {
+  rpc: (fn: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: unknown }>
+  from: (table: 'spaces') => {
+    select: (cols: string) => {
+      eq: (col: string, v: string) => { maybeSingle: () => Promise<{ data: { last_plan_event_at: string | null } | null }> }
+    }
+    update: (v: { last_plan_event_at: string | null }) => {
+      eq: (col: string, v: string) => { eq: (col: string, v: string) => Promise<{ error: unknown }> }
+    }
+  }
+}
+
+async function claimSpacePlanEvent(spaceId: string, eventCreatedSec: number): Promise<SpacePlanClaim> {
+  const eventIso = new Date(eventCreatedSec * 1000).toISOString()
   try {
-    const db = createAdminClient() as unknown as {
-      rpc: (fn: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: unknown }>
+    const db = createAdminClient() as unknown as SpacesWatermarkClient
+    // The watermark this claim will replace. Read BEFORE the RPC (the RPC returns only a boolean), so a
+    // failed reconcile can restore it. A read hiccup leaves it unknown (null): the rollback then clears
+    // the watermark rather than leaving it advanced — a cleared mark re-admits a late OLDER event once
+    // (rare, and only after a reconcile already failed), an advanced mark drops Stripe's retry forever.
+    let previousIso: string | null = null
+    try {
+      const { data } = await db.from('spaces').select('last_plan_event_at').eq('id', spaceId).maybeSingle()
+      previousIso = data?.last_plan_event_at ? new Date(data.last_plan_event_at).toISOString() : null
+    } catch (err) {
+      console.warn('[space-subscriptions] last_plan_event_at read failed before claim (rollback would clear it):', err)
     }
     const { data, error } = await db.rpc('claim_space_plan_event', {
       _space_id: spaceId,
-      _event_created: new Date(eventCreatedSec * 1000).toISOString(),
+      _event_created: eventIso,
     })
-    if (error) return true // fail-open: guard unavailable -> today's behavior
-    return data === true
+    if (error) return { kind: 'unguarded' } // fail-open: guard unavailable -> today's behavior
+    return data === true ? { kind: 'claimed', eventIso, previousIso } : { kind: 'stale' }
   } catch {
-    return true
+    return { kind: 'unguarded' }
+  }
+}
+
+/** Roll a claimed watermark back after the reconcile it guarded threw (scan2 L6-02, 2026-09-05), so
+ *  Stripe's retry of the SAME event (same `created`) claims again instead of reading as stale.
+ *  CONDITIONAL on the mark still being ours (`last_plan_event_at = eventIso`): if a NEWER event claimed
+ *  in between, its mark stands and this is a no-op — that newer event's reconcile owns the state now,
+ *  and the retry of this one is then genuinely stale. Best-effort; a failure here is logged loudly
+ *  because it recreates the dropped-retry defect for this one event. */
+async function releaseSpacePlanEvent(spaceId: string, eventIso: string, previousIso: string | null): Promise<void> {
+  try {
+    const db = createAdminClient() as unknown as SpacesWatermarkClient
+    const { error } = await db
+      .from('spaces')
+      .update({ last_plan_event_at: previousIso })
+      .eq('id', spaceId)
+      .eq('last_plan_event_at', eventIso)
+    if (error) throw error
+  } catch (err) {
+    console.error(
+      `[space-subscriptions] could not roll back last_plan_event_at for space ${spaceId} (event ${eventIso}); Stripe's retry of this event will be skipped as stale:`,
+      err,
+    )
   }
 }
 
@@ -358,10 +416,22 @@ export async function routeSpaceSubscription(sub: Stripe.Subscription, eventCrea
   const kind = subscriptionKind(sub.metadata)
   if (kind === 'space_plan') {
     const spaceId = sub.metadata?.space_id
-    if (spaceId && typeof eventCreatedSec === 'number' && !(await claimSpacePlanEvent(spaceId, eventCreatedSec))) {
+    const claim: SpacePlanClaim =
+      spaceId && typeof eventCreatedSec === 'number'
+        ? await claimSpacePlanEvent(spaceId, eventCreatedSec)
+        : { kind: 'unguarded' }
+    if (claim.kind === 'stale') {
       return true // stale event: skip the reconcile, keep the newer applied state
     }
-    await reconcileSpacePlanSubscription(sub)
+    try {
+      await reconcileSpacePlanSubscription(sub)
+    } catch (err) {
+      // scan2 L6-02 (2026-09-05): the claim advanced the watermark BEFORE the reconcile; without this
+      // rollback the 500 → Stripe retry (same `created`) would be claimed-as-stale and acked, dropping
+      // the plan change for good. Restore the mark, then rethrow so the webhook still 500s and retries.
+      if (claim.kind === 'claimed' && spaceId) await releaseSpacePlanEvent(spaceId, claim.eventIso, claim.previousIso)
+      throw err
+    }
     return true
   }
   if (kind === 'space_membership') {

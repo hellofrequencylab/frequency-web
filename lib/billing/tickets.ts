@@ -525,12 +525,39 @@ export async function hasTicket(eventId: string, profileId: string): Promise<boo
 /** Bump a tier's `sold` by `delta` (service role). Re-reads then writes — low
  *  volume. Atomic `sold = sold + delta` (clamped ≥ 0) via the adjust_ticket_sold
  *  RPC, so concurrent webhooks can't lose an increment (audit M1). */
-async function adjustTierSold(ticketTypeId: string, delta: number): Promise<void> {
-  if (!ticketTypeId || delta === 0) return
-  await (db()).rpc('adjust_ticket_sold', {
-    p_tier_id: ticketTypeId,
-    p_delta: delta,
+// L6-15 (2026-09-05): the bump's RESULT is now checked and retried, and its failure is logged with the
+// tier + delta + ticket so a drift is at least visible; before this the RPC's error was discarded, so a
+// single unavailable call (or a crash between the flip and the bump) under-counted `sold` forever and
+// nothing ever said so. WHY the flip and the bump are still two statements: PostgREST cannot update two
+// tables in one request and no RPC exists that settles a ticket (flip pending -> succeeded and bump
+// `sold` in one transaction); this lane adds no migration. Capacity itself is safe either way:
+// reserve_ticket_atomic counts event_tickets rows, not `sold` (migration 20260930000000), so the
+// consequence of a crash in the gap is the displayed "N/M sold" under-counting by one qty. The exact
+// fix is a `settle_ticket_atomic(session_id, payment_intent_id)` RPC that does both under one
+// transaction, with this function's caller collapsing to a single call; until then the reconcile is
+//   update event_ticket_types t set sold = coalesce((select sum(qty) from event_tickets
+//     where ticket_type_id = t.id and status = 'succeeded'), 0)
+// which is safe to run at any time because `sold` is derived, never authoritative.
+const ADJUST_SOLD_ATTEMPTS = 2
+
+async function adjustTierSold(ticketTypeId: string, delta: number, ctx: { ticketId?: string } = {}): Promise<boolean> {
+  if (!ticketTypeId || delta === 0) return true
+  let lastError: { message: string } | null = null
+  for (let attempt = 0; attempt < ADJUST_SOLD_ATTEMPTS; attempt++) {
+    const { error } = await (db()).rpc('adjust_ticket_sold', {
+      p_tier_id: ticketTypeId,
+      p_delta: delta,
+    })
+    if (!error) return true
+    lastError = error
+  }
+  console.error('[tickets] adjust_ticket_sold failed; event_ticket_types.sold is now off by this delta', {
+    ticketTypeId,
+    delta,
+    ticketId: ctx.ticketId ?? null,
+    error: lastError?.message ?? null,
   })
+  return false
 }
 
 /** Mark the ticket behind a completed Checkout session as succeeded (idempotent),
@@ -561,7 +588,7 @@ export async function recordTicketFromSession(session: Stripe.Checkout.Session):
     currency: string
   }[]
   for (const row of rows) {
-    if (row.ticket_type_id) await adjustTierSold(row.ticket_type_id, row.qty ?? 1)
+    if (row.ticket_type_id) await adjustTierSold(row.ticket_type_id, row.qty ?? 1, { ticketId: row.id })
     // A BUYER IS A CONTACT (ADR-913). This is what makes "we charge once for the introduction" true:
     // the first sale from someone Frequency sourced is network-rated, this records the relationship,
     // and every later sale to that person resolves to their own audience at 0%.
@@ -751,7 +778,7 @@ export async function recordTicketRefund(paymentIntentId: string | null): Promis
     currency: string
   }[]
   for (const row of rows) {
-    if (row.ticket_type_id) await adjustTierSold(row.ticket_type_id, -(row.qty ?? 1))
+    if (row.ticket_type_id) await adjustTierSold(row.ticket_type_id, -(row.qty ?? 1), { ticketId: row.id })
     // Reverse the entity's recorded revenue (a negative 'refund' row). Idempotent per
     // ticket; best-effort. Keeps the ledger an accurate net of the partition.
     await recordFinancialTransaction({
