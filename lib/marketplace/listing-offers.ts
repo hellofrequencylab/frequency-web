@@ -14,6 +14,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { formatPriceCents } from '@/lib/commerce/types'
 import { getMyProfileId } from '@/lib/auth'
 import { findOrCreateDirectConversation } from '@/lib/messages/direct-conversation'
 
@@ -35,17 +36,10 @@ function db(): SupabaseClient {
   return createAdminClient()
 }
 
-/** Cents to a plain USD label, e.g. 29900 -> "$299", 29950 -> "$299.50". Whole dollars drop the cents. */
-function formatCents(cents: number): string {
-  const dollars = cents / 100
-  const whole = Number.isInteger(dollars)
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: whole ? 0 : 2,
-    maximumFractionDigits: 2,
-  }).format(dollars)
-}
+// Cents to a plain USD label, e.g. 29900 -> "$299", 29950 -> "$299.50". Whole dollars drop the cents.
+// The offer line in the thread reads through the ONE house formatter (lib/commerce/types.ts
+// formatPriceCents, imported above); a private copy of it used to sit here, and it can no longer
+// drift from the dialog that showed the buyer the same number.
 
 /** Resolve the seller's profile id for a target row, or null if the row / column is missing. */
 async function resolveSellerId(
@@ -98,7 +92,7 @@ export async function submitListingContact(input: {
     const conversationId = await findOrCreateDirectConversation(admin, viewerId, sellerId)
 
     // Body = the buyer's message, with the named price prepended as a plain line when they made an offer.
-    const body = offerCents ? `Offer: ${formatCents(offerCents)}.\n\n${message}` : message
+    const body = offerCents ? `Offer: ${formatPriceCents(offerCents)}.\n\n${message}` : message
 
     // Match the messages-insert shape used by sendMessage (app/(main)/messages/actions.ts): conversation_id,
     // sender_id, body.

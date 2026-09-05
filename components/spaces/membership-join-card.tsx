@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { Check, Loader2, Ticket } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { isError } from '@/lib/action-result'
+import { formatPriceCents } from '@/lib/commerce/types'
 import { joinTier, startSpaceMembershipCheckout } from '@/lib/spaces/memberships-actions'
 import type { MembershipInterval, MembershipTier } from '@/lib/spaces/memberships'
 
@@ -26,14 +27,8 @@ import type { MembershipInterval, MembershipTier } from '@/lib/spaces/membership
 /** Cents to a plain price label, e.g. 2500 -> "$25", 2550 -> "$25.50". Whole dollars drop the
  *  cents. USD only in v1 (a currency column is a later, additive expansion). */
 export function formatPrice(cents: number): string {
-  const dollars = cents / 100
-  const whole = Number.isInteger(dollars)
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: whole ? 0 : 2,
-    maximumFractionDigits: 2,
-  }).format(dollars)
+  // The ONE house price format (lib/commerce/types.ts); this was a verbatim copy of it.
+  return formatPriceCents(cents)
 }
 
 /** A short per-interval suffix for the price label. */

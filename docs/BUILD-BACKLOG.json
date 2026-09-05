@@ -51,7 +51,8 @@
             "HYG-042",
             "HYG-046",
             "SCAN-538",
-            "SCAN-539"
+            "SCAN-539",
+            "LIVE-154"
           ]
         },
         {
@@ -6433,6 +6434,40 @@
         "kind": "manual",
         "evidence": "lib/events/dispatch.ts passes a subject on push and email; the RSVP confirmation, approval, cancellation and reminder sends do not, by design (W6 report, 2026-09-04).",
         "checked": "2026-09-04"
+      }
+    },
+    {
+      "id": "SCAN-550",
+      "title": "Four duplicated rules had started to disagree: two formatCents, twenty slug implementations, three relative-time copies, two recurrence mirrors with no parity test",
+      "status": "done",
+      "lane": "hygiene",
+      "size": "M",
+      "source": {
+        "file": "lib/utils.ts",
+        "ref": "ADR-1206"
+      },
+      "detail": "formatCents rendered 2500 as $25 in pricing and $25.00 in finance under one name; the importer's slug normalised NFKD and the hand path did not, so one business name yielded two slugs and neither stripped combining marks; three admin screens rounded relative time up; lib/event-recurrence.ts and lib/events/recurrence.ts re-implemented occurrenceAt with nothing holding them equal. Closed 2026-09-04: one slug rule (ASCII outputs pinned byte-identical), one price format with the ledger's rule renamed formatLedgerCents, one relativeTime, and a recurrence parity test that holds the mirrors byte-equal over 15 fixtures in three zones.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const r=(f)=>fs.existsSync(f)?fs.readFileSync(f,'utf8'):'';const ok=['lib/events/recurrence-parity.test.ts','lib/slug-parity.test.ts','lib/commerce/format-cents-parity.test.ts','lib/relative-time.test.ts'].every(f=>fs.existsSync(f))&&/export function formatLedgerCents/.test(r('lib/finance/dashboard.ts'))&&/normalize\\('NFKD'\\)/.test(r('lib/utils.ts'));process.exit(ok?0:1)\"",
+        "note": "Passes when the four parity tests exist, the ledger formatter carries its own name, and slugify normalises NFKD."
+      }
+    },
+    {
+      "id": "LIVE-154",
+      "title": "The calendar strip compares recurrence_until at day granularity while both recurrence mirrors compare at the instant, so it shows a chip for an occurrence that is never materialised",
+      "status": "open",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/events/calendar-repeats.ts",
+        "ref": "ADR-1206"
+      },
+      "detail": "Found by the recurrence parity test (2026-09-04). The event form stores until via dateToWallClockIso as YYYY-MM-DDT00:00:00Z; for a weekly 7 pm series ending 2027-06-24 the write and read mirrors give [06-10, 06-17] and the strip's stepKey gives [06-10, 06-17, 06-24]. Which end-date rule is intended (inclusive day vs instant) is an owner ruling; the two disagreeing fixtures are pinned it.fails in lib/events/recurrence-parity.test.ts so aligning either side turns them red and forces the marker to be removed here.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const r=(f)=>fs.existsSync(f)?fs.readFileSync(f,'utf8'):'';process.exit(/it\\.fails\\(/.test(r('lib/events/recurrence-parity.test.ts'))?1:0)\"",
+        "note": "Passes when the parity test no longer carries an it.fails marker, i.e. the strip and the mirrors agree. Fails today."
       }
     },
     {

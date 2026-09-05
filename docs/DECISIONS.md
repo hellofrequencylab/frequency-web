@@ -35657,6 +35657,17 @@ Two things were re-tested and NOT changed. The host-payout failure logged at 20:
 **Consequences.** SCAN-548 is `done` with a consequence probe; OWN-049 is `open`. `docs/ARCHITECTURE.md` names `resolveSendGate` as the seam. Two history docs still describe `shouldSend` as the idiom and stay as written.
 
 
+
+## ADR-1206: four duplicated rules had started to disagree; one home each, and a parity test where two homes must remain (2026-09-04)
+
+**Status.** Accepted.
+
+**Context.** Two exported `formatCents` rendered 2500 as "$25" (pricing) and "$25.00" (finance) under one name, with six byte-identical copies of the first under five other names. Twenty-plus slug implementations, two of which disagreed on diacritics: "naïve" became `nai-ve` through the importer (NFKD) and `na-ve` by hand — and neither stripped the combining mark, so both were wrong and a business got a different URL depending on which door it came through. Three admin screens rounded relative time up. `lib/event-recurrence.ts` and `lib/events/recurrence.ts` both implemented `occurrenceAt`/`daysInUTCMonth`, both imported by `app/(main)/events/actions.ts`, with a comment stating the invariant and no test holding it.
+
+**Decision.** `slugify` (NFKD, strip `\p{M}`, hyphenate) is the one slug rule and the others delegate; ASCII outputs are pinned byte-identical to the old body so no stored URL changes. `formatPriceCents` is the one price format; the finance ledger keeps its two-decimal accounting rule under the name `formatLedgerCents`, so the name carries the rule instead of hiding it. `relativeTime` is the one relative-time rule. The two recurrence mirrors stay separate and `lib/events/recurrence-parity.test.ts` holds them byte-equal over 15 fixtures in three zones — and found a THIRD copy that disagrees: `lib/events/calendar-repeats.ts` compares `recurrence_until` at day granularity, so the calendar strip shows a chip for an occurrence the mirrors never materialise. That is pinned `it.fails`; which end-date rule is intended is an owner ruling (LIVE-154).
+
+**Consequences.** SCAN-550 is `done`; LIVE-154 is `open`. About 130 lines in the whole tree are genuinely deletable; the leverage of this audit was consolidation, not deletion.
+
 ## ADR-1202: ADR-885 is amended — `'scoped'` did not come back, and the right rail shows on every member page (2026-09-04)
 
 **Status.** Accepted. Amends ADR-885 (whose body is left as written; this ledger is append-only).

@@ -5,7 +5,7 @@ import { StatCard } from '@/components/ui/stat-card'
 import { DataTable, type ColumnDef } from '@/components/admin/data-table'
 import { EmptyState } from '@/components/ui/empty-state'
 import { StatusChip } from '@/components/admin/status'
-import { getFinanceSummary, formatCents, type FinanceTxn } from '@/lib/finance/dashboard'
+import { getFinanceSummary, formatLedgerCents, type FinanceTxn } from '@/lib/finance/dashboard'
 
 // The "Finances" tab of the consolidated Insights suite (ADR-263) — formerly /admin/financials.
 // The operator view of the entity-partitioned money ledger (ADR-246): Foundation (nonprofit) and
@@ -37,7 +37,7 @@ export async function FinancialsTab() {
       key: 'amountCents',
       header: 'Amount',
       type: 'number',
-      render: (t) => <span className="font-semibold tabular-nums text-text">{formatCents(t.amountCents, t.currency)}</span>,
+      render: (t) => <span className="font-semibold tabular-nums text-text">{formatLedgerCents(t.amountCents, t.currency)}</span>,
     },
   ]
 
@@ -48,14 +48,14 @@ export async function FinancialsTab() {
         description="Money by legal entity. Foundation (nonprofit) and Labs (for-profit) funds are hard-partitioned and never commingle; each is reported on its own here. The ledger fills as ticketing, dues, donations, commerce, and payouts are wired to record into it."
       >
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
-          <StatCard bordered icon={Wallet} label="Total recorded" value={formatCents(summary.grandTotalCents)} detail={`${summary.txnCount.toLocaleString()} transactions`} />
+          <StatCard bordered icon={Wallet} label="Total recorded" value={formatLedgerCents(summary.grandTotalCents)} detail={`${summary.txnCount.toLocaleString()} transactions`} />
           {summary.entities.map((e) => (
             <StatCard
               key={e.entityKey}
               bordered
               icon={ENTITY_ICON[e.entityKey] ?? Receipt}
               label={e.entityName}
-              value={formatCents(e.totalCents)}
+              value={formatLedgerCents(e.totalCents)}
               detail={`${e.kind === 'nonprofit' ? 'Nonprofit' : 'For-profit'} · ${e.txnCount.toLocaleString()} txns`}
             />
           ))}
@@ -75,7 +75,7 @@ export async function FinancialsTab() {
                     {Object.entries(e.byType).map(([type, cents]) => (
                       <li key={type} className="flex items-center justify-between text-body-sm">
                         <span className="capitalize text-muted">{type}</span>
-                        <span className="font-medium tabular-nums text-text">{formatCents(cents)}</span>
+                        <span className="font-medium tabular-nums text-text">{formatLedgerCents(cents)}</span>
                       </li>
                     ))}
                   </ul>
