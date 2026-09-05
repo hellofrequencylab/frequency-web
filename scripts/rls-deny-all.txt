@@ -22,8 +22,10 @@ challenge_qr_codes
 circle_transfer_offers
 content_ratings
 creator_tips
+cron_run_markers
 element_settings
 email_events
+email_webhook_events
 email_suppressions
 email_templates
 entry_campaigns

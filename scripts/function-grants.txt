@@ -157,6 +157,7 @@ match_room_messages                  authenticated
 member_engagement_stats              public
 member_interaction_stats             internal
 members_near                         internal
+merge_profile_meta                   authenticated
 merge_practices                      internal
 merge_tags                           internal
 message_peer_profiles                authenticated
@@ -200,6 +201,7 @@ redeem_store_item_atomic             internal
 refresh_member_engagement_scores     internal
 refresh_resonance_density_cells      internal
 relationship_timeline                authenticated
+remove_profile_meta_keys             authenticated
 reserve_ticket_atomic                internal
 reset_season                         internal
 resonance_neighbors                  internal
@@ -223,6 +225,7 @@ trg_decrement_member_count           public
 trg_decrement_reply_count            internal
 trg_hub_auto_activate                public
 trg_increment_circle_member_count    public
+trg_sync_circle_member_count         internal
 trg_increment_member_count           public
 trg_increment_reply_count            internal
 trg_nexus_auto_activate              public
