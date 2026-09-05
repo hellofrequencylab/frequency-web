@@ -55,6 +55,16 @@ const VERDICTS = new Set(['public', 'authenticated', 'internal'])
 /** A repo this size never legitimately drops to a handful of migrations. */
 const MIN_MIGRATIONS = 400
 
+/** ── NON-TRIVIALITY FLOOR ON WHAT WAS PARSED, not only on what was listed (scan2 L8-02, 2026-09-05).
+ *  MIN_MIGRATIONS proves the directory was read; it cannot tell whether `liveTables()` still
+ *  matches anything. If the create-table regex stopped matching AND the ledger read as empty, the
+ *  bijection held over two empty sets and this gate printed "0 live public table(s), every one with
+ *  a verdict" and exited 0. Measured 273 live tables on 2026-09-05; the floor sits at 150 so a real
+ *  sweep never trips it and a blind parser always does. Exits 2 ("guard saw nothing"), a code
+ *  distinct from a contract violation (1), so a workflow can tell the two apart.
+ *  Raise it only when the real count moves, never to make a red run green. */
+export const MIN_LIVE_TABLES = 150
+
 /**
  * Blank BOTH comment forms, preserving length so nothing shifts.
  *
@@ -145,11 +155,19 @@ function main() {
   const names = readdirSync(MIGRATIONS).filter((f) => f.endsWith('.sql')).sort()
   if (names.length < MIN_MIGRATIONS) {
     console.error(`✗ check:grants — found ${names.length} migration(s), expected at least ${MIN_MIGRATIONS}.`)
-    process.exit(1)
+    // 2026-09-05 (scan2 L8-02): exit 2, not 1. A floor that fires is "the guard saw nothing", which a
+    // workflow must be able to tell from "the guard saw a violation".
+    process.exit(2)
   }
   const files = names.map((f) => ({ name: f, text: readFileSync(join(MIGRATIONS, f), 'utf8') }))
 
   const live = liveTables(files)
+  if (live.size < MIN_LIVE_TABLES) {
+    console.error(`✗ check:grants: parsed only ${live.size} live public table(s) from ${names.length} migration(s), expected at least ${MIN_LIVE_TABLES}.`)
+    console.error('    The directory was read but the create-table parser matched almost nothing. A clean verdict over')
+    console.error('    an empty set is not a pass; either the SQL shape changed or the parser did.')
+    process.exit(2)
+  }
   const revoked = revokedTables(files)
   const { entries, bad } = parseLedger(readFileSync(LEDGER, 'utf8'))
 

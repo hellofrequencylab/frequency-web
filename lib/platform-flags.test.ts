@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { readFileSync } from 'node:fs'
+import { sourceWithoutComments } from '@/test/source-shape'
 
 // THE EVENTS LISTING HORIZON (owner ruling 2026-08-20). Two jobs here, because this knob has two
 // ways to be useless, and the bug it fixes was invisibility:
@@ -159,7 +160,11 @@ describe('the horizon setting reaches the listing it claims to tune', () => {
   })
 
   it('the /events loader reads the setting', () => {
-    expect(indexData).toContain('eventsListingHorizonDays()')
+    // The CALL, on comment- and import-free source (scan2 L8-04, proven by mutation): the setting is
+    // also named in a comment of index-data.ts, so a bare toContain stayed green with the call gone.
+    expect(sourceWithoutComments('app/(main)/events/index-data.ts', { imports: true })).toContain(
+      'eventsListingHorizonDays()',
+    )
   })
 
   it('no longer hardcodes a 60-day horizon', () => {
@@ -211,3 +216,81 @@ describe('the horizon setting reaches the listing it claims to tune', () => {
     for (const src of [adminPage, adminSection, adminAction]) expect(src).not.toMatch(catalog)
   })
 })
+
+// ── Every boolean flag the code READS has a seed row in a migration ──────────────────────────────
+// (2026-09-05, scan2 L3-07 / L4-07.) Eight read keys had no seed anywhere, so each reader's
+// hardcoded default was the only thing deciding, and the admin had no row to show which default
+// was in force. supabase/migrations/20270345000400_seed_missing_platform_flags.sql seeds them.
+// This walks every `.eq('key', '<flag>')` read of platform_flags in the reader modules and fails
+// on a key no migration inserts, so the next unseeded reader cannot land silently.
+
+import { readdirSync } from 'node:fs'
+import { join } from 'node:path'
+
+const FLAG_READERS = ['lib/platform-flags.ts', 'lib/onboarding/flags.ts', 'lib/onboarding/status.ts']
+
+function readFlagKeys(): string[] {
+  const keys = new Set<string>()
+  for (const file of FLAG_READERS) {
+    const src = readFileSync(file, 'utf8')
+    // Only a read that sits inside a platform_flags query: the key literal is what a seed must match.
+    for (const m of src.matchAll(/from\('platform_flags'\)[\s\S]{0,120}?\.eq\('key',\s*'([a-z_]+)'\)/g)) keys.add(m[1])
+  }
+  return [...keys].sort()
+}
+
+function seededFlagKeys(): Set<string> {
+  const dir = join('supabase', 'migrations')
+  const seeded = new Set<string>()
+  for (const f of readdirSync(dir)) {
+    if (!f.endsWith('.sql')) continue
+    const sql = readFileSync(join(dir, f), 'utf8')
+    for (const m of sql.matchAll(/\('([a-z_]+)',\s*(?:true|false)\)/g)) seeded.add(m[1])
+  }
+  return seeded
+}
+
+describe('every platform_flags key the code reads is seeded by a migration', () => {
+  it('guards non-trivially (the walk finds the readers it claims to)', () => {
+    const keys = readFlagKeys()
+    expect(keys.length).toBeGreaterThanOrEqual(12)
+    for (const k of [
+      'auto_popups_enabled',
+      'next_steps_enabled',
+      'referrals_enabled',
+      'sms_enabled',
+      'vera_autonomy_enabled',
+      'vera_breaker_armed',
+      'host_payouts_enabled',
+      'chat_dm_routes_retired',
+    ]) {
+      expect(keys).toContain(k)
+    }
+  })
+
+  it('has no read key without a seed row', () => {
+    const seeded = seededFlagKeys()
+    const unseeded = readFlagKeys().filter((k) => !seeded.has(k))
+    expect(unseeded).toEqual([])
+  })
+
+  it('seeds each late-seeded key with its reader default, so the row changes nothing on apply', () => {
+    const sql = readFileSync('supabase/migrations/20270345000400_seed_missing_platform_flags.sql', 'utf8')
+    const expected: Record<string, boolean> = {
+      auto_popups_enabled: false,
+      next_steps_enabled: false,
+      referrals_enabled: true,
+      sms_enabled: false,
+      vera_autonomy_enabled: false,
+      vera_breaker_armed: true,
+      host_payouts_enabled: false,
+      chat_dm_routes_retired: false,
+    }
+    for (const [key, value] of Object.entries(expected)) {
+      expect(sql).toMatch(new RegExp(`\\('${key}',\\s*${value}\\)`))
+    }
+    // Idempotent: a later operator flip must survive a re-run.
+    expect(sql).toMatch(/on conflict \(key\) do nothing/)
+  })
+})
+

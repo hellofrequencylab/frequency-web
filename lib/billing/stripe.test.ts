@@ -1,49 +1,16 @@
 import { afterEach, describe, expect, it } from 'vitest'
-import { membershipAmount, priceFor, tierForPrice } from './stripe'
+import { tierForPrice } from './stripe'
 
 const ORIGINAL = { ...process.env }
 afterEach(() => {
   process.env = { ...ORIGINAL }
 })
 
-describe('membershipAmount', () => {
-  it('defaults Crew to $10 (the one sellable member tier, ADR-878)', () => {
-    delete process.env.STRIPE_MEMBERSHIP_AMOUNT
-    expect(membershipAmount()).toBe(1000)
-  })
-
-  it('reads the env override', () => {
-    process.env.STRIPE_MEMBERSHIP_AMOUNT = '1500'
-    expect(membershipAmount()).toBe(1500)
-  })
-
-  it('ignores a non-positive or non-numeric override', () => {
-    process.env.STRIPE_MEMBERSHIP_AMOUNT = '0'
-    expect(membershipAmount()).toBe(1000)
-    process.env.STRIPE_MEMBERSHIP_AMOUNT = 'free'
-    expect(membershipAmount()).toBe(1000)
-  })
-
-  // ADR-878: Supporter left the sellable ladder, so the Supporter env knobs are dead. Setting them
-  // must not move the amount a member is charged, and must never resurface a $25 member price.
-  it('the retired Supporter env knobs are inert', () => {
-    process.env.STRIPE_SUPPORTER_AMOUNT = '5000'
-    delete process.env.STRIPE_MEMBERSHIP_AMOUNT
-    expect(membershipAmount()).toBe(1000)
-  })
-})
+// 2026-09-05 (scan2 L3-04): the membershipAmount / priceFor suites that lived here are gone with
+// the helpers. Neither had a caller outside this file; checkout mints its own price from the
+// member's chosen amount, so the env knobs they read were documentation of nothing.
 
 describe('the Supporter sell path is gone (ADR-878)', () => {
-  it('priceFor never resolves a Supporter price id, even with the env set', () => {
-    process.env.STRIPE_PRICE_SUPPORTER = 'price_supporter_legacy'
-    process.env.STRIPE_PRICE_CREW = 'price_crew'
-    // The label is not on EntitlementTier any more (retired 2026-08-24), so the cast is what asking
-    // the question at all now takes — and the answer is still null, never a $12 price.
-    expect(priceFor('supporter' as unknown as 'crew')).toBeNull()
-    expect(priceFor('free')).toBeNull()
-    expect(priceFor('crew')).toBe('price_crew')
-  })
-
   it('tierForPrice always resolves crew, so a legacy Supporter price keeps paid access', () => {
     process.env.STRIPE_PRICE_SUPPORTER = 'price_supporter_legacy'
     expect(tierForPrice('price_supporter_legacy')).toBe('crew')

@@ -39,6 +39,27 @@ describe('rateLimitOk (unconfigured limiter)', () => {
     const { rateLimitOk } = await loadRateLimit()
     expect(await rateLimitOk('subscribe', '1.2.3.4', 5, '10 m')).toBe(false)
   })
+
+  // 2026-09-05 (scan2 L3-03). Next forces NODE_ENV=production on every Vercel build, previews
+  // included, so a preview without KV used to DENY the 29 default-policy call sites. A preview is
+  // not production: the limiter must no-op there, exactly as the header comment promises.
+  it('no-ops (allows) on a Vercel PREVIEW even though NODE_ENV is production', async () => {
+    vi.stubEnv('KV_REST_API_URL', '')
+    vi.stubEnv('KV_REST_API_TOKEN', '')
+    vi.stubEnv('NODE_ENV', 'production')
+    vi.stubEnv('VERCEL_ENV', 'preview')
+    const { rateLimitOk } = await loadRateLimit()
+    expect(await rateLimitOk('subscribe', '1.2.3.4', 5, '10 m')).toBe(true)
+  })
+
+  it('no-ops (allows) on a Vercel DEVELOPMENT deploy even though NODE_ENV is production', async () => {
+    vi.stubEnv('KV_REST_API_URL', '')
+    vi.stubEnv('KV_REST_API_TOKEN', '')
+    vi.stubEnv('NODE_ENV', 'production')
+    vi.stubEnv('VERCEL_ENV', 'development')
+    const { rateLimitOk } = await loadRateLimit()
+    expect(await rateLimitOk('subscribe', '1.2.3.4', 5, '10 m')).toBe(true)
+  })
 })
 
 describe('rateLimitOk whenUnconfigured: allow', () => {

@@ -84,6 +84,17 @@ const MAX_INCIDENTAL = 100
  *  trips teaches you nothing about the run before. Advisory only — this never fails the build. */
 const HEADROOM_WARN = 10
 
+// ── NON-TRIVIALITY FLOORS (scan2 L8-02, 2026-09-05) ──────────────────────────────────────────
+// Measured on production e3cec7af2 (2026-08-25): 497 trace files, 18 rasterising routes. Without
+// these, a renamed trace layout that still leaves SOME `.nft.json` behind, or a RASTERISING regex
+// that stops matching the route path (which is exactly how half of this gate went vacuous once),
+// prints "sharp ships to all 0 rasterising route(s)" and exits 0. The floors sit well under the
+// real counts so ordinary growth or a card retirement never trips them, and a blind read always
+// does. Exit 2 ("guard saw nothing") is distinct from a real failure (1) on purpose.
+// Raise them only when the real counts move, never to make a red build green.
+const MIN_TRACES = 200
+const MIN_RASTERISERS = 5
+
 if (!existsSync(SERVER_DIR)) {
   console.error('check:og-trace — no .next/server. Run `pnpm build` first.')
   process.exit(1)
@@ -195,6 +206,17 @@ if (incidental.length > MAX_INCIDENTAL) {
 }
 
 if (failed) process.exit(1)
+
+if (traces.length < MIN_TRACES || rasterisers.length < MIN_RASTERISERS) {
+  console.error(
+    `\n🔴 check:og-trace saw nothing it can vouch for: ${traces.length} trace file(s) (floor ${MIN_TRACES}), ` +
+      `${rasterisers.length} rasterising route(s) (floor ${MIN_RASTERISERS}).\n` +
+      `   A clean verdict over an artifact this small is not a pass. Either the trace layout under\n` +
+      `   .next/server changed, the RASTERISING route pattern stopped matching, or the build did not\n` +
+      `   finish. All three are real problems; none of them is green.\n`,
+  )
+  process.exit(2)
+}
 
 console.log(
   `✅ check:og-trace — sharp ships to all ${rasterisers.length} rasterising route(s), and to ` +

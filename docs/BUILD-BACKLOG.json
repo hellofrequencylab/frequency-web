@@ -59,7 +59,10 @@
             "LIVE-159",
             "LIVE-160",
             "LIVE-161",
-            "LIVE-162"
+            "LIVE-162",
+            "LIVE-165",
+            "LIVE-166",
+            "LIVE-169"
           ]
         },
         {
@@ -7299,6 +7302,227 @@
         "kind": "cmd",
         "cmd": "node -e \"const fs=require('fs');const a=/LEAD_GRAB_COOKIE = '([^']+)'/.exec(fs.readFileSync('lib/crm/lead-capture.ts','utf8'));const b=/LEAD_COOKIE = '([^']+)'/.exec(fs.readFileSync('app/join/(induction)/lead-actions.ts','utf8'));process.exit(a&&b&&a[1]!==b[1]?0:1)\"",
         "note": "Passes once the two cookie names differ."
+      }
+    },
+    {
+      "id": "SCAN-582",
+      "title": "A schema-contract guard: every .from()/.rpc() chain is checked against lib/database.types.ts in CI",
+      "status": "done",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "scripts/check-schema-contract.mjs",
+        "ref": "ADR-1211"
+      },
+      "detail": "Scan two, phase E (2026-09-05). The L1 scanner that found the phantom campaigns.updated_at (ADR-1207) is now scripts/check-schema-contract.mjs, wired as check:schema-contract in package.json and the ci.yml guards list. It walks app, lib, components, scripts and supabase/functions, checks tables, columns, insert and update keys and rpc names against the generated types, exits 1 on a phantom with file:line, exits 2 when it saw fewer than 2500 files or 3000 chains (a guard that sees nothing must not read as green), counts dynamic-table and runtime-built payloads as named skips, and carries an empty dated allowlist whose stale entries fail. The live tree is clean. A planted-violation test spawns it on a fixture carrying the exact L1-01 shape.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const s=fs.readFileSync('scripts/check-schema-contract.mjs','utf8');const w=fs.readFileSync('.github/workflows/ci.yml','utf8').split('\\\\n').filter(l=>!/^\\\\s*#/.test(l)).join('\\\\n');const g=/guards=\\\\(([\\\\s\\\\S]*?)\\\\)/.exec(w);process.exit(/MIN_FILES\\\\s*=\\\\s*\\\\d/.test(s)&&/MIN_CHAINS\\\\s*=\\\\s*\\\\d/.test(s)&&g&&g[1].split(/\\\\s+/).includes('schema-contract')&&/check:schema-contract/.test(fs.readFileSync('package.json','utf8'))&&fs.existsSync('scripts/check-schema-contract.test.ts')?0:1)\"",
+        "note": "Fails if the guard loses its floors, its CI wiring, or its planted-violation test."
+      }
+    },
+    {
+      "id": "SCAN-584",
+      "title": "Four guard scripts could match nothing and exit 0; they now have floors and spawn tests",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "scripts/check-og-trace.mjs",
+        "ref": "ADR-1211"
+      },
+      "detail": "Scan two, phase E (2026-09-05). L8-02. check-grants, check-og-trace, check-build-budget and check-collective had no test that imported or spawned them and no non-triviality floor, so a renamed .nft.json layout would report zero functions carrying sharp and 0 GB and pass. Closed: each has a floor (150 live tables; 200 traces and 5 rasterisers; 200 traces and 1 GB; 100 doc and 2000 code files) that exits 2, and a test that spawns it against a fixture with one planted violation and one clean case. Real-tree verdicts are byte-identical before and after.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const ok=['scripts/check-grants.mjs','scripts/check-og-trace.mjs','scripts/check-build-budget.mjs','scripts/check-collective.mjs'].every(f=>/MIN_[A-Z_]+\\\\s*=\\\\s*\\\\d/.test(fs.readFileSync(f,'utf8'))&&fs.existsSync(f.replace(/\\\\.mjs$/,'.test.ts')));process.exit(ok?0:1)\"",
+        "note": "Fails if any of the four loses its floor or its spawn test."
+      }
+    },
+    {
+      "id": "SCAN-585",
+      "title": "check-studio and check-crm-parity take a root and have planted-violation controls",
+      "status": "done",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "scripts/check-studio.mjs",
+        "ref": "ADR-1211"
+      },
+      "detail": "Scan two, phase E (2026-09-05). L8-03. runCheck() and checkCrmParity() took no root argument, so their tests had a corpus floor and a live-tree-is-clean arm but no negative control; a kernel importing from lib/studio/entities/ would be caught only if the detector regex still matched today's syntax, and nothing checked that. Closed: both take a root (default unchanged), and each test plants the violation in the live import syntax and asserts the exact findings.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');process.exit(/export function runCheck\\\\(root/.test(fs.readFileSync('scripts/check-studio.mjs','utf8'))&&/export function checkCrmParity\\\\(root/.test(fs.readFileSync('scripts/check-crm-parity.mjs','utf8'))?0:1)\"",
+        "note": "Fails if either check drops its root parameter."
+      }
+    },
+    {
+      "id": "SCAN-588",
+      "title": "Every Vercel preview counted as the production deployment for GA and the rate limiter",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/rate-limit.ts",
+        "ref": "ADR-1211"
+      },
+      "detail": "Scan two, phase E (2026-09-05). L3-03. NODE_ENV is production on previews too, so the GA tag and its server mirror fired from every preview and the e2e workflow, and a preview without KV denied the 29 default-policy call sites. Closed: both read VERCEL_ENV first and fall back to NODE_ENV only when it is unset; tests set VERCEL_ENV=preview with NODE_ENV=production and prove GA stays off and the limiter allows.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');process.exit(/VERCEL_ENV/.test(fs.readFileSync('lib/rate-limit.ts','utf8').replace(/\\\\/\\\\/.*$/gm,''))&&/VERCEL_ENV/.test(fs.readFileSync('lib/analytics/ga-server.ts','utf8').replace(/\\\\/\\\\/.*$/gm,''))?0:1)\"",
+        "note": "Fails if either gate goes back to NODE_ENV alone."
+      }
+    },
+    {
+      "id": "SCAN-589",
+      "title": "Four Stripe knobs the code never read were documented as live, and the example fee was 10 where the code charges 3",
+      "status": "done",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": ".env.example",
+        "ref": "ADR-1211"
+      },
+      "detail": "Scan two, phase E (2026-09-05). L3-04. STRIPE_PRICE_CREW and STRIPE_MEMBERSHIP_AMOUNT were read only by two functions with no non-test caller; STRIPE_PRICE_SUPPORTER and STRIPE_SUPPORTER_AMOUNT were read nowhere; STRIPE_PLATFORM_FEE_PCT shipped as 10 against a code default of 3. Closed: the four keys and the two dead helpers are gone, the example says 3.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const e=fs.readFileSync('.env.example','utf8');const s=fs.readFileSync('lib/billing/stripe.ts','utf8').split('\\n').filter(l=>!/^\\s*(\\/\\/|\\*|\\/\\*)/.test(l)).join('\\n');process.exit(!/^(STRIPE_PRICE_CREW|STRIPE_MEMBERSHIP_AMOUNT|STRIPE_PRICE_SUPPORTER|STRIPE_SUPPORTER_AMOUNT)=/m.test(e)&&/^STRIPE_PLATFORM_FEE_PCT=3$/m.test(e)&&!/STRIPE_PRICE_CREW|STRIPE_MEMBERSHIP_AMOUNT/.test(s)?0:1)\"",
+        "note": "Fails if a dead knob returns to the example or the code."
+      }
+    },
+    {
+      "id": "SCAN-590",
+      "title": "Copying .env.example switched every dark-unless-set feature on with junk credentials",
+      "status": "done",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": ".env.example",
+        "ref": "ADR-1211"
+      },
+      "detail": "Scan two, phase E (2026-09-05). L3-05. Placeholder values were truthy, so billingEnabled(), aiEnabled(), the Resend send path and the Google Wallet signer all read as configured and threw or called out with bad keys. Closed: eleven such keys ship blank with the placeholder in the comment above, and scripts/env-example.test.ts asserts they stay blank.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const e=fs.readFileSync('.env.example','utf8');process.exit(/^STRIPE_SECRET_KEY=$/m.test(e)&&/^ANTHROPIC_API_KEY=$/m.test(e)&&/^RESEND_API_KEY=$/m.test(e)&&fs.existsSync('scripts/env-example.test.ts')?0:1)\"",
+        "note": "Fails if a dark key regains a placeholder value or the example test is removed."
+      }
+    },
+    {
+      "id": "SCAN-591",
+      "title": "Eight platform flags were read but never seeded, and the marketplace readers failed open",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "supabase/migrations/20270345000400_seed_missing_platform_flags.sql",
+        "ref": "ADR-1211"
+      },
+      "detail": "Scan two, phase E (2026-09-05). L3-07 and L4-07. auto_popups_enabled, next_steps_enabled, referrals_enabled, sms_enabled, vera_autonomy_enabled, vera_breaker_armed, host_payouts_enabled and chat_dm_routes_retired had no seed row anywhere, so readers ran on hardcoded defaults an operator could not see; the four marketplace area readers published an area on a read error. Closed: the migration seeds the eight with their reader defaults (on conflict do nothing, behaviour-neutral), lib/marketplace/visibility.ts reads the error and hides on failure, and a test asserts every flag key read in the three reader modules is seeded by some migration. The scan's claim that the Vera flags had no setter had expired: app/(main)/admin/ai has both.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const m=fs.readFileSync('supabase/migrations/20270345000400_seed_missing_platform_flags.sql','utf8');const v=fs.readFileSync('lib/marketplace/visibility.ts','utf8').replace(/\\\\/\\\\/.*$/gm,'');process.exit(/vera_autonomy_enabled/.test(m)&&/vera_breaker_armed/.test(m)&&/error/.test(v)?0:1)\"",
+        "note": "Fails if the seed migration loses a flag or the marketplace reader stops reading the error."
+      }
+    },
+    {
+      "id": "SCAN-592",
+      "title": "Twenty-two keys the scripts and CI read were absent from .env.example",
+      "status": "done",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": ".env.example",
+        "ref": "ADR-1211"
+      },
+      "detail": "Scan two, phase E (2026-09-05). L3-08 (a, b). SENTRY_DSN, the Vercel system variables and a labelled scripts-and-CI block (VERCEL_AUTOMATION_BYPASS_SECRET, SUPABASE_PROJECT_REF, the perf and spend keys, PW_*) are documented. NEXT_PUBLIC_SUPPORT_CHAT keeps its prefix (LIVE-165: renaming it in code without renaming the Vercel variable in the same window would hide the widget on the next deploy).",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const e=fs.readFileSync('.env.example','utf8');process.exit(/^VERCEL_AUTOMATION_BYPASS_SECRET=$/m.test(e)&&/^SUPABASE_PROJECT_REF=$/m.test(e)?0:1)\"",
+        "note": "Fails if the scripts-and-CI block is removed."
+      }
+    },
+    {
+      "id": "SCAN-593",
+      "title": "track('qr.referral_activated') was dropped by the taxonomy, so the referral moment never reached GA4",
+      "status": "done",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "lib/analytics/events.ts",
+        "ref": "ADR-1211"
+      },
+      "detail": "Scan two, phase E (2026-09-05). L4-03. The site emitted the name and isTrackedEvent refused it. Closed: registered as a lifecycle event, server-only; first-party was never affected because the same site also writes referral.activated through recordEngagementEvent.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');process.exit(/name: 'qr\\\\.referral_activated'/.test(fs.readFileSync('lib/analytics/events.ts','utf8'))?0:1)\"",
+        "note": "Fails if the name leaves the taxonomy."
+      }
+    },
+    {
+      "id": "SCAN-594",
+      "title": "The page-chrome catalog registered /referral, a route with no page",
+      "status": "done",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "lib/layout/page-chrome.ts",
+        "ref": "ADR-1211"
+      },
+      "detail": "Scan two, phase E (2026-09-05). L4-06. No app/**/referral page exists and the flag it was gated on is read by nothing. Closed: the entry is gone (the comment stays with a dated correction); railFor semantics are untouched.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const s=fs.readFileSync('lib/layout/page-chrome.ts','utf8').replace(/\\\\/\\\\/.*$/gm,'');process.exit(/['\\\"]\\\\/referral['\\\"]/.test(s)?1:0)\"",
+        "note": "Fails if the dead entry returns."
+      }
+    },
+    {
+      "id": "LIVE-165",
+      "title": "NEXT_PUBLIC_SUPPORT_CHAT is read only by server layouts; the public prefix buys nothing",
+      "status": "open",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "app/(marketing)/layout.tsx",
+        "ref": "ADR-1211"
+      },
+      "detail": "Scan two L3-08 (b). The three readers are server layouts. Renaming it in code without renaming the Vercel variable in the same window would hide the widget on the next deploy, so this is a two-step change: add SUPPORT_CHAT in Vercel, switch the readers to prefer it with a fallback to the old name, then remove the old variable and the fallback.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs'),pa=require('path');function*w(d){for(const e of fs.readdirSync(d,{withFileTypes:true})){const f=pa.join(d,e.name);if(e.isDirectory()){if(e.name!=='node_modules'&&!e.name.startsWith('.'))yield*w(f)}else yield f}}const hits=['app','lib','components'].flatMap(d=>[...w(d)]).filter(f=>/\\\\.tsx?$/.test(f)&&/NEXT_PUBLIC_SUPPORT_CHAT/.test(fs.readFileSync(f,'utf8')));process.exit(hits.length===0?0:1)\"",
+        "note": "Passes once no reader names the prefixed variable."
+      }
+    },
+    {
+      "id": "LIVE-166",
+      "title": "Five platform_flags rows are seeded and read by nothing",
+      "status": "open",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "lib/platform-flags.ts",
+        "ref": "ADR-1211"
+      },
+      "detail": "beta_referral_contest, beta_ends_at, plan_whitelabel_enabled, plan_practitioner_enabled and plan_organization_enabled have live rows and no reader (tier_supporter_enabled is read for display only). Either the readers never shipped (write them) or the rows are dead (delete them in a migration). Owner ruling on the plan flags; the beta pair can go.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs'),pa=require('path');function*w(d){for(const e of fs.readdirSync(d,{withFileTypes:true})){const f=pa.join(d,e.name);if(e.isDirectory()){if(e.name!=='node_modules'&&!e.name.startsWith('.'))yield*w(f)}else yield f}}const keys=/beta_referral_contest|beta_ends_at|plan_whitelabel_enabled|plan_practitioner_enabled|plan_organization_enabled/;const read=['app','lib','components'].flatMap(d=>[...w(d)]).some(f=>/\\\\.tsx?$/.test(f)&&keys.test(fs.readFileSync(f,'utf8').replace(/\\\\/\\\\/.*$/gm,'')));const del=[...w('supabase/migrations')].some(f=>f.endsWith('.sql')&&/delete from public\\\\.platform_flags[\\\\s\\\\S]*beta_referral_contest/.test(fs.readFileSync(f,'utf8')));process.exit(read||del?0:1)\"",
+        "note": "Passes once the flags are read somewhere or deleted by a migration."
+      }
+    },
+    {
+      "id": "LIVE-169",
+      "title": "Env contract residue: bare Supabase reads and two canonical-URL variables",
+      "status": "open",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": ".env.example",
+        "ref": "ADR-1211"
+      },
+      "detail": "Scan two L3-08 (c) and (d), not addressed in phase E: four Supabase client constructions read the env with a non-null assertion rather than a checked read, and two variables carry the canonical site URL. Route both through lib/env/string.ts (phase D) and document the URL pair once.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs'),pa=require('path');function*w(d){for(const e of fs.readdirSync(d,{withFileTypes:true})){const f=pa.join(d,e.name);if(e.isDirectory()){if(e.name!=='node_modules'&&!e.name.startsWith('.'))yield*w(f)}else yield f}}const n=['app','lib'].flatMap(d=>[...w(d)]).filter(f=>/\\\\.tsx?$/.test(f)&&fs.readFileSync(f,'utf8').includes('process.env.NEXT_PUBLIC_SUPABASE_URL!')).length;process.exit(n===0?0:1)\"",
+        "note": "Passes once no Supabase client reads the URL with a non-null assertion."
       }
     }
   ]

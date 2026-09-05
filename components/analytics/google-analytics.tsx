@@ -22,10 +22,21 @@
 // browser-scoped by design (client-side), which keeps every page statically
 // renderable — no per-request auth read in the root layout.
 
+// 2026-09-05 (scan2 L3-03): "running in production" above meant NODE_ENV, which Next forces to
+// 'production' on every Vercel build, previews included, so the tag DID fire on preview deploys.
+// The gate is now VERCEL_ENV === 'production', with NODE_ENV consulted only when VERCEL_ENV is
+// unset (local / non-Vercel). VERCEL_ENV is a Vercel system variable, present at build and
+// runtime, and this is a Server Component, so the read is a real one and not an inlined blank.
+
 const GA_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID
 
+/** The deployment we are running in: Vercel's VERCEL_ENV when present, NODE_ENV otherwise. */
+function deployEnv(): string | undefined {
+  return process.env.VERCEL_ENV || process.env.NODE_ENV
+}
+
 export function GoogleAnalytics() {
-  if (!GA_ID || process.env.NODE_ENV !== 'production') return null
+  if (!GA_ID || deployEnv() !== 'production') return null
 
   return (
     <>

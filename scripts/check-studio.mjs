@@ -43,8 +43,14 @@
 // violation. Model: scripts/check-menu.mjs.
 
 import { readFileSync, readdirSync, existsSync } from 'node:fs'
-import { join } from 'node:path'
-import { pathToFileURL } from 'node:url'
+import { dirname, join, relative } from 'node:path'
+import { fileURLToPath, pathToFileURL } from 'node:url'
+
+/** The tree every export measures by default. Resolved from this file's own location, so the CLI
+ *  and the vitest guard read the same repo whatever the cwd. Every export also takes a `root`
+ *  argument (scan2 L8-03, 2026-09-05) so the test can point the SAME detector at a fixture tree
+ *  with a planted violation and prove the regexes still match today's import syntax. */
+export const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 
 const KERNEL_DIR = 'lib/studio/kernel'
 const FIELD_KIT_DIR = 'components/studio/spark/field'
@@ -98,14 +104,14 @@ export const MIN_STUDIO_FILES = 10
 
 /** The two corpora the floors are measured against. Exported so the vitest guard asserts the SAME
  *  numbers the CLI does, rather than a re-derived approximation of them. */
-export function corpus() {
-  return { kernelFiles: walk(KERNEL_DIR), studioFiles: STUDIO_ROOTS.flatMap((r) => walk(r)) }
+export function corpus(root = REPO_ROOT) {
+  return { kernelFiles: walk(join(root, KERNEL_DIR)), studioFiles: STUDIO_ROOTS.flatMap((r) => walk(join(root, r))) }
 }
 
 /** The floor, as a message rather than an exit — so both the CLI and the test can enforce it.
  *  Returns null when the corpus is real. */
-export function corpusFloorFailure() {
-  const { kernelFiles, studioFiles } = corpus()
+export function corpusFloorFailure(root = REPO_ROOT) {
+  const { kernelFiles, studioFiles } = corpus(root)
   if (kernelFiles.length >= MIN_KERNEL_FILES && studioFiles.length >= MIN_STUDIO_FILES) return null
   return (
     `\n✗ check:studio — refusing to pass over a corpus it could not read.\n` +
@@ -116,11 +122,11 @@ export function corpusFloorFailure() {
   )
 }
 
-export function runCheck() {
+export function runCheck(root = REPO_ROOT) {
   const violations = []
-  const norm = (p) => p.split('\\').join('/')
+  const norm = (p) => relative(root, p).split('\\').join('/')
 
-  const kernelFiles = walk(KERNEL_DIR)
+  const kernelFiles = walk(join(root, KERNEL_DIR))
 
   // (a) + (b): the kernel's layering + purity.
   for (const file of kernelFiles) {
@@ -133,8 +139,8 @@ export function runCheck() {
   }
 
   // (c): bespoke field CSS inside the Studio surface, outside the kit.
-  for (const root of STUDIO_ROOTS) {
-    for (const file of walk(root)) {
+  for (const surface of STUDIO_ROOTS) {
+    for (const file of walk(join(root, surface))) {
       const rel = norm(file)
       if (rel.startsWith(FIELD_KIT_DIR) || FIELD_CSS_ALLOWLIST.has(rel)) continue
       const lines = readFileSync(file, 'utf8').split('\n')
