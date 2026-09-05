@@ -37,6 +37,23 @@ const SEND = `send.${APEX}`
 const MAILFROM = `send.${SEND}`
 const DKIM = `resend._domainkey.${SEND}`
 
+/**
+ * The domains the CODE names for CONVERSATIONAL mail — the human-sounding "<Name> via Frequency"
+ * replies, which are a different identity from the transactional noreply above.
+ *
+ * Measured here because the question "is that domain verified in Resend" is exactly the kind of
+ * dashboard state this script exists to reach around: Resend publishes DKIM at
+ * `resend._domainkey.<domain>` only once verification completes, so the record's presence IS the
+ * verification signal, and public DNS answers it without an API key.
+ *
+ * `CONVERSATION` is lib/comms/from-address.ts's hardcoded DEFAULT_CONVERSATION_ADDRESS domain and
+ * `INBOUND` is .env.example's documented CONVERSATION_REPLY_DOMAIN default. Neither is necessarily
+ * what production uses — EMAIL_CONVERSATION_FROM and CONVERSATION_REPLY_DOMAIN can override both,
+ * and this script cannot read Vercel's env. That asymmetry is the whole point of the row below.
+ */
+const CONVERSATION = `people.${APEX}`
+const INBOUND = `reply.${APEX}`
+
 /** Flatten node's TXT shape (array of chunk-arrays) into whole strings. */
 const txt = (rows) => rows.map((chunks) => chunks.join(''))
 
@@ -85,16 +102,20 @@ async function spfAuthorises(name, target, depth = 0) {
 const rows = []
 const add = (name, pass, detail, fix) => rows.push({ name, pass, detail, fix })
 
-const [apexTxt, sendMx, mailFromMx, mailFromSpf, dkimTxt, dmarcTxt] = await Promise.all([
-  lookup('resolveTxt', APEX),
-  lookup('resolveMx', SEND),
-  lookup('resolveMx', MAILFROM),
-  spfAuthorises(MAILFROM, 'amazonses.com'),
-  lookup('resolveTxt', DKIM),
-  lookup('resolveTxt', `_dmarc.${APEX}`),
-])
+const [apexTxt, sendMx, mailFromMx, mailFromSpf, dkimTxt, dmarcTxt, convDkim, inboundDkim, inboundMx] =
+  await Promise.all([
+    lookup('resolveTxt', APEX),
+    lookup('resolveMx', SEND),
+    lookup('resolveMx', MAILFROM),
+    spfAuthorises(MAILFROM, 'amazonses.com'),
+    lookup('resolveTxt', DKIM),
+    lookup('resolveTxt', `_dmarc.${APEX}`),
+    lookup('resolveTxt', `resend._domainkey.${CONVERSATION}`),
+    lookup('resolveTxt', `resend._domainkey.${INBOUND}`),
+    lookup('resolveMx', INBOUND),
+  ])
 
-const unreachable = [apexTxt, sendMx, mailFromMx, mailFromSpf, dkimTxt, dmarcTxt].filter((r) => !r.ok)
+const unreachable = [apexTxt, sendMx, mailFromMx, mailFromSpf, dkimTxt, dmarcTxt, convDkim, inboundDkim, inboundMx].filter((r) => !r.ok)
 if (unreachable.length) {
   console.error(`✖ DNS unreachable (${unreachable.map((u) => u.error).join(', ')}). Records NOT measured.`)
   process.exit(2)
@@ -164,6 +185,34 @@ add(
   !!apexSpf && !apexSpf.split(/\s+/).some((t) => t.toLowerCase().startsWith('include:') && isHostOrSubdomainOf(t.slice('include:'.length), 'amazonses.com')),
   apexSpf ? `${APEX} TXT "${apexSpf}"` : `${APEX} publishes no SPF`,
   'The apex sends Google Workspace mail. Product mail belongs on the subdomain, not here.',
+)
+
+// 6. CONVERSATIONAL mail has somewhere verified to send FROM (OWN-051, 2026-09-05).
+//
+//    ⚠️ READ THE QUESTION CAREFULLY, because the obvious one is the wrong one. This does NOT assert
+//    that `people.frequencylocal.com` is verified — it is not, it has no DNS at all, and neither does
+//    `reply.frequencylocal.com`. Asserting that would pin a red row to an owner action and, per
+//    LIVE-186, a check that is red for a reason nobody owns is one everybody learns to scroll past.
+//
+//    The invariant that IS true and worth guarding: at least one verified domain must exist for a
+//    conversational From to use, or EMAIL_CONVERSATION_FROM cannot be set to anything that sends.
+//    Today `send.frequencylocal.com` is that domain (row 1 proves its verification). The per-domain
+//    measurement rides in `detail`, so `pnpm check:mail-dns` still ANSWERS "is people. verified?"
+//    without failing on the answer.
+const hasKey = (r) => txt(r.value).some((t) => t.includes('p='))
+const convVerified = hasKey(convDkim)
+const inboundVerified = hasKey(inboundDkim)
+const inboundHasMx = inboundMx.value.length > 0
+const sendVerified = !!dkim
+add(
+  'a verified domain exists for conversational mail',
+  convVerified || sendVerified,
+  `${CONVERSATION} ${convVerified ? 'VERIFIED' : 'not verified (no resend DKIM)'}`
+    + ` \u00b7 ${INBOUND} ${inboundVerified ? 'verified' : 'not verified'}, ${inboundHasMx ? 'has MX' : 'NO MX'}`
+    + ` \u00b7 ${SEND} ${sendVerified ? 'VERIFIED' : 'not verified'}`,
+  'Verify a sending domain in Resend. Then point EMAIL_CONVERSATION_FROM at a BARE address on it '
+    + '(OWN-051) — lib/comms/from-address.ts defaults to people@people.frequencylocal.com, which '
+    + 'this row shows is not a domain that can send.',
 )
 
 if (process.argv.includes('--json')) {
