@@ -280,6 +280,11 @@ describe('check:backlog — the probe/status contract', () => {
         status: 'open',
         lane: 'owner',
         size: 'S',
+        // Open owner rows carry `ownerAction` (2026-09-06) — the OWNER section of the report is
+        // grouped by it. Present here only to make the fixture a VALID row: the subject of this
+        // test is staleness handling, and a structural error would red the build for the wrong
+        // reason and hide the thing being asserted.
+        ownerAction: 'ruling',
         verify: { kind: 'manual', evidence: 'checked once, long ago', checked: '2020-01-01' },
       },
     ])

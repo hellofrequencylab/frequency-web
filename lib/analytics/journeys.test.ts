@@ -49,11 +49,14 @@ describe('the registry', () => {
 
   it('names every unimplemented marker as a gap rather than burying it', () => {
     const gaps = journeyGaps()
-    // Verified against prod: nothing emits either of these.
-    expect(gaps.map((g) => `${g.journey}/${g.step.key}`)).toEqual([
-      'land_to_beta/account_created',
-      'circle_to_rsvp/rsvped',
-    ])
+    // Verified against prod 2026-09-06: `event.rsvp` has no emitter anywhere in app/ or lib/ and
+    // 0 rows in engagement_events, so it is a real hole and stays declared as one.
+    //
+    // `land_to_beta/account_created` LEFT this list on 2026-09-06, and it is the reason to re-run
+    // the measurement rather than trust the pin: app/auth/callback/route.ts emits `account.created`
+    // and production holds 7 rows. The registry still called it unimplemented, and this assertion
+    // pinned that stale pair — a green test whose subject had changed underneath it.
+    expect(gaps.map((g) => `${g.journey}/${g.step.key}`)).toEqual(['circle_to_rsvp/rsvped'])
     // A gap must explain itself, or it is just a zero nobody can act on.
     for (const g of gaps) expect(g.step.note, g.step.key).toBeTruthy()
   })

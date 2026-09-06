@@ -55,6 +55,18 @@ const MANUAL_STALE_DAYS = 120
 const PROBE_INDETERMINATE = 79
 
 const LANES = ['owner', 'live', 'program', 'deferred', 'hygiene']
+
+/** What KIND of action an owner-lane row needs, in the order the report prints them:
+ *  the things that unblock code first, the judgement calls next, and the rows that are
+ *  merely WAITING last — those are not asks and re-raising them as questions is noise. */
+const OWNER_ACTIONS = [
+  ['account', 'ACCOUNT — a console action on a third-party account'],
+  ['config', 'CONFIG — a value to set'],
+  ['content', 'CONTENT — URLs or an export only you have'],
+  ['ruling', 'RULING — a product decision only you can make'],
+  ['waiting', 'WAITING — blocked on an outside party, not an ask'],
+]
+const OWNER_ACTION_KEYS = OWNER_ACTIONS.map(([k]) => k)
 const STATUSES = ['open', 'done', 'parked', 'blocked']
 const SIZES = ['XS', 'S', 'M', 'L', 'XL', '—']
 const PROBE_KINDS = ['grep-absent', 'grep-present', 'cmd', 'manual']
@@ -111,6 +123,21 @@ function validate(entries) {
     if (!STATUSES.includes(e.status)) problems.push(`${at}: status "${e.status}" not one of ${STATUSES.join('|')}`)
     if (!LANES.includes(e.lane)) problems.push(`${at}: lane "${e.lane}" not one of ${LANES.join('|')}`)
     if (e.size && !SIZES.includes(e.size)) problems.push(`${at}: size "${e.size}" not one of ${SIZES.join('|')}`)
+
+    // The OWNER section is grouped by `ownerAction`, so an open owner row without one would
+    // fall into "unclassified" and quietly undo the grouping. Enforced rather than trusted:
+    // a section that degrades to a flat list the moment someone forgets a field is a
+    // convention, not a contract.
+    if (e.lane === 'owner' && (e.status === 'open' || e.status === 'blocked')) {
+      if (!e.ownerAction) {
+        problems.push(
+          `${at}: open owner row has no ownerAction. Set one of ${OWNER_ACTION_KEYS.join('|')} — `
+            + 'it says what KIND of action this needs, and `pnpm backlog` groups the OWNER section by it.',
+        )
+      } else if (!OWNER_ACTION_KEYS.includes(e.ownerAction)) {
+        problems.push(`${at}: ownerAction "${e.ownerAction}" not one of ${OWNER_ACTION_KEYS.join('|')}`)
+      }
+    }
 
     const p = e.verify
     if (!p || typeof p !== 'object') {
@@ -320,13 +347,33 @@ if (REPORT) {
   const openRows = rows.filter((e) => e.status === 'open' || e.status === 'blocked')
   console.log(`\n  THE ONE LIST — ${FILE}`)
   console.log(`  ${entries.length} entries · showing ${openRows.length} open/blocked${LANE ? ` in lane "${LANE}"` : ''}\n`)
+  const line = (e) => {
+    const mark = e.status === 'blocked' ? yellow('◍') : '○'
+    console.log(`    ${mark} ${e.id.padEnd(9)} ${dim(`[${e.size ?? '—'}]`)} ${e.title}`)
+  }
   for (const lane of LANES) {
     const inLane = openRows.filter((e) => e.lane === lane)
     if (!inLane.length) continue
     console.log(`  ${lane.toUpperCase()} (${inLane.length})`)
-    for (const e of inLane) {
-      const mark = e.status === 'blocked' ? yellow('◍') : '○'
-      console.log(`    ${mark} ${e.id.padEnd(9)} ${dim(`[${e.size ?? '—'}]`)} ${e.title}`)
+    // The OWNER section is grouped by what KIND of action each row needs. Nineteen
+    // undifferentiated items cannot be batched; five labelled groups can, and the split
+    // also separates the rows that are ASKS from the ones merely WAITING on a third party
+    // — re-raising the latter as a question is how one Stripe blocker collected five
+    // different wrong diagnoses across three rows.
+    if (lane === 'owner') {
+      for (const [kind, heading] of OWNER_ACTIONS) {
+        const group = inLane.filter((e) => e.ownerAction === kind)
+        if (!group.length) continue
+        console.log(dim(`    — ${heading} (${group.length})`))
+        for (const e of group) line(e)
+      }
+      const rest = inLane.filter((e) => !OWNER_ACTIONS.some(([k]) => k === e.ownerAction))
+      if (rest.length) {
+        console.log(dim(`    — unclassified (${rest.length})`))
+        for (const e of rest) line(e)
+      }
+    } else {
+      for (const e of inLane) line(e)
     }
     console.log('')
   }
