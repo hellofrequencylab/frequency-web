@@ -110,9 +110,9 @@ export const JOURNEYS: readonly Journey[] = [
         label: 'Created an account',
         stream: 'engagement',
         markers: ['account.created'],
-        coverage: 'unimplemented',
+        coverage: 'observed',
         note:
-          'GAP. `account.created` is registered in the taxonomy (lib/analytics/events.ts) but nothing emits it. Sign-up currently leaves no ledger row, so the step between joining the waitlist and finishing induction is invisible.',
+          'app/auth/callback/route.ts emits it on first sign-in, keyed `account.created:<profileId>` so every later sign-in re-attempts the same row and the exactly-once ledger absorbs it. 7 rows in production, most recent 2026-09-01. ⚠️ THIS STEP READ `unimplemented` UNTIL 2026-09-06, with a note saying nothing emitted it and sign-up left no ledger row. Both had stopped being true: the emitter landed and the registry never caught up, so the funnel suppressed the signup conversion it could already compute, which is the one number the sitemap submission makes urgent. The coverage values carry a "verified against prod" date for exactly this reason; re-measure them rather than trusting the constant.',
       },
       {
         key: 'induction_completed',
