@@ -3,6 +3,7 @@ title: How to meet people in a new city
 description: You moved and you don't know anyone. Here is the fastest honest way to meet people in a new city and find your footing.
 category: find-your-people
 order: 5
+published: 2026-06-20
 updated: 2026-06-20
 audience: member
 featureKeys: [circles, practices]

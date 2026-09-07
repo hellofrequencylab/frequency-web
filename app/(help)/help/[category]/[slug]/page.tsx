@@ -57,11 +57,31 @@ export default async function HelpArticlePage({ params }: Params) {
     <>
     <JsonLd
       data={[
+        // Article. `image` and `datePublished` are the LIVE-183 half: Google lists image as
+        // REQUIRED for the Article rich result and datePublished as recommended, and all 57 nodes
+        // shipped with neither, so not one of them was eligible.
+        //
+        // The IMAGE resolves the same way the page's own cover band does: the operator's /help
+        // Settings image when one is set (`hero.coverImage`, resolved above), else the photograph
+        // the help centre's share card is built from. Both are real files a crawler can fetch --
+        // `/images/hero.jpg` is served verbatim out of `public/` and is the exact background
+        // `app/(help)/opengraph-image.tsx` reads off disk, so the schema image and the share card
+        // are the same picture. It deliberately does NOT point at `/opengraph-image`: that is a
+        // Next metadata ROUTE, and a schema image has to be a URL that resolves on its own.
+        //
+        // ⚠️ There is deliberately NO per-article card in this pass. Adding
+        // `help/[category]/[slug]/opengraph-image.tsx` spends `check:og-trace` fan-out headroom,
+        // which read 18 rasterising + 64 incidental of 100 on the last production build, so it is
+        // its own change with its own budget reading. Until then all 57 articles share one card --
+        // which is what their `og:image` already does, so this makes the schema agree with the page
+        // rather than claiming something richer than the page has.
         articleSchema({
           title: article.title,
           description: article.description,
           path: helpHref(cat.slug, article.slug),
+          published: article.published || null,
           updated: article.updated,
+          image: typeof hero.coverImage === 'string' ? hero.coverImage : '/images/hero.jpg',
         }),
         breadcrumbSchema([
           { name: 'Help', path: '/help' },

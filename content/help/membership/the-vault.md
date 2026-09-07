@@ -3,6 +3,7 @@ title: Membership & the Vault
 description: What's free, what membership includes, and how the Vault works.
 category: membership
 order: 1
+published: 2026-06-03
 updated: 2026-08-19
 audience: member
 featureKeys: [vault]

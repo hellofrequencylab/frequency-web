@@ -38,6 +38,14 @@ export interface HelpArticle {
   title: string
   description: string
   order: number
+  /** ISO date (YYYY-MM-DD) the article was FIRST published. Backfilled per article from
+   *  `git log --follow --diff-filter=A` (the commit that added the file, followed through renames),
+   *  which is the only record of it this repo has -- there is no CMS behind these files.
+   *  It feeds `datePublished` on the Article schema node (LIVE-183); Google lists it as recommended,
+   *  and without it all 57 articles claimed a modification date with no origin date beside it.
+   *  Empty string when a file has no `published:` key, in which case the node simply omits the
+   *  field rather than inventing one. */
+  published: string
   /** ISO date (YYYY-MM-DD) the article was last reviewed/updated. */
   updated: string
   /** Who the article is written for (member / host / guide / janitor / partner). */
@@ -183,6 +191,7 @@ async function readArticle(category: string, file: string): Promise<HelpArticle>
     title: str(data.title, file),
     description: str(data.description),
     order: Number(str(data.order, '99')) || 99,
+    published: str(data.published),
     updated: str(data.updated),
     audience: str(data.audience, 'member'),
     role: str(data.role) || undefined,

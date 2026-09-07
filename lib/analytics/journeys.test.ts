@@ -49,16 +49,33 @@ describe('the registry', () => {
 
   it('names every unimplemented marker as a gap rather than burying it', () => {
     const gaps = journeyGaps()
-    // Verified against prod 2026-09-06: `event.rsvp` has no emitter anywhere in app/ or lib/ and
-    // 0 rows in engagement_events, so it is a real hole and stays declared as one.
+    // 🔴 THIS LIST IS NOW EMPTY, AND AN EMPTY LIST IS THE EASIEST THING IN THIS FILE TO GET
+    // WRONG. It asserts that no step is declared `unimplemented` — NOT that every step is
+    // measured. A step whose emitter is deleted, or a new step added with an honest
+    // `unimplemented`, must FAIL here and be re-argued, which is why the assertion is an exact
+    // equality rather than a length check.
     //
-    // `land_to_beta/account_created` LEFT this list on 2026-09-06, and it is the reason to re-run
-    // the measurement rather than trust the pin: app/auth/callback/route.ts emits `account.created`
-    // and production holds 7 rows. The registry still called it unimplemented, and this assertion
-    // pinned that stale pair — a green test whose subject had changed underneath it.
-    expect(gaps.map((g) => `${g.journey}/${g.step.key}`)).toEqual(['circle_to_rsvp/rsvped'])
+    // `circle_to_rsvp/rsvped` LEFT this list on 2026-09-06 (LIVE-189): app/(main)/events/actions.ts
+    // now emits `event.rsvp` from `recordRsvpConversion` on a confirmed seat, keyed
+    // `event.rsvp:<eventId>:<profileId>`, so the funnel's last step is wired. It is declared
+    // `emitted`, not `observed` — the emitter is new and no production row has been counted yet.
+    //
+    // `land_to_beta/account_created` left it the same day, and is the reason to re-run the
+    // measurement rather than trust the pin: app/auth/callback/route.ts emits `account.created`
+    // and production holds 7 rows, while the registry still called it unimplemented. This
+    // assertion pinned that stale pair — a green test whose subject had changed underneath it.
+    expect(gaps.map((g) => `${g.journey}/${g.step.key}`)).toEqual([])
     // A gap must explain itself, or it is just a zero nobody can act on.
     for (const g of gaps) expect(g.step.note, g.step.key).toBeTruthy()
+  })
+
+  it('keeps the RSVP conversion wired, since it is the one the product exists to produce', () => {
+    // The positive control for the empty-gap list above: a step going missing, or quietly
+    // reverting to `unimplemented`, is caught by name here rather than by an equality on [].
+    const step = getJourney('circle_to_rsvp')!.steps.at(-1)!
+    expect(step.key).toBe('rsvped')
+    expect(step.markers).toContain('event.rsvp')
+    expect(step.coverage).not.toBe('unimplemented')
   })
 
   it('only claims a taxonomy event exists if it is registered or emitted directly', () => {

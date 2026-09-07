@@ -3,6 +3,7 @@ title: Programs and Chapters
 description: A Program is a community model anyone can run locally. A Chapter is the local Circle running it. How to find one near you, and how to start one.
 category: groups
 order: 4
+published: 2026-07-27
 updated: 2026-08-19
 audience: member
 featureKeys: [channels, circles]

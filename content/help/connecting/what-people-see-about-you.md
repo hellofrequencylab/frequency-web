@@ -3,6 +3,7 @@ title: What people see about you
 description: What your profile reveals about the Circles, Spaces, and events you are part of, and who sees what.
 category: connecting
 order: 5
+published: 2026-07-28
 updated: 2026-07-28
 audience: member
 featureKeys: [people, profile]

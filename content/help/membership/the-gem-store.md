@@ -3,6 +3,7 @@ title: Spending Gems in the Vault Store
 description: What Gems buy, how redeeming works, and the "how you earned" ledger.
 category: membership
 order: 2
+published: 2026-06-09
 updated: 2026-08-19
 audience: member
 featureKeys: [vault, gems]

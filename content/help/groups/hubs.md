@@ -3,6 +3,7 @@ title: Hubs
 description: How nearby Circles cluster into a Hub.
 category: groups
 order: 1
+published: 2026-06-03
 updated: 2026-06-03
 audience: member
 role: guide

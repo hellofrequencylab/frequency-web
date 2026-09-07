@@ -3,6 +3,7 @@ title: Why groups fizzle, and how to get the return
 description: Groups fizzle from missing structure, not missing charisma. A standing time, a predictable format, and a shared load are what get people to come back.
 category: leading
 order: 2
+published: 2026-06-23
 updated: 2026-06-24
 audience: host
 role: host

@@ -3,6 +3,7 @@ title: Meeting people safely
 description: How to meet someone from Frequency in person, the safe way.
 category: safety
 order: 2
+published: 2026-06-26
 updated: 2026-09-01
 audience: member
 featureKeys: [connections, events, moderation]

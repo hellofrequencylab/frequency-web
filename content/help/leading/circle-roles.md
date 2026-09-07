@@ -3,6 +3,7 @@ title: Circle roles
 description: Host, Admin, Moderator, Member. What each one can do, how to hand one out, and what happens when someone leaves.
 category: leading
 order: 3
+published: 2026-08-12
 updated: 2026-08-13
 audience: member
 role: host

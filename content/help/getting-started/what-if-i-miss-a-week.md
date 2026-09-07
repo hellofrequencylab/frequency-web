@@ -3,6 +3,7 @@ title: What if I miss a week?
 description: Nothing bad. You drop to Ghost, which just means you have not finished a Journey yet, and you pick back up where you left off. No penalty, no guilt.
 category: getting-started
 order: 8
+published: 2026-06-23
 updated: 2026-06-24
 audience: member
 featureKeys: [circles, ranks]

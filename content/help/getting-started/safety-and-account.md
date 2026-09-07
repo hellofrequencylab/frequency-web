@@ -3,6 +3,7 @@ title: Blocking and deleting your account
 description: How to block another member and how to permanently delete your account.
 category: getting-started
 order: 4
+published: 2026-05-31
 updated: 2026-08-24
 audience: member
 featureKeys: [blocking, account]

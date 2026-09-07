@@ -3,6 +3,7 @@ title: Reporting & moderation
 description: How to report something, block someone, and how moderation works.
 category: safety
 order: 1
+published: 2026-06-03
 updated: 2026-06-03
 audience: member
 featureKeys: [moderation]

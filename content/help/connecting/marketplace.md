@@ -3,6 +3,7 @@ title: Buying, selling & sharing
 description: Swap and share with neighbors, plus housing, the community Market, and the Frequency Store.
 category: connecting
 order: 5
+published: 2026-06-06
 updated: 2026-07-27
 audience: member
 featureKeys: [marketplace]

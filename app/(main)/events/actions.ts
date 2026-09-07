@@ -14,6 +14,7 @@ import { processGamificationEvent, recordStreakActivity } from '@/lib/achievemen
 import { awardGems } from '@/lib/gems'
 import { awardZapsForAction } from '@/lib/zaps'
 import { recordEngagementEvent } from '@/lib/engagement/events'
+import { track } from '@/lib/analytics/track'
 import { markVerifiedByAttendance } from '@/lib/verification/attendance'
 import { propagateAnchorEditsToOccurrences, generateOccurrencesForAnchor, type RecurrenceType } from '@/lib/event-recurrence'
 import { validateRecurrenceUntil } from '@/lib/events/recurrence'
@@ -916,6 +917,30 @@ function rsvpWriteFailure(error: { message?: string } | null | undefined): Actio
   return fail(/suspend/i.test(msg) ? RSVP_SUSPENDED : RSVP_WRITE_FAILED)
 }
 
+// `event.rsvp` — the final step of the `circle_to_rsvp` funnel (lib/analytics/journeys.ts), and
+// LIVE-189. The taxonomy has registered this event since ADR-070 while NOTHING emitted it, so the
+// funnel's last step read 0 and meant "not measured", never "nobody went". RSVP is the conversion
+// this product exists to produce, so that was the most expensive hole in the readout.
+//
+// EXACTLY ONCE PER (profile, event), the same shape `account.created` uses in
+// app/auth/callback/route.ts: `recordEngagementEvent` upserts on `idempotency_key` with
+// `ignoreDuplicates`, so a STABLE key means a withdraw-and-re-RSVP, a second device, a double tap
+// or a QR door scan on top of an existing seat all re-attempt the same row and the ledger drops
+// it. Nothing to reconcile, no window to miss, and the funnel counts people rather than taps.
+//
+// WHERE it fires: only from `onGoing`, i.e. only when a CONFIRMED seat persisted. A waitlisted or
+// host-pending row is not an RSVP conversion, and neither branch calls onGoing. A host RSVPing to
+// their own event does count here — the reward paths exclude that for anti-farming reasons, which
+// is about payouts, not about whether an RSVP happened.
+//
+// FAIL-SAFE: `track()` already swallows its ledger write, and this is called un-awaited. An
+// analytics row never delays or breaks an RSVP.
+function recordRsvpConversion(eventId: string, profileId: string): void {
+  void track('event.rsvp', { eventId }, profileId, {
+    idempotencyKey: `event.rsvp:${eventId}:${profileId}`,
+  }).catch((e) => console.error('[events rsvp analytics]', e))
+}
+
 // Does this event make people wait for the host? Reads `events.rsvp_requires_approval`
 // (20270303000000) and FAILS CLOSED: an error, or no row at all, answers `true`.
 //
@@ -1007,9 +1032,14 @@ async function eventOpenForRsvp(eventId: string): Promise<RsvpGate> {
 //   • going = false → remove the entry (they moved to maybe / waitlist / not_going).
 //
 // Best-effort by construction: wrapped so a feed hiccup never blocks or breaks the
-// RSVP itself. `event_posts.kind` is newer than the generated DB types, so this
-// reaches it through the untyped-client cast (repo convention; the column ships in
-// migration 20261125000000, not yet applied — until then this quietly no-ops).
+// RSVP itself. `event_posts.kind` reaches the DB through the untyped-client cast below
+// (repo convention). ⚠️ CORRECTED 2026-09-06 (HYG-054): this said migration 20261125000000
+// was "not yet applied — until then this quietly no-ops". It IS applied. The Supabase
+// migration ledger carries version 20261125000000 (event_posts_kind) and the live schema
+// has `event_posts.kind`, both re-read 2026-09-06; the ledger table records no apply
+// timestamp, so the version's presence is the only date evidence there is. The path is
+// live, not a no-op, and the column is in lib/database.types.ts, so the cast above it is
+// now avoidable rather than necessary.
 const MAX_RSVP_NOTE = 500
 
 async function syncRsvpActivityPost(
@@ -1139,6 +1169,10 @@ export async function toggleRSVP(eventId: string) {
     }
     // Validated creation pays the host (idempotent per event, so any 'going' is safe).
     fireEventValidation(eventId, myProfileId).catch((e) => console.error('[events creation validation]', e))
+    // The funnel's RSVP conversion (LIVE-189). Outside the `firstTime` arm on purpose: a re-join
+    // is still this member's RSVP to this event, and the stable idempotency key is what makes it
+    // count once rather than the caller's guess about which tap was the first.
+    recordRsvpConversion(eventId, myProfileId)
   }
 
   if (existing) {
@@ -1331,6 +1365,10 @@ export async function setRsvpStatus(
     }
     // Validated creation pays the host (idempotent per event, so any 'going' is safe).
     fireEventValidation(eventId, myProfileId).catch((e) => console.error('[events creation validation]', e))
+    // The funnel's RSVP conversion (LIVE-189). Outside the `firstTime` arm on purpose: a re-join
+    // is still this member's RSVP to this event, and the stable idempotency key is what makes it
+    // count once rather than the caller's guess about which tap was the first.
+    recordRsvpConversion(eventId, myProfileId)
   }
 
   if (intent === 'going') {

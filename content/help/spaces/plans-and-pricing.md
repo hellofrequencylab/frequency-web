@@ -3,6 +3,7 @@ title: Plans and pricing
 description: What each Space plan costs, what it includes, and how to pick the one that fits.
 category: spaces
 order: 2
+published: 2026-07-27
 updated: 2026-09-03
 audience: member
 featureKeys: [billing]

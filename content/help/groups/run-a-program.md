@@ -3,6 +3,7 @@ title: Run a Program
 description: For Space owners: turn your model into a Program so members anywhere can start Chapters of it. What you need, how it works, and what you can change later.
 category: groups
 order: 5
+published: 2026-07-27
 updated: 2026-08-19
 audience: host
 featureKeys: [channels, circles]
