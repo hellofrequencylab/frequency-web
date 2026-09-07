@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { readFileSync } from 'node:fs'
+import { sourceWithoutComments } from '@/test/source-shape'
 import { join } from 'node:path'
 
 // THE RUN EVENT WRITERS PARSE NO WALL-CLOCK IN THE SERVER'S ZONE. scheduleKickoff receives a
@@ -10,10 +10,11 @@ import { join } from 'node:path'
 // instant). This is a source-shape guard because the failure is an ABSENT conversion: both
 // functions are IO orchestration whose mocked client would accept either spelling.
 describe('journey run events follow the wall-clock storage convention', () => {
-  const src = readFileSync(join(__dirname, 'runs.ts'), 'utf8')
+  // Comment- and import-free (LIVE-167): the two calls are the needle, never the import line.
+  const src = sourceWithoutComments(join(__dirname, 'runs.ts'), { imports: true })
 
   it('normalises startsAt through eventStartInputToIso', () => {
-    expect(src).toContain("import { eventStartInputToIso } from '@/lib/events/datetime'")
+    expect(src).not.toMatch(/function eventStartInputToIso\b/)
     // Both writers (scheduleKickoff + setPhaseEvent) route through the helper.
     expect(src.match(/eventStartInputToIso\(input\.startsAt\)/g)?.length).toBe(2)
   })

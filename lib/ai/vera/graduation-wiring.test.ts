@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { readFileSync } from 'node:fs'
+import { sourceWithoutComments } from '@/test/source-shape'
 import { AUTONOMY_CATEGORIES } from './autonomy-config'
 
 // THE GRADUATION SEAM MUST STAY CONNECTED (ADR-626).
@@ -17,11 +17,14 @@ import { AUTONOMY_CATEGORIES } from './autonomy-config'
 // plumbing to test the decision in isolation. This file covers the thing that was actually broken and
 // that no unit test can see: whether anything calls it.
 
-const EXECUTE = readFileSync('lib/ai/vera/execute.ts', 'utf8')
+// Comment- and import-free (LIVE-167): execute.ts names autonomousSend in prose too, so every
+// needle below must hit the call.
+const EXECUTE = sourceWithoutComments('lib/ai/vera/execute.ts', { imports: true })
 
 describe('Vera autonomous-send is wired to the console that controls it', () => {
   it('execute.ts imports the graduation seam', () => {
-    expect(EXECUTE).toContain("from '@/lib/ai/vera/autonomous-send'")
+    expect(EXECUTE).toMatch(/await autonomousSend\(/)
+    expect(EXECUTE).not.toMatch(/function autonomousSend\b/)
   })
 
   it('every autonomy category the console exposes has a call site', () => {

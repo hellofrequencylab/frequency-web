@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
+import { sourceWithoutComments } from '@/test/source-shape'
 import path from 'node:path'
 import { publicVisibleLocation, cityLine } from './visible-location'
 
@@ -13,6 +14,8 @@ import { publicVisibleLocation, cityLine } from './visible-location'
 
 const ROOT = path.join(import.meta.dirname, '..', '..')
 const read = (rel: string) => readFileSync(path.join(ROOT, rel), 'utf8')
+// Comment- and import-free (LIVE-167): the redaction needles must hit the CALL, never the import.
+const code = (rel: string) => sourceWithoutComments(path.join(ROOT, rel), { imports: true })
 
 const hidden = {
   hide_address: true,
@@ -70,8 +73,8 @@ describe('every non-attending reader goes through the rule', () => {
   // is a caller that never asked. A route reading the row and publishing `ev.location` straight into
   // a VEVENT is invisible to any runtime test of this module.
   it('the per-event export redacts rather than reading location directly', () => {
-    const src = read('app/events/[slug]/event.ics/route.ts')
-    expect(src).toContain("from '@/lib/events/visible-location'")
+    const src = code('app/events/[slug]/event.ics/route.ts')
+    expect(src).not.toMatch(/function publicVisibleLocation\b/)
     expect(src).toContain('publicVisibleLocation(ev)')
     expect(
       /location:\s*masked\s*\?\s*null\s*:\s*ev\.location/.test(src),
@@ -93,8 +96,8 @@ describe('every non-attending reader goes through the rule', () => {
     // and lib/og/deliver.ts caches the render on a shared CDN for 24h with a week of
     // stale-while-revalidate — so the leak outlives the fix by a day. 19 published public events had
     // `hide_address = true` when this was found.
-    const src = read('app/(main)/events/[slug]/opengraph-image.tsx')
-    expect(src).toContain("from '@/lib/events/visible-location'")
+    const src = code('app/(main)/events/[slug]/opengraph-image.tsx')
+    expect(src).not.toMatch(/function publicVisibleLocation\b/)
     expect(src).toContain('publicVisibleLocation(')
     // The raw free-text line must never reach the canvas again.
     expect(

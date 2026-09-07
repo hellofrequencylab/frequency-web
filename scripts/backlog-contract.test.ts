@@ -452,12 +452,16 @@ describe('a cmd probe that could not run is not a verdict', () => {
   })
   afterAll(() => rmSync(dir, { recursive: true, force: true }))
 
-  // `kill -9 $$` makes the shell kill itself, so spawnSync reports signal SIGKILL with a null exit
+  // `kill -9 $$` makes the shell kill itself, so the guard sees signal SIGKILL with a null exit
   // status — the same shape the OOM killer produces, without needing to exhaust memory to get it.
-  // The missing binary yields the shell's own 127.
+  // (The shell has to be the one that dies: /bin/sh does not exec its last command, so a node that
+  // kills ITSELF surfaces as the shell exiting 137, which is a real exit code.) The missing binary
+  // yields the shell's own 127 before node is ever reached. Both are written as node pipelines
+  // because validate() now refuses a cmd probe that does not run under node (HYG-062): the fixture
+  // has to be a probe the guard would accept, or it tests the validator.
   for (const [label, cmd] of [
-    ['killed by a signal', 'kill -9 $$'],
-    ['a command that does not exist', 'frequency-no-such-binary-8f3a1c'],
+    ['killed by a signal', 'node -e 0 && kill -9 $$'],
+    ['a command that does not exist', 'frequency-no-such-binary-8f3a1c && node -e 0'],
   ] as const) {
     it(`does not call a done row regressed when its probe was ${label}`, () => {
       writeBacklog(dir, [

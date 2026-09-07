@@ -106,10 +106,46 @@ async function pingHeartbeat(
  * `jobName` should match the route segment under app/api/cron/ (and the vercel.json
  * `path`) so the env-var/monitor mapping is obvious.
  */
+/** The platform's hard ceiling on one invocation (Vercel: 300 s). A cron that reaches it is killed,
+ *  and with the claim-then-send discipline (ADR-1212) its unfinished tail is retried next run, so a
+ *  cron whose window grows faster than its budget falls further behind every invocation. */
+export const CRON_CEILING_MS = 300_000
+
+/** The per-invocation WORK BUDGET a cron is held to unless its route declares its own (LIVE-190):
+ *  a fifth of the ceiling. It is a budget, not a limit — nothing is killed here — and the point of
+ *  stating it in the seam is that every route has one from the day it is wrapped, so the
+ *  `cron.run` chart has a line to read against instead of only the ceiling it can never see a
+ *  route approach in time. A route with a genuinely larger unit of work declares a larger budget
+ *  beside its handler, where the number is reviewed with the work it bounds. */
+export const DEFAULT_CRON_BUDGET_MS = CRON_CEILING_MS / 5
+
+export interface CronHeartbeatOptions {
+  /** The stated per-invocation budget for this route, in ms. Defaults to DEFAULT_CRON_BUDGET_MS. */
+  budgetMs?: number
+}
+
 export function withCronHeartbeat<R extends Request = Request>(
   jobName: string,
   handler: CronHandler<R>,
+  options: CronHeartbeatOptions = {},
 ): CronHandler<R> {
+  const budgetMs = options.budgetMs ?? DEFAULT_CRON_BUDGET_MS
+  /** The one `cron.run` line, on every path. `over_budget` is the reading LIVE-190 charts: a
+   *  route that keeps crossing its stated budget is one whose window needs batching or narrowing
+   *  BEFORE it reaches the ceiling, which is the only thing the error group could ever see. */
+  const runLine = (status: number, startedMs: number) => {
+    const durationMs = Date.now() - startedMs
+    const fields = {
+      job: jobName,
+      status,
+      ok: status < 400,
+      duration_ms: durationMs,
+      budget_ms: budgetMs,
+      over_budget: durationMs > budgetMs,
+    }
+    log.info('cron.run', fields)
+    if (fields.over_budget) log.warn('cron.over_budget', { job: jobName, duration_ms: durationMs, budget_ms: budgetMs })
+  }
   return async function wrapped(req: R): Promise<Response> {
     // Tag any Sentry event raised inside the handler with the job route so cron
     // failures are filterable. No-op when Sentry is off.
@@ -139,12 +175,7 @@ export function withCronHeartbeat<R extends Request = Request>(
 
     try {
       const res = await handler(req)
-      log.info('cron.run', {
-        job: jobName,
-        status: res.status,
-        ok: res.status < 400,
-        duration_ms: Date.now() - startedMs,
-      })
+      runLine(res.status, startedMs)
       // A 5xx (returned, not thrown) is a job failure → fail-ping. A 4xx is a
       // client/auth problem (e.g. an unauthorized probe rejected by
       // rejectUnauthorizedCron), NOT the job dying — don't fail-ping those, or a
@@ -164,12 +195,7 @@ export function withCronHeartbeat<R extends Request = Request>(
       // The same line on the throw path, so a chart of `cron.run` covers every invocation rather
       // than only the ones that got as far as returning. A run that dies at 280s is the reading
       // this row most needs and is precisely the one a success-only instrument loses.
-      log.info('cron.run', {
-        job: jobName,
-        status: 500,
-        ok: false,
-        duration_ms: Date.now() - startedMs,
-      })
+      runLine(500, startedMs)
       log.error('cron.failed', { job: jobName, error: message })
       await pingHeartbeat(jobName, { fail: true })
       throw err

@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
+import { sourceWithoutComments } from '@/test/source-shape'
 import {
   canReadRoom,
   canPostToRoom,
@@ -79,9 +80,11 @@ describe('roomPostGateReason', () => {
 // when a renderer quietly re-derives the rule, and the symptom (a composer that eats messages,
 // or one that never appears) is invisible from a unit test of either renderer alone.
 
-const roomPage = readFileSync('app/(main)/messages/r/[roomId]/page.tsx', 'utf8')
-const dockLoader = readFileSync('app/(main)/messages/popover-actions.ts', 'utf8')
-const roomThread = readFileSync('components/rooms/room-thread.tsx', 'utf8')
+// Comment- and import-free (LIVE-167): the three renderers are pinned on their CALLS into the
+// rule, never on the import line that names it.
+const roomPage = sourceWithoutComments('app/(main)/messages/r/[roomId]/page.tsx', { imports: true })
+const dockLoader = sourceWithoutComments('app/(main)/messages/popover-actions.ts', { imports: true })
+const roomThread = sourceWithoutComments('components/rooms/room-thread.tsx', { imports: true })
 const sendAction = readFileSync('app/(main)/messages/rooms/actions.ts', 'utf8')
 
 describe('the files under test are non-trivial (guards a vacuous pass)', () => {
@@ -94,7 +97,7 @@ describe('the files under test are non-trivial (guards a vacuous pass)', () => {
 
 describe('both renderers derive read/post from the shared rule', () => {
   it('the room page imports it and uses both halves', () => {
-    expect(roomPage).toContain("from '@/lib/messages/room-access'")
+    expect(roomPage).not.toMatch(/function (canReadRoom|canPostToRoom)\b/)
     expect(roomPage).toContain('canReadRoom(')
     expect(roomPage).toContain('canPostToRoom(')
     // The collapse that caused the silent-swallow bug: posting must not be spelled as reading.
@@ -108,7 +111,7 @@ describe('both renderers derive read/post from the shared rule', () => {
   })
 
   it('the dock loader imports it and resolves tune-in rather than guessing', () => {
-    expect(dockLoader).toContain("from '@/lib/messages/room-access'")
+    expect(dockLoader).not.toMatch(/function canPostToRoom\b/)
     expect(dockLoader).toContain('canPostToRoom(')
     expect(dockLoader).toContain('topical_channel_memberships')
     // The old rule, which made every Channel room read-only in the dock.
@@ -116,7 +119,7 @@ describe('both renderers derive read/post from the shared rule', () => {
   })
 
   it('the composer gate copy comes from the rule, not a hardcoded sentence', () => {
-    expect(roomThread).toContain("from '@/lib/messages/room-access'")
+    expect(roomThread).not.toMatch(/function roomPostGateReason\b/)
     expect(roomThread).toContain('roomPostGateReason(visibility)')
     expect(roomThread).not.toContain('Join this room to send messages.')
   })

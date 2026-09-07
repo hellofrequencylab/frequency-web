@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
+import { sourceWithoutComments } from '@/test/source-shape'
 
 // ── Wiring guard: the seed list can DELETE an intake, but never a published one (LIVE-062) ──
 // The Wave-1 seeder shipped list + review + publish with deleteListingIntake as an orphan.
@@ -8,8 +9,9 @@ import { readFileSync } from 'node:fs'
 // widening the gate to 'applied' seeds quietly strands a live listing's images — publish
 // reuses the staged listing-intake/<id>/ URLs, and the delete best-effort removes them.
 
-const list = readFileSync('app/(main)/admin/listing-seeder/intake-list.tsx', 'utf8')
-const button = readFileSync('app/(main)/admin/listing-seeder/delete-intake-button.tsx', 'utf8')
+// Comment- and import-free (LIVE-167): a needle must hit the mount or the call, never the import.
+const list = sourceWithoutComments('app/(main)/admin/listing-seeder/intake-list.tsx', { imports: true })
+const button = sourceWithoutComments('app/(main)/admin/listing-seeder/delete-intake-button.tsx', { imports: true })
 const actions = readFileSync('app/(main)/admin/listing-seeder/actions.ts', 'utf8')
 
 describe('the seed card carries a delete affordance', () => {
@@ -18,7 +20,7 @@ describe('the seed card carries a delete affordance', () => {
   })
 
   it('mounts DeleteIntakeButton in the EntityCard action slot', () => {
-    expect(list).toContain("import { DeleteIntakeButton } from './delete-intake-button'")
+    expect(list).toMatch(/<DeleteIntakeButton\b/)
     expect(list).toContain('<DeleteIntakeButton intakeId={it.id} />')
   })
 
@@ -39,7 +41,8 @@ describe('the button expresses intent and nothing else', () => {
   })
 
   it('imports the server action and surfaces its refusal', () => {
-    expect(button).toContain("import { deleteListingIntake } from './actions'")
+    expect(button).toMatch(/\bdeleteListingIntake\(/)
+    expect(button).not.toMatch(/function deleteListingIntake\b/)
     expect(button).toContain('if (!res.ok) setErr(res.error)')
   })
 })
