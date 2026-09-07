@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { briefError } from './log'
+import { briefError, errorStack } from './log'
 
 // Every case here is taken from the 2026-08-25 02:18-02:53 Supabase incident, because a
 // helper written against imagined inputs is how the two defects it replaces got written.
@@ -74,5 +74,38 @@ describe('briefError', () => {
 
   it('normalises whitespace so one message is one line', () => {
     expect(briefError('a\n  b\t c')).toBe('a b c')
+  })
+})
+
+describe('errorStack — the companion briefError deliberately drops (LIVE-053)', () => {
+  it('returns the first frames of a real Error, so a generic message still names a call site', () => {
+    const out = errorStack(new Error("Cannot read properties of undefined (reading 'rest')"))
+    expect(out).toBeDefined()
+    expect(out).toContain("reading 'rest'")
+    // Frames are joined onto one line: the log line stays queryable by field.
+    expect(out).not.toContain('\n')
+  })
+
+  it('bounds the frame count, so a full stack cannot defeat the queryable-shape rule', () => {
+    const e = new Error('boom')
+    e.stack = ['Error: boom', ...Array.from({ length: 40 }, (_, i) => `    at f${i} (x.js:${i}:1)`)].join('\n')
+    expect(errorStack(e, 3)!.split(' | ')).toHaveLength(4)
+    expect(errorStack(e, 3)).toContain('at f2')
+    expect(errorStack(e, 3)).not.toContain('at f3')
+  })
+
+  it('is undefined when there is nothing to add, so the log shape does not change', () => {
+    expect(errorStack('a string throw')).toBeUndefined()
+    expect(errorStack({ message: 'a PostgrestError' })).toBeUndefined()
+    expect(errorStack(null)).toBeUndefined()
+    const noStack = new Error('x')
+    noStack.stack = undefined
+    expect(errorStack(noStack)).toBeUndefined()
+  })
+
+  it('caps total length', () => {
+    const e = new Error('x')
+    e.stack = 'Error: x\n' + '    at verylongframe (' + 'y'.repeat(5000) + ':1:1)'
+    expect(errorStack(e)!.length).toBeLessThanOrEqual(800)
   })
 })

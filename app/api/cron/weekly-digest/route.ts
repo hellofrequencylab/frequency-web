@@ -24,7 +24,7 @@ import { assembleDigestForProfile, listProfileIdsForDigest } from '@/lib/digest'
 import { rejectUnauthorizedCron } from '@/lib/cron-auth'
 import { withCronHeartbeat } from '@/lib/observability/cron-heartbeat'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { briefError, log } from '@/lib/log'
+import { briefError, errorStack, log } from '@/lib/log'
 
 export const dynamic = 'force-dynamic'
 
@@ -55,9 +55,19 @@ type MarkerClient = {
 }
 
 /** cron_run_markers is not in the generated types yet (migration 20270345000700); reach it through a
- *  narrow untyped handle, the repo convention for not-yet-typed tables (ADR-246). */
+ *  narrow untyped handle, the repo convention for not-yet-typed tables (ADR-246).
+ *
+ *  🔴 `.bind(client)` IS LOAD-BEARING, NOT STYLE (LIVE-053). This returned `client.from` as a bare
+ *  VALUE, so calling `markers()('cron_run_markers')` invoked it with no receiver — and
+ *  SupabaseClient.from reads `this.rest.from`, which threw
+ *  `TypeError: Cannot read properties of undefined (reading 'rest')` on every member who got far
+ *  enough to claim their week. That is the exact error the 2026-09-06 14:00:46Z production run
+ *  logged (candidates 5 / sent 0 / failed 1), and it is the same lost-`this` defect LIVE-053 bound
+ *  at ten other sites — reached here through a shape the sweep and the guard both had to be taught
+ *  to see: a cast of the CLIENT, `(client as T).from`, rather than a cast of the METHOD. */
 function markers(): MarkerClient['from'] {
-  return (createAdminClient() as unknown as MarkerClient).from
+  const client = createAdminClient() as unknown as MarkerClient
+  return client.from.bind(client)
 }
 
 async function handler(req: NextRequest) {
@@ -128,7 +138,15 @@ async function handler(req: NextRequest) {
         sent++
       } catch (err) {
         failed++
-        log.error('cron.weekly_digest.member_failed', { profile_id: profileId, error: briefError(err) })
+        // The stack rides along (LIVE-053): this fail-safe swallowed a lost-`this` TypeError whose
+        // message names no call site, and a message-only line cost a day of diagnosis on
+        // 2026-09-06. `errorStack` is undefined for a non-Error throw, so the shape is unchanged
+        // when there is nothing to add.
+        log.error('cron.weekly_digest.member_failed', {
+          profile_id: profileId,
+          error: briefError(err),
+          stack: errorStack(err),
+        })
       }
     }
   })
