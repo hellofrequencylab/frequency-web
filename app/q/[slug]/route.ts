@@ -360,9 +360,12 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
       // told nothing at all. The outcome now rides to the event page as `?door=<reason>`, where the
       // reasons are checkInEvent's own (`signed_out` / `unavailable` / `window_closed` /
       // `checkin_off` / `not_going` / `pending`) plus `rsvp_refused` (the RSVP write itself was
-      // refused) and `failed` (an action threw). The page does NOT render the flag yet; it reads
-      // `ticket` / `session_id` / `claimed` / `claim` only. Rendering `door` is the page owner's
-      // row. A thrown action is logged at warn and never 500s the door.
+      // refused) and `failed` (an action threw). The page RENDERS the flag as of 2026-09-06
+      // (LIVE-157): `app/(main)/events/[slug]/door-note.ts` maps each token to one member-facing
+      // line and the event page shows it at the top of the RSVP box. This comment said "the page
+      // does NOT render the flag yet" until then, so add a token there in the same change as here
+      // or the door goes back to redirecting in silence. A thrown action is logged at warn and
+      // never 500s the door.
       // A refused RSVP wins over the check-in reason that follows from it (a refused seat reads
       // `not_going` at the door, which is the consequence, not the cause).
       let door: DoorOutcome | null = null

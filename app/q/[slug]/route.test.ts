@@ -69,7 +69,7 @@ vi.mock('@/lib/platform-flags', () => ({ referralsEnabled: async () => true }))
 vi.mock('@/lib/connections/qr-capture', () => ({ captureQrContact: async () => null }))
 vi.mock('@/lib/qr/event-invite', () => ({ makeEventInviteToken: () => 'token' }))
 vi.mock('@/lib/crm/lead-capture', () => ({
-  LEAD_GRAB_COOKIE: 'fq_lead',
+  LEAD_GRAB_COOKIE: 'fq_lead_grab',
   LEAD_GRAB_MAX_AGE: 60,
   encodeLeadGrab: () => '',
   linkMemberToSpaceLead: async () => undefined,

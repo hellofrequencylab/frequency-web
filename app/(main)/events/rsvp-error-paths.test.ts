@@ -45,6 +45,15 @@ const fx = vi.hoisted(() => ({
   promoteFromWaitlist: vi.fn(async () => null as null | Row),
   notifyPromotedSeat: vi.fn(async () => undefined),
   getMyProfileId: vi.fn(async () => ME as string | null),
+  /** Every track() call the action made, in order (LIVE-189). */
+  trackCalls: [] as Array<{ event: string; props: Record<string, unknown>; actor: string | null; key?: string }>,
+  /**
+   * A stand-in for the engagement_events ledger, keyed exactly the way the real one is: an upsert
+   * on `idempotency_key` with `ignoreDuplicates`. This is what makes the exactly-once assertion
+   * below a test of the CONSEQUENCE (one ledger row per person per event) rather than of the call
+   * count, which is allowed to be higher.
+   */
+  ledger: new Map<string, { event: string; props: Record<string, unknown>; actor: string | null }>(),
 }))
 
 vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }))
@@ -137,6 +146,21 @@ vi.mock('@/lib/achievements', () => ({
 vi.mock('@/lib/gems', () => ({ awardGems: fx.awardGems }))
 vi.mock('@/lib/zaps', () => ({ awardZapsForAction: async () => ({ amount: 0 }) }))
 vi.mock('@/lib/engagement/events', () => ({ recordEngagementEvent: async () => ({ recorded: false }) }))
+// track() mirrored onto the fake ledger above: a call with a key already present is dropped, which
+// is precisely what recordEngagementEvent's ignoreDuplicates upsert does with a stable key.
+vi.mock('@/lib/analytics/track', () => ({
+  track: async (
+    event: string,
+    props: Record<string, unknown> = {},
+    actor: string | null = null,
+    opts: { idempotencyKey?: string } = {},
+  ) => {
+    fx.trackCalls.push({ event, props, actor, key: opts.idempotencyKey })
+    // No key means "one row per call", so the default carries a unique suffix like track()'s does.
+    const key = opts.idempotencyKey ?? `${event}:${actor}:${fx.trackCalls.length}`
+    if (!fx.ledger.has(key)) fx.ledger.set(key, { event, props, actor })
+  },
+}))
 vi.mock('@/lib/verification/attendance', () => ({ markVerifiedByAttendance: async () => undefined }))
 vi.mock('@/lib/event-recurrence', () => ({
   propagateAnchorEditsToOccurrences: async () => undefined,
@@ -214,8 +238,15 @@ beforeEach(() => {
   fx.promoteFromWaitlist.mockResolvedValue(null)
   fx.notifyPromotedSeat.mockClear()
   fx.getMyProfileId.mockResolvedValue(ME)
+  fx.trackCalls.length = 0
+  fx.ledger.clear()
   vi.spyOn(console, 'error').mockImplementation(() => {})
 })
+
+/** The ledger rows for one analytics event, after duplicate keys have been absorbed. */
+function ledgerRows(event: string) {
+  return [...fx.ledger.values()].filter((r) => r.event === event)
+}
 
 function expectNoSeatSideEffects() {
   expect(fx.awardGems).not.toHaveBeenCalled()
@@ -407,6 +438,84 @@ describe('L5-21: checkInEvent names the reason it refused', () => {
   it('signed out → reason signed_out', async () => {
     fx.getMyProfileId.mockResolvedValue(null)
     expect(await checkInEvent(EVENT)).toEqual({ ok: false, reason: 'signed_out' })
+  })
+})
+
+// ── LIVE-189: the RSVP conversion reaches the ledger, exactly once per (profile, event) ────────
+//
+// `event.rsvp` is the last step of the `circle_to_rsvp` funnel (lib/analytics/journeys.ts) and was
+// declared `unimplemented` for the registry's whole life because nothing emitted it: an RSVP wrote
+// an `event_rsvps` row and stopped. The step read 0 and meant "not measured", not "nobody went".
+//
+// The risk on the other side of the fix is DOUBLE COUNTING: a member who withdraws and re-RSVPs,
+// double-taps, or gets scanned in at the door on top of an existing seat would otherwise inflate
+// the one conversion the product is judged on. The stable idempotency key is the whole defence,
+// so it is asserted against a ledger that dedupes, not against a call count.
+
+describe('LIVE-189: event.rsvp', () => {
+  it('a confirmed first RSVP records the conversion, keyed on (event, profile)', async () => {
+    state.stored = 'going'
+    await setRsvpStatus(EVENT, 'going', { slug: 'sunrise' })
+    await flush()
+    expect(ledgerRows('event.rsvp')).toEqual([
+      { event: 'event.rsvp', props: { eventId: EVENT }, actor: ME },
+    ])
+    expect(fx.trackCalls[0]?.key).toBe(`event.rsvp:${EVENT}:${ME}`)
+  })
+
+  it('is EXACTLY ONCE across a repeated RSVP: withdraw, re-join, and a second path all collapse', async () => {
+    // 1. First RSVP (insert).
+    state.stored = 'going'
+    await toggleRSVP(EVENT)
+    await flush()
+    // 2. Withdraw, then re-join through the toggle (update, firstTime = false).
+    state.existing = { id: 'rsvp-1', status: 'not_going', approval_status: 'none' }
+    await toggleRSVP(EVENT)
+    await flush()
+    // 3. And again through the other path — the one the QR door calls.
+    state.existing = { id: 'rsvp-1', status: 'maybe', approval_status: 'none' }
+    await setRsvpStatus(EVENT, 'going')
+    await flush()
+
+    // The action emitted every time, which is correct: it never guesses which tap was the first.
+    const emits = fx.trackCalls.filter((c) => c.event === 'event.rsvp')
+    expect(emits.length).toBeGreaterThan(1)
+    // Every emit carried the SAME stable key, so the ledger holds one row and the funnel counts
+    // one person. This is the assertion that would fail if the key ever picked up a timestamp,
+    // a random suffix, or the RSVP row's id.
+    expect(new Set(emits.map((c) => c.key))).toEqual(new Set([`event.rsvp:${EVENT}:${ME}`]))
+    expect(ledgerRows('event.rsvp')).toHaveLength(1)
+  })
+
+  it('a waitlisted seat is not an RSVP conversion', async () => {
+    state.stored = 'waitlist'
+    await setRsvpStatus(EVENT, 'going')
+    await flush()
+    expect(ledgerRows('event.rsvp')).toHaveLength(0)
+  })
+
+  it('a request still waiting on the host is not an RSVP conversion', async () => {
+    state.requiresApproval = true
+    state.stored = 'going'
+    await setRsvpStatus(EVENT, 'going')
+    await flush()
+    expect(fx.sessionWrites[0]?.payload).toMatchObject({ approval_status: 'pending' })
+    expect(ledgerRows('event.rsvp')).toHaveLength(0)
+  })
+
+  it('a refused write records nothing, like every other seat side-effect', async () => {
+    state.writeError = SUSPENDED
+    await setRsvpStatus(EVENT, 'going')
+    await flush()
+    expect(ledgerRows('event.rsvp')).toHaveLength(0)
+  })
+
+  it('stepping back to maybe / not_going never records a conversion', async () => {
+    state.existing = { id: 'rsvp-1', status: 'going', approval_status: 'none' }
+    await setRsvpStatus(EVENT, 'maybe')
+    await setRsvpStatus(EVENT, 'not_going')
+    await flush()
+    expect(ledgerRows('event.rsvp')).toHaveLength(0)
   })
 })
 

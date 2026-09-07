@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { IconLink } from '@/components/ui/icon-button'
 import { ClaimButton } from '@/app/events/claim/[token]/claim-button'
 import { ClaimRequestCta } from './claim-request-cta'
+import { doorNoteFor } from './door-note'
 import { HostRequestCta } from './host-request-cta'
 import { listSpacesThatCanAskToHost, type HostAskSpace } from '../host-transfer-actions'
 import { CalendarDays, MapPin, Check, Ticket, Clock, Zap, Video, Globe, LayoutDashboard, Settings } from 'lucide-react'
@@ -282,16 +283,29 @@ export default async function EventDetailPage({
   searchParams,
 }: {
   params: Promise<{ slug: string }>
-  searchParams: Promise<{ ticket?: string; session_id?: string; claimed?: string; claim?: string }>
+  searchParams: Promise<{
+    ticket?: string
+    session_id?: string
+    claimed?: string
+    claim?: string
+    /** Why the printed-code door could not check the scanner in (app/q/[slug]/route.ts). */
+    door?: string
+  }>
 }) {
   // params, searchParams, and the auth client are mutually independent — resolve
   // them concurrently instead of one-after-another. (createAdminClient is sync.)
   const admin = createAdminClient()
-  const [{ slug }, { ticket, session_id, claimed, claim }, supabase] = await Promise.all([
+  const [{ slug }, sp, supabase] = await Promise.all([
     params,
     searchParams,
     createClient(),
   ])
+  const { ticket, session_id, claimed, claim } = sp
+  // LIVE-157. The QR door has reported its refusal as `?door=<reason>` since SCAN-566 and this
+  // page ignored the parameter, so someone standing at the door with the code was told nothing at
+  // all. `doorNoteFor` turns the token into one member-facing line (./door-note.ts) and answers
+  // null for anything it does not recognise, so a hand-typed value renders nothing.
+  const doorNote = doorNoteFor(sp.door)
 
   const { data: rawEvent } = await admin
     .from('events')
@@ -1328,6 +1342,16 @@ export default async function EventDetailPage({
             <span className="text-body-sm font-medium text-muted">· {priceLabel} ticket</span>
           )}
         </div>
+
+        {/* The door's answer (LIVE-157). Sits at the top of the RSVP box, directly above whichever
+            control this viewer gets, because the sentence is only useful next to the thing they
+            can do about it. Rendered for every branch (member, guest, tickets mode) since the
+            scanner could be any of them, and self-hiding when there is no `?door=` to explain. */}
+        {doorNote && (
+          <p role="status" className="rounded-card bg-warning-bg px-3 py-2 text-body-sm text-warning">
+            {doorNote}
+          </p>
+        )}
 
         {/* The when-line + calendar links moved OUT of this box into the Event Details card
             (the `event-when-where` module) — owner spec. Only the online join link stays here:
