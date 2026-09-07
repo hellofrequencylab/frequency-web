@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { ImagePlus, X } from 'lucide-react'
 import { LoomPicker } from '@/components/loom/loom-picker'
-import { assetRefUrl, type AssetValue } from '@/lib/library/asset-ref'
+import { assetRefUrl, assetValueFromPick, type AssetValue } from '@/lib/library/asset-ref'
 import { safeImageSrc } from '@/lib/safe-image-src'
 
 // The `<img src>` guard is NOT written here. Every src in the product whose value did not come from
@@ -23,7 +23,12 @@ import { safeImageSrc } from '@/lib/safe-image-src'
 // operator clicks and the Loom opens, where they browse their library or upload into it.
 //
 // Compact by design — the block inspector rail is ~300px wide, so this is a small preview tile plus text
-// controls, not a full dropzone. Controlled: the parent owns the URL and the save.
+// controls, not a full dropzone. Controlled: the parent owns the value and the save.
+//
+// A pick stores the REFERENCE, not just its URL (ADR-1253): the Loom hands back `{ url, assetId }` for a
+// real library row, and the value stored is `{ assetId, url }` so a later edit of that asset re-points every
+// document referencing it. sanitizeBlockContent keeps the ref whole (ADR-1245) and every renderer reads it
+// through safeImageUrl, so a legacy URL string and a ref render identically.
 //
 // `scopeKey` locks the Loom to the library being edited (a Space, by id or slug — so a pick FILES INTO that
 // Space's own library and a teammate can reuse it). It is UX plumbing only: loomScope / loomImages /
@@ -43,8 +48,10 @@ export function LoomImageField({
   value: AssetValue
   /** The Loom library to open in: a Space id or slug. Omit for a surface with no Space (the full picker). */
   scopeKey?: string
-  /** The chosen image URL, or undefined when cleared (the panel deletes an empty key). */
-  onChange: (value: string | undefined) => void
+  /** The chosen image VALUE, or undefined when cleared (the panel deletes an empty key). A pick that
+   *  carries a library row stores the AssetRef ({ assetId, url }, ADR-1253); a pick with no row (a house
+   *  site icon) stores the bare URL, which every reader still accepts. */
+  onChange: (value: AssetValue | undefined) => void
 }) {
   const [open, setOpen] = useState(false)
   const lower = label.toLowerCase()
@@ -94,7 +101,7 @@ export function LoomImageField({
       <LoomPicker
         open={open}
         onClose={() => setOpen(false)}
-        onSelect={(url) => onChange(url)}
+        onSelectAsset={(pick) => onChange(assetValueFromPick(pick))}
         title={`Choose ${lower}`}
         scopeKey={scopeKey}
         kinds={['image']}

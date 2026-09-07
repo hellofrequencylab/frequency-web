@@ -59,6 +59,22 @@ export function assetRefId(value: unknown): string | null {
   return isAssetRef(value) ? value.assetId : null
 }
 
+/** What a picker hands back for one chosen asset: the public URL, plus the library row's id when the
+ *  choice HAS a row (a house site icon does not). Declared structurally so this pure module never
+ *  imports the picker component; `LoomAssetPick` is assignable to it. */
+export type AssetPick = { url: string; assetId?: string; alt?: string | null }
+
+/** The value a picker consumer STORES for one pick (ADR-1253): the reference when the pick carries an
+ *  asset id, otherwise the bare URL every reader already accepts. The ONE mapping, so a control cannot
+ *  half-adopt the seam by keeping the url and dropping the id.
+ *
+ *  `alt` is deliberately NOT folded into the ref here. On both block systems a photo's alt is its own
+ *  authored field beside the image (the operator writes it in the popup / rail and the renderer reads
+ *  it there), so copying the asset's alt into the value would give one photo two alts that drift. */
+export function assetValueFromPick(pick: AssetPick): AssetValue {
+  return pick.assetId ? { assetId: pick.assetId, url: pick.url } : pick.url
+}
+
 // A React element must never be walked (its props are not ours) — same guard the
 // BlockRender walk uses.
 function isReactElement(value: object): boolean {
