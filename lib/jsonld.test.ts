@@ -543,18 +543,20 @@ describe('spaceSchema', () => {
     expect(spaceSchema({ slug: 's', type: 'mystery', name: 'N' })['@type']).toBe('Organization')
   })
 
-  it('leads image with the operator logo, then the per-space OG card, then the site image', () => {
+  // ⚠️ THESE TWO TESTS USED TO PIN THE PER-SPACE OG CARD in the middle of the array, and that
+  // URL was a 404 (LIVE-205): the card lives under app/(main)/, so Next serves it at
+  // `/spaces/<slug>/opengraph-image-tt3pwa` and never at the bare path. The tests were asserting
+  // the defect, which is why nothing caught it for as long as it was live. They now pin the
+  // corrected ordering. The card is not replaced by a hardcoded hash — the suffix is Next's to
+  // derive and would drift; the SHARE card is still per-Space via the metadata API.
+  it('leads image with the operator logo, then the site image', () => {
     const result = spaceSchema({ slug: 'sp', type: 'business', name: 'N', logoUrl: 'https://cdn/l.png' })
-    expect(result.image).toEqual([
-      'https://cdn/l.png',
-      `${SITE_URL}/spaces/sp/opengraph-image`,
-      `${SITE_URL}/opengraph-image`,
-    ])
+    expect(result.image).toEqual(['https://cdn/l.png', `${SITE_URL}/opengraph-image`])
   })
 
-  it('falls back to the OG card + site image when no logo, and includes tagline as description', () => {
+  it('falls back to the site image when no logo, and includes tagline as description', () => {
     const result = spaceSchema({ slug: 'sp', type: 'business', name: 'N', tagline: 'Move well, locally.' })
-    expect(result.image).toEqual([`${SITE_URL}/spaces/sp/opengraph-image`, `${SITE_URL}/opengraph-image`])
+    expect(result.image).toEqual([`${SITE_URL}/opengraph-image`])
     expect(result).toHaveProperty('description', 'Move well, locally.')
   })
 
@@ -799,5 +801,61 @@ describe('articleSchema — image + datePublished (LIVE-183)', () => {
     // not "the builder returned nothing useful".
     expect(node.headline).toBe(base.title)
     expect(node.url).toBe(`${SITE_URL}${base.path}`)
+  })
+})
+
+// ── LIVE-205 ────────────────────────────────────────────────────────────────────────────────
+//
+// A metadata image route whose parent path contains a ROUTE GROUP is served by Next at a
+// hash-suffixed URL (`getMetadataRouteSuffix` hashes the parent path). Both per-entity cards sit
+// under app/(main)/, so `/events/<slug>/opengraph-image` and `/spaces/<slug>/opengraph-image` are
+// 404s — proven by reading the built artifact, which carries `opengraph-image-lyffkg` and
+// `opengraph-image-tt3pwa`.
+//
+// This guard measures the CONSEQUENCE rather than the shape: no schema node may name a
+// per-entity OG card by a path this repo wrote itself, whatever the entity. Hardcoding the hash
+// would satisfy a naive "does it look right" check and still rot, because the suffix is derived
+// from the parent path and moves whenever a route group does. The share cards are unaffected —
+// those pages leave openGraph.images unset so Next injects the suffixed URL itself.
+describe('LIVE-205 — no schema node hand-writes a per-entity OG card URL', () => {
+  const PER_ENTITY_CARD = /\/(events|spaces|listings|people|journeys|circles|practices|partners)\/[^"'\s]+\/(opengraph|twitter)-image/
+
+  it('eventSchema names no per-event card', () => {
+    const json = JSON.stringify(
+      eventSchema({
+        id: 'e1',
+        slug: 'a-real-event',
+        title: 'An event',
+        starts_at: '2027-01-01T18:00:00Z',
+        time_zone: 'UTC',
+      } as Parameters<typeof eventSchema>[0]),
+    )
+    expect(json, 'a hand-written per-event OG path is a 404 in live structured data').not.toMatch(
+      PER_ENTITY_CARD,
+    )
+    // POSITIVE CONTROL: the node still carries an image, so this is not passing by emptiness.
+    expect(json).toContain('/opengraph-image')
+  })
+
+  it('spaceSchema names no per-Space card, with or without an operator logo', () => {
+    for (const logoUrl of [undefined, 'https://cdn.example.com/logo.png']) {
+      const json = JSON.stringify(
+        spaceSchema({ slug: 'a-real-space', name: 'A Space', logoUrl } as Parameters<
+          typeof spaceSchema
+        >[0]),
+      )
+      expect(json, `per-Space OG path leaked (logoUrl=${String(logoUrl)})`).not.toMatch(
+        PER_ENTITY_CARD,
+      )
+      expect(json).toContain('/opengraph-image')
+    }
+  })
+
+  it('the guard would actually catch a regression', () => {
+    // The detector must fire on the exact strings that were live until 2026-09-07.
+    expect(`https://x.test/events/some-slug/opengraph-image`).toMatch(PER_ENTITY_CARD)
+    expect(`https://x.test/spaces/some-slug/opengraph-image`).toMatch(PER_ENTITY_CARD)
+    // …and must NOT fire on the root card, which is a static file at a path with no route group.
+    expect(`https://x.test/opengraph-image`).not.toMatch(PER_ENTITY_CARD)
   })
 })
