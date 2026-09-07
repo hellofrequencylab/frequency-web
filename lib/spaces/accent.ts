@@ -14,9 +14,22 @@
 // canvas/surface tokens stay neutral, D4).
 //
 // A TOKEN accent resolves to `var(<token>)` references (tracking the live palette + dark mode); a HEX
-// accent derives its -hover / -strong / -bg / text-on shades from the one hex with `color-mix` (so the
-// derived shades stay theme-tolerant — the -bg is a translucent tint that sits on any surface) plus a
-// luminance-picked readable text color.
+// accent derives its -hover / -bg shades from the one hex with `color-mix` (the -bg is a translucent
+// tint that sits on any surface) plus a luminance-picked readable text color.
+//
+// 🔴 THE -strong SLOT IS DERIVED PER THEME, BY MEASUREMENT (LIVE-211, ADR-1224). `-strong` is the
+// slot TEXT reads — PageHeading's eyebrow, the active tab, the type badge, every in-body
+// `text-primary-strong` — so it sits on the page ground and has to clear WCAG AA (4.5:1) there.
+// Until 2026-09-07 the hex path emitted ONE value for both themes, `color-mix(in srgb, hex 72%,
+// black)`, and that constant cannot be right: on the light ground you darken to gain contrast, on the
+// dark ground darkening moves the text TOWARD the ground. A Space's #1FB6C5 brand measured 4.24 on
+// light and 4.14 on dark — failing both at once — and its two fixes point in opposite directions (68%
+// toward black on light, 76% on dark, i.e. lighter). So the hex path now builds two values, each the
+// SMALLEST shift of the accent (toward black for light, toward white for dark) that measures >= 4.5:1
+// against the hardest ground of that theme, and emits them through `light-dark()`, which the browser
+// resolves from the `color-scheme` the mode already sets (`:root` light, `.dark` dark, and every skin
+// block). The luminance helper that picks text-on-accent does the measuring; the built-in FAMILIES
+// were contrast-checked by hand, and this closes the one path that was never held to the same rule.
 //
 // Why a registry (tokens) and not a blind `--color-primary: var(<accent>)`: a complete remap needs the
 // accent's -hover / -strong / -bg / text-on variants too (the primary BUTTON reads -hover and
@@ -38,28 +51,118 @@ export function isValidAccent(value: string): boolean {
   return TOKEN_ALLOWLIST.has(value) || HEX_ACCENT.test(value)
 }
 
-/** Readable text color to sit ON a hex accent: white on a dark accent, near-black ink on a light one,
- *  by sRGB relative luminance (the standard 0.2126/0.7152/0.0722 weighting). Returns a hex (accent DATA,
- *  applied via inline style — not a component-styling token). */
-function readableTextOn(hex: string): string {
-  const r = parseInt(hex.slice(1, 3), 16) / 255
-  const g = parseInt(hex.slice(3, 5), 16) / 255
-  const b = parseInt(hex.slice(5, 7), 16) / 255
-  const lin = (c: number) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4)
-  const luminance = 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b)
-  // 0.179 is the WCAG crossover where black and white text carry EQUAL contrast against the accent
-  // ((L+0.05)/0.05 = 1.05/(L+0.05)); above it dark ink wins, below it white wins.
-  return luminance > 0.179 ? '#141414' : '#ffffff'
+type Rgb = readonly [number, number, number]
+
+function parseHex(hex: string): Rgb {
+  return [parseInt(hex.slice(1, 3), 16), parseInt(hex.slice(3, 5), 16), parseInt(hex.slice(5, 7), 16)]
 }
 
-/** Build the `--color-primary*` override for a HEX accent: the hex itself, two darker shades via
- *  `color-mix` (hover/strong), a translucent tint (bg, theme-tolerant), and a luminance-picked text
- *  color. The hex is pre-validated by the caller (accentVars), so no untrusted string is interpolated. */
+function toHex([r, g, b]: Rgb): string {
+  return '#' + [r, g, b].map((c) => c.toString(16).padStart(2, '0')).join('')
+}
+
+/** sRGB relative luminance (the standard 0.2126/0.7152/0.0722 weighting over linearised channels). */
+function luminanceOf([r, g, b]: Rgb): number {
+  const lin = (c: number) => {
+    const s = c / 255
+    return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4
+  }
+  return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b)
+}
+
+/** WCAG contrast ratio between two colours, (L1 + 0.05) / (L2 + 0.05) with the lighter on top. */
+export function contrastRatio(a: string, b: string): number {
+  const la = luminanceOf(parseHex(a))
+  const lb = luminanceOf(parseHex(b))
+  const [hi, lo] = la >= lb ? [la, lb] : [lb, la]
+  return (hi + 0.05) / (lo + 0.05)
+}
+
+/** `color-mix(in srgb, <hex> <100-pct>%, <toward>)` computed here, so the result can be MEASURED
+ *  before it ships. Per-channel linear interpolation in sRGB, rounded to the 8-bit channel the
+ *  browser would emit, is exactly what that CSS function does for two opaque sRGB colours. */
+function mixToward(hex: string, toward: Rgb, pct: number): string {
+  const from = parseHex(hex)
+  const t = pct / 100
+  return toHex([0, 1, 2].map((i) => Math.round(from[i]! * (1 - t) + toward[i]! * t)) as unknown as Rgb)
+}
+
+/** Readable text color to sit ON a hex accent: white on a dark accent, near-black ink on a light one,
+ *  by sRGB relative luminance. Returns a hex (accent DATA, applied via inline style — not a
+ *  component-styling token). */
+function readableTextOn(hex: string): string {
+  // 0.179 is the WCAG crossover where black and white text carry EQUAL contrast against the accent
+  // ((L+0.05)/0.05 = 1.05/(L+0.05)); above it dark ink wins, below it white wins.
+  return luminanceOf(parseHex(hex)) > 0.179 ? '#141414' : '#ffffff'
+}
+
+/** WCAG AA for normal text. `-strong` is a TEXT slot (the eyebrow, the active tab, the badge), so
+ *  this is the floor, not the large-text 3:1. */
+export const STRONG_CONTRAST_FLOOR = 4.5
+// A hair above the floor so a checker that rounds to two decimals (axe reports "4.23", "4.14") can
+// never read a value this module accepted as 4.49.
+const STRONG_CONTRAST_TARGET = STRONG_CONTRAST_FLOOR + 0.02
+
+/** The page grounds `text-primary-strong` can sit on, per mode: canvas, surface and surface-elevated
+ *  for the base DAWN palette and for the midnight skin (app/globals.css `:root` / `.dark` /
+ *  `[data-skin="midnight"]` / `.dark [data-skin="midnight"]`). The builder measures against the
+ *  HARDEST of each list — the darkest light ground, the lightest dark ground — so a value that clears
+ *  it clears every ground a themed Space can render on. lib/spaces/accent.test.ts pins these to the
+ *  live token values in globals.css, so a palette edit that moves a ground fails a test rather than
+ *  silently un-measuring this. */
+export const LIGHT_GROUNDS: readonly string[] = ['#FAF8F4', '#FFFFFF', '#F5F2EC', '#EEF1F6', '#F4F6FB']
+export const DARK_GROUNDS: readonly string[] = ['#17120B', '#211A10', '#2B2415', '#0C1018', '#161C28', '#1F2736']
+
+const BLACK: Rgb = [0, 0, 0]
+const WHITE: Rgb = [255, 255, 255]
+
+/** The hardest ground of a mode for text: the one whose luminance is CLOSEST to the direction the
+ *  text has to move away from (the darkest light ground, the lightest dark ground). */
+function hardestGround(grounds: readonly string[], pick: 'darkest' | 'lightest'): string {
+  return grounds.reduce((best, g) => {
+    const lb = luminanceOf(parseHex(best))
+    const lg = luminanceOf(parseHex(g))
+    return (pick === 'darkest' ? lg < lb : lg > lb) ? g : best
+  })
+}
+
+/** The smallest shift of `hex` toward `toward` (0..100%, in whole percents) whose result measures at
+ *  least the target contrast against `ground`. Contrast against a ground grows monotonically as the
+ *  colour moves away from it, so the first passing step is the least-altered readable shade; an accent
+ *  that already reads needs no shift at all (the dark DAWN palette does the same: its `-strong` IS its
+ *  primary). Black and white both clear 4.5:1 against every ground in the lists, so the scan always
+ *  terminates before 100%. */
+function readableShade(hex: string, toward: Rgb, ground: string): string {
+  for (let pct = 0; pct <= 100; pct++) {
+    const candidate = mixToward(hex, toward, pct)
+    if (contrastRatio(candidate, ground) >= STRONG_CONTRAST_TARGET) return candidate
+  }
+  return toHex(toward)
+}
+
+/** The two `-strong` values a hex accent needs — the light-ground one and the dark-ground one — each
+ *  measured rather than assumed. Exported so the test can assert both halves against every ground. */
+export function strongShades(hex: string): { light: string; dark: string } {
+  return {
+    light: readableShade(hex, BLACK, hardestGround(LIGHT_GROUNDS, 'darkest')),
+    dark: readableShade(hex, WHITE, hardestGround(DARK_GROUNDS, 'lightest')),
+  }
+}
+
+/** Build the `--color-primary*` override for a HEX accent: the hex itself, a darker hover via
+ *  `color-mix`, a per-theme MEASURED `-strong` pair through `light-dark()`, a translucent tint (bg,
+ *  theme-tolerant), and a luminance-picked text color. The hex is pre-validated by the caller
+ *  (accentVars), so no untrusted string is interpolated.
+ *
+ *  FAIL-SAFE for a browser without `light-dark()` (pre-2024): an inline declaration it cannot parse
+ *  is dropped, so `--color-primary-strong` keeps inheriting the host token — legible, un-branded —
+ *  rather than rendering a value that fails contrast. */
 function hexAccentVars(hex: string): AccentVars {
+  const strong = strongShades(hex)
   return {
     '--color-primary': hex,
     '--color-primary-hover': `color-mix(in srgb, ${hex} 88%, black)`,
-    '--color-primary-strong': `color-mix(in srgb, ${hex} 72%, black)`,
+    '--color-primary-strong': `light-dark(${strong.light}, ${strong.dark})`,
     '--color-primary-bg': `color-mix(in srgb, ${hex} 14%, transparent)`,
     '--color-text-on-primary': readableTextOn(hex),
   }
