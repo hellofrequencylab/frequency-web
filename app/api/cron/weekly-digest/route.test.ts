@@ -50,28 +50,44 @@ vi.mock('@/lib/email', () => ({
   },
 }))
 vi.mock('@/lib/supabase/admin', () => ({
-  createAdminClient: () => ({
-    from: (table: string) => {
-      if (table !== 'cron_run_markers') throw new Error(`unexpected table ${table}`)
-      return {
-        insert: ({ key }: { key: string }) => {
-          state.claimInserts.push(key)
-          if (state.claimed.has(key)) {
-            return Promise.resolve({ error: { code: '23505', message: 'duplicate key value violates unique constraint' } })
-          }
-          state.claimed.add(key)
-          return Promise.resolve({ error: null })
-        },
-        delete: () => ({
-          eq: (_col: string, key: string) => {
-            state.releases.push(key)
-            state.claimed.delete(key)
+  // ⚠️ `from` is a METHOD that reads `this.rest`, exactly as the real SupabaseClient does
+  // (@supabase/supabase-js dist/index.mjs: `from(relation) { return this.rest.from(relation) }`).
+  // LIVE-053 (ADR-1231): route.ts once returned `client.from` as a bare value, and
+  // `markers()('cron_run_markers')` then invoked it with no receiver, throwing
+  // `TypeError: Cannot read properties of undefined (reading 'rest')` for a real member on
+  // 2026-09-06. The arrow-function mock this replaced had no `this` to lose, so this file passed
+  // 8/8 with the bind deleted (measured 2026-09-07). Now the bind is load-bearing here too, and the
+  // control below proves the mock can lose `this` at all.
+  createAdminClient: () => {
+    const rest = {
+      from: (table: string) => {
+        if (table !== 'cron_run_markers') throw new Error(`unexpected table ${table}`)
+        return {
+          insert: ({ key }: { key: string }) => {
+            state.claimInserts.push(key)
+            if (state.claimed.has(key)) {
+              return Promise.resolve({ error: { code: '23505', message: 'duplicate key value violates unique constraint' } })
+            }
+            state.claimed.add(key)
             return Promise.resolve({ error: null })
           },
-        }),
-      }
-    },
-  }),
+          delete: () => ({
+            eq: (_col: string, key: string) => {
+              state.releases.push(key)
+              state.claimed.delete(key)
+              return Promise.resolve({ error: null })
+            },
+          }),
+        }
+      },
+    }
+    return {
+      rest,
+      from(this: { rest: typeof rest }, table: string) {
+        return this.rest.from(table)
+      },
+    }
+  },
 }))
 vi.mock('@/lib/cron-auth', () => ({ rejectUnauthorizedCron: () => null }))
 vi.mock('@/lib/observability/cron-heartbeat', () => ({
@@ -174,6 +190,23 @@ describe('GET /api/cron/weekly-digest, per-member fail-safe', () => {
     const line = state.logged.error.find((l) => l.event === 'cron.weekly_digest.member_failed')
     expect(typeof line?.fields?.stack).toBe('string')
     expect(String(line?.fields?.stack)).toContain('assemble broke for p2')
+  })
+
+  it('claims through a BOUND from: the mock loses `this` like the real client, so the bind is load-bearing (LIVE-053)', async () => {
+    // POSITIVE CONTROL for the mock itself. If a future edit turns `from` back into an arrow, this
+    // stops throwing, and the tests below would pass again with the bind deleted from route.ts,
+    // which is exactly the blind spot ADR-1231 closed.
+    const { createAdminClient } = await import('@/lib/supabase/admin')
+    const client = createAdminClient() as unknown as { from: (table: string) => unknown }
+    const detached = client.from
+    expect(() => detached('cron_run_markers')).toThrow("Cannot read properties of undefined (reading 'rest')")
+    expect(() => client.from('cron_run_markers')).not.toThrow()
+
+    // The route reaches the same method through `client.from.bind(client)`, so the claim lands.
+    state.profiles = ['p1']
+    const res = await GET(req)
+    expect(await res.json()).toMatchObject({ ok: true, sent: 1, failed: 0 })
+    expect(state.claimInserts).toEqual(['weekly-digest:p1:2026-W36'])
   })
 
   it('releases the claim when the send throws, so the next run retries that member only', async () => {
