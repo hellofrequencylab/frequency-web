@@ -6,11 +6,13 @@ import { Check, Plus, Pencil, X } from 'lucide-react'
 import {
   updateEvent,
   cancelEvent,
+  cancelEventSeriesAsEditor,
   reinstateEvent,
   createTicketTier,
   updateTicketTier,
   setTicketTierActive,
 } from '../actions'
+import { describeSeriesCancel } from '../events-client'
 import { DangerModal } from '@/components/admin/danger-modal'
 import { Select } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -78,11 +80,14 @@ export function EventEditClient({
   event,
   tiers,
   spaceAccess,
+  series,
 }: {
   event: EventData
   tiers: TierEditRow[]
   /** Hosting-space membership context (ADR-823); null = no hosting space, control hidden. */
   spaceAccess?: SpaceAccessContext | null
+  /** The event's series, for the "cancel every remaining date" control (LIVE-206). */
+  series?: { recurring: boolean; cancellable: number; truncated: boolean }
 }) {
   const router = useRouter()
   const [saved, setSaved] = useState(false)
@@ -90,6 +95,19 @@ export function EventEditClient({
   const [isPending, startTransition] = useTransition()
   const [isCancelPending, startCancelTransition] = useTransition()
   const [confirmCancelOpen, setConfirmCancelOpen] = useState(false)
+  const [confirmSeriesOpen, setConfirmSeriesOpen] = useState(false)
+  const [seriesNote, setSeriesNote] = useState<string | null>(null)
+
+  function commitSeriesCancel() {
+    startCancelTransition(async () => {
+      try {
+        setSeriesNote(describeSeriesCancel(await cancelEventSeriesAsEditor(event.id)))
+        router.refresh()
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Could not cancel the series.')
+      }
+    })
+  }
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -265,6 +283,40 @@ export function EventEditClient({
           confirmLabel="Cancel event"
           onConfirm={commitCancelToggle}
         />
+        {/* The whole series (LIVE-206): offered only when there are at least two dates still to come,
+            since one date is the button above. Mirrors the host's danger zone control. */}
+        {series?.recurring && series.cancellable >= 2 && !event.is_cancelled && (
+          <div className="mt-4 flex items-center justify-between gap-4 border-t border-border pt-4">
+            <div>
+              <p className="text-body-sm font-medium text-text">This event repeats.</p>
+              <p className="text-meta text-subtle mt-0.5">
+                Takes all {series.cancellable} dates still to come off the calendar in one go, and refunds every
+                ticket on them.{series.truncated ? ' The series is long; you may need to run it twice.' : ''}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setConfirmSeriesOpen(true)}
+              disabled={isCancelPending}
+              className="shrink-0 rounded-lg border border-danger px-4 py-2 text-body-sm font-semibold text-danger transition-colors hover:bg-danger-bg disabled:opacity-50"
+            >
+              Cancel {series.cancellable} remaining dates
+            </button>
+            <DangerModal
+              open={confirmSeriesOpen}
+              onClose={() => setConfirmSeriesOpen(false)}
+              title={`Cancel all ${series.cancellable} dates and refund their tickets?`}
+              body="Every date still to come is cancelled and its tickets refunded. Dates that have already happened are left alone. Each date can be reinstated afterward, one at a time."
+              confirmLabel="Cancel the series"
+              onConfirm={commitSeriesCancel}
+            />
+          </div>
+        )}
+        {seriesNote && (
+          <p role="status" className="mt-3 text-meta text-subtle">
+            {seriesNote}
+          </p>
+        )}
       </div>
 
       {/* Ticket tiers (EVENTS-SYSTEM §2.2) */}

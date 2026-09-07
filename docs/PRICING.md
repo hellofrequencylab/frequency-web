@@ -389,7 +389,9 @@ creates/updates one Stripe **Product per tier** (Crew, Supporter, Practitioner, 
 Organization, White-label; **Partner** is comped and never carries a checkout Price) and a
 **monthly + annual Price** from the admin `pricing_settings` values,
 writing the resolved ids into `pricing_stripe_prices` (`key` → `stripe_product_id` / `stripe_price_id`
-/ `archived`). It is **admin-triggered only** (the `/admin/pricing` "Sync products to Stripe" action),
+/ `archived`, plus the **provenance** of the ids — `stripe_account_id` and `livemode` — stamped from the
+key in force at sync time; `resolveStripePriceId` refuses a row whose recorded provenance contradicts the
+key in force, so a rotated key reads as "not synced" rather than as Stripe being down, HYG-049 / ADR-1227). It is **admin-triggered only** (the `/admin/pricing` "Sync products to Stripe" action),
 **never** on import/boot, and a clear no-op when env is missing. Idempotent: Products are looked up by
 a stable metadata key (`frequency_pricing_key`); Prices (immutable in Stripe) are reused when amount +
 interval match, else a new Price is created. Founder prices are separate Price objects stored

@@ -10,6 +10,7 @@ import { isError, type ActionResult } from '@/lib/action-result'
 import { StatusChip } from '@/components/admin/status'
 import { EmptyState } from '@/components/ui/empty-state'
 import type { AdminEvent } from './load-events'
+import { isSeriesMember } from '@/lib/events/series'
 
 // Operator "Featured" star — optimistic toggle around setEventFeaturedAction; reverts on a
 // failed write (mirrors the content suite's FeatureStar).
@@ -138,7 +139,7 @@ function EventRow({ event }: { event: AdminEvent }) {
       >
         <Pencil className="h-3.5 w-3.5" />
       </Link>
-      <CancelToggle id={event.id} isCancelled={event.is_cancelled ?? false} />
+      <CancelToggle id={event.id} isCancelled={event.is_cancelled ?? false} isSeries={isSeriesMember(event)} />
     </div>
   )
 }

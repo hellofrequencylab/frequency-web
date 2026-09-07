@@ -1,4 +1,9 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { collapseSeriesRows, seriesFetchLimit, seriesUpcomingFloor, TEASER_CARDS_PER_SERIES } from '@/lib/events/series'
+import { dayInZone, HOME_TZ } from '@/lib/time/zone'
+
+/** How many upcoming events the splash strip shows. */
+const LIVE_EVENT_SLOTS = 3
 import type { LiveData, LivePost, LiveEvent } from '@/components/marketing/blocks'
 import type { LivePricing } from './live-pricing'
 
@@ -67,7 +72,9 @@ export async function getLiveData(supabase: SupabaseClient): Promise<LiveData> {
       settle<PublicPostRow[]>(supabase.rpc('public_featured_posts', { _limit: 6 })),
       settle<PublicPostRow[]>(supabase.rpc('public_posts', { _limit: 3 })),
       settle<number>(supabase.rpc('public_member_count')),
-      settle<LiveEvent[]>(supabase.rpc('public_events', { _limit: 3 })),
+      // Over-fetched and folded below: the strip shows three GATHERINGS, not three dates of one
+      // weekly class, and its "Events soon" figure counts the same way (LIVE-206).
+      settle<LiveEvent[]>(supabase.rpc('public_events', { _limit: seriesFetchLimit(LIVE_EVENT_SLOTS) })),
       settle<number>(supabase.rpc('public_active_circle_count')),
       // getLivePricing already swallows its own failures and returns {}, so there is no error to
       // observe here. The catch only covers it rejecting outright, which would otherwise take the
@@ -87,7 +94,10 @@ export async function getLiveData(supabase: SupabaseClient): Promise<LiveData> {
     pricing,
     memberCount: memberCountRead.data ?? 0,
     circleCount: circleCountRead.data ?? 0,
-    upcomingEvents: eventsRead.data ?? [],
+    upcomingEvents: collapseSeriesRows(eventsRead.data ?? [], {
+      upcomingFrom: seriesUpcomingFloor(dayInZone(new Date(), HOME_TZ)),
+      perSeries: TEASER_CARDS_PER_SERIES,
+    }).slice(0, LIVE_EVENT_SLOTS),
     posts,
     postsCurated,
     status: {

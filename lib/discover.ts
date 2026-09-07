@@ -24,6 +24,8 @@
 // we cast to the explicit row shapes below.
 
 import { createPublicClient } from '@/lib/supabase/public'
+import { collapseSeriesRows, seriesFetchLimit, seriesUpcomingFloor, TEASER_CARDS_PER_SERIES } from '@/lib/events/series'
+import { dayInZone, HOME_TZ } from '@/lib/time/zone'
 
 // ── Row shapes (mirror the RPC RETURNS TABLE columns) ─────────────────────────
 
@@ -39,6 +41,10 @@ export type PublicEvent = {
   circle_name: string | null
   /** Ticket price in cents; null/0 = free (drives the JSON-LD `offers` block). */
   price_cents: number | null
+  /** The series columns (LIVE-206, migration 20270345002100). Absent from a database ahead of that
+   *  migration, in which case seriesKey() falls back to the row id and the fold is a no-op. */
+  parent_event_id?: string | null
+  recurrence_type?: string | null
 }
 
 export type PublicCircle = {
@@ -242,10 +248,18 @@ async function detailRead<T>(
 
 // ── Events ────────────────────────────────────────────────────────────────────
 
+/** Upcoming public events, ONE per series (LIVE-206). The RPC returns every date; a weekly class
+ *  with nine dates ahead is one gathering on a discovery page, and `events.length` on the discover
+ *  index pages and the per-city buckets is a count of gatherings for the same reason every other
+ *  count site folds (LIVE-198). Over-fetches because the fold spends the limit on rows it discards,
+ *  and the RPC caps its own read at 200. */
 export async function getPublicEvents(limit = 50): Promise<PublicEvent[]> {
   const supabase = createPublicClient()
-  const { rows } = await listRead<PublicEvent>('public_events', () => supabase.rpc('public_events', { _limit: limit }))
-  return rows
+  const { rows } = await listRead<PublicEvent>('public_events', () =>
+    supabase.rpc('public_events', { _limit: seriesFetchLimit(limit) }),
+  )
+  const floor = seriesUpcomingFloor(dayInZone(new Date(), HOME_TZ))
+  return collapseSeriesRows(rows, { upcomingFrom: floor, perSeries: TEASER_CARDS_PER_SERIES }).slice(0, limit)
 }
 
 export async function getPublicEventBySlug(slug: string): Promise<PublicEvent | null> {

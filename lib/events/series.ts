@@ -81,6 +81,13 @@ export function isSeriesAnchor(row: SeriesRow): boolean {
   return row.parent_event_id == null && isSeriesCadence(row.recurrence_type)
 }
 
+/** Does this row belong to a repeating event at all — as its anchor or as one of its dates? Pure,
+ *  so a client component can ask it (the admin events list offers "Cancel series" on such rows,
+ *  LIVE-206) without reaching the server-only loader that read the row. */
+export function isSeriesMember(row: SeriesFields): boolean {
+  return row.parent_event_id != null || isSeriesCadence(row.recurrence_type)
+}
+
 /** One date in a series, as a card or rail renders it. ONE declaration in the repo. */
 export interface SeriesDate {
   id: string

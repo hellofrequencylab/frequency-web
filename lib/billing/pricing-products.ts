@@ -440,6 +440,9 @@ export async function syncPricingCatalogToStripe(changedBy?: string | null): Pro
           stripe_price_id: row.stripe_price_id,
           archived: true,
           changedBy,
+          // Archiving re-saves ids this sync did not mint; keep whatever provenance they carry
+          // rather than stamping them as the current key's (HYG-049).
+          provenance: { stripe_account_id: row.stripe_account_id, livemode: row.livemode },
         })
       }
     }
