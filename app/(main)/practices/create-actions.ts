@@ -15,6 +15,7 @@ import { atLeastRole } from '@/lib/core/roles'
 import { canCreate } from '@/lib/core/load-capabilities'
 import { crewCreateUpsell } from '@/lib/core/beta-notices'
 import { ok, fail, type ActionResult } from '@/lib/action-result'
+import { proposeAndConfirmCreate } from '@/lib/ai/vera/create-entity'
 import type { MovementConfig } from '@/lib/movement'
 import {
   createPractice,
@@ -110,14 +111,36 @@ export async function createPracticeFromSparkAction(input: {
   // receive half-built rows at the moment of creation, before the author had written a guide
   // or set a timer. Submitting for review is now the author's explicit act (the builder's
   // publish section → submitPracticeForReviewAction). Host+/staff stay live at birth.
-  const practice = await createPractice({
-    title,
-    description: input.description?.trim() || null,
-    createdBy: profileId,
-    isPublic: autoApprove,
-    status: autoApprove ? 'approved' : 'draft',
+  //
+  // THE GOVERNED WRITE (ADR-988, ADR-1249): the author reviewed the identity and committed it,
+  // so one call proposes, claims and commits through the same writer, and the audit row is
+  // written. The review-status policy above stays here, exactly where ADR-998 says it lives.
+  const description = input.description?.trim() || null
+  const governed = await proposeAndConfirmCreate({
+    entity: 'practice',
+    draft: {
+      title,
+      description: description ?? '',
+      summary: input.summary?.trim() ?? '',
+      body: input.body?.trim() ?? '',
+      cadence: input.cadence?.trim() ?? '',
+      duration_min: input.durationMin ?? null,
+    },
+    rationale: 'Practice builder, spark road: the author reviewed the identity and committed it.',
+    commit: async () => {
+      const created = await createPractice({
+        title,
+        description,
+        createdBy: profileId,
+        isPublic: autoApprove,
+        status: autoApprove ? 'approved' : 'draft',
+      })
+      if (!created) throw new Error('Could not create the practice.')
+      return created
+    },
   })
-  if (!practice) redirect('/practices')
+  if ('error' in governed) redirect('/practices')
+  const practice = governed.data
 
   // Map the chosen Pillar slugs to real Focus ids (a Practice can span multiple Focuses).
   // updatePractice mirrors domain_id to the FIRST focus_details key for back-compat.

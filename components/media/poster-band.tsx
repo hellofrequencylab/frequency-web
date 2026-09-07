@@ -51,26 +51,35 @@ import Image from 'next/image'
 // so painting a blurred copy under an opaque one there is a wasted decode on the surface least able
 // to afford it.
 //
-// 🔴 IT NEEDS NO STORED DIMENSIONS, AND THAT IS STILL THE POINT. The exact fix for both halves is to
-// size the band to the poster's own aspect, which needs the poster's intrinsic size — and there is
-// nowhere cheap to get it. `events` stores none (only `library_assets` carries width/height, and
-// event covers do not go through the Loom). Measuring on the server means `sharp`, which
-// lib/library/image-describe.ts already refuses for this exact seam: sharp reaches 69 of
-// check:og-trace's 100-function budget and 1510 MB of check:build-budget, and the event page fans
-// out across the route table. Measuring by fetching the image header at render time means a blocking
-// subrequest on a marquee page, in a repo tracking requests killed at Vercel's 300s ceiling
-// (LIVE-124). A fit keyword costs nothing, cannot fail, and cannot time out.
+// ── WHEN THE BAND KNOWS THE POSTER'S OWN SHAPE, IT TAKES IT (ADR-1248, closes LIVE-200) ─────────
+// Everything above describes the band with NO stored dimensions, and it is still the fallback,
+// because `events` stored none and every server-side way of learning them was refused for this
+// seam: decoding means `sharp` (the largest single cost in check:build-budget, fanned out across the
+// event routes), and fetching the image header at render time is a blocking subrequest on a
+// marquee page. The browser, though, decodes the cover every time the header controls preview it,
+// so the event header controls read `naturalWidth / naturalHeight` off that preview and store
+// width / height on `events.theme.coverAspect` beside `coverFocus` (lib/events/cover-aspect.ts).
 //
-// THE FOLLOW-UP THAT REMOVES THE TRADE ENTIRELY is to capture the aspect in the BROWSER at upload —
-// the uploader has already decoded the file — and travel it to the server as a form field, exactly
-// as lib/library/image-describe.ts does for blurhash and palette. Store it on the existing
-// `events.theme` jsonb beside `coverFocus` (no migration), give this component an `aspect` prop, and
-// the band becomes the poster's own shape: no bars, no crop, no letterbox, at either width. This
-// component is shaped so that is a prop and a class, not a rewrite.
+// With `aspect` passed, the band sizes itself to the poster (`aspect-ratio`) and the tier becomes a
+// CEILING (`maxHeightClass`, the same ladder as `max-h-*`) instead of a height. What that buys:
+//
+//   any source whose own height at the band's width fits under the tier   the band IS the poster:
+//                                                                          no bars, no crop, either width
+//   a taller source (a 1:1 poster at 1044px would be 1044px tall)          clamped to the tier, and the
+//                                                                          two fits above take over exactly
+//                                                                          as before
+//
+// So the 1400x600 flyer that produced the 2026-08-31 report renders whole on a phone (412x177), and a
+// square cover keeps today's aimed 412x221 crop. Nothing a band without the value did changes:
+// `aspect` absent or unusable renders the markup above byte for byte. Both props are needed for the
+// shaped path; an aspect with no ceiling falls back too, because an uncapped portrait band on a
+// desktop is worse than the guess.
 
 export function PosterBand({
   src,
   heightClass,
+  maxHeightClass,
+  aspect,
   radiusClass = 'rounded-2xl',
   widthClass = 'w-full',
   focus,
@@ -83,6 +92,13 @@ export function PosterBand({
   /** The band's height. Pass `posterHeightClass(tier)` — the shared ladder with a shorter phone
    *  half, which is what keeps the phone crop horizontal-safe (lib/layout/cover-height.ts). */
   heightClass: string
+  /** The band's CEILING when `aspect` is known: pass `posterMaxHeightClass(tier)`, the same ladder
+   *  as `max-h-*`. Ignored without `aspect`. */
+  maxHeightClass?: string
+  /** The poster's intrinsic width / height as the browser measured it (events.theme.coverAspect,
+   *  lib/events/cover-aspect.ts). With it, the band is the poster's own shape up to `maxHeightClass`.
+   *  Null or absent keeps the tier-height band above. */
+  aspect?: number | null
   /** The band's corner radius, substituted into the base class string.
    *
    *  🔴 A PROP AND NOT SOMETHING YOU APPEND VIA `className`. This repo's `cn` is a plain join with
@@ -127,8 +143,14 @@ export function PosterBand({
   unoptimized?: boolean
   className?: string
 }) {
+  // The shaped path needs a usable ratio AND a ceiling; anything less is the tier-height band.
+  const shaped = typeof aspect === 'number' && Number.isFinite(aspect) && aspect > 0 && !!maxHeightClass
+  const sizeClass = shaped ? maxHeightClass : heightClass
   return (
-    <div className={`relative ${heightClass} ${widthClass} overflow-hidden ${radiusClass} bg-surface-elevated ${className}`}>
+    <div
+      className={`relative ${sizeClass} ${widthClass} overflow-hidden ${radiusClass} bg-surface-elevated ${className}`}
+      style={shaped ? { aspectRatio: String(aspect) } : undefined}
+    >
       {/* THE BACKDROP, from `sm` up only — the width where the band contains and therefore has bars.
           The same image, scaled past the edges so the blur has pixels to work with all the way out
           (a blur samples beyond its own box and would otherwise fade to transparent at the frame),

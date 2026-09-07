@@ -3,6 +3,7 @@ import { GraduationCap, ArrowRight, BookOpen } from 'lucide-react'
 import { requireLeadFloor } from '@/lib/admin/guard'
 import { getAllTrainingCategories, trainingHref } from '@/lib/leader-training/content'
 import { IndexTemplate } from '@/components/templates'
+import { resolveIndexHero } from '@/lib/layout/index-hero'
 import { EmptyState } from '@/components/ui/empty-state'
 
 // Leader Training library home — the right-pane landing of the two-pane docs library (the left
@@ -20,8 +21,11 @@ export default async function LeaderTrainingPage() {
   const categories = await getAllTrainingCategories()
   const start = categories[0]?.docs[0] ?? null
 
+  const hero = await resolveIndexHero('/lead/training-library')
+
   return (
     <IndexTemplate
+      {...hero}
       eyebrow="Leadership"
       title="Leader Training"
       description="Guides for people who run Circles and author Journeys. Read these before you build."

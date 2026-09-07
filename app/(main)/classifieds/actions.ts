@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { getMyProfileId, isPlatformStaff } from '@/lib/auth'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import { draftListingCopy, type ListingCopy } from '@/lib/ai/listing-copy'
+import { proposeAndConfirmCreate } from '@/lib/ai/vera/create-entity'
 import {
   createListing, updateListing, setListingStatus, deleteListing, listingAuthorId,
   type ListingInput, type ListingPatch, type ListingStatus,
@@ -32,10 +33,31 @@ export async function createListingAction(input: ListingInput): Promise<ActionRe
   const profileId = await getMyProfileId()
   if (!profileId) return fail('Sign in to post a listing.')
   if (!input.title?.trim()) return fail('Give your listing a title.')
-  const listing = await createListing(profileId, input)
-  if (!listing) return fail('Could not post the listing. Try again.')
+  // THE GOVERNED WRITE (ADR-988, ADR-1249): the member wrote the listing and tapped Post, so one
+  // call proposes, claims and commits through the same writer, and the audit row is written. The
+  // board's gate is scoped (signed in is the whole of it), which the layer records and leaves here.
+  const governed = await proposeAndConfirmCreate({
+    entity: 'listing',
+    draft: {
+      title: input.title.trim(),
+      description: input.description ?? '',
+      kind: input.kind ?? '',
+      category: input.category ?? '',
+      priceNote: input.priceNote ?? '',
+      neighborhood: input.neighborhood ?? '',
+      city: input.city ?? '',
+      circleId: input.circleId ?? '',
+    },
+    rationale: 'Classifieds spark: the member wrote the listing and tapped Post.',
+    commit: async () => {
+      const listing = await createListing(profileId, input)
+      if (!listing) throw new Error('Could not post the listing. Try again.')
+      return listing
+    },
+  })
+  if ('error' in governed) return fail(governed.error)
   revalidatePath('/classifieds')
-  return ok({ id: listing.id })
+  return ok({ id: governed.data.id })
 }
 
 /** How each listing kind is described to Vera. Plain, and never "for sale": the board takes no

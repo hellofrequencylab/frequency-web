@@ -29,6 +29,7 @@ import { useEffect, useState } from 'react'
 import { isError } from '@/lib/action-result'
 import { coverOffer, type CoverOffer } from '@/lib/loom/cover'
 import { coverOfferAvailableAction, generateEntityCoverAction } from '@/lib/loom/cover-actions'
+import { describeGeneratedAsset } from '@/lib/library/describe-generated'
 import type { GeneratedCover } from '@/lib/loom/cover-actions'
 import { reviewEntityDraftAction } from '@/lib/ai/quality-gate-actions'
 import type { EntityManifest } from '@/lib/studio/kernel/manifest'
@@ -124,6 +125,12 @@ export function useCoverOffer(input: UseCoverOfferInput): CoverOfferState {
           setApplied(res.data)
           setUsed(active)
           onApply(res.data, active)
+          // HYG-021: the cover is filed with a checksum and its dimensions, but no blurhash — that
+          // needs decoded pixels, and decoding on the server means `sharp` in the Loom write seam
+          // (docs/DEPLOY-SAFETY.md). This browser has the image, so it describes it one round-trip
+          // later. AFTER the cover is applied, and never awaited: nothing here should make an author
+          // wait on a placeholder.
+          void describeGeneratedAsset(res.data.assetId, res.data.url)
         }
       } catch {
         setError('Vera could not draw one this time. Try again, or add your own image.')

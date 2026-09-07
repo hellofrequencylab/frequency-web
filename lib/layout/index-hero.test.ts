@@ -312,3 +312,60 @@ describe('the /events/calendar row', () => {
     expect((await resolveIndexHero('/events/calendar')).heroImage).toBe('/uploads/events.jpg')
   })
 })
+
+describe('the 2026-09-07 adoption rows (LIVE-117, ADR-1255)', () => {
+  it('gives the five discovery surfaces the tall directory band', () => {
+    for (const route of ['/help', '/partners', '/housing/roommates', '/discover/partners', '/discover/practices']) {
+      expect(indexHeroDefaultsFor(route).size).toBe('large')
+    }
+  })
+
+  it('gives the eleven utility surfaces the short band, and refuses an inherited hero on them', () => {
+    for (const route of [
+      '/circles/templates', '/crew/leaderboard', '/drafts', '/lead/training-library', '/market/manage',
+      '/messages', '/orders', '/partners/join', '/search', '/spaces/operating', '/support',
+    ]) {
+      expect(indexHeroDefaultsFor(route)).toEqual({ image: null, size: 'short', inheritHero: false })
+    }
+  })
+
+  it('invents no cover: every new row resolves to the gradient band', () => {
+    for (const route of ['/help', '/partners', '/housing/roommates', '/discover/partners', '/discover/practices']) {
+      expect(indexHeroDefaultsFor(route).image).toBeNull()
+    }
+  })
+
+  it('/partners/collaborators takes the section row rather than one of its own', () => {
+    // Deliberately unmapped: it is part of the Partners section, which is what a prefix map is for.
+    expect(INDEX_HERO_DEFAULTS.some((r) => r.prefix === '/partners/collaborators')).toBe(false)
+    expect(indexHeroDefaultsFor('/partners/collaborators')).toEqual(indexHeroDefaultsFor('/partners'))
+  })
+
+  it('the nested utility rows still beat their section, longest prefix first', () => {
+    // '/partners/join' matches '/partners' too; the specific row must win or a claim flow
+    // silently inherits the directory billboard.
+    expect(indexHeroDefaultsFor('/partners/join').size).toBe('short')
+    expect(indexHeroDefaultsFor('/market/manage').size).toBe('short')
+    expect(indexHeroDefaultsFor('/circles/templates').size).toBe('short')
+  })
+
+  it('a utility row keeps the gradient when its section carries an operator hero', async () => {
+    resolveContentCascade.mockResolvedValue(cascaded('/uploads/partners.jpg', 'section'))
+    expect((await resolveIndexHero('/partners/join')).heroImage).toBeNull()
+  })
+
+  it('a discovery row DOES take the section hero the cascade hands it', async () => {
+    resolveContentCascade.mockResolvedValue(cascaded('/uploads/partners.jpg', 'section'))
+    expect((await resolveIndexHero('/discover/partners')).heroImage).toBe('/uploads/partners.jpg')
+  })
+
+  it('none of the new prefixes disturbs an existing adopter beneath the same section', () => {
+    // '/housing', '/market', '/circles' and '/spaces/directory' are MarketHero adopters that
+    // must keep falling through to the map's tail, not pick up a nested utility row.
+    expect(indexHeroDefaultsFor('/housing').size).toBe('large')
+    expect(indexHeroDefaultsFor('/market').size).toBe('large')
+    expect(indexHeroDefaultsFor('/circles').size).toBe('large')
+    expect(indexHeroDefaultsFor('/spaces/directory').size).toBe('large')
+    expect(indexHeroDefaultsFor('/discover/spaces').size).toBe('large')
+  })
+})

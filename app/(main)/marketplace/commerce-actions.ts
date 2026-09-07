@@ -8,6 +8,7 @@ import { createCommerceCheckout } from '@/lib/commerce/checkout'
 import { canListNew } from '@/lib/commerce/selling'
 import { normalizeCategory, normalizeTags } from '@/lib/commerce/categories'
 import { draftListingCopy, type ListingCopy } from '@/lib/ai/listing-copy'
+import { proposeAndConfirmCreate } from '@/lib/ai/vera/create-entity'
 import type { ProductKind, ProductStatus } from '@/lib/commerce/types'
 
 /** Parse a JSON string[] posted in a hidden form field (image paths, tags), tolerating a blank or
@@ -52,25 +53,45 @@ export async function createMakerProductAction(formData: FormData): Promise<void
   // (marketGroupForKind), so this changes what the row SAYS it is, not where it shows.
   const productKind: ProductKind = formData.get('productKind') === 'digital' ? 'digital' : 'physical'
 
-  const product = await createProduct({
-    ownerKind: 'profile',
-    ownerProfileId: profileId,
-    productKind,
-    vertical: 'maker',
-    title,
-    description: (formData.get('description') as string) || null,
-    category: normalizeCategory(formData.get('category') as string | null),
-    // Ordered storage paths from the gallery uploader (cap enforced in createProduct).
-    images: parseStringArray(formData.get('images')),
-    tags: normalizeTags(parseStringArray(formData.get('tags'))),
-    priceCents: Math.round(priceDollars * 100),
-    // Individuals list used items (R3); New is a Business feature, rejected above. A download has no
-    // condition at all, so it stores null rather than claiming to be second hand.
-    condition: productKind === 'digital' ? null : 'used',
-    // A member product IS a Market listing (the maker path implicitly opts into the umbrella, ADR-596).
-    marketPublished: true,
+  const description = (formData.get('description') as string) || null
+  const category = normalizeCategory(formData.get('category') as string | null)
+  // Ordered storage paths from the gallery uploader (cap enforced in createProduct).
+  const images = parseStringArray(formData.get('images'))
+  const tags = normalizeTags(parseStringArray(formData.get('tags')))
+  const priceCents = Math.round(priceDollars * 100)
+
+  // THE GOVERNED WRITE (ADR-988, ADR-1249): the maker filled the listing and tapped List it, so
+  // one call proposes, claims and commits through the same writer, and the audit row is written.
+  // The seller gate is scoped (signed in is the whole of it, ADR-914), which the layer records
+  // and leaves here. A refusal ends the action exactly as a failed write always did.
+  const governed = await proposeAndConfirmCreate({
+    entity: 'product',
+    draft: { title, productKind, description: description ?? '', category: category ?? '', images, tags, priceCents, marketPublished: true },
+    rationale: 'Market sell page: the maker filled the listing and tapped List it.',
+    commit: async () => {
+      const created = await createProduct({
+        ownerKind: 'profile',
+        ownerProfileId: profileId,
+        productKind,
+        vertical: 'maker',
+        title,
+        description,
+        category,
+        images,
+        tags,
+        priceCents,
+        // Individuals list used items (R3); New is a Business feature, rejected above. A download has no
+        // condition at all, so it stores null rather than claiming to be second hand.
+        condition: productKind === 'digital' ? null : 'used',
+        // A member product IS a Market listing (the maker path implicitly opts into the umbrella, ADR-596).
+        marketPublished: true,
+      })
+      if (!created) throw new Error('Could not list that product.')
+      return created
+    },
   })
-  if (!product) return
+  if ('error' in governed) return
+  const product = governed.data
 
   // A maker listing their piece means it is live to browse immediately. Payouts still
   // require a Connect account + billing enabled before a buyer can actually check out.

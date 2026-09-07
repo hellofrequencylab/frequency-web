@@ -19,6 +19,7 @@ import {
   type CircleDraftPatch,
 } from '@/lib/circles/draft'
 import { assertCanCreate } from '@/lib/core/load-capabilities'
+import { proposeAndConfirmCreate } from '@/lib/ai/vera/create-entity'
 import { draftCircleSpark, type CircleSparkDraft } from '@/lib/ai/circle-spark'
 import {
   composeCircleSection,
@@ -73,25 +74,61 @@ export async function sparkPreviewAction(input: {
   })
 }
 
+/** The manifest-keyed draft the governed layer validates and audits (ADR-988, ADR-1249): the
+ *  same bridge lib/ai/vera/create-commits.ts makes in the other direction. The writer's own name
+ *  default is restated here so a nameless spark proposes the Circle it has always created. */
+function circleDraft(input: { name?: string; spark?: CircleSparkDraft }): Record<string, unknown> {
+  const spark = input.spark
+  return {
+    name: (input.name?.trim() || spark?.name?.trim() || 'New circle').slice(0, 120),
+    about: spark?.oneLiner || spark?.identity || '',
+    primaryPillar: spark?.primaryPillar ?? '',
+    pillarsInside: spark?.pillarsInside ?? {},
+    meetup: { text: spark?.meetup ?? '' },
+    gathering: { text: spark?.gathering ?? '' },
+    thread: spark?.thread ?? '',
+    format: spark?.format ?? '',
+    sizeLabel: spark?.sizeLabel ?? '',
+  }
+}
+
 /** Commit a reviewed spark into a private draft the caller owns, then route the
- *  caller into the builder. */
+ *  caller into the builder.
+ *
+ *  THE GOVERNED WRITE (ADR-988, ADR-1249). The member reviewed the spark and tapped Create, so
+ *  one call proposes, claims and commits, and the audit row the wizard used to skip is written.
+ *  The commit is the same writer with the same input; a refusal throws, which is this file's
+ *  error surface. */
 export async function createDraftFromSparkAction(spark: CircleSparkDraft): Promise<{ slug: string; circleId: string }> {
   const profileId = await callerProfileId()
   await assertCanCreate('circle.create')
-  const res = await createBlankCircleDraft({ profileId, spark })
+  const res = await proposeAndConfirmCreate({
+    entity: 'circle',
+    draft: circleDraft({ spark }),
+    rationale: 'Circle builder, spark road: the member reviewed the draft and tapped Create.',
+    commit: () => createBlankCircleDraft({ profileId, spark }),
+  })
+  if ('error' in res) throw new Error(res.error)
   revalidatePath('/circles')
   revalidatePath('/lead')
-  return res
+  return res.data
 }
 
-/** Start a blank draft from scratch (the "I'll write it myself" path). */
+/** Start a blank draft from scratch (the "I'll write it myself" path). Governed the same way as
+ *  the spark road above. */
 export async function createBlankDraftAction(input?: { name?: string }): Promise<{ slug: string; circleId: string }> {
   const profileId = await callerProfileId()
   await assertCanCreate('circle.create')
-  const res = await createBlankCircleDraft({ profileId, name: input?.name })
+  const res = await proposeAndConfirmCreate({
+    entity: 'circle',
+    draft: circleDraft({ name: input?.name }),
+    rationale: 'Circle builder, blank road: the member chose to write it themselves.',
+    commit: () => createBlankCircleDraft({ profileId, name: input?.name }),
+  })
+  if ('error' in res) throw new Error(res.error)
   revalidatePath('/circles')
   revalidatePath('/lead')
-  return res
+  return res.data
 }
 
 /** Pull plain text out of an uploaded write-up (PDF / Word / plain text) so the

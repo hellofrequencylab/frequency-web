@@ -24,6 +24,19 @@ vi.mock('./membership', async (orig) => ({
   addSpaceMember: (input: Record<string, unknown>) => addSpaceMember(input),
 }))
 
+// ── Pass the governed create layer through (ADR-988, ADR-1249) ─────────────────────────────
+// The layer is exercised in lib/ai/vera/create-entity.propose-and-confirm.test.ts; here the commit
+// runs as-is so these guards keep measuring provisioning, not governance.
+vi.mock('@/lib/ai/vera/create-entity', () => ({
+  proposeAndConfirmCreate: async ({ commit }: { commit: (input: unknown) => Promise<unknown> }) => {
+    try {
+      return { data: await commit({ entity: 'space', draft: {}, actorProfileId: 'p', spaceId: null, proposalId: 'a1' }) }
+    } catch (e) {
+      return { error: e instanceof Error ? e.message : 'failed' }
+    }
+  },
+}))
+
 // ── Mock redirect (throws a sentinel like the real next/navigation redirect) ────────────────
 class RedirectError extends Error {
   constructor(public url: string) {

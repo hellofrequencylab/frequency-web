@@ -184,8 +184,14 @@ resolver, not a table schema): `lib/library/renditions.ts`. Access is **service-
     See `docs/DEPLOY-SAFETY.md`.
   - **Not everything can ingest.** A path that files an object already in storage (the importer, an
     event photo) never holds the bytes: it writes `bytes: null` — "unknown", not the `0` it used to
-    claim — and no checksum. A server-side generator gets a checksum and dimensions but no blurhash
-    (`HYG-021`).
+    claim — and neither a checksum nor dimensions. A server-side GENERATOR does hold them, so it gets
+    both, and the two columns a decode is needed for arrive one round-trip later
+    ([ADR-1254](DECISIONS.md), `HYG-021`): the Studio client that asked for the image decodes what it
+    is already looking at and posts the descriptor to `describeLibraryAssetAction`, which fills
+    `blurhash`/`colors` only where they are null and validates them exactly as the upload path does.
+    One shared client path (`lib/library/describe-generated.ts`) serves both generators. The importer
+    seeds and the event-photo copies have no browser anywhere in the flow (an apply, a cron, a claim),
+    so they stay without, and that is the whole remaining gap.
 
 - **Search is ranked over two indexes** ([ADR-1121](DECISIONS.md)). A query runs BOTH arms the schema
   already carries and merges them: full text (`search_tsv @@ websearch_to_tsquery`, stemmed and
