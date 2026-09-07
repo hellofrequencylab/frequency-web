@@ -1,3 +1,6 @@
+// LIVE-190 budget (ADR-1252): 500 events per lead and RSVPs per event per invocation; the per-RSVP claim (reminder_*_sent_at) is the cursor, so a cut-off run resumes on the next quarter-hour inside the window's slack.
+// The clock is CRON_TIME_BUDGET_MS from lib/cron/budget.ts; app/api/cron/budget.test.ts checks the
+// declaration is applied, not merely written down.
 // Event reminder cron — runs every 15 minutes via Vercel Cron.
 //
 // Three-pass (completing the research-backed 3-touch cadence, EVENTS-SYSTEM
@@ -33,6 +36,7 @@ import { sendSms } from '@/lib/comms/sms'
 import { recordContactInteraction } from '@/lib/crm/interactions'
 import { rejectUnauthorizedCron } from '@/lib/cron-auth'
 import { withCronHeartbeat } from '@/lib/observability/cron-heartbeat'
+import { cronBudget, type CronBudget } from '@/lib/cron/budget'
 import { log } from '@/lib/log'
 
 export const dynamic = 'force-dynamic'
@@ -142,7 +146,10 @@ function formatRelative(lead: ReminderLead): string {
   return 'in about 2 hours'
 }
 
-async function processLead(lead: ReminderLead): Promise<{ events: number; sent: number }> {
+async function processLead(
+  lead: ReminderLead,
+  budget: CronBudget,
+): Promise<{ events: number; sent: number; remaining: number; stoppedOnBudget: boolean }> {
   const admin = createAdminClient()
   const now = Date.now()
 
@@ -181,14 +188,24 @@ async function processLead(lead: ReminderLead): Promise<{ events: number; sent: 
     const inst = eventInstant(ev.starts_at, resolveZone(ev.time_zone))
     return !!inst && inst.getTime() >= windowStart.getTime() && inst.getTime() < windowEnd.getTime()
   })
-  if (!eventRows.length) return { events: 0, sent: 0 }
-
+  if (!eventRows.length) return { events: 0, sent: 0, remaining: 0, stoppedOnBudget: false }
+  // LIVE-190: soonest event first, at most `budget.items` events and RSVPs per event. Every RSVP
+  // is claimed before it is sent, so whatever this run leaves is exactly what the next one reads.
+  const { batch: eventBatch, remaining: eventTail } = budget.take(
+    [...eventRows].sort((a, b) => a.starts_at.localeCompare(b.starts_at)),
+  )
+  let remaining = eventTail
+  let stoppedOnBudget = false
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://frequencylocal.com'
   const sentColumn = sentColumnFor(lead)
 
   let sent = 0
-
-  for (const ev of eventRows) {
+  for (const [evIndex, ev] of eventBatch.entries()) {
+    if (budget.exhausted()) {
+      stoppedOnBudget = true
+      remaining += eventBatch.length - evIndex
+      break
+    }
     const { data: rsvps } = await admin
       .from('event_rsvps')
       .select('id, event_id, profile_id, guest_email, guest_name')
@@ -200,7 +217,10 @@ async function processLead(lead: ReminderLead): Promise<{ events: number; sent: 
       .neq('approval_status', 'pending')
       .is(sentColumn, null)
 
-    const rsvpRows = (rsvps ?? []) as unknown as RsvpRow[]
+    const { batch: rsvpRows, remaining: rsvpTail } = budget.take(
+      [...((rsvps ?? []) as unknown as RsvpRow[])].sort((a, b) => a.id.localeCompare(b.id)),
+    )
+    remaining += rsvpTail
     if (!rsvpRows.length) continue
 
     // 🔴 A guest's NULL used to be passed straight into `.in('id', profileIds)`. Two failures
@@ -245,7 +265,12 @@ async function processLead(lead: ReminderLead): Promise<{ events: number; sent: 
     }
     const warmProof = goingCount >= 2 ? `${goingCount} going` : null
 
-    for (const rsvp of rsvpRows) {
+    for (const [rsvpIndex, rsvp] of rsvpRows.entries()) {
+      if (budget.exhausted()) {
+        stoppedOnBudget = true
+        remaining += rsvpRows.length - rsvpIndex
+        break
+      }
       // ── The guest leg. Email only: push needs a registered device and SMS needs an A2P consent
       // record, and a guest has neither. Stamped like every other path so it is sent once.
       if (!rsvp.profile_id) {
@@ -387,7 +412,7 @@ async function processLead(lead: ReminderLead): Promise<{ events: number; sent: 
     }
   }
 
-  return { events: eventRows.length, sent }
+  return { events: eventRows.length, sent, remaining, stoppedOnBudget }
 }
 
 // Warm ~1-week-out email. Built here (not via sendEventReminderEmail, whose
@@ -467,10 +492,11 @@ async function handler(req: NextRequest) {
   const denied = rejectUnauthorizedCron(req)
   if (denied) return denied
 
-  const t7  = await processLead('7d')
-  const t24 = await processLead('24h')
-  const t2  = await processLead('2h')
-
+  const budget = cronBudget(500)
+  const t7  = await processLead('7d', budget)
+  const t24 = await processLead('24h', budget)
+  const t2  = await processLead('2h', budget)
+  const summary = budget.summary(t7.events + t24.events + t2.events, t7.remaining + t24.remaining + t2.remaining)
   log.info('cron.event_reminders', {
     sent7d:    t7.sent,
     events7d:  t7.events,
@@ -478,13 +504,15 @@ async function handler(req: NextRequest) {
     events24h: t24.events,
     sent2h:    t2.sent,
     events2h:  t2.events,
+    ...summary,
   })
-
+  const lead = (t: { events: number; sent: number }) => ({ events: t.events, sent: t.sent })
   return NextResponse.json({
     ok: true,
-    '7d':  t7,
-    '24h': t24,
-    '2h':  t2,
+    '7d':  lead(t7),
+    '24h': lead(t24),
+    '2h':  lead(t2),
+    budget: summary,
   })
 }
 

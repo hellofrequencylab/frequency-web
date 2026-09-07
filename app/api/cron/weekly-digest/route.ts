@@ -1,3 +1,6 @@
+// LIVE-190 budget (ADR-1252): 2000 members per invocation; the cron_run_markers claim keeps a digest from sending twice in a week, but there is NO cursor: a cut-off run re-does the head (assemble + gate, one claim insert) on a re-fire. Recorded in the row.
+// The clock is CRON_TIME_BUDGET_MS from lib/cron/budget.ts; app/api/cron/budget.test.ts checks the
+// declaration is applied, not merely written down.
 // Weekly community digest cron — runs Sundays at 14:00 UTC (~7am PT,
 // matches when most members are actually awake on their day off).
 //
@@ -23,6 +26,7 @@ import { resolveSendGate } from '@/lib/comms/send-gate'
 import { assembleDigestForProfile, listProfileIdsForDigest } from '@/lib/digest'
 import { rejectUnauthorizedCron } from '@/lib/cron-auth'
 import { withCronHeartbeat } from '@/lib/observability/cron-heartbeat'
+import { cronBudget } from '@/lib/cron/budget'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { briefError, errorStack, log } from '@/lib/log'
 
@@ -74,7 +78,10 @@ async function handler(req: NextRequest) {
   const denied = rejectUnauthorizedCron(req)
   if (denied) return denied
 
-  const profileIds = await listProfileIdsForDigest()
+  const budget = cronBudget(2000)
+  const { batch: profileIds, remaining: tail } = budget.take((await listProfileIdsForDigest()).slice().sort())
+  let remaining = tail
+  let visited = 0
   const now = new Date()
   let sent    = 0
   let skipped = 0
@@ -86,7 +93,12 @@ async function handler(req: NextRequest) {
   // and scales with member count, so wrap it in log.time to emit one structured
   // line carrying duration_ms + ok, queryable/alertable by `cron.weekly_digest`.
   await log.time('cron.weekly_digest', async () => {
-    for (const profileId of profileIds) {
+    for (const [i, profileId] of profileIds.entries()) {
+      if (budget.exhausted()) {
+        remaining += profileIds.length - i
+        break
+      }
+      visited++
       // Per-member fail-safe: one member's throw is counted and logged, never the end of the run.
       try {
         const payload = await assembleDigestForProfile(profileId)
@@ -152,12 +164,13 @@ async function handler(req: NextRequest) {
   })
 
   const counts = {
-    candidates: profileIds.length,
+    candidates: profileIds.length + tail,
     sent,
     skipped,
     optOut,
     deduped,
     failed,
+    ...budget.summary(visited, remaining),
   }
   log.info('cron.weekly_digest.counts', counts)
 

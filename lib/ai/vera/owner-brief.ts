@@ -252,14 +252,24 @@ export interface OwnerBriefRunResult {
  * The daily worker the cron calls. Collects recipients (platform operators + active Space owners),
  * composes + sends each brief. FAIL-SAFE: per-recipient and per-collection errors are swallowed so
  * the run always completes and returns counts; it never throws.
+ *
+ * LIVE-190: one run sends at most `limit` briefs and stops on the clock. A brief already sent
+ * today is skipped by `sendOwnerBrief`'s own dedupe read, so a re-run re-does the head at the cost
+ * of one read per recipient; there is no cursor, and the row records that as the missing piece.
+ * The caller's budget object reports the clock, so the result shape stays the one the tests pin.
  */
-export async function runOwnerBriefs(opts: { now?: Date } = {}): Promise<OwnerBriefRunResult> {
+export async function runOwnerBriefs(
+  opts: { now?: Date; limit?: number; exhausted?: () => boolean } = {},
+): Promise<OwnerBriefRunResult> {
   const now = opts.now ?? new Date()
+  const limit = Math.max(1, opts.limit ?? 200)
+  const exhausted = opts.exhausted ?? (() => false)
   const recipients = await collectRecipients()
   let sent = 0
   let skipped = 0
   let errors = 0
-  for (const r of recipients) {
+  for (const r of recipients.slice(0, limit)) {
+    if (exhausted()) break
     try {
       const res = await sendOwnerBrief(r, { now })
       if (res.sent) sent += 1

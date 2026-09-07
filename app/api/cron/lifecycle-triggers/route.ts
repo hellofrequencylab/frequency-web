@@ -1,3 +1,6 @@
+// LIVE-190 budget (ADR-1252): 500 memberships per invocation; the day flags are the claim, so a stamped row leaves the query; oldest joined_at first, which is the most-due first.
+// The clock is CRON_TIME_BUDGET_MS from lib/cron/budget.ts; app/api/cron/budget.test.ts checks the
+// declaration is applied, not merely written down.
 /**
  * Lifecycle trigger cron. Runs daily at midnight UTC via Vercel Cron.
  * For each active membership that hasn't received a Day 1 / 3 / 7 check-in
@@ -23,6 +26,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { rejectUnauthorizedCron } from '@/lib/cron-auth'
 import { withCronHeartbeat } from '@/lib/observability/cron-heartbeat'
+import { cronBudget } from '@/lib/cron/budget'
 import { log } from '@/lib/log'
 
 export const dynamic = 'force-dynamic'
@@ -56,7 +60,7 @@ async function handler(req: NextRequest) {
   if (denied) return denied
 
   const admin = createAdminClient()
-
+  const budget = cronBudget(500)
   // Fetch all active memberships that may need lifecycle notifications
   const { data: memberships, error } = await admin
     .from('memberships')
@@ -68,7 +72,8 @@ async function handler(req: NextRequest) {
     `)
     .eq('status', 'active')
     .or('lifecycle_day1_sent.eq.false,lifecycle_day3_sent.eq.false,lifecycle_day7_sent.eq.false')
-
+    .order('joined_at', { ascending: true })
+    .limit(budget.items)
   if (error) {
     log.error('cron.lifecycle_triggers.fetch_failed', { error: error.message })
     return NextResponse.json({ error: error.message }, { status: 500 })
@@ -79,12 +84,16 @@ async function handler(req: NextRequest) {
   let day7Count = 0
   let superseded = 0
   let failed = 0
-
+  let remaining = 0
   // Timed: the per-membership notification loop is the cron's real work and grows
   // with active membership count, so wrap it in log.time to emit one structured
   // line with duration_ms + ok, queryable/alertable by `cron.lifecycle_triggers`.
   await log.time('cron.lifecycle_triggers', async () => {
-  for (const m of memberships ?? []) {
+  for (const [i, m] of (memberships ?? []).entries()) {
+    if (budget.exhausted()) {
+      remaining = (memberships?.length ?? 0) - i
+      break
+    }
     if (!m.joined_at) continue
     const days = daysSince(m.joined_at)
     const profile = m.profile as unknown as { id: string; display_name: string | null; email: string | null } | null
@@ -144,7 +153,8 @@ async function handler(req: NextRequest) {
   }
   })
 
-  const counts = { day1: day1Count, day3: day3Count, day7: day7Count, superseded, failed }
+  const summary = budget.summary((memberships?.length ?? 0) - remaining, remaining)
+  const counts = { day1: day1Count, day3: day3Count, day7: day7Count, superseded, failed, ...summary }
   log.info('cron.lifecycle_triggers.counts', counts)
 
   // failed > 0 is a job failure the heartbeat must see (withCronHeartbeat fail-pings on a 5xx).
@@ -155,6 +165,7 @@ async function handler(req: NextRequest) {
     sent: { day1: day1Count, day3: day3Count, day7: day7Count },
     superseded,
     failed,
+    budget: summary,
   }, { status: failed === 0 ? 200 : 500 })
 }
 

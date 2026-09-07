@@ -1,9 +1,13 @@
+// LIVE-190 budget (ADR-1252): 25 outbox jobs per invocation; claim_outbox_jobs flips them to processing under SKIP LOCKED; the queue itself is the cursor.
+// The clock is CRON_TIME_BUDGET_MS from lib/cron/budget.ts; app/api/cron/budget.test.ts checks the
+// declaration is applied, not merely written down.
 // Drains the durable job queue (lib/queue/outbox) with retries + backoff.
 // Register a handler per job `kind` below as flows migrate onto the queue.
 
 import { NextRequest, NextResponse } from 'next/server'
 import { rejectUnauthorizedCron } from '@/lib/cron-auth'
 import { withCronHeartbeat } from '@/lib/observability/cron-heartbeat'
+import { cronBudget } from '@/lib/cron/budget'
 import { processQueue } from '@/lib/queue/outbox'
 import { queueHandlers } from '@/lib/queue/handlers'
 
@@ -14,13 +18,15 @@ async function handler(req: NextRequest) {
   if (denied) return denied
 
   try {
-    const result = await processQueue(queueHandlers)
+    const budget = cronBudget(25)
+    const result = await processQueue(queueHandlers, budget.items)
+    const summary = budget.summary(result.processed)
     // Surface dead-letters in the cron's own logs so a backlog of dropped
     // side-effects is visible without inspecting the table by hand (ADR-043).
     if (result.failed > 0) {
       console.error(`[process-queue] ${result.failed} job(s) dead-lettered this drain`)
     }
-    return NextResponse.json({ ok: true, ...result })
+    return NextResponse.json({ ok: true, ...result, budget: summary })
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err)
     console.error(`[process-queue] drain failed: ${msg}`)

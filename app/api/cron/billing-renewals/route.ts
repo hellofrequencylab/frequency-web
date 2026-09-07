@@ -1,3 +1,6 @@
+// LIVE-190 budget (ADR-1252): 200 agreements per touch per invocation; the touch stamp is the claim, so an unstamped tail is tomorrow's head. Oldest paid_through first.
+// The clock is CRON_TIME_BUDGET_MS from lib/cron/budget.ts; app/api/cron/budget.test.ts checks the
+// declaration is applied, not merely written down.
 // Manual billing renewal reminders (ADR-872) — daily via Vercel Cron (off-peak, with the other
 // nightly jobs; see vercel.json).
 //
@@ -26,6 +29,7 @@ import { formatAgreementRate } from '@/lib/billing/manual-agreement-dates'
 import { asSpacePlan, SPACE_PLAN_LABEL } from '@/lib/pricing/plans'
 import { rejectUnauthorizedCron } from '@/lib/cron-auth'
 import { withCronHeartbeat } from '@/lib/observability/cron-heartbeat'
+import { cronBudget, type CronBudget } from '@/lib/cron/budget'
 import { log } from '@/lib/log'
 
 export const dynamic = 'force-dynamic'
@@ -194,9 +198,24 @@ async function notifyAgreement(agreement: ManualAgreement, touch: Touch): Promis
   return delivered
 }
 
-async function processTouch(agreements: ManualAgreement[], touch: Touch): Promise<number> {
+async function processTouch(
+  agreements: ManualAgreement[],
+  touch: Touch,
+  budget: CronBudget,
+): Promise<{ sent: number; processed: number; remaining: number }> {
   let sent = 0
-  for (const agreement of agreements) {
+  let processed = 0
+  // Oldest due date first, so the tail a run leaves is the least urgent; the touch stamp is the
+  // claim that keeps a processed agreement out of tomorrow's bucket (LIVE-190).
+  const ordered = [...agreements].sort((a, b) => a.paidThrough.localeCompare(b.paidThrough))
+  const { batch, remaining } = budget.take(ordered)
+  let left = remaining
+  for (const [i, agreement] of batch.entries()) {
+    if (budget.exhausted()) {
+      left += batch.length - i
+      break
+    }
+    processed++
     try {
       const delivered = await notifyAgreement(agreement, touch)
       // Stamp AFTER the sends, and only when something actually went out: a fully failed fan-out
@@ -215,32 +234,37 @@ async function processTouch(agreements: ManualAgreement[], touch: Touch): Promis
       console.error('[billing-renewals]', touch, agreement.id, e)
     }
   }
-  return sent
+  return { sent, processed, remaining: left }
 }
 
 async function handler(req: NextRequest) {
   const denied = rejectUnauthorizedCron(req)
   if (denied) return denied
 
+  const budget = cronBudget(200)
   const buckets = await agreementsDue(new Date())
-  const sent30 = await processTouch(buckets.reminder30, 'reminder_30')
-  const sent7 = await processTouch(buckets.reminder7, 'reminder_7')
-  const sentOverdue = await processTouch(buckets.overdue, 'overdue')
-
+  const t30 = await processTouch(buckets.reminder30, 'reminder_30', budget)
+  const t7 = await processTouch(buckets.reminder7, 'reminder_7', budget)
+  const tOverdue = await processTouch(buckets.overdue, 'overdue', budget)
+  const summary = budget.summary(
+    t30.processed + t7.processed + tOverdue.processed,
+    t30.remaining + t7.remaining + tOverdue.remaining,
+  )
   log.info('cron.billing_renewals', {
     due30: buckets.reminder30.length,
     due7: buckets.reminder7.length,
     dueOverdue: buckets.overdue.length,
-    sent30,
-    sent7,
-    sentOverdue,
+    sent30: t30.sent,
+    sent7: t7.sent,
+    sentOverdue: tOverdue.sent,
+    ...summary,
   })
-
   return NextResponse.json({
     ok: true,
-    reminder_30: { due: buckets.reminder30.length, sent: sent30 },
-    reminder_7: { due: buckets.reminder7.length, sent: sent7 },
-    overdue: { due: buckets.overdue.length, sent: sentOverdue },
+    reminder_30: { due: buckets.reminder30.length, sent: t30.sent },
+    reminder_7: { due: buckets.reminder7.length, sent: t7.sent },
+    overdue: { due: buckets.overdue.length, sent: tOverdue.sent },
+    budget: summary,
   })
 }
 

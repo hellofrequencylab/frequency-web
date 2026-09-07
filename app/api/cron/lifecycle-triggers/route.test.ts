@@ -31,6 +31,9 @@ const state = vi.hoisted(() => ({
   inserted: [] as Record<string, unknown>[],
   stamps: [] as { id: string; patch: Record<string, unknown> }[],
   logged: { error: [] as { event: string; fields?: Record<string, unknown> }[] },
+  /** LIVE-190: the order and limit the driving query asked for. */
+  order: null as string | null,
+  limit: null as number | null,
 }))
 
 vi.mock('@/lib/supabase/admin', () => ({
@@ -39,7 +42,21 @@ vi.mock('@/lib/supabase/admin', () => ({
       if (table === 'memberships') {
         return {
           select: () => ({
-            eq: () => ({ or: () => Promise.resolve({ data: state.rows, error: null }) }),
+            eq: () => ({
+              or: () => ({
+                // LIVE-190: the route orders oldest joined_at first and takes `budget.items`. The
+                // mock records both so the batch shape is asserted, not assumed.
+                order: (col: string, opts: { ascending: boolean }) => {
+                  state.order = `${col}:${opts.ascending ? 'asc' : 'desc'}`
+                  return {
+                    limit: (n: number) => {
+                      state.limit = n
+                      return Promise.resolve({ data: state.rows.slice(0, n), error: null })
+                    },
+                  }
+                },
+              }),
+            }),
           }),
           update: (patch: Record<string, unknown>) => ({
             eq: (_col: string, id: string) => {
@@ -101,6 +118,8 @@ function membership(over: Partial<Row> & { id: string }): Row {
 
 beforeEach(() => {
   state.rows = []
+  state.order = null
+  state.limit = null
   state.insertFails.clear()
   state.stampFails.clear()
   state.inserted.length = 0
@@ -191,5 +210,20 @@ describe('GET /api/cron/lifecycle-triggers, one check-in per membership per run'
     state.insertFails.add('old')
     await GET(req)
     expect(state.stamps).toEqual([])
+  })
+
+  // LIVE-190 (ADR-1252): the driving query is bounded and ordered oldest-first, and the response
+  // carries the budget summary. The stamps are the claim, so a row past the limit is simply the
+  // next run's head; this pins that the route asks for that shape rather than reading everything.
+  it('reads at most the budget, oldest joined_at first, and reports processed vs remaining', async () => {
+    state.rows = [membership({ id: 'm1', joined_at: daysAgo(3) }), membership({ id: 'm2', joined_at: daysAgo(1) })]
+    const res = await GET(req)
+    expect(state.order).toBe('joined_at:asc')
+    expect(state.limit).toBe(500)
+    expect(await res.json()).toMatchObject({
+      ok: true,
+      processed: 2,
+      budget: { processed: 2, remaining: 0, more: false, budget_items: 500, stopped_on_time: false },
+    })
   })
 })
