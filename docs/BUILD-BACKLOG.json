@@ -58,9 +58,7 @@
         },
         {
           "name": "W0c · P2 — small cleanups worth doing whenever a lane is clear.",
-          "ids": [
-            "LIVE-167"
-          ]
+          "ids": []
         },
         {
           "name": "W0d · P3 — the perf set and the deferred niceties. 12 visitors / 18 pageviews in 31 days: the funnel, not the page speed, is the constraint, and these are priced against that rather than against merit.",
@@ -7758,7 +7756,7 @@
     {
       "id": "LIVE-167",
       "title": "51 import-only source-shape assertions still lean on eslint's unused-import rule",
-      "status": "open",
+      "status": "done",
       "priority": "P2",
       "lane": "live",
       "size": "S",
@@ -7766,11 +7764,11 @@
         "file": "test/source-shape.ts",
         "ref": "ADR-1211"
       },
-      "detail": "SCAN-586 fixed the 34 comment-shadowed assertions and added sourceWithoutComments. The remaining 51 (scan2 l8-shape.json, class import) match an import line only, so deleting the call but keeping the import is caught by eslint's unused-import rule rather than the test. Converting them to sourceWithoutComments(path, { imports: true }) plus a call token is mechanical with the helper.",
+      "detail": "SCAN-586 fixed the 34 comment-shadowed assertions and added sourceWithoutComments. The remaining 51 (scan2 l8-shape.json, class import) match an import line only, so deleting the call but keeping the import is caught by eslint's unused-import rule rather than the test. Converting them to sourceWithoutComments(path, { imports: true }) plus a call token is mechanical with the helper. ── ✅ CLOSED 2026-09-07 (ADR-1232). Re-measured first: the probe counted 20 test files using sourceWithoutComments (threshold 40), and a wide grep for a positive import-line needle (toContain / toMatch on `import ` or `from '…'`, absences and re-export pins excluded) read 102 across the test tree. Converted 49 of them in 30 files: each pinned file is now read with sourceWithoutComments(path, { imports: true }) and the needle is the CALL, the JSX mount, or the value read (push: pushSendingEnabled is a boolean, not a call), plus a `not.toMatch(/function <name>\\b/)` where the point of the import line was that the name resolves to the shared module rather than a private copy. Where a sibling assertion in the same file legitimately needs comments or imports (a slice keyed off a comment marker in claim-wiring and reseed-copy-wiring, the header-prose tests in app/api/status, the em-dash rule over the whole member-facing file in erase-drafts, the purity check in lib/moderation/scope), the raw read stays beside a second import-free read, so nothing was weakened. Proven by mutation on two: deleting the dismissWalkthroughAction call while keeping its import fails walkthrough-actions.test.ts, and renaming the canPostToRoom call in popover-actions.ts fails room-access.test.ts. After: 50 files use the helper (probe passes at 50 of 40) and the wide grep reads 53, of which the residue is largely deliberate (re-export pins, `import type` boundary checks, build-fanout reading import edges as the thing it measures, the helper's own fixtures). Lint clean at zero warnings on all 30; every touched test passes.",
       "verify": {
         "kind": "cmd",
-        "cmd": "node -e \"const fs=require('fs');const {execSync}=require('child_process');const n=parseInt(execSync('grep -rl \\\"sourceWithoutComments(\\\" --include=*.test.ts --include=*.test.tsx app components lib scripts test | wc -l').toString());process.exit(n>=40?0:1)\"",
-        "note": "Passes once at least 40 test files use the helper (20 today)."
+        "cmd": "node -e 'const fs=require(\"fs\");const path=require(\"path\");const walk=d=>{let o=[];let es=[];try{es=fs.readdirSync(d,{withFileTypes:true})}catch{return o}for(const e of es){const q=path.join(d,e.name);if(e.isDirectory()){if(e.name===\"node_modules\"||e.name===\".next\")continue;o=o.concat(walk(q))}else if(/\\.test\\.tsx?$/.test(e.name))o.push(q)}return o};const files=[\"app\",\"components\",\"lib\",\"scripts\",\"test\"].flatMap(walk);const n=files.filter(f=>{try{return fs.readFileSync(f,\"utf8\").includes(\"sourceWithoutComments(\")}catch{return false}}).length;console.error(\"helper adopters=\"+n);process.exit(n>=40?0:1)'",
+        "note": "Passes once at least 40 test files use the helper (20 when filed; 50 at close). Pure node since 2026-09-07: the first version shelled out to grep, and scripts/backlog-contract.test.ts runs the guard with every binary but node stripped from PATH, where a probe that cannot run reads as a verdict."
       }
     },
     {

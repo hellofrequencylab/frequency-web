@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { readFileSync } from 'node:fs'
-import path from 'node:path'
+import { sourceWithoutComments } from '@/test/source-shape'
 import { safeWebsite } from './website'
 
 // safeWebsite (L9-02): the one seam between `profiles.website` (free text the member typed) and
@@ -56,12 +55,13 @@ describe('safeWebsite refuses what is not a website', () => {
 })
 
 describe('the public profile renders it (L9-02)', () => {
-  const page = readFileSync(path.join(process.cwd(), 'app/(main)/people/[handle]/page.tsx'), 'utf8')
+  // Comment- and import-free (LIVE-167): the call is the needle, never the import line.
+  const page = sourceWithoutComments('app/(main)/people/[handle]/page.tsx', { imports: true })
 
   it('selects profiles.website and routes it through safeWebsite', () => {
     // The column has to be in the ONE profile read, or the value never reaches the page.
     expect(page).toMatch(/\.select\(`[\s\S]*?\bwebsite,[\s\S]*?`\)/)
-    expect(page).toContain("import { safeWebsite } from '@/lib/profiles/website'")
+    expect(page).not.toMatch(/function safeWebsite\b/)
     expect(page).toContain('safeWebsite(profile.website)')
   })
 

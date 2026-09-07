@@ -1,6 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { readFileSync } from 'node:fs'
-import path from 'node:path'
+import { sourceWithoutComments } from '@/test/source-shape'
 import { relativeTime } from './utils'
 
 // ONE RELATIVE-TIME RULE (B5 dead-code sweep D2, 2026-09-04).
@@ -70,11 +69,11 @@ describe('relativeTime floors, and dates past a week', () => {
 })
 
 describe('the three intake lists read through relativeTime and carry no rounding copy', () => {
-  const read = (p: string) => readFileSync(path.join(process.cwd(), p), 'utf8')
   for (const screen of ['business-seeder', 'event-seeder', 'listing-seeder']) {
     it(`app/(main)/admin/${screen}/intake-list.tsx`, () => {
-      const src = read(`app/(main)/admin/${screen}/intake-list.tsx`)
-      expect(src).toContain("import { relativeTime } from '@/lib/utils'")
+      // Comment- and import-free (LIVE-167): the call is the needle, never the import line.
+      const src = sourceWithoutComments(`app/(main)/admin/${screen}/intake-list.tsx`, { imports: true })
+      expect(src).not.toMatch(/function relativeTime\b/)
       expect(src).toContain('{relativeTime(it.updatedAt)}')
       expect(src).not.toContain('function timeAgo')
       expect(src).not.toContain('Math.round')

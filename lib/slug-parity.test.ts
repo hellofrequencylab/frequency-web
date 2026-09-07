@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 // (fixture words avoid Tailwind utility prefixes such as `leading-*`: scripts/check-phantom-classes.mjs
 //  is a text scan and would read them as a class that emits no CSS.)
 import { readFileSync, readdirSync } from 'node:fs'
+import { sourceWithoutComments } from '@/test/source-shape'
 import path from 'node:path'
 import { slugify } from './utils'
 import { slugifyName } from './importer/map'
@@ -143,15 +144,16 @@ describe('3. the copies that could not be imported here delegate instead (source
   // Space form is a client component; neither can be called from a node test, so their delegation
   // is pinned in the source, the idiom of lib/events/rsvp-enforcement.test.ts.
   it('lib/practices.ts derives through the shared rule with its 40 cap and the trailing re-strip', () => {
-    const src = read('lib/practices.ts')
-    expect(src).toContain("import { slugify as slugifyShared } from '@/lib/utils'")
+    // Comment- and import-free (LIVE-167): slugifyShared can only be the call, never the import.
+    const src = sourceWithoutComments('lib/practices.ts', { imports: true })
+    expect(src).toMatch(/\bslugifyShared\(/)
     expect(src).toContain("const slugify = (s: string): string => slugifyShared(s).slice(0, 40).replace(/-+$/g, '')")
     expect(src).not.toContain(RULE_BODY)
   })
 
   it('the create Space form suggests exactly what lib/spaces/provision.ts will derive', () => {
-    const form = read('app/(main)/spaces/new/create-space-form.tsx')
-    expect(form).toContain("import { cn, slugify as slugifyShared } from '@/lib/utils'")
+    const form = sourceWithoutComments('app/(main)/spaces/new/create-space-form.tsx', { imports: true })
+    expect(form).toMatch(/\bslugifyShared\(/)
     expect(form).toContain("return slugifyShared(name).slice(0, 40).replace(/-+$/g, '')")
     expect(form).not.toContain(RULE_BODY)
     // The server side of the same derivation, for the reader: same rule, same cap, same re-strip.

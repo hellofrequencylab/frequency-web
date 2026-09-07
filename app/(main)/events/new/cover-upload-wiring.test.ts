@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
+import { sourceWithoutComments } from '@/test/source-shape'
 
 // THE CREATE-EVENT COVER MUST UPLOAD THROUGH THE SERVER (LIVE-072).
 //
@@ -21,9 +22,11 @@ const ACTIONS = 'app/(main)/events/admin-actions.ts'
 const CONTROL = 'components/ui/image-upload.tsx'
 const CREATE = 'app/(main)/events/actions.ts'
 
-const form = readFileSync(FORM, 'utf8')
+// Comment- and import-free (LIVE-167): the form's own header NAMES uploadNewEventImage while
+// explaining it, so the needle must hit the call.
+const form = sourceWithoutComments(FORM, { imports: true })
 const actions = readFileSync(ACTIONS, 'utf8')
-const control = readFileSync(CONTROL, 'utf8')
+const control = sourceWithoutComments(CONTROL, { imports: true })
 
 /** The props of the mount whose opening tag starts at `tag` — e.g. the ONE `<ImageUpload` in the form. */
 function mountProps(source: string, tag: string): string {
@@ -36,7 +39,8 @@ function mountProps(source: string, tag: string): string {
 
 describe('the create form routes its photos through the gated action', () => {
   it('imports the server action', () => {
-    expect(form).toContain("import { uploadNewEventImage } from '@/app/(main)/events/admin-actions'")
+    expect(form).toContain('return uploadNewEventImage(fd)')
+    expect(form).not.toMatch(/function uploadNewEventImage\b/)
   })
 
   it('the cover control carries an uploadFn, so it never touches the browser Storage client', () => {
@@ -99,7 +103,7 @@ describe('uploadNewEventImage is gated, bounded, and returns a path', () => {
 
 describe('the uploadFn branch respects the control\'s mode', () => {
   it('delegates the value decision instead of assuming a URL', () => {
-    expect(control).toContain("from '@/lib/library/upload-result'")
+    expect(control).not.toMatch(/function valueFromServerUpload\b/)
     expect(control).toContain('const next = valueFromServerUpload(mode, res, Date.now())')
     expect(control).toContain('onChange(next.value)')
   })
