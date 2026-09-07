@@ -121,7 +121,7 @@ export function Toast({
     // not interrupt. `pointer-events-auto` re-arms the click surface the lane turns off.
     <div
       role="status"
-      className={`pointer-events-auto flex items-start gap-3 rounded-card border px-4 py-3 lift-3 animate-[slideUp_0.4s_ease-out] ${frame} ${className}`}
+      className={`pointer-events-auto flex items-start gap-3 rounded-card border px-4 py-3 lift-3 motion-safe:animate-[slideUp_0.4s_ease-out] ${frame} ${className}`}
     >
       {icon && (
         <span

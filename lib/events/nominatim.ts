@@ -31,10 +31,12 @@ export function nominatimContact(): string {
     'https://frequencylocal.com'
   )
 }
+// Call this PER REQUEST rather than snapshotting it into a module constant: the contact chain reads
+// env, and a module-eval constant freezes whatever was loaded at import time (which is how the blank
+// `GEOCODER_CONTACT_EMAIL=` above went unnoticed). The one live header build, below, calls it directly.
 export function nominatimUserAgent(): string {
   return `Frequency/1.0 (${nominatimContact()})`
 }
-export const NOMINATIM_USER_AGENT = nominatimUserAgent()
 
 const DEFAULT_MIN_INTERVAL_MS = 1100
 const REQUEST_TIMEOUT_MS = 5000

@@ -6,7 +6,6 @@ import { describe, it, expect } from 'vitest'
 
 import {
   priceKey,
-  offersPeriod,
   allPublicPriceKeys,
   allFounderPriceKeys,
   asMemberTierKey,
@@ -37,16 +36,6 @@ describe('priceKey', () => {
     expect(priceKey('crew', 'annual')).toBe('crew_annual')
     expect(priceKey('business', 'monthly')).toBe('business_monthly')
     expect(priceKey('crew', 'monthly', true)).toBe('crew_monthly_founder')
-  })
-})
-
-describe('offersPeriod', () => {
-  it('crew/business/nonprofit offer monthly + annual (ADR-552, ADR-878)', () => {
-    // Supporter is off the sellable ladder (ADR-878), so it is no longer a key with periods at all.
-    for (const base of ['crew', 'business', 'nonprofit'] as const) {
-      expect(offersPeriod(base, 'monthly')).toBe(true)
-      expect(offersPeriod(base, 'annual')).toBe(true)
-    }
   })
 })
 
