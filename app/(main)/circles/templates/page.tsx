@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { PenLine } from 'lucide-react'
 import { IndexTemplate } from '@/components/templates'
+import { resolveIndexHero } from '@/lib/layout/index-hero'
 import { SectionHeader } from '@/components/ui/section-header'
 import { EntityCard } from '@/components/cards/entity-card'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -30,10 +31,14 @@ export default async function StarterCirclesPage() {
   const caller = await getCallerProfile()
   if (!caller) redirect('/circles')
 
+  // ONE resolve for both branches below: enabled or not, this is the same route.
+  const hero = await resolveIndexHero('/circles/templates')
+
   const enabled = await templatesEnabled()
   if (!enabled) {
     return (
       <IndexTemplate
+        {...hero}
         eyebrow="Circles"
         title="Starter Circles"
         description="Staff-made blueprints you can remix into a Circle of your own."
@@ -63,6 +68,7 @@ export default async function StarterCirclesPage() {
 
   return (
     <IndexTemplate
+      {...hero}
       eyebrow="Circles"
       title="Starter Circles"
       description="Staff-made blueprints, three per Pillar. Remix one to make it yours, or start from scratch."

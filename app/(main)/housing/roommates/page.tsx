@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { Users, MapPin, Sparkles } from 'lucide-react'
 import { IndexTemplate } from '@/components/templates'
+import { resolveIndexHero } from '@/lib/layout/index-hero'
 import { EmptyState } from '@/components/ui/empty-state'
 import { PersonCard } from '@/components/cards/person-card'
 import { UnderlineTabs } from '@/components/ui/underline-tabs'
@@ -72,8 +73,11 @@ export default async function RoommatesPage({
 
   const base = '/housing/roommates'
 
+  const hero = await resolveIndexHero('/housing/roommates')
+
   return (
     <IndexTemplate
+      {...hero}
       title="Roommate matches"
       description="Tell us what you're after. We rank rooms and people by who you'd actually click with, your budget, and how close it is."
       toolbar={<MarketplaceFacets active="housing" />}

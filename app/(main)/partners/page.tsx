@@ -8,6 +8,7 @@ import {
 } from '@/lib/partners/read'
 import { getMyProfileId } from '@/lib/auth'
 import { IndexTemplate } from '@/components/templates/index-template'
+import { resolveIndexHero } from '@/lib/layout/index-hero'
 import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
 import { EntityCard } from '@/components/cards/entity-card'
@@ -39,8 +40,11 @@ export default async function PartnersPage() {
   const cities = new Set(partners.map((p) => p.city).filter(Boolean)).size
   const categories = new Set(partners.map((p) => p.category).filter(Boolean)).size
 
+  const hero = await resolveIndexHero('/partners')
+
   return (
     <IndexTemplate
+      {...hero}
       title="Partners"
       description="Local businesses that back the community. Walk in, tap their plaque or scan a code to claim a members-only offer, and pick up Zaps while you’re at it."
     >
