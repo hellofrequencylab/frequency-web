@@ -37,6 +37,8 @@ export interface RailManifestFieldsProps {
   onChange: (path: string, next: string) => void
   /** Ghost text per path. A prop, not manifest data: an example is tuned to the surface asking. */
   placeholders?: Record<string, string>
+  /** Standing guidance under a control, per path. The surface's, for the same reason as a placeholder. */
+  hints?: Record<string, string>
   /** Loaded collections for `optionsFrom` fields, keyed by the collection name. */
   loaded?: FieldOptions
   disabled?: boolean
@@ -58,6 +60,7 @@ export function RailManifestFields({
   values,
   onChange,
   placeholders,
+  hints,
   loaded,
   disabled,
 }: RailManifestFieldsProps) {
@@ -78,6 +81,7 @@ export function RailManifestFields({
               value={values[def.path] ?? ''}
               onChange={(next) => onChange(def.path, Array.isArray(next) ? next.join(', ') : next)}
               placeholder={placeholders?.[def.path]}
+              hint={hints?.[def.path]}
               loaded={loaded}
               disabled={disabled}
             />
