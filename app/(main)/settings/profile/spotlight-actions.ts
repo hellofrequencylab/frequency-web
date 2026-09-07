@@ -3,12 +3,8 @@
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { mergeProfileMeta, removeProfileMetaKeys } from '@/lib/profiles/meta'
-import {
-  readSpotlightEnabled,
-  withSpotlightTheme,
-  withSpotlightBackground,
-} from '@/lib/profile/spotlight-flags'
+import { mergeProfileMeta, mergeProfileMetaPath, removeProfileMetaKeys } from '@/lib/profiles/meta'
+import { readSpotlightEnabled } from '@/lib/profile/spotlight-flags'
 import { validateSpotlightTheme } from '@/lib/spotlight/theme'
 import { validateSpotlightBackground } from '@/lib/spotlight/blocks/validate'
 import {
@@ -158,10 +154,10 @@ export async function setSpotlightTheme(rawTheme: unknown): Promise<{ error?: st
   }
 
   const safe = validateSpotlightTheme(rawTheme)
-  // 2026-09-05 (scan2 L6-09): only the `spotlight` key is merged server-side (the read supplies its
-  // sibling fields: enabled, published, background). Sibling meta keys are never carried back.
-  const { spotlight } = withSpotlightTheme((me as { meta?: unknown }).meta, safe)
-  const { error } = await mergeProfileMeta(supabase, (me as { id: string }).id, { spotlight })
+  // 2026-09-07 (LIVE-171, ADR-1235): only `theme` is sent, merged INSIDE the `spotlight` key
+  // server-side. The sibling fields (enabled, published, background) are never read and re-sent, so
+  // a janitor unpublishing in the same second is not reverted by this save.
+  const { error } = await mergeProfileMetaPath(supabase, (me as { id: string }).id, ['spotlight'], { theme: safe })
   if (error) return { error }
 
   revalidateSpotlight((me as { handle?: string | null }).handle ?? null)
@@ -190,9 +186,8 @@ export async function setSpotlightBackground(rawBackground: unknown): Promise<{ 
   }
 
   const safe = validateSpotlightBackground(rawBackground, user.id)
-  // 2026-09-05 (scan2 L6-09): only the `spotlight` key is merged server-side.
-  const { spotlight } = withSpotlightBackground((me as { meta?: unknown }).meta, safe)
-  const { error } = await mergeProfileMeta(supabase, (me as { id: string }).id, { spotlight })
+  // 2026-09-07 (LIVE-171): only `background` is sent, merged INSIDE the `spotlight` key server-side.
+  const { error } = await mergeProfileMetaPath(supabase, (me as { id: string }).id, ['spotlight'], { background: safe })
   if (error) return { error }
 
   revalidateSpotlight((me as { handle?: string | null }).handle ?? null)

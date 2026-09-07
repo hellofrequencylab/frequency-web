@@ -7,7 +7,9 @@
 // (doing nothing) when Sentry is off. With no DSN, instrumentation loads but
 // captures nothing — no behaviour change.
 
+import type { Instrumentation } from 'next'
 import * as Sentry from '@sentry/nextjs'
+import { isClientAbortedStream } from '@/lib/observability/request-error'
 
 export async function register() {
   if (process.env.NEXT_RUNTIME === 'nodejs') {
@@ -20,4 +22,14 @@ export async function register() {
 }
 
 // Captures errors thrown in Server Components, route handlers, and the proxy.
-export const onRequestError = Sentry.captureRequestError
+//
+// ONE classification sits in front of the recorder (LIVE-210, ADR-1236): React's "The destination
+// stream closed early." is the client closing the connection mid-payload (a cancelled prefetch, a
+// navigation away), not a failure of the route, so it is not recorded. The match is exact and lives
+// in lib/observability/request-error.ts with the digest and the production sample that justify it.
+// Everything else goes to Sentry unchanged. Do not add a second case here without the same shape:
+// an exact match, a named digest, and a test.
+export const onRequestError: Instrumentation.onRequestError = (err, request, context) => {
+  if (isClientAbortedStream(err)) return
+  return Sentry.captureRequestError(err, request, context)
+}

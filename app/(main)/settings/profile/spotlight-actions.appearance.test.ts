@@ -33,12 +33,13 @@ vi.mock('@/lib/supabase/server', () => ({
 
 import { setSpotlightTheme, setSpotlightBackground } from './spotlight-actions'
 
-/** The `spotlight` sub-object the writer sent through merge_profile_meta. */
+/** The patch the writer sent INSIDE the `spotlight` key through merge_profile_meta_path (LIVE-171):
+ *  only the one field it owns, never the sibling fields it could have read back. */
 function sentSpotlight<T>(): T {
-  const [name, args] = rpc.mock.calls[0] as [string, { p_profile_id: string; p_patch: { spotlight: T } }]
-  expect(name).toBe('merge_profile_meta')
-  expect(Object.keys(args.p_patch)).toEqual(['spotlight'])
-  return args.p_patch.spotlight
+  const [name, args] = rpc.mock.calls[0] as [string, { p_profile_id: string; p_path: string[]; p_patch: T }]
+  expect(name).toBe('merge_profile_meta_path')
+  expect(args.p_path).toEqual(['spotlight'])
+  return args.p_patch
 }
 
 beforeEach(() => {
@@ -64,9 +65,9 @@ describe('setSpotlightTheme', () => {
     expect((rpc.mock.calls[0] as [string, { p_profile_id: string }])[1].p_profile_id).toBe('prof-1')
   })
 
-  it('preserves other spotlight keys (enabled) when writing theme', async () => {
+  it('sends ONLY theme, so the enabled / published flags it read are never carried back stale', async () => {
     await setSpotlightTheme({})
-    expect(sentSpotlight<{ enabled?: boolean }>().enabled).toBe(true)
+    expect(Object.keys(sentSpotlight<Record<string, unknown>>())).toEqual(['theme'])
   })
 
   it('rejects a signed-out caller', async () => {
@@ -104,6 +105,11 @@ describe('setSpotlightBackground', () => {
     const res = await setSpotlightBackground({ assetPath: 'auth-2/spotlight/pic.png' })
     expect(res).toEqual({})
     expect(sentSpotlight<{ background: BackgroundShape }>().background.assetPath).toBeNull()
+  })
+
+  it('sends ONLY background inside the spotlight key', async () => {
+    await setSpotlightBackground({})
+    expect(Object.keys(sentSpotlight<Record<string, unknown>>())).toEqual(['background'])
   })
 
   it('rejects a signed-out caller', async () => {

@@ -361,4 +361,25 @@ figures are non-sensitive dollar amounts you copy from each vendor's billing con
 | **Monthly** | Re-run `cost-baseline.mjs`, append a dated §3 snapshot; watch the per-1k trend. |
 | **Per deploy / CI** | `pnpm check:cron-freshness --strict` confirms no cron is paging-blind (every §4a job has a heartbeat monitor) before shipping. |
 | **Per incident** | If an SLO pages, the runbook (H4-7) references the relevant §4 row. |
-```
+
+---
+
+## 7. Known-benign error groups
+
+The production error list (Vercel runtime errors, and Sentry when the DSN is set) is read by
+people looking for defects. An error group that is NOT a defect but stays on that list is a tax on
+every future reader, and camouflage for a real failure that lands beside it. So each one is
+recorded here with its digest and the reason, and, where userland can reach the recorder, filtered
+there with the same digest in a comment. Do not add a row here to make a real error go away.
+
+| Digest | Message | Routes | What it is | Where it is handled |
+|---|---|---|---|---|
+| `3689792676` | `The destination stream closed early.` | eleven `.rsc` payload routes (`/marketplace`, `/housing`, `/spaces/directory`, `/index`, `/crew`, `/network/contacts`, `/classifieds`, `/nearby`, `/network`, `/events/[slug]`, `/people/[handle]`) | The browser closed the connection while the RSC payload was streaming. React's Flight server cancels the render with this plain `Error` when the destination emits `close`. The sample that settles it (read 2026-09-07, LIVE-210): at 06:12:55Z on 2026-09-03 one client logged seven of these in the same second on seven unrelated routes, every request `200`. That is the router prefetching a menu of links and then navigating, which aborts the prefetches it no longer needs. 19 occurrences, 4 users, 2026-08-17 to 2026-09-03. No response was owed and nothing downstream ran. | **Sentry:** not recorded. `instrumentation.ts` `onRequestError` consults `isClientAbortedStream` (`lib/observability/request-error.ts`, exact-message match, tested) before `Sentry.captureRequestError`. **Vercel:** still listed, and it cannot be filtered from userland: Next's `createReactServerErrorHandler` drops an abort only when `err.name` is `AbortError` or `ResponseAborted`, React throws a plain `Error`, and Next `console.error`s it with the digest BEFORE calling `onRequestError`. Read the routes: eleven unrelated `.rsc` routes at once is this row; one route, repeatedly, with a different message is not. |
+
+**How to tell this row from a real stream failure.** A defect in shared code clusters on the
+routes that share it; a defect in one route stays on that route. This group spreads thinly over
+every route a member can prefetch, at the rate a handful of people navigate, and the message is
+React's client-close message verbatim. A genuine mid-stream failure (an upstream that hung, a
+payload that threw while flushing) carries a different message and still reaches Sentry: the
+classifier matches the exact string, never a substring, and `instrumentation.test.ts` holds the
+positive control.

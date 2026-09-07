@@ -32,7 +32,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { createAdminClient } from '@/lib/supabase/admin'
-import { mergeProfileMeta } from '@/lib/profiles/meta'
+import { mergeProfileMeta, mergeProfileMetaPath } from '@/lib/profiles/meta'
 import { getSpaceById, loadRootSpaceId } from '@/lib/spaces/store'
 import { insertSpaceLibraryImage, fileAssetsIntoSpacesCollection } from '@/lib/library/store'
 import { withImageOrder } from './media-order'
@@ -43,7 +43,6 @@ import { normalizeWindow } from '@/lib/spaces/booking'
 import { withProfileData } from '@/lib/spaces/profile-data'
 import { sanitizeEntityLayout } from '@/lib/entity-blocks/layout'
 import { withMemberGridLayout } from '@/lib/entity-blocks/member-grid-meta'
-import { withSpotlightEnabled } from '@/lib/profile/spotlight-flags'
 import { isSafeSlug } from '@/lib/theme/validate'
 import { withPageDoc, HOME_SLUG } from '@/lib/spaces/profile-pages'
 import type { EntityLayout } from '@/lib/entity-blocks/layout'
@@ -617,8 +616,8 @@ async function eventSlugExists(slug: string): Promise<boolean> {
 /**
  * Dress a demo owner's Spotlight so the seeded demo looks lived-in: write a member GRID layout
  * (a single `links` row from the business links) into profiles.meta.entityGrid and enable
- * Spotlight. Reuses the PURE meta writers (withMemberGridLayout / withSpotlightEnabled) and binds
- * the write to the given profile id via the admin client. Session-derived spotlight-actions.ts can
+ * Spotlight. Reuses the PURE grid writer (withMemberGridLayout) and binds the two merges to the
+ * given profile id via the admin client. Session-derived spotlight-actions.ts can
  * NOT be reused here (they gate on the caller's own session), hence the direct, id-bound write.
  * Best-effort; returns whether it wrote.
  */
@@ -633,19 +632,16 @@ async function dressSpotlight(profileId: string, profile: BusinessProfile): Prom
   }
   const safe = sanitizeEntityLayout(rawLayout, 'member')
   try {
-    const table = adminFrom('profiles')
-    const { data } = await table
-      .select('meta')
-      .eq('id', profileId)
-      .maybeSingle()
-    const currentMeta = (data as { meta?: unknown } | null)?.meta
-    // 2026-09-05 (scan2 L6-09): "the direct, id-bound write" above now merges ONLY the two keys this
-    // dressing owns (`entityGrid`, and the `spotlight` sub-object with enabled flipped) server-side,
-    // instead of spreading the whole read back over the row.
+    // 2026-09-05 (scan2 L6-09): "the direct, id-bound write" above now merges ONLY what this dressing
+    // owns, server-side, instead of spreading a read back over the row. 2026-09-07 (LIVE-171): the
+    // `entityGrid` key is this writer's own and merges whole; `enabled` is one field of the shared
+    // `spotlight` key and merges INSIDE it, so nothing of that key is read and re-sent.
+    const admin = createAdminClient()
     const { entityGrid } = withMemberGridLayout({}, safe)
-    const { spotlight } = withSpotlightEnabled(currentMeta, true)
-    const { error } = await mergeProfileMeta(createAdminClient(), profileId, { entityGrid, spotlight })
-    return !error
+    const { error } = await mergeProfileMeta(admin, profileId, { entityGrid })
+    if (error) return false
+    const { error: flagErr } = await mergeProfileMetaPath(admin, profileId, ['spotlight'], { enabled: true })
+    return !flagErr
   } catch {
     return false
   }

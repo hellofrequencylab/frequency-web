@@ -20,7 +20,7 @@ vi.mock('@/lib/connections/resonance', () => ({ getMyOrbit: async () => [] }))
 vi.mock('@/lib/feed/post-origin', () => ({ buildScopeContextResolver: async () => () => null }))
 vi.mock('@/lib/events/dispatch-audience', () => ({
   viewerInEventDispatchArea: () => false,
-  viewerHasActiveRsvp: async () => false,
+  viewerActiveRsvpEventIds: async () => new Set<string>(),
 }))
 vi.mock('./feed-people-strip', () => ({ FeedPeopleStrip: () => null }))
 vi.mock('./post-card', () => ({ PostCard: () => null }))
@@ -39,10 +39,21 @@ async function render(props: Parameters<typeof FeedList>[0]): Promise<string> {
   return renderToStaticMarkup(el)
 }
 
+// The furniture reads (dispatch candidates, nearest event, viewer context) start in the SAME
+// wave as the feed RPC now (LIVE-179, ADR-1242), so the admin stub must answer a builder chain
+// even on the failed-RPC path; every chain resolves to no rows.
+function chain(): Record<string, unknown> {
+  const b: Record<string, unknown> = {}
+  for (const m of ['select', 'eq', 'is', 'in', 'gte', 'order', 'limit']) b[m] = () => b
+  b.maybeSingle = async () => ({ data: null })
+  b.then = (resolve: (v: { data: never[] }) => void) => resolve({ data: [] })
+  return b
+}
+
 beforeEach(() => {
   vi.clearAllMocks()
   vi.spyOn(console, 'error').mockImplementation(() => {})
-  createAdminClient.mockReturnValue({})
+  createAdminClient.mockReturnValue({ from: () => chain() })
 })
 
 describe('FeedList on a failed feed RPC', () => {
