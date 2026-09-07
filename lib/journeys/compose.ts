@@ -15,6 +15,7 @@ import {
   type ComposeCandidate,
 } from '@/lib/ai/journey-composition'
 import { DEFAULT_EXTRA_CREDIT_ZAPS } from '@/lib/journeys/grants'
+import { log } from '@/lib/log'
 
 type AdminDb = ReturnType<typeof createAdminClient>
 type NewBlock = Database['public']['Tables']['journey_plan_items']['Insert']
@@ -73,10 +74,35 @@ async function candidatesByPillar(
 }
 
 /** Insert a sequence of child blocks under `parentId`, in order. */
+/**
+ * Insert a phase's composed children, in order.
+ *
+ * 🔴 THE `{ error }` IS READ, AND THAT IS THE POINT (LIVE-173). Every insert here used to be
+ * awaited with its result discarded, so a Vera composition whose practice rows never landed still
+ * returned `aiUsed: true` and the author was dropped into an editor missing the very rows the
+ * compose run had just promised them. Nothing anywhere recorded it.
+ *
+ * The loop still does NOT abort on a failure, and that is deliberate rather than an oversight: the
+ * rows are independent slots (four Pillars plus extra credit), so one refused insert must not cost
+ * the four that would have succeeded. What changes is that a dropped row is now a queryable line
+ * keyed by plan and parent instead of silence. `journeys.compose_child_failed` is the event to
+ * alert on, and it shares the shape of create-actions' `journeys.seed_failed`.
+ */
 export async function insertChildren(admin: AdminDb, planId: string, parentId: string, rows: ComposedRow[]): Promise<void> {
   let sort = 0
   for (const row of rows) {
-    await admin.from('journey_plan_items').insert({ ...row, plan_id: planId, parent_id: parentId, sort_order: sort++ })
+    const { error } = await admin
+      .from('journey_plan_items')
+      .insert({ ...row, plan_id: planId, parent_id: parentId, sort_order: sort++ })
+    if (error) {
+      log.error('journeys.compose_child_failed', {
+        planId,
+        parentId,
+        blockType: row.block_type,
+        title: row.title,
+        error: error.message,
+      })
+    }
   }
 }
 
