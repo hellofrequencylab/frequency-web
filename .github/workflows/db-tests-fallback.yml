@@ -31,16 +31,47 @@
 # `pr-compare`. Read that file's header for the two incidents that shaped this shape.
 name: db-tests-fallback
 
+# ⚠️ THE DISPATCH PATH EXISTS BECAUSE `pull_request` IS NOT GUARANTEED TO FIRE (SCAN-521).
+#
+# A pull request opened AFTER its branch was pushed fires no `pull_request` event at all, and
+# GitHub then reports zero workflow runs on that head — not red, NEVER RUN, which on the PR page is
+# visually identical to "waiting". `ci.yml` and `codeql.yml` survive that because both declare
+# `workflow_dispatch`. This file did not, so for a PR that (a) fires no event and (b) touches no
+# migration path, the required `db-tests` context had NO producer and no manual path — and
+# `bypass_actors` is null on the ruleset, so an admin cannot force it either. That is the PR #2107
+# deadlock reached by a different route: a missing event rather than a path filter.
+#
+# 🔴 CONFIRMED A SECOND TIME, 2026-09-07, BY A THIRD ROUTE. Retargeting a PR's base branch fires no
+# `synchronize` either. Three PRs in the audit stack (#2388, #2390, #2391) were retargeted to main
+# and sat with zero required contexts; the merge was refused with "5 of 6 required status checks are
+# expected". They escaped exactly the way PR #2310 did — by needing a real push for another reason.
+# A PR needing no such push would have been stuck.
+#
+# 🔴 WHY THIS IS NOT A BARE `workflow_dispatch:`, which would be the dangerous fix. With no PR
+# context there is no changed-file list, so a bare dispatch could post a green `db-tests` having
+# looked at nothing — the vacuous green this file's header spends a paragraph warning about — and it
+# could stamp that green over a PR that DID change migrations. The input is therefore the PR NUMBER,
+# and every decision below is recomputed from the API for that PR: its changed files, and its
+# CURRENT head SHA. The property that makes requiring `db-tests` safe is preserved exactly — this
+# job decides for itself whether the real gate ran, and posts only when it did not.
 on:
   pull_request:
     branches: [main]
+  workflow_dispatch:
+    inputs:
+      pr:
+        description: 'Pull request number to post db-tests for (recomputed from the API, never assumed)'
+        required: true
+        type: string
 
 permissions:
   contents: read
   statuses: write
 
 concurrency:
-  group: db-tests-fallback-${{ github.ref }}
+  # Keyed on the PR rather than the ref, so a dispatch and an event for the same pull request do not
+  # run concurrently and race each other's status write.
+  group: db-tests-fallback-${{ github.event.pull_request.number || inputs.pr }}
   cancel-in-progress: true
 
 jobs:
@@ -56,10 +87,58 @@ jobs:
         with:
           fetch-depth: 1
 
+      # Resolve the pull request ONCE, from the API, for both paths.
+      #
+      # 🔴 THE HEAD SHA MUST COME FROM THE API, NOT FROM THE DISPATCH REF. On the event path
+      # `github.event.pull_request.head.sha` is the PR's head and is correct. On the dispatch path
+      # there is no such context, and the obvious substitute — `github.sha`, the ref the workflow was
+      # dispatched on — is NOT the same thing: dispatching on a branch whose tip has moved, or on a
+      # ref that is not the PR's head at all, would post a status onto a commit the PR does not
+      # point at. The context would then be absent where the merge looks for it, which is the very
+      # deadlock this file exists to break. So the dispatch path asks the API what the PR's head is.
+      #
+      # It also refuses a PR that is not OPEN. A dispatch naming a merged or closed PR has no
+      # business writing a status, and a typo'd number is far likelier than a legitimate one.
+      - name: Resolve the pull request
+        id: pr
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number || inputs.pr }}
+        run: |
+          set -euo pipefail
+          case "$PR_NUMBER" in
+            ''|*[!0-9]*) echo "::error::pr input must be a number, got '${PR_NUMBER}'."; exit 1 ;;
+          esac
+
+          pr=$(curl -sS --fail-with-body \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}")
+
+          state=$(printf '%s' "$pr" | python3 -c 'import json,sys; print(json.load(sys.stdin)["state"])')
+          head=$(printf '%s' "$pr" | python3 -c 'import json,sys; print(json.load(sys.stdin)["head"]["sha"])')
+          base=$(printf '%s' "$pr" | python3 -c 'import json,sys; print(json.load(sys.stdin)["base"]["ref"])')
+
+          if [ "$state" != "open" ]; then
+            echo "::error::PR #${PR_NUMBER} is ${state}, not open. Refusing to post a status on it."
+            exit 1
+          fi
+          # The event path is already branch-filtered by `on:`; the dispatch path is not, so it is
+          # filtered here rather than trusting the caller to have checked.
+          if [ "$base" != "main" ]; then
+            echo "::error::PR #${PR_NUMBER} targets '${base}', not main. db-tests is only required there."
+            exit 1
+          fi
+
+          echo "number=${PR_NUMBER}" >> "$GITHUB_OUTPUT"
+          echo "head=${head}" >> "$GITHUB_OUTPUT"
+          echo "::notice::PR #${PR_NUMBER} is open against ${base}; head is ${head}."
+
       - name: Decide whether db-tests already owns this PR
         id: decide
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ steps.pr.outputs.number }}
         run: |
           set -euo pipefail
 
@@ -72,7 +151,7 @@ jobs:
             body=$(curl -sS --fail-with-body \
               -H "Authorization: Bearer ${GH_TOKEN}" \
               -H "Accept: application/vnd.github+json" \
-              "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/pulls/${{ github.event.pull_request.number }}/files?per_page=100&page=${page}")
+              "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}/files?per_page=100&page=${page}")
             count=$(printf '%s' "$body" | python3 -c 'import json,sys; d=json.load(sys.stdin); print(len(d)); [print(f["filename"]) for f in d]' | tee /tmp/page.txt | head -1)
             tail -n +2 /tmp/page.txt >> /tmp/changed.txt
             [ "$count" -lt 100 ] && break
@@ -114,7 +193,7 @@ jobs:
         if: steps.decide.outputs.db == 'false'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          HEAD_SHA: ${{ steps.pr.outputs.head }}
         run: |
           # NOT `-e`: curl's exit code is inspected per attempt rather than aborting the step.
           set -uo pipefail
