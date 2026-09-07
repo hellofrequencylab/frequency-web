@@ -111,7 +111,6 @@
             "HYG-050",
             "SCAN-502",
             "HYG-053",
-            "HYG-059",
             "HYG-062"
           ]
         },
@@ -225,7 +224,8 @@
             "LIVE-127",
             "OWN-059",
             "OWN-060",
-            "OWN-061"
+            "OWN-061",
+            "OWN-062"
           ]
         }
       ],
@@ -9270,7 +9270,7 @@
     {
       "id": "HYG-059",
       "title": "Every query baseline and the SLO snapshot in OBSERVABILITY-BASELINES still read \"pending capture\"",
-      "status": "open",
+      "status": "done",
       "priority": "P2",
       "lane": "hygiene",
       "size": "S",
@@ -9278,7 +9278,7 @@
         "file": "docs/OBSERVABILITY-BASELINES.md",
         "ref": "§Baselines, every _pending capture_ cell"
       },
-      "detail": "FILED 2026-09-06 by the backlog audit's docs sweep: work a live plan or ADR names as open, deferred or \"a follow-up\", with no row owning it. docs/OBSERVABILITY-BASELINES.md defines the query baselines and the SLO snapshot the observability program measures against, and every reading cell is a placeholder: `_tbd_` in the latency and cost tables, `_pending_` for the capture date, dataset size and region, and `_pending capture._` for all five query plans. A baseline that was never captured is a ratchet with no floor: LIVE-178 to LIVE-181 (the perf set) were filed from a call-graph read because there was no measured number to compare against. THE WORK: take the captures the doc specifies (pg_stat_statements or the Supabase query report for the named queries; the SLO snapshot from lib/observability/slos.ts) and write the numbers and the date into the doc, which is the one place a measured reading is allowed to live as prose because the doc IS the instrument's record. Do it before the perf rows land so they have a before. ⚠️ NOTE ON THE PROBE, because the first two attempts at it were both wrong and in opposite directions. It is grep-ABSENT of the placeholder tokens: absent means every cell holds a number, which is the consequence this row is about. Attempt one searched for `_pending capture_` while the doc says `_pending capture._`, so it matched nothing and reported the row already done; attempt two kept the right pattern and flipped the kind to grep-present, which reported the same thing for the opposite reason. Both were caught by check:backlog on the run that filed them, which is the contract working — a probe is only trustworthy once it has been watched to disagree with the tree.",
+      "detail": "FILED 2026-09-06 by the backlog audit's docs sweep. docs/OBSERVABILITY-BASELINES.md defines the query baselines and the SLO snapshot the observability program measures against, and every reading cell was a placeholder. A baseline that was never captured is a ratchet with no floor.\n\n── CLOSED 2026-09-07, AND THE REMEDY IS NOT THE ONE THE ROW IMPLIED. \"Capture the baseline\" was the obvious reading; measuring the database first showed it would have been actively harmful.\n\nTHE DATASET CANNOT SUPPORT A BASELINE YET, measured rather than assumed: posts 0, circles 0, circle_profiles 0, memberships 0, room_messages 0, friendships 1, event_rsvps 5, practice_logs 14, spaces 22, profiles 58, events 67. Only engagement_events has volume, at 39,492 rows / 26 MB. THREE OF THE FIVE HOT PATHS READ TABLES THAT ARE EMPTY. Numbers captured here would encode \"every plan is an instant scan of nothing\", and the first real traffic would blow through them for reasons that have nothing to do with a regression — a ratchet that fires on success, which is how a check trains people to ignore it (ADR-970). The doc's own methodology says so: a p95 is meaningless without the data volume it ran against.\n\nSo the file now carries MEASURED FACTS where they exist and a STATED GATE where they do not: region us-west-2, Postgres 17.6, the full per-table row counts and sizes at a dated capture, and an explicit volume threshold at which §2a should be re-run (posts >= 1,000 · circles >= 50 with circle_profiles >= 500 · profiles >= 500 · event_rsvps >= 1,000). The honest floor today is that there is no floor, said with numbers.\n\n🔴 TWO REAL BUGS WERE FOUND BY TRYING TO FOLLOW THE DOC, which is the argument for trying rather than reasoning about it. (1) scripts/perf-baseline.mjs printed capture SQL for a function that DOES NOT EXIST: it passed a viewer uuid as the first argument, while the live signature is feed_for_viewer(_sort text, _limit int, _lat float8, _lng float8, _radius_m int) and takes no viewer id at all. It failed with `function feed_for_viewer(uuid, integer, unknown) does not exist`. Fixed, with the real signature and the reason recorded at the line. (2) EXPLAIN of an RPC CALL yields nothing usable — feed_for_viewer is PL/pgSQL, so the plan is one opaque `Function Scan` line (measured 180.970 ms, shared hit=3032). §2a already said to capture the body's hot statement; the script's SQL did not, and now says how.\n\n⚠️ AND A LIMIT ON THE TOOL, recorded so the next attempt does not produce the wrong plan wearing the right label: §2a requires the plan as role `authenticated` because RLS predicates inline differently, and the Supabase MCP execute_sql connects privileged, so it can only ever produce the service_role shape.\n\n⏳ THE COST HALF IS OWNER-BLOCKED AND IS NOW ADDRESSED TO THE OWNER. §3a and §3b come from vendor billing consoles, which is account access no agent has. Those cells read \"⏳ owner\" against the repo's own status legend rather than a placeholder that reads as \"someone forgot\", and the ask is carried by OWN-062. Noted there and here: the denominator is 58 profiles, so a per-1k-members figure computed today would be an extrapolation from a twentieth of the unit presented as fact.",
       "verify": {
         "kind": "grep-absent",
         "pattern": "_(pending|tbd)",
@@ -9401,6 +9401,25 @@
         "cmd": "node -e \"const fs=require('fs');const s=fs.readFileSync('scripts/maintenance/fold-ledger-docs.mjs','utf8');if(!/function foldSlate/.test(s))throw new Error('the fold no longer reconciles meta.slate');if(!/status === 'done'/.test(s))throw new Error('foldSlate no longer drops finished rows');const t=fs.readFileSync('scripts/maintenance/fold-ledger-docs.test.ts','utf8');if(!/meta.slate is folded beside the entries/.test(t))throw new Error('the slate fold has no test');\""
       },
       "notes": "Filed and closed in the same change, per the rule that a gate is wired beside the run that proves it."
+    },
+    {
+      "id": "OWN-062",
+      "title": "The cost baseline and unit economics need figures only a billing console can give",
+      "status": "open",
+      "lane": "owner",
+      "size": "XS",
+      "priority": "P3",
+      "ownerAction": "account",
+      "source": {
+        "file": "docs/OBSERVABILITY-BASELINES.md",
+        "ref": "HYG-059 · H0-7"
+      },
+      "detail": "FILED 2026-09-07 while closing HYG-059. docs/OBSERVABILITY-BASELINES.md §3a and §3b are the cost baseline and unit economics the H0-7 work measures against, and every figure comes from a vendor's own billing console — account access no agent in this repo has. The cells now read \"⏳ owner\" rather than an unfilled placeholder, and this row is the ask so the gap is addressed to somebody rather than sitting in a document nobody owns.\n\nWHAT TO DO: open the current invoice for Supabase, Vercel, Anthropic, Resend and Upstash; put each plan tier and monthly figure into §3a; state the snapshot month; and state whether the §3b denominator is WAM or MAU.\n\n⚠️ WORTH DOING §3a NOW AND §3b LATER. The per-vendor spend is useful the moment it is written down. The per-1,000-members division is not: the denominator is 58 profiles today (measured 2026-09-07), so a per-1k figure would be an extrapolation from a twentieth of the unit and would read as a fact. Capture §3b when the member count makes the division meaningful — the same volume gate §2b now carries.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "2026-09-07: §3a and §3b of docs/OBSERVABILITY-BASELINES.md carry \"⏳ owner\" in every figure cell. Closes when the five vendor rows carry a plan tier and a monthly figure and the snapshot month is stated.",
+        "checked": "2026-09-07"
+      }
     }
   ]
 }
