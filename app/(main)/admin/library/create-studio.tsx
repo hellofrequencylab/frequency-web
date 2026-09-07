@@ -7,6 +7,7 @@ import { sanitizeSvg } from '@/lib/library/svg-sanitize'
 import { Select } from '@/components/ui/select'
 import { generateLoomCard, saveLoomCard, type LoomCardMode } from './vera-actions'
 import { generateWithRecraft, listBrandStyles, deleteBrandStyle } from './recraft-actions'
+import { describeGeneratedAssets } from '@/lib/library/describe-generated'
 import type { BrandStyle } from '@/lib/library/styles'
 import { Input, Textarea } from '@/components/ui/field'
 
@@ -185,6 +186,11 @@ export function CreateStudio({ recraftEnabled }: { recraftEnabled: boolean }) {
         else {
           setMsg(`Added ${res.count} to the library.`)
           setPrompt('')
+          // HYG-021: a server generator cannot compute a blurhash — that needs decoded pixels, and a
+          // server-side decode would drag `sharp` into the Loom write seam (docs/DEPLOY-SAFETY.md).
+          // This browser can, so it describes what it just made before the grid reloads. Best-effort
+          // and never blocking: `describeGeneratedAssets` swallows every failure.
+          await describeGeneratedAssets(res.assets)
           router.refresh()
         }
       })
