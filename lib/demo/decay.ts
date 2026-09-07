@@ -36,6 +36,21 @@ export type DecayReport = {
   prunedPosts: number
   trimmedNeighbours: number
   orphansRemoved: number
+  /** Circles (demo areas plus real neighbours) this run actually walked. */
+  visited: number
+  /** Circles the run left for next time: the real-circle tail past `limit`, plus whatever an
+   *  exhausted clock cut off. */
+  remaining: number
+  /** True when the caller's clock ran out before the walk finished (LIVE-190). */
+  stoppedOnBudget: boolean
+}
+
+export interface DecayOptions {
+  dryRun: boolean
+  /** Real circles one run walks for neighbour decay (default 500, the long-standing cap). */
+  limit?: number
+  /** Wall-clock check from the cron budget; true means stop after the current circle. */
+  exhausted?: () => boolean
 }
 
 type Circle = { id: string; latitude: number | null; longitude: number | null }
@@ -65,11 +80,12 @@ async function removeOrphans(
   return orphans.length
 }
 
-export async function runDecay({ dryRun }: { dryRun: boolean }): Promise<DecayReport> {
+export async function runDecay({ dryRun, limit = 500, exhausted = () => false }: DecayOptions): Promise<DecayReport> {
   const d = createAdminClient()
   const report: DecayReport = {
     dryRun, demoCircles: 0, realCircles: 0, purgedCircles: 0,
     prunedCircles: 0, prunedPosts: 0, trimmedNeighbours: 0, orphansRemoved: 0,
+    visited: 0, remaining: 0, stoppedOnBudget: false,
   }
 
   const [{ data: demo }, { data: real }] = await Promise.all([
@@ -87,7 +103,15 @@ export async function runDecay({ dryRun }: { dryRun: boolean }): Promise<DecayRe
   }
 
   // ── (A) Area decay ──────────────────────────────────────────────────────
-  for (const c of demoCircles) {
+  // LIVE-190: each circle is idempotent (a purged area is gone, a pruned one has nothing older than
+  // the cutoff), so a run cut off by the clock leaves the rest for tomorrow and says how many.
+  for (const [i, c] of demoCircles.entries()) {
+    if (exhausted()) {
+      report.stoppedOnBudget = true
+      report.remaining += demoCircles.length - i
+      break
+    }
+    report.visited++
     if (c.latitude == null || c.longitude == null) continue
     const near = realNear(c.latitude, c.longitude)
 
@@ -124,7 +148,15 @@ export async function runDecay({ dryRun }: { dryRun: boolean }): Promise<DecayRe
   }
 
   // ── (B) Neighbour decay on real circles carrying demo members ───────────
-  for (const rc of reals.slice(0, 500)) {
+  const neighbourWalk = reals.slice(0, Math.max(1, limit))
+  report.remaining += reals.length - neighbourWalk.length
+  for (const [i, rc] of neighbourWalk.entries()) {
+    if (exhausted()) {
+      report.stoppedOnBudget = true
+      report.remaining += neighbourWalk.length - i
+      break
+    }
+    report.visited++
     const { data: ms } = await d
       .from('memberships')
       .select('id, profile_id, joined_at, profile:profiles!inner ( is_demo )')

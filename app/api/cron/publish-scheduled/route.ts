@@ -1,8 +1,12 @@
+// LIVE-190 budget (ADR-1252): 200 due dispatches per invocation; the status flip to published is the claim; oldest scheduled_for first.
+// The clock is CRON_TIME_BUDGET_MS from lib/cron/budget.ts; app/api/cron/budget.test.ts checks the
+// declaration is applied, not merely written down.
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
 import { rejectUnauthorizedCron } from '@/lib/cron-auth'
 import { withCronHeartbeat } from '@/lib/observability/cron-heartbeat'
+import { cronBudget } from '@/lib/cron/budget'
 import { log, briefError } from '@/lib/log'
 
 export const runtime = 'nodejs'
@@ -14,14 +18,15 @@ async function handler(request: Request) {
 
   const admin = createAdminClient()
   const now = new Date().toISOString()
-
+  const budget = cronBudget(200)
   const { data: due, error } = await admin
     .from('dispatches')
     .select('id')
     .eq('status', 'draft')
     .not('scheduled_for', 'is', null)
     .lte('scheduled_for', now)
-
+    .order('scheduled_for', { ascending: true })
+    .limit(budget.items)
   if (error) {
     log.error('cron.publish_scheduled.fetch_failed', { error: briefError(error) })
     return NextResponse.json({ error: error.message }, { status: 500 })
@@ -46,7 +51,9 @@ async function handler(request: Request) {
   revalidatePath('/feed')
   revalidatePath('/admin/dispatches')
 
-  return NextResponse.json({ published: ids.length, ids })
+  const summary = budget.summary(ids.length)
+  log.info('cron.publish_scheduled', { published: ids.length, ...summary })
+  return NextResponse.json({ published: ids.length, ids, budget: summary })
 }
 
 export const GET = withCronHeartbeat('publish-scheduled', handler)
