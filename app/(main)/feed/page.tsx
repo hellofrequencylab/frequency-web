@@ -1,6 +1,6 @@
 import { Suspense } from 'react'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { createClient } from '@/lib/supabase/server'
+import { getCachedViewerProfile } from '@/lib/auth'
 import { CaptureBar } from '@/components/feed/capture-bar'
 import { CreateMenu } from '@/components/feed/create-menu'
 import { FeedList } from '@/components/feed/feed-list'
@@ -46,8 +46,12 @@ export default async function FeedPage({
   // "Ask Vera" opens straight in chat; the post-induction welcome plays the deck.
   const veraStartInChat = v === 'chat'
 
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  // The viewer's own row comes from the ONE React-cached read the (main) layout already made
+  // for this request (ADR-1244): no second GET /auth/v1/user, no second profiles select, and the
+  // geo columns ride on that select instead of a third read keyed by id. The layout has
+  // already bounced a signed-in viewer with no row to /onboarding, so a null here is the
+  // signed-out visitor the public feed still serves.
+  const profile = await getCachedViewerProfile()
 
   const admin = createAdminClient()
   let myProfileId: string | null = null
@@ -63,80 +67,63 @@ export default async function FeedPage({
   let hasAvatar = true
   let veraWelcome: { slides: ReturnType<typeof buildWelcomeSlides>; opening: ReturnType<typeof buildVeraOpening> } | null = null
 
-  if (user) {
-    const { data: profile } = await admin
-      .from('profiles')
-      .select('id, community_role, display_name, current_streak, meta, avatar_url')
-      .eq('auth_user_id', user.id)
+  if (profile) {
+    myProfileId = profile.id
+    myRole = (profile.community_role ?? 'member') as CommunityRole
+    firstName = (profile.display_name ?? '').trim().split(/\s+/)[0] || null
+    streak = (profile.current_streak as number | null) ?? 0
+    hasAvatar = !!profile.avatar_url
+
+    // Member geo (ADR-088) rides on the shared viewer row above; the primary circle is a
+    // cross-table read the viewer cannot make under RLS for every circle, so it stays admin.
+    homeLat = profile.home_lat ?? null
+    homeLng = profile.home_lng ?? null
+    feedRadiusM = profile.feed_radius_m ?? 25000
+    const { data: membership } = await admin
+      .from('memberships')
+      .select('circle_id')
+      .eq('profile_id', profile.id)
+      .eq('status', 'active')
+      .order('joined_at', { ascending: true })
+      .limit(1)
       .maybeSingle()
+    primaryCircleId = (membership?.circle_id as string) ?? null
 
-    if (profile) {
-      myProfileId = profile.id
-      myRole = (profile.community_role ?? 'member') as CommunityRole
-      firstName = (profile.display_name ?? '').trim().split(/\s+/)[0] || null
-      streak = (profile.current_streak as number | null) ?? 0
-      hasAvatar = !!(profile as { avatar_url?: string | null }).avatar_url
-
-      // Member geo (ADR-088) + primary circle — independent reads, fetched together rather
-      // than back-to-back (site audit 2026-06-18). Geo goes through an untyped handle since the
-      // new columns aren't in the generated types yet (cast pattern, per lib/practices.ts).
-      const [{ data: geoRow }, { data: membership }] = await Promise.all([
-        (admin)
-          .from('profiles')
-          .select('home_lat, home_lng, feed_radius_m')
-          .eq('id', profile.id)
-          .maybeSingle(),
-        admin
-          .from('memberships')
-          .select('circle_id')
-          .eq('profile_id', profile.id)
-          .eq('status', 'active')
-          .order('joined_at', { ascending: true })
-          .limit(1)
-          .maybeSingle(),
-      ])
-      const geo = (geoRow ?? null) as { home_lat: number | null; home_lng: number | null; feed_radius_m: number | null } | null
-      homeLat = geo?.home_lat ?? null
-      homeLng = geo?.home_lng ?? null
-      feedRadiusM = geo?.feed_radius_m ?? 25000
-      primaryCircleId = (membership?.circle_id as string) ?? null
-
-      // Vera's onboarding lightbox continues from what induction already learned
-      // (profiles.meta.beta), so she never opens cold. Built only when arriving
-      // straight from induction (?welcome=vera).
-      if (showVeraWelcome) {
-        const beta = ((profile.meta as Record<string, unknown> | null)?.beta ?? {}) as {
-          intent?: string | null
-          interests?: string | null
-          location?: { label?: string | null } | null
-        }
-        const ctx = {
-          firstName,
-          intent: beta.intent ?? null,
-          interests: beta.interests ?? null,
-          location: beta.location?.label ?? null,
-        }
-        veraWelcome = { slides: buildWelcomeSlides(ctx), opening: buildVeraOpening(ctx) }
-
-        // Activation-funnel step 2, "Met Vera" (ADR-075). This used to be emitted by the
-        // standalone /onboarding/vera page, which ADR-081 replaced with this lightbox in June
-        // and then kept "as a direct-nav fallback". Nothing ever linked the fallback, so the
-        // marker never fired and the funnel step read zero for its whole life — it was pointed
-        // at a surface members did not reach. It is emitted HERE now, at the moment the app
-        // decides to show a member Vera, which is the surface they actually meet her on.
-        //
-        // Server-side on purpose: the event is `clientEmittable: false` in the registry, and
-        // this is a Server Component, so the seam stays honest. Keyed per profile rather than
-        // per call because meeting Vera is a LIFECYCLE FACT, not a page view — re-opening
-        // /feed?welcome=vera must not add a second "met Vera" row. Same reasoning as
-        // `account.created` (lib/analytics/track.ts), and stricter than the page it replaces,
-        // which counted every visit.
-        await track('onboarding.vera_opened', {}, profile.id, {
-          idempotencyKey: `onboarding.vera_opened:${profile.id}`,
-        })
+    // Vera's onboarding lightbox continues from what induction already learned
+    // (profiles.meta.beta), so she never opens cold. Built only when arriving
+    // straight from induction (?welcome=vera).
+    if (showVeraWelcome) {
+      const beta = ((profile.meta as Record<string, unknown> | null)?.beta ?? {}) as {
+        intent?: string | null
+        interests?: string | null
+        location?: { label?: string | null } | null
       }
-      canAnnounce = ['host', 'guide', 'mentor', 'janitor'].includes(myRole)
+      const ctx = {
+        firstName,
+        intent: beta.intent ?? null,
+        interests: beta.interests ?? null,
+        location: beta.location?.label ?? null,
+      }
+      veraWelcome = { slides: buildWelcomeSlides(ctx), opening: buildVeraOpening(ctx) }
+
+      // Activation-funnel step 2, "Met Vera" (ADR-075). This used to be emitted by the
+      // standalone /onboarding/vera page, which ADR-081 replaced with this lightbox in June
+      // and then kept "as a direct-nav fallback". Nothing ever linked the fallback, so the
+      // marker never fired and the funnel step read zero for its whole life — it was pointed
+      // at a surface members did not reach. It is emitted HERE now, at the moment the app
+      // decides to show a member Vera, which is the surface they actually meet her on.
+      //
+      // Server-side on purpose: the event is `clientEmittable: false` in the registry, and
+      // this is a Server Component, so the seam stays honest. Keyed per profile rather than
+      // per call because meeting Vera is a LIFECYCLE FACT, not a page view — re-opening
+      // /feed?welcome=vera must not add a second "met Vera" row. Same reasoning as
+      // `account.created` (lib/analytics/track.ts), and stricter than the page it replaces,
+      // which counted every visit.
+      await track('onboarding.vera_opened', {}, profile.id, {
+        idempotencyKey: `onboarding.vera_opened:${profile.id}`,
+      })
     }
+    canAnnounce = ['host', 'guide', 'mentor', 'janitor'].includes(myRole)
   }
 
   // A post written from the HOME feed lands on the member's own wall + the public feed,
