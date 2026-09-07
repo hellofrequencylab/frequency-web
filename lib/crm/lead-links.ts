@@ -1,6 +1,6 @@
 // Signed public-capture links for lead-grab front doors 2 to 5 (CRM-MASTER-BUILD-PLAN §Phase 3).
 //
-// Door 1 (Space QR) uses the fq_lead COOKIE path (app/q/[slug]). The other four doors are surfaces a
+// Door 1 (Space QR) uses the fq_lead_grab COOKIE path (app/q/[slug]). The other four doors are surfaces a
 // visitor lands on directly, so each needs a shareable link that safely carries the capture CONTEXT
 // (which Space, which door, the event/magnet label, the resource to unlock, the introduced contact)
 // WITHOUT a per-magnet/per-event DB row. We do it the way the double-opt-in confirm link does

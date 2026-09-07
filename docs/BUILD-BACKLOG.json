@@ -45,7 +45,6 @@
             "LIVE-053",
             "LIVE-123",
             "LIVE-124",
-            "LIVE-156",
             "LIVE-187",
             "LIVE-188",
             "LIVE-189",
@@ -64,12 +63,9 @@
             "LIVE-184",
             "LIVE-159",
             "LIVE-161",
-            "LIVE-172",
             "LIVE-173",
-            "LIVE-162",
             "LIVE-157",
             "LIVE-154",
-            "LIVE-168",
             "LIVE-176",
             "LIVE-177",
             "LIVE-185",
@@ -6897,15 +6893,14 @@
     {
       "id": "LIVE-156",
       "title": "The scan-intro lead unsubscribe still acts on GET (app/u/scan/route.ts)",
-      "status": "open",
-      "priority": "P0",
+      "status": "done",
       "lane": "live",
       "size": "XS",
       "source": {
         "file": "app/u/scan/route.ts",
         "ref": "ADR-1207"
       },
-      "detail": "Same class as SCAN-552, different route: the lead unsubscribe link in scan-intro emails writes consent_state='unsubscribed' from its GET handler, so a link scanner unsubscribes the lead. Fix as SCAN-552: render a confirm step on GET, act on POST (or a signed one-click POST from the header only).",
+      "detail": "Same class as SCAN-552, different route: the lead unsubscribe link in scan-intro emails writes consent_state='unsubscribed' from its GET handler, so a link scanner unsubscribes the lead. Fix as SCAN-552: render a confirm step on GET, act on POST (or a signed one-click POST from the header only).\n\n── ✅ DONE 2026-09-06 (fan-out slice B), fixed the way SCAN-552 fixed the member sibling rather than by inventing a second pattern. GET now only VERIFIES the token and renders a confirm button; POST performs the write. The RFC 8058 one-click path is unchanged and unaffected, because `List-Unsubscribe-Post` is POST by definition — which is the whole reason this shape is safe: the mailbox provider's automated unsubscribe still works, and the link scanner's GET no longer does anything.\n\n⚪ THE TOKEN GATE MOVED INTO A FILE-LOCAL HELPER both handlers call, deliberately: that is the shape scripts/check-authz-guards.mjs resolves through, so the route still reads as gated to the scan rather than looking like an ungated export. The write also now checks its `error` instead of returning an unconditional true, so a failed unsubscribe reports rather than telling the reader they are unsubscribed when they are not — the same class SCAN-539 swept in the money paths, found here by touching the file.",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e \"const fs=require('fs');const r=fs.readFileSync('app/u/scan/route.ts','utf8');const m=r.match(/export async function GET[\\s\\S]*?\\n\\}/);process.exit(m&&/unsubscribed/.test(m[0])?1:0)\"",
@@ -7462,15 +7457,14 @@
     {
       "id": "LIVE-162",
       "title": "Two different things share the fq_lead cookie name",
-      "status": "open",
-      "priority": "P1",
+      "status": "done",
       "lane": "live",
       "size": "XS",
       "source": {
         "file": "lib/crm/lead-capture.ts",
         "ref": "ADR-1210"
       },
-      "detail": "lib/crm/lead-capture.ts LEAD_GRAB_COOKIE and app/join/(induction)/lead-actions.ts LEAD_COOKIE are both 'fq_lead': one is a Space QR lead grab (JSON), the other the signup lead claim (now id.token after SCAN-580). Neither mis-parses the other today, but on a shared browser one overwrites the other. Rename one (fq_lead_grab for the QR path is the smaller change) and keep both readers tolerant of the old name for a release.",
+      "detail": "lib/crm/lead-capture.ts LEAD_GRAB_COOKIE and app/join/(induction)/lead-actions.ts LEAD_COOKIE are both 'fq_lead': one is a Space QR lead grab (JSON), the other the signup lead claim (now id.token after SCAN-580). Neither mis-parses the other today, but on a shared browser one overwrites the other. Rename one (fq_lead_grab for the QR path is the smaller change) and keep both readers tolerant of the old name for a release.\n\n── ✅ DONE 2026-09-06 (fan-out slice B). The Space-QR grab moved to `fq_lead_grab`; the older signup-claim cookie kept `fq_lead`. Readers accept the legacy name so a grab already sitting in a browser under the 30-day max-age is still redeemed, and the fallback carries a DATED removal note (2026-10-07, one full max-age window past the rename) rather than an open-ended 'for a release'.\n\n⚪ WHY THE SHAPES ARE CHECKED AT ALL, recorded at both sites so the next reader does not delete the check as redundant: until every pre-rename cookie ages out, a value in the claim jar slot may still be the grab's URL-encoded JSON. readLeadClaim rejects anything that is not `<id>.<token>`, and a JSON blob that happens to contain a dot names a row no token can open, so the RPC returns false and the beat is a silent no-op rather than a wrong claim.",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e \"const fs=require('fs');const a=/LEAD_GRAB_COOKIE = '([^']+)'/.exec(fs.readFileSync('lib/crm/lead-capture.ts','utf8'));const b=/LEAD_COOKIE = '([^']+)'/.exec(fs.readFileSync('app/join/(induction)/lead-actions.ts','utf8'));process.exit(a&&b&&a[1]!==b[1]?0:1)\"",
@@ -8102,15 +8096,14 @@
     {
       "id": "LIVE-168",
       "title": "The onboarding sequence runner has no opt-in step, so its cutover would record consent withheld for everyone",
-      "status": "open",
-      "priority": "P1",
+      "status": "done",
       "lane": "live",
       "size": "XS",
       "source": {
         "file": "components/onboarding/sequence-runner.tsx",
         "ref": "ADR-1211"
       },
-      "detail": "SCAN-604 stopped consent being granted by omission. The staff-only sequence preview binding omits emailOptIn, and the comment in the file plans a production cutover to it; that cutover now needs an explicit opt-in step in the sequence before it ships, or every member routed through it is recorded as declining marketing email.",
+      "detail": "SCAN-604 stopped consent being granted by omission. The staff-only sequence preview binding omits emailOptIn, and the comment in the file plans a production cutover to it; that cutover now needs an explicit opt-in step in the sequence before it ships, or every member routed through it is recorded as declining marketing email.\n\n── ✅ DONE 2026-09-06 (fan-out slice B). The onboarding sequence carries an explicit opt-in step, so the production cutover the file plans can no longer record consent withheld for everyone by omission. The staff-only preview binding and the default sequence move together, with tests over both.",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e \"const fs=require('fs');const s=fs.readFileSync('components/onboarding/sequence-runner.tsx','utf8').replace(/\\\\/\\\\/.*$/gm,'');process.exit(/emailOptIn/.test(s)?0:1)\"",
@@ -8326,15 +8319,14 @@
     {
       "id": "LIVE-172",
       "title": "A re-sent Email Studio campaign reaches the recipients already queued",
-      "status": "open",
-      "priority": "P1",
+      "status": "done",
       "lane": "live",
       "size": "XS",
       "source": {
         "file": "lib/email-studio/send.ts",
         "ref": "ADR-1212"
       },
-      "detail": "SCAN-620 records a failed send with the count sent so far and lets the operator re-send; nothing skips the recipients already queued, and the copy says so. Add a per-recipient ledger check (the Space campaign runner's outreach_sends pattern) before each enqueue.",
+      "detail": "SCAN-620 records a failed send with the count sent so far and lets the operator re-send; nothing skips the recipients already queued, and the copy says so. Add a per-recipient ledger check (the Space campaign runner's outreach_sends pattern) before each enqueue.\n\n── ✅ DONE 2026-09-06 (fan-out slice B). The Email Studio send path checks a per-recipient ledger before each enqueue, following the Space campaign runner's outreach_sends pattern rather than a new mechanism, so a re-sent campaign skips the recipients already queued instead of reaching them twice. lib/email-studio/send-lifecycle.test.ts covers the re-send case.",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e \"const fs=require('fs');const R=(f)=>fs.readFileSync(f,'utf8');const C=(f)=>R(f).replace(/\\\\/\\\\*[\\\\s\\\\S]*?\\\\*\\\\//g,'').replace(/^\\\\s*\\\\/\\\\/.*$/gm,'');process.exit(/outreach_sends|already sent|alreadySent/.test(C('lib/email-studio/send.ts'))?0:1)\"",
