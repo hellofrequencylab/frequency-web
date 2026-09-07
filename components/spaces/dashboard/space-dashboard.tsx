@@ -28,6 +28,11 @@ import { listActiveSpaceMemberIds } from '@/lib/spaces/resonance-roster'
 import { listWorkspaceConversations } from '@/lib/comms/workspace'
 import { listContactInteractions, type ContactInteraction } from '@/lib/crm/interactions'
 import { listEventsForSpace } from '@/lib/events/store'
+import { collapseSeriesRows, seriesFetchLimit, seriesUpcomingFloor, TEASER_CARDS_PER_SERIES } from '@/lib/events/series'
+import { dayInZone, HOME_TZ } from '@/lib/time/zone'
+
+/** How many upcoming events the dashboard's "Coming up" box lists. */
+const COMING_UP_SLOTS = 5
 import { getSpaceProfileStats } from '@/lib/spaces/analytics'
 
 // THE SPACE COMMAND-CENTER HOME (ADR-796). The default landing of the /manage console: at-a-glance revenue,
@@ -287,7 +292,12 @@ function channelFallback(channel: string): string {
 
 // ── Upcoming: the next events for the space ──────────────────────────────────────────────────────────
 async function DashboardUpcoming({ spaceId, slug }: { spaceId: string; slug: string }) {
-  const events = await listEventsForSpace(spaceId, { upcomingOnly: true, limit: 5 })
+  // One card per series (LIVE-206): a weekly class is one line here, not five copies of it. The
+  // reader carries SERIES_COLUMNS; the over-fetch pays for the rows the fold discards.
+  const events = collapseSeriesRows(
+    await listEventsForSpace(spaceId, { upcomingOnly: true, limit: seriesFetchLimit(COMING_UP_SLOTS) }),
+    { upcomingFrom: seriesUpcomingFloor(dayInZone(new Date(), HOME_TZ)), perSeries: TEASER_CARDS_PER_SERIES },
+  ).slice(0, COMING_UP_SLOTS)
   return (
     <section>
       <SectionHeader title="Coming up" href={`/spaces/${slug}/settings/offerings#availability`} action="Bookings" />

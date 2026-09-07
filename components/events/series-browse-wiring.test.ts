@@ -20,6 +20,10 @@ type Surface = {
   /** A bare pre-fold limit literal that must be gone. Omitted where the same literal legitimately
    *  sizes a NON-event read in the same file (the search files also list people and posts). */
   oldLimit?: string
+  /** Rows arrive through lib/events/store.ts listEventsForSpace, whose COLS carries the columns. */
+  viaReader?: boolean
+  /** Rows arrive from the public_events RPC, which returns the columns (migration 20270345002100). */
+  viaRpc?: boolean
 }
 
 const SURFACES: Surface[] = [
@@ -33,6 +37,15 @@ const SURFACES: Surface[] = [
   { path: 'app/discover/events/_data.ts', sizing: 'SERIES_WIDE_READ', oldLimit: 'limit = 500' },
   { path: 'app/(main)/search/page.tsx', sizing: 'seriesFetchLimit(' },
   { path: 'app/api/search/route.ts', sizing: 'seriesFetchLimit(' },
+  // LIVE-206: the three list-shaped gaps LIVE-198 enumerated. The two Space surfaces read through
+  // lib/events/store.ts listEventsForSpace, whose own COLS carries SERIES_COLUMNS; the public
+  // reader folds the anon RPC, which returns the two columns since migration 20270345002100.
+  { path: 'components/spaces/dashboard/space-dashboard.tsx', sizing: 'seriesFetchLimit(', oldLimit: 'limit: 5 }', viaReader: true },
+  { path: 'components/widgets/entity/entity-cta.tsx', sizing: 'seriesFetchLimit(', oldLimit: 'limit: 8 }', viaReader: true },
+  // No oldLimit on the two RPC readers: the same `_limit` literal legitimately sizes the circles
+  // and posts RPCs in the same files.
+  { path: 'lib/discover.ts', sizing: 'seriesFetchLimit(', viaRpc: true },
+  { path: 'lib/page-editor/live-data.ts', sizing: 'seriesFetchLimit(', viaRpc: true },
 ]
 
 /** An events read that still sizes itself with a bare number: `.order('starts_at', …).limit(6)`.
@@ -58,7 +71,18 @@ describe('every browse surface folds repeating events', () => {
       const code = stripComments(read(surface.path))
 
       it('selects the three recurrence columns, or the fold silently does nothing', () => {
-        // Via the shared SERIES_COLUMNS fragment, so a rename cannot leave a stale copy behind.
+        // Via the shared SERIES_COLUMNS fragment, so a rename cannot leave a stale copy behind. A
+        // surface reading through listEventsForSpace inherits that reader's COLS; one reading the
+        // public_events RPC gets the columns from the function's own return list.
+        if (surface.viaReader) {
+          expect(stripComments(read('lib/events/store.ts'))).toContain('SERIES_COLUMNS')
+          return
+        }
+        if (surface.viaRpc) {
+          const rpc = read('supabase/migrations/20270345002100_series_fold_in_two_rpcs.sql')
+          expect(rpc).toMatch(/parent_event_id\s+uuid,\s*\n\s*recurrence_type\s+text/)
+          return
+        }
         expect(code).toContain('SERIES_COLUMNS')
         for (const col of SERIES_COLUMNS.split(', ')) {
           expect(SERIES_COLUMNS).toContain(col)

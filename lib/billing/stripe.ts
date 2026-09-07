@@ -41,6 +41,37 @@ export function billingEnabled(): boolean {
   return !!stripe
 }
 
+/** Whether the configured key is LIVE mode (`sk_live_` / `rk_live_`), false for a test key, null
+ *  when billing is off. Read off the key itself: Stripe does not put the mode on the account object,
+ *  and a price minted in one mode does not exist in the other (HYG-049, ADR-1227). */
+export function keyLivemode(): boolean | null {
+  if (!SECRET) return null
+  return /^(?:sk|rk)_live_/.test(SECRET)
+}
+
+let accountIdPromise: Promise<string | null> | null = null
+
+/** The Stripe account (`acct_…`) the configured key belongs to, or null when billing is off or the
+ *  lookup fails. Memoised for the process: the answer cannot change without a new key, and the
+ *  checkout path asks on every resolve. A null is "cannot tell" — the resolver compares livemode
+ *  alone in that case and never treats an unknown account as foreign (HYG-049, ADR-1227). */
+export function stripeAccountId(): Promise<string | null> {
+  if (!stripe) return Promise.resolve(null)
+  if (!accountIdPromise) {
+    const client = stripe
+    // `retrieveCurrent`: the account the key itself belongs to (SDK v22; `retrieve(null)` is the
+    // older spelling of the same call).
+    accountIdPromise = client.accounts
+      .retrieveCurrent()
+      .then((a) => a.id ?? null)
+      .catch(() => {
+        accountIdPromise = null // a transient failure is not a verdict; ask again next time
+        return null
+      })
+  }
+  return accountIdPromise
+}
+
 /** The tier a Stripe price id maps back to (for the webhook). Always Crew: Crew is the only member
  *  subscription that is sold (ADR-878), and a legacy Supporter subscription is access-preserved as Crew
  *  — the same direction the retired read-time fold took, kept HERE because a Stripe price id is an

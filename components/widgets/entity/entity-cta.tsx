@@ -5,6 +5,11 @@ import { defaultPrimaryCtaLabel } from '@/lib/spaces/profile-config'
 import { resolveMode, type ModeVariant } from '@/lib/spaces/modes'
 import { viewerManagesSpace } from '@/lib/spaces/operator'
 import { listEventsForSpace } from '@/lib/events/store'
+import { collapseSeriesRows, seriesFetchLimit, seriesUpcomingFloor, TEASER_CARDS_PER_SERIES } from '@/lib/events/series'
+import { dayInZone, HOME_TZ } from '@/lib/time/zone'
+
+/** How many upcoming events the entity CTA block lists. */
+const CTA_EVENT_SLOTS = 8
 import { ModuleCard } from '@/components/modules/module-card'
 import { EntityCard } from '@/components/cards/entity-card'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -135,8 +140,12 @@ export async function EntityCta() {
     )
   }
 
-  const events = await listEventsForSpace(space.id, { upcomingOnly: true, limit: 8 })
-  const live = events.filter((e) => !e.is_cancelled)
+  // One card per series (LIVE-206). collapseSeriesRows drops cancelled rows itself, which is the
+  // filter the next line used to apply by hand.
+  const live = collapseSeriesRows(
+    await listEventsForSpace(space.id, { upcomingOnly: true, limit: seriesFetchLimit(CTA_EVENT_SLOTS) }),
+    { upcomingFrom: seriesUpcomingFloor(dayInZone(new Date(), HOME_TZ)), perSeries: TEASER_CARDS_PER_SERIES },
+  ).slice(0, CTA_EVENT_SLOTS)
   // Only resolve operator status on the EMPTY path (the rare owner-setup moment), so the happy path
   // (live sessions) never pays for the lookup.
   const canManage = live.length === 0 && (await viewerManagesSpace(space))
