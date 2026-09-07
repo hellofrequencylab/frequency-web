@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-// The owner's grid / theme / background writers (scan2 L6-09): each writes ONLY its own key
-// (`entityGrid`, or the `spotlight` sub-object) through merge_profile_meta on the session client.
+// The owner's grid / theme / background writers (scan2 L6-09): the grid writes ONLY its own key
+// (`entityGrid`) through merge_profile_meta, and the theme / background writers write ONLY their
+// own field INSIDE `spotlight` through merge_profile_meta_path (LIVE-171), on the session client.
 // An empty grid layout REMOVES entityGrid rather than writing a blob without it.
 
 const mocks = vi.hoisted(() => ({
@@ -71,17 +72,23 @@ describe('saveMemberGridLayout', () => {
 })
 
 describe('setSpotlightTheme / setSpotlightBackground', () => {
-  it('each merges only the spotlight key, keeping enabled + published beside the new node', async () => {
+  it('each merges ONLY its own field, at the spotlight path, so enabled + published are never carried back (LIVE-171)', async () => {
+    // Before ADR-1235 each writer re-sent the whole `spotlight` node (enabled, published, theme,
+    // background) and raced its siblings inside the key. Now the RPC is path-scoped and the patch
+    // is the one field the writer owns.
+    type PathCall = [string, { p_profile_id: string; p_path: string[]; p_patch: Record<string, unknown> }]
     await setSpotlightTheme({})
-    const theme = rpcCalls()[0][1].p_patch!
-    expect(Object.keys(theme)).toEqual(['spotlight'])
-    expect(theme.spotlight).toMatchObject({ enabled: true, published: true })
-    expect((theme.spotlight as { theme: unknown }).theme).toBeTruthy()
+    const [themeRpc, themeArgs] = rpcCalls()[0] as unknown as PathCall
+    expect(themeRpc).toBe('merge_profile_meta_path')
+    expect(themeArgs.p_path).toEqual(['spotlight'])
+    expect(Object.keys(themeArgs.p_patch)).toEqual(['theme'])
+    expect(themeArgs.p_patch.theme).toBeTruthy()
 
     await setSpotlightBackground(null)
-    const bg = rpcCalls()[1][1].p_patch!
-    expect(Object.keys(bg)).toEqual(['spotlight'])
-    expect(bg.spotlight).toMatchObject({ enabled: true, published: true })
+    const [bgRpc, bgArgs] = rpcCalls()[1] as unknown as PathCall
+    expect(bgRpc).toBe('merge_profile_meta_path')
+    expect(bgArgs.p_path).toEqual(['spotlight'])
+    expect(Object.keys(bgArgs.p_patch)).toEqual(['background'])
     expect(mocks.updates).toEqual([])
   })
 
