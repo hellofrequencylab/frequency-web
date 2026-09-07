@@ -36034,3 +36034,29 @@ Final agreement is exact in both directions: **180 live in the replay, minus the
 **Consequences.** Six fixture arms, each testing both directions, plus two real-tree assertions. Three mutations proven red: restoring the regex bug (9 tests), reading only the header (5 tests), preserving the pin across a replace (1 test). Enforced through vitest, which the required `test` job runs.
 
 ⚠️ **One row moved with it, and the reason generalises.** `LIVE-020`'s probe builds a fixture to exercise the ACL arm, and that fixture did not pin — so the new arm failed it, and the probe reported the guard "fails everything and proves nothing". **A probe measuring one arm has to satisfy every other arm, or it stops measuring anything.** The guard's own test fixtures needed the same treatment. Tightening a shared contract means every fixture that models a real migration has to keep looking like one.
+
+---
+
+## ADR-1223: the crawlable event page reads its zone from the table it already reads, not from a widened RPC (2026-09-07)
+
+**Status.** Accepted. Closes LIVE-199. Follows the seam [ADR-1132](DECISIONS.md) (LIVE-133) established for the cover.
+
+**Context.** LIVE-199 inherited a follow-up from SCAN-207: the public event RPCs return no `time_zone`, so `/discover/events/<slug>` falls back to the community zone. It was filed P2 with the note *"correct for 61 of 61 events today"*.
+
+🔴 **The row predicted the wrong symptom, and the real one is worse.** It expected *"the wrong hour on the crawlable page"*. The hour is never wrong: `events.starts_at` stores the host's wall clock as UTC parts, so rendering those parts prints the right clock face in any zone. What is wrong is the **offset in the structured data** — the half a human never sees and a crawler always does. On 2026-09-07 production held 61 `America/Los_Angeles` and, for the first time, one `Europe/London` public published event, and that page was publishing:
+
+```
+"startDate": "2026-09-11T10:33:00-07:00"
+```
+
+The right wall clock against the wrong instant, **eight hours out**, four days before the event.
+
+**Decision.**
+
+- **The zone comes from `app/discover/events/_data.ts`, not from a widened RPC**, and the reasoning is the one LIVE-133 already settled for the cover. That module reads `events` directly with the **anon** client under RLS, so the zone rides along on a select this page was making anyway: no migration, no new surface, and no widening — a row this read cannot see returns nothing here either. Widening `public_event_by_slug` means a `DROP` + `CREATE` on a `SECURITY DEFINER` function granted to `anon` — the same function that, before ADR-903, served private events to anonymous callers. That is a far larger blast radius than the defect.
+- **`EventEnrichment.time_zone` is required, not optional.** The enrichment is the only supplier on this path; an optional field would let a future edit drop it and typecheck.
+- **The canonical `/events/<slug>` page is untouched.** It already passes `event.time_zone`. Only the discover twin was wrong, which is exactly why nobody noticed: the page a member opens was right the whole time.
+
+**Consequences.** One column on two existing selects. `app/discover/events/_data.test.ts` pins both halves, and the split matters: the row shapes in that module are `as unknown as` casts, so **dropping the column from the select literal typechecks cleanly and hands `eventSchema` an undefined zone** — the type system cannot see this class at all. So one half reads the select *literal*, the other asserts the published offset, with the exact production string (`-07:00`) as the positive control.
+
+⚠️ **The generalisable part is the sizing, not the fix.** The row said "add `time_zone` to both RPCs in a new migration" and was sized against that. The actual change was one column on a read that already existed. **A row that names its own implementation inherits that implementation's cost forever**, and nobody re-prices it — this one sat at P2/S for a day on a plan that was four times too big. Rows should state the consequence they need; the seam is chosen when the work starts, against the tree as it is then.

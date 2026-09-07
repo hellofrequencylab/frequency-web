@@ -44,6 +44,23 @@ import {
 import { ticketFromPriceCents, ticketsSoldOut } from '@/lib/commerce/ticket-projection'
 
 export type EventEnrichment = {
+  /** The event's own IANA zone (`events.time_zone`, NOT NULL, default 'America/Los_Angeles').
+   *
+   *  🔴 THIS IS WHAT MAKES THE PUBLISHED `startDate` CARRY THE RIGHT OFFSET (LIVE-199).
+   *  `events.starts_at` stores the host's WALL CLOCK as UTC parts, so `eventSchema` has to be told
+   *  the zone to turn it back into an instant. `getPublicEventBySlug` (the anon RPC this page
+   *  enriches) returns no `time_zone` column, so without this field the JSON-LD fell back to
+   *  HOME_TZ and stamped a PACIFIC offset on every event — measured on production 2026-09-07,
+   *  where the one Europe/London public event published
+   *  `startDate: "2026-09-11T10:33:00-07:00"`: the right wall clock, eight hours off the right
+   *  instant, on a crawlable page four days before the event.
+   *
+   *  WHY IT COMES FROM HERE AND NOT FROM A WIDENED RPC — the same reasoning as `cover_url` below.
+   *  This module already reads `events` with the ANON client under RLS; the zone rides along on a
+   *  select that was happening anyway. Widening `public_event_by_slug` means a DROP + CREATE on a
+   *  SECURITY DEFINER function granted to `anon`, which is a much larger blast radius than the
+   *  defect. A row this read cannot see returns nothing here either, so nothing widens. */
+  time_zone: string | null
   attendance_mode: 'in_person' | 'online' | 'hybrid'
   is_cancelled: boolean
   category: string
@@ -94,6 +111,8 @@ type SafeEventRow = {
   description: string | null
   starts_at: string
   ends_at: string | null
+  /** See EventEnrichment.time_zone — the hub rows carry it for the same reason. */
+  time_zone: string | null
   city: string | null
   region: string | null
   country: string | null
@@ -105,7 +124,7 @@ type SafeEventRow = {
 }
 
 const SAFE_COLUMNS =
-  `id, slug, title, description, starts_at, ends_at, city, region, country, attendance_mode, is_cancelled, category, price_cents, currency, ${SERIES_COLUMNS}`
+  `id, slug, title, description, starts_at, ends_at, time_zone, city, region, country, attendance_mode, is_cancelled, category, price_cents, currency, ${SERIES_COLUMNS}`
 
 function normalizeMode(mode: string | null): EventEnrichment['attendance_mode'] {
   return mode === 'online' || mode === 'hybrid' ? mode : 'in_person'
@@ -119,6 +138,7 @@ function toEnriched(r: SafeEventRow): EnrichedPublicEvent {
     description: r.description,
     starts_at: r.starts_at,
     ends_at: r.ends_at,
+    time_zone: r.time_zone,
     city: r.city,
     // The hub list doesn't render the hosting circle, so the circle fields stay
     // null here (the detail page enriches the RPC row, which carries the circle).
@@ -141,14 +161,14 @@ export async function getEventEnrichment(slug: string): Promise<EventEnrichment 
   const supabase = createPublicClient()
   const { data } = await supabase
     .from('events')
-    .select('id, attendance_mode, is_cancelled, category, region, country, currency, cover_image_path, theme')
+    .select('id, time_zone, attendance_mode, is_cancelled, category, region, country, currency, cover_image_path, theme')
     .eq('slug', slug)
     .limit(1)
     .maybeSingle()
   if (!data) return null
   const r = data as unknown as Pick<
     SafeEventRow,
-    'attendance_mode' | 'is_cancelled' | 'category' | 'region' | 'country' | 'currency'
+    'time_zone' | 'attendance_mode' | 'is_cancelled' | 'category' | 'region' | 'country' | 'currency'
   > & { id: string; cover_image_path: string | null; theme: unknown }
 
   // The cover, as a public URL. `getPublicUrl` is pure string construction — no request, no
@@ -178,6 +198,7 @@ export async function getEventEnrichment(slug: string): Promise<EventEnrichment 
     Parameters<typeof ticketsSoldOut>[0][number])[]
 
   return {
+    time_zone: r.time_zone,
     attendance_mode: normalizeMode(r.attendance_mode),
     is_cancelled: r.is_cancelled ?? false,
     category: r.category ?? 'gathering',
