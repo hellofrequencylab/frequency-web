@@ -12,7 +12,11 @@ import { getSeriesDisplayConfig } from "@/lib/events/series-config";
 import { listPublicJourneys } from "@/lib/journey-plans";
 import { listActivePartners } from "@/lib/partners/read";
 import { listPublicPractices } from "@/lib/practices";
-import { DISCOVERY_FETCH_LIMIT, listNetworkedSpaces } from "@/lib/spaces/discovery";
+import {
+  DISCOVERY_FETCH_LIMIT,
+  listNetworkedSpaces,
+  listNetworkedSpaceProfileTabs,
+} from "@/lib/spaces/discovery";
 import { listShopProducts, listMarketListings } from "@/lib/commerce/products";
 import { listHousingListings } from "@/lib/listings/housing";
 import { listListings as listClassifieds } from "@/lib/marketplace";
@@ -334,8 +338,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     organizerRoutes = organizers;
     spotlightRoutes = spotlights;
 
+    // Space profile roots. `lastModified` (LIVE-197) rides `spaces.updated_at`, which the discovery
+    // reader now projects: Spaces are the entity with the most tabs behind them, so lastmod is the
+    // one signal that tells a crawler which of ~20 profiles is worth re-fetching. It is OPTIONAL by
+    // design — a row with no `updated_at` emits no `<lastmod>` rather than a synthesised one, because
+    // an invented date is worse than none (Google demotes a whole sitemap's lastmod once it catches
+    // one that lies). ⚠️ `spaces` has no set_updated_at trigger and most write paths do not stamp the
+    // column, so today this is a FLOOR on freshness (often the row's creation time), not a precise
+    // edit time; making it precise is a write-side change, not a sitemap one.
     const spaceRoutes: MetadataRoute.Sitemap = spaces.map((s) => ({
       url: `${SITE_URL}/spaces/${s.slug}`,
+      ...((s.updatedAt) ? { lastModified: new Date(s.updatedAt) } : {}),
       changeFrequency: "weekly" as const,
       priority: 0.6,
       images: [`${SITE_URL}/spaces/${s.slug}/opengraph-image`],
@@ -423,13 +436,23 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       COMMERCE_SITEMAP_CAP,
       "store products",
       "listShopProducts",
-    ).map((p) => ({
-      url: `${SITE_URL}/store/${p.id}`,
-      ...((p.updatedAt) ? { lastModified: new Date(p.updatedAt) } : {}),
-      changeFrequency: "weekly" as const,
-      priority: 0.6,
-      ...(p.images[0] ? { images: [p.images[0]] } : {}),
-    }));
+    )
+      // DEMO rows never enter the crawl (LIVE-187). Measured on production 2026-09-06: all four
+      // platform-owned `is_demo` store products are `status='active'` and carry picsum placeholder
+      // art, so the sitemap was advertising four commerce URLs whose declared IMAGE is stock filler
+      // presented as product photography — and a sitemap-declared image is a representation claim,
+      // not decoration. The fix is here rather than in `listShopProducts` deliberately: that reader
+      // also feeds the /store storefront, and whether demo dressing shows in the shop is a product
+      // decision this file does not get to make. The filter drops the whole row, not just its image,
+      // because a demo product is a thin page with or without a picture.
+      .filter((p) => !p.isDemo)
+      .map((p) => ({
+        url: `${SITE_URL}/store/${p.id}`,
+        ...((p.updatedAt) ? { lastModified: new Date(p.updatedAt) } : {}),
+        changeFrequency: "weekly" as const,
+        priority: 0.6,
+        ...(p.images[0] ? { images: [p.images[0]] } : {}),
+      }));
 
     // Marketplace listing detail pages — the active-only readers each page uses, so a
     // sold/closed/draft listing is isolated OUT of the sitemap by construction.
@@ -505,6 +528,46 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       podcastRoutes = [];
     }
 
+    // ── The public Space PROFILE TABS (LIVE-184) ────────────────────────────────────────────────
+    //
+    // Seven crawlable siblings live beside each Space profile — book, calendar, circles,
+    // collaborators, reviews, shop and the operator's own custom pages. Every one stamps its own
+    // canonical through `spaceProfileMetadata` and none of them is noindex, so all seven were
+    // indexable and advertised NOWHERE: ~7 tabs x ~20 networked Spaces of URLs a crawler could only
+    // reach by walking in from the profile, including the two (/shop, /calendar) carrying the
+    // commercial and local-intent content an answer engine is actually looking for.
+    //
+    // The reader emits only the tabs a Space ACTUALLY HAS — each gated the way its own page (or, for
+    // the pages that render an honest empty rather than 404ing, its nav entry) gates it — so an
+    // empty tab never gets a URL. That is the same rule `podcastRoutes` above already follows.
+    //
+    // Priority 0.5, one step under the profile root's 0.6: a tab is a facet OF the profile, and the
+    // ranking we want a crawler to infer is "land on the Space, not on its reviews list". They carry
+    // the profile's own weak-but-honest lastmod (see the spaceRoutes note above).
+    //
+    // Fail-safe like every other section: the reader returns [] on any error, which costs the tabs
+    // and nothing else in the sitemap.
+    let spaceTabRoutes: MetadataRoute.Sitemap = [];
+    try {
+      // An operator's custom page slug is validated against `RESERVED_PAGE_SLUGS`, which blocks
+      // `book` but NOT `podcasts` — and `/spaces/<slug>/podcasts` is a static sibling that wins the
+      // routing and is already advertised above. So the tab entries are deduped against everything
+      // this Space section has already emitted: one URL, advertised once, is the invariant the
+      // "emits no duplicate URLs" test in app/sitemap.test.ts holds this file to.
+      const already = new Set([...spaceRoutes, ...podcastRoutes].map((e) => e.url));
+      const tabs = await listNetworkedSpaceProfileTabs();
+      spaceTabRoutes = tabs
+        .map((t) => ({
+          url: `${SITE_URL}/spaces/${t.slug}/${t.segment}`,
+          ...((t.updatedAt) ? { lastModified: new Date(t.updatedAt) } : {}),
+          changeFrequency: "weekly" as const,
+          priority: 0.5,
+        }))
+        .filter((e) => !already.has(e.url));
+    } catch {
+      spaceTabRoutes = [];
+    }
+
     dynamicRoutes = [
       ...topicRoutes,
       ...circleRoutes,
@@ -514,6 +577,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       ...partnerRoutes,
       ...practiceRoutes,
       ...spaceRoutes,
+      ...spaceTabRoutes,
       ...spaceHubRoutes,
       ...placeRoutes,
       ...densityCityRoutes,

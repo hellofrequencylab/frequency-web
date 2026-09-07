@@ -12,6 +12,7 @@ import { hasPublicTwin } from '@/lib/nav/public-twin'
 import { frontDoorRedirect } from '@/lib/nav/front-door'
 import { referralsEnabled } from '@/lib/platform-flags'
 import { isFunnelSplashPath } from '@/lib/funnels/definitions'
+import { supabaseUrl, supabaseAnonKey } from '@/lib/supabase/env'
 
 // The referral attribution cookie — the referrer's profile id, consumed once at
 // onboarding by applyReferralAttribution (lib/qr/referral.ts). Name + attributes MUST
@@ -61,8 +62,8 @@ export async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request: { headers: withPath(request) } })
 
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    supabaseUrl(),
+    supabaseAnonKey(),
     {
       cookies: {
         getAll() {
@@ -265,7 +266,21 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    // Run on all paths except Next.js internals and static assets.
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    // Run on all paths except Next.js internals, static assets, and the four CRAWLER FILES.
+    //
+    // The crawler files are the HYG-048 exclusion, and they are here for a measured reason: this
+    // middleware runs first-touch attribution, so every `GET /robots.txt` and `GET /sitemap.xml`
+    // came back with a `Set-Cookie: fq_attr=...` carrying `landing:"/robots.txt"` and
+    // `Max-Age=7776000`. Two consequences, both small and both real: a pointless Set-Cookie on every
+    // crawler request, and — for any bot that keeps cookies — a 90-day first-touch record whose
+    // landing page is robots.txt, which is noise in exactly the acquisition data that starts being
+    // worth reading now the sitemap is submitted. None of these four files is ever a human's landing
+    // page, none is tenanted, and none is behind auth, so excluding them costs nothing the auth and
+    // tenancy halves of this middleware were doing.
+    //
+    // ⚠️ Only the negative lookahead changed. Everything this matcher governs BESIDES attribution —
+    // session refresh, the protected-path redirect, tenancy — still runs on every other path exactly
+    // as before.
+    '/((?!_next/static|_next/image|favicon.ico|robots\\.txt$|sitemap\\.xml$|llms\\.txt$|llms-full\\.txt$|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 }
