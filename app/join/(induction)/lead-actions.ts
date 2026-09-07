@@ -31,6 +31,14 @@ import type { Json } from '@/lib/database.types'
 // `<lead id>.<claim token>`, and the claim token (minted by capture_signup_lead, stored hashed,
 // migration 20270345000610) is what update_signup_lead / mark_signup_lead_converted require. A
 // cookie in the old bare-id shape names a row that no token can open, so it is treated as absent.
+// 2026-09-06 (LIVE-162): this name USED TO BE SHARED. The Space-QR lead grab (LEAD_GRAB_COOKIE,
+// lib/crm/lead-capture.ts) wrote its own URL-encoded JSON to 'fq_lead' too, so on a shared browser
+// one feature silently overwrote the other's cookie. The grab moved to 'fq_lead_grab'; this name,
+// the older of the two, did not move. Until every pre-rename grab cookie has aged out, a value in
+// THIS jar slot may still be that other feature's JSON: readLeadClaim rejects anything that is not
+// `<id>.<token>`, and a JSON blob that happens to contain a dot names a row no token can open, so
+// the RPC returns false and the beat is a silent no-op. Nothing to remove here on 2026-10-07 (the
+// grab-side fallback's expiry); this comment is the record of why the shapes are checked at all.
 const LEAD_COOKIE = 'fq_lead'
 const LEAD_COOKIE_MAX_AGE = 60 * 60 * 24 * 30 // 30 days — a funnel abandoned today is worth mailing next week
 

@@ -17,7 +17,8 @@ vi.mock('@/lib/qr/member-codes', () => ({ ensureMemberCodes: vi.fn(async () => {
 vi.mock('@/lib/attribution/acquisition', () => ({ persistAcquisition: vi.fn(async () => {}) }))
 vi.mock('@/lib/rewards/connector', () => ({ rewardConnectorJoinOnSignup: vi.fn(async () => {}) }))
 vi.mock('@/lib/crm/lead-capture', () => ({
-  LEAD_GRAB_COOKIE: 'fq_lead',
+  LEAD_GRAB_COOKIE: 'fq_lead_grab',
+  LEGACY_LEAD_GRAB_COOKIE: 'fq_lead',
   parseLeadGrab: () => null,
   claimPendingLeadGrab: vi.fn(async () => {}),
   claimLeadOnSignup: vi.fn(async () => {}),
