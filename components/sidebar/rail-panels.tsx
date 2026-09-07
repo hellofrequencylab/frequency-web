@@ -4,11 +4,14 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { HOME_TZ, dayInZone } from '@/lib/time/zone'
 import {
   SERIES_COLUMNS,
+  SERIES_WIDE_READ,
   TEASER_CARDS_PER_SERIES,
   collapseSeriesRows,
+  countSeries,
   seriesFetchLimit,
   seriesUpcomingFloor,
   type SeriesFields,
+  type SeriesRow,
 } from '@/lib/events/series'
 import { circleEventVisibilities } from '@/lib/events/circle-upcoming'
 import { relativeTime } from '@/lib/utils'
@@ -621,11 +624,17 @@ export async function PulsePanel() {
     admin.from('profiles').select('id', { count: 'exact', head: true }).eq('is_active', true).eq('is_system', false),
     admin.from('circles').select('id', { count: 'exact', head: true }).eq('status', 'active').eq('is_demo', false)
       .eq('unlisted', false),
-    admin.from('events').select('id', { count: 'exact', head: true }).eq('is_cancelled', false).gte('starts_at', now).lte('starts_at', weekAhead),
+    // "N this week" counts GATHERINGS (LIVE-198 / SERIES-COUNT). Recurrence is materialised
+    // (ADR-007), so a daily series is seven rows in a seven-day window and one gathering — the same
+    // arithmetic that made the panel above show one cowork series in all three of its slots. A row
+    // read rather than `head: true`, because the fold needs the series columns.
+    admin.from('events').select(`id, starts_at, is_cancelled, ${SERIES_COLUMNS}`)
+      .eq('is_cancelled', false).gte('starts_at', now).lte('starts_at', weekAhead)
+      .limit(SERIES_WIDE_READ),
   ])
   const members = membersRes.count ?? 0
   const circles = circlesRes.count ?? 0
-  const events = eventsRes.count ?? 0
+  const events = countSeries((eventsRes.data ?? []) as SeriesRow[])
   if (!members && !circles && !events) return null
 
   const stats = [

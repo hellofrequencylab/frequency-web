@@ -17,6 +17,7 @@ import { loadRootSpaceId } from '@/lib/spaces/store'
 import { readEventCoverFocus } from '@/lib/events/cover-focus'
 import { DEFAULT_OBJECT_POSITION } from '@/lib/images/focal-point'
 import { upcomingEventFloor } from './upcoming-floor'
+import { SERIES_COLUMNS } from './series'
 import { seriesAnchorIsLive, type RepeatAnchorRow } from './calendar-repeats'
 
 /** An event as the by-space read returns it (the columns the offerings/schedule modules need). */
@@ -36,6 +37,11 @@ export interface SpaceEvent {
   /** 'draft' | 'published' — the manage calendar badges drafts; public readers filter on it. */
   status: string | null
   location: string | null
+  // The SERIES columns (ADR-897 / ADR-007). Present on every row this reader returns, so any caller
+  // that COUNTS or LISTS these rows can fold occurrences into gatherings instead of counting dates.
+  recurrence_type?: string | null
+  recurrence_until?: string | null
+  parent_event_id?: string | null
   // ── Space-page Events block fields (view upgrade) — all in the generated DB types now (ADR-246
   // closed). All additive + nullable, so every existing caller
   // keeps its shape. capacity/price feed the card + popup; join_mode/hide_address carry the ADR-826 /
@@ -51,8 +57,13 @@ export interface SpaceEvent {
   is_demo?: boolean | null
 }
 
+// 🔴 SERIES_COLUMNS is part of this SELECT, and it is load-bearing rather than decorative: three
+// readers built on listEventsForSpace COUNT its rows (the Spaces manage rail's Calendar box, the
+// Space calendar console's summary line, and the public profile hero stat), and recurrence is
+// MATERIALISED (ADR-007), so without these columns the fold that turns occurrences back into
+// gatherings is a silent no-op and each of them counts a weekly series nine times (LIVE-198).
 const COLS =
-  'id, slug, title, description, starts_at, ends_at, host_id, scope_id, scope_type, is_cancelled, space_id, time_zone, status, location, capacity, price_cents, join_mode, hide_address, city, region, venue_name, attendance_mode, is_demo'
+  `id, slug, title, description, starts_at, ends_at, host_id, scope_id, scope_type, is_cancelled, space_id, time_zone, status, location, capacity, price_cents, join_mode, hide_address, city, region, venue_name, attendance_mode, is_demo, ${SERIES_COLUMNS}`
 
 /** An event row for the per-space CALENDAR (Events EC2): the fields the month grid + popup need. */
 export interface SpaceCalendarEvent {

@@ -3,6 +3,7 @@ import { cookies } from 'next/headers'
 import Link from 'next/link'
 import { Plus, Sparkles } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { SERIES_COLUMNS, SERIES_WIDE_READ, countSeries, type SeriesRow } from '@/lib/events/series'
 import { getPracticeMetrics } from '@/lib/analytics/practice'
 import { getDensitySignal } from '@/lib/analytics/density'
 import { getEngagementRead } from '@/lib/analytics/engagement-read'
@@ -61,7 +62,7 @@ export default async function AdminPageView() {
     joinsRes,
     practiceRows,
     eventRows,
-    upcomingCount,
+    upcomingRows,
     totalProfilesRes,
   ] = await Promise.all([
     // "Members" = real (non-system) person profiles — the canonical community size
@@ -77,11 +78,16 @@ export default async function AdminPageView() {
       .eq('event_type', 'practice.verified')
       .gte('created_at', volumeStart),
     admin.from('events').select('starts_at').gte('starts_at', volumeStart).lte('starts_at', weekAhead),
+    // "Events ahead" counts GATHERINGS, not materialised occurrences (LIVE-198 / SERIES-COUNT).
+    // Recurrence is materialised (ADR-007), so a DAILY series is seven rows inside this seven-day
+    // window and one gathering. It is a row read rather than `head: true` because the fold needs the
+    // series columns; the window is a week, so SERIES_WIDE_READ is a ceiling it never approaches.
     admin
       .from('events')
-      .select('id', { count: 'exact', head: true })
+      .select(`id, starts_at, is_cancelled, ${SERIES_COLUMNS}`)
       .gte('starts_at', now.toISOString())
-      .lte('starts_at', weekAhead),
+      .lte('starts_at', weekAhead)
+      .limit(SERIES_WIDE_READ),
     admin.from('profiles').select('id', { count: 'exact', head: true }).eq('is_system', false),
   ])
 
@@ -99,6 +105,10 @@ export default async function AdminPageView() {
     VOLUME_WEEKS,
     now,
   )
+  // The number the KPI + the Community tile print. countSeries drops cancelled occurrences (the
+  // fold's default), which the raw `head: true` count never did.
+  const upcomingEvents = countSeries((upcomingRows.data ?? []) as SeriesRow[])
+
   const eventSeries = weeklyBuckets(
     (eventRows.data ?? []).map((r) => new Date(r.starts_at as string)),
     VOLUME_WEEKS,
@@ -129,7 +139,7 @@ export default async function AdminPageView() {
           membersCount={membersCount.count ?? 0}
           circlesCount={circlesCount.count ?? 0}
           broadcasts={dispatchesCount.count ?? 0}
-          upcomingEvents={upcomingCount.count ?? 0}
+          upcomingEvents={upcomingEvents}
           growthSeries={growthSeries}
           eventSeries={eventSeries}
           joinedThisMonth={joinedThisMonth}
@@ -164,9 +174,9 @@ export default async function AdminPageView() {
       // and show immediately (the two practice numbers fade in).
       actions={
         <Suspense
-          fallback={<HeaderKpis members={membersCount.count ?? 0} events={upcomingCount.count ?? 0} />}
+          fallback={<HeaderKpis members={membersCount.count ?? 0} events={upcomingEvents} />}
         >
-          <HeaderKpisLive members={membersCount.count ?? 0} events={upcomingCount.count ?? 0} />
+          <HeaderKpisLive members={membersCount.count ?? 0} events={upcomingEvents} />
         </Suspense>
       }
     >

@@ -21,7 +21,19 @@ vi.mock('@/lib/core/load-capabilities', () => ({ getEventCapabilities: async () 
 vi.mock('@/lib/events/rsvp-depth', () => ({ approveRsvpById: fx.approve }))
 vi.mock('@/lib/events/guest-rsvp-email', () => ({ sendRsvpApprovedNotice: fx.notice }))
 vi.mock('@/lib/admin/audit', () => ({ logAdminAction: async () => undefined }))
-vi.mock('@/lib/events/cancellation', () => ({ refundAndNotifyForCancelledEvent: async () => undefined }))
+// admin-actions.ts imports the whole cancel surface (the single-event fan-out plus the series
+// cancel added for LIVE-198), so the mock declares all three: a factory that omits an export the
+// module under test imports is a load-order failure waiting to happen.
+vi.mock('@/lib/events/cancellation', () => ({
+  refundAndNotifyForCancelledEvent: async () => undefined,
+  cancelSeries: async () => ({
+    seriesKey: null, considered: 0, cancelled: [], alreadyCancelled: [],
+    unauthorized: [], failed: [], fanoutFailed: [], truncated: false,
+  }),
+  loadSeriesCancelPlan: async () => ({
+    seriesKey: null, recurring: false, upcoming: [], cancellable: 0, truncated: false,
+  }),
+}))
 vi.mock('@/lib/events/event-lifecycle', () => ({ cancelAudit: () => ({}), reinstateAudit: () => ({}) }))
 vi.mock('@/lib/events/event-stats', () => ({ loadEventCoreStats: async () => null }))
 vi.mock('@/lib/events/geocode', () => ({ saveEventLocation: async () => undefined }))

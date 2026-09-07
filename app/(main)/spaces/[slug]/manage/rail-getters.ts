@@ -31,6 +31,8 @@ import { listAllTicketTiers } from '@/lib/spaces/tickets'
 import { getDeals } from '@/lib/crm/pipeline'
 import { listSpaceCampaigns } from '@/lib/spaces/campaigns'
 import { listEventsForSpace } from '@/lib/events/store'
+import { countSeries, type SeriesRow } from '@/lib/events/series'
+import { upcomingEventFloor } from '@/lib/events/upcoming-floor'
 import { listSpaceCodes } from '@/lib/qr/space-codes'
 import {
   readProfilePages,
@@ -550,7 +552,9 @@ async function buildSummariesData(
     'space.booking': windows ? { count: windows.length } : null,
     'space.memberships': memberTiers ? { count: memberTiers.length } : null,
     'space.tickets': ticketTiers ? { count: ticketTiers.length } : null,
-    'space.calendar': upcoming ? { count: upcoming.length } : null,
+    // GATHERINGS, not materialised occurrences (LIVE-198 / SERIES-COUNT). listEventsForSpace now
+    // carries SERIES_COLUMNS, so this is the same fold every list uses, not a second definition.
+    'space.calendar': upcoming ? { count: countSeries(upcoming as SeriesRow[], { upcomingFrom: upcomingEventFloor() }) } : null,
     'space.reach': codes ? { count: codes.length, tier } : null,
   }
 }
@@ -776,7 +780,9 @@ export async function getSpaceCalendarSummary(slug: string): Promise<{ count: nu
   const space = await resolveSummarySpace(slug, 'events')
   if (!space) return null
   const upcoming = await listEventsForSpace(space.id, { upcomingOnly: true, limit: EVENT_COUNT_LIMIT })
-  return { count: upcoming.length }
+  // The Calendar box's stat counts GATHERINGS: a weekly series is ~9 rows inside the cron's 60-day
+  // horizon and one thing on the calendar (LIVE-198 / SERIES-COUNT).
+  return { count: countSeries(upcoming as SeriesRow[], { upcomingFrom: upcomingEventFloor() }) }
 }
 
 /** "N codes" — the QR codes this Space has made. Gated on manage access + the `qr` function, and

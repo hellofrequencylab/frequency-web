@@ -272,6 +272,68 @@ export function collapseSeriesRows<T extends SeriesRow>(rows: T[], opts?: Collap
 }
 
 /**
+ * HOW MANY GATHERINGS — the count twin of the fold (LIVE-198 / SERIES-COUNT).
+ *
+ * Every operator dashboard, Space card and stat tile that showed "N upcoming events" counted ROWS,
+ * and recurrence is MATERIALISED (ADR-007), so a single weekly cowork inside the 60-day horizon
+ * counted as nine events. Measured on production 2026-09-07: 21 upcoming non-cancelled rows are
+ * 5 gatherings, and the two Spaces that run a weekly series each advertised 9 where 1 is true.
+ *
+ * IT IS DEFINED AS THE FOLD, NOT BESIDE IT. The body is `collapseSeriesRows(rows, perSeries: 1)`,
+ * so the number is literally "how many cards a one-card-per-series render would draw" — a count and
+ * the list under it can never drift, because there is one implementation and one series key
+ * (`parent_event_id ?? id`). A second definition of "what a series is" is the drift this repo has
+ * failed gates for; this one cannot acquire it.
+ *
+ * The caller therefore owns the clock exactly as it does for the fold: pass `upcomingFrom`
+ * (upcomingEventFloor()) when the ROWS are not already floored by the query, and nothing when they
+ * are. `dropCancelled` defaults to true, matching the fold.
+ *
+ * ⚠️ A row the fold cannot place — no id, or no parseable `starts_at` — passes through the fold and
+ * so counts as one. That is deliberate: it is the number of cards that would render, and silently
+ * dropping a row from a count is the same failure as silently dropping it from a list.
+ */
+export function countSeries<T extends SeriesRow>(rows: T[], opts: CollapseOptions = {}): number {
+  return collapseSeriesRows(rows, { ...opts, perSeries: 1 }).length
+}
+
+/**
+ * countSeries, per bucket — for a batched read that fetched MANY owners' rows in one query and needs
+ * one count each (the Spaces directory reads every listed Space's upcoming events at once).
+ *
+ * Bucketing happens FIRST and the fold runs per bucket, which is the only correct order: a series'
+ * occurrences all belong to the same owner, so no series can straddle two buckets, and folding the
+ * whole result set first would let one owner's rows decide another's count. A row whose key is
+ * missing (a null `space_id`) belongs to no bucket and is skipped; a bucket with no eligible rows is
+ * absent from the map rather than present as 0, so a caller can still tell "none" from "unknown".
+ */
+export function countSeriesBy<T extends SeriesRow>(
+  rows: T[],
+  keyOf: (row: T) => string | null | undefined,
+  opts: CollapseOptions = {},
+): Map<string, number> {
+  const buckets = new Map<string, T[]>()
+  const order: string[] = []
+  for (const row of rows) {
+    if (!row) continue
+    const key = keyOf(row)
+    if (!key) continue
+    const bucket = buckets.get(key)
+    if (bucket) bucket.push(row)
+    else {
+      buckets.set(key, [row])
+      order.push(key)
+    }
+  }
+  const out = new Map<string, number>()
+  for (const key of order) {
+    const n = countSeries(buckets.get(key)!, opts)
+    if (n > 0) out.set(key, n)
+  }
+  return out
+}
+
+/**
  * SEARCH's fold, for a reader that has run TWO reads around the wall-clock floor: `upcoming`
  * ascending from the floor, `past` DESCENDING below it. Each half folds SEPARATELY and the results
  * concatenate, so a still-running series is represented by its NEXT date and a finished one by its

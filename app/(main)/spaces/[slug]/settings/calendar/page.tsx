@@ -9,6 +9,8 @@ import { resolveSpaceManageAccess, getSpaceCapabilities } from '@/lib/spaces/ent
 import { spaceFunctionAccess } from '@/lib/spaces/functions'
 import { FeatureLockedNotice } from '@/components/spaces/feature-locked-notice'
 import { listSpaceCalendarEvents, listCalendarEngagement, listEventsForSpace } from '@/lib/events/store'
+import { countSeries, type SeriesRow } from '@/lib/events/series'
+import { upcomingEventFloor } from '@/lib/events/upcoming-floor'
 import { formatEventWhen, eventInstant } from '@/lib/time/zone'
 import { eventDayKey } from '@/lib/events/calendar-grid'
 import { SITE_URL } from '@/lib/site'
@@ -112,7 +114,12 @@ export default async function SpaceCalendarConsolePage({ params }: { params: Pro
     }),
   ].filter((e): e is CalendarEvent => e !== null)
 
-  const upcomingCount = ownedRows.filter((r) => r.starts_at >= nowIso && !r.is_cancelled).length
+  // "N upcoming events." — GATHERINGS, not materialised occurrences (LIVE-198 / SERIES-COUNT).
+  // Recurrence is materialised (ADR-007), so a weekly series is ~9 rows inside the cron's 60-day
+  // horizon and the operator's own console told them they had nine events when they have one. The
+  // fold owns both gates (cancelled + the floor), so this is one call rather than a hand-rolled
+  // filter that could drift from the lists on the same page.
+  const upcomingCount = countSeries(ownedRows as SeriesRow[], { upcomingFrom: upcomingEventFloor(now) })
 
   // The deep-management table below the calendar: duplicate / cancel / delete per event.
   const managedEvents: ManagedEvent[] = ownedRows.map((ev) => ({
