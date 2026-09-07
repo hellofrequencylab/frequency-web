@@ -260,6 +260,22 @@ const nextConfig: NextConfig = {
         destination: '/help/sharing/dispatches',
         permanent: true,
       },
+      // A public practice was submitted to Search Console (2026-09-05) under the slug
+      // `untitled-practice-2` while its title had said "Daily Hypnosis" since July (LIVE-188).
+      // The slug was renamed in the database on 2026-09-06; this rule keeps the submitted URL
+      // resolving. Permanent (308) so the crawl signal transfers rather than splitting.
+      //
+      // 🔴 THE CAUSE IS NOT THIS ROW, and it is worth reading before the next one appears:
+      // `uniquePracticeSlug` is called at CREATE (lib/practices.ts:1361) and FORK (:1778) and
+      // NOWHERE ELSE — `updatePractice` never re-mints a slug. So every practice created before
+      // it was named keeps `untitled-practice-N` as its public URL for good, however well it is
+      // titled afterwards. One row is a rename; the general fix is a re-mint on the first title
+      // set while a practice is still private, which is filed rather than swept in here.
+      {
+        source: '/discover/practices/untitled-practice-2',
+        destination: '/discover/practices/daily-hypnosis',
+        permanent: true,
+      },
       // The pricing "five doors" (ADR-590/591). Only genuinely RETIRED persona slugs belong here.
       //
       // These rules used to assume a short-slug rename (coaches / hosts / communities) that the funnel

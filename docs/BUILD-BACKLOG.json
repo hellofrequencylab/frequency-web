@@ -46,8 +46,6 @@
             "LIVE-123",
             "LIVE-124",
             "LIVE-156",
-            "LIVE-187",
-            "LIVE-188",
             "LIVE-189",
             "LIVE-182"
           ]
@@ -59,7 +57,6 @@
             "LIVE-144",
             "LIVE-175",
             "LIVE-186",
-            "HYG-048",
             "LIVE-183",
             "LIVE-184",
             "LIVE-159",
@@ -76,7 +73,6 @@
             "LIVE-190",
             "LIVE-191",
             "LIVE-195",
-            "LIVE-197",
             "LIVE-198",
             "LIVE-201"
           ]
@@ -8848,36 +8844,34 @@
     {
       "id": "LIVE-187",
       "title": "Four seeded demo products ship picsum.photos placeholder art, and the sitemap submits them WITH image nodes",
-      "status": "open",
-      "priority": "P0",
+      "status": "done",
       "lane": "live",
       "size": "XS",
       "source": {
         "file": "docs/BUILD-BACKLOG.json",
         "ref": "crawl-surface scan, 2026-09-06"
       },
-      "detail": "FOUND 2026-09-06 by reading the LIVE sitemap in the hour after the owner submitted it to Search Console. Four /store/<uuid> entries carry an <image:image><image:loc> pointing at picsum.photos — the lorem-ipsum image service — e.g. https://picsum.photos/seed/tee/600/400 for a tee, plus pins, tote and stickers. MEASURED, not inferred: commerce_products with images matching picsum = 4, all status='active', so they are live products rather than drafts. Scope is exactly those 4 rows: the same query across practices, quests, store_items, spaces and events returns 0, because the practice and Journey picsum seeds introduced by migrations 20260606130000 and 20260622000000 were replaced as those files' own comments promised. This is the residue. ⚠️ WHY IT MATTERS MORE TODAY THAN YESTERDAY: until the sitemap was submitted nothing crawled these URLs, so seeded art cost nothing. Google requires sitemap image URLs to be on a domain you own or have verified, so a picsum.photos image node is at best ignored and at worst counts against the page; and a crawler that does fetch it sees stock placeholder art presented as product photography on a commerce URL. THE FIX IS A DATA EDIT, NOT CODE: give the four products real images, or move them off status='active' so they leave both the storefront and the sitemap. Deleting them is equally fine, they are demo rows. Nothing changes in app/sitemap.ts, which is correctly reporting what the table says.",
+      "detail": "FOUND 2026-09-06 by reading the LIVE sitemap in the hour after the owner submitted it to Search Console. Four /store/<uuid> entries carry an <image:image><image:loc> pointing at picsum.photos — the lorem-ipsum image service — e.g. https://picsum.photos/seed/tee/600/400 for a tee, plus pins, tote and stickers. MEASURED, not inferred: commerce_products with images matching picsum = 4, all status='active', so they are live products rather than drafts. Scope is exactly those 4 rows: the same query across practices, quests, store_items, spaces and events returns 0, because the practice and Journey picsum seeds introduced by migrations 20260606130000 and 20260622000000 were replaced as those files' own comments promised. This is the residue. ⚠️ WHY IT MATTERS MORE TODAY THAN YESTERDAY: until the sitemap was submitted nothing crawled these URLs, so seeded art cost nothing. Google requires sitemap image URLs to be on a domain you own or have verified, so a picsum.photos image node is at best ignored and at worst counts against the page; and a crawler that does fetch it sees stock placeholder art presented as product photography on a commerce URL. THE FIX IS A DATA EDIT, NOT CODE: give the four products real images, or move them off status='active' so they leave both the storefront and the sitemap. Deleting them is equally fine, they are demo rows. Nothing changes in app/sitemap.ts, which is correctly reporting what the table says.\n\n── ✅ DONE 2026-09-06 (fan-out slice A), and the fix is CODE rather than the data edit the row proposed, because measuring the rows first changed the answer. All four products are `is_demo: true`, `owner_kind: 'platform'`, `market_published: false`, `status: 'active'` — they are seed dressing, not drafts someone forgot. So editing four rows would have fixed today and left the next demo seed to do it again. app/sitemap.ts now filters `!p.isDemo` on storeRoutes, which drops the whole demo row rather than just its image, since a picsum URL in an image sitemap is placeholder art presented as product photography.\n\n⚪ DELIBERATELY NOT FILTERED IN listShopProducts, although that is where it would be shorter: that reader also feeds the /store storefront, and whether demo dressing appears in the shop is a product decision that is not this row's to make. The test pins that a demo product emits no /store URL while a real one does, and was confirmed to fail against the pre-change code.",
       "verify": {
-        "kind": "manual",
-        "evidence": "2026-09-06: read from the LIVE sitemap after submission — four /store/<uuid> entries carry <image:loc> https://picsum.photos/seed/{tee,pins,tote,stickers}/600/400. Confirmed in the database: 4 commerce_products rows have images matching picsum, all status=active; the same query over practices, quests, store_items, spaces and events returns 0. MANUAL because the defect is production DATA and no repo-side probe can see it — a probe over app/sitemap.ts would pass while the four rows sat there, which is the shape check:backlog rightly rejects. Closes when that count is 0, or when Search Console reports no picsum image errors.",
-        "checked": "2026-09-06"
+        "kind": "cmd",
+        "cmd": "node -e 'const s=require(\"fs\").readFileSync(\"app/sitemap.ts\",\"utf8\");process.exit(/isDemo/.test(s)?0:1)'",
+        "note": "The row was manual against a production count; the durable consequence is the sitemap filter, so the probe measures that instead. A demo row reaching the crawl surface again means this filter was removed."
       }
     },
     {
       "id": "LIVE-188",
       "title": "A practice called untitled-practice-2 is public and in the submitted sitemap",
-      "status": "open",
-      "priority": "P0",
+      "status": "done",
       "lane": "live",
       "size": "XS",
       "source": {
         "file": "docs/BUILD-BACKLOG.json",
         "ref": "crawl-surface scan, 2026-09-06"
       },
-      "detail": "FOUND 2026-09-06 in the live sitemap: https://frequencylocal.com/discover/practices/untitled-practice-2 is submitted for indexing at priority 0.5. Measured: 1 of 21 rows in practices has a slug beginning 'untitled'. It is a placeholder somebody created and never named, and it is now public, crawlable and pointed at by the sitemap that went to Search Console today. Thin content under a meaningless slug is the clearest low-quality signal available on a domain with no ranking history to spend. THE FIX IS A DATA EDIT: name it and give it a real slug, or unpublish it. ⚠️ THE GENERAL CASE IS WORTH A THOUGHT RATHER THAN A SWEEP: nothing stops the next unnamed draft reaching the sitemap the same way, because the reader asks whether a practice is public, not whether anyone finished writing it. If a second one appears, the row to file is a publish-time guard, not another rename.",
+      "detail": "FOUND 2026-09-06 in the live sitemap: https://frequencylocal.com/discover/practices/untitled-practice-2 is submitted for indexing at priority 0.5. Measured: 1 of 21 rows in practices has a slug beginning 'untitled'. It is a placeholder somebody created and never named, and it is now public, crawlable and pointed at by the sitemap that went to Search Console today. Thin content under a meaningless slug is the clearest low-quality signal available on a domain with no ranking history to spend. THE FIX IS A DATA EDIT: name it and give it a real slug, or unpublish it. ⚠️ THE GENERAL CASE IS WORTH A THOUGHT RATHER THAN A SWEEP: nothing stops the next unnamed draft reaching the sitemap the same way, because the reader asks whether a practice is public, not whether anyone finished writing it. If a second one appears, the row to file is a publish-time guard, not another rename.\n\n── ✅ DONE 2026-09-06, and the premise was HALF WRONG in the direction that changes the fix. The row read the slug as a placeholder nobody had named. The row is titled `Daily Hypnosis` and has been since 2026-07-01: only the SLUG said untitled. So it was never thin content — it was a real practice wearing a meaningless URL, and unpublishing it (the row's other suggested fix) would have removed a good page.\n\nWHAT SHIPPED: the slug is renamed to `daily-hypnosis` in production (id d61634a3…, verified: 0 practices now have a slug beginning `untitled`), and next.config.ts gains a permanent 308 from `/discover/practices/untitled-practice-2`, because that exact URL was submitted to Search Console the day before and a rename without it would have 404'd the thing the sitemap advertises.\n\n🔴 THE CAUSE, which the row asked someone to think about rather than sweep: `uniquePracticeSlug` (lib/practices.ts:1691) is called at CREATE (:1361) and FORK (:1778) and nowhere else — `updatePractice` never re-mints a slug. So this was not one careless draft; EVERY practice created before it is named keeps `untitled-practice-N` as its public URL for good, no matter how well it is titled afterwards, and the Vera rename path at app/(main)/practices/actions.ts:388 sets exactly that title. The row said 'if a second one appears, the row to file is a publish-time guard'. The cause is stronger evidence than a second occurrence, so the guard is filed now as LIVE-201 rather than waiting for the next one to reach a crawler.",
       "verify": {
         "kind": "manual",
-        "evidence": "2026-09-06: read from the LIVE sitemap after submission — https://frequencylocal.com/discover/practices/untitled-practice-2 is submitted at priority 0.5. Confirmed in the database: 1 of 21 practices has a slug beginning \"untitled\". MANUAL for the same reason as LIVE-187: the row is production DATA, and the only repo-side probe available would assert that practices appear in the sitemap, which is true whether or not this one is named. Closes when no practice slug begins with \"untitled\".",
+        "evidence": "2026-09-06: `select count(*) from practices where slug like 'untitled%'` returns 0 (was 1). The renamed row keeps its submitted URL via a 308 in next.config.ts. The recurrence guard is LIVE-201.",
         "checked": "2026-09-06"
       }
     },
@@ -8902,15 +8896,14 @@
     {
       "id": "HYG-048",
       "title": "The proxy sets a 90-day attribution cookie on robots.txt and sitemap.xml, so crawler fetches land in attribution",
-      "status": "open",
-      "priority": "P1",
+      "status": "done",
       "lane": "hygiene",
       "size": "XS",
       "source": {
         "file": "docs/BUILD-BACKLOG.json",
         "ref": "crawl-surface scan, 2026-09-06"
       },
-      "detail": "MEASURED 2026-09-06 from live response headers rather than inferred. GET https://frequencylocal.com/robots.txt returns a set-cookie for fq_attr carrying landing:\"/robots.txt\" with Max-Age=7776000, and sitemap.xml returns the same with landing:\"/sitemap.xml\". The cause is proxy.ts's matcher, which excludes _next internals and static image extensions and nothing else, so the first-touch attribution middleware runs on both files. TWO CONSEQUENCES, both small and both real: every crawler request carries a pointless Set-Cookie, and any bot that keeps cookies gets a first-touch record whose landing page is robots.txt — noise in exactly the acquisition data that becomes worth reading now that the sitemap is submitted and organic traffic is expected for the first time. THE FIX is one matcher entry: add robots.txt, sitemap.xml and the llms files to the negative lookahead beside the static assets. Left unmade deliberately — proxy.ts is the highest-traffic file in the codebase and its matcher governs auth and tenancy as well as attribution, so a scan finding does not justify editing it in the same pass. It wants its own change with the proxy tests run against it.",
+      "detail": "MEASURED 2026-09-06 from live response headers rather than inferred. GET https://frequencylocal.com/robots.txt returns a set-cookie for fq_attr carrying landing:\"/robots.txt\" with Max-Age=7776000, and sitemap.xml returns the same with landing:\"/sitemap.xml\". The cause is proxy.ts's matcher, which excludes _next internals and static image extensions and nothing else, so the first-touch attribution middleware runs on both files. TWO CONSEQUENCES, both small and both real: every crawler request carries a pointless Set-Cookie, and any bot that keeps cookies gets a first-touch record whose landing page is robots.txt — noise in exactly the acquisition data that becomes worth reading now that the sitemap is submitted and organic traffic is expected for the first time. THE FIX is one matcher entry: add robots.txt, sitemap.xml and the llms files to the negative lookahead beside the static assets. Left unmade deliberately — proxy.ts is the highest-traffic file in the codebase and its matcher governs auth and tenancy as well as attribution, so a scan finding does not justify editing it in the same pass. It wants its own change with the proxy tests run against it.\n\n── ✅ DONE 2026-09-06 (fan-out slice A). proxy.ts:284 adds `robots\\.txt$|sitemap\\.xml$|llms\\.txt$|llms-full\\.txt$` to the matcher's negative lookahead, and NOTHING ELSE in that file changed — the row was explicit that the matcher governs auth and tenancy as well as attribution. The exclusion was verified by compiling the literal and asserting path by path: the four files are excluded, and `/`, `/feed`, `/spaces/foo`, `/api/x`, `/settings` and `/blog/robots.txt` all still run the proxy.",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e \"const s=require('fs').readFileSync('proxy.ts','utf8');const m=s.match(/matcher:\\s*\\[([\\s\\S]*?)\\]/);if(!m)process.exit(1);process.exit(/robots|sitemap/.test(m[1])?0:1)\"",
@@ -9203,15 +9196,14 @@
     {
       "id": "LIVE-197",
       "title": "Space entries in the sitemap carry no lastmod because the discovery reader never projects updated_at",
-      "status": "open",
-      "priority": "P1",
+      "status": "done",
       "lane": "live",
       "size": "S",
       "source": {
         "file": "docs/UX-MATURITY-PLAN.md",
         "ref": "§SEO, sitemap lastmod for the dynamic sets"
       },
-      "detail": "FILED 2026-09-06 by the backlog audit's docs sweep: work a live plan or ADR names as open, deferred or \"a follow-up\", with no row owning it. UX-MATURITY-PLAN records that \"several dynamic sets could carry a lastmod but do not, because their list functions never project updated_at (listNetworkedSpaces is the largest)\". Verified 2026-09-06: lib/spaces/discovery.ts selects no updated_at and app/sitemap.ts sets lastModified for events, journeys, practices and articles but not for Spaces. Now that the sitemap is submitted (2026-09-05), lastmod is the one signal that tells a crawler which of ~20 Space profiles changed, and Spaces are the entity with the most tabs behind them (LIVE-184). THE WORK: project updated_at through listNetworkedSpaces (and the Space tab routes LIVE-184 adds), pass it as lastModified, and let the existing check:seo Scan C see it if it reads the sitemap shape.",
+      "detail": "FILED 2026-09-06 by the backlog audit's docs sweep: work a live plan or ADR names as open, deferred or \"a follow-up\", with no row owning it. UX-MATURITY-PLAN records that \"several dynamic sets could carry a lastmod but do not, because their list functions never project updated_at (listNetworkedSpaces is the largest)\". Verified 2026-09-06: lib/spaces/discovery.ts selects no updated_at and app/sitemap.ts sets lastModified for events, journeys, practices and articles but not for Spaces. Now that the sitemap is submitted (2026-09-05), lastmod is the one signal that tells a crawler which of ~20 Space profiles changed, and Spaces are the entity with the most tabs behind them (LIVE-184). THE WORK: project updated_at through listNetworkedSpaces (and the Space tab routes LIVE-184 adds), pass it as lastModified, and let the existing check:seo Scan C see it if it reads the sitemap shape.\n\n── ✅ DONE 2026-09-06 (fan-out slice A). lib/spaces/discovery.ts projects `updated_at` through COLS, the row type and NetworkedSpace, and app/sitemap.ts stamps `lastModified` on every Space profile entry and on the tab entries LIVE-184 added. Optional by construction: no timestamp means no lastmod, never a synthesised one.\n\n🔴 AN HONEST LIMIT, RECORDED RATHER THAN GLOSSED: `spaces` has no set_updated_at trigger and updateSpaceProfile does not stamp the column, so for many rows this lastmod is the row's CREATION time. That is weak but never false, which is why it ships — a crawler is better served by a conservative date than by none. Making it precise is a trigger migration or a write-side change, and is filed separately rather than smuggled in here.",
       "verify": {
         "kind": "grep-present",
         "pattern": "updated_at",
