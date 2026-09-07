@@ -65,15 +65,20 @@ beforeEach(() => {
 })
 
 describe('Spotlight switches', () => {
-  it('setSpotlightPublished merges only the spotlight key through the session client', async () => {
+  it('setSpotlightPublished sends only `published` inside the spotlight key through the session client (LIVE-171)', async () => {
     await setSpotlightPublished(true)
     expect(mocks.updates).toEqual([])
-    expect(rpcCalls()).toEqual([['merge_profile_meta', { p_profile_id: 'p1', p_patch: { spotlight: { enabled: true, published: true } } }]])
+    expect(rpcCalls()).toEqual([['merge_profile_meta_path', { p_profile_id: 'p1', p_path: ['spotlight'], p_patch: { published: true } }]])
   })
 
-  it('setMySpotlightEnabled(false) also unpublishes, inside the one spotlight key', async () => {
+  it('setMySpotlightEnabled(false) also unpublishes, in one path merge inside the spotlight key', async () => {
     await setMySpotlightEnabled(false)
-    expect(rpcCalls()[0][1].p_patch).toEqual({ spotlight: { enabled: false, published: false } })
+    expect(rpcCalls()).toEqual([['merge_profile_meta_path', { p_profile_id: 'p1', p_path: ['spotlight'], p_patch: { enabled: false, published: false } }]])
+  })
+
+  it('setMySpotlightEnabled(true) sends only `enabled`, never a published flag it could have read', async () => {
+    await setMySpotlightEnabled(true)
+    expect(rpcCalls()[0][1]).toEqual({ p_profile_id: 'p1', p_path: ['spotlight'], p_patch: { enabled: true } })
   })
 
   it('throws and does not revalidate when the merge did not land', async () => {

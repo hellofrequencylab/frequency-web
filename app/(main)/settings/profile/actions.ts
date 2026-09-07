@@ -3,15 +3,11 @@
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { mergeProfileMeta, removeProfileMetaKeys } from '@/lib/profiles/meta'
+import { mergeProfileMeta, mergeProfileMetaPath, removeProfileMetaKeys } from '@/lib/profiles/meta'
 import type { Database } from '@/lib/database.types'
 import { sanitizeProfileInput } from '@/lib/profile-input'
 import { uploadProfileImage } from '@/lib/storage/profile-images'
-import {
-  readSpotlightEnabled,
-  withSpotlightEnabled,
-  withSpotlightPublished,
-} from '@/lib/profile/spotlight-flags'
+import { readSpotlightEnabled } from '@/lib/profile/spotlight-flags'
 import { writeProfileHeaderFocus, writeProfileAvatarFocus, writeProfileOverlay } from '@/lib/profile/header-focus'
 import { withAvatarFocusFragment } from '@/lib/images/avatar-focus'
 import { getProfileCapabilities } from '@/lib/core/load-capabilities'
@@ -22,8 +18,8 @@ import { getProfileCapabilities } from '@/lib/core/load-capabilities'
 // ownership at the database (defense-in-depth: even a dropped filter can't touch another
 // row). The .eq('auth_user_id') stays as the row locator. Requires the owner's Spotlight
 // to be ENABLED first (an admin turns that on); publishing is the owner's explicit,
-// separate act, so a page never goes public by accident. Read-modify-write of the
-// isolated spotlight sub-object (withSpotlightPublished) preserves every other meta key.
+// separate act, so a page never goes public by accident. The write sends ONLY `published`,
+// merged inside the `spotlight` key server-side, so every other field of it survives.
 export async function setSpotlightPublished(published: boolean): Promise<void> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -41,11 +37,11 @@ export async function setSpotlightPublished(published: boolean): Promise<void> {
     throw new Error('Your Spotlight page is not turned on yet.')
   }
 
-  // 2026-09-05 (scan2 L6-09): "Read-modify-write of the isolated spotlight sub-object" above now means
-  // the WRITE merges ONLY the `spotlight` key server-side (merge_profile_meta checks auth.uid() owns the
-  // row, so the session client keeps its self-scoping). Sibling keys are never carried back.
-  const { spotlight } = withSpotlightPublished(meta, published)
-  const { error } = await mergeProfileMeta(supabase, (me as { id: string }).id, { spotlight })
+  // 2026-09-07 (LIVE-171, ADR-1235): the read above only gates on `enabled`; the WRITE merges the one
+  // field INSIDE the `spotlight` key server-side (merge_profile_meta_path checks auth.uid() owns the
+  // row, so the session client keeps its self-scoping). A janitor reset or a theme save landing in
+  // the same second is never carried back stale.
+  const { error } = await mergeProfileMetaPath(supabase, (me as { id: string }).id, ['spotlight'], { published })
   if (error) throw new Error(error)
 
   revalidatePath('/settings/profile')
@@ -78,12 +74,10 @@ export async function setMySpotlightEnabled(enabled: boolean): Promise<void> {
     throw new Error('Spotlight is a Crew feature. Upgrade to turn yours on.')
   }
 
-  const meta = (me as { meta?: unknown }).meta
-  let nextMeta = withSpotlightEnabled(meta, enabled)
-  if (!enabled) nextMeta = withSpotlightPublished(nextMeta, false)
-
-  // 2026-09-05 (scan2 L6-09): only the `spotlight` key is merged server-side.
-  const { error } = await mergeProfileMeta(supabase, (me as { id: string }).id, { spotlight: nextMeta.spotlight })
+  // 2026-09-07 (LIVE-171): only the flag(s) this switch owns are sent, merged INSIDE the `spotlight`
+  // key server-side; turning off also unpublishes, in the same statement.
+  const patch: Record<string, unknown> = enabled ? { enabled: true } : { enabled: false, published: false }
+  const { error } = await mergeProfileMetaPath(supabase, (me as { id: string }).id, ['spotlight'], patch)
   if (error) throw new Error(error)
 
   revalidatePath('/settings/profile')

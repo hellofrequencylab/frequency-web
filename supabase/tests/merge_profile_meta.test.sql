@@ -1,5 +1,7 @@
 -- pgTAP behavioural guard for merge_profile_meta / remove_profile_meta_keys (migration
--- 20270345000900): the one write primitive for profiles.meta (scan two L6-09, L5-06).
+-- 20270345000900): the one write primitive for profiles.meta (scan two L6-09, L5-06), and for
+-- merge_profile_meta_path (migration 20270345002300, LIVE-171 / ADR-1235): the merge INSIDE a key
+-- several writers share, so two of them cannot revert each other one level down.
 --
 -- WHY THIS FILE EXISTS. Every profiles.meta writer used to rewrite the whole blob from a stale
 -- read, so two writers for one member lost each other's key. The TypeScript side
@@ -13,7 +15,7 @@
 -- Runs via `supabase test db` (see supabase/tests/README.md), NOT under vitest.
 
 begin;
-select plan(25);
+select plan(36);
 
 -- ── Fixture ─────────────────────────────────────────────────────────────────────────────────────
 -- profiles.auth_user_id carries a FOREIGN KEY to auth.users, and the owner check inside the RPC
@@ -44,6 +46,10 @@ select is(has_function_privilege('anon', 'public.remove_profile_meta_keys(uuid, 
   'anon cannot execute remove_profile_meta_keys');
 select is(has_function_privilege('authenticated', 'public.remove_profile_meta_keys(uuid, text[])', 'execute'), true,
   'authenticated can execute remove_profile_meta_keys');
+select is(has_function_privilege('anon', 'public.merge_profile_meta_path(uuid, text[], jsonb)', 'execute'), false,
+  'anon cannot execute merge_profile_meta_path');
+select is(has_function_privilege('authenticated', 'public.merge_profile_meta_path(uuid, text[], jsonb)', 'execute'), true,
+  'authenticated can execute merge_profile_meta_path (the function itself checks ownership)');
 
 -- ── 1. As the service role (the admin client), the merge keeps the other writer's key ─────────
 select set_config('request.jwt.claims', json_build_object('role', 'service_role')::text, true);
@@ -104,6 +110,56 @@ select is(
   'a nested object is replaced whole at its key (freezeTokens is gone), which is the stated contract: a writer sends its complete key'
 );
 
+-- ── 3b. merge_profile_meta_path merges INSIDE a shared key (LIVE-171) ─────────────────────────
+-- The race 0900 left open: a janitor unpublishing and an owner setting a theme both used to send the
+-- whole `spotlight` sub-object from their own read, so the second write carried the first field as
+-- it was BEFORE the first write. Each now sends only its field, and both survive.
+select lives_ok(
+  $$ select public.merge_profile_meta('00000000-0000-4000-b900-000000000001',
+       '{"spotlight": {"enabled": true, "published": true, "theme": {"accent": "old"}}}'::jsonb) $$,
+  'fixture: a spotlight key with three fields'
+);
+select is(
+  public.merge_profile_meta_path('00000000-0000-4000-b900-000000000001', array['spotlight'], '{"published": false}'::jsonb)
+    -> 'spotlight',
+  '{"enabled": true, "published": false, "theme": {"accent": "old"}}'::jsonb,
+  'the janitor sends only published:false and the owner''s enabled + theme survive'
+);
+select is(
+  public.merge_profile_meta_path('00000000-0000-4000-b900-000000000001', array['spotlight'], '{"theme": {"accent": "new"}}'::jsonb)
+    -> 'spotlight',
+  '{"enabled": true, "published": false, "theme": {"accent": "new"}}'::jsonb,
+  'the owner sends only the theme and the janitor''s published:false written a moment ago survives'
+);
+select is(
+  (select meta -> 'practiceStreak' ->> 'current' from public.profiles where id = '00000000-0000-4000-b900-000000000001'),
+  '4',
+  'and the top-level keys other writers own are untouched by a path merge'
+);
+select is(
+  public.merge_profile_meta_path('00000000-0000-4000-b900-000000000001', array['tour'], '{"spotlight": {"status": "paused"}}'::jsonb)
+    -> 'tour',
+  '{"spotlight": {"status": "paused"}}'::jsonb,
+  'a missing key at the path is created rather than silently skipped (jsonb_set alone would write nothing)'
+);
+select is(
+  public.merge_profile_meta_path('00000000-0000-4000-b900-000000000001', array['tour', 'spotlight'], '{"atStop": 3}'::jsonb)
+    #> '{tour,spotlight}',
+  '{"status": "paused", "atStop": 3}'::jsonb,
+  'a two-element path merges two levels down and keeps the sibling field'
+);
+select is(
+  public.merge_profile_meta_path('00000000-0000-4000-b900-000000000001', array['deep', 'er'], '{"x": 1}'::jsonb) #> '{deep,er}',
+  '{"x": 1}'::jsonb,
+  'every missing ancestor is materialised so the merge always lands'
+);
+select throws_ok(
+  $$ select public.merge_profile_meta_path('00000000-0000-4000-b900-000000000001', array[]::text[], '{"x": 1}'::jsonb) $$,
+  '22023',
+  'merge_profile_meta_path: path must name at least one key',
+  'an empty path is refused rather than treated as a top-level merge'
+);
+
 -- ── 4. p_columns is an allowlist, not a column writer ─────────────────────────────────────────
 select throws_ok(
   $$ select public.merge_profile_meta('00000000-0000-4000-b900-000000000001', '{}'::jsonb, '{"lifetime_gems": 999999}'::jsonb) $$,
@@ -152,6 +208,12 @@ select throws_ok(
   '42501',
   'remove_profile_meta_keys: not your profile',
   'and refused on the delete half too'
+);
+select throws_ok(
+  $$ select public.merge_profile_meta_path('00000000-0000-4000-b900-000000000002', array['spotlight'], '{"published": true}'::jsonb) $$,
+  '42501',
+  'merge_profile_meta_path: not your profile',
+  'and refused on the path half: a member cannot publish another member''s Spotlight'
 );
 
 -- ── 7. remove_profile_meta_keys drops the named keys and keeps the rest (still as the owner) ───
