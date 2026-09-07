@@ -292,6 +292,10 @@ const CREATE_FN =
 const DROP_FN = /drop\s+function\s+(?:if\s+exists\s+)?([\s\S]*?);/gi
 const SET_SCHEMA =
   /alter\s+function\s+(?:([a-z0-9_]+)\s*\.\s*)?"?([a-z0-9_]+)"?\s*(?:\([^)]*\))?\s*set\s+schema\s+([a-z0-9_]+)/gi
+/** `alter function f [(args)] set search_path = ...` pins; `... reset search_path` unpins. */
+const ALTER_SEARCH_PATH =
+  /alter\s+function\s+(?:([a-z0-9_]+)\s*\.\s*)?"?([a-z0-9_]+)"?\s*(?:\([^)]*\))?\s*(set|reset)\s+search_path/gi
+
 const REVOKE_FN =
   /revoke\s+(?:all(?:\s+privileges)?|execute)\s+on\s+function\s+([\s\S]*?)\s+from\s+([^;]+);/gi
 const GRANT_FN =
@@ -309,6 +313,52 @@ function argSpanFrom(sql, open) {
   }
   return ''
 }
+
+/**
+ * A CREATE statement's ATTRIBUTE TEXT: everything in the statement that is not the body.
+ *
+ * 🔴 POSTGRES ACCEPTS THE ATTRIBUTE LIST ON EITHER SIDE OF `AS <body>`, AND THIS REPO USES BOTH:
+ *   create function f() returns x language sql set search_path = public as $$ ... $$;
+ *   create function f() returns x as $$ ... $$ language plpgsql set search_path = public;
+ * A header-only read sees the first and misses the second. It cost two false positives here
+ * (`trg_increment_reply_count`, `trg_decrement_reply_count`) before the production catalog said
+ * both were pinned, so keeping BOTH sides is the only shape that reads the two alike.
+ *
+ * Dropping the BODY is the other half, and it is not an optimisation: a `set search_path` written
+ * inside a function — a `set_config` call, a quoted example in a comment the stripper missed —
+ * would otherwise count as a pin on the function containing it.
+ */
+export function attrTextAfter(sql, closeParen) {
+  const rest = sql.slice(closeParen + 1)
+  let out = ''
+  let i = 0
+  while (i < rest.length) {
+    const dq = /\$([a-z0-9_]*)\$/i.exec(rest.slice(i))
+    if (!dq) {
+      out += rest.slice(i)
+      break
+    }
+    out += rest.slice(i, i + dq.index)
+    const tag = dq[0]
+    const bodyStart = i + dq.index + tag.length
+    const bodyEnd = rest.indexOf(tag, bodyStart)
+    if (bodyEnd < 0) break // unterminated body: keep what we have rather than swallow the file
+    i = bodyEnd + tag.length
+  }
+  const semi = out.indexOf(';')
+  return semi >= 0 ? out.slice(0, semi) : out.slice(0, 4000)
+}
+
+/**
+ * Does this attribute text pin `search_path`?
+ *
+ * ⚠️ THE TRAILING `\b` THAT IS NOT THERE IS DELIBERATE. Written `(=|to)\b` this matches `TO` and
+ * never `=`, because `=` and the space after it are both non-word characters, so there is no word
+ * boundary between them to match. That one character reported 129 pinned functions as unpinned —
+ * every single one a false positive — which is exactly the ~47:3 noise ratio LIVE-128 warned a
+ * naive instrument would have.
+ */
+export const PINS_SEARCH_PATH = /\bset\s+search_path\s*(?:=|\bto\b)/i
 
 /**
  * Replay every migration's statements IN ORDER and return the live `public` functions with their
@@ -334,11 +384,14 @@ function argSpanFrom(sql, open) {
  * not something a migration author can be expected to get right by hand.
  */
 export function replay(files) {
-  /** name -> { sigs, anonRevoked, createdIn, publicOnlyRevokes: [file], regrantedIn: [file] } */
+  /** name -> { sigs, anonRevoked, pinned, createdIn, publicOnlyRevokes: [file], regrantedIn: [file] } */
   const state = new Map()
   const fresh = () => ({
     sigs: new Set(),
     anonRevoked: false,
+    // `search_path` state, tracked alongside the ACL because it drifts the same way and for the
+    // same reason: it is set at CREATE and can be changed later by an ALTER. LIVE-128.
+    pinned: false,
     createdIn: null,
     publicOnlyRevokes: [],
     regrantedIn: [],
@@ -355,7 +408,16 @@ export function replay(files) {
     for (const m of sql.matchAll(CREATE_FN)) {
       if ((m[1] || 'public').toLowerCase() !== 'public') continue
       const open = m.index + m[0].length - 1
-      events.push({ i: m.index, kind: 'create', fn: m[2].toLowerCase(), arity: arityOf(argSpanFrom(sql, open)) })
+      const argSpan = argSpanFrom(sql, open)
+      // The arg list ends where argSpanFrom stopped: open + '(' + span + ')'.
+      const close = open + argSpan.length + 1
+      events.push({
+        i: m.index,
+        kind: 'create',
+        fn: m[2].toLowerCase(),
+        arity: arityOf(argSpan),
+        pinned: PINS_SEARCH_PATH.test(attrTextAfter(sql, close)),
+      })
     }
     for (const m of sql.matchAll(DROP_FN)) {
       for (const t of functionNamesIn(m[1])) events.push({ i: m.index, kind: 'drop', fn: t.name, arity: t.arity })
@@ -364,6 +426,10 @@ export function replay(files) {
       if ((m[1] || 'public').toLowerCase() !== 'public') continue
       if (m[3].toLowerCase() === 'public') continue
       events.push({ i: m.index, kind: 'drop', fn: m[2].toLowerCase(), arity: null })
+    }
+    for (const m of sql.matchAll(ALTER_SEARCH_PATH)) {
+      if ((m[1] || 'public').toLowerCase() !== 'public') continue
+      events.push({ i: m.index, kind: m[3].toLowerCase() === 'set' ? 'pin' : 'unpin', fn: m[2].toLowerCase() })
     }
     for (const m of sql.matchAll(REVOKE_FN)) {
       const anon = namesAnonRole(m[2])
@@ -388,6 +454,11 @@ export function replay(files) {
             s.publicOnlyRevokes = []
             s.regrantedIn = []
           }
+          // 🔴 UNLIKE THE ACL, A REPLACE DOES NOT PRESERVE THIS. `create or replace` rewrites the
+          // function's whole definition, and `proconfig` comes from the NEW one — so a replace
+          // with no `SET search_path` clause UNPINS a function that was pinned. That asymmetry
+          // with the ACL two lines above is the reason this cannot be a one-line grep.
+          s.pinned = e.pinned
           s.sigs.add(e.arity)
           if (!s.createdIn) s.createdIn = name
           break
@@ -397,6 +468,7 @@ export function replay(files) {
           else s.sigs.delete(e.arity)
           if (s.sigs.size === 0) {
             s.anonRevoked = false
+            s.pinned = false
             s.publicOnlyRevokes = []
             s.regrantedIn = []
           }
@@ -413,6 +485,12 @@ export function replay(files) {
         case 'grant-anon':
           if (s.anonRevoked) s.regrantedIn.push(name)
           s.anonRevoked = false
+          break
+        case 'pin':
+          s.pinned = true
+          break
+        case 'unpin':
+          s.pinned = false
           break
       }
     }
@@ -590,6 +668,33 @@ export function audit(files, ledgerText) {
     )
   }
 
+  // ── search_path (LIVE-128) ────────────────────────────────────────────────────────────────────
+  //
+  // Every live `public` function must pin `search_path`. An unpinned SECURITY DEFINER function
+  // resolves unqualified names through the CALLER's search_path, which is a privilege-escalation
+  // shape; the Supabase advisor flags it, and this repo has re-fixed the same class twice already
+  // (20261134000000 re-pinned eight housing helpers, then 20270326000000 created three more
+  // without the pin while citing those very helpers as its pattern).
+  //
+  // 🔴 THIS IS A RATCHET ON A CLEAN STATE, NOT A HUNT FOR A LIVE GAP. Measured against the
+  // production catalog on 2026-09-07: 163 non-extension `public` functions, ALL 163 pinned, zero
+  // unpinned. So the bar is absolute rather than argued — this arm is correct if and only if it
+  // reports NOTHING on this tree, and any name it prints is a bug in the parser until production
+  // says otherwise. Three parser bugs were found exactly that way while it was written, and the
+  // last two were shapes no header-only reader could see. `docs/DATABASE.md` carries the reading.
+  const unpinned = [...live].filter(([, s2]) => !s2.pinned)
+  for (const [fn, s2] of unpinned) {
+    problems.push(
+      `✗ check:function-grants — \`${fn}\` is live in \`public\` and does not pin \`search_path\`\n` +
+        `    (created in ${s2.createdIn ?? 'an unknown migration'}).\n` +
+        `    An unpinned SECURITY DEFINER function resolves unqualified names through the CALLER's\n` +
+        `    search_path. Add \`set search_path = public, pg_temp\` to the function's attribute list,\n` +
+        `    or a later \`alter function public.${fn}(...) set search_path = ...\`.\n` +
+        `    ⚠️ A \`create or replace\` with NO set clause UNPINS a function that was pinned —\n` +
+        `    unlike the ACL, \`proconfig\` is taken from the new definition every time.\n`,
+    )
+  }
+
   return { problems, live, entries, loopCovered }
 }
 
@@ -627,6 +732,11 @@ function main() {
   console.log(
     `✓ Function-grant contract: ${live.size} live public function(s), every one with a verdict ` +
       `(${counts.public} public · ${counts.authenticated} authenticated · ${counts.internal} internal).`,
+  )
+  console.log(
+    `  ✓ search_path: all ${live.size} pin it (LIVE-128). Production agreed at 163/163 on 2026-09-07;` +
+      `\n     this arm is correct only while it reports nothing, so a name here is a parser bug until` +
+      `\n     the catalog says otherwise.`,
   )
   console.log(
     `  ⚠️ This read ${MIGRATIONS}/, NOT the database. Prod held 29 anon-executable and 49 ` +

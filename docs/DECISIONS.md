@@ -36003,3 +36003,32 @@ Both wrong forms fall through the app's catch-all to the home page. Structured d
 **Consequences.** First production readings (`dpl_BU432fbGAwdpwvBZHU2JKR9a4VGW`, 2026-09-07 09:45Z) are 115–533 ms against a 300,000 ms ceiling.
 
 ⚠️ **Those numbers prove almost nothing yet, and saying so is the point.** Every counts line in the same window reads zero — `due 0, claimed 0, sent 0` — so they are the durations of a cron with **no work to do**: a floor measuring the fixed cost of waking up and finding nothing, not a budget. The reading LIVE-190 needs is the same query on a busy week, which is why the instrument had to land first and why this ADR closes no budget.
+
+---
+
+## ADR-1222: search_path joins the function replay, and a free oracle turned a design problem into a measurement loop (2026-09-07)
+
+**Status.** Accepted. Closes LIVE-128. Extends [ADR-959](DECISIONS.md)'s replay rather than adding a second guard.
+
+**Context.** No guard read `search_path`, and the class had drifted twice: `20261134000000` exists solely to re-pin eight housing helpers after the advisor flagged them, and `20270326000000` then created three more without the pin **while citing those very helpers as the pattern it was following**. LIVE-128 also recorded why the obvious fix is wrong — a static pass over `create function` headers reported **50 unpinned of 183**, and spot-checks against `pg_proc` said production disagreed.
+
+**🔴 The oracle is free, and that is the whole story of this change.** Measured before writing a line: production carries **163 non-extension `public` functions and all 163 pin `search_path`** — zero unpinned. So the bar is absolute rather than argued: *the arm is correct if and only if it reports nothing on this tree*, and any name it prints is a parser bug until the catalog says otherwise. That converts a design problem into a measurement loop, and the loop found three bugs no amount of reasoning would have:
+
+| False positives | Cause |
+| ---: | --- |
+| **129** | One character. Written `(=\|to)\b` the detector matches `TO` and **never** `=`, because `=` and the following space are both non-word characters, so there is no boundary between them. Nearly every migration here spells it `= public`. |
+| **2** | Postgres accepts the attribute list on **either** side of `AS <body>`, and this repo uses both. A header-only reader calls the trailing form unpinned — `trg_increment_reply_count` and `trg_decrement_reply_count` are written that way. |
+| **18** *(phantom-live)* | Already solved: the RLS helpers moved to `private` by `20270101000000` through dynamic SQL. `RETIRED_BY_DYNAMIC_SQL` already declares exactly those 18, so the guard inherited the fix. |
+
+Final agreement is exact in both directions: **180 live in the replay, minus the 18 declared retired, is 162 — the oracle set, name for name — with zero unpinned.**
+
+**Decision.**
+
+- **`search_path` is one more tracked attribute on the existing replay**, not a second guard. It drifts for the same reason the ACL does — set at CREATE, changeable later by an ALTER — so it wants the same per-function, file-ordered state machine.
+- **🔴 But it does not follow the ACL's rule, and that is why this is not a grep.** `create or replace` **rewrites** the definition and `proconfig` comes from the new one, so **a replace with no `SET` clause UNPINS** a function that was pinned. The ACL, two cases away in the same `switch`, is *preserved* by a replace. A one-line static scan cannot model that; a stateful replay gets it for free.
+- **The attribute text is read on both sides of the body, with the body removed** — the removal is not an optimisation, it is what stops a `set_config` call *inside* a function counting as a pin on the function containing it.
+- **The probe carries its own positive control.** An arm whose correct output is silence is indistinguishable from an arm that was deleted, so the probe also holds back `20270342000000` — the migration that pinned three natal-chart helpers `20270326000000` created unpinned — and requires exactly those three to light up. Deleting the arm entirely fails that half.
+
+**Consequences.** Six fixture arms, each testing both directions, plus two real-tree assertions. Three mutations proven red: restoring the regex bug (9 tests), reading only the header (5 tests), preserving the pin across a replace (1 test). Enforced through vitest, which the required `test` job runs.
+
+⚠️ **One row moved with it, and the reason generalises.** `LIVE-020`'s probe builds a fixture to exercise the ACL arm, and that fixture did not pin — so the new arm failed it, and the probe reported the guard "fails everything and proves nothing". **A probe measuring one arm has to satisfy every other arm, or it stops measuring anything.** The guard's own test fixtures needed the same treatment. Tightening a shared contract means every fixture that models a real migration has to keep looking like one.

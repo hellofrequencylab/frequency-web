@@ -33,6 +33,7 @@ import path from 'node:path'
 import {
   arityOf,
   functionNamesIn,
+  audit,
   LOOP_COVERED,
   LOOP_REVOKES,
   namesAnonRole,
@@ -92,8 +93,8 @@ describe('check:function-grants — the arms that must FAIL', () => {
     // "I looked and it was fine" half of the pair.
     fx.add(
       '20260101000000_ok.sql',
-      'create function public.open_rpc(_limit integer) returns setof record language sql as $$ select 1 $$;\n' +
-        'create function public.shut_rpc() returns void language sql as $$ select 1 $$;\n' +
+      'create function public.open_rpc(_limit integer) returns setof record language sql set search_path = public as $$ select 1 $$;\n' +
+        'create function public.shut_rpc() returns void language sql set search_path = public as $$ select 1 $$;\n' +
         'revoke execute on function public.shut_rpc() from public, anon, authenticated;\n',
     )
     fx.ledger('open_rpc  public\nshut_rpc  internal\n')
@@ -102,10 +103,111 @@ describe('check:function-grants — the arms that must FAIL', () => {
     expect(code).toBe(0)
   })
 
+  // ── search_path, LIVE-128 ─────────────────────────────────────────────────────────────────────
+  //
+  // Every arm below is a shape that actually appears in supabase/migrations/, and three of them
+  // are parser bugs this suite exists to keep fixed. The oracle is absolute: production carries
+  // 163 non-extension `public` functions and ALL 163 pin search_path, so on the real tree this arm
+  // must report NOTHING — see the real-tree assertion at the end of the file.
+
+  it('FAILS a live function that never pins search_path', () => {
+    fx.add(
+      '20260101000000_x.sql',
+      'create function public.bare_rpc() returns void language sql as $$ select 1 $$;\n' +
+        'revoke execute on function public.bare_rpc() from public, anon, authenticated;\n',
+    )
+    fx.ledger('bare_rpc  internal\n')
+    const { code, out } = run(fx.dir)
+    expect(out).toContain('bare_rpc')
+    expect(out).toContain('search_path')
+    expect(code).toBe(1)
+  })
+
+  // 🔴 THE REGRESSION THAT COST 129 FALSE POSITIVES. Written `(=|to)\b`, the detector matches `TO`
+  // and never `=`, because `=` and the space after it are both non-word characters and there is no
+  // boundary between them. `= public` is how nearly every migration in this tree spells it.
+  it('reads the `=` spelling, not only `TO`', () => {
+    fx.add(
+      '20260101000000_x.sql',
+      'create function public.eq_rpc() returns void language sql set search_path = public as $$ select 1 $$;\n' +
+        'create function public.to_rpc() returns void language sql set search_path to public as $$ select 1 $$;\n' +
+        'revoke execute on function public.eq_rpc() from public, anon, authenticated;\n' +
+        'revoke execute on function public.to_rpc() from public, anon, authenticated;\n',
+    )
+    fx.ledger('eq_rpc  internal\nto_rpc  internal\n')
+    const { code, out } = run(fx.dir)
+    expect(out).toContain('✓ Function-grant contract')
+    expect(code).toBe(0)
+  })
+
+  // 🔴 THE SECOND PARSER BUG. Postgres takes the attribute list on EITHER side of the body, and
+  // this repo uses both spellings; a header-only reader calls the trailing form unpinned.
+  it('reads the attribute list AFTER the body, not only before it', () => {
+    fx.add(
+      '20260101000000_x.sql',
+      'create function public.trailing_rpc() returns trigger as $$ begin return new; end $$ ' +
+        'language plpgsql security definer set search_path = public;\n' +
+        'revoke execute on function public.trailing_rpc() from public, anon, authenticated;\n',
+    )
+    fx.ledger('trailing_rpc  internal\n')
+    const { code, out } = run(fx.dir)
+    expect(out).toContain('✓ Function-grant contract')
+    expect(code).toBe(0)
+  })
+
+  // A pin written INSIDE the body governs nothing about the function that contains it.
+  it('does NOT count a set search_path written in the function BODY', () => {
+    fx.add(
+      '20260101000000_x.sql',
+      'create function public.body_rpc() returns void language plpgsql as $$ begin ' +
+        "perform set_config('search_path', 'public', true); end $$;\n" +
+        'revoke execute on function public.body_rpc() from public, anon, authenticated;\n',
+    )
+    fx.ledger('body_rpc  internal\n')
+    const { code, out } = run(fx.dir)
+    expect(out).toContain('body_rpc')
+    expect(code).toBe(1)
+  })
+
+  // 🔴 THE ASYMMETRY WITH THE ACL, and the reason a one-line grep cannot answer this. A
+  // `create or replace` rewrites the definition, and `proconfig` comes from the NEW one — so a
+  // replace with no set clause UNPINS. The ACL, two cases up in the same switch, is preserved.
+  it('treats a create-or-replace with no set clause as UNPINNING a pinned function', () => {
+    fx.add(
+      '20260101000000_a.sql',
+      'create function public.drift_rpc() returns void language sql set search_path = public as $$ select 1 $$;\n' +
+        'revoke execute on function public.drift_rpc() from public, anon, authenticated;\n',
+    )
+    fx.add(
+      '20260102000000_b.sql',
+      'create or replace function public.drift_rpc() returns void language sql as $$ select 2 $$;\n',
+    )
+    fx.ledger('drift_rpc  internal\n')
+    const { code, out } = run(fx.dir)
+    expect(out).toContain('drift_rpc')
+    expect(code).toBe(1)
+  })
+
+  it('accepts a later `alter function ... set search_path`, and honours a `reset`', () => {
+    fx.add(
+      '20260101000000_a.sql',
+      'create function public.late_rpc() returns void language sql as $$ select 1 $$;\n' +
+        'revoke execute on function public.late_rpc() from public, anon, authenticated;\n' +
+        'alter function public.late_rpc() set search_path = public, pg_temp;\n',
+    )
+    fx.ledger('late_rpc  internal\n')
+    expect(run(fx.dir).code).toBe(0)
+
+    fx.add('20260102000000_b.sql', 'alter function public.late_rpc() reset search_path;\n')
+    const { code, out } = run(fx.dir)
+    expect(out).toContain('late_rpc')
+    expect(code).toBe(1)
+  })
+
   it('FAILS on a function with no ledger verdict at all', () => {
     fx.add(
       '20260101000000_new.sql',
-      'create function public.unledgered_rpc(_id uuid) returns void language sql as $$ select 1 $$;\n',
+      'create function public.unledgered_rpc(_id uuid) returns void language sql set search_path = public as $$ select 1 $$;\n',
     )
     fx.ledger('# nothing here\n')
     const { code, out } = run(fx.dir)
@@ -120,7 +222,7 @@ describe('check:function-grants — the arms that must FAIL', () => {
   it('FAILS on a ledger entry for a function that was dropped', () => {
     fx.add(
       '20260101000000_add.sql',
-      'create function public.gone_rpc() returns void language sql as $$ select 1 $$;\n',
+      'create function public.gone_rpc() returns void language sql set search_path = public as $$ select 1 $$;\n',
     )
     fx.add('20260102000000_drop.sql', 'drop function if exists public.gone_rpc();\n')
     fx.ledger('gone_rpc  internal\n')
@@ -133,7 +235,7 @@ describe('check:function-grants — the arms that must FAIL', () => {
   it('FAILS an `internal` verdict backed ONLY by `revoke ... from public` (ADR-959)', () => {
     fx.add(
       '20260101000000_looks_locked.sql',
-      'create function public.secret_rpc(_id uuid) returns void language sql security definer as $$ select 1 $$;\n' +
+      'create function public.secret_rpc(_id uuid) returns void language sql security definer set search_path = public as $$ select 1 $$;\n' +
         '-- This statement runs, succeeds, and removes nothing.\n' +
         'revoke execute on function public.secret_rpc(uuid) from public;\n' +
         'grant execute on function public.secret_rpc(uuid) to service_role;\n',
@@ -154,7 +256,7 @@ describe('check:function-grants — the arms that must FAIL', () => {
     // rejects every `internal` verdict, which would be a different bug wearing the same exit code.
     fx.add(
       '20260101000000_locked.sql',
-      'create function public.secret_rpc(_id uuid) returns void language sql security definer as $$ select 1 $$;\n' +
+      'create function public.secret_rpc(_id uuid) returns void language sql security definer set search_path = public as $$ select 1 $$;\n' +
         'revoke execute on function public.secret_rpc(uuid) from public, anon, authenticated;\n',
     )
     fx.ledger('secret_rpc  internal\n')
@@ -166,7 +268,7 @@ describe('check:function-grants — the arms that must FAIL', () => {
   it('FAILS an `authenticated` verdict with no anon revoke — a definer function has no RLS behind it', () => {
     fx.add(
       '20260101000000_authed.sql',
-      'create function public.member_rpc() returns void language sql security definer as $$ select 1 $$;\n',
+      'create function public.member_rpc() returns void language sql security definer set search_path = public as $$ select 1 $$;\n',
     )
     fx.ledger('member_rpc  authenticated\n')
     const { code, out } = run(fx.dir)
@@ -179,7 +281,7 @@ describe('check:function-grants — the arms that must FAIL', () => {
     // A set-union reading of these two files reports the function as revoked. It is not.
     fx.add(
       '20260101000000_revoke.sql',
-      'create function public.flip_rpc() returns void language sql as $$ select 1 $$;\n' +
+      'create function public.flip_rpc() returns void language sql set search_path = public as $$ select 1 $$;\n' +
         'revoke execute on function public.flip_rpc() from public, anon, authenticated;\n',
     )
     fx.add('20260102000000_regrant.sql', 'grant execute on function public.flip_rpc() to anon, authenticated;\n')
@@ -194,13 +296,13 @@ describe('check:function-grants — the arms that must FAIL', () => {
   it('FAILS when a function is re-created after its revoke — drop + create resets the ACL', () => {
     fx.add(
       '20260101000000_v1.sql',
-      'create function public.rebuilt_rpc() returns void language sql as $$ select 1 $$;\n' +
+      'create function public.rebuilt_rpc() returns void language sql set search_path = public as $$ select 1 $$;\n' +
         'revoke execute on function public.rebuilt_rpc() from public, anon, authenticated;\n',
     )
     fx.add(
       '20260102000000_v2.sql',
       'drop function if exists public.rebuilt_rpc();\n' +
-        'create function public.rebuilt_rpc() returns void language sql as $$ select 2 $$;\n',
+        'create function public.rebuilt_rpc() returns void language sql set search_path = public as $$ select 2 $$;\n',
     )
     fx.ledger('rebuilt_rpc  internal\n')
     const { code, out } = run(fx.dir)
@@ -222,7 +324,7 @@ describe('check:function-grants — the arms that must FAIL', () => {
     // Created AFTER the loop, so a fresh replay never reaches it.
     fx.add(
       '20270101000000_late.sql',
-      'create function public.after_crew_completion_verified() returns trigger language plpgsql as $x$ begin return new; end $x$;\n',
+      'create function public.after_crew_completion_verified() returns trigger language plpgsql set search_path = public as $x$ begin return new; end $x$;\n',
     )
     fx.ledger('after_crew_completion_verified  internal\n')
     const { code, out } = run(fx.dir)
@@ -234,7 +336,7 @@ describe('check:function-grants — the arms that must FAIL', () => {
   it('ACCEPTS a LOOP_COVERED function created before its loop, and says so out loud', () => {
     fx.add(
       '20261009000000_early.sql',
-      'create function public.after_crew_completion_verified() returns trigger language plpgsql as $x$ begin return new; end $x$;\n',
+      'create function public.after_crew_completion_verified() returns trigger language plpgsql set search_path = public as $x$ begin return new; end $x$;\n',
     )
     fx.add(
       '20261231000000_revoke_trigger_fn_rest_execute.sql',
@@ -253,7 +355,7 @@ describe('check:function-grants — the arms that must FAIL', () => {
   it('FAILS a LOOP_COVERED claim pointing at a migration that is not a catalog loop', () => {
     fx.add(
       '20261009000000_early.sql',
-      'create function public.after_crew_completion_verified() returns trigger language plpgsql as $x$ begin return new; end $x$;\n',
+      'create function public.after_crew_completion_verified() returns trigger language plpgsql set search_path = public as $x$ begin return new; end $x$;\n',
     )
     fx.add('20261231000000_revoke_trigger_fn_rest_execute.sql', '-- somebody emptied this out\n')
     fx.ledger('after_crew_completion_verified  internal\n')
@@ -263,7 +365,7 @@ describe('check:function-grants — the arms that must FAIL', () => {
   })
 
   it('FAILS on an unparseable ledger line rather than skipping it', () => {
-    fx.add('20260101000000_x.sql', 'create function public.x_rpc() returns void language sql as $$ select 1 $$;\n')
+    fx.add('20260101000000_x.sql', 'create function public.x_rpc() returns void language sql set search_path = public as $$ select 1 $$;\n')
     fx.ledger('x_rpc  internal\nx_rpc_two  servicerole\n')
     const { code, out } = run(fx.dir)
     expect(code).toBe(1)
@@ -283,7 +385,7 @@ describe('check:function-grants — the arms that must FAIL', () => {
   })
 
   it('FAILS when the ledger file is missing entirely', () => {
-    fx.add('20260101000000_x.sql', 'create function public.x_rpc() returns void language sql as $$ select 1 $$;\n')
+    fx.add('20260101000000_x.sql', 'create function public.x_rpc() returns void language sql set search_path = public as $$ select 1 $$;\n')
     const { code, out } = run(fx.dir)
     expect(code).toBe(1)
     expect(out).toContain('A gate cannot pass over nothing')
@@ -296,14 +398,14 @@ describe('the parser sees what the SQL actually says', () => {
     // not work. A parser that counts those has credited the exact statement the gate rejects.
     const sql =
       '-- revoke execute on function public.trap_rpc() from public, anon;\n' +
-      'create function public.trap_rpc() returns void language sql as $$ select 1 $$;\n'
+      'create function public.trap_rpc() returns void language sql set search_path = public as $$ select 1 $$;\n'
     const live = replay([{ name: '20260101000000_a.sql', text: sql }])
     expect(live.get('trap_rpc')?.anonRevoked).toBe(false)
   })
 
   it('a block-comment rollback script is not real SQL', () => {
     const sql =
-      'create function public.kept_rpc() returns void language sql as $$ select 1 $$;\n' +
+      'create function public.kept_rpc() returns void language sql set search_path = public as $$ select 1 $$;\n' +
       '/* DOWN:\n   drop function if exists public.kept_rpc();\n*/\n'
     expect(stripSqlComments(sql)).not.toContain('drop function')
     expect(replay([{ name: '20260101000000_a.sql', text: sql }]).has('kept_rpc')).toBe(true)
@@ -313,9 +415,9 @@ describe('the parser sees what the SQL actually says', () => {
     // 20260604030000 revokes five admin RPCs in one statement. A single-name regex saw one of them
     // and four SECURITY DEFINER functions read as un-revoked while their revoke sat in the file.
     const sql =
-      'create function public.a_rpc(_n integer) returns void language sql as $$ select 1 $$;\n' +
-      'create function public.b_rpc() returns void language sql as $$ select 1 $$;\n' +
-      'create function public.c_rpc(_x integer, _y integer) returns void language sql as $$ select 1 $$;\n' +
+      'create function public.a_rpc(_n integer) returns void language sql set search_path = public as $$ select 1 $$;\n' +
+      'create function public.b_rpc() returns void language sql set search_path = public as $$ select 1 $$;\n' +
+      'create function public.c_rpc(_x integer, _y integer) returns void language sql set search_path = public as $$ select 1 $$;\n' +
       'revoke execute on function\n' +
       '  public.a_rpc(int), public.b_rpc(), public.c_rpc(int,int)\n' +
       '  from public, anon, authenticated;\n'
@@ -327,15 +429,15 @@ describe('the parser sees what the SQL actually says', () => {
     // `record_qr_scan`: 20270104000000 drops its 7-argument signature, and the 8-argument one is
     // still live in production. A name-granular model dropped it out of the bijection entirely.
     const sql =
-      'create function public.over_rpc(a uuid, b uuid) returns void language sql as $$ select 1 $$;\n' +
-      'create function public.over_rpc(a uuid, b uuid, c text) returns void language sql as $$ select 1 $$;\n' +
+      'create function public.over_rpc(a uuid, b uuid) returns void language sql set search_path = public as $$ select 1 $$;\n' +
+      'create function public.over_rpc(a uuid, b uuid, c text) returns void language sql set search_path = public as $$ select 1 $$;\n' +
       'drop function if exists public.over_rpc(uuid, uuid);\n'
     expect(replay([{ name: '20260101000000_a.sql', text: sql }]).has('over_rpc')).toBe(true)
   })
 
   it('`drop function` with no argument list removes every signature', () => {
     const sql =
-      'create function public.gone_rpc(a uuid) returns void language sql as $$ select 1 $$;\n' +
+      'create function public.gone_rpc(a uuid) returns void language sql set search_path = public as $$ select 1 $$;\n' +
       'drop function if exists public.gone_rpc;\n'
     expect(replay([{ name: '20260101000000_a.sql', text: sql }]).has('gone_rpc')).toBe(false)
   })
@@ -345,7 +447,7 @@ describe('the parser sees what the SQL actually says', () => {
     // functions to migrations shaped exactly like this one.
     const sql =
       'drop function if exists public.same_file_rpc(uuid);\n' +
-      'create function public.same_file_rpc(a uuid) returns void language sql as $$ select 1 $$;\n'
+      'create function public.same_file_rpc(a uuid) returns void language sql set search_path = public as $$ select 1 $$;\n'
     expect(replay([{ name: '20260101000000_a.sql', text: sql }]).has('same_file_rpc')).toBe(true)
   })
 
@@ -355,13 +457,13 @@ describe('the parser sees what the SQL actually says', () => {
   })
 
   it('a function created in another schema is not a public function', () => {
-    const sql = 'create function private.helper_rpc() returns void language sql as $$ select 1 $$;\n'
+    const sql = 'create function private.helper_rpc() returns void language sql set search_path = public as $$ select 1 $$;\n'
     expect(replay([{ name: '20260101000000_a.sql', text: sql }]).has('helper_rpc')).toBe(false)
   })
 
   it('`alter function ... set schema private` retires it from public', () => {
     const sql =
-      'create function public.moved_rpc() returns void language sql as $$ select 1 $$;\n' +
+      'create function public.moved_rpc() returns void language sql set search_path = public as $$ select 1 $$;\n' +
       'alter function public.moved_rpc() set schema private;\n'
     expect(replay([{ name: '20260101000000_a.sql', text: sql }]).has('moved_rpc')).toBe(false)
   })
@@ -507,6 +609,39 @@ describe('the real tree', () => {
     const migrations = new Set(readdirSync(MIGRATIONS))
     if (migrations.has('20270304000000_revoke_browser_execute_on_service_only_rpcs.sql')) return
     for (const fn of proposed) expect(entries.get(fn)?.verdict, fn).toBe('public')
+  })
+
+  // ── LIVE-128's free positive control ──────────────────────────────────────────────────────────
+  //
+  // The search_path arm reports nothing on this tree, which is what makes it correct — and also
+  // what makes it indistinguishable from an arm that never runs. So run the REAL tree with ONE
+  // migration held back: 20270342000000 is the change that pinned three natal-chart helpers which
+  // 20270326000000 had created without a pin. Remove it and exactly those three must light up.
+  //
+  // This costs nothing to maintain and cannot go stale silently: if either migration is edited so
+  // the shape no longer holds, this test says so.
+  it('the search_path arm FIRES on the real tree when the pin migration is held back', () => {
+    const PIN = '20270342000000_natal_chart_helpers_take_the_search_path_pin.sql'
+    if (!files.some((f) => f.name === PIN)) return // migration squashed away; nothing to control on
+    const without = files.filter((f) => f.name !== PIN)
+    const { problems } = audit(without, readFileSync(LEDGER, 'utf8'))
+    const flagged = problems.filter((p) => p.includes('search_path'))
+    const named = ['housing_safe_float', 'housing_aspect_score', 'housing_natal_compat']
+    for (const fn of named) {
+      expect(
+        flagged.some((p) => p.includes(`\`${fn}\``)),
+        `${fn} was created unpinned by 20270326000000 and pinned by ${PIN}; holding that back must flag it`,
+      ).toBe(true)
+    }
+    expect(flagged.length, 'exactly the three that migration pins, no more').toBe(named.length)
+  })
+
+  it('and reports NOTHING on the tree as it stands, which is the whole bar', () => {
+    // Production carried 163 non-extension `public` functions on 2026-09-07 and ALL 163 pinned
+    // search_path. So this arm is correct if and only if it is silent here: any name it prints is
+    // a parser bug until the catalog says otherwise. Three were found exactly this way.
+    const { problems } = audit(files, readFileSync(LEDGER, 'utf8'))
+    expect(problems.filter((p) => p.includes('search_path'))).toEqual([])
   })
 
   it('states what it cannot see, every time it passes', () => {
