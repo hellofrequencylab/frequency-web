@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { existsSync, readFileSync } from 'node:fs'
 import path from 'node:path'
+import { sourceWithoutComments } from '@/test/source-shape'
 
 // THE OPERATOR CHANNEL CONSOLE READS AND WRITES THE LIVE TABLE (L9-01, 2026-09-05).
 //
@@ -74,7 +75,11 @@ describe('getChannelsAdminData reads the live table', () => {
 describe('the console mounts the live create dialog', () => {
   it('imports NewChannelCompose from the /channels page, not the retired form', () => {
     const page = read('app/(main)/admin/channels/page.tsx')
-    expect(page).toContain("from '@/app/(main)/channels/new-channel-compose'")
+    // The mount is pinned on comment- and import-free source (LIVE-167); the absence check below
+    // keeps the raw read, because a retired import is exactly what it must still see.
+    expect(sourceWithoutComments('app/(main)/admin/channels/page.tsx', { imports: true })).toMatch(
+      /<NewChannelCompose\b/,
+    )
     expect(page).not.toContain('components/compose/new-channel-compose')
   })
 
@@ -83,8 +88,8 @@ describe('the console mounts the live create dialog', () => {
   })
 
   it('the live dialog posts to createTopicalChannel', () => {
-    const compose = read('app/(main)/channels/new-channel-compose.tsx')
-    expect(compose).toContain("import { createTopicalChannel } from './actions'")
+    const compose = sourceWithoutComments('app/(main)/channels/new-channel-compose.tsx', { imports: true })
+    expect(compose).not.toMatch(/function createTopicalChannel\b/)
     expect(compose).toContain('await createTopicalChannel(fd)')
   })
 })

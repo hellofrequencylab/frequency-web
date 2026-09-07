@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
+import { sourceWithoutComments } from '@/test/source-shape'
 
 // The two induction writers (writeInduction, mergeInduction) in this file (scan2 L6-09). Both used to
 // put the identity columns AND a spread of the whole meta read into ONE profiles update, so a key
@@ -12,7 +13,8 @@ import { readFileSync } from 'node:fs'
 // stripped before matching so the header that DESCRIBES the old shape cannot satisfy or trip it.
 
 const raw = readFileSync('app/join/(induction)/actions.ts', 'utf8')
-const src = raw.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '')
+// Comment- and import-free (LIVE-167): a needle can only hit the code that does the thing.
+const src = sourceWithoutComments('app/join/(induction)/actions.ts', { imports: true })
 
 /** Every `.update({ ... })` payload on the profiles table, as the text between its braces. */
 function profileUpdatePayloads(code: string): string[] {
@@ -46,7 +48,7 @@ describe('the induction writers never send meta through a profiles update', () =
   })
 
   it('both writers merge through mergeProfileMeta, each stamping onboarding_completed as its own key', () => {
-    expect(src).toContain("import { mergeProfileMeta } from '@/lib/profiles/meta'")
+    expect(src).not.toMatch(/function mergeProfileMeta\b/)
     const merges = src.match(/await mergeProfileMeta\(supabase,/g) ?? []
     expect(merges).toHaveLength(2)
     expect(src).toMatch(/mergeProfileMeta\(supabase, metaProfileId, \{\s*onboarding_completed: true,/)

@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
+import { sourceWithoutComments } from '@/test/source-shape'
 
 // LIVE-066 — the qr-studio element config's CONSUMPTION chain, in the house source-shape archetype
 // (components/events/series-wiring.test.ts, components/profile/profile-associations-wiring.test.ts).
@@ -13,7 +14,6 @@ import { readFileSync } from 'node:fs'
 
 const pure = readFileSync('lib/elements/qr-studio-config.ts', 'utf8')
 const resolver = readFileSync('lib/elements/qr-studio.ts', 'utf8')
-const editor = readFileSync('app/(main)/admin/qr/style-editor.tsx', 'utf8')
 const adminPage = readFileSync('app/(main)/admin/qr/page.tsx', 'utf8')
 const dashboard = readFileSync('app/(main)/admin/qr/qr-studio-dashboard.tsx', 'utf8')
 const codesPage = readFileSync('app/(main)/codes/page.tsx', 'utf8')
@@ -55,10 +55,11 @@ describe('the split that lets a client editor type the config (guards a vacuous 
 })
 
 describe('StyleEditor consumes the config (the header-element precedent: off = not rendered)', () => {
-  const code = strip(editor)
+  // Comment- and import-free (LIVE-167): the config must be CONSUMED, not merely imported.
+  const code = sourceWithoutComments('app/(main)/admin/qr/style-editor.tsx', { imports: true })
 
   it('takes the config prop, defaulting to the fail-safe full config', () => {
-    expect(code).toContain("from '@/lib/elements/qr-studio-config'")
+    expect(code).not.toMatch(/const DEFAULT_QR_STUDIO_CONFIG\b/)
     expect(code).toContain('config = DEFAULT_QR_STUDIO_CONFIG')
   })
 

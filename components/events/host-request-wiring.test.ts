@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
+import { sourceWithoutComments } from '@/test/source-shape'
 
 // ── Wiring guard: the SPACE side of the host handshake reaches the event page (ADR-911 ·
 // LIVE-062 batch 5) ──
@@ -10,7 +11,8 @@ import { readFileSync } from 'node:fs'
 // the page still renders, the ask just disappears.
 
 const page = readFileSync('app/(main)/events/[slug]/page.tsx', 'utf8')
-const cta = readFileSync('app/(main)/events/[slug]/host-request-cta.tsx', 'utf8')
+// Comment- and import-free (LIVE-167): the call is the needle, never the import line.
+const cta = sourceWithoutComments('app/(main)/events/[slug]/host-request-cta.tsx', { imports: true })
 const actions = readFileSync('app/(main)/events/host-transfer-actions.ts', 'utf8')
 
 describe('the event page mounts the ask-to-host CTA', () => {
@@ -40,7 +42,7 @@ describe('the event page mounts the ask-to-host CTA', () => {
 describe('the CTA calls the action and follows its contract', () => {
   it('is a client island calling requestEventHost from the shared actions file', () => {
     expect(cta).toContain("'use client'")
-    expect(cta).toContain("from '@/app/(main)/events/host-transfer-actions'")
+    expect(cta).not.toMatch(/function requestEventHost\b/)
     expect(cta).toContain('await requestEventHost(eventId, spaceId)')
   })
 

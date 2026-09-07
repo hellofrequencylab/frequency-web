@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
+import { sourceWithoutComments } from '@/test/source-shape'
 
 // THE PUBLIC CLAIM CTA MUST STAY MOUNTED.
 //
@@ -27,8 +28,11 @@ describe('requestClaimLink is reachable from the event detail page', () => {
   })
 
   it('the event detail page mounts the card', () => {
-    expect(page).toContain("from './claim-request-cta'")
-    expect(page, 'requestClaimLink is orphaned again').toContain('<ClaimRequestCta')
+    // Comment- and import-free (LIVE-167): the mount must be in the JSX, not in a comment or the
+    // import line. `page` itself stays raw because a later slice keys off a comment marker.
+    const code = sourceWithoutComments(PAGE, { imports: true })
+    expect(code, 'requestClaimLink is orphaned again').toContain('<ClaimRequestCta')
+    expect(code).not.toMatch(/function ClaimRequestCta\b/)
   })
 
   it('the client boundary is the leaf, not the page', () => {

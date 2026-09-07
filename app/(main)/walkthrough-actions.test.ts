@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
+import { sourceWithoutComments } from '@/test/source-shape'
 
 // ── Drift guard: the walkthrough 'seen' mark has exactly ONE writer (LIVE-062) ───────────
 // seenWalkthroughAction was a pure orphan and a double-write hazard: the seen mark is already
@@ -13,8 +14,9 @@ const actionsRaw = readFileSync('app/(main)/walkthrough-actions.ts', 'utf8')
 // writer while explaining it, and a guard that trips on the documentation for the thing it guards
 // is a guard that gets deleted (the /api/status env-pin test sets this precedent).
 const actions = actionsRaw.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '')
-const feed = readFileSync('components/walkthroughs/feed-walkthrough.tsx', 'utf8')
-const promo = readFileSync('components/walkthroughs/feed-role-promotion.tsx', 'utf8')
+// Comment- and import-free (LIVE-167): a needle must hit the CALL, never the import line that names it.
+const feed = sourceWithoutComments('components/walkthroughs/feed-walkthrough.tsx', { imports: true })
+const promo = sourceWithoutComments('components/walkthroughs/feed-role-promotion.tsx', { imports: true })
 
 describe('the client actions file no longer carries a seen writer', () => {
   it('is non-trivial (guards a vacuous pass)', () => {
@@ -38,7 +40,7 @@ describe('the render-time writers remain (the reason the action could go)', () =
     ['feed-role-promotion', promo],
   ] as const) {
     it(`${name} writes the seen mark fire-and-forget at server render`, () => {
-      expect(src).toContain("import { markWalkthroughSeen } from '@/lib/walkthroughs/progress'")
+      expect(src).not.toMatch(/function markWalkthroughSeen\b/)
       expect(src).toMatch(/void markWalkthroughSeen\(profileId, \w+\.slug\)\.catch\(/)
     })
   }
@@ -46,9 +48,9 @@ describe('the render-time writers remain (the reason the action could go)', () =
 
 describe('the surviving actions stay wired', () => {
   it('the card dismisses and the lightbox completes through this file', () => {
-    const card = readFileSync('components/walkthroughs/walkthrough-card.tsx', 'utf8')
-    const lightbox = readFileSync('components/walkthroughs/walkthrough-lightbox.tsx', 'utf8')
-    expect(card).toContain("import { dismissWalkthroughAction } from '@/app/(main)/walkthrough-actions'")
-    expect(lightbox).toContain("import { completeWalkthroughAction } from '@/app/(main)/walkthrough-actions'")
+    const card = sourceWithoutComments('components/walkthroughs/walkthrough-card.tsx', { imports: true })
+    const lightbox = sourceWithoutComments('components/walkthroughs/walkthrough-lightbox.tsx', { imports: true })
+    expect(card).toContain('await dismissWalkthroughAction(walkthrough.slug)')
+    expect(lightbox).toContain('await completeWalkthroughAction(walkthrough.slug)')
   })
 })

@@ -36060,3 +36060,23 @@ The right wall clock against the wrong instant, **eight hours out**, four days b
 **Consequences.** One column on two existing selects. `app/discover/events/_data.test.ts` pins both halves, and the split matters: the row shapes in that module are `as unknown as` casts, so **dropping the column from the select literal typechecks cleanly and hands `eventSchema` an undefined zone** — the type system cannot see this class at all. So one half reads the select *literal*, the other asserts the published offset, with the exact production string (`-07:00`) as the positive control.
 
 ⚠️ **The generalisable part is the sizing, not the fix.** The row said "add `time_zone` to both RPCs in a new migration" and was sized against that. The actual change was one column on a read that already existed. **A row that names its own implementation inherits that implementation's cost forever**, and nobody re-prices it — this one sat at P2/S for a day on a plan that was four times too big. Rows should state the consequence they need; the seam is chosen when the work starts, against the tree as it is then.
+
+## ADR-1232: an import line is not evidence of a call, so 49 source-shape needles moved onto the code that does the thing (2026-09-07)
+
+**Status.** Accepted. Closes LIVE-167. Finishes the pass [ADR-1211](DECISIONS.md) started with `sourceWithoutComments` (SCAN-586).
+
+**Context.** A source-shape test reads a file and asserts a token is in it. SCAN-586 fixed the 34 assertions whose needle also sat in a comment of the pinned file, and left a second class in the row: assertions whose needle is the **import line** (`import { deleteListingIntake } from './actions'`). Those pass for as long as the import exists, so deleting the call while leaving the import keeps the test green, and the only thing that notices is eslint's unused-import rule, which is a lint warning about tidiness rather than a test about wiring.
+
+**Re-measured before working it.** The row said 51; a wide grep for a positive import-line needle across the test tree read **102** (absences and re-export pins excluded), and the probe counted **20** test files using the helper against a threshold of 40. The number had moved, in the wrong direction, because the pattern kept being copied from the house archetypes.
+
+**Decision.**
+
+- **The pinned file is read comment- and import-free, and the needle is the consequence.** Each converted site reads `sourceWithoutComments(path, { imports: true })` and asserts the call (`await requestEventHost(eventId, spaceId)`), the JSX mount (`<DeleteIntakeButton`), or the value read (`push: pushSendingEnabled` is a boolean, not a call, and the first draft of that needle assumed parentheses and went red on the real file). With imports blanked, the name can only be satisfied by code.
+- **Where the import line was really saying "this comes from the shared module", the assertion says that instead.** A `not.toMatch(/function <name>\b/)` on the import-free source fails the moment a private copy grows back, which is the drift the import line was standing in for.
+- **Nothing was weakened to get there.** Five files carry a sibling assertion that legitimately needs the raw file: a slice keyed off a comment marker, a header-prose test, an em-dash rule over the whole member-facing file, a purity check that must see the imports. Those keep the raw read beside a second import-free read; the two are never merged.
+- **Proven by mutation, not by reading.** Deleting the `dismissWalkthroughAction` call while keeping its import fails `walkthrough-actions.test.ts`; renaming the `canPostToRoom` call in `popover-actions.ts` fails `room-access.test.ts`. Both sources were restored.
+
+**Consequences.** 49 assertions in 30 files converted; 50 test files now use the helper (the probe passes at 50 of 40); the wide grep reads 53, and most of that residue is deliberate: re-export pins, `import type` boundary checks, `scripts/build-fanout.test.ts` reading import edges because the edges are what it measures, and the helper's own fixtures. Lint is clean at zero warnings on every touched file, and every touched test passes.
+
+⚠️ **The generalisable part is the shape of the false pass.** An assertion that matches a declaration proves the declaration, and a declaration is the cheapest thing in a file to leave behind. The three forms that keep recurring are the comment that explains the call, the import that names it, and the type that describes it; each is text that survives the deletion of the thing it is about. When a source-shape needle is chosen, ask what would still be in the file after the behaviour is gone, and pick a needle that would not be.
+
