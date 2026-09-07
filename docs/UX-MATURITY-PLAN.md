@@ -59,8 +59,11 @@ latest findings file; each inbound CHANGES.md is expected to answer them. The tw
 contract already exists — this adds the third voice to it.
 
 **1d. Session-replay lite, consent-gated (M, deferred until traffic justifies).** No new
-vendor by default (mirrors the ADR-922 no-vendor stance). Revisit at >1k WAM; if adopted,
-gate on the existing `analytics` consent scope and record the decision as its own ADR.
+vendor by default (mirrors the ADR-922 no-vendor stance). **The threshold is >1k weekly
+active members**, and crossing it buys a revisit, not an adoption: if one is adopted it
+gates on the existing `analytics` consent scope and the decision is recorded as its own ADR.
+Tabled beside the other two traffic-held instruments in
+[`ANALYTICS.md` § Instruments held until there is traffic](ANALYTICS.md).
 
 **Gate:** 🔴 **none, and that is the honest state.** A `check:research-freshness` script
 existed until 2026-08-12; it ran in no workflow, and its own output ended *"Nothing a PR
@@ -356,9 +359,13 @@ vitals table; a 🔴 budget on any surface a round redesigns is a stated constra
 that round ("this page must get lighter, not heavier"). Breach protocol: two consecutive
 🔴 weeks on a surface = a perf task enters the next wave ahead of new screens.
 
-**7d. Guard the collector (S).** `SAMPLE_RATE` drops to 0.25 past ~10k daily loads
-(ADR-922's own note); add the `viewport_class` field (Lift 4). Keep it account-free —
-that invariant is the consent posture.
+**7d. Guard the collector (S).** Two halves. The `viewport_class` field (Lift 4) is on the
+beacon: each vital carries `mobile` / `tablet` / `desktop` in `props.vp`, and `vitals_p75`
+takes it as an optional filter. The other half is held on a number — **`SAMPLE_RATE` drops
+from `1` to `0.25` once daily page loads pass ~10k** (ADR-922's own note; a p75 over the
+7-day window keeps ample n at that rate), and it stays head-based, decided once per page
+load. Keep it account-free — that invariant is the consent posture. The threshold and what
+ships at it are tabled in [`ANALYTICS.md` § Instruments held until there is traffic](ANALYTICS.md).
 
 **7e. The lab smoke alarm (S, shipped 2026-08-04, ADR-930).** A Lighthouse run on the
 PR's own preview, inside the existing `pr-compare` job: LCP / CLS / TBT, three runs,
@@ -377,7 +384,12 @@ runs rather than defended.
 - 🔴 **The vitals ratchet.** 7e is a stopgap instrument, not the goal. The better gate is
   the ADR-928 ratchet shape applied to live p75: freeze per budget class, fail a rise,
   celebrate and re-freeze a fall. It needs real traffic to be anything but noise, so it
-  waits on beta rather than on a decision.
+  waits on beta rather than on a decision. **The trigger is a number:** when the 7b readout
+  scores every budget class — no `⏳` cell, i.e. each clears its `MIN_SAMPLES` floor of 5
+  loads — on two consecutive weekly reads. The ratchet's own seeding floor is then set from
+  that first real window rather than guessed, which is the lesson 7e's first-run thresholds
+  already carry. Tabled with the other two traffic-held instruments in
+  [`ANALYTICS.md` § Instruments held until there is traffic](ANALYTICS.md).
 - ⚠️ **Sitemap `lastmod` for the dynamic sets.** ADR-930 stopped the sitemap fabricating
   timestamps, and the entries that had a real date keep it. Several dynamic sets could
   carry one but do not, because their list functions never project `updated_at`

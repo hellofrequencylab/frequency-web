@@ -31,13 +31,30 @@ import {
 //
 // This owns all four. A segment supplies only its HEAD and its CONTENTS.
 //
-// 🔴 FOLLOW-UP, deliberately not done here: components/sidebar/game-stats-dock.tsx still carries
-// its own copy of this logic. It is the shell this file was extracted FROM, it is green, and it
-// is pinned by guards in components/layout/dock-bar.test.ts that assert the head class appears in
-// that file. Migrating it is a guard edit plus a re-verify, and doing it in the same pass as the
-// admin fix would mean shipping a change to the working Vault to fix the broken one. Until then
-// the two agree because BOTH read DOCK_HEAD_H_CLASS and the same channel helpers from dock-bar —
-// the values that could drift are imported, not restated.
+// ⚪ THE VAULT IS NOT MIGRATED ONTO THIS SHELL, AND THAT IS THE DECISION, not a pending task.
+// components/sidebar/game-stats-dock.tsx keeps its own copy of the open/dismiss logic. It is the
+// shell this file was extracted FROM, and three things say leave it there:
+//
+//   1. IT WOULD WIDEN THIS SHELL FOR ONE CALLER. The Vault opens two ways — the head button and
+//      the rail's end (RAIL_END_OPENS / railEndOpenDue, subscribed through the dock geometry
+//      store) — and its head button carries its own aria-label ("The Vault. Your Zaps, Gems and
+//      streak"). A segment shell that grows an imperative open and a label prop to re-absorb the
+//      component it was extracted from is no longer the thing that stops hand-rolled variation.
+//   2. THE RE-VERIFY IS NOT AVAILABLE IN THE REPO. What would have to be re-proved is
+//      INTERACTION — Esc, an outside click, the scroll deadband, the channel close, the rail-end
+//      rising edge. game-stats-dock.test.tsx renders GameStatsPanel only, so nothing in `pnpm
+//      test` would catch a regression in the migrated logic; the guard that does exist
+//      (dock-bar.test.ts) reads source shape, so migrating means editing the very assertion that
+//      pins the file. A refactor of working interaction logic with no test to fail is the trade
+//      this repo keeps losing.
+//   3. WHAT COULD DRIFT IS IMPORTED, NOT RESTATED. Both files take DOCK_HEAD_H_CLASS,
+//      DOCK_SCROLL_DISMISS_PX, announceDockSegmentOpen, onOtherDockSegmentOpen and
+//      setDockPanelOpen from dock-bar, and both identify as the 'vault' segment — which is sound
+//      because they are mutually exclusive at runtime (showSidebar is false on /admin, where
+//      railFor returns 'none'), so the two can never be mounted together.
+//
+// WHAT WOULD CHANGE IT: a behavioural test harness over the dock's dismissal paths. Write that
+// first, then the migration is a refactor with a net rather than a rewrite of a working panel.
 
 export function DockSegment({
   regionLabel,

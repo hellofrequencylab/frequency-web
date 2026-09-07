@@ -6,7 +6,13 @@
 # Runs on every PR since 2026-08-03 (ADR-923): the migration ledger is reconciled, the last
 # latent fresh-apply bug (stray authoring tags in 20261161000000) is fixed, and the full apply +
 # suite is green — so migration drift and policy regressions now fail the PR that introduces
-# them. Owner follow-up: mark this a required check in branch protection.
+# them. It is a REQUIRED check: ruleset 17640795 requires checks, analyze, lint, test, Vercel and
+# db-tests (it joined via #2302, ADR-1150). Re-read the ruleset from the API before citing that
+# list — see the header of pr-compare-fallback.yml for why a comment about it is not evidence.
+# 🔴 Because this workflow is PATH-FILTERED and required, a PR touching no migration would block
+# forever on a never-posted context (the PR #2107 deadlock). `db-tests-fallback.yml` posts the
+# `db-tests` context for those PRs, reading the path list below through `scripts/db-paths.mjs`.
+# Change the paths here only; a second copy drifts and hands a migration PR a free green.
 name: db-tests
 
 on:

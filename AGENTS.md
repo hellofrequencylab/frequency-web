@@ -89,6 +89,11 @@ ARTIFACT. Full rules and the incident: [`docs/DEPLOY-SAFETY.md`](docs/DEPLOY-SAF
 - **Never record status in prose.** Docs explain the work — specs, architecture and rationale are why
   this repo is legible. They do not track whether it is done, because prose cannot be verified. Every
   planning doc must say so in its first 25 lines; the gate checks it.
+- **Every open row carries a `priority` (P0–P3) beside its wave** ([ADR-1213](docs/DECISIONS.md),
+  2026-09-06). A wave is build ORDER; a priority is what the row costs TODAY. `pnpm backlog` prints
+  P0 across every lane first, then each lane by priority, and `check:backlog` fails an open row
+  without one. A code row gated on a ruling also carries `ownerAction`, so the ask is printed beside
+  the OWNER section instead of hiding in a live row's detail.
 - **Every row states how it will be proven.** `pnpm check:backlog` runs each row's probe and fails
   **both ways**: a row marked `open` whose probe passes is stale, and a row marked `done` whose probe
   fails is a regression. It caught its 23rd stale item on its first run.

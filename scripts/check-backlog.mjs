@@ -67,6 +67,22 @@ const OWNER_ACTIONS = [
   ['waiting', 'WAITING — blocked on an outside party, not an ask'],
 ]
 const OWNER_ACTION_KEYS = OWNER_ACTIONS.map(([k]) => k)
+
+/** How URGENT a row is, independent of WHERE it sits in the build order (meta.slate.waves).
+ *  The two axes are deliberately separate: a wave says what is built after what; a priority
+ *  says what is costing something TODAY. Sequenced programme phases are P2 by construction;
+ *  P0 is reserved for a production incident, a money/consent/permission answer that is
+ *  currently wrong, or a crawl-facing defect. Required on every open/blocked row for the
+ *  same reason `ownerAction` is: a field the guard does not demand is a field that decays
+ *  back into "everything in W0 is equally urgent", which is how 46 undifferentiated rows
+ *  came to sit under one "active now" heading (audit of 2026-09-06). */
+const PRIORITIES = [
+  ['P0', 'P0 — costing something today: incident, wrong money/consent answer, crawl-facing'],
+  ['P1', 'P1 — ready repairs, instruments that keep a gate honest, rulings blocking shipped mechanism'],
+  ['P2', 'P2 — the scheduled build-out in wave order'],
+  ['P3', 'P3 — parked by name, the runway-closing waves, housekeeping with no member consequence'],
+]
+const PRIORITY_KEYS = PRIORITIES.map(([k]) => k)
 const STATUSES = ['open', 'done', 'parked', 'blocked']
 const SIZES = ['XS', 'S', 'M', 'L', 'XL', '—']
 const PROBE_KINDS = ['grep-absent', 'grep-present', 'cmd', 'manual']
@@ -137,6 +153,27 @@ function validate(entries) {
       } else if (!OWNER_ACTION_KEYS.includes(e.ownerAction)) {
         problems.push(`${at}: ownerAction "${e.ownerAction}" not one of ${OWNER_ACTION_KEYS.join('|')}`)
       }
+    }
+    // A non-owner row may ALSO carry ownerAction, meaning "code work that is gated on a ruling";
+    // the report lists those beside the owner section so a ruling hiding in the live lane is not
+    // invisible to the person who has to make it. The value is validated wherever it appears.
+    if (e.lane !== 'owner' && e.ownerAction && !OWNER_ACTION_KEYS.includes(e.ownerAction)) {
+      problems.push(`${at}: ownerAction "${e.ownerAction}" not one of ${OWNER_ACTION_KEYS.join('|')}`)
+    }
+
+    // Every open/blocked row says how urgent it is. Enforced for the same reason ownerAction is:
+    // a working view where "active now" holds 46 rows with no ordering inside it is not a view.
+    if (e.status === 'open' || e.status === 'blocked') {
+      if (!e.priority) {
+        problems.push(
+          `${at}: open row has no priority. Set one of ${PRIORITY_KEYS.join('|')} — ` +
+            'it says how urgent the row is, separately from where meta.slate sequences it.',
+        )
+      } else if (!PRIORITY_KEYS.includes(e.priority)) {
+        problems.push(`${at}: priority "${e.priority}" not one of ${PRIORITY_KEYS.join('|')}`)
+      }
+    } else if (e.priority && !PRIORITY_KEYS.includes(e.priority)) {
+      problems.push(`${at}: priority "${e.priority}" not one of ${PRIORITY_KEYS.join('|')}`)
     }
 
     const p = e.verify
@@ -347,12 +384,26 @@ if (REPORT) {
   const openRows = rows.filter((e) => e.status === 'open' || e.status === 'blocked')
   console.log(`\n  THE ONE LIST — ${FILE}`)
   console.log(`  ${entries.length} entries · showing ${openRows.length} open/blocked${LANE ? ` in lane "${LANE}"` : ''}\n`)
+  const rank = (e) => {
+    const i = PRIORITY_KEYS.indexOf(e.priority)
+    return i === -1 ? PRIORITY_KEYS.length : i
+  }
+  const byPriority = (a, b) => rank(a) - rank(b)
+  const tag = (e) => (e.priority === 'P0' ? red(e.priority) : e.priority === 'P1' ? yellow(e.priority) : dim(e.priority ?? '??'))
   const line = (e) => {
     const mark = e.status === 'blocked' ? yellow('◍') : '○'
-    console.log(`    ${mark} ${e.id.padEnd(9)} ${dim(`[${e.size ?? '—'}]`)} ${e.title}`)
+    console.log(`    ${mark} ${tag(e)} ${e.id.padEnd(9)} ${dim(`[${e.size ?? '—'}]`)} ${e.title}`)
+  }
+  // The urgent set first, across every lane, so the working view answers "what is costing
+  // something today" before it answers "what is in which lane". Rows keep their lane below.
+  const urgent = openRows.filter((e) => e.priority === 'P0')
+  if (urgent.length && !LANE) {
+    console.log(`  ${red('NOW')} — ${PRIORITIES[0][1].replace(/^P0 — /, '')} (${urgent.length})`)
+    for (const e of urgent) line(e)
+    console.log('')
   }
   for (const lane of LANES) {
-    const inLane = openRows.filter((e) => e.lane === lane)
+    const inLane = openRows.filter((e) => e.lane === lane).sort(byPriority)
     if (!inLane.length) continue
     console.log(`  ${lane.toUpperCase()} (${inLane.length})`)
     // The OWNER section is grouped by what KIND of action each row needs. Nineteen
@@ -371,6 +422,15 @@ if (REPORT) {
       if (rest.length) {
         console.log(dim(`    — unclassified (${rest.length})`))
         for (const e of rest) line(e)
+      }
+      // Code rows gated on a ruling. They stay in their own lane because the work is code,
+      // but the ruling is the owner's, and a ruling that only appears in a live row's detail
+      // is one nobody is asked for (LIVE-185 sat that way: an economy payout the code and
+      // three help articles disagree on, filed as "an owner ruling" inside the live lane).
+      const carried = openRows.filter((e) => e.lane !== 'owner' && e.ownerAction).sort(byPriority)
+      if (carried.length && !LANE) {
+        console.log(dim(`    — RULINGS CARRIED BY OTHER LANES — code work waiting on a decision (${carried.length})`))
+        for (const e of carried) line(e)
       }
     } else {
       for (const e of inLane) line(e)

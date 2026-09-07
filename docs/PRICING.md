@@ -293,10 +293,12 @@ value is editable at `/admin/pricing`; nothing charges while `billing_live` is O
 | Organization (space) | $199 | monthly only | 1 | enterprise | take-rate 3%; **custom, built but not sold self-serve** |
 | White-label (space) | $299 + ≈ $1,500 setup | monthly only | 1 | full branding removal | branding removal; setup is a high-touch lead, not checkout |
 
-**Operator seats** are the count of operators who can administer the space. Seats are a **planned
-follow-up** (not built yet): only Nonprofit carries a higher planned seat count (3); per-seat billing
-is deferred (see below). Until seats ship, the column records the intended allocation, not a live
-limit.
+**Operator seats** are the count of operators who can administer the space, and they are built. The
+included allowance is read from the `space_team` meter (`lib/pricing/feature-meters.ts`), not from a
+constant — [ADR-917](DECISIONS.md) collapsed the two ladders that used to disagree about it. The seat
+arithmetic and the `featureGatesLive()`-gated enforcement live in `lib/spaces/seats.ts`; extra seats
+bill through the per-seat `operator_seat` catalog item (see below). The Seats column above records
+the per-plan intent this table was written with; the meter is what a Space actually gets.
 
 Other knobs: **Vera free cap** 10 messages/day · **annual discount** ≈ 2 months free · **trial** 14
 days on Space plans, card upfront (members have no trial, the free tier is theirs; editable). Take-rates
@@ -316,9 +318,20 @@ influencers and collaborators hosting a program; it is never offered through sel
 **Organization** keeps its $199/mo price but is positioned as **custom, built but not sold
 self-serve** (the same posture as white-label setup: a high-touch path, not a checkout button).
 
-**Per-seat billing is a deferred follow-up.** The intended model is "3 included, +$9/seat" with extra
-seats **auto-charged via Stripe**. It is not built yet; the operator-seat counts above describe the
-planned allocation only.
+**Per-seat operator billing shipped, and not in the shape ADR-373 sketched.**
+[ADR-373](DECISIONS.md) deferred it and described "3 included, +$9/seat";
+[ADR-799](DECISIONS.md) (2026-07-21) built a different model, and that is the one that runs.
+`operator_seat` is a real per-seat catalog item (`perSeat: true`) that `catalogKeysForLoadout`
+(`lib/billing/space-plan-checkout.ts`) adds to a loadout whenever the owner buys seats;
+`reconcileSpacePlanSubscription` writes `spaces.seat_quantity` back from **that** item's quantity,
+and `lib/billing/operator-seats.ts` mutates the line with proration on a Space that already pays.
+Included seats come from the `space_team` meter, never a hardcoded 3.
+
+**The seat price is operator-set, and the switch is guarded.** The catalog item ships as a
+placeholder amount behind the `catalog_operator_seat_active` flag ([ADR-803](DECISIONS.md)), and
+`setOperatorSeatActive(true)` refuses while `pricing_settings` holds no `catalog.operator_seat`
+override. That guard exists because the first live catalog sync minted the $9 stand-in as a real
+Stripe price, and Stripe prices are immutable — they could only be archived, never corrected.
 
 ## Feature gates (data, not code branches)
 
@@ -629,7 +642,6 @@ All wired through the OFF-preserving seam (`featureAllowed` grant-all while OFF,
 | Item | Why deferred |
 |---|---|
 | **`pricing_*` type regen** | No DB access in the gates worktree; the parent session regenerates `lib/database.types.ts` via Supabase MCP at integration, then the untyped casts that read the new columns are removed. Blocked columns/casts: `profiles.gamification_access_override`, `profiles.membership_payment_status`, `profiles.household_bundle_id`, `spaces.plan` (projected in `lib/spaces/store.ts`), `space_memberships.payment_status` (P2), and the `pricing_settings` / `pricing_feature_gates` / `pricing_stripe_prices` tables (P1/P2). Until then every reader fail-safes to the seeded code defaults. |
-| **Per-seat operator billing (ADR-373)** | The seat model ("3 included, +$9/seat", extra seats auto-charged via Stripe) is a planned follow-up, not built. Only Nonprofit's higher seat count (3) is recorded as intent; until seats ship there is no live seat limit or per-seat charge. |
 
 ## Roadmap
 

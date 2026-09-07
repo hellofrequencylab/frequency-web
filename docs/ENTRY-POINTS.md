@@ -199,7 +199,13 @@ separate, reviewed step).
 - **Threading:** `EntryPointInput.campaignId` (validated via `campaignExists`) flows through `createEntryPoint`/`updateEntryPoint`; `listEntryPointsByCampaign` powers the detail view.
 - **Assign-to-crew (2b, done):** each entry point in a campaign has an owner control (`reassignEntryPoint`) — an operator can hand it to any active crew-and-above member (`listAssignableMembers`); the new owner gets it in their "My Entry Points" + future recruiter-board scan credit. Historical signup attribution (`referred_by`, set at scan time) is unchanged.
 - **Template curation (2b, done):** operators toggle which registry templates crew may use (a "Crew templates" panel on `/marketing/funnels`). Backed by `entry_template_settings` (migration `20260607030000`; a missing row ⇒ enabled, so new templates are available by default); `crewEntryTemplates()` filters the crew builder's picker. Disabled templates stay available to operators.
-- **Still pending (2b):** Puck custom landings (the only remaining advanced builder piece).
+- **Custom landings, as scoped, are off the table:** 2b's last piece was a **Puck**-built landing, and
+  `@measured/puck` is no longer a dependency — [ADR-493](DECISIONS.md) planned the move onto an
+  in-house block layer and the package left the tree, which
+  [`PUCK-MIGRATION-PLAN.md`](PUCK-MIGRATION-PLAN.md) recorded on 2026-09-03
+  ([ADR-1197](DECISIONS.md)). A custom landing for an entry point would now be built on the
+  in-house block registry and the page editor, so it is a scope question for
+  [`EDITOR-ARCHITECTURE.md`](EDITOR-ARCHITECTURE.md), not a leftover of this phase.
 
 ### Phase 1 — what shipped
 

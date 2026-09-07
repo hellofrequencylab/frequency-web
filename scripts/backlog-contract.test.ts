@@ -113,6 +113,7 @@ describe('check:backlog — the probe/status contract', () => {
         id: 'STALE-1',
         title: 'a row nobody closed',
         status: 'open',
+        priority: 'P2',
         lane: 'live',
         size: 'S',
         verify: { kind: 'grep-present', pattern: 'SENTINEL_TOKEN', paths: ['src/present.ts'] },
@@ -149,6 +150,7 @@ describe('check:backlog — the probe/status contract', () => {
         id: 'HONEST-OPEN',
         title: 'genuinely not done',
         status: 'open',
+        priority: 'P2',
         lane: 'live',
         size: 'S',
         verify: { kind: 'grep-present', pattern: 'NEVER_APPEARS_ANYWHERE', paths: ['src/present.ts'] },
@@ -195,6 +197,7 @@ describe('check:backlog — the probe/status contract', () => {
         id: 'EATEN',
         title: 'a probe whose quotes the shell removes',
         status: 'open',
+        priority: 'P2',
         lane: 'live',
         verify: { kind: 'cmd', cmd: 'node -e "const need=["a","b"];process.exit(need.length?0:1)"' },
       },
@@ -217,6 +220,7 @@ describe('check:backlog — the probe/status contract', () => {
         id: 'EATENSQ',
         title: 'a single-quoted probe whose inner apostrophe ends the word',
         status: 'open',
+        priority: 'P2',
         lane: 'live',
         verify: { kind: 'cmd', cmd: `node -e ${sq}const s=${sq}x${sq};process.exit(0)${sq}` },
       },
@@ -237,6 +241,7 @@ describe('check:backlog — the probe/status contract', () => {
         id: 'SAFESQ',
         title: 'the recommended style',
         status: 'open',
+        priority: 'P2',
         lane: 'live',
         verify: { kind: 'cmd', cmd: `node -e ${sq}const need=["a","b"];process.exit(1)${sq}` },
       },
@@ -254,6 +259,7 @@ describe('check:backlog — the probe/status contract', () => {
         id: 'ESCAPED',
         title: 'a probe that escapes its inner quotes',
         status: 'open',
+        priority: 'P2',
         lane: 'live',
         verify: { kind: 'cmd', cmd: 'node -e "const s=\\"x\\";process.exit(s?1:0)"' },
       },
@@ -278,6 +284,7 @@ describe('check:backlog — the probe/status contract', () => {
         id: 'ANCIENT',
         title: 'a human decision nobody revisited',
         status: 'open',
+        priority: 'P2',
         lane: 'owner',
         size: 'S',
         // Open owner rows carry `ownerAction` (2026-09-06) — the OWNER section of the report is
@@ -292,6 +299,24 @@ describe('check:backlog — the probe/status contract', () => {
     expect(code, 'a recruiting decision must never be able to red the build').toBe(0)
     expect(out).toContain('ANCIENT')
     expect(out).toMatch(/manual row\(s\) with evidence older than/)
+  })
+
+  it('FAILS an open row with no priority — the working view is ordered by it (2026-09-06)', () => {
+    writeBacklog(dir, [
+      ...ballast(),
+      {
+        id: 'UNRANKED',
+        title: 'a row that would sit under "active now" with no ordering',
+        status: 'open',
+        lane: 'live',
+        size: 'S',
+        verify: { kind: 'manual', evidence: 'fixture', checked: '2026-09-06' },
+      },
+    ])
+    const { code, out } = run(BACKLOG_GUARD, dir)
+    expect(code, 'an open row without a priority is a structural problem, not a warning').toBe(1)
+    expect(out).toContain('UNRANKED')
+    expect(out).toMatch(/open row has no priority/)
   })
 
   it('does not probe parked rows at all', () => {
@@ -479,7 +504,18 @@ describe('the probe engine does not depend on ambient tooling', () => {
   // only under load so it does not reproduce when re-run alone, and reads exactly like a flake —
   // which this repo's own rules correctly say is never a root cause. `HYG-042` carries the fix.
   // The CPU budget below is the healthier half: a number someone can watch. The timeout is a cliff.
-  it('gives identical results with and without ripgrep on PATH', { timeout: 60_000 }, () => {
+  //
+  // ── 2026-09-06: THE CLIFF WAS REACHED, AND THE BUDGET IS NOW SET DELIBERATELY (HYG-042 option a).
+  // Measured on a 4-core container at load 0.90, on the tree as it stood BEFORE that day's backlog
+  // audit added any row: **one guard run 33.6s / 34.0s wall over 371 probes**, so this case's TWO
+  // runs need ~67s and it timed out at 60.4s. It was therefore already over the cliff at 371, and
+  // the audit's 16 new probes (+~1.4s per pass, ~2.8s doubled) widened a gap they did not open.
+  // The budget below is set against the measured ~68s with room for a loaded runner, the same
+  // reasoning as the 90s on `satisfies both contracts` above. This is option (a) of HYG-042 and it
+  // is the CHEAP HALF: nothing about the metric changes, and both budgets still need re-reading as
+  // n grows. Option (b) — every `node -e` probe reporting its own process.cpuUsage() on exit, so
+  // attribution survives parallelism — is the real fix and is HYG-062.
+  it('gives identical results with and without ripgrep on PATH', { timeout: 150_000 }, () => {
     const stub = mkdtempSync(path.join(tmpdir(), 'nopath-'))
     // Everything a probe legitimately needs (node, git, a shell) — but deliberately not `rg`.
     for (const bin of ['node', 'git', 'sh', 'bash', 'env']) {
