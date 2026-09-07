@@ -15,6 +15,13 @@
 // The merge is SHALLOW: a nested object is replaced whole at its top-level key. Send your complete
 // key, never a partial sub-object, and never patch inside a key another writer owns.
 //
+// A key SEVERAL writers share (spotlight, tour) is the one place that rule is not enough: each of
+// those writers used to read the sub-object, change one field and send the sub-object back whole,
+// so two of them in the same second still raced INSIDE the key (LIVE-171, ADR-1235). They use
+// mergeProfileMetaPath instead: the database merges the patch into the object AT a path
+// (`['spotlight']`), under the row lock, so a writer sends only the field it owns and never a
+// sibling field it read a moment ago (migration 20270345002300). Same shallow rule one level down.
+//
 // Authorization is inside the RPC: the service role (admin client) may write any profile, a
 // signed-in member only the profile whose auth_user_id is their own. So this works through the
 // admin client AND the member's session client.
@@ -68,6 +75,32 @@ export async function mergeProfileMeta(
   // Called inline on the client (not through a detached alias) so `this` survives; see
   // scripts/check-detached-client-methods.test.ts.
   const { data, error } = await (client.rpc as unknown as RpcFn)('merge_profile_meta', args)
+  if (error) return { meta: null, error: error.message }
+  return { meta: isPlainObject(data) ? data : {}, error: null }
+}
+
+/**
+ * Merge `patch` into the object at `path` inside profiles.meta for `profileId` (for a key several
+ * writers share). The patch carries ONLY the field(s) this writer owns; the database merges them
+ * under the row lock and materialises a missing ancestor as `{}`. Returns the merged meta as the
+ * database now holds it, or an error string. Never throws.
+ */
+export async function mergeProfileMetaPath(
+  client: ProfileMetaClient,
+  profileId: string,
+  path: readonly string[],
+  patch: Record<string, unknown>,
+): Promise<ProfileMetaResult> {
+  if (!profileId) return { meta: null, error: 'mergeProfileMetaPath: profile id is required' }
+  if (path.length === 0 || path.some((k) => typeof k !== 'string' || k.length === 0)) {
+    return { meta: null, error: 'mergeProfileMetaPath: path must be one or more non-empty keys' }
+  }
+  if (!isPlainObject(patch)) return { meta: null, error: 'mergeProfileMetaPath: patch must be a plain object' }
+  const { data, error } = await (client.rpc as unknown as RpcFn)('merge_profile_meta_path', {
+    p_profile_id: profileId,
+    p_path: [...path],
+    p_patch: patch,
+  })
   if (error) return { meta: null, error: error.message }
   return { meta: isPlainObject(data) ? data : {}, error: null }
 }

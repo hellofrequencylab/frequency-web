@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { mergeProfileMeta, removeProfileMetaKeys } from './meta'
+import { mergeProfileMeta, mergeProfileMetaPath, removeProfileMetaKeys } from './meta'
 
 // The wiring half of scan two L6-09: every profiles.meta write goes through ONE RPC that merges
 // the caller's own key server-side. The SQL half (the merge keeps the other writer's key, the
@@ -51,6 +51,41 @@ describe('mergeProfileMeta', () => {
   it('normalizes a non-object row result to {} rather than leaking it', async () => {
     const c = client({ data: null, error: null })
     expect(await mergeProfileMeta(c, 'p1', { x: 1 })).toEqual({ meta: {}, error: null })
+  })
+})
+
+describe('mergeProfileMetaPath', () => {
+  // LIVE-171 / ADR-1235: a key several writers share is merged INSIDE, at a path, so each writer
+  // sends only the field it owns. The SQL half (the merge lands under the row lock, a missing
+  // ancestor is materialised, the wrong user is refused) is supabase/tests/merge_profile_meta.test.sql.
+  it('calls merge_profile_meta_path with the id, the path and ONLY the patch it was handed', async () => {
+    const c = client({ data: { spotlight: { enabled: true, published: false } }, error: null })
+    const res = await mergeProfileMetaPath(c, 'p1', ['spotlight'], { published: false })
+    expect(c.rpc).toHaveBeenCalledTimes(1)
+    const [name, args] = c.calls[0]
+    expect(name).toBe('merge_profile_meta_path')
+    expect(args).toEqual({ p_profile_id: 'p1', p_path: ['spotlight'], p_patch: { published: false } })
+    expect(res).toEqual({ meta: { spotlight: { enabled: true, published: false } }, error: null })
+  })
+
+  it('passes a deeper path through as given', async () => {
+    const c = client({ data: {}, error: null })
+    await mergeProfileMetaPath(c, 'p1', ['tour', 'spotlight'], { status: 'paused' })
+    expect(c.calls[0][1].p_path).toEqual(['tour', 'spotlight'])
+  })
+
+  it('refuses an empty path, an empty key, a non-object patch or a missing id without calling the database', async () => {
+    const c = client({ data: {}, error: null })
+    expect((await mergeProfileMetaPath(c, '', ['spotlight'], { x: 1 })).error).toMatch(/profile id/)
+    expect((await mergeProfileMetaPath(c, 'p1', [], { x: 1 })).error).toMatch(/path/)
+    expect((await mergeProfileMetaPath(c, 'p1', ['spotlight', ''], { x: 1 })).error).toMatch(/path/)
+    expect((await mergeProfileMetaPath(c, 'p1', ['spotlight'], [1] as unknown as Record<string, unknown>)).error).toMatch(/plain object/)
+    expect(c.rpc).not.toHaveBeenCalled()
+  })
+
+  it('surfaces the RPC error as { error } and never throws', async () => {
+    const c = client({ data: null, error: { message: 'not your profile' } })
+    expect(await mergeProfileMetaPath(c, 'p1', ['spotlight'], { enabled: true })).toEqual({ meta: null, error: 'not your profile' })
   })
 })
 

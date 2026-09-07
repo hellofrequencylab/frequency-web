@@ -70,7 +70,7 @@ import { join } from 'node:path'
 import { AxeBuilder } from '@axe-core/playwright'
 import { test, type TestInfo, type Page } from '@playwright/test'
 import type { Result } from 'axe-core'
-import { RECAPTURE, judge, resolveBaseline, type A11yBaselinesDoc } from './a11y-ratchet'
+import { RECAPTURE, contextKey, judge, resolveBaseline, type A11yBaselinesDoc } from './a11y-ratchet'
 import { describeWaived, partitionWaived } from './a11y-waivers'
 import {
   DEFAULT_STATE,
@@ -82,6 +82,8 @@ import {
   assertMemberSession,
   assertNotProtectionWall,
   currentPathname,
+  operatorDenialReason,
+  operatorSurfaces,
   publicSurfaces,
   settle,
   type RenderState,
@@ -286,6 +288,16 @@ async function open(page: Page, surface: Surface, state: RenderState): Promise<b
   await applyRenderState(page, state)
   await page.goto(surface.path, { waitUntil: 'load' })
   await assertNotProtectionWall(page)
+  // An OPERATOR surface bounced to /feed is requireAdminFloor()'s denial: the e2e account is a
+  // member and not staff. Auditing /feed under seven /admin names would record the feed's
+  // (already-measured) count against the console's rows, so this skips WITH THE CAUSE NAMED
+  // and is counted by shell-reporter.ts, which fails the run under PW_REQUIRE_OPERATOR. Same
+  // treatment visual.spec.ts gives it; see operatorDenialReason() and backlog HYG-027.
+  const denied = operatorDenialReason(page, surface)
+  if (denied) {
+    test.skip(true, denied)
+    return false
+  }
   // Auditing the sign-in page under `/feed`'s name would report someone else's contrast as
   // the shell's, and auditing the marketing home page under the room's name would do the
   // same (it is exactly what the app-room baselines caught). A member surface that lands
@@ -305,13 +317,13 @@ async function open(page: Page, surface: Surface, state: RenderState): Promise<b
 async function auditFull(page: Page, surface: Surface, state: RenderState, testInfo: TestInfo): Promise<void> {
   if (!(await open(page, surface, state))) return
   const results = await new AxeBuilder({ page }).withTags(WCAG_TAGS).analyze()
-  report(results.violations, `${surface.path} [${state.id}, ${testInfo.project.name}]`, testInfo)
+  report(results.violations, contextKey(surface.path, state.id, testInfo.project.name), testInfo)
 }
 
 async function auditContrast(page: Page, surface: Surface, state: RenderState, testInfo: TestInfo): Promise<void> {
   if (!(await open(page, surface, state))) return
   const results = await new AxeBuilder({ page }).withRules(['color-contrast']).analyze()
-  report(results.violations, `${surface.path} [${state.id}, contrast only, ${testInfo.project.name}]`, testInfo)
+  report(results.violations, contextKey(surface.path, state.id, testInfo.project.name, true), testInfo)
 }
 
 /* ── Full WCAG A/AA pass, canonical state, both viewports ───────────────────── */
@@ -381,6 +393,54 @@ test.describe('a11y · member shell', { tag: ['@a11y', '@shell'] }, () => {
   for (const state of SHELL_RENDER_STATES.filter((s) => s.id !== DEFAULT_STATE.id)) {
     test.describe(state.id, () => {
       for (const surface of appSurfaces()) {
+        test(`${surface.path} contrast holds`, async ({ page }, testInfo) => {
+          test.skip(
+            testInfo.project.name !== 'desktop',
+            'Contrast is viewport-independent — the desktop project carries the render-state sweep.',
+          )
+          await auditContrast(page, surface, state, testInfo)
+        })
+      }
+    })
+  }
+})
+
+/* ── The operator console ───────────────────────────────────────────────────── */
+
+// HYG-027 (ADR-1239). SAME session as the member shell, SAME render-state shape (the console
+// renders inside the authed shell, so the skin axis is not ours), SAME @shell tag so the
+// reporter counts every one of these and names each /admin route it could not audit.
+//
+// 🔴 WHAT HOLDS THESE ROWS TODAY. Every operator context in a11y-baselines.json is a READING of
+// 0, and nothing has ever run axe on an /admin route: the account behind PW_MEMBER_EMAIL bounces
+// off requireAdminFloor() (measured on the 2026-08-31 pr-compare run; see shell-coverage.test.ts),
+// so these skip with the cause named until the owner grants the role. The 0 is the join rule
+// (`a11y-baselines.mjs`: "a new surface joins at zero tolerance") made explicit, not a value
+// anyone measured. Declared ceilings were the first draft and cannot ship: LIVE-023's probe holds
+// this file at zero ceiling objects. So the first staff run is the measurement, and a context
+// with debt fails with every element printed and the three remedies, of which only FIX and
+// WAIVE are open. The reporter's operator banner (and PW_REQUIRE_OPERATOR) keeps the skip loud.
+test.describe('a11y · operator console', { tag: ['@a11y', '@shell'] }, () => {
+  test.use({ storageState: STORAGE_STATE })
+
+  test.skip(
+    !baseURL,
+    'PW_BASE_URL is not set. Point it at a Vercel preview or a running dev server to run the a11y suite.',
+  )
+  test.skip(
+    !STORAGE_STATE,
+    'PW_STORAGE_STATE is not set (or the file is missing). The operator surfaces ride the SAME member session as the app shell — point it at a saved storage state for an account that is platform staff.',
+  )
+
+  for (const surface of operatorSurfaces()) {
+    test(`${surface.path} has no serious+ violations (${DEFAULT_STATE.id})`, async ({ page }, testInfo) => {
+      await auditFull(page, surface, DEFAULT_STATE, testInfo)
+    })
+  }
+
+  for (const state of SHELL_RENDER_STATES.filter((s) => s.id !== DEFAULT_STATE.id)) {
+    test.describe(state.id, () => {
+      for (const surface of operatorSurfaces()) {
         test(`${surface.path} contrast holds`, async ({ page }, testInfo) => {
           test.skip(
             testInfo.project.name !== 'desktop',

@@ -16,7 +16,16 @@ export type LivePost = {
   media_urls: string[]
   author: { display_name: string; handle: string; avatar_url: string | null; community_role?: string } | null
 }
-export type LiveEvent = { id: string; title: string; starts_at: string; city: string | null; slug: string }
+export type LiveEvent = {
+  id: string
+  title: string
+  starts_at: string
+  city: string | null
+  slug: string
+  /** Series columns from public_events (LIVE-206); absent ahead of migration 20270345002100. */
+  parent_event_id?: string | null
+  recurrence_type?: string | null
+}
 
 /** The live fields that carry a per-source outcome. Keyed by the field a consumer READS, not by
  *  the RPC behind it: `posts` collapses the featured + latest-public pair, because a consumer sees

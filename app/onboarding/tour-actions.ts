@@ -2,7 +2,7 @@
 
 import type { Json } from '@/lib/database.types'
 import { createClient } from '@/lib/supabase/server'
-import { mergeProfileMeta } from '@/lib/profiles/meta'
+import { mergeProfileMetaPath } from '@/lib/profiles/meta'
 import { recordEngagementEvent } from '@/lib/engagement/events'
 
 // Persist a tour interaction into profiles.meta.tour and emit an analytics event
@@ -38,10 +38,13 @@ export async function recordTourEvent(tipId: string, kind: TourEventKind) {
     lastShownAt: new Date().toISOString(),
   }
 
-  // 2026-09-05 (scan2 L6-09): only the `tour` key is merged server-side (the RPC checks auth.uid() owns
-  // the row, so the member scoping above holds). A failed merge is logged and the analytics event is
-  // not emitted for a tip that was not actually marked seen.
-  const { error } = await mergeProfileMeta(supabase, profile.id, { tour: nextTour })
+  // 2026-09-07 (LIVE-171, ADR-1235): the four tip fields merge INSIDE the `tour` key server-side (the
+  // RPC checks auth.uid() owns the row, so the member scoping above holds), so `tour.spotlight`, which
+  // setSpotlightTourState owns, is never read here and sent back stale. The `seen` and `dismissed`
+  // lists are still computed from the read: two tips marked in the same second by this ONE writer
+  // remain a same-writer race, which is a smaller thing than the cross-writer one this closes. A
+  // failed merge is logged and the analytics event is not emitted for a tip that was not marked.
+  const { error } = await mergeProfileMetaPath(supabase, profile.id, ['tour'], nextTour)
   if (error) {
     console.error('[recordTourEvent] tour merge failed', { profileId: profile.id, error })
     return
@@ -75,12 +78,10 @@ export async function setSpotlightTourState(state: SpotlightState, atStop = 0) {
     .maybeSingle()
   if (!profile) return
 
-  const meta = (profile.meta as Meta | null) ?? {}
-  const tour = (meta.tour as Record<string, Json> | undefined) ?? {}
-
-  // 2026-09-05 (scan2 L6-09): only the `tour` key is merged server-side (see recordTourEvent).
-  const { error } = await mergeProfileMeta(supabase, profile.id, {
-    tour: { ...tour, spotlight: { status: state, atStop, at: new Date().toISOString() } },
+  // 2026-09-07 (LIVE-171): only `tour.spotlight` is sent, merged INSIDE the `tour` key server-side, so
+  // the tip lists recordTourEvent owns are never read here and sent back stale.
+  const { error } = await mergeProfileMetaPath(supabase, profile.id, ['tour'], {
+    spotlight: { status: state, atStop, at: new Date().toISOString() },
   })
   if (error) {
     console.error('[setSpotlightTourState] tour merge failed', { profileId: profile.id, error })

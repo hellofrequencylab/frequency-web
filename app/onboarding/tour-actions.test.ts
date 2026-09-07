@@ -1,8 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-// Tour writers (scan2 L6-09): both merge ONLY the `tour` key through the member's SESSION client
-// (merge_profile_meta checks auth.uid() owns the row). A failed merge is logged and the analytics
-// event is not emitted for a tip that was not actually marked.
+// Tour writers (scan2 L6-09, then LIVE-171 / ADR-1235): both merge ONLY the fields they own INSIDE the
+// `tour` key through the member's SESSION client (merge_profile_meta_path checks auth.uid() owns the
+// row). recordTourEvent never sends `tour.spotlight`; setSpotlightTourState never sends the tip lists;
+// so the two cannot revert each other. A failed merge is logged and the analytics event is not
+// emitted for a tip that was not actually marked.
 
 const mocks = vi.hoisted(() => ({
   rpc: vi.fn(),
@@ -28,8 +30,12 @@ vi.mock('@/lib/engagement/events', () => ({ recordEngagementEvent: mocks.recordE
 
 import { recordTourEvent, setSpotlightTourState } from './tour-actions'
 
+type PathCall = [string, { p_profile_id: string; p_path: string[]; p_patch: Record<string, unknown> }]
+function call() {
+  return mocks.rpc.mock.calls[0] as PathCall
+}
 function patch() {
-  return (mocks.rpc.mock.calls[0] as [string, { p_profile_id: string; p_patch: Record<string, unknown> }])[1]
+  return call()[1]
 }
 
 beforeEach(() => {
@@ -37,17 +43,20 @@ beforeEach(() => {
   mocks.updates.length = 0
   mocks.rpc.mockResolvedValue({ data: {}, error: null })
   mocks.recordEngagementEvent.mockResolvedValue(undefined)
-  mocks.meta = { practiceStreak: { current: 2 }, tour: { seen: ['a'], dismissed: [] } }
+  mocks.meta = { practiceStreak: { current: 2 }, tour: { seen: ['a'], dismissed: [], spotlight: { status: 'paused', atStop: 1 } } }
   vi.spyOn(console, 'error').mockImplementation(() => {})
 })
 
 describe('recordTourEvent', () => {
-  it('merges only the tour key through the session client, then emits the event', async () => {
+  it('merges the tip fields INSIDE the tour key through the session client, then emits the event', async () => {
     await recordTourEvent('b', 'seen')
     expect(mocks.updates).toEqual([])
+    expect(call()[0]).toBe('merge_profile_meta_path')
     expect(patch().p_profile_id).toBe('p1')
-    expect(Object.keys(patch().p_patch)).toEqual(['tour'])
-    expect(patch().p_patch.tour).toMatchObject({ version: 1, seen: ['a', 'b'], dismissed: [] })
+    expect(patch().p_path).toEqual(['tour'])
+    expect(patch().p_patch).toMatchObject({ version: 1, seen: ['a', 'b'], dismissed: [] })
+    // The guided-tour state another writer owns is not read here and sent back stale.
+    expect('spotlight' in patch().p_patch).toBe(false)
     expect(mocks.recordEngagementEvent).toHaveBeenCalledTimes(1)
   })
 
@@ -59,12 +68,12 @@ describe('recordTourEvent', () => {
 })
 
 describe('setSpotlightTourState', () => {
-  it('merges only the tour key, keeping the tip lists beside the spotlight state', async () => {
+  it('sends only `spotlight` INSIDE the tour key, never the tip lists it could have read', async () => {
     await setSpotlightTourState('paused', 2)
-    expect(Object.keys(patch().p_patch)).toEqual(['tour'])
-    const tour = patch().p_patch.tour as Record<string, unknown>
-    expect(tour.seen).toEqual(['a'])
-    expect(tour.spotlight).toMatchObject({ status: 'paused', atStop: 2 })
+    expect(call()[0]).toBe('merge_profile_meta_path')
+    expect(patch().p_path).toEqual(['tour'])
+    expect(Object.keys(patch().p_patch)).toEqual(['spotlight'])
+    expect(patch().p_patch.spotlight).toMatchObject({ status: 'paused', atStop: 2 })
   })
 
   it('emits no event when the merge did not land', async () => {

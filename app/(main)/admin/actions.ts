@@ -16,7 +16,7 @@ import { recordEngagementEvent } from '@/lib/engagement/events'
 import { awardZapsForAction } from '@/lib/zaps'
 import { processGamificationEvent } from '@/lib/achievements'
 import { cancelAudit, reinstateAudit } from '@/lib/events/event-lifecycle'
-import { refundAndNotifyForCancelledEvent } from '@/lib/events/cancellation'
+import { cancelSeries, refundAndNotifyForCancelledEvent } from '@/lib/events/cancellation'
 import { atLeastRole, isStaff, isJanitor } from '@/lib/core/roles'
 import { coerceTierZaps } from '@/lib/practices/tiers'
 import { stampCircleSpaceId } from '@/lib/circles/store'
@@ -917,6 +917,53 @@ export async function toggleCancelEvent(id: string, cancel: boolean) {
   revalidatePath('/admin/events')
   revalidatePath('/events')
   revalidatePath('/feed')
+}
+
+/** Cancel every remaining date of this event's series from the scoped console (LIVE-206). Same
+ *  seam as cancelEventSeriesAsEditor (admin/events/actions.ts) and the host's cancelEventSeries;
+ *  this console's gate is `requireScopedManage` on `event.editSettings`, asked once for the date
+ *  the operator clicked and then once per occurrence, because a scope's manage right can differ
+ *  across the dates of one series. Returns the same buckets the other consoles report. */
+export async function cancelEventSeriesScoped(id: string): Promise<{
+  cancelled: number
+  alreadyCancelled: number
+  skipped: number
+  failed: number
+  needsAttention: number
+  truncated: boolean
+}> {
+  const caller = await getCallerProfile()
+  const mayCancel = async (eventId: string): Promise<boolean> => {
+    const caps = await getEventCapabilities(eventId)
+    await requireScopedManage(caller, caps.has('event.editSettings'), 'community')
+    return true
+  }
+  await mayCancel(id)
+  const result = await cancelSeries({
+    eventId: id,
+    actorProfileId: caller?.id ?? null,
+    canCancel: async (occurrenceId) => {
+      if (occurrenceId === id) return true
+      try {
+        return await mayCancel(occurrenceId)
+      } catch {
+        return false
+      }
+    },
+  })
+  revalidatePath('/admin/events')
+  revalidatePath('/events')
+  revalidatePath('/feed')
+  revalidatePath('/spaces', 'layout')
+  revalidatePath('/circles', 'layout')
+  return {
+    cancelled: result.cancelled.length,
+    alreadyCancelled: result.alreadyCancelled.length,
+    skipped: result.unauthorized.length,
+    failed: result.failed.length,
+    needsAttention: result.fanoutFailed.length,
+    truncated: result.truncated,
+  }
 }
 
 export async function updateEventDetails(id: string, fd: FormData) {
