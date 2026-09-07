@@ -59,8 +59,7 @@
             "LIVE-190",
             "LIVE-191",
             "LIVE-198",
-            "LIVE-203",
-            "LIVE-195"
+            "LIVE-203"
           ]
         },
         {
@@ -9075,7 +9074,7 @@
     {
       "id": "LIVE-195",
       "title": "Nothing rate-limits Vera chat or any composer; only /help/ask carries a limiter",
-      "status": "open",
+      "status": "done",
       "priority": "P1",
       "lane": "live",
       "size": "S",
@@ -9083,11 +9082,11 @@
         "file": "docs/EDITOR-ARCHITECTURE.md",
         "ref": "§9 the AI-layer gaps table"
       },
-      "detail": "FILED 2026-09-06 by the backlog audit's docs sweep: work a live plan or ADR names as open, deferred or \"a follow-up\", with no row owning it. EDITOR-ARCHITECTURE §9's table of AI-layer gaps records that the only rate-limited AI door is /help/ask; Vera chat and every generation path (blurbs, drafts, the Space copilot) are budget-gated by the ledger (which LIVE-194 shows is mis-priced) and by nothing per-request. A signed-in member can therefore drive a paid model in a tight loop until a budget trips. Verified 2026-09-06 as far as a grep can: no rate-limit helper is referenced from lib/ai. RE-TEST THE PREMISE by walking the Vera and composer server actions for any limiter before building one. THE WORK: one per-profile sliding-window limiter (the /help/ask one is the pattern) applied at each AI door, returning the same member-voice refusal the budget gate uses. The same table names three further gaps that belong to PROG-E8 rather than here — Vera's loop re-sends the system prompt every round (against ADR-041), no streaming, and no zod on any AI path — and they are recorded on that row so they stop living only in a doc.",
+      "detail": "FILED 2026-09-06 by the backlog audit's docs sweep: work a live plan or ADR names as open, deferred or \"a follow-up\", with no row owning it. EDITOR-ARCHITECTURE §9's table of AI-layer gaps records that the only rate-limited AI door is /help/ask; Vera chat and every generation path (blurbs, drafts, the Space copilot) are budget-gated by the ledger (which LIVE-194 shows is mis-priced) and by nothing per-request. A signed-in member can therefore drive a paid model in a tight loop until a budget trips. Verified 2026-09-06 as far as a grep can: no rate-limit helper is referenced from lib/ai. RE-TEST THE PREMISE by walking the Vera and composer server actions for any limiter before building one. THE WORK: one per-profile sliding-window limiter (the /help/ask one is the pattern) applied at each AI door, returning the same member-voice refusal the budget gate uses. The same table names three further gaps that belong to PROG-E8 rather than here — Vera's loop re-sends the system prompt every round (against ADR-041), no streaming, and no zod on any AI path — and they are recorded on that row so they stop living only in a doc.\nCLOSED 2026-09-07, and re-testing the premise first found it WRONG IN THE DIRECTION THAT MADE IT WORSE.\n\n🔴 `/help/ask` DID NOT EXIST. The row named it as the one rate-limited AI door and told the next reader to reuse it as the pattern. Scan two DELETED app/(help)/help/ask/route.ts on 2026-09-05 because nothing called it, two days before this row was filed - the deletion note is in components/admin/admin-footer.tsx and lib/help/drift.test.ts. So the true state was not \"one of N doors is covered\", it was ZERO of N, and the exemplar to copy was gone. Verified properly rather than by grep: every featureOverBudget call site (44 files, the honest census of AI doors) was checked against every rateLimitOk call site and the overlap was EMPTY.\n\nTHE WORK: lib/ai/rate-limit.ts is a thin policy layer over the generic rateLimitOk the row's exemplar was itself built on, so no new storage and no migration. 21 doors now pass through it, covering Vera chat, all seven Sparks, every entity quality gate, the Space copilot, grounded help, the anonymous Ask Vera door, and the compose/edit paths for circles, journeys, practices and listings. Every door refuses EXACTLY as it already refuses when over budget, so there is no new refusal vocabulary; the one judgement call is that the quality gate reuses its \"paused\" line rather than its budget line, because the budget line says \"again tomorrow\" and that is false of a window that clears in a minute.\n\n⚪ THE DOORS DELIBERATELY LEFT UNLIMITED ARE NAMED WITH REASONS in UNLIMITED_DOORS: doors that delegate to an already-throttled one, actorless work (cron sweeps and queue workers, where a per-actor window is the wrong tool and would break the legitimate batch), and operator importers that loop by design. Those stay bounded by the daily caps alone.\n\nTHE RATCHET IS THE DURABLE HALF: featureOverBudget call sites ARE the door census, so a door added later that gates on budget but not on the window fails CI unless it is named with a reason. The list may shrink and may only grow with a stated reason.\n\n⚠️ THE UNCONFIGURED POLICY IS `allow`, AGAINST lib/rate-limit's production default of `deny`, and that is deliberate: denying would switch off every AI surface at once, each degrading to its fallback with no error anywhere for an operator to see, while allowing leaves an unconfigured deploy exactly where it stood and still bounded by the daily caps and the global ceiling.\n\n🔴 BUT ALLOW-AND-SILENT IS THE FAILURE AGENTS.md NAMES, so it was closed in the same pass: /api/status now publishes monitoring.rateLimit beside monitoring.sentry, booleanised from whether a client was built and never a URL or a token. \"Is throttling on in this deployment?\" is one curl, exactly as LIVE-053 made \"is the error recorder on?\" one curl. A fail-safe that cannot be seen to have fired reads as coverage without being coverage.\n\nWATCHED GO RED: 6 of 22 tests failed against the unlimited tree (the coverage ratchet listing all 17 unthrottled doors, plus five per-door refusals), and every negative test is paired with a positive control that passes in both states - one of which caught a false pass where retrieval was simply empty. ADR-1215, and EDITOR-ARCHITECTURE §9's gaps table corrected because it was false in two ways.",
       "verify": {
         "kind": "manual",
         "evidence": "2026-09-06: no rate-limit reference under lib/ai; the doc table stands. Closes when every AI door (Vera chat, blurb/draft generation, the Space copilot) passes through one per-profile limiter and a test proves the refusal.",
-        "checked": "2026-09-06"
+        "checked": "2026-09-07"
       }
     },
     {

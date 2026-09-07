@@ -37,6 +37,7 @@ import { aiEnabled } from './client'
 import { MODELS, type ModelTier } from './models'
 import { estimateCostUsd } from './budget'
 import { recordAiUsage, featureOverBudget } from './usage'
+import { aiRateLimited } from './rate-limit'
 import { withVoice } from './voice'
 import type { SeedMood } from '@/lib/studio/kernel/moods'
 import { studioManifest } from '@/lib/studio/registry'
@@ -117,6 +118,11 @@ export async function runSpark<T, C>(spec: SparkSpec<T, C>, run: SparkRun<C>): P
   // Per-feature daily cap (lib/ai/budget.ts): over budget means fall back to hand entry,
   // never bill on.
   if (await featureOverBudget(spec.feature)) return null
+
+  // Per-author window (lib/ai/rate-limit.ts, LIVE-195). The daily cap bounds what EVERYBODY can
+  // spend; this bounds how fast ONE author can knock. Over the window is the same null the wizard
+  // already handles, so a throttled author falls back to hand entry exactly like AI being off.
+  if (await aiRateLimited(spec.feature, run.profileId)) return null
 
   // The mood dial is a kernel capability an entity opts into. Absent, withVoice is called with
   // no mood and the prompt is byte for byte what it was before moods existed.

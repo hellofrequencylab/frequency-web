@@ -15,6 +15,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { completeText } from './complete'
 import { MODELS } from './models'
 import { aiAvailable, featureOverBudget, recordAiUsage } from './usage'
+import { aiRateLimited } from './rate-limit'
 import { withVoice } from './voice'
 import { stripEmDashes } from './space-copilot'
 
@@ -71,6 +72,11 @@ export async function eventBlurb(profileId: string, eventId: string): Promise<st
   // Kill switch + per-feature daily budget cap. When off, return null WITHOUT
   // caching (so it can be tried again once AI is back on).
   if (!(await aiAvailable()) || (await featureOverBudget(FEATURE))) return null
+
+  // Per-viewer window (lib/ai/rate-limit.ts, LIVE-195). The "For you" lane draws four of these in
+  // parallel per render, so the window clears a burst plus reloads; a scripted reload loop past it
+  // gets the same uncached null the kill switch gives, and the card simply renders without a line.
+  if (await aiRateLimited(FEATURE, profileId)) return null
 
   // ── Gather REAL overlap facts ──────────────────────────────────────────────
   let blurb: string | null = null

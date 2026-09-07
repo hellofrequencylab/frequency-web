@@ -9,6 +9,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getCampaignMetrics } from '@/lib/email-studio/analytics'
 import { aiAvailable, featureOverBudget, recordAiUsage } from './usage'
+import { aiRateLimited } from './rate-limit'
 import { completeText, AiUnavailableError } from './complete'
 import { withVoice } from './voice'
 
@@ -42,6 +43,10 @@ export async function analyzeCampaignOpenRate(campaignId: string, actorId?: stri
 
   if (!(await aiAvailable()) || (await featureOverBudget(FEATURE))) {
     return { ok: false, reason: 'Vera analysis is off or over budget for today. The stats above are still live.' }
+  }
+  // Per-actor window (lib/ai/rate-limit.ts, LIVE-195). Same plain refusal as the budget cap.
+  if (await aiRateLimited(FEATURE, actorId)) {
+    return { ok: false, reason: 'Vera is resting right now. Try again in a bit. The stats above are still live.' }
   }
 
   // Pull the levers Vera reasons over (subject, preheader, from-name, audience). Fail-soft to blanks.

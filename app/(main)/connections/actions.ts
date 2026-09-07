@@ -6,6 +6,7 @@ import { contactsOwnerId } from '@/lib/connections/access'
 import { operatesSpace, isSpaceTeamMember } from '@/lib/spaces/operated'
 import { resolveVisibilityChange } from '@/lib/connections/visibility'
 import { aiAvailable, featureOverBudget } from '@/lib/ai/usage'
+import { aiRateLimited } from '@/lib/ai/rate-limit'
 import { scanCardImage, assistFromText } from '@/lib/ai/connections-ai'
 import { dedupeTags, normalizeTag, coerceContactDetails } from '@/lib/connections/normalize'
 import * as store from '@/lib/connections/store'
@@ -57,7 +58,14 @@ export async function scanCard(paths: string[], opts?: { hasBack?: boolean }): P
 
   const cleanup = () => { for (const p of clean) void store.removeObject(p) }
 
-  if (!(await aiAvailable()) || (await featureOverBudget('connection-scan'))) {
+  // Kill switch, daily cap, then the per-owner window (lib/ai/rate-limit.ts, LIVE-195). A vision
+  // read of an uploaded card is one of the priciest calls here, so a scripted upload loop is the
+  // one worth bounding; all three refuse with the SAME 'ai_unavailable' the UI already speaks.
+  if (
+    !(await aiAvailable()) ||
+    (await featureOverBudget('connection-scan')) ||
+    (await aiRateLimited('connection-scan', ownerId))
+  ) {
     cleanup()
     return { ok: false, reason: 'ai_unavailable' }
   }
@@ -81,7 +89,11 @@ export async function scanCard(paths: string[], opts?: { hasBack?: boolean }): P
 /** Vera assist: tidy free text into a structured profile (no image). */
 export async function veraAssist(text: string): Promise<ExtractResult> {
   const ownerId = await requireOwner()
-  if (!(await aiAvailable()) || (await featureOverBudget('connection-assist'))) {
+  if (
+    !(await aiAvailable()) ||
+    (await featureOverBudget('connection-assist')) ||
+    (await aiRateLimited('connection-assist', ownerId))
+  ) {
     return { ok: false, reason: 'ai_unavailable' }
   }
   const extraction = await assistFromText({ text, profileId: ownerId })
@@ -321,7 +333,11 @@ export type BriefResult = { ok: true; brief: string } | { ok: false; reason: str
  *  calm reason rather than an error, and it NEVER sends anything (ADR-028). */
 export async function briefContact(contactId: string): Promise<BriefResult> {
   const ownerId = await requireOwner()
-  if (!(await aiAvailable()) || (await featureOverBudget('crm-brief'))) {
+  if (
+    !(await aiAvailable()) ||
+    (await featureOverBudget('crm-brief')) ||
+    (await aiRateLimited('crm-brief', ownerId))
+  ) {
     return { ok: false, reason: 'Vera is resting right now. Try again in a bit.' }
   }
   const [detail, interactions, reminders] = await Promise.all([
