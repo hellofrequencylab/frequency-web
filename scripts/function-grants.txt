@@ -185,6 +185,7 @@ provision_channel_room               internal
 public_active_circle_count           public
 public_calendar_feed                 internal
 public_circle_by_id                  public
+public_circle_by_slug                public
 public_circles                       public
 public_event_by_slug                 public
 public_events                        public

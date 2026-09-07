@@ -249,7 +249,7 @@ export function circleListSchema(circles: PublicCircle[], listName: string) {
     itemListElement: circles.map((c, i) => ({
       '@type': 'ListItem',
       position: i + 1,
-      url: abs(`/discover/circles/${c.id}`),
+      url: abs(`/discover/circles/${c.slug ?? c.id}`),
       name: c.name,
     })),
   }
@@ -264,6 +264,9 @@ export function circleListSchema(circles: PublicCircle[], listName: string) {
 // so it can't drift from the other entity schemas.
 export function circleSchema(c: {
   id: string
+  /** The canonical public key (LIVE-182). Optional so a caller holding only an id still builds a
+   *  node rather than none, but every production caller passes it and the uuid is the fallback. */
+  slug?: string | null
   name: string
   about?: string | null
   city?: string | null
@@ -272,7 +275,7 @@ export function circleSchema(c: {
     '@context': 'https://schema.org',
     '@type': 'Organization',
     name: c.name,
-    url: abs(`/discover/circles/${c.id}`),
+    url: abs(`/discover/circles/${c.slug ?? c.id}`),
     ...(c.about ? { description: c.about } : {}),
     ...(c.city
       ? {

@@ -1,8 +1,8 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { notFound } from 'next/navigation'
+import { notFound, permanentRedirect } from 'next/navigation'
 import { Users, MapPin, ChevronLeft } from 'lucide-react'
-import { getPublicCircleById, getPublicCircles } from '@/lib/discover'
+import { getPublicCircle, getPublicCircles } from '@/lib/discover'
 import { SignInCta } from '@/components/discover/cards'
 import { RippleRings } from '@/components/marketing/vector-art'
 import { DetailTemplate } from '@/components/templates'
@@ -22,7 +22,9 @@ export const revalidate = 3600
 // Falls back to [] when Supabase credentials are absent (CI / preview without env vars).
 export async function generateStaticParams() {
   const circles = await getPublicCircles(200).catch(() => [])
-  return circles.map((c) => ({ id: c.id }))
+  // The SLUG, not the id (LIVE-182): the prerendered param has to be the URL the sitemap
+  // advertises and the canonical points at, or the manifest holds a set nothing links to.
+  return circles.map((c) => ({ id: c.slug ?? c.id }))
 }
 
 export async function generateMetadata({
@@ -31,7 +33,7 @@ export async function generateMetadata({
   params: Promise<{ id: string }>
 }): Promise<Metadata> {
   const { id } = await params
-  const circle = await getPublicCircleById(id)
+  const circle = await getPublicCircle(id)
   if (!circle) return { title: 'Circle not found' }
 
   const where = circle.city ? ` in ${circle.city}` : ''
@@ -44,11 +46,11 @@ export async function generateMetadata({
   return {
     title: circle.name,
     description,
-    alternates: { canonical: `/discover/circles/${circle.id}` },
+    alternates: { canonical: `/discover/circles/${circle.slug ?? circle.id}` },
     openGraph: {
       title: `${circle.name} · ${SITE_NAME}`,
       description,
-      url: `/discover/circles/${circle.id}`,
+      url: `/discover/circles/${circle.slug ?? circle.id}`,
     },
     twitter: {
       card: 'summary_large_image',
@@ -64,14 +66,21 @@ export default async function CirclePage({
   params: Promise<{ id: string }>
 }) {
   const { id } = await params
-  const circle = await getPublicCircleById(id)
+  const circle = await getPublicCircle(id)
   if (!circle) notFound()
+
+  // 🔴 THE UUID FORM 308s TO THE SLUG (LIVE-182). Both resolve — a printed QR code, a pasted link
+  // and an existing citation must all keep working — but exactly one of them is the URL, and a
+  // page reachable at two addresses splits its own crawl signal. The canonical below says which;
+  // the redirect makes the browser agree. Guarded on the slug actually differing, so this can
+  // never loop, and issued only for the legacy form because a slug request is already correct.
+  if (id !== circle.slug && circle.slug) permanentRedirect(`/discover/circles/${circle.slug}`)
 
   // The standard entity cover (PROG-P5, ADR-1117). This is the RUNG-3 case in production: the
   // public Circle read (`public_circle_by_id`) exposes no image at all, so the section default in
   // DETAIL_HERO_DEFAULTS is the only thing that can give this page a band. An operator who sets a
   // header image on /discover/circles in Settings replaces it for every public Circle at once.
-  const hero = await resolveDetailHero(`/discover/circles/${circle.id}`)
+  const hero = await resolveDetailHero(`/discover/circles/${circle.slug ?? circle.id}`)
 
   return (
     <div className="relative overflow-hidden max-w-3xl mx-auto px-6 py-20 sm:py-24">
@@ -85,7 +94,7 @@ export default async function CirclePage({
           breadcrumbSchema([
             { name: 'Discover', path: '/discover' },
             { name: 'Circles', path: '/discover/circles' },
-            { name: circle.name, path: `/discover/circles/${circle.id}` },
+            { name: circle.name, path: `/discover/circles/${circle.slug ?? circle.id}` },
           ]),
           // A circle as schema.org/Organization (a small local group) — the tested
           // helper so it stays consistent with every other /discover entity schema.

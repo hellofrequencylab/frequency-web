@@ -81,7 +81,10 @@ export const TWIN_RULES: readonly TwinRule[] = [
   // slug or an id (getPublicPractice takes both, and the page self-canonicals to `slug ?? id`),
   // so the captured segment passes straight through and the canonical is emitted by the twin.
   { kind: 'direct', re: /^\/practices\/([^/]+)$/, to: (s) => `/discover/practices/${s}` },
-  // Circles: member route is /circles/<slug>, twin is /discover/circles/<id>. Needs the lookup.
+  // Circles: both routes are keyed by /<slug> since LIVE-182, so nothing needs translating — but
+  // this stays a LOOKUP rather than becoming `direct`, because the read is the existence check: a
+  // circle with no public twin must resolve to null, not to a link into a 404. Practices above are
+  // `direct` for the opposite reason — that page self-canonicals and 404s on its own.
   { kind: 'lookup', re: /^\/circles\/([^/]+)$/, entity: 'circle' },
   // Channels: member route is /channels/<id>, twin is /discover/topics/<slug>. Needs the lookup.
   { kind: 'lookup', re: /^\/channels\/([^/]+)$/, entity: 'channel' },

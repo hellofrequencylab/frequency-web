@@ -1,4 +1,4 @@
-import { getPublicCircleById } from '@/lib/discover'
+import { getPublicCircle } from '@/lib/discover'
 import { SITE_NAME } from '@/lib/site'
 import { cardResponse } from '@/lib/og/deliver'
 import { OG_CONTENT_TYPE } from '@/lib/og/content-type'
@@ -12,11 +12,16 @@ export const size = { width: 1200, height: 630 }
 export const contentType = OG_CONTENT_TYPE
 
 // Per-circle dynamic OG image for /discover/circles/[id] (site-audit SEO-2). Falls back to a
-// generic branded card when the circle isn't found. Visual language mirrors the practices /
+// generic branded card when the circle isn't found.
+//
+// ⚠️ RESOLVES slug-OR-id, and it HAS to (LIVE-182). This route receives the same segment the page
+// does, and that segment is now the slug. A by-id-only read would hand a slug to an RPC typed
+// `_id uuid`, fail, and fall through to the generic card — every share of a public Circle losing
+// its name, silently, because the fallback is indistinguishable from "circle not found". Visual language mirrors the practices /
 // events cards: near-black gradient ground, indigo brand bar, white display type.
 export default async function Image({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const circle = await getPublicCircleById(id).catch(() => null)
+  const circle = await getPublicCircle(id).catch(() => null)
 
   const title = circle?.name ?? 'Circles'
   const where = circle?.city ?? null

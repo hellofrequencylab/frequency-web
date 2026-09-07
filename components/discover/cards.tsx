@@ -22,7 +22,7 @@ import { Button, Card } from '@/components/marketing/marketing-ui'
 //     signed-out visitor who lands on a protected path keeps their destination anyway — the
 //     rewrite bought nothing on /people;
 //   · /circles/<slug> is no longer a bounce at all. It has a public twin, so proxy.ts lets it
-//     through and the (main) layout redirects to /discover/circles/<id> — the reader SEES the
+//     through and the (main) layout redirects to /discover/circles/<slug> — the reader SEES the
 //     Circle instead of a sign-in form;
 //   · /events/<slug> is anon-readable outright (isPublicEventView), so the rewrite was sending
 //     people to a login wall in front of an already-public page.

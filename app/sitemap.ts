@@ -403,7 +403,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       "circles",
       "the public_circles RPC",
     ).map((c) => ({
-      url: `${SITE_URL}/discover/circles/${c.id}`,
+      // The slug, not the uuid (LIVE-182). circles.slug is NOT NULL and public_circles has always
+      // returned it; advertising the uuid froze a keyword-free URL into every citation and QR code.
+      url: `${SITE_URL}/discover/circles/${c.slug ?? c.id}`,
       changeFrequency: "weekly",
       priority: 0.6,
     }));
