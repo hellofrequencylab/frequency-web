@@ -33,6 +33,7 @@ import { EventCohostChooser } from '@/components/admin/modules/event-cohost-choo
 import { EventPlacementField } from '@/components/events/event-placement-field'
 import { EventShareField } from '@/components/events/event-share-field'
 import { readEventHeroHeight } from '@/lib/events/hero-height'
+import { readEventCoverAspect } from '@/lib/events/cover-aspect'
 import { readEventCoverFocus } from '@/lib/events/cover-focus'
 import {
   readEventCheckInEnabled,
@@ -372,6 +373,7 @@ export function EventSettingsModule() {
           slug={data.slug}
           imageUrl={coverUrl}
           initialFocus={readEventCoverFocus(data.theme)}
+          initialAspect={readEventCoverAspect(data.theme)}
           initialHeight={readEventHeroHeight(data.theme)}
         />
         {imgErr && <p className="text-meta font-medium text-danger">{imgErr}</p>}

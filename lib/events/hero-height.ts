@@ -6,6 +6,7 @@
 
 import {
   posterHeightClass,
+  posterMaxHeightClass,
   asCoverHeight,
   COVER_HEIGHT_OPTIONS,
   COVER_HEIGHT_DEFAULT,
@@ -22,6 +23,13 @@ export const EVENT_HERO_HEIGHTS: { value: EventHeroHeight; label: string }[] = [
  *  lib/layout/cover-height.ts, and components/media/poster-band.tsx for why). */
 export function eventPosterHeightClass(height: EventHeroHeight): string {
   return posterHeightClass(height)
+}
+
+/** The same ladder as a CEILING, for a band that knows its cover's own aspect
+ *  (events.theme.coverAspect, lib/events/cover-aspect.ts): the band is the poster's shape and the
+ *  tier is the tallest it may grow. */
+export function eventPosterMaxHeightClass(height: EventHeroHeight): string {
+  return posterMaxHeightClass(height)
 }
 
 /** Read the saved hero height out of events.theme (jsonb), defaulting to 'standard' (maps legacy 'medium'). */
