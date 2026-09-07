@@ -6,8 +6,14 @@
 //
 // Isomorphic (no node-only APIs): the builder preview (client) and the download
 // route (server) produce identical output. Text renders with system fonts wherever
-// the SVG opens. (A PNG export needs a bundled font for the rasterizer — a follow-up;
-// the QR itself already downloads as PNG via /api/qr.)
+// the SVG opens.
+//
+// PNG export SHIPPED in 349733c4f (2026-06-05) and this comment claimed otherwise until
+// 2026-09-07: `lib/entry-points/flyer-raster.ts` hands resvg the bundled Liberation Sans
+// (public/fonts/, Arial-metric — this flyer's target), memoized, and
+// `/api/entry-points/<slug>/flyer?format=png` serves it. Font loading is best-effort, so a
+// font fetch that fails degrades to a text-less PNG rather than a 500; the vector SVG
+// (?format=svg, the default) is always the reliable export.
 
 import { renderStyledQrSvg } from '@/lib/qr/render-styled'
 import { DEFAULT_STYLE, type QrStyle } from '@/lib/qr/style'

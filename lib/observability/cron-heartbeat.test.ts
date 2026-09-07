@@ -249,3 +249,116 @@ describe('withCronHeartbeat — the cron.run duration instrument', () => {
     expect(await res.json()).toEqual({ ok: true })
   })
 })
+
+// ── OWN-005 / the fail-safe that has to notice it failed ──────────────────────────────────────
+//
+// `fetch` rejects only on a TRANSPORT error. A monitor that ANSWERS "no" — Healthchecks.io
+// returning 429 once the account is over its check cap (free tier caps at 20; vercel.json
+// declares 27), or a 400/404 for a check that no longer exists — resolves normally, so before
+// the status check the wrapper logged nothing at all. A dead-man's-switch that is silently
+// rejecting pings is indistinguishable from one that was never wired, which is the exact shape
+// AGENTS.md names: "every fail-safe needs a gate that notices it fired".
+//
+// These tests pin four properties: silence on a good ping, a warn on a rejected one (both the
+// 4xx and 5xx families), the transport-error line still firing, and — the property that matters
+// most — the cron's own outcome never moving because of any of it.
+describe('withCronHeartbeat — a REJECTED ping is not silence', () => {
+  function captureWarn() {
+    const lines: Array<{ event: string; fields: Record<string, unknown> }> = []
+    const read = (...args: unknown[]) => {
+      for (const a of args) {
+        if (typeof a !== 'string') continue
+        try {
+          const parsed = JSON.parse(a) as Record<string, unknown>
+          if (typeof parsed.event === 'string') lines.push({ event: parsed.event, fields: parsed })
+        } catch {
+          // Not a structured line; the logger also emits plain text in some modes.
+        }
+      }
+    }
+    // The logger may route warnings to console.warn or console.log depending on mode.
+    const spies = [
+      vi.spyOn(console, 'warn').mockImplementation(read),
+      vi.spyOn(console, 'log').mockImplementation(read),
+    ]
+    return { lines, restore: () => spies.forEach((s) => s.mockRestore()) }
+  }
+
+  const pingFailures = (lines: Array<{ event: string; fields: Record<string, unknown> }>) =>
+    lines.filter((l) => l.event === 'cron.heartbeat.ping_failed')
+
+  beforeEach(() => {
+    process.env.CRON_HEARTBEAT_BASE_URL = 'https://hc.example/ping'
+  })
+
+  it('stays silent when the monitor accepts the ping (200)', async () => {
+    fetchMock.mockResolvedValue(new Response(null, { status: 200 }))
+    const { lines, restore } = captureWarn()
+    try {
+      await withCronHeartbeat('weekly-digest', okRes)(req())
+    } finally {
+      restore()
+    }
+    expect(pingFailures(lines), 'a healthy ping must not be noise').toHaveLength(0)
+  })
+
+  // 🔴 THE MUTATION CONTROL. Delete the `if (!res.ok)` check in pingHeartbeat and this goes red:
+  // a 429 resolves, so the try/catch alone never sees it.
+  it('logs when the monitor REJECTS the ping with a 429 (over the check cap)', async () => {
+    fetchMock.mockResolvedValue(new Response('rate limited', { status: 429 }))
+    const { lines, restore } = captureWarn()
+    try {
+      await withCronHeartbeat('weekly-digest', okRes)(req())
+    } finally {
+      restore()
+    }
+    const failures = pingFailures(lines)
+    expect(failures, 'a rejected ping is a dead dead-man’s-switch and must be logged').toHaveLength(1)
+    expect(failures[0].fields.job).toBe('weekly-digest')
+    expect(failures[0].fields.status).toBe(429)
+    expect(failures[0].fields.fail, 'this was the alive ping, not the /fail ping').toBe(false)
+  })
+
+  it('logs a rejected FAIL ping too, and says it was the fail ping', async () => {
+    fetchMock.mockResolvedValue(new Response('nope', { status: 500 }))
+    const { lines, restore } = captureWarn()
+    try {
+      await withCronHeartbeat('process-queue', errRes)(req())
+    } finally {
+      restore()
+    }
+    const failures = pingFailures(lines)
+    expect(failures).toHaveLength(1)
+    expect(failures[0].fields.job).toBe('process-queue')
+    expect(failures[0].fields.status).toBe(500)
+    expect(failures[0].fields.fail, 'the /fail endpoint rejecting is the worse of the two').toBe(true)
+  })
+
+  it('still logs a transport error, with no status, as it always did', async () => {
+    fetchMock.mockRejectedValue(new Error('monitor unreachable'))
+    const { lines, restore } = captureWarn()
+    try {
+      await withCronHeartbeat('weekly-digest', okRes)(req())
+    } finally {
+      restore()
+    }
+    const failures = pingFailures(lines)
+    expect(failures).toHaveLength(1)
+    expect(failures[0].fields.error).toContain('monitor unreachable')
+    expect(failures[0].fields.status, 'a transport error has no HTTP status').toBeUndefined()
+  })
+
+  it('a rejected ping never changes the cron’s own outcome', async () => {
+    fetchMock.mockResolvedValue(new Response('rate limited', { status: 429 }))
+
+    // Success stays a success...
+    const ok = await withCronHeartbeat('weekly-digest', okRes)(req())
+    expect(ok.status).toBe(200)
+    expect(await ok.json()).toEqual({ ok: true })
+
+    // ...and a throwing handler still re-throws its ORIGINAL error, not a ping error.
+    await expect(
+      withCronHeartbeat('process-queue', vi.fn().mockRejectedValue(new Error('handler failure')))(req()),
+    ).rejects.toThrow('handler failure')
+  })
+})

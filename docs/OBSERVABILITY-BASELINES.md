@@ -171,14 +171,21 @@ monthly; the trend matters more than any single month.
 
 ### 3a. Per-vendor spend
 
-> ⏳ **OWNER-BLOCKED, and it is the only thing blocking it.** Every figure in §3a and §3b comes
-> from a vendor's own billing console, which is account access no agent in this repo has. It is not
-> a measurement anyone here can take, so the cells stay empty and the ask is carried as a backlog
-> row (`OWN-062`) rather than sitting as `⏳ owner` in a document nobody is accountable for.
+> ⏳ **PARTLY OWNER-BLOCKED — the DOLLARS are, the PLAN TIERS were not.** The premise this note
+> carried until 2026-09-07 was that *every* figure needs a billing console. Re-tested that day and
+> two of the five tiers came back from the platforms' own management APIs, which this repo can
+> reach: the Supabase org **Frequency™** (`hkveprznovcteywuczcv`) reports `plan: pro`, and the
+> Vercel team `team_BQT87yt90JOxQEh0efoVZnQh` reports `plan: pro`. Both are recorded below with
+> that date. Anthropic, Resend and Upstash expose no equivalent read here, so their tiers stay
+> `⏳ owner` alongside every monthly figure.
 >
-> To fill it: read the current invoice for each vendor below, put the plan tier and the monthly
-> figure in the table, state the snapshot month, and state whether the denominator is WAM or MAU.
-> Source for each figure: the vendor's own billing console (not estimated).
+> Read it as the reminder it is: *"no agent can check this"* is a claim with an expiry date, and
+> two of these five had already expired. Re-test a blocker's premise before treating it as one.
+>
+> To fill the rest: read the current invoice for each vendor below, put the monthly figure in the
+> table, state the snapshot month, and state whether the denominator is WAM or MAU. Source for each
+> DOLLAR figure: the vendor's own billing console (not estimated). The ask is carried as a backlog
+> row (`OWN-062`) rather than sitting as `⏳ owner` in a document nobody is accountable for.
 >
 > ⚠️ **The denominator is currently 58 profiles** (§2b), so a per-1k-members figure computed today
 > would be an extrapolation from a twentieth of the unit and would read as fact. Capture §3b when
@@ -186,8 +193,8 @@ monthly; the trend matters more than any single month.
 
 | Vendor | What it bills for | Plan / tier | Monthly spend (USD) | Primary cost driver | Notes |
 |---|---|---|---|---|---|
-| **Supabase** | Postgres, Auth, Storage, Realtime, egress | ⏳ owner | ⏳ owner | DB compute + storage + egress | watch egress as media grows (H3-6) |
-| **Vercel** | Hosting, edge, functions, bandwidth, Analytics | ⏳ owner | ⏳ owner | function invocations + bandwidth | 18 crons + RSC traffic |
+| **Supabase** | Postgres, Auth, Storage, Realtime, egress | ✅ **pro** (org `hkveprznovcteywuczcv`, read from the management API 2026-09-07) | ⏳ owner | DB compute + storage + egress | watch egress as media grows (H3-6) |
+| **Vercel** | Hosting, edge, functions, bandwidth, Analytics | ✅ **pro** (team `team_BQT87yt90JOxQEh0efoVZnQh`, read from the platform API 2026-09-07) | ⏳ owner | function invocations + bandwidth | **27** crons + RSC traffic (counted in `vercel.json` 2026-09-07; this line said 18 until then) |
 | **Anthropic** | Vera + embeddings (Claude API) | ⏳ owner | ⏳ owner | tokens (Haiku-default) | governed by AI-CONTROLS.md caps |
 | **Resend** | Transactional + digest email | ⏳ owner | ⏳ owner | emails sent / month | digest + lifecycle + nurture |
 | **Upstash** | Redis (rate-limit, cache) | ⏳ owner | ⏳ owner | commands / month | sliding-window rate limits |
