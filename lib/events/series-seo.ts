@@ -1,5 +1,6 @@
 import 'server-only'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { EVENT_MEDIA_BUCKET } from './hero-url'
 import { HOME_TZ, dayInZone } from '@/lib/time/zone'
 import {
   DEFAULT_INDEXED_OCCURRENCES,
@@ -46,6 +47,19 @@ export interface SitemapEventEntry {
   slug: string
   /** ISO instant of the date this URL represents — the sitemap's `lastModified`. */
   startsAt: string
+  /**
+   * The event's PUBLIC cover image URL, for the image-sitemap extension — or absent when the row
+   * has no uploaded cover.
+   *
+   * 🔴 THE HOST-UPLOADED COVER ONLY, AND DELIBERATELY NOT `resolveEventHeroUrl`. An event has three
+   * artwork sources (lib/events/hero-url.ts) and two of them live in a PRIVATE bucket reachable
+   * only through `createSignedUrl`. A signed URL EXPIRES, and an image sitemap full of URLs that
+   * 404 in a week is LIVE-205's defect on a timer — an advertised image that is not there. So a
+   * scanned-poster-only event correctly carries no image here rather than a URL with a fuse in it.
+   *
+   * Absent beats invented, the same rule LIVE-197 applied to `lastModified`.
+   */
+  image?: string
   /** The earliest live date of its series, i.e. the URL a crawler should treat as the series page.
    *  FALSE for every one-off, so `isSeriesHome` is never a synonym for "an event". */
   isSeriesHome: boolean
@@ -254,7 +268,9 @@ export async function listSitemapEventEntries(opts: {
       .from('events')
       // SERIES_COLUMNS verbatim: without them collapseSeries is a silent no-op and this ships
       // looking finished while the sitemap still carries every date.
-      .select(`id, slug, starts_at, is_cancelled, ${SERIES_COLUMNS}`)
+      // `cover_image_path` rides along for the image-sitemap entry — the PUBLIC bucket only; see
+      // the note on SitemapEventEntry.image for why the other two hero sources must never appear.
+      .select(`id, slug, starts_at, is_cancelled, cover_image_path, ${SERIES_COLUMNS}`)
       .eq('status', 'published')
       .eq('visibility', 'public')
       .eq('is_cancelled', false)
@@ -269,6 +285,7 @@ export async function listSitemapEventEntries(opts: {
       slug: string | null
       starts_at: string | null
       is_cancelled: boolean | null
+      cover_image_path: string | null
       recurrence_type: string | null
       recurrence_until: string | null
       parent_event_id: string | null
@@ -290,7 +307,15 @@ export async function listSitemapEventEntries(opts: {
         // isSeriesHome is the ELECTED earliest live row, not "the anchor". A long-running series'
         // anchor row is gone from an upcoming-only read the moment its own date passes; electing the
         // anchor would drop established series out of the sitemap entirely.
-        out.push({ slug: r.slug, startsAt: r.starts_at, isSeriesHome: group.recurring && i === 0 })
+        const cover = r.cover_image_path
+          ? (admin.storage.from(EVENT_MEDIA_BUCKET).getPublicUrl(r.cover_image_path).data?.publicUrl ?? null)
+          : null
+        out.push({
+          slug: r.slug,
+          startsAt: r.starts_at,
+          isSeriesHome: group.recurring && i === 0,
+          ...(cover ? { image: cover } : {}),
+        })
       })
     }
     return out

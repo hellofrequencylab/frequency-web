@@ -223,6 +223,44 @@ describe('sitemap wiring', () => {
   it('ranks the series page above its individual dates', () => {
     expect(sitemap).toContain('e.isSeriesHome ? 0.8 : 0.7')
   })
+
+  // ── LIVE-207: the image entry, and the one URL shape it must never carry ──────────────────────
+  //
+  // 🔴 A SIGNED URL MUST NEVER ENTER A SITEMAP. An event has three artwork sources and two of them
+  // live in a PRIVATE bucket reached through `createSignedUrl`; those URLs expire, so advertising
+  // one is LIVE-205's defect on a timer — an image Google fetches today and cannot fetch next week.
+  // The reader therefore resolves ONLY `cover_image_path`, the public-bucket upload.
+  //
+  // This is also why the sitemap deliberately does NOT call `resolveEventHeroUrl`, even though that
+  // is the one authority for an event's artwork everywhere else. Reaching for it here would look
+  // like consistency and would ship expiring URLs.
+  it('carries the PUBLIC cover only, and never a signed-URL source', () => {
+    const reader = sourceWithoutComments(join(process.cwd(), 'lib/events/series-seo.ts'), {
+      imports: true,
+    })
+    expect(reader, 'the public cover is what the image entry is built from').toContain(
+      'cover_image_path',
+    )
+    expect(reader, 'the public bucket resolves without signing').toContain('getPublicUrl')
+    for (const forbidden of ['poster_path', 'createSignedUrl', 'posterSignedUrl', 'resolveEventHeroUrl']) {
+      expect(reader, `${forbidden} reaches a PRIVATE bucket; a signed URL expires out of a sitemap`).not.toContain(
+        forbidden,
+      )
+    }
+  })
+
+  it('emits no image at all for a row with no cover, rather than a placeholder', () => {
+    // Absent beats invented — the same rule LIVE-197 applied to lastmod and LIVE-205 to the card.
+    // The shared site card on every URL would be spam; a made-up path would be a 404.
+    expect(sitemap).toContain('e.image ? { images: [e.image] } : {}')
+    expect(sitemap, 'never the shared site card').not.toMatch(/images:\s*\[[^\]]*SITE_OG_IMAGE/)
+  })
+
+  it('still names no metadata-route card, which is what LIVE-205 removed', () => {
+    expect(sitemap, 'an image entry that resolves to HTML is worse than none').not.toMatch(
+      /images:\s*\[[^\]]*opengraph-image/,
+    )
+  })
 })
 
 describe('embeddings wiring (ADR-897 E1 + E2 ship together or not at all)', () => {
