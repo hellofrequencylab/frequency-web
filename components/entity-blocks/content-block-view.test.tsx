@@ -135,3 +135,31 @@ describe('ContentBlockView heading + inline fields honour <br> (published == edi
     expect(html).not.toContain('&lt;br&gt;')
   })
 })
+
+// ADR-1245: a stored image value may be an AssetRef ({ assetId, url }); the view renders its cached url.
+describe('ContentBlockView reads an AssetRef through its cached url (ADR-1245)', () => {
+  const ref = { assetId: '0b6f6f2e-1111-4222-8333-444455556666', url: 'https://cdn.example.com/a.jpg' }
+
+  it('image, callout, gallery, and a features item all render the ref, and a string still renders', () => {
+    expect(renderToStaticMarkup(<ContentBlockView id="image" props={{ src: ref }} />)).toContain(`src="${ref.url}"`)
+    expect(renderToStaticMarkup(<ContentBlockView id="callout" props={{ title: 'T', image: ref }} />)).toContain(
+      `src="${ref.url}"`,
+    )
+    expect(
+      renderToStaticMarkup(<ContentBlockView id="gallery" props={{ images: [ref, 'https://x/1.jpg'] }} />),
+    ).toContain(`src="${ref.url}"`)
+    expect(
+      renderToStaticMarkup(<ContentBlockView id="features" props={{ items: [{ title: 'A', image: ref }] }} />),
+    ).toContain(`src="${ref.url}"`)
+    expect(renderToStaticMarkup(<ContentBlockView id="image" props={{ src: 'https://x/a.jpg' }} />)).toContain(
+      'src="https://x/a.jpg"',
+    )
+  })
+
+  it('a ref whose cached url is unsafe renders nothing, and a bare object is not a ref', () => {
+    expect(
+      renderToStaticMarkup(<ContentBlockView id="image" props={{ src: { assetId: ref.assetId, url: 'javascript:1' } }} />),
+    ).toBe('')
+    expect(renderToStaticMarkup(<ContentBlockView id="image" props={{ src: { url: ref.url } }} />)).toBe('')
+  })
+})

@@ -150,6 +150,15 @@ resolver, not a table schema): `lib/library/renditions.ts`. Access is **service-
   (`lib/library/resolve-refs.ts`) — fail-open to the cache at every grain, no query at all for a
   ref-free document. 🔴 The refresh decodes nothing and must never import `sharp` (same rule as
   ingest).
+- **The entity-block system holds the same reference** ([ADR-1245](DECISIONS.md)). Its image
+  fields (`url` fields with `upload`, gallery `images`, a Features or Card-grid item's `image`) are
+  `string | AssetRef` too: `sanitizeBlockContent` keeps a well-formed ref in the shape it arrived
+  (bounded id, `safeUrl` on the cached url, `alt` only when present) and drops anything less, and
+  every renderer on that side reads through `safeImageUrl` (`lib/entity-blocks/block-content.ts`),
+  which is `safeUrl` over `assetRefUrl`. A link field never takes the object shape. The pickers
+  there still write a URL string; adopting `onSelectAsset` is `HYG-029`, and the entity layout
+  blob has no refresh-on-load yet (there is no single load function to hang it on, and the cached
+  url is the designed fail-open until a writer stores refs).
 - **One master, many renditions.** Serve web-optimized renditions (thumb/grid/hero/og), never the
   master, in pages and grids. Transforms are on-the-fly against the master.
 - **Non-destructive editing.** Every edit (Recraft op, Vera SVG save, Filerobot recipe) first

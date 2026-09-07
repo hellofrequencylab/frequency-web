@@ -1,5 +1,6 @@
 import { ENTITY_BLOCKS, entityBlockById, type EntityBlockDef } from './registry'
 import { parseEmbedUrl, parseLinkCard } from '@/lib/spotlight/embeds'
+import { assetRefUrl, isAssetRef, type AssetRef, type AssetValue } from '@/lib/library/asset-ref'
 
 // PER-BLOCK AUTHORED CONTENT + STYLE (ADR-528). The freeform grid (ADR-516/526) arranged blocks but their
 // CONTENT was still authored in the Puck Home doc. This module gives every block an inline-editable content
@@ -852,6 +853,40 @@ export function safeUrl(raw: unknown): string {
   }
 }
 
+// ── Image values: a URL string OR an AssetRef (ADR-1245) ────────────────────────────────────────────────
+// The Puck page editor stores a picked Loom image as { assetId, url } (lib/library/asset-ref.ts, ADR-1130)
+// so a later edit of the asset re-points every document that references it. This block system stored a
+// bare URL string, and sanitizeBlockContent coerced every image field through safeUrl, which returns ''
+// for an object: a picker that started writing the ref here did not store a broken reference, it stored
+// NOTHING, and the image vanished on save with no error anywhere (HYG-066). These two functions are the
+// seam: an image field now holds `string | AssetRef`, the sanitizer preserves a well-formed ref with the
+// SAME shape it arrived in, and every renderer reads the URL through safeImageUrl. A legacy string is
+// unchanged on both paths, so no stored document needs rewriting.
+
+/** The renderable, safe URL of a stored image value: a string passes through safeUrl exactly as before; a
+ *  ref yields its cached URL, guarded the same way; anything else is ''. The ONE image read on this side. */
+export function safeImageUrl(raw: unknown): string {
+  return safeUrl(assetRefUrl(raw))
+}
+
+/** Sanitize one stored image value to `string | AssetRef`, or undefined when nothing safe survives. A ref
+ *  is kept ONLY when its id is a bounded string and its cached url passes safeUrl; it comes back with the
+ *  keys it arrived with (`alt` only when present), never re-shaped, so a stored document round-trips
+ *  byte-for-byte. A string is safeUrl as before. Pure + total. */
+function sanitizeImageValue(raw: unknown): AssetValue | undefined {
+  if (isAssetRef(raw)) {
+    const assetId = str(raw.assetId, MAX_LABEL)
+    const url = safeUrl(raw.url)
+    if (!assetId || !url) return undefined
+    const out: AssetRef = { assetId, url }
+    const alt = typeof raw.alt === 'string' ? raw.alt.slice(0, MAX_LABEL) : ''
+    if (alt) out.alt = alt
+    return out
+  }
+  const u = safeUrl(raw)
+  return u || undefined
+}
+
 // ── Inline rich text (Email Studio canvas, Slice A) ─────────────────────────────────────────────────────
 // A `textarea` content field edited on the WYSIWYG email canvas (Tiptap) now stores LIMITED inline HTML, not
 // plain text. This is the ONE sanitizer both the SAVE path and the email RENDERER run, so the stored value
@@ -1072,7 +1107,8 @@ function sanitizeLink(raw: unknown): { label: string; url: string } | null {
  *  offering / event / tier (resolveFeatureSourceItems). */
 export interface SanitizedFeature {
   icon: string
-  image?: string
+  /** A URL string or an AssetRef (ADR-1245); read it through safeImageUrl. */
+  image?: AssetValue
   title: string
   text: string
   price?: string
@@ -1086,7 +1122,8 @@ export interface SanitizedFeature {
  *  round-trip. */
 export interface SanitizedCard {
   icon?: string
-  image?: string
+  /** A URL string or an AssetRef (ADR-1245); read it through safeImageUrl. */
+  image?: AssetValue
   stat?: { value: string; label: string }
   title: string
   text: string
@@ -1104,7 +1141,7 @@ function sanitizeFeature(raw: unknown): SanitizedFeature | null {
   const o = raw as Record<string, unknown>
   const title = str(o.title, MAX_LABEL)
   const text = str(o.text, MAX_TEXT)
-  const image = safeUrl(o.image)
+  const image = sanitizeImageValue(o.image)
   if (!title && !text && !image) return null
   const out: SanitizedFeature = { icon: str(o.icon, 40), title, text }
   if (image) out.image = image
@@ -1126,7 +1163,7 @@ function sanitizeCard(raw: unknown): SanitizedCard | null {
   const title = str(o.title, MAX_LABEL)
   const text = str(o.text, MAX_TEXT)
   const icon = str(o.icon, 40)
-  const image = safeUrl(o.image)
+  const image = sanitizeImageValue(o.image)
   let stat: { value: string; label: string } | undefined
   if (o.stat && typeof o.stat === 'object' && !Array.isArray(o.stat)) {
     const so = o.stat as Record<string, unknown>
@@ -1209,6 +1246,13 @@ export function sanitizeBlockContent(id: string, raw: unknown): Record<string, u
         break
       }
       case 'url': {
+        // An IMAGE field (`upload` on the schema) may hold an AssetRef as well as a URL string (ADR-1245);
+        // the ref is preserved in the shape it arrived. A plain link field is a URL string and nothing else.
+        if (field.upload) {
+          const img = sanitizeImageValue(v)
+          if (img) out[field.key] = img
+          break
+        }
         const u = safeUrl(v)
         if (u) out[field.key] = u
         break
@@ -1280,8 +1324,9 @@ export function sanitizeBlockContent(id: string, raw: unknown): Record<string, u
         break
       }
       case 'images': {
+        // Each gallery entry is a URL string or an AssetRef (ADR-1245); an entry that survives keeps its shape.
         const imgs = Array.isArray(v)
-          ? v.slice(0, MAX_ITEMS).map(safeUrl).filter((u) => u.length > 0)
+          ? v.slice(0, MAX_ITEMS).map(sanitizeImageValue).filter((u): u is AssetValue => u !== undefined)
           : []
         if (imgs.length) out[field.key] = imgs
         break

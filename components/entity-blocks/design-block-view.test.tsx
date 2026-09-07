@@ -182,3 +182,19 @@ describe('the two text design blocks (ADR-571 task 7)', () => {
     expect(isDesignBlock('prose')).toBe(true)
   })
 })
+
+// ADR-1245: a stored image value may be an AssetRef ({ assetId, url }); the view renders its cached url.
+describe('DesignBlockView reads an AssetRef through its cached url (ADR-1245)', () => {
+  const ref = { assetId: '0b6f6f2e-1111-4222-8333-444455556666', url: 'https://cdn.example.com/a.jpg' }
+
+  // The banner + zigzag render through next/image, which URL-encodes the src into a loader query.
+  const mentions = (html: string) => html.includes(ref.url) || html.includes(encodeURIComponent(ref.url))
+
+  it('photoHero, zigzag, and a card-grid card all render the ref', () => {
+    expect(mentions(renderToStaticMarkup(<DesignBlockView id="photoHero" props={{ title: 'T', image: ref }} />))).toBe(true)
+    expect(mentions(renderToStaticMarkup(<DesignBlockView id="zigzag" props={{ title: 'T', image: ref }} />))).toBe(true)
+    expect(
+      renderToStaticMarkup(<DesignBlockView id="cardGrid" props={{ cards: [{ title: 'A', image: ref }] }} />),
+    ).toContain(`src="${ref.url}"`)
+  })
+})

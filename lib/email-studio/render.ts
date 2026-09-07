@@ -13,6 +13,7 @@
 import { resolveRows } from '@/lib/entity-blocks/layout'
 import type { EntityLayout } from '@/lib/entity-blocks/layout'
 import {
+  safeImageUrl,
   safeUrl,
   sanitizeInlineHtml,
   inlineHtmlToText,
@@ -418,7 +419,7 @@ function cardGrid(props: Record<string, unknown>, style: BlockStyle | undefined,
           const stat = (it.stat && typeof it.stat === 'object' ? it.stat : {}) as Record<string, unknown>
           const button = (it.button && typeof it.button === 'object' ? it.button : {}) as Record<string, unknown>
           return {
-            image: safeUrl(it.image),
+            image: safeImageUrl(it.image),
             statValue: typeof stat.value === 'string' ? stat.value : '',
             statLabel: typeof stat.label === 'string' ? stat.label : '',
             title: typeof it.title === 'string' ? it.title : '',
@@ -482,7 +483,7 @@ function cardGrid(props: Record<string, unknown>, style: BlockStyle | undefined,
 function productCard(props: Record<string, unknown>, style: BlockStyle | undefined, colors: EmailColors): Rendered {
   const title = s(props, 'title')
   const price = s(props, 'price')
-  const img = safeUrl(props.image)
+  const img = safeImageUrl(props.image)
   const url = safeUrl(props.url)
   const cta = s(props, 'ctaLabel') || 'View product'
   if (!title && !price && !img) return { html: '', text: '' }
@@ -512,7 +513,7 @@ function productCard(props: Record<string, unknown>, style: BlockStyle | undefin
 function callout(props: Record<string, unknown>, style: BlockStyle | undefined, colors: EmailColors): Rendered {
   const title = s(props, 'title')
   const body = s(props, 'body')
-  const img = safeUrl(props.image)
+  const img = safeImageUrl(props.image)
   const buttonOn = props.buttonOn !== false
   const buttonLabel = s(props, 'buttonLabel')
   const hasButton = !!buttonLabel && buttonOn
@@ -536,7 +537,7 @@ function photoHero(props: Record<string, unknown>, style: BlockStyle | undefined
   const eb = s(props, 'eyebrow')
   const title = s(props, 'title')
   const subtitle = s(props, 'subtitle')
-  const img = safeUrl(props.image)
+  const img = safeImageUrl(props.image)
   const buttonOn = props.buttonOn !== false
   const buttonLabel = s(props, 'buttonLabel')
   const hasButton = !!buttonLabel && buttonOn
@@ -592,7 +593,7 @@ function renderBlockInner(id: string, props: Record<string, unknown>, style: Blo
       }
     }
     case 'image': {
-      const html = image(s(props, 'src'), s(props, 'alt'))
+      const html = image(safeImageUrl(props.src), s(props, 'alt'))
       return { html, text: html ? `[image]` : '' }
     }
     case 'quote': {
