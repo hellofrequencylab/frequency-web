@@ -1,3 +1,6 @@
+// LIVE-190 budget (ADR-1252): 2000 rows per phase (the long-standing SWEEP_CAP, now passed in) per invocation; each phase re-reads its own query next hour and every send is idempotent per member-day, so a cut-off run costs an hour, not a send.
+// The clock is CRON_TIME_BUDGET_MS from lib/cron/budget.ts; app/api/cron/budget.test.ts checks the
+// declaration is applied, not merely written down.
 /**
  * Practice lifecycle cron (ADR-920 Phase 3). Hourly. Two jobs in one pass, both idempotent:
  *
@@ -17,6 +20,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { rejectUnauthorizedCron } from '@/lib/cron-auth'
 import { withCronHeartbeat } from '@/lib/observability/cron-heartbeat'
+import { cronBudget } from '@/lib/cron/budget'
 import { runPracticeLifecycleSweep } from '@/lib/practices/lifecycle'
 import { log } from '@/lib/log'
 
@@ -29,9 +33,14 @@ async function handler(req: NextRequest) {
   const denied = rejectUnauthorizedCron(req)
   if (denied) return denied
 
-  const result = await runPracticeLifecycleSweep()
-  log.info('cron.practice_lifecycle', { ...result })
-  return NextResponse.json({ ok: true, ...result })
+  const budget = cronBudget(2000)
+  const result = await runPracticeLifecycleSweep(new Date(), { limit: budget.items, exhausted: budget.exhausted })
+  const summary = budget.summary(
+    result.completionsRetired + result.remindersSent + result.stalePrompts,
+    result.remaining,
+  )
+  log.info('cron.practice_lifecycle', { ...result, ...summary })
+  return NextResponse.json({ ok: true, ...result, budget: summary })
 }
 
 export const GET = withCronHeartbeat('practice-lifecycle', handler)

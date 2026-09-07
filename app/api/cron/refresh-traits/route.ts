@@ -1,3 +1,6 @@
+// LIVE-190 budget (ADR-1252): 2000 resonance anchors per invocation; the traits half is whole-population by design (two RPCs, batched upserts, no per-member round trip); the embeddings half keeps its own 500 cap; NO cursor on the opted-in read, so a tail past 2000 waits on one. Recorded in the row.
+// The clock is CRON_TIME_BUDGET_MS from lib/cron/budget.ts; app/api/cron/budget.test.ts checks the
+// declaration is applied, not merely written down.
 // Nightly cron — recomputes member_traits from the engagement ledger (ADR-069
 // Phase 2). Called by Vercel Cron (see vercel.json). Requires CRON_SECRET.
 
@@ -8,6 +11,7 @@ import { refreshResonanceEmbeddings } from '@/lib/resonance/embeddings'
 import { refreshResonanceDensityCells } from '@/lib/resonance/density'
 import { rejectUnauthorizedCron } from '@/lib/cron-auth'
 import { withCronHeartbeat } from '@/lib/observability/cron-heartbeat'
+import { cronBudget } from '@/lib/cron/budget'
 import { log } from '@/lib/log'
 
 export const dynamic = 'force-dynamic'
@@ -19,6 +23,7 @@ async function handler(req: NextRequest) {
   // Timed: the primary nightly recompute is the cron's heaviest step, so wrap it
   // in log.time to emit duration_ms + ok queryable by `cron.refresh_traits`. The
   // existing counts line is kept under a `.counts` event for back-compat.
+  const budget = cronBudget(2000)
   const result = await log.time('cron.refresh_traits', () => refreshMemberTraits())
   log.info('cron.refresh_traits.counts', result)
 
@@ -27,7 +32,7 @@ async function handler(req: NextRequest) {
   // writes the resonance_match_count trait from each anchor's edge count. BEST-EFFORT + FAIL-SAFE: a
   // missing table / extension (pre-migration) or any error is swallowed inside refreshResonanceEdges,
   // so the cron always completes the trait refresh even when the graph is absent.
-  const resonance = await refreshResonanceEdges()
+  const resonance = await refreshResonanceEdges({ limitAnchors: budget.items })
   log.info('cron.refresh_resonance_edges', resonance)
 
   // Embedding-retrieval step (ADR-385 Phase 4): refresh one 384-d resonance embedding per opted-in
@@ -57,12 +62,15 @@ async function handler(req: NextRequest) {
     log.info('cron.refresh_resonance_density', resonanceDensityStep)
   }
 
+  const summary = budget.summary(resonance.anchors)
+  log.info('cron.refresh_traits.budget', { ...summary })
   return NextResponse.json({
     ok: true,
     ...result,
     resonance,
     resonanceEmbeddings,
     resonanceDensity: resonanceDensityStep,
+    budget: summary,
   })
 }
 
