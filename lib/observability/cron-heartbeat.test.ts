@@ -158,3 +158,94 @@ describe('withCronHeartbeat — monitor outage never breaks the cron', () => {
     ).rejects.toThrow('handler failure') // not the ping error
   })
 })
+
+// ── LIVE-190 / ADR-1221: the duration instrument, which lives in the seam ──────────────────────
+//
+// The point of putting the timer here rather than in the routes is that no route can be missed.
+// These tests pin the two properties that make the reading trustworthy: the line is emitted on
+// EVERY path (a returned 200, a returned 500, and a throw), and `ok` reads the RESPONSE STATUS
+// rather than "did it throw" — the distinction that rules `log.time` out for this job, since a
+// cron that returns a 500 has not thrown and would have been logged as a success.
+describe('withCronHeartbeat — the cron.run duration instrument', () => {
+  function captureLog() {
+    const lines: Array<{ event: string; fields: Record<string, unknown> }> = []
+    const spy = vi.spyOn(console, 'log').mockImplementation((...args: unknown[]) => {
+      for (const a of args) {
+        if (typeof a !== 'string') continue
+        try {
+          const parsed = JSON.parse(a) as Record<string, unknown>
+          if (typeof parsed.event === 'string') lines.push({ event: parsed.event, fields: parsed })
+        } catch {
+          // Not a structured line; the logger also emits plain text in some modes.
+        }
+      }
+    })
+    return { lines, restore: () => spy.mockRestore() }
+  }
+
+  it('emits one cron.run line with a numeric duration on a 2xx', async () => {
+    const { lines, restore } = captureLog()
+    try {
+      await withCronHeartbeat('process-queue', okRes)(req())
+    } finally {
+      restore()
+    }
+    const run = lines.filter((l) => l.event === 'cron.run')
+    expect(run).toHaveLength(1)
+    expect(run[0].fields.job).toBe('process-queue')
+    expect(run[0].fields.status).toBe(200)
+    expect(run[0].fields.ok).toBe(true)
+    expect(typeof run[0].fields.duration_ms).toBe('number')
+    expect(run[0].fields.duration_ms as number).toBeGreaterThanOrEqual(0)
+  })
+
+  // 🔴 THE CONTROL THAT RULES OUT log.time. A returned 500 is the loudest failure a cron has, and
+  // a timer that decides `ok` by whether the function threw would file it under success.
+  it('marks a RETURNED 500 as not-ok, because it never threw', async () => {
+    const { lines, restore } = captureLog()
+    try {
+      await withCronHeartbeat('weekly-digest', errRes)(req())
+    } finally {
+      restore()
+    }
+    const run = lines.find((l) => l.event === 'cron.run')
+    expect(run?.fields.status).toBe(500)
+    expect(run?.fields.ok, 'a returned 500 is a failed run, not a successful one').toBe(false)
+  })
+
+  it('still emits the line when the handler THROWS, so a run that dies is not lost', async () => {
+    const { lines, restore } = captureLog()
+    const boom = () => {
+      throw new Error('cron blew up')
+    }
+    try {
+      await expect(withCronHeartbeat('season-go-live', boom)(req())).rejects.toThrow('cron blew up')
+    } finally {
+      restore()
+    }
+    const run = lines.find((l) => l.event === 'cron.run')
+    expect(run, 'a throwing cron must still report its duration — that is the reading LIVE-190 wants').toBeDefined()
+    expect(run?.fields.job).toBe('season-go-live')
+    expect(run?.fields.ok).toBe(false)
+    expect(typeof run?.fields.duration_ms).toBe('number')
+  })
+
+  it('a 4xx is reported as not-ok but is still one line, like every other outcome', async () => {
+    const { lines, restore } = captureLog()
+    try {
+      await withCronHeartbeat('nurture', () => new Response('no', { status: 401 }))(req())
+    } finally {
+      restore()
+    }
+    const run = lines.filter((l) => l.event === 'cron.run')
+    expect(run).toHaveLength(1)
+    expect(run[0].fields.status).toBe(401)
+    expect(run[0].fields.ok).toBe(false)
+  })
+
+  it('does not change the handler response or swallow its error', async () => {
+    const res = await withCronHeartbeat('publish-scheduled', okRes)(req())
+    expect(res.status).toBe(200)
+    expect(await res.json()).toEqual({ ok: true })
+  })
+})

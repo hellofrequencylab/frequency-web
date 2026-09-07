@@ -9,6 +9,8 @@
 //   • on FAILURE  → reports the error to Sentry (tagged by job) AND optionally pings
 //                   a per-monitor "/fail" endpoint, then RE-THROWS so Next still
 //                   returns 5xx and the existing run-log behaviour is unchanged.
+//   • ALWAYS      → emits ONE `cron.run` line carrying `job`, `status`, `ok` and
+//                   `duration_ms`, whatever the outcome. See the block on the wrapper.
 //
 // SAFE NO-OP WHEN UNCONFIGURED. With no heartbeat env vars, the success ping is
 // skipped (handler return value is untouched); with no Sentry DSN, the failure
@@ -92,8 +94,36 @@ export function withCronHeartbeat<R extends Request = Request>(
     // failures are filterable. No-op when Sentry is off.
     setObservabilityTags({ route: `cron.${jobName}` })
 
+    // ── THE DURATION INSTRUMENT LIVES HERE, IN THE SEAM, AND THAT IS THE POINT ────────────
+    // LIVE-190 wants a per-invocation work budget for the crons, and its re-scoped first step is
+    // to read DURATION rather than errors: the `Task timed out after 300 seconds` group only fires
+    // at the CEILING, so it can only ever see a cron that has already failed. A cron trending
+    // toward the ceiling is invisible to it.
+    //
+    // `log.time` was already available and EIGHT of twenty-seven routes had adopted it, which is
+    // the shape of an instrument that will never be complete: the nineteen that matter most on a
+    // busy week are exactly the ones nobody remembered to wrap, and a cron added next month starts
+    // uninstrumented again. Putting the timer in the wrapper every cron already goes through makes
+    // the coverage structural, and `scripts/cron-freshness.test.ts` ALREADY fails a scheduled cron
+    // that is not wrapped — so the guard that keeps this universal exists and needed no new gate.
+    //
+    // ⚠️ NOT `log.time(...)` AROUND THE HANDLER, deliberately: it decides `ok` by whether the
+    // function threw, and a cron that RETURNS a 500 has not thrown. That would log the loudest
+    // failure mode as a success. `ok` here reads the response status, the same rule the fail-ping
+    // below already uses.
+    //
+    // The clock stops before the heartbeat ping, which is a network call to a third party and has
+    // nothing to do with how long the job's work took.
+    const startedMs = Date.now()
+
     try {
       const res = await handler(req)
+      log.info('cron.run', {
+        job: jobName,
+        status: res.status,
+        ok: res.status < 400,
+        duration_ms: Date.now() - startedMs,
+      })
       // A 5xx (returned, not thrown) is a job failure → fail-ping. A 4xx is a
       // client/auth problem (e.g. an unauthorized probe rejected by
       // rejectUnauthorizedCron), NOT the job dying — don't fail-ping those, or a
@@ -110,6 +140,15 @@ export function withCronHeartbeat<R extends Request = Request>(
       // endpoint, then RE-THROW so Next returns 5xx and nothing is swallowed.
       Sentry.captureException(err, { tags: { route: `cron.${jobName}`, cron_job: jobName } })
       const message = err instanceof Error ? err.message : String(err)
+      // The same line on the throw path, so a chart of `cron.run` covers every invocation rather
+      // than only the ones that got as far as returning. A run that dies at 280s is the reading
+      // this row most needs and is precisely the one a success-only instrument loses.
+      log.info('cron.run', {
+        job: jobName,
+        status: 500,
+        ok: false,
+        duration_ms: Date.now() - startedMs,
+      })
       log.error('cron.failed', { job: jobName, error: message })
       await pingHeartbeat(jobName, { fail: true })
       throw err
