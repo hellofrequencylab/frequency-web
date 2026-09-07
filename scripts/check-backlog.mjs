@@ -216,6 +216,23 @@ function validate(entries) {
       // way, ran clean, mutation-fired on all five arms, and was still rejected here. Derive the
       // delimiter from the `-e ` that opens the body and complain about THAT character only.
       if (p.cmd) {
+        // 🔴 ASK THE SHELL, not a quote heuristic (2026-09-07). The rule below counts quotes, and
+        // OWN-058 got past it with an unmatched BACKTICK: /bin/sh refused the probe with
+        // "Syntax error: EOF in backquote substitution" and exited 2. Exit 127 (command not found)
+        // and 79 (the probe said it could not look) are both read as indeterminate further down,
+        // but 2 falls through to `status === 0` and becomes a VERDICT of "not done" — an answer
+        // nothing computed, which the row would have reported forever. `sh -n` parses without
+        // executing, so it catches every syntax error the heuristic enumerates plus the ones
+        // nobody thought of. A sweep the day this landed found exactly one offender.
+        const parse = spawnSync('sh', ['-n'], { input: p.cmd, encoding: 'utf8' })
+        if (parse.status !== 0) {
+          problems.push(
+            `${at}: verify.cmd cannot be parsed by the shell (${(parse.stderr ?? '').trim().split('\n')[0]}). ` +
+              `A probe that cannot RUN does not answer "not done" — it answers nothing, and the guard ` +
+              `would read its exit code as a verdict. Fix the syntax; quote the body with single quotes ` +
+              `and use String.fromCharCode(39) or \\x60 where a literal quote or backtick is needed.`,
+          )
+        }
         const opener = /(?:^|\s)-e\s+(['"])/.exec(p.cmd)
         // No `-e '…'`/`-e "…"` at all (a plain shell one-liner) — nothing to say about delimiters.
         if (opener) {

@@ -11,7 +11,7 @@
 // reason: the thing under test is the exit code a workflow will read.
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
-import { execFileSync, execSync } from 'node:child_process'
+import { execFileSync, execSync, spawnSync } from 'node:child_process'
 import { mkdtempSync, writeFileSync, mkdirSync, rmSync, readFileSync, statSync, symlinkSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
@@ -266,6 +266,48 @@ describe('check:backlog — the probe/status contract', () => {
     ])
     const { out } = run(BACKLOG_GUARD, dir)
     expect(out).not.toContain('carries a double quote inside')
+  })
+
+  // ── A PROBE THAT THE SHELL CANNOT PARSE (2026-09-07) ──────────────────────────────────────────
+  //
+  // 🔴 THE QUOTE RULES ABOVE ARE HEURISTICS, AND ONE GOT PAST THEM. OWN-058 shipped a probe with an
+  // unmatched BACKTICK: `/bin/sh` refused it with "Syntax error: EOF in backquote substitution" and
+  // exited 2. check-backlog treats 127 (command not found) and 79 (the probe said it could not look)
+  // as indeterminate, but 2 falls through to `status === 0` and is read as a VERDICT OF "NOT DONE".
+  // So the row reported an honest-looking answer that nothing had computed, and would have gone on
+  // doing so forever — coverage that cannot fire, the exact failure ADR-970 names.
+  //
+  // Asking the SHELL ITSELF is strictly stronger than counting quotes: `sh -n` parses without
+  // executing, so it catches every syntax error the heuristics enumerate plus the ones nobody
+  // thought of. A sweep of every cmd probe on the day this landed found exactly ONE offender, so
+  // this closes a real hole rather than a hypothetical one.
+  it('FAILS a cmd probe the shell cannot even parse', () => {
+    writeBacklog(dir, [
+      ...ballast(),
+      {
+        id: 'UNPARSEABLE',
+        title: 'a probe with an unmatched backtick, as OWN-058 carried',
+        status: 'open',
+        priority: 'P2',
+        lane: 'live',
+        verify: { kind: 'cmd', cmd: 'node -e "process.exit(/x`/.test(1)?0:1)"' },
+      },
+    ])
+    const { code, out } = run(BACKLOG_GUARD, dir)
+    expect(code).toBe(1)
+    expect(out).toMatch(/cannot be parsed by the shell|Syntax error/i)
+  })
+
+  it('EVERY cmd probe in the real backlog parses', () => {
+    // The live assertion, not a fixture: this is what would have caught OWN-058 on the day it shipped.
+    const real = JSON.parse(readFileSync(path.join(ROOT, 'docs/BUILD-BACKLOG.json'), 'utf8'))
+    const broken: string[] = []
+    for (const e of real.entries) {
+      if (e.verify?.kind !== 'cmd' || !e.verify.cmd) continue
+      const r = spawnSync('sh', ['-n'], { input: e.verify.cmd, encoding: 'utf8' })
+      if (r.status !== 0) broken.push(`${e.id}: ${(r.stderr || '').trim().split('\n')[0]}`)
+    }
+    expect(broken, `these probes cannot be parsed by the shell, so they can never answer:\n${broken.join('\n')}`).toEqual([])
   })
 
   it('FAILS a truncated file rather than printing a ✓ over nothing (ADR-962)', () => {
