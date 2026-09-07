@@ -4,7 +4,7 @@ description: Local businesses that back the community. Find them, walk in, and c
 category: membership
 order: 3
 published: 2026-06-09
-updated: 2026-06-10
+updated: 2026-09-07
 audience: member
 featureKeys: [partners]
 status: published
@@ -16,7 +16,7 @@ the mission, and in return members get real, in-person perks.
 
 ## The directory
 
-Open **Partners** from the Zap button or the menu. The page leads with **Offers
+Open **Partners** from the menu, under Connect. The page leads with **Offers
 right now**: every live offer, who gives it, and an **Unlocked** mark on the ones
 you've already claimed in person. Below that sits the full directory; each card
 shows the business, its city, and what kind of place it is. The directory grows
@@ -35,8 +35,8 @@ community, so the perk lives in the real world too:
 
 1. Show up at the partner's location.
 2. **Tap their plaque** (NFC) with your phone, or scan their code: the in-app
-   scanner is on the Partners page (or hit Check In in the Zap menu); your
-   phone's own camera works too.
+   scanner is one tap from the Partners page, and your phone's own camera works
+   too.
 3. You claim the offer at the counter and pick up **Zaps** for showing up.
 
 See [QR codes & checking in](/help/the-quest/qr-check-ins) for how scanning works in
