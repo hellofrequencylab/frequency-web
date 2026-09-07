@@ -58,8 +58,10 @@ drift apart: `spark` (guided creation) · `inline` (ADR-450's inline canvas) · 
 (ADR-450's Inspector, the default). Same declaration, filtered three ways. The Spark reads
 `sparkFields()`; a rail form reads `railForm(manifest, writes)` from
 `lib/studio/kernel/edit-plan.ts` (ADR-1240) and declares only the columns its save action
-writes. As of 2026-09-07 the Practice rail derives this way; `HYG-050` in the backlog is the
-record of which rails still hand-declare.
+writes. As of 2026-09-07 the Practice (ADR-1240) and Journey (ADR-1246) rails derive this way;
+`HYG-050` in the backlog is the record of which rails still hand-declare. A rail whose actions
+take JSON patches (the Journey's) keeps its column-to-key maps beside the plan, restating each
+action's signature once where a test holds it against the manifest.
 
 ## 1. The shell (built, keep it)
 

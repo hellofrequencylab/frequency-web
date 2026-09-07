@@ -16,9 +16,13 @@
 //
 // FIELD PATHS mirror what is really persisted:
 //   * `journey_plans` columns (lib/journey-plans.ts `JourneyPlan` + the ADR-302 attribute
-//     migration): title, summary, intro, emoji, accent, cover_image, difficulty, category,
-//     tags, daily_minutes, enroll_cap, completion_gems, drip_interval_days,
-//     certificate_enabled, visibility, status, official, source_overview.
+//     migration): title, summary, intro, emoji, accent, cover_image, logo_image,
+//     header_overlay_style, header_overlay_color, difficulty, category, tags, daily_minutes,
+//     enroll_cap, completion_gems, drip_interval_days, certificate_enabled, visibility, status,
+//     official, source_overview. The three header columns joined on 2026-09-07 (ADR-1246): the
+//     Inspector rail had persisted them for a year while the manifest was silent, which is the
+//     drift ADR-1240 exists to make visible. `cover_focus` is deliberately NOT a field: a focal
+//     point is a property of the cover image's control, not a thing an author fills in.
 //   * the `meeting` jsonb (JourneyMeeting): the FLAT fields are the Circle Meetup, the nested
 //     `gathering` is the Weekend Gathering. Both normalize through normalizeJourneyMeeting.
 //   * `answers.*` and `arc[]` are the CREATION payload (createJourneyFromSparkAction), not
@@ -117,6 +121,27 @@ export const JOURNEY_MANIFEST: EntityManifest = {
     // An accent TOKEN name, not a hex (lib/studio/accents.ts). The `color` control offers swatches.
     { path: 'accent', label: 'Accent', kind: 'color', section: 'identity', omitWhenEmpty: true },
     { path: 'cover_image', label: 'Cover image', kind: 'image', section: 'identity', omitWhenEmpty: true },
+    // The square leading mark beside the title. A Loom pick, never drafted.
+    { path: 'logo_image', label: 'Logo or profile image', kind: 'image', section: 'identity', omitWhenEmpty: true, veraDrafts: false },
+    // How the cover is treated behind the title (ADR-794): None keeps a clean photo, Shade darkens
+    // it, Blend fades it into the page. The column default is `shadow`, so an unset row reads as Shade
+    // and the choice is never "unset". Mirrors updatePlan's own guard (lib/journey-plans.ts).
+    {
+      path: 'header_overlay_style',
+      label: 'Header overlay',
+      kind: 'select',
+      section: 'identity',
+      veraDrafts: false,
+      options: [
+        { value: 'none', label: 'None' },
+        { value: 'shadow', label: 'Shade' },
+        { value: 'fade', label: 'Blend' },
+      ],
+      read: (d) => str(d.header_overlay_style) || 'shadow',
+    },
+    // STRICTLY a hex: it renders into a CSS color-mix on the public header, and updatePlan drops
+    // anything else to null. Empty means the overlay's own default for its style.
+    { path: 'header_overlay_color', label: 'Overlay color', kind: 'color', section: 'identity', omitWhenEmpty: true, veraDrafts: false },
     { path: 'slug', label: 'Slug', kind: 'slug', section: 'identity', omitWhenEmpty: true },
 
     // ── Promise and overview. The content that IS the page, so it edits in place. ──
