@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { isJourneyFinished } from './completion'
 import { QUEST } from '@/lib/gamification'
@@ -50,11 +52,15 @@ describe('rankForCompletion (completions → rank)', () => {
 })
 
 describe('QUEST reward constants', () => {
-  it('pays the documented finish purse + escalating Gem bonus', () => {
+  it('pays the documented finish purse, and no Gem ladder with it', () => {
     expect(QUEST.JOURNEY_FINISH_ZAPS).toBe(75)
-    expect(QUEST.JOURNEY_GEM_BONUS.initiate).toBe(25)
-    expect(QUEST.JOURNEY_GEM_BONUS.adept).toBe(50)
-    expect(QUEST.JOURNEY_GEM_BONUS.master).toBe(100)
+    // LIVE-185: finishing a Journey pays +75 Zaps and a Pillar Trophy, full stop (ADR-305,
+    // docs/NAMING.md §Economy). The v2 escalating per-Journey Gem ladder (initiate 25 /
+    // adept 50 / master 100) is RETIRED, so the completion path must not read it. This
+    // asserts the SOURCE has no reference left; the behavioural pin (no Gem grant, no Gem
+    // ledger row on a finish) lives in lib/quest/complete.test.ts.
+    const complete = readFileSync(join(__dirname, 'complete.ts'), 'utf8')
+    expect(complete).not.toContain('JOURNEY_GEM_BONUS')
   })
 
   it('pays the Expression Challenge by mode (Circle Zaps / online Gems)', () => {

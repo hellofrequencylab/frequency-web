@@ -138,6 +138,7 @@ import { tryCompleteJourney } from '@/lib/quest/complete'
 
 const ZAPS_KEY = `journey.finish.zaps:${PROFILE}:${JOURNEY}:1`
 const zapGrants = () => tbl('reward_grants').filter((r) => r.rule_key === ZAPS_KEY)
+const gemGrants = () => tbl('reward_grants').filter((r) => r.reward_kind === 'gems')
 
 beforeEach(() => {
   for (const k of Object.keys(store)) delete store[k]
@@ -151,6 +152,22 @@ beforeEach(() => {
   store.profiles = [{ id: PROFILE, current_season_rank: 'ghost', lifetime_rank: 'ghost', handle: null }]
   hoisted.awardZapsForAction.mockClear()
   hoisted.awardZapsForAction.mockResolvedValue({ awarded: true, amount: 75 })
+})
+
+// The RETIRED v2 escalating per-Journey Gem ladder (Initiate 25 / Adept 50 / Master 100).
+// docs/NAMING.md §Economy and ADR-305 both retire it: finishing a Journey pays +75 Zaps and a
+// Pillar Trophy, and recognition rides Trophies + the Certificate. The completion path paid the
+// ladder anyway until LIVE-185, so a member finishing their third Journey banked 100 Gems the
+// canon, /the-quest and the help center never promised (200 with the Certificate's own 100).
+// This pins the payout to the canon: the finish pays Zaps and a Trophy, and NO Gems.
+describe('tryCompleteJourney — the retired Gem ladder is not paid', () => {
+  it('pays no Gems on a fresh completion (initiate)', async () => {
+    const r = await tryCompleteJourney(PROFILE, JOURNEY)
+    expect(r.completed).toBe(true)
+    expect(r.rank).toBe('initiate')
+    expect(gemGrants()).toEqual([]) // no journey.finish.gems claim
+    expect(tbl('gem_transactions')).toEqual([]) // and nothing in the Gem ledger
+  })
 })
 
 describe('tryCompleteJourney — journey-finish purse (C5)', () => {

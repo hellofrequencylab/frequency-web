@@ -39,6 +39,13 @@
 // here is that YYYY-MM-DD key, compared as a string (lexicographic order is chronological order for
 // a zero-padded ISO day) and stepped with UTC arithmetic. No timezone library is involved, which is
 // also what keeps this module importable from the client grid.
+//
+// ONE EXCEPTION, and it is deliberate: `recurrence_until` is an INSTANT, not a day, and is compared
+// as one (see `stepInstant`). ADR-807 rules that it "resolves through the zone to the same instant
+// the RRULE `UNTIL` carries", and both recurrence mirrors plus the published .ics feeds already
+// bound the series there. Comparing it at day granularity is what made the strip chip an occurrence
+// nothing materialises (found by the parity gate, ADR-1206; closed as LIVE-154). Everything this
+// module RETURNS is still a day key.
 
 import { isSeriesCadence, seriesKey, type SeriesRow } from './series'
 
@@ -132,6 +139,45 @@ function stepKey(startKey: string, cadence: string, step: number): string {
   return utcToKey(new Date(Date.UTC(year, month, day)))
 }
 
+/**
+ * The occurrence INSTANT `step` cadence-steps after `start`, stepped with exactly the maths both
+ * recurrence mirrors use (`occurrenceAt` in lib/event-recurrence.ts and lib/events/recurrence.ts):
+ * UTC-parts arithmetic from the series start, monthly clamped to the target month's length from
+ * the ORIGINAL day, wall-clock carried through untouched.
+ *
+ * It exists for ONE job: comparing an occurrence against `recurrence_until`, which is an INSTANT
+ * and not a day. ADR-807 (the calendar feeds) rules that "`recurrence_until` resolves through the
+ * zone to the same instant the RRULE `UNTIL` carries", and the published feeds ship that today.
+ * The strip used to compare `until` at DAY granularity, so a 7 pm weekly series whose form-entered
+ * end date stores as `YYYY-MM-DDT00:00:00Z` kept one chip past the last occurrence either mirror
+ * materialises or announces (LIVE-154). Everything the strip OUTPUTS is still a day key; only the
+ * bound is measured at the instant.
+ */
+function stepInstant(start: Date, cadence: string, step: number): Date {
+  if (cadence === 'daily' || cadence === 'weekly') {
+    const d = new Date(start)
+    d.setUTCDate(d.getUTCDate() + step * (cadence === 'weekly' ? 7 : 1))
+    return d
+  }
+  // monthly
+  const originalDay = start.getUTCDate()
+  const totalMonths = start.getUTCMonth() + step
+  const year = start.getUTCFullYear() + Math.floor(totalMonths / 12)
+  const month = ((totalMonths % 12) + 12) % 12
+  const day = Math.min(originalDay, daysInUTCMonth(year, month))
+  return new Date(
+    Date.UTC(
+      year,
+      month,
+      day,
+      start.getUTCHours(),
+      start.getUTCMinutes(),
+      start.getUTCSeconds(),
+      start.getUTCMilliseconds(),
+    ),
+  )
+}
+
 const WEEKDAY_PLURALS = ['Sundays', 'Mondays', 'Tuesdays', 'Wednesdays', 'Thursdays', 'Fridays', 'Saturdays']
 
 /**
@@ -154,6 +200,12 @@ export function cadenceChipLabel(cadence: string | null | undefined, referenceDa
  * The future day keys a series lands on, computed from its anchor. Returns keys STRICTLY AFTER
  * `afterDayKey` and at or before `throughDayKey`, stopping at `recurrence_until`. Empty for a
  * cadence this model does not have, an unparseable anchor, or a series that has already ended.
+ *
+ * The window bounds are DAY keys (that is what the grid asks in), but `recurrence_until` is an
+ * INSTANT and is compared as one — byte-for-byte the rule both mirrors and the .ics feeds apply,
+ * so the strip can never chip a date that is never materialised (LIVE-154, ADR-807). A series
+ * whose anchor or `until` cannot be parsed as an instant falls back to the day comparison rather
+ * than losing its bound altogether.
  */
 export function computeSeriesDayKeys(
   anchor: Pick<RepeatAnchorRow, 'starts_at' | 'recurrence_type' | 'recurrence_until'>,
@@ -164,11 +216,18 @@ export function computeSeriesDayKeys(
   const startKey = dayKeyOf(anchor.starts_at)
   if (!startKey) return []
   const untilKey = dayKeyOf(anchor.recurrence_until ?? null)
+  const startInstant = new Date(anchor.starts_at ?? '')
+  const untilMs = anchor.recurrence_until ? new Date(anchor.recurrence_until).getTime() : NaN
+  // Compare at the instant whenever both ends parse; otherwise fall back to the day bound, which
+  // is still better than no bound at all.
+  const boundAtInstant = !Number.isNaN(untilMs) && !Number.isNaN(startInstant.getTime())
   const out: string[] = []
   for (let step = 0; step <= MAX_STEPS; step++) {
     const key = stepKey(startKey, cadence as string, step)
     if (key > opts.throughDayKey) break
-    if (untilKey && key > untilKey) break
+    if (boundAtInstant) {
+      if (stepInstant(startInstant, cadence as string, step).getTime() > untilMs) break
+    } else if (untilKey && key > untilKey) break
     if (key > opts.afterDayKey) out.push(key)
   }
   return out
