@@ -546,42 +546,61 @@ export async function hasTicket(eventId: string, profileId: string): Promise<boo
   return !!data
 }
 
-/** Bump a tier's `sold` by `delta` (service role). Re-reads then writes — low
- *  volume. Atomic `sold = sold + delta` (clamped ≥ 0) via the adjust_ticket_sold
- *  RPC, so concurrent webhooks can't lose an increment (audit M1). */
-// L6-15 (2026-09-05): the bump's RESULT is now checked and retried, and its failure is logged with the
-// tier + delta + ticket so a drift is at least visible; before this the RPC's error was discarded, so a
-// single unavailable call (or a crash between the flip and the bump) under-counted `sold` forever and
-// nothing ever said so. WHY the flip and the bump are still two statements: PostgREST cannot update two
-// tables in one request and no RPC exists that settles a ticket (flip pending -> succeeded and bump
-// `sold` in one transaction); this lane adds no migration. Capacity itself is safe either way:
-// reserve_ticket_atomic counts event_tickets rows, not `sold` (migration 20260930000000), so the
-// consequence of a crash in the gap is the displayed "N/M sold" under-counting by one qty. The exact
-// fix is a `settle_ticket_atomic(session_id, payment_intent_id)` RPC that does both under one
-// transaction, with this function's caller collapsing to a single call; until then the reconcile is
-//   update event_ticket_types t set sold = coalesce((select sum(qty) from event_tickets
-//     where ticket_type_id = t.id and status = 'succeeded'), 0)
-// which is safe to run at any time because `sold` is derived, never authoritative.
-const ADJUST_SOLD_ATTEMPTS = 2
+/** The row a settle or a refund RPC hands back: exactly the columns the two recorders below need
+ *  to write the ledger, the CRM contact, and the log line. */
+interface SettledTicketRow {
+  id: string
+  event_id: string
+  ticket_type_id: string | null
+  qty: number
+  entity_id: string
+  platform_fee_cents: number
+  buyer_profile_id: string | null
+  currency: string
+}
 
-async function adjustTierSold(ticketTypeId: string, delta: number, ctx: { ticketId?: string } = {}): Promise<boolean> {
-  if (!ticketTypeId || delta === 0) return true
-  let lastError: { message: string } | null = null
-  for (let attempt = 0; attempt < ADJUST_SOLD_ATTEMPTS; attempt++) {
-    const { error } = await (db()).rpc('adjust_ticket_sold', {
-      p_tier_id: ticketTypeId,
-      p_delta: delta,
+/**
+ * Flip a ticket AND move its tier's `sold` in ONE statement (LIVE-161, migrations
+ * 20270345001700). Returns the rows this call actually flipped -- empty on a redelivered event.
+ *
+ * WHAT THIS REPLACED, AND WHY THE REPLACEMENT IS NOT COSMETIC. The settle used to be an
+ * `update event_tickets ... where status = 'pending'` followed by a SECOND request to
+ * `adjust_ticket_sold(tier, +qty)`. Both halves were individually safe -- the RPC did
+ * `sold = greatest(0, sold + delta)` so concurrent bumps could not lose an increment, and the
+ * `pending` predicate made a redelivered webhook flip nothing and bump nothing. The GAP between
+ * them was the defect: a crash, a timeout or an unavailable second call after a successful flip
+ * left the ticket sold and `sold` short FOREVER, because the flip is exactly-once and nothing
+ * re-enters. L6-15 added a retry and an error log, which made that drift visible; no number of
+ * retries closes a window that exists between two round trips.
+ *
+ * Now the flip and the bump are one transaction, so there is no interval in which a ticket is
+ * succeeded and its tier has not counted it, and the bump is derived from the rows the same
+ * statement returned rather than inferred across a gap.
+ *
+ * NOT RETRIED, deliberately. The RPC is idempotent, but a call that COMMITS and then loses its
+ * response would return zero rows on a retry -- and zero rows is how this function says "somebody
+ * else settled it", which would skip the ledger row. That was already true of the bare flip, so
+ * this keeps the semantics and logs instead. `sold` is derived, never authoritative (capacity is
+ * counted from event_tickets rows by reserve_ticket_atomic, migration 20260930000000), and the
+ * reconcile below is safe to run at any time:
+ *   update event_ticket_types t set sold = coalesce((select sum(qty) from event_tickets
+ *     where ticket_type_id = t.id and status = 'succeeded'), 0)
+ */
+function flippedRows(
+  fn: 'settle_ticket_atomic' | 'refund_ticket_atomic',
+  args: Record<string, string | null>,
+  result: { data: unknown; error: { message: string } | null },
+): SettledTicketRow[] {
+  if (result.error) {
+    // One transaction: a failure flipped nothing and moved no `sold`, so the ticket is untouched
+    // and a Stripe redelivery can settle it cleanly. Loud, because nothing here retries.
+    console.error(`[tickets] ${fn} failed; the ticket was NOT flipped and its tier was NOT moved`, {
+      args,
+      error: result.error.message,
     })
-    if (!error) return true
-    lastError = error
+    return []
   }
-  console.error('[tickets] adjust_ticket_sold failed; event_ticket_types.sold is now off by this delta', {
-    ticketTypeId,
-    delta,
-    ticketId: ctx.ticketId ?? null,
-    error: lastError?.message ?? null,
-  })
-  return false
+  return (result.data ?? []) as SettledTicketRow[]
 }
 
 /** Mark the ticket behind a completed Checkout session as succeeded (idempotent),
@@ -592,27 +611,15 @@ export async function recordTicketFromSession(session: Stripe.Checkout.Session):
   if (session.payment_status !== 'paid') return
   const paymentIntentId =
     typeof session.payment_intent === 'string' ? session.payment_intent : session.payment_intent?.id ?? null
-  // Only advance pending → succeeded; `.select()` returns the rows we actually
-  // flipped, so a redelivered event (already succeeded) updates nothing and the
-  // sold-count bump below is skipped — idempotent.
-  const { data: updated } = await db()
-    .from('event_tickets')
-    .update({ status: 'succeeded', succeeded_at: new Date().toISOString(), stripe_payment_intent_id: paymentIntentId })
-    .eq('stripe_checkout_session_id', session.id)
-    .eq('status', 'pending')
-    .select('id, event_id, ticket_type_id, qty, entity_id, platform_fee_cents, buyer_profile_id, currency')
-  const rows = (updated ?? []) as {
-    id: string
-    event_id: string
-    ticket_type_id: string | null
-    qty: number
-    entity_id: string
-    platform_fee_cents: number
-    buyer_profile_id: string | null
-    currency: string
-  }[]
+  // Only advance pending → succeeded, and count the sale on the tier in the same transaction.
+  // The RPC returns the rows it actually flipped, so a redelivered event (already succeeded)
+  // flips nothing, bumps nothing, and lands here with an empty list — idempotent.
+  // The RPC name is written out at the call site, not passed through a variable: check:schema-contract
+  // resolves `.rpc('<literal>')` against the generated types and SKIPS a dynamic one, and a phantom
+  // RPC on an untyped client fails at runtime, not at tsc (ADR-1207).
+  const settleArgs = { _session_id: session.id, _payment_intent_id: paymentIntentId }
+  const rows = flippedRows('settle_ticket_atomic', settleArgs, await db().rpc('settle_ticket_atomic', settleArgs))
   for (const row of rows) {
-    if (row.ticket_type_id) await adjustTierSold(row.ticket_type_id, row.qty ?? 1, { ticketId: row.id })
     // A BUYER IS A CONTACT (ADR-913). This is what makes "we charge once for the introduction" true:
     // the first sale from someone Frequency sourced is network-rated, this records the relationship,
     // and every later sale to that person resolves to their own audience at 0%.
@@ -786,23 +793,11 @@ export async function refundTicket(ticketId: string, eventId: string): Promise<R
  *  that is currently `succeeded`, so a redelivered event decrements `sold` once. */
 export async function recordTicketRefund(paymentIntentId: string | null): Promise<void> {
   if (!paymentIntentId) return
-  const { data: updated } = await db()
-    .from('event_tickets')
-    .update({ status: 'refunded', refunded_at: new Date().toISOString() })
-    .eq('stripe_payment_intent_id', paymentIntentId)
-    .eq('status', 'succeeded')
-    .select('id, ticket_type_id, qty, entity_id, platform_fee_cents, buyer_profile_id, currency')
-  const rows = (updated ?? []) as {
-    id: string
-    ticket_type_id: string | null
-    qty: number
-    entity_id: string
-    platform_fee_cents: number
-    buyer_profile_id: string | null
-    currency: string
-  }[]
+  // succeeded → refunded and the seat goes back to the tier in ONE statement (LIVE-161), so a
+  // refunded ticket can never leave `sold` overstated because the second request never ran.
+  const refundArgs = { _payment_intent_id: paymentIntentId }
+  const rows = flippedRows('refund_ticket_atomic', refundArgs, await db().rpc('refund_ticket_atomic', refundArgs))
   for (const row of rows) {
-    if (row.ticket_type_id) await adjustTierSold(row.ticket_type_id, -(row.qty ?? 1), { ticketId: row.id })
     // Reverse the entity's recorded revenue (a negative 'refund' row). Idempotent per
     // ticket; best-effort. Keeps the ledger an accurate net of the partition.
     await recordFinancialTransaction({

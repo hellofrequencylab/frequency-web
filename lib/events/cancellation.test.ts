@@ -44,6 +44,20 @@ vi.mock('@/lib/finance/record', () => ({
 vi.mock('@/lib/supabase/admin', () => ({
   createAdminClient: () => ({
     auth: { admin: { getUserById: async (id: string) => ({ data: { user: { email: `${id}@example.com` } } }) } },
+    // LIVE-161 moved the refund flip and the tier give-back into ONE database statement, so the
+    // path this file drives now goes through an RPC instead of a table update. The assertions below
+    // are unchanged because the BEHAVIOUR is unchanged — a succeeded ticket becomes refunded exactly
+    // once — so the mock models the RPC's contract rather than the assertions being relaxed:
+    // flip only `succeeded` rows matching the PaymentIntent, and return exactly the rows flipped
+    // (empty on a redelivery, which is how the caller knows somebody else already refunded it).
+    rpc: async (fn: string, args: Record<string, unknown>) => {
+      if (fn !== 'refund_ticket_atomic') return { data: [], error: null }
+      const flipped = [...m.ticketById.values()].filter(
+        (t) => t.stripe_payment_intent_id === args._payment_intent_id && t.status === 'succeeded',
+      )
+      for (const t of flipped) t.status = 'refunded'
+      return { data: flipped, error: null }
+    },
     from: (table: string) => {
       if (table === 'events') {
         return {
