@@ -625,6 +625,7 @@ lib/gems.ts
 lib/growth/host-prompts.ts
 lib/growth/nearby-practice.ts
 lib/importer/harvest/media.ts
+lib/importer/harvest/staging-lifecycle.ts
 lib/importer/materialize.ts
 lib/importer/store.ts
 lib/journey-plans.ts
