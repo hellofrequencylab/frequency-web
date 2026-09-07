@@ -147,16 +147,36 @@ export async function reconcileSpacePlanSubscription(sub: Stripe.Subscription): 
   const spaceWriter = db as unknown as {
     from: (t: string) => {
       select: (c: string) => {
-        eq: (c: string, val: string) => { maybeSingle: () => Promise<{ data: { stripe_subscription_id?: string | null } | null }> }
+        eq: (c: string, val: string) => {
+          maybeSingle: () => Promise<{
+            data: { stripe_subscription_id?: string | null } | null
+            error: { message?: string } | null
+          }>
+        }
       }
       update: (v: Record<string, unknown>) => { eq: (c: string, val: string) => Promise<{ error: unknown }> }
     }
   }
-  const { data: priorSpace } = await spaceWriter
+
+  // DIRECTION — NEITHER; RETRY (SCAN-539). A PostgREST error arrives in `error`, not as a throw, so an
+  // unchecked read left `priorSubscriptionId` null and the lapse guard below silently answered "this
+  // Space is not on this subscription" — a canceled subscription never lapsed founding, and the Space
+  // kept a lifetime locked rate it had stopped paying for. Both guesses are wrong in a way nobody sees:
+  // guessing "lapse" strips a hand-recorded cash founder's permanent badge on an unrelated event, and
+  // guessing "keep" is the bug this row names, and it is PERMANENT because a canceled subscription
+  // emits no further events to re-decide on. So we do not guess: we throw. This function only runs
+  // from the Stripe webhook, which releases its idempotency claim and returns 500 on a throw, so Stripe
+  // redelivers and the whole reconcile (idempotent by construction) re-runs against a readable row.
+  // Thrown BEFORE the update below, so the prior id the retry needs is still intact.
+  const { data: priorSpace, error: priorSpaceErr } = await spaceWriter
     .from('spaces')
     .select('stripe_subscription_id')
     .eq('id', spaceId)
     .maybeSingle()
+  if (priorSpaceErr) {
+    console.error('[space-subscriptions] prior subscription id unreadable for', spaceId, priorSpaceErr)
+    throw new Error(`space ${spaceId}: prior stripe_subscription_id unreadable, retry the event`)
+  }
   const priorSubscriptionId = priorSpace?.stripe_subscription_id ?? null
 
   await spaceWriter

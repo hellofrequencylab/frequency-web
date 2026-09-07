@@ -243,11 +243,21 @@ export async function createSpaceLoadoutCheckout(
     // so `owner` came back null and BOTH values below stayed undefined — the owner's saved
     // stripe_customer_id was never reused (duplicate Stripe customers on every repeat checkout)
     // and the session was created with no customer_email to prefill.
-    const { data: owner } = await db
+    //
+    // DIRECTION — FAIL CLOSED (SCAN-539). That 42703 bug is the same shape as this one: the failure
+    // arrives in `error`, not as a throw, so an unchecked read is indistinguishable from "this owner has
+    // no customer yet" and mints a DUPLICATE Stripe customer on every repeat checkout, permanently
+    // splitting the Space's billing history across two customers. Refusing (null) costs one retryable
+    // checkout; an owner who genuinely has no customer row yet still proceeds on customer_email.
+    const { data: owner, error: ownerErr } = await db
       .from('profiles')
       .select('stripe_customer_id')
       .eq('id', space.owner_profile_id)
       .maybeSingle()
+    if (ownerErr) {
+      console.error('[space-plan-checkout] owner stripe_customer_id unreadable, refusing checkout:', ownerErr.message)
+      return null
+    }
     customer = (owner as { stripe_customer_id?: string | null } | null)?.stripe_customer_id ?? undefined
     ownerEmail = (await profileAccountEmail(space.owner_profile_id)) ?? undefined
   }

@@ -53,11 +53,22 @@ export async function createMembershipCheckout(opts: {
   // exactly the "charged a number they never chose" failure this path exists to prevent.
   if (chosen === null) return null
 
-  const { data: profile } = await createAdminClient()
+  // DIRECTION — FAIL CLOSED (SCAN-539). A PostgREST error arrives in `error`, not as a throw, so an
+  // unchecked read left `profileRow` null and the session below was minted with NO customer, which makes
+  // Stripe create a BRAND NEW customer for a member who already has one. That is not a degraded read, it
+  // is a permanent split identity: the member's subscriptions, invoices, payment methods and billing
+  // portal end up on two customers, and nothing after the fact can tell which is theirs. Refusing (null,
+  // the function's existing default-deny arm) costs a retryable upgrade click. A member who genuinely has
+  // no customer yet (`data === null`, no error) still checks out with customer_email, as before.
+  const { data: profile, error: profileErr } = await createAdminClient()
     .from('profiles')
     .select('stripe_customer_id')
     .eq('id', opts.profileId)
     .maybeSingle()
+  if (profileErr) {
+    console.error('[billing] stripe_customer_id unreadable, refusing checkout:', profileErr.message)
+    return null
+  }
   const profileRow = profile as { stripe_customer_id?: string | null } | null
 
   // The stable Crew Product, so the ad-hoc PWYW prices every checkout mints roll up under ONE product
@@ -217,11 +228,21 @@ export async function recordMembershipDuesFromInvoice(invoice: Stripe.Invoice): 
 /** Open the Stripe billing portal for a member to manage/cancel; returns the URL. */
 export async function createBillingPortal(profileId: string): Promise<string | null> {
   if (!stripe) return null
-  const { data: profile } = await createAdminClient()
+  // DIRECTION — FAIL CLOSED, LOUDLY (SCAN-539). There is no other direction available: without a customer
+  // id there is no portal to open, so an unreadable read can only return null. What changes is that it is
+  // no longer SILENT and no longer indistinguishable from "this member has no billing to manage" — the
+  // read error is logged, because a paying member being told they have nothing to manage (and so being
+  // unable to cancel) is a support incident that otherwise leaves no trace anywhere.
+  const { data, error } = await createAdminClient()
     .from('profiles')
     .select('stripe_customer_id')
     .eq('id', profileId)
     .maybeSingle()
+  if (error) {
+    console.error('[billing] stripe_customer_id unreadable, cannot open billing portal:', error.message)
+    return null
+  }
+  const profile = data
   if (!profile?.stripe_customer_id) return null
 
   const session = await stripe.billingPortal.sessions.create({

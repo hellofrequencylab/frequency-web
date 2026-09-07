@@ -13,7 +13,14 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 // checkout charges the CATALOG key on both sides of the 2026-09-01 cutover, never the legacy
 // `<plan>_<period>` product, and stamps the metadata the webhook reconciles on.
 
-const { created, beta, flags, grant, lock } = vi.hoisted(() => ({
+const { created, beta, flags, grant, lock, db } = vi.hoisted(() => ({
+  /** SCAN-539: the Space row's own customer id (null forces the OWNER profile read), and whether that
+   *  owner read fails. A PostgREST failure arrives in `error`, not as a throw. */
+  db: {
+    spaceCustomerId: 'cus_1' as string | null,
+    ownerCustomerId: 'cus_owner' as string | null,
+    ownerReadError: null as { message: string } | null,
+  },
   created: [] as { line_items: { price: string; quantity: number }[]; metadata: Record<string, string> }[],
   beta: { active: true },
   /** ADR-1061: does THIS Space carry the private per-Space beta price grant? */
@@ -44,18 +51,34 @@ vi.mock('./stripe', () => ({
 }))
 
 vi.mock('@/lib/supabase/admin', () => ({
-  createAdminClient: () => ({
-    from: () => ({
-      select: () => ({
-        eq: () => ({
-          maybeSingle: () =>
-            Promise.resolve({
-              data: { id: 'space-1', owner_profile_id: 'p-1', slug: 'aset', stripe_customer_id: 'cus_1', seat_quantity: 0 },
-            }),
-        }),
-      }),
-    }),
-  }),
+  createAdminClient: () => {
+    let table = ''
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const b: any = {
+      from: (t: string) => {
+        table = t
+        return b
+      },
+      select: () => b,
+      eq: () => b,
+      maybeSingle: () =>
+        Promise.resolve(
+          table === 'profiles'
+            ? { data: db.ownerReadError ? null : { stripe_customer_id: db.ownerCustomerId }, error: db.ownerReadError }
+            : {
+                data: {
+                  id: 'space-1',
+                  owner_profile_id: 'p-1',
+                  slug: 'aset',
+                  stripe_customer_id: db.spaceCustomerId,
+                  seat_quantity: 0,
+                },
+                error: null,
+              },
+        ),
+    }
+    return b
+  },
 }))
 
 vi.mock('@/lib/pricing/settings', () => ({
@@ -95,6 +118,10 @@ beforeEach(() => {
   beta.active = true
   grant.granted = false
   lock.priceId = null
+  db.spaceCustomerId = 'cus_1'
+  db.ownerCustomerId = 'cus_owner'
+  db.ownerReadError = null
+  vi.spyOn(console, 'error').mockImplementation(() => {}).mockClear()
 })
 
 describe('the Space plan checkout charges the CATALOG key, never the legacy plan product', () => {
@@ -180,5 +207,28 @@ describe('a granted Space checks out at the founding rate while everyone else pa
     await createSpaceLoadoutCheckout('space-1', { plan: 'collective', interval: 'month' })
     expect(ungranted).toEqual(['price_collective_base_month'])
     expect(prices()).toEqual(ungranted)
+  })
+})
+
+// SCAN-539 — the OWNER's stripe_customer_id read, reached whenever the Space itself has no customer
+// id yet. Unchecked, a PostgREST failure read exactly like "this owner has no customer either", the
+// session was created with no `customer`, and Stripe minted a DUPLICATE customer on every repeat
+// checkout, permanently splitting the Space's billing history in two. DIRECTION: FAIL CLOSED — refuse.
+// One retryable checkout is cheaper than a split identity nothing after the fact can untangle. The
+// file already carries the sibling failure of this exact read (the `profiles.email` 42703 comment).
+describe('createSpaceLoadoutCheckout — an unreadable owner stripe_customer_id (SCAN-539)', () => {
+  const loadout = { plan: 'business' as const, interval: 'month' as const }
+
+  it('refuses rather than minting a duplicate Stripe customer', async () => {
+    db.spaceCustomerId = null
+    db.ownerReadError = { message: '57014 statement timeout' }
+    expect(await createSpaceLoadoutCheckout('space-1', loadout)).toBeNull()
+    expect(created).toHaveLength(0)
+  })
+
+  it('still sells on a clean owner read, reusing the owner customer', async () => {
+    db.spaceCustomerId = null
+    expect(await createSpaceLoadoutCheckout('space-1', loadout)).toBe('https://checkout.stripe.com/session')
+    expect(created).toHaveLength(1)
   })
 })

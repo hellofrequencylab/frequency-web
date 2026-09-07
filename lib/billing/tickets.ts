@@ -208,12 +208,23 @@ export async function createTicketCheckout(opts: {
   // member_only: only paying members (Crew+). Resolved against the buyer's tier so
   // it's enforced server-side regardless of what the client renders.
   if (tier?.member_only) {
-    const { data: prof } = await db()
+    // DIRECTION — FAIL CLOSED, BUT HONEST (SCAN-539). A PostgREST error arrives in `error`, not as a
+    // throw, so an unchecked read defaulted the buyer's tier to 'free' and answered the gate with
+    // "This ticket is for members only." — telling a paying Crew member they are not a member and
+    // refusing them their own ticket, for a reason they cannot act on. We keep failing CLOSED (an
+    // entitlement gate must never hand out a restricted ticket on an unreadable tier), but we stop
+    // asserting the buyer's tier: an unknown tier is a transient failure, and it says so, so the
+    // member retries instead of going to support to argue about a membership they do hold.
+    const { data, error } = await db()
       .from('profiles')
       .select('membership_tier')
       .eq('id', opts.buyerProfileId)
       .maybeSingle()
-    const t = (prof as { membership_tier?: string | null } | null)?.membership_tier ?? 'free'
+    if (error) {
+      console.error('[tickets] buyer membership tier unreadable, refusing member-only ticket:', error.message)
+      return { error: 'Could not check your membership. Please try again.' }
+    }
+    const t = (data as { membership_tier?: string | null } | null)?.membership_tier ?? 'free'
     if (t === 'free') return { error: 'This ticket is for members only.' }
   }
 
@@ -377,13 +388,26 @@ export async function createTicketCheckout(opts: {
     //
     // Reads the REAL `membership_tier` off `profiles` rather than through resolveCaller. BETA_OPEN_ACCESS
     // reports 'crew' to every signed-in member to make the beta feel open, and billing someone the Crew
-    // rate on a tier they have not bought is charging for a discount they do not hold. Fail-safe on the
-    // read: an error leaves `payeeTier` null, which prices at the free rung (never under-collect).
-    const { data: payeeProf } = await db()
+    // rate on a tier they have not bought is charging for a discount they do not hold.
+    //
+    // DIRECTION — FAIL CLOSED ON THE TRANSACTION (SCAN-539). The old comment here said "fail-safe on the
+    // read: an error leaves payeeTier null, which prices at the free rung (never under-collect)", but a
+    // PostgREST error arrives in `error`, not as a throw, so that arm was never a decision — it was the
+    // unchecked null falling through, and it billed a Crew host the free rung's 10% on a rate they had
+    // paid to buy down to 8%. Over-charging against a rate someone bought is worse than not selling the
+    // ticket: it takes real money on a contract we could not verify, and it is invisible until the host
+    // audits their receipts. Refusing costs one retryable checkout. `data === null` with no error still
+    // means a genuinely absent profile row and still prices at the free rung — only the UNKNOWN case
+    // refuses.
+    const { data: payeeProf, error: payeeProfErr } = await db()
       .from('profiles')
       .select('membership_tier')
       .eq('id', payeeProfileId)
       .maybeSingle()
+    if (payeeProfErr) {
+      console.error('[tickets] host membership tier unreadable, refusing checkout:', payeeProfErr.message)
+      return { error: 'Could not start checkout. Please try again.' }
+    }
     const payeeTier = (payeeProf as { membership_tier: string | null } | null)?.membership_tier ?? null
     fee = await memberTakeRateCents(gross, source, payeeTier)
     rateBps = source === 'self' ? 0 : memberNetworkTakeRateBps(payeeTier, await resolvedNetworkRate())
