@@ -14,10 +14,16 @@ let row: CampaignRow
 let updates: CampaignRow[]
 /** Inject a failure for an update whose patch satisfies the predicate. */
 let failUpdateWhen: ((patch: CampaignRow) => boolean) | null
+/** The outreach_sends ledger: one row per recipient this campaign has been queued to (LIVE-172). */
+let ledger: { campaign_id: string; contact_id: string | null; email: string; status: string }[]
+/** Make the ledger READ fail, so the fail-closed re-send path can be driven. */
+let failLedgerRead: boolean
 
 function from(table: string) {
   type Filter = { col: string; value: unknown }
   const filters: Filter[] = []
+  const notFilters: Filter[] = []
+  let inserted: Record<string, unknown>[] | null = null
   let op: 'select' | 'update' = 'select'
   let patch: CampaignRow | null = null
   let selectCols: string | null = null
@@ -30,6 +36,17 @@ function from(table: string) {
     select: (cols?: string) => {
       if (op === 'update') wantRows = true
       else selectCols = cols ?? '*'
+      return api
+    },
+    // outreach_sends only: the ledger read is `.select().eq().neq().range()` and the write is
+    // `.insert([row])`, so the in-memory table answers both (LIVE-172).
+    neq: (col: string, value: unknown) => {
+      notFilters.push({ col, value })
+      return api
+    },
+    range: () => api,
+    insert: (rows: Record<string, unknown>[]) => {
+      inserted = rows
       return api
     },
     update: (p: CampaignRow) => {
@@ -51,6 +68,27 @@ function from(table: string) {
     then(resolve: (v: unknown) => unknown, reject?: (e: unknown) => unknown) {
       try {
         if (table === 'contacts') return Promise.resolve({ data: [], error: null }).then(resolve)
+        if (table === 'outreach_sends') {
+          if (inserted) {
+            for (const r of inserted) {
+              ledger.push({
+                campaign_id: String(r.campaign_id),
+                contact_id: (r.contact_id as string) ?? null,
+                email: String(r.email),
+                status: String(r.status),
+              })
+            }
+            return Promise.resolve({ data: null, error: null }).then(resolve)
+          }
+          if (failLedgerRead) {
+            return Promise.resolve({ data: null, error: { message: 'ledger unreadable' } }).then(resolve)
+          }
+          const rows = ledger
+            .filter((l) => filters.every((f) => (l as unknown as Record<string, unknown>)[f.col] === f.value))
+            .filter((l) => notFilters.every((f) => (l as unknown as Record<string, unknown>)[f.col] !== f.value))
+            .map((l) => ({ contact_id: l.contact_id, email: l.email }))
+          return Promise.resolve({ data: rows, error: null }).then(resolve)
+        }
         if (table !== 'campaigns') throw new Error(`unexpected table ${table}`)
         if (op === 'update') {
           if (failUpdateWhen && failUpdateWhen(patch!)) {
@@ -115,7 +153,7 @@ vi.mock('./product-block', () => ({
   productVarsFromLayout: () => ({}),
 }))
 
-import { sendCampaignNow, sendStoppedCopy, sentUnrecordedCopy } from './send'
+import { sendCampaignNow, sendStoppedCopy, sentUnrecordedCopy, ledgerUnreadableCopy } from './send'
 import { SENDING_LEASE_MS } from '@/lib/messaging/status'
 
 function freshRow(over: CampaignRow = {}): CampaignRow {
@@ -145,6 +183,8 @@ beforeEach(() => {
   row = freshRow()
   updates = []
   failUpdateWhen = null
+  ledger = []
+  failLedgerRead = false
   enqueueEmail.mockResolvedValue(undefined)
   vi.spyOn(console, 'error').mockImplementation(() => {})
 })
@@ -245,3 +285,103 @@ describe('the "already sending" refusal is reachable only while a send is genuin
     expect(row.status).toBe('sent')
   })
 })
+
+// ── LIVE-172: a re-sent campaign must not reach the recipients already queued ────────────────────
+//
+// SCAN-620 made a stopped send re-sendable (status 'failed' + the count queued so far), and nothing
+// skipped the people the first attempt had already handed to the outbox: the operator's second click
+// mailed them twice, and the copy told them it would. Every enqueue now writes an outreach_sends row
+// for the campaign (the Space campaign runner's ledger, same table and same 'queued' meaning), and
+// the loop skips anyone who has one.
+
+describe('a re-send skips the recipients already queued', () => {
+  it('the first send ledgers every recipient it queues', async () => {
+    await sendCampaignNow('camp-1')
+    expect(enqueueEmail).toHaveBeenCalledTimes(3)
+    expect(ledger.map((l) => l.email)).toEqual(['one@example.test', 'two@example.test', 'three@example.test'])
+    expect(ledger.every((l) => l.status === 'queued' && l.campaign_id === 'camp-1')).toBe(true)
+  })
+
+  it('a send that stopped after two, re-sent, reaches only the third', async () => {
+    enqueueEmail.mockResolvedValueOnce(undefined).mockResolvedValueOnce(undefined).mockRejectedValueOnce(new Error('provider down'))
+    await sendCampaignNow('camp-1')
+    expect(row.status).toBe('failed')
+    expect(ledger).toHaveLength(2)
+
+    // The operator sends again.
+    vi.clearAllMocks()
+    enqueueEmail.mockResolvedValue(undefined)
+    const res = await sendCampaignNow('camp-1')
+
+    expect(res).toEqual({ data: { recipientCount: 1 } })
+    expect(enqueueEmail).toHaveBeenCalledTimes(1)
+    expect(enqueueEmail.mock.calls[0][0]).toMatchObject({ to: 'three@example.test' })
+    // The row records the campaign's TOTAL reach, not just what the second attempt added.
+    expect(row.status).toBe('sent')
+    expect(row.recipient_count).toBe(3)
+    expect(ledger).toHaveLength(3)
+  })
+
+  it('a re-send with the whole audience already queued sends nothing and still lands sent', async () => {
+    await sendCampaignNow('camp-1')
+    row.status = 'failed'
+    row.sent_at = null
+    vi.clearAllMocks()
+    enqueueEmail.mockResolvedValue(undefined)
+
+    const res = await sendCampaignNow('camp-1')
+    expect(res).toEqual({ data: { recipientCount: 0 } })
+    expect(enqueueEmail).not.toHaveBeenCalled()
+    expect(row.status).toBe('sent')
+    expect(row.recipient_count).toBe(3)
+  })
+
+  it('matches on the address too, so a recipient with no contact id is still skipped', async () => {
+    ledger.push({ campaign_id: 'camp-1', contact_id: null, email: 'TWO@example.test', status: 'queued' })
+    row = freshRow({ status: 'failed', recipient_count: 1 })
+    await sendCampaignNow('camp-1')
+    expect(enqueueEmail).toHaveBeenCalledTimes(2)
+    expect(enqueueEmail.mock.calls.map((c) => (c[0] as { to: string }).to)).toEqual([
+      'one@example.test',
+      'three@example.test',
+    ])
+  })
+
+  it('a ledger row left by a FAILED send is not treated as delivered', async () => {
+    ledger.push({ campaign_id: 'camp-1', contact_id: 'c1', email: 'one@example.test', status: 'failed' })
+    row = freshRow({ status: 'failed', recipient_count: 0 })
+    await sendCampaignNow('camp-1')
+    expect(enqueueEmail).toHaveBeenCalledTimes(3)
+  })
+
+  it('a ledger row for a DIFFERENT campaign never blocks this one', async () => {
+    ledger.push({ campaign_id: 'other-campaign', contact_id: 'c1', email: 'one@example.test', status: 'queued' })
+    await sendCampaignNow('camp-1')
+    expect(enqueueEmail).toHaveBeenCalledTimes(3)
+  })
+})
+
+describe('the ledger check fails closed, but only where it can do harm', () => {
+  it('refuses a RE-SEND when the ledger cannot be read, and sends nothing', async () => {
+    failLedgerRead = true
+    row = freshRow({ status: 'failed', recipient_count: 2, send_error: 'provider down' })
+
+    const res = await sendCampaignNow('camp-1')
+
+    expect(res).toEqual({ error: ledgerUnreadableCopy(true) })
+    expect(enqueueEmail).not.toHaveBeenCalled()
+    expect(row.status).toBe('failed')
+    // The earlier attempt's count survives, so the next try still knows this was a re-send.
+    expect(row.recipient_count).toBe(2)
+    expect(String(row.send_error)).toContain('Could not read the send ledger')
+    expect((res as { error: string }).error).not.toMatch(/[\u2013\u2014]/)
+  })
+
+  it('lets a FIRST send through when the ledger cannot be read: nothing could be double-sent', async () => {
+    failLedgerRead = true
+    const res = await sendCampaignNow('camp-1')
+    expect(res).toEqual({ data: { recipientCount: 3 } })
+    expect(enqueueEmail).toHaveBeenCalledTimes(3)
+  })
+})
+

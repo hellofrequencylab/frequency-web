@@ -61,14 +61,14 @@
       "exclude": [
         "**/*.{test,spec}.{ts,tsx}"
       ],
-      "baseline": 2181,
+      "baseline": 2180,
       "frozen": {
-        "at": "2026-09-05",
-        "value": 2181,
+        "at": "2026-09-07",
+        "value": 2180,
         "direction": "lowered",
         "basis": "db695768f455",
-        "reason": "Scan two phase A (#2360) retired the legacy admin New Channel composer (components/compose/new-channel-compose.tsx, deleted) and rebuilt the unsubscribe page on the kit card; phase B re-freezes the floor so the ratchet holds at the lower number",
-        "from": 2208
+        "reason": "LIVE-168's consent step first duplicated app/onboarding/form.tsx's opt-in card; extracting the two copies into components/onboarding/email-opt-in.tsx removed the duplicate and took the checkbox from the literal rounded-md to the rounded-control role radius",
+        "from": 2181
       },
       "history": [
         {
@@ -238,6 +238,13 @@
           "to": 2181,
           "direction": "lowered",
           "reason": "Scan two phase A (#2360) retired the legacy admin New Channel composer (components/compose/new-channel-compose.tsx, deleted) and rebuilt the unsubscribe page on the kit card; phase B re-freezes the floor so the ratchet holds at the lower number"
+        },
+        {
+          "at": "2026-09-07",
+          "from": 2181,
+          "to": 2180,
+          "direction": "lowered",
+          "reason": "LIVE-168's consent step first duplicated app/onboarding/form.tsx's opt-in card; extracting the two copies into components/onboarding/email-opt-in.tsx removed the duplicate and took the checkbox from the literal rounded-md to the rounded-control role radius"
         }
       ]
     },

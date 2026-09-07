@@ -1,5 +1,5 @@
 import type { SequenceDef } from './sequence-schema'
-import { DEFAULT_ONBOARDING_SEQUENCE } from './default-sequence'
+import { DEFAULT_ONBOARDING_SEQUENCE, CONSENT_STEP } from './default-sequence'
 
 // Example onboarding sequences (code) for the staff sequence PREVIEW (app/onboarding/sequence-preview).
 // They demonstrate persona-targeted flow selection DETERMINISTICALLY, without a DB row: a coach
@@ -46,6 +46,10 @@ export const PRACTITIONER_SEQUENCE: SequenceDef = {
         description: 'We will connect you to seekers near you.',
       },
     },
+    // The marketing-email opt-in (LIVE-168). The runner guarantees this step in any flow that lacks
+    // it, and an example flow that leans on that guarantee would not SHOW an author what a complete
+    // flow looks like, so it is declared here the same way the default declares it.
+    CONSENT_STEP,
     {
       id: 'review',
       type: 'review',

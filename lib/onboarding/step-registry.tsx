@@ -7,9 +7,10 @@
 // bindings discipline lib/library/element-registry.tsx uses — so config is data and the render +
 // detection + side-effects stay in code.
 //
-// The four registered types reproduce today's steady-state onboarding (app/onboarding/form.tsx:
-// You / About you / Your region / Review) so a future cutover to the runner is behaviour
-// preserving. Copy defaults mirror that file verbatim (voice canon: no em dashes). Client-safe;
+// The registered types reproduce today's steady-state onboarding (app/onboarding/form.tsx:
+// You / About you / Your region / [the email opt-in card] / Review) so a future cutover to the
+// runner is behaviour preserving. The opt-in is its OWN step here (LIVE-168) rather than a corner
+// of the review screen, because the runner has to be able to see whether a flow asks the question. Copy defaults mirror that file verbatim (voice canon: no em dashes). Client-safe;
 // the terminal server action is resolved by KEY in the runner (components/onboarding/
 // sequence-runner.tsx), never imported here.
 
@@ -19,6 +20,7 @@ import { getInitials } from '@/lib/utils'
 import { prepareImageForUpload } from '@/lib/library/image-shrink'
 import { safeUploadPreviewSrc } from '@/lib/safe-image-src'
 import { type StepType } from './step-types'
+import { EmailOptInCard } from '@/components/onboarding/email-opt-in'
 
 // ── The draft the flow accumulates + the per-request context the steps read ────────────────
 
@@ -29,6 +31,11 @@ export interface OnboardingDraft {
   bio: string
   avatarUrl: string
   regionId: string
+  /** The marketing-email choice, set ONLY by the consent step (LIVE-168). `undefined` means the
+   *  question was never put to this member, which the terminal action treats as consent WITHHELD
+   *  (app/onboarding/actions.ts records only an explicit `true` as granted). It is deliberately
+   *  optional so "not asked" and "said no" stay distinguishable in the draft. */
+  emailOptIn?: boolean
 }
 
 /** Server-provided context for a run (the props app/onboarding/page.tsx already loads). */
@@ -405,6 +412,51 @@ function RegionStep({ content, draft, patch, ctx }: StepViewProps) {
   )
 }
 
+// ── consent — "Keep me in the loop": the marketing email opt-in ───────────────────────────────
+//
+// LIVE-168. completeOnboarding records `email_marketing` as GRANTED only for an explicit
+// `emailOptIn: true` (SCAN-604 stopped consent being granted by omission), so a flow that never
+// asks records every member it onboards as declining. This step is that question, and the runner
+// guarantees it is in every flow it runs. Copy + posture mirror app/onboarding/form.tsx verbatim
+// (owner directive: a visible, deliberate choice, on by default, plain words, no em dashes).
+
+const consentContent = z
+  .object({
+    title: z.string().default('One last thing'),
+    description: z.string().default('Choose what lands in your inbox. You can change this any time in Settings.'),
+    optInLabel: z.string().default('Keep me in the loop'),
+    optInText: z
+      .string()
+      .default(
+        'New circles near you, events worth showing up for, and the occasional note from the team. No noise, and you can turn it off anytime in Settings.',
+      ),
+    footnote: z.string().default('Account email (sign in, receipts, event reminders) is separate and always on.'),
+  })
+
+function ConsentStep({ content, draft, patch }: StepViewProps) {
+  const c = consentContent.parse(content)
+  const optIn = draft.emailOptIn ?? true
+
+  // Record the shown default the moment the step is reached, so what the member is looking at is
+  // what the terminal action sends. It never overrides a choice already made (the guard is on
+  // `undefined`, not on the value), so stepping back and forward keeps an opt-OUT opted out.
+  useEffect(() => {
+    if (draft.emailOptIn === undefined) patch({ emailOptIn: true })
+  }, [draft.emailOptIn, patch])
+
+  return (
+    <div className="mt-2">
+      <EmailOptInCard
+        checked={optIn}
+        onToggle={() => patch({ emailOptIn: !optIn })}
+        label={c.optInLabel}
+        text={c.optInText}
+      />
+      <p className="mt-3 text-body-sm text-subtle">{c.footnote}</p>
+    </div>
+  )
+}
+
 // ── review — "Review": read-only summary + the terminal action ────────────────────────────────
 
 const reviewContent = z
@@ -466,6 +518,12 @@ export const STEP_REGISTRY: Record<StepType, StepDef> = {
     contentSchema: regionContent,
     Component: RegionStep,
     validate: (draft, ctx) => draft.regionId !== '' || ctx.regions.length === 0,
+  },
+  consent: {
+    type: 'consent',
+    label: 'Your inbox',
+    contentSchema: consentContent,
+    Component: ConsentStep,
   },
   review: {
     type: 'review',

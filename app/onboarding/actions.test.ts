@@ -13,9 +13,25 @@ const mocks = vi.hoisted(() => ({
   recordConsent: vi.fn(),
   cur: {} as Record<string, unknown>,
   updates: [] as unknown[],
+  /** The request's cookie jar, drivable per test (LIVE-162: the lead-grab cookie rename). */
+  jar: new Map<string, string>(),
+  /** Cookie names completeOnboarding deleted, in order. */
+  deleted: [] as string[],
+  claimPendingLeadGrab: vi.fn(),
 }))
 
-vi.mock('next/headers', () => ({ cookies: async () => ({ get: () => undefined, delete: () => {} }) }))
+vi.mock('next/headers', () => ({
+  cookies: async () => ({
+    get: (name: string) => {
+      const value = mocks.jar.get(name)
+      return value === undefined ? undefined : { name, value }
+    },
+    delete: (name: string) => {
+      mocks.deleted.push(name)
+      mocks.jar.delete(name)
+    },
+  }),
+}))
 vi.mock('next/navigation', () => ({ redirect: mocks.redirect }))
 vi.mock('@/lib/supabase/server', () => ({
   createClient: async () => ({
@@ -41,9 +57,12 @@ vi.mock('@/lib/qr/member-codes', () => ({ ensureMemberCodes: vi.fn(async () => u
 vi.mock('@/lib/attribution/acquisition', () => ({ persistAcquisition: vi.fn(async () => undefined) }))
 vi.mock('@/lib/rewards/connector', () => ({ rewardConnectorJoinOnSignup: vi.fn(async () => undefined) }))
 vi.mock('@/lib/crm/lead-capture', () => ({
-  LEAD_GRAB_COOKIE: 'fq_lead',
-  parseLeadGrab: () => null,
-  claimPendingLeadGrab: vi.fn(async () => undefined),
+  LEAD_GRAB_COOKIE: 'fq_lead_grab',
+  LEGACY_LEAD_GRAB_COOKIE: 'fq_lead',
+  // A grab cookie is URL-encoded JSON; the signup lead claim's cookie is `<id>.<token>` and
+  // parses to nothing, which is the whole reason the two can share a jar during the fallback window.
+  parseLeadGrab: (value?: string) => (value && value.startsWith('%7B') ? { s: 'space-1', d: 'space_qr' } : null),
+  claimPendingLeadGrab: mocks.claimPendingLeadGrab,
   claimLeadOnSignup: vi.fn(async () => undefined),
 }))
 
@@ -58,6 +77,9 @@ beforeEach(() => {
   mocks.applyReferralAttribution.mockResolvedValue(undefined)
   mocks.postWelcomeForMember.mockResolvedValue(undefined)
   mocks.recordConsent.mockResolvedValue(undefined)
+  mocks.claimPendingLeadGrab.mockResolvedValue(undefined)
+  mocks.jar.clear()
+  mocks.deleted.length = 0
   mocks.cur = { display_name: null, handle: null, bio: null, avatar_url: null, nexus_region_id: null, meta: { beta: { intent: 'x' }, tour: { seen: ['a'] } } }
 })
 
@@ -82,5 +104,34 @@ describe('completeOnboarding', () => {
     expect(mocks.applyReferralAttribution).not.toHaveBeenCalled()
     expect(mocks.postWelcomeForMember).not.toHaveBeenCalled()
     expect(mocks.redirect).not.toHaveBeenCalled()
+  })
+})
+
+// ── LIVE-162: the lead-grab cookie was renamed, and the old name still redeems ──────────────────
+// 'fq_lead' was written by TWO unrelated features (this Space-QR grab and the signup lead claim in
+// app/join/(induction)/lead-actions.ts), so on a shared browser one overwrote the other. The grab
+// moved to 'fq_lead_grab'. A grab parked before the rename has a 30-day life, so the old name is
+// still read here until 2026-10-07 — and the claim cookie, which keeps the old name, must survive.
+describe('claiming a pending Space-QR lead grab', () => {
+  it('redeems the current cookie name and clears only that slot', async () => {
+    mocks.jar.set('fq_lead_grab', '%7B%22s%22%3A%22space-1%22%7D')
+    await completeOnboarding(input)
+    expect(mocks.claimPendingLeadGrab).toHaveBeenCalledWith('p1', { s: 'space-1', d: 'space_qr' })
+    expect(mocks.deleted).toEqual(['fq_lead_grab'])
+  })
+
+  it('still redeems a grab parked under the OLD name', async () => {
+    mocks.jar.set('fq_lead', '%7B%22s%22%3A%22space-1%22%7D')
+    await completeOnboarding(input)
+    expect(mocks.claimPendingLeadGrab).toHaveBeenCalledWith('p1', { s: 'space-1', d: 'space_qr' })
+    expect(mocks.deleted).toEqual(['fq_lead'])
+  })
+
+  it('leaves the signup lead claim cookie alone: it shares the old name but is not a grab', async () => {
+    mocks.jar.set('fq_lead', 'lead-9.tok-9')
+    await completeOnboarding(input)
+    expect(mocks.claimPendingLeadGrab).not.toHaveBeenCalled()
+    expect(mocks.deleted).toEqual([])
+    expect(mocks.jar.get('fq_lead')).toBe('lead-9.tok-9')
   })
 })
