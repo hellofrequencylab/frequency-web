@@ -40,38 +40,42 @@
       "note": "The development order for the whole open queue, waves in sequence, ids in order within a wave. Array order IS the sequence — W0 first through W10 last, with `owner-timed` kept at the end because it is scheduled by the owner rather than by this order. Owner-lane rows are decisions, not sequenced dev. Status lives only in each row's probe; this object is the sequence.",
       "waves": [
         {
-          "name": "W0 · P0 — costing something today (incidents, wrong money/consent answers, the crawl surface the sitemap just exposed)",
-          "ids": [
-            "LIVE-053",
-            "LIVE-123"
-          ]
+          "name": "W0 · P0 — costing something today: an incident, a wrong money/consent/permission answer, or a crawl-facing defect the submitted sitemap exposes. EMPTY IS THE GOAL, and it is empty of code work: the one P0 on the list, OWN-050, is a console action and sits in owner-timed.",
+          "ids": []
         },
         {
-          "name": "W0b · P1 — repairs ready to work, and the instruments that keep the gates honest",
+          "name": "W0b · P1 — repairs ready to work now, and the instruments that keep the gates honest. This is the wave to pull from when you want the next thing to do.",
           "ids": [
+            "LIVE-123",
             "LIVE-186",
             "LIVE-190",
             "LIVE-203",
-            "LIVE-204"
+            "LIVE-204",
+            "LIVE-208"
           ]
         },
         {
-          "name": "W0c · P2 — small cleanups and the perf set (six visitors in three months; no traffic yet justifies re-ordering auth)",
+          "name": "W0c · P2 — small cleanups worth doing whenever a lane is clear.",
+          "ids": [
+            "LIVE-053",
+            "LIVE-164",
+            "LIVE-165",
+            "LIVE-167",
+            "LIVE-193",
+            "LIVE-206"
+          ]
+        },
+        {
+          "name": "W0d · P3 — the perf set and the deferred niceties. 12 visitors / 18 pageviews in 31 days: the funnel, not the page speed, is the constraint, and these are priced against that rather than against merit.",
           "ids": [
             "LIVE-149",
             "SCAN-538",
             "LIVE-171",
             "LIVE-170",
-            "LIVE-164",
-            "LIVE-165",
-            "LIVE-167",
             "LIVE-180",
             "LIVE-179",
             "LIVE-181",
             "LIVE-178",
-            "LIVE-193",
-            "LIVE-206",
-            "LIVE-208",
             "LIVE-210"
           ]
         },
