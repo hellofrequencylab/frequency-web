@@ -36130,4 +36130,28 @@ The right wall clock against the wrong instant, **eight hours out**, four days b
 **Consequences.** Nothing is killed or throttled: a budget is a reading, not a limit. The row closes on a busy-week `cron.run` read with every route under its stated budget, or on the routes that are batched or narrowed to it.
 
 ⚠️ **The generalisable part.** An instrument without a stated expectation cannot fire. Stating the expectation in the same seam as the measurement means neither can exist without the other.
+## ADR-1231: LIVE-053 closes on the code consequence, and a fail-safe's mock must lose `this` the way the real client does (2026-09-07)
+
+**Status.** Accepted. Closes LIVE-053. Follows [ADR-1154](DECISIONS.md) (the guard's blind spots) and #2396 (the second path, bound 2026-09-06).
+
+**Context.** LIVE-053 opened on 2026-08-19 for a production `TypeError: Cannot read properties of undefined (reading 'rest')` on `/feed`, diagnosed as a Supabase client method invoked with a lost `this`. Ten alias sites were bound that day; a second path in the weekly digest cron threw for a real member on 2026-09-06 and was bound in #2396. The row then held itself open on a silence clock, twice, because closing on a diagnosis is the "closed without the probe ever passing" failure the one-list rules exist to prevent.
+
+Re-tested 2026-09-07 before any work ([ADR-1082](DECISIONS.md)):
+
+- Vercel runtime errors, production, 7 days, every route: exactly ONE `rest` occurrence, the digest cron at 2026-09-06T14:00:46Z on `dpl_5Rex4cFT6btTzcsLs44NJnfecaaY`. The fix commit `bcc3d3f64` is dated 2026-09-06 21:37 -0700, which is 2026-09-07T04:37Z, so that hit is PRE-fix by 14.6 hours. The row said seven; it compared a UTC clock against a Pacific one. The `/feed` group has aged out of the window entirely; its last hit stays 2026-08-19T04:36:35Z.
+- At least 18 production deployments have shipped since `dpl_GPcCK9MYgWaGikorFtnGfaXv12Zq` (04:47Z, the first carrying the fix), with zero occurrences of any digest in the family.
+- The mechanism re-proved against the installed `@supabase/supabase-js`: the detached value throws the exact string; the bound and inline forms return normally.
+- All twelve bind sites present at HEAD; `scripts/check-detached-client-methods.test.ts` green 11/11; an independent sweep for any client method in value position: zero.
+
+🔴 **What the re-test found that the record did not know.** With `client.from.bind(client)` mutated back to `client.from` in `app/api/cron/weekly-digest/route.ts`, `route.test.ts` still passed 8 of 8. Its mock's `from` was an arrow function, which has no `this` to lose, so the one test file that exercises the exact production path could not see the exact production defect. The tree-wide guard is a SOURCE-SHAPE test; nothing at the behaviour level pinned this site. `lib/gems.test.ts` had learned this for its own site on 2026-08-20 and the lesson did not travel.
+
+**Decision.**
+
+- **The row closes on the code consequence, not the clock.** Both paths are named, reproduced, bound and guarded, and a repo can probe that. A repo cannot probe a production silence, and a row whose only remaining action is waiting has no probe ([ADR-970](DECISIONS.md)). The residual observation is recorded with its trip-wire: the digest cron runs `0 14 * * 0`, so 2026-09-13T14:00Z is the first invocation that can speak, and it answers 500 by design ([ADR-1212](DECISIONS.md)) with `errorStack` beside the message, so a recurrence pages, names its frame, and re-opens the row.
+- **The verify block becomes a `cmd` probe** that reads the two named files, fails on the detached shape at either site, requires the bound form at both, and requires the digest test's mock to read `this.rest`. It exits 79 if a file cannot be read. Mutation-proven in both directions before it was written into the row.
+- **A mock of a Supabase client reads `this.rest` in its methods**, as the real one does, wherever a test exercises a site LIVE-053 bound. `route.test.ts` now does, with a positive control that calls the mock's method detached and expects the production string, so a mock that drifts back to arrows fails loudly rather than silently losing its teeth.
+
+**Consequences.** `app/api/cron/weekly-digest/route.test.ts` fails when the bind is removed (measured: red on the mutation, green on the tree). The backlog row is done, out of W0c, and its probe runs under `check:backlog` on every PR. The `/feed` title survives as history; the row's substance was two sites and one gate.
+
+⚠️ **The generalisable part is the mock.** A fail-safe test that mocks a class with arrow functions cannot lose `this`, so it cannot see the whole class of defect this row is about, and it reads as coverage. When the defect is "a method was detached from its receiver", the mock's method must depend on its receiver, and the test must carry a control proving it does. A mock more forgiving than the real thing is a gate that cannot fire.
 
