@@ -158,6 +158,7 @@ member_engagement_stats              public
 member_interaction_stats             internal
 members_near                         internal
 merge_profile_meta                   authenticated
+merge_profile_meta_path              authenticated
 merge_practices                      internal
 merge_tags                           internal
 message_peer_profiles                authenticated
