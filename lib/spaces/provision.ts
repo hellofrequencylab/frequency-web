@@ -34,6 +34,7 @@ import { isSafeSlug } from '@/lib/theme/validate'
 import { slugify } from '@/lib/utils'
 import { buildBusinessStarter, type BusinessIntake } from '@/lib/spaces/business-starter'
 import { type ActionResult, fail } from '@/lib/action-result'
+import { proposeAndConfirmCreate } from '@/lib/ai/vera/create-entity'
 import { featureGatesLive } from '@/lib/pricing/settings'
 import { isPaidSpacePlan, spaceCreationBlockReason } from '@/lib/pricing/space-limits'
 
@@ -189,35 +190,49 @@ export async function createSpace(input: CreateSpaceInput): Promise<ActionResult
   // Insert the Space. status active, plan free, the seeded tool config, the default DAWN skin,
   // owner = caller, ported into the network. brand_name seeds from the chosen brand/name. mode_variant
   // seeds the chosen Focus (null = the type's default Focus, resolved in code); Space Modes M3.
-  let spaceId: string
-  try {
-    const { data, error } = await spacesTable()
-      .insert({
-        slug,
-        name,
-        type,
-        status: 'active',
-        entity_id: entityId,
-        skin: DEFAULT_SPACE_SKIN,
-        network_connected: true,
-        visibility,
-        plan: 'free',
-        entitlements: seedEntitlements,
-        feature_roles: seedFeatureRoles,
-        owner_profile_id: profileId,
-        brand_name: brandName,
-        mode_variant: modeVariant,
-        // The ADR-887 KIND seed (see above); omitted entirely when there is nothing to seed so an
-        // unseeded Space keeps a bare row exactly as today.
-        ...(seededKind ? { preferences: withProfileData(null, { kind: seededKind }) } : {}),
-      })
-      .select('id')
-      .maybeSingle()
-    if (error || !data?.id) return fail('Could not create the space. Try again.')
-    spaceId = data.id
-  } catch {
-    return fail('Could not create the space. Try again.')
-  }
+  //
+  // THE GOVERNED WRITE (ADR-988, ADR-1249). The member named the Space and tapped Create, so the
+  // insert runs as the commit of a proposal this call records, claims and closes out, and the
+  // highest-value create on the platform lands in the audit log. The plan-limit gate above is the
+  // scoped authority ADR-988 §4 names: the layer records it and does not re-check it. The payload
+  // is untouched, and a failed write keeps the line this action always returned.
+  const governed = await proposeAndConfirmCreate<string>({
+    entity: 'space',
+    draft: { type, name, slug, brandName, visibility, modeVariant: modeVariant ?? '' },
+    rationale: 'Space builder: the member named the Space and tapped Create.',
+    commit: async () => {
+      try {
+        const { data, error } = await spacesTable()
+          .insert({
+            slug,
+            name,
+            type,
+            status: 'active',
+            entity_id: entityId,
+            skin: DEFAULT_SPACE_SKIN,
+            network_connected: true,
+            visibility,
+            plan: 'free',
+            entitlements: seedEntitlements,
+            feature_roles: seedFeatureRoles,
+            owner_profile_id: profileId,
+            brand_name: brandName,
+            mode_variant: modeVariant,
+            // The ADR-887 KIND seed (see above); omitted entirely when there is nothing to seed so an
+            // unseeded Space keeps a bare row exactly as today.
+            ...(seededKind ? { preferences: withProfileData(null, { kind: seededKind }) } : {}),
+          })
+          .select('id')
+          .maybeSingle()
+        if (error || !data?.id) throw new Error('Could not create the space. Try again.')
+        return data.id
+      } catch {
+        throw new Error('Could not create the space. Try again.')
+      }
+    },
+  })
+  if ('error' in governed) return fail(governed.error)
+  const spaceId = governed.data
 
   // Seat the owner as a Space admin (an explicit membership row, alongside owner_profile_id).
   await addSpaceMember({ spaceId, profileId, role: 'admin', status: 'active' })
@@ -283,39 +298,60 @@ export async function createBusinessSpace(input: BusinessIntake): Promise<Action
     facebook: input.facebook,
   })
 
-  let created: string
-  try {
-    const { data, error } = await spacesTable()
-      .insert({
-        slug,
-        name,
-        type: 'business',
-        status: 'active',
-        entity_id: entityId,
-        skin: DEFAULT_SPACE_SKIN,
-        network_connected: true,
-        // Private until they publish: the seeded prompts are owner-facing guidance, never public copy.
-        visibility: 'private',
-        plan: 'free',
-        entitlements: seedEntitlements,
-        feature_roles: seedFeatureRoles,
-        owner_profile_id: profileId,
-        brand_name: name,
-        mode_variant: null,
-        // Starter identity so the page is never blank: a warm cover, a tagline prompt, a short-about
-        // prompt, and the owner's real links + a story prompt in preferences.profileData.
-        cover_image_url: starter.coverImageUrl,
-        tagline: starter.tagline,
-        about: starter.aboutShort,
-        preferences: { profileData: starter.profileData },
-      })
-      .select('id')
-      .maybeSingle()
-    if (error || !data?.id) return fail('Could not create your space. Try again.')
-    created = data.id
-  } catch {
-    return fail('Could not create your space. Try again.')
-  }
+  // THE GOVERNED WRITE (ADR-988, ADR-1249). The owner filled the quick-start and tapped Create,
+  // so the insert runs as the commit of a proposal this call records, claims and closes out. The
+  // `business` manifest verifies commercial facts against a ledger; the quick-start asserts none
+  // (a link is not a commercial fact), so the draft clears with no ledger, exactly as the kernel's
+  // rule says an unasserted fact should. The payload is untouched.
+  const governed = await proposeAndConfirmCreate<string>({
+    entity: 'business',
+    draft: {
+      name,
+      slug,
+      type: 'business',
+      brandName: name,
+      tagline: starter.tagline,
+      about: starter.aboutShort,
+      contact: { website: input.website ?? '' },
+    },
+    rationale: 'Business quick-start: the owner named the business and tapped Create.',
+    commit: async () => {
+      try {
+        const { data, error } = await spacesTable()
+          .insert({
+            slug,
+            name,
+            type: 'business',
+            status: 'active',
+            entity_id: entityId,
+            skin: DEFAULT_SPACE_SKIN,
+            network_connected: true,
+            // Private until they publish: the seeded prompts are owner-facing guidance, never public copy.
+            visibility: 'private',
+            plan: 'free',
+            entitlements: seedEntitlements,
+            feature_roles: seedFeatureRoles,
+            owner_profile_id: profileId,
+            brand_name: name,
+            mode_variant: null,
+            // Starter identity so the page is never blank: a warm cover, a tagline prompt, a short-about
+            // prompt, and the owner's real links + a story prompt in preferences.profileData.
+            cover_image_url: starter.coverImageUrl,
+            tagline: starter.tagline,
+            about: starter.aboutShort,
+            preferences: { profileData: starter.profileData },
+          })
+          .select('id')
+          .maybeSingle()
+        if (error || !data?.id) throw new Error('Could not create your space. Try again.')
+        return data.id
+      } catch {
+        throw new Error('Could not create your space. Try again.')
+      }
+    },
+  })
+  if ('error' in governed) return fail(governed.error)
+  const created = governed.data
 
   await addSpaceMember({ spaceId: created, profileId, role: 'admin', status: 'active' })
   await ensureSpaceStages(created, 'business', null)

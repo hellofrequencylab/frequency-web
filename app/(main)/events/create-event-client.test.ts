@@ -124,6 +124,20 @@ vi.mock('@/lib/auth', () => ({
   isPlatformStaff: async () => false,
   resolveCaller: async () => null,
 }))
+
+// ── Pass the governed create layer through (ADR-988, ADR-1249) ─────────────────────────────
+// createEvent now runs its insert as the commit of a governed proposal. The layer is exercised in
+// lib/ai/vera/create-entity.propose-and-confirm.test.ts; here the commit runs as-is, so these guards
+// keep measuring WHICH CLIENT the insert lands on and WHOSE identity it stamps, not governance.
+vi.mock('@/lib/ai/vera/create-entity', () => ({
+  proposeAndConfirmCreate: async ({ commit }: { commit: (input: unknown) => Promise<unknown> }) => {
+    try {
+      return { data: await commit({ entity: 'event', draft: {}, actorProfileId: HOST, spaceId: null, proposalId: 'a1' }) }
+    } catch (e) {
+      return { error: e instanceof Error ? e.message : 'failed' }
+    }
+  },
+}))
 vi.mock('@/lib/core/load-capabilities', () => ({
   getEventCapabilities: async () => new Set<string>(),
   getCircleCapabilities: async () => new Set<string>(),

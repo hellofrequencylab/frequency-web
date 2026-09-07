@@ -14,6 +14,7 @@ import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { ok, fail, isError, type ActionResult } from '@/lib/action-result'
 import { createBlankCircleDraft } from '@/lib/circles/draft'
+import { proposeAndConfirmCreate } from '@/lib/ai/vera/create-entity'
 import { transferCircle, type TransferTarget } from '@/lib/circles/transfer'
 import { listCirclesHostedBy } from '@/lib/circles/store'
 import { offerCircleToPerson, cancelCircleOffer } from '@/lib/circles/handoff'
@@ -60,17 +61,26 @@ export async function createSpaceCircleAction(
   if (!clean) return fail('Give the circle a name first.')
   if (clean.length > 120) return fail('That name is too long. Keep it under 120 characters.')
 
-  try {
-    const { slug: circleSlug } = await createBlankCircleDraft({
-      profileId: gate.profileId,
-      name: clean,
-      spaceId: gate.spaceId,
-    })
-    revalidateSpaceCircles(slug)
-    return ok({ circleSlug })
-  } catch {
-    return fail('Could not create that circle. Please try again.')
-  }
+  // THE GOVERNED WRITE (ADR-988, ADR-1249). The team named the Circle and tapped Create, so one
+  // call proposes, claims and commits, and the audit row is written. The writer and its input are
+  // unchanged; the layer's own refusals surface as their plain sentence, and a writer failure
+  // keeps the generic line this action always returned.
+  const res = await proposeAndConfirmCreate({
+    entity: 'circle',
+    draft: { name: clean },
+    spaceId: gate.spaceId,
+    rationale: 'Space Circles console: the team named a Circle and tapped Create.',
+    commit: async () => {
+      try {
+        return await createBlankCircleDraft({ profileId: gate.profileId, name: clean, spaceId: gate.spaceId })
+      } catch {
+        throw new Error('Could not create that circle. Please try again.')
+      }
+    },
+  })
+  if ('error' in res) return fail(res.error)
+  revalidateSpaceCircles(slug)
+  return ok({ circleSlug: res.data.slug })
 }
 
 /**
