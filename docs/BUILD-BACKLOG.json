@@ -110,7 +110,6 @@
             "SCAN-521",
             "HYG-049",
             "SCAN-540",
-            "HYG-052",
             "HYG-050",
             "SCAN-502",
             "HYG-053",
@@ -6456,7 +6455,7 @@
     {
       "id": "HYG-052",
       "title": "Nothing in CI regenerates or diffs lib/database.types.ts against the live schema; a report-only gen-types drift step is drafted and not wired",
-      "status": "open",
+      "status": "done",
       "priority": "P2",
       "lane": "hygiene",
       "size": "S",
@@ -6464,11 +6463,10 @@
         "file": "lib/database.types.ts",
         "ref": "ADR-1205"
       },
-      "detail": "HYG-051 was found by hand. The #2351 technique (satisfies readonly Column[]) proves code agrees with the FILE, not that the file agrees with the DATABASE. A maintenance-workflow step (supabase gen types --project-id, then git diff --exit-code) is drafted in the audit scratchpad in the same token-gated set +e shape as its siblings; wire it after one real run proves the --project-id output byte-matches the CLI's --linked output, per the rule that a gate is wired in the same change as the run that proves it.",
+      "detail": "HYG-051 was found by hand. The #2351 technique (satisfies readonly Column[]) proves code agrees with the FILE, not that the file agrees with the DATABASE.\n\n── CLOSED 2026-09-07, and the run that proved the gate also found the drift it was built for. `lib/database.types.ts` was regenerated from the live project and compared: FIVE objects disagreed. `Functions.merge_profile_meta` and `Functions.remove_profile_meta_keys` existed in the database and not in the file at all; `Functions.award_gems_atomic` had gained a second overload taking `_day_key` and `_timezone`; `Functions.claim_outbox_jobs` had gained a `dedupe_key` field; `Functions.mark_signup_lead_converted` had changed shape. Migrations had been applied and the types were never regenerated beside them, and nothing anywhere went red — because every gate in this repo checks that the CODE agrees with the FILE and not one checked that the FILE agrees with the DATABASE. That is a whole class, not one file: coverage that cannot fail (ADR-970).\n\nThe regenerated file is committed and `tsc --noEmit` is clean against it, so the drift was additive and nothing in the tree leaned on the stale picture.\n\n⚠️ THE PROBE THIS ROW SHIPPED WITH MEASURED THE WRONG THING and was rewritten rather than satisfied. It asserted the literal string `gen types` appeared in maintenance.yml, which pins ONE implementation — the CLI — and would have been satisfied by a comment. The step is wired the way its three siblings are, a token-gated fetch of the Management API's types endpoint feeding a script that consumes JSON and never touches a database, so it stays testable without one. The probe now asserts the consequence: the script exists, its test exists, and the workflow actually invokes the script.\n\n⚪ WHAT WAS NOT PROVED, stated because the row asked for it. The row prescribed comparing `supabase gen types --project-id` output against the CLI's `--linked` output byte for byte. That comparison was NOT run: the fetch goes through the Management API, which is what the sibling steps use and what the CLI itself calls. What WAS proved is stronger in the direction that matters — the API output typechecks clean across the whole repo and its diff against the committed file named five real database objects.\n\n⚠️ THE DETECTOR IGNORES ORDER ON PURPOSE. The generator's object order is stable per run but not across versions of it: on the first real run `cron_run_markers` moved about 390 lines with no schema change behind it. Comparing by named object rather than by byte answers the question actually being asked. Leading indentation is NOT ignored, because it encodes nesting depth — the same `id: string` under a table, under its Insert, and under a function's Args are three different facts.",
       "verify": {
         "kind": "cmd",
-        "cmd": "node -e \"const fs=require('fs');const r=(f)=>fs.existsSync(f)?fs.readFileSync(f,'utf8'):'';process.exit(/gen types/.test(r('.github/workflows/maintenance.yml'))?0:1)\"",
-        "note": "Passes when the maintenance workflow runs a gen-types drift step. Fails today."
+        "cmd": "node -e \"const fs=require('fs');const need=['scripts/maintenance/types-drift.mjs','scripts/maintenance/types-drift.test.ts'];for(const f of need)if(!fs.existsSync(f))throw new Error('missing '+f);const wf=fs.readFileSync('.github/workflows/maintenance.yml','utf8');if(!/types-drift\\.mjs/.test(wf))throw new Error('maintenance.yml does not invoke the types-drift script');if(!/types\\/typescript/.test(wf))throw new Error('maintenance.yml does not fetch the generated types');const s=fs.readFileSync('scripts/maintenance/types-drift.mjs','utf8');if(!/driftedObjects/.test(s))throw new Error('the detector no longer compares by named object');\""
       }
     },
     {

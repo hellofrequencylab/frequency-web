@@ -2747,21 +2747,6 @@ export type Database = {
           },
         ]
       }
-      cron_run_markers: {
-        Row: {
-          created_at: string
-          key: string
-        }
-        Insert: {
-          created_at?: string
-          key: string
-        }
-        Update: {
-          created_at?: string
-          key?: string
-        }
-        Relationships: []
-      }
       crew_completions: {
         Row: {
           completed_at: string | null
@@ -3154,6 +3139,21 @@ export type Database = {
           },
         ]
       }
+      cron_run_markers: {
+        Row: {
+          created_at: string
+          key: string
+        }
+        Insert: {
+          created_at?: string
+          key: string
+        }
+        Update: {
+          created_at?: string
+          key?: string
+        }
+        Relationships: []
+      }
       custom_field_registry: {
         Row: {
           created_at: string
@@ -3523,24 +3523,6 @@ export type Database = {
           },
         ]
       }
-      email_webhook_events: {
-        Row: {
-          event_id: string
-          received_at: string
-          type: string | null
-        }
-        Insert: {
-          event_id: string
-          received_at?: string
-          type?: string | null
-        }
-        Update: {
-          event_id?: string
-          received_at?: string
-          type?: string | null
-        }
-        Relationships: []
-      }
       email_events: {
         Row: {
           campaign_id: string | null
@@ -3649,6 +3631,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      email_webhook_events: {
+        Row: {
+          event_id: string
+          received_at: string
+          type: string | null
+        }
+        Insert: {
+          event_id: string
+          received_at?: string
+          type?: string | null
+        }
+        Update: {
+          event_id?: string
+          received_at?: string
+          type?: string | null
+        }
+        Relationships: []
       }
       engagement_events: {
         Row: {
@@ -15698,16 +15698,29 @@ export type Database = {
         }
         Returns: Json
       }
-      award_gems_atomic: {
-        Args: {
-          _action: string
-          _amount: number
-          _daily_cap: number
-          _metadata?: Json
-          _profile: string
-        }
-        Returns: Json
-      }
+      award_gems_atomic:
+        | {
+            Args: {
+              _action: string
+              _amount: number
+              _daily_cap: number
+              _metadata?: Json
+              _profile: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              _action: string
+              _amount: number
+              _daily_cap: number
+              _day_key?: string
+              _metadata?: Json
+              _profile: string
+              _timezone?: string
+            }
+            Returns: Json
+          }
       award_zaps_atomic: {
         Args: {
           _action: string
@@ -15780,6 +15793,7 @@ export type Database = {
         Returns: {
           attempts: number
           created_at: string
+          dedupe_key: string | null
           id: string
           kind: string
           last_error: string | null
@@ -16195,7 +16209,11 @@ export type Database = {
       }
       longtransactionsenabled: { Args: never; Returns: boolean }
       mark_signup_lead_converted: {
-        Args: { p_claim_token?: string; p_lead_id: string; p_profile_id: string }
+        Args: {
+          p_claim_token?: string
+          p_lead_id: string
+          p_profile_id: string
+        }
         Returns: boolean
       }
       match_help_chunks: {
@@ -16294,6 +16312,10 @@ export type Database = {
       }
       merge_practices: {
         Args: { from_id: string; to_id: string }
+        Returns: Json
+      }
+      merge_profile_meta: {
+        Args: { p_columns?: Json; p_patch: Json; p_profile_id: string }
         Returns: Json
       }
       merge_tags: { Args: { from_id: string; into_id: string }; Returns: Json }
@@ -16674,6 +16696,10 @@ export type Database = {
           kind: string
           title: string
         }[]
+      }
+      remove_profile_meta_keys: {
+        Args: { p_keys: string[]; p_profile_id: string }
+        Returns: Json
       }
       reserve_ticket_atomic: {
         Args: {
