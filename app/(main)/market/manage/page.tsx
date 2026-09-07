@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { Hammer, Plus, Wallet, CheckCircle2, Rocket, PackageX, EyeOff, Trash2 } from 'lucide-react'
 import { IndexTemplate } from '@/components/templates'
+import { resolveIndexHero } from '@/lib/layout/index-hero'
 import { EmptyState } from '@/components/ui/empty-state'
 import { buttonClasses } from '@/components/ui/button'
 import { IconButton } from '@/components/ui/icon-button'
@@ -88,8 +89,11 @@ export default async function MakerManagePage() {
   ])
   const salesTotal = sales.reduce((sum, o) => sum + o.amountCents, 0)
 
+  const hero = await resolveIndexHero('/market/manage')
+
   return (
     <IndexTemplate
+      {...hero}
       title="My storefront"
       description="Your maker listings, payouts, and sales in one place."
       action={

@@ -2,6 +2,7 @@ import { Suspense } from 'react'
 import { redirect } from 'next/navigation'
 import { FileText } from 'lucide-react'
 import { IndexTemplate } from '@/components/templates'
+import { resolveIndexHero } from '@/lib/layout/index-hero'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Skeleton } from '@/components/ui/skeleton'
 import { getMyProfileId } from '@/lib/auth'
@@ -137,8 +138,11 @@ export default async function DraftsPage() {
   const profileId = await getMyProfileId()
   if (!profileId) redirect('/sign-in')
 
+  const hero = await resolveIndexHero('/drafts')
+
   return (
     <IndexTemplate
+      {...hero}
       title="Drafts"
       description="Things you started, and things drawn up for you to look at. Nothing here is made yet, and nothing gets made until you say so."
       trail={[

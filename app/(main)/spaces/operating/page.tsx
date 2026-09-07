@@ -13,6 +13,7 @@ import {
   Contact,
 } from 'lucide-react'
 import { IndexTemplate } from '@/components/templates'
+import { resolveIndexHero } from '@/lib/layout/index-hero'
 import { buttonClasses } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EntityCard } from '@/components/cards/entity-card'
@@ -197,8 +198,11 @@ export default async function SpacesOperatingPage() {
   // Gate: signed in. The list is naturally scoped to the Spaces the caller operates.
   const profileId = await getMyProfileId()
 
+  const hero = await resolveIndexHero('/spaces/operating')
+
   return (
     <IndexTemplate
+      {...hero}
       title="Spaces you run"
       description="Open the management console for any Space you own or help run. This is your front door to the spaces you operate, separate from the directory you browse."
       action={

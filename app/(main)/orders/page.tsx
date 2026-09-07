@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { Receipt, ShoppingBag } from 'lucide-react'
 import { IndexTemplate } from '@/components/templates'
+import { resolveIndexHero } from '@/lib/layout/index-hero'
 import { EmptyState } from '@/components/ui/empty-state'
 import { buttonClasses } from '@/components/ui/button'
 import { getMyProfileId } from '@/lib/auth'
@@ -72,8 +73,14 @@ export default async function OrdersPage() {
   const orders = await listOrdersForBuyer(profileId)
   const disputes = await disputesForOrders(orders.map((o) => o.id))
 
+  const hero = await resolveIndexHero('/orders')
+
   return (
-    <IndexTemplate title="My orders" description="Everything you've bought from the Market and the Frequency Store.">
+    <IndexTemplate
+      {...hero}
+      title="My orders"
+      description="Everything you've bought from the Market and the Frequency Store."
+    >
       {orders.length === 0 ? (
         <EmptyState
           icon={Receipt}
