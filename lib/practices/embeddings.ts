@@ -1,7 +1,14 @@
 // Practice embeddings — the semantic half of the Phase-1 hybrid retrieval
 // (docs/PRACTICE-LIBRARY.md §5, ADR-438). One 384-d gte-small vector per practice,
-// built from title + summary + body, stored on practices.embedding (HNSW). Fused
-// with the full-text search_vector by search_practices_hybrid() (RRF).
+// built from title + summary + body, stored on practices.embedding (HNSW).
+//
+// The column's live consumer is match_practices() — the vector nearest-neighbour behind
+// the near-dup detector (lib/practices/clean.ts). It was ALSO read by the RRF fusion RPC
+// search_practices_hybrid(), which was dropped by LIVE-163 (migration 20270345001900)
+// after a year with no caller: that signature is service_role-only and its include_hidden
+// escape hatch means a member-facing hybrid search needs a hardened, is_public-locked
+// variant rather than that one. This column and the full-text search_vector both stay
+// exactly as they are, so re-adding such a variant is a create-or-replace over them.
 //
 // Server-only (admin client). The embedding column predates the regenerated DB types
 // for the rest of Phase 1, so writes go through the untyped admin handle (ADR-246, repo

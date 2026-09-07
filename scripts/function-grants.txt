@@ -213,7 +213,6 @@ rooms_maintain_member_count          public
 rooms_touch_last_message             public
 scoped_feed_for_viewer               authenticated
 search_handles_public                authenticated
-search_practices_hybrid              internal
 set_event_geog                       internal
 set_node_geo                         internal
 set_updated_at                       public
