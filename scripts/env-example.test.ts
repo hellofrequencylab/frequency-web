@@ -77,6 +77,7 @@ describe('.env.example names the keys scripts and CI read', () => {
     'PW_SPACE_SLUG',
     'PW_STORAGE_STATE',
     'PW_REQUIRE_SHELL',
+    'PW_REQUIRE_OPERATOR',
     'VERCEL_AUTOMATION_BYPASS_SECRET',
   ]) {
     it(`${key} is documented, blank`, () => {

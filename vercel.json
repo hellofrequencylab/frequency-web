@@ -7,7 +7,7 @@
     },
     {
       "path": "/api/cron/journey-prompt",
-      "schedule": "0 13 * * *"
+      "schedule": "0 * * * *"
     },
     {
       "path": "/api/cron/vera-owner-brief",

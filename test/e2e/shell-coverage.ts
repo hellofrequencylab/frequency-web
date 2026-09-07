@@ -38,6 +38,10 @@ export interface ShellObservation {
   /** True when the test failed with Playwright's "snapshot doesn't exist" — a baseline that
    *  has never been captured, which is a different problem from a pixel regression. */
   missingBaseline?: boolean
+  /** True when the test SKIPPED because the session bounced off the /admin role floor: the skip
+   *  annotation carried `ROLE_FLOOR_MARKER` (surfaces.ts). The reporter reads it off the test's
+   *  own annotations, so it is a fact about the run rather than an inference from the env. */
+  roleFloor?: boolean
 }
 
 export interface ShellCoverageInput {
@@ -88,6 +92,18 @@ export interface ShellCoverage {
   missingBaselines: readonly string[]
   /** True when the Space console is missing from the matrix because no slug is configured. */
   spaceConsoleAbsent: boolean
+  /**
+   * OPERATOR surfaces this run collected and could not look at because the session bounced off
+   * the /admin role floor. Empty when the operator half ran, when it was never collected, or when
+   * the member shell ALSO skipped (that is a missing session, reported as `partial`, not this).
+   *
+   * 🔴 This list is why `covered` is no longer the whole verdict. Until 2026-09-07 a run whose
+   * member shell ran and whose seven /admin routes all bounced printed `✅ App shell covered` with
+   * a one-line "Still unphotographed" footnote — a tick over a console nobody had looked at, for
+   * a cause that was known, named and filed (HYG-027). The headline now says so, the annotation
+   * is an `::error`, and `PW_REQUIRE_OPERATOR` turns it into a failure (`requiredFailure`).
+   */
+  operatorsDenied: readonly string[]
   /** One sentence naming the cause, derived from the env rather than guessed. */
   reason: string
   /** The fix, as an instruction rather than a hint. */
@@ -128,7 +144,8 @@ function reasonFor(
       remedy: `Re-mint it with \`pnpm e2e:session\` — the path is created fresh each run and is never committed. See ${RUNBOOK}.`,
     }
   }
-  if (onlyOperatorsMissing(input, unphotographed)) {
+  const saidSo = input.observations.some((o) => o.status === 'skipped' && o.roleFloor)
+  if (saidSo || onlyOperatorsMissing(input, unphotographed)) {
     // The one case the old fall-through actively mis-described. Every missing surface is an
     // operator route, which means requireAdminFloor() bounced the session to /feed — a known,
     // named, already-filed account fact, not something to go hunting for in the run log.
@@ -157,6 +174,20 @@ export function summarizeShellCoverage(input: ShellCoverageInput): ShellCoverage
   const verdict: ShellVerdict =
     observations.length === 0 ? 'idle' : ran.length === 0 ? 'partial' : 'covered'
 
+  // Two ways to know the floor was hit, and the precise one wins. (1) A skipped observation whose
+  // annotation carried ROLE_FLOOR_MARKER — the run SAID so. (2) The older inference: a session
+  // existed, the member half ran, and every missing surface is an operator route. (2) is kept so
+  // a reporter that lost the annotation (a retry, a future Playwright) still names the cause.
+  const flagged = new Set(skipped.filter((o) => o.roleFloor).map((o) => o.surface))
+  const operatorsDenied =
+    verdict === 'covered'
+      ? (input.operatorSurfaces ?? []).filter(
+          (path) =>
+            unphotographed.includes(path) &&
+            (flagged.has(path) || onlyOperatorsMissing(input, unphotographed)),
+        )
+      : []
+
   return {
     verdict,
     total: observations.length,
@@ -165,6 +196,7 @@ export function summarizeShellCoverage(input: ShellCoverageInput): ShellCoverage
     photographed,
     unphotographed,
     spaceConsoleAbsent: !input.spaceSlug,
+    operatorsDenied,
     missingBaselines: observations.filter((o) => o.missingBaseline).map((o) => o.title),
     reason,
     remedy,
@@ -230,6 +262,40 @@ export function renderShellCoverage(coverage: ShellCoverage): ShellReport {
         `0 of ${surfaceCount} member-shell surfaces were captured — ${coverage.unphotographed.join(', ')}. ` +
         `${coverage.reason} This result is PARTIAL, not a pass.`,
     )
+  } else if (coverage.operatorsDenied.length > 0) {
+    // The member shell ran; the operator console did not, and the run knows why. This is NOT a
+    // tick with a footnote: the console is product an operator uses every day, and a headline
+    // that says "covered" over seven unaudited /admin routes is the HYG-026 silence in a new
+    // coat. Name every route, name the cause, name the grant.
+    const member = coverage.photographed.length
+    const memberTotal = surfaceCount - coverage.operatorsDenied.length
+    lines.push(
+      `### ⚠️ App shell covered, operator console NOT looked at (${label})`,
+      '',
+      `${member} of ${memberTotal} member-shell surfaces ran (${coverage.ran} of ${coverage.total} ` +
+        `checks). Photographed: ${coverage.photographed.map((p) => `\`${p}\``).join(', ')}.`,
+      '',
+      `**${coverage.operatorsDenied.length} operator surface(s) bounced off the /admin role floor** ` +
+        'and were neither photographed nor audited. A green result here covers the member shell ' +
+        'and the marketing site; the operator console was not rendered, not captured and not compared.',
+      '',
+      '| Operator surface | Covered? |',
+      '| :--- | :--- |',
+      ...coverage.operatorsDenied.map((path) => `| \`${path}\` | 🔴 denied by requireAdminFloor() |`),
+      '',
+      `**Why.** ${coverage.reason}`,
+      '',
+      `**Fix.** ${coverage.remedy}`,
+    )
+    annotations.push(
+      `::error title=Operator console not audited (${label})::` +
+        `${coverage.operatorsDenied.join(', ')} bounced off the /admin role floor. ${coverage.reason} ` +
+        'This result covers the member shell only; the operator half is NOT a pass.',
+    )
+    const others = coverage.unphotographed.filter((p) => !coverage.operatorsDenied.includes(p))
+    if (others.length > 0) {
+      lines.push('', `⚠️ Also unphotographed: ${others.map((p) => `\`${p}\``).join(', ')}.`)
+    }
   } else {
     lines.push(
       `### ✅ App shell covered (${label})`,
@@ -292,11 +358,57 @@ export function renderShellCoverage(coverage: ShellCoverage): ShellReport {
           `      ${coverage.remedy}`,
           '',
         ]
-      : [
-          '',
-          `  ✅  App shell covered: ${coverage.photographed.length}/${surfaceCount} surfaces, ${coverage.ran}/${coverage.total} checks.`,
-          '',
-        ]
+      : coverage.operatorsDenied.length > 0
+        ? [
+            '',
+            '  ⚠️  App shell covered; the OPERATOR CONSOLE was not looked at.',
+            `      ${coverage.operatorsDenied.length} /admin surface(s) bounced off the role floor: ${coverage.operatorsDenied.join(', ')}`,
+            `      ${coverage.reason}`,
+            `      ${coverage.remedy}`,
+            '',
+          ]
+        : [
+            '',
+            `  ✅  App shell covered: ${coverage.photographed.length}/${surfaceCount} surfaces, ${coverage.ran}/${coverage.total} checks.`,
+            '',
+          ]
 
   return { markdown, annotations, console: consoleLines.join('\n') }
+}
+
+/** A flag value that means "on". `0` and `false` are off so a variable can be parked, not deleted. */
+function flagOn(value: string | undefined): boolean {
+  const v = (value ?? '').trim()
+  return v !== '' && v !== '0' && v !== 'false'
+}
+
+/**
+ * Should this run FAIL for what it could not look at? Returns the `::error` line, or null.
+ *
+ * Two opt-in ratchets, one per owner precondition, because the two silences have different fixes:
+ *   · `PW_REQUIRE_SHELL`    — the CREDENTIAL exists, so a run that photographs zero app surfaces
+ *                             (`partial`) is red rather than announced.
+ *   · `PW_REQUIRE_OPERATOR` — the account CLEARS THE FLOOR, so a run whose operator surfaces bounce
+ *                             off requireAdminFloor() is red rather than announced.
+ * Neither is on by default: before the precondition, silence is loud (the banner above); after it,
+ * silence is red, so a grant that is later revoked cannot quietly re-open the blind spot. Pure so
+ * `shell-coverage.test.ts` can prove both directions without a Playwright run.
+ */
+export function requiredFailure(
+  coverage: ShellCoverage,
+  env: { requireShell?: string; requireOperator?: string },
+): string | null {
+  if (coverage.verdict === 'partial' && flagOn(env.requireShell)) {
+    return (
+      '::error title=App shell not photographed::PW_REQUIRE_SHELL is set, so a run that photographs ' +
+      `0 app surfaces fails. ${coverage.reason}`
+    )
+  }
+  if (coverage.operatorsDenied.length > 0 && flagOn(env.requireOperator)) {
+    return (
+      '::error title=Operator console not audited::PW_REQUIRE_OPERATOR is set, so a run whose operator ' +
+      `surfaces bounce off the /admin role floor fails (${coverage.operatorsDenied.join(', ')}). ${coverage.reason}`
+    )
+  }
+  return null
 }

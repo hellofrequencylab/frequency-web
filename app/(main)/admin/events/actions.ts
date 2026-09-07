@@ -9,7 +9,7 @@ import { authorizeAction } from '@/lib/admin/guard'
 import { ok, fail, type ActionResult } from '@/lib/action-result'
 import { slugify } from '@/lib/utils'
 import { spaceIdForCircle } from '@/lib/circles/store'
-import { refundAndNotifyForCancelledEvent } from '@/lib/events/cancellation'
+import { cancelSeries, refundAndNotifyForCancelledEvent } from '@/lib/events/cancellation'
 import { saveEventLocation, type EventAddress, type AttendanceMode } from '@/lib/events/geocode'
 import { nominatimGeocoder } from '@/lib/events/geocode-provider'
 import { cancelAudit, reinstateAudit } from '@/lib/events/event-lifecycle'
@@ -226,6 +226,58 @@ export async function cancelEvent(id: string) {
   // Only fan out refunds + notifications on the live → cancelled transition.
   if (firstCancel) {
     await refundAndNotifyForCancelledEvent(id)
+  }
+}
+
+/** What the console is told after a series cancel: every bucket the seam reports, because a bulk
+ *  money action that says only "done" hides the dates it could not reach. */
+export interface AdminSeriesCancelSummary {
+  cancelled: number
+  alreadyCancelled: number
+  /** Dates this caller may not cancel; still live. */
+  skipped: number
+  failed: number
+  /** Cancelled, but the refund/notify fan-out failed; the event's Manage page shows what is owed. */
+  needsAttention: number
+  truncated: boolean
+}
+
+/** Cancel every date of this event's series that is still to come (LIVE-206). The seam is
+ *  lib/events/cancellation.ts cancelSeries — per occurrence, idempotent, refunds through the
+ *  outbox — and this console passes its OWN gate into it: `requireEventEditor` is asked once for
+ *  the date the operator invoked it from, and then once PER OCCURRENCE, because the right to
+ *  cancel tonight's date is not the right to cancel next month's. app/(main)/events/admin-actions.ts
+ *  cancelEventSeries is the worked example this mirrors with the host's gate. */
+export async function cancelEventSeriesAsEditor(id: string): Promise<AdminSeriesCancelSummary> {
+  const caller = await requireEventEditor(id)
+  const result = await cancelSeries({
+    eventId: id,
+    actorProfileId: caller.id,
+    canCancel: async (occurrenceId) => {
+      if (occurrenceId === id) return true
+      try {
+        await requireEventEditor(occurrenceId)
+        return true
+      } catch {
+        return false
+      }
+    },
+  })
+
+  revalidatePath('/admin/events')
+  revalidatePath('/events')
+  revalidatePath('/feed')
+  // A space event surfaces on its Space's Calendar console, public Calendar tab and .ics feed.
+  revalidatePath('/spaces', 'layout')
+  revalidatePath('/circles', 'layout')
+
+  return {
+    cancelled: result.cancelled.length,
+    alreadyCancelled: result.alreadyCancelled.length,
+    skipped: result.unauthorized.length,
+    failed: result.failed.length,
+    needsAttention: result.fanoutFailed.length,
+    truncated: result.truncated,
   }
 }
 

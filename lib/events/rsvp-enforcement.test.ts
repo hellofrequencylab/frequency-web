@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
+import { sourceWithoutComments } from '@/test/source-shape'
 import path from 'node:path'
 
 // SOURCE-SHAPE tests for where the two windows are ENFORCED (ADR-1174, ADR-1175).
@@ -14,7 +15,8 @@ import path from 'node:path'
 
 const read = (p: string) => readFileSync(path.join(process.cwd(), p), 'utf8')
 const ACTIONS = read('app/(main)/events/actions.ts')
-const PAGE = read('app/(main)/events/[slug]/page.tsx')
+// Comment- and import-free (LIVE-167): the page's window needles must hit the calls.
+const PAGE = sourceWithoutComments('app/(main)/events/[slug]/page.tsx', { imports: true })
 const SQL = read('supabase/migrations/20270343000000_guest_rsvp_honours_the_booking_window.sql')
 
 describe('the booking window gates the MEMBER paths', () => {
@@ -95,8 +97,9 @@ describe('check-in has an upper bound now', () => {
 
 describe('the page hides controls the actions would refuse', () => {
   it('derives both windows from the same pure rules the actions use', () => {
-    expect(PAGE).toContain("from '@/lib/events/rsvp-window'")
-    expect(PAGE).toContain("from '@/lib/events/checkin-window'")
+    expect(PAGE).toMatch(/const rsvpWindow = rsvpWindowStateFromDetails\(/)
+    expect(PAGE).toMatch(/const rsvpWindowLine = rsvpWindowNote\(/)
+    expect(PAGE).not.toMatch(/function (rsvpWindowStateFromDetails|rsvpWindowNote|checkInWindowOpen)\b/)
     expect(PAGE).toMatch(/const checkInWindow = checkInEnabled && checkInWindowOpen\(/)
   })
 

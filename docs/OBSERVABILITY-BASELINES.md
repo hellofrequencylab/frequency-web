@@ -280,6 +280,18 @@ checks for the presence of the `CRON_HEARTBEAT_*` env vars `cron-heartbeat.ts` r
 Run `pnpm check:cron-freshness` to print the table, or `--strict` in CI to fail when any
 job lacks monitor coverage.
 
+**Per-invocation duration and budget (LIVE-190, ADR-1221 + ADR-1229).** Every wrapped cron
+emits one `cron.run` line per invocation, on the return and the throw path, carrying `job`,
+`status`, `ok` (read from the response status, never from "did it throw"), `duration_ms`,
+`budget_ms` and `over_budget`. The budget is stated in the seam: `DEFAULT_CRON_BUDGET_MS` is a
+fifth of the platform's 300 s ceiling, and a route with a larger unit of work declares its own
+through `withCronHeartbeat(name, handler, { budgetMs })`. Crossing it also emits a
+`cron.over_budget` warning. A budget is a reading, not a limit: nothing is killed. Chart
+`cron.run` by job over a busy week to see which routes need batching or a narrower window
+before they ever reach the ceiling — the only thing the old timeout error group could see.
+Note `journey-prompt` fires hourly since ADR-1225 and sends each member once, at their local
+morning, so its fresh-by window is 2 h.
+
 ### 4b. What happens when an SLO is breached
 
 - **Page (immediate):** uptime, error rate, any cron going stale, queue lag over budget.

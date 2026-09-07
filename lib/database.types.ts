@@ -10517,6 +10517,8 @@ export type Database = {
         Row: {
           archived: boolean
           key: string
+          livemode: boolean | null
+          stripe_account_id: string | null
           stripe_price_id: string | null
           stripe_product_id: string | null
           updated_at: string
@@ -10525,6 +10527,8 @@ export type Database = {
         Insert: {
           archived?: boolean
           key: string
+          livemode?: boolean | null
+          stripe_account_id?: string | null
           stripe_price_id?: string | null
           stripe_product_id?: string | null
           updated_at?: string
@@ -10533,6 +10537,8 @@ export type Database = {
         Update: {
           archived?: boolean
           key?: string
+          livemode?: boolean | null
+          stripe_account_id?: string | null
           stripe_price_id?: string | null
           stripe_product_id?: string | null
           updated_at?: string
@@ -16624,7 +16630,9 @@ export type Database = {
           description: string
           ends_at: string
           id: string
+          parent_event_id: string
           price_cents: number
+          recurrence_type: string
           slug: string
           starts_at: string
           title: string

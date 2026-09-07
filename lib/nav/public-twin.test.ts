@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { readFileSync } from 'node:fs'
+import { sourceWithoutComments } from '@/test/source-shape'
 import { matchPublicTwin, hasPublicTwin, TWIN_RULES } from './public-twin'
 
 // THE INVARIANT: a share link a member can press must not dead-end a signed-out recipient.
@@ -10,16 +10,17 @@ import { matchPublicTwin, hasPublicTwin, TWIN_RULES } from './public-twin'
 // worked, the link was valid, and the gates were behaving exactly as written. Only a test that
 // reads BOTH the table and the two gates that consume it can hold this, so that is what this does.
 
-const PROXY = readFileSync('proxy.ts', 'utf8')
-const LAYOUT = readFileSync('app/(main)/layout.tsx', 'utf8')
+// Comment- and import-free (LIVE-167): both gates must CALL the table, not merely import it.
+const PROXY = sourceWithoutComments('proxy.ts', { imports: true })
+const LAYOUT = sourceWithoutComments('app/(main)/layout.tsx', { imports: true })
 
 describe('member detail routes redirect a signed-out visitor to their public twin', () => {
   it('both gates actually consult this table', () => {
     // If either call is dropped, every assertion below still passes while the dead-end returns.
-    expect(PROXY).toContain('hasPublicTwin')
-    expect(PROXY).toContain("from '@/lib/nav/public-twin'")
-    expect(LAYOUT).toContain('matchPublicTwin')
-    expect(LAYOUT).toContain("from '@/lib/nav/public-twin'")
+    expect(PROXY).toMatch(/\bhasPublicTwin\(pathname\)/)
+    expect(PROXY).not.toMatch(/function hasPublicTwin\b/)
+    expect(LAYOUT).toMatch(/\bmatchPublicTwin\(pathname\)/)
+    expect(LAYOUT).not.toMatch(/function matchPublicTwin\b/)
   })
 
   it('the proxy exempts twin routes from the sign-in bounce', () => {

@@ -41,6 +41,8 @@ function searchedKey(query: string): string {
 }
 
 vi.mock('./stripe', () => ({
+  keyLivemode: () => false,
+  stripeAccountId: () => Promise.resolve('acct_test'),
   billingEnabled: () => true,
   stripe: {
     products: {

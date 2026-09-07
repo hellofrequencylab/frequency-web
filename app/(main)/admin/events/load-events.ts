@@ -1,4 +1,5 @@
 import { createAdminClient } from '@/lib/supabase/admin'
+import { SERIES_COLUMNS } from '@/lib/events/series'
 
 export type AdminEvent = {
   id: string
@@ -10,6 +11,11 @@ export type AdminEvent = {
   is_cancelled: boolean
   featured_at: string | null
   host: { display_name: string } | null
+  /** The series columns (SERIES_COLUMNS). The table itself stays PER DATE on purpose — an operator
+   *  managing dates wants the dates (LIVE-206's recorded decision) — but each row knows whether it
+   *  belongs to a repeating event, so its cancel control can offer the whole series too. */
+  recurrence_type: string | null
+  parent_event_id: string | null
 }
 
 // "Manage events across your circles" data for the in-place Spaces·Events module
@@ -37,7 +43,7 @@ export async function getEventsAdminData(profileId: string) {
     const { data } = await admin
       .from('events')
       .select(
-        `id, title, slug, starts_at, ends_at, location, is_cancelled, featured_at,
+        `id, title, slug, starts_at, ends_at, location, is_cancelled, featured_at, ${SERIES_COLUMNS},
          host:profiles!host_id ( display_name )`,
       )
       .in('scope_id', circleIds)
@@ -49,7 +55,7 @@ export async function getEventsAdminData(profileId: string) {
   const { data: directHosted } = await admin
     .from('events')
     .select(
-      `id, title, slug, starts_at, ends_at, location, is_cancelled, featured_at,
+      `id, title, slug, starts_at, ends_at, location, is_cancelled, featured_at, ${SERIES_COLUMNS},
        host:profiles!host_id ( display_name )`,
     )
     .eq('host_id', profileId)

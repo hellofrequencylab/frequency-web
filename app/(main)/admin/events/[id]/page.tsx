@@ -10,6 +10,7 @@ import { buttonClasses } from '@/components/ui/button'
 import { EventEditorWindow } from '@/components/studio/event/event-editor-window'
 import { EventEditClient, type TierEditRow } from './event-edit-client'
 import { loadSpaceAccessContext } from '@/lib/events/ticket-space-access'
+import { loadSeriesCancelPlan } from '@/lib/events/cancellation'
 
 export const dynamic = 'force-dynamic'
 
@@ -48,12 +49,17 @@ export default async function AdminEventEditPage({ params }: { params: Promise<{
   await requireAdmin('host', { staff: 'community' })
 
   // Verify the caller can edit this event before rendering the form.
-  const [event, caps, tiers, spaceAccess] = await Promise.all([
+  const [event, caps, tiers, spaceAccess, series] = await Promise.all([
     loadEvent(id),
     getEventCapabilities(id),
     loadTiers(id),
     // Membership-linked ticket access (ADR-823): the "Who can buy" control's context.
     loadSpaceAccessContext(id),
+    // How many dates of this event's series are still to come, for the series control (LIVE-206).
+    // An unreadable series offers nothing: a bulk money button must not guess its own count.
+    loadSeriesCancelPlan(id)
+      .then((p) => ({ recurring: p.recurring, cancellable: p.cancellable, truncated: p.truncated }))
+      .catch(() => ({ recurring: false, cancellable: 0, truncated: false })),
   ])
   if (!event) notFound()
   // Can't edit this event's settings — send them home rather than to a dead end.
@@ -96,6 +102,7 @@ export default async function AdminEventEditPage({ params }: { params: Promise<{
 
       {/* Edit form + cancel/reinstate + ticket tiers */}
       <EventEditClient
+        series={series}
         event={{
           id:           event.id,
           title:        event.title,

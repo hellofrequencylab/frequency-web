@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
+import { sourceWithoutComments } from '@/test/source-shape'
 import {
   canAdministerAchievements,
   canModeratePost,
@@ -125,6 +126,8 @@ describe('isStaff is the lib/core/roles definition, re-exported', () => {
 
 const ROOT = path.join(import.meta.dirname, '..', '..')
 const read = (p: string) => readFileSync(path.join(ROOT, p), 'utf8')
+// Comment- and import-free (LIVE-167): the consumer greps pin the CALL, never the import line.
+const code = (p: string) => sourceWithoutComments(path.join(ROOT, p), { imports: true })
 
 describe('the pure helper stays pure', () => {
   it('imports nothing from React, Next, or Supabase', () => {
@@ -134,10 +137,11 @@ describe('the pure helper stays pure', () => {
 })
 
 describe('feed/actions.ts · deletePost, pinPost, unpinPost ask canModeratePost', () => {
-  const src = read('app/(main)/feed/actions.ts')
+  const src = code('app/(main)/feed/actions.ts')
 
   it('imports the helper and reads the post before writing', () => {
-    expect(src).toContain("import { canModeratePost } from '@/lib/moderation/scope'")
+    expect(src).toMatch(/\bcanModeratePost\(/)
+    expect(src).not.toMatch(/function canModeratePost\b/)
     expect(src).toMatch(/\.select\('author_id, scope_id'\)[\s\S]{0,80}\.eq\('id', postId\)/)
   })
 
@@ -170,10 +174,10 @@ describe('feed/actions.ts · deletePost, pinPost, unpinPost ask canModeratePost'
 })
 
 describe('library/actions.ts · reviewContent is staff only', () => {
-  const src = read('app/(main)/library/actions.ts')
+  const src = code('app/(main)/library/actions.ts')
 
   it('asks canReviewLibrarySubmission with the caller web_role', () => {
-    expect(src).toContain("import { canReviewLibrarySubmission } from '@/lib/moderation/scope'")
+    expect(src).not.toMatch(/function canReviewLibrarySubmission\b/)
     const body = src.slice(src.indexOf('export async function reviewContent('))
     expect(body).toContain('canReviewLibrarySubmission(caller.webRole)')
     expect(body.indexOf('canReviewLibrarySubmission')).toBeLessThan(body.indexOf(".from('practices').update("))
@@ -186,10 +190,10 @@ describe('library/actions.ts · reviewContent is staff only', () => {
 })
 
 describe('crew/gamification-actions.ts · award/revoke are staff only', () => {
-  const src = read('app/(main)/crew/gamification-actions.ts')
+  const src = code('app/(main)/crew/gamification-actions.ts')
 
   it('asks canAdministerAchievements from one gate both actions call', () => {
-    expect(src).toContain("import { canAdministerAchievements } from '@/lib/moderation/scope'")
+    expect(src).not.toMatch(/function canAdministerAchievements\b/)
     expect(src).toContain('canAdministerAchievements({ webRole: caller.webRole, staffRole: staff?.role })')
     for (const fn of ['awardAchievement', 'revokeAchievement']) {
       const body = src.slice(src.indexOf(`export async function ${fn}(`))

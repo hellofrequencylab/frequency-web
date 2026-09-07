@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { readFileSync } from 'node:fs'
+import { sourceWithoutComments } from '@/test/source-shape'
 
 // ── Wiring guard: the Household bundle OFFER is mounted, buyable, and flag-gated (LIVE-062) ──────
 // OWNER RULING (batch 6, 2026-08-20): startBundleCheckout was a deliberate mount of
@@ -9,16 +9,19 @@ import { readFileSync } from 'node:fs'
 // only shows once the platform flips billing on.
 
 const DIR = 'app/(main)/settings/billing'
-const section = readFileSync(`${DIR}/bundle-seats-section.tsx`, 'utf8')
-const controls = readFileSync(`${DIR}/bundle-offer-controls.tsx`, 'utf8')
-const actions = readFileSync(`${DIR}/actions.ts`, 'utf8')
+// Comment- and import-free (LIVE-167): every needle below must hit a CALL or a mount, never the
+// import line that names it, so deleting the use while keeping the import fails here, not in lint.
+const section = sourceWithoutComments(`${DIR}/bundle-seats-section.tsx`, { imports: true })
+const controls = sourceWithoutComments(`${DIR}/bundle-offer-controls.tsx`, { imports: true })
+const actions = sourceWithoutComments(`${DIR}/actions.ts`, { imports: true })
 
 /** Comments stripped, so copy assertions (voice canon) judge only what a member can read. */
 const strip = (src: string) => src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '')
 
 describe('the flag gate stands in front of the offer', () => {
   it('the section reads bundleSellable() and returns null before anything renders', () => {
-    expect(section).toContain("import { bundleSellable, getHouseholdBundle } from '@/lib/pricing/settings'")
+    expect(section).toMatch(/\bbundleSellable\(\)/)
+    expect(section).toMatch(/\bgetHouseholdBundle\(\)/)
     expect(section).toContain('if (!(await bundleSellable())) return null')
     // The gate runs BEFORE the offer can mount: switch off ⇒ the whole section, offer included,
     // renders nothing (the sibling billing idiom this surface already used).
@@ -30,14 +33,14 @@ describe('the flag gate stands in front of the offer', () => {
 
 describe('the offer card is mounted and calls the deliberate action', () => {
   it('the section mounts the offer with the buy control and the live config', () => {
-    expect(section).toContain("import { BuyBundleButtons } from './bundle-offer-controls'")
+    expect(section).toMatch(/<BuyBundleButtons\b/)
     expect(section).toContain('<BundleOffer />')
     expect(section).toContain('await getHouseholdBundle()')
     expect(section).toContain('<BuyBundleButtons hasAnnual=')
   })
 
   it('the control calls startBundleCheckout and redirects to the Stripe URL', () => {
-    expect(controls).toContain("import { startBundleCheckout } from './actions'")
+    expect(controls).toMatch(/\bstartBundleCheckout\(/)
     expect(controls).toContain('await startBundleCheckout(period)')
     expect(controls).toContain('window.location.href = r.data.url')
   })
@@ -48,7 +51,7 @@ describe('the offer card is mounted and calls the deliberate action', () => {
   // settings page). The chain is what this control is for, not the keyword, so it now pins the call
   // AND the guard the call must sit inside — strictly more than it asserted before.
   it('the action still mounts createBundleCheckout, inside the non-throwing guard', () => {
-    expect(actions).toContain("import { createBundleCheckout } from '@/lib/billing/bundle-checkout'")
+    expect(actions).toMatch(/\bcreateBundleCheckout\(/)
     expect(actions).toContain('export async function startBundleCheckout')
     expect(actions).toContain('createBundleCheckout({')
     expect(actions).toContain("viaStripe('settings/billing startBundleCheckout'")
@@ -75,7 +78,8 @@ describe('the offer card is mounted and calls the deliberate action', () => {
     // via-stripe.test.ts pins BOTH the value/error union and the rule that neither billing
     // surface may await a Stripe call outside the wrapper. What this file still owns is that it
     // reaches for the shared guard at all rather than growing a private copy back.
-    expect(actions).toContain("import { viaStripe } from '@/lib/billing/via-stripe'")
+    expect(actions).toMatch(/\bviaStripe\(/)
+    expect(actions).not.toMatch(/function viaStripe\b/)
   })
 })
 

@@ -25,6 +25,8 @@ const H = vi.hoisted(() => ({
 }))
 
 vi.mock('./stripe', () => ({
+  keyLivemode: () => false,
+  stripeAccountId: () => Promise.resolve('acct_test'),
   appUrl: () => 'https://frequencylocal.com',
   stripe: {
     checkout: {

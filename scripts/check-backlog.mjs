@@ -39,8 +39,10 @@
 //   node scripts/check-backlog.mjs --lane owner   # filter the report to one lane
 
 import { readFileSync, existsSync, statSync, readdirSync } from 'node:fs'
-import { spawnSync } from 'node:child_process'
-import { join } from 'node:path'
+import { spawn, spawnSync } from 'node:child_process'
+import { availableParallelism } from 'node:os'
+import { dirname, join } from 'node:path'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 
 const FILE = 'docs/BUILD-BACKLOG.json'
 
@@ -215,6 +217,19 @@ function validate(entries) {
       // the safer form, because it needs no backslashes at all. SCAN-509's probe was written that
       // way, ran clean, mutation-fired on all five arms, and was still rejected here. Derive the
       // delimiter from the `-e ` that opens the body and complain about THAT character only.
+      // 🔴 A cmd PROBE MUST RUN UNDER node (HYG-062). Per-probe cost is reported by the probe itself
+      // (scripts/backlog-probe-cpu.mjs, preloaded into every node the probe starts), which is what
+      // lets the probes run in parallel without going blind on which one is expensive. A plain
+      // grep pipeline reports nothing, so the per-probe ceiling could not see it — and the probes
+      // most likely to be expensive are exactly the ones that shell out. Refused here rather than
+      // tolerated at run time, for the same reason a probe that cannot parse is refused: a cost the
+      // guard cannot attribute is a cost nobody watches (ADR-970, with the roles reversed).
+      if (p.cmd && !/(?:^|[\s;&|(])node\s/.test(p.cmd)) {
+        problems.push(
+          `${at}: verify.cmd does not run under node, so its cost cannot be attributed. ` +
+            'Write it as a `node -e` body (fs.readFileSync + includes/regex does what grep did).',
+        )
+      }
       if (p.cmd) {
         // 🔴 ASK THE SHELL, not a quote heuristic (2026-09-07). The rule below counts quotes, and
         // OWN-058 got past it with an unmatched BACKTICK: /bin/sh refused the probe with
@@ -317,36 +332,65 @@ function patternMatches(pattern, paths) {
   return false
 }
 
-/** CPU burned by REAPED CHILDREN so far, in ms, or null off Linux.
- *
- *  This is the same quantity scripts/backlog-contract.test.ts budgets against, and it is the only
- *  honest one: LIVE-047 established that the wall clock here measures the CI runner's contention
- *  rather than any probe's cost (12.0s of CPU read as 9.3s wall unloaded and 18.6s wall against a
- *  20s ceiling with six spinners, while the CPU stayed flat within 4%). Measuring it PER PROBE is
- *  what lets the budget name the expensive probe instead of blaming the list for being long. */
-function childCpuMs() {
-  try {
-    const stat = readFileSync('/proc/self/stat', 'utf8')
-    const fields = stat.slice(stat.lastIndexOf(')') + 2).split(' ')
-    const ticks = Number(fields[13]) + Number(fields[14]) // cutime + cstime
-    if (!Number.isFinite(ticks)) return null
-    return (ticks / 100) * 1000 // CLK_TCK is 100 on every platform this runs on
-  } catch {
-    return null
-  }
+/** The self-report preload every cmd probe's node process carries (HYG-062, ADR-1226). */
+const PROBE_CPU_PRELOAD = pathToFileURL(join(dirname(fileURLToPath(import.meta.url)), 'backlog-probe-cpu.mjs')).href
+
+/** The environment a cmd probe runs in: the caller's, plus the preload (`--import` takes a file
+ *  URL, so the path survives whatever the checkout directory is called). Appended rather than
+ *  replaced so a NODE_OPTIONS the runner already set keeps working. */
+function probeEnv() {
+  const inherited = process.env.NODE_OPTIONS ? `${process.env.NODE_OPTIONS} ` : ''
+  return { ...process.env, NODE_OPTIONS: `${inherited}--import ${PROBE_CPU_PRELOAD}` }
 }
 
-/** Per-probe CPU, newest first, for the summary line the contract test parses. */
-const probeCosts = []
+/** The probe's own cost, summed from every `probe-cpu <ms>` line it (and any node it started that
+ *  inherited fd 3) wrote to the report pipe. null when nothing reported — the process was killed
+ *  before exit, or the command never reached node — which the caller records as unattributed
+ *  rather than as zero. */
+function parseProbeReport(text) {
+  let total = null
+  for (const m of String(text ?? '').matchAll(/^probe-cpu (\d+(?:\.\d+)?)$/gm)) {
+    total = (total ?? 0) + Number(m[1])
+  }
+  return total
+}
 
-/** Run one probe. Returns true (DONE), false (NOT DONE), or null (cannot tell). */
-function runProbe(p) {
-  if (p.kind === 'manual') return null
+/** Per-probe CPU, for the summary line the contract test parses. Filled in entry order. */
+const probeCosts = []
+let unattributed = 0
+
+/** Run one cmd probe. Resolves to its raw outcome; the verdict logic lives in runProbe(). Async so
+ *  the pool below can hold several in flight — attribution no longer depends on being the only
+ *  child, so nothing forces the probes to queue. */
+function spawnProbe(cmd) {
+  return new Promise((resolve) => {
+    let child
+    try {
+      // fd 3 is the report pipe: stdout and stderr stay the probe's own, so a probe that prints its
+      // reasoning cannot corrupt the cost line and the cost line cannot corrupt a probe's output.
+      child = spawn(cmd, { shell: true, stdio: ['ignore', 'pipe', 'pipe', 'pipe'], env: probeEnv(), timeout: 120_000 })
+    } catch (error) {
+      resolve({ error })
+      return
+    }
+    const report = []
+    child.stdio[3].on('data', (c) => report.push(c))
+    child.stdout.resume()
+    child.stderr.resume()
+    child.on('error', (error) => resolve({ error }))
+    child.on('close', (status, signal) => resolve({ status, signal, cpuMs: parseProbeReport(Buffer.concat(report)) }))
+  })
+}
+
+/** Run one probe. Resolves { result, cpuMs }: result true (DONE), false (NOT DONE), or null
+ *  (cannot tell); cpuMs the probe's self-reported cost, or null for an in-process kind. */
+async function runProbe(p) {
+  if (p.kind === 'manual') return { result: null, cpuMs: null }
 
   if (p.kind === 'cmd') {
     // ⚠️ A `cmd` probe carries the same hazard the ripgrep bug above demonstrated: a pipeline whose
     // tool is missing can still exit 0 and read as DONE. Keep cmd probes to `node -e`, which is
-    // guaranteed present wherever this guard runs at all.
+    // guaranteed present wherever this guard runs at all — and which validate() now requires.
     //
     // 🔴 AND THE MIRROR OF IT. The first version wrapped this in try/catch and returned `false` for
     // everything that threw — which folded four different outcomes into one confident verdict. A
@@ -358,25 +402,42 @@ function runProbe(p) {
     //
     // So only a real exit code is a real answer. Death by signal, timeout, spawn failure and 127
     // are all "cannot tell", which the caller counts as unprovable and never converts to a verdict.
-    const r = spawnSync(p.cmd, { shell: true, stdio: 'pipe', timeout: 120_000 })
-    if (r.error || r.signal !== null || r.status === null) return null // killed, timed out, unspawnable
-    if (r.status === 127) return null // the shell could not find the command — not an answer
-    if (r.status === PROBE_INDETERMINATE) return null // the probe told us it could not look
-    return r.status === 0
+    const r = await spawnProbe(p.cmd)
+    const cpuMs = r.cpuMs ?? null
+    if (r.error || r.signal !== null || r.status === null) return { result: null, cpuMs } // killed, timed out, unspawnable
+    if (r.status === 127) return { result: null, cpuMs } // the shell could not find the command — not an answer
+    if (r.status === PROBE_INDETERMINATE) return { result: null, cpuMs } // the probe told us it could not look
+    return { result: r.status === 0, cpuMs }
   }
 
   // Paths that do not exist count as "no match" — a deleted file cannot contain the thing.
   const paths = p.paths.filter((f) => existsSync(f))
-  if (paths.length === 0) return p.kind === 'grep-absent'
+  if (paths.length === 0) return { result: p.kind === 'grep-absent', cpuMs: null }
 
   let matched
   try {
     matched = patternMatches(p.pattern, paths)
   } catch {
-    return null // a bad regex is "cannot tell", never a silent verdict
+    return { result: null, cpuMs: null } // a bad regex is "cannot tell", never a silent verdict
   }
-  return p.kind === 'grep-present' ? matched : !matched
+  return { result: p.kind === 'grep-present' ? matched : !matched, cpuMs: null }
 }
+
+/** Run `tasks` (thunks returning promises) with at most `width` in flight, preserving nothing
+ *  about order — callers index their results. Width is the runner's cores, capped: a probe is a
+ *  node start plus a file read, so more than a core's worth each just contends. */
+async function runPool(tasks, width) {
+  let next = 0
+  const lanes = Array.from({ length: Math.max(1, width) }, async () => {
+    while (next < tasks.length) {
+      const i = next++
+      await tasks[i]()
+    }
+  })
+  await Promise.all(lanes)
+}
+
+const PROBE_PARALLELISM = Math.min(4, availableParallelism())
 
 function daysSince(iso) {
   const then = Date.parse(iso)
@@ -465,6 +526,9 @@ const staleManual = []
 let probed = 0
 let unprovable = 0
 
+// Every probe first, in a pool, then the verdicts in entry order — so the output is stable however
+// the pool interleaves, and a contradiction is reported against the same row it always was.
+const toProbe = []
 for (const e of entries) {
   // A parked row is a scheduling decision, not a claim about the tree. Probing it would report
   // "you could do this now", which is true of everything parked and therefore says nothing.
@@ -476,12 +540,22 @@ for (const e of entries) {
     if (age > MANUAL_STALE_DAYS) staleManual.push({ e, age })
     continue
   }
+  toProbe.push(e)
+}
+const outcomes = new Array(toProbe.length)
+await runPool(
+  toProbe.map((e, i) => async () => {
+    outcomes[i] = await runProbe(e.verify)
+  }),
+  PROBE_PARALLELISM,
+)
 
-  const cpuBefore = childCpuMs()
-  const result = runProbe(p)
-  const cpuAfter = childCpuMs()
-  if (cpuBefore !== null && cpuAfter !== null) {
-    probeCosts.push({ id: e.id, kind: p.kind, cpuMs: Math.max(0, cpuAfter - cpuBefore) })
+for (const [i, e] of toProbe.entries()) {
+  const p = e.verify
+  const { result, cpuMs } = outcomes[i]
+  if (p.kind === 'cmd') {
+    if (cpuMs === null) unattributed++
+    else probeCosts.push({ id: e.id, kind: p.kind, cpuMs })
   }
   if (result === null) {
     unprovable++
@@ -540,12 +614,17 @@ function printCost() {
   // (AGENTS.md, and the reason PACKED_PER_RAW needed a paired real reading). The `checks` job pipes
   // this stdout straight through, so a green run publishes it. Self CPU is added to child CPU
   // because ~4% of the cost is this process walking the tree for the in-process probe kinds.
+  // Self CPU plus what every probe reported for itself. The probes' half used to be read off this
+  // process's reaped-children counters, which is the same total but attributable only while the
+  // probes ran one at a time; each probe now reports its own (backlog-probe-cpu.cjs), and the in-
+  // process grep kinds are inside the self figure.
   const selfCpu = process.cpuUsage()
-  const guardCpuMs = Math.round((selfCpu.user + selfCpu.system) / 1000 + (childCpuMs() ?? 0))
+  const guardCpuMs = Math.round((selfCpu.user + selfCpu.system) / 1000 + total)
   console.log(
-    `  probe-cost: n=${probeCosts.length} totalCpuMs=${total} maxCpuMs=${Math.round(worst.cpuMs)} slowest=${worst.id}`,
+    `  probe-cost: n=${probeCosts.length} totalCpuMs=${total} maxCpuMs=${Math.round(worst.cpuMs)} slowest=${worst.id}` +
+      (unattributed ? ` unattributed=${unattributed}` : ''),
   )
-  console.log(`  guard-cost: guardCpuMs=${guardCpuMs} (probes ${total} + this process)`)
+  console.log(`  guard-cost: guardCpuMs=${guardCpuMs} (probes ${total} + this process, ${PROBE_PARALLELISM} in flight)`)
   // The three most expensive, always — `--report` returns before any probe runs, so gating this
   // on it would have printed the list exactly never.
   for (const c of sorted.slice(0, 3)) {
