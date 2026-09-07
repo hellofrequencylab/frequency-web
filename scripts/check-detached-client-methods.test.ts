@@ -95,6 +95,65 @@ const ALIAS = /(=>|[=(,[:]|\breturn\b)\s*([\w$.()]*?)\.(rpc|from|schema)(?![\w$(
  */
 const PAREN_CAST = /^\s*as\b/
 
+/**
+ * The FOURTH blind spot, and the only one that was NOT empty when it was closed.
+ *
+ *     return (createAdminClient() as unknown as MarkerClient).from
+ *
+ * `ALIAS` cannot see this and no widening of its prefix would help, because the receiver class is a
+ * contiguous run of `[\w$.()]` and this shape puts ` as unknown as ` between the client and the
+ * dot. The regex therefore reads the receiver as the bare TYPE NAME `MarkerClient`, which is not a
+ * client by any test, and drops the match.
+ *
+ * ⚠️ NOTE WHICH HALF IS CAST. `PAREN_CAST` above excuses a cast of the METHOD —
+ * `(supabase.rpc as Fn)('x')` — where `this` survives because the call is on the client. THIS is a
+ * cast of the CLIENT — `(client as T).from` — where the method comes off a parenthesized expression
+ * and is then handed around as a value. The two look alike and behave oppositely.
+ *
+ * It ran in production: app/api/cron/weekly-digest/route.ts returned exactly this, and the
+ * 2026-09-06 14:00:46Z run logged `Cannot read properties of undefined (reading 'rest')` for a real
+ * member. Every other `(client as T).from` in the tree is invoked immediately, which keeps `this`
+ * and is excluded by the same lookahead `ALIAS` uses.
+ *
+ * Parens are balanced by walking backwards rather than matched by a regex, because the cast's own
+ * `createAdminClient()` nests inside it and a regex cannot count.
+ */
+const CAST_TAIL = /\)\s*\.(rpc|from|schema)(?![\w$(<.])/g
+
+export function detachedFromCast(
+  code: string,
+  local: Set<string>,
+): Array<{ index: number }> {
+  const out: Array<{ index: number }> = []
+  for (const m of code.matchAll(CAST_TAIL)) {
+    // Walk back from the `)` this match starts on to its opening `(`.
+    let depth = 0
+    let open = -1
+    for (let i = m.index ?? 0; i >= 0; i--) {
+      const ch = code[i]
+      if (ch === ')') depth++
+      else if (ch === '(') {
+        depth--
+        if (depth === 0) {
+          open = i
+          break
+        }
+      }
+    }
+    if (open < 0) continue
+    const inner = code.slice(open + 1, m.index)
+    // Only a cast: a parenthesized expression that is not a cast and not a client is none of our
+    // business, and `(await getClient()).from` without an `as` is already a bare-receiver shape.
+    if (!/\bas\b/.test(inner)) continue
+    const head = inner.match(/^\s*([\w$]+)/)?.[1] ?? ''
+    const isClient =
+      /\bcreate[\w$]*Client\s*\(/.test(inner) || /\bdb\s*\(\s*\)/.test(inner) || local.has(head) || CLIENT_RECEIVER.test(head)
+    if (!isClient) continue
+    out.push({ index: (m.index ?? 0) + m[0].length })
+  }
+  return out
+}
+
 export function detachedClientMethods(source: string): Array<{ line: number; text: string }> {
   const hits: Array<{ line: number; text: string }> = []
   const local = clientBoundNames(source)
@@ -131,6 +190,12 @@ export function detachedClientMethods(source: string): Array<{ line: number; tex
     const line = lineOf(lineStarts, at)
     hits.push({ line, text: (source.split('\n')[line - 1] ?? '').trim() })
   }
+  // …and the cast-of-the-client shape ALIAS structurally cannot reach; see detachedFromCast.
+  for (const c of detachedFromCast(code, local)) {
+    const line = lineOf(lineStarts, c.index)
+    hits.push({ line, text: (source.split('\n')[line - 1] ?? '').trim() })
+  }
+  hits.sort((a, b) => a.line - b.line)
   return hits
 }
 
@@ -255,6 +320,37 @@ describe('supabase client methods are never detached from their client', () => {
     // Blanking preserves LENGTH, so offsets after a comment still resolve to the right line.
     expect(blankComments('// hi\nconst x = 1').length).toBe('// hi\nconst x = 1'.length)
     expect(detachedClientMethods('/* pad */\nconst rpc = admin.rpc as Fn')[0].line).toBe(2)
+  })
+
+  // ── The FOURTH blind spot, closed 2026-09-07, and the only one that was NOT empty ────────────
+  //
+  // The other three were widenings against shapes that did not exist yet. This one was found by a
+  // production 500: /api/cron/weekly-digest failed a real member on 2026-09-06 with the same
+  // `reading 'rest'` TypeError LIVE-053 is about, from a site three sweeps had walked past.
+
+  it('sees a cast of the CLIENT, which no widening of the ALIAS prefix could reach', () => {
+    // The literal line that ran in production, as a fixture. ALIAS reads its receiver as the type
+    // name `MarkerClient` and drops the match; the cast walk sees the client inside the parens.
+    expect(
+      detachedClientMethods('  return (createAdminClient() as unknown as MarkerClient).from'),
+      'the line app/api/cron/weekly-digest/route.ts:60 carried',
+    ).toHaveLength(1)
+    expect(detachedClientMethods('const dbh = createAdminClient()\nconst f = (dbh as unknown as T).rpc')).toHaveLength(1)
+    expect(detachedClientMethods('  doThing((supabase as Any).schema)')).toHaveLength(1)
+  })
+
+  it('does not fire on the same cast when it is INVOKED, which is the whole tree today', () => {
+    // `this` survives an immediate call: every other `(client as T).from` site reads
+    // `.from('table')`, and the lookahead excludes them exactly as it does for ALIAS.
+    expect(detachedClientMethods("  return (createAdminClient() as unknown as Marker).from('x')")).toEqual([])
+    // …and on the bound form, which is the fix.
+    expect(
+      detachedClientMethods('  const c = createAdminClient() as unknown as M\n  return c.from.bind(c)'),
+    ).toEqual([])
+    // A parenthesized expression that holds no client is none of the guard's business.
+    expect(detachedClientMethods('  const x = (style as Gradient).from')).toEqual([])
+    // Nor is a parenthesized expression with no cast in it at all.
+    expect(detachedClientMethods('  const x = (a ? b : c).from')).toEqual([])
   })
 
   it('finds none in the tree', () => {

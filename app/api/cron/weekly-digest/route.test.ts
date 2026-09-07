@@ -79,6 +79,9 @@ vi.mock('@/lib/observability/cron-heartbeat', () => ({
 }))
 vi.mock('@/lib/log', () => ({
   briefError: (e: unknown) => (e instanceof Error ? e.message : String(e)),
+  // Stands in for the real errorStack: the point under test is that the ROUTE logs frames beside
+  // the message, not how lib/log formats them (lib/log.test.ts owns that).
+  errorStack: (e: unknown) => (e instanceof Error ? e.stack : undefined),
   log: {
     info: () => {},
     warn: () => {},
@@ -158,6 +161,19 @@ describe('GET /api/cron/weekly-digest, per-member fail-safe', () => {
     expect(await res.json()).toMatchObject({ ok: false, sent: 2, failed: 1 })
     const line = state.logged.error.find((l) => l.event === 'cron.weekly_digest.member_failed')
     expect(line?.fields).toMatchObject({ profile_id: 'p2', error: 'assemble broke for p2' })
+  })
+
+  it('logs the STACK beside the message, because the message alone names no call site (LIVE-053)', async () => {
+    // The defect this fail-safe swallowed on 2026-09-06 threw
+    // `Cannot read properties of undefined (reading 'rest')` — a message that is identical for
+    // every lost-`this` on a Supabase client and points at nothing. The frames are the only part
+    // that says where, and this fail-safe was dropping them.
+    state.profiles = ['p1', 'p2']
+    state.assembleThrows.add('p2')
+    await GET(req)
+    const line = state.logged.error.find((l) => l.event === 'cron.weekly_digest.member_failed')
+    expect(typeof line?.fields?.stack).toBe('string')
+    expect(String(line?.fields?.stack)).toContain('assemble broke for p2')
   })
 
   it('releases the claim when the send throws, so the next run retries that member only', async () => {

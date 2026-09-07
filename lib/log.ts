@@ -96,6 +96,27 @@ async function time<T>(
 const HTML_DOC = /^\s*<(?:!doctype|html)\b/i
 const HTML_TITLE = /<title[^>]*>([^<]*)<\/title>/i
 
+/**
+ * The first frames of an error's stack, bounded, or undefined when there is none.
+ *
+ * 🔴 WHY THIS EXISTS (LIVE-053). `briefError` deliberately reduces a throw to one queryable line,
+ * and that is right for grouping an outage. It is wrong for a defect whose MESSAGE is generic: a
+ * lost-`this` on a Supabase client always reads
+ * `Cannot read properties of undefined (reading 'rest')`, which names no call site at all. That
+ * message ran unattributed in production for six weeks, and then a SECOND time on
+ * /api/cron/weekly-digest, because the per-member fail-safe logged the message and dropped the
+ * frames — the only part that says WHERE.
+ *
+ * So this is not a replacement for `briefError`; it is the companion a per-item fail-safe should
+ * log BESIDE it, so that swallowing an item never also swallows the diagnosis. Bounded to a few
+ * frames because a full stack defeats the queryable-shape rule this module exists for.
+ */
+export function errorStack(e: unknown, frames = 4): string | undefined {
+  const raw = e instanceof Error ? e.stack : undefined
+  if (!raw) return undefined
+  return raw.split('\n').slice(0, frames + 1).map((l) => l.trim()).join(' | ').slice(0, 800)
+}
+
 export function briefError(e: unknown, max = 300): string {
   let raw: string
 
