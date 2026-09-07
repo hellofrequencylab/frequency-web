@@ -86,17 +86,41 @@ export function crossRequestCached<A extends (string | number | boolean | null)[
   keyParts: readonly string[],
   opts: { tags: readonly ChromeCacheTag[] },
 ): AsyncFn<A, R> {
-  const cached = unstable_cache(read, [...keyParts], {
-    tags: [...opts.tags],
-    revalidate: CROSS_REQUEST_CEILING_SECONDS,
-  })
+  // Built on first use, not at import: a test that partially mocks `next/cache` (most mock only
+  // `revalidatePath`) would otherwise throw on the missing export the moment any module that
+  // declares a cached read is imported. Without `unstable_cache` there is no cache, so the seam
+  // is the raw read, which is also what it is outside a Next request (E469, below).
+  let cached: AsyncFn<A, R> | null | undefined
+  const build = (): AsyncFn<A, R> | null => {
+    try {
+      return unstable_cache(read, [...keyParts], {
+        tags: [...opts.tags],
+        revalidate: CROSS_REQUEST_CEILING_SECONDS,
+      }) as AsyncFn<A, R>
+    } catch {
+      return null
+    }
+  }
   return async (...args: A): Promise<R> => {
+    if (cached === undefined) cached = build()
+    if (!cached) return read(...args)
     try {
       return await cached(...args)
     } catch (err) {
       if (isCacheUnavailable(err)) return read(...args)
       throw err
     }
+  }
+}
+
+/** Resolve one `next/cache` export at call time. A partially mocked `next/cache` (vitest) throws
+ *  on an export the mock did not declare; that means "no cache here", never a failure. */
+function nextCacheFn<T>(pick: () => T): T | null {
+  try {
+    const fn = pick()
+    return typeof fn === 'function' ? fn : null
+  } catch {
+    return null
   }
 }
 
@@ -108,14 +132,19 @@ export function crossRequestCached<A extends (string | number | boolean | null)[
  *  without the action-only guard. Outside a Next request entirely (E263: vitest, a script) there
  *  is nothing cached, so there is nothing to do. Any other error is a real one and surfaces. */
 export function invalidateCacheTag(tag: ChromeCacheTag): void {
+  const update = nextCacheFn(() => updateTag)
+  const revalidate = nextCacheFn(() => revalidateTag)
+  if (!update && !revalidate) return
   try {
-    updateTag(tag)
+    if (!update) throw Object.assign(new Error('updateTag unavailable'), { __NEXT_ERROR_CODE: 'E872' })
+    update(tag)
   } catch (err) {
     const code = nextErrorCode(err)
     if (code === 'E263') return
     if (code !== 'E872') throw err
+    if (!revalidate) return
     try {
-      revalidateTag(tag, { expire: 0 })
+      revalidate(tag, { expire: 0 })
     } catch (inner) {
       if (nextErrorCode(inner) === 'E263') return
       throw inner
