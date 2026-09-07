@@ -63,11 +63,21 @@ export default async function Image() {
             objectFit: "cover",
           }}
         />
-        {/* Gradient overlay — slightly heavier to keep the label legible */}
+        {/* Gradient overlay — slightly heavier to keep the label legible.
+            🔴 THIS DREW NOTHING UNTIL 2026-09-07 (LIVE-183). It was sized with `inset: 0` and
+            carried no `display`, and Satori implements neither the shorthand nor CSS's initial
+            `display: block` — so the scrim collapsed to 0x0 and the wordmark sat as white type
+            directly on a bright, low-contrast beach photograph. Nothing failed: the route returned
+            200 with a valid JPEG every time, which is why it survived. Explicit box, explicit
+            display. */}
         <div
           style={{
             position: "absolute",
-            inset: 0,
+            top: 0,
+            left: 0,
+            width: "100%",
+            height: "100%",
+            display: "flex",
             backgroundImage:
               "linear-gradient(180deg, rgba(0,0,0,0.30) 0%, rgba(0,0,0,0.50) 38%, rgba(0,0,0,0.82) 72%, rgba(0,0,0,0.97) 100%)",
           }}
