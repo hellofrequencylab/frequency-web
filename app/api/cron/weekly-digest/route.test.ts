@@ -49,16 +49,11 @@ vi.mock('@/lib/email', () => ({
     return Promise.resolve()
   },
 }))
-vi.mock('@/lib/supabase/admin', () => ({
-  // ⚠️ `from` is a METHOD that reads `this.rest`, exactly as the real SupabaseClient does
-  // (@supabase/supabase-js dist/index.mjs: `from(relation) { return this.rest.from(relation) }`).
-  // LIVE-053 (ADR-1231): route.ts once returned `client.from` as a bare value, and
-  // `markers()('cron_run_markers')` then invoked it with no receiver, throwing
-  // `TypeError: Cannot read properties of undefined (reading 'rest')` for a real member on
-  // 2026-09-06. The arrow-function mock this replaced had no `this` to lose, so this file passed
-  // 8/8 with the bind deleted (measured 2026-09-07). Now the bind is load-bearing here too, and the
-  // control below proves the mock can lose `this` at all.
-  createAdminClient: () => {
+/** The mocked service-role client, hoisted so the positive control below can build one WITHOUT
+ *  naming the module outside vi.mock: scripts/check-admin-client.mjs counts every `import(...)` of
+ *  lib/supabase/admin, a dynamic one in a test included, and a test that only mocks it is not a
+ *  new RLS bypass. */
+const makeAdminClient = vi.hoisted(() => () => {
     const rest = {
       from: (table: string) => {
         if (table !== 'cron_run_markers') throw new Error(`unexpected table ${table}`)
@@ -87,7 +82,18 @@ vi.mock('@/lib/supabase/admin', () => ({
         return this.rest.from(table)
       },
     }
-  },
+})
+
+vi.mock('@/lib/supabase/admin', () => ({
+  // ⚠️ `from` is a METHOD that reads `this.rest`, exactly as the real SupabaseClient does
+  // (@supabase/supabase-js dist/index.mjs: `from(relation) { return this.rest.from(relation) }`).
+  // LIVE-053 (ADR-1231): route.ts once returned `client.from` as a bare value, and
+  // `markers()('cron_run_markers')` then invoked it with no receiver, throwing
+  // `TypeError: Cannot read properties of undefined (reading 'rest')` for a real member on
+  // 2026-09-06. The arrow-function mock this replaced had no `this` to lose, so this file passed
+  // 8/8 with the bind deleted (measured 2026-09-07). Now the bind is load-bearing here too, and the
+  // control below proves the mock can lose `this` at all.
+  createAdminClient: makeAdminClient,
 }))
 vi.mock('@/lib/cron-auth', () => ({ rejectUnauthorizedCron: () => null }))
 vi.mock('@/lib/observability/cron-heartbeat', () => ({
@@ -196,8 +202,7 @@ describe('GET /api/cron/weekly-digest, per-member fail-safe', () => {
     // POSITIVE CONTROL for the mock itself. If a future edit turns `from` back into an arrow, this
     // stops throwing, and the tests below would pass again with the bind deleted from route.ts,
     // which is exactly the blind spot ADR-1231 closed.
-    const { createAdminClient } = await import('@/lib/supabase/admin')
-    const client = createAdminClient() as unknown as { from: (table: string) => unknown }
+    const client = makeAdminClient() as unknown as { from: (table: string) => unknown }
     const detached = client.from
     expect(() => detached('cron_run_markers')).toThrow("Cannot read properties of undefined (reading 'rest')")
     expect(() => client.from('cron_run_markers')).not.toThrow()
