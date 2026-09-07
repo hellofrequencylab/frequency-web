@@ -47,7 +47,6 @@
             "LIVE-124",
             "LIVE-187",
             "LIVE-188",
-            "LIVE-189",
             "LIVE-182"
           ]
         },
@@ -64,7 +63,6 @@
             "LIVE-159",
             "LIVE-161",
             "LIVE-173",
-            "LIVE-157",
             "LIVE-154",
             "LIVE-176",
             "LIVE-177",
@@ -7111,15 +7109,14 @@
     {
       "id": "LIVE-157",
       "title": "The event page does not yet read the ?door= reason the QR route now carries",
-      "status": "open",
-      "priority": "P1",
+      "status": "done",
       "lane": "live",
       "size": "XS",
       "source": {
         "file": "app/(main)/events/[slug]/page.tsx",
         "ref": "ADR-1208"
       },
-      "detail": "SCAN-566 made the QR door report why a scan did not check the scanner in (?door=window_closed, not_going, pending, checkin_off, signed_out, rsvp_refused, failed). The event page reads ticket, session_id, claimed and claim from its search params and nothing else, so the reason rides the URL and is shown to nobody. Render one line per reason in member voice (NAMING.md, CONTENT-VOICE.md) near the RSVP control.",
+      "detail": "SCAN-566 made the QR door report why a scan did not check the scanner in (?door=window_closed, not_going, pending, checkin_off, signed_out, rsvp_refused, failed). The event page reads ticket, session_id, claimed and claim from its search params and nothing else, so the reason rides the URL and is shown to nobody. Render one line per reason in member voice (NAMING.md, CONTENT-VOICE.md) near the RSVP control.\n\n── ✅ DONE 2026-09-06 (fan-out slice E). `app/(main)/events/[slug]/door-note.ts` maps each door reason to one member-voice line, rendered as a single `role=\"status\"` line at the top of the RSVP box, above every control branch. The stale comment in the QR route that said the page does not render the flag is corrected.\n\n⚪ EIGHT REASONS, NOT THE SEVEN THE ROW LISTED: `unavailable` is genuinely returned by checkInEvent and the row missed it. A test derives the union from CheckInFailReason and DoorOutcome in the source files, so a ninth reason cannot ship unspoken.\n\n🔴 A BUG WAS FOUND BY WRITING THE TEST, which is worth recording because it is a class rather than a typo: the first draft looked the reason up on a plain object, so `?door=constructor` returned a Function and rendered it. It uses Object.hasOwn now, and unknown or prototype keys render nothing. Any lookup keyed on a URL parameter has this shape.",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e \"const fs=require('fs');const p=fs.readFileSync('app/(main)/events/[slug]/page.tsx','utf8');process.exit(/\\.door\\b|['\\\"]door['\\\"]/.test(p)?0:1)\"",
@@ -8876,15 +8873,14 @@
     {
       "id": "LIVE-189",
       "title": "Nothing emits event.rsvp, so the RSVP step of the Circle funnel can never be measured",
-      "status": "open",
-      "priority": "P0",
+      "status": "done",
       "lane": "live",
       "size": "S",
       "source": {
         "file": "docs/BUILD-BACKLOG.json",
         "ref": "journey-registry re-verification, 2026-09-06"
       },
-      "detail": "The circle_to_rsvp funnel's final step is declared coverage:'unimplemented' in lib/analytics/journeys.ts, and the declaration is CORRECT: grep finds no emitter for event.rsvp anywhere in app/ or lib/, and engagement_events holds 0 rows for it. The funnel therefore refuses to report a conversion for that step, which is the honest behaviour and precisely what the registry was built to do. ── WHY NOW rather than whenever: RSVP is the conversion this product exists to produce, and the sitemap went to Search Console today. Every visitor who now arrives from search and RSVPs will be invisible in the one readout built to measure whether any of it worked. The registry's other 17 steps were re-verified against production on 2026-09-06 and all 17 are accurate; this is the single remaining hole. ── ⚠️ ITS TWIN WAS ALREADY FIXED AND NOBODY NOTICED, which is the reason to act rather than assume. land_to_beta/account_created carried the same 'unimplemented' declaration and the same 'nothing emits it' note until 2026-09-06, while app/auth/callback/route.ts had been emitting account.created with an idempotency key and production held 7 rows. journeys.test.ts pinned the stale pair, so a green test asserted a claim whose subject had changed underneath it. That step is now 'observed'; this one is the real gap. THE FIX: emit event.rsvp from the RSVP path with the same exactly-once shape, an idempotency key on profile plus event so a re-RSVP cannot double count.",
+      "detail": "The circle_to_rsvp funnel's final step is declared coverage:'unimplemented' in lib/analytics/journeys.ts, and the declaration is CORRECT: grep finds no emitter for event.rsvp anywhere in app/ or lib/, and engagement_events holds 0 rows for it. The funnel therefore refuses to report a conversion for that step, which is the honest behaviour and precisely what the registry was built to do. ── WHY NOW rather than whenever: RSVP is the conversion this product exists to produce, and the sitemap went to Search Console today. Every visitor who now arrives from search and RSVPs will be invisible in the one readout built to measure whether any of it worked. The registry's other 17 steps were re-verified against production on 2026-09-06 and all 17 are accurate; this is the single remaining hole. ── ⚠️ ITS TWIN WAS ALREADY FIXED AND NOBODY NOTICED, which is the reason to act rather than assume. land_to_beta/account_created carried the same 'unimplemented' declaration and the same 'nothing emits it' note until 2026-09-06, while app/auth/callback/route.ts had been emitting account.created with an idempotency key and production held 7 rows. journeys.test.ts pinned the stale pair, so a green test asserted a claim whose subject had changed underneath it. That step is now 'observed'; this one is the real gap. THE FIX: emit event.rsvp from the RSVP path with the same exactly-once shape, an idempotency key on profile plus event so a re-RSVP cannot double count.\n\n── ✅ DONE 2026-09-06 (fan-out slice E). `event.rsvp` is emitted from BOTH member RSVP writers — toggleRSVP and setRsvpStatus — through `track()` rather than raw recordEngagementEvent, because it is a registered taxonomy event and so also needs the GA4 server-side mirror. The idempotency key is `event.rsvp:<eventId>:<profileId>`, so a re-RSVP cannot double count. It fires only on a CONFIRMED PERSISTED SEAT: not waitlist, not host-pending, not on a refused write. The QR door routes through setRsvpStatus, so it is covered without a second emitter.\n\n⚪ THE REGISTRY NOW READS 'emitted', NOT 'observed', and the distinction is the row's own point. journeys.ts defines `observed` as emitted AND rows existing in the ledger today; the emitter ships now and no production row exists yet, so declaring 'observed' would have been precisely the stale unverifiable claim this row was filed about. Both values remove the step from journeyGaps(), so the funnel reports the conversion either way. Promote to 'observed' from a production read, not from this change.\n\nTHE EXACTLY-ONCE TEST IS NOT VACUOUS: it drives first RSVP → withdraw → re-join → the second path, asserts the action emitted MORE THAN ONCE so the dedupe is load-bearing, that every emit carried the same key, and that the ledger holds one row. Signed-out guest RSVPs carry no profile id and so cannot carry the key; they enter the funnel when claimed at sign-in.",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e \"const fs=require('fs');const walk=(d,o)=>{for(const e of fs.readdirSync(d,{withFileTypes:true})){if(e.name==='node_modules'||e.name.startsWith('.'))continue;const f=d+'/'+e.name;if(e.isDirectory())walk(f,o);else if(/\\\\.tsx?$/.test(f)&&!/\\\\.test\\\\.|journeys\\\\.ts$|events\\\\.ts$/.test(f))o.push(f)}return o};const files=[...walk('app',[]),...walk('lib',[])];if(files.length<500){console.error('walk found only '+files.length+' files - not descending, a clean result would prove nothing');process.exit(1)}const hit=files.filter(f=>/event\\\\.rsvp/.test(fs.readFileSync(f,'utf8')));process.exit(hit.length?0:1)\"",

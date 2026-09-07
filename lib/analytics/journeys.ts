@@ -187,9 +187,9 @@ export const JOURNEYS: readonly Journey[] = [
         label: 'RSVP’d to an event',
         stream: 'engagement',
         markers: ['event.rsvp'],
-        coverage: 'unimplemented',
+        coverage: 'emitted',
         note:
-          'GAP, and the most expensive one. `event.rsvp` is registered in the taxonomy but nothing emits it: an RSVP writes an `event_rsvps` row and stops there. This funnel cannot close until the RSVP path calls track(). Until then the last step reads 0 and means "not measured", not "nobody went".',
+          'app/(main)/events/actions.ts emits it from `recordRsvpConversion`, called by the `onGoing` side-effect block in BOTH member RSVP paths (`toggleRSVP` and `setRsvpStatus`, the latter being what the QR door calls too), so it fires only when a CONFIRMED seat persisted, never for a waitlist row and never while a host approval is pending. Keyed `event.rsvp:<eventId>:<profileId>`, so a withdraw-and-re-RSVP, a double tap or a second device re-attempt the same row and the exactly-once ledger absorbs it: the step counts people, not taps. ⚠️ THIS STEP READ `unimplemented` UNTIL 2026-09-06 (LIVE-189), correctly at the time: nothing emitted the marker and the ledger held 0 rows, so the last step of the funnel this product exists to produce read 0 and meant "not measured". It is `emitted` rather than `observed` because the emitter is new and no production row has been counted yet; promote it to `observed` once the ledger shows rows, and re-measure rather than trusting this constant.',
       },
     ],
   },
