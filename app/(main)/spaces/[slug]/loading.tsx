@@ -36,14 +36,16 @@ import { COVER_HEIGHT_DEFAULT, coverHeightClass } from '@/lib/layout/cover-heigh
 // its bottom-left, and the phone action row. Heights come from the SAME ladder the layout uses
 // (lib/layout/cover-height.ts) rather than from copied literals, so the two cannot drift again.
 //
-// 🔴 RADIUS: THIS FILE CANNOT USE THE ROLE TOKENS, and that is the second half of the same bug.
-// A loading.tsx renders inside the layout SHARING ITS FOLDER, and the AccentScope that establishes
-// [data-space-theme] lives one level down in (profile)/layout.tsx — so this skeleton has no themed
-// ancestor. `rounded-card` here does not resolve to the SPACE's shape; it resolves to the VIEWER's
-// skin/generation, which retune --radius-card from 15px to 42px. The skeleton was drawing a 42px
-// chip in front of a 2px one. --radius-cover has no skin/generation override at all, so it is the
-// one radius that reads the same inside and outside the scope: the cover and the chip both use it
-// (matching BrandAnchor, which is also cover-shaped now), and everything else here is shape-free.
+// 🔴 RADIUS: this file used to be unable to reach the role tokens, and that was the second half of
+// the same bug. A loading.tsx renders inside the layout SHARING ITS FOLDER, and the AccentScope that
+// establishes [data-space-theme] used to live one level down in (profile)/layout.tsx — so this
+// skeleton had no themed ancestor: `rounded-card` resolved to the VIEWER's skin/generation, which
+// retune --radius-card from 15px to 42px, and the skeleton drew a 42px chip in front of a 2px one.
+// The scope moved UP to the sibling [slug]/layout.tsx (LIVE-196, ADR-1192), so this file IS inside it
+// now and the role tokens would resolve to the Space's shape. The markup below is deliberately
+// unchanged: --radius-cover reads the same inside and outside the scope, the cover and the chip both
+// use it (matching BrandAnchor, which is also cover-shaped), and everything else here is shape-free —
+// so the skeleton still cannot drift from the hero it mirrors.
 export default function SpaceDetailLoading() {
   return (
     <div>

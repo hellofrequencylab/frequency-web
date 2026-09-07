@@ -1,5 +1,6 @@
 import type { CSSProperties, ReactNode } from 'react'
 import { type AccentVars } from '@/lib/spaces/accent'
+import { type SpaceThemeId } from '@/lib/theme/space-themes'
 
 // ACCENT SCOPE — the wrapper that paints a Space's brand accent over its profile subtree
 // (ENTITY-SPACES-BUILD §A, D4 "the accent is a guest" / D6 "tokens only"). It sets the
@@ -21,9 +22,15 @@ export function AccentScope({
   /** The resolved `--color-primary*` override (lib/spaces/accent.ts), or null to inherit the host. */
   vars: AccentVars | null
   /** The Space page THEME id (ADR-578, lib/theme/space-themes.ts). Emitted as `data-space-theme` so the
-   *  `[data-space-theme="<id>"]` CSS block themes the typography + shape of this profile subtree. Omitted
-   *  (or 'bold', the no-op default) leaves the render unchanged. */
-  theme?: string
+   *  `[data-space-theme="<id>"]` CSS block themes the typography + shape of this Space subtree. Omitted
+   *  (or 'bold', the no-op default) leaves the render unchanged.
+   *
+   *  🔴 TYPED, NOT `string` (LIVE-196, ADR-1192). Every id here must have a matching
+   *  `[data-space-theme="<id>"]` block in app/globals.css, and the attribute is emitted verbatim — so a
+   *  loose `string` let a typo render a live attribute matching no CSS block, silently dropping the
+   *  Space's typography with nothing to notice. `parseSpaceTheme` already returns this union; taking it
+   *  here is what makes the guarantee reach the DOM. */
+  theme?: SpaceThemeId
   className?: string
   children: ReactNode
 }) {

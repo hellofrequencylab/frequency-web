@@ -2,7 +2,7 @@
 // Cron (see vercel.json). Requires CRON_SECRET.
 
 import { NextRequest, NextResponse } from 'next/server'
-import { enforceRetention } from '@/lib/consent/retention'
+import { enforceRetention, type RetentionTable } from '@/lib/consent/retention'
 import { rejectUnauthorizedCron } from '@/lib/cron-auth'
 import { withCronHeartbeat } from '@/lib/observability/cron-heartbeat'
 import { log } from '@/lib/log'
@@ -14,9 +14,22 @@ async function handler(req: NextRequest) {
   if (denied) return denied
 
   const result = await enforceRetention()
-  log.info('cron.enforce_retention', result)
 
-  return NextResponse.json({ ok: true, ...result })
+  // One count per TABLE this job bounds, beside the camelCase counts the response has always
+  // carried. The question this cron exists to answer is "which tables are kept from growing
+  // without bound, and did last night's sweep touch them?", and until LIVE-174 the answer lived
+  // only in lib/consent/retention.ts — cron_run_markers grew unswept for exactly that long.
+  // Typed as Record<RetentionTable, number>, so a table added to RETENTION_TABLES fails the
+  // build here until this line names it too.
+  const purgedByTable: Record<RetentionTable, number> = {
+    member_tags: result.tagsPurged,
+    interaction_events: result.interactionsPurged,
+    studio_draft: result.studioDraftsPurged,
+    cron_run_markers: result.cronMarkersPurged,
+  }
+  log.info('cron.enforce_retention', { ...result, purgedByTable })
+
+  return NextResponse.json({ ok: true, ...result, purgedByTable })
 }
 
 export const GET = withCronHeartbeat('enforce-retention', handler)

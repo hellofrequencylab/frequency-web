@@ -40,6 +40,13 @@ const ACCENT_BY_TYPE: Record<string, string> = {
   business: '#1EB6C5',
   nonprofit: '#0F8E78',
 }
+// The logo chip's corner, mirroring `--radius-cover` (app/globals.css :root, 24px). The chip on the
+// page is BrandAnchor, which rides that token because a Space's cover photo and logo chip are its
+// IDENTITY MEDIA and stay round on every theme (ADR-1192). This literal read 28 — a number matching
+// no token and no theme — under a header that claims this card mirrors the on-page hero, so the card
+// and the page told two stories about the same chip. Named, and pinned to the token by
+// accent-scope-coverage.test.ts, which fails if the two drift again (LIVE-196).
+const COVER_RADIUS = 24
 
 // Build-time assets under public/ are inlined through lib/og/local-image.ts (Satori needs bytes,
 // not a relative URL). ⚠️ NOT a `readFile` in this file: a path built from a variable is
@@ -195,7 +202,7 @@ export default async function Image({ params }: { params: Promise<{ slug: string
               display: 'flex',
               width: 148,
               height: 148,
-              borderRadius: 28,
+              borderRadius: COVER_RADIUS,
               backgroundColor: '#FFFFFF',
               boxShadow: '0 10px 40px rgba(0,0,0,0.4)',
               alignItems: 'center',
