@@ -69,10 +69,11 @@
 // against the real tree. Vitest AUTO-DISCOVERS `*.test.ts`, so unlike an array entry it cannot be
 // forgotten — which is how THIS guard, shipped in PR #2098, ran nowhere for that PR's whole life.
 //
-// It stays BLOCKING, deliberately, and that is a judgement worth stating: its 18 unrouted creates
-// are a NAMED SET (UNROUTED), not a count, so this gate is green today and only fires when a NEW
-// ungoverned create appears. An unrelated PR cannot trip it, and the two ways out — route it, or
-// add a dated line to UNROUTED — are both one edit. That is a ratchet, not a tracker.
+// It stays BLOCKING, deliberately, and that is a judgement worth stating: its unrouted creates
+// are a NAMED SET (UNROUTED: 18 on 2026-08-11, 3 on 2026-09-07 after ADR-1249 routed fifteen in
+// one pass), not a count, so this gate is green today and only fires when a NEW ungoverned create
+// appears. An unrelated PR cannot trip it, and the two ways out — route it, or add a dated line
+// to UNROUTED — are both one edit. That is a ratchet, not a tracker.
 //
 // Still runnable by hand for the friendly report: `node scripts/check-creates.mjs`. Exits 1 on
 // violation.
@@ -97,10 +98,13 @@ const GOVERNED_SPECIFIERS = ['@/lib/ai/vera/create-entity', './create-entity']
  * The exported names that ARE the confirm phase. `confirmCreate` is the primitive;
  * `confirmProposalWithRegisteredCommit` is the drafts surface's thin wrapper around it, in the same
  * module, which looks the commit up in the registry and then hands the whole decision straight to
- * `confirmCreate`. Both count, and nothing else does — a locally-defined function that happens to
- * share the name is not an adoption (see `routesThroughGovernedLayer`, which requires the import).
+ * `confirmCreate`; `proposeAndConfirmCreate` (ADR-1249) is the wizard road's wrapper, also in the
+ * same module, which runs `proposeCreate` and then hands the proposal straight to `confirmCreate`
+ * because the member tapping Create in a wizard is both phases performed by the person (ADR-988
+ * §1). All three count, and nothing else does — a locally-defined function that happens to share
+ * a name is not an adoption (see `routesThroughGovernedLayer`, which requires the import).
  */
-const GOVERNED_CALLS = ['confirmCreate', 'confirmProposalWithRegisteredCommit']
+const GOVERNED_CALLS = ['confirmCreate', 'confirmProposalWithRegisteredCommit', 'proposeAndConfirmCreate']
 
 // ─────────────────────────────────────────────────────────────────────────────────────────────
 // The tables a Studio entity lives in. Derived by hand from the nine manifests in
@@ -184,9 +188,10 @@ export const ENTITY_WRITES = new Map([
 // gate wraps the action and the writer stays untouched.
 // ─────────────────────────────────────────────────────────────────────────────────────────────
 export const CREATE_ENTRIES = new Map([
-  // THE DRAFTS SURFACE (ADR-998). The one adopter today, and the reason this rule can fire
+  // THE DRAFTS SURFACE (ADR-998). The first adopter, and the reason this rule can fire
   // POSITIVELY rather than only ever naming debt: a member confirming a pending proposal creates
-  // a Circle through the governed layer, using the entity's own writer as the commit.
+  // a Circle through the governed layer, using the entity's own writer as the commit. The wizard
+  // roads below adopted on 2026-09-07 (ADR-1249) through `proposeAndConfirmCreate`.
   ['app/(main)/drafts/actions.ts::confirmDraftAction', { entity: 'circle (registered commits)', writer: 'lib/circles/draft.ts::createBlankCircleDraft' }],
   // Circle
   ['app/(main)/circles/builder-actions.ts::createDraftFromSparkAction', { entity: 'circle', writer: 'lib/circles/draft.ts::createBlankCircleDraft' }],
@@ -271,28 +276,26 @@ export const NOT_PROPOSE_AND_CONFIRM = new Map([
 // its line. An entry that HAS adopted but is still listed FAILS as a stale allowance, so this
 // cannot rot into a permanent amnesty. Anything not on this list fails on sight.
 //
-// 🔴 THE CONTRACT IS THEREFORE UNENFORCED TODAY. Every line below is real, unaudited create
-// volume. See ADR-988 in docs/DECISIONS.md for the order to route them in.
+// 🔴 Every line below is real, unaudited create volume. Fifteen of the original eighteen routed on
+// 2026-09-07 (ADR-1249). The three that remain are NOT waiting on effort: each one, routed as it
+// stands, would refuse a create the road accepts today, because the governed layer validates the
+// draft against the entity's manifest and re-checks a `capability` gate the road deliberately does
+// not hold. Each therefore waits on a ruling (a manifest change, or a scoped gate for a road that
+// already has one), and the ruling each needs is written on its line. Route it, delete the line.
 // ─────────────────────────────────────────────────────────────────────────────────────────────
 export const UNROUTED = new Map([
-  ['app/(main)/circles/builder-actions.ts::createDraftFromSparkAction', '2026-08-11 — the Circle builder. Vera already drafts this spark, so it is the highest-value first adopter.'],
-  ['app/(main)/circles/builder-actions.ts::createBlankDraftAction', '2026-08-11 — the "I will write it myself" Circle road. Adopts alongside the spark road.'],
-  ['app/(main)/spaces/[slug]/manage/circles/actions.ts::createSpaceCircleAction', '2026-08-11 — the Space manager Circle road; same writer, a scoped Space gate on top.'],
-  ['app/(main)/events/actions.ts::createEvent', '2026-08-11 — the member Event road. Takes FormData, so adopting it means lifting the parse above the propose call first.'],
-  ['app/(main)/events/scan/actions.ts::saveDraft', '2026-08-11 — the flyer-scan Event draft. Owned by the Event Seeder agent this cycle.'],
-  ['app/(main)/journeys/create-actions.ts::createJourneyDraftAction', '2026-08-11 — the deferred-title Journey create. Redirects on completion, so adopting it means returning the slug instead.'],
-  ['app/(main)/journeys/create-actions.ts::createJourneyFromSparkAction', '2026-08-11 — the guided Journey builder commit. Vera drafts the identity, so this is the second-highest-value adopter.'],
-  ['app/(main)/journeys/create-actions.ts::createJourneyFromTemplateAction', '2026-08-11 — the template Journey road.'],
-  ['app/(main)/practices/create-actions.ts::createPracticeFromSparkAction', '2026-08-11 — the guided Practice builder commit. Vera drafts it.'],
-  ['app/(main)/practices/actions.ts::createPracticeAction', '2026-08-11 — the title+description Practice create. Owned by another agent this cycle.'],
-  ['app/(main)/practices/actions.ts::createPracticeDraftAction', '2026-08-11 — the blank Practice draft. Owned by another agent this cycle.'],
-  ['app/(main)/spaces/[slug]/practices/actions.ts::createSpacePracticeAction', '2026-08-11 — the Space Practice road.'],
-  ['lib/spaces/provision.ts::createSpace', '2026-08-11 — the member Space road. Scoped gate (the plan limit) lives in the commit, so the governed layer records it rather than re-checking it.'],
-  ['lib/spaces/provision.ts::createBusinessSpace', '2026-08-11 — the researched Space road. Same scoped gate, plus a provenance ledger the governed layer can already validate.'],
-  ['app/(main)/classifieds/actions.ts::createListingAction', '2026-08-11 — the Classifieds listing spark.'],
-  ['app/(main)/marketplace/actions.ts::createHousingListingAction', '2026-08-11 — the Housing listing road.'],
-  ['app/(main)/marketplace/commerce-actions.ts::createMakerProductAction', '2026-08-11 — the maker product road.'],
-  ['app/(main)/spaces/[slug]/settings/shop/shop-actions.ts::createSpaceProductAction', '2026-08-11 — the Shop catalog road, which is ALSO the only road that creates a service.'],
+  [
+    'app/(main)/events/scan/actions.ts::saveDraft',
+    '2026-08-11 — the flyer-scan Event draft. 2026-09-07 (ADR-1249): NOT routable as it stands. The draft row is born with no start time (createEventDraft writes starts_at null and titles it "Untitled event"), and the Event manifest requires `startsAt`, so checkCreateDraft would refuse every flyer draft. Needs a ruling on whether a draft-status Event is a create at all, or a manifest that knows a draft; then route.',
+  ],
+  [
+    'app/(main)/spaces/[slug]/practices/actions.ts::createSpacePracticeAction',
+    '2026-08-11 — the Space Practice road. 2026-09-07 (ADR-1249): NOT routable as it stands. The road is deliberately open to anyone who MANAGES the Space, so a free member running a Space can build for their members, while CREATE_GATES declares `practice` a `practice.create` capability gate (Crew-only). confirmCreate re-checks that capability at the write and would refuse the free Space manager. Needs a per-road scoped gate (the kernel ruling ADR-1240 also deferred); then route.',
+  ],
+  [
+    'app/(main)/marketplace/actions.ts::createHousingListingAction',
+    '2026-08-11 — the Housing listing road. 2026-09-07 (ADR-1249): NOT routable as it stands. The housing form does not require a city (app/(main)/housing/new/housing-form.tsx, and the action stores null), while the Housing manifest declares `city` required, so checkCreateDraft would refuse a listing the road accepts today. Routing it as `listing` instead would audit a housing post under the wrong manifest. Needs the form and the manifest to agree on city; then route.',
+  ],
 ])
 
 /** A census that finds almost nothing must fail rather than report a clean contract. Measured 24

@@ -46,6 +46,18 @@ vi.mock('@/lib/commerce/checkout', () => ({ createCommerceCheckout: vi.fn() }))
 vi.mock('@/lib/ai/listing-copy', () => ({ draftListingCopy }))
 // The Spark is a client island; the page test only cares that the page CHOSE to render it.
 vi.mock('./../market/sell/product-spark', () => ({ ProductSpark: () => null }))
+// The governed create layer (ADR-988, ADR-1249) has its own test; here the commit passes straight
+// through so the assertion stays "createProduct was called for a free member". The layer's real
+// refusals are not what this file measures.
+vi.mock('@/lib/ai/vera/create-entity', () => ({
+  proposeAndConfirmCreate: async ({ commit }: { commit: (input: unknown) => Promise<unknown> }) => {
+    try {
+      return { data: await commit({ entity: 'product', draft: {}, actorProfileId: 'p1', spaceId: null, proposalId: 'a1' }) }
+    } catch (e) {
+      return { error: e instanceof Error ? e.message : 'failed' }
+    }
+  },
+}))
 
 import { createMakerProductAction, draftMakerProductCopyAction } from './commerce-actions'
 import MarketSellPage from '../market/sell/page'

@@ -327,6 +327,49 @@ async function closeOut(
   }
 }
 
+// ── Both phases from one tap: the wizard road (ADR-1249) ─────────────────────────────────
+//
+// A creation wizard is not the Vera tool loop. The member has already read the draft on the
+// wizard's own review step, and the Create button they tap runs in their own session. ADR-988 §1
+// says that tap IS the propose-and-confirm gate, performed by the person; this is that sentence
+// as code. One request records the proposal, claims it, and runs the entity's own commit, so the
+// audit row every wizard used to skip is written on exactly the same path the drafts surface
+// takes, with every check `proposeCreate` and `confirmCreate` make left intact.
+//
+// NOT REACHABLE FROM A TOOL KEY. `proposeCreateFromTool` still stops at the propose, and nothing
+// in the tool registry names this function, so the wall ADR-988 §3 builds is untouched: a model
+// can put a draft in front of a member and can never make one real.
+
+export interface ProposeAndConfirmCreateInput<T> extends ProposeCreateInput {
+  /** The entity's own create path. This layer never writes the row itself. */
+  commit: (input: CreateCommitInput) => Promise<T>
+}
+
+/**
+ * Propose and confirm in one call, for a surface where the human is already tapping Create.
+ *
+ * Every gate is the two phases' own: the caller is re-derived from the session twice, the draft
+ * is validated against the manifest, a capability gate is checked at propose and again at the
+ * write, a scoped gate is recorded and left to the commit, and the proposal is claimed with the
+ * single-use conditional update before the commit runs. A refusal at either phase is returned as
+ * the phase's own plain sentence, and a commit that throws closes the audit row out `failed` and
+ * returns its message, so a wizard keeps whatever error surface its writer already had.
+ *
+ * Deliberately NOT `aiDrafted`-aware on the member's behalf: the AI cap in `proposeCreate` exists
+ * for the tool loop (ADR-988 §7), and a wizard cannot tell a Vera spark from one the member typed
+ * when Vera was offline. Callers say which road this was in `rationale` instead.
+ */
+export async function proposeAndConfirmCreate<T>(input: ProposeAndConfirmCreateInput<T>): Promise<ActionResult<T>> {
+  const { commit, ...proposal } = input
+  const proposed = await proposeCreate(proposal)
+  if ('error' in proposed) return proposed
+  return confirmCreate<T>({
+    proposalId: proposed.data.proposalId,
+    ledger: input.ledger,
+    commit,
+  })
+}
+
 // ── The member-visible side of a proposal (ADR-998) ──────────────────────────────────────
 //
 // ADR-988 wrote proposals nobody could read: a `studio_create` row sat at status 'proposed'

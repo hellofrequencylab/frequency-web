@@ -57,6 +57,7 @@ import {
 } from '@/lib/studio/kernel/redraw'
 import { saveSteer } from '@/lib/studio/steer-store'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
+import { proposeAndConfirmCreate } from '@/lib/ai/vera/create-entity'
 import { resolveHostingSpaceIdFromRow } from '@/lib/events/host-space'
 
 // Gallery images ride as a JSON array of storage paths (the form has no native array
@@ -422,48 +423,79 @@ export async function createEvent(formData: FormData): Promise<ActionResult<{ sl
   // ownership (circle.editSettings / listSpaceEventCreatorIds), `scope_id` from the caller's own
   // region, and the Journey link is authorized before we get here. Nothing in this payload is
   // taken from the form as an identity, so the service role widens nothing a caller can write.
-  const { data: inserted, error } = await admin
-    .from('events').insert({
+  //
+  // THE GOVERNED WRITE (ADR-988, ADR-1249). The host filled the form and tapped Create, so the
+  // insert runs as the commit of a proposal this call records, claims and closes out, and the
+  // row lands in the audit log the autonomy ladder is read from. The payload is untouched.
+  const governed = await proposeAndConfirmCreate<{ id: string }>({
+    entity: 'event',
+    draft: {
       title,
-      description,
-      location,
-      scope_id: scopeId,
-      scope_type: scopeType,   // 'circle' (a circle's event) or 'public' (a standalone local event)
-      starts_at: startsIso,
-      ends_at: endsIso,
-      host_id: myProfileId,
-      slug,
-      recurrence_type: recurrenceType,
-      recurrence_until: recurrenceUntil,
+      description: description ?? '',
+      location: location ?? '',
+      startsAt: startsIso,
+      endsAt: endsIso ?? '',
+      recurrenceType,
+      recurrenceUntil: recurrenceUntil ?? '',
+      timeZone,
       capacity,
       visibility,
       category,
-      energy_tag: energyTag,
-      cover_image_path: headerCover,
-      gallery_image_paths: galleryWithCover,
-      // Ticket price (null = free RSVP event). Setting it turns the event into a paid-ticket event.
-      price_cents: priceCents,
-      // Event's IANA zone (newer than the generated DB types → cast). Refined from the geocoded
-      // venue point in geocodeEventOnCreate; this seed keeps it non-null for online events too.
-      time_zone: timeZone,
-      // Practical host notes, folded into the details JSONB (only when provided).
-      ...(specialInstructions ? { details: { specialInstructions } } : {}),
-      // space_id is newer than the generated DB types — cast the payload to reach the column
-      // (ADR-246); omit when the root row is missing (the backfill sweeps the NULL to root).
-      ...(spaceId ? { space_id: spaceId } : {}),
-      // HOSTING ENTITY: an event created under a space is HOSTED by that space (billed + displayed
-      // host; registrations and ticket money route through it). host_id stays the personal operator
-      // axis (edit rights, notifications). Distinct from space_id, which is pure tenancy/placement.
-      ...(scopeChoice === 'space' && spaceIdForPlacement ? { host_space_id: spaceIdForPlacement } : {}),
-      // The Journey association (journey_id), authorized above. Empty when the form sent no link,
-      // so this is the only place the column is touched on create and it can never carry a scope.
-      ...journeyLink.patch,
-    } as never).select('id').single()
-
-  if (error || !inserted) {
-    console.error('createEvent error', error)
-    return fail('Could not create the event. Please try again.')
-  }
+      energyTag: energyTag ?? '',
+      coverImagePath: headerCover ?? '',
+      galleryImagePaths: galleryWithCover,
+      priceCents,
+      scopeId,
+    },
+    spaceId: spaceIdForPlacement,
+    rationale: 'Event builder: the host filled the form and tapped Create.',
+    commit: async () => {
+      const { data: row, error } = await admin
+        .from('events').insert({
+          title,
+          description,
+          location,
+          scope_id: scopeId,
+          scope_type: scopeType,   // 'circle' (a circle's event) or 'public' (a standalone local event)
+          starts_at: startsIso,
+          ends_at: endsIso,
+          host_id: myProfileId,
+          slug,
+          recurrence_type: recurrenceType,
+          recurrence_until: recurrenceUntil,
+          capacity,
+          visibility,
+          category,
+          energy_tag: energyTag,
+          cover_image_path: headerCover,
+          gallery_image_paths: galleryWithCover,
+          // Ticket price (null = free RSVP event). Setting it turns the event into a paid-ticket event.
+          price_cents: priceCents,
+          // Event's IANA zone (newer than the generated DB types → cast). Refined from the geocoded
+          // venue point in geocodeEventOnCreate; this seed keeps it non-null for online events too.
+          time_zone: timeZone,
+          // Practical host notes, folded into the details JSONB (only when provided).
+          ...(specialInstructions ? { details: { specialInstructions } } : {}),
+          // space_id is newer than the generated DB types — cast the payload to reach the column
+          // (ADR-246); omit when the root row is missing (the backfill sweeps the NULL to root).
+          ...(spaceId ? { space_id: spaceId } : {}),
+          // HOSTING ENTITY: an event created under a space is HOSTED by that space (billed + displayed
+          // host; registrations and ticket money route through it). host_id stays the personal operator
+          // axis (edit rights, notifications). Distinct from space_id, which is pure tenancy/placement.
+          ...(scopeChoice === 'space' && spaceIdForPlacement ? { host_space_id: spaceIdForPlacement } : {}),
+          // The Journey association (journey_id), authorized above. Empty when the form sent no link,
+          // so this is the only place the column is touched on create and it can never carry a scope.
+          ...journeyLink.patch,
+        } as never).select('id').single()
+      if (error || !row) {
+        console.error('createEvent error', error)
+        throw new Error('Could not create the event. Please try again.')
+      }
+      return row as { id: string }
+    },
+  })
+  if ('error' in governed) return fail(governed.error)
+  const inserted = governed.data
 
   // Persist the structured address + geocode the venue to a map point (best-effort;
   // never blocks or fails the create). Awaited so the event lands on its page with

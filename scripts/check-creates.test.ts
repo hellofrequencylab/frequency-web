@@ -149,6 +149,29 @@ export const createThingAction = async () => confirmCreate({ proposalId: 'x', co
 `
     expect(routesThroughGovernedLayer('app/x/actions.ts', src, 'createThingAction')).toBe(true)
   })
+
+  // THE WIZARD ROAD (ADR-1249): a member tapping Create in a wizard is both phases performed by
+  // the person, and `proposeAndConfirmCreate` is that sentence as code, in the governed module,
+  // handing straight to `confirmCreate`. It counts exactly like the drafts surface's wrapper does.
+  it('accepts the one-tap wrapper proposeAndConfirmCreate from the governed module', () => {
+    const src = `import { proposeAndConfirmCreate } from '@/lib/ai/vera/create-entity'
+export async function createThingAction(draft: Record<string, unknown>) {
+  const res = await proposeAndConfirmCreate({ entity: 'circle', draft, commit: () => writeThing(draft) })
+  if ('error' in res) throw new Error(res.error)
+  return res.data
+}
+`
+    expect(routesThroughGovernedLayer('app/x/actions.ts', src, 'createThingAction')).toBe(true)
+  })
+
+  it('rejects a local function that merely shares the wrapper name', () => {
+    const src = `async function proposeAndConfirmCreate(x: unknown) { return { data: x } }
+export async function createThingAction() {
+  return proposeAndConfirmCreate({})
+}
+`
+    expect(routesThroughGovernedLayer('app/x/actions.ts', src, 'createThingAction')).toBe(false)
+  })
 })
 
 describe('check-creates · rule 3 (the autonomy wall)', () => {
@@ -249,5 +272,45 @@ describe('check-creates · the live repo', () => {
     const { ratchet } = runCheck()
     expect(ratchet.routed).toContain('app/(main)/drafts/actions.ts::confirmDraftAction')
     expect(UNROUTED.has('app/(main)/drafts/actions.ts::confirmDraftAction')).toBe(false)
+  })
+
+  // THE RATCHET TURNED (ADR-1249, HYG-053). Fifteen of the eighteen wizard roads named on
+  // 2026-08-11 route through the governed layer as of 2026-09-07. Each is asserted POSITIVELY here,
+  // so a road that quietly stops calling the layer fails this test before it can be re-added to
+  // UNROUTED; and the allowlist's size is a ceiling that may fall and never rise.
+  const ROUTED_ON_2026_09_07 = [
+    'app/(main)/circles/builder-actions.ts::createDraftFromSparkAction',
+    'app/(main)/circles/builder-actions.ts::createBlankDraftAction',
+    'app/(main)/spaces/[slug]/manage/circles/actions.ts::createSpaceCircleAction',
+    'app/(main)/events/actions.ts::createEvent',
+    'app/(main)/journeys/create-actions.ts::createJourneyDraftAction',
+    'app/(main)/journeys/create-actions.ts::createJourneyFromSparkAction',
+    'app/(main)/journeys/create-actions.ts::createJourneyFromTemplateAction',
+    'app/(main)/practices/create-actions.ts::createPracticeFromSparkAction',
+    'app/(main)/practices/actions.ts::createPracticeAction',
+    'app/(main)/practices/actions.ts::createPracticeDraftAction',
+    'lib/spaces/provision.ts::createSpace',
+    'lib/spaces/provision.ts::createBusinessSpace',
+    'app/(main)/classifieds/actions.ts::createListingAction',
+    'app/(main)/marketplace/commerce-actions.ts::createMakerProductAction',
+    'app/(main)/spaces/[slug]/settings/shop/shop-actions.ts::createSpaceProductAction',
+  ]
+
+  it('recognises the fifteen wizard roads routed on 2026-09-07, and UNROUTED never grows past three', () => {
+    const { ratchet } = runCheck()
+    for (const key of ROUTED_ON_2026_09_07) {
+      expect(ratchet.routed, key).toContain(key)
+      expect(UNROUTED.has(key), key).toBe(false)
+    }
+    expect(UNROUTED.size).toBeLessThanOrEqual(3)
+  })
+
+  // The three that remain each say, on their own line, which ruling they wait on. A bare date is
+  // not a reason; the reader of this list must be able to tell effort from a blocked premise.
+  it('every remaining UNROUTED line names the ruling it waits on', () => {
+    for (const [key, why] of UNROUTED) {
+      expect(why, key).toMatch(/NOT routable as it stands/)
+      expect(why, key).toMatch(/Needs /)
+    }
   })
 })
