@@ -3,6 +3,7 @@ title: The leaderboard
 description: One shared goal first. Where people stand sits below it, scoped to your Circle and yours to opt out of.
 category: the-quest
 order: 8
+published: 2026-06-09
 updated: 2026-08-13
 audience: member
 featureKeys: [leaderboard, gamification]

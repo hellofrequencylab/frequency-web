@@ -135,3 +135,39 @@ describe('the core still reads the real help centre', () => {
     }
   })
 })
+
+
+// ── Every article carries a first-published date (LIVE-183) ──────────────────────────────────────
+//
+// All 57 Article schema nodes shipped with no `datePublished`, because the front matter had no key
+// for it: there was an `updated` and nothing behind it. The dates were backfilled per article from
+// `git log --follow --diff-filter=A` (the commit that ADDED the file, followed through renames),
+// which is the only origin record this repo has.
+//
+// The backfill is a one-time act; this is the part that lasts. It fails on the NEXT article added
+// without a `published:` key, which is exactly how the 57 came to be missing one.
+describe('help front matter — the published date behind every datePublished', () => {
+  it('gives every published article a well-formed published date', async () => {
+    const articles = selectCategories(await loadCategoriesFromDisk()).flatMap((c) => c.articles)
+    expect(articles.length).toBeGreaterThan(0)
+    const missing = articles.filter((a) => !/^\d{4}-\d{2}-\d{2}$/.test(a.published))
+    expect(missing.map((a) => `${a.category}/${a.slug}`)).toEqual([])
+  })
+
+  it('never dates an article as published AFTER it was updated', async () => {
+    // datePublished > dateModified is a self-contradicting pair, and it is the specific way this
+    // backfill could go wrong: run in a SHALLOW clone, `--diff-filter=A` reports the graft commit
+    // for every file and stamps all 57 with one late date. This is the assertion that catches that.
+    const articles = selectCategories(await loadCategoriesFromDisk()).flatMap((c) => c.articles)
+    const backwards = articles.filter((a) => a.updated && a.published > a.updated)
+    expect(backwards.map((a) => `${a.category}/${a.slug}: ${a.published} > ${a.updated}`)).toEqual([])
+  })
+
+  it('does not stamp them all with the same date (the shallow-clone failure mode)', async () => {
+    const articles = selectCategories(await loadCategoriesFromDisk()).flatMap((c) => c.articles)
+    const distinct = new Set(articles.map((a) => a.published))
+    // The real history spreads these across months. One value for 57 articles means the dates were
+    // read from a truncated history, not from the commits that added the files.
+    expect(distinct.size).toBeGreaterThan(1)
+  })
+})

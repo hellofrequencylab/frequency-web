@@ -3,6 +3,7 @@ title: Your location & being found nearby
 description: Exactly what others can see, every control you have, and how live location works.
 category: connecting
 order: 6
+published: 2026-06-09
 updated: 2026-06-26
 audience: member
 featureKeys: [connections, location, settings, resonance]

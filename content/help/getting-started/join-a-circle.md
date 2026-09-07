@@ -3,6 +3,7 @@ title: How to join a Circle
 description: Find a local group around what you practice and start showing up.
 category: getting-started
 order: 2
+published: 2026-05-31
 updated: 2026-06-16
 audience: member
 featureKeys: [circles, memberships]

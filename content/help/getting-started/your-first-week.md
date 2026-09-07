@@ -3,6 +3,7 @@ title: Your first week on Frequency
 description: A quick welcome, then Vera points you to your first Circle, and a six-task Founder's First Week to earn your first badge.
 category: getting-started
 order: 10
+published: 2026-06-03
 updated: 2026-06-10
 audience: member
 featureKeys: [onboarding]

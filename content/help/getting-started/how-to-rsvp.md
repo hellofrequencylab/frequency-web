@@ -3,6 +3,7 @@ title: How do I RSVP to a Circle?
 description: Open the next gathering, tap RSVP, and add it to your calendar. That is the whole first action, and it takes under a minute.
 category: getting-started
 order: 6
+published: 2026-06-23
 updated: 2026-07-26
 audience: member
 featureKeys: [events, circles]

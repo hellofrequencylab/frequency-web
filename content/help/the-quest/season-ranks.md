@@ -3,6 +3,7 @@ title: Season ranks
 description: How finishing Journeys moves you up the ranks each season.
 category: the-quest
 order: 2
+published: 2026-06-03
 updated: 2026-06-18
 audience: member
 featureKeys: [ranks]

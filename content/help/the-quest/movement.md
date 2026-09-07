@@ -3,6 +3,7 @@ title: Moving practices, now part of Mindless
 description: Walks, runs, yoga, strength, stretch and play moved into Mindless as the Get Moving mode. One timer, two modes.
 category: the-quest
 order: 4
+published: 2026-06-21
 updated: 2026-07-09
 audience: member
 featureKeys: [practices, gamification]

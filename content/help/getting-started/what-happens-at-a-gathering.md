@@ -3,6 +3,7 @@ title: What happens at a gathering?
 description: A small group, a standing activity, and a couple of hours together. Here is the honest play-by-play so the first one feels less unknown.
 category: getting-started
 order: 7
+published: 2026-06-23
 updated: 2026-07-17
 audience: member
 featureKeys: [events, circles]

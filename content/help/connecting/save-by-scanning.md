@@ -3,6 +3,7 @@ title: Save someone by scanning their code
 description: Scan another member's personal Frequency code in person to keep them as a contact, pre-filled and stamped with where you met.
 category: connecting
 order: 7
+published: 2026-06-22
 updated: 2026-06-23
 audience: member
 featureKeys: [connections]

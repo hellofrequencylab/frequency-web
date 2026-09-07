@@ -3,6 +3,7 @@ title: Season challenges
 description: The Expression Challenge that closes each Journey, and how it works.
 category: the-quest
 order: 6
+published: 2026-06-09
 updated: 2026-06-18
 audience: member
 featureKeys: [challenges, gamification]

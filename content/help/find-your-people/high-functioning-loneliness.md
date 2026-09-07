@@ -3,6 +3,7 @@ title: High-functioning loneliness, when you're fine but not okay
 description: You look fine on paper and still feel alone. Here is what high-functioning loneliness is, why it happens, and the smallest way out.
 category: find-your-people
 order: 3
+published: 2026-06-20
 updated: 2026-06-20
 audience: member
 featureKeys: [circles, practices]

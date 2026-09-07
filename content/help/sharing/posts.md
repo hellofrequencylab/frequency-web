@@ -3,6 +3,7 @@ title: Posts, reactions & comments
 description: Share with your Circle and join the conversation.
 category: sharing
 order: 1
+published: 2026-06-03
 updated: 2026-06-21
 audience: member
 featureKeys: [posts]

@@ -3,6 +3,7 @@ title: Your Space Contacts
 description: Track the people you work with in your Space, and bring them over from My Contacts.
 category: spaces
 order: 1
+published: 2026-06-22
 updated: 2026-06-23
 audience: member
 featureKeys: [crm]

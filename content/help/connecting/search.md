@@ -3,6 +3,7 @@ title: Search
 description: Find people, Circles, places, and more across Frequency.
 category: connecting
 order: 4
+published: 2026-06-03
 updated: 2026-06-25
 audience: member
 featureKeys: [search]

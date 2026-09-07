@@ -3,6 +3,7 @@ title: Friends
 description: Send and accept friend requests, invite new people, and why they matter for messaging.
 category: connecting
 order: 2
+published: 2026-06-03
 updated: 2026-06-10
 audience: member
 featureKeys: [friends]

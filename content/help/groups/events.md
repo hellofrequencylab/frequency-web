@@ -3,6 +3,7 @@ title: Events & RSVPs
 description: Find gatherings, RSVP, and add them to your calendar.
 category: groups
 order: 3
+published: 2026-06-03
 updated: 2026-09-01
 audience: member
 role: host
@@ -78,6 +79,8 @@ See a cool event poster around town, or one on Eventbrite or in a group chat? Ca
 When you **check in at the door** of an event you're going to, you earn your Zaps, keep your streak, and you also become a **verified member**: a small check appears by your name. Showing up in the real world is the truest sign you're a real person, so it's how verification works here. Nothing to upload, no form, just turn up.
 
 **How to check in.** Open the event page once the gathering has started and tap **Check in**. It appears there for anyone marked going, from the start time onward, so a late arrival can still check in. Once you have checked in the button reads **Checked In**, and tapping again changes nothing, so there is no way to count yourself twice.
+
+**If you scan a door code and nothing happens, the event page now says why.** Scanning a host's check-in code lands you on the event, and if it could not check you in you get one line explaining it: the window has not opened yet or has closed, you are not marked going, your spot is still waiting on the host, the host turned check-in off for this event, or you need to sign in first. Before, the scan simply took you to the page and left you guessing.
 
 **Check-in closes a few hours after the event.** You have until four hours past the end time, so remembering in the car still counts. After that the button is gone and the event is done. If the host set no end time, the four hours run from the start.
 

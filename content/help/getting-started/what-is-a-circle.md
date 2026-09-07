@@ -3,6 +3,7 @@ title: What is a Circle?
 description: A Circle is a small local group built around one thing you practice, with a standing time to meet. It is the basic unit of Frequency.
 category: getting-started
 order: 5
+published: 2026-06-23
 updated: 2026-08-12
 audience: member
 featureKeys: [circles, community]

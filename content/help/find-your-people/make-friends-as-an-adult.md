@@ -3,6 +3,7 @@ title: How to make friends as an adult
 description: Making friends after 30 is hard because the easy structures are gone. Here is what actually works, plus a small thing to try this week.
 category: find-your-people
 order: 1
+published: 2026-06-20
 updated: 2026-06-20
 audience: member
 featureKeys: [circles, practices]

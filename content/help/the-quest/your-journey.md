@@ -3,6 +3,7 @@ title: Your Journey
 description: Each season gives you three Journeys. Do the practices, share what shifted, and finish to climb the ranks.
 category: the-quest
 order: 4
+published: 2026-06-06
 updated: 2026-06-18
 audience: member
 featureKeys: [journeys, circles]

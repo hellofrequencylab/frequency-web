@@ -3,6 +3,7 @@ title: Your settings
 description: Where to update your profile, preferences, and account.
 category: getting-started
 order: 12
+published: 2026-06-03
 updated: 2026-08-19
 audience: member
 featureKeys: [settings, notifications]

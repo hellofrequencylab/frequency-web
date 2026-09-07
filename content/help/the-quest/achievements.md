@@ -3,6 +3,7 @@ title: Achievements & badges
 description: The permanent badges you collect for showing up: the firsts, the streak and Amplitude milestones, your Trophies, and the Certificate.
 category: the-quest
 order: 7
+published: 2026-06-09
 updated: 2026-06-18
 audience: member
 featureKeys: [achievements, gamification]
