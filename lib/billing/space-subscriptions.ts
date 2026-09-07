@@ -346,77 +346,156 @@ function writeErrorMessage(error: WriteError): string {
   return error?.message ?? String(error)
 }
 
-/** EVENT-ORDERING GUARD (meta-scan 2026-07-25, mirrors the member path's
- *  apply_membership_event_atomic): claim the event's `created` against the space's watermark
- *  (spaces.last_plan_event_at) in ONE conditional UPDATE. Returns false for a STALE event (an older
- *  event delivered after a newer one already applied), which the caller must skip — otherwise the
- *  set-to-target reconcile would revert plan/add-ons/seats to stale values. FAIL-OPEN on any RPC
- *  error (e.g. the migration not applied yet): proceeding is exactly today's unguarded behavior.
+/** The SUBSCRIPTION LIFECYCLE RANK of a Stripe event type — the same-second ordering tiebreaker
+ *  (LIVE-159, ADR-1214). PURE.
  *
- *  2026-09-05 correction (scan2 L6-02): the sentence "returns false" above is now a three-way result.
- *  The claim used to be a bare boolean, and the watermark it stamped could never be un-stamped: if the
- *  reconcile that FOLLOWED the claim threw, the webhook returned 500, Stripe retried the SAME event
- *  with the SAME `created`, and the RPC's strictly-newer test read that retry as stale — the plan
- *  change was dropped forever while Stripe showed it applied. The claim now also carries the
- *  watermark it replaced (`previous`), read just before the RPC, so the router can roll the stamp back
- *  (releaseSpacePlanEvent) when the reconcile fails and the retry claims cleanly. */
+ *  `event.created` is unix SECONDS, and a checkout emits `customer.subscription.created` and
+ *  `.updated` for one subscription INSIDE THE SAME SECOND as a matter of course, so `created`
+ *  alone cannot separate them. Nothing else in the payload can either: a Stripe event carries no
+ *  sequence number, and event ids (`evt_...`) are random after the prefix — ordering by id would
+ *  be ordering by a random string, which is why this does not use one.
+ *
+ *  What IS deterministic is the lifecycle the TYPE names: for one subscription a `.created` can
+ *  never follow its `.updated`, and an `.updated` can never follow its `.deleted`. So the rank is
+ *  the type's position in that lifecycle, and 0 means "no lifecycle evidence" — an unranked type
+ *  never loses a same-second tie (it is admitted rather than dropped). */
+export const SPACE_PLAN_EVENT_RANKS: Readonly<Record<string, number>> = {
+  'customer.subscription.created': 1,
+  'customer.subscription.updated': 2,
+  'customer.subscription.deleted': 3,
+}
+
+/** The lifecycle rank for a Stripe event type; 0 for anything unranked. PURE. */
+export function spacePlanEventRank(type: string | null | undefined): number {
+  return (type && SPACE_PLAN_EVENT_RANKS[type]) || 0
+}
+
+/** The identifying bits of the Stripe event driving a space_plan reconcile. `id` and `type` are
+ *  optional so a caller that has only a timestamp still gets the (weaker) created-only guard. */
+export type SpacePlanEventRef = {
+  /** `event.created`, unix seconds — the primary ordering key. */
+  created: number
+  /** `event.type` — the same-second tiebreaker, via spacePlanEventRank. */
+  type?: string | null
+  /** `event.id` — the IDENTITY of the watermark this event writes. Never an ordering key. */
+  id?: string | null
+}
+
+/** EVENT-ORDERING GUARD (meta-scan 2026-07-25, mirrors the member path's
+ *  apply_membership_event_atomic): claim the event against the space's watermark
+ *  (spaces.last_plan_event_at / _rank / _id) in ONE conditional UPDATE. Returns `stale` for an
+ *  event the watermark says is older (an out-of-order delivery), which the caller must skip —
+ *  otherwise the set-to-target reconcile would revert plan/add-ons/seats to stale values.
+ *  FAIL-OPEN on any RPC error (e.g. the migration not applied yet): proceeding is exactly the
+ *  unguarded behavior that predates the guard.
+ *
+ *  2026-09-05 correction (scan2 L6-02): the claim also carries the watermark it replaced
+ *  (`previous`), read just before the RPC, so the router can roll the stamp back
+ *  (releaseSpacePlanEvent) when the reconcile fails and Stripe's retry then claims cleanly.
+ *
+ *  2026-09-07 (LIVE-159, ADR-1214): the claim now sends the event's LIFECYCLE RANK and id too.
+ *  `created` is a SECOND, so a `.created`/`.updated` pair from one checkout shares it and the
+ *  strictly-newer test dropped whichever arrived second — usually the `.updated` carrying the
+ *  settled state, leaving a paid Space on its pre-payment snapshot forever. The rank orders the
+ *  same second without loosening anything: `.created` then `.updated` both apply, `.updated`
+ *  then `.created` still skips the `.created`. Two events of the SAME type in one second remain
+ *  genuinely unorderable and are admitted in arrival order (see the migration header). */
+type SpacePlanWatermark = { at: string | null; rank: number | null; eventId: string | null }
+
 type SpacePlanClaim =
-  | { kind: 'claimed'; eventIso: string; previousIso: string | null }
+  | { kind: 'claimed'; eventIso: string; eventId: string | null; previous: SpacePlanWatermark }
   | { kind: 'stale' }
   | { kind: 'unguarded' } // RPC unavailable / errored: fail-open, nothing was stamped, nothing to roll back
+
+type WatermarkUpdate = PromiseLike<{ error: unknown }> & { eq: (col: string, v: string) => WatermarkUpdate }
 
 type SpacesWatermarkClient = {
   rpc: (fn: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: unknown }>
   from: (table: 'spaces') => {
     select: (cols: string) => {
-      eq: (col: string, v: string) => { maybeSingle: () => Promise<{ data: { last_plan_event_at: string | null } | null }> }
+      eq: (
+        col: string,
+        v: string,
+      ) => {
+        maybeSingle: () => Promise<{
+          data: {
+            last_plan_event_at: string | null
+            last_plan_event_rank?: number | null
+            last_plan_event_id?: string | null
+          } | null
+        }>
+      }
     }
-    update: (v: { last_plan_event_at: string | null }) => {
-      eq: (col: string, v: string) => { eq: (col: string, v: string) => Promise<{ error: unknown }> }
-    }
+    update: (v: Record<string, unknown>) => WatermarkUpdate
   }
 }
 
-async function claimSpacePlanEvent(spaceId: string, eventCreatedSec: number): Promise<SpacePlanClaim> {
-  const eventIso = new Date(eventCreatedSec * 1000).toISOString()
+async function claimSpacePlanEvent(spaceId: string, event: SpacePlanEventRef): Promise<SpacePlanClaim> {
+  const eventIso = new Date(event.created * 1000).toISOString()
+  const eventRank = spacePlanEventRank(event.type)
+  const eventId = event.id ?? null
   try {
     const db = createAdminClient() as unknown as SpacesWatermarkClient
     // The watermark this claim will replace. Read BEFORE the RPC (the RPC returns only a boolean), so a
-    // failed reconcile can restore it. A read hiccup leaves it unknown (null): the rollback then clears
+    // failed reconcile can restore it. A read hiccup leaves it unknown (all null): the rollback then clears
     // the watermark rather than leaving it advanced — a cleared mark re-admits a late OLDER event once
     // (rare, and only after a reconcile already failed), an advanced mark drops Stripe's retry forever.
-    let previousIso: string | null = null
+    let previous: SpacePlanWatermark = { at: null, rank: null, eventId: null }
     try {
-      const { data } = await db.from('spaces').select('last_plan_event_at').eq('id', spaceId).maybeSingle()
-      previousIso = data?.last_plan_event_at ? new Date(data.last_plan_event_at).toISOString() : null
+      const { data } = await db
+        .from('spaces')
+        .select('last_plan_event_at, last_plan_event_rank, last_plan_event_id')
+        .eq('id', spaceId)
+        .maybeSingle()
+      previous = {
+        at: data?.last_plan_event_at ? new Date(data.last_plan_event_at).toISOString() : null,
+        rank: data?.last_plan_event_rank ?? null,
+        eventId: data?.last_plan_event_id ?? null,
+      }
     } catch (err) {
       console.warn('[space-subscriptions] last_plan_event_at read failed before claim (rollback would clear it):', err)
     }
     const { data, error } = await db.rpc('claim_space_plan_event', {
       _space_id: spaceId,
       _event_created: eventIso,
+      _event_rank: eventRank,
+      _event_id: eventId,
     })
     if (error) return { kind: 'unguarded' } // fail-open: guard unavailable -> today's behavior
-    return data === true ? { kind: 'claimed', eventIso, previousIso } : { kind: 'stale' }
+    return data === true ? { kind: 'claimed', eventIso, eventId, previous } : { kind: 'stale' }
   } catch {
     return { kind: 'unguarded' }
   }
 }
 
 /** Roll a claimed watermark back after the reconcile it guarded threw (scan2 L6-02, 2026-09-05), so
- *  Stripe's retry of the SAME event (same `created`) claims again instead of reading as stale.
- *  CONDITIONAL on the mark still being ours (`last_plan_event_at = eventIso`): if a NEWER event claimed
- *  in between, its mark stands and this is a no-op — that newer event's reconcile owns the state now,
- *  and the retry of this one is then genuinely stale. Best-effort; a failure here is logged loudly
+ *  Stripe's retry of the SAME event claims again instead of reading as stale.
+ *  CONDITIONAL on the mark still being OURS: `last_plan_event_at = eventIso` AND — since LIVE-159 let
+ *  a same-SECOND sibling legitimately claim on top of us — `last_plan_event_id = eventId`. If anything
+ *  else claimed in between, its mark stands and this is a no-op: that event's reconcile owns the state
+ *  now, and the retry of this one is then genuinely stale. Best-effort; a failure here is logged loudly
  *  because it recreates the dropped-retry defect for this one event. */
-async function releaseSpacePlanEvent(spaceId: string, eventIso: string, previousIso: string | null): Promise<void> {
+async function releaseSpacePlanEvent(
+  spaceId: string,
+  eventIso: string,
+  eventId: string | null,
+  previous: SpacePlanWatermark,
+): Promise<void> {
   try {
     const db = createAdminClient() as unknown as SpacesWatermarkClient
-    const { error } = await db
+    let pending = db
       .from('spaces')
-      .update({ last_plan_event_at: previousIso })
+      .update({
+        last_plan_event_at: previous.at,
+        last_plan_event_rank: previous.rank,
+        last_plan_event_id: previous.eventId,
+      })
       .eq('id', spaceId)
       .eq('last_plan_event_at', eventIso)
+    // Only when we know our own id. Without one (a caller that passed no event id) the timestamp alone
+    // is the same test this had before LIVE-159.
+    if (eventId) pending = pending.eq('last_plan_event_id', eventId)
+    const { error } = await pending
     if (error) throw error
   } catch (err) {
     console.error(
@@ -428,17 +507,17 @@ async function releaseSpacePlanEvent(spaceId: string, eventIso: string, previous
 
 /** Route a subscription event to the right reconciler by its kind. Returns true if handled (so the
  *  caller knows the member Crew path should be skipped). No-ops for an unknown kind.
- *  `eventCreatedSec` (Stripe event.created, unix seconds) drives the space_plan ordering guard: a
+ *  `event` (the Stripe event's `created` + `type` + `id`) drives the space_plan ordering guard: a
  *  stale event is claimed-and-skipped but still reported handled (it IS a space event; the member
  *  path must not run). space_membership events are per-member and deliberately not gated on the
  *  per-space watermark. */
-export async function routeSpaceSubscription(sub: Stripe.Subscription, eventCreatedSec?: number): Promise<boolean> {
+export async function routeSpaceSubscription(sub: Stripe.Subscription, event?: SpacePlanEventRef): Promise<boolean> {
   const kind = subscriptionKind(sub.metadata)
   if (kind === 'space_plan') {
     const spaceId = sub.metadata?.space_id
     const claim: SpacePlanClaim =
-      spaceId && typeof eventCreatedSec === 'number'
-        ? await claimSpacePlanEvent(spaceId, eventCreatedSec)
+      spaceId && event && typeof event.created === 'number'
+        ? await claimSpacePlanEvent(spaceId, event)
         : { kind: 'unguarded' }
     if (claim.kind === 'stale') {
       return true // stale event: skip the reconcile, keep the newer applied state
@@ -449,7 +528,9 @@ export async function routeSpaceSubscription(sub: Stripe.Subscription, eventCrea
       // scan2 L6-02 (2026-09-05): the claim advanced the watermark BEFORE the reconcile; without this
       // rollback the 500 → Stripe retry (same `created`) would be claimed-as-stale and acked, dropping
       // the plan change for good. Restore the mark, then rethrow so the webhook still 500s and retries.
-      if (claim.kind === 'claimed' && spaceId) await releaseSpacePlanEvent(spaceId, claim.eventIso, claim.previousIso)
+      if (claim.kind === 'claimed' && spaceId) {
+        await releaseSpacePlanEvent(spaceId, claim.eventIso, claim.eventId, claim.previous)
+      }
       throw err
     }
     return true

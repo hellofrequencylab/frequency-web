@@ -7,8 +7,9 @@ import type Stripe from 'stripe'
 //          every write, and never hands out a URL for an order that does not exist.
 //   L6-08  a policy PARTIAL refund is recorded as partial: status kept, refunded_at stamped once,
 //          ledger reversal pro-rated; the charge.refunded webhook understands partials too.
-//   L6-16  a FULL refund restores tracked stock (variant or product) once per order, by guarded
-//          compare-and-swap, never an unguarded read-then-write.
+//   L6-16  a FULL refund restores tracked stock once per order. LIVE-161 (2026-09-06) moved that
+//          restore into restore_commerce_stock_atomic: one RPC, one transaction, no app-side
+//          compare-and-swap loop and no separate marker write to race.
 // The admin client is a scripted fake: every builder call is recorded (table, op, payload, filters)
 // and resolved by a per-test handler, so the assertions read the WRITES, not the return values.
 
@@ -377,84 +378,62 @@ describe('refundCommerceOrder — a policy PARTIAL refund is recorded as partial
 
 // ── L6-16 ────────────────────────────────────────────────────────────────────────────────────────
 
-describe('recordCommerceRefund — a full refund puts tracked stock back on the shelf (L6-16)', () => {
-  const ITEMS = [
-    { product_id: 'p1', variant_id: null, qty: 2 },
-    { product_id: 'p2', variant_id: 'v1', qty: 1 },
-    { product_id: 'p3', variant_id: null, qty: 4 }, // untracked (stock null) → skipped
-  ]
-
-  function stockHandler(opts: { decremented?: boolean; loseFirstCas?: boolean } = {}) {
-    let p1Attempts = 0
+describe('recordCommerceRefund — a full refund puts tracked stock back on the shelf, atomically (L6-16 / LIVE-161)', () => {
+  // LIVE-161 (2026-09-06): the restore used to be, per item, a stock read + a compare-and-swap
+  // write retried five times, then a fourth request stamping metadata.inventory_restored. That is
+  // four round trips over a money path, and it could exhaust its retries and drop the units.
+  // It is now ONE call to restore_commerce_stock_atomic (migration 20270345001600), which owns the
+  // idempotency check, both increments and the marker inside one transaction under a for-update
+  // lock on the order. These tests assert the CALL and the absence of the old table traffic —
+  // whether the SQL restores the right rows is proven in the migration, against Postgres.
+  function handler(opts: { rpcError?: { message: string } } = {}) {
     state.setHandler((c) => {
       if (c.table === 'commerce_orders' && c.op === 'update' && (c.payload as { status?: string }).status === 'refunded') {
-        return { data: [{ ...REFUND_ROW, metadata: { inventory_decremented: opts.decremented ?? true } }] }
+        return { data: [{ ...REFUND_ROW, metadata: { inventory_decremented: true } }] }
       }
-      if (c.table === 'commerce_order_items') return { data: ITEMS }
-      if (c.table === 'commerce_products' && c.op === 'select') {
-        const id = c.filters.find((f) => f[1] === 'id')?.[2]
-        if (id === 'p1') return { data: { stock: opts.loseFirstCas && p1Attempts > 0 ? 1 : 0 } }
-        if (id === 'p3') return { data: { stock: null } }
-        return { data: { stock: 0 } }
-      }
-      if (c.table === 'commerce_products' && c.op === 'update') {
-        const id = c.filters.find((f) => f[1] === 'id')?.[2]
-        if (id === 'p1' && opts.loseFirstCas && p1Attempts++ === 0) return { data: [] } // a concurrent sale moved it
-        return { data: [{ id }] }
-      }
-      if (c.table === 'commerce_variants' && c.op === 'select') return { data: { stock: 3 } }
-      if (c.table === 'commerce_variants' && c.op === 'update') return { data: [{ id: 'v1' }] }
+      if (c.table === 'rpc:restore_commerce_stock_atomic' && opts.rpcError) return { error: opts.rpcError }
       return {}
     })
   }
 
-  it('restores the product for a plain item, the VARIANT for a variant item, skips untracked, and stamps the order once', async () => {
-    stockHandler()
+  it('hands the whole restore to ONE atomic RPC, keyed on the order it just flipped', async () => {
+    handler()
     await recordCommerceRefund('pi_1')
-    // Flip happened.
     const flip = firstCall((c) => c.table === 'commerce_orders' && (c.payload as { status?: string })?.status === 'refunded')
     expect(flip).toBeDefined()
-    // Product p1: 0 → 2, guarded on the value that was read (compare-and-swap, not a blind write).
-    const p1 = firstCall((c) => c.table === 'commerce_products' && c.op === 'update' && hasFilter(c, 'eq', 'id', 'p1'))!
-    expect(p1.payload).toEqual({ stock: 2 })
-    expect(hasFilter(p1, 'eq', 'stock', 0)).toBe(true)
-    // Variant v1: 3 → 4; and its parent product p2 is NOT touched (the variant governs).
-    const v1 = firstCall((c) => c.table === 'commerce_variants' && c.op === 'update')!
-    expect(v1.payload).toEqual({ stock: 4 })
-    expect(hasFilter(v1, 'eq', 'stock', 3)).toBe(true)
-    expect(firstCall((c) => c.table === 'commerce_products' && c.op === 'update' && hasFilter(c, 'eq', 'id', 'p2'))).toBeUndefined()
-    // Untracked p3: read, never written.
-    expect(firstCall((c) => c.table === 'commerce_products' && c.op === 'update' && hasFilter(c, 'eq', 'id', 'p3'))).toBeUndefined()
-    // The once-marker, merged over the existing metadata (the decrement marker survives).
-    const stamp = firstCall((c) => c.table === 'commerce_orders' && c.op === 'update' && 'metadata' in (c.payload as object))!
-    expect(stamp.payload).toEqual({ metadata: { inventory_decremented: true, inventory_restored: true } })
+    const rpc = firstCall((c) => c.table === 'rpc:restore_commerce_stock_atomic')!
+    expect(rpc.payload).toEqual({ _order: 'o1' })
     // The ledger reversal and the booking release still happen.
     expect(ledger.recordFinancialTransaction).toHaveBeenCalledTimes(1)
     expect(booking.cancelBookingByOrder).toHaveBeenCalledWith('o1')
   })
 
-  it('an order whose stock was never decremented gets nothing back (nothing to give)', async () => {
-    stockHandler({ decremented: false })
+  it('no longer reads or writes stock from the app at all — no item walk, no compare-and-swap, no marker write', async () => {
+    handler()
     await recordCommerceRefund('pi_1')
+    // The four round trips the RPC replaced. Any of these coming back means the race came back.
+    expect(firstCall((c) => c.table === 'commerce_order_items')).toBeUndefined()
     expect(firstCall((c) => c.table === 'commerce_products')).toBeUndefined()
     expect(firstCall((c) => c.table === 'commerce_variants')).toBeUndefined()
+    expect(
+      firstCall((c) => c.table === 'commerce_orders' && c.op === 'update' && 'metadata' in (c.payload as object)),
+    ).toBeUndefined()
   })
 
-  it('a lost compare-and-swap re-reads and retries instead of overwriting a concurrent sale', async () => {
-    stockHandler({ loseFirstCas: true })
-    await recordCommerceRefund('pi_1')
-    const p1Updates = state.calls.filter((c) => c.table === 'commerce_products' && c.op === 'update' && hasFilter(c, 'eq', 'id', 'p1'))
-    expect(p1Updates).toHaveLength(2)
-    expect(p1Updates[0].payload).toEqual({ stock: 2 }) // read 0, lost
-    expect(hasFilter(p1Updates[0], 'eq', 'stock', 0)).toBe(true)
-    expect(p1Updates[1].payload).toEqual({ stock: 3 }) // re-read 1, won
-    expect(hasFilter(p1Updates[1], 'eq', 'stock', 1)).toBe(true)
+  it('a failed restore is logged loudly and never throws (the refund itself still stands)', async () => {
+    handler({ rpcError: { message: 'deadlock detected' } })
+    await expect(recordCommerceRefund('pi_1')).resolves.toBeUndefined()
+    expect(console.error).toHaveBeenCalledWith(
+      expect.stringContaining('stock restore failed'),
+      expect.objectContaining({ orderId: 'o1', error: 'deadlock detected' }),
+    )
+    expect(ledger.recordFinancialTransaction).toHaveBeenCalledTimes(1)
   })
 
   it('a redelivered charge.refunded flips nothing and therefore restores nothing (exactly once)', async () => {
     state.setHandler(() => ({})) // the flip finds no paid/fulfilled row
     await recordCommerceRefund('pi_1')
-    expect(firstCall((c) => c.table === 'commerce_order_items')).toBeUndefined()
+    expect(firstCall((c) => c.table === 'rpc:restore_commerce_stock_atomic')).toBeUndefined()
     expect(ledger.recordFinancialTransaction).not.toHaveBeenCalled()
   })
 })

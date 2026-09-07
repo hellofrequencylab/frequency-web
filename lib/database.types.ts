@@ -13850,6 +13850,8 @@ export type Database = {
           id: string
           is_comped: boolean
           last_plan_event_at: string | null
+          last_plan_event_id: string | null
+          last_plan_event_rank: number | null
           latitude: number | null
           location_precision: string
           longitude: number | null
@@ -13899,6 +13901,8 @@ export type Database = {
           id?: string
           is_comped?: boolean
           last_plan_event_at?: string | null
+          last_plan_event_id?: string | null
+          last_plan_event_rank?: number | null
           latitude?: number | null
           location_precision?: string
           longitude?: number | null
@@ -13948,6 +13952,8 @@ export type Database = {
           id?: string
           is_comped?: boolean
           last_plan_event_at?: string | null
+          last_plan_event_id?: string | null
+          last_plan_event_rank?: number | null
           latitude?: number | null
           location_precision?: string
           longitude?: number | null
@@ -15815,7 +15821,7 @@ export type Database = {
         Returns: boolean
       }
       claim_space_plan_event: {
-        Args: { _event_created: string; _space_id: string }
+        Args: { _event_created: string; _event_id?: string; _event_rank?: number; _space_id: string }
         Returns: boolean
       }
       community_library: {
@@ -16704,6 +16710,19 @@ export type Database = {
       }
       refresh_member_engagement_scores: { Args: never; Returns: undefined }
       refresh_resonance_density_cells: { Args: never; Returns: number }
+      refund_ticket_atomic: {
+        Args: { _payment_intent_id: string }
+        Returns: {
+          buyer_profile_id: string
+          currency: string
+          entity_id: string
+          event_id: string
+          id: string
+          platform_fee_cents: number
+          qty: number
+          ticket_type_id: string
+        }[]
+      }
       relationship_timeline: {
         Args: { _limit?: number; _other: string }
         Returns: {
@@ -16736,6 +16755,10 @@ export type Database = {
           profile_id: string
           similarity: number
         }[]
+      }
+      restore_commerce_stock_atomic: {
+        Args: { _order: string }
+        Returns: undefined
       }
       room_unread_counts: {
         Args: { _rooms: string[] }
@@ -16799,6 +16822,19 @@ export type Database = {
           p_proximity_m: number
         }
         Returns: undefined
+      }
+      settle_ticket_atomic: {
+        Args: { _payment_intent_id: string; _session_id: string }
+        Returns: {
+          buyer_profile_id: string
+          currency: string
+          entity_id: string
+          event_id: string
+          id: string
+          platform_fee_cents: number
+          qty: number
+          ticket_type_id: string
+        }[]
       }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }

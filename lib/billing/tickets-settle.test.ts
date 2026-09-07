@@ -1,12 +1,25 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type Stripe from 'stripe'
 
-// TICKET SETTLE + REFUND `sold` bump (lib/billing/tickets.ts). L6-15 (2026-09-05): the bump after the
-// pending -> succeeded flip is a second statement (no settle RPC exists; see the comment on
-// adjustTierSold), so the lock here is the part that CAN be held without a migration: the bump's
-// result is checked and retried, its failure is logged with the tier + delta + ticket, it never
-// throws (the ledger row still lands), and a redelivered event that flips nothing bumps nothing.
-// Sibling of ./tickets.test.ts (pure helpers); this file mocks the admin client + ledger the way
+// TICKET SETTLE + REFUND (lib/billing/tickets.ts). MONEY CODE.
+//
+// L6-15 (2026-09-05) found that the settle was TWO round trips: an `update event_tickets ... where
+// status = 'pending'` and then a separate `adjust_ticket_sold(tier, +qty)` RPC. It could only lock
+// the half that needed no migration — the bump's result was checked, retried and logged — and its
+// own comment named the real fix.
+//
+// LIVE-161 (2026-09-06) is that fix. settle_ticket_atomic / refund_ticket_atomic (migration
+// 20270345001700) flip the ticket and move `event_ticket_types.sold` in ONE statement and return
+// the rows they flipped. So the property under test changed shape: it is no longer "the second
+// request is retried and its failure is visible", it is "THERE IS NO SECOND REQUEST". A settled
+// ticket whose tier did not count it is now unrepresentable rather than merely logged.
+//
+// What these tests own is the CALL: one RPC, the right arguments, no table traffic of its own, and
+// the ledger/CRM writes still keyed on the rows the RPC actually flipped. What the SQL does with
+// those arguments (the flip predicate, the summed bump, the greatest(0, ...) floor) is proven in
+// the migration against a real Postgres, not here — a fake client cannot prove a transaction.
+//
+// Sibling of ./tickets.test.ts (pure helpers); mocks the admin client + ledger like
 // lib/commerce/orders.test.ts does.
 
 interface Call {
@@ -18,26 +31,26 @@ interface Call {
 
 const state = vi.hoisted(() => {
   const calls: Call[] = []
-  let flipRows: unknown[] = []
-  let rpcErrors: ({ message: string } | null)[] = []
+  let rpcRows: unknown[] = []
+  let rpcError: { message: string } | null = null
   return {
     calls,
-    setFlipRows(rows: unknown[]) {
-      flipRows = rows
+    /** The rows settle_ticket_atomic / refund_ticket_atomic report having flipped. */
+    setRpcRows(rows: unknown[]) {
+      rpcRows = rows
     },
-    setRpcErrors(errs: ({ message: string } | null)[]) {
-      rpcErrors = errs
+    setRpcError(err: { message: string } | null) {
+      rpcError = err
     },
     run(call: Call) {
       calls.push(call)
-      if (call.op === 'update' && call.table === 'event_tickets') return { data: flipRows, error: null }
-      if (call.op === 'rpc') return { data: null, error: rpcErrors.shift() ?? null }
+      if (call.op === 'rpc') return rpcError ? { data: null, error: rpcError } : { data: rpcRows, error: null }
       return { data: null, error: null }
     },
     reset() {
       calls.length = 0
-      flipRows = []
-      rpcErrors = []
+      rpcRows = []
+      rpcError = null
     },
   }
 })
@@ -96,6 +109,7 @@ function paidSession(): Stripe.Checkout.Session {
 }
 
 const rpcCalls = () => state.calls.filter((c) => c.op === 'rpc')
+const ticketWrites = () => state.calls.filter((c) => c.table === 'event_tickets' && c.op === 'update')
 
 beforeEach(() => {
   state.reset()
@@ -103,52 +117,90 @@ beforeEach(() => {
   vi.spyOn(console, 'error').mockImplementation(() => {})
 })
 
-describe('recordTicketFromSession — the sold bump is checked, retried, and keyed on the flip (L6-15)', () => {
-  it('bumps sold by the ticket qty exactly once when this call is the one that flipped the row', async () => {
-    state.setFlipRows([TICKET])
+describe('recordTicketFromSession — the flip and the sold bump are ONE statement (LIVE-161)', () => {
+  it('settles through a single RPC carrying the session and the PaymentIntent', async () => {
+    state.setRpcRows([TICKET])
     await recordTicketFromSession(paidSession())
-    const flip = state.calls.find((c) => c.op === 'update' && c.table === 'event_tickets')!
-    expect(flip.filters).toContainEqual(['eq', 'stripe_checkout_session_id', 'cs_1'])
-    expect(flip.filters).toContainEqual(['eq', 'status', 'pending'])
     expect(rpcCalls()).toHaveLength(1)
-    expect(rpcCalls()[0]).toMatchObject({ table: 'rpc:adjust_ticket_sold', payload: { p_tier_id: 'tier1', p_delta: 2 } })
+    expect(rpcCalls()[0]).toMatchObject({
+      table: 'rpc:settle_ticket_atomic',
+      payload: { _session_id: 'cs_1', _payment_intent_id: 'pi_1' },
+    })
     expect(console.error).not.toHaveBeenCalled()
     expect(ledger.recordFinancialTransaction).toHaveBeenCalledTimes(1)
   })
 
-  it('a redelivered event flips nothing and so bumps nothing', async () => {
-    state.setFlipRows([])
+  it('makes NO second round trip: no app-side ticket update and no adjust_ticket_sold', async () => {
+    state.setRpcRows([TICKET])
     await recordTicketFromSession(paidSession())
-    expect(rpcCalls()).toHaveLength(0)
+    // The gap this row closed. Either of these coming back re-opens the window in which a ticket
+    // is succeeded and its tier has not counted it.
+    expect(ticketWrites()).toHaveLength(0)
+    expect(rpcCalls().map((c) => c.table)).toEqual(['rpc:settle_ticket_atomic'])
+  })
+
+  it('a redelivered event flips nothing, so nothing is counted and nothing is recorded', async () => {
+    state.setRpcRows([])
+    await recordTicketFromSession(paidSession())
+    expect(rpcCalls()).toHaveLength(1)
     expect(ledger.recordFinancialTransaction).not.toHaveBeenCalled()
   })
 
-  it('a bump that fails once is retried and succeeds silently', async () => {
-    state.setFlipRows([TICKET])
-    state.setRpcErrors([{ message: 'connection reset' }, null])
-    await recordTicketFromSession(paidSession())
-    expect(rpcCalls()).toHaveLength(2)
-    expect(console.error).not.toHaveBeenCalled()
+  it('a failed settle is logged, never thrown, NOT retried, and records no ledger row', async () => {
+    state.setRpcRows([TICKET])
+    state.setRpcError({ message: 'function unavailable' })
+    await expect(recordTicketFromSession(paidSession())).resolves.toBeUndefined()
+    // Not retried on purpose: a call that commits and loses its response would return zero rows on
+    // a retry, and zero rows is how this path says "somebody else settled it".
+    expect(rpcCalls()).toHaveLength(1)
+    expect(console.error).toHaveBeenCalledWith(
+      expect.stringContaining('settle_ticket_atomic failed'),
+      expect.objectContaining({ error: 'function unavailable' }),
+    )
+    // One transaction: nothing flipped, so there is no settled ticket to write a ledger row for.
+    expect(ledger.recordFinancialTransaction).not.toHaveBeenCalled()
   })
 
-  it('a bump that keeps failing is LOGGED with the tier, delta and ticket, never thrown, and the ledger still lands', async () => {
-    state.setFlipRows([TICKET])
-    state.setRpcErrors([{ message: 'function unavailable' }, { message: 'function unavailable' }])
-    await expect(recordTicketFromSession(paidSession())).resolves.toBeUndefined()
-    expect(rpcCalls()).toHaveLength(2)
-    expect(console.error).toHaveBeenCalledWith(
-      expect.stringContaining('adjust_ticket_sold failed'),
-      expect.objectContaining({ ticketTypeId: 'tier1', delta: 2, ticketId: 't1', error: 'function unavailable' }),
-    )
-    expect(ledger.recordFinancialTransaction).toHaveBeenCalledTimes(1)
+  it('a session that is not a paid ticket touches nothing at all', async () => {
+    await recordTicketFromSession({ id: 'cs_2', payment_status: 'unpaid', metadata: { kind: 'ticket' } } as unknown as Stripe.Checkout.Session)
+    await recordTicketFromSession({ id: 'cs_3', payment_status: 'paid', metadata: { kind: 'tip' } } as unknown as Stripe.Checkout.Session)
+    expect(state.calls).toHaveLength(0)
   })
 })
 
-describe('recordTicketRefund — the mirror image frees the tier by the same qty (L6-15)', () => {
-  it('decrements sold by the refunded qty, keyed on the succeeded -> refunded flip', async () => {
-    state.setFlipRows([TICKET])
+describe('recordTicketRefund — the mirror image gives the seat back in the same statement (LIVE-161)', () => {
+  it('unwinds through a single RPC keyed on the PaymentIntent, with no second bump', async () => {
+    state.setRpcRows([TICKET])
     await recordTicketRefund('pi_1')
     expect(rpcCalls()).toHaveLength(1)
-    expect(rpcCalls()[0]).toMatchObject({ payload: { p_tier_id: 'tier1', p_delta: -2 } })
+    expect(rpcCalls()[0]).toMatchObject({
+      table: 'rpc:refund_ticket_atomic',
+      payload: { _payment_intent_id: 'pi_1' },
+    })
+    expect(ticketWrites()).toHaveLength(0)
+    // The reversal is negative and keyed on the row the RPC flipped.
+    expect(ledger.recordFinancialTransaction).toHaveBeenCalledWith(
+      expect.objectContaining({ revenueType: 'refund', amountCents: -150, sourceId: 't1' }),
+    )
+  })
+
+  it('a redelivered charge.refunded flips nothing and reverses nothing', async () => {
+    state.setRpcRows([])
+    await recordTicketRefund('pi_1')
+    expect(ledger.recordFinancialTransaction).not.toHaveBeenCalled()
+  })
+
+  it('a failed refund RPC is logged and never throws', async () => {
+    state.setRpcError({ message: 'deadlock detected' })
+    await expect(recordTicketRefund('pi_1')).resolves.toBeUndefined()
+    expect(console.error).toHaveBeenCalledWith(
+      expect.stringContaining('refund_ticket_atomic failed'),
+      expect.objectContaining({ error: 'deadlock detected' }),
+    )
+  })
+
+  it('no PaymentIntent means no call', async () => {
+    await recordTicketRefund(null)
+    expect(state.calls).toHaveLength(0)
   })
 })

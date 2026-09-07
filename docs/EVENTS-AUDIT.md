@@ -30,7 +30,7 @@ Stripe webhook signature verified; refunds authz-gated; AI blurb is read-only + 
 
 | ID | Finding | Fix |
 |---|---|---|
-| ⚠️ M1 | Paid-tier `sold` was a non-atomic read-modify-write (lost-update / oversell) | ✅ Atomic `adjust_ticket_sold()` RPC (`sold = sold + delta`, clamped); `lib/billing/tickets.ts` now calls it |
+| ⚠️ M1 | Paid-tier `sold` was a non-atomic read-modify-write (lost-update / oversell) | ✅ Atomic `adjust_ticket_sold()` RPC (`sold = sold + delta`, clamped). Superseded 2026-09-07 by `settle_ticket_atomic` / `refund_ticket_atomic` ([ADR-1216](DECISIONS.md)), which flip the ticket and move `sold` in ONE statement — the atomic bump was still a second round trip after the flip. `adjust_ticket_sold` remains as the manual lever with no app caller. |
 | ⚠️ M2/M3 | RSVP capacity enforced only in app code (a client could write `status='going'` directly past capacity) | ✅ `enforce_event_rsvp_capacity()` BEFORE trigger coerces over-capacity → `waitlist` at the DB layer |
 | 🟡 L2 | Two FK columns unindexed (cascade-delete scans) | ✅ Indexes on `event_blurb_cache(event_id)`, `circle_field_transactions(profile_id)` |
 

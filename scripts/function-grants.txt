@@ -201,11 +201,13 @@ record_streak_tick                   internal
 redeem_store_item_atomic             internal
 refresh_member_engagement_scores     internal
 refresh_resonance_density_cells      internal
+refund_ticket_atomic                 internal
 relationship_timeline                authenticated
 remove_profile_meta_keys             authenticated
 reserve_ticket_atomic                internal
 reset_season                         internal
 resonance_neighbors                  internal
+restore_commerce_stock_atomic        internal
 room_unread_counts                   authenticated
 rooms_maintain_member_count          public
 rooms_touch_last_message             public
@@ -215,6 +217,7 @@ search_practices_hybrid              internal
 set_event_geog                       internal
 set_node_geo                         internal
 set_updated_at                       public
+settle_ticket_atomic                 internal
 similar_library_assets               internal
 space_public_calendar_feed           internal
 sync_contact_from_profile            internal

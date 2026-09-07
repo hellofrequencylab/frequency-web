@@ -251,9 +251,11 @@ export async function POST(req: Request) {
       case 'customer.subscription.updated': {
         const sub = event.data.object as Stripe.Subscription
         // Pricing P2 (ADR-363): route Space subscriptions to their reconcilers first; if it
-        // was a Space sub, the member tier path is skipped. event.created drives the space_plan
-        // ordering guard (a stale out-of-order event is skipped, mirroring the member path).
-        if (await routeSpaceSubscription(sub, event.created)) break
+        // was a Space sub, the member tier path is skipped. The whole event drives the space_plan
+        // ordering guard (a stale out-of-order event is skipped, mirroring the member path): its
+        // `created` orders across seconds, and its `type` breaks a same-second tie by lifecycle
+        // rank, which a `.created`/`.updated` pair from one checkout always needs (LIVE-159).
+        if (await routeSpaceSubscription(sub, event)) break
         // Household / Circle bundle (ADR-370): ONE subscription that seats several members. Routed
         // ahead of the member path for the same reason as a Space sub — the payer is buying seats,
         // not a personal membership. Seating is one atomic RPC and throws on failure, so a partial
@@ -314,8 +316,9 @@ export async function POST(req: Request) {
       case 'customer.subscription.deleted': {
         const sub = event.data.object as Stripe.Subscription
         // Pricing P2: a deleted Space subscription reverts the plan to free / cancels the membership.
-        // event.created keeps the deletion in the same ordering stream as the updates.
-        if (await routeSpaceSubscription(sub, event.created)) break
+        // The event keeps the deletion in the same ordering stream as the updates — and its lifecycle
+        // rank (deleted > updated > created) means a same-second sibling can never revert it.
+        if (await routeSpaceSubscription(sub, event)) break
         // A deleted bundle subscription EMPTIES the bundle: every seat is restored to what it held
         // before the bundle seated it (never below), and the household link is cleared. `terminal`
         // because THIS EVENT is the cancellation; it must not depend on reading a status back.
