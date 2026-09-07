@@ -278,6 +278,12 @@ jobs:
       # and a red X meaning "the owner has not created a credential yet" trains people to
       # ignore the check (e2e.yml's founding argument). It says so loudly instead, here and
       # again in the reporter's PARTIAL banner, which names each unphotographed surface.
+      #
+      # THE ROLE FLOOR IS READ HERE TOO (HYG-027). After the session is proven against /feed,
+      # the mint script probes /admin with the same cookies: a redirect to /feed means the
+      # account is not platform staff, and it says so as a `::warning` annotation and a job
+      # summary paragraph BEFORE the suites run, rather than as a banner fifteen minutes
+      # later. Still never a failure here; PW_REQUIRE_OPERATOR is the opt-in that makes it one.
       - name: Mint the member session
         id: session
         if: steps.preview.outputs.ready == 'true'
@@ -351,6 +357,10 @@ jobs:
           # ratchet that silently stays off because it was typed into the Secrets tab is the
           # exact failure this flag exists to prevent -- so accept both rather than trust aim.
           PW_REQUIRE_SHELL: ${{ vars.PW_REQUIRE_SHELL || secrets.PW_REQUIRE_SHELL }}
+          # Set PW_REQUIRE_OPERATOR=1 once the PW_MEMBER_EMAIL account clears the /admin role
+          # floor (HYG-027): from then on a run whose seven operator surfaces bounce off
+          # requireAdminFloor() fails instead of announcing. Same two-tab read, same reason.
+          PW_REQUIRE_OPERATOR: ${{ vars.PW_REQUIRE_OPERATOR || secrets.PW_REQUIRE_OPERATOR }}
         run: pnpm test:e2e
 
       # @visual: needs committed baselines captured against a deployment of the SAME kind.
@@ -364,6 +374,7 @@ jobs:
           PW_ROOM_PATH: ${{ vars.PW_ROOM_PATH }}
           PW_SPACE_SLUG: ${{ vars.PW_SPACE_SLUG }}
           PW_REQUIRE_SHELL: ${{ vars.PW_REQUIRE_SHELL || secrets.PW_REQUIRE_SHELL }}
+          PW_REQUIRE_OPERATOR: ${{ vars.PW_REQUIRE_OPERATOR || secrets.PW_REQUIRE_OPERATOR }}
         run: pnpm test:e2e:visual
 
       # The synthetic speed gate used to run here as steps 11-13. It is its own parallel

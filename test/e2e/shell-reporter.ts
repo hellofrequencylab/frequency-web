@@ -23,15 +23,22 @@
 // AFTER the credential and the shell baselines exist, and a partial run becomes a failure.
 // That is the ratchet: before the credential, silence is loud; after it, silence is red, so
 // a credential that quietly expires cannot re-open the blind spot the same way.
+//
+// The operator console has the same shape with a different precondition (HYG-027, ADR-1239):
+// its tests skip when the session bounces off requireAdminFloor(), the run's headline says so
+// and carries an `::error` annotation, and `PW_REQUIRE_OPERATOR=1` — set AFTER the e2e account
+// clears the floor — makes that bounce a failure. The decision is `requiredFailure()` in
+// shell-coverage.ts, pure, so both directions are proven without a browser.
 import { appendFileSync } from 'node:fs'
 import { basename } from 'node:path'
 import type { FullResult, Reporter, TestCase, TestResult } from '@playwright/test/reporter'
 import {
   renderShellCoverage,
+  requiredFailure,
   summarizeShellCoverage,
   type ShellObservation,
 } from './shell-coverage'
-import { STORAGE_STATE, appSurfaces, operatorSurfaces } from './surfaces'
+import { ROLE_FLOOR_MARKER, STORAGE_STATE, appSurfaces, operatorSurfaces } from './surfaces'
 
 /** The tag that marks a test as covering an AUTHED surface. Applied to the `member shell`
  *  describes in visual.spec.ts and a11y.spec.ts, and to the `operator console` describe in
@@ -41,12 +48,12 @@ const SHELL_TAG = '@shell'
 /** Every authed surface path this reporter can attribute an observation to.
  *
  *  ⚠️ THE OPERATOR HALF IS INCLUDED ONLY WHEN THE RUN COLLECTED IT, and that condition is the
- *  whole design. `a11y.spec.ts` and `overflow.spec.ts` carry the member shell and NOT the
- *  operator console, so an unconditional union would make every a11y run announce seven
- *  operator routes as "still unphotographed" — true of that run, useless as a signal, and the
- *  fastest way to teach a reader to skip the banner. A SKIPPED test is still a collected one,
- *  so a visual run whose operator surfaces all skip does report them, which is the case that
- *  matters. */
+ *  whole design. `overflow.spec.ts` carries the member shell and NOT the operator console (and
+ *  `a11y.spec.ts` did too until 2026-09-07), so an unconditional union would make such a run
+ *  announce seven operator routes as "still unphotographed" — true of that run, useless as a
+ *  signal, and the fastest way to teach a reader to skip the banner. A SKIPPED test is still a
+ *  collected one, so a run whose operator surfaces all skip does report them, which is the case
+ *  that matters. */
 function authedSurfaces(collectedOperator: boolean): string[] {
   return [
     ...appSurfaces().map((s) => s.path),
@@ -81,12 +88,19 @@ export default class ShellCoverageReporter implements Reporter {
       this.operatorCollected = true
     }
 
+    // `test.skip(true, reason)` lands the reason as a `skip` annotation on the result, so the run
+    // itself says whether this was the role floor — no inference from the env needed.
+    const roleFloor = [...test.annotations, ...result.annotations].some(
+      (a) => a.type === 'skip' && (a.description ?? '').includes(ROLE_FLOOR_MARKER),
+    )
+
     this.specs.add(basename(test.location.file))
     this.seen.set(test.id, {
       title: test.titlePath().filter(Boolean).join(' › '),
       surface,
       status: result.status === 'skipped' ? 'skipped' : 'ran',
       missingBaseline: MISSING_SNAPSHOT.test(errors),
+      roleFloor,
     })
   }
 
@@ -123,13 +137,14 @@ export default class ShellCoverageReporter implements Reporter {
       }
     }
 
-    // The opt-in ratchet. Only ever TIGHTENS: without the variable this returns nothing and
-    // the run's own status stands.
-    const required = (process.env.PW_REQUIRE_SHELL ?? '').trim()
-    if (coverage.verdict === 'partial' && required && required !== '0' && required !== 'false') {
-      process.stdout.write(
-        `::error title=App shell not photographed::PW_REQUIRE_SHELL is set, so a run that photographs 0 app surfaces fails. ${coverage.reason}\n`,
-      )
+    // The opt-in ratchets. They only ever TIGHTEN: without the variables this returns nothing
+    // and the run's own status stands.
+    const failure = requiredFailure(coverage, {
+      requireShell: process.env.PW_REQUIRE_SHELL,
+      requireOperator: process.env.PW_REQUIRE_OPERATOR,
+    })
+    if (failure) {
+      process.stdout.write(`${failure}\n`)
       return { status: 'failed' }
     }
 

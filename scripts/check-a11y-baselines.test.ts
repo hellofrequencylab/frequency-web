@@ -65,6 +65,13 @@ describe('the file that actually ships', () => {
   // every one of the 52 contexts is held to EQUALITY, so a rise fails and a fall fails too.
   // Keep it that way. If a future change wants a ceiling back, it has to argue for it here, and
   // the only honest argument is the one LIVE-023 made — that nothing has measured the surface.
+  //
+  //    0 → 0   2026-09-07 (HYG-027, ADR-1239). That argument WAS made, for the operator console:
+  //            the seven /admin routes joined the a11y matrix with nothing having measured them,
+  //            and the first draft seeded 21 declared ceilings. It did not ship, because
+  //            LIVE-023's own probe (a DONE row) asserts the same thing this test does and
+  //            check:backlog fails a done row that regresses. So the console joined at ZERO
+  //            tolerance as 21 readings of 0, and the count below moved 82 → 103.
   it('declares NO ceilings at all: every context is held to equality', () => {
     const { ceilings, readings } = validate(shipped)
     expect(ceilings.map((c: { context: string }) => c.context).sort()).toEqual([])

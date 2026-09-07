@@ -51,6 +51,58 @@ describe('aggregate', () => {
   })
 })
 
+// ── The WHOLE return tree passes React Flight's own rule, not only its root ──────────────────
+//
+// LIVE-203 (ADR-1230) re-derived this defect from the error text alone: Flight describes the
+// PARENT of the refused value, and a bare `{}` in that message is its `emptyRoot` sentinel, so
+// the refused value was a serialisation ROOT (a server action's return value), not a prop nested
+// in JSX. That deduction is what four passes of reading the page's render tree could not give.
+// The prototype assertion above pins the root; this one walks every nested value with the exact
+// predicate the flight server applies (react-server-dom-webpack-server.node.production.js, the
+// "Only plain objects" throw), so a null-prototype `counts` bucket, which would be refused with a
+// different parent description and therefore a different digest, is a red test too.
+
+/** React Flight's acceptance rule for a non-array object, verbatim from the server build. */
+function flightAccepts(value: object): boolean {
+  const proto = Object.getPrototypeOf(value)
+  return proto === Object.prototype || (proto !== null && Object.getPrototypeOf(proto) === null)
+}
+
+/** Every object reachable from `value` that Flight would refuse, as dotted paths. */
+function flightRefusals(value: unknown, at = '$'): string[] {
+  if (typeof value !== 'object' || value === null) return []
+  if (Array.isArray(value)) return value.flatMap((v, i) => flightRefusals(v, `${at}[${i}]`))
+  if (value instanceof Date) return []
+  const here = flightAccepts(value) ? [] : [at]
+  return here.concat(Object.keys(value).flatMap((k) => flightRefusals((value as Record<string, unknown>)[k], `${at}.${k}`)))
+}
+
+describe('aggregate crosses the Flight boundary whole (LIVE-203, ADR-1230)', () => {
+  it('the predicate is the real one: it refuses exactly what Flight refuses', () => {
+    // Positive controls for the walker itself, so a broken walker cannot pass by silence.
+    expect(flightRefusals(Object.create(null))).toEqual(['$'])
+    expect(flightRefusals({ a: { b: Object.create(null) } })).toEqual(['$.a.b'])
+    expect(flightRefusals([{ counts: Object.create(null) }])).toEqual(['$[0].counts'])
+    expect(flightRefusals(new (class Row {})())).toEqual(['$'])
+    // And accepts what Flight accepts: plain objects, arrays, Dates, primitives.
+    expect(flightRefusals({ a: [1, 'x', null, new Date(0), { b: {} }] })).toEqual([])
+  })
+
+  it('🔴 the pre-fix shape (a null-prototype map at the root) is refused by that predicate', () => {
+    const preFix = Object.assign(Object.create(null), { p1: { counts: {}, mine: [] } })
+    expect(flightRefusals(preFix)).toEqual(['$'])
+  })
+
+  it('no value anywhere in the fold result is refused, on every path the action can return', () => {
+    // The populated path, the shaped-but-empty path (viewer cannot read the event), the
+    // unsafe-key path, and the no-ids path: each is a return value of getEventPostReactions.
+    expect(flightRefusals(aggregate(rows, ['p1', 'p2'], 'me'))).toEqual([])
+    expect(flightRefusals(aggregate([], ['p1'], null))).toEqual([])
+    expect(flightRefusals(aggregate(rows, ['__proto__', 'p1'], 'me'))).toEqual([])
+    expect(flightRefusals(aggregate([], [], null))).toEqual([])
+  })
+})
+
 describe('the reaction set', () => {
   it('accepts exactly the five faces and nothing else', () => {
     for (const k of BOOP_KINDS) expect(isBoopKind(k)).toBe(true)

@@ -56,6 +56,7 @@
     "check:cache-budget": "node scripts/check-cache-budget.mjs",
     "check:shell-weight": "node scripts/check-shell-weight.mjs",
     "check:stored-blocks": "node scripts/check-stored-blocks.mjs",
+    "check:stored-links": "node scripts/check-stored-links.mjs",
     "check:entity-layouts": "node scripts/check-entity-layouts.mjs",
     "check:cosmetic-renders": "node scripts/check-cosmetic-renders.mjs",
     "check:studio": "node scripts/check-studio.mjs",
@@ -134,7 +135,7 @@
     "supabase": "^2.116.0",
     "tailwindcss": "^4",
     "typescript": "^6",
-    "vitest": "^4.1.11"
+    "vitest": "^5.0.0"
   },
   "pnpm": {
     "overrides": {
