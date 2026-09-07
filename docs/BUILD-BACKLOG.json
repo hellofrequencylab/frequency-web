@@ -56,7 +56,6 @@
             "LIVE-175",
             "LIVE-186",
             "LIVE-183",
-            "LIVE-184",
             "LIVE-159",
             "LIVE-161",
             "LIVE-173",
@@ -8778,7 +8777,7 @@
     {
       "id": "LIVE-184",
       "title": "Seven public Space profile tabs are indexable and canonical but advertised nowhere",
-      "status": "open",
+      "status": "done",
       "priority": "P1",
       "lane": "live",
       "size": "S",
@@ -8786,11 +8785,10 @@
         "file": "docs/BUILD-BACKLOG.json",
         "ref": "sweep 3, 2026-09-05"
       },
-      "detail": "Sweep 3 (SEO). app/(main)/spaces/[slug]/(profile)/ holds seven crawlable tabs beside the profile root: book, calendar, circles, collaborators, reviews, shop and [page]. Each has generateMetadata routed through spaceProfileMetadata, which stamps a per-tab title and its own canonical, and none sets robots.index false -- so all seven are indexable. app/sitemap.ts advertises only /spaces/<slug> plus the podcasts routes, and scripts/check-seo.mjs cannot see them because Scan C walks static routes while these sit under [slug]. About 7 tabs x 20 networked Spaces = ~140 indexable URLs reachable only by crawl-through, and /shop and /calendar carry exactly the commercial and local-intent content a local answer-engine query wants. FIX: expand spaceRoutes to emit the tabs a Space actually HAS, gated the way the pages gate themselves (storefront published + shop feature on, >=1 review, >=1 circle) so an empty tab never gets a URL -- the pattern podcastRoutes already uses -- at priority 0.5 under the profile's 0.6. If a tab is deliberately unwanted the alternative is teaching spaceProfileMetadata to noindex it; declaring nothing is the state to leave behind either way.",
+      "detail": "Sweep 3 (SEO). app/(main)/spaces/[slug]/(profile)/ holds seven crawlable tabs beside the profile root: book, calendar, circles, collaborators, reviews, shop and [page]. Each has generateMetadata routed through spaceProfileMetadata, which stamps a per-tab title and its own canonical, and none sets robots.index false -- so all seven are indexable. app/sitemap.ts advertises only /spaces/<slug> plus the podcasts routes, and scripts/check-seo.mjs cannot see them because Scan C walks static routes while these sit under [slug]. About 7 tabs x 20 networked Spaces = ~140 indexable URLs reachable only by crawl-through, and /shop and /calendar carry exactly the commercial and local-intent content a local answer-engine query wants. FIX: expand spaceRoutes to emit the tabs a Space actually HAS, gated the way the pages gate themselves (storefront published + shop feature on, >=1 review, >=1 circle) so an empty tab never gets a URL -- the pattern podcastRoutes already uses -- at priority 0.5 under the profile's 0.6. If a tab is deliberately unwanted the alternative is teaching spaceProfileMetadata to noindex it; declaring nothing is the state to leave behind either way.\n\n── CLOSED 2026-09-07 by #2387. lib/spaces/discovery.ts exports listNetworkedSpaceProfileTabs and app/sitemap.ts awaits it at the spaceRoutes section, emitting only the tabs a Space actually HAS, each gated the way its own page gates itself, at priority 0.5 under the profile root. ⚪ THE ROW WAS manual AND THEREFORE CLOSED NOTHING WHEN ITS CODE SHIPPED: the six sibling rows in that PR carried real probes and went done with the merge, while this one sat open behind an evidence string nothing evaluates. That is the manual-row cost ADR-970 accepts, and it is worth seeing once - a manual row does not fail the build, so it also does not NOTICE its own fix. It carries a cmd probe now, because the consequence became measurable the moment the reader existed: the probe asserts the export, the import, the await, and that the reader still gates on the Space row. Watched go RED by mutation before it was trusted - against f4d868fb3 (the commit before the crawl slice) it exits 1 naming the missing export, and exits 0 on the merged tree.",
       "verify": {
-        "kind": "manual",
-        "evidence": "2026-09-05: listed the seven tab directories and confirmed each routes through spaceProfileMetadata without noindex. Closes when the tabs a Space has are advertised or deliberately noindexed.",
-        "checked": "2026-09-05"
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const disc=fs.readFileSync('lib/spaces/discovery.ts','utf8');const sm=fs.readFileSync('app/sitemap.ts','utf8');if(!/export const listNetworkedSpaceProfileTabs\\b/.test(disc))throw new Error('discovery.ts does not export the tab reader');if(!/listNetworkedSpaceProfileTabs/.test(sm.split('\\n').slice(0,60).join('\\n')))throw new Error('app/sitemap.ts does not import it');if(!/await listNetworkedSpaceProfileTabs\\(\\)/.test(sm))throw new Error('app/sitemap.ts never awaits it - tabs reach no sitemap');if(!/entitlements|preferences/.test(disc.slice(disc.indexOf('listNetworkedSpaceProfileTabs'))))throw new Error('the tab reader does not gate on the Space row');\""
       }
     },
     {
