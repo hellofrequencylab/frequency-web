@@ -115,8 +115,11 @@ function CatalogSection({
         </div>
       </FormSection>
 
-      {/* TODO(ADR-472 surfaces): the catalog editor still lists add-ons generically; only AI Engine
-          remains a metered add-on. The full Tier x Mode console rebuild lands in the surface PR. */}
+      {/* The catalog editor lists add-ons generically although only Vera AI remains a metered add-on
+          (ADR-472 folded Marketing / Team / Branding into tier depth; ADR-811 re-cut the tiers into the
+          bases above). Kept generic on purpose: a future metered item is a catalog row, not a console
+          change. The tier console ADR-472's comment once promised here was overtaken and is not
+          planned (ADR-1247). */}
       <FormSection
         title="Vera AI (metered add-on)"
         description="The sole cross-tier add-on, listed publicly as Vera AI. Toggle it off here to hide it from the picker entirely. It is usage-priced and available on any paid tier."
