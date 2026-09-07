@@ -351,7 +351,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       ...((s.updatedAt) ? { lastModified: new Date(s.updatedAt) } : {}),
       changeFrequency: "weekly" as const,
       priority: 0.6,
-      images: [`${SITE_URL}/spaces/${s.slug}/opengraph-image`],
+      // ⚠️ NO `images` HERE, DELIBERATELY. This carried
+      // `${SITE_URL}/spaces/<slug>/opengraph-image` until 2026-09-07, and that URL is not an
+      // image: the per-Space card sits under the (main) route group, so Next serves it at a
+      // hashed path, and the bare one falls through to the home page as 200 text/html. An image
+      // sitemap advertising an HTML document is worse than none — Google fetches it, and nothing
+      // on our side reports the mismatch. Naming the shared site card instead would be spam (one
+      // image on every URL). Carrying each entity's REAL cover is the right answer and needs the
+      // reader to project `cover_image_path` through the storage helper; that is LIVE-207.
     }));
 
     // Programmatic type hubs (/discover/spaces/[type]) — include ONLY types with enough networked
@@ -413,15 +420,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // Only UPCOMING events are listed: listSitemapEventEntries floors on the community's wall-clock
     // day, so expired events are isolated OUT of the sitemap by construction (they go noindex,follow
     // on the page until pruned). The CANONICAL event URL is /events/<slug> (the discover detail
-    // canonicalises here), so the sitemap points at it; each entry carries the per-event OG image for
-    // the image sitemap. A series' own page outranks its individual dates, which is the ranking we
-    // want a crawler to infer: land a member on the series, not on week three.
+    // canonicalises here), so the sitemap points at it. A series' own page outranks its individual
+    // dates, which is the ranking we want a crawler to infer: land a member on the series, not on
+    // week three. (This comment promised "each entry carries the per-event OG image for the image
+    // sitemap" until 2026-09-07; it did carry a URL, and that URL served HTML — see below.)
     const eventRoutes: MetadataRoute.Sitemap = (events as SitemapEventEntry[]).map((e) => ({
       url: `${SITE_URL}/events/${e.slug}`,
       lastModified: new Date(e.startsAt),
       changeFrequency: "daily",
       priority: e.isSeriesHome ? 0.8 : 0.7,
-      images: [`${SITE_URL}/events/${e.slug}/opengraph-image`],
+      // No `images` — same reason as the Space routes above (LIVE-205 / LIVE-207).
     }));
 
     const journeyRoutes: MetadataRoute.Sitemap = journeys.map((j) => ({

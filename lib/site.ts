@@ -14,6 +14,24 @@ export const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ??
   "https://frequencylocal.com";
 
+// The site OG card, as an absolute URL, and the ONE definition of it.
+//
+// 🔴 THE PATH CARRIES ITS EXTENSION AND MUST. `app/opengraph-image.jpg` is a STATIC metadata file,
+// so Next serves it at `/opengraph-image.jpg`; the extensionless `/opengraph-image` is not a route
+// at all and falls through to the home page, which answers **200 with text/html**. Structured data
+// naming it therefore did not 404 - it advertised an HTML document as an image, which no validator
+// reports and no gate could see. Measured on production 2026-09-07: `/opengraph-image` returns
+// text/html with `x-matched-path: /`, while `/opengraph-image.jpg` returns image/jpeg, 84,049
+// bytes, matching this file on disk byte for byte (LIVE-205, ADR-1220).
+//
+// ⚠️ A METADATA ROUTE CANNOT BE NAMED THIS WAY AT ALL. A per-entity card
+// (`app/(main)/events/[slug]/opengraph-image.tsx`) sits under a route group, so Next appends a
+// six-character hash derived from the parent path and the bare path is dead. Only a STATIC file at
+// a non-grouped root has a URL stable enough to hardcode, which is why this constant names one and
+// `lib/jsonld.seo-images.test.ts` fails any self-origin image URL that does not resolve to a real
+// file on disk.
+export const SITE_OG_IMAGE = `${SITE_URL}/opengraph-image.jpg`;
+
 export const SITE_NAME = "Frequency";
 // The brand tagline, and the exact words under the mark in the logo lockup. No leading "The":
 // NAMING.md §ADR-811 makes "Community Collective" the canonical descriptor for the platform, and

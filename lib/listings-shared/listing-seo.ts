@@ -11,7 +11,7 @@
 //   - Voice canon: no em or en dashes in any surfaced string.
 
 import type { Metadata } from 'next'
-import { SITE_NAME, SITE_URL } from '@/lib/site'
+import { SITE_NAME, SITE_URL, SITE_OG_IMAGE } from '@/lib/site'
 import { breadcrumbSchema, aggregateRatingNode, productReviewNodes } from '@/lib/jsonld'
 import type { ListingDetailView } from '@/lib/listings-shared/detail-view'
 
@@ -128,7 +128,7 @@ export function listingJsonLd(view: ListingJsonLdInput): object[] {
   const url = abs(path)
   if (view.status != null) return [] // non-active: no rich result
 
-  const image = [...(view.primaryImage ? [view.primaryImage] : []), abs('/opengraph-image')]
+  const image = [...(view.primaryImage ? [view.primaryImage] : []), SITE_OG_IMAGE]
   const priceCents = priceCentsFromLabel(view.priceLabel)
   const isHousing = view.vertical === 'housing'
   const housing = isHousing ? view.housingFacts : undefined
