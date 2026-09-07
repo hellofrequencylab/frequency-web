@@ -119,10 +119,17 @@ export async function getNexusPeopleData(slug: string): Promise<NexusPeopleData 
   const caps = await getNexusCapabilities(nexus.id)
   if (!caps.has('nexus.manage')) return null
 
+  // 🔴 ARCHIVED HUBS ARE EXCLUDED (HYG-064, the same defect HYG-046 fixed on the public Nexus
+  // page). `archiveNexus` and `archiveHub` both document archiving as "so it drops out of
+  // listings", and the Hub twin next door has excluded archived CHILDREN since it was written
+  // (app/(main)/hubs/admin-actions.ts) — this console did not, so a Nexus operator saw archived
+  // Hubs in the only listing of Hubs the console has, and their circles' members were counted
+  // into `totalMembers` below.
   const { data: rawHubs } = await admin
     .from('hubs')
     .select('id, name, slug, status, guide:profiles!guide_id ( display_name ), circles ( member_count )')
     .eq('nexus_id', nexus.id)
+    .neq('status', 'archived')
     .order('name', { ascending: true })
 
   type Row = {
@@ -170,7 +177,7 @@ export async function getNexusInsightsData(slug: string): Promise<NexusInsightsD
   const admin = createAdminClient()
   const { data: nexus } = await admin
     .from('nexuses')
-    .select('id, member_cap, hubs ( circles ( member_count ) )')
+    .select('id, member_cap')
     .eq('slug', slug)
     .maybeSingle()
   if (!nexus) return null
@@ -178,17 +185,28 @@ export async function getNexusInsightsData(slug: string): Promise<NexusInsightsD
   const caps = await getNexusCapabilities(nexus.id)
   if (!caps.has('nexus.manage')) return null
 
-  type Row = { member_cap: number; hubs: { circles: { member_count: number | null }[] }[] }
-  const nx = nexus as unknown as Row
-  const totalMembers = nx.hubs.reduce(
-    (sum, h) => sum + h.circles.reduce((s, c) => s + (c.member_count ?? 0), 0),
-    0,
+  // 🔴 ARCHIVED HUBS ARE EXCLUDED HERE TOO (HYG-064). This read used to embed the hubs under the
+  // nexus row (`hubs ( circles ( member_count ) )`), and an embed carries no place to put the
+  // filter — so every one of these four numbers counted archived Hubs: `hubCount` listed them,
+  // `totalMembers` summed their circles, and `avgPerHub` divided by the inflated count. Reading
+  // hubs as their own row set, the way the Hub twin reads circles, is what makes the filter
+  // expressible at all.
+  const { data: rawHubs } = await admin
+    .from('hubs')
+    .select('circles ( member_count )')
+    .eq('nexus_id', nexus.id)
+    .neq('status', 'archived')
+
+  type Row = { circles: { member_count: number | null }[] }
+  const hubs = ((rawHubs ?? []) as unknown as Row[]).map((h) =>
+    h.circles.reduce((s, c) => s + (c.member_count ?? 0), 0),
   )
+  const totalMembers = hubs.reduce((sum, n) => sum + n, 0)
   return {
     totalMembers,
-    memberCap: nx.member_cap,
-    hubCount: nx.hubs.length,
-    avgPerHub: nx.hubs.length > 0 ? Math.round(totalMembers / nx.hubs.length) : 0,
+    memberCap: (nexus as unknown as { member_cap: number }).member_cap,
+    hubCount: hubs.length,
+    avgPerHub: hubs.length > 0 ? Math.round(totalMembers / hubs.length) : 0,
   }
 }
 
