@@ -16795,21 +16795,6 @@ export type Database = {
           id: string
         }[]
       }
-      search_practices_hybrid: {
-        Args: {
-          include_hidden?: boolean
-          match_limit?: number
-          query_embedding?: string
-          query_text?: string
-          rrf_k?: number
-        }
-        Returns: {
-          fts_rank: number
-          id: string
-          rrf_score: number
-          vec_rank: number
-        }[]
-      }
       set_event_geog: {
         Args: { _event_id: string; _lat: number; _long: number }
         Returns: undefined
