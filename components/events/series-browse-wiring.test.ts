@@ -90,7 +90,11 @@ describe('the surfaces with a shape of their own', () => {
     const code = stripComments(read('components/sidebar/rail-panels.tsx'))
     // Two reads: the viewer's Circles, and the community-wide fallback when those are quiet.
     // Wiring only the first leaves the unscoped one flooding every member's rail.
-    expect(code.split('${SERIES_COLUMNS}').length).toBe(3)
+    // THREE reads in this file select the series columns now: the two LIST branches below, and the
+    // Pulse panel's "N this week" COUNT (LIVE-198), which folds through countSeries. The two list
+    // branches are pinned precisely by their shared over-fetch limit on the next line, so this
+    // number is the file total, not the branch count.
+    expect(code.split('${SERIES_COLUMNS}').length).toBe(4)
     expect(code.split('.limit(fetchLimit)').length).toBe(3)
     expect(code.split('= fold(').length).toBe(3) // one shared fold, called by BOTH branches
     // The gate is the query here: this panel reads through the RLS-bypassing admin client, and it

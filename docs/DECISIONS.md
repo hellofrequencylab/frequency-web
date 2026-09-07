@@ -35893,3 +35893,40 @@ Two things were re-tested and NOT changed. The host-payout failure logged at 20:
 **One behaviour change, stated.** The settle writes the PaymentIntent id with `coalesce`, so a session arriving without one no longer erases a PaymentIntent already on the row. The old statement wrote the incoming value, null included.
 
 **Consequences.** `lib/commerce/checkout.ts` loses `restoreStockRow` and its retry constant; `lib/billing/tickets.ts` loses `adjustTierSold`. Both call sites write the RPC name as a literal so `check:schema-contract` can resolve it (a dynamic name is skipped, and a phantom RPC on an untyped client fails at runtime, not at tsc — ADR-1207). Three `internal` verdicts added to `scripts/function-grants.txt`. `lib/billing/tickets-settle.test.ts` and the L6-16 block of `lib/commerce/checkout.test.ts` now assert the absence of the second round trip; nine of them were watched RED against the unfixed tree. The SQL itself was proven against a real Postgres 16 before merge, including the two-caller races above, because a fake client cannot prove a transaction.
+
+---
+
+## ADR-1217: a series cancel is per-occurrence, not bulk, because a bulk write that dies mid-fan-out strands refunds (2026-09-07)
+
+**Status.** Accepted. Closes the SERIES-CANCEL half of LIVE-198. Builds on ADR-1216's outbox refund path.
+
+**Context.** Cancelling a recurring event meant cancelling one date at a time: four entry points, each flipping one `events` row and fanning out to `refundAndNotifyForCancelledEvent`. Measured on production 2026-09-07, two Spaces each carry a nine-occurrence weekly series, so "cancel this series" was nine operator actions, each independently refunding tickets, with no way to see mid-way which had landed.
+
+**Decision — four rulings, and the fourth inverts the obvious answer.**
+
+- **Future dates only.** Refunding a gathering that already happened is money out for value already delivered. "Already happened" is `isEventPast` from `lib/time/zone.ts`, the repo's one past predicate, and NOT a `new Date()` compare against `starts_at` — that column holds the host's wall clock kept as UTC parts, so a naive compare classifies tonight's 7pm date as past at 1pm. The mutation test is explicit: substituting the naive compare turns 8 of 9 tests red.
+- **An already-cancelled occurrence is a no-op, guarded twice.** The loop skips a row it read as cancelled BEFORE any write, and the write itself keeps `.eq('is_cancelled', false)`. Removing either guard makes the run enqueue a fourth refund job where three are correct — a real double refund — and 6 of 9 tests go red.
+- **Idempotent under a double-click or a redelivered retry**, by that same transition guard: `update ... where is_cancelled = false` is atomic per row, so of two concurrent runs exactly one owns each flip. The second reports zero cancelled, zero refunds, zero emails.
+- **🔴 PER-OCCURRENCE, NOT A BULK UPDATE, and this is the ruling worth keeping.** A single `update ... in (ids)` looks obviously better: one statement, atomic, fewer round trips. It is the wrong shape here. That statement COMMITS, and then the fan-out runs per event afterwards — so a crash part-way leaves the remaining occurrences CANCELLED WITH NO REFUND QUEUED, and the idempotency guard above then makes them permanently unreachable, because a second run correctly skips a row that is already cancelled. Flipping one row and fanning it out before touching the next means a crash leaves later dates untouched and trivially retryable. Atomicity across the series is worth less than never stranding a refund.
+
+**Consequences.** `cancelSeries` in `lib/events/cancellation.ts` returns a `SeriesCancelResult` bucketing every occurrence as `cancelled` / `alreadyCancelled` / `unauthorized` / `failed` / `fanoutFailed` / `truncated`, which the danger-zone control renders one line each; one date's failure never aborts the loop. Refunds stay entirely in ADR-1216's outbox path — `cancelSeries` never calls Stripe. Authorization is asked per occurrence through a `canCancel` callback supplied by the caller, because a host transfer can split a series across two owners, and that keeps `cancellation.ts` out of the session machinery. The SQL floor is deliberately two days below the home-zone day, because `starts_at` is a wall clock that can sit ±14h from home; the precise call is made in JS by `isEventPast`. A wide floor costs two rows, a tight one drops a live date.
+
+⚠️ **Known thin spot, recorded rather than papered over.** `refundAndNotifyForCancelledEvent` swallows most of its own errors internally, so the `fanoutFailed` bucket only catches a throw from the admin client or the ticket read. A failure inside the fan-out is still invisible. That is unchanged from before this work, and it is the "every fail-safe needs a gate that notices it fired" hazard still open on that function.
+
+---
+
+## ADR-1218: a count of occurrences is not a count of gatherings, and the count IS the fold (2026-09-07)
+
+**Status.** Accepted. Closes the SERIES-COUNT half of LIVE-198.
+
+**Context.** Recurrence is materialised (ADR-007), so a weekly series is N rows in `events`. `collapseSeriesRows` (ADR-897) folded them for LISTS, but every COUNT still tallied rows. `EVENTS-SERIES-BUILD-PLAN` recorded dashboards overstating "by ~60x".
+
+**🔴 The premise was re-measured first, and both of its numbers were stale.** Against production on 2026-09-07: 21 upcoming non-cancelled events collapse to 5 series-aware, and concretely two Spaces each show **9** in the directory where **1** is true. The aggregate is 4.2x, not 60x — a 60x reading needs a DAILY series (61 rows in the horizon) and production runs weekly ones. The row's "~9 operator dashboards" was stale too: there are **11** count sites and only 6 are operator dashboards.
+
+**Decision.** `countSeries` and `countSeriesBy` live beside `collapseSeriesRows` in `lib/events/series.ts`, and `countSeries` **is** `collapseSeriesRows(rows, { perSeries: 1 }).length`. The body is the fold rather than a copy of it, so a count and the list beneath it cannot drift and there remains exactly one definition of `parent_event_id ?? id`. `countSeriesBy` buckets FIRST and folds per bucket, which is the only correct order: folding the whole result set first would let one owner's rows decide another's count.
+
+**Consequences.** All 11 sites are wired and pinned by a source-level ratchet (`components/events/series-count-wiring.test.ts`) that fails if any regresses to `head: true`. `lib/events/store.ts` gains `SERIES_COLUMNS` in its SELECT — load-bearing, not decorative: three readers count its rows, and without the recurrence columns the fold is a SILENT NO-OP.
+
+Three behaviour changes ride along and are stated rather than buried: `/admin`'s "Events ahead" now excludes cancelled events (the old `head: true` had no `is_cancelled` filter at all, so it had been counting them); the Space calendar summary and the public hero stat move to `upcomingEventFloor()` so a 7pm class no longer drops off at 7:01pm; and five `head: true` tallies became row reads capped at `SERIES_WIDE_READ`.
+
+⚪ **Deliberately not folded, each for a reason.** Two counts are computed inside Postgres (`circle_momentum`, `public_events`) and their RPCs do not return `parent_event_id` — a migration, not a TS change. `memberEventAllowanceOk` is inflated the same way but it is an ENTITLEMENT QUOTA, and folding it LOOSENS a cap, so it is an owner call rather than a bug fix. The weekly volume bars on `/admin` still count occurrences, because "how busy is the calendar" is honestly per-date.

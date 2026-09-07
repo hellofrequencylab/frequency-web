@@ -11,6 +11,8 @@
 
 import { defaultHeroStats } from './profile-config'
 import { listEventsForSpace } from '@/lib/events/store'
+import { countSeries, type SeriesRow } from '@/lib/events/series'
+import { upcomingEventFloor } from '@/lib/events/upcoming-floor'
 import { listPracticesForSpace } from '@/lib/practices'
 import { listJourneyPlansForSpace } from '@/lib/journey-plans'
 import { listPublicSpaceCircles } from '@/lib/circles/store'
@@ -62,8 +64,15 @@ export async function resolveProfileStats(spaceId: string): Promise<ResolvedStat
     listSpaceMembers(spaceId),
   ])
 
+  // GATHERINGS, not materialised occurrences (LIVE-198 / SERIES-COUNT). Recurrence is materialised
+  // (ADR-007), so a Space running one weekly class advertised "Sessions 9" (and "Offerings 9") on
+  // its PUBLIC hero for one thing on offer — the same over-count the /spaces directory card carried.
+  // Both stats fold through the one series helper, so the hero can never disagree with the Space's
+  // own calendar. `upcoming` also moves off the raw instant onto the wall-clock floor, which is what
+  // every other event reader uses: a 7pm class must not drop off the hero at 7:01pm.
   const liveEvents = events.filter((e) => !e.is_cancelled)
-  const upcoming = liveEvents.filter((e) => new Date(e.starts_at).getTime() >= Date.now()).length
+  const offerings = countSeries(liveEvents as SeriesRow[])
+  const upcoming = countSeries(liveEvents as SeriesRow[], { upcomingFrom: upcomingEventFloor() })
   const activeCircles = circles.length
   const activeMembers = members.filter((m) => m.status === 'active').length
 
@@ -72,7 +81,7 @@ export async function resolveProfileStats(spaceId: string): Promise<ResolvedStat
       case 'sessions':
         return upcoming
       case 'offerings':
-        return liveEvents.length
+        return offerings
       case 'practices':
         return practices.length + journeys.length
       case 'circles':

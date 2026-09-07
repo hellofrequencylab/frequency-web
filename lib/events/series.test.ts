@@ -9,6 +9,8 @@ import {
   collapseSeries,
   collapseSeriesAroundFloor,
   collapseSeriesRows,
+  countSeries,
+  countSeriesBy,
   isSeriesAnchor,
   isSeriesCadence,
   seriesDates,
@@ -330,6 +332,79 @@ describe('seriesDates + fetch sizing + predicates', () => {
   it('seriesKey is parent_event_id ?? id', () => {
     expect(seriesKey(row({ id: 'c', parent_event_id: 'a' }))).toBe('a')
     expect(seriesKey(row({ id: 'x' }))).toBe('x')
+  })
+})
+
+describe('countSeries / countSeriesBy — the count twin of the fold (LIVE-198)', () => {
+  // The production reading this exists for (measured 2026-09-07): 21 upcoming, non-cancelled rows
+  // across the community are FIVE gatherings, and the two Spaces running a weekly series each
+  // advertised 9 upcoming events where 1 is true.
+  it('a weekly series inside the 60-day horizon counts ONCE, not nine times', () => {
+    const rows = weekly(8) // the anchor + 8 children: exactly what the cron materialises
+    expect(rows.length).toBe(9)
+    expect(countSeries(rows, { upcomingFrom: FLOOR })).toBe(1)
+  })
+
+  it('is DEFINED as the fold: the count always equals a one-card-per-series render', () => {
+    const rows = [...weekly(8), row({ id: 'solo' }), ...weekly(60).map((r) => ({ ...r, id: `d-${r.id}`, parent_event_id: r.parent_event_id ? 'd-a' : null }))]
+    for (const opts of [{}, { upcomingFrom: FLOOR }, { dropCancelled: false }, { upcomingFrom: FLOOR, dropCancelled: false }]) {
+      expect(countSeries(rows, opts)).toBe(collapseSeriesRows(rows, { ...opts, perSeries: TEASER_CARDS_PER_SERIES }).length)
+    }
+  })
+
+  it('counts one-offs one each, and mixed input by GATHERING', () => {
+    expect(countSeries([], { upcomingFrom: FLOOR })).toBe(0)
+    expect(countSeries([row({ id: 'x' }), row({ id: 'y' })], { upcomingFrom: FLOOR })).toBe(2)
+    expect(countSeries([...weekly(8), row({ id: 'x' })], { upcomingFrom: FLOOR })).toBe(2)
+  })
+
+  it('shares the fold’s cancelled + floor semantics, not a second set', () => {
+    const rows = weekly(2)
+    rows.forEach((r) => { r.is_cancelled = true })
+    // Every occurrence cancelled: the gathering is gone, exactly as the fold drops the group.
+    expect(countSeries(rows, { upcomingFrom: FLOOR })).toBe(0)
+    expect(countSeries(rows, { upcomingFrom: FLOOR, dropCancelled: false })).toBe(1)
+    // A series entirely BELOW the floor counts zero; the same rows with no floor count one.
+    const finished = weekly(2).map((r) => ({ ...r, starts_at: new Date(Date.parse(r.starts_at!) - 400 * 864e5).toISOString() }))
+    expect(countSeries(finished, { upcomingFrom: FLOOR })).toBe(0)
+    expect(countSeries(finished)).toBe(1)
+  })
+
+  it('the anchor having aged out does not change the count', () => {
+    const [, ...childrenOnly] = weekly(8)
+    expect(childrenOnly.length).toBe(8)
+    expect(countSeries(childrenOnly, { upcomingFrom: FLOOR })).toBe(1)
+  })
+
+  it('a duplicate row id counts once', () => {
+    const rows = [row({ id: 'x' }), row({ id: 'x' })]
+    expect(countSeries(rows, { upcomingFrom: FLOOR })).toBe(1)
+  })
+
+  it('countSeriesBy folds INSIDE each bucket, so one owner’s rows never decide another’s count', () => {
+    const rows = [
+      ...weekly(8).map((r) => ({ ...r, space: 's1' })),
+      { ...row({ id: 'one-off' }), space: 's2' },
+      { ...row({ id: 'other' }), space: 's2' },
+      { ...row({ id: 'keyless' }), space: null as string | null },
+    ]
+    const counts = countSeriesBy(rows, (r) => r.space, { upcomingFrom: FLOOR })
+    expect(counts.get('s1')).toBe(1) // 9 rows, 1 gathering — the production reading
+    expect(counts.get('s2')).toBe(2)
+    expect([...counts.keys()]).toEqual(['s1', 's2']) // a row with no bucket key is skipped
+  })
+
+  it('countSeriesBy omits a bucket with nothing eligible, so "none" is distinguishable from "unknown"', () => {
+    const rows = weekly(2).map((r) => ({ ...r, is_cancelled: true, space: 's1' }))
+    expect(countSeriesBy(rows, (r) => r.space, { upcomingFrom: FLOOR }).has('s1')).toBe(false)
+  })
+
+  it('is pure: neither the input array nor its rows are mutated', () => {
+    const rows = weekly(4)
+    const before = JSON.parse(JSON.stringify(rows))
+    countSeries(rows, { upcomingFrom: FLOOR })
+    countSeriesBy(rows, (r) => r.id, { upcomingFrom: FLOOR })
+    expect(rows).toEqual(before)
   })
 })
 

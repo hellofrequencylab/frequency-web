@@ -7,7 +7,11 @@ import { getEventCapabilities } from '@/lib/core/load-capabilities'
 import { loadEventCoreStats, type EventCoreStats } from '@/lib/events/event-stats'
 import { getMyProfileId } from '@/lib/auth'
 import { cancelAudit, reinstateAudit } from '@/lib/events/event-lifecycle'
-import { refundAndNotifyForCancelledEvent } from '@/lib/events/cancellation'
+import {
+  refundAndNotifyForCancelledEvent,
+  cancelSeries,
+  loadSeriesCancelPlan,
+} from '@/lib/events/cancellation'
 import { logAdminAction } from '@/lib/admin/audit'
 import { slugify } from '@/lib/utils'
 import { saveEventLocation, type EventAddress } from '@/lib/events/geocode'
@@ -231,6 +235,99 @@ export async function setEventCancelled(id: string, slug: string, cancelled: boo
   revalidatePath(`/events/${slug}`)
   revalidatePath('/events')
   revalidatePath('/feed')
+}
+
+// ── Cancel a whole series (SERIES-CANCEL, LIVE-198) ────────────────────────────────────────────
+//
+// Recurrence is materialised, so before this existed "cancel the weekly sit" meant opening nine
+// separate dates and cancelling each one, each of which independently refunds its tickets. The
+// rulings this is built on (future dates only, an already-cancelled date is a no-op, idempotent,
+// per-occurrence and reported rather than all-or-nothing) live with the code in
+// lib/events/cancellation.ts. Everything money-shaped stays there; these two actions add the authz
+// gate and the revalidation, exactly like setEventCancelled above.
+
+export interface SeriesCancelSummary {
+  /** Dates this call took off the calendar. */
+  cancelled: number
+  /** Dates that were already cancelled. No refund was queued for them, by design. */
+  alreadyCancelled: number
+  /** Dates the caller may not edit (a host transfer can split a series). */
+  skipped: number
+  /** Dates whose cancel was refused. Nothing moved for these; they are still live. */
+  failed: number
+  /** 🔴 Cancelled, but the refund/notify fan-out failed. Refunds are NOT queued for these and a
+   *  re-run will not pick them up: the event's Manage page still shows what is owed. */
+  needsAttention: number
+  /** The series was longer than one run handles; run it again to finish. */
+  truncated: boolean
+}
+
+/** How many dates of this event's series are still to come, for the confirm copy. Returns a
+ *  non-recurring answer (recurring: false) rather than throwing when the viewer may not edit it. */
+export async function getSeriesCancelPlan(
+  id: string,
+): Promise<{ recurring: boolean; cancellable: number; truncated: boolean }> {
+  const none = { recurring: false, cancellable: 0, truncated: false }
+  const caps = await getEventCapabilities(id)
+  if (!caps.has('event.editSettings')) return none
+  try {
+    const plan = await loadSeriesCancelPlan(id)
+    return { recurring: plan.recurring, cancellable: plan.cancellable, truncated: plan.truncated }
+  } catch {
+    // An unreadable series must not render a button that claims to know how many dates it will
+    // cancel. Offering nothing is the safe direction for a bulk money action.
+    return none
+  }
+}
+
+/** Cancel every date of this event's series that is still to come. */
+export async function cancelEventSeries(id: string, slug: string): Promise<SeriesCancelSummary> {
+  // AUTHORIZATION, twice. Once for the date the operator invoked it from — the gate that decides
+  // whether this action runs at all — and then once PER OCCURRENCE inside cancelSeries, because
+  // the right to cancel tonight's date is not the right to cancel next month's.
+  const caps = await getEventCapabilities(id)
+  if (!caps.has('event.editSettings')) throw new Error('Unauthorized')
+
+  const actorId = await getMyProfileId()
+  const result = await cancelSeries({
+    eventId: id,
+    actorProfileId: actorId,
+    canCancel: async (occurrenceId) =>
+      occurrenceId === id || (await getEventCapabilities(occurrenceId)).has('event.editSettings'),
+  })
+
+  await logAdminAction({
+    actorId,
+    action: 'event.cancelSeries',
+    targetType: 'event',
+    targetId: id,
+    detail: {
+      slug,
+      seriesKey: result.seriesKey,
+      cancelled: result.cancelled,
+      alreadyCancelled: result.alreadyCancelled.length,
+      unauthorized: result.unauthorized.length,
+      failed: result.failed,
+      fanoutFailed: result.fanoutFailed,
+      truncated: result.truncated,
+    },
+  }).catch((e) => console.error('[cancelEventSeries] audit log failed', e))
+
+  revalidatePath(`/events/${slug}`)
+  revalidatePath('/events')
+  revalidatePath('/feed')
+  // A space event surfaces on its Space's Calendar console, public Calendar tab and .ics feed.
+  revalidatePath('/spaces', 'layout')
+  revalidatePath('/circles', 'layout')
+
+  return {
+    cancelled: result.cancelled.length,
+    alreadyCancelled: result.alreadyCancelled.length,
+    skipped: result.unauthorized.length,
+    failed: result.failed.length,
+    needsAttention: result.fanoutFailed.length,
+    truncated: result.truncated,
+  }
 }
 
 export async function updateEventSettings(id: string, slug: string, fd: FormData) {

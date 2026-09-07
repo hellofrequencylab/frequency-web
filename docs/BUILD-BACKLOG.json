@@ -54,7 +54,6 @@
             "LIVE-186",
             "LIVE-190",
             "LIVE-191",
-            "LIVE-198",
             "LIVE-203",
             "LIVE-204",
             "LIVE-205"
@@ -75,7 +74,8 @@
             "LIVE-181",
             "LIVE-178",
             "LIVE-193",
-            "LIVE-199"
+            "LIVE-199",
+            "LIVE-206"
           ]
         },
         {
@@ -9161,7 +9161,7 @@
     {
       "id": "LIVE-198",
       "title": "Operator dashboards count every occurrence of a repeating event as an event, and no series-wide cancel exists",
-      "status": "open",
+      "status": "done",
       "priority": "P1",
       "lane": "live",
       "size": "M",
@@ -9169,11 +9169,11 @@
         "file": "docs/EVENTS-SERIES-BUILD-PLAN.md",
         "ref": "§Named follow-ups: SERIES-COUNT, SERIES-CANCEL"
       },
-      "detail": "FILED 2026-09-06 by the backlog audit's docs sweep: work a live plan or ADR names as open, deferred or \"a follow-up\", with no row owning it. EVENTS-SERIES-BUILD-PLAN's named follow-ups were never filed. The two with a member- or operator-facing consequence: SERIES-COUNT — \"a series-aware count helper for the ~9 inflated operator dashboards and lib/spaces/discovery.ts\", against its own R20 reading that dashboards \"overstate by ~60x\" for a weekly series; and SERIES-CANCEL — no series-wide cancel exists, so cancelling a recurring event is one occurrence at a time. RE-TEST THE PREMISE FIRST: the 60x figure predates the collapseSeriesRows work (LIVE-081), so measure a Space dashboard against a known weekly series before writing the helper. The other six tags (SERIES-PD/RANK/PIN/MAIN/PICKER/EMBED) are polish and ride with DEF-DOMAIN. Closes with one count helper used by the dashboards and discovery, and a cancel that takes a series.",
+      "detail": "FILED 2026-09-06 by the backlog audit's docs sweep: work a live plan or ADR names as open, deferred or \"a follow-up\", with no row owning it. EVENTS-SERIES-BUILD-PLAN's named follow-ups were never filed. The two with a member- or operator-facing consequence: SERIES-COUNT — \"a series-aware count helper for the ~9 inflated operator dashboards and lib/spaces/discovery.ts\", against its own R20 reading that dashboards \"overstate by ~60x\" for a weekly series; and SERIES-CANCEL — no series-wide cancel exists, so cancelling a recurring event is one occurrence at a time. RE-TEST THE PREMISE FIRST: the 60x figure predates the collapseSeriesRows work (LIVE-081), so measure a Space dashboard against a known weekly series before writing the helper. The other six tags (SERIES-PD/RANK/PIN/MAIN/PICKER/EMBED) are polish and ride with DEF-DOMAIN. Closes with one count helper used by the dashboards and discovery, and a cancel that takes a series.\n── CLOSED 2026-09-07. Both halves shipped: a series-aware count helper used by every count site, and a cancel that takes a series. ADR-1218 and ADR-1217 record the rulings.\n\n🔴 THE ROW ASKED FOR ITS PREMISE TO BE RE-TESTED, AND BOTH OF ITS NUMBERS WERE STALE. Measured against production before any code: 21 upcoming non-cancelled events collapse to 5 series-aware, and concretely TWO Spaces each show 9 in the directory where 1 is true. The aggregate is 4.2x, not the \"~60x\" the row carries - a 60x reading needs a DAILY series (61 rows in the horizon) and production runs weekly ones. The row's \"~9 operator dashboards\" was stale too: there are ELEVEN count sites and only six are operator dashboards. The defect was entirely real; only its size was wrong.\n\nSERIES-COUNT. countSeries / countSeriesBy sit beside collapseSeriesRows, and countSeries IS collapseSeriesRows(rows, {perSeries:1}).length - the fold itself rather than a copy, so a count and the list beneath it cannot drift and there is still exactly one definition of parent_event_id ?? id. countSeriesBy buckets FIRST then folds per bucket, the only correct order. All 11 sites wired, pinned by a source-level ratchet that fails if any regresses to head:true. lib/events/store.ts gained SERIES_COLUMNS in its SELECT, which is load-bearing rather than decorative: three readers count its rows and without those columns the fold is a SILENT NO-OP.\n\nThree behaviour changes ride along, stated rather than buried: /admin's \"Events ahead\" now excludes cancelled events (the old head:true had NO is_cancelled filter, so it had been counting them - an incidental bug fix); the Space calendar summary and the public hero stat move to upcomingEventFloor() so a 7pm class no longer drops off at 7:01pm; and five head:true tallies became row reads capped at SERIES_WIDE_READ.\n\nSERIES-CANCEL. cancelSeries flips future dates only (via isEventPast, the repo's shared predicate - a naive Date compare turns 8 of 9 tests red because starts_at is a wall clock), no-ops on already-cancelled behind two guards, is idempotent through the .eq(is_cancelled,false) transition guard, and is PER-OCCURRENCE rather than a bulk UPDATE. That last one inverts the obvious answer for a reason worth keeping: a bulk statement COMMITS and then fans out, so a crash part-way leaves rows cancelled with NO refund queued and permanently unreachable behind the idempotency guard. Refunds stay entirely in LIVE-161's outbox path; cancelSeries never calls Stripe. Verified by reading the body, not the report.\n\n⚪ RESIDUE FILED AS LIVE-206 rather than silently dropped: two counts computed inside Postgres that need a migration, an entitlement quota whose fold would LOOSEN a cap (an owner call), two /admin consoles still cancelling one date at a time, and three list-shaped fold gaps.",
       "verify": {
-        "kind": "manual",
-        "evidence": "2026-09-06: no series-aware count helper in lib/events or lib/spaces; no cancel path takes a series id. Closes when both exist and a test pins the count against a weekly fixture.",
-        "checked": "2026-09-06"
+        "kind": "cmd",
+        "cmd": "node -e 'const fs = require(\"fs\")\nconst series = fs.readFileSync(\"lib/events/series.ts\", \"utf8\")\nconst cancel = fs.readFileSync(\"lib/events/cancellation.ts\", \"utf8\")\nconst disc = fs.readFileSync(\"lib/spaces/discovery.ts\", \"utf8\")\nconst strip = (s) => s.split(\"\\n\").filter((l) => !/^\\s*(\\/\\/|\\*|\\/\\*)/.test(l)).join(\"\\n\")\nconst hasCount = /export function countSeries\\b/.test(strip(series))\nconst foldIsTheFold = /collapseSeriesRows\\([^)]*perSeries: 1[^)]*\\)\\.length/.test(strip(series))\nconst discUses = /countSeries(By)?\\(/.test(strip(disc))\nconst hasCancelSeries = /export async function cancelSeries\\b/.test(strip(cancel))\nconsole.error(\"countSeries=\" + hasCount + \" isTheFold=\" + foldIsTheFold + \" discoveryFolds=\" + discUses + \" cancelSeries=\" + hasCancelSeries)\nprocess.exit(hasCount && foldIsTheFold && discUses && hasCancelSeries ? 0 : 1)'",
+        "note": "Measures the CONSEQUENCE on both halves: a count helper exists, it is the FOLD rather than a second definition of a series (the perSeries:1 collapse), the Spaces directory actually uses it, and a cancel takes a series. Comment lines are stripped first so the probe cannot read its own documentation and pass by existing. The per-site coverage is pinned separately and more strictly by components/events/series-count-wiring.test.ts, which fails if any of the 11 sites regresses to head:true. ⚠️ The discovery detector requires CALL syntax (countSeries(...) / countSeriesBy(...)): a bare substring match was tried first and let a renamed identifier (countSeriesByX) satisfy it, i.e. a probe that could not detect the regression it exists for."
       }
     },
     {
@@ -9457,6 +9457,24 @@
         "kind": "manual",
         "checked": "2026-09-07",
         "evidence": "2026-09-07: app/(main)/events/[slug]/opengraph-image.tsx and app/(main)/spaces/[slug]/opengraph-image.tsx both sit under the (main) route group while lib/jsonld.ts:208 and :539 emitted the unhashed path; the built artifact carries opengraph-image-lyffkg and opengraph-image-tt3pwa. FIX LANDED the same day: both hand-written URLs removed, root card retained (app/opengraph-image.jpg, a real static file at a path with no route group, so unsuffixed), guarded by a mutation-proven test that fails on the pre-fix strings. STILL OPEN because the close condition is a live 200 on a deployed build and egress from the agent container is refused by the proxy (403 CONNECT). Closes when someone with network reach fetches the schema image URL for an event and for a Space on a deployed build and both return 200."
+      }
+    },
+    {
+      "id": "LIVE-206",
+      "title": "Five series-fold gaps survive LIVE-198, two of them behind a Postgres RPC and one behind an entitlement cap",
+      "status": "open",
+      "lane": "live",
+      "size": "S",
+      "priority": "P2",
+      "source": {
+        "file": "lib/events/series.ts",
+        "ref": "enumerated 2026-09-07 while closing LIVE-198; deliberately out of that rowic scope"
+      },
+      "detail": "FILED 2026-09-07 by the LIVE-198 work, which wired all ELEVEN in-reach count sites and enumerated what it could not reach. Recorded here rather than dropped, because an enumeration that lives only in a merged PR body is an enumeration nobody finds again.\n\n1. TWO COUNTS COMPUTED INSIDE POSTGRES, so no TS change can fold them: circle_momentum (lib/connections/metrics.ts) and public_events (app/discover/places/_data.ts, components/marketing/blocks.tsx \"Events soon\"). Neither RPC returns parent_event_id, so the fold has nothing to key on. This needs a MIGRATION that either returns the column or folds in SQL - which is why it was correctly left out of a TS-only change.\n\n2. 🔴 memberEventAllowanceOk (app/(main)/events/actions.ts) IS INFLATED THE SAME WAY BUT MUST NOT BE FOLDED WITHOUT A RULING. It is an ENTITLEMENT QUOTA, not a dashboard: today a member creating a weekly series burns nine of their allowance, and folding it would let one member create nine times as many events. That LOOSENS a cap. Whether a series should cost one allowance or nine is a product decision about what the allowance is FOR, and the agent that found it correctly refused to decide.\n\n3. TWO /admin CONSOLES STILL CANCEL ONE DATE AT A TIME (app/(main)/admin/events/actions.ts, app/(main)/admin/actions.ts). cancelSeries exists and is exposed on the host danger zone; wiring these two is roughly one line each. Left out deliberately to keep a money-path diff small on the night it was written.\n\n4. THREE LIST-SHAPED FOLD GAPS, same family, different shape: the Space dashboard \"Coming up\" (components/spaces/dashboard/space-dashboard.tsx), components/widgets/entity/entity-cta.tsx, and the /admin/events management table - where per-occurrence is arguably CORRECT, since an operator managing dates wants the dates.\n\n⚪ ALSO DELIBERATELY UNCHANGED and not a gap: /admin's weekly volume bars still count occurrences, because \"how busy is the calendar\" is honestly a per-date question.",
+      "verify": {
+        "kind": "manual",
+        "checked": "2026-09-07",
+        "evidence": "Enumerated 2026-09-07 while closing LIVE-198, which wired the 11 reachable sites. Closes when each of the four items above is either folded or has a recorded decision not to fold it: the two RPC counts (needs a migration returning parent_event_id or folding in SQL), memberEventAllowanceOk (needs an owner ruling, since folding loosens an entitlement cap), the two /admin cancel consoles (roughly one line each now cancelSeries exists), and the three list-shaped gaps."
       }
     },
     {

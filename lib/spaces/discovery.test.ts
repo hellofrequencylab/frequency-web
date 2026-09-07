@@ -51,6 +51,9 @@ const store: {
   counts: Record<string, number>
   followers: Record<string, number>
   upcoming: Record<string, number>
+  /** REAL event rows for the upcoming-count read, when a test needs the SERIES shape rather than a
+   *  bare per-Space number (LIVE-198). When empty, `upcoming` synthesises one-off rows instead. */
+  upcomingRows: PresenceRow[]
   events: PresenceRow[]
   circles: PresenceRow[]
   reviews: PresenceRow[]
@@ -60,6 +63,7 @@ const store: {
   counts: {},
   followers: {},
   upcoming: {},
+  upcomingRows: [],
   events: [],
   circles: [],
   reviews: [],
@@ -148,6 +152,44 @@ function countBuilder(map: Record<string, number>) {
   return api
 }
 
+/** The directory's UPCOMING-EVENTS read, which is a ROW read, not a grouped count: since LIVE-198 it
+ *  selects the series columns and folds per Space, so a weekly series counts as one gathering rather
+ *  than as its nine materialised occurrences.
+ *
+ *  Two ways to state the world. `store.upcomingRows` gives REAL rows (the series fixture); otherwise
+ *  the per-Space `store.upcoming` number is synthesised as that many DISTINCT one-off rows, so every
+ *  test that only cares about the number still means exactly what it meant before the fold. */
+function upcomingEventsBuilder() {
+  const api = {
+    select() {
+      return api
+    },
+    eq() {
+      return api
+    },
+    gt() {
+      return api
+    },
+    in(_col: string, vals: string[]) {
+      const rows = store.upcomingRows.length
+        ? store.upcomingRows.filter((r) => vals.includes(String(r.space_id)))
+        : vals.flatMap((id) =>
+            Array.from({ length: store.upcoming[id] ?? 0 }, (_, i) => ({
+              space_id: id,
+              id: `${id}-e${i}`,
+              starts_at: '2099-01-01T19:00:00Z',
+              parent_event_id: null,
+              recurrence_type: 'none',
+              recurrence_until: null,
+              is_cancelled: false,
+            })),
+          )
+      return Promise.resolve({ data: rows, error: null })
+    },
+  }
+  return api
+}
+
 /** A THENABLE builder over a plain row array, applying the filters the presence reads chain. It is
  *  thenable rather than resolving on a terminal method because the real PostgREST builder is: the
  *  events read calls `.in()` twice (once for `visibility`, once for `space_id`) and only the await
@@ -201,7 +243,7 @@ vi.mock('@/lib/supabase/admin', () => ({
     from: (table: string) => {
       if (table === 'space_members') return countBuilder(store.counts)
       if (table === 'space_follows') return countBuilder(store.followers)
-      if (table === 'events') return tabRead ? presenceBuilder(store.events) : countBuilder(store.upcoming)
+      if (table === 'events') return tabRead ? presenceBuilder(store.events) : upcomingEventsBuilder()
       if (table === 'circles') return presenceBuilder(store.circles)
       if (table === 'space_reviews') return presenceBuilder(store.reviews)
       if (table === 'space_collaborations') return presenceBuilder(store.collaborations)
@@ -226,6 +268,7 @@ beforeEach(() => {
   store.counts = {}
   store.followers = {}
   store.upcoming = {}
+  store.upcomingRows = []
   store.events = []
   store.circles = []
   store.reviews = []
@@ -408,6 +451,45 @@ describe('the extra per-space stats', () => {
     expect(byId.s1).toEqual({ f: 4, e: 2 })
     expect(byId.s3).toEqual({ f: 9, e: null }) // no upcoming events -> null
     expect(byId.s2).toEqual({ f: null, e: null }) // neither -> null
+  })
+
+  // ── LIVE-198 / SERIES-COUNT: the directory card counts GATHERINGS, not materialised rows ────────
+  // The production reading, 2026-09-07: two Spaces each run ONE weekly series and the directory
+  // advertised "9 upcoming events" for each of them, because recurrence is materialised (ADR-007)
+  // and the count read one row per date. 21 upcoming rows across the community are 5 gatherings.
+  it('counts a weekly SERIES once, where the raw rows would say nine', async () => {
+    // Exactly what the cron materialises for s1: an anchor plus eight weekly children.
+    const start = Date.UTC(2099, 0, 6, 19, 0, 0)
+    const week = 7 * 24 * 60 * 60 * 1000
+    store.upcomingRows = [
+      { space_id: 's1', id: 'anchor', starts_at: new Date(start).toISOString(), parent_event_id: null, recurrence_type: 'weekly', recurrence_until: null, is_cancelled: false },
+      ...Array.from({ length: 8 }, (_, i) => ({
+        space_id: 's1',
+        id: `child-${i}`,
+        starts_at: new Date(start + (i + 1) * week).toISOString(),
+        parent_event_id: 'anchor',
+        recurrence_type: 'none',
+        recurrence_until: null,
+        is_cancelled: false,
+      })),
+      // s3 runs two genuinely separate one-offs, which must still count as two.
+      { space_id: 's3', id: 'gala', starts_at: '2099-02-01T19:00:00Z', parent_event_id: null, recurrence_type: 'none', recurrence_until: null, is_cancelled: false },
+      { space_id: 's3', id: 'clinic', starts_at: '2099-02-08T19:00:00Z', parent_event_id: null, recurrence_type: 'none', recurrence_until: null, is_cancelled: false },
+    ]
+    const spaces = await listNetworkedSpaces({})
+    const byId = Object.fromEntries(spaces.map((sp) => [sp.id, sp.upcomingEventCount]))
+    expect(byId.s1).toBe(1) // nine rows, one gathering
+    expect(byId.s3).toBe(2)
+    expect(byId.s2).toBe(null)
+  })
+
+  it('a series whose occurrences are ALL cancelled leaves the Space with no count at all', async () => {
+    store.upcomingRows = [
+      { space_id: 's1', id: 'anchor', starts_at: '2099-01-06T19:00:00Z', parent_event_id: null, recurrence_type: 'weekly', recurrence_until: null, is_cancelled: true },
+      { space_id: 's1', id: 'child-1', starts_at: '2099-01-13T19:00:00Z', parent_event_id: 'anchor', recurrence_type: 'none', recurrence_until: null, is_cancelled: true },
+    ]
+    const spaces = await listNetworkedSpaces({})
+    expect(spaces.find((sp) => sp.id === 's1')!.upcomingEventCount).toBe(null)
   })
 })
 

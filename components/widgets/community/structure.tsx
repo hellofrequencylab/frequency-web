@@ -2,6 +2,7 @@ import { Users } from 'lucide-react'
 import { DashArea, TileGrid, Tile, GraphTile, MiniStat, MiniGrid } from '@/components/admin/dash'
 import { TrendArea, weeklyBuckets, cumulative } from '@/components/admin/spark-charts'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { SERIES_COLUMNS, SERIES_WIDE_READ, countSeries, type SeriesRow } from '@/lib/events/series'
 
 // Community layout module (LP7): "Structure & people" — the shape of the live site and who's in it.
 // Self-fetching RSC; the page owns the host + community-staff gate, so this never re-gates. Every
@@ -44,11 +45,16 @@ async function load(): Promise<StructureData> {
         admin.from('circles').select('id', { count: 'exact', head: true }).eq('status', 'active')
           .eq('unlisted', false),
         admin.from('channels').select('id', { count: 'exact', head: true }),
+        // GATHERINGS, not materialised occurrences (LIVE-198 / SERIES-COUNT). Recurrence is
+        // materialised (ADR-007), so one weekly series is ~9 rows inside the cron's 60-day horizon
+        // and this tile counted it nine times. A row read rather than `head: true`, because the
+        // fold needs the series columns.
         admin
           .from('events')
-          .select('id', { count: 'exact', head: true })
+          .select(`id, starts_at, is_cancelled, ${SERIES_COLUMNS}`)
           .gte('starts_at', nowIso)
-          .eq('is_cancelled', false),
+          .eq('is_cancelled', false)
+          .limit(SERIES_WIDE_READ),
         admin.from('hubs').select('id', { count: 'exact', head: true }),
         admin.from('nexuses').select('id', { count: 'exact', head: true }),
         admin.from('dispatches').select('id', { count: 'exact', head: true }),
@@ -73,7 +79,7 @@ async function load(): Promise<StructureData> {
     return {
       circles: circles.count ?? 0,
       channels: channels.count ?? 0,
-      events: events.count ?? 0,
+      events: countSeries((events.data ?? []) as SeriesRow[]),
       hubs: hubs.count ?? 0,
       nexuses: nexuses.count ?? 0,
       dispatches: dispatches.count ?? 0,
