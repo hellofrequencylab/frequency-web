@@ -12,6 +12,7 @@ import { aiEnabled } from './client'
 import { MODELS } from './models'
 import { estimateCostUsd } from './budget'
 import { recordAiUsage, featureOverBudget } from './usage'
+import { aiRateLimited } from './rate-limit'
 import { withVoice } from './voice'
 
 const FEATURE = 'journey-slot-coaching'
@@ -54,6 +55,9 @@ export async function draftSlotCoaching(input: {
   // Per-feature daily cap (lib/ai/budget.ts): over budget => return null, so the builder falls back
   // to the author writing the line by hand, never bill on.
   if (await featureOverBudget(FEATURE)) return null
+  // Per-author window (lib/ai/rate-limit.ts, LIVE-195): the daily cap bounds everybody's spend,
+  // this bounds how fast one author can knock. Same refusal as the cap above.
+  if (await aiRateLimited(FEATURE, input.profileId)) return null
   const practiceTitle = input.practiceTitle.trim().slice(0, 200)
   if (!practiceTitle) return null
 

@@ -15,6 +15,7 @@ import { aiEnabled } from './client'
 import { MODELS } from './models'
 import { estimateCostUsd } from './budget'
 import { recordAiUsage, featureOverBudget } from './usage'
+import { aiRateLimited } from './rate-limit'
 import { withVoice } from './voice'
 import { withJourneyShape } from './journey-shape'
 
@@ -124,6 +125,9 @@ export async function draftJourneyComposition(input: {
   // Per-feature daily cap (lib/ai/budget.ts): this is an Opus path, so a hard ceiling matters most
   // here. Over budget => fall back to the empty shape, never bill on.
   if (await featureOverBudget(FEATURE)) return null
+  // Per-author window (lib/ai/rate-limit.ts, LIVE-195): the daily cap bounds everybody's spend,
+  // this bounds how fast one author can knock. Same refusal as the cap above.
+  if (await aiRateLimited(FEATURE, input.profileId)) return null
   // Roomy cap: the description can carry the author's uploaded course outline (ADR-302), which we
   // want Vera to read in full rather than truncate to a couple of sentences.
   const description = input.description.trim().slice(0, 8000)

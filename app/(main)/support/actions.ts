@@ -5,11 +5,19 @@
 // `support` bucket; everything else is plain ticket data.
 
 import { revalidatePath } from 'next/cache'
+import { headers } from 'next/headers'
 import { getCallerProfile, getMyProfileId } from '@/lib/auth'
 import { ok, fail, type ActionResult } from '@/lib/action-result'
 import { createTicket, addMemberMessage, uploadScreenshot } from '@/lib/support/store'
 import { TICKET_TYPES, type SupportContext, type TicketType } from '@/lib/support/types'
 import { answerHelpQuestion, type HelpCitation } from '@/lib/ai/help-rag'
+import { aiRateLimited } from '@/lib/ai/rate-limit'
+
+/** The caller's IP, for the anonymous half of the Ask Vera window (see askHelp). */
+async function callerIp(): Promise<string> {
+  const h = await headers()
+  return h.get('x-forwarded-for')?.split(',')[0]?.trim() || h.get('x-real-ip') || 'unknown'
+}
 
 function parseType(v: unknown): TicketType {
   return TICKET_TYPES.includes(v as TicketType) ? (v as TicketType) : 'bug'
@@ -23,6 +31,13 @@ export async function askHelp(question: string): Promise<ActionResult<{ answer: 
   const profileId = await getMyProfileId()
   const q = question.trim()
   if (!q) return fail('Type your question first.')
+  // A signed-in asker is throttled per profile inside answerHelpQuestion (LIVE-195). An anonymous
+  // one has no profile to throttle, so bind the window to their IP here — which is what the
+  // retired POST /help/ask handler did before it was deleted. Over the window deflects, the same
+  // answer a weak retrieval gives, so the member is always pointed at a human.
+  if (!profileId && (await aiRateLimited('help-search', `ip:${await callerIp()}`))) {
+    return ok({ answer: null, citations: [], deflected: true })
+  }
   const res = await answerHelpQuestion(q, profileId)
   return ok({ answer: res.answer, citations: res.citations, deflected: res.deflected })
 }

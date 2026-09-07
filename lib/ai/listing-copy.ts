@@ -16,6 +16,7 @@
 import { completeText, AiUnavailableError } from './complete'
 import { aiEnabled } from './client'
 import { recordAiUsage, featureOverBudget } from './usage'
+import { aiRateLimited } from './rate-limit'
 import { withVoice } from './voice'
 import { stripEmDashes } from './space-copilot'
 import type { ProductKind, ServicePriceModel } from '@/lib/commerce/types'
@@ -129,6 +130,9 @@ export async function draftListingCopy(input: ListingCopyInput): Promise<Listing
   // Per-Space daily spend cap: when we know the Space, gate on ITS spend so one Space can't run up
   // the whole feature's bill; the global 'listing-copy' cap still applies underneath.
   if (await featureOverBudget(FEATURE, input.spaceId)) return fallback
+  // Per-author window (lib/ai/rate-limit.ts, LIVE-195): re-rolling listing copy is one click, so
+  // one author holding the button gets their own window, not the Space's whole day. Same fallback.
+  if (await aiRateLimited(FEATURE, input.profileId)) return fallback
 
   try {
     const res = await completeText({
