@@ -280,9 +280,9 @@ is inlined there separately. Trust globals.css over any Notion "indigo"/"charcoa
 
 ## ADR-018: Presentation-neutral contract layer (view-models carry data + capabilities)
 
-**Status:** Accepted · corroborated by `lib/contract/`
+**Status:** Accepted in principle · 🔴 **NOT corroborated by the tree.** `lib/contract/` was built and then removed as a zero-importer orphan (`views.ts` `1b1a9c0f1` 2026-06-06, `types.ts` `9d34d0b44` 2026-06-14). The decision stands; the implementation does not exist. See HYG-067.
 **Context:** Business logic and entity shapes lived inside RSC/React, which would trap them when the mobile app arrives.
-**Decision:** `lib/contract/` defines presentation-neutral view-models (`CircleView`, `ProfileView`, `FeedView`) that bundle data **with** the viewer's capabilities; view-builders (`getCircleView`, `getProfileView`) compose them. Web renders them now; mobile consumes the identical shapes later (via RPC/endpoint).
+**Decision:** *(as accepted; the directory was later removed — see the status line above)* `lib/contract/` defines presentation-neutral view-models (`CircleView`, `ProfileView`, `FeedView`) that bundle data **with** the viewer's capabilities; view-builders (`getCircleView`, `getProfileView`) compose them. Web renders them now; mobile consumes the identical shapes later (via RPC/endpoint).
 **Consequences:** One contract both clients code against; clients render affordances from `capabilities` without recomputing policy.
 
 ## ADR-019: Engagement event ledger sits *in front of* the existing rules engine
@@ -332,7 +332,7 @@ is inlined there separately. Trust globals.css over any Notion "indigo"/"charcoa
 **Status:** Accepted · corroborated by `lib/engagement/events.ts` · governs COMMS-CRM §1
 **Context:** The loyalty/gamification ledger, the notification spine's trigger source, and the CRM activity timeline are secretly the same stream; building three would fork the truth.
 **Decision:** `engagement_events` is the **single** append-only stream. Gamification, notifications, the CRM contact timeline, analytics, and the AI agent are **projections/subscribers** — none keeps its own event log. The notification spine, CRM `engagement_score`, and WAM are read-models off it.
-**Consequences:** Always add a subscriber/projection, never a parallel log. One idempotency + audit surface. The CRM timeline is a `lib/contract` projection.
+**Consequences:** Always add a subscriber/projection, never a parallel log. One idempotency + audit surface. The CRM timeline is a `lib/contract` projection. *(That directory was later removed — ADR-018, HYG-067.)*
 
 ## ADR-026: Communications spine — one router/registry, everything queued
 
@@ -9141,7 +9141,7 @@ Mode labels are EXACTLY `Be Still` and `Get Moving`; the tagline is EXACTLY "Get
 
 **Consequences.**
 - Marketing/operators move at the speed of config; the launch does not require engineering per campaign.
-- The contract layer (`lib/contract/`) is honored so the eventual mobile app reuses every engine.
+- The contract layer (`lib/contract/`) is honored so the eventual mobile app reuses every engine. *(🔴 2026-09-07: that layer has since been removed as a zero-importer orphan — see ADR-018 and HYG-067. The intent below is unaffected; the directory is not there.)*
 - NAMING.md + CONTENT-VOICE.md and PAGE-FRAMEWORK.md are enforced by the engines (no em dashes, locked nouns, kit composition).
 - The recruiter reward *leaderboard* stays retired (ADR-305); affiliate is a commission ledger, not a points board.
 - Authority order unchanged: running code + migrations > docs > Notion.
