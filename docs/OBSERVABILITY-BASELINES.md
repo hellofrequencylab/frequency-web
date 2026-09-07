@@ -94,16 +94,43 @@ because policy predicates are inlined). Flag any **Seq Scan on a large table**, 
 
 ### 2b. Latency baseline table (fill in on capture)
 
-> Capture date: _pending_. Dataset size at capture: _pending_ (record per-table row
-> counts). Region: _pending_.
+> **Region: `us-west-2`** (project `azsqfeonabsbmemvddqd`, Postgres 17.6). **Dataset measured
+> 2026-09-07** from `pg_stat_user_tables`. **Latency and plans are NOT captured, and the reason is
+> the dataset, not the effort** — see the gate below.
+
+**Dataset at 2026-09-07** (`n_live_tup`, the tables the five paths touch):
+
+| Table | Rows | Size | | Table | Rows | Size |
+|---|---:|---|---|---|---:|---|
+| `engagement_events` | 39,492 | 26 MB | | `event_rsvps` | 5 | 328 kB |
+| `events` | 67 | 592 kB | | `space_members` | 2 | 96 kB |
+| `profiles` | 58 | 488 kB | | `friendships` | 1 | 312 kB |
+| `spaces` | 22 | 568 kB | | `posts` | **0** | 936 kB |
+| `practice_logs` | 14 | 528 kB | | `circles` | **0** | 248 kB |
+| | | | | `circle_profiles` / `memberships` / `room_messages` | **0** | — |
+
+🔴 **A BASELINE CAPTURED AGAINST THIS DATASET WOULD BE WORSE THAN NO BASELINE, which is why the
+cells below stay empty rather than being filled in.** §2a states the reason itself: *"A p95 is
+meaningless without knowing how much data it ran against, because the whole point of H3 is to keep
+it flat as the data grows."* Three of the five hot paths read tables that are **empty** — Feed reads
+`posts` (0), Circle detail reads `circles` (0) and `circle_profiles` (0), People directory joins
+connection state from `friendships` (1). Numbers taken here would encode "every plan is an instant
+scan of nothing", and the first real traffic would blow through them for reasons that have nothing
+to do with a regression. That is a ratchet that fires on success, and it trains people to ignore it
+(ADR-970).
+
+**THE GATE — capture when the paths have data to be slow against.** Re-run §2a and fill this table
+when any of: `posts` ≥ 1,000 · `circles` ≥ 50 with `circle_profiles` ≥ 500 · `profiles` ≥ 500 ·
+`event_rsvps` ≥ 1,000. Until then the honest floor is *there is no floor yet*, stated here with the
+numbers rather than as an unfilled placeholder.
 
 | Path | Server p50 (ms) | Server p95 (ms) | Route p50 (ms) | Route p95 (ms) | Rows scanned | Plan ref |
 |---|---|---|---|---|---|---|
-| Feed | _tbd_ | _tbd_ | _tbd_ | _tbd_ | _tbd_ | §2c.1 |
-| Circle detail | _tbd_ | _tbd_ | _tbd_ | _tbd_ | _tbd_ | §2c.2 |
-| People directory | _tbd_ | _tbd_ | _tbd_ | _tbd_ | _tbd_ | §2c.3 |
-| Practice log write | _tbd_ | _tbd_ | _tbd_ | _tbd_ | _tbd_ | §2c.4 |
-| Events catalog | _tbd_ | _tbd_ | _tbd_ | _tbd_ | _tbd_ | §2c.5 |
+| Feed | not captured | not captured | not captured | not captured | `posts` = 0 | §2c.1 |
+| Circle detail | not captured | not captured | not captured | not captured | `circles` = 0 | §2c.2 |
+| People directory | not captured | not captured | not captured | not captured | `profiles` = 58 | §2c.3 |
+| Practice log write | not captured | not captured | not captured | not captured | `practice_logs` = 14 | §2c.4 |
+| Events catalog | not captured | not captured | not captured | not captured | `events` = 67 | §2c.5 |
 
 ### 2c. Query plans (paste captured `EXPLAIN ANALYZE` here)
 
@@ -111,11 +138,28 @@ Keep each plan dated and labeled with the role it ran as, so a later re-capture 
 clean diff. The `scripts/perf-baseline.mjs --plans` mode prints the exact SQL to run via
 the Supabase MCP `execute_sql` (read-only) or the SQL editor for each path.
 
-1. **Feed** (`feed_for_viewer`, role `authenticated`): _pending capture._
-2. **Circle detail**: _pending capture._
-3. **People directory**: _pending capture._
-4. **Practice log write** (insert + award path): _pending capture._
-5. **Events catalog**: _pending capture._
+> **Not captured, for the dataset reason in §2b.** Two further obstacles were measured on
+> 2026-09-07 and are recorded here so the next attempt does not rediscover them:
+>
+> 🔴 **`EXPLAIN` OF AN RPC CALL TELLS YOU NOTHING.** `feed_for_viewer` is PL/pgSQL, so
+> `EXPLAIN (ANALYZE, BUFFERS)` of a call to it returns a single opaque line —
+> `Function Scan on feed_for_viewer (actual time=180.722..180.725 rows=20) Buffers: shared hit=3032`
+> — and none of the inner plan H3 needs. §2a already says to capture *the RPC body's hot statement*;
+> that is not optional, it is the only thing that yields a plan.
+>
+> ⚠️ **THE `authenticated` PLAN CANNOT BE CAPTURED THROUGH THE MCP TOOL.** §2a requires the plan as
+> the role the path runs as, because RLS predicates inline differently. `execute_sql` connects
+> privileged, so it produces the `service_role` shape — the one §2a warns is not the same. Capture
+> these from the SQL editor with an explicit `set local role authenticated` and a
+> `request.jwt.claims` set, or they are the wrong plan wearing the right label.
+
+1. **Feed** (`feed_for_viewer`, role `authenticated`): not captured — `posts` = 0.
+2. **Circle detail**: not captured — `circles` = 0, `circle_profiles` = 0.
+3. **People directory**: not captured — `profiles` = 58, `friendships` = 1.
+4. **Practice log write** (insert + award path): not captured — `practice_logs` = 14. ⚠️ Note when
+   this is captured: `EXPLAIN ANALYZE` **executes** the statement, so the insert path must be run
+   inside a transaction that is rolled back, never against production as-is.
+5. **Events catalog**: not captured — `events` = 67.
 
 ---
 
@@ -127,17 +171,27 @@ monthly; the trend matters more than any single month.
 
 ### 3a. Per-vendor spend
 
-> Snapshot month: _pending_. Active members at snapshot (denominator): _pending_.
+> ⏳ **OWNER-BLOCKED, and it is the only thing blocking it.** Every figure in §3a and §3b comes
+> from a vendor's own billing console, which is account access no agent in this repo has. It is not
+> a measurement anyone here can take, so the cells stay empty and the ask is carried as a backlog
+> row (`OWN-062`) rather than sitting as `⏳ owner` in a document nobody is accountable for.
+>
+> To fill it: read the current invoice for each vendor below, put the plan tier and the monthly
+> figure in the table, state the snapshot month, and state whether the denominator is WAM or MAU.
 > Source for each figure: the vendor's own billing console (not estimated).
+>
+> ⚠️ **The denominator is currently 58 profiles** (§2b), so a per-1k-members figure computed today
+> would be an extrapolation from a twentieth of the unit and would read as fact. Capture §3b when
+> the member count makes the division meaningful.
 
 | Vendor | What it bills for | Plan / tier | Monthly spend (USD) | Primary cost driver | Notes |
 |---|---|---|---|---|---|
-| **Supabase** | Postgres, Auth, Storage, Realtime, egress | _tbd_ | _tbd_ | DB compute + storage + egress | watch egress as media grows (H3-6) |
-| **Vercel** | Hosting, edge, functions, bandwidth, Analytics | _tbd_ | _tbd_ | function invocations + bandwidth | 18 crons + RSC traffic |
-| **Anthropic** | Vera + embeddings (Claude API) | _tbd_ | _tbd_ | tokens (Haiku-default) | governed by AI-CONTROLS.md caps |
-| **Resend** | Transactional + digest email | _tbd_ | _tbd_ | emails sent / month | digest + lifecycle + nurture |
-| **Upstash** | Redis (rate-limit, cache) | _tbd_ | _tbd_ | commands / month | sliding-window rate limits |
-| **Total** | | | **_tbd_** | | |
+| **Supabase** | Postgres, Auth, Storage, Realtime, egress | ⏳ owner | ⏳ owner | DB compute + storage + egress | watch egress as media grows (H3-6) |
+| **Vercel** | Hosting, edge, functions, bandwidth, Analytics | ⏳ owner | ⏳ owner | function invocations + bandwidth | 18 crons + RSC traffic |
+| **Anthropic** | Vera + embeddings (Claude API) | ⏳ owner | ⏳ owner | tokens (Haiku-default) | governed by AI-CONTROLS.md caps |
+| **Resend** | Transactional + digest email | ⏳ owner | ⏳ owner | emails sent / month | digest + lifecycle + nurture |
+| **Upstash** | Redis (rate-limit, cache) | ⏳ owner | ⏳ owner | commands / month | sliding-window rate limits |
+| **Total** | | | **⏳ owner** | | |
 
 Add any other live vendor (geocoder once H3-3 swaps off keyless Nominatim, a CDN once
 H3-6 lands, Sentry once volume exceeds the free tier) as a row when it starts billing.
@@ -150,14 +204,14 @@ quantity H3 is trying to hold flat or bend down as the denominator grows.
 
 | Metric | Value | How it is derived |
 |---|---|---|
-| Active members (denominator) | _tbd_ | WAM or MAU at snapshot (state which) |
-| Total infra spend / month | _tbd_ | sum of §3a |
-| **Cost per 1k members / month** | **_tbd_** | total spend / (members / 1000) |
-| Supabase per 1k | _tbd_ | Supabase spend / (members / 1000) |
-| Vercel per 1k | _tbd_ | Vercel spend / (members / 1000) |
-| Anthropic per 1k | _tbd_ | Anthropic spend / (members / 1000) |
-| Resend per 1k | _tbd_ | Resend spend / (members / 1000) |
-| Upstash per 1k | _tbd_ | Upstash spend / (members / 1000) |
+| Active members (denominator) | ⏳ owner | WAM or MAU at snapshot (state which) |
+| Total infra spend / month | ⏳ owner | sum of §3a |
+| **Cost per 1k members / month** | **⏳ owner** | total spend / (members / 1000) |
+| Supabase per 1k | ⏳ owner | Supabase spend / (members / 1000) |
+| Vercel per 1k | ⏳ owner | Vercel spend / (members / 1000) |
+| Anthropic per 1k | ⏳ owner | Anthropic spend / (members / 1000) |
+| Resend per 1k | ⏳ owner | Resend spend / (members / 1000) |
+| Upstash per 1k | ⏳ owner | Upstash spend / (members / 1000) |
 
 **Reading it:** a per-1k cost that rises with the denominator means a path scales
 super-linearly and is an H3 target. A flat or falling per-1k cost means the

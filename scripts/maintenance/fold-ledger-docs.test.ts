@@ -113,6 +113,91 @@ describe('the fold is byte-faithful to the file it is replacing', () => {
   })
 })
 
+// ─────────────────────────────────────────────────────────────────────────────────────────────
+// meta.slate — THE ONE NON-ENTRY KEY THAT IS NOT MAIN'S TO KEEP.
+//
+// The slate is a VIEW OVER THE ENTRIES, and the fold has just changed which entries are done, so
+// carrying main's copy through unread hands back a file that contradicts itself. HYG-047 measures
+// exactly that, and it fired on all five folds of the 2026-09-06/07 seven-PR stack — each fixed by
+// hand with the same three lines, by a tool whose whole purpose is that this file is never
+// hand-edited.
+//
+// Every test below fails against the pre-fix driver, which is the only reason to trust them.
+// ─────────────────────────────────────────────────────────────────────────────────────────────
+describe('meta.slate is folded beside the entries, then reconciled against them', () => {
+  const slated = (rows: Row[], waves: { name: string; ids: string[] }[]) =>
+    JSON.stringify({ entries: rows, meta: { slate: { note: 'n', waves } } }, null, 2)
+  const slateOf = (text: string) => JSON.parse(text).meta.slate.waves as { name: string; ids: string[] }[]
+
+  it('🔴 drops a row THIS BRANCH closed but main still lists as active work', () => {
+    // The exact five-times shape: ours closes A, main's slate still carries it.
+    const base = slated([row('A'), row('B')], [{ name: 'W0', ids: ['A', 'B'] }])
+    const ours = slated([row('A', { status: 'done' }), row('B')], [{ name: 'W0', ids: ['B'] }])
+    const theirs = slated([row('A'), row('B')], [{ name: 'W0', ids: ['A', 'B'] }])
+    const r = mergeBacklog(base, ours, theirs) as { text: string; slate: { done: string[] } }
+    expect(slateOf(r.text)[0].ids).toEqual(['B'])
+    expect(r.slate.done).toEqual(['A'])
+  })
+
+  it('🔴 drops a row MAIN closed, so the reconcile does not depend on which side did it', () => {
+    const base = slated([row('A'), row('B')], [{ name: 'W0', ids: ['A', 'B'] }])
+    const ours = slated([row('A'), row('B')], [{ name: 'W0', ids: ['A', 'B'] }])
+    const theirs = slated([row('A', { status: 'done' }), row('B')], [{ name: 'W0', ids: ['A', 'B'] }])
+    const r = mergeBacklog(base, ours, theirs) as { text: string }
+    expect(slateOf(r.text)[0].ids).toEqual(['B'])
+  })
+
+  it('keeps THIS BRANCH’s placement of a row main has never seen', () => {
+    // A new open row filed on the branch stays placed — otherwise HYG-047 fails it as unplaced,
+    // and the fold would have created the very violation it is meant to prevent.
+    const base = slated([row('A')], [{ name: 'W0', ids: ['A'] }])
+    const ours = slated([row('A'), row('NEW')], [{ name: 'W0', ids: ['A', 'NEW'] }])
+    const theirs = slated([row('A')], [{ name: 'W0', ids: ['A'] }])
+    const r = mergeBacklog(base, ours, theirs) as { text: string }
+    expect(slateOf(r.text)[0].ids).toEqual(['A', 'NEW'])
+  })
+
+  it('drops an id that names no row at all, rather than emitting a phantom', () => {
+    const base = slated([row('A')], [{ name: 'W0', ids: ['A'] }])
+    const ours = slated([row('A')], [{ name: 'W0', ids: ['A', 'GHOST'] }])
+    const theirs = slated([row('A')], [{ name: 'W0', ids: ['A'] }])
+    const r = mergeBacklog(base, ours, theirs) as { text: string; slate: { phantom: string[] } }
+    expect(slateOf(r.text)[0].ids).toEqual(['A'])
+    expect(r.slate.phantom).toEqual(['GHOST'])
+  })
+
+  it('places a row once when the two sides put it in DIFFERENT waves, first wave winning', () => {
+    const base = slated([row('A')], [{ name: 'W0', ids: [] }, { name: 'W1', ids: [] }])
+    const ours = slated([row('A')], [{ name: 'W0', ids: [] }, { name: 'W1', ids: ['A'] }])
+    const theirs = slated([row('A')], [{ name: 'W0', ids: ['A'] }, { name: 'W1', ids: [] }])
+    const r = mergeBacklog(base, ours, theirs) as { text: string; slate: { duplicate: string[] } }
+    expect(slateOf(r.text).map((w) => w.ids)).toEqual([['A'], []])
+    expect(r.slate.duplicate).toEqual(['A'])
+  })
+
+  it('⚪ does NOT invent a wave for an unplaced open row — that judgement is a human’s', () => {
+    // Going green by guessing build ORDER is how a slate starts lying. HYG-047 should fail here,
+    // and the fold must leave it failing rather than paper over it.
+    const base = slated([row('A')], [{ name: 'W0', ids: ['A'] }])
+    const ours = slated([row('A'), row('LOOSE')], [{ name: 'W0', ids: ['A'] }])
+    const theirs = slated([row('A')], [{ name: 'W0', ids: ['A'] }])
+    const r = mergeBacklog(base, ours, theirs) as { text: string }
+    expect(slateOf(r.text).flatMap((w) => w.ids)).not.toContain('LOOSE')
+  })
+
+  it('leaves a document with no slate exactly as main had it', () => {
+    const r = mergeBacklog(doc(row('A')), doc(row('A')), doc(row('A'))) as { text: string }
+    expect(JSON.parse(r.text).meta).toBeUndefined()
+  })
+
+  it('keeps the slate’s own non-wave keys, and the wave’s, from main', () => {
+    const base = slated([row('A')], [{ name: 'W0', ids: ['A'] }])
+    const r = mergeBacklog(base, base, base) as { text: string }
+    expect(JSON.parse(r.text).meta.slate.note).toBe('n')
+    expect(slateOf(r.text)[0].name).toBe('W0')
+  })
+})
+
 describe('the Markdown half appends, and knows when it is not an append', () => {
   it('keeps main’s block first and this branch’s after', () => {
     const base = '# ADRs\n\n## ADR-1\n'

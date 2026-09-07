@@ -127,8 +127,66 @@ export function mergeBacklog(base, ours, theirs) {
   if (dupes.length) throw new Error(`duplicate row id(s) after fold: ${[...new Set(dupes)].join(', ')}`)
 
   const out = { ...t, entries: merged }
+
+  // 🔴 meta.slate IS NOT A NON-ENTRY KEY, AND TAKING IT FROM MAIN WHOLESALE WAS A BUG.
+  //
+  // Every other key on the document belongs to main by right — `schema`, `lanes`, `rules` — because
+  // this branch has no opinion about them. `meta.slate` is different: it is a VIEW OVER THE ENTRIES,
+  // and this fold has just changed which entries are done. Carrying main's copy through unread left
+  // rows this branch closed still listed as active work, which is exactly what HYG-047 measures
+  // ("the slate inside the verified backlog is itself unverified"), so `check:backlog` went red on
+  // the fold's own output.
+  //
+  // Measured, not theorised: on 2026-09-06/07 a seven-PR stack was folded five times and HYG-047
+  // fired on all five, each time fixed by hand with the same three lines. A tool that exists so this
+  // file is never hand-edited cannot hand back a file that needs hand-editing.
+  //
+  // So the slate is folded too, on the same principle as the entries — main's order first, this
+  // branch's additions appended — and then reconciled against the merged entries, which are the
+  // authority on status. It drops exactly what HYG-047 forbids and nothing else.
+  const slateFold = foldSlate(o.meta?.slate, t.meta?.slate, new Map(merged.map((e) => [e.id, e])))
+  if (slateFold) out.meta = { ...t.meta, slate: slateFold.slate }
+
   const text = JSON.stringify(out, null, 2) // no trailing newline — see the byte-fidelity note above
-  return { text, count: merged.length, added: merged.length - T.size, bothChanged }
+  return { text, count: merged.length, added: merged.length - T.size, bothChanged, slate: slateFold?.dropped }
+}
+
+/** Fold `meta.slate` beside the entries, then reconcile it against them.
+ *
+ *  ⚠️ THE RECONCILE READS THE MERGED ENTRIES, NEVER EITHER SIDE'S. A row's status is settled by the
+ *  fold above; asking `ours` or `theirs` would re-open a question that has already been answered,
+ *  and would answer it differently depending on which side happened to close the row.
+ *
+ *  It deliberately does NOT place an unplaced open row. HYG-047 fails on one, and that failure is
+ *  correct: which wave a row belongs to is a judgement about build ORDER, and inventing one to go
+ *  green is how a slate starts lying. The fold's job is to stop carrying rows that are finished. */
+function foldSlate(ourSlate, theirSlate, mergedById) {
+  if (!theirSlate?.waves) return null
+
+  const ourWaves = new Map((ourSlate?.waves ?? []).map((w) => [w.name, w]))
+  const named = new Set()
+  const waves = []
+  for (const w of theirSlate.waves) {
+    named.add(w.name)
+    const ids = [...(w.ids ?? [])]
+    for (const id of ourWaves.get(w.name)?.ids ?? []) if (!ids.includes(id)) ids.push(id)
+    waves.push({ ...w, ids })
+  }
+  // A wave only this branch has — a new phase — keeps its own placement.
+  for (const w of ourSlate?.waves ?? []) if (!named.has(w.name)) waves.push({ ...w, ids: [...(w.ids ?? [])] })
+
+  const dropped = { done: [], phantom: [], duplicate: [] }
+  const placed = new Set()
+  for (const w of waves) {
+    w.ids = w.ids.filter((id) => {
+      const r = mergedById.get(id)
+      if (!r) return dropped.phantom.push(id), false // names no row at all
+      if (r.status === 'done') return dropped.done.push(id), false // finished; not active work
+      if (placed.has(id)) return dropped.duplicate.push(id), false // the union placed it twice
+      return placed.add(id), true
+    })
+  }
+  return { slate: { ...theirSlate, waves }, dropped }
 }
 
 // ── DECISIONS.md ──────────────────────────────────────────────────────────────────────────────
@@ -184,6 +242,12 @@ function main() {
     } else {
       if (!checkOnly) writeFileSync(BACKLOG, r.text)
       console.log(`✓ ${BACKLOG}: ${r.count} rows (${r.added >= 0 ? '+' : ''}${r.added} vs main)${checkOnly ? ' [check only]' : ''}`)
+      // Say what left the slate. Silence here is what made the old behaviour hard to see: the fold
+      // reported success, and HYG-047 reported the consequence several commands later.
+      const s = r.slate
+      if (s?.done.length) console.log(`  meta.slate: dropped ${s.done.length} finished row(s) — ${s.done.join(', ')}`)
+      if (s?.phantom.length) console.log(`  meta.slate: dropped ${s.phantom.length} id(s) naming no row — ${s.phantom.join(', ')}`)
+      if (s?.duplicate.length) console.log(`  meta.slate: dropped ${s.duplicate.length} duplicate placement(s) — ${s.duplicate.join(', ')}`)
     }
   }
 

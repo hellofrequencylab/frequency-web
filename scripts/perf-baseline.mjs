@@ -44,7 +44,17 @@ const HOT_PATHS = [
     route: '/feed',
     authed: true,
     entry: 'lib/feed/blend-rank.ts, lib/feed/feed-people.ts',
-    sql: "EXPLAIN (ANALYZE, BUFFERS, FORMAT TEXT) SELECT * FROM feed_for_viewer(/* viewer_id */ '00000000-0000-0000-0000-000000000000', 20, NULL);",
+    // 🔴 THIS SQL DESCRIBED A FUNCTION THAT DOES NOT EXIST, and anyone following the doc hit it.
+    // It passed a viewer uuid as the first argument; the live signature is
+    // `feed_for_viewer(_sort text, _limit int, _lat float8, _lng float8, _radius_m int)` and takes
+    // NO viewer id at all — the viewer comes from auth.uid() inside the body. Run 2026-09-07 it
+    // failed with `function feed_for_viewer(uuid, integer, unknown) does not exist`.
+    //
+    // ⚠️ AND EXPLAINING THE CALL IS NOT ENOUGH. feed_for_viewer is PL/pgSQL, so EXPLAIN ANALYZE of
+    // a call to it yields one opaque `Function Scan` line (measured: 180.970 ms, shared hit=3032)
+    // and none of the inner plan the H3 work needs. §2a already says to capture "the RPC body's hot
+    // statement"; this line now says how. Capture the body's statement, not the call.
+    sql: "EXPLAIN (ANALYZE, BUFFERS, FORMAT TEXT) SELECT * FROM feed_for_viewer('new', 20, NULL, NULL, NULL);  -- call-level only: yields a bare Function Scan. For a usable plan, read the body with `\\sf feed_for_viewer` and EXPLAIN its hot SELECT directly, as role authenticated.",
   },
   {
     id: 'circle-detail',
