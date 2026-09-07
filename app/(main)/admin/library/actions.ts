@@ -1,7 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import type { SupabaseClient } from '@supabase/supabase-js'
+import type { Database } from '@/lib/database.types'
 import { requireAdmin } from '@/lib/admin/guard'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getRootSpaceId, insertSpaceLibraryImage, findLibraryAssetBySha256 } from '@/lib/library/store'
@@ -87,8 +87,7 @@ export async function uploadLibraryImage(
   return { ok: true }
 }
 
-// eslint-disable-next-line no-restricted-syntax -- library_assets isn't in lib/database.types.ts yet (types regen is a follow-up integrator step); genuinely untyped table access
-const dbh = () => createAdminClient() as unknown as SupabaseClient
+const dbh = () => createAdminClient()
 
 /** Edit an asset's metadata. Tags arrive as a comma-separated string. Janitor-gated. */
 export async function updateLibraryAssetMeta(
@@ -98,7 +97,7 @@ export async function updateLibraryAssetMeta(
   await requireAdmin('janitor')
   if (!id) return { error: 'Missing asset id.' }
 
-  const patch: Record<string, unknown> = { updated_at: new Date().toISOString() }
+  const patch: Database['public']['Tables']['library_assets']['Update'] = { updated_at: new Date().toISOString() }
   if (fields.title !== undefined) {
     const t = fields.title.trim()
     if (!t) return { error: 'Title cannot be empty.' }
@@ -139,9 +138,7 @@ export async function deleteLibraryAsset(id: string): Promise<{ ok: true } | { e
   if (!id) return { error: 'Missing asset id.' }
 
   const admin = createAdminClient()
-  // eslint-disable-next-line no-restricted-syntax -- library_assets isn't in lib/database.types.ts yet (types regen is a follow-up integrator step); genuinely untyped table access
-  const handle = admin as unknown as SupabaseClient
-  const { data } = await handle
+  const { data } = await admin
     .from('library_assets')
     .select('storage_bucket, storage_path')
     .eq('id', id)
@@ -151,7 +148,7 @@ export async function deleteLibraryAsset(id: string): Promise<{ ok: true } | { e
     await admin.storage.from(row.storage_bucket).remove([row.storage_path])
   }
 
-  const { error } = await handle.from('library_assets').delete().eq('id', id)
+  const { error } = await admin.from('library_assets').delete().eq('id', id)
   if (error) return { error: error.message }
   revalidatePath('/admin/library')
   return { ok: true }

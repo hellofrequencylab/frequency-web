@@ -4,9 +4,13 @@
 -- firing, the season derivation, and the editor patch-writers were removed across ADR-253
 -- steps 1-3), these three columns are now dead and are dropped here.
 --
--- ⚠️ NOT yet applied. Apply via the Supabase SQL Editor (db push isn't safe against this
--- project's migration-history baseline — see docs/WORKFLOW.md), then regenerate
--- lib/database.types.ts. Guarded with IF EXISTS, so safe to re-run.
+-- ✅ APPLIED. Corrected 2026-09-06 (HYG-054); this header read "NOT yet applied" long after
+-- the fact. The Supabase migration ledger (supabase_migrations.schema_migrations) carries
+-- version 20260624000000 (drop_journey_season_columns), and the live schema has none of the
+-- three columns, both re-read 2026-09-06. The ledger table stores only version + name and no
+-- apply timestamp, so there is no exact apply DATE to record here; the ledger row plus the
+-- schema reading is the whole of the evidence. lib/database.types.ts is regenerated and shows
+-- the columns gone. Guarded with IF EXISTS, so still safe to re-run.
 --
 -- NOTE: journey_plan_adoptions is deliberately NOT dropped here — ADR-253 keeps it; it is still
 -- referenced elsewhere (content-signals, coop-pulse, circles/admin-actions, the prompt cron,

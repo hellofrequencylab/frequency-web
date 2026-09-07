@@ -29,14 +29,46 @@ export function chatSigningAvailable(): boolean {
 /**
  * The RUNTIME prerequisites of the live-chat widget (scan2 L3-06, 2026-09-05): a signing secret that can
  * mint the visitor's capability token, and the platform inbox owner the conversation hangs on
- * (CRM_INBOX_OWNER_PROFILE_ID, blank counts as unset). The widget is mounted on the BUILD-time flag
- * NEXT_PUBLIC_SUPPORT_CHAT; the three public layouts AND startSupportChat both gate on this too, so the
+ * (CRM_INBOX_OWNER_PROFILE_ID, blank counts as unset). The widget is mounted on the SUPPORT_CHAT
+ * switch (see supportChatFlagEnabled below); the three public layouts AND startSupportChat both gate on this too, so the
  * chat is never offered when it cannot open a thread, and a thread is never opened when its token cannot
  * be minted. Lives here (not in support-chat.ts) so a layout can import it without pulling the admin
  * client and the conversations spine into every public route. Pure env reads; never throws.
  */
 export function isSupportChatAvailable(): boolean {
   return envStringOrNull('CRM_INBOX_OWNER_PROFILE_ID') !== null && chatSigningAvailable()
+}
+
+/**
+ * The SWITCH that mounts the public live-chat widget — step one of the LIVE-165 rename (2026-09-06).
+ *
+ * The flag has only ever been read by three SERVER layouts, so the `NEXT_PUBLIC_` prefix bought
+ * nothing: it published a value the browser never needed. The new name is the unprefixed
+ * `SUPPORT_CHAT`, and this reader PREFERS it while still FALLING BACK to `NEXT_PUBLIC_SUPPORT_CHAT`,
+ * because renaming in code without renaming the Vercel variable in the same window would hide the
+ * widget on the next deploy.
+ *
+ * ⚠️ SECOND PASS, once `SUPPORT_CHAT` is set in Vercel Production (and the old variable removed):
+ * delete the fallback line below, the `NEXT_PUBLIC_SUPPORT_CHAT` entry in `.env.example`, and the
+ * mentions in the three layouts + `components/chat/support-chat-widget.tsx`. LIVE-165's probe
+ * (grep-absent for the prefixed name under app/lib/components) only passes after that pass.
+ *
+ * Note the two reads are deliberately different shapes. `SUPPORT_CHAT` is a server-only variable, so
+ * it goes through `envStringOrNull` (blank means unset). The legacy name is read as a LITERAL
+ * `process.env.NEXT_PUBLIC_SUPPORT_CHAT` because Next inlines `NEXT_PUBLIC_*` by textual substitution
+ * at build time (`next/dist/lib/inline-static-env.js`) — a dynamic lookup would not be replaced.
+ * An explicit `SUPPORT_CHAT` of anything but "1" wins and leaves the widget off.
+ *
+ * ⚠️ `SUPPORT_CHAT` is NOT more runtime-swappable than the name it replaces. The three callers are
+ * PRERENDERED server layouts, and a server env var read during prerender is evaluated at BUILD time
+ * unless the route opts into dynamic rendering (Next env-vars guide, "Runtime Environment Variables").
+ * So it must be set before `next build` on Vercel, exactly like the old flag. The prefix is what is
+ * being dropped here — publishing the value to the browser bundle bought nothing — not the timing.
+ */
+export function supportChatFlagEnabled(): boolean {
+  const next = envStringOrNull('SUPPORT_CHAT')
+  if (next !== null) return next === '1'
+  return process.env.NEXT_PUBLIC_SUPPORT_CHAT === '1'
 }
 
 /** HMAC over the conversation ref (chat variant). 16 bytes (32 hex). */

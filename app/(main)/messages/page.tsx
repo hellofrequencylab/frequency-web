@@ -105,9 +105,9 @@ function noteFailedRead(section: string, error: unknown): void {
 }
 
 // The presence read is the ONE member of the second wave that could take the page down, and it
-// did not need a non-null `error` to do it. `createAdminClient()` asserts
-// `process.env.SUPABASE_SERVICE_ROLE_KEY!` and @supabase/ssr throws "supabaseKey is required"
-// when that env var is absent — SYNCHRONOUSLY, while the `Promise.all` argument list is still
+// did not need a non-null `error` to do it. `createAdminClient()` REQUIRES SUPABASE_SERVICE_ROLE_KEY
+// and throws naming it (lib/supabase/env.ts; before LIVE-169 a bare non-null assertion let
+// @supabase/ssr throw the unattributed "supabaseKey is required" instead) when that env var is absent — SYNCHRONOUSLY, while the `Promise.all` argument list is still
 // being built, so the throw escapes before a single sibling read is even started and every
 // section of the inbox dies with it. Presence dots are decoration on this page; whether a peer
 // was seen in the last thirty minutes may not decide whether a member can reach their

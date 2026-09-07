@@ -71,7 +71,6 @@
             "LIVE-185",
             "LIVE-190",
             "LIVE-191",
-            "LIVE-194",
             "LIVE-195",
             "LIVE-197",
             "LIVE-198",
@@ -90,7 +89,6 @@
             "LIVE-164",
             "LIVE-165",
             "LIVE-166",
-            "LIVE-169",
             "LIVE-167",
             "LIVE-163",
             "LIVE-180",
@@ -123,7 +121,6 @@
             "HYG-050",
             "SCAN-502",
             "HYG-053",
-            "HYG-054",
             "HYG-059",
             "HYG-062"
           ]
@@ -7681,15 +7678,14 @@
     {
       "id": "LIVE-169",
       "title": "Env contract residue: bare Supabase reads and two canonical-URL variables",
-      "status": "open",
-      "priority": "P2",
+      "status": "done",
       "lane": "live",
       "size": "XS",
       "source": {
         "file": ".env.example",
         "ref": "ADR-1211"
       },
-      "detail": "Scan two L3-08 (c) and (d), not addressed in phase E: four Supabase client constructions read the env with a non-null assertion rather than a checked read, and two variables carry the canonical site URL. Route both through lib/env/string.ts (phase D) and document the URL pair once.",
+      "detail": "Scan two L3-08 (c) and (d), not addressed in phase E: four Supabase client constructions read the env with a non-null assertion rather than a checked read, and two variables carry the canonical site URL. Route both through lib/env/string.ts (phase D) and document the URL pair once.\n\n── ✅ DONE 2026-09-06 (fan-out slice D). The four Supabase client constructions read through lib/env/string.ts instead of a non-null assertion, so a missing or blank variable now fails naming the key and the caller rather than surfacing downstream as `@supabase/ssr` saying 'supabaseUrl is required'. Blank counts as unset, which is the shape a variable created with no value in Vercel actually takes — the case an assertion cannot see at all.\n\n🔴 A REAL TRAP WAS FOUND AND IS RECORDED IN THE HELPER: a `NEXT_PUBLIC_*` variable read in code that reaches the browser must NOT go through a dynamic lookup. Next inlines those by TEXTUAL SUBSTITUTION of `…env.NEXT_PUBLIC_X` at build time, so `process.env[key]` is never replaced and reads undefined in the bundle. Hence two helpers rather than one: `requireEnvString(key)` for server-only reads, and `requireEnvValue(key, process.env.LITERAL)` for anything the inliner must still see. Anyone routing more variables through this seam needs that distinction.",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e \"const fs=require('fs'),pa=require('path');function*w(d){for(const e of fs.readdirSync(d,{withFileTypes:true})){const f=pa.join(d,e.name);if(e.isDirectory()){if(e.name!=='node_modules'&&!e.name.startsWith('.'))yield*w(f)}else yield f}}const n=['app','lib'].flatMap(d=>[...w(d)]).filter(f=>/\\\\.tsx?$/.test(f)&&fs.readFileSync(f,'utf8').includes('process.env.NEXT_PUBLIC_SUPABASE_URL!')).length;process.exit(n===0?0:1)\"",
@@ -8970,15 +8966,14 @@
     {
       "id": "HYG-054",
       "title": "Thirteen untyped-access eslint disables say \"types regen is a follow-up\" about tables that have been in the generated types for weeks, beside three migration headers that still read \"not yet applied\"",
-      "status": "open",
-      "priority": "P2",
+      "status": "done",
       "lane": "hygiene",
       "size": "S",
       "source": {
         "file": "lib/database.types.ts",
         "ref": "library_assets, app_overrides, partners, recordings, event_posts.kind, ai_usage.space_id"
       },
-      "detail": "FILED 2026-09-06 by the backlog audit's code sweep: a marker in the tree that promised later work, with no row owning it. Thirteen lines across lib/library/{styles,store,versions,embeddings}.ts, lib/airwaves/recordings.ts and app/(main)/admin/library/*-actions.ts carry \"eslint-disable-next-line no-restricted-syntax -- library_*/library_assets isn't in lib/database.types.ts yet (types regen is a follow-up)\". It is not a follow-up any more: lib/database.types.ts carries library_assets, app_overrides, partners, recordings, event_posts.kind and ai_usage.space_id today (SCAN-001 was the regen; nobody circled back to the casts), so each disable is now an untyped read of a typed table, and the disable comment is the only thing keeping the lint quiet. Same family: app/(main)/events/actions.ts:1012 says migration 20261125000000 is \"not yet applied — until then this quietly no-ops\", and 20260624000000_drop_journey_season_columns.sql:7 and 20270226000000_drop_profile_zap_total.sql:4 carry \"NOT YET APPLIED\" headers, while the generated types show the columns gone, i.e. applied. THE WORK: replace each cast with the generated type and drop the disable; correct the three headers to say when they were applied (the ledger has the date). Mechanical, and it removes 13 of the repo's ~30 no-restricted-syntax disables. Related but separate: HYG-052 wires the CI drift step that would have caught the next one of these.",
+      "detail": "FILED 2026-09-06 by the backlog audit's code sweep: a marker in the tree that promised later work, with no row owning it. Thirteen lines across lib/library/{styles,store,versions,embeddings}.ts, lib/airwaves/recordings.ts and app/(main)/admin/library/*-actions.ts carry \"eslint-disable-next-line no-restricted-syntax -- library_*/library_assets isn't in lib/database.types.ts yet (types regen is a follow-up)\". It is not a follow-up any more: lib/database.types.ts carries library_assets, app_overrides, partners, recordings, event_posts.kind and ai_usage.space_id today (SCAN-001 was the regen; nobody circled back to the casts), so each disable is now an untyped read of a typed table, and the disable comment is the only thing keeping the lint quiet. Same family: app/(main)/events/actions.ts:1012 says migration 20261125000000 is \"not yet applied — until then this quietly no-ops\", and 20260624000000_drop_journey_season_columns.sql:7 and 20270226000000_drop_profile_zap_total.sql:4 carry \"NOT YET APPLIED\" headers, while the generated types show the columns gone, i.e. applied. THE WORK: replace each cast with the generated type and drop the disable; correct the three headers to say when they were applied (the ledger has the date). Mechanical, and it removes 13 of the repo's ~30 no-restricted-syntax disables. Related but separate: HYG-052 wires the CI drift step that would have caught the next one of these.\n\n── ✅ DONE 2026-09-06 (fan-out slice D). The thirteen `no-restricted-syntax` disables are gone along with the `as unknown as SupabaseClient` casts they excused: the tables they claimed were missing (library_*, app_overrides, partners, recordings, event_posts.kind, ai_usage.space_id) have all been in the generated types since SCAN-001, so each was an untyped read of a typed table kept alive only by its own excuse comment. The three migration headers still claiming NOT YET APPLIED are corrected against the ledger.",
       "verify": {
         "kind": "grep-absent",
         "pattern": "types regen is a follow-up",
@@ -9109,15 +9104,14 @@
     {
       "id": "LIVE-194",
       "title": "The AI ledger prices Opus at three times its list rate, so every Opus cap trips at a third of the intended spend",
-      "status": "open",
-      "priority": "P1",
+      "status": "done",
       "lane": "live",
       "size": "XS",
       "source": {
         "file": "docs/EDITOR-ARCHITECTURE.md",
         "ref": "§9 the AI-layer gaps table, row \"Opus is ledgered at 3x\""
       },
-      "detail": "FILED 2026-09-06 by the backlog audit's docs sweep: work a live plan or ADR names as open, deferred or \"a follow-up\", with no row owning it. lib/ai/models.ts:27 reads opus: { inPerM: 15, outPerM: 75 } while MODELS maps the tier to claude-opus-4-8, whose list price is $5 in / $25 out per million (Anthropic pricing, re-read 2026-09-06; every Opus 4.6+ model is $5/$25). Haiku 4.5 ($1/$5) and Sonnet 4.6 ($3/$15) are priced correctly in the same table, so this is one stale row, not a stale table. CONSEQUENCE: everything that reads the ledger — the ai_usage cost column, the per-Space and per-member budget caps in lib/ai, and the operator AI-usage report — overstates every Opus call by 3x, so a cap set at intent trips at a third of it and the cost report is wrong in the direction that makes AI look expensive. THE FIX is the two numbers plus a note in the file saying where the price was read and when; the row's probe pins the table to the tier's list price so the next model swap has to touch both.",
+      "detail": "FILED 2026-09-06 by the backlog audit's docs sweep: work a live plan or ADR names as open, deferred or \"a follow-up\", with no row owning it. lib/ai/models.ts:27 reads opus: { inPerM: 15, outPerM: 75 } while MODELS maps the tier to claude-opus-4-8, whose list price is $5 in / $25 out per million (Anthropic pricing, re-read 2026-09-06; every Opus 4.6+ model is $5/$25). Haiku 4.5 ($1/$5) and Sonnet 4.6 ($3/$15) are priced correctly in the same table, so this is one stale row, not a stale table. CONSEQUENCE: everything that reads the ledger — the ai_usage cost column, the per-Space and per-member budget caps in lib/ai, and the operator AI-usage report — overstates every Opus call by 3x, so a cap set at intent trips at a third of it and the cost report is wrong in the direction that makes AI look expensive. THE FIX is the two numbers plus a note in the file saying where the price was read and when; the row's probe pins the table to the tier's list price so the next model swap has to touch both.\n\n── ✅ DONE 2026-09-06 (fan-out slice D). opus is priced at its list rate of $5 in / $25 out per million, and the table carries a comment naming where the price was read and when, plus the rule the row exists to enforce: a tier and its price must move together. That is the actual defect — the tier had been re-pointed to claude-opus-4-8 while the price stayed at the pre-4.6 $15/$75, so it was not a typo but a half-finished model migration, and the comment is what makes the next one visible.",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e 'const s=require(\"fs\").readFileSync(\"lib/ai/models.ts\",\"utf8\");const m=/opus:\\s*\\{\\s*inPerM:\\s*(\\d+(?:\\.\\d+)?),\\s*outPerM:\\s*(\\d+(?:\\.\\d+)?)\\s*\\}/.exec(s);process.exit(m&&Number(m[1])===5&&Number(m[2])===25?0:1)'",

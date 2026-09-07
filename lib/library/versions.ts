@@ -1,6 +1,6 @@
 import 'server-only'
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { asJson } from '@/lib/supabase/json'
 
 // Non-destructive version history for Loom assets (ADR-480 `library_versions`). Every edit snapshots
 // the asset's state into a version row (the original is never lost); rollback restores a prior
@@ -8,8 +8,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 // code-drawn elements (config.svg) — the full prior state lives in the version's `recipe` jsonb.
 // Service-role only; callers gate via requireAdmin. See docs/LIBRARY.md.
 
-// eslint-disable-next-line no-restricted-syntax -- library_* isn't in lib/database.types.ts yet (types regen is a follow-up integrator step); genuinely untyped table access
-const db = (): SupabaseClient => createAdminClient() as unknown as SupabaseClient
+const db = () => createAdminClient()
 
 /** The fields a version captures — enough to fully restore the live asset to this point. */
 export type AssetSnapshot = {
@@ -72,7 +71,7 @@ export async function recordVersion(assetId: string, note: string, createdBy?: s
     version: nextVersion,
     storage_bucket: snap.storage_bucket,
     storage_path: snap.storage_path,
-    recipe: snap,
+    recipe: asJson(snap),
     note: note.slice(0, 200),
     is_current: true,
     created_by: createdBy ?? null,
@@ -129,7 +128,7 @@ export async function rollbackToVersion(
       bytes: snap.bytes,
       width: snap.width,
       height: snap.height,
-      config: snap.config,
+      config: asJson(snap.config),
       updated_at: new Date().toISOString(),
     })
     .eq('id', assetId)

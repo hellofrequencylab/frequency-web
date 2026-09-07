@@ -1,6 +1,5 @@
 import 'server-only'
 import { createHash } from 'node:crypto'
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { embedText, EMBED_DIM } from '@/lib/ai/embed'
 import { aiAvailable, featureOverBudget, recordAiUsage } from '@/lib/ai/usage'
@@ -13,8 +12,7 @@ import { fetchLibraryItemsByIds, type LibraryGalleryItem } from './store'
 
 const FEATURE = 'library-search'
 
-// eslint-disable-next-line no-restricted-syntax -- library_assets isn't in lib/database.types.ts yet (types regen is a follow-up integrator step); genuinely untyped table access
-const db = (): SupabaseClient => createAdminClient() as unknown as SupabaseClient
+const db = () => createAdminClient()
 
 /** pgvector wants a bracketed literal for a vector parameter over PostgREST. */
 function toVectorLiteral(v: number[]): string {
@@ -92,7 +90,9 @@ export async function matchLibraryAssets(
       query_embedding: toVectorLiteral(embedding),
       p_space_id: spaceId,
       match_count: opts.limit ?? 48,
-      p_kind: opts.kind ?? null,
+      // Omitted rather than null: the SQL default IS null (migration 20260921000000), and the
+      // generated Args type has no null arm for an optional argument.
+      p_kind: opts.kind ?? undefined,
     })
     if (error) throw new Error(error.message)
     void recordAiUsage({ feature: FEATURE, model: 'gte-small', usage: { inputTokens: 0, outputTokens: 0 }, costUsd: 0, profileId: opts.profileId ?? null })

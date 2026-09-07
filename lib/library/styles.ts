@@ -1,5 +1,4 @@
 import 'server-only'
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { RecraftLane } from '@/lib/loom/recraft'
 
@@ -8,8 +7,7 @@ import type { RecraftLane } from '@/lib/loom/recraft'
 // trophy look. We persist only the returned style_id + a name + its lane; the training images live
 // on Recraft. Service-role only; callers gate via requireAdmin. See docs/LIBRARY.md.
 
-// eslint-disable-next-line no-restricted-syntax -- library_* isn't in lib/database.types.ts yet (types regen is a follow-up integrator step); genuinely untyped table access
-const db = (): SupabaseClient => createAdminClient() as unknown as SupabaseClient
+const db = () => createAdminClient()
 
 export type BrandStyle = {
   id: string

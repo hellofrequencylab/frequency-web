@@ -1,9 +1,9 @@
 // DB-backed governance: the operator kill switch + the usage ledger
 // (docs/AI-STRATEGY.md, ADR-041/067). Layered on the env switch in client.ts.
 //
-// ai_usage / match_help_chunks aren't in database.types yet; per repo convention
-// (see components/feed/feed-list.tsx) we cast to an untyped client for them rather
-// than regenerate the whole generated types file. platform_flags IS typed.
+// ai_usage IS in database.types (space_id included) — HYG-054, 2026-09-06: the casts and the
+// "not yet in the generated types" notes below were stale by weeks, so the reads and writes here
+// are now plainly typed. platform_flags is typed too.
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { Database } from '@/lib/database.types'
@@ -40,10 +40,9 @@ export async function recordAiUsage(input: {
 }): Promise<void> {
   try {
     const admin = createAdminClient()
-    // `space_id` is added by migration 20260712020000 but not yet in the generated
-    // database.types (regenerated post-apply), so cast the row past the stale Insert type to
-    // write the new column. Same `as unknown as` pattern the repo uses (components/feed/feed-list.tsx).
-    const row = {
+    // `space_id` (migration 20260712020000) is in the generated Insert type, so this is a plain
+    // typed insert; it used to be cast past a stale type that had not been stale for weeks.
+    const row: Database['public']['Tables']['ai_usage']['Insert'] = {
       feature: input.feature,
       model: input.model,
       input_tokens: input.usage.inputTokens,
@@ -52,7 +51,7 @@ export async function recordAiUsage(input: {
       profile_id: input.profileId ?? null,
       space_id: input.spaceId ?? null,
     }
-    await admin.from('ai_usage').insert(row as unknown as Database['public']['Tables']['ai_usage']['Insert'])
+    await admin.from('ai_usage').insert(row)
   } catch {
     /* the ledger is best-effort; a failed write must not break the feature */
   }
@@ -80,12 +79,9 @@ export async function featureOverBudget(feature: string, spaceId?: string | null
       .select('cost_usd')
       .eq('feature', feature)
       .gte('created_at', sinceIso)
-    // `space_id` (migration 20260712020000) isn't in the generated column union yet, so cast the
-    // filter column past the stale type (repo's `as unknown as` pattern). Sums only this Space's
-    // spend so the per-Space cap can't be run up by one Space.
-    const scoped = spaceId
-      ? query.eq('space_id' as unknown as 'feature', spaceId)
-      : query
+    // Sums only this Space's spend so the per-Space cap can't be run up by one Space. `space_id`
+    // (migration 20260712020000) is in the generated column union, so the filter needs no cast.
+    const scoped = spaceId ? query.eq('space_id', spaceId) : query
     const { data } = await scoped
     const spent = ((data ?? []) as { cost_usd: number }[]).reduce((s, r) => s + Number(r.cost_usd), 0)
     const cap = spaceId ? spaceDailyCapFor(feature) : dailyCapFor(feature)
