@@ -36002,6 +36002,8 @@ Both wrong forms fall through the app's catch-all to the home page. Structured d
 
 **Consequences.** First production readings (`dpl_BU432fbGAwdpwvBZHU2JKR9a4VGW`, 2026-09-07 09:45Z) are 115–533 ms against a 300,000 ms ceiling.
 
+🔴 **And the instrument's first correction was to a claim made from its own output.** A 1,896 ms `publish-scheduled` reading was reported as an outlier "14× its neighbours"; fourteen readings over the next 70 minutes run 114–376 ms, median ~121, and the 1,896 was simply the **first invocation on the deploy that shipped the instrument** — a cold start. The claim is withdrawn. Two rules come out of it, and the second is the sharper one: mark the first invocation on a new deployment as what it is, and **n=1 is not a measurement even when it comes from a real production log** — coming from prod is exactly what made it feel like one.
+
 ⚠️ **Those numbers prove almost nothing yet, and saying so is the point.** Every counts line in the same window reads zero — `due 0, claimed 0, sent 0` — so they are the durations of a cron with **no work to do**: a floor measuring the fixed cost of waking up and finding nothing, not a budget. The reading LIVE-190 needs is the same query on a busy week, which is why the instrument had to land first and why this ADR closes no budget.
 
 ---
