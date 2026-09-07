@@ -2,7 +2,6 @@
 
 import { after } from 'next/server'
 import { revalidatePath } from 'next/cache'
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { requireAdmin } from '@/lib/admin/guard'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { aiAvailable, featureOverBudget, recordAiUsage } from '@/lib/ai/usage'
@@ -31,8 +30,7 @@ const BUCKET = 'library-media'
 // Recraft list price, for the budget ledger.
 const COST: Record<RecraftLane, number> = { raster: 0.04, vector: 0.08 }
 
-// eslint-disable-next-line no-restricted-syntax -- library_* isn't in lib/database.types.ts yet (types regen is a follow-up integrator step); genuinely untyped table access
-const dbh = () => createAdminClient() as unknown as SupabaseClient
+const dbh = () => createAdminClient()
 
 function slugify(s: string): string {
   return (

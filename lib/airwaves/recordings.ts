@@ -1,5 +1,6 @@
 import 'server-only'
-import type { SupabaseClient } from '@supabase/supabase-js'
+import type { Database } from '@/lib/database.types'
+import { asJson } from '@/lib/supabase/json'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { normalizePrice, type Price } from '@/lib/commerce/types'
@@ -23,13 +24,12 @@ import {
 // behind app-layer authz. WRITES gate on the caller's per-Space capability (canEditProfile: owner /
 // admin / editor / platform staff), the same authority the Loom uploader + space-landing publish use.
 //
-// The tables aren't in lib/database.types.ts yet, so this reaches them through the untyped admin
-// handle — the repo's standard pattern for a freshly-added seam (store.ts convention, ADR-246). Pure
-// logic (visibility, attach key, price precedence) lives in ./types.ts and is unit-tested there; this
-// module is the IO + gate seam only.
+// The three tables ARE in lib/database.types.ts (HYG-054, 2026-09-06 — they had been reached through
+// an untyped admin handle, on a comment that promised a types regen that had already happened), so
+// this is the ordinary typed admin client. Pure logic (visibility, attach key, price precedence)
+// lives in ./types.ts and is unit-tested there; this module is the IO + gate seam only.
 
-// eslint-disable-next-line no-restricted-syntax -- recordings / recording_attachments aren't in lib/database.types.ts yet (types regen is a follow-up integrator step); genuinely untyped table access
-const db = () => createAdminClient() as unknown as SupabaseClient
+const db = () => createAdminClient()
 
 type Result<T> = { ok: true; value: T } | { ok: false; error: string }
 
@@ -200,9 +200,9 @@ export async function createRecording(
         description: input.description?.trim() || null,
         show_id: input.showId?.trim() || null,
         transcript: input.transcript ?? null,
-        chapters: input.chapters ?? null,
+        chapters: asJson(input.chapters ?? null),
         duration_seconds: input.durationSeconds ?? null,
-        price,
+        price: asJson(price),
         required_entitlement: input.requiredEntitlement?.trim() || null,
         visibility: asRecordingVisibility(input.visibility),
         published_at: input.publishedAt ?? null,
@@ -283,7 +283,7 @@ export async function updateRecording(
   const spaceId = await authorizeSpaceEditor(existing.spaceId, actorProfileId)
   if (!spaceId) return { ok: false, error: 'You do not have access to edit this recording.' }
 
-  const patch: Record<string, unknown> = { updated_at: new Date().toISOString() }
+  const patch: Database['public']['Tables']['recordings']['Update'] = { updated_at: new Date().toISOString() }
   if (fields.title !== undefined) {
     const t = fields.title.trim()
     if (!t) return { ok: false, error: 'Give the recording a title.' }
@@ -293,10 +293,10 @@ export async function updateRecording(
   if (fields.description !== undefined) patch.description = fields.description?.trim() || null
   if (fields.showId !== undefined) patch.show_id = fields.showId?.trim() || null
   if (fields.transcript !== undefined) patch.transcript = fields.transcript ?? null
-  if (fields.chapters !== undefined) patch.chapters = fields.chapters ?? null
+  if (fields.chapters !== undefined) patch.chapters = asJson(fields.chapters ?? null)
   if (fields.durationSeconds !== undefined) patch.duration_seconds = fields.durationSeconds ?? null
   if (fields.price !== undefined)
-    patch.price = normalizePrice(fields.price ?? { mode: 'free' })
+    patch.price = asJson(normalizePrice(fields.price ?? { mode: 'free' }))
   if (fields.requiredEntitlement !== undefined)
     patch.required_entitlement = fields.requiredEntitlement?.trim() || null
   if (fields.visibility !== undefined) patch.visibility = asRecordingVisibility(fields.visibility)
@@ -390,7 +390,7 @@ export async function attachRecording(
           recording_id: recording.id,
           host_kind: hostKind,
           host_id: hostId,
-          price,
+          price: asJson(price),
           required_entitlement: input.requiredEntitlement?.trim() || null,
           sort_order: input.sortOrder ?? 0,
         },

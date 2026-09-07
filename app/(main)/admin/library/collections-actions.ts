@@ -1,7 +1,6 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { requireAdmin } from '@/lib/admin/guard'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getRootSpaceId } from '@/lib/library/store'
@@ -11,8 +10,7 @@ import { getRootSpaceId } from '@/lib/library/store'
 // See docs/LIBRARY.md. Collections use library_collections + library_collection_items
 // (ADR-480); membership is many-to-many so an asset can live in several folders.
 
-// eslint-disable-next-line no-restricted-syntax -- library_* isn't in lib/database.types.ts yet (types regen is a follow-up integrator step); genuinely untyped table access
-const dbh = () => createAdminClient() as unknown as SupabaseClient
+const dbh = () => createAdminClient()
 
 const MAX_BATCH = 500
 
@@ -191,10 +189,8 @@ export async function bulkDelete(assetIds: string[]): Promise<{ ok: true } | { e
   if (ids.length === 0) return { error: 'No assets selected.' }
 
   const admin = createAdminClient()
-  // eslint-disable-next-line no-restricted-syntax -- library_* isn't in lib/database.types.ts yet (types regen is a follow-up integrator step); genuinely untyped table access
-  const handle = admin as unknown as SupabaseClient
 
-  const { data } = await handle.from('library_assets').select('storage_bucket, storage_path').in('id', ids)
+  const { data } = await admin.from('library_assets').select('storage_bucket, storage_path').in('id', ids)
   const byBucket: Record<string, string[]> = {}
   for (const r of (data as Array<{ storage_bucket: string | null; storage_path: string | null }> | null) ?? []) {
     if (r.storage_bucket && r.storage_path) (byBucket[r.storage_bucket] ??= []).push(r.storage_path)
@@ -203,7 +199,7 @@ export async function bulkDelete(assetIds: string[]): Promise<{ ok: true } | { e
     if (paths.length) await admin.storage.from(bucket).remove(paths)
   }
 
-  const { error } = await handle.from('library_assets').delete().in('id', ids)
+  const { error } = await admin.from('library_assets').delete().in('id', ids)
   if (error) return { error: error.message }
   revalidatePath('/admin/library')
   return { ok: true }
