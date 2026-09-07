@@ -22,6 +22,27 @@ import { isSeedMood, moodToAccent } from '@/lib/importer/moods'
 import { composeJourneyAction } from '@/app/(main)/journeys/[slug]/edit/actions'
 import { composeIntoPhase } from '@/lib/journeys/compose'
 import { extractOverviewText } from '@/lib/journeys/extract-text'
+import { log } from '@/lib/log'
+
+/**
+ * A child insert that failed, reported rather than dropped (LIVE-173).
+ *
+ * 🔴 EVERY SEED INSERT IN THIS FILE USED TO BE `await admin...insert(...)` WITH THE RESULT UNREAD,
+ * so a Journey whose phases or items never landed was still redirected to as if it were built: the
+ * author arrived in the editor at an empty or half-built curriculum with nothing anywhere saying
+ * why. That is the same defect lib/journey-plans.ts fixed for the EDIT path on 2026-09-05 (scan2
+ * L5-13) and SCAN-628 covered for editing; the CREATE path was never carried along.
+ *
+ * These actions end in `redirect()`, so they have no return channel to carry an error — and the
+ * plan row itself DID commit, so redirecting to the fallback would strand a real Journey the author
+ * can no longer reach. The honest fix for a void action is therefore to make the failure VISIBLE
+ * rather than to invent a rollback: one structured line, keyed by plan id and by which seeding step
+ * failed, so a partial create is queryable instead of silent. `journeys.seed_failed` is the event to
+ * alert on.
+ */
+function seedFailed(step: string, planId: string, error: { message: string }): void {
+  log.error('journeys.seed_failed', { step, planId, error: error.message })
+}
 
 /**
  * Resolve WHO is creating a Journey and WHICH owner it is stamped to, applying the right gate:
@@ -71,7 +92,7 @@ export async function createJourneyDraftAction(title: string, spaceSlug?: string
 
   // Three phase boxes, ready to edit (the author fills them, or rebuilds with Vera).
   const admin = createAdminClient()
-  await admin.from('journey_plan_items').insert(
+  const { error: phaseError } = await admin.from('journey_plan_items').insert(
     [0, 1, 2].map((i) => ({
       plan_id: plan.id,
       block_type: 'phase',
@@ -81,6 +102,7 @@ export async function createJourneyDraftAction(title: string, spaceSlug?: string
       required: true,
     })),
   )
+  if (phaseError) seedFailed('draft.phases', plan.id, phaseError)
 
   redirect(`/journeys/${plan.slug}/edit`)
 }
@@ -243,7 +265,7 @@ export async function createJourneyFromSparkAction(input: {
   // focus, not an empty "Week N"). Falls back to a plain week label when the arc is missing.
   const weeks = Math.min(12, Math.max(1, Math.floor(a.weeks) || 4))
   const arc = input.arc ?? []
-  const { data: phaseRows } = await admin
+  const { data: phaseRows, error: weekPhaseError } = await admin
     .from('journey_plan_items')
     .insert(
       Array.from({ length: weeks }, (_, i) => ({
@@ -257,6 +279,7 @@ export async function createJourneyFromSparkAction(input: {
       })),
     )
     .select('id, sort_order')
+  if (weekPhaseError) seedFailed('spark.week_phases', plan.id, weekPhaseError)
   const phases = ((phaseRows ?? []) as { id: string; sort_order: number }[]).sort((x, y) => x.sort_order - y.sort_order)
 
   if (source) {
@@ -320,7 +343,7 @@ export async function createJourneyFromTemplateAction(templateId: string | null,
     const idMap = new Map<string, string>()
     // Insert in order (parents before children) so each parent_id resolves to a real id.
     for (const b of templateToBlocks(template)) {
-      const { data } = await admin
+      const { data, error } = await admin
         .from('journey_plan_items')
         .insert({
           plan_id: plan.id,
@@ -332,6 +355,10 @@ export async function createJourneyFromTemplateAction(templateId: string | null,
         })
         .select('id')
         .maybeSingle()
+      // A failed PARENT is worse than a failed leaf: every child that names it falls back to
+      // parent_id null and silently reparents to the top level, so the shape is wrong rather than
+      // merely incomplete. The step name carries the block so the log says which.
+      if (error) seedFailed(`template.${b.blockType}`, plan.id, error)
       const realId = (data as { id: string } | null)?.id
       if (realId) idMap.set(b.tempId, realId)
     }
@@ -372,11 +399,13 @@ export async function createMasterFrameworkAction(input: {
       b.block.kind === 'phase'
         ? { plan_id: plan.id, block_type: 'phase' as const, parent_id: parentId, title: b.block.title, body: b.block.body, sort_order: b.sortOrder, required: true }
         : { ...b.block.row, plan_id: plan.id, parent_id: parentId, sort_order: b.sortOrder }
-    const { data } = await admin
+    const { data, error } = await admin
       .from('journey_plan_items')
       .insert(insert as unknown as Database['public']['Tables']['journey_plan_items']['Insert'])
       .select('id')
       .maybeSingle()
+    // Same reparenting hazard as the template path above.
+    if (error) seedFailed(`master.${b.block.kind}`, plan.id, error)
     const realId = (data as { id: string } | null)?.id
     if (realId) idMap.set(b.tempId, realId)
   }
