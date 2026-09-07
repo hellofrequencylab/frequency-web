@@ -1585,7 +1585,56 @@ const STR = (v: string | null | undefined, max: number): string | null => {
  *  Only the fields present in `patch` are written. */
 export async function updatePractice(id: string, patch: PracticeEdit): Promise<Practice | null> {
   const update: Record<string, unknown> = {}
-  if (patch.title !== undefined) update.title = STR(patch.title, 80) ?? 'Untitled practice'
+  // The pre-edit row, read AT MOST ONCE and only when a clause below actually needs it (the
+  // weight-class clamp, or the placeholder-slug re-mint). Two clauses would otherwise mean two
+  // round trips for one save.
+  let cachedCurrent: Practice | null | undefined
+  const loadCurrent = async (): Promise<Practice | null> => {
+    if (cachedCurrent === undefined) cachedCurrent = await getPractice(id)
+    return cachedCurrent
+  }
+  // The title actually being written (already trimmed + capped), kept so the slug re-mint just below
+  // slugifies exactly what lands in the column rather than the raw patch.
+  let nextTitle: string | null = null
+  if (patch.title !== undefined) {
+    nextTitle = STR(patch.title, 80) ?? PLACEHOLDER_PRACTICE_TITLE
+    update.title = nextTitle
+  }
+  // 🔴 SLUG RE-MINT (LIVE-201, from LIVE-188's root cause). `uniquePracticeSlug` was called at
+  // CREATE and at FORK and nowhere else, so a practice's public URL was frozen at the moment it
+  // was created — and a practice is created BEFORE it is named: createPracticeDraftAction stamps
+  // the literal title 'Untitled practice', which slugs to `untitled-practice-N`. Naming it
+  // afterwards (by hand, or by the Vera draft path in app/(main)/practices/actions.ts, which sets
+  // a real title on exactly these rows) wrote the title and left the URL alone. That minted a
+  // real, crawled URL reading `untitled-practice-2` for a practice titled "Daily Hypnosis"
+  // (LIVE-188 — next.config.ts carries its 308).
+  //
+  // Every clause here is load-bearing:
+  //   • only when a title is being written;
+  //   • only when the current slug is STILL the untitled placeholder — a slug that any real title
+  //     ever earned, at create or at fork, is never touched;
+  //   • only while the practice is still PRIVATE. A public practice keeps its URL. A silent slug
+  //     change on an indexed page splits its crawl signal, so renaming a public practice stays a
+  //     deliberate act (rename + a 308, exactly as LIVE-188 was handled) and is NOT automated
+  //     here. This is also why no `practice_slug_redirects` row is written: a private practice's
+  //     placeholder URL was never public, so there is nothing to keep resolving;
+  //   • only when the new title yields a real root that is not the placeholder again, so
+  //     re-saving a still-unnamed practice can never bump it to `untitled-practice-3`.
+  if (nextTitle !== null) {
+    const before = await loadCurrent()
+    const root = slugify(nextTitle)
+    if (
+      before &&
+      !before.is_public &&
+      before.slug != null &&
+      PLACEHOLDER_PRACTICE_SLUG.test(before.slug) &&
+      root &&
+      root !== PLACEHOLDER_PRACTICE_ROOT
+    ) {
+      update.slug = await uniquePracticeSlug(nextTitle)
+    }
+  }
+
   if (patch.summary !== undefined) update.summary = STR(patch.summary, 140)
   if (patch.description !== undefined) update.description = STR(patch.description, 280)
   if (patch.body !== undefined) update.body = STR(patch.body, 8000)
@@ -1655,7 +1704,7 @@ export async function updatePractice(id: string, patch: PracticeEdit): Promise<P
   // reads the unchanged half when only one side is in the patch. Guards a junk tier too.
   if (patch.weight_class !== undefined || patch.duration_min !== undefined) {
     const needCurrent = patch.weight_class === undefined || patch.duration_min === undefined
-    const current = needCurrent ? await getPractice(id) : null
+    const current = needCurrent ? await loadCurrent() : null
     const effDuration =
       patch.duration_min !== undefined ? (update.duration_min as number | null) : current?.duration_min ?? null
     const rawWeight = patch.weight_class !== undefined ? patch.weight_class : current?.weight_class ?? 'standard'
@@ -1685,6 +1734,15 @@ export async function updatePractice(id: string, patch: PracticeEdit): Promise<P
 // landed on a word boundary used to leave a trailing "-", and uniquePracticeSlug then minted
 // "foo--2". Same cap + re-strip as lib/spaces/provision.ts uses for a Space.
 const slugify = (s: string): string => slugifyShared(s).slice(0, 40).replace(/-+$/g, '')
+
+/** The title an UNNAMED practice is born with (createPracticeDraftAction and its Space twin both
+ *  stamp this literal), and the slug shapes that follow from it. Derived through `slugify` rather
+ *  than written out, so the root can never drift from the rule that mints it: the placeholder
+ *  root is `untitled-practice` and uniquePracticeSlug suffixes it (`-2`, `-3`, …). These are what
+ *  updatePractice's re-mint recognises as "this URL was never chosen by anyone". */
+const PLACEHOLDER_PRACTICE_TITLE = 'Untitled practice'
+const PLACEHOLDER_PRACTICE_ROOT = slugify(PLACEHOLDER_PRACTICE_TITLE)
+const PLACEHOLDER_PRACTICE_SLUG = new RegExp(`^${PLACEHOLDER_PRACTICE_ROOT}(-\\d+)?$`)
 
 /** A unique practice slug from a title: the slugified base, or base-2/-3… if taken.
  *  (slug chars are a-z0-9- only, so the ilike prefix is injection-safe.) */

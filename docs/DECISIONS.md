@@ -34940,6 +34940,16 @@ renders inside the layout *sharing its folder*, and `AccentScope` lives one leve
 the Space's. `--radius-cover` has no skin override, which is now the reason it is the only radius the
 skeleton may spell.
 
+> ⚠️ **AMENDED 2026-09-07 by LIVE-196 — the clause above is no longer true, and it was a statement
+> about a fixable arrangement rather than a law.** `AccentScope` was mounted in exactly one place
+> under `/spaces/[slug]`, and a route walk found **35 route entries with no accent scope at all** —
+> not the five subtrees this ADR named. The scope is now hoisted to `[slug]/layout.tsx`, the layout
+> that already resolves the Space, so `loading.tsx` renders *inside* it and the role tokens do
+> resolve against the Space. The skeleton's markup is deliberately left on `--radius-cover` anyway:
+> it reads identically either side of the scope, so switching it is a design decision rather than a
+> consequence of this fix. `accent-scope-coverage.test.ts` walks the real route tree and fails on any
+> unscoped route, so the arrangement cannot silently regress.
+
 ⚠️ **`taglineHiddenOnMobile` was dead.** The hero identity is `absolute bottom-0` inside a
 fixed-height `overflow-hidden` box with no clamp on any text, so extra copy grows **upward** and out
 through the top — the `<h1>` first. The parameter that relocates the tagline below the cover existed,

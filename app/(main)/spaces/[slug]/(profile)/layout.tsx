@@ -12,11 +12,9 @@ import { usableSpaceFunctions, type SpaceFunctionKey } from '@/lib/spaces/functi
 import { getActiveSpace } from '@/lib/spaces/active-space'
 import { trackSpaceProfileViewOnce } from '@/lib/spaces/analytics'
 import { buildSpaceProfileNav } from '@/lib/spaces/profile-nav'
-import { defaultAccentForType, defaultPrimaryCtaLabel } from '@/lib/spaces/profile-config'
+import { defaultPrimaryCtaLabel } from '@/lib/spaces/profile-config'
 import { readHeroConfig, resolveHero, heroHeightClass } from '@/lib/spaces/hero-config'
 import { coverPlaceholderFor } from '@/lib/spaces/cover-placeholder'
-import { resolveAccentVars } from '@/lib/spaces/accent'
-import { parseSpaceTheme } from '@/lib/theme/space-themes'
 import { cn } from '@/lib/utils'
 import { BrandAnchor } from '@/components/spaces/brand-anchor'
 import { readCoverSize, readCoverScrim, readCoverFocus, readLogoBackdrop } from '@/app/(main)/spaces/[slug]/manage/layout/preferences'
@@ -27,7 +25,6 @@ import { OpenAdminBarButton } from '@/components/admin/open-admin-bar-button'
 import { readModuleMenuPrefs } from '@/lib/spaces/module-menu'
 import { SpaceProfileMenu } from '@/components/spaces/space-profile-menu'
 import { isFollowing } from '@/lib/spaces/follows'
-import { AccentScope } from '@/components/spaces/accent-scope'
 import { SpaceShareButton } from '@/components/spaces/space-share-button'
 import { SpacePrivateNotice } from '@/components/spaces/space-private-notice'
 import { JsonLd } from '@/components/json-ld'
@@ -151,13 +148,11 @@ export default async function SpaceProfileChromeLayout({
 
   const brandName = space.brandName ?? space.name
 
-  // The brand accent override (§1 KEYSTONE): the Space's own validated `brand_accent` token wins, else
-  // the per-type default (profile-config, re-homed off the retired blueprint). Only tokens, never a hex.
-  const accentVars = resolveAccentVars(space.brandAccent, defaultAccentForType(space.type))
-
-  // The Space PAGE THEME (ADR-578): the owner's typography + shape identity, read fail-safe off
-  // preferences (defaults to 'bold' = today's look). Rides the same AccentScope wrapper as the accent.
-  const spaceTheme = parseSpaceTheme(space.preferences)
+  // The brand accent (§1 KEYSTONE) and the page THEME (ADR-578) are NOT resolved here any more. They
+  // are properties of the Space, not of the profile group, and this layout was the reason every
+  // sibling subtree — manage, settings, crm, marketing, the public podcasts tabs, the editors, and the
+  // sibling `loading.tsx` — rendered unscoped (LIVE-196, ADR-1192). The single AccentScope now sits in
+  // the parent `[slug]/layout.tsx` and wraps this subtree along with all of them.
 
   // The hero's remaining inputs are independent, so resolve them in ONE round-trip (site-audit PERF-4).
   // `visibility` gates the JSON-LD (a private Space is noindex; fail-safe private). `presence` (which
@@ -634,7 +629,7 @@ export default async function SpaceProfileChromeLayout({
   const stickyNav = <SpaceProfileMenu tabs={tabs} canManage={canManage} />
 
   return (
-    <AccentScope vars={accentVars} theme={spaceTheme}>
+    <>
       {/* Per-type structured data for the PUBLIC profile plus a Breadcrumb back to the directory.
           Network spaces only, never on a private one. */}
       {isNetwork && (
@@ -690,7 +685,7 @@ export default async function SpaceProfileChromeLayout({
       {/* The owner Customize rail is now the STANDARDIZED admin bar (mounted site-wide by the shell), opened
           by the owner-gated Customize button in the identity row via openAdminBar — no per-profile drawer to
           mount here anymore (ENTITY-MANAGEMENT / PR C). */}
-    </AccentScope>
+    </>
   )
 }
 

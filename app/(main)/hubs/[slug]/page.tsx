@@ -1,22 +1,21 @@
 import { notFound } from 'next/navigation'
-import Link from 'next/link'
-import { Users, LayoutDashboard, Settings } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { HierarchyBreadcrumb } from '@/components/hierarchy/breadcrumb'
-import { StatusBadge } from '@/components/groups/status-badge'
 import { DetailTemplate } from '@/components/templates/detail-template'
-import { resolveDetailHero } from '@/lib/layout/detail-hero'
-import { InlineText } from '@/components/admin/inline/inline-text'
-import { OpenAdminBarButton } from '@/components/admin/open-admin-bar-button'
+import { loadTierChrome } from '@/lib/hierarchy/tier-detail'
+import { TierDetailBody, TierDetailFrame, metaLine, tierCrumbs, tierDetailHeader } from '@/components/hierarchy/tier-detail'
+import type { TierDetailView } from '@/components/hierarchy/tier-detail'
 import { getHubCapabilities } from '@/lib/core/load-capabilities'
-import { surfaceAccess } from '@/lib/core/viewer-hats'
-import { showsScopedInsight } from '@/lib/core/scoped-surface-ui'
 import { updateHubField } from '../admin-actions'
-import { StatCard } from '@/components/ui/stat-card'
-import { SectionHeader } from '@/components/ui/section-header'
-import { EmptyState } from '@/components/ui/empty-state'
-import { ProgressTrack } from '@/components/ui/progress-track'
 import type { CircleBase } from '@/lib/types/circle'
+
+// The Hub tier of the hierarchy detail page. Everything it shares with `/nexuses/[slug]` — the
+// frame, the header lockup, the scoped Insight band, the child list and its row — lives in
+// `components/hierarchy/tier-detail.tsx`, and the one round-trip behind it in
+// `lib/hierarchy/tier-detail.ts` (HYG-046). This file owns only what is Hub-specific: its entity
+// query and the view it builds. Add nothing here that a Nexus would also want.
+
+/** A Hub can hold five Circles. Shown as the denominator in the summary line. */
+const CIRCLE_CAP = 5
 
 type HubDetail = {
   id: string
@@ -28,11 +27,7 @@ type HubDetail = {
     id: string
     name: string
     slug: string
-    outpost: {
-      id: string
-      name: string
-      region: { name: string } | null
-    } | null
+    outpost: { id: string; name: string; region: { name: string } | null } | null
   } | null
 }
 
@@ -42,11 +37,7 @@ type CircleRow = CircleBase & {
   host: { display_name: string; handle: string } | null
 }
 
-export default async function HubPage({
-  params,
-}: {
-  params: Promise<{ slug: string }>
-}) {
+export default async function HubPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
   const admin = createAdminClient()
 
@@ -69,175 +60,63 @@ export default async function HubPage({
   if (!rawHub) notFound()
   const hub = rawHub as unknown as HubDetail
 
-  // Caps, the scoped-Insight access check, and the circles list are all independent given the hub
-  // id — resolve them in ONE round-trip instead of a serial chain (site-audit PERF-6). The header
-  // counts derive from `circles`, so it can't stream behind Suspense; batching is the win here.
-  //
-  // Scoped Insight surface (P1.6 adoption, ADR-225): the IN-SCOPE matrix question, so a Guide who
-  // leads THIS hub by stewardship edge — even a global member — gets the hub's Insight summary (a hub
-  // confers guide level ⇒ `full`). Additive: a non-leader resolves `none` and the section stays hidden.
-  const [caps, insightAccess, rawCirclesRes, hero] = await Promise.all([
-    getHubCapabilities(hub.id),
-    surfaceAccess('insight', { type: 'hub', id: hub.id }),
-    admin
+  const { caps, canManage, showsInsight, hero, children: circles } = await loadTierChrome<CircleRow>({
+    kind: 'hub',
+    id: hub.id,
+    path: `/hubs/${slug}`,
+    loadCapabilities: getHubCapabilities,
+    children: admin
       .from('circles')
       .select(
         `id, name, slug, type, member_count, member_cap, status,
          host:profiles!host_id ( display_name, handle )`
       )
       .eq('hub_id', hub.id)
-      .neq('status', 'archived')
       .order('name', { ascending: true }),
-    // The standard entity cover (PROG-P5, ADR-1136). A Hub carries no cover column, so the ladder
-    // is the operator's /hubs Settings image or nothing — adopting is a visual no-op until an
-    // operator uploads one, and then every Hub page wears it.
-    resolveDetailHero(`/hubs/${slug}`),
-  ])
-  const canManage = caps.has('hub.manage')
-  const showsInsight = showsScopedInsight(insightAccess)
-  const circles = (rawCirclesRes.data ?? []) as unknown as CircleRow[]
+  })
+
   const totalMembers = circles.reduce((sum, c) => sum + c.member_count, 0)
 
-  const crumbs = [
-    hub.nexus?.outpost?.region?.name ? { label: hub.nexus.outpost.region.name } : null,
-    hub.nexus?.outpost ? { label: hub.nexus.outpost.name } : null,
-    hub.nexus ? { label: hub.nexus.name, href: `/nexuses/${hub.nexus.slug}` } : null,
-    { label: hub.name },
-  ].filter(Boolean) as { label: string; href?: string }[]
+  const view: TierDetailView = {
+    kind: 'hub',
+    id: hub.id,
+    name: hub.name,
+    slug: hub.slug,
+    status: hub.status,
+    href: `/hubs/${hub.slug}`,
+    caps: Array.from(caps),
+    canManage,
+    saveName: canManage ? updateHubField.bind(null, hub.id, slug, 'name') : null,
+    crumbs: tierCrumbs(
+      hub.nexus?.outpost?.region?.name,
+      hub.nexus?.outpost?.name,
+      hub.nexus && { label: hub.nexus.name, href: `/nexuses/${hub.nexus.slug}` },
+      hub.name
+    ),
+    lead: hub.guide
+      ? { role: 'Guide', name: hub.guide.display_name, handle: hub.guide.handle }
+      : null,
+    summary: `${totalMembers} members across ${circles.length} / ${CIRCLE_CAP} circles`,
+    showsInsight,
+    totalMembers,
+    childLabel: 'Circles',
+    childNoun: 'circle',
+    rows: circles.map((circle) => ({
+      id: circle.id,
+      name: circle.name,
+      href: `/circles/${circle.slug}`,
+      status: circle.status,
+      chip: circle.type,
+      meta: metaLine(circle.host ? `Host: ${circle.host.display_name}` : null),
+      capacity: { count: circle.member_count, cap: circle.member_cap },
+    })),
+  }
 
   return (
-    <div>
-      <Link
-        href="/circles"
-        className="inline-flex items-center gap-1 text-meta text-subtle hover:text-muted mb-4 transition-colors"
-      >
-        ← Circles
-      </Link>
-
-      <HierarchyBreadcrumb crumbs={crumbs} className="mb-4" />
-
-      {/* ── Header (DetailTemplate) ─────────────────── */}
-      <DetailTemplate
-        {...hero}
-        title={
-          canManage ? (
-            <InlineText
-              value={hub.name}
-              save={updateHubField.bind(null, hub.id, slug, 'name')}
-              inputClassName="w-full rounded-lg border border-border-strong bg-surface px-2 py-0.5 text-lead sm:text-page-title font-bold text-text outline-none focus:ring-2 focus:ring-border-strong/30"
-            />
-          ) : (
-            hub.name
-          )
-        }
-        badges={<StatusBadge status={hub.status} />}
-        // Owner/operator entries, stacked: Edit (Settings drawer) then Manage (console).
-        // Gated on hub.manage — the same capability every settings action re-checks server-side.
-        actions={
-          canManage ? (
-            <div className="flex flex-col items-stretch gap-2 sm:items-end">
-              <OpenAdminBarButton
-                scope={{ kind: 'hub', id: hub.id }}
-                caps={Array.from(caps)}
-                label="Edit hub"
-                icon={<Settings className="h-4 w-4" />}
-              />
-              <Link
-                href={`/hubs/${hub.slug}/manage`}
-                className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-2 text-body-sm font-semibold text-text transition-colors hover:border-border-strong hover:bg-surface-elevated"
-              >
-                <LayoutDashboard className="h-4 w-4 text-subtle" />
-                Manage hub
-              </Link>
-            </div>
-          ) : undefined
-        }
-        subtitle={
-          <>
-            {hub.guide && (
-              <span>
-                Guide:{' '}
-                <Link
-                  href={`/people/${hub.guide.handle}`}
-                  className="text-primary-strong hover:underline"
-                >
-                  {hub.guide.display_name}
-                </Link>
-              </span>
-            )}
-            <span className="mt-1 flex items-center gap-1.5">
-              <Users className="w-4 h-4" />
-              {totalMembers} members across {circles.length} / 5 circles
-            </span>
-          </>
-        }
-      >
-        {/* ── Insight (scoped) — in-scope analytics for the hub's Guide, ADR-225 ── */}
-        {showsInsight && (
-          <section className="mb-8">
-            <SectionHeader title="Insight" />
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-              <StatCard label="Members" value={totalMembers.toLocaleString()} icon={Users} />
-              <StatCard label="Circles" value={circles.length.toLocaleString()} />
-              <StatCard
-                label="Avg per circle"
-                value={circles.length > 0 ? Math.round(totalMembers / circles.length).toLocaleString() : '0'}
-              />
-            </div>
-          </section>
-        )}
-
-        {/* ── Circles ────────────────────────────────── */}
-        <section>
-          <SectionHeader title="Circles" count={circles.length} />
-          {circles.length === 0 ? (
-            <EmptyState title="No circles yet." />
-          ) : (
-            <div className="space-y-1">
-              {circles.map((circle) => {
-                const pct = Math.min(100, Math.round((circle.member_count / circle.member_cap) * 100))
-                const full = circle.member_count >= circle.member_cap
-
-                return (
-                  <Link
-                    key={circle.id}
-                    href={`/circles/${circle.slug}`}
-                    className="group flex items-center gap-3 rounded-control px-4 py-3 transition-colors hover:bg-surface-elevated/60 motion-reduce:transition-none"
-                  >
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-body-sm font-semibold text-text">{circle.name}</span>
-                        <StatusBadge status={circle.status} />
-                        <span className="text-meta px-1.5 py-0.5 rounded-md bg-surface-elevated text-muted font-medium">
-                          {circle.type}
-                        </span>
-                      </div>
-                      {circle.host && (
-                        <p className="text-meta text-subtle mt-0.5">
-                          Host: {circle.host.display_name}
-                        </p>
-                      )}
-                      <div className="mt-1.5 flex items-center gap-2">
-                        <span className="text-meta text-subtle tabular-nums">
-                          {circle.member_count} / {circle.member_cap}
-                        </span>
-                        <ProgressTrack
-                          value={pct}
-                          tone={full ? 'danger' : 'primary'}
-                          size="sm"
-                          className="w-20"
-                          label={`${circle.member_count} of ${circle.member_cap} seats taken`}
-                        />
-                      </div>
-                    </div>
-                    <span className="text-subtle transition-colors group-hover:text-text">→</span>
-                  </Link>
-                )
-              })}
-            </div>
-          )}
-        </section>
+    <TierDetailFrame crumbs={view.crumbs}>
+      <DetailTemplate {...hero} {...tierDetailHeader(view)}>
+        <TierDetailBody view={view} />
       </DetailTemplate>
-    </div>
+    </TierDetailFrame>
   )
 }
