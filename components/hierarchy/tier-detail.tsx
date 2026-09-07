@@ -92,6 +92,16 @@ export function metaLine(...parts: (string | null | undefined | false)[]): strin
   return kept.length > 0 ? kept.join(' · ') : null
 }
 
+/** The tier's hierarchy trail (region → outpost → parent tier → itself), with the rungs the entity
+ *  does not have dropped. A bare string is a plain label; pass an object to make a rung a link. */
+export function tierCrumbs(
+  ...parts: ({ label: string; href?: string } | string | null | undefined | false)[]
+): { label: string; href?: string }[] {
+  return parts
+    .filter((p): p is { label: string; href?: string } | string => Boolean(p))
+    .map((p) => (typeof p === 'string' ? { label: p } : p))
+}
+
 /** The back-link + hierarchy trail every tier page sits inside. */
 export function TierDetailFrame({
   crumbs,
@@ -119,12 +129,12 @@ export function TierDetailFrame({
 /** DetailTemplate's identity slots for a tier. Spread into the template the PAGE composes:
  *  `<DetailTemplate {...hero} {...tierDetailHeader(view)}>`. */
 export function tierDetailHeader(view: TierDetailView) {
-  const editable = view.canManage && view.saveName !== null
+  const rename = view.canManage ? view.saveName : null
   return {
-    title: editable ? (
+    title: rename ? (
       <InlineText
         value={view.name}
-        save={view.saveName!}
+        save={rename}
         inputClassName="w-full rounded-lg border border-border-strong bg-surface px-2 py-0.5 text-lead sm:text-page-title font-bold text-text outline-none focus:ring-2 focus:ring-border-strong/30"
       />
     ) : (

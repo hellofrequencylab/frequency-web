@@ -153,6 +153,7 @@ export default async function SpaceProfileChromeLayout({
   // sibling subtree — manage, settings, crm, marketing, the public podcasts tabs, the editors, and the
   // sibling `loading.tsx` — rendered unscoped (LIVE-196, ADR-1192). The single AccentScope now sits in
   // the parent `[slug]/layout.tsx` and wraps this subtree along with all of them.
+
   // The hero's remaining inputs are independent, so resolve them in ONE round-trip (site-audit PERF-4).
   // `visibility` gates the JSON-LD (a private Space is noindex; fail-safe private). `presence` (which
   // live sections have real rows) rides the same round-trip and is request-cached, SHARED with the page

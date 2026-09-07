@@ -66,7 +66,7 @@
             "LIVE-191",
             "LIVE-195",
             "LIVE-198",
-            "LIVE-201"
+            "LIVE-202"
           ]
         },
         {
@@ -77,7 +77,6 @@
             "HYG-046",
             "LIVE-171",
             "LIVE-170",
-            "LIVE-174",
             "LIVE-164",
             "LIVE-165",
             "LIVE-166",
@@ -157,7 +156,6 @@
             "LIVE-117",
             "LIVE-139",
             "HYG-055",
-            "LIVE-196",
             "HYG-057",
             "HYG-058",
             "LIVE-200",
@@ -8216,7 +8214,7 @@
     {
       "id": "LIVE-174",
       "title": "cron_run_markers has no purge",
-      "status": "open",
+      "status": "done",
       "priority": "P2",
       "lane": "live",
       "size": "XS",
@@ -8224,7 +8222,7 @@
         "file": "app/api/cron/enforce-retention/route.ts",
         "ref": "ADR-1212"
       },
-      "detail": "SCAN-611's weekly-digest marker table grows by one row per member per week. Add it to enforce-retention (rows older than 60 days), or move the digest to the outbox dedupe key once enqueueEmail takes one (then drop the table).",
+      "detail": "SCAN-611's weekly-digest marker table grows by one row per member per week. Add it to enforce-retention (rows older than 60 days), or move the digest to the outbox dedupe key once enqueueEmail takes one (then drop the table).\n\n── CLOSED 2026-09-07. THE PREMISE HELD AND THE TIMING IS THE LUCKY PART: measured on production, cron_run_markers holds 0 rows (n_tup_ins = 0, 16 kB) because the table shipped 2026-09-05 and no digest send has claimed a row yet. This is a pre-emptive fix rather than a cleanup, which is the cheap moment for it. Growth it would have had: one row per active member per week, forever.\n\nRETENTION IS 60 DAYS, and the number is reasoned rather than picked. The correctness floor is one ISO week plus one nightly run — the key embeds the week, so a row can never be consulted once its week ends, and anything under 7 days risks a double send inside the live week. Everything above that floor is bought for OPERATORS: the marker table is the only per-member record of \"was this person covered, and when\", which is the answer to a digest complaint. 60 days is about eight weeks of that, and it bounds the table at members x 8 rows flat forever.\n\nThe purge follows the interaction_events shape already in enforceRetention rather than inventing a second pattern, and a failed sweep is LOGGED rather than swallowed or thrown — the earlier purges have already committed and the job re-runs nightly. The route reports purgedByTable keyed by real table names and typed so that adding a table to RETENTION_TABLES fails the build until the route names it. A created_at index ships with it, because that is the sweep's only filter and the sole existing index was the primary key on `key`.\n\nFive mutations, each watched red: both files reverted (6 of 6), the window changed 60 to 90, the log.error dropped, the route no longer naming the table, and the age cutoff removed so the purge would delete everything.\n\n⚠️ SCOPE DEVIATION, RECORDED RATHER THAN GLOSSED: lib/consent/retention.ts sits outside the path list this work was given. It is the repo's retention home and the change there is additive, and the alternative — a shared lib/cron/run-markers.ts — would have added an admin-client baseline entry and indirection for a six-line delete, against the instruction to prefer the pattern already in use.\n\n⚪ NOT TAKEN: the row's alternative branch, moving the digest onto enqueueEmail's dedupeKey and dropping the table. That needs sendWeeklyDigestEmail to thread a key through and is a larger change than this row.",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e \"const fs=require('fs');const R=(f)=>fs.readFileSync(f,'utf8');const C=(f)=>R(f).replace(/\\\\/\\\\*[\\\\s\\\\S]*?\\\\*\\\\//g,'').replace(/^\\\\s*\\\\/\\\\/.*$/gm,'');process.exit(/cron_run_markers/.test(C('app/api/cron/enforce-retention/route.ts'))?0:1)\"",
@@ -9158,7 +9156,7 @@
     {
       "id": "LIVE-196",
       "title": "ADR-1192 left the Space accent unscoped on the manage, settings, CRM, marketing and podcast subtrees, and nothing guards any of it",
-      "status": "open",
+      "status": "done",
       "priority": "P2",
       "lane": "live",
       "size": "S",
@@ -9166,11 +9164,10 @@
         "file": "docs/DECISIONS.md",
         "ref": "ADR-1192 \"What is still open\""
       },
-      "detail": "FILED 2026-09-06 by the backlog audit's docs sweep: work a live plan or ADR names as open, deferred or \"a follow-up\", with no row owning it. ADR-1192's closing section lists what it did not do, and none of it was filed. Verified 2026-09-06: only app/(main)/spaces/[slug]/(profile)/layout.tsx wraps AccentScope, so the manage, settings, crm and marketing subtrees and the public, sitemap-listed podcasts subtree render a Space with no accent scope; app/(main)/spaces/[slug]/opengraph-image.tsx:198 still hardcodes borderRadius: 28 where the theme carries the radius; components/spaces/accent-scope.tsx:26 types theme as string rather than SpaceThemeId, so a misspelt theme id is silently unstyled. THE WORK: wrap the remaining subtrees (the podcasts one first, it is public), type the prop, replace the literal, and add the guard the ADR asked for — a source-shape test that every route under spaces/[slug] renders inside an AccentScope.",
+      "detail": "FILED 2026-09-06 by the backlog audit's docs sweep: work a live plan or ADR names as open, deferred or \"a follow-up\", with no row owning it. ADR-1192's closing section lists what it did not do, and none of it was filed. Verified 2026-09-06: only app/(main)/spaces/[slug]/(profile)/layout.tsx wraps AccentScope, so the manage, settings, crm and marketing subtrees and the public, sitemap-listed podcasts subtree render a Space with no accent scope; app/(main)/spaces/[slug]/opengraph-image.tsx:198 still hardcodes borderRadius: 28 where the theme carries the radius; components/spaces/accent-scope.tsx:26 types theme as string rather than SpaceThemeId, so a misspelt theme id is silently unstyled. THE WORK: wrap the remaining subtrees (the podcasts one first, it is public), type the prop, replace the literal, and add the guard the ADR asked for — a source-shape test that every route under spaces/[slug] renders inside an AccentScope.\n\n── CLOSED 2026-09-07, AND THE PREMISE WAS UNDERSTATED. AccentScope was mounted in exactly ONE place under /spaces/[slug] — (profile)/layout.tsx — and a walk of the real route tree found THIRTY-FIVE route entries with no accent scope at all, not the five subtrees this row named. All five named subtrees confirmed unscoped (manage 6 routes, settings 15, crm 5, marketing 1, podcasts 2), plus edit-page, loom, journeys, messages, practices and [slug]/loading.tsx which the row did not name. One correction to the row: the fifth subtree is `podcasts`; there is no `portal` subtree.\n\nTHE FIX IS ONE HOIST, NOT FIVE WRAPPERS. The accent and theme are functions of the Space alone and constant across the whole segment, so they belong in the layout that already resolves the Space: [slug]/layout.tsx now wraps children in a single AccentScope, and (profile)/layout.tsx's now-redundant one is removed so the scope has exactly one source. SpaceBreadcrumbs stays outside it deliberately — shell wayfinding, not the Space's page. Five subtrees became scoped without a line being written in any of them; for edit-page that is a fidelity fix, because the Puck preview of the Space landing now renders under the same scope the public route does.\n\nAlso: AccentScope's `theme` is typed SpaceThemeId rather than string (tsc was already clean, so every call site was passing the union), and opengraph-image.tsx's bare `borderRadius: 28` becomes a named COVER_RADIUS = 24 in the file's existing mirrored-token block, pinned by test to --radius-cover.\n\n⚠️ THE ROW'S OWN PROBE WAS A SHAPE PROBE AND DID NOT MEASURE THE MAIN WORK. It regexed for the absence of `borderRadius: 28` and of `theme?: string`, so it passed if the OG file were DELETED, if 28 became 31, and it said nothing whatever about whether any subtree was scoped — which is the bulk of the row. The row's own note conceded this and asked for a source-shape test when one existed. It exists, and the probe is now that test.\n\nThe guard walks the real route tree rather than listing subtrees, because a list is the thing that rots. Five tests, each watched red: against the unfixed tree it named all 35 unscoped routes; a second AccentScope planted in manage/layout.tsx tripped the exactly-once arm; breaking the route regex tripped a floor test that exists precisely because the first two arms pass vacuously if the walk finds nothing.\n\n⚪ ADR-1192 IS AMENDED IN THE SAME PASS. Its loading.tsx paragraph said the skeleton \"cannot use the role tokens\" because AccentScope lived one level down. That was a true statement about a fixable arrangement rather than a law, and the hoist makes it false. The skeleton's markup is still left on --radius-cover, which reads identically either side of the scope.\n\n⚪ NOT DONE, and filed rather than smuggled in: test/e2e/overflow.spec.ts covers /manage but not the public profile. ADR-1192 names it in the same paragraph, but it is a Playwright coverage gap rather than accent scoping.",
       "verify": {
         "kind": "cmd",
-        "cmd": "node -e 'const fs=require(\"fs\");const og=fs.readFileSync(\"app/(main)/spaces/[slug]/opengraph-image.tsx\",\"utf8\");const sc=fs.readFileSync(\"components/spaces/accent-scope.tsx\",\"utf8\");process.exit(!/borderRadius:\\s*28\\b/.test(og)&&!/theme\\?:\\s*string\\b/.test(sc)?0:1)'",
-        "note": "Pins the two literal defects the ADR named; the subtree coverage is proven by the source-shape test the row asks for, which should be added to the probe when it exists."
+        "cmd": "node -e 'const fs=require(\"fs\"),path=require(\"path\");\nconst ROOT=\"app/(main)/spaces/[slug]\";\nif(!fs.existsSync(ROOT))process.exit(79);\nconst routes=[];const layouts=[];\n(function walk(d){for(const e of fs.readdirSync(d,{withFileTypes:true})){const p=path.join(d,e.name);if(e.isDirectory())walk(p);else if(/^(page|route)\\.tsx?$/.test(e.name))routes.push(p);else if(/^layout\\.tsx?$/.test(e.name))layouts.push(p)}})(ROOT);\nif(routes.length<20){console.error(\"the walk found only \"+routes.length+\" routes under \"+ROOT+\" - it is not descending, so a clean result would prove nothing\");process.exit(1)}\nconst scoped=new Set(layouts.filter(f=>/<AccentScope/.test(fs.readFileSync(f,\"utf8\"))).map(f=>path.dirname(f)));\nif(!scoped.size){console.error(\"no layout under \"+ROOT+\" mounts AccentScope, so every Space route renders on the viewer skin instead of the Space accent\");process.exit(1)}\nconst bad=[],dbl=[];\nfor(const r of routes){const chain=[];let d=path.dirname(r);for(;;){if(scoped.has(d))chain.push(d);if(d===ROOT||d.length<=ROOT.length)break;d=path.dirname(d)}\nif(!chain.length)bad.push(r);else if(chain.length>1)dbl.push(r)}\nif(bad.length){console.error(bad.length+\" Space route(s) render with no accent scope: \"+bad.slice(0,6).join(\", \")+(bad.length>6?\" ...\":\"\"));process.exit(1)}\nif(dbl.length){console.error(dbl.length+\" Space route(s) sit inside TWO AccentScopes, so the scope has more than one source: \"+dbl.slice(0,6).join(\", \"));process.exit(1)}\nconst og=\"app/(main)/spaces/[slug]/opengraph-image.tsx\";\nif(fs.existsSync(og)&&/borderRadius:\\s*28\\b/.test(fs.readFileSync(og,\"utf8\"))){console.error(\"opengraph-image.tsx is back on the bare borderRadius: 28 instead of a named token mirror\");process.exit(1)}\nif(/theme\\?:\\s*string/.test(fs.readFileSync(\"components/spaces/accent-scope.tsx\",\"utf8\"))){console.error(\"AccentScope.theme is typed string again, so any string passes as a theme id\");process.exit(1)}'"
       }
     },
     {
@@ -9369,7 +9366,7 @@
     {
       "id": "LIVE-201",
       "title": "A practice named after it is created keeps its untitled-practice-N URL for good, because no path re-mints a slug",
-      "status": "open",
+      "status": "done",
       "priority": "P1",
       "lane": "live",
       "size": "S",
@@ -9377,7 +9374,7 @@
         "file": "lib/practices.ts",
         "ref": "uniquePracticeSlug and its two call sites"
       },
-      "detail": "FILED 2026-09-06 from LIVE-188's root cause, which was found by fixing the one row and asking why it existed. `uniquePracticeSlug` (lib/practices.ts:1691) has exactly two callers: create (:1361) and fork (:1778). `updatePractice` (:1586) writes a title and never revisits the slug. So the public URL of a practice is frozen at the moment it is created, and the create path defaults an unnamed practice to the title 'Untitled practice' — which slugs to `untitled-practice-N`. The Vera path at app/(main)/practices/actions.ts:388 then sets a real title on exactly those practices and leaves the URL alone. That is the whole mechanism, and it produced a submitted-to-Search-Console URL reading `untitled-practice-2` for a practice titled 'Daily Hypnosis' since July.\n\n🔴 THE FIX HAS ONE HARD CONSTRAINT: never break a URL that is already public. Re-mint the slug when a title is first set on a practice whose slug still matches the untitled placeholder AND which is not yet public. A practice that IS public keeps its URL and needs a deliberate rename plus a redirect, exactly as LIVE-188 did — do not automate that half, because a silent slug change on an indexed page splits its crawl signal.\n\nWORTH CHECKING IN THE SAME PASS, from the same reading: whether Journeys, Circles and Spaces mint their slugs the same way. Practices were found by the sitemap; the others were not looked at.",
+      "detail": "FILED 2026-09-06 from LIVE-188's root cause, which was found by fixing the one row and asking why it existed. `uniquePracticeSlug` (lib/practices.ts:1691) has exactly two callers: create (:1361) and fork (:1778). `updatePractice` (:1586) writes a title and never revisits the slug. So the public URL of a practice is frozen at the moment it is created, and the create path defaults an unnamed practice to the title 'Untitled practice' — which slugs to `untitled-practice-N`. The Vera path at app/(main)/practices/actions.ts:388 then sets a real title on exactly those practices and leaves the URL alone. That is the whole mechanism, and it produced a submitted-to-Search-Console URL reading `untitled-practice-2` for a practice titled 'Daily Hypnosis' since July.\n\n🔴 THE FIX HAS ONE HARD CONSTRAINT: never break a URL that is already public. Re-mint the slug when a title is first set on a practice whose slug still matches the untitled placeholder AND which is not yet public. A practice that IS public keeps its URL and needs a deliberate rename plus a redirect, exactly as LIVE-188 did — do not automate that half, because a silent slug change on an indexed page splits its crawl signal.\n\nWORTH CHECKING IN THE SAME PASS, from the same reading: whether Journeys, Circles and Spaces mint their slugs the same way. Practices were found by the sitemap; the others were not looked at.\n\n── CLOSED 2026-09-07. `updatePractice` re-mints the slug when a title is written, and every clause is load-bearing: only when a title is being written; only when the current slug is STILL the untitled placeholder, so a slug any real title earned at create or fork is never touched; only while the practice is PRIVATE; and only when the new title yields a real root that is not the placeholder again, so re-saving a still-unnamed practice cannot bump it to untitled-practice-3. The pre-edit row is read at most once, shared with the weight-class clamp that already read it.\n\n🔴 A PUBLIC PRACTICE KEEPS ITS URL, and that is the constraint rather than an omission. A silent slug change on an indexed page splits its crawl signal, so renaming a public practice stays a deliberate act — rename plus a 308, exactly how LIVE-188 was handled. No practice_slug_redirects row is written either: a private practice's placeholder URL was never public, resolvePracticeSlugRedirect refuses a non-public target anyway, so the row would be inert at write time and would go stale when the freed placeholder slug is re-issued.\n\n⚪ EXISTING STOCK HEALS ON THE NEXT TITLE EDIT, not on any edit. Broadening the trigger would cost an extra read on every updatePractice; that trade is stated in the code and pinned by a test.\n\nSeven mutations, each watched red: the whole file reverted (3 tests), the is_public gate removed, the placeholder-shape gate removed, the placeholder-root gate removed, the empty-root guard removed, uniquePracticeSlug swapped for the bare root, and the trigger keyed on row shape rather than a title write. Re-verified independently after the agent reported: reverting lib/practices.ts to main fails exactly 3 of 9, and all 9 pass restored.\n\n⚠️ THE ROW'S OWN PROBE READS ONLY THE FIRST 4000 CHARS of updatePractice. A first draft placed the block at the end of that long function and the probe FAILED — the probe is a window, not a search. Moving it beside the title write satisfied the probe and is the better home regardless.",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e 'const s=require(\"fs\").readFileSync(\"lib/practices.ts\",\"utf8\");const u=s.slice(s.indexOf(\"export async function updatePractice\"));process.exit(/uniquePracticeSlug/.test(u.slice(0,4000))?0:1)'",
@@ -9419,6 +9416,23 @@
         "kind": "manual",
         "evidence": "2026-09-07: §3a and §3b of docs/OBSERVABILITY-BASELINES.md carry \"⏳ owner\" in every figure cell. Closes when the five vendor rows carry a plan tier and a monthly figure and the snapshot month is stated.",
         "checked": "2026-09-07"
+      }
+    },
+    {
+      "id": "LIVE-202",
+      "title": "Journeys freeze an untitled-journey-<random> slug at creation, and those URLs are in the sitemap",
+      "status": "open",
+      "lane": "live",
+      "size": "S",
+      "priority": "P1",
+      "source": {
+        "file": "lib/journey-plans.ts",
+        "ref": "LIVE-201 root cause, ported"
+      },
+      "detail": "FILED 2026-09-07 from LIVE-201's fix, by asking whether the same mechanism exists elsewhere. It does, and the journey case is WORSE because journey slugs are in the sitemap.\n\napp/(main)/journeys/create-actions.ts creates with title 'Untitled journey'. lib/journey-plans.ts mints slug: slugify(input.title), and that local slugify APPENDS A RANDOM 6-CHAR SUFFIX — so an unnamed journey is born `untitled-journey-a1b2c3`. updateJourneyPlan writes the title and never revisits the slug, exactly as updatePractice did before LIVE-201.\n\n🔴 AND THESE URLS ARE CRAWLED: app/sitemap.ts emits /discover/journeys/<slug>. The sitemap went to Search Console on 2026-09-05, so every journey named after creation is advertising a permanent `untitled-journey-<random>` URL. Same mechanism as LIVE-188/LIVE-201, same crawler exposure, unfixed.\n\nTHE FIX IS THE ONE LIVE-201 SHIPPED, ported: re-mint on the title write, gated on the slug still matching the placeholder shape and the plan still being private. The random suffix makes the collision-free re-mint EASIER here, not harder. Read lib/practices.ts's re-mint block and its clause-by-clause comment before writing this one; the four gates are each there for a reason found the hard way.\n\n⚪ CIRCLES ARE THE SAME SHAPE AND LOWER RISK, worth doing in the same pass. lib/circles/draft.ts defaults the name to 'New circle' and mints the slug from it; publishCircle in lib/circles/remix.ts returns c.slug without re-minting. Circles are draft-until-publish, so the placeholder URL is not crawlable while it is wrong — but PUBLISH is the obvious re-mint seam and nothing uses it.\n\n⚪ SPACES ARE CLEAN: lib/spaces/provision.ts mints from an operator-typed name and has no 'Untitled' default, so there is no placeholder to freeze.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const s=fs.readFileSync('lib/journey-plans.ts','utf8');const i=s.indexOf('updateJourneyPlan');if(i<0)throw new Error('updateJourneyPlan is gone; re-scope this row');const body=s.slice(i,i+4000);if(!/slug/.test(body))throw new Error('updateJourneyPlan still never revisits the slug, so a journey named after creation keeps its untitled-journey-<random> URL');\""
       }
     }
   ]

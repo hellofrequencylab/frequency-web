@@ -2,13 +2,8 @@ import { notFound } from 'next/navigation'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { DetailTemplate } from '@/components/templates/detail-template'
 import { loadTierChrome } from '@/lib/hierarchy/tier-detail'
-import {
-  TierDetailBody,
-  TierDetailFrame,
-  metaLine,
-  tierDetailHeader,
-  type TierDetailView,
-} from '@/components/hierarchy/tier-detail'
+import { TierDetailBody, TierDetailFrame, metaLine, tierCrumbs, tierDetailHeader } from '@/components/hierarchy/tier-detail'
+import type { TierDetailView } from '@/components/hierarchy/tier-detail'
 import { getHubCapabilities } from '@/lib/core/load-capabilities'
 import { updateHubField } from '../admin-actions'
 import type { CircleBase } from '@/lib/types/circle'
@@ -92,12 +87,12 @@ export default async function HubPage({ params }: { params: Promise<{ slug: stri
     caps: Array.from(caps),
     canManage,
     saveName: canManage ? updateHubField.bind(null, hub.id, slug, 'name') : null,
-    crumbs: [
-      hub.nexus?.outpost?.region?.name ? { label: hub.nexus.outpost.region.name } : null,
-      hub.nexus?.outpost ? { label: hub.nexus.outpost.name } : null,
-      hub.nexus ? { label: hub.nexus.name, href: `/nexuses/${hub.nexus.slug}` } : null,
-      { label: hub.name },
-    ].filter(Boolean) as { label: string; href?: string }[],
+    crumbs: tierCrumbs(
+      hub.nexus?.outpost?.region?.name,
+      hub.nexus?.outpost?.name,
+      hub.nexus && { label: hub.nexus.name, href: `/nexuses/${hub.nexus.slug}` },
+      hub.name
+    ),
     lead: hub.guide
       ? { role: 'Guide', name: hub.guide.display_name, handle: hub.guide.handle }
       : null,

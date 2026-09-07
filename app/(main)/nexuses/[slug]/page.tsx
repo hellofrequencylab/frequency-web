@@ -2,13 +2,8 @@ import { notFound } from 'next/navigation'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { DetailTemplate } from '@/components/templates/detail-template'
 import { loadTierChrome } from '@/lib/hierarchy/tier-detail'
-import {
-  TierDetailBody,
-  TierDetailFrame,
-  metaLine,
-  tierDetailHeader,
-  type TierDetailView,
-} from '@/components/hierarchy/tier-detail'
+import { TierDetailBody, TierDetailFrame, metaLine, tierCrumbs, tierDetailHeader } from '@/components/hierarchy/tier-detail'
+import type { TierDetailView } from '@/components/hierarchy/tier-detail'
 import { getNexusCapabilities } from '@/lib/core/load-capabilities'
 import { updateNexusField } from '../admin-actions'
 
@@ -86,11 +81,7 @@ export default async function NexusPage({ params }: { params: Promise<{ slug: st
     caps: Array.from(caps),
     canManage,
     saveName: canManage ? updateNexusField.bind(null, nexus.id, slug, 'name') : null,
-    crumbs: [
-      nexus.outpost?.region?.name ? { label: nexus.outpost.region.name } : null,
-      nexus.outpost ? { label: nexus.outpost.name } : null,
-      { label: nexus.name },
-    ].filter(Boolean) as { label: string; href?: string }[],
+    crumbs: tierCrumbs(nexus.outpost?.region?.name, nexus.outpost?.name, nexus.name),
     lead: nexus.mentor
       ? { role: 'Mentor', name: nexus.mentor.display_name, handle: nexus.mentor.handle }
       : null,
