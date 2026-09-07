@@ -3,6 +3,7 @@ title: Finding people & Circles
 description: Browse the directory and search by location.
 category: connecting
 order: 1
+published: 2026-06-03
 updated: 2026-06-23
 audience: member
 featureKeys: [people]

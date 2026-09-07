@@ -3,6 +3,7 @@ title: Dispatches
 description: Wider announcements from Hosts and leadership.
 category: sharing
 order: 2
+published: 2026-06-03
 updated: 2026-08-12
 audience: member
 role: host

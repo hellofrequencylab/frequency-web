@@ -3,6 +3,7 @@ title: How to stop doomscrolling (without quitting your phone)
 description: You doomscroll and you hate it. Here is why willpower fails, the one swap that works, and a real thing to do instead.
 category: find-your-people
 order: 4
+published: 2026-06-20
 updated: 2026-06-20
 audience: member
 featureKeys: [practices, on-air]

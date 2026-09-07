@@ -3,6 +3,7 @@ title: Channels
 description: The focus areas every Circle is organized around, and the Programs some of them run.
 category: groups
 order: 2
+published: 2026-06-03
 updated: 2026-07-27
 audience: member
 role: host

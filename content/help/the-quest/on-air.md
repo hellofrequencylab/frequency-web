@@ -3,6 +3,7 @@ title: Mindless, the practice timer
 description: One timer, two modes. Be Still for the quiet sit, Get Moving for a walk, run, yoga or workout. Then collect your rewards, streak and next assignment.
 category: the-quest
 order: 4
+published: 2026-06-11
 updated: 2026-08-03
 audience: member
 featureKeys: [practices, gamification]

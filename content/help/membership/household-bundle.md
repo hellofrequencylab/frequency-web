@@ -3,6 +3,7 @@ title: Sharing a membership with your household
 description: One payment, several seats. How to invite people, what a seat gets them, and what happens when someone leaves or the payment lapses.
 category: membership
 order: 3
+published: 2026-08-12
 updated: 2026-08-13
 audience: member
 featureKeys: [vault, memberships]

@@ -3,6 +3,7 @@ title: How to calm down fast when you can't switch off
 description: Wired and tired at the same time? Here is a 60-second way to calm down fast, why it works, and how to make it stick.
 category: find-your-people
 order: 2
+published: 2026-06-20
 updated: 2026-06-20
 audience: member
 featureKeys: [practices, on-air]

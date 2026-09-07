@@ -3,6 +3,7 @@ title: Import your contacts from a CSV
 description: Bring a spreadsheet of people into My Contacts. Frequency matches your columns, shows a preview, and skips anyone you already have.
 category: connecting
 order: 8
+published: 2026-07-14
 updated: 2026-07-14
 audience: member
 featureKeys: [connections]

@@ -3,6 +3,7 @@ title: Messages & rooms
 description: Direct messages, group threads, and chat rooms.
 category: connecting
 order: 3
+published: 2026-06-03
 updated: 2026-06-10
 audience: member
 featureKeys: [messages]

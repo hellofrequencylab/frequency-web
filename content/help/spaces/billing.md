@@ -3,6 +3,7 @@ title: Billing
 description: Where your plan, payments, and invoices live, and how a cash agreement works.
 category: spaces
 order: 3
+published: 2026-07-27
 updated: 2026-09-04
 audience: member
 featureKeys: [billing]

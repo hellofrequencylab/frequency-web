@@ -3,6 +3,7 @@ title: Notifications
 description: How Frequency lets you know what's happening, and how to tune it.
 category: getting-started
 order: 13
+published: 2026-06-03
 updated: 2026-08-11
 audience: member
 featureKeys: [notifications]

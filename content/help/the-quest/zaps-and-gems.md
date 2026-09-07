@@ -3,6 +3,7 @@ title: Zaps and Gems explained
 description: The two currencies, how you earn them, and what they are for.
 category: the-quest
 order: 1
+published: 2026-05-31
 updated: 2026-06-18
 audience: member
 featureKeys: [gamification, zaps, gems]

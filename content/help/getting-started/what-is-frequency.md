@@ -3,6 +3,7 @@ title: What is Frequency?
 description: The short version of what Frequency is and how it helps you find real-world community.
 category: getting-started
 order: 1
+published: 2026-05-31
 updated: 2026-06-10
 audience: member
 featureKeys: [community, circles]

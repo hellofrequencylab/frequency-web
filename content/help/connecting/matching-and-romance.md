@@ -3,6 +3,7 @@ title: Matching, astrology & romance
 description: The optional signals that shape who we suggest, and how romance mode works.
 category: connecting
 order: 7
+published: 2026-06-26
 updated: 2026-06-26
 audience: member
 featureKeys: [connections, resonance]

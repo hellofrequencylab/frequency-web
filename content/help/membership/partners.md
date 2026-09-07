@@ -3,6 +3,7 @@ title: Partners & member offers
 description: Local businesses that back the community. Find them, walk in, and claim offers.
 category: membership
 order: 3
+published: 2026-06-09
 updated: 2026-06-10
 audience: member
 featureKeys: [partners]

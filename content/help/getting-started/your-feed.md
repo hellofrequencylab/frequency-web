@@ -3,6 +3,7 @@ title: Your feed
 description: What you see on the home feed and where it comes from.
 category: getting-started
 order: 11
+published: 2026-06-03
 updated: 2026-06-27
 audience: member
 featureKeys: [feed]

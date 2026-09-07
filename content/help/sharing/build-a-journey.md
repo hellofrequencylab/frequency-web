@@ -3,6 +3,7 @@ title: Build and share a Journey
 description: Turn what you know into a guided program. Let Vera draft a balanced first week, build it phase by phase, share it with the community, and let Vera check it for rank.
 category: sharing
 order: 3
+published: 2026-06-06
 updated: 2026-07-27
 audience: member
 featureKeys: [journeys]

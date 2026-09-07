@@ -3,6 +3,7 @@ title: Practices, choose, do, log
 description: Adopt a practice or follow your Circle's, then log it each day to earn Zaps and build your streak.
 category: getting-started
 order: 3
+published: 2026-05-31
 updated: 2026-08-19
 audience: member
 featureKeys: [practices, gamification]

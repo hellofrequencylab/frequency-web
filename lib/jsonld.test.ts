@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
+  articleSchema,
   breadcrumbSchema,
   eventSchema,
   organizationSchema,
@@ -751,5 +752,42 @@ describe('SCAN-207 · Event startDate carries the event zone, not a bare Z', () 
       'x',
     ).itemListElement
     expect((items[0].item as Record<string, unknown>).startDate).toBe('2026-08-27T18:30:00-07:00')
+  })
+})
+
+
+// ── articleSchema · the two fields the help centre shipped without (LIVE-183) ────────────────────
+//
+// All 57 help articles emitted an Article node with no `image` and no `datePublished`. The builder
+// could always carry both -- nothing passed them -- so what is locked here is the CONSEQUENCE at
+// the boundary: given a published date and an image, the node has to carry them in the shape
+// Google reads, and given neither it must omit the keys rather than emit empty ones.
+describe('articleSchema — image + datePublished (LIVE-183)', () => {
+  const base = { title: 'How to join a Circle', description: 'Find a local group.', path: '/help/getting-started/join-a-circle' }
+
+  it('emits datePublished and dateModified when both are given', () => {
+    const node = articleSchema({ ...base, published: '2026-05-31', updated: '2026-06-16' }) as Record<string, unknown>
+    expect(node.datePublished).toBe('2026-05-31')
+    expect(node.dateModified).toBe('2026-06-16')
+  })
+
+  it('absolutises a root-relative image and leaves an absolute one alone', () => {
+    // The exact value the help article page passes when no operator cover is set.
+    const relative = articleSchema({ ...base, image: '/images/hero.jpg' }) as Record<string, unknown>
+    expect(relative.image).toEqual([`${SITE_URL}/images/hero.jpg`])
+
+    const absolute = articleSchema({ ...base, image: 'https://cdn.example/cover.jpg' }) as Record<string, unknown>
+    expect(absolute.image).toEqual(['https://cdn.example/cover.jpg'])
+  })
+
+  it('omits the keys entirely when nothing is passed — never an empty image or a null date', () => {
+    const node = articleSchema(base) as Record<string, unknown>
+    expect('image' in node).toBe(false)
+    expect('datePublished' in node).toBe(false)
+    expect('dateModified' in node).toBe(false)
+    // The positive control: the node is otherwise complete, so the absences above mean "omitted",
+    // not "the builder returned nothing useful".
+    expect(node.headline).toBe(base.title)
+    expect(node.url).toBe(`${SITE_URL}${base.path}`)
   })
 })

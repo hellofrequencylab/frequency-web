@@ -3,6 +3,7 @@ title: Streaks
 description: How your daily practice streak works, the reserve that forgives a slip, the rest you can plan, and the rewards for showing up.
 category: the-quest
 order: 5
+published: 2026-06-06
 updated: 2026-06-18
 audience: member
 featureKeys: [practices, gamification]

@@ -20,6 +20,8 @@ const article = (over: Partial<HelpArticle> = {}): HelpArticle => ({
   title: 'A',
   description: '',
   order: 1,
+  // Front matter gained a `published` date (LIVE-183) so the Article node can carry datePublished.
+  published: '2026-06-03',
   updated: '2026-08-11',
   audience: 'member',
   featureKeys: [],
