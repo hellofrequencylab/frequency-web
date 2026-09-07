@@ -202,10 +202,22 @@ export function eventSchema(event: PublicEvent & EventSchemaEnrichment) {
       ? 'https://schema.org/EventCancelled'
       : 'https://schema.org/EventScheduled',
     eventAttendanceMode: ATTENDANCE_MODE_URL[mode],
-    // Google lists `image` as required for Event rich results — the per-event
-    // dynamic OG image on the canonical page (app/(main)/events/[slug]/opengraph-image.tsx),
-    // with the site image as a secondary.
-    image: [abs(`/events/${event.slug}/opengraph-image`), abs('/opengraph-image')],
+    // Google lists `image` as required for Event rich results, and this is the SITE card because
+    // the per-event one cannot be named from here (LIVE-205).
+    //
+    // 🔴 THIS USED TO LEAD WITH abs(`/events/${event.slug}/opengraph-image`), AND THAT URL 404s.
+    // A metadata image route whose parent path contains a ROUTE GROUP gets a six-character hash
+    // appended by Next (`getMetadataRouteSuffix`), and the per-event card sits under
+    // app/(main)/, so it is served at `/events/<slug>/opengraph-image-lyffkg` and never at the
+    // bare path — read straight out of .next/server on a real build, not inferred.
+    //
+    // The hash is a build detail nobody should hardcode: it is derived from the parent path and
+    // would drift the moment a route group is added, renamed or removed. So the schema names the
+    // ROOT card, which is a static file (app/opengraph-image.jpg) at a path with no route group
+    // in it and therefore no suffix. The SHARE card is unaffected and still per-event: this page
+    // deliberately leaves openGraph.images unset so Next injects the suffixed URL itself, which
+    // is the one mechanism that knows the hash.
+    image: [abs('/opengraph-image')],
     ...(event.description ? { description: event.description } : {}),
     location,
     url,
@@ -536,10 +548,14 @@ function postalAddress(a: SpaceSchemaInput['address']) {
 
 export function spaceSchema(space: SpaceSchemaInput) {
   const url = abs(`/spaces/${space.slug}`)
-  const ogImage = abs(`/spaces/${space.slug}/opengraph-image`)
-  // The operator's own logo (an arbitrary URL) is the primary image when set, then the per-Space OG
-  // card, then the site image as a final fallback, so the node always has an image (rich-result bar).
-  const image = [...(space.logoUrl ? [space.logoUrl] : []), ogImage, abs('/opengraph-image')]
+  // The operator's own logo (an arbitrary URL) is the primary image when set, then the site card,
+  // so the node always has an image (rich-result bar).
+  //
+  // 🔴 THE PER-SPACE OG CARD USED TO SIT BETWEEN THEM, and that URL 404s for the same reason the
+  // event one did (LIVE-205): app/(main)/spaces/[slug]/opengraph-image.tsx is under a route group,
+  // so Next serves it at `/spaces/<slug>/opengraph-image-tt3pwa`. Removed rather than hardcoded —
+  // the suffix is Next's to derive. The share card is unaffected and still per-Space.
+  const image = [...(space.logoUrl ? [space.logoUrl] : []), abs('/opengraph-image')]
 
   const sameAs = cleanStrings(space.sameAs)
   const openingHours = cleanStrings(space.openingHours)
