@@ -307,27 +307,6 @@ export default async function EventDetailPage({
   // null for anything it does not recognise, so a hand-typed value renders nothing.
   const doorNote = doorNoteFor(sp.door)
 
-  const { data: rawEvent } = await admin
-    .from('events')
-    .select(
-      `id, title, slug, description, location, starts_at, ends_at, time_zone, is_cancelled, price_cents, currency,
-       visibility, scope_id, scope_type, recurrence_type, recurrence_until, parent_event_id,
-       host:profiles!host_id ( id, display_name, handle, avatar_url )`
-    )
-    .eq('slug', slug)
-    .maybeSingle()
-
-  if (!rawEvent) notFound()
-  const event = rawEvent as unknown as EventDetail
-
-  // PLACEMENT, read honestly (ADR-883). `scope_id` names an entity for exactly ONE value of
-  // `scope_type`: Circle. A 'public' event's scope_id is a shared SENTINEL region uuid and the
-  // legacy 'standalone' row's scope_id is a PROFILE id, so both resolve to null here and can
-  // never be looked up as a Circle, gated as a Circle, or rendered as a link. The helper also
-  // accepts the pre-rename 'group' value the older rows still carry, which the two hand-rolled
-  // `=== 'circle'` checks below used to miss (the circle_only membership gate among them).
-  const circleId = circleScopeId({ scopeType: event.scope_type, scopeId: event.scope_id })
-
   // ── Poster Events + presentation + geo fields (newer than the generated types →
   // untyped read, repo convention). Drives the "Posted by" credit, the cover image,
   // the attendance-mode chip, and the online join link. ───────────────────────
@@ -372,17 +351,44 @@ export default async function EventDetailPage({
     // (prices informational); 'tickets' = buying is attending (no RSVP switch).
     join_mode: 'auto' | 'rsvp' | 'tickets' | null
   }
+
+  // ONE events read (ADR-1237). This page used to select the typed header columns here and then
+  // select the ExtraMeta columns from the SAME row by id in a second, serial round trip, only
+  // because those columns are newer than the generated types. The cast below already discards the
+  // generated row type, so the newer columns ride on the same select at zero extra cost and every
+  // wave after this one starts a round trip earlier. `time_zone` is named once, because EventDetail
+  // and ExtraMeta both declare it and one column serves both.
+  //
+  // ⚠️ Keep this ONE single-quoted literal. scripts/check-event-hero-parity.test.ts reads the
+  // select strings of this file to prove the hero columns are all fetched, and it only sees
+  // `.select('…')`; a template literal here would make that guard blind to this page.
+  const { data: rawEvent } = await admin
+    .from('events')
+    .select(
+      'id, title, slug, description, location, starts_at, ends_at, time_zone, is_cancelled, price_cents, currency, visibility, scope_id, scope_type, recurrence_type, recurrence_until, parent_event_id, posted_by_profile_id, claimed_at, claim_token, organizer_name, details, poster_path, cover_image_path, gallery_image_paths, attendance_mode, online_url, status, venue_name, street, city, region, postal_code, space_id, host_space_id, theme, geog, hide_address, join_mode, rsvp_requires_approval, host:profiles!host_id ( id, display_name, handle, avatar_url )',
+    )
+    .eq('slug', slug)
+    .maybeSingle()
+
+  if (!rawEvent) notFound()
+  const event = rawEvent as unknown as EventDetail & ExtraMeta
+  // The same row, under the name every gate and credit below reads it by. Non-null now that it is
+  // the row the page just 404'd on when absent; the optional chains that follow are kept because
+  // they cost nothing and each of them is quoted by a wiring test.
+  const extra: ExtraMeta = event
+
+  // PLACEMENT, read honestly (ADR-883). `scope_id` names an entity for exactly ONE value of
+  // `scope_type`: Circle. A 'public' event's scope_id is a shared SENTINEL region uuid and the
+  // legacy 'standalone' row's scope_id is a PROFILE id, so both resolve to null here and can
+  // never be looked up as a Circle, gated as a Circle, or rendered as a link. The helper also
+  // accepts the pre-rename 'group' value the older rows still carry, which the two hand-rolled
+  // `=== 'circle'` checks below used to miss (the circle_only membership gate among them).
+  const circleId = circleScopeId({ scopeType: event.scope_type, scopeId: event.scope_id })
+
   // These three only depend on already-resolved values (event.id / session_id) and
-  // not on each other, so resolve them concurrently: the extra-meta read, the
-  // Stripe redirect reconcile (when present), and the viewer's event capabilities.
-  const [{ data: rawExtra }, ticketedCentsResolved, eventCaps, rootSpaceId] = await Promise.all([
-    (admin)
-      .from('events')
-      .select(
-        'posted_by_profile_id, claimed_at, claim_token, organizer_name, details, poster_path, cover_image_path, gallery_image_paths, attendance_mode, online_url, status, venue_name, street, city, region, postal_code, time_zone, space_id, host_space_id, theme, geog, hide_address, join_mode, rsvp_requires_approval',
-      )
-      .eq('id', event.id)
-      .maybeSingle(),
+  // not on each other, so resolve them concurrently: the Stripe redirect reconcile
+  // (when present), the viewer's event capabilities, and the root Space id.
+  const [ticketedCentsResolved, eventCaps, rootSpaceId] = await Promise.all([
     // Webhook-independent reconcile when Stripe redirects back from a paid ticket.
     ticket === 'success' && session_id
       ? recordTicketFromSessionId(session_id)
@@ -392,7 +398,6 @@ export default async function EventDetailPage({
     // it), so it has to be excluded before space_id can be read as a real placement.
     loadRootSpaceId(),
   ])
-  const extra = (rawExtra ?? null) as ExtraMeta | null
   // The event's IANA zone (default HOME). Every is-past / check-in gate + when-line
   // resolves through this so an event geolocated to another city reads in ITS zone.
   const eventTz = resolveZone(extra?.time_zone)
@@ -426,39 +431,37 @@ export default async function EventDetailPage({
   // the payee whose Connect account tickets pay into (ADR-819) — the payout-readiness check below
   // must key on it, not on the personal organizer.
   let hostSpaceOwnerId: string | null = null
-  if (eventSpaceId) {
-    const { data: rawSpace } = await admin
+  // THE VENUE Space, when a DIFFERENT Space hosts (ADR-911). Name + slug only: a venue is a
+  // context credit on the host line, not an identity with a logo, and it carries no money and no
+  // rights. `venueSpaceId` already returned null when the venue IS the host, so the venue only ever
+  // resolves on an event that genuinely has two Spaces to name.
+  let venueSpace: { slug: string; name: string } | null = null
+  // ONE spaces read (ADR-1237). Host and venue were two serial round trips on ids derived together
+  // above; they are one `.in('id', …)` now, and each row is picked back by ITS id, so the host can
+  // never be credited as the venue or the venue as the host. Both are gated on `status === 'active'`
+  // exactly as before: a suspended or archived Space silently drops out (the host falls back to the
+  // person host; the venue drops to "Hosted by <host>") rather than linking a dead Space page.
+  const spaceIds = [eventSpaceId, eventVenueSpaceId].filter((id): id is string => !!id)
+  if (spaceIds.length > 0) {
+    const { data: rawSpaces } = await admin
       .from('spaces')
       .select('id, slug, name, brand_name, brand_logo_url, status, owner_profile_id')
-      .eq('id', eventSpaceId)
-      .maybeSingle()
-    const s = rawSpace as {
+      .in('id', spaceIds)
+    type SpaceRow = {
       id: string; slug: string; name: string | null
       brand_name: string | null; brand_logo_url: string | null; status: string | null
       owner_profile_id: string | null
-    } | null
-    if (s && s.status === 'active') {
+    }
+    const rows = (rawSpaces ?? []) as unknown as SpaceRow[]
+    const activeSpace = (id: string | null) =>
+      id ? rows.find((r) => r.id === id && r.status === 'active') ?? null : null
+    const s = activeSpace(eventSpaceId)
+    if (s) {
       spaceHost = { id: s.id, slug: s.slug, name: s.brand_name ?? s.name ?? 'Space', logoUrl: s.brand_logo_url }
       if (extra?.host_space_id === s.id) hostSpaceOwnerId = s.owner_profile_id
     }
-  }
-
-  // THE VENUE Space, when a DIFFERENT Space hosts (ADR-911). Name + slug only: a venue is a
-  // context credit on the host line, not an identity with a logo, and it carries no money and no
-  // rights. `venueSpaceId` already returned null when the venue IS the host, so this read only ever
-  // happens on an event that genuinely has two Spaces to name.
-  //
-  // Gated on `status === 'active'` exactly as the host is, so a suspended or archived venue silently
-  // drops to "Hosted by <host>" rather than linking a dead Space page.
-  let venueSpace: { slug: string; name: string } | null = null
-  if (eventVenueSpaceId) {
-    const { data: rawVenue } = await admin
-      .from('spaces')
-      .select('slug, name, brand_name, status')
-      .eq('id', eventVenueSpaceId)
-      .maybeSingle()
-    const v = rawVenue as { slug: string; name: string | null; brand_name: string | null; status: string | null } | null
-    if (v && v.status === 'active') venueSpace = { slug: v.slug, name: v.brand_name ?? v.name ?? 'Space' }
+    const v = activeSpace(eventVenueSpaceId)
+    if (v) venueSpace = { slug: v.slug, name: v.brand_name ?? v.name ?? 'Space' }
   }
 
   // Draft guard (ADR poster-events): an unpublished draft must never render on its

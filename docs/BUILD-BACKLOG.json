@@ -76,7 +76,6 @@
             "SCAN-538",
             "LIVE-171",
             "LIVE-170",
-            "LIVE-180",
             "LIVE-179",
             "LIVE-181",
             "LIVE-178",
@@ -8722,7 +8721,7 @@
     {
       "id": "LIVE-180",
       "title": "/events/[slug] reads the same events row twice and two Space rows in two serial round trips",
-      "status": "open",
+      "status": "done",
       "priority": "P3",
       "lane": "live",
       "size": "S",
@@ -8730,11 +8729,11 @@
         "file": "docs/BUILD-BACKLOG.json",
         "ref": "sweep 3, 2026-09-05"
       },
-      "detail": "Sweep 3. app/(main)/events/[slug]/page.tsx:296 selects 17 columns from events by slug; :364 then selects 23 MORE columns from the SAME row by id, in a second round trip, only because those columns are newer than the generated types (the file says so at :317). Everything after blocks on it. Separately :416 reads the hosting Space and :441 the venue Space serially, though both ids are derived together at :404. That is 2 removable round trips out of an 8-to-11 wave chain, on a route with three recorded production incidents (LIVE-142, SCAN-545). FIX: merge the two events selects into one (the second's cast pattern applies to the combined list) and the two spaces reads into one .in('id',[host,venue]). LOW RISK: identical data, same client, same filters. A THIRD win exists but is riskier: getMyProfileId is already cached and could start in the first wave instead of being derived at :611/:696, collapsing two more waves -- but the visibility gate at :585 imports it lazily inside the !canManage branch on purpose, so the read may be hoisted while the GATE ORDER must not move.\n\n── RE-PRICED P2 -> P3 on 2026-09-07. Vercel Web Analytics, 31 days to 2026-09-07: 12 visitors, 18 pageviews. An SEO or funnel refinement cannot be P1 while the funnel itself has no traffic to refine — the constraint is upstream of every one of these rows. Re-priced by the live-lane audit on that reading, not on merit.",
+      "detail": "Sweep 3. app/(main)/events/[slug]/page.tsx:296 selects 17 columns from events by slug; :364 then selects 23 MORE columns from the SAME row by id, in a second round trip, only because those columns are newer than the generated types (the file says so at :317). Everything after blocks on it. Separately :416 reads the hosting Space and :441 the venue Space serially, though both ids are derived together at :404. That is 2 removable round trips out of an 8-to-11 wave chain, on a route with three recorded production incidents (LIVE-142, SCAN-545). FIX: merge the two events selects into one (the second's cast pattern applies to the combined list) and the two spaces reads into one .in('id',[host,venue]). LOW RISK: identical data, same client, same filters. A THIRD win exists but is riskier: getMyProfileId is already cached and could start in the first wave instead of being derived at :611/:696, collapsing two more waves -- but the visibility gate at :585 imports it lazily inside the !canManage branch on purpose, so the read may be hoisted while the GATE ORDER must not move.\n\n── RE-PRICED P2 -> P3 on 2026-09-07. Vercel Web Analytics, 31 days to 2026-09-07: 12 visitors, 18 pageviews. An SEO or funnel refinement cannot be P1 while the funnel itself has no traffic to refine — the constraint is upstream of every one of these rows. Re-priced by the live-lane audit on that reading, not on merit.\n\n── ✅ CLOSED 2026-09-07 (ADR-1237). Premise re-tested first: the four reads sat at :311/:380/:431/:456 (fifteen lines below the sweep numbers, same shape). BEFORE, on an event hosted by one Space at a different venue Space, the page body read these two tables in 4 round trips across 4 serial waves: events by slug → events by id (23 more columns, beside caps + root) → spaces by host id → spaces by venue id. AFTER: 2 round trips in 2 waves: one events select carrying all 40 columns + the host embed, cast as EventDetail & ExtraMeta → one spaces select .in('id', [host, venue]) with each row picked back by its own id and the same status === 'active' gate. One-Space event 3 → 2, personal event 2 → 1. No gate moved (draft guard, address gate, claimability, payee rule unchanged; the third win, hoisting getMyProfileId, was deliberately not taken because the gate order forbids it). Pinned by app/(main)/events/[slug]/read-fanout.test.ts; the probe below counts the reads in the page body.",
       "verify": {
-        "kind": "manual",
-        "evidence": "2026-09-05: read the file end to end. Closes when the page issues one events read and one spaces read.",
-        "checked": "2026-09-05"
+        "kind": "cmd",
+        "cmd": "node -e 'const s=require(\"fs\").readFileSync(\"app/(main)/events/[slug]/page.tsx\",\"utf8\");const b=s.slice(s.indexOf(\"export default async function EventDetailPage\"));const e=(b.match(/\\.from\\(.events.\\)/g)||[]).length;const p=(b.match(/\\.from\\(.spaces.\\)/g)||[]).length;const q=String.fromCharCode(39);const ok=e===1&&p===1&&b.includes(\".in(\" + q + \"id\" + q + \", spaceIds)\");if(!ok)console.error(JSON.stringify({events:e,spaces:p}));process.exit(ok?0:1)'",
+        "note": "Measures the consequence in the page BODY (from the page function down, so generateMetadata's own read is not counted): exactly one .from(events), exactly one .from(spaces), and the Space read keyed on the host+venue pair. A second events read or a per-id spaces read fails it."
       }
     },
     {
