@@ -40,6 +40,22 @@ function limiterFor(limit: number, window: Window): Ratelimit | null {
   return rl
 }
 
+/**
+ * Is a rate limiter actually wired in this deployment?
+ *
+ * 🔴 EXISTS SO THE UNCONFIGURED STATE IS VISIBLE (LIVE-195). Every AI door passes
+ * `whenUnconfigured: 'allow'`, because denying would switch all of them off at once with no error
+ * anywhere for an operator to see. That is the right call — the daily budget caps still bound
+ * abuse — but allow-and-SILENT is the failure AGENTS.md names: "every fail-safe needs a gate that
+ * notices it fired". `/api/status` publishes this so "is throttling on in this deployment?" is one
+ * curl, exactly as `monitoring.sentry` answers the same question for the error recorder.
+ *
+ * Booleanised on purpose: it reports whether a client was built, never a URL or a token.
+ */
+export function rateLimitConfigured(): boolean {
+  return redis !== null
+}
+
 /** The caller's IP (Vercel sets x-forwarded-for / x-real-ip). Falls back to a constant so
  *  the limiter still applies a shared bucket rather than failing. */
 export function clientIp(req: Request): string {

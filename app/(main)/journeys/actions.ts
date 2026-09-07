@@ -460,7 +460,7 @@ export async function setJourneyVisibility(
     // Vera's rank gate. Best-effort: it never throws (fail-closed verdicts), and we persist
     // the result through the admin client (members can't self-approve). A failed review must
     // not block publishing — the Journey is already live above.
-    const review = await runVeraGate(planId)
+    const review = await runVeraGate(planId, caller.id)
     revalidatePath('/journeys', 'layout')
     return ok({ status, review, next: await launchPathFor(planId) })
   }
@@ -494,8 +494,9 @@ export async function deleteJourney(planId: string): Promise<ActionResult> {
 export async function submitJourneyForReview(
   planId: string,
 ): Promise<ActionResult<{ review: StoredVeraReview }>> {
-  if (!(await assertOwner(planId))) return fail('Not allowed.')
-  const review = await runVeraGate(planId)
+  const ownerId = await assertOwner(planId)
+  if (!ownerId) return fail('Not allowed.')
+  const review = await runVeraGate(planId, ownerId)
   revalidatePath('/journeys', 'layout')
   return ok({ review })
 }
@@ -503,8 +504,8 @@ export async function submitJourneyForReview(
 /** Run the Vera gate for a planId and persist the verdict + eligibility through the admin
  *  client. Internal; both publish and resubmit go through here so the write rule is one place.
  *  Authorship is the caller's responsibility — this only ever sets eligibility from Vera. */
-async function runVeraGate(planId: string): Promise<StoredVeraReview> {
-  const review = await reviewJourneyForLibrary(planId)
+async function runVeraGate(planId: string, actorId?: string | null): Promise<StoredVeraReview> {
+  const review = await reviewJourneyForLibrary(planId, actorId)
   const stored: StoredVeraReview = {
     status: review.status,
     score: review.score,

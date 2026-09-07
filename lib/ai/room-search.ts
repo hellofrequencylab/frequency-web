@@ -8,6 +8,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { embedText } from '@/lib/ai/embed'
 import { aiAvailable, featureOverBudget, recordAiUsage } from '@/lib/ai/usage'
+import { aiRateLimited } from '@/lib/ai/rate-limit'
 import { escapeLike } from '@/lib/search-sanitize'
 
 const FEATURE = 'room-search'
@@ -57,6 +58,13 @@ export async function searchRoom(
   if (!q) return { hits: [], mode: 'text' }
 
   if (!(await aiAvailable()) || (await featureOverBudget(FEATURE))) {
+    return { hits: await substringSearch(roomId, q, limit), mode: 'text' }
+  }
+
+  // Per-searcher window (lib/ai/rate-limit.ts, LIVE-195). A search box fires on every keystroke a
+  // caller cares to send, so this is the door a typing loop finds first. Over the window falls back
+  // to the substring scan, which is the same answer AI-off gives: search still works.
+  if (await aiRateLimited(FEATURE, profileId)) {
     return { hits: await substringSearch(roomId, q, limit), mode: 'text' }
   }
 

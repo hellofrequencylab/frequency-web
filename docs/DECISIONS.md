@@ -35844,6 +35844,29 @@ Two things were re-tested and NOT changed. The host-payout failure logged at 20:
 
 ---
 
+## ADR-1215: a daily budget is not a rate limit — every AI door gains a per-actor window (2026-09-07)
+
+**Status.** Accepted. Closes LIVE-195. Amends `EDITOR-ARCHITECTURE.md` §9's AI-layer gaps table, which recorded this as open.
+
+**Context.** Every AI surface gated spend the same way: `aiAvailable()` (the env + operator kill switch) and `featureOverBudget(feature)` (a per-feature daily USD cap, under a global daily ceiling). Both are DAILY and GLOBAL. Neither bounds how fast one signed-in member can knock, so a member in a tight loop drove a paid model until a cap tripped, and the cap then tripped for everybody at once — one member's loop closing a surface for the whole community for the rest of the UTC day.
+
+**What the re-test found.** The row said the one rate-limited AI door was `POST /help/ask`. That handler no longer exists: scan two deleted it on 2026-09-05 because nothing in the repo ever called it (`components/admin/admin-footer.tsx` and `lib/help/drift.test.ts` both carry the note). So the premise was not "one door is limited, thirty are not" — it was that ZERO were, and the pattern the row pointed at had been deleted two days earlier. The pattern that survived is the generic one it was built on, `rateLimitOk` in `lib/rate-limit.ts`, which sign-in, scoped DMs, search and every lead-capture door already share.
+
+**Decision.**
+
+- **One limiter, not a second mechanism.** `lib/ai/rate-limit.ts` is a thin policy layer over `rateLimitOk`: a per-feature sliding window, bucketed `ai:<feature>` and keyed by the ACTOR (the caller's profile id; an anonymous door passes its IP). It decides only the two things a generic limiter cannot — the window per surface, and what an unconfigured limiter answers.
+- **`aiRateLimited` returns `true` to REFUSE**, mirroring `featureOverBudget`, so a door reads its two spend gates the same way and neither can be mistaken for the other.
+- **No new refusal copy.** Every door already answers "the model is not available to you right now" in its own member voice — a deterministic fallback, a `null` the wizard reads as hand entry, an `ai_unavailable` reason, a deflected help answer, "Vera is resting right now. Try again in a bit." A throttled actor gets that SAME answer. A second vocabulary for one event is a second thing to keep on-voice. The one place reuse needed care is the quality gate, whose budget line says "for today" and "again tomorrow": true of a daily cap, false of a window that clears in a minute. It reuses the PAUSED line ("again later") instead, which is the already-written line that is true of both.
+- **An unconfigured limiter ALLOWS here, against `lib/rate-limit`'s production default of `deny`.** Denying would switch off every AI surface in the product at once, silently, each door degrading to its fallback with nothing for an operator to notice. Allowing leaves an unconfigured deploy exactly where it stood before this existed, and spend there is still bounded by the daily caps and the global ceiling. Failure mode is lockout, not abuse — the case `UnconfiguredPolicy` was written for. The choice is stated once, in the module, not at thirty call sites.
+- **An actorless call is NOT throttled.** A null id means nobody is knocking: a cron sweep or a queue worker running one feature across many members. A per-actor window is not the tool for that, and applying one would break the legitimate batch.
+- **Windows are declared by SHAPE, not by price.** Conversational (Vera, 20/min), fanned-out (the "For you" lane draws four blurbs per render, 40/min), heavy (Opus reasoning or a vision read, 5/min), everything else 10/min. A window that throttles a fast typist is a broken product, and a window a script can outrun is not a limit.
+
+**The guard is a ratchet, not a checklist.** `featureOverBudget` call sites ARE the census of AI doors, so `lib/ai/rate-limit.test.ts` walks them and fails any door that gates on the daily budget but not on the per-actor window, unless it is named in `UNLIMITED_DOORS` **with a reason** — delegating doors (already throttled one layer down), actorless work, and operator importers that loop by design. That list may shrink and may only grow with a stated reason, so the NEXT door added is caught by the guard rather than by the next audit. `lib/ai/rate-limit-doors.test.ts` drives five doors end to end and asserts the throttled path returns the door's own refusal and makes NO model call — a gate that refuses but bills anyway would pass a shape check and fail the only thing that matters. Both files were watched RED against the unlimited tree before the doors were changed.
+
+**Consequences.** Twenty-one files gained the window beside their budget gate. `runQualityGate` and `reviewJourneyForLibrary` take an optional `actorId`, threaded from the callers that had already resolved it to check authorship. `askHelp` limits an anonymous asker by IP, which is the one thing the deleted `/help/ask` handler did that nothing had inherited. Operator importers, cron sweeps and the dashboard bands are deliberately unlimited and named as such; they remain bounded by the daily caps alone.
+
+---
+
 ## ADR-1216: a guard that can give up is not a guarantee — the stock restore and the ticket settle become one-statement RPCs (2026-09-07)
 
 **Status.** Accepted. Closes LIVE-161. Implements the fix ADR-1209 named and `lib/billing/tickets.ts` had written into its own comment.

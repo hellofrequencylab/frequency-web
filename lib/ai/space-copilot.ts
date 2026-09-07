@@ -23,6 +23,7 @@
 import { completeText, AiUnavailableError } from './complete'
 import { aiEnabled } from './client'
 import { recordAiUsage, featureOverBudget } from './usage'
+import { aiRateLimited } from './rate-limit'
 import { withVoice } from './voice'
 import type { SpaceType } from '@/lib/spaces/types'
 
@@ -212,6 +213,10 @@ async function draft(p: {
   // single Space can't run up the whole feature's bill; the global 'space-copilot' cap still
   // applies underneath. Either over budget => fall back deterministically, never bill unbounded.
   if (await featureOverBudget(FEATURE, p.spaceId)) return null
+  // Per-owner window (lib/ai/rate-limit.ts, LIVE-195). Re-rolling a blurb is one click, so this is
+  // a door a bored owner can hold down. Over the window returns the same null every caller already
+  // reads as "use the deterministic copy".
+  if (await aiRateLimited(FEATURE, p.profileId)) return null
   try {
     const res = await completeText({
       system: withVoice(p.system),

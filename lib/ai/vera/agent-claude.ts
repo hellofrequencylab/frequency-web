@@ -14,6 +14,7 @@ import { aiEnabled } from '@/lib/ai'
 import { runToolLoop, type CompleteMessage } from '@/lib/ai/complete'
 import { estimateCostUsd } from '@/lib/ai/budget'
 import { aiAvailable, featureOverBudget, recordAiUsage } from '@/lib/ai/usage'
+import { aiRateLimited } from '@/lib/ai/rate-limit'
 import type { MemberContext } from '@/lib/ai/memory'
 import { VERA_TOOLS, requiresConfirmation, validateToolCall, type VeraToolDef } from './tools'
 import { executeReadTool } from './read-tools'
@@ -177,6 +178,11 @@ export async function runVeraClaudeTurn(input: {
   try {
     // Operator kill switch + per-feature daily cap — degrade to deterministic.
     if (!(await aiAvailable()) || (await featureOverBudget(FEATURE))) return null
+
+    // Per-member window (lib/ai/rate-limit.ts, LIVE-195). A live loop is the fastest door in the
+    // app to drive; over the window degrades to the deterministic concierge, EXACTLY like the
+    // kill-switch and over-budget paths above, so the member always gets an answer.
+    if (await aiRateLimited(FEATURE, input.profileId)) return null
 
     // The vera_unlimited gate (ADR-370): a free member over the operator daily cap degrades to the
     // deterministic concierge, EXACTLY like the kill-switch / over-budget path above. INERT while

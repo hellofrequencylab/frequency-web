@@ -53,6 +53,8 @@ export async function reviewEntityDraftAction(
   const body = (content ?? '').trim().slice(0, MAX_CHARS)
   if (body.length < 20) return fail('There is not enough here to read yet. Fill it in first.')
 
-  const verdict = await runQualityGate(qualityStandardFor(manifest.entity, manifest.label), body)
+  const verdict = await runQualityGate(qualityStandardFor(manifest.entity, manifest.label), body, {
+    actorId: caller.id,
+  })
   return ok({ verdict })
 }

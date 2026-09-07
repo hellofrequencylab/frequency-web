@@ -11,6 +11,7 @@ import { updateConversationFields } from '@/lib/comms/conversations'
 import { completeText, AiUnavailableError } from '@/lib/ai/complete'
 import { withVoice } from '@/lib/ai/voice'
 import { aiAvailable, featureOverBudget, recordAiUsage } from '@/lib/ai/usage'
+import { aiRateLimited } from '@/lib/ai/rate-limit'
 import { CONVERSATION_PRIORITIES, PRIORITY_LABELS, type ConversationPriority } from '@/lib/comms/labels'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 
@@ -62,6 +63,10 @@ export async function veraDraftReply(conversationId: string, profileId: string):
     if (!(await aiAvailable()) || (await featureOverBudget('conversation-draft'))) {
       return fail('Vera drafting is unavailable right now. Write your reply and send it.')
     }
+    // Per-actor window (lib/ai/rate-limit.ts, LIVE-195): one draft per thought, not per keypress.
+    if (await aiRateLimited('conversation-draft', profileId)) {
+      return fail('Vera is resting right now. Try again in a bit.')
+    }
     const thread = await getWorkspaceThread(id)
     if (!thread) return fail('That conversation no longer exists.')
     const res = await completeText({
@@ -88,6 +93,10 @@ export async function veraSummarize(conversationId: string, profileId: string): 
   try {
     if (!(await aiAvailable()) || (await featureOverBudget('conversation-summarize'))) {
       return fail('Summaries are unavailable right now.')
+    }
+    // Per-actor window (lib/ai/rate-limit.ts, LIVE-195).
+    if (await aiRateLimited('conversation-summarize', profileId)) {
+      return fail('Vera is resting right now. Try again in a bit.')
     }
     const thread = await getWorkspaceThread(id)
     if (!thread) return fail('That conversation no longer exists.')
@@ -118,6 +127,10 @@ export async function veraSuggestTriage(
   try {
     if (!(await aiAvailable()) || (await featureOverBudget('conversation-triage'))) {
       return fail('Triage is unavailable right now.')
+    }
+    // Per-actor window (lib/ai/rate-limit.ts, LIVE-195).
+    if (await aiRateLimited('conversation-triage', profileId)) {
+      return fail('Vera is resting right now. Try again in a bit.')
     }
     const thread = await getWorkspaceThread(id)
     if (!thread) return fail('That conversation no longer exists.')
