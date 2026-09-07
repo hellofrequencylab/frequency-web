@@ -323,3 +323,23 @@ describe('email palette contract', () => {
     expect(ids).toContain('productCard')
   })
 })
+
+// ADR-1245: a stored image value may be an AssetRef ({ assetId, url }). Email is on the send path of two
+// crons, so the renderer must read the cached url rather than drop the image.
+describe('renderEmailLayout reads an AssetRef through its cached url (ADR-1245)', () => {
+  const ref = { assetId: '0b6f6f2e-1111-4222-8333-444455556666', url: 'https://cdn.example.com/a.jpg' }
+
+  it('image, callout, photoHero, and a card-grid card all render the ref', () => {
+    const layout: EntityLayout = {
+      rows: [{ id: 'r0', columns: 1, cells: [['image', 'callout', 'photoHero', 'cardGrid']] }],
+      content: {
+        image: { src: ref, alt: 'A' },
+        callout: { title: 'T', image: ref },
+        photoHero: { title: 'H', image: ref },
+        cardGrid: { cards: [{ title: 'C', image: ref }] },
+      },
+    }
+    const html = renderEmailLayout(layout).html
+    expect(html.split(`src="${ref.url}"`).length - 1).toBe(4)
+  })
+})

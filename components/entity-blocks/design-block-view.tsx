@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { decodeLegacyEntities, gridColumns, safeUrl } from '@/lib/entity-blocks/block-content'
+import { decodeLegacyEntities, gridColumns, safeImageUrl, safeUrl } from '@/lib/entity-blocks/block-content'
 import { DESIGN_ENTITY_BLOCK_IDS } from '@/lib/entity-blocks/registry'
 import { BlockIcon } from './block-icon'
 import { InlineRichText } from './content-block-view'
@@ -137,7 +137,7 @@ function aspectRatio(v: unknown): string {
 export function DesignBlockView({ id, props }: { id: string; props: Record<string, unknown> }): ReactNode {
   switch (id) {
     case 'photoHero': {
-      const image = safeUrl(props.image) || undefined
+      const image = safeImageUrl(props.image) || undefined
       // The height / display primitives (ADR-571). Already sanitized upstream, but this adapter may be
       // called with a raw bag, so gate each to its allowed set and fall back to the block's own default.
       const height = oneOf(props.height, ['short', 'medium', 'tall'], 'medium') as BannerHeight
@@ -173,7 +173,7 @@ export function DesignBlockView({ id, props }: { id: string; props: Record<strin
       // extra fields (icon / stat / button) are ignored here; its image / title / text / link still render.
       return <SimpleCardGrid props={props} />
     case 'zigzag': {
-      const image = safeUrl(props.image) || undefined
+      const image = safeImageUrl(props.image) || undefined
       return (
         <ZigzagBlock
           image={image}
@@ -226,7 +226,7 @@ function readSimpleCards(raw: unknown): SimpleCard[] {
   return (raw as Array<Record<string, unknown>>)
     .map((it) => ({
       icon: typeof it.icon === 'string' ? it.icon : '',
-      image: safeUrl(it.image),
+      image: safeImageUrl(it.image),
       // Decode the card's plain-text title / text so an escaped apostrophe renders as a character, not `&#39;`.
       title: typeof it.title === 'string' ? decodeLegacyEntities(it.title) : '',
       text: typeof it.text === 'string' ? decodeLegacyEntities(it.text) : '',

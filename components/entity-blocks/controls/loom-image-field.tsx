@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { ImagePlus, X } from 'lucide-react'
 import { LoomPicker } from '@/components/loom/loom-picker'
+import { assetRefUrl, type AssetValue } from '@/lib/library/asset-ref'
 import { safeImageSrc } from '@/lib/safe-image-src'
 
 // The `<img src>` guard is NOT written here. Every src in the product whose value did not come from
@@ -37,8 +38,9 @@ export function LoomImageField({
   onChange,
 }: {
   label: string
-  /** The current image URL, or '' when the field is empty. */
-  value: string
+  /** The current image value: a URL string, an AssetRef ({ assetId, url }, ADR-1245), or '' when empty. A
+   *  stored ref previews through its cached url, so it never reads to an operator as a missing photo. */
+  value: AssetValue
   /** The Loom library to open in: a Space id or slug. Omit for a surface with no Space (the full picker). */
   scopeKey?: string
   /** The chosen image URL, or undefined when cleared (the panel deletes an empty key). */
@@ -46,7 +48,7 @@ export function LoomImageField({
 }) {
   const [open, setOpen] = useState(false)
   const lower = label.toLowerCase()
-  const safeValue = safeImageSrc(value) ?? ''
+  const safeValue = safeImageSrc(assetRefUrl(value)) ?? ''
 
   return (
     <div className="space-y-1">

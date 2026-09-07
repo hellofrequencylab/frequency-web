@@ -18,6 +18,7 @@ import { BlockIcon } from '../block-icon'
 import { useProfileLayout } from '../profile-layout-context'
 import { SpaceEditableSlot } from './space-editable-slot'
 import { SpaceImagePopup } from './space-image-popup'
+import { assetRefUrl } from '@/lib/library/asset-ref'
 
 // ONE SPACE BLOCK, RENDERED TO THE LIVE WYSIWYG CANVAS so the EDIT surface MATCHES the published page. Each
 // block's authored TEXT (text / textarea, plus each Features / Cards item's title + text) is an inline-editable
@@ -293,7 +294,7 @@ function ItemsTextCanvas({
     return <p className="text-body-sm italic text-subtle">Add items in this block&rsquo;s settings.</p>
   }
   const sig = items
-    .map((it) => `${typeof it.icon === 'string' ? it.icon : ''}~${typeof it.image === 'string' ? it.image : ''}`)
+    .map((it) => `${typeof it.icon === 'string' ? it.icon : ''}~${assetRefUrl(it.image)}`)
     .join('|')
   const patch = (i: number, key: 'title' | 'text', next: string) => {
     onChange(items.map((it, j) => (j === i ? { ...it, [key]: next } : it)))
@@ -301,7 +302,7 @@ function ItemsTextCanvas({
   return (
     <div className="grid gap-4 sm:grid-cols-2">
       {items.map((it, i) => {
-        const image = typeof it.image === 'string' ? it.image : ''
+        const image = assetRefUrl(it.image)
         const title = typeof it.title === 'string' ? it.title : ''
         const text = typeof it.text === 'string' ? it.text : ''
         return (
@@ -370,7 +371,7 @@ function CardGridItemsCanvas({
     return <p className="text-body-sm italic text-subtle">Add cards in this block&rsquo;s settings.</p>
   }
   const sig = items
-    .map((it) => `${typeof it.icon === 'string' ? it.icon : ''}~${typeof it.image === 'string' ? it.image : ''}`)
+    .map((it) => `${typeof it.icon === 'string' ? it.icon : ''}~${assetRefUrl(it.image)}`)
     .join('|')
   const patch = (i: number, key: 'title' | 'text', next: string) => {
     onChange(items.map((it, j) => (j === i ? { ...it, [key]: next } : it)))
@@ -378,7 +379,7 @@ function CardGridItemsCanvas({
   return (
     <div className={`grid gap-6 ${featureGridCols(cols)}`}>
       {items.map((raw, i) => {
-        const image = typeof raw.image === 'string' ? raw.image : ''
+        const image = assetRefUrl(raw.image)
         const icon = typeof raw.icon === 'string' ? raw.icon : ''
         const title = typeof raw.title === 'string' ? raw.title : ''
         const text = typeof raw.text === 'string' ? raw.text : ''
@@ -454,13 +455,13 @@ function FeaturesItemsCanvas({
   const layout = featureLayout(props)
   const cols = gridColumns(props)
   const sig = items
-    .map((it) => `${typeof it.icon === 'string' ? it.icon : ''}~${typeof it.image === 'string' ? it.image : ''}`)
+    .map((it) => `${typeof it.icon === 'string' ? it.icon : ''}~${assetRefUrl(it.image)}`)
     .join('|')
   const patch = (i: number, key: 'title' | 'text', next: string) => {
     onChange(items.map((it, j) => (j === i ? { ...it, [key]: next } : it)))
   }
   const read = (it: Record<string, unknown>) => ({
-    image: typeof it.image === 'string' ? it.image : '',
+    image: assetRefUrl(it.image),
     icon: typeof it.icon === 'string' ? it.icon : '',
     title: typeof it.title === 'string' ? it.title : '',
     text: typeof it.text === 'string' ? it.text : '',
@@ -685,7 +686,7 @@ export function SpaceCanvasBlock({
     return (
       <ImageSlot
         key={key}
-        url={str(props, key)}
+        url={assetRefUrl(props[key])}
         alt={altKey ? str(props, altKey) : ''}
         loomScope={loomScope}
         className={opts?.className}
@@ -873,7 +874,7 @@ export function SpaceCanvasBlock({
     // hint so the block still has a visible footprint.
     if (f.type === 'images') {
       const imgs = Array.isArray(props[f.key])
-        ? (props[f.key] as unknown[]).filter((x): x is string => typeof x === 'string' && x.length > 0)
+        ? (props[f.key] as unknown[]).map(assetRefUrl).filter((x) => x.length > 0)
         : []
       return (
         <div key={f.key} className="space-y-2">

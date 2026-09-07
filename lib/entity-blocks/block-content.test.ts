@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
+  safeImageUrl,
   sanitizeBlockStyle,
   sanitizeBlockContent,
   sanitizeContentMap,
@@ -609,5 +610,85 @@ describe('Features source / layout / columns helpers (ADR-585)', () => {
     expect(gridColumns({ columns: '2' })).toBe(2)
     expect(gridColumns({ columns: '4' })).toBe(4)
     expect(gridColumns({ columns: '9' })).toBe(3)
+  })
+})
+
+// ── AssetRef round-trip (HYG-066, ADR-1245) ───────────────────────────────────────────────────────────
+// The Puck page editor stores a picked Loom image as { assetId, url } (ADR-1130). Before ADR-1245 this
+// sanitizer coerced every image field through safeUrl, which returns '' for an object, so a ref written into
+// this block system was not stored broken; it was not stored at all, and the image vanished on save. These
+// pins hold the seam: a well-formed ref comes back in the SAME shape, a legacy string still works exactly as
+// before, and a link field (a url with no `upload`) never grows the object shape.
+describe('sanitizeBlockContent preserves an AssetRef on image fields (ADR-1245)', () => {
+  const ref = { assetId: '0b6f6f2e-1111-4222-8333-444455556666', url: 'https://cdn.example.com/a.jpg' }
+
+  it('image.src: a ref survives with the same shape; a string still works', () => {
+    expect(sanitizeBlockContent('image', { src: ref, alt: 'A' })).toEqual({ src: ref, alt: 'A' })
+    expect(sanitizeBlockContent('image', { src: 'https://x/a.jpg' })).toEqual({ src: 'https://x/a.jpg' })
+  })
+
+  it('callout.image + photoHero.image + zigzag.image: the upload fields keep the ref', () => {
+    expect(sanitizeBlockContent('callout', { title: 'T', image: ref })).toEqual({ title: 'T', image: ref })
+    expect(sanitizeBlockContent('photoHero', { image: ref })).toEqual({ image: ref })
+    expect(sanitizeBlockContent('zigzag', { image: ref })).toEqual({ image: ref })
+  })
+
+  it('a link field (url WITHOUT upload) never takes the object shape', () => {
+    expect(sanitizeBlockContent('callout', { title: 'T', buttonUrl: ref })).toEqual({ title: 'T' })
+    expect(sanitizeBlockContent('links', { items: [{ label: 'x', url: ref }] })).toBeUndefined()
+  })
+
+  it('gallery images: each entry keeps its own shape, unsafe entries drop', () => {
+    expect(
+      sanitizeBlockContent('gallery', {
+        images: [ref, 'https://x/1.jpg', { assetId: 'nope', url: 'javascript:1' }, 'javascript:1', {}],
+      }),
+    ).toEqual({ images: [ref, 'https://x/1.jpg'] })
+  })
+
+  it('features + cards item images keep the ref, and an image-only item still counts as content', () => {
+    expect(sanitizeBlockContent('features', { items: [{ image: ref }] })).toEqual({
+      items: [{ icon: '', title: '', text: '', image: ref }],
+    })
+    expect(sanitizeBlockContent('cardGrid', { cards: [{ image: ref }] })).toEqual({
+      cards: [{ title: '', text: '', image: ref }],
+    })
+  })
+
+  it('a ref is kept only when whole and safe: no id, an unsafe cached url, or a bare {url} all drop', () => {
+    expect(sanitizeBlockContent('image', { src: { assetId: '', url: ref.url } })).toBeUndefined()
+    expect(sanitizeBlockContent('image', { src: { assetId: ref.assetId, url: 'javascript:1' } })).toBeUndefined()
+    expect(sanitizeBlockContent('image', { src: { url: ref.url } })).toBeUndefined()
+    // Only the ref's own keys come back: `alt` when present (bounded), never an extra property.
+    expect(sanitizeBlockContent('image', { src: { ...ref, alt: 'Alt', extra: 'x' } })).toEqual({
+      src: { ...ref, alt: 'Alt' },
+    })
+    expect(sanitizeBlockContent('image', { src: { ...ref, alt: 'a'.repeat(200) } })).toEqual({
+      src: { ...ref, alt: 'a'.repeat(120) },
+    })
+  })
+
+  it('the whole content map round-trips a ref byte-for-byte (the save path)', () => {
+    const map = {
+      image: { src: ref },
+      gallery: { images: [ref, 'https://x/1.jpg'] },
+      callout: { title: 'T', image: { ...ref, alt: 'Alt' } },
+      features: { items: [{ icon: '', title: 'A', text: '', image: ref }] },
+    }
+    const out = sanitizeContentMap(map) ?? {}
+    // The map iterates the registry allowlist, so block ORDER is the registry's; each block's bag is bytes.
+    expect(out).toEqual(map)
+    for (const id of Object.keys(map)) {
+      expect(JSON.stringify(out[id])).toBe(JSON.stringify(map[id as keyof typeof map]))
+    }
+  })
+
+  it('safeImageUrl is the one read: a string is safeUrl, a ref is its cached url, anything else is empty', () => {
+    expect(safeImageUrl('https://x/a.jpg')).toBe('https://x/a.jpg')
+    expect(safeImageUrl('javascript:1')).toBe('')
+    expect(safeImageUrl(ref)).toBe(ref.url)
+    expect(safeImageUrl({ assetId: ref.assetId, url: 'javascript:1' })).toBe('')
+    expect(safeImageUrl({ url: ref.url })).toBe('')
+    expect(safeImageUrl(undefined)).toBe('')
   })
 })

@@ -6,6 +6,7 @@ import { fieldsForBlock, featureLayout, gridColumns, type FieldDef } from '@/lib
 import { DEFAULT_EMAIL_COLORS as C } from '@/lib/email-studio/render'
 import { BlockIcon } from '@/components/entity-blocks/block-icon'
 import { LoomImagePopup } from '../loom/loom-image-popup'
+import { assetRefUrl } from '@/lib/library/asset-ref'
 import { EditableSlot } from './editable-slot'
 
 // ONE BLOCK, RENDERED TO THE LIVE EMAIL CANVAS (Email Studio WYSIWYG editor). A React approximation of the
@@ -180,7 +181,7 @@ function CardsCanvas({ label, value, onChange }: { label: string; value: unknown
   return (
     <div className="grid gap-3 sm:grid-cols-2">
       {cards.map((c, i) => {
-        const image = typeof c.image === 'string' ? c.image : ''
+        const image = assetRefUrl(c.image)
         const stat = (c.stat && typeof c.stat === 'object' ? c.stat : {}) as Record<string, unknown>
         const statValue = typeof stat.value === 'string' ? stat.value : ''
         const statLabel = typeof stat.label === 'string' ? stat.label : ''
@@ -297,11 +298,8 @@ export function CanvasBlock({
         const altKey = fields.find((x) => x.key === 'alt')?.key
         const isArr = f.type === 'images'
         const raw = props[f.key]
-        const current = isArr
-          ? (Array.isArray(raw) ? String(raw[0] ?? '') : '')
-          : typeof raw === 'string'
-            ? raw
-            : ''
+        // A stored value is a URL string or an AssetRef ({ assetId, url }, ADR-1245); preview either.
+        const current = isArr ? (Array.isArray(raw) ? assetRefUrl(raw[0]) : '') : assetRefUrl(raw)
         const altVal = altKey ? str(props, altKey) : ''
         return (
           <ImageSlot
