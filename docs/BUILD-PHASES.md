@@ -54,8 +54,11 @@ CAPABILITIES-AND-MOBILE.
 
 - [x] Extract shared code into folders (formal Turborepo monorepo deferred to
       mobile, Phase 5): **`lib/core/`** (`roles`, `capabilities`, + the
-      `load-capabilities` server seam), **`lib/contract/`** (presentation-neutral
-      view-model types), **`lib/tokens/`** (cross-platform token plan).
+      `load-capabilities` server seam), ~~**`lib/contract/`** — REMOVED, see below — (presentation-neutral
+      view-model types)~~, **`lib/tokens/`** (cross-platform token plan).
+      🔴 `lib/contract/` was built and then REMOVED as a zero-importer orphan
+      (`types.ts` in `9d34d0b44`, 2026-06-14). `lib/core/` and `lib/tokens/` are
+      still there. See HYG-067.
 - [x] Build the **capability resolver**: `lib/core/capabilities.ts`
       (`resolveCapabilities(viewer, scope)`, `can()`), pure + framework-independent;
       plus `lib/core/roles.ts` (single-source `atLeastRole`). tsc clean.
@@ -126,9 +129,14 @@ registry remains as an optional refactor.
       surface by surface (generalize the `/discover` SECURITY DEFINER model).
 - [x] Build the core **view-models** returning **data + capabilities**:
       `getCircleView` + `getProfileView` + `getFeed` (cursor-paginated FeedView)
-      shipped (`lib/contract/views.ts`), reusing the one capability resolver.
+      shipped (`lib/contract/views.ts`, since deleted — see below), reusing the one capability resolver.
       Implemented as server view-builders now; expose via RPC/endpoint for mobile
       in Phase 5.
+      🔴 **They shipped and were then removed.** `lib/contract/views.ts` (96 lines,
+      all three builders) was deleted in `1b1a9c0f1` on 2026-06-06 as a
+      zero-importer orphan — correct on that test, because web renders directly
+      and the consumer was always the mobile app. Whoever picks up mobile rebuilds
+      this rather than finding it. See HYG-067.
 - [ ] Verify RLS coverage with policy tests for each migrated table.
 
 **Done when:** the primary read paths and key mutations are RLS-enforced and

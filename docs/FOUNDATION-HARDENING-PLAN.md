@@ -222,7 +222,7 @@ mobile-ready.
 | H5-4 | **Docs reconciliation** | Fix the known stale docs (ARCHITECTURE.md still lists shadcn; Notion drift on geography/tables/Stripe). Run `/sync-docs`. Repo code + migrations win. | 🔴 |
 | H5-5 | **Dependency hygiene** | Run the `maintenance` skill: outdated deps, advisories, lint/build/test; schedule it. No silent major bumps. | 🔴 |
 | H5-6 | **Naming-collision cleanup** | Resolve the flagged "templates" collision (outer page shells `@/components/templates` vs inner layouts `lib/widgets/templates.ts`). | ⏳ |
-| H5-7 | **Contract layer mobile-readiness audit** | Audit `lib/contract/` view-models + the capability resolver for any Next/Supabase/UI coupling; confirm every surface mobile needs has a presentation-neutral RPC shape. **This is the gate for M1.** | 🔴 |
+| H5-7 | **Contract layer mobile-readiness audit** | 🔴 **Re-worded 2026-09-07: there is nothing to audit.** `lib/contract/` was removed as a zero-importer orphan (`views.ts` 2026-06-06, `types.ts` 2026-06-14), so this reads as BUILD the contract layer, not audit it — restore the view-models from those commits or re-derive them, then check the capability resolver for Next/Supabase/UI coupling and confirm every surface mobile needs has a presentation-neutral RPC shape. **This is the gate for M1**, and it was un-openable as written for three months. See HYG-067. | 🔴 |
 | H5-8 | **Dead-code & retired-table drop** | Drop dormant tables after their deprecation window (e.g. `quest_*` once `quest_outcomes()` is retired); remove dead engines. | ⏳ |
 
 **Done when:** the type casts are gone, authz is centralized, the page framework is fully adopted,

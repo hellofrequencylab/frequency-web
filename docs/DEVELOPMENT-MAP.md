@@ -415,7 +415,7 @@ Five layers. Only one of them is "verticals"; the rest is the substrate everythi
 | Horizontal | State |
 |---|---|
 | Capability resolver + role ladder (`lib/core`) | ✅ |
-| Contract / view-models (`lib/contract`) | ✅ |
+| Contract / view-models (`lib/contract`) | 🔴 built, then REMOVED — `views.ts` in `1b1a9c0f1` (2026-06-06) and `types.ts` in `9d34d0b44` (2026-06-14), both as zero-importer orphans. The directory does not exist; see HYG-067. |
 | Engagement spine (`engagement_events`) | ✅ |
 | Comms spine + durable queue | ✅ |
 | Geo / PostGIS | ✅ |

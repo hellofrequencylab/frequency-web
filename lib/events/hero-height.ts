@@ -5,7 +5,6 @@
 // keeps an empty theme.
 
 import {
-  coverHeightClass,
   posterHeightClass,
   asCoverHeight,
   COVER_HEIGHT_OPTIONS,
@@ -17,11 +16,6 @@ export type EventHeroHeight = CoverHeight
 
 /** The height tiers for the event hero picker (the shared Short / Standard / Tall ladder). */
 export const EVENT_HERO_HEIGHTS: { value: EventHeroHeight; label: string }[] = [...COVER_HEIGHT_OPTIONS]
-
-/** The Tailwind height classes for a hero height (delegates to the shared ladder). */
-export function eventHeroHeightClass(height: EventHeroHeight): string {
-  return coverHeightClass(height)
-}
 
 /** The height classes for the event page's CONTAIN-fitted poster band — the same tiers and the
  *  same desktop heights, one rung shorter on a phone (see the poster ladder's note in

@@ -54,7 +54,10 @@ export function resolveHeartbeatUrl(jobName: string): string | null {
 
 /** Fire a heartbeat ping. Best-effort and crash-proof: failures to ping are logged
  *  but never thrown, so the monitor transport can't affect the cron's own outcome.
- *  `fail` appends the `/fail` suffix used by Healthchecks-style monitors. */
+ *  A ping that is REJECTED (a non-2xx answer) is logged too — `fetch` does not throw
+ *  on one, so without the status check a monitor saying "no" is indistinguishable
+ *  from a monitor saying "yes". `fail` appends the `/fail` suffix used by
+ *  Healthchecks-style monitors. */
 async function pingHeartbeat(
   jobName: string,
   opts: { fail?: boolean } = {},
@@ -65,12 +68,30 @@ async function pingHeartbeat(
   const target = opts.fail ? `${url}/fail` : url
   try {
     // A short timeout so a hung monitor never delays the cron response.
-    await fetch(target, {
+    const res = await fetch(target, {
       method: 'POST',
       signal: AbortSignal.timeout(5000),
       // We don't care about the body; some monitors accept run output here.
       cache: 'no-store',
     })
+    // 🔴 A REJECTED PING IS A FAILED FAIL-SAFE, AND `fetch` DOES NOT THROW ON ONE.
+    // fetch only rejects on a transport error, so a monitor that ANSWERS "no" —
+    // Healthchecks.io returning 400/404 for an unknown check, or 429 once the
+    // account is over its check cap (the free tier caps at 20 and vercel.json
+    // declares 27, OWN-005) — used to land in the success path and emit nothing.
+    // The dead-man's-switch would then be silently dead: no ping arriving looks
+    // exactly like a healthy cron that was never wired, and nothing would say so.
+    // Same event name and field shape as the transport-failure line below, so one
+    // query over `cron.heartbeat.ping_failed` finds both kinds of failure; `status`
+    // is what tells them apart (a transport error has no status).
+    if (!res.ok) {
+      log.warn('cron.heartbeat.ping_failed', {
+        job: jobName,
+        fail: opts.fail === true,
+        status: res.status,
+        error: `monitor rejected the ping (HTTP ${res.status})`,
+      })
+    }
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)
     log.warn('cron.heartbeat.ping_failed', { job: jobName, fail: opts.fail === true, error: message })

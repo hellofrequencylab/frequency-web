@@ -35,8 +35,10 @@ export const PERIODS_BY_KEY: Record<MemberTierKey | SpacePlanKey, readonly Billi
   nonprofit: ['monthly', 'annual'],
 }
 
-/** Does this tier/plan offer the given billing period? (Business + Nonprofit offer both.) */
-export function offersPeriod(base: MemberTierKey | SpacePlanKey, period: BillingPeriod): boolean {
+/** Does this tier/plan offer the given billing period? (Business + Nonprofit offer both.)
+ *  Module-internal: the only caller is `memberCheckoutPriceKey` below. `PERIODS_BY_KEY` is the
+ *  exported source of truth for "is there an annual price?"; read that rather than re-exporting this. */
+function offersPeriod(base: MemberTierKey | SpacePlanKey, period: BillingPeriod): boolean {
   return (PERIODS_BY_KEY[base] ?? []).includes(period)
 }
 

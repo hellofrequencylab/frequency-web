@@ -8,15 +8,23 @@
 // A sweep run on that output deletes working code. CONSUMER_EXT below is therefore the load-bearing
 // line: every extension that can reference a lib identifier has to be in it.
 //
-// ⚠️ AND A DEAD EXPORT IS NOT AUTOMATICALLY DEAD CODE. The 2026-08-25 classification found the 19
-// unreferenced lib FUNCTIONS split three ways, and only one of the three is safe to delete blindly:
-//   · BUILT BUT NEVER WIRED — runContestSweep documents itself "safe to run on a schedule" and none
-//     of the 27 crons in vercel.json calls it. Deleting it removes a finished feature.
-//   · GENUINELY RETIRED, WITH A STALE DOC — spaceTrailingProcessedCents still cites ADR-552 for the
-//     "you'd have saved $X" nudge, which ADR-811 RETIRED. The code is dead; its comment advertises a
-//     feature that no longer exists, which is how it reads as a gap when it is not.
-//   · CONVENIENCE WRAPPERS — the majority. Dropping the `export` keyword is the whole change.
-// So read the report, then read each function. The report ranks; it does not decide.
+// ⚠️ AND A DEAD EXPORT IS NOT AUTOMATICALLY DEAD CODE. The 2026-08-25 classification split the
+// unreferenced lib exports four ways, and only two of the four are safe to sweep:
+//   · BUILT BUT NEVER WIRED — a finished capability with no caller. Deleting it removes working code
+//     and the only record the capability exists. A product question, not hygiene.
+//   · DECLARED CONTRACT / PUBLIC SURFACE — an export in a module literally named `types.ts`, or one
+//     whose own doc names the later phase that consumes it. "Nothing imports it yet" is not "nothing
+//     should". These need a per-item ruling; they are what this report mostly surfaces today.
+//   · GENUINELY RETIRED, WITH A STALE DOC — the code is dead AND its comment advertises a feature
+//     that no longer exists, which is how it reads as a gap when it is not. Delete the comment too.
+//   · CONVENIENCE WRAPPERS — a thin delegate over a live sibling. Dropping the `export` keyword (or
+//     the wrapper) is the whole change.
+// So read the report, then read each export. The report ranks; it does not decide.
+//
+// 🔴 DO NOT CITE A SYMBOL HERE AS A LIVE EXAMPLE. This block named `runContestSweep` and
+// `spaceTrailingProcessedCents`; both were removed (SCAN-510, and SCAN-502's own sweep), and the
+// comment went on pointing at them — a maintenance script that misdescribes the tree it measures.
+// Name the CATEGORY, and let a run of the script supply the current members.
 // 🔴 THE PITFALL SCAN-502 RECORDS: a scan that only reads .ts/.tsx scores lib/help/drift.ts and
 // lib/ai/autodoc.ts as fully dead. They are LIVE, consumed by scripts/*.mts. Any consumer extension
 // left out of this list turns a live module into a deletion.

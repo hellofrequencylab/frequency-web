@@ -683,7 +683,7 @@ export default function FunnelInduction({ userId = '', userEmail = '', initialHa
           tabIndex={-1}
           role="group"
           aria-label={`Step ${beat + 1} of ${BEAT_COUNT}: ${BEAT_LABELS[beat]}`}
-          className="mt-10 w-full animate-[slideUp_0.5s_ease-out] text-center outline-none"
+          className="mt-10 w-full motion-safe:animate-[slideUp_0.5s_ease-out] text-center outline-none"
         >
             {/* ── Beat 0: Intro ── */}
             {beat === 0 && (

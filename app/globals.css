@@ -2126,10 +2126,22 @@ h1, h2, h3, h4, h5, h6 {
   color: var(--rank-bright);
 }
 
-/* ── Achievement toast animation (existing) ───────────────────────────────── */
+/* ── The shared entrance rise (toasts, dialogs, sheets, celebrations) ──────────
+   Applied from TSX as a Tailwind arbitrary value (`animate-[slideUp_0.4s_ease-out]`), so unlike the
+   keyframes below it has no consumer CLASS to hang a guard on. It carried NO guard of its own until
+   2026-09-07 and leaned on every call site remembering `motion-safe:` — fifteen of seventeen did,
+   two did not, and the rule had already been written down in a comment
+   (components/journey/v2/trophy-celebration.tsx) without being enforced. The attribute selector
+   below is the BACKSTOP: it makes the keyframe safe by construction, so a future call site that
+   forgets the prefix still renders motionless for a member who asked for less motion. Keep writing
+   `motion-safe:` at the call site anyway — this is the floor, not the intent. Enforced by
+   scripts/check-reduced-motion.test.ts. */
 @keyframes slideUp {
   from { opacity: 0; transform: translateY(20px) scale(0.95); }
   to   { opacity: 1; transform: translateY(0)    scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  [class*="animate-[slideUp"] { animation: none !important; }
 }
 
 /* ── Spotlight animated gradient background ────────────────────────────────────

@@ -280,9 +280,9 @@ is inlined there separately. Trust globals.css over any Notion "indigo"/"charcoa
 
 ## ADR-018: Presentation-neutral contract layer (view-models carry data + capabilities)
 
-**Status:** Accepted · corroborated by `lib/contract/`
+**Status:** Accepted in principle · 🔴 **NOT corroborated by the tree.** `lib/contract/` was built and then removed as a zero-importer orphan (`views.ts` `1b1a9c0f1` 2026-06-06, `types.ts` `9d34d0b44` 2026-06-14). The decision stands; the implementation does not exist. See HYG-067.
 **Context:** Business logic and entity shapes lived inside RSC/React, which would trap them when the mobile app arrives.
-**Decision:** `lib/contract/` defines presentation-neutral view-models (`CircleView`, `ProfileView`, `FeedView`) that bundle data **with** the viewer's capabilities; view-builders (`getCircleView`, `getProfileView`) compose them. Web renders them now; mobile consumes the identical shapes later (via RPC/endpoint).
+**Decision:** *(as accepted; the directory was later removed — see the status line above)* `lib/contract/` defines presentation-neutral view-models (`CircleView`, `ProfileView`, `FeedView`) that bundle data **with** the viewer's capabilities; view-builders (`getCircleView`, `getProfileView`) compose them. Web renders them now; mobile consumes the identical shapes later (via RPC/endpoint).
 **Consequences:** One contract both clients code against; clients render affordances from `capabilities` without recomputing policy.
 
 ## ADR-019: Engagement event ledger sits *in front of* the existing rules engine
@@ -332,7 +332,7 @@ is inlined there separately. Trust globals.css over any Notion "indigo"/"charcoa
 **Status:** Accepted · corroborated by `lib/engagement/events.ts` · governs COMMS-CRM §1
 **Context:** The loyalty/gamification ledger, the notification spine's trigger source, and the CRM activity timeline are secretly the same stream; building three would fork the truth.
 **Decision:** `engagement_events` is the **single** append-only stream. Gamification, notifications, the CRM contact timeline, analytics, and the AI agent are **projections/subscribers** — none keeps its own event log. The notification spine, CRM `engagement_score`, and WAM are read-models off it.
-**Consequences:** Always add a subscriber/projection, never a parallel log. One idempotency + audit surface. The CRM timeline is a `lib/contract` projection.
+**Consequences:** Always add a subscriber/projection, never a parallel log. One idempotency + audit surface. The CRM timeline is a `lib/contract` projection. *(That directory was later removed — ADR-018, HYG-067.)*
 
 ## ADR-026: Communications spine — one router/registry, everything queued
 
@@ -9141,7 +9141,7 @@ Mode labels are EXACTLY `Be Still` and `Get Moving`; the tagline is EXACTLY "Get
 
 **Consequences.**
 - Marketing/operators move at the speed of config; the launch does not require engineering per campaign.
-- The contract layer (`lib/contract/`) is honored so the eventual mobile app reuses every engine.
+- The contract layer (`lib/contract/`) is honored so the eventual mobile app reuses every engine. *(🔴 2026-09-07: that layer has since been removed as a zero-importer orphan — see ADR-018 and HYG-067. The intent below is unaffected; the directory is not there.)*
 - NAMING.md + CONTENT-VOICE.md and PAGE-FRAMEWORK.md are enforced by the engines (no em dashes, locked nouns, kit composition).
 - The recruiter reward *leaderboard* stays retired (ADR-305); affiliate is a commission ledger, not a points board.
 - Authority order unchanged: running code + migrations > docs > Notion.
@@ -36034,3 +36034,29 @@ Final agreement is exact in both directions: **180 live in the replay, minus the
 **Consequences.** Six fixture arms, each testing both directions, plus two real-tree assertions. Three mutations proven red: restoring the regex bug (9 tests), reading only the header (5 tests), preserving the pin across a replace (1 test). Enforced through vitest, which the required `test` job runs.
 
 ⚠️ **One row moved with it, and the reason generalises.** `LIVE-020`'s probe builds a fixture to exercise the ACL arm, and that fixture did not pin — so the new arm failed it, and the probe reported the guard "fails everything and proves nothing". **A probe measuring one arm has to satisfy every other arm, or it stops measuring anything.** The guard's own test fixtures needed the same treatment. Tightening a shared contract means every fixture that models a real migration has to keep looking like one.
+
+---
+
+## ADR-1223: the crawlable event page reads its zone from the table it already reads, not from a widened RPC (2026-09-07)
+
+**Status.** Accepted. Closes LIVE-199. Follows the seam [ADR-1132](DECISIONS.md) (LIVE-133) established for the cover.
+
+**Context.** LIVE-199 inherited a follow-up from SCAN-207: the public event RPCs return no `time_zone`, so `/discover/events/<slug>` falls back to the community zone. It was filed P2 with the note *"correct for 61 of 61 events today"*.
+
+🔴 **The row predicted the wrong symptom, and the real one is worse.** It expected *"the wrong hour on the crawlable page"*. The hour is never wrong: `events.starts_at` stores the host's wall clock as UTC parts, so rendering those parts prints the right clock face in any zone. What is wrong is the **offset in the structured data** — the half a human never sees and a crawler always does. On 2026-09-07 production held 61 `America/Los_Angeles` and, for the first time, one `Europe/London` public published event, and that page was publishing:
+
+```
+"startDate": "2026-09-11T10:33:00-07:00"
+```
+
+The right wall clock against the wrong instant, **eight hours out**, four days before the event.
+
+**Decision.**
+
+- **The zone comes from `app/discover/events/_data.ts`, not from a widened RPC**, and the reasoning is the one LIVE-133 already settled for the cover. That module reads `events` directly with the **anon** client under RLS, so the zone rides along on a select this page was making anyway: no migration, no new surface, and no widening — a row this read cannot see returns nothing here either. Widening `public_event_by_slug` means a `DROP` + `CREATE` on a `SECURITY DEFINER` function granted to `anon` — the same function that, before ADR-903, served private events to anonymous callers. That is a far larger blast radius than the defect.
+- **`EventEnrichment.time_zone` is required, not optional.** The enrichment is the only supplier on this path; an optional field would let a future edit drop it and typecheck.
+- **The canonical `/events/<slug>` page is untouched.** It already passes `event.time_zone`. Only the discover twin was wrong, which is exactly why nobody noticed: the page a member opens was right the whole time.
+
+**Consequences.** One column on two existing selects. `app/discover/events/_data.test.ts` pins both halves, and the split matters: the row shapes in that module are `as unknown as` casts, so **dropping the column from the select literal typechecks cleanly and hands `eventSchema` an undefined zone** — the type system cannot see this class at all. So one half reads the select *literal*, the other asserts the published offset, with the exact production string (`-07:00`) as the positive control.
+
+⚠️ **The generalisable part is the sizing, not the fix.** The row said "add `time_zone` to both RPCs in a new migration" and was sized against that. The actual change was one column on a read that already existed. **A row that names its own implementation inherits that implementation's cost forever**, and nobody re-prices it — this one sat at P2/S for a day on a plan that was four times too big. Rows should state the consequence they need; the seam is chosen when the work starts, against the tree as it is then.

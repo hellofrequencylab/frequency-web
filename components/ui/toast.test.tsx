@@ -51,7 +51,10 @@ describe('Toast', () => {
   it('enters on the slideUp keyframes and sits on the .lift-3 elevation', () => {
     const c = mount(<Toast title="Saved" duration={0} />)
     const el = c.querySelector('[role="status"]')!
-    expect(el.className).toContain('animate-[slideUp_0.4s_ease-out]')
+    // `motion-safe:` is part of the assertion, not decoration: this toast was one of the two
+    // slideUp call sites that animated for a reduced-motion member (HYG-058). A bare
+    // `toContain('animate-[slideUp…')` passes either way, which is why it did not catch it.
+    expect(el.className).toContain('motion-safe:animate-[slideUp_0.4s_ease-out]')
     // Elevation via the named lift, never a shadow literal (the achievement card used
     // `shadow-xl` + a conditional `shadow-lg`; both are retired here).
     expect(el.className).toContain('lift-3')

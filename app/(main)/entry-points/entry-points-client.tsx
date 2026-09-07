@@ -322,8 +322,16 @@ export function EntryRow({ card, destinationGroups }: { card: EntryCard; destina
             <span className="font-semibold text-text">{card.scans}</span> scan{card.scans === 1 ? '' : 's'}
           </p>
           <div className="mt-2 flex flex-wrap items-center gap-2">
-            {/* Flyer downloads are turned off for now (kept on the dev list, BACKLOG §
-                "Entry-point flyer designer"). QR PNG/SVG + link stay. */}
+            {/* Flyer downloads are turned off here; QR PNG/SVG + link stay. ⚠️ NOT for the
+                reason this comment used to give. It cited BACKLOG.md § "Entry-point flyer
+                designer", a doc retired 2026-06-15, and lib/entry-points/flyer.ts blamed a
+                missing rasterizer font — that font shipped in 349733c4f, one day BEFORE
+                b7c862005 removed these buttons. So the builder and BOTH downloads
+                (/api/entry-points/<slug>/flyer, ?format=svg|png, owner-gated) work today and
+                are simply unlinked. What is actually pending is a product ruling — ship the
+                fixed-template flyer as-is, or replace it with the flyer designer that
+                deferral wanted — carried as OWN-059 in docs/BUILD-BACKLOG.json. Restoring
+                them is two <a> tags; see that row before you do. */}
             <a href={`${qrApi}&format=png&download=${encodeURIComponent(card.slug)}`} className={action}>
               <Download className="h-3 w-3" /> QR PNG
             </a>
