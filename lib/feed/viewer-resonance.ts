@@ -3,7 +3,9 @@
 // blend scorer (lib/feed/blend-rank.ts) reads as its "graph" signal, and the set
 // of people the viewer has hidden from suggestions.
 //
-// Two cheap, request-cached reads compose the map:
+// Two cheap reads compose the map (the map itself is request-cached below, and so is
+// the orbit read: getMyOrbit is wrapped in React cache(), LIVE-179 / ADR-1242, so the
+// Event-Dispatch gate's own getMyOrbit(200) in the same render shares this RPC):
 //   • the ORBIT (my_orbit RPC): people the viewer has real co-presence with
 //     (shared circles + co-events), as a saturating co-presence strength.
 //   • the resonance EDGES (resonance_edges): the nightly reciprocal-match graph,
