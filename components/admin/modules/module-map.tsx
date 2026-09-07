@@ -116,9 +116,13 @@ function SpaceProfileSettingsModule() {
 // rail actually opens. Nothing about behaviour changes: `hasContent` derives from the section count
 // in settings-panel.tsx, not from whether a component is resolved.
 //
-// There is no guard for this. The repo gates the SERVER artifact (`check:build-budget`) and has
-// NOTHING measuring client first-load JS, which is how 1.8 MB accumulated unnoticed. That gap is
-// recorded as follow-up work rather than fixed here.
+// THERE IS A GUARD NOW, and it is the reason a static import here fails a build rather than merely
+// being discouraged. `check:shell-weight` (ADR-1066) runs in `postbuild` beside `check:build-budget`
+// and measures the CLIENT half: Arm A budgets the app shell's eager first-load JS against
+// BUDGET_KB, and Arm B pins named FINGERPRINTS — including "This nexus is archived" from
+// nexus-danger-module.tsx, the exact string that proved the leak — failing if any of them turns up
+// in a shell chunk. It was promoted off `--warn-only` in #2188 after two green production readings,
+// so every module below must stay behind `dynamic()` to keep it green.
 
 export const MODULE_COMPONENTS: Record<string, ComponentType> = {
   // Edit re-entry (ADR-450 §2 · ADR-994 · ADR-996). ONE surface (guided-module.tsx) behind four

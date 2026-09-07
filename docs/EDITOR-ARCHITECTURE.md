@@ -501,7 +501,6 @@ client id. Three things fall out for free rather than being built:
 | 🔴 No zod in any AI path | Hand-written JSON Schema + hand-written `coerce*` per tool does not scale past ~30 sites |
 | ⚠️ Vera's loop does not cache its system prompt | Re-sends voice primer + persona + tool schemas every round. Contradicts [ADR-041](DECISIONS.md) |
 | ⚠️ No rate limit on Vera chat or any composer | Only `/help/ask` is limited |
-| 🔴 `lib/ai/models.ts:27` prices Opus at `{15, 75}` | Opus 4.8 is **$5/$25**. Every Opus path is ledgered at **3×**, so caps trip at a third of intent and the $25/day ceiling is really ~$8 |
 
 ---
 

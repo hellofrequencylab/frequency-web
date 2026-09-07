@@ -499,13 +499,22 @@ right posture for a rule about not breaking people.
 
 #### The rest
 
-1. Every new gate ships behind `featureGatesLive`, which is false. Nothing bites until the grace
-   window closes, which is why Phase 0 made that date visible and editable.
+1. Every new gate ships behind `featureGatesLive()` = `billingLive() && !betaGraceActive(...)`.
+   Nothing bites while a grace window is open, which is why Phase 0 made that date visible and
+   editable at `/admin/pricing` rather than a constant in code.
 2. Any Space already using a now-gated feature gets an explicit grandfather entitlement row rather
    than a silent break.
-3. ⏳ The Phase 0 migrations are written but **not yet applied** — `beta_grace` is still absent and
-   all 11 gate override rows are still live in production. They apply on merge. Until then the fuse
-   described in Phase 0 is still lit.
+3. Both Phase 0 migrations are in the tree and in the ledger.
+   `20270201000000_pricing_gate_overrides_reset` deletes every `pricing_feature_gates` row, so the
+   code map in `lib/pricing/gates.ts` is the only ladder again; an operator re-adds an override from
+   `/admin/pricing` when there is a real reason to, which is the only thing that table was for.
+   `20270314000000_beta_grace_removed` carries the owner's 2026-08-19 decision — the platform-wide
+   feature-gate window is retired, and the half that survives is the per-Space private price grant
+   (`spaces.beta_price_grant`, [ADR-1061](DECISIONS.md)), a checkout fact with nothing to do with
+   gating. That migration **writes** `pricing_settings.beta_grace` rather than deleting the row,
+   because `{"until": null}` is the explicit no-window value `asBetaGrace` honours while a missing
+   or malformed value fails safe to the code default window. The live window is operator-editable,
+   so read it at `/admin/pricing`, never from this page.
 4. Re-run the table above immediately before enforcement goes live. It moved once already.
 
 ### Phase 9 — The verification protocol

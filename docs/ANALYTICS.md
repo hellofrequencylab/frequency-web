@@ -73,20 +73,29 @@ and the registry only makes it queryable as a funnel. `/admin/insights?tab=exper
 
 | Key | Funnel | Steps (marker → marker) |
 |---|---|---|
-| `land_to_beta` | Land to beta | `web_vital` · `web_vital` (path `/beta%`) · `waitlist.joined`/`application.submitted` · 🔴 `account.created` · `onboarding.induction_completed` |
+| `land_to_beta` | Land to beta | `web_vital` · `web_vital` (path `/beta%`) · `waitlist.joined`/`application.submitted` · `account.created` · `onboarding.induction_completed` |
 | `join_to_circle` | Join to first Circle | `onboarding.induction_completed` · `onboarding.vera_opened` · `nav.page_view` (path `/circles%`) · `circle.joined`/`circle.started`/`circle.claimed` |
-| `circle_to_rsvp` | First Circle to first RSVP | `circle.joined`/`circle.started`/`circle.claimed` · `nav.page_view` (path `/events%`) · 🔴 `event.rsvp` |
+| `circle_to_rsvp` | First Circle to first RSVP | `circle.joined`/`circle.started`/`circle.claimed` · `nav.page_view` (path `/events%`) · `event.rsvp` |
 | `practice_to_return` | First practice to the return | `practice.adopted`/`practice.claimed` · `practice.verified` · `practice.verified` within 7 days |
 | `claim_to_published` | Operator: claim to published | `circle.claimed`/`event.claimed` · `nav.page_view` (path `%/manage%`) · `event.posted`/`entry_point.created` |
 
 **Coverage is a first-class value, not an assumption.** Each step carries `observed` (rows
 exist in prod), `emitted` (an emitter exists, no rows yet), or `unimplemented` (🔴 nothing
-emits it). Two steps are 🔴 today and the readout says so rather than printing a zero:
+emits it). **The registry itself is the state; this doc does not restate it** (read
+`journeyGaps()` in `lib/analytics/journeys.ts`, or the readout, for what is 🔴 right now). Two
+steps carried 🔴 for most of the registry's life, and each turned out to be a different failure
+worth keeping in view:
 
-| Gap | Why it matters | Fix |
+| Was a gap | What it turned out to be | Where it is emitted now |
 |---|---|---|
-| 🔴 `account.created` | Registered in the taxonomy, never emitted. Sign-up leaves no ledger row, so waitlist → induction is a black box. | One `track('account.created', …)` on the profile-creation path. |
-| 🔴 `event.rsvp` | Registered in the taxonomy, never emitted: an RSVP writes an `event_rsvps` row and stops. J3 cannot close. | One `track('event.rsvp', { eventId }, profileId)` beside the `event_rsvps` insert. |
+| `account.created` | Not a wiring gap at all by the end: `app/auth/callback/route.ts` had been emitting it, production held 7 rows, and the REGISTRY was stale. A green test pinned the stale pair, so the funnel suppressed a conversion it could already compute. | `app/auth/callback/route.ts`, keyed `account.created:<profileId>`. `observed`. |
+| `event.rsvp` | A real hole for the registry's whole life: an RSVP wrote an `event_rsvps` row and stopped, so the last step of the funnel this product exists to produce read 0 and meant "not measured" (LIVE-189). | `app/(main)/events/actions.ts` → `recordRsvpConversion`, from the `onGoing` block of `toggleRSVP` and `setRsvpStatus`, keyed `event.rsvp:<eventId>:<profileId>` so a re-RSVP cannot double count. `emitted` until prod rows land. |
+
+**Re-measure, never trust the constant.** `coverage` is a hand-written declaration about the
+world, and the `account.created` row above is what a stale one costs. Check the emitter and the
+ledger before believing a step's value; `lib/analytics/journeys.test.ts` asserts the gap list is
+EMPTY, which catches a step reverting to 🔴 but can never tell you a declaration went stale in
+the other direction.
 
 **The identity seam.** `engagement_events` is keyed by profile; the anonymous vitals stream is
 keyed only by an ephemeral per-tab session id, and the two can never be joined (joining them
@@ -132,6 +141,22 @@ stored as `props.vp`. **Account-free by construction** — a bucket of three is 
 page view, never of a person, which is exactly what keeps this stream outside the `analytics`
 consent scope (the ADR-922 invariant). `vitals_p75` takes it as an optional filter and is
 correct both before and after the collector starts writing it.
+
+## Instruments held until there is traffic
+
+Three instruments are designed and deliberately not built, because each one measures a
+distribution and a distribution needs volume before it means anything. They are held on a
+**number**, not on a decision, so the trigger is written here rather than carried as a
+follow-up someone has to remember.
+
+| Instrument | The metric that releases it | Threshold | What ships when it is crossed |
+|---|---|---|---|
+| **Vitals ratchet** (UX-MATURITY-PLAN Lift 7, the follow-up 7e stands in for) | live field p75 per budget class, from `vitals_p75` over `interaction_events kind='web_vital'` | every budget class scores — no `⏳` cell in the readout (its `MIN_SAMPLES` floor is 5 loads per cell) — on two consecutive weekly reads | The [ADR-928](DECISIONS.md) ratchet shape applied to live p75: a frozen number per budget class, a rise fails, a fall is annotated and re-frozen. Its own seeding floor is set from that first real window, **not guessed** — the lesson 7e's first-run thresholds already carry. It then replaces the Lighthouse smoke alarm as the gate, and 7e becomes the pre-merge stopgap it was always described as |
+| **Collector sample rate** (Lift 7d, the half still open) | daily page loads reaching the `/api/vitals` beacon | **~10k / day** | `SAMPLE_RATE` in `lib/analytics/vitals.ts` drops from `1` to `0.25`. Sampling stays **head-based, decided once per page load** — never per metric, which would desynchronize LCP/INP/CLS for the same load — and a p75 over the 7-day window keeps ample n at that rate. The collector stays account-free either way; that invariant is the consent posture, not a tuning knob. (7d's other half, the `viewport_class` dimension, is already on the beacon — see above.) |
+| **Session-replay lite**, consent-gated (Lift 1d) | weekly active members | **>1k WAM** | Revisit only. The default answer stays **no new vendor** (the ADR-922 stance); if one is adopted it gates on the existing `analytics` consent scope and the adoption is recorded as its own ADR |
+
+Below its threshold, each instrument would report noise, and a gate that reports noise is the
+thing four ADRs in this repo warn about: it gets muted, and then it reads as coverage.
 
 ## Event taxonomy (canonical)
 

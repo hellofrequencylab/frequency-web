@@ -62,11 +62,20 @@ export async function createBundleCheckout(opts: {
   if (requested.length + 1 > config.seats) return null
 
   const db = createAdminClient()
-  const { data: profile } = await db
+  // DIRECTION — FAIL CLOSED (SCAN-539), matching the seat-roster read below, which already returns null
+  // on `error`. A PostgREST error arrives in `error`, not as a throw, so an unchecked read reads exactly
+  // like "this buyer has no customer yet" and makes Stripe mint a DUPLICATE customer, splitting the
+  // payer's bundle subscription off from the rest of their billing for good. Refusing costs one
+  // retryable checkout; a buyer with genuinely no customer row still proceeds on customer_email.
+  const { data: profile, error: profileErr } = await db
     .from('profiles')
     .select('stripe_customer_id')
     .eq('id', opts.profileId)
     .maybeSingle()
+  if (profileErr) {
+    console.error('[bundle-checkout] stripe_customer_id unreadable, refusing checkout:', profileErr.message)
+    return null
+  }
   const customer = (profile as { stripe_customer_id?: string | null } | null)?.stripe_customer_id ?? undefined
 
   // Every co-seat must be a real profile before any money moves: the seating RPC drops ids it cannot

@@ -50,7 +50,7 @@ Role-appropriate visibility throughout: drafts owner/guide+ only; active Circles
 | Migrations + seed | `supabase/migrations/` | low (done) |
 | Types + guidance library | `lib/circles/templates.ts` | low (done) |
 | Server actions: adopt / publish / generate-events / Vera | `lib/circles/*`, action files | low |
-| Staff admin: index + per-template builder + toggles | `/admin/circle-templates` (+ nav registration, **deferred** — `sections.ts` / `lib/admin/nav.ts` / `lib/menus` are the reorg hot zone) | medium |
+| Staff admin: index + per-template builder + toggles | `/admin/circle-templates`, registered in nav as the `circle-templates` leaf of `STUDIO_LEAVES` (`lib/nav/studio.ts`) — the reorg landed on one catalog ([ADR-848](DECISIONS.md), [`MENU-CONTRACT.md`](MENU-CONTRACT.md)), so the row is a data edit, not a rail edit | low |
 | Member builder + 4-entry wizard + gallery | `/circles/new`, `/circles/[slug]/edit`, `/circles/templates` | high (defer to post-reorg) |
 | Wiring into Circle detail + `/lead` | `/circles/[slug]`, `/lead` | high (defer) |
 
@@ -86,7 +86,7 @@ Beyond the `/circles/templates` gallery, the active blueprints are surfaced as *
 
 1. **Foundation** (done, local): migrations + seed + types + guidance + this doc.
 2. **Actions + Vera** (done, local): `lib/circles/templates-data.ts` (read layer), `lib/circles/remix.ts` (remix + publish + `ensureHostOnOwnership`), `lib/circles/events.ts` (one-click events), `app/(main)/circles/remix-actions.ts` (authz wrappers), and the full Vera set: `circle-spark` (draft the frame from Q&A or outline), `circle-compose` (fill one section), `circle-edit` (edit-by-instruction patch). Claim relabeled to **Remix** (`components/circles/claim-circle.tsx`) + canon in `NAMING.md`. **Wires in at Stage 4:** outline upload reuses `lib/journeys/extract-text.ts`; the compose/edit apply-to-draft actions live with the builder's autosave.
-3. **Staff admin**: `/admin/circle-templates` index + per-template builder + toggles (nav registration deferred until the reorg settles).
+3. **Staff admin**: `/admin/circle-templates` index + per-template builder + toggles. Nav registration is no longer a separate step: the reorg settled on one catalog per scope ([ADR-848](DECISIONS.md)), and `circle-templates` is a `STUDIO_LEAVES` row in `lib/nav/studio.ts` carrying its own `world` / `adminGroups` / `adminNav` placement.
 4. **Member builder**: full-page builder, 4-entry wizard, gallery, then wire into the Circle detail page and `/lead`; execute the gut list in the same change.
 
 Nothing is pushed or applied to the database until the page/admin reorg lands and the owner gives the go.

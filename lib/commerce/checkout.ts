@@ -73,13 +73,24 @@ async function resolveCharge(seller: ProductRow, grossCents: number, source: Ord
     //
     // Reads the REAL `membership_tier`, not the beta-granted one: BETA_OPEN_ACCESS reports 'crew' to
     // every signed-in member, and billing the Crew rate to someone who has not bought Crew charges them
-    // for a discount they do not hold. Fail-safe — an error leaves the tier null, which prices at the
-    // free rung (never under-collect).
-    const { data: sellerProf } = await db()
+    // for a discount they do not hold.
+    //
+    // DIRECTION — FAIL CLOSED ON THE TRANSACTION (SCAN-539). The old comment claimed "fail-safe — an
+    // error leaves the tier null, which prices at the free rung", but a PostgREST error arrives in
+    // `error`, not as a throw, so that was never a decision: the unchecked null fell through and billed
+    // a Crew seller the free rung's 10% on a rate they had paid to buy down to 8%. Over-charging on a
+    // contract we could not verify is worse than not selling: it takes real money and stays invisible
+    // until the seller audits their receipts, while refusing costs one retryable checkout. A genuinely
+    // absent profile row (`data === null`, no error) still prices at the free rung — only UNKNOWN refuses.
+    const { data: sellerProf, error: sellerProfErr } = await db()
       .from('profiles')
       .select('membership_tier')
       .eq('id', seller.owner_profile_id ?? '')
       .maybeSingle()
+    if (sellerProfErr) {
+      console.error('[commerce] seller membership tier unreadable, refusing checkout:', sellerProfErr.message)
+      return { error: CHECKOUT_START_FAILED }
+    }
     const sellerTier = (sellerProf as { membership_tier: string | null } | null)?.membership_tier ?? null
     return {
       platformFeeCents: await memberTakeRateCents(grossCents, source, sellerTier),

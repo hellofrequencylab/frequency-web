@@ -17,11 +17,15 @@ pnpm test:rls           # = supabase test db  → runs every *.test.sql here via
 
 The Supabase CLI is not installed in the cloud sandbox, so these run **locally or in CI**, not in
 the agent environment. CI wiring is in **`.github/workflows/db-tests.yml`** — it boots a fresh
-local Supabase (`supabase db start`, applying every migration), then runs `supabase test db`. It's
-**manual (`workflow_dispatch`) for now**: until the migration ledger is reconciled
-(`OPEN-THREADS.md` §A2) a fresh full apply may surface latent migration bugs. Run it from the
-Actions tab; once it's reliably green, enable the `pull_request` trigger and mark it a required
-check so migration drift can never ship again.
+local Supabase (`supabase db start`, applying every migration), then runs `supabase test db`.
+
+It runs on **every pull request** that touches `supabase/migrations/**`, `supabase/tests/**` or the
+workflow itself, and it is a **required check** on `main` (ADR-923 opened the `pull_request`
+trigger on 2026-08-03 once the ledger was reconciled; ADR-1150 made it required on 2026-08-25).
+`workflow_dispatch` is still there, so an ad-hoc run from the Actions tab remains available.
+Because the trigger is path-filtered and the context is required, `db-tests-fallback.yml` posts a
+`db-tests` context for pull requests that touch none of those paths — without it such a PR waits
+forever on a status nothing will report.
 
 ## What's here / what to add
 

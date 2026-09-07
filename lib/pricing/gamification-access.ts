@@ -73,11 +73,25 @@ export async function resolveViewerGamificationAccess(): Promise<GamificationAcc
     const user = await getCachedUser()
     if (!user) return 'earn_only'
     const admin = createAdminClient()
-    const { data } = await admin
+    const { data, error } = await admin
       .from('profiles')
       .select('membership_tier, gamification_access_override')
       .eq('auth_user_id', user.id)
       .maybeSingle()
+    // DIRECTION — FAIL OPEN (SCAN-539), which is what this module's header has always promised and what
+    // its sibling gamificationFullAllowed already does ("any error degrades to today's behavior, never to
+    // a lockout"). A PostgREST error arrives in `error`, not as a throw, so the try/catch below never
+    // engaged and the unchecked null fell into the `!data` arm: a signed-in, paid, full-access member was
+    // silently DOWNGRADED to 'earn_only' — the entitlement they bought disappearing with no error shown.
+    // On an unreadable profile we cannot derive a tier, so the two candidate answers are "assume free"
+    // (revokes a paid entitlement for the duration of the outage) and "assume full" (lets a free member
+    // see the full loop for one request). The second is the smaller wrong answer, and it is the one the
+    // module documents. `data === null` with no error is a genuinely absent profile and still reads
+    // 'earn_only'; only the UNKNOWN case grants.
+    if (error) {
+      console.error('[gamification-access] profile unreadable, granting full (fail-open):', error.message)
+      return 'full'
+    }
     if (!data) return 'earn_only'
     const flags = await loadPricingFlags()
     return resolveGamificationAccessWithFlags(

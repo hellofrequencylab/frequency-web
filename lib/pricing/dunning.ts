@@ -33,15 +33,31 @@ export async function resolveMemberPaymentState(profileId: string | null | undef
     // While billing is OFF the recovery UX is entirely dark — never read or surface a status.
     if (!(await billingLive())) return 'active'
     const admin = createAdminClient()
-    const { data } = await (admin as unknown as {
+    const { data, error } = await (admin as unknown as {
       from: (t: string) => {
-        select: (c: string) => { eq: (col: string, v: string) => { maybeSingle: () => Promise<{ data: Record<string, unknown> | null }> } }
+        select: (c: string) => {
+          eq: (col: string, v: string) => {
+            maybeSingle: () => Promise<{ data: Record<string, unknown> | null; error: { message?: string } | null }>
+          }
+        }
       }
     })
       .from('profiles')
       .select('membership_payment_status')
       .eq('id', profileId)
       .maybeSingle()
+    // DIRECTION — FAIL OPEN, DELIBERATELY (SCAN-539). This is the one site in the sweep whose behaviour is
+    // unchanged: 'active' is the right answer on an unreadable status, because the wrong answer in the
+    // other direction is a FALSE past-due wall in front of a member whose card is fine, and this module's
+    // whole contract is "never strand a paying member behind one". What was wrong is that it was an
+    // accident: a PostgREST error arrives in `error`, not as a throw, so the try/catch documented as the
+    // fail-safe never engaged and the unchecked null merely happened to land on 'active'. It is now a
+    // decision, and the error is logged, so an outage that hides every recovery banner leaves a trace
+    // instead of looking like a platform with no past-due members.
+    if (error) {
+      console.error('[dunning] membership_payment_status unreadable, reading as active (fail-open):', error.message)
+      return 'active'
+    }
     return asMemberPaymentState(data?.membership_payment_status)
   } catch {
     return 'active'

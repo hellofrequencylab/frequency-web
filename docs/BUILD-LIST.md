@@ -444,7 +444,11 @@ Products have not been synced, so the Stripe catalog is empty. To go live, **in 
 | 5 | Turn ON the per-plan `*_enabled` flags for the plans you want to sell | 📋 | `/admin/pricing` |
 | 6 | **Flip the master switch `billing_live`** (the real go-live; this is when charging begins) | 📋 do last | `/admin/pricing` |
 
-**Deferred:** per-seat operator billing (the "+$9/seat" auto-charge, ADR-373). **Recommendation:** you can
+**Operator seats** are built, not deferred: `operator_seat` is a per-seat catalog item on any paid
+plan ([ADR-799](DECISIONS.md)), and it stays inert until an owner sets a real seat amount and flips
+`catalog_operator_seat_active`. `setOperatorSeatActive(true)` refuses that flip while no amount is
+set ([ADR-803](DECISIONS.md)), a guard added after the first live sync minted the $9 placeholder as
+an immutable Stripe price. **Recommendation:** you can
 do step 3 (Sync) any time to populate and review the catalog with zero risk; keep step 6 (`billing_live`)
 OFF until you are truly ready to charge members.
 
@@ -1460,10 +1464,17 @@ The guard in `lib/meta-scan-highs.test.ts` pinned the literal `100dvh-3.5rem` �
 bug. Rewritten to assert what it protects (dvh never vh, the shell gutter mirrored, both tokens
 present, and the old shape prohibited), it then caught two more files I had missed.
 
-### ⚠️ Still open — one decision, not a task
+### White-on-amber was decided, and neither the label nor the amber moved
 
-**White-on-amber button text.** The DAWN artifact shows white on `#E2912F`; the shipped token is
-ink. Measured: ink 7.35:1 (passes AA and AAA), white **2.52:1** (needs 4.5). White cannot ship on
-the current amber without failing `check:contrast` and degrading every primary button in the
-product. Either darken the amber (~`#8A5410` puts white at 6.26:1, but that is a real brand shift,
-not a tweak) or correct the DS artifact to match the shipped ink. **Owner's call.**
+The question this section used to hold open — darken the amber, or correct the DAWN artifact to the
+shipped ink — was answered with neither. [ADR-1031](DECISIONS.md) (2026-08-13) put the **white**
+label on the unchanged `#E2912F`: `--color-text-on-primary` is `#FFFFFF`, the brand amber is
+untouched, and the shortfall is **disclosed rather than beaten** — the pair rides as a named,
+frozen waiver in `scripts/check-contrast.mjs` (2.52:1 on DAWN light, down to 1.88:1 on DAWN dark)
+instead of failing the gate.
+
+A letterpress finish (`.text-emboss` + `chisel`) briefly shipped alongside it, because a four-edge
+zero-blur ring is credited by axe as a text stroke and moved the measured number to 15.2-19.8:1.
+[ADR-1096](DECISIONS.md) (2026-08-21) removed it: the label is still white on amber to a reader, so
+a **finish must never be cited as mitigation**. Filled controls carry `lift-1`. The fill waivers for
+pills, badges and toggles are unchanged.

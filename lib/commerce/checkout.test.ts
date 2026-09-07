@@ -125,7 +125,13 @@ vi.mock('./order-source', () => ({ classifyOrderSource: vi.fn(async () => ({ sou
 vi.mock('@/lib/pricing/network-world', () => ({ effectiveOrderSource: (s: string) => s }))
 vi.mock('@/lib/spaces/booking', () => booking)
 vi.mock('@/lib/finance/record', () => ledger)
-vi.mock('./selling', () => ({ canTakePayments: (k: string) => k === 'space' || k === 'platform' }))
+// The role gate. Default = production truth (space / platform only). The SCAN-539 block below flips
+// `allowProfile` so the individual-seller branch of resolveCharge — which canTakePayments currently
+// keeps unreachable from this entry point — can still be exercised.
+const selling = vi.hoisted(() => ({ allowProfile: false }))
+vi.mock('./selling', () => ({
+  canTakePayments: (k: string) => k === 'space' || k === 'platform' || (selling.allowProfile && k === 'profile'),
+}))
 vi.mock('./variants', () => ({ getVariantsByIds: vi.fn(async () => new Map()) }))
 
 import {
@@ -157,6 +163,7 @@ function hasFilter(c: Call, op: string, k: string, v?: unknown): boolean {
 
 beforeEach(() => {
   state.reset()
+  selling.allowProfile = false
   vi.clearAllMocks()
   stripeFake.checkout.sessions.create.mockImplementation(async () => ({ id: 'cs_1', url: 'https://stripe.test/cs_1' }))
   stripeFake.checkout.sessions.expire.mockImplementation(async () => ({}))
@@ -449,5 +456,56 @@ describe('recordCommerceRefund — a full refund puts tracked stock back on the 
     await recordCommerceRefund('pi_1')
     expect(firstCall((c) => c.table === 'commerce_order_items')).toBeUndefined()
     expect(ledger.recordFinancialTransaction).not.toHaveBeenCalled()
+  })
+})
+
+// ── SCAN-539 ─────────────────────────────────────────────────────────────────────────────────────
+// resolveCharge reads the seller's REAL `profiles.membership_tier` to pick the take-rate rung (free
+// Member 10%, Crew 8%). A PostgREST failure arrives in `error`, not as a throw, so the unchecked read
+// fell through as `sellerTier = null` and billed a Crew seller the free rung's 10% on a rate they had
+// paid to buy down to 8%. DIRECTION: fail CLOSED on the TRANSACTION — refuse rather than take real
+// money at a rate we could not verify. A genuinely absent row (no error) still prices at the free rung.
+
+describe('createCommerceCheckout — an unreadable seller tier never charges an unverified rate (SCAN-539)', () => {
+  const PROFILE_PRODUCT = {
+    ...PRODUCT,
+    owner_kind: 'profile',
+    owner_profile_id: 'seller-1',
+    owner_space_id: null,
+  }
+  const input = { items: [{ productId: 'p1', qty: 2 }], buyerProfileId: 'buyer-1' }
+
+  function handler(profilesResult: { data?: unknown; error?: { message: string } | null }) {
+    state.setHandler((c) => {
+      if (c.table === 'commerce_products' && c.op === 'select') return { data: [PROFILE_PRODUCT] }
+      if (c.table === 'profiles' && c.op === 'select') return profilesResult
+      if (c.table === 'commerce_orders' && c.op === 'insert') return { data: { id: 'o1' } }
+      if (c.table === 'commerce_order_items' && c.op === 'insert') return { data: [] }
+      if (c.table === 'commerce_orders' && c.op === 'update') return { data: [{ id: 'o1' }] }
+      return {}
+    })
+  }
+
+  it('refuses the checkout, writes no order and opens no session', async () => {
+    selling.allowProfile = true
+    handler({ data: null, error: { message: '57014 statement timeout' } })
+
+    const res = await createCommerceCheckout(input)
+
+    expect(res.url).toBeUndefined()
+    expect(res.error).toMatch(/Could not start checkout/)
+    expect(stripeFake.checkout.sessions.create).not.toHaveBeenCalled()
+    // The refusal happens in fee resolution, BEFORE the pending order is written.
+    expect(state.events).not.toContain('insert:commerce_orders')
+  })
+
+  it('still sells on a clean read (the guard bites only on an unreadable tier)', async () => {
+    selling.allowProfile = true
+    handler({ data: { membership_tier: 'crew' } })
+
+    const res = await createCommerceCheckout(input)
+
+    expect(res.url).toBe('https://stripe.test/cs_1')
+    expect(stripeFake.checkout.sessions.create).toHaveBeenCalledTimes(1)
   })
 })

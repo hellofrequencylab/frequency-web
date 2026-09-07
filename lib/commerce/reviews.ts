@@ -170,14 +170,27 @@ export async function upsertProductReview(input: {
   // Moderation must be DURABLE: if an operator hid this member's review, editing/re-submitting it must
   // NOT flip it back to visible (else moderation is trivially reversible by the author). Preserve an
   // existing 'hidden' status; a brand-new review defaults to 'visible'.
-  const { data: existing } = await db()
+  //
+  // DIRECTION — FAIL CLOSED (SCAN-539): `error` is destructured and checked because a PostgREST error
+  // arrives in `error`, not as a throw, and an unchecked read left `existing` null, which took the
+  // "brand-new review" branch and wrote status 'visible' — silently UN-HIDING a review an operator had
+  // moderated, by the author's own edit. On an unreadable prior status we do not know whether this
+  // review is hidden, so we refuse the WRITE rather than guess. Refusing is safer than either guess:
+  // defaulting to 'visible' reverses moderation, and defaulting to 'hidden' would silently bury a
+  // first-time reviewer's honest review with no signal to them. `false` is the caller's existing
+  // "could not save, try again" arm, so a transient blip is retryable and nothing is lost.
+  const { data, error } = await db()
     .from('commerce_reviews')
     .select('status')
     .eq('product_id', input.productId)
     .eq('reviewer_profile_id', input.reviewerProfileId)
     .maybeSingle()
-  const status = (existing as { status?: string } | null)?.status === 'hidden' ? 'hidden' : 'visible'
-  const { error } = await db()
+  if (error) {
+    console.error('[reviews] prior moderation status unreadable, refusing upsert:', error.message)
+    return false
+  }
+  const status = (data as { status?: string } | null)?.status === 'hidden' ? 'hidden' : 'visible'
+  const { error: upsertErr } = await db()
     .from('commerce_reviews')
     .upsert(
       {
@@ -191,7 +204,7 @@ export async function upsertProductReview(input: {
       },
       { onConflict: 'product_id,reviewer_profile_id' },
     )
-  return !error
+  return !upsertErr
 }
 
 /** Hide a review (operator moderation; reversible, sets status hidden rather than deleting). */
