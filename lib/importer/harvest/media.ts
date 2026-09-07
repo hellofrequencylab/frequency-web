@@ -8,6 +8,9 @@
 // FAIL-SAFE: a download or upload error returns null (the harvest records the source url
 // with its status and moves on). We NEVER assert ownership of a harvested image; the
 // source url is recorded on the HarvestedSource for the rights trail (docs §7).
+//
+// LIFECYCLE: what lands here is swept by ./staging-lifecycle.ts (LIVE-120, ADR-1251): on Apply,
+// everything the applied draft no longer references; nightly, the prefixes of abandoned intakes.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { createAdminClient } from '@/lib/supabase/admin'

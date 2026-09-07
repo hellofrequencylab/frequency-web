@@ -16,6 +16,9 @@ const state = vi.hoisted(() => ({
   /** Per-table canned reply for the awaited builder. */
   replies: {} as Record<string, Response>,
   studioDraftsPurged: 0,
+  /** What the importer staging age-out (LIVE-120) was asked for, and what it reports back. */
+  stagingCalls: [] as { now: string }[],
+  stagingRemoved: 0,
   logged: { info: [] as Record<string, unknown>[], error: [] as { event: string; fields?: Record<string, unknown> }[] },
 }))
 
@@ -47,6 +50,14 @@ vi.mock('@/lib/supabase/admin', () => ({
 vi.mock('@/lib/studio/draft-store', () => ({
   purgeExpiredStudioDrafts: () => Promise.resolve(state.studioDraftsPurged),
 }))
+// The importer staging age-out (LIVE-120, ADR-1251) has its own tests against a fake bucket; here it
+// is a collaborator the nightly run must ask for, with the run's clock, and report beside the tables.
+vi.mock('@/lib/importer/harvest/staging-lifecycle', () => ({
+  sweepStaleImporterStaging: (opts: { now?: Date }) => {
+    state.stagingCalls.push({ now: opts.now?.toISOString() ?? '' })
+    return Promise.resolve({ foldersSeen: 1, removed: state.stagingRemoved, kept: 0, errors: 0 })
+  },
+}))
 vi.mock('@/lib/cron-auth', () => ({ rejectUnauthorizedCron: () => null }))
 vi.mock('@/lib/observability/cron-heartbeat', () => ({
   withCronHeartbeat: (_name: string, handler: unknown) => handler,
@@ -76,6 +87,8 @@ beforeEach(() => {
   state.deletes.length = 0
   state.replies = {}
   state.studioDraftsPurged = 0
+  state.stagingCalls.length = 0
+  state.stagingRemoved = 0
   state.logged.info.length = 0
   state.logged.error.length = 0
   vi.useFakeTimers()
@@ -128,6 +141,22 @@ describe('GET /api/cron/enforce-retention, cron_run_markers is bounded (LIVE-174
       studioDraftsPurged: 3,
       cronMarkersPurged: 0,
     })
+  })
+})
+
+describe('GET /api/cron/enforce-retention, importer staging media is aged out beside the tables (LIVE-120)', () => {
+  it('asks the staging age-out to run on the same clock and reports what it removed', async () => {
+    state.stagingRemoved = 3
+    const res = await GET(req)
+    expect(state.stagingCalls, 'before LIVE-120 nothing ever removed a harvested staging file').toEqual([{ now: '2026-09-06T03:00:00.000Z' }])
+    expect(await res.json()).toMatchObject({ ok: true, importerStagingPurged: 3 })
+    expect(state.logged.info[0]).toMatchObject({ importerStagingPurged: 3 })
+  })
+
+  it('is a storage prefix, not a table: it does not join purgedByTable', async () => {
+    const res = await GET(req)
+    const body = (await res.json()) as { purgedByTable: Record<string, number> }
+    expect(Object.keys(body.purgedByTable)).not.toContain('importerStagingPurged')
   })
 })
 

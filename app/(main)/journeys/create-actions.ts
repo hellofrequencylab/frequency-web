@@ -12,6 +12,7 @@ import { ok, fail, type ActionResult } from '@/lib/action-result'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { Database } from '@/lib/database.types'
 import { createPlan } from '@/lib/journey-plans'
+import { proposeAndConfirmCreate } from '@/lib/ai/vera/create-entity'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { getTemplate, templateToBlocks, MASTER_FRAMEWORK, masterFrameworkToBlocks } from '@/lib/journeys/templates'
@@ -87,8 +88,22 @@ export async function createJourneyDraftAction(title: string, spaceSlug?: string
   const clean = title.trim().slice(0, 120)
   if (!clean) redirect(spaceSlug ? createFallback(spaceSlug) : '/journeys/new')
 
-  const plan = await createPlan({ authorId: ctx.authorId, title: clean, spaceId: ctx.spaceId })
-  if (!plan) redirect(createFallback(spaceSlug))
+  // THE GOVERNED WRITE (ADR-988, ADR-1249): the author committed a title, so one call proposes,
+  // claims and commits through the same writer, and the audit row is written. A refusal at any
+  // phase lands on the same fallback a failed write always did (this action has no return channel).
+  const governed = await proposeAndConfirmCreate({
+    entity: 'journey',
+    draft: { title: clean },
+    spaceId: ctx.spaceId,
+    rationale: 'Journey editor, deferred-title road: the author named the Journey and committed it.',
+    commit: async () => {
+      const created = await createPlan({ authorId: ctx.authorId, title: clean, spaceId: ctx.spaceId })
+      if (!created) throw new Error('Could not create the Journey.')
+      return created
+    },
+  })
+  if ('error' in governed) redirect(createFallback(spaceSlug))
+  const plan = governed.data
 
   // Three phase boxes, ready to edit (the author fills them, or rebuilds with Vera).
   const admin = createAdminClient()
@@ -217,8 +232,33 @@ export async function createJourneyFromSparkAction(input: {
   const title = input.title.trim().slice(0, 120)
   if (!title) redirect(spaceSlug ? createFallback(spaceSlug) : '/journeys/new')
 
-  const plan = await createPlan({ authorId, title, summary: input.promise.trim().slice(0, 280) || null, spaceId: ctx.spaceId })
-  if (!plan) redirect(createFallback(spaceSlug))
+  // THE GOVERNED WRITE (ADR-988, ADR-1249): the author reviewed the identity and committed it.
+  // Same writer, same input; the seeding below is unchanged and runs after the row exists.
+  const summary = input.promise.trim().slice(0, 280) || null
+  const governed = await proposeAndConfirmCreate({
+    entity: 'journey',
+    draft: {
+      title,
+      summary: summary ?? '',
+      intro: input.overview.trim().slice(0, 8000),
+      answers: {
+        who: input.answers.who,
+        topic: input.answers.topic,
+        outcome: input.answers.outcome,
+        weeks: input.answers.weeks,
+        pace: input.answers.pace,
+      },
+    },
+    spaceId: ctx.spaceId,
+    rationale: 'Journey builder, spark road: the author reviewed the identity and committed it.',
+    commit: async () => {
+      const created = await createPlan({ authorId, title, summary, spaceId: ctx.spaceId })
+      if (!created) throw new Error('Could not create the Journey.')
+      return created
+    },
+  })
+  if ('error' in governed) redirect(createFallback(spaceSlug))
+  const plan = governed.data
 
   const admin = createAdminClient()
   const a = input.answers
@@ -330,13 +370,26 @@ export async function createJourneyFromTemplateAction(templateId: string | null,
   if ('error' in ctx) redirect(createFallback(spaceSlug))
 
   const template = templateId ? getTemplate(templateId) : null
-  const plan = await createPlan({
-    authorId: ctx.authorId,
-    title: template ? template.name : 'Untitled journey',
-    emoji: template?.emoji ?? null,
+  const title = template ? template.name : 'Untitled journey'
+  // THE GOVERNED WRITE (ADR-988, ADR-1249): the author picked a template (or none) and committed.
+  const governed = await proposeAndConfirmCreate({
+    entity: 'journey',
+    draft: { title, emoji: template?.emoji ?? '' },
     spaceId: ctx.spaceId,
+    rationale: 'Journey builder, template road: the author picked a starting structure and committed it.',
+    commit: async () => {
+      const created = await createPlan({
+        authorId: ctx.authorId,
+        title,
+        emoji: template?.emoji ?? null,
+        spaceId: ctx.spaceId,
+      })
+      if (!created) throw new Error('Could not create the Journey.')
+      return created
+    },
   })
-  if (!plan) redirect(createFallback(spaceSlug))
+  if ('error' in governed) redirect(createFallback(spaceSlug))
+  const plan = governed.data
 
   if (template) {
     const admin = createAdminClient()

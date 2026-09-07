@@ -35,6 +35,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { mergeProfileMeta, mergeProfileMetaPath } from '@/lib/profiles/meta'
 import { getSpaceById, loadRootSpaceId } from '@/lib/spaces/store'
 import { insertSpaceLibraryImage, fileAssetsIntoSpacesCollection } from '@/lib/library/store'
+import { sweepIntakeStaging } from './harvest/staging-lifecycle'
 import { withImageOrder } from './media-order'
 import { composeMarketingLayout } from './compose'
 import { buildSourceExcerpt } from './excerpt'
@@ -749,6 +750,13 @@ export async function applyIntake(
 
   await store.markApplied(intakeId, result.spaceId)
   await store.setStatus(intakeId, 'applied', { error: null })
+
+  // STAGING LIFECYCLE (LIVE-120, ADR-1251): the harvest copied this business's logo / hero / gallery
+  // into site-media under importer/<intakeId>/, and the seeded Space stores the draft's URLs AS-IS
+  // (mapIdentity above), so what the draft still references is live and stays. Everything else
+  // under the prefix is a capture nobody kept, and this is the moment it goes. Best-effort: a
+  // storage miss is logged inside the sweep and never fails an apply that has already committed.
+  await sweepIntakeStaging(intakeId, { mode: 'materialized', keepFrom: { draft: row.draft, inputs: row.inputs } })
   return result
 }
 

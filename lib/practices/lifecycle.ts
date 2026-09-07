@@ -101,6 +101,18 @@ export interface LifecycleSweepResult {
   remindersSent: number
   stalePrompts: number
   errors: number
+  /** Rows across the three phases the clock cut off (LIVE-190). The next hourly pass re-reads
+   *  each phase from its own query, so nothing is lost; the number says how far behind it ran. */
+  remaining: number
+  /** True when the caller's clock ran out inside any phase. */
+  stoppedOnBudget: boolean
+}
+
+export interface LifecycleSweepOptions {
+  /** Rows one phase reads (default SWEEP_CAP). Applied to every phase's driving query. */
+  limit?: number
+  /** Wall-clock check from the cron budget; true means stop before the next row. */
+  exhausted?: () => boolean
 }
 
 /** Days of silence before an ONGOING self adoption earns the one quiet "still keeping this?"
@@ -123,8 +135,24 @@ function chunks<T>(arr: T[], size: number): T[][] {
 }
 
 /** One sweep pass. `now` injectable for tests. Never throws. */
-export async function runPracticeLifecycleSweep(now: Date = new Date()): Promise<LifecycleSweepResult> {
-  const result: LifecycleSweepResult = { completionsRetired: 0, completionNotices: 0, remindersSent: 0, stalePrompts: 0, errors: 0 }
+export async function runPracticeLifecycleSweep(
+  now: Date = new Date(),
+  opts: LifecycleSweepOptions = {},
+): Promise<LifecycleSweepResult> {
+  const result: LifecycleSweepResult = {
+    completionsRetired: 0, completionNotices: 0, remindersSent: 0, stalePrompts: 0, errors: 0,
+    remaining: 0, stoppedOnBudget: false,
+  }
+  const cap = Math.max(1, opts.limit ?? SWEEP_CAP)
+  const exhausted = opts.exhausted ?? (() => false)
+  /** LIVE-190: the per-row clock check every phase shares. Returns true when the phase must stop,
+   *  having already counted the rows it leaves. */
+  const outOfTime = (left: number): boolean => {
+    if (!exhausted()) return false
+    result.stoppedOnBudget = true
+    result.remaining += left
+    return true
+  }
   const admin = db()
 
   // ── 1. Term completions ─────────────────────────────────────────────────────────
@@ -140,7 +168,8 @@ export async function runPracticeLifecycleSweep(now: Date = new Date()): Promise
       .eq('source', 'self')
       .not('ends_on', 'is', null)
       .lte('ends_on', utcToday)
-      .limit(SWEEP_CAP)
+      .order('ends_on')
+      .limit(cap)
     type DueRow = {
       profile_id: string
       practice_id: string
@@ -162,7 +191,8 @@ export async function runPracticeLifecycleSweep(now: Date = new Date()): Promise
         }
         for (const r of (tzRows ?? []) as { id: string; home_timezone: string | null }[]) tzById.set(r.id, r.home_timezone)
       }
-      for (const row of due) {
+      for (const [i, row] of due.entries()) {
+        if (outOfTime(due.length - i)) break
         // A member whose tz read failed is skipped (never completed on the wrong midnight);
         // the next hourly pass retries.
         if (!tzById.has(row.profile_id)) continue
@@ -230,7 +260,7 @@ export async function runPracticeLifecycleSweep(now: Date = new Date()): Promise
       .limit(10000)
     const memberIds = [...new Set(((activeRows ?? []) as { profile_id: string }[]).map((r) => r.profile_id))]
       .sort()
-      .slice(0, SWEEP_CAP)
+      .slice(0, cap)
     if (memberIds.length) {
       const tzById = new Map<string, string | null>()
       for (const chunk of chunks(memberIds, ID_CHUNK)) {
@@ -241,7 +271,8 @@ export async function runPracticeLifecycleSweep(now: Date = new Date()): Promise
         }
         for (const r of (tzRows ?? []) as { id: string; home_timezone: string | null }[]) tzById.set(r.id, r.home_timezone)
       }
-      for (const profileId of memberIds) {
+      for (const [i, profileId] of memberIds.entries()) {
+        if (outOfTime(memberIds.length - i)) break
         try {
           // A member whose tz read failed is skipped (a UTC fallback would nudge at the
           // wrong hour); the next hourly pass retries.
@@ -343,7 +374,7 @@ export async function runPracticeLifecycleSweep(now: Date = new Date()): Promise
         .is('ends_on', null)
         .or(`starts_on.lte.${cutoff},starts_on.is.null`)
         .order('created_at')
-        .limit(SWEEP_CAP)
+        .limit(cap)
       type StaleRow = {
         profile_id: string
         practice_id: string
@@ -368,7 +399,8 @@ export async function runPracticeLifecycleSweep(now: Date = new Date()): Promise
           if (r.practice_id) recentPairs.add(`${r.profile_id}:${r.practice_id}`)
         }
       }
-      for (const row of candidates) {
+      for (const [i, row] of candidates.entries()) {
+        if (outOfTime(candidates.length - i)) break
         try {
           if (recentPairs.has(`${row.profile_id}:${row.practice_id}`)) continue
           // Exactly once per (member, practice), ever — the claim also removes the row from

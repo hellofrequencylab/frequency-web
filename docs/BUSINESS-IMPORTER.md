@@ -333,6 +333,14 @@ interface BusinessProfile {
 | `applied` | materialized into `target_space_id` | Apply (§5) |
 | `failed` | a stage errored; `error` set; safe to re-run | any stage |
 
+**Staging media lifecycle (ADR-1251).** Harvest copies logo / hero / gallery into `site-media` under
+`importer/<intakeId>/`, and the seeded Space stores those URLs as-is, so the prefix is swept by
+REFERENCES, not emptied: on Apply, `lib/importer/harvest/staging-lifecycle.ts` removes every object the
+applied draft no longer points at; the nightly `enforce-retention` cron ages out the rest (a row that is
+gone or `applied` is swept the same way, an unapplied row untouched for 30 days is emptied, a live draft is
+left alone), bounded per run. There is no abandon verb in this machine; silence is the abandon path.
+Staging files are never catalogued into the Loom.
+
 ### 3.6 Provenance ledger (the heart of verification)
 
 ```ts

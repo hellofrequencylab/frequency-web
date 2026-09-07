@@ -1,3 +1,6 @@
+// LIVE-190 budget (ADR-1252): 150 messages embedded per invocation; a null embedding is the cursor and the runner counts what is left.
+// The clock is CRON_TIME_BUDGET_MS from lib/cron/budget.ts; app/api/cron/budget.test.ts checks the
+// declaration is applied, not merely written down.
 // Cron — embeds new room messages for semantic search (Phase C, ADR-088 §6).
 // Cheap batch backfill (no insert trigger): newest-unembedded first, so search
 // stays fresh. Called by Vercel Cron (see vercel.json). Requires CRON_SECRET.
@@ -7,6 +10,7 @@ import { embedRoomMessageBacklog } from '@/lib/ai/room-search'
 import { aiAvailable } from '@/lib/ai/usage'
 import { rejectUnauthorizedCron } from '@/lib/cron-auth'
 import { withCronHeartbeat } from '@/lib/observability/cron-heartbeat'
+import { cronBudget } from '@/lib/cron/budget'
 import { log } from '@/lib/log'
 
 export const dynamic = 'force-dynamic'
@@ -20,9 +24,11 @@ async function handler(req: NextRequest) {
     return NextResponse.json({ ok: true, skipped: 'ai_disabled' })
   }
 
-  const result = await embedRoomMessageBacklog(150)
-  log.info('cron.embed_room_messages', result)
-  return NextResponse.json({ ok: true, ...result })
+  const budget = cronBudget(150)
+  const result = await embedRoomMessageBacklog(budget.items)
+  const summary = budget.summary(result.embedded, result.remaining)
+  log.info('cron.embed_room_messages', { ...result, ...summary })
+  return NextResponse.json({ ok: true, ...result, budget: summary })
 }
 
 export const GET = withCronHeartbeat('embed-room-messages', handler)

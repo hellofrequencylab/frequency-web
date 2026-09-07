@@ -8,6 +8,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { purgeExpiredStudioDrafts } from '@/lib/studio/draft-store'
+import { sweepStaleImporterStaging } from '@/lib/importer/harvest/staging-lifecycle'
 import { log } from '@/lib/log'
 
 /** How long raw interaction_events rows are kept before purge (PI.1). The durable
@@ -59,8 +60,10 @@ function db(): SupabaseClient {
 
 /** Delete data past its window: expired member tags, raw interaction_events older than
  *  INTERACTION_RETENTION_DAYS, staged Spark drafts past their seven-day life
- *  (ADR-1001 in docs/DECISIONS.md), and cron run markers past
- *  CRON_MARKER_RETENTION_DAYS. Returns how many of each were purged. */
+ *  (ADR-1001 in docs/DECISIONS.md), cron run markers past
+ *  CRON_MARKER_RETENTION_DAYS, and the importer's staging media (a storage prefix, not a
+ *  table: `site-media/importer/<intakeId>/`, LIVE-120 / ADR-1251) for intakes that were
+ *  applied or abandoned. Returns how many of each were purged. */
 export async function enforceRetention(
   now: Date = new Date(),
 ): Promise<{
@@ -68,6 +71,7 @@ export async function enforceRetention(
   interactionsPurged: number
   studioDraftsPurged: number
   cronMarkersPurged: number
+  importerStagingPurged: number
 }> {
   const { data: tags } = await db()
     .from('member_tags')
@@ -90,11 +94,18 @@ export async function enforceRetention(
 
   const cronMarkersPurged = await purgeExpiredCronRunMarkers(now)
 
+  // The importer's harvested media has no table row to expire, only a storage prefix per intake,
+  // so it is aged out here beside the tables rather than in a cron of its own (the function
+  // count is gated; a housekeeping sweep belongs in the housekeeping cron). BOUNDED per run by
+  // the sweep's own caps; it logs and reports its own failures and never throws.
+  const staging = await sweepStaleImporterStaging({ now })
+
   return {
     tagsPurged: (tags ?? []).length,
     interactionsPurged: (interactions ?? []).length,
     studioDraftsPurged,
     cronMarkersPurged,
+    importerStagingPurged: staging.removed,
   }
 }
 
