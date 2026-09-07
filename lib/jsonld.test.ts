@@ -389,7 +389,10 @@ describe('circleListSchema', () => {
     expect(result.numberOfItems).toBe(2)
     expect(result.itemListElement[0].position).toBe(1)
     expect(result.itemListElement[1].position).toBe(2)
-    expect(result.itemListElement[0].url).toBe(`${SITE_URL}/discover/circles/c1`)
+    // The SLUG, not the uuid (LIVE-182): this is the URL the sitemap advertises and the detail
+    // page canonicals to, and an ItemList that names a different one contradicts both.
+    expect(result.itemListElement[0].url).toBe(`${SITE_URL}/discover/circles/north`)
+    expect(result.itemListElement[1].url).toBe(`${SITE_URL}/discover/circles/south`)
     expect(result.itemListElement[0].name).toBe('North')
   })
 })
@@ -397,11 +400,18 @@ describe('circleListSchema', () => {
 // ── circleSchema ──────────────────────────────────────────────────────────────
 
 describe('circleSchema', () => {
-  it('returns an Organization with an absolute url', () => {
-    const result = circleSchema({ id: 'c1', name: 'North Circle' })
+  it('keys the url on the SLUG, which is the canonical public key (LIVE-182)', () => {
+    const result = circleSchema({ id: 'c1', slug: 'north-county', name: 'North Circle' })
     expect(result['@type']).toBe('Organization')
     expect(result.name).toBe('North Circle')
-    expect(result.url).toBe(`${SITE_URL}/discover/circles/c1`)
+    expect(result.url).toBe(`${SITE_URL}/discover/circles/north-county`)
+  })
+
+  it('falls back to the id when a caller holds no slug, rather than emitting no node', () => {
+    // Every production caller passes a PublicCircle, which carries a NOT NULL slug. The fallback
+    // exists so a partial caller still produces a valid Organization rather than a broken url.
+    expect(circleSchema({ id: 'c1', name: 'North Circle' }).url).toBe(`${SITE_URL}/discover/circles/c1`)
+    expect(circleSchema({ id: 'c1', slug: null, name: 'North Circle' }).url).toBe(`${SITE_URL}/discover/circles/c1`)
   })
 
   it('omits description + location when absent, includes them (city-level) when present', () => {

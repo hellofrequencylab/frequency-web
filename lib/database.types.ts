@@ -16564,6 +16564,21 @@ export type Database = {
           type: string
         }[]
       }
+      public_circle_by_slug: {
+        Args: { _slug: string }
+        Returns: {
+          about: string
+          channel_name: string
+          channel_slug: string
+          city: string
+          id: string
+          member_count: number
+          name: string
+          slug: string
+          status: string
+          type: string
+        }[]
+      }
       public_circles: {
         Args: { _limit?: number }
         Returns: {

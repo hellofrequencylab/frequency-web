@@ -161,11 +161,13 @@ async function resolvePublicTwin(pathname: string | null): Promise<string | null
   if (match.path) return match.path
   try {
     if (match.lookup === 'circle') {
-      // Member route is keyed by slug, the twin by id. Only LISTED circles are in this read,
-      // which is exactly the set /discover/circles/<id> will resolve.
+      // Both routes are keyed by the SLUG now (LIVE-182), so this no longer TRANSLATES anything —
+      // but the read stays, because it is the existence check. Only LISTED circles are in it,
+      // which is exactly the set /discover/circles/<slug> will resolve, so a member on a circle
+      // with no public twin gets null here instead of a link into a 404.
       const circles = await getPublicCircles(200)
       const hit = circles.find((c) => c.slug === match.segment)
-      return hit ? `/discover/circles/${hit.id}` : null
+      return hit ? `/discover/circles/${hit.slug ?? hit.id}` : null
     }
     if (match.lookup === 'channel') {
       // Member route is keyed by id, the twin by slug.

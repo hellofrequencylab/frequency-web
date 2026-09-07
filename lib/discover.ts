@@ -274,6 +274,30 @@ export async function getPublicCircleById(id: string): Promise<PublicCircle | nu
   return rows[0] ?? null
 }
 
+/** A uuid, as the public detail routes receive it in a path segment. */
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+/**
+ * One PUBLIC circle by SLUG (the canonical public key) or by uuid (the legacy URL form).
+ *
+ * LIVE-182: /discover/circles/<uuid> was the canonical URL although circles.slug is NOT NULL and
+ * `public_circle_by_id` has returned it all along — the page read the slug and threw it away. This
+ * is the same slugOrId resolution `getPublicPractice` has used since LIVE-052, so a printed QR code
+ * or a pasted uuid still resolves while the slug is the URL that gets advertised and indexed.
+ *
+ * Both branches are the SAME redaction: `public_circle_by_slug` copies its twin's visibility
+ * predicate verbatim, so arriving by slug can never reveal a circle arriving by id would not.
+ */
+export async function getPublicCircle(slugOrId: string): Promise<PublicCircle | null> {
+  if (UUID.test(slugOrId)) return getPublicCircleById(slugOrId)
+  const supabase = createPublicClient()
+  const rows = await detailRead<PublicCircle>(
+    'public_circle_by_slug',
+    () => supabase.rpc('public_circle_by_slug', { _slug: slugOrId }),
+  )
+  return rows[0] ?? null
+}
+
 /**
  * Circles that belong to a given topical channel. The public_circles RPC
  * doesn't filter by channel, so we fetch the top circles and narrow in JS.
