@@ -36060,3 +36060,74 @@ The right wall clock against the wrong instant, **eight hours out**, four days b
 **Consequences.** One column on two existing selects. `app/discover/events/_data.test.ts` pins both halves, and the split matters: the row shapes in that module are `as unknown as` casts, so **dropping the column from the select literal typechecks cleanly and hands `eventSchema` an undefined zone** — the type system cannot see this class at all. So one half reads the select *literal*, the other asserts the published offset, with the exact production string (`-07:00`) as the positive control.
 
 ⚠️ **The generalisable part is the sizing, not the fix.** The row said "add `time_zone` to both RPCs in a new migration" and was sized against that. The actual change was one column on a read that already existed. **A row that names its own implementation inherits that implementation's cost forever**, and nobody re-prices it — this one sat at P2/S for a day on a plan that was four times too big. Rows should state the consequence they need; the seam is chosen when the work starts, against the tree as it is then.
+
+## ADR-1224: a hex accent's `-strong` text shade is measured per theme, not mixed by a constant (2026-09-07)
+
+**Status.** Accepted. Closes LIVE-211, the accessibility half of the pr-compare failure LIVE-186 recorded. Amends the hex path of [ADR-516](DECISIONS.md) D2 (the brand colour picker).
+
+**Context.** `lib/spaces/accent.ts` maps a Space's picked hex onto the `--color-primary*` family. The `-strong` slot is the one TEXT reads: `PageHeading`'s eyebrow, the active tab, the type badge, every in-body `text-primary-strong`. It was derived as `color-mix(in srgb, <hex> 72%, black)`, one value for both themes. A Space with brand `#1FB6C5` measured **4.24:1 on the light ground and 4.14:1 on the dark ground** against a 4.5 requirement, and the two repairs point in opposite directions: darker on light, LIGHTER on dark, because on a near-black ground darkening moves the text toward the ground. No constant serves both. The built-in token families were contrast-checked by hand (`#11827A on white is 4.67:1`); only the hex path was never held to that rule.
+
+**Decision.**
+
+- **The hex path measures instead of mixing.** `strongShades(hex)` walks the accent toward black (light theme) and toward white (dark theme) in whole-percent steps and keeps the first shade that reads at least 4.52:1 against the hardest ground of that theme. "Hardest" is the darkest light ground and the lightest dark ground across the `:root`, `.dark`, and both midnight skin blocks, so a passing value passes on every ground a themed Space can render on. The 0.02 margin keeps a checker that rounds to two decimals from reading an accepted value as 4.49.
+- **The pair is emitted as `light-dark(<light>, <dark>)`** on the same inline declaration. The browser resolves it from the `color-scheme` the mode already sets on `:root`, `.dark`, and every skin block, so no new theme plumbing, no `<style>` tag, and no change to `AccentScope` or the portal hook, which copies the inline string verbatim.
+- **The least shift wins.** An accent that already reads on a ground is kept as-is there. That is what the dark DAWN palette already does (its `-strong` IS its primary), and it is why the CI accent's dark half is the brand colour itself.
+- **`-hover` and `-bg` are unchanged.** `-hover` is a button ground whose text is the luminance-picked `text-on-primary`; `-bg` is a translucent tint. Neither is the text slot this defect was in.
+- **Fail-safe.** A browser without `light-dark()` drops the inline declaration and inherits the host token: legible and un-branded rather than branded and unreadable.
+
+**Consequences.** `lib/spaces/accent.test.ts` asserts nine accents (the CI one, the host amber, a navy, a yellow, black, white, three saturated primaries) at or above 4.5:1 against **every** ground of each theme, pins the old `#16838E` as failing both, and pins the ground lists to `app/globals.css` in both directions so a new skin ground fails a unit test rather than silently un-measuring the derivation. The row's probe passes because the derivation carries a theme discriminator; it deliberately asserts no percentage, since 68/76 were the numbers for one accent.
+
+⚠️ **The generalisable part.** A derived colour that is never measured is a design-system change that skipped its own gate. The knowledge to measure it (`readableTextOn`, the luminance helper) sat in the same file the whole time; the gap was that one of three paths was exempt. When adding a derived shade, measure it against the ground it will sit on, in the theme it will sit in, before it ships.
+
+## ADR-1225: the Journey prompt fires hourly and lands at each member's local morning (2026-09-07)
+
+**Status.** Accepted. Closes LIVE-193. Sibling of [ADR-1221](DECISIONS.md) (the cron seam) and of SCAN-106 (Vera's dispatch day moved onto a zone).
+
+**Context.** `app/api/cron/journey-prompt` ran once a day at 13:00 UTC and its header said a timezone-aware morning was a follow-up because *"the codebase has no per-profile timezone yet"*. It has one: `profiles.home_timezone` drives the SMS quiet-hours gate, the practice day (`lib/member-day.ts`), and Vera's dispatch. 13:00 UTC is 6am on one coast and after lunch in Lisbon, for a feature whose whole point is a morning nudge.
+
+**Decision.**
+
+- **The schedule is hourly and the route decides per member.** `lib/journeys/prompt-morning.ts` exports `morningFor(now, tz)`: due when it is `LOCAL_MORNING_HOUR` (8) in the member's zone; for a member with no zone on file, or one `Intl` cannot resolve, due at `LEGACY_UTC_HOUR` (13), the old schedule verbatim. Nobody the change cannot improve sees any change.
+- **The decision lives in a lib leaf, not the route.** A Next.js route file may only export its handlers, so the constants and the pure function sit where the test can import them without the route's mocks.
+- **The gate runs before the loader.** One batched read of `home_timezone` for the candidates (chunked at 500 for the PostgREST URL ceiling), then a per-member hour check that costs nothing; on 23 of 24 runs a member is simply `notDue`, and that answer must not cost a `getDailyJourneyPrompt` call. A failed timezone read logs a warning and falls the chunk back to the legacy hour rather than silencing the run.
+- **The dedupe key and the push tag carry the member's local day.** `journey-prompt:<id>:<local day>`, so Auckland at 20:00Z on the 5th is keyed to the 6th. The once-per-day guard (migration 20270345000700) is unchanged and now means once per *local* day.
+
+**Consequences.** `hourInZone` joins `dayInZone` in `lib/time/zone.ts`. The route test pins the four cases that matter: a Pacific member not due at 13:00Z and due at 15:00Z; Lisbon and Auckland served by different UTC runs with Auckland's key on their own day; an unparseable zone treated as none; and a not-due member costing no loader call. `docs/ARCHITECTURE.md`'s cron table says hourly, and `check-arch-doc` holds at 27 claims.
+
+⚠️ **The owner-side consequence.** `scripts/cron-freshness.mjs` now derives a 2-hour fresh-by window for this job instead of two days, so the matching Healthchecks.io check period has to move to hourly or it pages on the first missed hour. That is the third-party half of OWN-005 and cannot be set from the repo.
+
+⚠️ **The generalisable part.** A comment that says *"the codebase has no X yet"* is a claim with an expiry date. This one expired when `home_timezone` shipped and sat for months because a marker in a header is not a row. The backlog audit that filed LIVE-193 swept the tree for exactly that shape; the fix was a day's work once anyone looked.
+
+## ADR-1226: a backlog probe reports its own cost, so the guard runs in parallel (2026-09-07)
+
+**Status.** Accepted. Closes HYG-062, the half of HYG-042 a raised timeout could not fix. Extends [ADR-970](DECISIONS.md) (a gate that cannot fire honestly reads as coverage) and the HYG-012 cost line.
+
+**Context.** `scripts/check-backlog.mjs` measured each probe by reading the parent's reaped-children CPU counters around a synchronous spawn. That attribution was correct only because the probes ran one at a time, so the guard could not be parallelised without going blind on per-probe cost, which is the signal LIVE-034 exists to provide. 346 cmd probes cost ~34 s wall per run, twice in the parity test, and every budget around it (two vitest timeouts, a 4.5 s per-probe ceiling) was a cliff to be re-read as the list grew.
+
+**Decision.**
+
+- **Each probe reports its own cost.** `scripts/backlog-probe-cpu.mjs` is preloaded into every `node` a cmd probe starts (`NODE_OPTIONS=--import`, appended so a runner's own options survive). On exit it writes `probe-cpu <ms>` to fd 3, a pipe the guard opens per probe for exactly that line, so stdout and stderr stay the probe's own. The figure is `process.cpuUsage()` **plus the CPU of the children that probe waited for**, read from the probe's own `/proc/self/stat`. That second half is deliberate: a probe that shells out to `tsc` is still charged for it, which a pure self-report would have lost and the old parent-side reading did see. The parent no longer reads reaped-children counters at all.
+- **A cmd probe must run under node, enforced at validation.** The row named the hole in option (b): a probe that is not node reports nothing, and the probes most likely to be expensive are exactly the ones that shell out. `validate()` now refuses a cmd probe with no `node` invocation and says what to write instead. Seven grep pipelines in the file were rewritten as `node -e` bodies reading the same files for the same strings; each verdict was checked identical before and after, with one mutation control.
+- **The probes run through a pool** of `min(4, cores)`, and verdicts are reported in entry order afterwards, so the output is stable however the pool interleaves. Measured here: 34 s wall to 9.1 s, CPU unchanged in kind, 346 attributed and 0 unattributed.
+- **The cost lines keep their shape** for the contract test, gaining `unattributed=N` when a probe reported nothing and `N in flight` on the guard line so a reading says how it was taken.
+
+**Consequences.** `scripts/backlog-contract.test.ts` holds all 26 cases, including both parity arms and the three "not a verdict" shapes, whose fixtures were rewritten as node pipelines because a fixture the validator would refuse tests the validator. A probe that spawns a non-node grandchild without waiting for it is the one cost still invisible, and it was invisible before too.
+
+⚠️ **The generalisable part.** An instrument that only works under a constraint nobody wrote down (here: serial execution) is a constraint on every future change to the thing it measures. Moving the measurement to the unit being measured removed the constraint and made the number more honest at the same time.
+
+## ADR-1229: every cron states a per-invocation budget through the seam, and the seam says when it is crossed (2026-09-07)
+
+**Status.** Accepted. Advances LIVE-190 (which stays open for its busy-week read). Extends [ADR-1221](DECISIONS.md), the duration instrument.
+
+**Context.** ADR-1221 put the `cron.run` duration line in `withCronHeartbeat` so every route is measured. A measurement with nothing to measure against is a number: the only reference the routes had was the platform's 300 s ceiling, which a cron reaches by being killed. LIVE-190's remaining work is a stated budget per route, and its first readings were of an idle system, so no route's budget could honestly be set from data.
+
+**Decision.**
+
+- **The budget is stated in the seam.** `withCronHeartbeat(name, handler, { budgetMs? })`; the default `DEFAULT_CRON_BUDGET_MS` is a fifth of `CRON_CEILING_MS`. Every wrapped route therefore has a budget from the day it is wrapped, and `scripts/cron-freshness.test.ts` already fails an unwrapped scheduled cron, so the coverage is structural.
+- **The line carries the comparison.** `cron.run` gains `budget_ms` and `over_budget`, on the return and the throw path alike; crossing the budget also emits `cron.over_budget` at warn level, so a route trending toward the ceiling is visible on the first busy day rather than on the day it dies.
+- **All 27 routes ride the default today, deliberately.** The idle readings say nothing about which route needs more. A route that proves it does declares a larger budget beside its own handler, where the number is reviewed with the work it bounds.
+
+**Consequences.** Nothing is killed or throttled: a budget is a reading, not a limit. The row closes on a busy-week `cron.run` read with every route under its stated budget, or on the routes that are batched or narrowed to it.
+
+⚠️ **The generalisable part.** An instrument without a stated expectation cannot fire. Stating the expectation in the same seam as the measurement means neither can exist without the other.
+

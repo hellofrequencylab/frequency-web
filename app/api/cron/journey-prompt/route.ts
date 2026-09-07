@@ -5,9 +5,21 @@
  * (gated by their preferences, lifecycle category). Voice canon: a fact plus an invitation, never
  * guilt. (v2; ADR-253 — candidates come from journey_enrollments, not the retired adoptions clock.)
  *
- * Once-per-day idempotency rides the daily schedule (the cron fires once a day); the push tag is
- * date-stamped so a device shows at most one per day. Timezone-aware local morning is a follow-up
- * (the codebase has no per-profile timezone yet — see app/api/cron/event-reminders).
+ * Once-per-day idempotency is the dedupe key below (never the schedule); the push tag is
+ * date-stamped so a device shows at most one per day.
+ *
+ * 2026-09-07 (LIVE-193, ADR-1225): THE PROMPT LANDS AT THE MEMBER'S LOCAL MORNING. This header
+ * used to say a timezone-aware morning was a follow-up because profiles carried no timezone. They
+ * do — `profiles.home_timezone`, read by the SMS quiet-hours gate, the practice day, and Vera's
+ * dispatch — so the schedule is now HOURLY (`0 * * * *` in vercel.json) and each run sends only
+ * to the members for whom it is LOCAL_MORNING_HOUR (lib/journeys/prompt-morning.ts) right now in
+ * their own zone. The dedupe key
+ * and the push tag carry the member's LOCAL day, so one member gets one prompt per local day and
+ * the 23 other runs each find nothing to do for them (`notDue`, cheap: the timezone gate runs
+ * BEFORE the per-member loader). A member with no timezone on file, or an unparseable one, keeps
+ * the previous behaviour exactly: the run at LEGACY_UTC_HOUR (13:00 UTC, the old schedule) is
+ * their morning.
+ *
  * 2026-09-05 (scan2 L2-02): the schedule is not idempotency. A dashboard re-fire or a redeploy
  * re-run in the same day inserted a second notifications row per member. The in-app row now
  * carries `dedupe_key = journey-prompt:<profile_id>:<YYYY-MM-DD>`, unique where set (migration
@@ -31,29 +43,63 @@ import { sendPushToProfile } from '@/lib/push'
 import { getDailyJourneyPrompt, formatJourneyPrompt, type JourneyPrompt } from '@/lib/journey-prompt'
 import { listEnrolledMemberIds } from '@/lib/journeys/progress'
 import { briefError, log } from '@/lib/log'
+import { isValidTimeZone } from '@/lib/time/zone'
+import { morningFor } from '@/lib/journeys/prompt-morning'
 
 export const dynamic = 'force-dynamic'
 
 /** Postgres unique_violation: the day's row for this member already exists. */
 const UNIQUE_VIOLATION = '23505'
 
+/** Chunk size for the `.in('id', …)` timezone read; PostgREST URLs have a length ceiling. */
+const TZ_READ_CHUNK = 500
+
+/** `profiles.home_timezone` for the candidates, batched. Best-effort: a member missing from the
+ *  result, or whose value is not a real IANA zone, is treated as having none (the legacy hour). */
+async function readHomeTimezones(admin: ReturnType<typeof createAdminClient>, ids: string[]): Promise<Map<string, string>> {
+  const out = new Map<string, string>()
+  for (let i = 0; i < ids.length; i += TZ_READ_CHUNK) {
+    const chunk = ids.slice(i, i + TZ_READ_CHUNK)
+    const { data, error } = await admin.from('profiles').select('id, home_timezone').in('id', chunk)
+    if (error) {
+      // A failed read must not silence the run: everyone in the chunk falls back to the legacy hour.
+      log.warn('cron.journey_prompt.tz_read_failed', { error: error.message, size: chunk.length })
+      continue
+    }
+    for (const p of (data ?? []) as { id: string; home_timezone: string | null }[]) {
+      if (isValidTimeZone(p.home_timezone)) out.set(p.id, p.home_timezone)
+    }
+  }
+  return out
+}
+
 async function handler(req: NextRequest) {
   const denied = rejectUnauthorizedCron(req)
   if (denied) return denied
 
   const admin = createAdminClient()
-  const day = new Date().toISOString().slice(0, 10)
+  const now = new Date()
 
   // Every member with at least one active (not-yet-completed) Journey enrollment.
   const memberIds = await listEnrolledMemberIds()
+  const tzByProfile = memberIds.length ? await readHomeTimezones(admin, memberIds) : new Map<string, string>()
 
   let inapp = 0
   let push = 0
   let skipped = 0
+  let notDue = 0
   let deduped = 0
   let failed = 0
   let loaderFailed = 0
   for (const profileId of memberIds) {
+    // The timezone gate runs FIRST: on 23 of 24 runs a member is simply not in their morning, and
+    // that answer must not cost a loader call.
+    const { due, day } = morningFor(now, tzByProfile.get(profileId))
+    if (!due) {
+      notDue++
+      continue
+    }
+
     let prompt: JourneyPrompt | null
     try {
       prompt = await getDailyJourneyPrompt(profileId)
@@ -110,7 +156,7 @@ async function handler(req: NextRequest) {
     }
   }
 
-  const counts = { candidates: memberIds.length, inapp, push, skipped, deduped, failed, loaderFailed }
+  const counts = { candidates: memberIds.length, inapp, push, skipped, notDue, deduped, failed, loaderFailed }
   log.info('cron.journey_prompt', counts)
   // failed > 0 is a job failure the heartbeat must see (withCronHeartbeat fail-pings on a 5xx).
   // Every in-app row that did land carries its dedupe key, so the retry cannot double-send.
