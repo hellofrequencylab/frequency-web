@@ -41,8 +41,10 @@ import { computeSeriesDayKeys } from '@/lib/events/calendar-repeats'
 // therefore be blind to the process zone. A copy that ever reached for a local-time getter would
 // pass under UTC and fail under the other two.
 //
-// If this file goes red the two sides ALREADY DISAGREE in production. Do not "fix" one side to make
-// it pass; the disagreeing fixture, with both outputs, is the finding.
+// If this file goes red the copies ALREADY DISAGREE in production. Do not "fix" whichever side is
+// cheapest to change; the disagreeing fixture, with both outputs, is the finding. When the strip
+// diverged on the `until` bound (LIVE-154), the direction was settled by ADR-807 — the mirrors and
+// the published .ics feeds carry the ruling, so the strip was the one that moved.
 
 type Fixture = {
   name: string
@@ -53,10 +55,6 @@ type Fixture = {
   bound: string
   /** The exact series both sides must produce (ISO), when the fixture pins one. */
   expect?: string[]
-  /** 🔴 Set when the calendar strip is KNOWN to disagree with the write + read sides on this
-   *  fixture. The strip's check then runs as `it.fails`, so the day the strip is brought into line
-   *  this file goes red and the flag has to come off; a divergence can never be forgotten quietly. */
-  calendarDiverges?: string
 }
 
 const FIXTURES: Fixture[] = [
@@ -144,24 +142,23 @@ const FIXTURES: Fixture[] = [
     until: '2027-08-15T11:59:59.999Z',
     bound: '2028-05-15T12:00:00.000Z',
     expect: ['2027-06-15T12:00:00.000Z', '2027-07-15T12:00:00.000Z'],
-    calendarDiverges: 'the strip compares until at DAY granularity and keeps 2027-08-15',
   },
   {
-    // 🔴 THE PRODUCTION SHAPE. The event form's "repeat end date" is a date-only input, and
-    // app/(main)/events/actions.ts stores it through dateToWallClockIso as `YYYY-MM-DDT00:00:00Z`.
-    // So for any series whose wall-clock is later than midnight (all of them), the write side and
-    // the read side compare instants and DROP the occurrence that falls on the end date itself,
-    // while the calendar strip compares day keys and KEEPS it. Found by this gate on 2026-09-04;
-    // the two named mirrors agree with each other, the strip is the odd one out. Which of the two
-    // readings is the intended member-facing rule ("through the end date" or "before it") is an
-    // owner decision recorded nowhere yet, so this row pins the disagreement rather than a fix.
-    name: 'weekly with a date-only until (the form\'s shape): the end date itself is excluded by both mirrors',
+    // 🔴 THE PRODUCTION SHAPE, and the fixture that closed LIVE-154. The event form's "repeat end
+    // date" is a date-only input, and app/(main)/events/actions.ts stores it through
+    // dateToWallClockIso as `YYYY-MM-DDT00:00:00Z`. So for any series whose wall-clock is later
+    // than midnight (all of them), the end date's own occurrence falls AFTER `until` as an instant
+    // and is not part of the series. Found by this gate on 2026-09-04, when the calendar strip
+    // compared `until` at day granularity and kept 2027-06-24 — a chip for a date nothing
+    // materialises. ADR-807 already ruled the instant reading canon ("`recurrence_until` resolves
+    // through the zone to the same instant the RRULE `UNTIL` carries") and the published .ics feeds
+    // ship it, so the strip was brought into line; all three copies now produce the same series.
+    name: 'weekly with a date-only until (the form\'s shape): the end date itself is excluded by all three copies',
     startsAt: '2027-06-03T19:00:00.000Z',
     type: 'weekly',
     until: '2027-06-24T00:00:00.000Z',
     bound: '2027-12-31T00:00:00.000Z',
     expect: ['2027-06-10T19:00:00.000Z', '2027-06-17T19:00:00.000Z'],
-    calendarDiverges: 'the strip keeps 2027-06-24, the end date, which neither mirror materialises or announces',
   },
   {
     name: 'weekly with an end date',
@@ -341,14 +338,13 @@ for (const zone of ['UTC', 'America/Los_Angeles', 'Europe/London']) {
       })
 
       // The calendar strip's day keys are the same series, so a third copy cannot drift alone.
-      // A fixture flagged `calendarDiverges` runs as it.fails: it documents a divergence that
-      // exists TODAY, and turns red the moment the strip is brought into line (see the flag's doc).
-      const calendarCheck = () => expect(calendarSide(f)).toEqual(writeSide(f).map(dayKey))
-      if (f.calendarDiverges) {
-        it.fails(`🔴 calendar strip diverges (${f.calendarDiverges}): ${f.name}`, calendarCheck)
-      } else {
-        it(`calendar strip agrees: ${f.name}`, calendarCheck)
-      }
+      // Every fixture is held to this, with no exemptions: the last two exemptions (an `until` a
+      // millisecond before an occurrence, and the form's date-only `until`) came off on 2026-09-07
+      // when the strip was taught to compare `recurrence_until` at the INSTANT, the rule ADR-807
+      // already gave the mirrors and the .ics feeds (LIVE-154). If a future divergence needs
+      // pinning, pin it with a failing fixture, not a marker that turns the gate off.
+      it(`calendar strip agrees: ${f.name}`, () =>
+        expect(calendarSide(f)).toEqual(writeSide(f).map(dayKey)))
     }
 
     it('a one-time event yields nothing on either side', () => {

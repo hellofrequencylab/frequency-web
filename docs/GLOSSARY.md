@@ -111,8 +111,9 @@ pays gems. The single source of truth is `currencyForCriteria` /
 - **Zaps**: earned through **external + in-person activity**: showing up, hosting,
   founding/leading a circle, outreach + invites that land, ghost-node captures,
   business/NFC programs, and **every practice log** (personal or circle, the
-  real-world doing). Finishing a Journey pays **+75 Zaps + a Trophy + escalating Gems**
-  (Initiate 25 / Adept 50 / Master 100 Gems). An Expression Challenge pays **+50 Zaps
+  real-world doing). Finishing a Journey pays **+75 Zaps + a Pillar Trophy** and no Gems
+  (the v2 escalating ladder is RETIRED, ADR-305; the third finish mints the Certificate,
+  which pays its own 100 Gems). An Expression Challenge pays **+50 Zaps
   in person at a Circle, or +30 Gems posted solo online**. Zaps accumulate during the
   season and roll into Gems at season end (5:1 flat). They drive **Amplitude** (lifetime
   total) but no longer gate **season rank** directly. Ranks are completion-based (see
@@ -166,15 +167,16 @@ pays gems. The single source of truth is `currencyForCriteria` /
   a **Journey** (`journey_plans` + `journey_plan_items`) is a set of practices,
   official (nested under a Quest via `quest_id`) or member-built (open library),
   with progress derived from the practice log (ADR-144). Finishing a Journey pays
-  **+75 Zaps + a Trophy + escalating Gems by rank reached** and advances the member's
+  **+75 Zaps + a Pillar Trophy**, no Gems (ADR-305), and advances the member's
   season rank. All free. *(The legacy action-chain engine is retired **and dropped**, ADR-152.)*
 - **Challenge / Expression Challenge**: the **Expression capstone** that completes each
   Journey (a `season_challenges` row typed `expression`, linked to its Journey via `journey_id`).
   Required to finish the Journey. Pays **+50 Zaps in person at a Circle, or +30 Gems posted
   solo online**. The season-wide 15-challenge outreach engine is **dormant** (kept, not seeded).
-- **Trophy**: the award minted when a member **finishes a Journey**. Advances the season rank
-  and pays the escalating Gem bonus (Initiate 25 / Adept 50 / Master 100). Stamped with the
-  rank reached and stored in `season_trophies`.
+- **Trophy**: the award minted when a member **finishes a Journey**. Advances the season rank.
+  Pays no Gems: the escalating ladder (Initiate 25 / Adept 50 / Master 100) is RETIRED by
+  ADR-305 and LIVE-185 removed the code still paying it. Stamped with the rank reached and
+  stored in `season_trophies`.
 - **Pillars**: Mind / Body / Spirit / Expression, the taxonomy Journeys are organised by
   (table `pillars`, migration `20260613000010`; renamed 2026, see docs/NAMING.md).
   **Three Pillars carry Journeys (Mind / Body / Spirit); Expression is woven in as the

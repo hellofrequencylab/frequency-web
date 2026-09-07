@@ -207,8 +207,10 @@ export const DIFFICULTY_CONFIG: Record<ChallengeDifficulty, {
 // ---------------------------------------------------------------------------
 // A Journey finishes when a member logs one of its Practices on enough DISTINCT
 // days inside the Journey window AND completes its Expression Challenge. Finishing
-// pays a flat Zap purse, an escalating Gem bonus by the NEW rank reached, and a
-// Trophy (the journey_completions row itself). The Expression Challenge pays on its
+// pays a flat Zap purse and a Trophy (the journey_completions row itself). It pays NO
+// Gems: the v2 escalating per-Journey ladder is RETIRED (ADR-305, docs/NAMING.md
+// §Economy) and LIVE-185 removed the code that was still paying it. The third finish
+// mints the Certificate, which pays its own 100 Gems. The Expression Challenge pays on its
 // own: in person at a Circle earns Zaps, posted solo online earns Gems. These are
 // the tunable-fallback constants; the live numbers (where applicable) come from
 // zap_config / gem_config, so a grant never breaks if a config row is missing.
@@ -222,8 +224,6 @@ export const QUEST = {
   JOURNEY_WINDOW_DAYS: 28,
   /** Flat Zap purse for finishing a Journey. */
   JOURNEY_FINISH_ZAPS: 75,
-  /** Escalating Gem bonus by the NEW rank reached on finishing. */
-  JOURNEY_GEM_BONUS: { initiate: 25, adept: 50, master: 100 } as Record<string, number>,
   /** Expression Challenge done in person at a Circle. */
   EXPRESSION_CIRCLE_ZAPS: 50,
   /** Expression Challenge posted solo online. */

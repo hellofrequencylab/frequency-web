@@ -67,8 +67,9 @@ async function grantGemsOnce(
  *  longer paid: per the Quest COMPLETION model (ADR-Quest), finishing a Journey is no
  *  longer "checked off every lesson" — it is logging the Journey's Practices on 14
  *  distinct days + completing its Expression Challenge, and the completion engine
- *  (lib/quest/complete.ts) owns the finish rewards (+75 Zaps, an escalating Gem
- *  rank-bonus, and the Trophy). The old flat-30 journey-complete grant is retired here
+ *  (lib/quest/complete.ts) owns the finish rewards (+75 Zaps and the Trophy — no Gems;
+ *  the escalating rank-bonus this line used to name is RETIRED by ADR-305 and was removed
+ *  from that path by LIVE-185). The old flat-30 journey-complete grant is retired here
  *  so a Journey is never double-rewarded. */
 export async function grantJourneyRewards(opts: {
   profileId: string
