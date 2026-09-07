@@ -44,7 +44,7 @@ export function scopeKeyFor(scope: AdminScope): string {
 }
 
 /** One raw app_overrides row as the untyped client returns it (all fields re-validated below). */
-interface RawOverrideRow {
+export interface RawAppOverrideRow {
   app_id: unknown
   enabled?: unknown
   position?: unknown
@@ -54,7 +54,7 @@ interface RawOverrideRow {
 /** Coerce one raw DB row into an AppOverride, or null if it fails validation (unknown App id,
  *  bad min_role). FAIL-CLOSED per field: a malformed value falls back to the permissive default
  *  (enabled true / no position / no floor) rather than throwing. */
-function parseRow(row: RawOverrideRow): { id: string; override: AppOverride } | null {
+function parseRow(row: RawAppOverrideRow): { id: string; override: AppOverride } | null {
   if (typeof row.app_id !== 'string') return null
   if (!appById(row.app_id)) return null // unknown App id ⇒ ignore (catalog is the authority)
   const enabled = row.enabled === false ? false : true
@@ -63,13 +63,29 @@ function parseRow(row: RawOverrideRow): { id: string; override: AppOverride } | 
   return { id: row.app_id, override: { enabled, position, minRole } }
 }
 
+/** Rows → the override map, each row re-validated (appById + min_role). PURE, and the ONE
+ *  validation both readers share: the editor's direct read below and the shell's cross-request
+ *  cached read (lib/layout/chrome-sources.ts, ADR-1243). */
+export function parseAppOverrideRows(rows: readonly RawAppOverrideRow[]): AppOverrides {
+  const out: AppOverrides = {}
+  for (const row of rows) {
+    const parsed = parseRow(row)
+    if (parsed) out[parsed.id] = parsed.override
+  }
+  return out
+}
+
 /** All operator App overrides for one scope kind as a plain map (app_id → override). Service-role
  *  read so it works regardless of the caller's RLS context; REQUEST-CACHED via React.cache so it
  *  runs at most once per (request, scopeKey). FAIL-SAFE: returns `{}` on ANY error (incl. a
  *  missing table pre-migration), so the resolver always falls back to the catalog defaults and the
  *  rail never breaks. The dynamic import keeps this server-only dependency out of the module's top
  *  level (the pure helpers below stay client-safe). Each row is re-validated (appById + min_role)
- *  before use. */
+ *  before use.
+ *
+ *  This is the EDITOR's read (/admin/page-layout/apps, lib/apps/for-scope.ts) and reads the table
+ *  directly, so the manager shows the row an operator just saved. The SHELL reads the same table
+ *  through `loadCachedAppOverrides` (lib/layout/chrome-sources.ts), cached across requests. */
 export const loadAppOverrides = cache(async (scopeKey: string): Promise<AppOverrides> => {
   try {
     const { createAdminClient } = await import('@/lib/supabase/admin')
@@ -80,7 +96,7 @@ export const loadAppOverrides = cache(async (scopeKey: string): Promise<AppOverr
       from: (t: string) => {
         select: (cols: string) => {
           eq: (col: string, val: string) => {
-            is: (col: string, val: null) => Promise<{ data: RawOverrideRow[] | null; error: unknown }>
+            is: (col: string, val: null) => Promise<{ data: RawAppOverrideRow[] | null; error: unknown }>
           }
         }
       }
@@ -91,12 +107,7 @@ export const loadAppOverrides = cache(async (scopeKey: string): Promise<AppOverr
       .eq('scope_key', scopeKey)
       .is('space_id', null)
     if (error) return {}
-    const out: AppOverrides = {}
-    for (const row of data ?? []) {
-      const parsed = parseRow(row)
-      if (parsed) out[parsed.id] = parsed.override
-    }
-    return out
+    return parseAppOverrideRows(data ?? [])
   } catch {
     return {}
   }

@@ -12,8 +12,9 @@ import { AnnouncementBar } from '@/components/layout/announcement-bar'
 import type { Metadata } from 'next'
 import { matchPublicTwin } from '@/lib/nav/public-twin'
 import { getPublicCircles, getTopicalChannels } from '@/lib/discover'
-import { loadChromeOverrides, isSafeRoute, adminScopeFor } from '@/lib/layout/page-chrome'
-import { loadAppOverrides, scopeKeyFor, type AppOverrides } from '@/lib/apps/overrides'
+import { isSafeRoute, adminScopeFor } from '@/lib/layout/page-chrome'
+import { scopeKeyFor, type AppOverrides } from '@/lib/apps/overrides'
+import { loadCachedChromeOverrides, loadCachedAppOverrides } from '@/lib/layout/chrome-sources'
 import { loadPageSettings } from '@/lib/page-settings/store'
 import { resolveTheme } from '@/lib/theme/server/resolve'
 import { structureFor } from '@/lib/theme/structure'
@@ -313,7 +314,7 @@ export default async function MainLayout({
   const reqPath = reqHeaders.get('x-pathname')
 
   // The admin scope for this page (adminScopeFor, pure) — used to load the per-scope App overrides
-  // (docs/ADMIN-RAIL.md Phase 6) threaded into PageAdminProvider, mirroring loadChromeOverrides. A
+  // (docs/ADMIN-RAIL.md Phase 6) threaded into PageAdminProvider, mirroring the chrome overrides. A
   // null scope (full-viewport takeover) has nothing to manage, so no overrides load.
   const pageScope = reqPath && isSafeRoute(reqPath) ? adminScopeFor(reqPath) : null
 
@@ -377,11 +378,14 @@ export default async function MainLayout({
     getViewerHats(),
     hasConsent(profile.id, 'analytics'),
     Promise.all([demoModeEnabled(), viewerHidesDemo(), demoContentExists()]),
-    loadChromeOverrides(),
+    // The two operator chrome tables, through the shell's CROSS-REQUEST cached readers (ADR-1243,
+    // lib/layout/chrome-sources.ts): identical for every viewer, invalidated by the page-layout
+    // manager's write path, FAIL-SAFE {} on any error so the code chrome map + catalog defaults win.
+    loadCachedChromeOverrides(),
     // Per-scope App overrides for the standardized admin rail (docs/ADMIN-RAIL.md Phase 6). Loaded
     // once per request like chromeOverrides; FAIL-SAFE ({} on any error / pre-migration) so the rail
     // always falls back to the catalog defaults. A null page scope (takeover) loads nothing.
-    pageScope ? loadAppOverrides(scopeKeyFor(pageScope)) : Promise.resolve({} as AppOverrides),
+    pageScope ? loadCachedAppOverrides(scopeKeyFor(pageScope)) : Promise.resolve({} as AppOverrides),
     resolveSpaceForHost(reqHeaders.get('host')).catch(() => null),
     getStaffMember().catch(() => null),
     // Speculative operator reads, folded in like getStaffMember above. Each is React-cached AND

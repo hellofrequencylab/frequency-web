@@ -1,6 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { CHROME_CACHE_TAGS, invalidateCacheTag } from '@/lib/cross-request-cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { requireAdmin } from '@/lib/admin/guard'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
@@ -86,6 +87,9 @@ export async function setAppOverride(
   )
   if (error) return fail('Could not save that App override.')
 
+  // The shell's cross-request cached read of app_overrides (lib/layout/chrome-sources.ts,
+  // ADR-1243) is stale from here.
+  invalidateCacheTag(CHROME_CACHE_TAGS.appOverrides)
   revalidatePath(LIST_PATH)
   revalidatePath('/', 'layout')
   return ok()
@@ -116,6 +120,7 @@ export async function clearAppOverride(scopeKey: string, appId: string): Promise
     .is('space_id', null)
   if (error) return fail('Could not reset that App.')
 
+  invalidateCacheTag(CHROME_CACHE_TAGS.appOverrides)
   revalidatePath(LIST_PATH)
   revalidatePath('/', 'layout')
   return ok()

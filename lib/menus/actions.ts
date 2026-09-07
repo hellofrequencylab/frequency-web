@@ -1,6 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { CHROME_CACHE_TAGS, invalidateCacheTag } from '@/lib/cross-request-cache'
 import { getCallerProfile } from '@/lib/auth'
 import { isJanitor } from '@/lib/core/roles'
 import { menuDb } from './db'
@@ -64,6 +65,21 @@ async function requireJanitor() {
 /** The untyped admin client, the menu tables aren't in the generated types yet. */
 function adminDb() {
   return menuDb()
+}
+
+/** Every menu write ends here (ADR-1243). The tag expires the shell's cross-request cached rows
+ *  (lib/menus/read.ts menuRows) so the next page view reads the edit; the layout revalidation is
+ *  what it always was, the statically rendered public pages and the router cache. Both, always:
+ *  a write path that busts one and not the other is exactly the stale nav the row described. */
+function bustMenus() {
+  invalidateCacheTag(CHROME_CACHE_TAGS.menus)
+  revalidatePath('/', 'layout')
+}
+
+/** The `menu_settings` twin of bustMenus, for the one action that writes that row. */
+function bustMenuSettings() {
+  invalidateCacheTag(CHROME_CACHE_TAGS.menuSettings)
+  revalidatePath('/', 'layout')
 }
 
 function isSurface(v: unknown): v is MenuSurfaceKey {
@@ -149,7 +165,7 @@ export async function ensureMenu(surfaceKey: MenuSurfaceKey): Promise<EnsureResu
     const row = (inserted ?? [])[0]
     if (!row) return { ok: false, error: 'Insert returned no row' }
 
-    revalidatePath('/', 'layout')
+    bustMenus()
     return { ok: true, id: row.id }
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : 'ensureMenu failed' }
@@ -325,7 +341,7 @@ export async function seedMenuFromDefaults(surfaceKey: MenuSurfaceKey): Promise<
     // and deliberately-removed ones are never resurrected.
     await db.from('menus').update({ synced_default_keys: leafHrefs(def) }).eq('id', menuId)
 
-    revalidatePath('/', 'layout')
+    bustMenus()
     return { ok: true }
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : 'seedMenuFromDefaults failed' }
@@ -528,7 +544,7 @@ export async function syncMenuFromDefaults(
       const upd = await db.from('menus').update({ synced_default_keys: newSeen }).eq('id', menuId)
       if (upd.error) return { ok: false, error: upd.error.message }
     }
-    if (toInject.length > 0) revalidatePath('/', 'layout')
+    if (toInject.length > 0) bustMenus()
 
     // Hand back the baseline this sync just settled on, so the Menu manager's drift badges
     // (lib/menus/drift.ts, ADR-1134) classify against the SAME keys the row now carries rather
@@ -547,7 +563,7 @@ export async function setMenuColumns(menuId: string, columns: number): Promise<R
     const db = adminDb()
     const { error } = await db.from('menus').update({ columns: clampColumns(columns) }).eq('id', menuId)
     if (error) return { ok: false, error: error.message }
-    revalidatePath('/', 'layout')
+    bustMenus()
     return { ok: true }
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : 'setMenuColumns failed' }
@@ -601,7 +617,7 @@ export async function createCategory(input: CreateCategoryInput): Promise<Ensure
     if (error) return { ok: false, error: error.message }
     const id = (data ?? [])[0]?.id
     if (!id) return { ok: false, error: 'Insert returned no row' }
-    revalidatePath('/', 'layout')
+    bustMenus()
     return { ok: true, id }
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : 'createCategory failed' }
@@ -647,7 +663,7 @@ export async function updateCategory(id: string, patch: UpdateCategoryPatch): Pr
     const db = adminDb()
     const { error } = await db.from('menu_categories').update(update).eq('id', id)
     if (error) return { ok: false, error: error.message }
-    revalidatePath('/', 'layout')
+    bustMenus()
     return { ok: true }
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : 'updateCategory failed' }
@@ -662,7 +678,7 @@ export async function deleteCategory(id: string): Promise<Result> {
     // Child categories + items cascade via the FK on delete.
     const { error } = await db.from('menu_categories').delete().eq('id', id)
     if (error) return { ok: false, error: error.message }
-    revalidatePath('/', 'layout')
+    bustMenus()
     return { ok: true }
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : 'deleteCategory failed' }
@@ -729,7 +745,7 @@ export async function createItem(input: CreateItemInput): Promise<EnsureResult> 
     if (error) return { ok: false, error: error.message }
     const id = (data ?? [])[0]?.id
     if (!id) return { ok: false, error: 'Insert returned no row' }
-    revalidatePath('/', 'layout')
+    bustMenus()
     return { ok: true, id }
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : 'createItem failed' }
@@ -789,7 +805,7 @@ export async function updateItem(id: string, patch: UpdateItemPatch): Promise<Re
     const db = adminDb()
     const { error } = await db.from('menu_items').update(update).eq('id', id)
     if (error) return { ok: false, error: error.message }
-    revalidatePath('/', 'layout')
+    bustMenus()
     return { ok: true }
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : 'updateItem failed' }
@@ -803,7 +819,7 @@ export async function deleteItem(id: string): Promise<Result> {
     const db = adminDb()
     const { error } = await db.from('menu_items').delete().eq('id', id)
     if (error) return { ok: false, error: error.message }
-    revalidatePath('/', 'layout')
+    bustMenus()
     return { ok: true }
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : 'deleteItem failed' }
@@ -834,7 +850,7 @@ export async function moveItem(id: string, surfaceKey: MenuSurfaceKey): Promise<
       .update({ menu_id: ensured.id, category_id: null, position })
       .eq('id', id)
     if (error) return { ok: false, error: error.message }
-    revalidatePath('/', 'layout')
+    bustMenus()
     return { ok: true }
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : 'moveItem failed' }
@@ -887,7 +903,7 @@ export async function moveCategory(id: string, surfaceKey: MenuSurfaceKey): Prom
       .update({ parent_id: null, position })
       .eq('id', id)
     if (error) return { ok: false, error: error.message }
-    revalidatePath('/', 'layout')
+    bustMenus()
     return { ok: true }
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : 'moveCategory failed' }
@@ -913,7 +929,7 @@ export async function reorderItems(
       const { error } = await db.from('menu_items').update(update).eq('id', u.id)
       if (error) return { ok: false, error: error.message }
     }
-    revalidatePath('/', 'layout')
+    bustMenus()
     return { ok: true }
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : 'reorderItems failed' }
@@ -937,7 +953,7 @@ export async function reorderCategories(
       const { error } = await db.from('menu_categories').update(update).eq('id', u.id)
       if (error) return { ok: false, error: error.message }
     }
-    revalidatePath('/', 'layout')
+    bustMenus()
     return { ok: true }
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : 'reorderCategories failed' }
@@ -987,7 +1003,7 @@ export async function createRailCard(input: CreateRailCardInput): Promise<Ensure
     if (error) return { ok: false, error: error.message }
     const id = (data ?? [])[0]?.id
     if (!id) return { ok: false, error: 'Insert returned no row' }
-    revalidatePath('/', 'layout')
+    bustMenus()
     return { ok: true, id }
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : 'createRailCard failed' }
@@ -1027,7 +1043,7 @@ export async function updateRailCard(id: string, patch: UpdateRailCardPatch): Pr
     const db = adminDb()
     const { error } = await db.from('menu_rail_cards').update(update).eq('id', id)
     if (error) return { ok: false, error: error.message }
-    revalidatePath('/', 'layout')
+    bustMenus()
     return { ok: true }
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : 'updateRailCard failed' }
@@ -1041,7 +1057,7 @@ export async function deleteRailCard(id: string): Promise<Result> {
     const db = adminDb()
     const { error } = await db.from('menu_rail_cards').delete().eq('id', id)
     if (error) return { ok: false, error: error.message }
-    revalidatePath('/', 'layout')
+    bustMenus()
     return { ok: true }
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : 'deleteRailCard failed' }
@@ -1091,7 +1107,7 @@ export async function setMenuSettings(patch: Partial<MenuSettings>): Promise<Res
     )
     if (error) return { ok: false, error: error.message }
 
-    revalidatePath('/', 'layout')
+    bustMenuSettings()
     return { ok: true }
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : 'setMenuSettings failed' }

@@ -1,6 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { CHROME_CACHE_TAGS, invalidateCacheTag } from '@/lib/cross-request-cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getCallerProfile } from '@/lib/auth'
 import { logAdminAction } from '@/lib/admin/audit'
@@ -34,6 +35,9 @@ export async function setDemoMode(enabled: boolean) {
     .upsert({ key: 'demo_mode', value: enabled, updated_at: new Date().toISOString() })
   if (error) throw new Error(error.message)
 
+  // The shell's cross-request cached read of this flag (lib/platform-flags.ts demoModeEnabled,
+  // ADR-1243) is stale from here; the tag is what makes the toggle live on the next request.
+  invalidateCacheTag(CHROME_CACHE_TAGS.platformFlags)
   revalidatePath('/', 'layout') // demo gating touches many surfaces
 }
 
