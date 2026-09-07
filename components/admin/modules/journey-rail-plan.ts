@@ -83,8 +83,9 @@ export const JOURNEY_RAIL: JourneyRailPlan = {
 
 /** Every field the rail renders, in manifest order, across all zones. */
 export function journeyRailFields(): FieldDef[] {
-  const paths = new Set(Object.values(JOURNEY_RAIL).flatMap((z) => z.fields.map((f) => f.path)))
-  return JOURNEY_MANIFEST.fields.filter((f) => paths.has(f.path))
+  const paths = new Set<string>()
+  for (const zone of Object.values(JOURNEY_RAIL) as RailForm[]) for (const f of zone.fields) paths.add(f.path)
+  return JOURNEY_MANIFEST.fields.filter((f: FieldDef) => paths.has(f.path))
 }
 
 // ── Reading the row into the rail's values ───────────────────────────────────────────────
@@ -151,9 +152,10 @@ export function journeyMetaPatch(values: JourneyRailValues, writes: readonly (ke
   const patch: JourneyMetaPatch = {}
   for (const col of writes) {
     const v = values[col] ?? ''
+    const key = META_KEYS[col]
     // The title is the one column updatePlan takes as a bare string; the rest are nullable.
-    if (col === 'title') patch.title = v
-    else patch[META_KEYS[col]] = v || null
+    if (key === 'title') patch.title = v
+    else patch[key] = v || null
   }
   return patch
 }
