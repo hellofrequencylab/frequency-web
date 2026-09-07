@@ -85,7 +85,10 @@ const REQUIRED_IMPORTS = [
   { file: 'app/(main)/channels/admin-actions.ts', module: '@/lib/channels/categories', symbols: ['isChannelCategory'] },
   // Practice category pickers — practices share the Channel subject vocabulary.
   { file: 'components/studio/practice/practice-builder.tsx', module: '@/lib/channels/categories', symbols: ['CHANNEL_CATEGORIES'] },
-  { file: 'components/admin/modules/practice-settings-module.tsx', module: '@/lib/channels/categories', symbols: ['CHANNEL_CATEGORIES'] },
+  // The Practice settings rail declares no field of its own (ADR-1240): its picker is the
+  // manifest's `category` field, whose options are the subject vocabulary. The manifest is the
+  // picker, so the manifest is what must read the source.
+  { file: 'lib/studio/entities/practice.ts', module: '@/lib/taxonomy/subjects', symbols: ['SUBJECTS'] },
   // Space subject + kind pickers (ADR-887).
   { file: 'components/spaces/space-business-info-form.tsx', module: '@/lib/taxonomy/subjects', symbols: ['SUBJECTS'] },
   { file: 'components/spaces/space-business-info-form.tsx', module: '@/lib/spaces/categories', symbols: ['SPACE_KINDS'] },
