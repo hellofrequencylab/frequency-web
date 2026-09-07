@@ -9389,6 +9389,24 @@
         "cmd": "node -e 'const s=require(\"fs\").readFileSync(\"lib/practices.ts\",\"utf8\");const u=s.slice(s.indexOf(\"export async function updatePractice\"));process.exit(/uniquePracticeSlug/.test(u.slice(0,4000))?0:1)'",
         "note": "Passes when updatePractice can re-mint a slug at all. Deliberately narrow: it proves the seam exists, and the not-yet-public gate is pinned by the unit test the row asks for rather than by a grep."
       }
+    },
+    {
+      "id": "HYG-063",
+      "title": "The ledger fold takes meta.slate wholesale from main, so it hands back a backlog that contradicts itself",
+      "status": "done",
+      "lane": "hygiene",
+      "size": "S",
+      "priority": "P2",
+      "source": {
+        "file": "scripts/maintenance/fold-ledger-docs.mjs",
+        "ref": "HYG-032 fold driver · HYG-047 slate contract"
+      },
+      "detail": "FOUND 2026-09-07 by hitting it five times in one night. mergeBacklog merged ENTRIES by row id and then emitted `{ ...theirs, entries: merged }`, so every non-entry key came from main unread. That is right for `schema`, `lanes` and `rules`, which a branch has no opinion about, and WRONG for meta.slate, which is a VIEW OVER THE ENTRIES the fold has just changed. A branch that closed a row and dropped it from the slate had that drop discarded, so the tool emitted a file whose slate listed finished work as active — exactly what HYG-047 measures (\"the slate inside the verified backlog is itself unverified\"), and check:backlog went red on the fold's own output.\n\nMEASURED, NOT THEORISED: the seven-PR audit stack of 2026-09-06/07 was folded five times (slice-consent, slice-measurement, slice-crawl-surface twice, and the LIVE-184 close) and HYG-047 fired on ALL FIVE, each fixed by hand with the same three lines. A tool that exists so this file is never hand-edited cannot hand back a file that needs hand-editing.\n\nTHE FIX FOLDS THE SLATE ON THE SAME PRINCIPLE AS THE ENTRIES — main's order first, this branch's additions appended — and then reconciles it against the MERGED entries, which are the authority on status. It drops a row that is done, an id naming no row, and a duplicate placement when the two sides filed the same row into different waves. It reports each drop on stdout, because the old failure was invisible at fold time and surfaced several commands later.\n\n⚪ IT DELIBERATELY DOES NOT PLACE AN UNPLACED OPEN ROW. HYG-047 fails on one and that failure is correct: which wave a row belongs to is a judgement about build ORDER, and inventing one to go green is how a slate starts lying. Five of the eight new tests fail against the pre-fix driver; the other three are labelled controls rather than counted as proof.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const s=fs.readFileSync('scripts/maintenance/fold-ledger-docs.mjs','utf8');if(!/function foldSlate/.test(s))throw new Error('the fold no longer reconciles meta.slate');if(!/status === 'done'/.test(s))throw new Error('foldSlate no longer drops finished rows');const t=fs.readFileSync('scripts/maintenance/fold-ledger-docs.test.ts','utf8');if(!/meta.slate is folded beside the entries/.test(t))throw new Error('the slate fold has no test');\""
+      },
+      "notes": "Filed and closed in the same change, per the rule that a gate is wired beside the run that proves it."
     }
   ]
 }
