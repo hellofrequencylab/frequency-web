@@ -49,12 +49,37 @@ AssuranceBar are shared constants. Config #1 (Coaches) is the reference build wi
 
 ## 5. The Start-free bridge (the crux)
 
-Today a logged-out visitor cannot create a free Space: `/spaces/new` is auth-gated, and the site CTA
-(`/join`) builds a member profile, not a Space. So the funnel's whole promise is net-new work:
+A logged-out visitor cannot create a free Space directly: `/spaces/new` is auth-gated, and the site CTA
+(`/join`) builds a member profile, not a Space. So the funnel's promise is a chain:
 **minimal signup (deferred-auth pattern from `/join`) → create account → `createSpace` pre-seeded in
 the niche's Mode (coaches -> business:packages, studios -> business:membership, hosts -> business:ticketed,
 communities -> business:cohort, nonprofits -> nonprofit:donations) → land in the Space editor**, with
 attribution carried through (`lib/attribution/*`, which already captures UTM + first-touch + referral at signup).
+
+**How the chain is wired (ADR-1238).** Two slug vocabularies meet here, and they are different on purpose:
+the `/for/<slug>` door slug is a search keyword (`coaches-and-healers`), the funnel sequence slug is a
+stored key (`coaches`, the `sequence_overrides` slug and the `beta_coaches` cohort tag). Each door names
+its sequence slug once, as `FunnelConfig.niche` in `lib/marketing/funnel-config.ts`, and that field is the
+only bridge. The Mode is declared once too, on the niche's row in `NICHE_FUNNEL_DESTINATIONS`
+(`lib/funnels/definitions.ts`), never on the door.
+
+- Every Start free on a door renders `funnelStartHref(config)`: `/join?seq=<niche>` when the niche has
+  a destination row, else the Space directory (`FUNNEL_START_FALLBACK_HREF`), because an induction for a
+  niche with no row would end on the general Beta waitlist.
+- A signed-out visitor runs the induction with sign-up embedded; `resolveFunnel` gives a niche sequence
+  its code-default destination (`withNicheDefaultDestination`), and completion redirects through
+  `funnelLanding` to `/spaces/new?mode=<type>:<variant>`, which the create wizard reads (ADR-1197).
+- A signed-in member who is already onboarded is sent straight to the same path by `/join` (the
+  onboarded branch also goes through `funnelLanding`), so an existing account clicking a door does not
+  land on the feed.
+- A niche sequence needs no `sequence_overrides` row to work: an unknown slug resolves as a blank clone
+  of the default flow with the niche destination attached. Authoring a row for the slug in the funnel
+  builder replaces its copy; saving that row as a draft falls back to the default flow, which lands on
+  the waitlist, so a niche door's row should never sit in draft.
+
+`lib/funnels/routing.test.ts` pins the pure half (every door names a niche with a row, and derives the
+sequence URL); `components/marketing/funnel/funnel-sections.test.ts` pins the render (no literal start
+path survives on the door) and the `/join` onboarded branch.
 
 ## 6. Measurement + SEO
 
