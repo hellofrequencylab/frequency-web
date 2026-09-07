@@ -5,6 +5,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   renderShellCoverage,
+  requiredFailure,
   summarizeShellCoverage,
   type ShellObservation,
 } from './shell-coverage'
@@ -255,5 +256,139 @@ describe('the reason tells the two blind spots apart', () => {
     })
     expect(coverage.reason).toContain('PW_STORAGE_STATE is not set')
     expect(coverage.reason).not.toContain('HYG-027')
+  })
+})
+
+// ── A COVERED MEMBER SHELL OVER A DENIED OPERATOR CONSOLE IS NOT A TICK (HYG-027, ADR-1239) ────
+//
+// The run above ("names the /admin role floor") got the REASON right on 2026-08-31 and still
+// printed `### ✅ App shell covered` over it, with the seven /admin routes in a one-line footnote.
+// That is the #2048 silence at a different altitude: a headline that says covered, over a console
+// that was not looked at, for a cause the repo had already filed. The headline now says so, the
+// annotation is an `::error`, and PW_REQUIRE_OPERATOR turns it into a failure. ADR-949 applies
+// twice over: the negative control (operators RAN → no banner, no failure) is the assertion that
+// keeps this from being decoration.
+function deniedRun(surface: string): ShellObservation {
+  return {
+    title: `a11y · operator console › ${surface} has no serious+ violations (dawn-light)`,
+    surface,
+    status: 'skipped',
+    roleFloor: true,
+  }
+}
+
+describe('a denied operator console changes the verdict, not just the footnote', () => {
+  const base = {
+    baseURL: 'https://preview.example.vercel.app',
+    storageStateVar: '/tmp/state.json',
+    storageState: '/tmp/state.json',
+    specs: ['a11y.spec.ts'],
+    spaceSlug: 'demo',
+    operatorSurfaces: OPERATORS,
+    surfaces: [...SURFACES, ...OPERATORS],
+  }
+
+  it('🔴 names every denied /admin route in the headline and raises an ::error annotation', () => {
+    const coverage = summarizeShellCoverage({
+      ...base,
+      observations: [...ranRun(), ...OPERATORS.map(deniedRun)],
+    })
+    expect(coverage.verdict).toBe('covered')
+    expect(coverage.operatorsDenied).toEqual(OPERATORS)
+
+    const { markdown, annotations, console: terminal } = renderShellCoverage(coverage)
+    expect(markdown).toContain('operator console NOT looked at')
+    expect(markdown).not.toContain('✅ App shell covered')
+    for (const surface of OPERATORS) expect(markdown).toContain(`| \`${surface}\` | 🔴`)
+    expect(markdown).toContain('HYG-027')
+    expect(annotations).toHaveLength(1)
+    expect(annotations[0]).toContain('::error title=Operator console not audited')
+    expect(terminal).toContain('OPERATOR CONSOLE was not looked at')
+  })
+
+  it('reads the role floor off the skip annotation even when a MEMBER surface also skipped', () => {
+    // The heuristic alone ("only operators missing") cannot see this case; the flagged
+    // observation can, which is why the reporter records it from the test's own annotation.
+    const coverage = summarizeShellCoverage({
+      ...base,
+      observations: [
+        ...ranRun().map((o) => (o.surface === '/settings' ? { ...o, status: 'skipped' as const } : o)),
+        ...OPERATORS.map(deniedRun),
+      ],
+    })
+    expect(coverage.operatorsDenied).toEqual(OPERATORS)
+    expect(coverage.reason).toContain('/admin role floor')
+    expect(renderShellCoverage(coverage).markdown).toContain('Also unphotographed: `/settings`')
+  })
+
+  it('NEGATIVE CONTROL: operators that RAN produce no denial, no ::error and no failure', () => {
+    const coverage = summarizeShellCoverage({
+      ...base,
+      observations: [...ranRun(), ...OPERATORS.map((s) => run(s, 'ran'))],
+    })
+    expect(coverage.operatorsDenied).toEqual([])
+    const { markdown, annotations } = renderShellCoverage(coverage)
+    expect(markdown).toContain('✅ App shell covered')
+    expect(annotations).toEqual([])
+    expect(requiredFailure(coverage, { requireOperator: '1', requireShell: '1' })).toBeNull()
+  })
+
+  it('does not call a PARTIAL run an operator denial: no session is a different problem', () => {
+    const coverage = summarizeShellCoverage({
+      baseURL: 'https://preview.example.vercel.app',
+      surfaces: [...SURFACES, ...OPERATORS],
+      observations: [...skippedRun(), ...OPERATORS.map(deniedRun)],
+      operatorSurfaces: OPERATORS,
+    })
+    expect(coverage.verdict).toBe('partial')
+    expect(coverage.operatorsDenied).toEqual([])
+    expect(coverage.reason).toContain('PW_STORAGE_STATE is not set')
+  })
+
+  it('does not blame the floor when the run never collected an operator surface', () => {
+    const coverage = summarizeShellCoverage({
+      ...base,
+      operatorSurfaces: [],
+      surfaces: SURFACES,
+      observations: ranRun(),
+    })
+    expect(coverage.operatorsDenied).toEqual([])
+  })
+})
+
+describe('requiredFailure: two opt-in ratchets, one per owner precondition', () => {
+  const denied = summarizeShellCoverage({
+    baseURL: 'https://preview.example.vercel.app',
+    storageStateVar: '/tmp/state.json',
+    storageState: '/tmp/state.json',
+    surfaces: [...SURFACES, ...OPERATORS],
+    observations: [...ranRun(), ...OPERATORS.map(deniedRun)],
+    operatorSurfaces: OPERATORS,
+  })
+  const partial = summarizeShellCoverage({
+    baseURL: 'https://preview.example.vercel.app',
+    surfaces: SURFACES,
+    observations: skippedRun(),
+  })
+
+  it('is silent by default: before the grant, silence is loud, not red', () => {
+    expect(requiredFailure(denied, {})).toBeNull()
+    expect(requiredFailure(denied, { requireOperator: '0' })).toBeNull()
+    expect(requiredFailure(denied, { requireOperator: 'false' })).toBeNull()
+  })
+
+  it('PW_REQUIRE_OPERATOR turns a denied console into a failure that names the routes', () => {
+    const failure = requiredFailure(denied, { requireOperator: '1' })
+    expect(failure).toContain('::error title=Operator console not audited')
+    expect(failure).toContain('PW_REQUIRE_OPERATOR')
+    for (const surface of OPERATORS) expect(failure).toContain(surface)
+  })
+
+  it('PW_REQUIRE_SHELL governs the missing session, and ONLY that', () => {
+    expect(requiredFailure(partial, { requireShell: '1' })).toContain('PW_REQUIRE_SHELL')
+    // A denied console with the member shell covered is not `partial`, so the shell knob alone
+    // must not fire on it — the two silences have two fixes and two switches.
+    expect(requiredFailure(denied, { requireShell: '1' })).toBeNull()
+    expect(requiredFailure(partial, { requireOperator: '1' })).toBeNull()
   })
 })

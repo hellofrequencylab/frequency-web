@@ -47,7 +47,7 @@
 // PW_BASE_URL/feed, and landing on /sign-in is a hard failure. A storage-state file that
 // does not actually authenticate is worse than none, because the suite would photograph the
 // sign-in page under the shell's name.
-import { mkdirSync, writeFileSync } from 'node:fs'
+import { appendFileSync, mkdirSync, writeFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 
@@ -288,6 +288,61 @@ try {
   )
 }
 
+/* ── 4b. Say whether the account clears the /admin role floor ─────────────────────────── */
+
+// The session is valid; the question is what it can SEE. requireAdminFloor() (lib/admin/guard.ts)
+// redirects a signed-in non-staff viewer from any /admin route to /feed, and the seven operator
+// surfaces in test/e2e/surfaces.ts skip on exactly that bounce. Until 2026-09-07 the first place
+// anyone learned the account was not staff was the reporter banner at the END of a 15-minute run;
+// the fact is readable here, one request after the session exists, so it is printed here too.
+//
+// This never fails the mint: a member session that cannot open /admin is still the member session
+// the app-shell half needs. It only refuses to be quiet about it (HYG-027, ADR-1239).
+let staff: 'yes' | 'no' | 'unknown' = 'unknown'
+let adminLanded = ''
+try {
+  const response = await fetch(new URL('/admin', baseUrl).toString(), {
+    redirect: 'manual',
+    headers: {
+      cookie: cookieHeader,
+      ...(bypass ? { 'x-vercel-protection-bypass': bypass } : {}),
+    },
+  })
+  const location = response.headers.get('location')
+  adminLanded = location ? new URL(location, baseUrl).pathname : '/admin'
+  if (adminLanded.startsWith('/feed')) staff = 'no'
+  else if (adminLanded === '/admin' || adminLanded.startsWith('/admin/')) staff = 'yes'
+} catch (error) {
+  console.warn(`  ⚠️ could not probe /admin to read the role floor: ${String(error)}`)
+}
+
+if (staff === 'no') {
+  const line =
+    `${email} is signed in but is NOT platform staff: /admin redirected to ${adminLanded}, which is ` +
+    "requireAdminFloor()'s denial target. The seven operator surfaces will skip with that cause " +
+    'named, in the visual AND the a11y suite. Give the account web_role admin ' +
+    '(or a team_members staff role that sees an admin group) - backlog HYG-027.'
+  // A workflow-command line on stdout becomes a checks-page annotation with no YAML to wire.
+  if (process.env.GITHUB_ACTIONS) console.log(`::warning title=e2e account is not platform staff::${line}`)
+  const summaryPath = process.env.GITHUB_STEP_SUMMARY
+  if (summaryPath) {
+    try {
+      appendFileSync(
+        summaryPath,
+        [
+          '',
+          '### ⚠️ The e2e account does not clear the /admin role floor',
+          '',
+          line,
+          '',
+        ].join('\n'),
+      )
+    } catch {
+      // The summary is a courtesy; the console line above is the record.
+    }
+  }
+}
+
 /* ── 5. Write it ─────────────────────────────────────────────────────────────────────── */
 
 mkdirSync(dirname(outPath), { recursive: true })
@@ -297,6 +352,15 @@ console.log(`\n✅ Member session minted for ${email}`)
 console.log(`   target   ${baseUrl.origin}`)
 console.log(`   verified /feed → ${landed}${landed === '/feed' ? '' : '  ⚠️ not /feed — see below'}`)
 console.log(`   cookies  ${cookies.length} (${cookies.map((c) => c.name).join(', ')})`)
+console.log(
+  `   /admin   ${
+    staff === 'yes'
+      ? 'opens: the account is platform staff, so the operator surfaces will run'
+      : staff === 'no'
+        ? `redirects to ${adminLanded}  ⚠️ NOT staff: the operator surfaces will skip (HYG-027)`
+        : `landed on ${adminLanded || '(unreachable)'}  ⚠️ could not tell whether the account is staff`
+  }`,
+)
 console.log(`   written  ${outPath}  (mode 600, git-ignored)`)
 console.log(`\n   PW_STORAGE_STATE=${outPath}\n`)
 if (landed !== '/feed') {
