@@ -167,7 +167,7 @@ export const MODULE_COMPONENTS: Record<string, ComponentType> = {
   'channel.settings': ChannelSettingsModule,
   'channel.insights': ChannelInsightsModule,
   'channel.danger': ChannelDangerZone,
-  // Journey rail (ADR-515 Phase 6). Settings mounts the self-contained JourneySettings editor inline;
+  // Journey rail (ADR-515 Phase 6). Settings renders the manifest's rail plan inline (ADR-1246);
   // Builder/Layout links out to the full-page builder (the block tree is data-heavy — the hub/nexus
   // pattern); Export is a light inline control; Danger is inline (never banked). Each self-fetches its
   // read-gated bundle (getJourneyRailData) and renders nothing for a non-owner.

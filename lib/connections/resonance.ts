@@ -1,3 +1,4 @@
+import { cache } from 'react'
 import { createClient } from '@/lib/supabase/server'
 
 // Orbits & Resonance reads (ADR-186, P2). The my_orbit / near_misses RPCs are
@@ -5,6 +6,13 @@ import { createClient } from '@/lib/supabase/server'
 // with the authenticated server client (which carries the user's JWT) — NOT the
 // service-role admin client (where auth.uid() is null). Resonance is private to the
 // caller by construction.
+//
+// getMyOrbit is wrapped in React cache() (LIVE-179, ADR-1242): my_orbit is a three-way
+// self-join over memberships and event_rsvps, and one feed render asked for it twice
+// (the blended rank's resonance map and the Event-Dispatch gate, both with limit 200).
+// cache() keys on the argument list, so two same-limit calls in one request share one
+// RPC, concurrent callers share the same in-flight promise, and the memo dies with the
+// request. Outside a React request (a server action, a script) cache() is a pass-through.
 
 export type Orbit = 'inner' | 'middle' | 'outer'
 
@@ -23,8 +31,9 @@ export interface OrbitMember {
   orbit: Orbit
 }
 
-/** The caller's connections, weighted by real co-presence — highest resonance first. */
-export async function getMyOrbit(limit = 100): Promise<OrbitMember[]> {
+/** The caller's connections, weighted by real co-presence — highest resonance first.
+ *  Request-memoised per limit (see the header note): the feed's two readers share one RPC. */
+export const getMyOrbit = cache(async (limit = 100): Promise<OrbitMember[]> => {
   // The AUTHED client so auth.uid() resolves to the caller. The rows are normalized
   // defensively (the generated RPC row types claim non-null, but SQL can return nulls).
   const supabase = await createClient()
@@ -43,7 +52,7 @@ export async function getMyOrbit(limit = 100): Promise<OrbitMember[]> {
     resonance: Number(r.resonance ?? 0),
     orbit: (r.orbit as Orbit) ?? 'outer',
   }))
-}
+})
 
 export interface NearMiss {
   profileId: string

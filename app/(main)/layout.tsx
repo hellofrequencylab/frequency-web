@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation'
 import { headers, cookies } from 'next/headers'
 import { Suspense } from 'react'
-import { createClient } from '@/lib/supabase/server'
+import { getCachedUser, getCachedViewerProfile } from '@/lib/auth'
 import { resolveSpaceForHost, activeVerticalsForSpace } from '@/lib/spaces'
 import { hasOperatedSpaces } from '@/lib/spaces/operated'
 import { VERTICALS } from '@/lib/verticals'
@@ -201,10 +201,10 @@ export default async function MainLayout({
    */
   wizard: React.ReactNode
 }) {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  // The ONE server-verified user read of the render (ADR-1244). Every helper in the wave
+  // below that needs the viewer (getCallerProfile, getViewerHats, applyViewAs) reads the same
+  // React-cached value, so this layout no longer pays its own GET /auth/v1/user beside theirs.
+  const user = await getCachedUser()
 
   // Logged-out visitors hitting an in-app URL go back to the splash (not the
   // sign-in form) — the splash is the front door for anyone who hasn't signed up.
@@ -271,11 +271,10 @@ export default async function MainLayout({
     redirect('/')
   }
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('id, display_name, handle, avatar_url, community_role, web_role, current_season_zaps, lifetime_gems, current_streak, meta')
-    .eq('auth_user_id', user.id)
-    .maybeSingle()
+  // The ONE viewer profiles read of the render (ADR-1244): the same React-cached row the
+  // caller resolver reads, so the roles and tier below are derived from the row this shell
+  // renders. Raw DB values: `community_role` here is the TRUE role (view-as is applied below).
+  const profile = await getCachedViewerProfile()
 
   // No profile row means the trigger hasn't run yet. Send to onboarding — unless this is a public
   // page, which stays viewable.

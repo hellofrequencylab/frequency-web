@@ -13,11 +13,25 @@
 // getMyProfileId() and getViewerGamStats(), plus the layout calls
 // getCallerProfile()) they share one `auth.getUser()` round-trip and one profiles
 // query instead of repeating them.
+//
+// ONE VIEWER READ PER REQUEST (ADR-1244, LIVE-178). `cache()` only dedupes what goes
+// THROUGH these two functions. Until 2026-09-07 the (main) layout and the feed page each
+// built their own client and made their own `auth.getUser()` and `profiles` read, so a
+// signed-in feed load paid three verified-user round trips and three reads of the same
+// row inside one render. Every server-side identity read in a render now goes through
+// getCachedUser() and getCachedViewerProfile(); the proxy keeps its own getUser() because
+// it runs before the render, in a different runtime, and is what refreshes the session
+// cookie. A render never trusts an inbound identity header (hazard 3 of the row): the
+// user here is always the one Supabase verified against the cookie for THIS request.
+//
+// `auth.getUser()` is NOT a local JWT decode: @supabase/auth-js issues GET /auth/v1/user
+// whenever a session exists. That is why the count matters.
 
 import { cache } from 'react'
 import type { User } from '@supabase/supabase-js'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import type { Database } from '@/lib/database.types'
 import { applyViewAs } from '@/lib/view-as'
 import type { EntitlementTier } from '@/lib/core/entitlement'
 import { BETA_OPEN_ACCESS, BETA_GRANTED_TIER } from '@/lib/core/beta'
@@ -26,11 +40,67 @@ import { communityRoleToLevel, levelRank, type CommunityLevel } from '@/lib/core
 
 export type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'admin' | 'janitor'
 
-/** The authenticated auth user (or null), memoized per request. */
+/** The authenticated auth user (or null), memoized per request. Server-verified
+ *  (GET /auth/v1/user), never a cookie-trusted session; the ONE such call a render makes. */
 export const getCachedUser = cache(async (): Promise<User | null> => {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   return user
+})
+
+/**
+ * The columns the viewer's own profile row is read with, ONCE per request. This is the
+ * union of what every consumer of the row needs: the caller resolver below (roles,
+ * level, tier), the (main) layout shell (identity, game stats, onboarding meta) and the
+ * feed page (streak, avatar, geo). A consumer that needs another column adds it HERE
+ * rather than reading the row again; the select is single-quoted on purpose so a
+ * source-shape test can read it.
+ */
+export const VIEWER_PROFILE_COLUMNS =
+  'id, display_name, handle, avatar_url, community_role, community_level, web_role, membership_tier, current_season_zaps, lifetime_gems, current_streak, meta, home_lat, home_lng, feed_radius_m'
+
+export type ViewerProfileRow = Pick<
+  Database['public']['Tables']['profiles']['Row'],
+  | 'id'
+  | 'display_name'
+  | 'handle'
+  | 'avatar_url'
+  | 'community_role'
+  | 'community_level'
+  | 'web_role'
+  | 'membership_tier'
+  | 'current_season_zaps'
+  | 'lifetime_gems'
+  | 'current_streak'
+  | 'meta'
+  | 'home_lat'
+  | 'home_lng'
+  | 'feed_radius_m'
+>
+
+/**
+ * The viewer's own `profiles` row (or null when signed out / no row yet), memoized per
+ * request. This is the ONE profiles read a render makes for the viewer; resolveCaller,
+ * the (main) layout and the feed page all read it from here.
+ *
+ * RAW DB values: `community_role` here is the true role, untouched by "view as". Use
+ * getCallerProfile() for the effective (preview-aware) role and getRealCallerRole() for
+ * the true one; never derive an authz decision from this row directly.
+ *
+ * Own-row read: RLS lets a signed-in user read their own profile ("profiles: read own or
+ * crew+ reads in-region", `auth_user_id = auth.uid()`), so the session client suffices
+ * and no service-role bypass is needed for the most-trafficked read in the app.
+ */
+export const getCachedViewerProfile = cache(async (): Promise<ViewerProfileRow | null> => {
+  const user = await getCachedUser()
+  if (!user) return null
+  const supabase = await createClient()
+  const { data } = await supabase
+    .from('profiles')
+    .select(VIEWER_PROFILE_COLUMNS)
+    .eq('auth_user_id', user.id)
+    .maybeSingle()
+  return (data as ViewerProfileRow | null) ?? null
 })
 
 /**
@@ -59,20 +129,10 @@ const resolveCaller = cache(
     membershipTier: EntitlementTier
     realMembershipTier: EntitlementTier
   } | null> => {
-    const user = await getCachedUser()
-    if (!user) return null
-
-    // Own-row read: RLS lets a signed-in user read their own profile, so the
-    // session client suffices (no service-role bypass). The `as` narrowings below
-    // tighten DB strings to their unions; asWebRole/asCommunityLevel stay as
-    // runtime validation regardless of what the types promise.
-    const supabase = await createClient()
-    const { data } = await supabase
-      .from('profiles')
-      .select('id, community_role, community_level, web_role, membership_tier')
-      .eq('auth_user_id', user.id)
-      .maybeSingle()
-
+    // The shared per-request row (one getUser, one select, see getCachedViewerProfile).
+    // The `as` narrowings below tighten DB strings to their unions; asWebRole/
+    // asCommunityLevel stay as runtime validation regardless of what the types promise.
+    const data = await getCachedViewerProfile()
     if (!data) return null
     const realRole = (data.community_role ?? 'member') as CommunityRole
     const realWebRole = asWebRole(data.web_role)

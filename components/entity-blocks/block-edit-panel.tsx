@@ -46,6 +46,13 @@ import {
 } from './controls/field-controls'
 import { RecordingPickerControl } from '@/components/airwaves/recording-picker-control'
 import { LoomImageField } from './controls/loom-image-field'
+import { assetRefUrl, isAssetRef, type AssetValue } from '@/lib/library/asset-ref'
+
+/** Read a stored image value for the rail: a URL string or an AssetRef (ADR-1245) is kept as is, so an
+ *  edit to a neighbouring field never downgrades a reference to its cached url; anything else is ''. */
+function imageValue(raw: unknown): AssetValue {
+  return isAssetRef(raw) || typeof raw === 'string' ? raw : ''
+}
 import { LoomPicker } from '@/components/loom/loom-picker'
 import { useProfileLayout } from './profile-layout-context'
 
@@ -323,12 +330,13 @@ export function FieldEditor({
   onChange: (v: unknown) => void
 }) {
   // An IMAGE field (`upload` on the schema) is the Loom and nothing else: no URL box, no file dialog
-  // (owner directive). Declared as `url` for the sanitizer's sake; the value is still a plain public URL.
+  // (owner directive). Declared as `url` for the sanitizer's sake; the stored value is a plain public URL
+  // or an AssetRef ({ assetId, url }, ADR-1245), and the control previews either.
   if (field.upload && (field.type === 'url' || field.type === 'text')) {
     return (
       <LoomImageField
         label={field.label}
-        value={typeof value === 'string' ? value : ''}
+        value={imageValue(value)}
         scopeKey={loomScope}
         onChange={(url) => onChange(url)}
       />
@@ -640,7 +648,10 @@ function ImagesEditor({
   loomScope?: string
   onChange: (v: unknown) => void
 }) {
-  const urls: string[] = Array.isArray(value) ? (value as unknown[]).filter((v): v is string => typeof v === 'string') : []
+  // Each entry is a URL string or an AssetRef (ADR-1245); a reorder / remove keeps every entry's shape.
+  const urls: AssetValue[] = Array.isArray(value)
+    ? (value as unknown[]).filter((v): v is AssetValue => isAssetRef(v) || (typeof v === 'string' && v.length > 0))
+    : []
   const [dragIndex, setDragIndex] = useState<number | null>(null)
   const [pickerOpen, setPickerOpen] = useState(false)
 
@@ -670,7 +681,9 @@ function ImagesEditor({
 
       {urls.length > 0 && (
         <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
-          {urls.map((url, i) => (
+          {urls.map((entry, i) => {
+            const url = assetRefUrl(entry)
+            return (
             <div
               key={`${url}-${i}`}
               draggable
@@ -714,7 +727,8 @@ function ImagesEditor({
                 </button>
               </div>
             </div>
-          ))}
+            )
+          })}
         </div>
       )}
 
@@ -740,7 +754,7 @@ function ImagesEditor({
 
 /** One Features item as edited in the rail (ADR-585): an icon OR an image, a title + text, an optional price,
  *  a whole-item link, and an optional CTA label (the CTA renders over `link`). */
-type FeatureRow = { icon: string; image: string; title: string; text: string; price: string; link: string; cta: string }
+type FeatureRow = { icon: string; image: AssetValue; title: string; text: string; price: string; link: string; cta: string }
 
 /** One row in a repeater's COMPACT list (ADR-585 → per-item settings): a drag handle, the item's title (with
  *  a positional fallback), and a remove button. The whole row opens that item's full settings (selectItem), so
@@ -858,7 +872,7 @@ function FeaturesEditor({
   const items: FeatureRow[] = Array.isArray(value)
     ? (value as Array<Record<string, unknown>>).map((it) => ({
         icon: typeof it.icon === 'string' ? it.icon : '',
-        image: typeof it.image === 'string' ? it.image : '',
+        image: imageValue(it.image),
         title: typeof it.title === 'string' ? it.title : '',
         text: typeof it.text === 'string' ? it.text : '',
         price: typeof it.price === 'string' ? it.price : '',
@@ -1001,7 +1015,7 @@ function FeaturesEditor({
  *  plus title + text, an optional whole-card link, and an optional separate button. */
 type CardRow = {
   icon: string
-  image: string
+  image: AssetValue
   statValue: string
   statLabel: string
   title: string
@@ -1019,7 +1033,7 @@ function toCardRow(raw: unknown): CardRow {
   const s = (v: unknown) => (typeof v === 'string' ? v : '')
   return {
     icon: s(o.icon),
-    image: s(o.image),
+    image: imageValue(o.image),
     statValue: s(stat.value),
     statLabel: s(stat.label),
     title: s(o.title),

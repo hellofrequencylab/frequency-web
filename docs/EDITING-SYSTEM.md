@@ -77,9 +77,9 @@ In fixed order, each rendered only when it applies to the scope + viewer:
 > kernel (`lib/studio/kernel/manifest.ts`, spec: [STUDIO.md](STUDIO.md)), and a field's `placement`
 > (`'spark' | 'inline' | 'rail'`) is what lets one declaration serve creation AND editing.
 > **§2 below is unchanged** and is that kernel's consumer. The rail side reads placement through
-> `railForm()` in `lib/studio/kernel/edit-plan.ts` (ADR-1240, 2026-09-07); the Practice rail derives
-> from it and the Circle, Event, and Journey rails still hand-declare (`HYG-050` tracks which). No
-> inline canvas consumes `inlineFields()` yet. Read this section as history.
+> `railForm()` in `lib/studio/kernel/edit-plan.ts` (ADR-1240, 2026-09-07); the Practice and Journey
+> rails derive from it (ADR-1240, ADR-1246) and the Circle and Event rails still hand-declare
+> (`HYG-050` tracks which). No inline canvas consumes `inlineFields()` yet. Read this section as history.
 
 Today each of the 7 entity settings modules hand-rolls its form, which is why nothing feels shared.
 Introduce **one declarative schema per scope kind** and **one renderer**:

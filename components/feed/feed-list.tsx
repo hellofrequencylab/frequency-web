@@ -11,7 +11,7 @@ import { FeedPeopleStrip } from './feed-people-strip'
 import { viewerHidesDemo } from '@/lib/demo-preference'
 import {
   viewerInEventDispatchArea,
-  viewerHasActiveRsvp,
+  viewerActiveRsvpEventIds,
   type EventDispatchTarget,
   type DispatchViewerContext,
 } from '@/lib/events/dispatch-audience'
@@ -115,11 +115,32 @@ async function resolveDispatchViewer(
  * may see it: readable + in its audience (guest / hosting Circle / surrounding
  * area). A private event never bleeds. Falls through to the next candidate when an
  * Event Dispatch is gated out, so a regular Dispatch still surfaces.
+ *
+ * The guest-reach leg is ONE read (LIVE-179, ADR-1242). This used to ask
+ * viewerHasActiveRsvp per candidate, serially, inside the loop: up to eight round
+ * trips to pick one card. The decision is unchanged, and it runs in the same order:
+ * the candidates that would have been asked are every Event Dispatch ahead of the
+ * first ordinary one that the area gate misses, so those ids go to a single
+ * `.in('event_id', …)` read first, and the loop below reads the set.
  */
 async function pickLeadDispatch(
   candidates: RawDispatchRow[],
   viewer: DispatchViewerContext,
 ): Promise<DispatchItem | null> {
+  // Pass 1 (pure): which candidates need the RSVP question at all.
+  const needsRsvp: string[] = []
+  for (const row of candidates) {
+    if (row.dispatch_type !== 'event') break
+    const event = eventOf(row)
+    if (!event || !event.slug) continue
+    if (!viewerInEventDispatchArea(event, viewer)) needsRsvp.push(event.id)
+  }
+  const rsvpd =
+    needsRsvp.length > 0 && viewer.profileId
+      ? await viewerActiveRsvpEventIds(needsRsvp, viewer.profileId)
+      : new Set<string>()
+
+  // Pass 2: the same walk the serial version made, with the lookup already in hand.
   for (const row of candidates) {
     if (row.dispatch_type !== 'event') {
       return toDispatchItem(row, null)
@@ -128,12 +149,9 @@ async function pickLeadDispatch(
     // A drift between a 'event'-typed dispatch and a missing link is non-surfacing.
     if (!event || !event.slug) continue
 
-    let visible = viewerInEventDispatchArea(event, viewer)
     // Guest reach: an explicit non-muted RSVP also surfaces it, even outside the
-    // viewer's Circle / radius. One narrow lookup, only when the area gate missed.
-    if (!visible && viewer.profileId) {
-      visible = await viewerHasActiveRsvp(event.id, viewer.profileId)
-    }
+    // viewer's Circle / radius, only when the area gate missed.
+    const visible = viewerInEventDispatchArea(event, viewer) || rsvpd.has(event.id)
     if (visible) {
       return toDispatchItem(row, { slug: event.slug, title: event.title })
     }
@@ -156,6 +174,103 @@ function toDispatchItem(
     linked_task: row.linked_task,
     event,
   }
+}
+
+// The feed RPC, in one place (RLS convergence, migration 20240309000000 / 20260602194223).
+//
+// Main feed: the reach model (public + group in my circles + cluster reachable via a shared hub
+// or a tuned topical channel) lives in the `feed_for_viewer` SECURITY DEFINER RPC, enforced in
+// the DB and run on the user-scoped client. It returns the author's public fields + reactions
+// safely (so it works for members too, whom the crew+ posts policy would otherwise limit to
+// public). Circle/channel detail page (surface 4): scoped posts come from
+// `scoped_feed_for_viewer`, the SAME reach predicate constrained to these scope ids, so a
+// non-member sees only the scope's PUBLIC posts while a member still gets its group/cluster posts.
+//
+// 2026-09-05 (scan2 L5-03): both reads used to be `const { data } = ...; data ?? []`, so a failed
+// call (timeout, RLS refusal, missing function) rendered the EMPTY state for every member and
+// logged nothing. They go through readFeedRpc, which reads `error`, logs it with the RPC name,
+// and yields a discriminated result; an 'error' renders FeedError, never FeedEmpty.
+async function loadPosts(args: {
+  myProfileId: string | null
+  circleIds: string[]
+  showPublicLayer: boolean
+  sort: 'recent' | 'relevant' | 'nearby' | 'story' | 'popular'
+  fetchSort: 'recent' | 'relevant' | 'nearby'
+  nearby: { lat: number; lng: number; radiusM: number } | null
+}): Promise<FeedLoad<RawPost>> {
+  const { myProfileId, circleIds, showPublicLayer, sort, fetchSort, nearby } = args
+  if (!myProfileId) return { kind: 'ok', items: [] }
+  const supabase = await createClient()
+  if (!showPublicLayer && circleIds.length > 0) {
+    return readFeedRpc<RawPost>(
+      'scoped_feed_for_viewer',
+      await supabase.rpc('scoped_feed_for_viewer', {
+        _scope_ids: circleIds,
+        _sort: fetchSort,
+        _limit: 30,
+      }),
+    )
+  }
+  const rpcArgs: Record<string, unknown> = { _sort: fetchSort, _limit: 40 }
+  // Pass the viewer's coords for BOTH the 'nearby' lens (which filters + orders by
+  // distance) and the 'relevant' lens (where it only POPULATES distance_m for the
+  // blended rank; the RPC orders by distance for 'nearby' alone, so selection is
+  // unchanged). Resonance Feed Phase 1 (ADR-414).
+  if (nearby && (sort === 'nearby' || sort === 'relevant')) {
+    rpcArgs._lat = nearby.lat
+    rpcArgs._lng = nearby.lng
+    rpcArgs._radius_m = nearby.radiusM
+  }
+  return readFeedRpc<RawPost>('feed_for_viewer', await supabase.rpc('feed_for_viewer', rpcArgs))
+}
+
+// The Event-Dispatch candidate window + nearest public event, for the furniture rail.
+// Event Dispatches (ADR-255) ride this same rail with dispatch_type='event' and link back
+// to their event via event_dispatches. Pull a small candidate window (not just the single
+// latest) so an Event Dispatch the viewer can't reach doesn't hide an ordinary Dispatch
+// they can. The reverse relation gives the linked event's slug + the visibility/scope/geog
+// this code re-checks (the admin client bypasses RLS, so the event gate must run in code).
+const DISPATCH_SELECT = `
+      id, title, excerpt, audience_scope, dispatch_type, published_at,
+      author:profiles!author_id ( display_name ),
+      linked_task:crew_tasks!linked_task_id ( id, name ),
+      event_dispatch:event_dispatches!dispatch_id (
+        event:events!event_id ( id, slug, title, visibility, scope_type, scope_id, host_id, geog )
+      )
+    `
+
+function dispatchCandidates(admin: AdminClient) {
+  return admin.from('dispatches').select(DISPATCH_SELECT)
+    .eq('status', 'published')
+    .is('hidden_at', null)
+    .order('published_at', { ascending: false })
+    .limit(8)
+}
+
+// The admin client bypasses RLS, so this banner must re-apply the public listing gate
+// itself (mirrors app/(main)/events/index-data.ts public query): only genuinely public,
+// published, non-circle/space events, and drop demo rows for a viewer who has opted out.
+// Without these, a private / draft / circle-only / standalone event would surface in
+// every member's feed.
+function nearestPublicEvent(admin: AdminClient, hideDemoEvents: boolean) {
+  return hideDemoEvents
+    ? admin.from('events').select('id, title, starts_at, location, slug')
+        .eq('status', 'published')
+        .eq('visibility', 'public')
+        .eq('scope_type', 'public')
+        .eq('is_cancelled', false)
+        .eq('is_demo', false)
+        .gte('starts_at', upcomingEventFloor())
+        .order('starts_at', { ascending: true })
+        .limit(1)
+    : admin.from('events').select('id, title, starts_at, location, slug')
+        .eq('status', 'published')
+        .eq('visibility', 'public')
+        .eq('scope_type', 'public')
+        .eq('is_cancelled', false)
+        .gte('starts_at', upcomingEventFloor())
+        .order('starts_at', { ascending: true })
+        .limit(1)
 }
 
 export async function FeedList({
@@ -191,65 +306,39 @@ export async function FeedList({
   // a pure popularity sort.
   const fetchSort = sort === 'story' ? 'recent' : sort === 'popular' ? 'relevant' : sort
 
-  // ── Posts ──────────────────────────────────────────────────────────────────
+  // Member-level beta-content toggle: drop seeded demo posts for an opted-out viewer (the
+  // global demo_mode already removes them when it's off). A cookie read, no round trip, and
+  // it MUST resolve before the wave below because the nearest-event query is shaped by it.
+  const hideDemoEvents = await viewerHidesDemo()
 
-  // 2026-09-05 (scan2 L5-03): both RPC reads below used to be `const { data } = ...; data ?? []`,
-  // so a failed call (timeout, RLS refusal, missing function) rendered the EMPTY state for every
-  // member and logged nothing. They now go through readFeedRpc, which reads `error`, logs it with
-  // the RPC name, and yields a discriminated result; an 'error' renders FeedError, never FeedEmpty.
-  let loaded: FeedLoad<RawPost> = { kind: 'ok', items: [] }
+  // Which optional reads this render wants. Both guards are the ones that always stood here:
+  // the resonance map is built for the "For you" lens only (every other lens would pay for a
+  // map it never reads), and the furniture rail (lead Dispatch + nearest event) shows on the
+  // main feed for a signed-in member outside the Story lens.
+  const resonanceFor = sort === 'relevant' && myProfileId ? myProfileId : null
+  const furnitureFor = myProfileId && showPublicLayer && sort !== 'story' ? myProfileId : null
 
-  if (myProfileId) {
-    if (!showPublicLayer && circleIds.length > 0) {
-      // Circle/channel detail page (RLS convergence surface 4, migration
-      // 20260602194223): scoped posts now come from the `scoped_feed_for_viewer`
-      // SECURITY DEFINER RPC on the user client — the SAME reach predicate as the
-      // main feed, constrained to these scope ids. So it respects per-post
-      // visibility (a non-member sees only the scope's PUBLIC posts, not its
-      // members-only 'group' posts) while still returning a member's group/cluster
-      // posts that the crew+ posts RLS policy would otherwise drop.
-      const supabase = (await createClient())
-      loaded = readFeedRpc<RawPost>(
-        'scoped_feed_for_viewer',
-        await supabase.rpc('scoped_feed_for_viewer', {
-          _scope_ids: circleIds,
-          _sort: fetchSort,
-          _limit: 30,
-        }),
-      )
-    } else {
-      // Main feed (RLS convergence, migration 20240309000000): the reach model —
-      // public + group in my circles + cluster reachable via a shared hub or a
-      // tuned topical channel — now lives in the `feed_for_viewer` SECURITY
-      // DEFINER RPC, enforced in the DB and run on the user-scoped client. It
-      // returns the author's public fields + reactions safely (so it works for
-      // members too, whom the crew+ posts policy would otherwise limit to public).
-      const supabase = (await createClient())
-      // The 'nearby' lens passes the member's coords + radius so the reconciled
-      // feed_for_viewer (geo + demo-aware) returns the closest activity first.
-      const rpcArgs: Record<string, unknown> = { _sort: fetchSort, _limit: 40 }
-      // Pass the viewer's coords for BOTH the 'nearby' lens (which filters + orders by
-      // distance) and the 'relevant' lens (where it only POPULATES distance_m for the
-      // blended rank — the RPC orders by distance for 'nearby' alone, so selection is
-      // unchanged). Resonance Feed Phase 1 (ADR-414).
-      if (nearby && (sort === 'nearby' || sort === 'relevant')) {
-        rpcArgs._lat = nearby.lat
-        rpcArgs._lng = nearby.lng
-        rpcArgs._radius_m = nearby.radiusM
-      }
-      loaded = readFeedRpc<RawPost>('feed_for_viewer', await supabase.rpc('feed_for_viewer', rpcArgs))
-    }
-  }
+  // ── Wave 1: everything that depends only on the props ─────────────────────
+  // LIVE-179 (ADR-1242). These five reads were awaited one after another, purely by position:
+  // the feed RPC, then the resonance map, then (after the scope resolver) the dispatch/event
+  // pair, then the viewer context. Only the scope resolver needs the posts, and only the
+  // Dispatch pick needs the viewer, so the rest start together. getMyOrbit is request-memoised,
+  // so the resonance map and the viewer context share ONE my_orbit RPC here.
+  const [loaded, resonance, dispatchR, eventR, viewer] = await Promise.all([
+    loadPosts({ myProfileId, circleIds, showPublicLayer, sort, fetchSort, nearby }),
+    resonanceFor ? getViewerResonanceMap(resonanceFor) : null,
+    furnitureFor ? dispatchCandidates(admin) : null,
+    furnitureFor ? nearestPublicEvent(admin, hideDemoEvents) : null,
+    // Viewer context for the Event-Dispatch gate (visibility + surrounding-area reach).
+    // Resolved once; reused for every candidate. `nearby` already carries the member's
+    // home + radius from the page.
+    furnitureFor ? resolveDispatchViewer(admin, furnitureFor, nearby) : null,
+  ])
 
   if (loaded.kind === 'error') {
     return <FeedError retryHref={retryHref} />
   }
   let rawPosts: RawPost[] = loaded.items
-
-  // Member-level beta-content toggle: drop seeded demo posts for an opted-out
-  // viewer (the global demo_mode already removes them when it's off). Reused
-  // below to gate the nearest-event banner the same way.
-  const hideDemoEvents = await viewerHidesDemo()
   if (hideDemoEvents) {
     rawPosts = rawPosts.filter((p) => !(p as { is_demo?: boolean }).is_demo)
   }
@@ -260,8 +349,7 @@ export async function FeedList({
   // nearest / chronological). Fail-safe: with no resonance + no geo the blend reduces
   // to recency-led, i.e. today's behavior.
   let ranked: RawPost[]
-  if (sort === 'relevant' && myProfileId) {
-    const resonance = await getViewerResonanceMap(myProfileId)
+  if (resonance) {
     const blendItems = rawPosts.map((p) => ({
       ...p,
       authorId: p.author.id,
@@ -273,74 +361,24 @@ export async function FeedList({
   }
   const posts: FeedPost[] = ranked.map((p) => ({ ...p, replyCount: p.comment_count ?? 0 })) as FeedPost[]
 
-  // ── Resolve scope context (wall, circle, channel, event, space) ───────────
+  // ── Wave 2: resolve scope context (wall, circle, channel, event, space) ────
   // The main feed shows posts from everywhere, so each one names its destination
   // in the card's attribution header (author › context). ONE resolver serves the
   // feed and the profile timeline, so the read never drifts between surfaces.
+  // This is the one wave that genuinely depends on the posts.
   const resolveScope = await buildScopeContextResolver(posts.map((p) => p.scope_id))
   for (const post of posts) {
     post.scopeContext = resolveScope(post.scope_id, post.author.id)
   }
 
-  // ── Dispatches + nearest event ──────────────────────────────────────────
+  // ── Wave 3 (conditional): the lead Dispatch, gated per viewer ─────────────
   let latestDispatch: DispatchItem | null = null
   let nearestEvent: { id: string; title: string; starts_at: string; location: string | null; slug: string } | null = null
 
-  if (myProfileId && showPublicLayer && sort !== 'story') {
-    // Event Dispatches (ADR-255) ride this same rail with dispatch_type='event' and
-    // link back to their event via event_dispatches. Pull a small candidate window
-    // (not just the single latest) so an Event Dispatch the viewer can't reach
-    // doesn't hide an ordinary Dispatch they can. The reverse relation gives the
-    // linked event's slug + the visibility/scope/geog this code re-checks (the
-    // admin client bypasses RLS, so the event gate must run in code).
-    const dispatchSelect = `
-      id, title, excerpt, audience_scope, dispatch_type, published_at,
-      author:profiles!author_id ( display_name ),
-      linked_task:crew_tasks!linked_task_id ( id, name ),
-      event_dispatch:event_dispatches!dispatch_id (
-        event:events!event_id ( id, slug, title, visibility, scope_type, scope_id, host_id, geog )
-      )
-    `
-
-    const [dispatchR, eventR] = await Promise.all([
-      admin.from('dispatches').select(dispatchSelect)
-        .eq('status', 'published')
-        .is('hidden_at', null)
-        .order('published_at', { ascending: false })
-        .limit(8),
-      // The admin client bypasses RLS, so this banner must re-apply the public
-      // listing gate itself (mirrors app/(main)/events/index-data.ts public query):
-      // only genuinely public, published, non-circle/space events, and drop demo
-      // rows for a viewer who has opted out. Without these, a private / draft /
-      // circle-only / standalone event would surface in every member's feed.
-      (hideDemoEvents
-        ? admin.from('events').select('id, title, starts_at, location, slug')
-            .eq('status', 'published')
-            .eq('visibility', 'public')
-            .eq('scope_type', 'public')
-            .eq('is_cancelled', false)
-            .eq('is_demo', false)
-            .gte('starts_at', upcomingEventFloor())
-            .order('starts_at', { ascending: true })
-            .limit(1)
-        : admin.from('events').select('id, title, starts_at, location, slug')
-            .eq('status', 'published')
-            .eq('visibility', 'public')
-            .eq('scope_type', 'public')
-            .eq('is_cancelled', false)
-            .gte('starts_at', upcomingEventFloor())
-            .order('starts_at', { ascending: true })
-            .limit(1)),
-    ])
-
-    // Viewer context for the Event-Dispatch gate (visibility + surrounding-area
-    // reach). Resolved once; reused for every candidate. `nearby` already carries
-    // the member's home + radius from the page.
-    const viewer = await resolveDispatchViewer(admin, myProfileId, nearby)
-
-    const candidates = ((dispatchR.data ?? []) as unknown as RawDispatchRow[])
+  if (furnitureFor && viewer) {
+    const candidates = ((dispatchR?.data ?? []) as unknown as RawDispatchRow[])
     latestDispatch = await pickLeadDispatch(candidates, viewer)
-    nearestEvent = (eventR.data?.[0] as unknown as typeof nearestEvent) ?? null
+    nearestEvent = (eventR?.data?.[0] as unknown as typeof nearestEvent) ?? null
   }
 
   // ── Merge + render ────────────────────────────────────────────────────────

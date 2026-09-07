@@ -6,6 +6,7 @@ import {
   gridColumns,
   marginBottomClass,
   marginTopClass,
+  safeImageUrl,
   safeUrl,
   sanitizeInlineHtml,
   textByRoleClass,
@@ -113,7 +114,7 @@ function readFeatureItems(raw: unknown): FeatureItem[] {
   return (raw as Array<Record<string, unknown>>)
     .map((it) => ({
       icon: typeof it.icon === 'string' ? it.icon : '',
-      image: safeUrl(it.image),
+      image: safeImageUrl(it.image),
       // Item title + text render through InlineRichText below (so their <br> + marks match the editor); the
       // pre-decode heals any legacy entity double-escape and InlineRichText re-sanitises idempotently on read.
       title: typeof it.title === 'string' ? decodeLegacyEntities(it.title) : '',
@@ -359,7 +360,7 @@ export function ContentBlockView({ id, props }: { id: string; props: Record<stri
       // A highlighted card: optional image, a title, a message, and one call-to-action button (ADR-542).
       const title = s(props, 'title')
       const body = s(props, 'body')
-      const image = safeUrl(props.image)
+      const image = safeImageUrl(props.image)
       const buttonUrl = safeUrl(props.buttonUrl)
       const buttonLabel = s(props, 'buttonLabel')
       // Fix 8: the button ALWAYS renders once it has a label and is toggled on — a no-link button falls
@@ -464,7 +465,7 @@ export function ContentBlockView({ id, props }: { id: string; props: Record<stri
       )
     }
     case 'image': {
-      const src = safeUrl(props.src)
+      const src = safeImageUrl(props.src)
       if (!src) return null
       // Aspect shape (sanitized segmented upstream): original keeps the photo's natural ratio; the others
       // crop to a fixed ratio via object-cover.
@@ -481,7 +482,7 @@ export function ContentBlockView({ id, props }: { id: string; props: Record<stri
     }
     case 'gallery': {
       const images = Array.isArray(props.images)
-        ? (props.images as unknown[]).map(safeUrl).filter((u) => u.length > 0)
+        ? (props.images as unknown[]).map(safeImageUrl).filter((u) => u.length > 0)
         : []
       if (!images.length) return null
       // Three views + a spacing step (Fix: gallery layout options). `view` and `gap` are sanitized enum

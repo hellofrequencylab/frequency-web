@@ -113,6 +113,30 @@ export async function viewerHasActiveRsvp(
   return !!data
 }
 
+/**
+ * The subset of `eventIds` this viewer holds a live, non-muted RSVP to. The batched
+ * form of viewerHasActiveRsvp (LIVE-179, ADR-1242): the feed's lead-Dispatch pick used
+ * to ask the single-event question once per candidate, serially, up to eight round
+ * trips; now it asks once for every candidate the area gate missed. Same table, same
+ * filters, keyed `.in('event_id', …)`. Empty for an empty id list without a read.
+ */
+export async function viewerActiveRsvpEventIds(
+  eventIds: string[],
+  profileId: string,
+): Promise<Set<string>> {
+  const ids = [...new Set(eventIds.filter(Boolean))]
+  if (ids.length === 0) return new Set()
+  const admin = createAdminClient()
+  const { data } = await admin
+    .from('event_rsvps')
+    .select('event_id')
+    .in('event_id', ids)
+    .eq('profile_id', profileId)
+    .eq('muted', false)
+    .in('status', ['going', 'maybe', 'waitlist'])
+  return new Set(((data ?? []) as { event_id: string | null }[]).map((r) => r.event_id).filter((id): id is string => !!id))
+}
+
 /** The event fields the feed gate needs (read once on the admin client). */
 export interface EventDispatchTarget {
   id: string
