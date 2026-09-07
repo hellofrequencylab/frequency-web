@@ -32,7 +32,7 @@ export function NicheFunnel({
 }) {
   return (
     <>
-      <SplashHeader />
+      <SplashHeader config={config} />
       <main className="pb-20 lg:pb-0">
         <FunnelHero config={config} />
         <AssuranceBar config={config} />
@@ -49,7 +49,7 @@ export function NicheFunnel({
         <FinalCta config={config} />
       </main>
       <SplashFooter />
-      <StickyMobileCta />
+      <StickyMobileCta config={config} />
     </>
   )
 }
