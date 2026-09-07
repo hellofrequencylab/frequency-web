@@ -45,7 +45,6 @@
             "LIVE-053",
             "LIVE-123",
             "LIVE-124",
-            "SCAN-539",
             "LIVE-156",
             "LIVE-187",
             "LIVE-188",
@@ -63,7 +62,6 @@
             "HYG-048",
             "LIVE-183",
             "LIVE-184",
-            "LIVE-160",
             "LIVE-159",
             "LIVE-161",
             "LIVE-172",
@@ -6332,15 +6330,14 @@
     {
       "id": "SCAN-539",
       "title": "Swallowed PostgREST errors silently reverse decisions in the money and permission paths",
-      "status": "open",
-      "priority": "P0",
+      "status": "done",
       "lane": "live",
       "size": "M",
       "source": {
         "file": "lib/commerce/reviews.ts",
         "ref": "ADR-1198, the sweep that followed LIVE-152"
       },
-      "detail": "LIVE-152 was one instance of a pattern: `const { data } = await db()...` with `error` neither destructured nor checked. A PostgREST error arrives in `error`, not as a throw, so a try/catch documented as \"FAIL-SAFE on any error\" does not engage - the code silently takes the data-is-null branch instead.\n\n83 such reads exist. Most degrade to an empty list, which is harmless. These do not, ranked by how wrong the answer is:\n  1. lib/commerce/reviews.ts:173 - a failed read defaults status to 'visible', UN-HIDING a review an operator moderated. The comment three lines above says moderation must be durable \"else moderation is trivially reversible by the author\".\n  2. lib/billing/space-subscriptions.ts:155 - priorSubscriptionId null means a canceled subscription never lapses founding status, so a Space keeps a founding rate it stopped paying for.\n  3. lib/billing/tickets.ts:382 and lib/commerce/checkout.ts:75 - membership_tier null prices at the free rung, charging a Crew seller 10% instead of 8%.\n  4. lib/billing/checkout.ts:56,220 and space-plan-checkout.ts:246 and bundle-checkout.ts:65 - stripe_customer_id null mints a DUPLICATE Stripe customer per checkout; at :220 createBillingPortal tells a paying member they have no billing to manage.\n  5. lib/billing/tickets.ts:211 - tier defaults to 'free' behind the member_only gate, denying a paying Crew member their own ticket.\n  6. lib/pricing/gamification-access.ts:76 - a full-access paid member is downgraded to earn_only.\n  7. lib/pricing/dunning.ts:36 - fails OPEN: a past_due member never sees the recovery banner and keeps access.\n\nNot a mechanical sweep: each needs a direction decided (fail open or closed) and stated. Do the money ones first.",
+      "detail": "LIVE-152 was one instance of a pattern: `const { data } = await db()...` with `error` neither destructured nor checked. A PostgREST error arrives in `error`, not as a throw, so a try/catch documented as \"FAIL-SAFE on any error\" does not engage - the code silently takes the data-is-null branch instead.\n\n83 such reads exist. Most degrade to an empty list, which is harmless. These do not, ranked by how wrong the answer is:\n  1. lib/commerce/reviews.ts:173 - a failed read defaults status to 'visible', UN-HIDING a review an operator moderated. The comment three lines above says moderation must be durable \"else moderation is trivially reversible by the author\".\n  2. lib/billing/space-subscriptions.ts:155 - priorSubscriptionId null means a canceled subscription never lapses founding status, so a Space keeps a founding rate it stopped paying for.\n  3. lib/billing/tickets.ts:382 and lib/commerce/checkout.ts:75 - membership_tier null prices at the free rung, charging a Crew seller 10% instead of 8%.\n  4. lib/billing/checkout.ts:56,220 and space-plan-checkout.ts:246 and bundle-checkout.ts:65 - stripe_customer_id null mints a DUPLICATE Stripe customer per checkout; at :220 createBillingPortal tells a paying member they have no billing to manage.\n  5. lib/billing/tickets.ts:211 - tier defaults to 'free' behind the member_only gate, denying a paying Crew member their own ticket.\n  6. lib/pricing/gamification-access.ts:76 - a full-access paid member is downgraded to earn_only.\n  7. lib/pricing/dunning.ts:36 - fails OPEN: a past_due member never sees the recovery banner and keeps access.\n\nNot a mechanical sweep: each needs a direction decided (fail open or closed) and stated. Do the money ones first.\n\n── ✅ DONE 2026-09-06 (fan-out slice C). Nine sites, and the point of the row was honoured: each one now DESTRUCTURES `error`, checks it, logs through the repo's `[module]` convention, and carries a `DIRECTION —` comment saying which way it fails and why that wrong answer is the smaller one. The `data === null` with no error path is untouched everywhere; only the UNKNOWN case changed.\n\nTHE DIRECTIONS, because the row said each needed deciding and stating: reviews upsert FAILS CLOSED ON THE WRITE (refusing does not reverse an operator's hide, and does not silently bury a first review either); space-subscriptions THROWS rather than guessing, because both guesses are permanent and invisible and only the webhook calls it — Stripe redelivers into an idempotent reconcile, and the throw is placed BEFORE the update that would overwrite the prior id; the two fee-tier reads (tickets, commerce checkout) FAIL CLOSED ON THE TRANSACTION; the four Stripe customer-id reads FAIL CLOSED, because a duplicate customer is a permanent split identity that nothing untangles afterwards; gamification-access FAILS OPEN to 'full' per its own module header; dunning FAILS OPEN unchanged — what changed is that it is now a decision rather than an accident, and it logs.\n\n🔴 ONE POLICY WAS REVERSED, NOT MADE EXPLICIT, and it is the one to review: tickets.ts:408 and commerce/checkout.ts:91 both carried \"fail-safe … prices at the free rung (never under-collect)\". They now abort the checkout, on the judgement that charging a Crew host 10% on a rate they paid to buy down to 8% takes real money on a contract we could not verify and stays invisible until they audit receipts, while refusing costs one retryable checkout. ⚪ The commerce/checkout.ts half is DEAD DEFENSIVE CODE today — createCommerceCheckout gates on canTakePayments, which is space||platform only — so the live exposure was tickets.ts alone.\n\nTESTS: 10 files, 38 new tests, and 19 of them were RUN AGAINST THE OLD BEHAVIOUR AND CONFIRMED TO FAIL first; the ones that pass both ways are labelled controls rather than counted as proof.",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e \"const fs=require('fs');const f=['lib/commerce/reviews.ts','lib/billing/space-subscriptions.ts','lib/billing/tickets.ts','lib/billing/checkout.ts'];const bad=f.filter(p=>{const s=fs.readFileSync(p,'utf8');return !/const \\\\{ data, error \\\\}/.test(s)});process.exit(bad.length===0?0:1)\"",
@@ -7379,15 +7376,14 @@
     {
       "id": "LIVE-160",
       "title": "The Space earnings summary counts a partially refunded order at full gross",
-      "status": "open",
-      "priority": "P1",
+      "status": "done",
       "lane": "live",
       "size": "XS",
       "source": {
         "file": "lib/commerce/orders.ts",
         "ref": "ADR-1209"
       },
-      "detail": "SCAN-572 records a partial refund in commerce_orders.metadata.refund and reverses the ledger pro rata, but spaceEarningsSummary reads status only, so the widget overstates by the refunded share. Read metadata.refund.refunded_cents and subtract. Also from the same change: listOrdersForBuyer and listOrdersForSeller filter out pending only, so the new failed rows from SCAN-567 appear in order lists the way cancelled rows already do; decide whether failed belongs there.",
+      "detail": "SCAN-572 records a partial refund in commerce_orders.metadata.refund and reverses the ledger pro rata, but spaceEarningsSummary reads status only, so the widget overstates by the refunded share. Read metadata.refund.refunded_cents and subtract. Also from the same change: listOrdersForBuyer and listOrdersForSeller filter out pending only, so the new failed rows from SCAN-567 appear in order lists the way cancelled rows already do; decide whether failed belongs there.\n\n── ✅ DONE 2026-09-06 (fan-out slice C). `lib/commerce/orders.ts` selects `metadata` and a pure `partialRefundedCents()` helper nets a partial refund out of the summary: gross less `refunded_cents`, and the fee reversed PRO RATA — `round(fee × refunded / amount)`, which is both the share Stripe returns with `refund_application_fee` and the share `recordPartialCommerceRefund` already reverses in the ledger, so the widget and the ledger cannot drift. Clamped so a malformed over-refund cannot drive gross negative. Order count is deliberately unchanged: the sale still happened.\n\nTHE ROW ALSO ASKED A QUESTION and the answer is no. `failed` does not belong in listOrdersForBuyer / listOrdersForSeller, and the real defect is the shape rather than the value: both use a DENYLIST (`.neq(status,pending)`) where listSpaceOrders beside them uses an allowlist, which is exactly why they silently widened the moment SCAN-567 added a status — nobody chose to show `failed`, they inherited it. A failed row is a checkout where no money moved, and it still carries amount_cents and platform_fee_cents, so on a seller list whose money columns are meant to sum to earnings it reads as a sale the allowlist-based header correctly excludes. Filed as its own row rather than changed here, because it changes what members see.",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e \"const fs=require('fs');const s=fs.readFileSync('lib/commerce/orders.ts','utf8');process.exit(/refunded_cents/.test(s)?0:1)\"",

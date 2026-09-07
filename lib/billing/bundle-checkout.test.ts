@@ -19,6 +19,9 @@ const H = vi.hoisted(() => ({
   price: 'price_household_monthly' as string | null,
   config: { seats: 4, monthly_cents: 2400, annual_cents: 24000, tier: 'crew' },
   existingProfiles: [] as string[],
+  // SCAN-539: the buyer's stripe_customer_id read can FAIL, and a PostgREST failure arrives in
+  // `error`, not as a throw.
+  customerReadError: null as { message: string } | null,
 }))
 
 vi.mock('./stripe', () => ({
@@ -42,7 +45,14 @@ vi.mock('@/lib/supabase/admin', () => ({
   createAdminClient: () => ({
     from: () => ({
       select: () => ({
-        eq: () => ({ maybeSingle: () => Promise.resolve({ data: { stripe_customer_id: 'cus_1' } }) }),
+        eq: () => ({
+          maybeSingle: () =>
+            Promise.resolve(
+              H.customerReadError
+                ? { data: null, error: H.customerReadError }
+                : { data: { stripe_customer_id: 'cus_1' }, error: null },
+            ),
+        }),
         in: (_col: string, ids: string[]) =>
           Promise.resolve({
             data: ids.filter((id) => H.existingProfiles.includes(id)).map((id) => ({ id })),
@@ -77,6 +87,8 @@ beforeEach(() => {
   H.price = 'price_household_monthly'
   H.config = { seats: 4, monthly_cents: 2400, annual_cents: 24000, tier: 'crew' }
   H.existingProfiles = [OWNER, SEAT_A, SEAT_B, SEAT_C, SEAT_D]
+  H.customerReadError = null
+  vi.spyOn(console, 'error').mockImplementation(() => {}).mockClear()
 })
 
 describe('createBundleCheckout — the gate', () => {
@@ -153,5 +165,23 @@ describe('createBundleCheckout — default-deny on seats', () => {
     })
     expect(url).toBe('https://checkout.stripe.com/session')
     expect(last().metadata.seat_ids).toBe(`${SEAT_A},${SEAT_B},${SEAT_C}`)
+  })
+})
+
+// SCAN-539 — the buyer's stripe_customer_id read. Unchecked, a PostgREST failure read exactly like
+// "this buyer has no customer yet" and the session was created with no `customer`, so Stripe minted a
+// DUPLICATE customer and split the payer's bundle subscription off from the rest of their billing for
+// good. DIRECTION: FAIL CLOSED — refuse, matching the seat-roster read directly below it, which has
+// always returned null on `error`. One retryable checkout is cheaper than a permanently split identity.
+describe('createBundleCheckout — an unreadable stripe_customer_id (SCAN-539)', () => {
+  it('refuses rather than minting a duplicate Stripe customer', async () => {
+    H.customerReadError = { message: '57014 statement timeout' }
+    expect(await createBundleCheckout({ profileId: OWNER })).toBeNull()
+    expect(H.created).toHaveLength(0)
+  })
+
+  it('still sells on a clean read, reusing the saved customer', async () => {
+    expect(await createBundleCheckout({ profileId: OWNER })).toBe('https://checkout.stripe.com/session')
+    expect(H.created).toHaveLength(1)
   })
 })

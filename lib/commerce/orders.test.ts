@@ -79,3 +79,75 @@ describe('spaceEarningsSummary — network-sourced split', () => {
     })
   })
 })
+
+// LIVE-160 — a PARTIAL refund (SCAN-572) keeps the order's settled status and records the amounts in
+// commerce_orders.metadata.refund, so a summary that reads `status` alone counts a half-refunded order
+// at FULL gross. The fee is netted by the same share Stripe refunds the application fee at, which is
+// the same share recordPartialCommerceRefund reverses in the ledger — so the widget and the ledger
+// agree instead of drifting by the refunded slice.
+describe('spaceEarningsSummary — partially refunded orders (LIVE-160)', () => {
+  const partial = (refundedCents: number) => ({
+    refund: { kind: 'partial', refunded_cents: refundedCents, retained_cents: 0, revenue_reversed_cents: 0 },
+  })
+
+  it('nets the refunded share out of gross, fee and net, and counts it as refunded', async () => {
+    rows = [
+      // A $100 sale at a 10% fee, half refunded: $50 of gross stands and $5 of fee with it.
+      { amount_cents: 10000, platform_fee_cents: 1000, status: 'paid', source: 'self', metadata: partial(5000) },
+    ]
+    const e = await spaceEarningsSummary('space-1')
+    expect(e.grossCents).toBe(5000)
+    expect(e.feeCents).toBe(500)
+    expect(e.netCents).toBe(4500)
+    expect(e.refundedCents).toBe(5000)
+    // The sale still happened: it stays one order in the count.
+    expect(e.orderCount).toBe(1)
+  })
+
+  it('nets the network slice too, so the honest receipt is not overstated either', async () => {
+    rows = [
+      { amount_cents: 10000, platform_fee_cents: 1000, status: 'fulfilled', source: 'network', metadata: partial(2500) },
+    ]
+    const e = await spaceEarningsSummary('space-1')
+    expect(e.networkGrossCents).toBe(7500)
+    expect(e.networkFeeCents).toBe(750)
+    expect(e.networkOrderCount).toBe(1)
+    expect(e.grossCents).toBe(7500)
+  })
+
+  it('adds partial refunds to the same refunded total as fully refunded orders', async () => {
+    rows = [
+      { amount_cents: 10000, platform_fee_cents: 0, status: 'paid', source: 'self', metadata: partial(2000) },
+      { amount_cents: 3000, platform_fee_cents: 0, status: 'refunded', source: 'self' },
+    ]
+    const e = await spaceEarningsSummary('space-1')
+    expect(e.refundedCents).toBe(5000)
+    expect(e.grossCents).toBe(8000)
+  })
+
+  it('ignores metadata that is not a well-formed partial record', async () => {
+    rows = [
+      { amount_cents: 10000, platform_fee_cents: 0, status: 'paid', source: 'self', metadata: null },
+      { amount_cents: 10000, platform_fee_cents: 0, status: 'paid', source: 'self', metadata: {} },
+      { amount_cents: 10000, platform_fee_cents: 0, status: 'paid', source: 'self', metadata: { refund: { kind: 'full' } } },
+      {
+        amount_cents: 10000,
+        platform_fee_cents: 0,
+        status: 'paid',
+        source: 'self',
+        metadata: { refund: { kind: 'partial', refunded_cents: 'oops' } },
+      },
+    ]
+    const e = await spaceEarningsSummary('space-1')
+    expect(e.grossCents).toBe(40000)
+    expect(e.refundedCents).toBe(0)
+  })
+
+  it('never lets a malformed over-refund drive gross negative', async () => {
+    rows = [{ amount_cents: 10000, platform_fee_cents: 1000, status: 'paid', source: 'self', metadata: partial(99999) }]
+    const e = await spaceEarningsSummary('space-1')
+    expect(e.grossCents).toBe(0)
+    expect(e.feeCents).toBe(0)
+    expect(e.refundedCents).toBe(10000)
+  })
+})

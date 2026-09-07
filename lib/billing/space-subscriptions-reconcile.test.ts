@@ -40,11 +40,15 @@ vi.mock('./space-subscription-items', async (importOriginal) => {
 // whether a cancel may lapse a founder, ADR-880) and then writes it, so the stub answers both.
 let spaceRow: { stripe_subscription_id: string | null } | null = { stripe_subscription_id: null }
 let spaceUpdates: Record<string, unknown>[] = []
+// SCAN-539: the prior-id read can FAIL, and a PostgREST failure arrives in `error`, not as a throw.
+let spaceReadError: { message: string } | null = null
 
 vi.mock('@/lib/supabase/admin', () => ({
   createAdminClient: () => ({
     from: () => ({
-      select: () => ({ eq: () => ({ maybeSingle: () => Promise.resolve({ data: spaceRow }) }) }),
+      select: () => ({
+        eq: () => ({ maybeSingle: () => Promise.resolve({ data: spaceReadError ? null : spaceRow, error: spaceReadError }) }),
+      }),
       update: (patch: Record<string, unknown>) => {
         spaceUpdates.push(patch)
         return { eq: () => Promise.resolve({ error: null }) }
@@ -115,6 +119,7 @@ beforeEach(() => {
   lapseCalls = []
   spaceUpdates = []
   spaceRow = { stripe_subscription_id: null }
+  spaceReadError = null
 })
 
 describe('reconcileSpacePlanSubscription, multi-item set-to-target (ADR-460)', () => {
@@ -300,6 +305,45 @@ describe('the founding LAPSE at reconcile (ADR-880)', () => {
     await reconcileSpacePlanSubscription(
       fakeSub({ status: 'past_due', items: [fakeItem('business_base_year')] }),
     )
+    expect(lapseCalls).toEqual([])
+  })
+})
+
+// SCAN-539 — the prior-subscription-id read is the EVIDENCE the lapse guard runs on, and a PostgREST
+// failure arrives in `error`, not as a throw. Unchecked, it read as "this Space is not on this
+// subscription", so a canceled subscription never lapsed founding and the Space kept a lifetime locked
+// rate it had stopped paying for — permanently, because a canceled sub emits no further events.
+// DIRECTION: neither guess; THROW so the webhook releases its claim, 500s, and Stripe redelivers into
+// an idempotent reconcile.
+describe('reconcileSpacePlanSubscription — an unreadable prior subscription id (SCAN-539)', () => {
+  it('throws instead of silently answering "not on this subscription"', async () => {
+    spaceRow = { stripe_subscription_id: 'sub_1' }
+    spaceReadError = { message: '57014 statement timeout' }
+    await expect(
+      reconcileSpacePlanSubscription(
+        fakeSub({ status: 'canceled', items: [], metadata: { plan: 'business' }, id: 'sub_1' }),
+      ),
+    ).rejects.toThrow(/prior stripe_subscription_id unreadable/)
+  })
+
+  it('leaves the prior id INTACT for the retry: the id-overwriting update never runs', async () => {
+    spaceRow = { stripe_subscription_id: 'sub_1' }
+    spaceReadError = { message: '57014 statement timeout' }
+    await expect(
+      reconcileSpacePlanSubscription(fakeSub({ status: 'canceled', items: [], metadata: { plan: 'business' }, id: 'sub_1' })),
+    ).rejects.toThrow()
+    // setSpaceSeatQuantity writes earlier in the reconcile and is idempotent on the retry; what must
+    // NOT happen is the update that OVERWRITES stripe_subscription_id, because the retry needs to read
+    // the prior id the failed read could not see.
+    expect(spaceUpdates.some((u) => 'stripe_subscription_id' in u)).toBe(false)
+  })
+
+  it('does not guess the OTHER way either: nothing is lapsed on an unreadable read', async () => {
+    spaceRow = { stripe_subscription_id: 'sub_1' }
+    spaceReadError = { message: '57014 statement timeout' }
+    await expect(
+      reconcileSpacePlanSubscription(fakeSub({ status: 'canceled', items: [], metadata: { plan: 'business' }, id: 'sub_1' })),
+    ).rejects.toThrow()
     expect(lapseCalls).toEqual([])
   })
 })

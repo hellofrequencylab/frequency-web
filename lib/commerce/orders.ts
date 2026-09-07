@@ -110,8 +110,26 @@ export async function listSpaceOrders(spaceId: string, opts: { limit?: number } 
   return ((data ?? []) as unknown as Record<string, unknown>[]).map(rowToOrder)
 }
 
+/** How many cents a PARTIAL refund took back off a still-settled order (LIVE-160). A partial refund
+ *  (lib/commerce/checkout.ts recordPartialCommerceRefund) leaves the order's status alone — the schema's
+ *  status check has no partial state and the sale partly stands — and records the amounts in
+ *  `metadata.refund`. A summary that reads `status` alone therefore counts a half-refunded order at full
+ *  gross. Returns 0 for anything that is not a well-formed partial record, and never more than the order.
+ *  PURE. */
+function partialRefundedCents(metadata: unknown, amountCents: number): number {
+  const refund = (metadata as { refund?: unknown } | null | undefined)?.refund as
+    | { kind?: unknown; refunded_cents?: unknown }
+    | null
+    | undefined
+  if (!refund || refund.kind !== 'partial') return 0
+  const cents = Number(refund.refunded_cents)
+  if (!Number.isFinite(cents) || cents <= 0) return 0
+  return Math.min(Math.round(cents), Math.max(0, amountCents))
+}
+
 /** A Space's earnings summary for the Orders tab header / StatCards. Gross + platform fee on settled
- *  orders (paid / fulfilled), refunded total on refunded orders, net = gross − fee. Optional trailing
+ *  orders (paid / fulfilled), refunded total across BOTH fully refunded orders and the partial refunds
+ *  recorded on still-settled ones (LIVE-160), net = gross − fee. Optional trailing
  *  window (`sinceDays`, by created_at). Server-only; FAIL-SAFE to zeros so the header never breaks. */
 export interface SpaceEarnings {
   grossCents: number
@@ -143,7 +161,9 @@ export async function spaceEarningsSummary(spaceId: string, sinceDays?: number):
   try {
     let query = db()
       .from('commerce_orders')
-      .select('amount_cents, platform_fee_cents, status, source')
+      // `metadata` carries the partial-refund record (LIVE-160); without it a half-refunded order that
+      // keeps its 'paid' status is counted at full gross.
+      .select('amount_cents, platform_fee_cents, status, source, metadata')
       .eq('owner_space_id', spaceId)
       .neq('status', 'pending')
     if (sinceDays && sinceDays > 0) {
@@ -156,6 +176,7 @@ export async function spaceEarningsSummary(spaceId: string, sinceDays?: number):
       platform_fee_cents?: number | null
       status?: string
       source?: string | null
+      metadata?: unknown
     }[]
     const out = { ...empty }
     for (const r of rows) {
@@ -167,14 +188,22 @@ export async function spaceEarningsSummary(spaceId: string, sinceDays?: number):
         out.refundedCents += amt
         out.orderCount += 1
       } else if (r.status === 'paid' || r.status === 'fulfilled') {
-        out.grossCents += amt
-        out.feeCents += fee
+        // A PARTIALLY refunded order is still 'paid' (the sale partly stands), so status alone reads it
+        // at full gross and the widget overstates earnings by the refunded share. Net it out here, and
+        // pro-rate the fee the same way Stripe does on a partial refund with refund_application_fee —
+        // the identical share recordPartialCommerceRefund reverses in the ledger, so this summary and
+        // the ledger agree instead of drifting by the refunded slice (LIVE-160).
+        const refunded = partialRefundedCents(r.metadata, amt)
+        const feeRefunded = amt > 0 ? Math.min(fee, Math.round((fee * refunded) / amt)) : 0
+        out.grossCents += amt - refunded
+        out.feeCents += fee - feeRefunded
+        out.refundedCents += refunded
         out.orderCount += 1
         // The network-sourced split: only orders the collective attributed as 'network' (default-safe to
         // self on null / anything else, so the 0%-fee promise is never overstated as network revenue).
         if (r.source === 'network') {
-          out.networkGrossCents += amt
-          out.networkFeeCents += fee
+          out.networkGrossCents += amt - refunded
+          out.networkFeeCents += fee - feeRefunded
           out.networkOrderCount += 1
         }
       }
