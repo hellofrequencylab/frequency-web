@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 import type { Database } from '@/lib/database.types'
+import { supabaseUrl, supabaseServiceRoleKey } from './env'
 
 // Service-role client — bypasses RLS entirely. Only call from server-side
 // code (Server Components, Route Handlers, Server Actions). Never import
@@ -11,8 +12,8 @@ import type { Database } from '@/lib/database.types'
 // session cookie.
 export function createAdminClient() {
   return createServerClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    supabaseUrl(),
+    supabaseServiceRoleKey(),
     {
       cookies: {
         getAll() { return [] },

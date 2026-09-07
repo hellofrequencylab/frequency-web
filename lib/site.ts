@@ -3,6 +3,13 @@ import { headerTriggers, marketingFooterLinks } from "@/lib/nav/registry";
 // Canonical site URL. Override per-environment with NEXT_PUBLIC_SITE_URL;
 // falls back to the production apex so canonical/sitemap/OG stay correct even if
 // the env var is missing in a deploy.
+//
+// ⚠️ THIS IS ONE OF A PAIR. NEXT_PUBLIC_APP_URL carries the same origin for the in-product links
+// (auth callbacks, claim/invite/outreach URLs) and defaults to the same apex; NEXT_PUBLIC_SITE_URL
+// is the public/canonical half (SEO, sitemap, robots, JSON-LD, email links) and is exported here so
+// those callers share one value. Setting only ONE of the two is the failure mode — see the App
+// block in .env.example, which documents the pair once (LIVE-169, 2026-09-06). Neither is being
+// removed; the split is historical, not semantic.
 export const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ??
   "https://frequencylocal.com";

@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 import type { Database } from '@/lib/database.types'
+import { supabaseUrl, supabaseAnonKey } from './env'
 
 // Cookieless anon client for PUBLIC reads (the /discover pages, sitemap).
 //
@@ -100,8 +101,8 @@ export function buildBoundedFetch(timeoutMs: number = BUILD_READ_TIMEOUT_MS): ty
 
 export function createPublicClient() {
   return createServerClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    supabaseUrl(),
+    supabaseAnonKey(),
     {
       cookies: {
         getAll() {
