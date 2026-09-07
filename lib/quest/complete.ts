@@ -2,10 +2,16 @@
 //
 // When a member crosses the bar (14 distinct in-window practice days + the
 // Expression Challenge), this writes the canonical completion record exactly once
-// and grants the rewards: a Trophy (the journey_completions row itself), +75 Zaps,
-// and an escalating Gem bonus by the NEW rank reached (initiate 25 / adept 50 /
-// master 100). Rank advances here — the after_zap_transaction trigger no longer
-// touches current_season_rank, so the completion path owns it.
+// and grants the rewards: a Trophy (the journey_completions row itself) and +75 Zaps.
+// Rank advances here — the after_zap_transaction trigger no longer touches
+// current_season_rank, so the completion path owns it.
+//
+// NO GEMS ARE PAID FOR FINISHING A JOURNEY (LIVE-185). The v2 escalating per-Journey
+// Gem ladder (initiate 25 / adept 50 / master 100) is RETIRED by ADR-305 and marked
+// retired in docs/NAMING.md §Economy: recognition rides the Pillar Trophy and, on the
+// third finish, the Certificate (which pays its own 100 Gems in grantCertificate below).
+// This path paid the ladder anyway until LIVE-185, so a member could bank Gems that
+// /the-quest and the help center never promised. Pinned by lib/quest/complete.test.ts.
 //
 // Everything is best-effort and idempotent: a redelivered or concurrent call never
 // double-pays (the unique journey_completions row is the lock), and a failure never
@@ -28,7 +34,6 @@ export interface CompleteJourneyResult {
   alreadyDone?: boolean
   rank?: SeasonRank
   zaps?: number
-  gems?: number
   /** The season capstone fired on this completion (3rd Journey → Master). */
   certificate?: boolean
 }
@@ -94,39 +99,7 @@ async function grantCertificate(
   }
 }
 
-/** Claim-then-pay Gem grant (mirrors lib/journeys/grants.ts grantGemsOnce): the
- *  unique (rule_key, profile_id) reward_grants insert is the lock; only a fresh
- *  claim writes the gem ledger, so the bonus never double-pays. */
-async function grantGemsOnce(
-  admin: ReturnType<typeof createAdminClient>,
-  ruleKey: string,
-  profileId: string,
-  amount: number,
-  label: string,
-  actionType: string,
-): Promise<boolean> {
-  if (amount <= 0) return false
-  const { error } = await admin
-    .from('reward_grants')
-    .insert({ rule_key: ruleKey, profile_id: profileId, reward_kind: 'gems', amount, detail: label })
-  if (error) return false // already granted / lost the race
-  // The claim is the lock, but the GEMS must actually land. If the ledger insert fails
-  // (a transient DB error), swallowing it would leave the lock permanent and the Gems
-  // never paid (claimed-but-unpaid). Release the claim so a retry can re-pay.
-  const { error: txErr } = await admin.from('gem_transactions').insert({
-    profile_id: profileId,
-    action_type: actionType,
-    amount,
-    metadata: { rule: ruleKey, label },
-  })
-  if (txErr) {
-    await admin.from('reward_grants').delete().eq('rule_key', ruleKey).eq('profile_id', profileId)
-    return false
-  }
-  return true
-}
-
-/** Claim-then-pay Zap grant (mirrors grantGemsOnce / lib/rewards/creation.ts): the unique
+/** Claim-then-pay Zap grant (mirrors lib/rewards/creation.ts): the unique
  *  (rule_key, profile_id) reward_grants insert is the lock; only a fresh claim writes the zap
  *  ledger, so a redelivered/concurrent completion never double-pays. Because the claim is
  *  DECOUPLED from the journey_completions lock, a crash AFTER the completion row lands but
@@ -159,8 +132,8 @@ async function grantZapsOnce(
 
 /**
  * Try to complete a Journey for a member. Re-checks eligibility, writes the
- * journey_completions row exactly once, advances rank, and pays the Zap + Gem
- * rewards on a GENUINELY fresh completion only. Never throws.
+ * journey_completions row exactly once, advances rank, and pays the Zap purse +
+ * the Trophy on a GENUINELY fresh completion only. Never throws.
  */
 export async function tryCompleteJourney(
   profileId: string,
@@ -271,17 +244,6 @@ export async function tryCompleteJourney(
     // amount from zap_config; the grant row records the canonical purse for the Vault log.
     await grantZapsOnce(admin, zapPurseKey, profileId, 'journey_finished', QUEST.JOURNEY_FINISH_ZAPS, 'Journey finished')
 
-    // Escalating Gem bonus by the new rank reached, granted idempotently.
-    const bonus = QUEST.JOURNEY_GEM_BONUS[newRank] ?? 0
-    await grantGemsOnce(
-      admin,
-      `journey.finish.gems:${profileId}:${journeyId}:${season}`,
-      profileId,
-      bonus,
-      'Journey finished',
-      'journey_finish_bonus',
-    )
-
     // The Trophy cosmetic: finishing a Journey mints its Pillar (Mind/Body/Spirit) badge
     // (REWARDS-ECONOMY.md §7), and the Full Spectrum banner once all four are held.
     // Idempotent + best-effort — granted directly here so the Trophy lands with the finish.
@@ -316,7 +278,7 @@ export async function tryCompleteJourney(
       }
     })()
 
-    return { completed: true, rank: newRank, zaps: QUEST.JOURNEY_FINISH_ZAPS, gems: bonus, certificate }
+    return { completed: true, rank: newRank, zaps: QUEST.JOURNEY_FINISH_ZAPS, certificate }
   } catch (err) {
     console.error('[tryCompleteJourney]', err instanceof Error ? err.message : err)
     return { completed: false }

@@ -160,7 +160,7 @@ A single Standing surface: the 4-rung ladder (Ghost→Initiate→Adept→Master)
 
 ### 3.6 Hero moments (the peak-end investment)
 Three designed celebration moments, **reduced-motion-safe** (calm static fallback), non-upsell (the TurboTax move):
-1. **Finish a Journey** → Trophy mints, +75 Zaps, Gems, **rank advances**: one earned celebration (light haptic + brief motion).
+1. **Finish a Journey** → Trophy mints, +75 Zaps, **rank advances**: one earned celebration (light haptic + brief motion). No Gems here (ADR-305 / LIVE-185); the third finish adds the Certificate, which does pay 100.
 2. **Rank up** → the ladder animates the new rung; "1 Journey to Master" updates.
 3. **Finish the season (Master)** → the biggest moment + immediately re-light the next goal (beat the documented post-reward dip; the next season's date/teaser).
 Ration the animation to these landmarks so it never becomes wallpaper.

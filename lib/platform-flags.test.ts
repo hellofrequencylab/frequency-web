@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { readFileSync } from 'node:fs'
-import { sourceWithoutComments } from '@/test/source-shape'
+import { sourceWithoutComments, stripComments } from '@/test/source-shape'
 
 // THE EVENTS LISTING HORIZON (owner ruling 2026-08-20). Two jobs here, because this knob has two
 // ways to be useless, and the bug it fixes was invisibility:
@@ -294,3 +294,87 @@ describe('every platform_flags key the code reads is seeded by a migration', () 
   })
 })
 
+// ── Retired flag keys leave no live row and no reader behind (LIVE-166) ──────────────────────────
+// The beta referral contest was ruled out (SCAN-511, ADR-1155): its code went in #2297 and its
+// table in 20270339000000. `platform_flags.beta_referral_contest` outlived both as a switch an
+// operator could flip with nothing on the other end, which is ADR-1083's failure shape wearing a
+// flag instead of a banner. The same is true of the three plan keys the ADR-552 collapse retired.
+//
+// TWO ASSERTIONS, because there are two ways to leave one behind: the ROW (a migration must delete
+// it, not merely stop reading it) and the READER (no source may name it again, which would quietly
+// re-create a switch for a feature that is gone). The backlog probe only covers the first half; the
+// second half is only ever provable here.
+
+const RETIRED_FLAG_KEYS = [
+  'beta_referral_contest',
+  'plan_practitioner_enabled',
+  'plan_organization_enabled',
+  'plan_whitelabel_enabled',
+] as const
+
+/** Every key named by a `delete from public.platform_flags ...` statement in any migration.
+ *  SQL `--` comments are blanked FIRST: 20270345000400 carries a commented-out rollback delete
+ *  naming eight LIVE keys, and counting those as deletions would have read the whole switchboard
+ *  as retired. Mention is not use, in SQL exactly as in TypeScript (ADR-1165). */
+function deletedFlagKeys(): Set<string> {
+  const dir = join('supabase', 'migrations')
+  const deleted = new Set<string>()
+  for (const f of readdirSync(dir)) {
+    if (!f.endsWith('.sql')) continue
+    const sql = readFileSync(join(dir, f), 'utf8').replace(/--.*$/gm, '')
+    for (const stmt of sql.matchAll(/delete\s+from\s+public\.platform_flags[\s\S]{0,600}?;/gi)) {
+      for (const k of stmt[0].matchAll(/'([a-z_]+)'/g)) deleted.add(k[1])
+    }
+  }
+  return deleted
+}
+
+/** Every non-test .ts/.tsx source under app/lib/components, comments blanked. A key in a comment is
+ *  a MENTION (the history explaining why it went), never a read; a key in a test is the same. */
+function productionSources(): { file: string; src: string }[] {
+  const out: { file: string; src: string }[] = []
+  const walk = (dir: string) => {
+    for (const e of readdirSync(dir, { withFileTypes: true })) {
+      const f = join(dir, e.name)
+      if (e.isDirectory()) {
+        if (e.name !== 'node_modules' && !e.name.startsWith('.')) walk(f)
+      } else if (/\.tsx?$/.test(e.name) && !/\.test\.tsx?$/.test(e.name)) {
+        out.push({ file: f, src: stripComments(readFileSync(f, 'utf8')) })
+      }
+    }
+  }
+  for (const d of ['app', 'lib', 'components']) walk(d)
+  return out
+}
+
+describe('retired platform_flags keys are deleted, and never read again', () => {
+  it('guards non-trivially (both walks find what they claim, and a LIVE key is not swept up)', () => {
+    const deleted = deletedFlagKeys()
+    const sources = productionSources()
+    expect(deleted.size).toBeGreaterThanOrEqual(4)
+    expect(sources.length).toBeGreaterThan(200)
+    // The positive control: a flag that is very much alive is NOT in the deleted set, so the walk
+    // above is reading delete statements rather than matching every quoted string in the corpus.
+    expect(deleted.has('vera_breaker_armed')).toBe(false)
+    expect(deleted.has('demo_mode')).toBe(false)
+    // ...and the source walk really does see live flag keys, so an empty read cannot pass below.
+    expect(sources.some((s) => s.src.includes('vera_breaker_armed'))).toBe(true)
+  })
+
+  it('a migration DELETES each retired key (stopping the reads is not enough)', () => {
+    const deleted = deletedFlagKeys()
+    for (const key of RETIRED_FLAG_KEYS) expect([...deleted]).toContain(key)
+  })
+
+  it('no reader module reads a retired key from platform_flags', () => {
+    const read = readFlagKeys()
+    for (const key of RETIRED_FLAG_KEYS) expect(read).not.toContain(key)
+  })
+
+  it('no production source names a retired key outside a comment', () => {
+    const offenders = productionSources()
+      .filter((s) => RETIRED_FLAG_KEYS.some((k) => s.src.includes(k)))
+      .map((s) => s.file)
+    expect(offenders).toEqual([])
+  })
+})
