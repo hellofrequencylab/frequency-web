@@ -176,6 +176,14 @@ export function dayInZone(at: Date = new Date(), timezone: string | null | undef
   }
 }
 
+/** The hour of day (0-23) for `at` as seen in `timezone`. A cron that fires every hour and wants
+ *  "is it morning THERE" asks this, so a member in Auckland and a member in Lisbon each get their
+ *  own morning from one UTC schedule. Falls back to the UTC hour when the zone cannot be read. */
+export function hourInZone(at: Date = new Date(), timezone: string | null | undefined = HOME_TZ): number {
+  const parts = wallPartsInZone(at, resolveZone(timezone))
+  return parts ? parts.hour : at.getUTCHours()
+}
+
 type WhenStyle = 'full' | 'date' | 'time' | 'dayTime'
 
 /** Render an event's when-line. By default it shows the event's OWN local wall-clock
