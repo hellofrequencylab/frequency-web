@@ -119,6 +119,34 @@ export async function describeImage(file: File): Promise<ImageDescriptor | null>
   }
 }
 
+/**
+ * Describe an image the browser did NOT pick from a disk: a file the SERVER just generated and
+ * stored, named by its public URL.
+ *
+ * This is `describeImage` one step later (HYG-021, ADR-1254). A generated asset has no `File` and no
+ * uploader looking at it, so the four server-side generators could only ever write a checksum and
+ * the header dimensions — a card with no blurhash paints a flat placeholder. The fix is the same
+ * browser trick, moved after the generation returns: fetch the stored object, hand it to the same
+ * decoder, post the same validated fields. It stays here rather than growing a second path because
+ * the alternative is a decode on the server, and that means `sharp` in a seam that fans out across
+ * the route table (docs/DEPLOY-SAFETY.md).
+ *
+ * FAIL-SAFE: a network miss, a CORS refusal, a vector file or any decode failure returns null and
+ * the asset simply keeps the placeholder it already had.
+ */
+export async function describeImageUrl(url: string): Promise<ImageDescriptor | null> {
+  if (!url) return null
+  try {
+    const res = await fetch(url, { credentials: 'omit' })
+    if (!res.ok) return null
+    const blob = await res.blob()
+    // The name is cosmetic — `describeImage` reads only the type — but a File is what it takes.
+    return await describeImage(new File([blob], 'generated', { type: blob.type }))
+  } catch {
+    return null
+  }
+}
+
 /** Attach a descriptor to the FormData an uploader is about to post. A null descriptor is a no-op,
  *  so a caller never has to branch. */
 export function appendImageDescriptor(form: FormData, descriptor: ImageDescriptor | null): void {

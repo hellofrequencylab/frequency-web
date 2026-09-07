@@ -36548,3 +36548,38 @@ The reason it had not turned is worth stating, because it shaped the decision. T
 
 ⚠️ **The generalisable part: a named allowlist that only ever shrinks still needs a road that shrinks it.** `UNROUTED` was designed correctly, as a set rather than a count, and it sat untouched for 27 days because the layer offered wizards no shape that fit them. When an adoption list stalls, look for the missing wrapper before looking for missing effort; and when three entries remain, write on each line the ruling it waits on, because a bare date on an allowlist reads as backlog when it is really a blocked premise, and those are the cheapest things in a backlog to get wrong.
 
+## ADR-1254: a generated image is described by the browser that asked for it, one round-trip later (2026-09-07)
+
+**Status.** Accepted. Closes `HYG-021`, which [ADR-1121](DECISIONS.md) split out of PROG-D1 rather than leaving as a silent gap. Takes option (b) of the three that row listed, and keeps the budget rule of [ADR-1002](DECISIONS.md) / [`docs/DEPLOY-SAFETY.md`](DEPLOY-SAFETY.md) intact.
+
+**Context.** Ingest computes `blurhash` and `colors` in the BROWSER (`lib/library/image-describe.ts`), because both need decoded pixels and a server decode means `sharp` in a seam the picker, the page editor, the importer and the email studio all reach. Every path where a person picks a file therefore gets both. Four paths did not, and their cards paint a flat placeholder.
+
+The premise was re-measured first, and two halves of it moved.
+
+| Path | 2026-08-25 claim | 2026-09-07 reading |
+|---|---|---|
+| Recraft generation (`app/(main)/admin/library/recraft-actions.ts`) | checksum + dimensions, no blurhash | ✅ still true, and it has a client (`create-studio.tsx`) |
+| Vera covers (`lib/loom/cover-actions.ts`) | checksum + dimensions, no blurhash | ✅ still true, and it has a client (`use-spark-offers.ts`) |
+| Importer seeds (`lib/importer/materialize.ts`) | checksum + dimensions, no blurhash | ⚠️ carries NEITHER: it files an object already in storage, so `bytes` is null and there is no checksum and no dimension read |
+| Event-photo copies (`lib/library/event-loom.ts`) | same | ⚠️ same, and it runs inside a CLAIM, on somebody else's uploads |
+| D7 AI colour extraction (the row's "check this first") | might have solved the colours half | 🔴 has not shipped. Nothing in the tree extracts colours or auto-tags; D7's live half is embeddings |
+
+So the row was true, and it was describing four paths as one thing when they are two things: two GENERATORS, which hold the bytes and have a person watching a button, and two FILERS, which hold no bytes and have no browser anywhere in the flow.
+
+**Decision.**
+
+1. **The two generators are described from the client, once, through one shared path.** `describeImageUrl(url)` (in `image-describe.ts`, beside `describeImage`) fetches the stored object and hands it to the same decoder; `describeGeneratedAsset(assetId, url)` in `lib/library/describe-generated.ts` is the one call a surface makes. The Loom Studio describes the set a generation returned (`generateWithRecraft` now returns the ids it wrote); the Spark's cover offer describes the cover after it applies it, unawaited, so no author waits on a placeholder.
+2. **One server action, and it can only fill a hole.** `describeLibraryAssetAction(assetId, formData)` re-validates the posted fields through `readImageDescriptor`, the same reader the upload path uses, then calls `backfillLibraryAssetDescriptor`, which writes `blurhash` and `colors` under a per-column `.is(<column>, null)` guard. A client can add a placeholder where there is none; it can never repaint or clear one. The two columns are written separately because they go null independently. Nothing else on the row is writable through this action.
+3. **Authorised the way the surrounding Loom writes are:** signed in, and either the asset's own creator, an operator of its Space (`canEditProfile`, what `uploadLoomImage` and `generateEntityCoverAction` require), or a janitor. The janitor arm is not decoration: a Recraft row carries no `created_by`, and the Loom Studio is janitor-gated.
+4. **The two filers are left alone, on the record.** The importer seed pass runs in an apply and a cron, and the event-photo copy runs inside a claim over images the claimer never uploaded. There is no browser to ask, so inventing one would mean either a server decode (the fan-out this row exists to avoid) or a background job whose only product is a placeholder. They keep `bytes: null`, no checksum, no dimensions and no descriptor.
+5. **The row's probe becomes a `cmd`.** It was `manual` because the honest answer might have been "not worth it"; shipping settles that, so `scripts/hyg-021-probe.mjs` measures the consequence: the shared path exists and is one, the write is null-guarded and re-validated, both generation paths reach it, and no module in the seam imports `sharp` or `next/og`.
+
+**Consequences.**
+
+- **Measured fan-out: unchanged, by construction.** No new route, no new function, no new dependency, and the probe's fourth section fails if any module in this seam ever names a rasteriser. `check:og-trace` and `check:build-budget` both read `.next/server` and print `no .next/server` in an agent container (no Supabase credentials, so a real build dies collecting page data, the same wall ADR-1066 hit); the artifact reading is the one on the deploy this merges into, against 18 rasterising + 64 incidental of 100.
+- The blurhash arrives a beat AFTER the card first paints, which is the honest cost of this option: the generated image is already on screen, so what is bought is the placeholder every LATER visitor to that asset sees.
+- A vector generation writes nothing, and correctly: `describeImage` accepts only jpeg/png/webp/gif, so an SVG returns null and the round-trip is skipped.
+- Tests: the action's authorisation and its three write properties (fills, refuses to overwrite, drops a malformed blurhash) in `describe-actions.test.ts`, the null guards against a fake PostgREST in `describe-backfill.test.ts`, and source-level wiring assertions that each surface calls the shared path exactly once, because unwiring it is silent.
+
+⚠️ **The generalisable part: when a constraint pushes work out of one process, the fix is usually the same work one step later, not the same work somewhere heavier.** The row's own cheapest option was to close it as not worth doing, and its most tempting was an isolated decoding service. Both were reasoning about WHERE a decoder should live. The answer was that a decoder already existed, in the one process that was guaranteed to be holding the image, and the only thing missing was an id to point it at. Before building a place to do the work, check whether the thing that asked for the work can simply be asked again.
+
