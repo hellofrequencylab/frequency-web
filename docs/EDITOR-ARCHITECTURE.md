@@ -500,7 +500,7 @@ client id. Three things fall out for free rather than being built:
 | 🔴 No per-Space retrieval | Vera has only `name / type / brandName / about`. `lib/ai/space-copilot.ts:18-22` names this deferred |
 | 🔴 No zod in any AI path | Hand-written JSON Schema + hand-written `coerce*` per tool does not scale past ~30 sites |
 | ⚠️ Vera's loop does not cache its system prompt | Re-sends voice primer + persona + tool schemas every round. Contradicts [ADR-041](DECISIONS.md) |
-| ⚠️ No rate limit on Vera chat or any composer | Only `/help/ask` is limited |
+| ✅ Per-request rate limit on every AI door | CLOSED 2026-09-07 (LIVE-195). This row said "only `/help/ask` is limited"; that handler had already been deleted (2026-09-05, no caller), so nothing was. `lib/ai/rate-limit.ts` now puts a per-actor sliding window beside the daily budget cap at every member-facing door, and `lib/ai/rate-limit.test.ts` ratchets the coverage |
 
 ---
 

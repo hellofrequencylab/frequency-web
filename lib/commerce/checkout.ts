@@ -604,11 +604,10 @@ async function recordFullCommerceRefund(paymentIntentId: string): Promise<void> 
     // Bookable services (Phase 4, ADR-596): release the slot behind a refunded service order. Fail-soft.
     await cancelBookingByOrder(row.id)
 
-    // L6-16 (2026-09-05): give the goods back to the shelf. Tickets free their tier on refund
-    // (adjustTierSold(-qty)); commerce never re-incremented stock, so a refunded item stayed sold out.
-    await restoreCommerceStock(row).catch((err) => {
-      console.error('[commerce] stock restore failed', { orderId: row.id, err })
-    })
+    // L6-16 (2026-09-05): give the goods back to the shelf. Tickets free their tier on refund;
+    // commerce never re-incremented stock, so a refunded item stayed sold out. LIVE-161: one RPC,
+    // one transaction -- the idempotency check, the increments and the marker no longer race.
+    await restoreCommerceStock(row)
   }
 }
 
@@ -660,54 +659,33 @@ async function recordPartialCommerceRefund(
   if (releaseBooking) await cancelBookingByOrder(row.id)
 }
 
-/** Re-increment tracked stock for a FULLY refunded order (L6-16). Mirrors decrement_commerce_stock_atomic
- *  (migration 20261132000000): a variant-selected item restores the VARIANT's stock, a plain item the
- *  PRODUCT's, and an untracked row (stock null) is skipped. Only runs when the decrement actually
- *  happened (metadata.inventory_decremented) and once per order (metadata.inventory_restored); the
- *  status flip that calls this is itself exactly-once, so a replayed webhook never re-enters.
+/** Re-increment tracked stock for a FULLY refunded order (L6-16), in ONE statement.
  *
- *  WHY compare-and-swap and not an RPC: no restore RPC exists (the decrement RPC is keyed on the order's
- *  items with a one-way marker and has no inverse) and this lane adds no migration, so the increment is
- *  a guarded single-statement update (`set stock = current + qty where id = ? and stock = current`)
- *  retried on a lost race, never an unguarded read-then-write. Lift into a `restore_commerce_stock_atomic`
- *  RPC when the next stock migration lands. */
-async function restoreCommerceStock(order: Pick<RefundedOrderRow, 'id' | 'metadata'>): Promise<void> {
-  const meta = order.metadata ?? {}
-  if (meta.inventory_decremented !== true) return // never decremented (pre-enforcement order, or the decrement failed soft)
-  if (meta.inventory_restored === true) return
-  const { data } = await db()
-    .from('commerce_order_items')
-    .select('product_id, variant_id, qty')
-    .eq('order_id', order.id)
-  const items = (data ?? []) as { product_id: string | null; variant_id: string | null; qty: number }[]
-  for (const it of items) {
-    const qty = Math.max(0, Math.floor(Number(it.qty) || 0))
-    if (!qty) continue
-    if (it.variant_id) await restoreStockRow('commerce_variants', it.variant_id, qty)
-    else if (it.product_id) await restoreStockRow('commerce_products', it.product_id, qty)
+ *  LIVE-161 (2026-09-06): this used to be three round trips per item -- read the stock, write it
+ *  back under a `where stock = <the value read>` guard, retry up to five times on a lost race --
+ *  followed by a fourth request stamping `metadata.inventory_restored`. The guard was real (it
+ *  never overwrote a concurrent sale) but it could EXHAUST its retries and silently drop the units,
+ *  and the once-marker being a separate request meant two callers arriving together could both read
+ *  "not yet restored" and both put the stock back.
+ *
+ *  restore_commerce_stock_atomic (migration 20270345001600) is the inverse of
+ *  decrement_commerce_stock_atomic: it takes `select ... for update` on the order row, so
+ *  concurrent restorers serialise and the second one no-ops on the marker; it increments with
+ *  `stock = stock + n` under the UPDATE's own lock, so there is no lost update to retry for; and
+ *  the increments plus the marker commit together, so the shelf and the order can never disagree.
+ *  It also owns both preconditions now (never decremented -> nothing to give back; already
+ *  restored -> no-op), which is why the caller passes nothing but the id.
+ */
+async function restoreCommerceStock(order: Pick<RefundedOrderRow, 'id'>): Promise<void> {
+  const { error } = await db().rpc('restore_commerce_stock_atomic', { _order: order.id })
+  if (error) {
+    // Nothing partial can be left behind (the RPC is one transaction), so a failure here means the
+    // stock is simply still off the shelf. Loud, because nothing retries it.
+    console.error('[commerce] stock restore failed; tracked stock is still held by this order', {
+      orderId: order.id,
+      error: error.message,
+    })
   }
-  await db()
-    .from('commerce_orders')
-    .update({ metadata: { ...meta, inventory_restored: true } })
-    .eq('id', order.id)
-}
-
-const STOCK_RESTORE_ATTEMPTS = 5
-
-async function restoreStockRow(table: 'commerce_products' | 'commerce_variants', id: string, qty: number): Promise<void> {
-  for (let attempt = 0; attempt < STOCK_RESTORE_ATTEMPTS; attempt++) {
-    const { data } = await db().from(table).select('stock').eq('id', id).maybeSingle()
-    const current = (data as { stock: number | null } | null)?.stock
-    if (current == null) return // untracked: nothing was decremented, nothing to give back
-    const { data: updated } = await db()
-      .from(table)
-      .update({ stock: current + qty })
-      .eq('id', id)
-      .eq('stock', current)
-      .select('id')
-    if ((updated ?? []).length) return
-  }
-  console.error('[commerce] stock restore lost the compare-and-swap race', { table, id, qty })
 }
 
 /** Resolve the refund's PaymentIntent from a charge.refunded event and reconcile.

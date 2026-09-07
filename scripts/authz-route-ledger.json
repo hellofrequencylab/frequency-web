@@ -90,9 +90,9 @@
     },
     "app/api/status/route.ts": {
       "verdict": "public",
-      "reason": "Read-only status index (H0-8). Serves the static SLO contract, VERCEL_GIT_*/VERCEL_ENV build identity, and TWO booleans: monitoring.sentry, derived in lib/observability/sentry.ts and never the DSN (LIVE-053), and monitoring.push, derived in lib/push.ts and never the VAPID key (OWN-020). Its own route.test.ts fails the suite on ANY other process.env read in this file, and separately asserts each boolean is imported rather than read here; both assertions are mutation-proven. Re-read in full 2026-08-24 when the push boolean was added: the handler still takes no input, touches no DB, and its env surface is unchanged at exactly the four build-metadata vars. Verdict unchanged.",
-      "checked": "2026-08-24",
-      "digest": "73cc1476ab19a31b"
+      "reason": "Read-only status index (H0-8). Serves the static SLO contract, VERCEL_GIT_*/VERCEL_ENV build identity, and THREE booleans: monitoring.sentry, derived in lib/observability/sentry.ts and never the DSN (LIVE-053); monitoring.push, derived in lib/push.ts and never the VAPID key (OWN-020); and monitoring.rateLimit, derived in lib/rate-limit.ts from whether a client was built and never a URL or token (LIVE-195, so an operator can see that AI throttling is unconfigured - every AI door allows in that state). Its own route.test.ts fails the suite on ANY other process.env read in this file, and separately asserts each boolean is imported rather than read here; both assertions are mutation-proven. Re-read in full 2026-08-24 when the push boolean was added: the handler still takes no input, touches no DB, and its env surface is unchanged at exactly the four build-metadata vars. Verdict unchanged.",
+      "checked": "2026-09-07",
+      "digest": "1a06c111c641d363"
     },
     "app/api/status/slos/route.ts": {
       "verdict": "public",

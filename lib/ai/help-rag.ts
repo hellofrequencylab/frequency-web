@@ -9,6 +9,7 @@ import { helpHref } from '@/lib/help/content'
 import { completeText } from './complete'
 import { embedText } from './embed'
 import { aiAvailable, featureOverBudget, recordAiUsage, logHelpQuery } from './usage'
+import { aiRateLimited } from './rate-limit'
 import { withVoice } from './voice'
 
 const FEATURE = 'help-search'
@@ -131,6 +132,13 @@ export async function answerHelpQuestion(question: string, profileId?: string | 
 async function resolveHelpAnswer(q: string, profileId?: string | null): Promise<HelpAnswer> {
   // Kill switch + budget cap. Fail closed to the deflect path.
   if (!(await aiAvailable()) || (await featureOverBudget(FEATURE))) return deflect([], 0)
+
+  // Per-asker window (lib/ai/rate-limit.ts, LIVE-195). This is the door the deleted /help/ask
+  // handler used to limit by IP; the limit now travels with the answer path itself, so every
+  // caller inherits it. Over the window deflects to a human, the same answer a weak retrieval
+  // gives. An anonymous caller has no profile id, so its door limits by IP instead
+  // (app/(main)/support/actions.ts).
+  if (await aiRateLimited(FEATURE, profileId)) return deflect([], 0)
 
   // Retrieve (shared primitive — no logging here).
   const chunks = await retrieveHelpChunks(q)

@@ -142,8 +142,10 @@ function toReviewPractices(
  * the caller can publish the Journey without making it ranked-eligible.
  *
  * @param planId the Journey to review (its id, not slug). Authorship is the caller's concern.
+ * @param actorId who asked, for the per-actor window in the shared gate (LIVE-195). The caller has
+ *   already resolved it to check authorship, so it costs nothing to pass.
  */
-export async function reviewJourneyForLibrary(planId: string): Promise<JourneyReview> {
+export async function reviewJourneyForLibrary(planId: string, actorId?: string | null): Promise<JourneyReview> {
   // 1) Load the Journey + its practices (with weight class + Pillar). A plan we can't load
   //    can't be fairly reviewed — fail closed. (The kill switch + the budget check live in the
   //    shared gate, which runs next; loading first costs one cheap read and lets a missing plan
@@ -172,7 +174,7 @@ export async function reviewJourneyForLibrary(planId: string): Promise<JourneyRe
 
   // 2) The shared gate: kill switch, budget cap, rubric, the forced-tool Opus call, and the
   //    coercion. It never throws, and every failure path is already a fail-closed `pending`.
-  const verdict = await runQualityGate(STANDARD, content)
+  const verdict = await runQualityGate(STANDARD, content, { actorId })
   return { status: verdict.status, score: verdict.score, feedback: verdict.feedback, reviewedAt: verdict.reviewedAt }
 }
 

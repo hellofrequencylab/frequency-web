@@ -30,6 +30,7 @@ import { aiEnabled } from './client'
 import { MODELS, type ModelTier } from './models'
 import { estimateCostUsd } from './budget'
 import { recordAiUsage, aiAvailable, featureOverBudget } from './usage'
+import { aiRateLimited } from './rate-limit'
 import { withVoice } from './voice'
 
 // ── The verdict ──────────────────────────────────────────────────────────────────────────
@@ -241,10 +242,24 @@ export function coerceVerdict(raw: unknown, entity: string, passScore: number): 
  * AUTHZ: none here, deliberately. This function judges text it was handed; whoever is allowed to
  * ask for a review is the calling action's concern.
  */
-export async function runQualityGate(standard: QualityStandard, content: string): Promise<QualityVerdict> {
+export async function runQualityGate(
+  standard: QualityStandard,
+  content: string,
+  opts: { actorId?: string | null } = {},
+): Promise<QualityVerdict> {
   // 1) Kill switch + budget. Fail closed: an unreviewed thing is never approved.
   if (!(await aiAvailable())) return pendingVerdict(standard.entity, [standard.pending.paused])
   if (await featureOverBudget(standard.feature)) return pendingVerdict(standard.entity, [standard.pending.budget])
+  // Per-author window (lib/ai/rate-limit.ts, LIVE-195). A review is one of the priciest reads in
+  // the app, so a resubmit loop is the expensive one to leave open. Same fail-closed pending
+  // verdict as the two gates above — never an approval — and it reuses the PAUSED copy rather than
+  // the budget copy on purpose: the budget line says "for today" and "again tomorrow", which is
+  // true of a daily cap and false of a window that clears in a minute. "Again later" is the one
+  // already-written line that is true of both, so a throttled author is told something accurate
+  // without a third vocabulary for the same event.
+  if (await aiRateLimited(standard.feature, opts.actorId)) {
+    return pendingVerdict(standard.entity, [standard.pending.paused])
+  }
   if (!aiEnabled()) return pendingVerdict(standard.entity, [standard.pending.paused])
 
   const body = (content ?? '').trim()

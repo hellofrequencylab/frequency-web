@@ -11,6 +11,7 @@ import { aiEnabled } from './client'
 import { MODELS } from './models'
 import { estimateCostUsd } from './budget'
 import { recordAiUsage, featureOverBudget } from './usage'
+import { aiRateLimited } from './rate-limit'
 import { withVoice } from './voice'
 import type { PillarSlug } from '@/lib/pillars'
 import type { CircleSparkDraft } from './circle-spark'
@@ -107,6 +108,9 @@ export async function planCircleEdit(input: {
 }): Promise<CircleEditPatch | null> {
   if (!aiEnabled()) return null
   if (await featureOverBudget(FEATURE)) return null
+  // Per-author window (lib/ai/rate-limit.ts, LIVE-195): the daily cap bounds everybody's spend,
+  // this bounds how fast one author can knock. Same refusal as the cap above.
+  if (await aiRateLimited(FEATURE, input.profileId)) return null
   const request = input.request.trim().slice(0, 1000)
   if (!request) return null
 
