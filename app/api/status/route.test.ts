@@ -1,5 +1,6 @@
 import { describe, it, expect, afterEach, vi } from 'vitest'
 import { readFileSync } from 'node:fs'
+import { sourceWithoutComments } from '@/test/source-shape'
 import { GET } from './route'
 
 // ── /api/status carries build identity (ADR-904) ──────────────────────────────────────────
@@ -16,6 +17,9 @@ import { GET } from './route'
 // "this field never existed". That silence is the whole reason these assertions are here.
 
 const SRC = readFileSync('app/api/status/route.ts', 'utf8')
+// Comment- and import-free (LIVE-167): the two seam assertions below must hit the CALL, never the
+// import line. SRC stays raw for the header-prose tests, which read the comments on purpose.
+const CODE = sourceWithoutComments('app/api/status/route.ts', { imports: true })
 
 async function body() {
   return (await GET().json()) as {
@@ -104,14 +108,16 @@ describe('the recorder is a checkable fact (LIVE-053)', () => {
     // documentation for the thing it guards is a guard that gets deleted. (It tripped on exactly
     // that when first written.)
     const code = SRC.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '')
-    expect(SRC).toContain("import { pushSendingEnabled } from '@/lib/push'")
+    expect(CODE).toContain('push: pushSendingEnabled')
+    expect(CODE).not.toMatch(/const pushSendingEnabled\b/)
     expect(code).not.toContain('VAPID')
   })
 
   it('booleanizes through the sentry module rather than reading env here', () => {
     // The env-pin test above is what keeps this route safe to hand to anyone; the DSN read
     // must stay in lib/observability/sentry.ts so the allowlist never grows a secret-bearing var.
-    expect(SRC).toContain("import { sentryEnabled } from '@/lib/observability/sentry'")
+    expect(CODE).toContain('sentry: sentryEnabled')
+    expect(CODE).not.toMatch(/const sentryEnabled\b/)
   })
 })
 

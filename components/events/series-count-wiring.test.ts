@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
+import { sourceWithoutComments } from '@/test/source-shape'
 import { SERIES_COLUMNS, countSeries, type SeriesRow } from '@/lib/events/series'
 
 // The COUNT half of the series fold (LIVE-198 / SERIES-COUNT) — the sibling of
@@ -81,9 +82,10 @@ describe('every surface that counts events counts GATHERINGS', () => {
   it('the shared reader behind the three viaReader sites selects the columns itself', () => {
     // Without this line those three count nine dates as nine events again, and nothing else in this
     // file would notice: their own source never names the columns.
-    const store = stripComments(read('lib/events/store.ts'))
+    // Import-free too (LIVE-167): the name must be the shared constant in use, not a private copy.
+    const store = sourceWithoutComments('lib/events/store.ts', { imports: true })
     expect(store).toContain('${SERIES_COLUMNS}')
-    expect(store).toContain("import { SERIES_COLUMNS } from './series'")
+    expect(store).not.toMatch(/const SERIES_COLUMNS\b/)
   })
 })
 

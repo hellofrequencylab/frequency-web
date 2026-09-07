@@ -36061,6 +36061,138 @@ The right wall clock against the wrong instant, **eight hours out**, four days b
 
 ⚠️ **The generalisable part is the sizing, not the fix.** The row said "add `time_zone` to both RPCs in a new migration" and was sized against that. The actual change was one column on a read that already existed. **A row that names its own implementation inherits that implementation's cost forever**, and nobody re-prices it — this one sat at P2/S for a day on a plan that was four times too big. Rows should state the consequence they need; the seam is chosen when the work starts, against the tree as it is then.
 
+## ADR-1224: a hex accent's `-strong` text shade is measured per theme, not mixed by a constant (2026-09-07)
+
+**Status.** Accepted. Closes LIVE-211, the accessibility half of the pr-compare failure LIVE-186 recorded. Amends the hex path of [ADR-516](DECISIONS.md) D2 (the brand colour picker).
+
+**Context.** `lib/spaces/accent.ts` maps a Space's picked hex onto the `--color-primary*` family. The `-strong` slot is the one TEXT reads: `PageHeading`'s eyebrow, the active tab, the type badge, every in-body `text-primary-strong`. It was derived as `color-mix(in srgb, <hex> 72%, black)`, one value for both themes. A Space with brand `#1FB6C5` measured **4.24:1 on the light ground and 4.14:1 on the dark ground** against a 4.5 requirement, and the two repairs point in opposite directions: darker on light, LIGHTER on dark, because on a near-black ground darkening moves the text toward the ground. No constant serves both. The built-in token families were contrast-checked by hand (`#11827A on white is 4.67:1`); only the hex path was never held to that rule.
+
+**Decision.**
+
+- **The hex path measures instead of mixing.** `strongShades(hex)` walks the accent toward black (light theme) and toward white (dark theme) in whole-percent steps and keeps the first shade that reads at least 4.52:1 against the hardest ground of that theme. "Hardest" is the darkest light ground and the lightest dark ground across the `:root`, `.dark`, and both midnight skin blocks, so a passing value passes on every ground a themed Space can render on. The 0.02 margin keeps a checker that rounds to two decimals from reading an accepted value as 4.49.
+- **The pair is emitted as `light-dark(<light>, <dark>)`** on the same inline declaration. The browser resolves it from the `color-scheme` the mode already sets on `:root`, `.dark`, and every skin block, so no new theme plumbing, no `<style>` tag, and no change to `AccentScope` or the portal hook, which copies the inline string verbatim.
+- **The least shift wins.** An accent that already reads on a ground is kept as-is there. That is what the dark DAWN palette already does (its `-strong` IS its primary), and it is why the CI accent's dark half is the brand colour itself.
+- **`-hover` and `-bg` are unchanged.** `-hover` is a button ground whose text is the luminance-picked `text-on-primary`; `-bg` is a translucent tint. Neither is the text slot this defect was in.
+- **Fail-safe.** A browser without `light-dark()` drops the inline declaration and inherits the host token: legible and un-branded rather than branded and unreadable.
+
+**Consequences.** `lib/spaces/accent.test.ts` asserts nine accents (the CI one, the host amber, a navy, a yellow, black, white, three saturated primaries) at or above 4.5:1 against **every** ground of each theme, pins the old `#16838E` as failing both, and pins the ground lists to `app/globals.css` in both directions so a new skin ground fails a unit test rather than silently un-measuring the derivation. The row's probe passes because the derivation carries a theme discriminator; it deliberately asserts no percentage, since 68/76 were the numbers for one accent.
+
+⚠️ **The generalisable part.** A derived colour that is never measured is a design-system change that skipped its own gate. The knowledge to measure it (`readableTextOn`, the luminance helper) sat in the same file the whole time; the gap was that one of three paths was exempt. When adding a derived shade, measure it against the ground it will sit on, in the theme it will sit in, before it ships.
+
+## ADR-1225: the Journey prompt fires hourly and lands at each member's local morning (2026-09-07)
+
+**Status.** Accepted. Closes LIVE-193. Sibling of [ADR-1221](DECISIONS.md) (the cron seam) and of SCAN-106 (Vera's dispatch day moved onto a zone).
+
+**Context.** `app/api/cron/journey-prompt` ran once a day at 13:00 UTC and its header said a timezone-aware morning was a follow-up because *"the codebase has no per-profile timezone yet"*. It has one: `profiles.home_timezone` drives the SMS quiet-hours gate, the practice day (`lib/member-day.ts`), and Vera's dispatch. 13:00 UTC is 6am on one coast and after lunch in Lisbon, for a feature whose whole point is a morning nudge.
+
+**Decision.**
+
+- **The schedule is hourly and the route decides per member.** `lib/journeys/prompt-morning.ts` exports `morningFor(now, tz)`: due when it is `LOCAL_MORNING_HOUR` (8) in the member's zone; for a member with no zone on file, or one `Intl` cannot resolve, due at `LEGACY_UTC_HOUR` (13), the old schedule verbatim. Nobody the change cannot improve sees any change.
+- **The decision lives in a lib leaf, not the route.** A Next.js route file may only export its handlers, so the constants and the pure function sit where the test can import them without the route's mocks.
+- **The gate runs before the loader.** One batched read of `home_timezone` for the candidates (chunked at 500 for the PostgREST URL ceiling), then a per-member hour check that costs nothing; on 23 of 24 runs a member is simply `notDue`, and that answer must not cost a `getDailyJourneyPrompt` call. A failed timezone read logs a warning and falls the chunk back to the legacy hour rather than silencing the run.
+- **The dedupe key and the push tag carry the member's local day.** `journey-prompt:<id>:<local day>`, so Auckland at 20:00Z on the 5th is keyed to the 6th. The once-per-day guard (migration 20270345000700) is unchanged and now means once per *local* day.
+
+**Consequences.** `hourInZone` joins `dayInZone` in `lib/time/zone.ts`. The route test pins the four cases that matter: a Pacific member not due at 13:00Z and due at 15:00Z; Lisbon and Auckland served by different UTC runs with Auckland's key on their own day; an unparseable zone treated as none; and a not-due member costing no loader call. `docs/ARCHITECTURE.md`'s cron table says hourly, and `check-arch-doc` holds at 27 claims.
+
+⚠️ **The owner-side consequence.** `scripts/cron-freshness.mjs` now derives a 2-hour fresh-by window for this job instead of two days, so the matching Healthchecks.io check period has to move to hourly or it pages on the first missed hour. That is the third-party half of OWN-005 and cannot be set from the repo.
+
+⚠️ **The generalisable part.** A comment that says *"the codebase has no X yet"* is a claim with an expiry date. This one expired when `home_timezone` shipped and sat for months because a marker in a header is not a row. The backlog audit that filed LIVE-193 swept the tree for exactly that shape; the fix was a day's work once anyone looked.
+
+## ADR-1226: a backlog probe reports its own cost, so the guard runs in parallel (2026-09-07)
+
+**Status.** Accepted. Closes HYG-062, the half of HYG-042 a raised timeout could not fix. Extends [ADR-970](DECISIONS.md) (a gate that cannot fire honestly reads as coverage) and the HYG-012 cost line.
+
+**Context.** `scripts/check-backlog.mjs` measured each probe by reading the parent's reaped-children CPU counters around a synchronous spawn. That attribution was correct only because the probes ran one at a time, so the guard could not be parallelised without going blind on per-probe cost, which is the signal LIVE-034 exists to provide. 346 cmd probes cost ~34 s wall per run, twice in the parity test, and every budget around it (two vitest timeouts, a 4.5 s per-probe ceiling) was a cliff to be re-read as the list grew.
+
+**Decision.**
+
+- **Each probe reports its own cost.** `scripts/backlog-probe-cpu.mjs` is preloaded into every `node` a cmd probe starts (`NODE_OPTIONS=--import`, appended so a runner's own options survive). On exit it writes `probe-cpu <ms>` to fd 3, a pipe the guard opens per probe for exactly that line, so stdout and stderr stay the probe's own. The figure is `process.cpuUsage()` **plus the CPU of the children that probe waited for**, read from the probe's own `/proc/self/stat`. That second half is deliberate: a probe that shells out to `tsc` is still charged for it, which a pure self-report would have lost and the old parent-side reading did see. The parent no longer reads reaped-children counters at all.
+- **A cmd probe must run under node, enforced at validation.** The row named the hole in option (b): a probe that is not node reports nothing, and the probes most likely to be expensive are exactly the ones that shell out. `validate()` now refuses a cmd probe with no `node` invocation and says what to write instead. Seven grep pipelines in the file were rewritten as `node -e` bodies reading the same files for the same strings; each verdict was checked identical before and after, with one mutation control.
+- **The probes run through a pool** of `min(4, cores)`, and verdicts are reported in entry order afterwards, so the output is stable however the pool interleaves. Measured here: 34 s wall to 9.1 s, CPU unchanged in kind, 346 attributed and 0 unattributed.
+- **The cost lines keep their shape** for the contract test, gaining `unattributed=N` when a probe reported nothing and `N in flight` on the guard line so a reading says how it was taken.
+
+**Consequences.** `scripts/backlog-contract.test.ts` holds all 26 cases, including both parity arms and the three "not a verdict" shapes, whose fixtures were rewritten as node pipelines because a fixture the validator would refuse tests the validator. A probe that spawns a non-node grandchild without waiting for it is the one cost still invisible, and it was invisible before too.
+
+⚠️ **The generalisable part.** An instrument that only works under a constraint nobody wrote down (here: serial execution) is a constraint on every future change to the thing it measures. Moving the measurement to the unit being measured removed the constraint and made the number more honest at the same time.
+
+## ADR-1229: every cron states a per-invocation budget through the seam, and the seam says when it is crossed (2026-09-07)
+
+**Status.** Accepted. Advances LIVE-190 (which stays open for its busy-week read). Extends [ADR-1221](DECISIONS.md), the duration instrument.
+
+**Context.** ADR-1221 put the `cron.run` duration line in `withCronHeartbeat` so every route is measured. A measurement with nothing to measure against is a number: the only reference the routes had was the platform's 300 s ceiling, which a cron reaches by being killed. LIVE-190's remaining work is a stated budget per route, and its first readings were of an idle system, so no route's budget could honestly be set from data.
+
+**Decision.**
+
+- **The budget is stated in the seam.** `withCronHeartbeat(name, handler, { budgetMs? })`; the default `DEFAULT_CRON_BUDGET_MS` is a fifth of `CRON_CEILING_MS`. Every wrapped route therefore has a budget from the day it is wrapped, and `scripts/cron-freshness.test.ts` already fails an unwrapped scheduled cron, so the coverage is structural.
+- **The line carries the comparison.** `cron.run` gains `budget_ms` and `over_budget`, on the return and the throw path alike; crossing the budget also emits `cron.over_budget` at warn level, so a route trending toward the ceiling is visible on the first busy day rather than on the day it dies.
+- **All 27 routes ride the default today, deliberately.** The idle readings say nothing about which route needs more. A route that proves it does declares a larger budget beside its own handler, where the number is reviewed with the work it bounds.
+
+**Consequences.** Nothing is killed or throttled: a budget is a reading, not a limit. The row closes on a busy-week `cron.run` read with every route under its stated budget, or on the routes that are batched or narrowed to it.
+
+⚠️ **The generalisable part.** An instrument without a stated expectation cannot fire. Stating the expectation in the same seam as the measurement means neither can exist without the other.
+## ADR-1231: LIVE-053 closes on the code consequence, and a fail-safe's mock must lose `this` the way the real client does (2026-09-07)
+
+**Status.** Accepted. Closes LIVE-053. Follows [ADR-1154](DECISIONS.md) (the guard's blind spots) and #2396 (the second path, bound 2026-09-06).
+
+**Context.** LIVE-053 opened on 2026-08-19 for a production `TypeError: Cannot read properties of undefined (reading 'rest')` on `/feed`, diagnosed as a Supabase client method invoked with a lost `this`. Ten alias sites were bound that day; a second path in the weekly digest cron threw for a real member on 2026-09-06 and was bound in #2396. The row then held itself open on a silence clock, twice, because closing on a diagnosis is the "closed without the probe ever passing" failure the one-list rules exist to prevent.
+
+Re-tested 2026-09-07 before any work ([ADR-1082](DECISIONS.md)):
+
+- Vercel runtime errors, production, 7 days, every route: exactly ONE `rest` occurrence, the digest cron at 2026-09-06T14:00:46Z on `dpl_5Rex4cFT6btTzcsLs44NJnfecaaY`. The fix commit `bcc3d3f64` is dated 2026-09-06 21:37 -0700, which is 2026-09-07T04:37Z, so that hit is PRE-fix by 14.6 hours. The row said seven; it compared a UTC clock against a Pacific one. The `/feed` group has aged out of the window entirely; its last hit stays 2026-08-19T04:36:35Z.
+- At least 18 production deployments have shipped since `dpl_GPcCK9MYgWaGikorFtnGfaXv12Zq` (04:47Z, the first carrying the fix), with zero occurrences of any digest in the family.
+- The mechanism re-proved against the installed `@supabase/supabase-js`: the detached value throws the exact string; the bound and inline forms return normally.
+- All twelve bind sites present at HEAD; `scripts/check-detached-client-methods.test.ts` green 11/11; an independent sweep for any client method in value position: zero.
+
+🔴 **What the re-test found that the record did not know.** With `client.from.bind(client)` mutated back to `client.from` in `app/api/cron/weekly-digest/route.ts`, `route.test.ts` still passed 8 of 8. Its mock's `from` was an arrow function, which has no `this` to lose, so the one test file that exercises the exact production path could not see the exact production defect. The tree-wide guard is a SOURCE-SHAPE test; nothing at the behaviour level pinned this site. `lib/gems.test.ts` had learned this for its own site on 2026-08-20 and the lesson did not travel.
+
+**Decision.**
+
+- **The row closes on the code consequence, not the clock.** Both paths are named, reproduced, bound and guarded, and a repo can probe that. A repo cannot probe a production silence, and a row whose only remaining action is waiting has no probe ([ADR-970](DECISIONS.md)). The residual observation is recorded with its trip-wire: the digest cron runs `0 14 * * 0`, so 2026-09-13T14:00Z is the first invocation that can speak, and it answers 500 by design ([ADR-1212](DECISIONS.md)) with `errorStack` beside the message, so a recurrence pages, names its frame, and re-opens the row.
+- **The verify block becomes a `cmd` probe** that reads the two named files, fails on the detached shape at either site, requires the bound form at both, and requires the digest test's mock to read `this.rest`. It exits 79 if a file cannot be read. Mutation-proven in both directions before it was written into the row.
+- **A mock of a Supabase client reads `this.rest` in its methods**, as the real one does, wherever a test exercises a site LIVE-053 bound. `route.test.ts` now does, with a positive control that calls the mock's method detached and expects the production string, so a mock that drifts back to arrows fails loudly rather than silently losing its teeth.
+
+**Consequences.** `app/api/cron/weekly-digest/route.test.ts` fails when the bind is removed (measured: red on the mutation, green on the tree). The backlog row is done, out of W0c, and its probe runs under `check:backlog` on every PR. The `/feed` title survives as history; the row's substance was two sites and one gate.
+
+⚠️ **The generalisable part is the mock.** A fail-safe test that mocks a class with arrow functions cannot lose `this`, so it cannot see the whole class of defect this row is about, and it reads as coverage. When the defect is "a method was detached from its receiver", the mock's method must depend on its receiver, and the test must carry a control proving it does. A mock more forgiving than the real thing is a gate that cannot fire.
+## ADR-1230: a bare `{}` in a Flight serialization error names a ROOT, and that reading closes a row four passes could not (2026-09-07)
+
+**Status.** Accepted. Closes LIVE-203 as a duplicate of SCAN-545 ([ADR-1201](DECISIONS.md) item 5), which had diagnosed and fixed the same defect three days before LIVE-203 was filed.
+
+**Context.** LIVE-203 was filed on 2026-09-07 from a Vercel runtime-error read: `Only plain objects, and a few built-ins, can be passed to Client Components from Server Components. Classes or null prototypes are not supported.`, 33 occurrences, 14 members, route `/events/[slug]`, first 2026-06-27, last 2026-09-03T17:27:54Z. Its title said no row owned it. Four passes in one day then read the page's render tree, excluded every client boundary reachable from it, hypothesised a server action, checked seven action modules, found them clean, and settled on waiting for a 7-day quiet window to close it as "fixed incidentally and never diagnosed".
+
+🔴 **The premise was false when the row was filed, and the record already said so.** `SCAN-545` (done 2026-09-04, `lib/events/reactions-core.ts`) names this exact error on this exact route: `aggregate` built its result with `Object.create(null)` and `getEventPostReactions`, a server action, returned it. PR #2366 carried the fix into production at 2026-09-05T12:17Z (`dpl_6gcnzawuMRV89dP1y5DcqnhSSNx5`, commit `67ada96`). LIVE-124's close paragraph, written 2026-09-06, already cited SCAN-545 for this group. LIVE-203 was opened the next morning by re-measuring LIVE-124's premise, and did not read LIVE-124's close.
+
+**The diagnostic that would have found it in one pass**, recorded here because it is what generalises. React Flight's throw appends `describeObjectForErrorMessage(parent, key)`: a description of the PARENT of the refused value with the refused key underlined. The sample in the row printed a bare `{}`. A parent with no enumerable keys cannot hold the value under a key, so `{}` is not a parent at all: it is Flight's `emptyRoot` sentinel, the parent it passes when the value being serialised is a ROOT. In the React 19.2.8 server build the roots are exactly: a task's model (`retryTask`), which is how a server action's return value and a Promise prop's resolved value are serialised; a Server Component's return value (`renderFunctionComponent`); and a Fragment's direct children. A prop nested in JSX never prints `{}`; it prints `{eventId: ..., posts: ...}` with carets. So the row's first pass held the strongest clue in the record and read it backwards, and three further passes of walking JSX props were walking the one place the value could not be.
+
+⚠️ **Two of the row's exclusions were also wrong, and the next reader should know.** The third pass wrote "there IS NO page_config block render path on this route at all"; the page's own header comment says the WHOLE interior renders through `PageModules` and stamps its data into `lib/events/active-event.ts` for seventeen zero-prop modules to read, which is where `EventActivity` (the component whose mount effect calls the action) lives. And the row said "a Date is NOT a candidate" as if that narrowed things; it did not, because every render-tree prop was already excluded by the `{}`.
+
+**Decision.**
+
+- **LIVE-203 closes as a duplicate.** No code on the event page changes: the defect was fixed at its source by SCAN-545 and that fix is pinned by `lib/events/reactions-core.test.ts`. Its evidence is the deployment record plus the runtime read on 2026-09-07 (production, error level, last 2 days: one line in the whole project, on `/api/cron/weekly-digest`, none on `/events/[slug]`).
+- **The pin gets the missing half.** `reactions-core.test.ts` asserted the ROOT's prototype. It now walks the whole return tree with Flight's exact predicate (`proto === Object.prototype || (proto !== null && getPrototypeOf(proto) === null)`), with positive controls for the walker and for the pre-fix shape, on every path the action can return. A null-prototype `counts` bucket would be refused with a different parent description, which is a different digest, which is the most economical account of the row's unexplained second digest; the pre-fix source is not in this clone's history, so that account is stated as the likely one, not a proven one.
+- **The row's probe is a runtime measurement, not a grep.** Node 22 imports `reactions-core.ts` directly (it has no imports of its own), so the probe calls `aggregate` on a fixture that includes `__proto__` as a key and applies the same predicate to every value. It exits `PROBE_INDETERMINATE` (79) when the import itself fails, so a Node that stops stripping types reads as "cannot look" rather than as a pass.
+
+**Consequences.** One row closed, one test extended, no product code touched. The Vercel grouped-errors read (`get_runtime_errors`) returned no groups for the whole project on any window on 2026-09-07 between 15:58Z and 16:10Z, including windows that must contain the 2026-09-03 occurrences three earlier reads saw; that instrument's silence is not evidence either way, which is why the close cites the runtime-log read and the deployment record instead.
+
+⚠️ **The generalisable part is a reading rule, in two halves.** First: **when an error message carries a description, decode the description before walking the code**. Flight, Postgres, Zod and Next all print the SHAPE of the thing that failed, and that shape usually names the class of call site; LIVE-203 spent four passes and a probability argument on a hunt the message had already ended. Second: **before filing "no row owns this", search the backlog for the error text, not the route**. The row that owned it was keyed on the file that was wrong, not the route that showed it, and it was `done`.
+## ADR-1232: an import line is not evidence of a call, so 49 source-shape needles moved onto the code that does the thing (2026-09-07)
+
+**Status.** Accepted. Closes LIVE-167. Finishes the pass [ADR-1211](DECISIONS.md) started with `sourceWithoutComments` (SCAN-586).
+
+**Context.** A source-shape test reads a file and asserts a token is in it. SCAN-586 fixed the 34 assertions whose needle also sat in a comment of the pinned file, and left a second class in the row: assertions whose needle is the **import line** (`import { deleteListingIntake } from './actions'`). Those pass for as long as the import exists, so deleting the call while leaving the import keeps the test green, and the only thing that notices is eslint's unused-import rule, which is a lint warning about tidiness rather than a test about wiring.
+
+**Re-measured before working it.** The row said 51; a wide grep for a positive import-line needle across the test tree read **102** (absences and re-export pins excluded), and the probe counted **20** test files using the helper against a threshold of 40. The number had moved, in the wrong direction, because the pattern kept being copied from the house archetypes.
+
+**Decision.**
+
+- **The pinned file is read comment- and import-free, and the needle is the consequence.** Each converted site reads `sourceWithoutComments(path, { imports: true })` and asserts the call (`await requestEventHost(eventId, spaceId)`), the JSX mount (`<DeleteIntakeButton`), or the value read (`push: pushSendingEnabled` is a boolean, not a call, and the first draft of that needle assumed parentheses and went red on the real file). With imports blanked, the name can only be satisfied by code.
+- **Where the import line was really saying "this comes from the shared module", the assertion says that instead.** A `not.toMatch(/function <name>\b/)` on the import-free source fails the moment a private copy grows back, which is the drift the import line was standing in for.
+- **Nothing was weakened to get there.** Five files carry a sibling assertion that legitimately needs the raw file: a slice keyed off a comment marker, a header-prose test, an em-dash rule over the whole member-facing file, a purity check that must see the imports. Those keep the raw read beside a second import-free read; the two are never merged.
+- **Proven by mutation, not by reading.** Deleting the `dismissWalkthroughAction` call while keeping its import fails `walkthrough-actions.test.ts`; renaming the `canPostToRoom` call in `popover-actions.ts` fails `room-access.test.ts`. Both sources were restored.
+
+**Consequences.** 49 assertions in 30 files converted; 50 test files now use the helper (the probe passes at 50 of 40); the wide grep reads 53, and most of that residue is deliberate: re-export pins, `import type` boundary checks, `scripts/build-fanout.test.ts` reading import edges because the edges are what it measures, and the helper's own fixtures. Lint is clean at zero warnings on every touched file, and every touched test passes.
+
+⚠️ **The generalisable part is the shape of the false pass.** An assertion that matches a declaration proves the declaration, and a declaration is the cheapest thing in a file to leave behind. The three forms that keep recurring are the comment that explains the call, the import that names it, and the type that describes it; each is text that survives the deletion of the thing it is about. When a source-shape needle is chosen, ask what would still be in the file after the behaviour is gone, and pick a needle that would not be.
 ## ADR-1237: the event page reads its own row once and its two Spaces in one round trip (2026-09-07)
 
 **Status.** Accepted. Closes LIVE-180 (sweep 3, 2026-09-05). Same seam as [ADR-1223](DECISIONS.md): widen a read that already exists rather than add one.
