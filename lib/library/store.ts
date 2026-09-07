@@ -1,18 +1,15 @@
 import 'server-only'
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { asJson } from '@/lib/supabase/json'
 import { ALL_ELEMENTS } from './element-catalog'
 import { SEARCH_CANDIDATE_CAP, mergeCandidates, rankLibraryMatches } from './search-rank'
 
-// Server-only data access for The Loom / Loom Studio. `library_assets` isn't in
-// lib/database.types.ts yet (the migration is applied but types aren't regenerated), so we
-// use an untyped admin handle — the repo's standard pattern for a freshly-added table (see
-// the space_segments / questionnaire actions). Service-role only; callers gate access.
-// See docs/LIBRARY.md.
+// Server-only data access for The Loom / Loom Studio. Service-role only; callers gate access.
+// See docs/LIBRARY.md. (Until HYG-054, 2026-09-06 this went through an untyped admin handle on a
+// comment saying `library_assets` was not in lib/database.types.ts yet — it had been for weeks.)
 
-function db(): SupabaseClient {
-  // eslint-disable-next-line no-restricted-syntax -- library_assets isn't in lib/database.types.ts yet (types regen is a follow-up integrator step); genuinely untyped table access
-  return createAdminClient() as unknown as SupabaseClient
+function db() {
+  return createAdminClient()
 }
 
 /** The root space owns the Frequency shared/master library (space_id is NOT NULL). */
@@ -439,7 +436,7 @@ export async function insertSpaceLibraryImage(input: {
       ...(input.createdBy ? { created_by: input.createdBy } : {}),
       ...(input.source ? { source: input.source } : {}),
       ...(input.tags?.length ? { tags: [...input.tags] } : {}),
-      ...(input.config ? { config: input.config } : {}),
+      ...(input.config ? { config: asJson(input.config) } : {}),
     })
     .select('id')
     .maybeSingle()
