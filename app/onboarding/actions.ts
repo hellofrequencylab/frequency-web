@@ -15,6 +15,7 @@ import { persistAcquisition } from '@/lib/attribution/acquisition'
 import { rewardConnectorJoinOnSignup } from '@/lib/rewards/connector'
 import {
   LEAD_GRAB_COOKIE,
+  LEGACY_LEAD_GRAB_COOKIE,
   parseLeadGrab,
   claimPendingLeadGrab,
   claimLeadOnSignup,
@@ -109,10 +110,23 @@ export async function completeOnboarding(data: {
     // email gets its 'claim' touchpoint logged (the profiles_sync_contact trigger linked profile_id).
     try {
       const jar = await cookies()
-      const grab = parseLeadGrab(jar.get(LEAD_GRAB_COOKIE)?.value)
+      // 2026-09-06 (LIVE-162): the grab cookie was renamed 'fq_lead' -> 'fq_lead_grab' because the
+      // signup lead claim (app/join/(induction)/lead-actions.ts) writes the same 'fq_lead' name, so
+      // on a shared browser one overwrote the other. A grab parked before the rename is still worth
+      // redeeming (30-day max-age), so the OLD name is read as a fallback and only a value that
+      // parses as a grab is used: the claim cookie's `<id>.<token>` string is not one, so a visitor
+      // who only walked the join funnel parses to null here and nothing is claimed.
+      // 🗓️ DELETE THE FALLBACK AFTER 2026-10-07 (one full LEAD_GRAB_MAX_AGE past the rename): drop
+      // LEGACY_LEAD_GRAB_COOKIE from this read, its delete below, and the export in lib/crm/lead-capture.ts.
+      const current = parseLeadGrab(jar.get(LEAD_GRAB_COOKIE)?.value)
+      const legacy = current ? null : parseLeadGrab(jar.get(LEGACY_LEAD_GRAB_COOKIE)?.value)
+      const grab = current ?? legacy
       if (grab) {
         await claimPendingLeadGrab(updated.id, grab).catch(() => {})
-        jar.delete(LEAD_GRAB_COOKIE)
+        // Clear only the slot the grab actually came from. The legacy name is ALSO the signup lead
+        // claim's cookie, and that one is consumed later, by markLeadConverted: deleting it here
+        // whenever it exists would drop a conversion stamp that has not been written yet.
+        jar.delete(current ? LEAD_GRAB_COOKIE : LEGACY_LEAD_GRAB_COOKIE)
       }
     } catch {
       /* claim is a bonus, never a blocker on signup */
