@@ -502,7 +502,12 @@ directive says otherwise:
 per request and `app-shell.tsx` resolves `mergeChrome(railFor(pathname), overrides, pathname)`;
 `resolvePageChrome` is the async server-side twin. Fail-safe throughout: no override, or a
 missing table, falls back to the code default. `MANAGED_ROUTES` is the curated catalog of
-surfaces the editor lists.
+surfaces the editor lists. The shell's read of that map (and of `app_overrides`, the menu
+surfaces, `menu_settings` and the `demo_mode` flag) is also cached ACROSS requests
+([ADR-1243](DECISIONS.md)): `lib/cross-request-cache.ts` is the one seam, each table has a tag
+its manager's write path expires, and only raw rows cross the boundary; the validation, the
+defaults, the registry gates and the per-viewer filter all run after it. The manager pages read
+the tables directly so an operator always sees the row they just saved.
 
 `app-shell.tsx` shows the global rail iff the resolved rail is `'global'`. **To reframe a
 route, edit `page-chrome.ts`, never the shell.** Locked by `lib/layout/page-chrome.test.ts`,

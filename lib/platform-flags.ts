@@ -1,5 +1,29 @@
 import { cache } from 'react'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { CHROME_CACHE_TAGS, crossRequestCached, invalidateCacheTag } from '@/lib/cross-request-cache'
+
+/** The `demo_mode` row's value, cached ACROSS requests under CHROME_CACHE_TAGS.platformFlags
+ *  (ADR-1243). Flags are global and change only when an operator toggles one, and both writers
+ *  (`setPlatformFlag` below and the demo console's setDemoMode) invalidate the tag beside the write.
+ *  null when the row does not exist; THROWS on a query error so a failure is never cached. The
+ *  caller owns the default, after the boundary, because each flag fails in its own direction.
+ *  KEY-SPECIFIC on purpose: lib/platform-flags.test.ts proves every key the code reads is seeded
+ *  by a migration by finding the literal beside its query, and a reader that took the key as an
+ *  argument would hide it from that walk. Only a flag the SHELL reads on every page belongs here;
+ *  a money or spend gate (payouts, AI) keeps its direct read. */
+const demoModeFlagRow = crossRequestCached(
+  async (): Promise<boolean | null> => {
+    const { data, error } = await createAdminClient()
+      .from('platform_flags')
+      .select('value')
+      .eq('key', 'demo_mode')
+      .maybeSingle()
+    if (error) throw new Error(`platform_flags query failed: ${error.message}`)
+    return typeof data?.value === 'boolean' ? data.value : null
+  },
+  ['platform-flags', 'demo_mode'],
+  { tags: [CHROME_CACHE_TAGS.platformFlags] },
+)
 
 // Global "show demo content" switch — the single source of truth for whether
 // seeded Beta demo content (is_demo rows) surfaces site-wide. Backed by
@@ -8,16 +32,11 @@ import { createAdminClient } from '@/lib/supabase/admin'
 //
 // Defaults to TRUE on any read failure so a transient DB hiccup never blanks the
 // Beta community unexpectedly. Cached per request (React cache) so the many
-// surfaces that gate on it share one round trip.
+// surfaces that gate on it share one round trip, and across requests through
+// demoModeFlagRow (the shell reads it on every member page view).
 export const demoModeEnabled = cache(async (): Promise<boolean> => {
   try {
-    const admin = createAdminClient()
-    const { data } = await admin
-      .from('platform_flags')
-      .select('value')
-      .eq('key', 'demo_mode')
-      .maybeSingle()
-    return data?.value ?? true
+    return (await demoModeFlagRow()) ?? true
   } catch {
     return true
   }
@@ -379,6 +398,8 @@ export async function setPlatformFlag(
     .from('platform_flags')
     .upsert({ key, value, updated_at: new Date().toISOString() })
   if (error) throw new Error(error.message)
+  // The flag is written; every cached read of the flags table is stale from here (ADR-1243).
+  invalidateCacheTag(CHROME_CACHE_TAGS.platformFlags)
 
   try {
     const db = admin

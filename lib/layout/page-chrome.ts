@@ -569,24 +569,40 @@ export const MANAGED_ROUTES: readonly ManagedRoute[] = [
 
 export type ChromeOverrides = Record<string, Rail>
 
+/** One stored `page_chrome_overrides` row, as read. Re-validated by `parseChromeOverrideRows`
+ *  before it can reach the resolver. */
+export type ChromeOverrideRow = { route: string; rail: string }
+
+/** Rows → the override map, keeping only a safe app route paired with a real rail. PURE, and the
+ *  ONE validation both readers share: the editor's direct read below and the shell's cross-request
+ *  cached read (lib/layout/chrome-sources.ts, ADR-1243), so a row the cache stored still cannot
+ *  reach `mergeChrome` unvalidated. */
+export function parseChromeOverrideRows(rows: readonly ChromeOverrideRow[]): ChromeOverrides {
+  const out: ChromeOverrides = {}
+  for (const row of rows) {
+    if (isSafeRoute(row.route) && isRail(row.rail)) out[row.route] = row.rail
+  }
+  return out
+}
+
 /** All operator chrome overrides as a plain map (route → rail). Service-role read so it
  *  works regardless of the caller's RLS context; REQUEST-CACHED via React.cache so it
  *  runs at most once per request. FAIL-SAFE: returns `{}` on ANY error (incl. a missing
  *  table pre-migration), so the resolver always falls back to the code defaults and the
  *  app never breaks. The dynamic import keeps this server-only dependency out of the
- *  module's top level (railFor/leftRailFor stay pure, client-safe). */
+ *  module's top level (railFor/leftRailFor stay pure, client-safe).
+ *
+ *  This is the EDITOR's read (/admin/page-layout) and it reads the table directly, so the
+ *  manager always shows the row an operator just saved. The SHELL reads the same table through
+ *  `loadCachedChromeOverrides` (lib/layout/chrome-sources.ts), which is cached across requests. */
 export const loadChromeOverrides = cache(async (): Promise<ChromeOverrides> => {
   try {
     const { createAdminClient } = await import('@/lib/supabase/admin')
-    // The result payload is re-validated below (isSafeRoute/isRail) before use.
+    // The result payload is re-validated (isSafeRoute/isRail) before use.
     const db = createAdminClient()
     const { data, error } = await db.from('page_chrome_overrides').select('route, rail')
     if (error) return {}
-    const out: ChromeOverrides = {}
-    for (const row of data ?? []) {
-      if (isSafeRoute(row.route) && isRail(row.rail)) out[row.route] = row.rail
-    }
-    return out
+    return parseChromeOverrideRows(data ?? [])
   } catch {
     return {}
   }

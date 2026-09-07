@@ -1,6 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { CHROME_CACHE_TAGS, invalidateCacheTag } from '@/lib/cross-request-cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { requireAdmin } from '@/lib/admin/guard'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
@@ -12,7 +13,9 @@ import { isSafeRoute, isRail, type Rail } from '@/lib/layout/page-chrome'
 // viewer, and we capture the id for `updated_by`. Writes go through the service-role admin
 // client into public.page_chrome_overrides. Each action revalidates the manager surface
 // AND the whole layout so a saved override is live on the next request (the shell merges
-// it over the code chrome map).
+// it over the code chrome map), and expires the shell's cross-request cached read of the table
+// (lib/layout/chrome-sources.ts, ADR-1243), which is what actually carries the row to the next
+// page view.
 
 const LIST_PATH = '/admin/page-layout'
 
@@ -44,6 +47,7 @@ export async function setRouteChrome(route: string, rail: Rail): Promise<ActionR
     )
   if (error) return fail('Could not save the rail for that route.')
 
+  invalidateCacheTag(CHROME_CACHE_TAGS.pageChrome)
   revalidatePath(LIST_PATH)
   revalidatePath('/', 'layout')
   return ok()
@@ -57,6 +61,7 @@ export async function clearRouteChrome(route: string): Promise<ActionResult> {
   const { error } = await db().from('page_chrome_overrides').delete().eq('route', route)
   if (error) return fail('Could not reset that route.')
 
+  invalidateCacheTag(CHROME_CACHE_TAGS.pageChrome)
   revalidatePath(LIST_PATH)
   revalidatePath('/', 'layout')
   return ok()

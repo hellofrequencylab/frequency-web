@@ -8,8 +8,10 @@
 // (lib/menus/defaults.ts) instead of throwing. The reader returns EVERYTHING
 // (including hidden items), the renderer does the per-role / per-mode filtering.
 
+import { cache } from 'react'
 import { menuDb } from './db'
 import { briefError } from '@/lib/log'
+import { CHROME_CACHE_TAGS, crossRequestCached } from '@/lib/cross-request-cache'
 import { defaultMenu, DEFAULT_MENU_SETTINGS } from './defaults'
 import { applyRegistryGates } from './gates'
 import { STAFF_DOMAINS, ACCESS_LEVELS, type StaffDomain, type Access } from '@/lib/core/staff-roles'
@@ -226,70 +228,90 @@ function assemble(
   }
 }
 
-/** Read the GLOBAL (space_id IS NULL) menu for a surface, assembled into a
- *  ResolvedMenu. Falls back to defaultMenu(surfaceKey) (isDefault true) when there
- *  is no DB row OR on any query error, nav must always render.
- *
- *  `opts.spaceId` is the seam for per-space menus (a later phase); null / omitted
- *  reads the global menu. */
-export async function getMenu(
+/** The raw rows of one surface at one scope: the menu row and its categories, items and rail
+ *  cards. THIS IS THE ONLY SHAPE THAT CROSSES THE CROSS-REQUEST CACHE BOUNDARY (ADR-1243): plain
+ *  PostgREST rows, no viewer in them, no gate applied to them. Everything that depends on code
+ *  (the defaults, the registry gates) or on the viewer (the renderer's role filter) happens after. */
+type MenuRowBundle = {
+  menu: MenuRow
+  categories: CategoryRow[]
+  items: ItemRow[]
+  railCards: RailCardRow[]
+}
+
+/** 1 + 3 queries in two serial waves. Returns null when the surface has no menu row at this scope
+ *  (the "use the code defaults" state, which IS cacheable: `ensureMenu` invalidates the tag when it
+ *  inserts one). THROWS on a query error instead of returning a fallback, because a fallback returned
+ *  from inside the cache boundary would be stored as if it were the data (lib/cross-request-cache.ts). */
+async function readMenuRows(surfaceKey: string, spaceId: string | null): Promise<MenuRowBundle | null> {
+  // Query the untyped (not-yet-generated) tables via the shared menuDb handle,
+  // mirroring lib/menu-config.ts (retired) for menu_config.
+  const db = menuDb()
+
+  let menuQuery = db
+    .from<MenuRow>('menus')
+    .select('id, surface_key, label, columns')
+    .eq('surface_key', surfaceKey)
+  menuQuery = spaceId == null ? menuQuery.is('space_id', null) : menuQuery.eq('space_id', spaceId)
+  const { data: menuRows, error: menuError } = await menuQuery.limit(1)
+  if (menuError) throw new Error(`menus query failed: ${menuError.message}`)
+  const menu = (menuRows ?? [])[0]
+  if (!menu) return null
+
+  const [categoriesRes, itemsRes, railCardsRes] = await Promise.all([
+    db
+      .from<CategoryRow>('menu_categories')
+      .select(
+        'id, parent_id, label, position, grid_col, grid_row, col_span, min_access, staff_domain, staff_level, icon, blurb',
+      )
+      .eq('menu_id', menu.id),
+    db
+      .from<ItemRow>('menu_items')
+      .select(
+        'id, category_id, label, href, subheading, icon, position, grid_col, grid_row, col_span, mode, role_modes, min_access, staff_domain, staff_level, ghost_tier, ghost_message',
+      )
+      .eq('menu_id', menu.id),
+    db
+      .from<RailCardRow>('menu_rail_cards')
+      .select('id, side, title, body, href, cta, position, mode, role_modes')
+      .eq('menu_id', menu.id),
+  ])
+  const childError = categoriesRes.error ?? itemsRes.error ?? railCardsRes.error
+  if (childError) throw new Error(`menu child query failed: ${childError.message}`)
+
+  return {
+    menu,
+    categories: categoriesRes.data ?? [],
+    items: itemsRes.data ?? [],
+    railCards: railCardsRes.data ?? [],
+  }
+}
+
+/** The same rows, cached ACROSS requests under CHROME_CACHE_TAGS.menus, keyed by (surface, scope).
+ *  Every mutation in lib/menus/actions.ts invalidates the tag beside its write (`bustMenus`). These
+ *  rows are `space_id IS NULL` globals identical for every viewer, so the key carries no viewer;
+ *  a per-space menu (the `spaceId` seam) is keyed by its own space, so one Space's nav can never be
+ *  served as another's. */
+const menuRows = crossRequestCached(readMenuRows, ['menus', 'rows'], {
+  tags: [CHROME_CACHE_TAGS.menus],
+})
+
+type MenuRowSource = (surfaceKey: string, spaceId: string | null) => Promise<MenuRowBundle | null>
+
+/** Rows in, ResolvedMenu out: the defaults fallback, the empty-row rule and the registry gates all
+ *  run HERE, after whichever source supplied the rows, so a code change to a default or a gate is
+ *  live on the next request whether or not the cache was invalidated. Falls back to
+ *  defaultMenu(surfaceKey) (isDefault true) on a missing row OR any error: nav must always render. */
+async function resolveMenu(
   surfaceKey: MenuSurfaceKey,
-  opts?: { spaceId?: string | null },
+  spaceId: string | null,
+  source: MenuRowSource,
 ): Promise<ResolvedMenu> {
   try {
-    // Query the untyped (not-yet-generated) tables via the shared menuDb handle,
-    // mirroring lib/menu-config.ts (retired) for menu_config.
-    const db = menuDb()
+    const rows = await source(surfaceKey, spaceId)
+    if (!rows) return defaultMenu(surfaceKey)
 
-    const spaceId = opts?.spaceId ?? null
-    let menuQuery = db
-      .from<MenuRow>('menus')
-      .select('id, surface_key, label, columns')
-      .eq('surface_key', surfaceKey)
-    menuQuery = spaceId == null ? menuQuery.is('space_id', null) : menuQuery.eq('space_id', spaceId)
-    const { data: menuRows, error: menuError } = await menuQuery.limit(1)
-    if (menuError) {
-      console.error('[menus] getMenu menu query failed', surfaceKey, briefError(menuError))
-      return defaultMenu(surfaceKey)
-    }
-    const menu = (menuRows ?? [])[0]
-    if (!menu) return defaultMenu(surfaceKey)
-
-    const [categoriesRes, itemsRes, railCardsRes] = await Promise.all([
-      db
-        .from<CategoryRow>('menu_categories')
-        .select(
-          'id, parent_id, label, position, grid_col, grid_row, col_span, min_access, staff_domain, staff_level, icon, blurb',
-        )
-        .eq('menu_id', menu.id),
-      db
-        .from<ItemRow>('menu_items')
-        .select(
-          'id, category_id, label, href, subheading, icon, position, grid_col, grid_row, col_span, mode, role_modes, min_access, staff_domain, staff_level, ghost_tier, ghost_message',
-        )
-        .eq('menu_id', menu.id),
-      db
-        .from<RailCardRow>('menu_rail_cards')
-        .select('id, side, title, body, href, cta, position, mode, role_modes')
-        .eq('menu_id', menu.id),
-    ])
-
-    if (categoriesRes.error || itemsRes.error || railCardsRes.error) {
-      console.error(
-        '[menus] getMenu child query failed',
-        surfaceKey,
-        briefError(categoriesRes.error ?? itemsRes.error ?? railCardsRes.error),
-      )
-      return defaultMenu(surfaceKey)
-    }
-
-    const resolved = assemble(
-      menu,
-      surfaceKey,
-      categoriesRes.data ?? [],
-      itemsRes.data ?? [],
-      railCardsRes.data ?? [],
-    )
+    const resolved = assemble(rows.menu, surfaceKey, rows.categories, rows.items, rows.railCards)
     // A row that exists but has NO groups, links, or rail cards (a half-seeded surface, or one
     // whose groups were all deleted) is treated as "use the code defaults": the editor shows the
     // default structure to manage (materialized on open) instead of a dead, unmanageable blank,
@@ -303,23 +325,50 @@ export async function getMenu(
     }
     // THE GATE CONTRACT (lib/menus/gates.ts, owner decision 2026-08-06). Permissions are
     // re-derived from the canonical registry here, at the ONE seam every surface reads
-    // through — so no renderer has to remember, and a stored gate can never disagree with
+    // through -- so no renderer has to remember, and a stored gate can never disagree with
     // the code again. Order, grouping, labels, icons and on/off stay the operator's.
     return applyRegistryGates(resolved)
   } catch (err) {
-    console.error('[menus] getMenu threw, falling back to defaults', surfaceKey, briefError(err))
+    console.error('[menus] getMenu failed, falling back to defaults', surfaceKey, briefError(err))
     return defaultMenu(surfaceKey)
   }
 }
 
-/** Same as getMenu, for the editor. getMenu already returns everything (hidden
- *  included), the renderers do the role/mode filtering, so this is a thin alias
- *  that exists so callers can express intent. */
+/** Per-request dedupe over the cross-request rows: the (main) layout, the admin layout and the site
+ *  header can each ask for a surface in one render and the rows are read once. */
+const getMenuCached = cache(
+  async (surfaceKey: MenuSurfaceKey, spaceId: string | null): Promise<ResolvedMenu> =>
+    resolveMenu(surfaceKey, spaceId, menuRows),
+)
+
+/** Read the GLOBAL (space_id IS NULL) menu for a surface, assembled into a
+ *  ResolvedMenu. Falls back to defaultMenu(surfaceKey) (isDefault true) when there
+ *  is no DB row OR on any query error, nav must always render.
+ *
+ *  Cached twice (ADR-1243): once per request (React `cache`) and across requests
+ *  (`unstable_cache`, tag CHROME_CACHE_TAGS.menus), because the rows are identical for every
+ *  viewer. THE READER STILL RETURNS EVERYTHING, hidden and gated items included; the per-viewer
+ *  filter is the renderer's (components/layout/menu-role canSeeMenuItem / effectiveMode), which
+ *  runs after both caches, so no viewer's filtered menu is ever stored.
+ *
+ *  `opts.spaceId` is the seam for per-space menus (a later phase); null / omitted
+ *  reads the global menu. */
+export async function getMenu(
+  surfaceKey: MenuSurfaceKey,
+  opts?: { spaceId?: string | null },
+): Promise<ResolvedMenu> {
+  return getMenuCached(surfaceKey, opts?.spaceId ?? null)
+}
+
+/** Same shape as getMenu, for the EDITOR, and it reads the truth: neither the per-request nor the
+ *  cross-request cache. The Menu Manager's actions write rows and then read the surface back in the
+ *  same call (syncMenuFromDefaults returns the menu it just synced), and a cached read there would
+ *  hand the editor the rows from before its own write. The shell never calls this. */
 export async function getAdminMenu(
   surfaceKey: MenuSurfaceKey,
   opts?: { spaceId?: string | null },
 ): Promise<ResolvedMenu> {
-  return getMenu(surfaceKey, opts)
+  return resolveMenu(surfaceKey, opts?.spaceId ?? null, readMenuRows)
 }
 
 /** Read a surface's `synced_default_keys` baseline — every default href this menu has ever
@@ -353,23 +402,31 @@ export async function getSyncedDefaultKeys(
   }
 }
 
-/** Read the singleton menu_settings row. Falls back to DEFAULT_MENU_SETTINGS on a
- *  missing row or any error. */
-export async function getMenuSettings(): Promise<MenuSettings> {
-  try {
+type MenuSettingsRow = { open_delay_ms: number | null; dwell_ms: number | null; fade_ms: number | null }
+
+/** The singleton `menu_settings` row, cached across requests under CHROME_CACHE_TAGS.menuSettings
+ *  (`setMenuSettings` invalidates it). null when the row does not exist; THROWS on a query error so
+ *  the failure is never cached. */
+const menuSettingsRow = crossRequestCached(
+  async (): Promise<MenuSettingsRow | null> => {
     const db = menuDb()
     const { data, error } = await db
-      .from<{ open_delay_ms: number | null; dwell_ms: number | null; fade_ms: number | null }>(
-        'menu_settings',
-      )
+      .from<MenuSettingsRow>('menu_settings')
       .select('open_delay_ms, dwell_ms, fade_ms')
       .eq('id', 1)
       .limit(1)
-    if (error) {
-      console.error('[menus] getMenuSettings failed', briefError(error))
-      return DEFAULT_MENU_SETTINGS
-    }
-    const row = (data ?? [])[0]
+    if (error) throw new Error(`menu_settings query failed: ${error.message}`)
+    return (data ?? [])[0] ?? null
+  },
+  ['menus', 'settings'],
+  { tags: [CHROME_CACHE_TAGS.menuSettings] },
+)
+
+/** Read the singleton menu_settings row. Falls back to DEFAULT_MENU_SETTINGS on a
+ *  missing row or any error. Per-request deduped (React `cache`) over the cross-request row. */
+export const getMenuSettings = cache(async (): Promise<MenuSettings> => {
+  try {
+    const row = await menuSettingsRow()
     if (!row) return DEFAULT_MENU_SETTINGS
     return {
       openDelayMs: row.open_delay_ms ?? DEFAULT_MENU_SETTINGS.openDelayMs,
@@ -377,7 +434,7 @@ export async function getMenuSettings(): Promise<MenuSettings> {
       fadeMs: row.fade_ms ?? DEFAULT_MENU_SETTINGS.fadeMs,
     }
   } catch (err) {
-    console.error('[menus] getMenuSettings threw, falling back to defaults', briefError(err))
+    console.error('[menus] getMenuSettings failed, falling back to defaults', briefError(err))
     return DEFAULT_MENU_SETTINGS
   }
-}
+})

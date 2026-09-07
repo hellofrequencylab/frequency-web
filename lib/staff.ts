@@ -2,6 +2,7 @@
 // A community janitor is not automatically a business operator. Server-only.
 // `team_members` lands in 20240221000000; untyped client view until types regen.
 
+import { cache } from 'react'
 import { redirect } from 'next/navigation'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getMyProfileId } from '@/lib/auth'
@@ -35,8 +36,13 @@ export interface StaffMember {
  *  resolveCaller. Without this, an operator's real `team_members` role leaked through
  *  the admin guards (requireAdmin/requireAdminFloor call this directly), so "view as
  *  Crew" still cleared the `/admin` floor and the staff-domain page opts. A view-as
- *  cookie is only ever set on a real downgrade, so its mere presence means "preview". */
-export async function getStaffMember(): Promise<StaffMember | null> {
+ *  cookie is only ever set on a real downgrade, so its mere presence means "preview".
+ *
+ *  REQUEST-CACHED (React `cache`, ADR-1243): the (main) layout asks for it directly, again through
+ *  getViewerHats, and a third time through requireAdminFloor on an operator page, and each was its
+ *  own `team_members` round trip. Per-request only: it is keyed on the viewer and must never cross
+ *  requests. */
+export const getStaffMember = cache(async (): Promise<StaffMember | null> => {
   if (await readViewAsTarget()) return null
   const profileId = await getMyProfileId()
   if (!profileId) return null
@@ -50,7 +56,7 @@ export async function getStaffMember(): Promise<StaffMember | null> {
 
   if (!data?.role) return null
   return { profileId, role: data.role as StaffRole }
-}
+})
 
 /**
  * Gate for the Studio. Redirects to '/' unless the caller is staff at >= `min`.
