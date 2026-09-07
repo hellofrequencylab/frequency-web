@@ -17,8 +17,7 @@
 // lib/pricing/feature-meters.ts (ADR-837) and the copy stays qualitative.
 
 import { OPERATOR_CTA_LABEL } from '@/lib/site'
-import type { SpaceType } from '@/lib/spaces/types'
-import { spaceCreatePath, type FunnelDestination } from '@/lib/funnels/definitions'
+import { NICHE_FUNNEL_DESTINATIONS, type FunnelDestination } from '@/lib/funnels/definitions'
 import { priceStrings } from '@/lib/pricing/pricing-page'
 import { formatBps } from '@/lib/pricing/display'
 import { NETWORK_TAKE_RATE_DEFAULT } from '@/lib/billing/pricing-keys'
@@ -113,10 +112,14 @@ export interface FunnelFaq {
  *  per-niche; the Loop copy, Mission, AssuranceBar base, and Footer are SHARED constants below (a config
  *  may override the assurance bar for the nonprofit swap). */
 export interface FunnelConfig {
-  /** The /for/<slug> route (short slug, ADR-591). */
+  /** The /for/<slug> route (short slug, ADR-591). A SEARCH keyword, so it can be long. */
   slug: string
-  /** The Space Mode a "Start free" pre-seeds for this niche (the signup bridge, funnels P2). */
-  mode: { type: SpaceType; variant: string }
+  /** The funnel SEQUENCE slug this door starts (ADR-1238): the `/join?seq=<niche>` the Start free button
+   *  builds, and the key of NICHE_FUNNEL_DESTINATIONS that lands the finished operator in Create-a-Space
+   *  pre-seeded in the niche's Mode. This is the ONE bridge between the door vocabulary
+   *  (`coaches-and-healers`) and the funnel vocabulary (`coaches`); the Mode itself is declared once, on
+   *  the destination row, never here. */
+  niche: string
   hero: FunnelHero
   /** Answer-first meta description (~150 chars). The hero subhead is written for the page and runs long
    *  (184 chars truncates in SERPs), so set this for the crawlable summary. Falls back to subhead. */
@@ -197,7 +200,7 @@ export const COACHES_FUNNEL: FunnelConfig = {
   // Canonical persona slug (ADR-590): the /for door, the pricing "by who you are" strip, and the persona
   // registry all speak ONE slug vocabulary now, so the strip card lands here instead of 404ing.
   slug: 'coaches-and-healers',
-  mode: { type: 'business', variant: 'packages' },
+  niche: 'coaches',
   hero: {
     eyebrow: 'For coaches, healers, and guides',
     h1: 'Your practice, made perfect.',
@@ -292,7 +295,7 @@ export const COACHES_FUNNEL: FunnelConfig = {
 
 export const STUDIOS_FUNNEL: FunnelConfig = {
   slug: 'studios',
-  mode: { type: 'business', variant: 'membership' },
+  niche: 'studios',
   hero: {
     eyebrow: 'For studios and class-based spaces',
     h1: 'Every class, every member, one place.',
@@ -382,7 +385,7 @@ export const STUDIOS_FUNNEL: FunnelConfig = {
 
 export const EVENTS_FUNNEL: FunnelConfig = {
   slug: 'event-hosts',
-  mode: { type: 'business', variant: 'ticketed' },
+  niche: 'hosts',
   hero: {
     eyebrow: 'For event hosts and organizers',
     h1: 'Sell the tickets. Keep the room.',
@@ -472,7 +475,7 @@ export const EVENTS_FUNNEL: FunnelConfig = {
 
 export const COMMUNITY_FUNNEL: FunnelConfig = {
   slug: 'community-builders',
-  mode: { type: 'business', variant: 'cohort' },
+  niche: 'communities',
   loopProminent: true,
   hero: {
     eyebrow: 'For community builders and organizers',
@@ -566,7 +569,7 @@ export const COMMUNITY_FUNNEL: FunnelConfig = {
 
 export const NONPROFITS_FUNNEL: FunnelConfig = {
   slug: 'nonprofits',
-  mode: { type: 'nonprofit', variant: 'donations' },
+  niche: 'nonprofits',
   nonprofit: true,
   hero: {
     eyebrow: 'For nonprofits and 501(c)(3) organizations',
@@ -680,11 +683,26 @@ export function assuranceItems(config: FunnelConfig): readonly string[] {
   return config.assuranceBar ?? (config.nonprofit ? ASSURANCE_NONPROFIT : ASSURANCE_BASE)
 }
 
+/** The Start-free FALLBACK: the Space directory, where a signed-in operator creates a free Space. This was
+ *  the literal every door button carried until 2026-09-07 (ADR-1238), while the niche destination map sat
+ *  with no runtime reader. It survives only for a door whose `niche` has no destination row: running such a
+ *  visitor through the induction would land them on the Beta waitlist, which is a worse promise than the
+ *  directory. Attribution is cookie-based (first-touch captures the landing URL), so no query param rides. */
+export const FUNNEL_START_FALLBACK_HREF = '/spaces'
+
 /** Where a finished operator from THIS niche funnel is admitted: Create-a-Space pre-seeded in the niche's
- *  Mode (OPERATOR-FUNNELS §5 Start-free bridge), NOT the general Beta list. Derived from the config's own
- *  `mode`, so it is one data edit per niche and can never drift from the niche's Space Mode. The onboarding
- *  side (NICHE_FUNNEL_DESTINATIONS in lib/funnels/definitions.ts) points at the SAME spaceCreatePath. Re-validated at
- *  redirect time by isSafeInAppPath / funnelLanding. PURE. */
-export function funnelStartDestination(config: FunnelConfig): FunnelDestination {
-  return { mode: 'direct', url: spaceCreatePath(config.mode) }
+ *  Mode (OPERATOR-FUNNELS §5 Start-free bridge), NOT the general Beta list. Read from the ONE destination
+ *  row (NICHE_FUNNEL_DESTINATIONS) the induction's completion also reads, so the door and the landing
+ *  cannot disagree. Undefined for a niche with no row. PURE. */
+export function funnelStartDestination(config: FunnelConfig): FunnelDestination | undefined {
+  return NICHE_FUNNEL_DESTINATIONS[config.niche]
+}
+
+/** The href every Start free button on a door renders (ADR-1238). A door whose niche has a destination row
+ *  starts the niche's funnel sequence, `/join?seq=<niche>`: a signed-out visitor runs the induction with
+ *  sign-up embedded and its completion lands them on that row's Space-create path; a signed-in member is
+ *  sent straight to the same path. A door whose niche has NO row falls back to the Space directory, because
+ *  the induction would otherwise end on the general Beta waitlist. PURE. */
+export function funnelStartHref(config: FunnelConfig): string {
+  return funnelStartDestination(config) ? `/join?seq=${encodeURIComponent(config.niche)}` : FUNNEL_START_FALLBACK_HREF
 }

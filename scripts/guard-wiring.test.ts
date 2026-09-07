@@ -147,6 +147,13 @@ const VITEST_ENFORCED: Record<string, string> = {
   // the real census with its quarantine stripped, which must still name all five orphans) as well
   // as against the real tree, so neither half can go quietly vacuous.
   'check:stored-blocks': 'scripts/check-stored-blocks.test.ts',
+  // Added 2026-09-07 (HYG-023, ADR-1241). The link twin of check:stored-blocks: it reads
+  // scripts/stored-links.json and next.config.ts's redirect table and asserts every stored link
+  // target is live, the census is fresh (a date with no recapture-log entry behind it fails), and
+  // the home block map agrees with its own store. Pure file reading, so vitest is its home by the
+  // rule above. The sibling test runs every arm against the real tree AND against a fixture built
+  // to break it, including the half re-capture the checker's first run found.
+  'check:stored-links': 'scripts/check-stored-links.test.ts',
   // Added 2026-08-25. Measures whether design_handoff/dawn/ is the round design_handoff/CHANGES.md
   // describes. Pure file reading, so vitest is its home; and its sibling test calls run() directly
   // rather than spawning node, because a probe that spawns a runner is what LIVE-034 exists about.

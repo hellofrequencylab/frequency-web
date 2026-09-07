@@ -55,7 +55,11 @@ way only, and `pnpm check:studio` fails the build if it ever reverses.
 
 A field's `placement` decides where it is edited, so creation and editing can never
 drift apart: `spark` (guided creation) · `inline` (ADR-450's inline canvas) · `rail`
-(ADR-450's Inspector, the default). Same declaration, filtered three ways.
+(ADR-450's Inspector, the default). Same declaration, filtered three ways. The Spark reads
+`sparkFields()`; a rail form reads `railForm(manifest, writes)` from
+`lib/studio/kernel/edit-plan.ts` (ADR-1240) and declares only the columns its save action
+writes. As of 2026-09-07 the Practice rail derives this way; `HYG-050` in the backlog is the
+record of which rails still hand-declare.
 
 ## 1. The shell (built, keep it)
 

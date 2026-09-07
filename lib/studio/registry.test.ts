@@ -10,6 +10,7 @@ import { describe, it, expect } from 'vitest'
 import { STUDIO_ENTITIES, studioEntityIds, studioManifest } from './registry'
 import { FIELD_KINDS, REPEAT_ITEM_SELF, isCatalogOnly, isFieldKind, validateManifest } from './kernel/manifest'
 import { buildFieldModel, sparkFields } from './kernel/review-kernel'
+import { editPlan } from './kernel/edit-plan'
 
 describe('the Studio catalog', () => {
   it('declares at least one entity', () => {
@@ -55,6 +56,20 @@ describe.each(STUDIO_ENTITIES.map((m) => [m.entity, m] as const))('manifest: %s'
     // Not a style rule: the research on guided creation is consistent that time-to-first-output is
     // what decides completion. A Spark that asks twelve questions is a form wearing a costume.
     expect(sparkFields(manifest).length).toBeLessThanOrEqual(8)
+  })
+
+  // The ADR-450 seam over the REAL catalog (ADR-1240): every declared field is on the Spark or on
+  // one edit plane, and never on both edit planes. A field on neither would be declared and
+  // unreachable; a field on both would render twice.
+  it('places every field on the Spark or on exactly one edit plane', () => {
+    const { inline, rail } = editPlan(manifest)
+    const spark = new Set(sparkFields(manifest).map((f) => f.path))
+    const onInline = new Set(inline.map((f) => f.path))
+    const onRail = new Set(rail.map((f) => f.path))
+    for (const f of manifest.fields) {
+      expect(spark.has(f.path) || onInline.has(f.path) || onRail.has(f.path), `${f.path} is on no plane`).toBe(true)
+      expect(onInline.has(f.path) && onRail.has(f.path), `${f.path} is on both edit planes`).toBe(false)
+    }
   })
 
   it('builds a model from an EMPTY draft without throwing (the cold-start path)', () => {
