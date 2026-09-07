@@ -74,7 +74,6 @@
           "ids": [
             "LIVE-149",
             "SCAN-538",
-            "HYG-046",
             "LIVE-171",
             "LIVE-170",
             "LIVE-164",
@@ -87,7 +86,8 @@
             "LIVE-181",
             "LIVE-178",
             "LIVE-193",
-            "LIVE-199"
+            "LIVE-199",
+            "HYG-064"
           ]
         },
         {
@@ -6082,7 +6082,7 @@
     {
       "id": "HYG-046",
       "title": "Hub and Nexus detail pages are hand-maintained twins that have already drifted",
-      "status": "open",
+      "status": "done",
       "priority": "P2",
       "lane": "hygiene",
       "size": "S",
@@ -6090,11 +6090,10 @@
         "file": "docs/DECISIONS.md",
         "ref": "ADR-1197, the 2026-09-03 repair and rework audit"
       },
-      "detail": "app/(main)/hubs/[slug]/page.tsx (243 lines) and app/(main)/nexuses/[slug]/page.tsx (232 lines) have identical import blocks and identical structure — HierarchyBreadcrumb, StatusBadge, DetailTemplate, resolveDetailHero, InlineText, OpenAdminBarButton, surfaceAccess, showsScopedInsight, StatCard, SectionHeader, EmptyState, ProgressTrack — differing only in getHubCapabilities vs getNexusCapabilities. The same holds for their admin-actions.ts files (220 and 217 lines).\n\nAfter normalising the hub/nexus and guide/mentor tokens roughly 60% of lines still differ. They are not copies kept in sync; they are copies that have drifted, which is the worse failure mode: a fix applied to one silently does not reach the other.\n\nBoth tiers are thin in production (hubs 27 code refs, nexuses 19, and neither is a member-facing nav noun). Extract one parameterised implementation rather than reconciling two.",
+      "detail": "app/(main)/hubs/[slug]/page.tsx (243 lines) and app/(main)/nexuses/[slug]/page.tsx (232 lines) have identical import blocks and identical structure — HierarchyBreadcrumb, StatusBadge, DetailTemplate, resolveDetailHero, InlineText, OpenAdminBarButton, surfaceAccess, showsScopedInsight, StatCard, SectionHeader, EmptyState, ProgressTrack — differing only in getHubCapabilities vs getNexusCapabilities. The same holds for their admin-actions.ts files (220 and 217 lines).\n\nAfter normalising the hub/nexus and guide/mentor tokens roughly 60% of lines still differ. They are not copies kept in sync; they are copies that have drifted, which is the worse failure mode: a fix applied to one silently does not reach the other.\n\nBoth tiers are thin in production (hubs 27 code refs, nexuses 19, and neither is a member-facing nav noun). Extract one parameterised implementation rather than reconciling two.\n\n── CLOSED 2026-09-07, AND THE PREMISE WAS UNDERSTATED: THREE OF THE DIFFERENCES WERE DEFECTS, NOT COSMETICS. The pages were diffed token-normalised (hub↔nexus, guide↔mentor) before anything was touched.\n\n1. ROUND TRIPS. The Hub page batched four reads in one Promise.all (the site-audit PERF-6 fix). The Nexus page batched caps and hero, then awaited surfaceAccess serially, then queried children serially — three latencies for four reads. PERF-6 never reached it.\n\n2. 🔴 ARCHIVED HUBS WERE LISTED AND COUNTED, and this is the member-visible one. The Hub page filtered circles with .neq(status,archived); the Nexus page had NO filter on hubs. So archived Hubs appeared in the only listing of Hubs the product has, and their members were counted in the Nexus member total AND in the Insight \"Members\" and \"Avg per hub\" stats. archiveNexus/archiveHub document archiving as existing \"so it drops out of listings\" — that was simply not true on one tier.\n\n3. A LEADING SEPARATOR. The name row wrapped on Hub and not on Nexus, and the meta was a <p> on one and an inline flex row with a literal · on the other, so a Hub with no Guide rendered a leading \"·\" on the Nexus page.\n\nTHE FIX MAKES 1 AND 2 STRUCTURALLY IMPOSSIBLE ON ONE TIER ONLY: lib/hierarchy/tier-detail.ts owns the single round trip and the archived-child exclusion, and components/hierarchy/tier-detail.tsx owns the frame, header slots, Insight band, child row and empty state, all derived from childLabel/childNoun. Pages fell 243→122 and 232→117; what remains is irreducibly tier-specific — the entity query, the row type it returns, and the view mapping.\n\n⚪ THE PAGE STILL RENDERS DetailTemplate ITSELF. tierDetailHeader() returns the template's SLOTS rather than the shell, because a page owning no layout would push check:templates backwards. Pinned by a test, not only by the gate.\n\n⚠️ THE ROW'S PROBE WAS HALF HONEST AND THE DISHONEST HALF WAS NOT SATISFIED. Its delegation arm measured the right consequence. Its \"<90 lines\" arm did not: a line count cannot tell an extraction from a relocation, and it is trivially gamed by moving the entity query into a sibling load.ts — a pattern this repo already uses — which buys 40 lines while removing zero duplication. The line count survives as a RATCHET at 125 (may shrink, never grow) rather than as the definition of done, and the probe now measures delegation, the shared loader being the only route to Insight and cover, the archived-child exclusion, and that neither page re-declares the empty state or hard-codes an Insight label.\n\n⚪ A vitest-spawning probe was proposed and REJECTED: LIVE-034 forbids it, because ten such probes are why check:backlog costs 24s. The 37 tests still run under pnpm test in CI; the probe is a cheap source-shape gate beside them.\n\nMutations, each watched red: against the pre-extraction tree the suite fails 11 of 18 — including \"serialises exactly one read\", which fails only for nexus and so independently reproduces defect 1. Six more against the fixed tree, each caught by exactly the intended test. The installed probe was re-verified here: reverting the Nexus page trips the delegation arm, and renaming the loader's archived filter trips the exclusion arm.",
       "verify": {
         "kind": "cmd",
-        "cmd": "node -e \"const fs=require('fs');const H='app/(main)/hubs/[slug]/page.tsx',N='app/(main)/nexuses/[slug]/page.tsx';if(!fs.existsSync(H)||!fs.existsSync(N))process.exit(79);const h=fs.readFileSync(H,'utf8'),n=fs.readFileSync(N,'utf8');const shared=/from '@\\\\/components\\\\/hierarchy\\\\/tier-detail'|from '.*tier-detail'/;process.exit(shared.test(h)&&shared.test(n)&&h.split('\\\\n').length<90&&n.split('\\\\n').length<90?0:1)\"",
-        "note": "Passes when both pages delegate to one shared tier-detail implementation and each is under 90 lines."
+        "cmd": "node -e 'const fs=require(\"fs\");\nconst H=\"app/(main)/hubs/[slug]/page.tsx\",N=\"app/(main)/nexuses/[slug]/page.tsx\";\nconst SHARED=\"components/hierarchy/tier-detail.tsx\",LOADER=\"lib/hierarchy/tier-detail.ts\";\nfor(const f of [H,N,SHARED,LOADER])if(!fs.existsSync(f))process.exit(79);\nconst h=fs.readFileSync(H,\"utf8\"),n=fs.readFileSync(N,\"utf8\");\nconst shared=fs.readFileSync(SHARED,\"utf8\"),loader=fs.readFileSync(LOADER,\"utf8\");\nconst DELEGATES=/hierarchy\\/tier-detail/;\nif(!DELEGATES.test(h))throw new Error(\"the Hub detail page no longer delegates to the shared tier-detail module\");\nif(!DELEGATES.test(n))throw new Error(\"the Nexus detail page no longer delegates to the shared tier-detail module\");\nif(!/loadTierChrome/.test(h)||!/loadTierChrome/.test(n))throw new Error(\"a tier page reaches Insight or cover without the shared loader, so the two can drift again\");\n// The defect the extraction actually fixed: archived children were listed and counted on ONE tier.\nif(!/archived/.test(loader))throw new Error(\"the shared loader no longer excludes archived children - archived Hubs return to the only listing of Hubs the product has\");\n// A RATCHET, not the definition of done: a line count cannot tell an extraction from a relocation,\n// so it may shrink and never grow, and delegation above is what actually measures the unification.\nconst MAX=125;\nfor(const [f,s] of [[H,h],[N,n]]){const L=s.split(\"\\n\").length;if(L>MAX)throw new Error(f+\" is \"+L+\" lines, over the \"+MAX+\"-line ratchet - re-declared markup is the usual cause\")}\n// Neither page may re-declare the shared grammar it was extracted from.\nfor(const [f,s] of [[H,h],[N,n]]){\n  if(/EmptyState/.test(s))throw new Error(f+\" re-declares an empty state the shared body already owns\");\n  if(/Avg per /.test(s))throw new Error(f+\" hard-codes an Insight label the shared band derives from the tier\");\n}'"
       }
     },
     {
@@ -9433,6 +9432,23 @@
       "verify": {
         "kind": "cmd",
         "cmd": "node -e \"const fs=require('fs');const s=fs.readFileSync('lib/journey-plans.ts','utf8');const i=s.indexOf('updateJourneyPlan');if(i<0)throw new Error('updateJourneyPlan is gone; re-scope this row');const body=s.slice(i,i+4000);if(!/slug/.test(body))throw new Error('updateJourneyPlan still never revisits the slug, so a journey named after creation keeps its untitled-journey-<random> URL');\""
+      }
+    },
+    {
+      "id": "HYG-064",
+      "title": "The Hub and Nexus MANAGE consoles are still twins, and the archived-children defect still lives in one of them",
+      "status": "open",
+      "lane": "hygiene",
+      "size": "M",
+      "priority": "P2",
+      "source": {
+        "file": "app/(main)/nexuses/admin-actions.ts",
+        "ref": "HYG-046 drift #2, one layer down"
+      },
+      "detail": "FILED 2026-09-07 from HYG-046, which fixed the same defect one layer up and found this one still live underneath.\n\napp/(main)/hubs/admin-actions.ts and app/(main)/nexuses/admin-actions.ts carry the Hub and Nexus MANAGE consoles as hand-maintained twins (220 and 217 lines), and drift #2 from HYG-046 lives there too: loadHubCircles filters archived rows, loadNexusHubs does NOT. So the Nexus manage console still lists archived Hubs and still counts them, exactly as the public Nexus detail page did before HYG-046 — archiveHub's documented purpose (\"so it drops out of listings\") remains untrue on that surface.\n\n⚠️ THIS IS NOT A COPY OF HYG-046 AND MUST NOT BE FIXED BY THE SAME EXTRACTION. These two carry real schema divergence — member_cap, host-vs-guide, and the circles-of-hubs rollup — and they are 'use server' files with per-route action registrations, so unifying them touches the action surface rather than a render path. The archived filter is the small, independent half and can be fixed on its own; the twinning is the larger question.\n\n⚪ HYG-046's probe deliberately does not reach these files: the row's detail named them, its probe did not, and a probe that fails for work the row never scoped is a probe nobody can close.\n\n⚠️ THE PATH WAS WRONG WHEN THIS ROW WAS FIRST WRITTEN — it said lib/hierarchy/admin-actions.ts, which does not exist — and the structural half of check:backlog caught it before the row could be filed against a phantom file. Verified in the real files instead: app/(main)/hubs/admin-actions.ts carries .neq(status, archived) at lines 126 and 183, and app/(main)/nexuses/admin-actions.ts reads .from(hubs) at line 123 with no such filter. The probe was control-tested both ways: it fails today, and adding the filter turns it green.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");\nconst NEX=\"app/(main)/nexuses/admin-actions.ts\",HUB=\"app/(main)/hubs/admin-actions.ts\";\nif(!fs.existsSync(NEX)||!fs.existsSync(HUB))process.exit(79);\nconst n=fs.readFileSync(NEX,\"utf8\"),h=fs.readFileSync(HUB,\"utf8\");\nconst i=n.indexOf(\".from(\\\"hubs\\\")\")>=0?n.indexOf(\".from(\\\"hubs\\\")\"):n.indexOf(\".from(\" + String.fromCharCode(39) + \"hubs\" + String.fromCharCode(39) + \")\");\nif(i<0)process.exit(79);\n// The Hub console is the control: it already excludes archived children, twice.\nif(!/archived/.test(h))process.exit(79);\nconst read=n.slice(i,i+420);\nif(!/archived/.test(read))throw new Error(\"the Nexus manage console still reads hubs without excluding archived rows, so it lists and counts them - the same defect HYG-046 fixed on the public page\");'"
       }
     }
   ]
