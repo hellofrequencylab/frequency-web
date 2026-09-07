@@ -140,7 +140,6 @@
             "DEF-DOMAIN",
             "LIVE-120",
             "LIVE-122",
-            "LIVE-192",
             "DEF-CODE",
             "HYG-061"
           ]
@@ -8996,7 +8995,7 @@
     {
       "id": "LIVE-192",
       "title": "ADR-472's Tier x Mode picker rebuild was promised as \"a separate PR\" in three files and never opened",
-      "status": "open",
+      "status": "done",
       "priority": "P2",
       "lane": "live",
       "size": "M",
@@ -9004,7 +9003,7 @@
         "file": "lib/pricing/loadout.ts",
         "ref": "the header comment and line 82"
       },
-      "detail": "FILED 2026-09-06 by the backlog audit's code sweep: a marker in the tree that promised later work, with no row owning it. lib/pricing/loadout.ts:8 and :82, app/(main)/admin/pricing/pricing-console.tsx:118 and lib/billing/pricing-keys.ts:312 each defer to the same thing: \"The Tier x Mode picker rebuild (separate PR) replaces this with a tier-aware base + per-seat tier billing\" / \"The full Tier x Mode console rebuild lands in the surface PR.\" No PR carries that title, no row names it, and SCAN-535 (done) cites ADR-472 only for the recommended add-ons defect. So the pricing console runs on a loadout shape its own comments call interim. RE-TEST THE PREMISE FIRST: read ADR-472 and decide whether the rebuild is still wanted under the 2026-09 pricing model (OWN-046, the two sale gates) before estimating it; if it is not, the four comments are the change and the row closes by deleting the promise. If it is, this is the pricing-console half of the money wave and belongs beside DEF-MONEY.",
+      "detail": "FILED 2026-09-06 by the backlog audit's code sweep: a marker in the tree that promised later work, with no row owning it. lib/pricing/loadout.ts:8 and :82, app/(main)/admin/pricing/pricing-console.tsx:118 and lib/billing/pricing-keys.ts:312 each defer to the same thing: \"The Tier x Mode picker rebuild (separate PR) replaces this with a tier-aware base + per-seat tier billing\" / \"The full Tier x Mode console rebuild lands in the surface PR.\" No PR carries that title, no row names it, and SCAN-535 (done) cites ADR-472 only for the recommended add-ons defect. So the pricing console runs on a loadout shape its own comments call interim. RE-TEST THE PREMISE FIRST: read ADR-472 and decide whether the rebuild is still wanted under the 2026-09 pricing model (OWN-046, the two sale gates) before estimating it; if it is not, the four comments are the change and the row closes by deleting the promise. If it is, this is the pricing-console half of the money wave and belongs beside DEF-MONEY.\n\n── ✅ CLOSED 2026-09-07 (ADR-1247). PREMISE RE-TESTED AND IT HAD EXPIRED: the rebuild is not wanted, because the model it would build no longer exists. ADR-472's ladder (Pro / Business / Non-profit / Organization, one Tier x one Mode) was collapsed to two programs by ADR-552 six days later and re-cut into six named tiers by ADR-811 (Member / Crew / Business / Collective / Non Profit / Independent); docs/PRICING-LADDER-PLAN.md, whose §1b the comments cite, opens with a 'TRIPLY superseded' banner, and the live ladder is docs/VALUE-LADDER.md (ADR-914). What ADR-472 wanted from the picker rebuild already shipped under the later shape, by other means: the loadout checkout chooses its base per plan (catalogKeysForLoadout in lib/billing/space-plan-checkout.ts, one of business_base / collective_base / nonprofit_seat / independent_base), seats bill through the operator_seat item (ADR-799/803, lib/billing/operator-seats.ts), the console lists the ADR-811 bases, and ADR-1227's price provenance sits on top. DEF-MONEY is NOT the home for it either: that row is the commerce verticals D1-D5 (Collective first commerce, Vault cash-in, affiliate ledger, donations, Lab Spaces), not the Space subscription picker, and it sits in W8 unparked, so pointing the comments there would have minted a new promise in place of the old one. THE CHANGE IS THE FOUR COMMENTS: each now says what the code composes today (one business_base line plus the Vera AI line), where tier selection and per-seat billing actually live, and that no tier-aware rewrite is planned. No behaviour changed; the lib/pricing and lib/billing suites are the proof. LEFT ALONE, named so nobody re-files it as a promise: computeLoadoutTotal still fixes its base at business_base and ignores seatQuantity, which is correct for the Business-rung figure the persona strip quotes; the catalog header a few lines above the rewritten comment still recites the five-tier vocabulary of 2026-06 (free / pro / business / nonprofit / organization) as history; and docs/BUILD-SEQUENCE.md:95 still marks the Tier x Mode row 'in progress' inside a document that carries a superseded banner.",
       "verify": {
         "kind": "grep-absent",
         "pattern": "Tier x Mode (picker|console) rebuild",
@@ -9012,7 +9011,8 @@
           "lib/pricing",
           "lib/billing",
           "app/(main)/admin/pricing"
-        ]
+        ],
+        "note": "Passes when no file under the three pricing paths still promises a Tier x Mode picker or console rebuild in a separate PR. The consequence is the absence of the promise: the four comments now describe the shipped shape (one business_base line plus the AI add-on; base per plan in space-plan-checkout.ts; seats via operator_seat) and cite ADR-1247 for why no rebuild is planned."
       }
     },
     {

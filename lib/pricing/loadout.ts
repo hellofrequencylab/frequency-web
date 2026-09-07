@@ -1,13 +1,19 @@
-// LOADOUT MATH — the PURE Pro loadout total (ADR-463; re-tiered ADR-472, docs/PRICING-LADDER-PLAN.md
-// §1b/§4). A Space buys a BASE tier plus the sole metered ADD-ON (AI Engine); the picker shows a LIVE
-// total as the operator flips the AI toggle + the monthly/yearly switch. This module is the single
-// source of that arithmetic, framework-independent (no Stripe/Supabase/Next), so it runs identically on
-// the client (the live picker) and the server (a sanity check / a future quote), and is trivially
-// unit-testable.
+// LOADOUT MATH — the PURE Space loadout total (ADR-463; the catalog it reads was re-tiered by ADR-472,
+// then re-cut by ADR-552 and ADR-811). A Space buys a BASE tier plus the sole metered ADD-ON (Vera AI);
+// the picker shows a LIVE total as the operator flips the AI toggle + the monthly/yearly switch. This
+// module is the single source of that arithmetic, framework-independent (no Stripe/Supabase/Next), so
+// it runs identically on the client (the live picker) and the server (a sanity check / a quote), and
+// is trivially unit-testable.
 //
-// TODO(ADR-472 surfaces): the Marketing / Team / Branding add-ons folded into tier depth (Pro vs
-// Business), so they are no longer loadout lines. The Tier x Mode picker rebuild (separate PR) makes
-// this tier-aware; today it still composes a single Pro base + the AI add-on.
+// WHAT THIS COMPOSES TODAY (ADR-1247). The Marketing / Team / Branding add-ons folded into tier depth
+// (ADR-472), so they are no longer loadout lines; the total here is ONE base line (`business_base`, the
+// Business rung of ADR-811) plus the AI line, and it is the figure behind the persona strip and the
+// /pricing loadout copy (lib/pricing/pricing-page.ts). Tier selection does not happen here: the loadout
+// checkout picks its base per plan (`catalogKeysForLoadout` in lib/billing/space-plan-checkout.ts,
+// one of business_base / collective_base / nonprofit_seat / independent_base), seats bill through the
+// `operator_seat` item (ADR-799/803, lib/billing/operator-seats.ts), and the live rate ladder is
+// docs/VALUE-LADDER.md (ADR-914). The tier-aware picker ADR-472's comments once promised here was
+// overtaken by those decisions and is not planned (LIVE-192, ADR-1247).
 //
 // THE SHAPE. Each catalog item carries a LIST anchor and a lower FOUNDING (charged) amount, per
 // interval (lib/pricing/catalog-config.ts resolves the operator-edited amounts). A loadout total sums
@@ -79,8 +85,11 @@ export function normalizeAddons(
  *  The base tier is always included. Each active add-on (only AI now, ADR-472) adds its line. List +
  *  founding totals are summed independently so the surface can show the anchor beneath the charged total.
  *
- *  TODO(ADR-472 surfaces): this still hard-codes the `pro_base` line + a flat per-add-on quantity. The
- *  Tier x Mode picker rebuild (separate PR) replaces this with a tier-aware base + per-seat tier billing. */
+ *  The base line is fixed at `business_base` and `seatQuantity` is unread: this is the Business-rung
+ *  figure the pricing surfaces quote, not a per-tier quote. A checkout resolves its own base per plan in
+ *  lib/billing/space-plan-checkout.ts, and seats bill through the `operator_seat` item there and in
+ *  lib/billing/operator-seats.ts (ADR-799/803). No tier-aware rewrite of this function is planned
+ *  (ADR-1247). */
 export function computeLoadoutTotal(
   itemsByKey: Record<CatalogItemKey, ResolvedCatalogItem>,
   addons: readonly (AddonKey | string)[],

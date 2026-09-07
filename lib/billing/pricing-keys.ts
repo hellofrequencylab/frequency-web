@@ -311,9 +311,11 @@ export function memberCheckoutPriceKey(opts: {
 //     buys a TIER (Pro base or Business base), not those add-ons. The Business base is the full-depth
 //     team tier. AI Engine is the SOLE remaining metered add-on item (addon_ai), toggled independently
 //     on any paid tier. Nonprofit is a FLAT $39/mo item (ADR-811), not per-seat; Organization is its own item.
-//   * TODO(ADR-472 surfaces): the marketing/team/branding add-on CATALOG items + their per-seat Team
-//     handling are RETIRED here (see RETIRED_CATALOG_KEYS). The loadout-picker / persona / pricing-page
-//     surfaces that still reference them are kept compiling but get their real rebuild in the surface PR.
+//   * The marketing/team/branding add-on CATALOG items + their per-seat Team handling are RETIRED here
+//     (see RETIRED_CATALOG_KEYS); their legacy price keys stay resolvable for grandfathered rows. The
+//     loadout picker, the persona strip and the pricing page read the live keys below, and the base a
+//     checkout buys is chosen per plan in space-plan-checkout.ts. ADR-472's promised Tier x Mode
+//     surfaces were overtaken by ADR-552 and ADR-811 and are not planned (ADR-1247).
 //
 // The price-row KEY namespace is `<item>_<interval>` (interval month|year), e.g. pro_base_month,
 // business_base_year, addon_ai_month, nonprofit_seat_month, organization_year. Each KEY resolves to a
