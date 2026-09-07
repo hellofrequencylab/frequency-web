@@ -35981,3 +35981,25 @@ Both wrong forms fall through the app's catch-all to the home page. Structured d
 **Consequences.** Three mutation arms are proven and each fails naming the offending URL: the extensionless static file, a route-group per-entity card, and a restored sitemap entry. Two `spaceSchema` tests that had pinned a dead URL **twice** — first the per-entity card, then the extensionless root — now pin the constant, with the file check behind them; the comment there records both corrections, because a literal can be wrong twice and a file cannot.
 
 ⚠️ **The transferable rule, and it is not about images.** LIVE-205's close condition read "resolves 200 on a deployed build". It was specific, measurable, and would have **passed on the defect**. A close condition can be perfectly checkable and still check the wrong thing; when a fail-safe's success and failure look identical from the outside, the probe has to reach for whatever distinguishes them — here, content-type, or offline, existence.
+
+---
+
+## ADR-1221: the cron duration instrument goes in the seam, because an opt-in instrument is never complete (2026-09-07)
+
+**Status.** Accepted. Ships the re-scoped first step of LIVE-190; the budgets themselves remain open.
+
+**Context.** LIVE-190 wants a per-invocation work budget for the crons. Its first step read the Vercel `Task timed out after 300 seconds` error group — and that group **can only ever see a cron that has already failed**, because it fires at the ceiling. A cron trending toward 300s is invisible to it, which is how the row's own headline number ("314 timeouts across fourteen routes") could expire into a quiet week without the underlying risk changing at all.
+
+`log.time` already existed and emitted `duration_ms`. **Eight of twenty-seven cron routes had adopted it.** That is the shape of an instrument that is never finished: the nineteen without it included `process-queue`, the busiest at 720 invocations a day, and a cron added next month would start uninstrumented again.
+
+**Decision.**
+
+- **The timer goes in `withCronHeartbeat`**, the wrapper every cron already passes through, and emits one `cron.run` line per invocation carrying `job`, `status`, `ok` and `duration_ms`. Coverage becomes structural rather than remembered.
+- **No new gate was needed.** `scripts/cron-freshness.test.ts` already fails a scheduled cron that is not wrapped, so the guard that keeps this universal was already in place — worth stating, because the reflex here is to add a second gate for the same property.
+- **🔴 Not `log.time` around the handler.** `log.time` decides `ok` by whether the function threw, and a cron that **returns** a 500 has not thrown. Wrapping the handler in it would log the loudest failure mode as a success. The seam reads the response status instead — the same rule the fail-ping already used.
+- **The line is emitted on the throw path too**, so a chart of `cron.run` covers every invocation rather than only the ones that got as far as returning. A run that dies at 280s is exactly the reading this is for, and exactly the one a success-only instrument loses.
+- **The clock stops before the heartbeat ping**, which is a third-party network call and is not the job's work.
+
+**Consequences.** First production readings (`dpl_BU432fbGAwdpwvBZHU2JKR9a4VGW`, 2026-09-07 09:45Z) are 115–533 ms against a 300,000 ms ceiling.
+
+⚠️ **Those numbers prove almost nothing yet, and saying so is the point.** Every counts line in the same window reads zero — `due 0, claimed 0, sent 0` — so they are the durations of a cron with **no work to do**: a floor measuring the fixed cost of waking up and finding nothing, not a budget. The reading LIVE-190 needs is the same query on a busy week, which is why the instrument had to land first and why this ADR closes no budget.
