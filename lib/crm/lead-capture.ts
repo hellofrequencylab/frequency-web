@@ -138,8 +138,21 @@ export function normalizePhoneKey(raw: string | null | undefined): string | null
 
 // ── Pending lead-grab cookie (anonymous scan -> redeem on signup) ────────────────────────────────────
 
-/** The cookie an anonymous Space-QR scan drops so the eventual signup redeems the lead-grab. */
-export const LEAD_GRAB_COOKIE = 'fq_lead'
+/** The cookie an anonymous Space-QR scan drops so the eventual signup redeems the lead-grab.
+ *
+ *  ⚠️ RENAMED 2026-09-06 (LIVE-162). This was 'fq_lead', the SAME name the signup lead claim uses
+ *  (LEAD_COOKIE in app/join/(induction)/lead-actions.ts, which parks an `id.token` string). Two
+ *  unrelated features writing one cookie name means whichever runs second overwrites the first on a
+ *  shared browser: a visitor who scanned a Space QR and then walked the join flow lost the grab.
+ *  Neither reader mis-parses the other's value (this one is URL-encoded JSON, that one `id.token`),
+ *  so the fix is only the name. */
+export const LEAD_GRAB_COOKIE = 'fq_lead_grab'
+
+/** The pre-LIVE-162 name of the cookie above. Readers accept it so a grab already sitting in a
+ *  visitor's browser (30-day max-age) is still redeemed after the rename.
+ *  🗓️ DELETE AFTER 2026-10-07: one full LEAD_GRAB_MAX_AGE window past the rename, by which point no
+ *  live browser can still be holding a cookie written under the old name. */
+export const LEGACY_LEAD_GRAB_COOKIE = 'fq_lead'
 export const LEAD_GRAB_MAX_AGE = 60 * 60 * 24 * 30 // 30 days
 
 /** The compact pending grab we persist in the cookie (keys short). */
@@ -821,7 +834,7 @@ export async function ensureSpaceMemberContact(spaceId: string, profileId: strin
 
 /**
  * CLAIM the anonymous pending grab at signup: the scanner joined, so the profiles_sync_contact trigger
- * has already created their contacts row by email. Redeem the fq_lead cookie into a real Space link
+ * has already created their contacts row by email. Redeem the fq_lead_grab cookie into a real Space link
  * (down-spill) + a 'claim' touchpoint, keeping the ORIGINAL door. Fail-safe. Returns the contactId.
  */
 export async function claimPendingLeadGrab(

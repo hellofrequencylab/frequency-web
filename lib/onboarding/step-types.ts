@@ -9,8 +9,21 @@
 // registry stays the single source of truth and TypeScript flags any drift between the two.
 
 /** Every registered onboarding step type (Layer 1 bindings live in step-registry.tsx). */
-export const STEP_TYPES = ['identity', 'profile', 'region', 'review'] as const
+export const STEP_TYPES = ['identity', 'profile', 'region', 'consent', 'review'] as const
 export type StepType = (typeof STEP_TYPES)[number]
+
+/** The step type that ASKS for marketing email consent, and the only thing that may set
+ *  `emailOptIn` on the draft (LIVE-168). Named here, in the server-safe half of the registry, so
+ *  the runner and any flow check can agree on it without importing the client module. */
+export const CONSENT_STEP_TYPE = 'consent' satisfies StepType
+
+/** Does this flow ask the marketing-email question? A flow that does not must never reach
+ *  completeOnboarding: the action records an omitted `emailOptIn` as consent WITHHELD, so an
+ *  unasked member is recorded as declining. The runner guarantees the step rather than trusting
+ *  config (components/onboarding/sequence-runner.tsx). */
+export function hasConsentStep(steps: readonly { type: string }[]): boolean {
+  return steps.some((s) => s.type === CONSENT_STEP_TYPE)
+}
 
 /** The terminal action keys a sequence's last step may reference. The runner binds each key to its
  *  real server action (do not reimplement); config only ever names a key from this list. */

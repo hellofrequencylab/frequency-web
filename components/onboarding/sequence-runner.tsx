@@ -10,6 +10,7 @@ import {
   type StepControls,
 } from '@/lib/onboarding/step-registry'
 import type { SequenceDef } from '@/lib/onboarding/sequence-schema'
+import { withConsentStep } from '@/lib/onboarding/default-sequence'
 import type { AppGate } from '@/lib/apps/types'
 
 // The sequence runner — walks any SequenceDef's steps inside WizardShell. It is the generalisation
@@ -22,10 +23,17 @@ import type { AppGate } from '@/lib/apps/types'
 // separate, verified step. The staff-only /onboarding/sequence-preview route renders this in
 // `preview` mode (no completeOnboarding side-effect) so a flow can be walked and verified first.
 //
-// 2026-09-05 (scan2 L5-16): the binding below does NOT pass `emailOptIn`, and completeOnboarding
-// now records an omitted field as consent WITHHELD (it used to default to granted). Before this
-// runner is cut over to production, the sequence needs an opt-in step whose value reaches the
-// binding, or every member it onboards is recorded as opted out of marketing email.
+// 2026-09-05 (scan2 L5-16) -> CLOSED 2026-09-06 (LIVE-168). The binding below did NOT pass
+// `emailOptIn`, and completeOnboarding records an omitted field as consent WITHHELD (it used to
+// default to granted), so a cutover would have marked every member it onboards as declining
+// marketing email. Two things fixed that, and both are load-bearing:
+//   1. the flow ASKS: `consent` is a registered step type (lib/onboarding/step-registry.tsx) that
+//      renders the same opt-in card app/onboarding/form.tsx shows, and `withConsentStep` below
+//      guarantees it is in EVERY flow this runner runs, config-authored ones included;
+//   2. the answer REACHES the action: SEQUENCE_ACTIONS passes `emailOptIn` through.
+// The draft leaves `emailOptIn` undefined until the step is seen, and the binding sends
+// `=== true`, so "never asked" and "said no" both land as withheld. That is the safe direction:
+// consent is an affirmative act, and the guaranteed step is what stops it being the common case.
 
 /** The terminal actions a sequence may name by key (Layer-1 binding; do not reimplement). */
 const SEQUENCE_ACTIONS: Record<string, (draft: OnboardingDraft) => Promise<unknown>> = {
@@ -36,6 +44,9 @@ const SEQUENCE_ACTIONS: Record<string, (draft: OnboardingDraft) => Promise<unkno
       bio: d.bio,
       avatarUrl: d.avatarUrl,
       regionId: d.regionId,
+      // The consent step's answer (LIVE-168). `=== true` mirrors what the action itself checks:
+      // only an explicit opt-in grants `email_marketing`.
+      emailOptIn: d.emailOptIn === true,
     }),
 }
 
@@ -54,8 +65,11 @@ export function SequenceRunner({
   preview?: boolean
 }) {
   // Layer-3 gating: hide steps the viewer can't pass. Default sequence carries no gates.
+  // Then the consent guarantee (LIVE-168): a flow that does not ask the marketing-email question
+  // gets the step inserted before its terminal step. Applied AFTER gating on purpose, so a gate
+  // that hides every other step cannot also hide the question.
   const steps = useMemo(
-    () => def.steps.filter((s) => !s.gate || (gatePasses ? gatePasses(s.gate) : true)),
+    () => withConsentStep(def.steps.filter((s) => !s.gate || (gatePasses ? gatePasses(s.gate) : true))),
     [def.steps, gatePasses],
   )
 

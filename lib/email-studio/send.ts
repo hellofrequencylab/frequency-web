@@ -309,9 +309,13 @@ interface CampaignSendRow {
   phase_id: string | null
   sent_at: string | null
   scheduled_for: string | null
+  /** How many emails the LAST attempt queued (stamped by recordSendFailed / the sent write). Read
+   *  by the re-send ledger check: a row that already queued someone is a prior attempt (LIVE-172). */
+  recipient_count: number
 }
 
-const SEND_COLS = 'id, subject, preheader, block_json, segment, status, phase_id, sent_at, scheduled_for'
+const SEND_COLS =
+  'id, subject, preheader, block_json, segment, status, phase_id, sent_at, scheduled_for, recipient_count'
 
 // ── The send lease (scan2 L5-04, 2026-09-05) ────────────────────────────────────
 // A campaign is claimed to 'sending' before the recipient loop and must NEVER be left there once
@@ -382,7 +386,24 @@ export function sendStoppedCopy(queued: number, recorded: boolean): string {
     : 'The campaign status could not be updated, so it may still show as sending.'
   if (queued === 0) return `The send stopped before any email was queued. ${status} Fix the cause and send again.`
   const n = queued === 1 ? '1 email was' : `${queued} emails were`
-  return `The send stopped after ${n} queued. ${status} Sending again reaches the whole audience, including the people already queued.`
+  // LIVE-172: this used to end "Sending again reaches the whole audience, including the people
+  // already queued", which was true and is now not: every queued recipient has a ledger row, and
+  // the next send skips them.
+  return `The send stopped after ${n} queued. ${status} Sending again picks up where it stopped and skips the people already queued.`
+}
+
+/** What is recorded on `send_error` when the ledger cannot be read on a re-send (LIVE-172). */
+const LEDGER_UNREADABLE_ERROR =
+  'Could not read the send ledger, so the people already queued could not be identified. Nothing was sent.'
+
+/** Operator copy for a re-send that refused because the ledger could not be read. Sending to a
+ *  whole audience twice is worse than sending late, so the refusal is the safe answer. Exported for
+ *  the test. Plain voice, no em dashes. */
+export function ledgerUnreadableCopy(recorded: boolean): string {
+  const status = recorded
+    ? 'The campaign is marked failed.'
+    : 'The campaign status could not be updated, so it may still show as sending.'
+  return `Nothing was sent. This campaign was sent before, and the record of who already received it could not be read, so sending now could reach those people twice. ${status} Try again in a few minutes.`
 }
 
 /** Operator copy for the rarer case: every email was queued but the 'sent' write failed. */
@@ -405,6 +426,7 @@ async function loadCampaign(campaignId: string): Promise<CampaignSendRow | null>
     phase_id: (data.phase_id as string) ?? null,
     sent_at: (data.sent_at as string) ?? null,
     scheduled_for: (data.scheduled_for as string) ?? null,
+    recipient_count: Number(data.recipient_count ?? 0) || 0,
   }
 }
 
@@ -570,6 +592,88 @@ export async function scheduleCampaign(
   return ok({ scheduledFor: when.toISOString(), count: audience.data.count })
 }
 
+// ── The per-recipient send ledger (LIVE-172) ─────────────────────────────────────
+//
+// A send that stops part way is recorded 'failed' with the count queued so far (scan2 L5-04) and the
+// operator can send it again, so "send again" is a NORMAL path, not a rare one. Nothing used to skip
+// the people already queued: the second attempt re-sent to everyone the first attempt had reached,
+// and the operator copy said so out loud. The Space campaign runner had already solved this
+// (lib/spaces/campaigns-send-due.ts: a resumed fan-out sends only to recipients with no
+// outreach_sends row for the campaign), so this is that pattern, on this sender:
+//   • BEFORE the loop, read every recipient this campaign already has a ledger row for;
+//   • skip them;
+//   • after each enqueue, write the recipient's row at 'queued' — the same status and the same
+//     meaning the Space seam gives it (lib/spaces/email.ts recordSend: a row exists the moment the
+//     outbox has the job, because the send itself happens later, in the drain).
+// The ledger row is keyed on the campaign, so a global campaign and a Space campaign that share the
+// `campaigns` table also share this protection.
+
+/** How many outreach_sends rows one ledger page holds. PostgREST caps an unranged select at 1000,
+ *  and a truncated read would re-send to people who already got it. */
+const LEDGER_PAGE = 1000
+
+/** The recipients of `campaignId` that already have an outreach_sends row in any status but
+ *  'failed' (queued, sent, delivered, bounced, complained, suppressed all mean "do not send
+ *  again"), keyed both ways. Paged, so a large fan-out is read in full. NULL on a read error, which
+ *  the caller must treat as "cannot tell" rather than "nobody". */
+async function readLedgerRecipients(
+  campaignId: string,
+): Promise<{ contactIds: Set<string>; emails: Set<string> } | null> {
+  const contactIds = new Set<string>()
+  const emails = new Set<string>()
+  try {
+    const db = createAdminClient()
+    for (let from = 0; ; from += LEDGER_PAGE) {
+      const { data, error } = await db
+        .from('outreach_sends')
+        .select('contact_id, email')
+        .eq('campaign_id', campaignId)
+        .neq('status', 'failed')
+        .range(from, from + LEDGER_PAGE - 1)
+      if (error) return null
+      const page = data ?? []
+      for (const r of page) {
+        if (r.contact_id) contactIds.add(String(r.contact_id))
+        if (r.email) emails.add(String(r.email).toLowerCase())
+      }
+      if (page.length < LEDGER_PAGE) break
+    }
+    return { contactIds, emails }
+  } catch {
+    return null
+  }
+}
+
+/** Commit one recipient to the ledger, at 'queued': the outbox has the job, the send happens in the
+ *  drain. Best-effort and never throws, exactly like the Space seam's recordSend, because the email
+ *  is already enqueued by this point and a ledger blip must not fail a send that is going out.
+ *  Needs a space to hang the row on (outreach_sends.space_id is NOT NULL); with no root space
+ *  resolved there is nothing to write, and the caller has already logged that. */
+async function recordLedgerSend(input: {
+  spaceId: string
+  campaignId: string
+  contactId: string | null
+  email: string
+}): Promise<void> {
+  try {
+    const db = createAdminClient()
+    await db.from('outreach_sends').insert([
+      {
+        space_id: input.spaceId,
+        campaign_id: input.campaignId,
+        contact_id: input.contactId,
+        email: input.email,
+        status: 'queued',
+      },
+    ])
+  } catch (err) {
+    console.error('[email-studio] ledger write failed', {
+      campaignId: input.campaignId,
+      error: err instanceof Error ? err.message : String(err),
+    })
+  }
+}
+
 // ── sendCampaignNow: the real, gated, per-recipient send ─────────────────────────
 
 /**
@@ -584,6 +688,9 @@ export async function scheduleCampaign(
  * the operator instead of being discarded with an `ok`. The "already sending" refusal below applies
  * only while the send lease (SENDING_LEASE_MS, lib/messaging/status.ts) is live, so a row abandoned
  * by a dead process is re-sendable instead of stuck.
+ * 2026-09-06 (LIVE-172): and a re-send never repeats a recipient. Every enqueue writes an
+ * outreach_sends row for the campaign, and the loop skips anyone who already has one, so the
+ * re-send an operator is invited to make picks up where the failed one stopped.
  */
 export async function sendCampaignNow(campaignId: string): Promise<ActionResult<{ recipientCount: number }>> {
   const row = await loadCampaign(campaignId)
@@ -674,6 +781,10 @@ export async function sendCampaignNow(campaignId: string): Promise<ActionResult<
   await stampSendColumns(campaignId, { sending_started_at: new Date().toISOString(), send_error: null })
 
   let count = 0
+  // Recipients this send skipped because an earlier attempt at this campaign already queued them
+  // (LIVE-172). Counted outside the try so the terminal stamp can record the campaign's TOTAL
+  // reach rather than only what this attempt added.
+  let skippedTotal = 0
   // One clock for the whole fan-out, so the drip (bulkRunAfter below) is measured from when the
   // send STARTED, not from each enqueue — otherwise a slow render would stretch the stagger.
   const fanOutStartedAt = new Date()
@@ -689,7 +800,35 @@ export async function sendCampaignNow(campaignId: string): Promise<ActionResult<
     // imported leads are suppression-gated against the root space and unsubscribe via a root-space token.
     const rootSpaceId = await loadRootSpaceId()
 
+    // RE-SEND SAFETY (LIVE-172): who has this campaign already been queued to? A first send finds
+    // nothing here and behaves exactly as before. A RE-SEND (the operator sending a 'failed' row
+    // again, or a dead sender's expired lease being re-claimed) finds the recipients the earlier
+    // attempt reached and skips them below.
+    // FAIL-CLOSED on an unreadable ledger, but only where it can do harm: if an earlier attempt
+    // queued nothing there is nothing to double-send, so a first send proceeds. A double send is
+    // the one outcome worse than a late one.
+    const priorAttempt = row.status === 'failed' || row.status === 'sending' || row.recipient_count > 0
+    const already = await readLedgerRecipients(campaignId)
+    if (!already && priorAttempt) {
+      // Keep the earlier attempt's count on the row: it is the evidence that a prior attempt
+      // queued people, and zeroing it would make the NEXT try look like a first send.
+      const recorded = await recordSendFailed(campaignId, row.recipient_count, LEDGER_UNREADABLE_ERROR)
+      return fail(ledgerUnreadableCopy(recorded))
+    }
+    // Nothing to write the ledger against (no root space) means the NEXT re-send cannot skip
+    // anyone. Say so in the log rather than sending in silence.
+    if (!rootSpaceId) {
+      console.warn('[email-studio] no root space: this send cannot be ledgered, a re-send would repeat it', {
+        campaignId,
+      })
+    }
     for (const r of recipients) {
+      // Already queued by an earlier attempt at this campaign: skip. Matched on the contact id AND
+      // the address, because a segment can yield a recipient with no contact id.
+      if (already && (already.contactIds.has(r.contactId) || already.emails.has(r.email.toLowerCase()))) {
+        skippedTotal++
+        continue
+      }
       let unsubscribeUrl: string
       // "Manage emails" opens the preference page (adjust categories / resubscribe), kept DISTINCT from the
       // one-click unsubscribe so it never fires the opt-out on load.
@@ -802,6 +941,25 @@ export async function sendCampaignNow(campaignId: string): Promise<ActionResult<
         { lane: 'bulk', runAfter: bulkRunAfter(count, fanOutStartedAt) },
       )
       count++
+      // COMMITTED: the outbox has the job, so this recipient must never be enqueued again for this
+      // campaign. Written after the enqueue and best-effort, the same order and posture as the
+      // Space seam (lib/spaces/email.ts): the email is already going out, and a ledger blip must
+      // not fail a send that succeeded.
+      if (rootSpaceId) {
+        await recordLedgerSend({
+          spaceId: rootSpaceId,
+          campaignId,
+          contactId: r.contactId || null,
+          email: r.email,
+        })
+      }
+    }
+    if (skippedTotal > 0) {
+      console.info('[email-studio] re-send skipped recipients already queued', {
+        campaignId,
+        skipped: skippedTotal,
+        queued: count,
+      })
     }
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)
@@ -816,8 +974,10 @@ export async function sendCampaignNow(campaignId: string): Promise<ActionResult<
     // happened. It is now recorded as 'failed' (re-sendable: failed -> send) with the count queued so
     // far on recipient_count and the error on send_error, the write is checked and retried, and the
     // operator copy says exactly what happened.
-    const recorded = await recordSendFailed(campaignId, count, message)
-    return fail(sendStoppedCopy(count, recorded))
+    // The count is this campaign's TOTAL reach (what this attempt queued plus what an earlier one
+    // already had), so a second failure cannot walk the number backwards.
+    const recorded = await recordSendFailed(campaignId, count + skippedTotal, message)
+    return fail(sendStoppedCopy(count + skippedTotal, recorded))
   }
 
   // 2026-09-05 (scan2 L5-04): this write's result used to be discarded, so a failed update returned
@@ -825,7 +985,7 @@ export async function sendCampaignNow(campaignId: string): Promise<ActionResult<
   // get the row out of 'sending' the other way and tell the operator the truth.
   const { error: sentError } = await db
     .from('campaigns')
-    .update({ status: 'sent', recipient_count: count, sent_at: new Date().toISOString() })
+    .update({ status: 'sent', recipient_count: count + skippedTotal, sent_at: new Date().toISOString() })
     .eq('id', campaignId)
   if (sentError) {
     console.error('[email-studio] sendCampaignNow could not mark the campaign sent', {
@@ -835,7 +995,7 @@ export async function sendCampaignNow(campaignId: string): Promise<ActionResult<
     })
     const recorded = await recordSendFailed(
       campaignId,
-      count,
+      count + skippedTotal,
       `Queued ${count} emails but could not record the sent status: ${sentError.message}`,
     )
     return fail(sentUnrecordedCopy(count, recorded))
