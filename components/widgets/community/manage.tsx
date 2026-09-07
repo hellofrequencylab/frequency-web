@@ -12,6 +12,7 @@ import { getCallerProfile } from '@/lib/auth'
 import { getStaffMember } from '@/lib/staff'
 import { ticketStatusCounts } from '@/lib/support/store'
 import { isOpenStatus } from '@/lib/support/types'
+import { SERIES_COLUMNS, SERIES_WIDE_READ, countSeries, type SeriesRow } from '@/lib/events/series'
 import type { CommunityRole, WebRole } from '@/lib/core/roles'
 import type { StaffRole } from '@/lib/core/staff-roles'
 
@@ -123,11 +124,16 @@ async function load(): Promise<ManageCounts> {
         .from('profile_personas')
         .select('id', { count: 'exact', head: true })
         .eq('state', 'claimed'),
+      // GATHERINGS, not materialised occurrences (LIVE-198 / SERIES-COUNT). Recurrence is
+      // materialised (ADR-007), so one weekly series is ~9 rows inside the cron's 60-day horizon;
+      // this card said "9 upcoming events" about one gathering. A row read rather than
+      // `head: true`, because the fold needs the series columns.
       admin
         .from('events')
-        .select('id', { count: 'exact', head: true })
+        .select(`id, starts_at, is_cancelled, ${SERIES_COLUMNS}`)
         .gte('starts_at', nowIso)
-        .eq('is_cancelled', false),
+        .eq('is_cancelled', false)
+        .limit(SERIES_WIDE_READ),
       admin.from('dispatches').select('id', { count: 'exact', head: true }),
       admin.from('reports').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
       ticketStatusCounts(),
@@ -146,7 +152,7 @@ async function load(): Promise<ManageCounts> {
       members: members.count ?? 0,
       team: team.count ?? 0,
       verifyQueue: pendingPersonas.count ?? 0,
-      events: events.count ?? 0,
+      events: countSeries((events.data ?? []) as SeriesRow[]),
       dispatches: dispatches.count ?? 0,
       reportsOpen: openReports.count ?? 0,
       openTickets,

@@ -3,6 +3,7 @@ import { Users, Zap, CalendarDays, ShieldAlert, LifeBuoy, HelpCircle, Lightbulb,
 import type { LucideIcon } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { OPEN_STATUSES } from '@/lib/support/types'
+import { SERIES_COLUMNS, SERIES_WIDE_READ, countSeries, type SeriesRow } from '@/lib/events/series'
 import { pendingReviewCount } from '@/lib/library'
 import { visibleLinks } from '@/app/(main)/admin/sections'
 import type { CommunityRole, WebRole } from '@/lib/core/roles'
@@ -56,11 +57,15 @@ async function railData() {
         .select('actor_profile_id')
         .eq('event_type', 'practice.verified')
         .gte('created_at', weekAgo),
+      // GATHERINGS ahead, not materialised occurrences (LIVE-198 / SERIES-COUNT): recurrence is
+      // materialised (ADR-007), so a daily series is seven rows in this seven-day window and one
+      // gathering. A row read rather than `head: true`, because the fold needs the series columns.
       admin
         .from('events')
-        .select('id', { count: 'exact', head: true })
+        .select(`id, starts_at, is_cancelled, ${SERIES_COLUMNS}`)
         .gte('starts_at', now.toISOString())
-        .lte('starts_at', weekAhead),
+        .lte('starts_at', weekAhead)
+        .limit(SERIES_WIDE_READ),
       admin.from('reports').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
       admin.from('support_tickets').select('id', { count: 'exact', head: true }).in('status', OPEN_STATUSES),
       admin.from('ai_help_queries').select('id', { count: 'exact', head: true }).eq('deflected', true).gte('created_at', monthAgo),
@@ -81,7 +86,7 @@ async function railData() {
   return {
     members: members.count ?? 0,
     wam,
-    eventsAhead: events.count ?? 0,
+    eventsAhead: countSeries((events.data ?? []) as SeriesRow[]),
     counts: {
       reports: reports.count ?? 0,
       tickets: tickets.count ?? 0,

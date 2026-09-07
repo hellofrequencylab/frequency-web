@@ -18,9 +18,12 @@ import { PageHero, type PageHeroSize, type PageHeroVariant } from '@/components/
 import { resolveHeaderElement } from '@/lib/elements/header'
 import {
   collapseSeriesRows,
+  countSeries,
   seriesFetchLimit,
   SERIES_COLUMNS,
+  SERIES_WIDE_READ,
   TEASER_CARDS_PER_SERIES,
+  type SeriesRow,
 } from '@/lib/events/series'
 import { loadNearbyMapPins } from '@/lib/nearby/map-pins'
 import { upcomingEventFloor } from '@/lib/events/upcoming-floor'
@@ -194,9 +197,15 @@ export default async function NearbyPage({
     // the hidden rows too would advertise a community larger than the one on offer.
     admin.from('circles').select('id', { count: 'exact', head: true })
       .in('status', ['forming', 'active']).eq('unlisted', false),
-    admin.from('events').select('id', { count: 'exact', head: true })
+    // 🔴 THE COUNT FOLDS TOO (LIVE-198 / SERIES-COUNT). The block above already collapses this same
+    // set to one card per gathering; a `head: true` tally beside it said "21 upcoming events" over a
+    // list of five, because recurrence is materialised (ADR-007). A number and the list under it
+    // must answer the same question, so this is a row read capped at SERIES_WIDE_READ — the cap
+    // this module already uses for a community-wide upcoming read.
+    admin.from('events').select(`id, starts_at, is_cancelled, ${SERIES_COLUMNS}`)
       .eq('is_cancelled', false).gte('starts_at', upcomingEventFloor())
-      .eq('status', 'published').eq('visibility', 'public').is('removed_at', null),
+      .eq('status', 'published').eq('visibility', 'public').is('removed_at', null)
+      .limit(SERIES_WIDE_READ),
   ])
 
   const seen = new Set<string>()
@@ -211,6 +220,8 @@ export default async function NearbyPage({
     perSeries: TEASER_CARDS_PER_SERIES,
     dropCancelled: false,
   }).slice(0, COMING_UP_COUNT)
+  // The at-a-glance number, folded through the SAME helper as the cards beside it.
+  const upcomingEventTotal = countSeries((eventsCountRes.data ?? []) as SeriesRow[])
   const newCircles = (newCirclesRes.data ?? []) as CircleRow[]
   const role = (profile as { community_role: CommunityRole }).community_role
   const broadcastsThisWeek = dispatches.filter((d) => (d.published_at ?? '') >= weekAgoIso).length
@@ -310,7 +321,7 @@ export default async function NearbyPage({
       // the count of announcements, which is the page's own furniture, goes last.
       headingLead={
         <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-body-sm text-muted">
-          <span><strong className="font-semibold text-text tabular-nums">{(eventsCountRes.count ?? upcomingEvents.length).toLocaleString()}</strong> upcoming events</span>
+          <span><strong className="font-semibold text-text tabular-nums">{(upcomingEventTotal || upcomingEvents.length).toLocaleString()}</strong> upcoming events</span>
           <span aria-hidden className="text-subtle">·</span>
           <span><strong className="font-semibold text-text tabular-nums">{(circlesCountRes.count ?? 0).toLocaleString()}</strong> circles</span>
           {newCirclesCount > 0 && <span className="text-subtle">({newCirclesCount} new)</span>}
@@ -375,7 +386,7 @@ export default async function NearbyPage({
               exactly ONE of these on the page and it is still fed by `upcomingEvents`. */}
           {upcomingEvents.length > 0 && (
             <div>
-              <SectionHeader title="Coming up" count={eventsCountRes.count ?? undefined} href="/events" />
+              <SectionHeader title="Coming up" count={upcomingEventTotal || undefined} href="/events" />
               <div className="grid gap-2">
                 {upcomingEvents.map((e) => (
                   <Link

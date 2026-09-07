@@ -1,6 +1,7 @@
 import { CircleDot, Users, CalendarDays, Network, Building2 } from 'lucide-react'
 import { getCallerProfile } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { SERIES_COLUMNS, SERIES_WIDE_READ, countSeries, type SeriesRow } from '@/lib/events/series'
 import { StatCard } from '@/components/ui/stat-card'
 import { getLedCircles, getLedHubs, getLedNexuses } from '@/app/(main)/lead/load-led-circles'
 import { listOperatedSpaces } from '@/lib/spaces/operated'
@@ -29,13 +30,16 @@ export async function LeadStats(): Promise<React.ReactElement | null> {
   let upcomingEvents = 0
   const circleIds = circles.map((c) => c.id)
   if (circleIds.length > 0) {
+    // GATHERINGS, not materialised occurrences (LIVE-198 / SERIES-COUNT): recurrence is
+    // materialised (ADR-007), so a lead running one weekly circle gathering saw ~9 here.
     const { data } = await createAdminClient()
       .from('events')
-      .select('id', { count: 'exact', head: false })
+      .select(`id, starts_at, is_cancelled, ${SERIES_COLUMNS}`)
       .in('scope_id', circleIds)
       .eq('is_cancelled', false)
       .gte('starts_at', new Date().toISOString())
-    upcomingEvents = (data ?? []).length
+      .limit(SERIES_WIDE_READ)
+    upcomingEvents = countSeries((data ?? []) as SeriesRow[])
   }
 
   return (

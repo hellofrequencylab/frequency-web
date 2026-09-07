@@ -25,6 +25,7 @@ import { isSubjectKey } from '@/lib/taxonomy/subjects'
 import { readHeaderCtaPreference, resolveHeaderCta } from './header-cta'
 import { defaultPrimaryCtaLabel } from './profile-config'
 import { foundingBadgesForSpaces } from '@/lib/founding/status'
+import { SERIES_COLUMNS, countSeriesBy, type SeriesRow } from '@/lib/events/series'
 // The profile-tab reader below re-uses the SAME pure gates the tab pages and the profile nav read,
 // so the sitemap can never disagree with what a visitor is actually offered.
 import { isConsoleSpaceType } from './types'
@@ -205,13 +206,17 @@ type FollowsCountQuery = {
   ) => Promise<unknown>
 }
 
+/** The upcoming-events read is a ROW read, not a tally: it carries the series columns so the count
+ *  can fold occurrences into gatherings (LIVE-198). */
+type UpcomingEventRow = SeriesRow & { space_id: string | null }
+
 type EventsCountQuery = {
   select: (cols: string) => EventsCountQuery
   eq: (col: string, val: string | boolean) => EventsCountQuery
   gt: (col: string, val: string) => EventsCountQuery
   in: (col: string, vals: string[]) => EventsCountQuery
   then: (
-    resolve: (r: { data: CountRow[] | null; error: unknown }) => unknown,
+    resolve: (r: { data: UpcomingEventRow[] | null; error: unknown }) => unknown,
   ) => Promise<unknown>
 }
 
@@ -289,25 +294,35 @@ async function followerCountsFor(spaceIds: string[]): Promise<Map<string, number
   }
 }
 
-/** Count UPCOMING events per Space across a set of ids — one grouped read over `events` for the
- *  non-cancelled, published rows starting after now, fail-safe to an empty map. Batched over the matched
- *  ids only (no N+1), mirroring memberCountsFor. */
+/**
+ * Count UPCOMING GATHERINGS per Space across a set of ids — one grouped read over `events` for the
+ * non-cancelled, published rows starting after now, fail-safe to an empty map. Batched over the
+ * matched ids only (no N+1), mirroring memberCountsFor.
+ *
+ * 🔴 IT COUNTS SERIES, NOT ROWS (LIVE-198 / SERIES-COUNT). Recurrence is MATERIALISED (ADR-007), so a
+ * weekly series is ~9 rows inside the cron's 60-day horizon and this card said "9 upcoming events"
+ * about ONE gathering. Measured on production 2026-09-07: 21 upcoming rows across the community are
+ * 5 gatherings, and the two Spaces that run a weekly series each showed 9 where 1 is true. The fold
+ * that the directory's own event LISTS use is the same one that counts here (countSeriesBy →
+ * collapseSeriesRows), so the number on the card and the cards on the calendar cannot drift.
+ *
+ * The read therefore selects SERIES_COLUMNS + id + starts_at rather than `space_id` alone; it was
+ * already a row read (never `head: true`), so this costs four columns, not a second query.
+ */
 async function upcomingEventCountsFor(spaceIds: string[]): Promise<Map<string, number>> {
   const counts = new Map<string, number>()
   if (spaceIds.length === 0) return counts
   try {
     const result = (await eventsTable()
-      .select('space_id')
+      .select(`space_id, id, starts_at, ${SERIES_COLUMNS}`)
       .eq('is_cancelled', false)
       .eq('status', 'published')
       .gt('starts_at', new Date().toISOString())
-      .in('space_id', spaceIds)) as { data: CountRow[] | null; error: unknown }
+      .in('space_id', spaceIds)) as { data: UpcomingEventRow[] | null; error: unknown }
     if (result.error || !result.data) return counts
-    for (const row of result.data) {
-      if (!row.space_id) continue
-      counts.set(row.space_id, (counts.get(row.space_id) ?? 0) + 1)
-    }
-    return counts
+    // No `upcomingFrom` here: the query already applied the floor, and the fold must not re-apply a
+    // DIFFERENT one. dropCancelled (default) is defence in depth over the `is_cancelled` predicate.
+    return countSeriesBy(result.data, (row) => row.space_id)
   } catch {
     return counts
   }
