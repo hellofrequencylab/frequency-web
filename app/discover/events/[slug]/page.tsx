@@ -8,7 +8,7 @@ import { SignInCta } from '@/components/discover/cards'
 import { FrequencyArcs } from '@/components/marketing/vector-art'
 import { EventDetailTemplate } from '@/components/templates'
 import { PosterBand } from '@/components/media/poster-band'
-import { eventPosterHeightClass } from '@/lib/events/hero-height'
+import { eventPosterHeightClass, eventPosterMaxHeightClass } from '@/lib/events/hero-height'
 import { SITE_NAME, BETA_CTA_HREF, BETA_CTA_LABEL } from '@/lib/site'
 import { JsonLd } from '@/components/json-ld'
 import { eventSchema, breadcrumbSchema } from '@/lib/jsonld'
@@ -125,6 +125,8 @@ export default async function EventPage({
             <PosterBand
               src={enrichment.cover_url}
               heightClass={eventPosterHeightClass('standard')}
+              maxHeightClass={eventPosterMaxHeightClass('standard')}
+              aspect={enrichment.cover_aspect ?? null}
               focus={enrichment.cover_focus ?? null}
             />
           ) : undefined

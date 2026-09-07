@@ -123,7 +123,6 @@
             "LIVE-139",
             "HYG-055",
             "HYG-057",
-            "LIVE-200",
             "LIVE-040",
             "HYG-065"
           ]
@@ -9404,7 +9403,7 @@
     {
       "id": "LIVE-200",
       "title": "The event cover's intrinsic aspect is not captured at upload, so the poster band still trades on a guess",
-      "status": "open",
+      "status": "done",
       "priority": "P2",
       "lane": "live",
       "size": "S",
@@ -9412,13 +9411,11 @@
         "file": "docs/DECISIONS.md",
         "ref": "ADR-1196, the closing follow-up"
       },
-      "detail": "FILED 2026-09-06 by the backlog audit's docs sweep: work a live plan or ADR names as open, deferred or \"a follow-up\", with no row owning it. ADR-1196 closed the poster-band aspect trade (LIVE-146) and named the change that removes the trade entirely: \"capture the cover's intrinsic aspect in the browser at upload and store it on events.theme beside coverFocus.\" It was recorded as a trailing sentence inside a done row. The browser already decodes the image for blurhash and palette (lib/library/image-describe.ts), so width and height are one more field from the same decode; the poster band then reads a real ratio instead of the fallback. Closes when the upload path stores the aspect and components/media/poster-band.tsx reads it.",
+      "detail": "FILED 2026-09-06 by the backlog audit's docs sweep: work a live plan or ADR names as open, deferred or \"a follow-up\", with no row owning it. ADR-1196 closed the poster-band aspect trade (LIVE-146) and named the change that removes the trade entirely: \"capture the cover's intrinsic aspect in the browser at upload and store it on events.theme beside coverFocus.\" It was recorded as a trailing sentence inside a done row. The browser already decodes the image for blurhash and palette (lib/library/image-describe.ts), so width and height are one more field from the same decode; the poster band then reads a real ratio instead of the fallback. Closes when the upload path stores the aspect and components/media/poster-band.tsx reads it.\n\nCLOSED 2026-09-07 (ADR-1248). Premise re-tested first and it held: events.theme carried coverFocus, heroHeight, marketListed and checkInEnabled and nothing about size; components/media/poster-band.tsx took only the tier height class, so its shape was the ladder, not the poster; the browser decoded the cover in the focal picker and in prepareImageForUpload and reported dimensions to nobody. The seam chosen is the focal picker rather than the upload control: components/ui/image-focal-picker.tsx now reports naturalWidth and naturalHeight through an onImageLoad prop, and components/admin/modules/event-header-controls.tsx stores width / height on events.theme.coverAspect through updateEventCoverFocus (a fourth optional argument, validated server-side by lib/events/cover-aspect.ts, bounded 0.2 to 5, and never computed on the server). That seam re-measures every time the preview changes, which is every time the gallery re-crowns its first photo, so a swapped cover measures itself the moment its preview appears; a plain focus drag leaves the value alone. The band takes aspect plus maxHeightClass (lib/layout/cover-height.ts posterMaxHeightClass, the same ladder as max-h-*) and becomes the poster's own shape up to the tier; absent either, it renders byte for byte what it rendered before. The event page passes the value only when the hero IS the uploaded cover, so a scanned poster never wears the cover's shape; the public twin under app/discover/events carries cover_aspect the same way. Not done here, on purpose: the create form stores no aspect (the first open of the header controls measures it), and no theme key is cleared when a cover changes outside the settings panel, because that clear would race the picker's write on the same jsonb bag. lib/events/cover-aspect.test.ts pins the parser and the round-trip; components/media/poster-band.test.tsx pins the shaped path, the byte-identical fallback, the ladder derivation and the page wiring.",
       "verify": {
-        "kind": "grep-present",
-        "pattern": "coverAspect",
-        "paths": [
-          "components/media/poster-band.tsx"
-        ]
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");\nconst strip=(p)=>fs.readFileSync(p,\"utf8\").replace(/\\/\\*[\\s\\S]*?\\*\\//g,\"\").replace(/\\/\\/.*$/gm,\"\");\nconst band=strip(\"components/media/poster-band.tsx\"),page=strip(\"app/(main)/events/[slug]/page.tsx\"),ctl=strip(\"components/admin/modules/event-header-controls.tsx\"),act=strip(\"app/(main)/events/admin-actions.ts\");\nconst reads=/aspectRatio/.test(band)&&/\\baspect\\b/.test(band)&&/shaped \\? maxHeightClass : heightClass/.test(band);\nconst wired=/readEventCoverAspect\\(extra\\?\\.theme\\)/.test(page)&&/aspect=\\{coverAspect\\}/.test(page);\nconst stored=/measureCoverAspect\\(/.test(ctl)&&/updateEventCoverFocus\\([^)]*measured\\)/.test(ctl)&&/writeEventCoverAspect\\(/.test(act)&&/normalizeCoverAspect\\(aspect\\)/.test(act);\nconst noSharp=!/sharp/.test(act)&&!/sharp/.test(band);\nconsole.error(\"bandReads=\"+reads+\" pageWired=\"+wired+\" browserStores=\"+stored+\" noServerDecode=\"+noSharp);\nprocess.exit(reads&&wired&&stored&&noSharp?0:1)'",
+        "note": "Four arms on the CONSEQUENCE, comments stripped first so no arm can pass by reading its own documentation. The band sizes by aspect-ratio and chooses the ceiling over the height only when shaped; the event page reads the stored value and passes it; the header controls measure in the browser and the action validates and writes it; and neither the action nor the band names sharp, which is the fan-out this row was never allowed to buy (DEPLOY-SAFETY)."
       }
     },
     {

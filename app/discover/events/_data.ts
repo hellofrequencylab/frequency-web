@@ -42,6 +42,7 @@ import {
 // The ONE ticket pricing authority, reused so this surface and the canonical /events/<slug> page
 // can never publish two different prices for the same event.
 import { ticketFromPriceCents, ticketsSoldOut } from '@/lib/commerce/ticket-projection'
+import { readEventCoverAspect } from '@/lib/events/cover-aspect'
 
 export type EventEnrichment = {
   /** The event's own IANA zone (`events.time_zone`, NOT NULL, default 'America/Los_Angeles').
@@ -98,6 +99,9 @@ export type EventEnrichment = {
   /** The operator's focal point ("x% y%") from events.theme, so the public crop matches the
    *  in-app one instead of defaulting to centre. */
   cover_focus?: string | null
+  /** The cover's intrinsic width / height from events.theme.coverAspect (ADR-1248), so the public
+   *  poster band takes the cover's own shape exactly as the in-app one does. Null when unmeasured. */
+  cover_aspect?: number | null
 }
 
 export type EnrichedPublicEvent = PublicEvent & EventEnrichment
@@ -207,6 +211,7 @@ export async function getEventEnrichment(slug: string): Promise<EventEnrichment 
     currency: r.currency,
     cover_url: coverUrl,
     cover_focus: coverFocus,
+    cover_aspect: coverUrl ? readEventCoverAspect(r.theme) : null,
     ...(tiers.length > 0
       ? { ticket_from_cents: ticketFromPriceCents(tiers), is_sold_out: ticketsSoldOut(tiers) }
       : {}),
