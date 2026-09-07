@@ -1,9 +1,9 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { requireAdmin } from '@/lib/admin/guard'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { asJson } from '@/lib/supabase/json'
 import { getRootSpaceId } from '@/lib/library/store'
 import { recordVersion } from '@/lib/library/versions'
 import { LIBRARY_STATUSES, type LibraryStatus } from '@/lib/library/types'
@@ -23,11 +23,11 @@ import { DEFAULT_ONBOARDING_SEQUENCE } from '@/lib/onboarding/default-sequence'
 // publish gate NEVER lets an invalid flow reach `approved`/`final` (the statuses the resolver serves
 // live), so nothing here can touch a live member until a future flagged cutover.
 //
-// library_assets isn't in lib/database.types.ts yet, so we use the repo's standard untyped admin
-// handle (see lib/library/store.ts). Service-role only; every action re-checks the janitor gate.
+// Service-role only; every action re-checks the janitor gate. (Until HYG-054, 2026-09-06, this read
+// library_assets through an untyped admin handle on a comment promising a types regen that had
+// already happened; the table is in lib/database.types.ts and the client here is the typed one.)
 
-// eslint-disable-next-line no-restricted-syntax -- library_assets isn't in lib/database.types.ts yet (types regen is a follow-up integrator step); genuinely untyped table access
-const dbh = (): SupabaseClient => createAdminClient() as unknown as SupabaseClient
+const dbh = () => createAdminClient()
 
 /** The rungs of the brand-build ladder that serve a flow LIVE (mirrors resolve-onboarding-sequence). */
 const LIVE_STATUSES = new Set<LibraryStatus>(['approved', 'final'])
@@ -87,7 +87,7 @@ export async function createSequence(input: {
       slug,
       status: 'draft',
       visibility: 'space',
-      config,
+      config: asJson(config),
     })
     .select('id')
     .maybeSingle()
@@ -120,7 +120,7 @@ export async function updateSequenceConfig(
 
   const { error } = await dbh()
     .from('library_assets')
-    .update({ config: parsed, updated_at: new Date().toISOString() })
+    .update({ config: asJson(parsed), updated_at: new Date().toISOString() })
     .eq('id', id)
     .eq('kind', 'sequence')
   if (error) return fail(error.message)

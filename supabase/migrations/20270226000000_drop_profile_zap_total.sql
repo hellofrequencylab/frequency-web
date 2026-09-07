@@ -1,11 +1,13 @@
 -- =============================================================================
 -- Drop public.profile_zap_total(uuid) — its only consumer is gone
 --
--- ⚠️ NOT YET APPLIED. Written 2026-08-12 alongside the deletion of
--- `lib/profile-zaps.ts`; it must be pushed before this file and the ledger agree.
--- Until it is applied the repo carries one migration the ledger head does not,
--- which is exactly the divergence `pnpm check:migrations` (rule 4) fails on when
--- it has database credentials. Apply it or revert this file; do not leave it.
+-- ✅ APPLIED, and the repo⇄ledger divergence this header warned about is closed.
+-- Corrected 2026-09-06 (HYG-054). Written 2026-08-12 alongside the deletion of
+-- `lib/profile-zaps.ts`. The Supabase migration ledger carries version 20270226000000
+-- (drop_profile_zap_total) and the live schema has no `public.profile_zap_total`
+-- function, both re-read 2026-09-06, so `pnpm check:migrations` rule 4 has nothing
+-- to fail on here. The ledger table stores only version + name and no apply
+-- timestamp, so the ledger row is the only date evidence that exists.
 --
 -- WHY. The RPC was added by 20260715000000_profile_zap_total.sql to serve ONE
 -- reader, `getProfileZapTotal` in lib/profile-zaps.ts, which put a member's

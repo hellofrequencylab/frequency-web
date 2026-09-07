@@ -1,7 +1,7 @@
 import { MarketingHeader } from '@/components/layout/marketing-header'
 import { MarketingFooter } from '@/components/layout/marketing-footer'
 import { SupportChatWidget } from '@/components/chat/support-chat-widget'
-import { isSupportChatAvailable } from '@/lib/comms/chat-token'
+import { isSupportChatAvailable, supportChatFlagEnabled } from '@/lib/comms/chat-token'
 import { getMenu, getMenuSettings } from '@/lib/menus/read'
 
 // Shared chrome for the public marketing content pages (/the-lab, /how-it-works,
@@ -34,12 +34,13 @@ export default async function MarketingLayout({ children }: { children: React.Re
       </main>
       <MarketingFooter menu={footerMenu} />
       {/* Anonymous live chat (ADR-816) — this PUBLIC surface owns the bottom-right corner
-          (docs/CHAT-SHELL-PLAN.md §2); the member shell owns its own via the dock. Off unless
-          NEXT_PUBLIC_SUPPORT_CHAT is enabled. */}
+          (docs/CHAT-SHELL-PLAN.md §2); the member shell owns its own via the dock. Off unless the
+          SUPPORT_CHAT switch is enabled (supportChatFlagEnabled prefers SUPPORT_CHAT and still falls
+          back to the legacy NEXT_PUBLIC_SUPPORT_CHAT — LIVE-165 step one, 2026-09-06). */}
       {/* 2026-09-05 (scan2 L3-06): the build flag alone mounted the widget even when the server could
           not mint its token (CONVERSATION_TOKEN_SECRET unset in production) or had no inbox owner, so
           every chat attempt failed after writing rows. isSupportChatAvailable is the server-side gate. */}
-      {process.env.NEXT_PUBLIC_SUPPORT_CHAT === '1' && isSupportChatAvailable() && <SupportChatWidget />}
+      {supportChatFlagEnabled() && isSupportChatAvailable() && <SupportChatWidget />}
     </>
   )
 }

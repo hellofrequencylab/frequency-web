@@ -2,7 +2,6 @@
 
 import { after } from 'next/server'
 import { revalidatePath } from 'next/cache'
-import type { SupabaseClient } from '@supabase/supabase-js'
 import { requireAdmin } from '@/lib/admin/guard'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { completeText, completeRaw, AiUnavailableError } from '@/lib/ai/complete'
@@ -136,8 +135,7 @@ export async function saveLoomCard(input: {
     `vera-${title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')}`.slice(0, 90) +
     `-${Date.now().toString(36)}`
 
-  // eslint-disable-next-line no-restricted-syntax -- library_assets isn't in lib/database.types.ts yet (types regen is a follow-up integrator step); genuinely untyped table access
-  const dbh = createAdminClient() as unknown as SupabaseClient
+  const dbh = createAdminClient()
   const { error } = await dbh.from('library_assets').insert({
     space_id: spaceId,
     kind: 'element',
@@ -310,8 +308,7 @@ export async function saveElementSvg(assetId: string, svg: string): Promise<{ ok
   const checked = sanitizeSvg(svg || '')
   if (!checked.ok) return { error: `That SVG didn't pass the safety check (${checked.error}).` }
 
-  // eslint-disable-next-line no-restricted-syntax -- library_assets isn't in lib/database.types.ts yet (types regen is a follow-up integrator step); genuinely untyped table access
-  const dbh = createAdminClient() as unknown as SupabaseClient
+  const dbh = createAdminClient()
   const { data } = await dbh.from('library_assets').select('config').eq('id', assetId).maybeSingle()
   const config = ((data as { config: Record<string, unknown> | null } | null)?.config ?? {}) as Record<string, unknown>
 

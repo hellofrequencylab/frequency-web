@@ -23,6 +23,12 @@ import { buildBoundedFetch, isProductionBuild, createPublicClient } from './publ
 // And a third, worse than either: leaking into RUNTIME, where an abort changes what a visitor sees.
 // The owner scoped this to the build phase on purpose, so that is asserted first and hardest.
 
+// createPublicClient now REQUIRES its two variables and throws naming the missing one (LIVE-169,
+// lib/supabase/env.ts) instead of passing `undefined` through a non-null assertion. These tests are
+// about the build-phase fetch bound, not about the connection contract, so give it a valid one.
+process.env.NEXT_PUBLIC_SUPABASE_URL ??= 'https://project.supabase.co'
+process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ??= 'anon-key-for-tests'
+
 const ORIGINAL_PHASE = process.env.NEXT_PHASE
 afterEach(() => {
   if (ORIGINAL_PHASE === undefined) delete process.env.NEXT_PHASE
