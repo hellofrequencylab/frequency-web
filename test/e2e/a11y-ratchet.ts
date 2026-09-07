@@ -123,3 +123,21 @@ export function judge(total: number, baseline: Baseline): Judgement {
 /** The one command that turns any verdict back into a recorded truth. Printed by both the
  *  runtime gate and the static one so a failure never leaves the reader guessing. */
 export const RECAPTURE = 'PW_A11Y_UPDATE=1 pnpm test:e2e:a11y && pnpm a11y:baselines'
+
+/**
+ * The key a (surface, state, project) context is recorded under in `a11y-baselines.json`.
+ *
+ * ONE function, used by the spec that writes the key and by the unit test that checks a row
+ * exists for it, so the two cannot drift: until 2026-09-07 the spec built this string inline in
+ * two places, and nothing but a real browser run could prove a seeded row would ever be looked
+ * up. `contrastOnly` is the three-state contrast sweep (desktop only), which carries its own
+ * count because it runs a different rule set from the full pass.
+ */
+export function contextKey(
+  path: string,
+  stateId: string,
+  project: string,
+  contrastOnly = false,
+): string {
+  return `${path} [${stateId}, ${contrastOnly ? 'contrast only, ' : ''}${project}]`
+}

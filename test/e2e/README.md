@@ -81,11 +81,12 @@ says so in words rather than as a skip count — see
 > failures), and the run reported "140 passed" (backlog `HYG-026`). The parse stays,
 > because it is right; it is now one **input** rather than the list.
 
-**The @a11y and overflow suites still read `publicSurfaces()` / `appSurfaces()`**
-and do *not* include the operator routes. An operator surface with no row in
-`a11y-baselines.json` is held to `$defaultMax` (0 serious+), so adding it there
-without a seeded ratchet capture would fail PRs on debt that predates them
-(`HYG-027`).
+**The @a11y suite audits the same seven operator routes** since 2026-09-07
+(ADR-1239), held to 21 readings of **0** in `a11y-baselines.json` that nothing has
+measured yet: the zero-tolerance join rule, written down. The first staff-session
+run is the measurement, and debt it finds is fixed or waived, never seeded
+(`LIVE-023` holds the file at zero ceilings). **The overflow suite still reads
+`publicSurfaces()` / `appSurfaces()`** and does *not* include them.
 
 **Render states.** Four, from the two orthogonal axes in `app/globals.css`:
 
@@ -185,6 +186,7 @@ ceiling carrying that reason.
 | `PW_MEMBER_EMAIL` | to mint a session | The e2e member account (see below) |
 | `SUPABASE_SERVICE_ROLE_KEY` | to mint a session | Admin key, used only to mint |
 | `PW_REQUIRE_SHELL` | no | `1` makes an unphotographed shell a **failure** |
+| `PW_REQUIRE_OPERATOR` | no | `1` makes an operator console that bounced off the `/admin` role floor a **failure** |
 
 ## The member shell
 
@@ -240,19 +242,28 @@ differently from the member shell's:
 | What happened | Where the landing goes | What the suite does |
 | :--- | :--- | :--- |
 | No session at all | `/sign-in` | skip — the whole `@shell` half skips, PARTIAL banner |
-| Session, **not staff** | `/feed` | **skip, with the cause named** (`operatorDenialReason`) and every route listed as unphotographed |
+| Session, **not staff** | `/feed` | **skip, with the cause named** (`operatorDenialReason`, visual AND a11y), the headline says the console was not looked at, and the annotation is an `::error` |
 | Session, dead credential | `/sign-in` | **throw** — `assertMemberSession`, unchanged |
 | Session, staff, wrong route | anywhere else | **throw** — the `app-room` failure mode |
 
 The middle row is the one worth understanding. A red X meaning *"nobody has
 promoted the e2e account yet"* is precisely the check-training failure
 `e2e.yml`'s own header argues against, so it is a skip. It is **not** a silent
-one: the describe carries `@shell`, so `shell-reporter.ts` counts these tests and
-names each unphotographed `/admin` route in `$GITHUB_STEP_SUMMARY` on every run.
+one, three times over: the describe carries `@shell`, so `shell-reporter.ts`
+counts these tests and names each `/admin` route in `$GITHUB_STEP_SUMMARY` under
+a headline that says the console was **not** looked at; `pnpm e2e:session` probes
+`/admin` with the minted cookies and prints whether the account clears the floor
+before any suite runs; and `PW_REQUIRE_OPERATOR=1` (a repo variable, set *after*
+the grant) makes the bounce a hard failure, so a grant that is later revoked
+cannot quietly re-open the blind spot.
 
-**To turn them on:** give the `PW_MEMBER_EMAIL` account `web_role = 'admin'`.
-That is the whole change; the surfaces start capturing on the next run. Tracked
-as `HYG-027`.
+**To turn them on:** give the `PW_MEMBER_EMAIL` account `web_role = 'admin'` (or
+`'janitor'`, or a `team_members` staff role that sees an admin group). Then
+dispatch `e2e-manual.yml` with `capture_shell ✔` + `update_baselines ✔` for the 28
+PNGs, and with `capture_shell ✔` + `update_a11y ✔` to read all 21 a11y counts in
+one log (the merge refuses a rise over 0, which is the debt list to fix or waive).
+Tracked as `HYG-027`; the row closes itself once an `admin*` PNG baseline is
+committed, the in-repo proof the account cleared the floor.
 
 **Which seven, and why those.** `node scripts/visual-surface-census.mjs` prints
 the measurement and re-runs it. Short version, 2026-08-25: 99 of the repo's 463
@@ -343,6 +354,8 @@ The order matters; see ADR-948's amendment and ADR-950.
    surfaces fails instead of announcing. Put it in **Variables** — the workflow
    also reads the Secrets tab so a mis-aimed entry still arms the ratchet, but a
    one-character *secret* risks GitHub redacting every `1` in the run log.
+   `PW_REQUIRE_OPERATOR=1` is the same ratchet for the operator console; set it
+   only once the account clears the `/admin` role floor (see above).
 6. **Only now** make `pr-compare` a required check (ADR-948).
 
 ## CI

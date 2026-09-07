@@ -445,11 +445,10 @@ const OPERATOR_PATHS: readonly { readonly path: string; readonly why: string }[]
  *  · THE SEEDER AND DEMO CONSOLES (`/admin/business-seeder` 3/27, `/admin/demo` 3/16). They are
  *    development fixtures, not operator product, and their content is generated. A button-first
  *    greedy cover picks `/admin/business-seeder` fifth; it is skipped on that ground, not missed.
- *  · THE @a11y AND OVERFLOW SUITES. Both read `publicSurfaces()` / `appSurfaces()` and are
- *    untouched by this change. An operator surface with no row in `a11y-baselines.json` is held
- *    to `$defaultMax` (0 serious+), so adding them there without a seeded ratchet capture would
- *    fail PRs on debt that predates them. That is its own change, with its own capture — filed
- *    as HYG-027.
+ *  · THE OVERFLOW SUITE. It reads `publicSurfaces()` / `appSurfaces()` and is untouched. The
+ *    @a11y suite DID say the same here until 2026-09-07; it now audits these seven too, held to
+ *    readings of 0 in `a11y-baselines.json` (the zero-tolerance join rule, made explicit) that
+ *    the first staff-session run measures for real (HYG-027, ADR-1239).
  */
 export function operatorSurfaces(): readonly Surface[] {
   return OPERATOR_PATHS.map(({ path }) => ({
@@ -498,12 +497,20 @@ export function coverageSurfaces(
  * A bounce to /sign-in is NOT handled here — that is a dead credential and it still throws,
  * through assertMemberSession, because it means the member half of the matrix is lying too.
  */
+/**
+ * The phrase every role-floor skip carries, and the ONE string `shell-reporter.ts` looks for in a
+ * skipped test's annotation to tell "bounced off requireAdminFloor()" apart from every other skip.
+ * A constant rather than a regex written twice, so the reporter cannot stop recognising the reason
+ * the day somebody rewords it.
+ */
+export const ROLE_FLOOR_MARKER = "requireAdminFloor()'s denial target"
+
 export function operatorDenialReason(page: Page, surface: Surface): string | null {
   if (surface.audience !== 'operator') return null
   const landed = currentPathname(page)
   if (!landed.startsWith('/feed')) return null
   return [
-    `${surface.path} redirected to ${landed}, which is requireAdminFloor()'s denial target:`,
+    `${surface.path} redirected to ${landed}, which is ${ROLE_FLOOR_MARKER}:`,
     'the account behind PW_MEMBER_EMAIL is signed in and is NOT platform staff, so no operator',
     'surface can be photographed with it. Give that account web_role admin (or a staff role that',
     'sees an admin group) and these captures start running — see backlog HYG-027.',

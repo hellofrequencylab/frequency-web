@@ -69,6 +69,15 @@
 # the floor. The job summary's shell-coverage table names every /admin route it could not
 # photograph; read it before believing the capture was complete (backlog HYG-027).
 #
+# Since 2026-09-07 (ADR-1239) the SAME seven routes are in the @a11y matrix, held to 21
+# READINGS of 0 in test/e2e/a11y-baselines.json that nothing has measured: the zero-tolerance
+# join rule written down, not a count. The mint step now prints whether the account clears
+# the floor as soon as the session exists. A capture_shell + update_a11y dispatch with a STAFF
+# account is how to see all 21 real counts in one log: the merge below writes a 0 as observed
+# and REFUSES a rise (this workflow never passes --force, and LIVE-023 holds the file at zero
+# ceilings), so operator debt is fixed or waived, never seeded. With a non-staff account the
+# a11y capture records nothing for /admin and the 0s stay as they are.
+#
 # ⚠️ THIS PARAGRAPH USED TO SAY "confirm ... has web_role = 'admin'", AND THAT WAS WRONG TWICE
 # OVER — measured against production 2026-08-25 while working SCAN-507:
 #   1. The floor is `isStaff(profile.webRole)` (lib/core/roles.ts:77), which admits 'admin'
