@@ -351,7 +351,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       ...((s.updatedAt) ? { lastModified: new Date(s.updatedAt) } : {}),
       changeFrequency: "weekly" as const,
       priority: 0.6,
-      // ⚠️ NO `images` HERE, DELIBERATELY. This carried
+      // The Space's own operator-supplied cover, when set (LIVE-207). `coverUrl` is already a URL
+      // (`spaces.cover_image_url`), so no storage resolution is needed on this side.
+      ...(s.coverUrl ? { images: [s.coverUrl] } : {}),
+      // ⚠️ NO PER-SPACE OG CARD HERE, DELIBERATELY. This carried
       // `${SITE_URL}/spaces/<slug>/opengraph-image` until 2026-09-07, and that URL is not an
       // image: the per-Space card sits under the (main) route group, so Next serves it at a
       // hashed path, and the bare one falls through to the home page as 200 text/html. An image
@@ -429,7 +432,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: new Date(e.startsAt),
       changeFrequency: "daily",
       priority: e.isSeriesHome ? 0.8 : 0.7,
-      // No `images` — same reason as the Space routes above (LIVE-205 / LIVE-207).
+      // The event's own PUBLIC cover, when it has one (LIVE-207). A row with no uploaded cover
+      // emits NO image rather than a placeholder or the shared site card — the same rule LIVE-197
+      // applied to lastmod. The reader deliberately resolves only `cover_image_path`: the other two
+      // artwork sources are signed URLs and would expire out from under the sitemap.
+      ...(e.image ? { images: [e.image] } : {}),
     }));
 
     const journeyRoutes: MetadataRoute.Sitemap = journeys.map((j) => ({
