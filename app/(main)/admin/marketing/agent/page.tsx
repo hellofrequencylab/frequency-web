@@ -48,7 +48,7 @@ export default async function AgentPage() {
             <div key={a.id} className="rounded-2xl border border-border bg-surface lift-1 p-4">
               {isDraft ? (
                 <>
-                  <p className="text-meta font-semibold uppercase tracking-wide text-primary-strong">
+                  <p className="eyebrow text-primary-strong">
                     {String(a.payload.channel ?? 'Content')} · {String(a.payload.painPoint ?? '')}
                   </p>
                   <p className="mt-1 text-body-sm font-bold text-text">{String(a.payload.hook ?? '')}</p>

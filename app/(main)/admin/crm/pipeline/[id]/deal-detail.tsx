@@ -314,7 +314,7 @@ export function DealDetail({
                 )}
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-meta font-semibold uppercase tracking-wide text-subtle">{label}</span>
+                    <span className="eyebrow text-subtle">{label}</span>
                     {a.due_at && !done && (
                       <StatusChip tone="warning" size="sm">due {new Date(a.due_at).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}</StatusChip>
                     )}

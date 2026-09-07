@@ -142,7 +142,7 @@ export function StartImportForm() {
 
       {/* Vertical picker */}
       <div className="flex items-center justify-between gap-2">
-        <p className="text-meta font-semibold uppercase tracking-wide text-muted">Vertical</p>
+        <p className="eyebrow text-muted">Vertical</p>
         {detectedLabel && (
           <p className="text-2xs font-medium text-primary-strong">Detected: {detectedLabel}</p>
         )}
@@ -188,7 +188,7 @@ export function StartImportForm() {
       </label>
 
       {/* Hints */}
-      <p className="mt-4 text-meta font-semibold uppercase tracking-wide text-muted">Hints (optional)</p>
+      <p className="mt-4 eyebrow text-muted">Hints (optional)</p>
       <p className="mb-2 text-2xs text-muted">A nudge for the extractor when the paste is thin on where or what.</p>
       <div className="grid gap-4 sm:grid-cols-3">
         <label className={labelCls}>
@@ -210,7 +210,7 @@ export function StartImportForm() {
       </div>
 
       {/* Photos */}
-      <p className="mt-4 text-meta font-semibold uppercase tracking-wide text-muted">Photos (optional)</p>
+      <p className="mt-4 eyebrow text-muted">Photos (optional)</p>
       <p className="mb-2 text-2xs text-muted">The first photo is the primary. You can add or reorder more on the next screen.</p>
       <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-6">
         {previews.map((p, i) => (

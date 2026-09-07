@@ -153,7 +153,7 @@ export function EventEditClient({
     <div className="space-y-6">
       {/* Edit form */}
       <form onSubmit={handleSubmit} className="rounded-2xl border border-border bg-surface p-5 space-y-4">
-        <p className="text-meta font-semibold uppercase tracking-wide text-subtle">Event details</p>
+        <p className="eyebrow text-subtle">Event details</p>
 
         <Field label="Title *">
           <Input
@@ -250,7 +250,7 @@ export function EventEditClient({
 
       {/* Cancel / reinstate zone */}
       <div className="rounded-2xl border border-border bg-surface p-5">
-        <p className="text-meta font-semibold uppercase tracking-wide text-subtle mb-3">Status</p>
+        <p className="eyebrow text-subtle mb-3">Status</p>
         <div className="flex items-center justify-between gap-4">
           <div>
             <p className="text-body-sm font-medium text-text">
@@ -387,7 +387,7 @@ function TierManager({
     <div className="rounded-2xl border border-border bg-surface p-5 space-y-4">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <p className="text-meta font-semibold uppercase tracking-wide text-subtle">Ticket tiers</p>
+          <p className="eyebrow text-subtle">Ticket tiers</p>
           <p className="mt-1 text-meta text-subtle">
             Named tiers with fixed, free, pay-what-you-can, sliding-scale or donation pricing.
             {tiers.length === 0 && flatPriceCents

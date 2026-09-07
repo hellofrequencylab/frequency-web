@@ -159,7 +159,7 @@ export async function SpaceContactDetail({
             registry type: a date reads as a date, a phone dials, a url / email is a link. */}
         {identity.customFields.length > 0 && (
           <div className="mt-4 border-t border-border pt-4">
-            <p className="mb-2 text-meta font-semibold uppercase tracking-wide text-subtle">Custom fields</p>
+            <p className="mb-2 eyebrow text-subtle">Custom fields</p>
             <dl className="grid gap-x-6 gap-y-3 @md:grid-cols-2">
               {identity.customFields.map((f) => (
                 <div key={f.key} className="min-w-0">

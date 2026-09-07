@@ -117,7 +117,7 @@ export function EmailBestPractices({ overview }: { overview: MarketingEmailOverv
 
       {/* Open-rate playbook */}
       <div>
-        <p className="mb-2 text-meta font-semibold uppercase tracking-wide text-subtle">Open-rate playbook</p>
+        <p className="mb-2 eyebrow text-subtle">Open-rate playbook</p>
         <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
           {PLAYBOOK.map((p) => {
             const Icon = p.icon

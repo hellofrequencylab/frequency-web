@@ -184,7 +184,7 @@ export function DesktopEditor({
           {/* LEFT — block outline + add. */}
           <aside className="flex w-72 shrink-0 flex-col border-r border-border bg-surface">
             <div className="flex items-center justify-between border-b border-border px-3 py-2">
-              <span className="flex items-center gap-1.5 text-meta font-semibold uppercase tracking-wide text-subtle">
+              <span className="flex items-center gap-1.5 eyebrow text-subtle">
                 <Layers className="h-4 w-4" aria-hidden /> Blocks
               </span>
               <button
@@ -548,7 +548,7 @@ function PalettePopover({
         <div className="min-h-0 flex-1 space-y-5 overflow-y-auto p-4">
           {groups.map((group) => (
             <div key={group.key}>
-              <h3 className="mb-2 text-meta font-semibold uppercase tracking-wide text-subtle">{group.title}</h3>
+              <h3 className="mb-2 eyebrow text-subtle">{group.title}</h3>
               <div className="grid grid-cols-2 gap-2">
                 {group.items.map((b) =>
                   b.disabled ? (

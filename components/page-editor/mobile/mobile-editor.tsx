@@ -469,7 +469,7 @@ export function MobileEditor({
         <div className="space-y-5">
           {pickerGroups.map((group) => (
             <div key={group.key}>
-              <h3 className="mb-2 text-meta font-semibold uppercase tracking-wide text-subtle">
+              <h3 className="mb-2 eyebrow text-subtle">
                 {group.title}
               </h3>
               <div className="grid grid-cols-3 gap-2">
