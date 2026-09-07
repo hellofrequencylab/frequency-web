@@ -20,7 +20,9 @@ const state = vi.hoisted(() => ({
   existingKeys: new Set<string>(),
   insertFails: new Set<string>(),
   inserted: [] as Record<string, unknown>[],
-  pushed: [] as string[],
+  pushed: [] as { id: string; tag: string }[],
+  /** profiles.home_timezone by member; absent = no timezone on file. */
+  timezones: new Map<string, string | null>(),
   logged: { error: [] as { event: string; fields?: Record<string, unknown> }[] },
 }))
 
@@ -36,15 +38,26 @@ vi.mock('@/lib/journey-prompt', () => ({
   },
 }))
 vi.mock('@/lib/push', () => ({
-  sendPushToProfile: (id: string) => {
+  sendPushToProfile: (id: string, payload: { tag: string }) => {
     if (state.pushThrows.has(id)) return Promise.reject(new Error('VAPID key missing'))
-    state.pushed.push(id)
+    state.pushed.push({ id, tag: payload.tag })
     return Promise.resolve(1)
   },
 }))
 vi.mock('@/lib/supabase/admin', () => ({
   createAdminClient: () => ({
     from: (table: string) => {
+      if (table === 'profiles') {
+        return {
+          select: () => ({
+            in: (_col: string, ids: string[]) =>
+              Promise.resolve({
+                data: ids.filter((id) => state.timezones.has(id)).map((id) => ({ id, home_timezone: state.timezones.get(id) })),
+                error: null,
+              }),
+          }),
+        }
+      }
       if (table !== 'notifications') throw new Error(`unexpected table ${table}`)
       return {
         insert: (row: Record<string, unknown>) => {
@@ -78,6 +91,7 @@ vi.mock('@/lib/log', () => ({
 }))
 
 import { GET } from './route'
+import { LOCAL_MORNING_HOUR, LEGACY_UTC_HOUR, morningFor } from '@/lib/journeys/prompt-morning'
 
 const req = new Request('http://localhost/api/cron/journey-prompt') as unknown as NextRequest
 
@@ -90,6 +104,7 @@ beforeEach(() => {
   state.insertFails.clear()
   state.inserted.length = 0
   state.pushed.length = 0
+  state.timezones.clear()
   state.logged.error.length = 0
   vi.useFakeTimers()
   vi.setSystemTime(new Date('2026-09-05T13:00:00Z'))
@@ -183,5 +198,69 @@ describe('GET /api/cron/journey-prompt, nothing is swallowed (L2-04)', () => {
     expect(state.logged.error).toEqual([
       { event: 'cron.journey_prompt.push_failed', fields: { profile_id: 'p1', error: 'VAPID key missing' } },
     ])
+  })
+})
+
+describe('GET /api/cron/journey-prompt, the prompt lands at the member\'s LOCAL morning (LIVE-193)', () => {
+  // The run is hourly now. Every test above runs at 13:00Z, which is the legacy hour, so members
+  // with no timezone on file are due there and the older contracts hold unchanged.
+
+  it('a member with no timezone keeps the old behaviour: due at 13:00 UTC, not at any other hour', async () => {
+    state.members = ['p1']
+    vi.setSystemTime(new Date('2026-09-05T12:00:00Z'))
+    let res = await GET(req)
+    expect(await res.json()).toMatchObject({ ok: true, candidates: 1, inapp: 0, notDue: 1 })
+    expect(state.inserted).toEqual([])
+    vi.setSystemTime(new Date(`2026-09-05T${String(LEGACY_UTC_HOUR).padStart(2, '0')}:00:00Z`))
+    res = await GET(req)
+    expect(await res.json()).toMatchObject({ ok: true, inapp: 1, notDue: 0 })
+  })
+
+  it('a Pacific member is NOT due at 13:00Z (6am there) and IS due at 15:00Z (8am PDT)', async () => {
+    state.members = ['p1']
+    state.timezones.set('p1', 'America/Los_Angeles')
+    let res = await GET(req) // 13:00Z
+    expect(await res.json()).toMatchObject({ inapp: 0, notDue: 1 })
+    vi.setSystemTime(new Date('2026-09-05T15:00:00Z'))
+    res = await GET(req)
+    expect(await res.json()).toMatchObject({ inapp: 1, notDue: 0 })
+    expect(state.inserted[0]).toMatchObject({ recipient_id: 'p1', dedupe_key: 'journey-prompt:p1:2026-09-05' })
+  })
+
+  it('one UTC run serves whichever members are in their morning: Lisbon at 07:00Z, Auckland at 20:00Z the day before', async () => {
+    state.members = ['lisbon', 'auckland', 'nowhere']
+    state.timezones.set('lisbon', 'Europe/Lisbon') // WEST in September, UTC+1
+    state.timezones.set('auckland', 'Pacific/Auckland') // NZST in September, UTC+12
+    vi.setSystemTime(new Date('2026-09-05T07:00:00Z'))
+    await GET(req)
+    expect(state.inserted.map((r) => r.recipient_id)).toEqual(['lisbon'])
+    vi.setSystemTime(new Date('2026-09-05T20:00:00Z'))
+    await GET(req)
+    // 20:00Z on the 5th is 08:00 on the 6th in Auckland: the key carries THEIR day.
+    expect(state.inserted.at(-1)).toMatchObject({ recipient_id: 'auckland', dedupe_key: 'journey-prompt:auckland:2026-09-06' })
+    expect(state.pushed.at(-1)).toEqual({ id: 'auckland', tag: 'journey-prompt-2026-09-06' })
+  })
+
+  it('an unparseable stored zone is treated as none: the legacy hour, never a throw', async () => {
+    state.members = ['p1']
+    state.timezones.set('p1', 'Mars/Olympus_Mons')
+    const res = await GET(req) // 13:00Z
+    expect(await res.json()).toMatchObject({ ok: true, inapp: 1, notDue: 0 })
+  })
+
+  it('the timezone gate runs before the loader, so a not-due member costs no loader call', async () => {
+    state.members = ['p1']
+    state.timezones.set('p1', 'America/Los_Angeles')
+    state.loaderThrows.add('p1') // would be a 500 if the loader were reached
+    const res = await GET(req) // 13:00Z, 6am Pacific
+    expect(res.status).toBe(200)
+    expect(await res.json()).toMatchObject({ ok: true, notDue: 1, loaderFailed: 0 })
+  })
+
+  it('morningFor: exactly one hour of the local day is the morning, in the zone\'s own clock', () => {
+    const hours = Array.from({ length: 24 }, (_, h) => new Date(Date.UTC(2026, 8, 5, h)))
+    const dueHours = hours.filter((d) => morningFor(d, 'America/New_York').due).map((d) => d.getUTCHours())
+    expect(dueHours).toEqual([LOCAL_MORNING_HOUR + 4]) // EDT is UTC-4 in September
+    expect(hours.filter((d) => morningFor(d, undefined).due).map((d) => d.getUTCHours())).toEqual([LEGACY_UTC_HOUR])
   })
 })
