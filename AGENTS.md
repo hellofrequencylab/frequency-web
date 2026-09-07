@@ -249,12 +249,16 @@ same guard locally and prints what to fix.
 - A field's `placement` (`spark` / `inline` / `rail`) is the intended ONE seam between creating and
   editing (the "one verb, two planes" model of ADR-450, spelled out in
   [`docs/EDITING-SYSTEM.md`](docs/EDITING-SYSTEM.md) §2 — ADR-450 itself has no numbered sections).
-  ⚠️ **Today only the creating half consumes it.** `sparkFields()` drives the Spark; the edit-side
-  selectors `inlineFields()` / `railFields()` in `lib/studio/kernel/review-kernel.ts` have no
-  production call site (only their own test, verified 2026-09-04), so the edit rail is NOT yet
-  derived from placement and nothing currently prevents the two from drifting. Keep declaring
-  placement for all three (`FieldPlacement` is the three-value type in `lib/studio/kernel/manifest.ts`);
-  wiring the edit rail to it is an open backlog row, not a shipped guarantee.
+  ⏳ **Both halves consume it now, but only ONE rail is wired.** `sparkFields()` drives every Spark.
+  The edit side reads placement through `lib/studio/kernel/edit-plan.ts` ([ADR-1240](docs/DECISIONS.md),
+  2026-09-07): `railForm(manifest, writes, { hostInline })` gives a rail form its fields from the
+  manifest, and the only thing the form says for itself is the columns its save action writes.
+  The Practice settings rail derives from it (`components/admin/modules/practice-rail-plan.ts`,
+  rendered through `RailManifestFields`); the Circle, Event, and Journey rails still hand-declare
+  their fields, so for those three nothing yet prevents drift. `HYG-050` stays open and its probe
+  passes only when all four derive. Keep declaring placement for all three planes (`FieldPlacement`
+  in `lib/studio/kernel/manifest.ts`), and when you touch one of the three remaining rails, wire it
+  through a `<entity>-rail-plan.ts` beside the module rather than editing its field list.
 
 # Admin menu — a locked, machine-enforced contract (extend the catalog, never rewrite the rail)
 

@@ -76,6 +76,13 @@ export interface FieldControlProps {
    */
   placeholder?: string
   id?: string
+  /**
+   * The native form name. A surface that reads the form's own FormData (the rail's autosave form,
+   * ADR-1240) needs the control to answer to a column name; a staged wizard that owns its values
+   * does not, so it is optional and the control stays controlled either way. Only the native arms
+   * carry it: a composite (tags, multiselect, daterange) is not one input.
+   */
+  name?: string
 }
 
 /**
@@ -140,6 +147,7 @@ export function FieldControl({
   error,
   placeholder,
   id,
+  name,
 }: FieldControlProps) {
   // One anchor for both ids, so a field's hint and its error are addressable without the caller
   // minting anything. `def.path` is unique within a manifest, and `id` overrides it when a surface
@@ -158,6 +166,7 @@ export function FieldControl({
     disabled,
     placeholder,
     id,
+    name,
     describedBy,
     invalid: Boolean(error),
   })
@@ -230,6 +239,7 @@ function renderControl({
   disabled,
   placeholder,
   id,
+  name,
   describedBy,
   invalid,
 }: Omit<FieldControlProps, 'hint' | 'error'> & { describedBy?: string; invalid?: boolean }) {
@@ -243,12 +253,17 @@ function renderControl({
     'aria-describedby': describedBy,
     'aria-invalid': invalid || undefined,
   }
+  // What only a NATIVE input can carry: the form name a FormData reader keys on, and the
+  // manifest's own `required` so the control is marked the way the declaration says. Kept apart
+  // from `common` because the composite controls are not one input and take neither.
+  const native = { name, required: def.required || undefined }
 
   switch (def.kind) {
     case 'longtext':
       return (
         <Textarea
           {...common}
+          {...native}
           rows={5}
           className="min-h-24 resize-y"
           value={asText(value)}
@@ -260,7 +275,19 @@ function renderControl({
     // the choices come from, which `optionsFor` already resolved.
     case 'select':
     case 'reference': {
-      const choices = optionsFor(def, loaded)
+      const declared = optionsFor(def, loaded)
+      const current = asText(value)
+      // A stored value that is OFF the list stays selectable and MARKED (ADR-879). A controlled
+      // select whose value matches no option has no selected option at all, so a form that
+      // re-reads its own FormData (the rail's autosave) would submit the field empty and rewrite
+      // it to null the moment any OTHER field saved. The Practice rail hand-wrote this guard for
+      // one select; here every CLOSED choice field on every entity gets it. A `reference` is left
+      // alone: its choices arrive from a load, and an id shown before they land is not off-list,
+      // it is early.
+      const choices =
+        def.kind === 'select' && current && !declared.some((o) => o.value === current)
+          ? [{ value: current, label: `${current} (not a standard choice)` }, ...declared]
+          : declared
       return (
         // An optional field needs a way back to "unset", and a reference that has not loaded yet
         // needs to say so rather than looking like an empty list of real choices. A field that is
@@ -268,7 +295,8 @@ function renderControl({
         // offering an empty option would invite a state it cannot hold.
         <Select
           {...common}
-          value={asText(value)}
+          {...native}
+          value={current}
           onChange={(e) => onChange(e.target.value)}
           options={choices}
           emptyLabel={
@@ -283,6 +311,7 @@ function renderControl({
         <label className="flex items-center gap-2 text-body-sm text-text">
           <input
             {...common}
+            {...native}
             type="checkbox"
             checked={asText(value) === 'true'}
             onChange={(e) => onChange(String(e.target.checked))}
@@ -315,7 +344,7 @@ function renderControl({
     case 'color':
       return (
         <div className="flex items-center gap-2">
-          <Input {...common} value={asText(value)} onChange={(e) => onChange(e.target.value)} />
+          <Input {...common} {...native} value={asText(value)} onChange={(e) => onChange(e.target.value)} />
           <input
             type="color"
             aria-label={`${def.label} swatch`}
@@ -365,6 +394,7 @@ function renderControl({
       return (
         <Input
           {...common}
+          {...native}
           type={NATIVE_INPUT[def.kind] ?? 'text'}
           inputMode={INPUT_MODE[def.kind]}
           {...(def.kind === 'price' || def.kind === 'number' || def.kind === 'duration'
