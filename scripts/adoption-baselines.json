@@ -61,14 +61,14 @@
       "exclude": [
         "**/*.{test,spec}.{ts,tsx}"
       ],
-      "baseline": 2180,
+      "baseline": 2178,
       "frozen": {
         "at": "2026-09-07",
-        "value": 2180,
+        "value": 2178,
         "direction": "lowered",
         "basis": "db695768f455",
-        "reason": "LIVE-168's consent step first duplicated app/onboarding/form.tsx's opt-in card; extracting the two copies into components/onboarding/email-opt-in.tsx removed the duplicate and took the checkbox from the literal rounded-md to the rounded-control role radius",
-        "from": 2181
+        "reason": "LIVE-195 routed 21 AI doors through one rate-limit helper and LIVE-161 replaced two app-side read-then-write loops with RPCs, retiring 2 sites of design debt as a side effect. Not a sweep aimed at these classes; re-frozen so the new floor holds and the ratchet keeps guarding at the lower number.",
+        "from": 2180
       },
       "history": [
         {
@@ -245,6 +245,13 @@
           "to": 2180,
           "direction": "lowered",
           "reason": "LIVE-168's consent step first duplicated app/onboarding/form.tsx's opt-in card; extracting the two copies into components/onboarding/email-opt-in.tsx removed the duplicate and took the checkbox from the literal rounded-md to the rounded-control role radius"
+        },
+        {
+          "at": "2026-09-07",
+          "from": 2180,
+          "to": 2178,
+          "direction": "lowered",
+          "reason": "LIVE-195 routed 21 AI doors through one rate-limit helper and LIVE-161 replaced two app-side read-then-write loops with RPCs, retiring 2 sites of design debt as a side effect. Not a sweep aimed at these classes; re-frozen so the new floor holds and the ratchet keeps guarding at the lower number."
         }
       ]
     },
