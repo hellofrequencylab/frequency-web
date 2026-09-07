@@ -3,11 +3,10 @@
 import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
-import { mergeProfileMeta } from '@/lib/profiles/meta'
+import { mergeProfileMetaPath } from '@/lib/profiles/meta'
 import { logAdminAction } from '@/lib/admin/audit'
 import { isJanitor, asWebRole } from '@/lib/core/roles'
 import { parseInput, z, uuid } from '@/lib/validation'
-import { withSpotlightEnabled } from '@/lib/profile/spotlight-flags'
 
 // Janitor-only: turn a member's Spotlight (their opt-in public mini-site) ON or OFF.
 // This is the per-user switch — the whole feature is dark by default, and a janitor
@@ -34,9 +33,11 @@ const input = z.object({ profileId: uuid, enabled: z.boolean() })
 
 /**
  * Flip `meta.spotlight.enabled` for a target member. Only toggles `enabled` (setup),
- * never `published` (going live stays an explicit owner act). Read-modify-write of the
- * opaque meta blob, isolating the spotlight sub-object so streak/checkin keys survive
- * (see lib/profile/spotlight-flags.ts withSpotlightEnabled).
+ * never `published` (going live stays an explicit owner act).
+ *
+ * 2026-09-07 (LIVE-171, ADR-1235): the write sends ONLY `enabled`, merged INSIDE the `spotlight`
+ * key server-side (merge_profile_meta_path). Nothing is read back and re-sent, so the owner
+ * publishing or setting a theme in the same second is never reverted by this switch.
  */
 export async function toggleSpotlightEnabled(profileId: string, enabled: boolean): Promise<void> {
   const caller = await requireJanitor()
@@ -45,16 +46,12 @@ export async function toggleSpotlightEnabled(profileId: string, enabled: boolean
   const admin = createAdminClient()
   const { data: target } = await admin
     .from('profiles')
-    .select('meta')
+    .select('id')
     .eq('id', pid)
     .maybeSingle()
   if (!target) throw new Error('Member not found')
 
-  // 2026-09-05 (scan2 L6-09): "Read-modify-write of the opaque meta blob" above is retired for the
-  // WRITE half. The read still supplies the spotlight sub-object; only the `spotlight` key is merged
-  // server-side, so a streak or check-in landing in the same second is never reverted.
-  const { spotlight } = withSpotlightEnabled((target as { meta?: unknown }).meta, on)
-  const { error } = await mergeProfileMeta(admin, pid, { spotlight })
+  const { error } = await mergeProfileMetaPath(admin, pid, ['spotlight'], { enabled: on })
   if (error) throw new Error(error)
 
   await logAdminAction({
@@ -78,14 +75,16 @@ export async function resetSpotlightToDefault(profileId: string): Promise<void> 
   const { profileId: pid } = parseInput(z.object({ profileId: uuid }), { profileId })
 
   const admin = createAdminClient()
-  const { data: target } = await admin.from('profiles').select('meta').eq('id', pid).maybeSingle()
+  const { data: target } = await admin.from('profiles').select('id').eq('id', pid).maybeSingle()
   if (!target) throw new Error('Member not found')
 
-  const base = ((target as { meta?: unknown }).meta ?? {}) as { spotlight?: Record<string, unknown> }
-  // 2026-09-05 (scan2 L6-09): the `spotlight` key merges server-side; profile_theme is a top-level
-  // column outside the RPC's allowlist, so it is a second, checked update after the merge landed.
-  const { error } = await mergeProfileMeta(admin, pid, {
-    spotlight: { ...(base.spotlight ?? {}), layout: null, background: null, published: false },
+  // 2026-09-07 (LIVE-171): the three calmed fields merge INSIDE the `spotlight` key server-side, so
+  // `enabled` and any saved theme slots survive untouched. profile_theme is a top-level column
+  // outside the RPC's allowlist, so it is a second, checked update after the merge landed.
+  const { error } = await mergeProfileMetaPath(admin, pid, ['spotlight'], {
+    layout: null,
+    background: null,
+    published: false,
   })
   if (error) throw new Error(error)
   const { error: themeErr } = await admin.from('profiles').update({ profile_theme: null }).eq('id', pid)
@@ -102,12 +101,11 @@ export async function forceUnpublishSpotlight(profileId: string): Promise<void> 
   const { profileId: pid } = parseInput(z.object({ profileId: uuid }), { profileId })
 
   const admin = createAdminClient()
-  const { data: target } = await admin.from('profiles').select('meta').eq('id', pid).maybeSingle()
+  const { data: target } = await admin.from('profiles').select('id').eq('id', pid).maybeSingle()
   if (!target) throw new Error('Member not found')
 
-  const base = ((target as { meta?: unknown }).meta ?? {}) as { spotlight?: Record<string, unknown> }
-  // 2026-09-05 (scan2 L6-09): only the `spotlight` key is merged server-side.
-  const { error } = await mergeProfileMeta(admin, pid, { spotlight: { ...(base.spotlight ?? {}), published: false } })
+  // 2026-09-07 (LIVE-171): only `published` is sent, merged INSIDE the `spotlight` key server-side.
+  const { error } = await mergeProfileMetaPath(admin, pid, ['spotlight'], { published: false })
   if (error) throw new Error(error)
 
   await logAdminAction({ actorId: caller.id, action: 'spotlight.force_unpublish', targetType: 'profile', targetId: pid })

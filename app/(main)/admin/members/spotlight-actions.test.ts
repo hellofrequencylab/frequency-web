@@ -1,8 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-// Janitor Spotlight switches (scan2 L6-09): each reads the target's spotlight sub-object and merges
-// ONLY the `spotlight` key server-side. resetSpotlightToDefault's profile_theme column is a second,
-// checked update after the merge landed (the RPC's column allowlist is the two streak mirrors only).
+// Janitor Spotlight switches (scan2 L6-09, then LIVE-171 / ADR-1235): each sends ONLY the field(s) it
+// owns, merged INSIDE the `spotlight` key server-side through merge_profile_meta_path. The target's
+// meta is never read and re-sent, so `enabled` / `published` / `layout` written by another writer in
+// the same second survive. resetSpotlightToDefault's profile_theme column is a second, checked update
+// after the merge landed (the RPC's column allowlist is the two streak mirrors only).
 
 const mocks = vi.hoisted(() => ({
   rpc: vi.fn(),
@@ -42,8 +44,12 @@ import { toggleSpotlightEnabled, resetSpotlightToDefault, forceUnpublishSpotligh
 
 const PID = '00000000-0000-4000-8000-000000000001'
 
+type PathCall = [string, { p_profile_id: string; p_path: string[]; p_patch: Record<string, unknown> }]
+function call() {
+  return mocks.rpc.mock.calls[0] as PathCall
+}
 function patch() {
-  return (mocks.rpc.mock.calls[0] as [string, { p_profile_id: string; p_patch: Record<string, unknown> }])[1]
+  return call()[1]
 }
 
 beforeEach(() => {
@@ -56,11 +62,11 @@ beforeEach(() => {
 })
 
 describe('toggleSpotlightEnabled', () => {
-  it('merges only the spotlight key (keeping published), never a whole-blob update', async () => {
+  it('sends only `enabled` inside the spotlight key, never the published flag or layout it could have read', async () => {
     await toggleSpotlightEnabled(PID, false)
     expect(mocks.updates).toEqual([])
-    expect(patch().p_profile_id).toBe(PID)
-    expect(patch().p_patch).toEqual({ spotlight: { enabled: false, published: true, layout: { rows: [] } } })
+    expect(call()[0]).toBe('merge_profile_meta_path')
+    expect(patch()).toEqual({ p_profile_id: PID, p_path: ['spotlight'], p_patch: { enabled: false } })
     expect(mocks.logAdminAction).toHaveBeenCalledTimes(1)
   })
 
@@ -72,9 +78,11 @@ describe('toggleSpotlightEnabled', () => {
 })
 
 describe('resetSpotlightToDefault', () => {
-  it('merges the calmed spotlight key, then clears profile_theme in a second checked update', async () => {
+  it('sends the three calmed fields inside the spotlight key, then clears profile_theme in a second checked update', async () => {
     await resetSpotlightToDefault(PID)
-    expect(patch().p_patch).toEqual({ spotlight: { enabled: true, published: false, layout: null, background: null } })
+    expect(call()[0]).toBe('merge_profile_meta_path')
+    expect(patch().p_path).toEqual(['spotlight'])
+    expect(patch().p_patch).toEqual({ published: false, layout: null, background: null })
     expect(mocks.updates).toEqual([{ profile_theme: null }])
     expect(mocks.logAdminAction).toHaveBeenCalledTimes(1)
   })
@@ -94,9 +102,10 @@ describe('resetSpotlightToDefault', () => {
 })
 
 describe('forceUnpublishSpotlight', () => {
-  it('merges only the spotlight key with published:false', async () => {
+  it('sends only published:false inside the spotlight key', async () => {
     await forceUnpublishSpotlight(PID)
     expect(mocks.updates).toEqual([])
-    expect(patch().p_patch).toEqual({ spotlight: { enabled: true, published: false, layout: { rows: [] } } })
+    expect(call()[0]).toBe('merge_profile_meta_path')
+    expect(patch()).toEqual({ p_profile_id: PID, p_path: ['spotlight'], p_patch: { published: false } })
   })
 })

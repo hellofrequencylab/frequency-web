@@ -36325,7 +36325,44 @@ The premise was re-tested before the work started, and it had not merely held: t
 **Consequences.** Migration `20270345002100` is in the tree and not yet applied. `components/events/series-browse-wiring.test.ts` now holds eleven surfaces and distinguishes three column sources: the file's own SELECT, the shared reader's COLS, and the RPC's return list. The entitlement question the row split off stays OWN-063.
 
 ⚠️ **The generalisable part.** A fold has one key and belongs in one place per shape: a count folds where it is computed, a list folds where it is read. Widening a public `SECURITY DEFINER` function is acceptable when the body is copied byte for byte and the grants travel in the same transaction; it is the *gate* that must not move, not the column list.
+## ADR-1235: a key several writers share is merged INSIDE, at a path, and the merge takes the lock before it reads (2026-09-07)
 
+**Status.** Accepted. Closes LIVE-171, the residual [ADR-1212](DECISIONS.md) named when it gave every profiles.meta writer a server-side merge of its own top-level key.
+
+**Context.** Migration `20270345000900` closed the lost-update between writers of DIFFERENT keys: each sends only its key and the database does `meta || patch` under the row lock. It also named what it did not close. Two keys are shared: `spotlight` has six writers (the janitor toggle, reset and force-unpublish; the owner publish, enable, theme and background; the importer's demo dressing) and `tour` has two. Every one of them read the sub-object, changed one field and sent the sub-object back whole, through a `withSpotlight*` helper or a bare spread. `||` replaces a nested object at its top-level key, so an owner saving a theme and a janitor unpublishing in the same second still lost one write, one level below the race 0900 fixed.
+
+Re-testing the premise found exactly that: eight call sites in five files, and the row's probe red.
+
+**Decision.**
+
+- **A sibling RPC, `merge_profile_meta_path(profile, path text[], patch)`, not a fourth argument on `merge_profile_meta`.** A defaulted fourth parameter is a new signature, and `create or replace` cannot change one. That means a `drop`, which resets the ACL (the function-grant replay's own rule: DROP RESETS THE VERDICT) and, if the drop is ever missed, leaves two overloads PostgREST cannot choose between. A new function is additive and idempotent, touches none of the thirty existing call sites, and carries its own explicit grants and its own verdict in `scripts/function-grants.txt`.
+- **The function takes the row lock BEFORE it reads, and it is not one `jsonb_set` expression.** `jsonb_set` creates only the LAST key of a path; when a parent is missing it returns its input unchanged and raises nothing. A path merge that can silently write nothing is the invisible regression this repo's rules forbid. So: `select ... for update`, materialise every missing ancestor as `{}`, merge at the path, update. The lock is what makes read-compute-write atomic; a second caller blocks and then reads the merged row.
+- **Each writer sends ONLY the field it owns.** `{ enabled }`, `{ published: false }`, `{ theme }`, `{ background }`, the reset's three calmed fields, the four tip fields, and `{ spotlight: {...} }` at path `['tour']`. The janitor actions no longer read `meta` at all (`select('id')`); the owner actions read it only to gate on `enabled`.
+- **The merge at the path is shallow, like its sibling.** A writer that needs to merge two levels down passes a two-element path. Deepening the merge would re-open the lost update one level further down.
+
+**Consequences.** One migration, one wrapper (`mergeProfileMetaPath`), eight call sites, and every writer test now asserts the RPC name, the path, and that the sibling fields the writer COULD have read are not in the patch. The pgTAP guard grows from 25 to 36 assertions and pins the interleaving in both orders. Two things stay open and are named in the row: `recordTourEvent` still derives its two arrays from its read (a same-writer race, smaller and closable with an array union if it ever shows), and the migration is written, not applied, so `check:migrations` Rule 4 gates the deploy until it is.
+
+⚠️ **The generalisable part is the probe, and the reason it moved.** The row's probe read migration `0900` for `p_path` or `jsonb_set(`. That file is applied, so it is history, and a probe that can only pass by editing history is a probe that will be passed by editing history. It was re-pointed to the migration that carries the fix and made STRICTER while it moved: it now also fails if the wrapper stops sending `p_path` or if any of the five writer files merges a whole `spotlight` or `tour` key again, and it was proven red on a reverted writer before it was committed. **A probe should name the consequence, not the file the author expected the consequence to land in.**
+
+---
+
+## ADR-1236: a client-aborted RSC stream is classified at the recorder, exactly, and recorded as benign where it cannot be filtered (2026-09-07)
+
+**Status.** Accepted. Closes LIVE-210.
+
+**Context.** The production error list carried "The destination stream closed early." at count 19, users 4, from 2026-08-17 to 2026-09-03, digest `3689792676`, across eleven routes with nothing in common except that each was an `.rsc` payload request. The row filed it because the shape pointed away from a bug but "probably benign" is not a finding: it sat in the same list as real defects, cost every reader the same minutes to rule out, and would have camouflaged a genuine stream failure landing beside it.
+
+The premise was re-tested against production, read-only, and the one sample the row asked for settled it. At 06:12:55Z on 2026-09-03 one client logged SEVEN of these in the same second, on seven unrelated routes, from one deployment, and every one of the seven requests completed `200`. That is the router prefetching a menu of links and then navigating, which cancels the prefetches it no longer needs. Source agrees: React's Flight server registers a `close` listener on the destination and cancels the render with a plain `Error` carrying exactly that text. Next's `createReactServerErrorHandler` drops an abort only when `err.name` is `AbortError` or `ResponseAborted`, so React's plain `Error` falls through, is given a digest, is logged, and is handed to `onRequestError`.
+
+**Decision.**
+
+- **Classify at the reporting boundary, with an exact match.** `instrumentation.ts` `onRequestError` consults `isClientAbortedStream` (`lib/observability/request-error.ts`) before `Sentry.captureRequestError`. The classifier matches the message string exactly and names the digest and the production sample in its header. It is not "ignore stream errors": a different message, a substring, a bare digest, or a non-error all still report, and `instrumentation.test.ts` holds that positive control beside the abort case. The rule the row set is kept: nothing was silenced by catching more broadly.
+- **Record it where it cannot be filtered.** Next `console.error`s the error itself BEFORE calling `onRequestError`, and Vercel's runtime error groups are built from that log, so nothing in userland stops the Vercel line. `docs/OBSERVABILITY-BASELINES.md` §7 "Known-benign error groups" now carries the digest, the routes, the sample, and how to tell this row from a real stream failure. The next reader gets an answer instead of a re-investigation, on both surfaces.
+- **The row's probe is a command, not a manual note.** It fails if the digest leaves the doc, if the classifier loses the exact-message match, or if `instrumentation.ts` stops consulting it ahead of Sentry; it was proven red with the consult line deleted before it was committed.
+
+**Consequences.** Sentry stops recording the group. Vercel keeps listing it, and §7 says so and says why. A second benign group, if one ever appears, follows the same three-part shape: an exact match, a named digest, and a test; the boundary comment says not to add a case without all three.
+
+⚠️ **The generalisable part is the sample, not the reasoning.** The row had already reasoned its way to "benign" from the shape of the group, and the reasoning was right, but it was still a claim. One log read, scoped to the fifteen minutes around the last occurrence, turned it into seven requests at one second with seven `200`s, which is a fact nobody has to re-derive. **A wide log query timed out; a narrow one answered in one call.** When a production question looks expensive, scope it to the minute the error table already gives you.
 ## ADR-1244: a render verifies the viewer once and reads the viewer's row once, and the proxy keeps its own (2026-09-07)
 
 **Status.** Accepted. Closes LIVE-178 (sweep 3, 2026-09-05). Same seam as [ADR-1237](DECISIONS.md): widen a read that already exists rather than add one.
