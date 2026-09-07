@@ -9,7 +9,7 @@ vi.mock('@sentry/nextjs', () => ({
   withScope: (fn: () => unknown) => fn(),
 }))
 
-import { withCronHeartbeat, resolveHeartbeatUrl } from '@/lib/observability/cron-heartbeat'
+import { DEFAULT_CRON_BUDGET_MS, CRON_CEILING_MS, withCronHeartbeat, resolveHeartbeatUrl } from '@/lib/observability/cron-heartbeat'
 
 // A fresh env per test so configured/unconfigured paths are isolated.
 const ENV_KEYS = [
@@ -360,5 +360,75 @@ describe('withCronHeartbeat — a REJECTED ping is not silence', () => {
     await expect(
       withCronHeartbeat('process-queue', vi.fn().mockRejectedValue(new Error('handler failure')))(req()),
     ).rejects.toThrow('handler failure')
+  })
+})
+
+// ── LIVE-190, the budget half: every route states a per-invocation budget through the seam ──────
+describe('withCronHeartbeat — the stated per-invocation budget', () => {
+  /** Captures info AND warn lines: the over-budget signal is a warning, and a capture that only
+   *  reads console.log would call a working warning missing. */
+  function captureLog() {
+    const lines: Array<{ event: string; fields: Record<string, unknown> }> = []
+    const sink = (...args: unknown[]) => {
+      for (const a of args) {
+        if (typeof a !== 'string') continue
+        try {
+          const parsed = JSON.parse(a) as Record<string, unknown>
+          if (typeof parsed.event === 'string') lines.push({ event: parsed.event, fields: parsed })
+        } catch {
+          // plain-text line
+        }
+      }
+    }
+    const spies = [vi.spyOn(console, 'log').mockImplementation(sink), vi.spyOn(console, 'warn').mockImplementation(sink)]
+    return { lines, restore: () => spies.forEach((s) => s.mockRestore()) }
+  }
+  const okRes = vi.fn().mockResolvedValue(new Response('ok', { status: 200 }))
+
+  it('the default budget is a fifth of the platform ceiling, and every route carries it', async () => {
+    expect(DEFAULT_CRON_BUDGET_MS).toBe(CRON_CEILING_MS / 5)
+    const { lines, restore } = captureLog()
+    try {
+      await withCronHeartbeat('process-queue', okRes)(req())
+    } finally {
+      restore()
+    }
+    const run = lines.find((l) => l.event === 'cron.run')
+    expect(run?.fields.budget_ms).toBe(DEFAULT_CRON_BUDGET_MS)
+    expect(run?.fields.over_budget).toBe(false)
+    expect(lines.some((l) => l.event === 'cron.over_budget')).toBe(false)
+  })
+
+  it('a route may declare its own budget, and crossing it is flagged on the line AND as a warning', async () => {
+    const { lines, restore } = captureLog()
+    const slow = vi.fn(async () => {
+      await new Promise((r) => setTimeout(r, 15))
+      return new Response('ok', { status: 200 })
+    })
+    try {
+      await withCronHeartbeat('publish-scheduled', slow, { budgetMs: 1 })(req())
+    } finally {
+      restore()
+    }
+    const run = lines.find((l) => l.event === 'cron.run')
+    expect(run?.fields.budget_ms).toBe(1)
+    expect(run?.fields.over_budget).toBe(true)
+    const warn = lines.find((l) => l.event === 'cron.over_budget')
+    expect(warn?.fields.job).toBe('publish-scheduled')
+    expect(warn?.fields.budget_ms).toBe(1)
+  })
+
+  it('the budget rides the throw path too, so a run that dies is still measured against it', async () => {
+    const { lines, restore } = captureLog()
+    try {
+      await Promise.resolve(
+        withCronHeartbeat('season-go-live', vi.fn().mockRejectedValue(new Error('boom')), { budgetMs: 5_000 })(req()),
+      ).catch(() => {})
+    } finally {
+      restore()
+    }
+    const run = lines.find((l) => l.event === 'cron.run')
+    expect(run?.fields.budget_ms).toBe(5_000)
+    expect(typeof run?.fields.over_budget).toBe('boolean')
   })
 })

@@ -7,8 +7,10 @@ import { type SpaceThemeId } from '@/lib/theme/space-themes'
 // `--color-primary*` family as a SCOPED inline CSS-variable override on one node, so every
 // `bg-primary` CTA, the active tab, the type badge, and the in-body `text-primary-strong` accents
 // inside it carry the Space's color automatically — while the canvas/surface tokens stay neutral
-// (the brand never repaints the whole page). The values are `var(--allowlisted-token)` strings built
-// by lib/spaces/accent.ts (never a hex), so they track the live palette + dark mode.
+// (the brand never repaints the whole page). The values are built by lib/spaces/accent.ts: for a
+// TOKEN accent, `var(--allowlisted-token)` strings that track the live palette + dark mode; for a HEX
+// accent (ADR-516 D2), the hex, `color-mix` shades, and a per-theme `light-dark()` pair for the
+// `-strong` text slot (LIVE-211) that the browser resolves from the mode's `color-scheme`.
 //
 // Server-friendly (no hooks): it renders a plain element with an inline `style`. When `vars` is null
 // (no Space accent and no role default) it renders its children untouched, so the host amber stands.

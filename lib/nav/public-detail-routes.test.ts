@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
+import { sourceWithoutComments } from '@/test/source-shape'
 import { isAnonPublicDetail, PUBLIC_DETAIL_PATTERNS } from './public-detail-routes'
 
 // THE INVARIANT: a URL advertised in app/sitemap.ts must be reachable by a signed-out crawler.
@@ -12,7 +13,8 @@ import { isAnonPublicDetail, PUBLIC_DETAIL_PATTERNS } from './public-detail-rout
 // can catch that, so this asserts the sitemap still emits each family and that the predicate admits it.
 
 const SITEMAP = readFileSync('app/sitemap.ts', 'utf8')
-const LAYOUT = readFileSync('app/(main)/layout.tsx', 'utf8')
+// Comment- and import-free (LIVE-167): the predicate must be CALLED, not merely imported.
+const LAYOUT = sourceWithoutComments('app/(main)/layout.tsx', { imports: true })
 
 /** One concrete URL per detail family the sitemap builds, with the template it is built from. */
 const ADVERTISED: { path: string; sitemapMarker: string }[] = [
@@ -26,8 +28,8 @@ const ADVERTISED: { path: string; sitemapMarker: string }[] = [
 describe('sitemap URLs are reachable by a signed-out crawler', () => {
   it('the layout actually consults this predicate', () => {
     // If someone drops the call, every assertion below would still pass while the bug returns.
-    expect(LAYOUT).toContain('isAnonPublicDetail')
-    expect(LAYOUT).toContain("from '@/lib/nav/public-detail-routes'")
+    expect(LAYOUT).toMatch(/\bisAnonPublicDetail\(currentPath\)/)
+    expect(LAYOUT).not.toMatch(/function isAnonPublicDetail\b/)
   })
 
   for (const { path, sitemapMarker } of ADVERTISED) {

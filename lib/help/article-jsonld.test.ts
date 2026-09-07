@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
+import { sourceWithoutComments } from '@/test/source-shape'
 import { helpArticleJsonLd, helpArticleImage, HELP_FALLBACK_IMAGE } from './article-jsonld.ts'
 import { loadCategoriesFromDisk, selectCategories } from './content-core.ts'
 import { SITE_URL } from '../site.ts'
@@ -122,10 +123,11 @@ describe('the page renders THIS builder, not a hand-rolled copy', () => {
   // The extraction is only worth anything while the page still calls it. A future edit that inlines
   // articleSchema back into the JSX would leave every test above green and the live node unguarded,
   // which is the exact way the fields went missing in the first place.
-  const src = readFileSync('app/(help)/help/[category]/[slug]/page.tsx', 'utf8')
+  // Comment- and import-free (LIVE-167): the call is the needle, never the import line.
+  const src = sourceWithoutComments('app/(help)/help/[category]/[slug]/page.tsx', { imports: true })
 
   it('imports and calls helpArticleJsonLd', () => {
-    expect(src).toContain("from '@/lib/help/article-jsonld'")
+    expect(src).not.toMatch(/function helpArticleJsonLd\b/)
     expect(src).toContain('helpArticleJsonLd({')
   })
 

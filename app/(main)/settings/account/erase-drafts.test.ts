@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
+import { sourceWithoutComments } from '@/test/source-shape'
 
 // ── Wiring guard: erase-all Spark drafts reaches Settings → Account (LIVE-062 batch 3) ───
 // eraseSparkDraftsAction was written for Settings (its own doc says so) and sat orphaned:
@@ -8,8 +9,11 @@ import { readFileSync } from 'node:fs'
 // per the house archetype (components/messages/message-member-button.test.ts): unwiring is
 // silent — Settings still renders, the control just vanishes.
 
-const section = readFileSync('app/(main)/settings/account/section.tsx', 'utf8')
+// Comment- and import-free (LIVE-167): the mount and the call are pinned on code alone. `control`
+// stays raw because the em-dash rule below reads the whole member-facing file, comments included.
+const section = sourceWithoutComments('app/(main)/settings/account/section.tsx', { imports: true })
 const control = readFileSync('app/(main)/settings/account/erase-drafts.tsx', 'utf8')
+const controlCode = sourceWithoutComments('app/(main)/settings/account/erase-drafts.tsx', { imports: true })
 const actions = readFileSync('lib/studio/draft-actions.ts', 'utf8')
 
 describe('the account section mounts the control in the danger zone', () => {
@@ -19,7 +23,7 @@ describe('the account section mounts the control in the danger zone', () => {
   })
 
   it('renders EraseDrafts inside the Danger zone, beside DeleteAccount', () => {
-    expect(section).toContain("from './erase-drafts'")
+    expect(section).toMatch(/<EraseDrafts\b/)
     const zone = section.indexOf('Danger zone')
     expect(zone).toBeGreaterThan(-1)
     expect(section.indexOf('<EraseDrafts />')).toBeGreaterThan(zone)
@@ -30,7 +34,8 @@ describe('the account section mounts the control in the danger zone', () => {
 describe('the control calls the action behind the same guard shape as delete-account', () => {
   it('calls eraseSparkDraftsAction from the shared draft actions', () => {
     expect(control).toContain("'use client'")
-    expect(control).toContain("from '@/lib/studio/draft-actions'")
+    expect(controlCode).toMatch(/\beraseSparkDraftsAction\(\)/)
+    expect(controlCode).not.toMatch(/function eraseSparkDraftsAction\b/)
     expect(control).toContain('await eraseSparkDraftsAction()')
   })
 

@@ -8,7 +8,7 @@ import { resolveFunnel } from '@/lib/funnels/resolve'
 import { isPersonaId, type PersonaId } from '@/lib/onboarding/personas'
 import { getReferrer } from '@/lib/qr/referral'
 import { hasEffectivelyOnboarded } from '@/lib/onboarding/onboarded'
-import { isSafeInAppPath } from '@/lib/funnels/destination'
+import { isSafeInAppPath, funnelLanding } from '@/lib/funnels/destination'
 import type { FunnelDestination } from '@/lib/funnels/definitions'
 import FunnelInduction from './induction'
 import FeatureFunnel from './feature-funnel'
@@ -76,11 +76,18 @@ export default async function FunnelInductionPage({
 
   // Already onboarded, or an existing active member who has plainly used the app but
   // never got the completion flag (seeded / pre-gate account) — don't re-induct them.
+  // WHERE THEY GO INSTEAD (ADR-1238): the destination this funnel promised, not the feed. A niche door's
+  // Start free is `/join?seq=<niche>`, and an existing member who clicks it asked for Create-a-Space
+  // pre-seeded in that niche's Mode; a feature funnel's link asked for its feature. Until 2026-09-07 only
+  // a `?next=` survived this branch and the sequence's own destination was dropped on the floor, so the
+  // operator most likely to create a Space (one who already has an account) landed on /feed. The same
+  // gate the completion action uses re-validates the path; a waitlist or absent destination still lands
+  // on the feed exactly as before.
   if (hasEffectivelyOnboarded({
     meta: profile?.meta,
     currentSeasonZaps: profile?.current_season_zaps,
     lifetimeGems: profile?.lifetime_gems,
-  })) redirect(nextDestination ? nextDestination.url : '/feed')
+  })) redirect(funnelLanding(funnel.destination, '/feed'))
 
   // Signed-in (not yet onboarded) visitor on a feature funnel: play the demo, then land in the app.
   if (seq.style === 'feature' && seq.feature) {

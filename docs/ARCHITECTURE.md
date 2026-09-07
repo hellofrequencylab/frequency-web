@@ -182,7 +182,7 @@ under `app/api/cron`. **27 jobs as of 2026-08-17**, in seven families:
 | Embeddings | `embed-events`, `embed-practices`, `embed-help`, `embed-library`, `embed-room-messages` | nightly / 10–30 min |
 | Lifecycle + season | `publish-scheduled`, `season-go-live`, `practice-lifecycle`, `lifecycle-triggers` | 5 min → nightly |
 | Money + retention | `billing-renewals`, `enforce-retention`, `demo-decay`, `refresh-traits` | nightly |
-| AI (Vera) | `vera-owner-brief`, `journey-prompt`, `summarize-vera-memory` | daily |
+| AI (Vera) | `vera-owner-brief`, `journey-prompt`, `summarize-vera-memory` | daily (`journey-prompt` fires hourly and sends each member once, at their local morning) |
 
 Every handler is wrapped twice, and both wrappers are contract-checked:
 

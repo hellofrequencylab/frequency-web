@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
+import { sourceWithoutComments } from '@/test/source-shape'
 
 // ── Wiring guard: the per-block copy re-seed reaches the rail (task #17 · LIVE-062 batch 5) ──
 // `reseedSpaceBlockCopy` (settings/profile/actions.ts) and its seam `reseedBlockCopy`
@@ -19,8 +20,11 @@ describe('the block edit panel carries the re-seed button', () => {
   })
 
   it('calls reseedSpaceBlockCopy from the shared actions file', () => {
-    expect(panel).toContain("from '@/app/(main)/spaces/[slug]/settings/profile/actions'")
-    expect(panel).toContain('await reseedSpaceBlockCopy(slug, blockId, content)')
+    // Comment- and import-free (LIVE-167): the call is pinned on code alone. `panel` stays raw
+    // because the slices below key off a doc-comment marker.
+    const code = sourceWithoutComments('components/entity-blocks/block-edit-panel.tsx', { imports: true })
+    expect(code).toContain('await reseedSpaceBlockCopy(slug, blockId, content)')
+    expect(code).not.toMatch(/function reseedSpaceBlockCopy\b/)
   })
 
   it('shows only where a Space slug is in play and the block carries text fields', () => {
