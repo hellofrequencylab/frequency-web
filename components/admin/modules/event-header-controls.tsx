@@ -6,6 +6,7 @@ import { ImageFocalPicker } from '@/components/ui/image-focal-picker'
 import { updateEventCoverFocus, updateEventHeroHeight } from '@/app/(main)/events/admin-actions'
 import { DEFAULT_OBJECT_POSITION } from '@/lib/images/focal-point'
 import { EVENT_HERO_HEIGHTS, type EventHeroHeight } from '@/lib/events/hero-height'
+import { measureCoverAspect } from '@/lib/events/cover-aspect'
 
 // The event HEADER controls — one tidy section that pairs the cover FOCAL POINT (where the cover
 // image sits inside its cropped hero window) with the hero HEIGHT (Short / Standard / Tall). Both
@@ -15,11 +16,21 @@ import { EVENT_HERO_HEIGHTS, type EventHeroHeight } from '@/lib/events/hero-heig
 // buttons on the RIGHT (they stack on a narrow panel). Height saves optimistically; focus drag
 // fires onChange rapidly, so its save is DEBOUNCED (the marker moves live; the write lands once the
 // creator settles). The focus picker only shows when there is a cover image to reposition.
+//
+// ── THE COVER'S OWN SHAPE IS CAPTURED HERE TOO (ADR-1248) ────────────────────────────────────────
+// The picker paints the cover, so the browser has decoded it and knows its intrinsic size. When
+// that image loads, its width / height is stored on events.theme.coverAspect through the same
+// action the focus goes through, and the poster band on the event page sizes itself to it instead
+// of to a tier-shaped guess. The measurement is free (no second decode, no server decode) and it
+// re-runs every time the preview changes, which is every time the gallery re-crowns its first
+// photo: a swapped cover re-measures itself the moment its preview appears. A write is only sent
+// when the measured value differs from what is stored, so opening the panel costs nothing.
 export function EventHeaderControls({
   eventId,
   slug,
   imageUrl,
   initialFocus = DEFAULT_OBJECT_POSITION,
+  initialAspect = null,
   initialHeight,
 }: {
   eventId: string
@@ -27,6 +38,9 @@ export function EventHeaderControls({
   /** The current cover/header image URL, or null when the event has no cover yet. */
   imageUrl: string | null
   initialFocus?: string
+  /** The cover aspect already stored on events.theme (lib/events/cover-aspect.ts), or null. Used
+   *  only to skip a write that would store what is already there. */
+  initialAspect?: number | null
   initialHeight: EventHeroHeight
 }) {
   const [focus, setFocus] = useState(initialFocus)
@@ -35,6 +49,9 @@ export function EventHeaderControls({
   const [, startFocus] = useTransition()
   const [error, setError] = useState<string | null>(null)
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // What the database holds (or is about to hold) for coverAspect, so a re-render of the same
+  // cover does not re-send the same number.
+  const storedAspect = useRef<number | null>(initialAspect)
 
   // Focus: move the marker live, debounce the write so a drag does not fire a save per pixel.
   function onFocusChange(next: string) {
@@ -47,6 +64,21 @@ export function EventHeaderControls({
         if ('error' in res) setError(res.error)
       })
     }, 400)
+  }
+
+  // Aspect: the picker's <img> has decoded, so its natural size is the cover's real shape. Store it
+  // beside the focus when it is new. A failed decode measures null and is NOT written: the band
+  // then keeps whatever it had rather than a shape that describes nothing. `focus` here is the
+  // render's current value: the picker takes a fresh callback on every render, so the load event
+  // always sees the focus the marker shows.
+  function onCoverLoad({ width, height: h }: { width: number; height: number }) {
+    const measured = measureCoverAspect(width, h)
+    if (measured === null || measured === storedAspect.current) return
+    storedAspect.current = measured
+    startFocus(async () => {
+      const res = await updateEventCoverFocus(eventId, slug, focus, measured)
+      if ('error' in res) setError(res.error)
+    })
   }
 
   // Height: optimistic — set locally, roll back if the save fails.
@@ -77,6 +109,7 @@ export function EventHeaderControls({
             imageUrl={imageUrl}
             value={focus}
             onChange={onFocusChange}
+            onImageLoad={onCoverLoad}
             label="Cover focus"
             hint="Drag to choose which part of the cover stays in frame. Vertical matters most."
             showSliders={false}

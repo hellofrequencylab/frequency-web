@@ -4,6 +4,7 @@ import { LifeBuoy } from 'lucide-react'
 import { getAllCategories, helpHref } from '@/lib/help/content'
 import { EmptyState } from '@/components/ui/empty-state'
 import { IndexTemplate } from '@/components/templates'
+import { resolveIndexHero } from '@/lib/layout/index-hero'
 import { JsonLd } from '@/components/json-ld'
 import { breadcrumbSchema } from '@/lib/jsonld'
 
@@ -17,8 +18,11 @@ export const metadata: Metadata = {
 export default async function HelpHomePage() {
   const categories = await getAllCategories()
 
+  const hero = await resolveIndexHero('/help')
+
   return (
     <IndexTemplate
+      {...hero}
       title="How can we help?"
       description="Everything you need to find your people, show up, and make the most of Frequency."
     >

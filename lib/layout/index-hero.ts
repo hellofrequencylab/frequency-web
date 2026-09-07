@@ -75,10 +75,52 @@ export const INDEX_HERO_DEFAULTS: readonly IndexHeroDefault[] = [
   { prefix: '/journeys/mine', image: null, size: 'short', inheritHero: false },
   { prefix: '/network/contacts', image: null, size: 'short', inheritHero: false },
   { prefix: '/network/friends', image: null, size: 'short', inheritHero: false },
+
+  // ── THE 2026-09-07 ADOPTION (LIVE-117, ADR-1255) ─────────────────────────────────────────────
+  // The static-route half of the 24 `IndexTemplate` pages that drew no band at all. NO COVER IS
+  // INVENTED: every row below carries `image: null` on purpose, so what a row buys is the band
+  // itself plus rungs 1 and 2 — the operator's Settings header image for the route, and the
+  // section hero the copy cascade already holds, both of which these pages were dropping on the
+  // floor (the index-side echo of the /network bug, ADR-1122). Picking a stock photo per surface
+  // is the per-page taste this map exists to prevent; a row earns a photo the day the owner
+  // chooses one, here, in one line.
+  //
+  // Discovery — the section IS the destination, so the band is `large` and a section hero reaches
+  // it. '/partners/collaborators' is deliberately absent: it is part of the Partners section and
+  // takes the '/partners' row, which is what a prefix map is for.
+  { prefix: '/help', image: null, size: 'large' },
+  { prefix: '/partners', image: null, size: 'large' },
+  { prefix: '/housing/roommates', image: null, size: 'large' },
+  { prefix: '/discover/partners', image: null, size: 'large' },
+  { prefix: '/discover/practices', image: null, size: 'large' },
+  // Utility — a member or an operator came here to get something done, so `short` + the gradient,
+  // and `inheritHero: false` so the section photo above them cannot quietly overturn that.
+  { prefix: '/circles/templates', image: null, size: 'short', inheritHero: false },
+  { prefix: '/crew/leaderboard', image: null, size: 'short', inheritHero: false },
+  { prefix: '/drafts', image: null, size: 'short', inheritHero: false },
+  { prefix: '/lead/training-library', image: null, size: 'short', inheritHero: false },
+  { prefix: '/market/manage', image: null, size: 'short', inheritHero: false },
+  { prefix: '/messages', image: null, size: 'short', inheritHero: false },
+  { prefix: '/orders', image: null, size: 'short', inheritHero: false },
+  { prefix: '/partners/join', image: null, size: 'short', inheritHero: false },
+  { prefix: '/search', image: null, size: 'short', inheritHero: false },
+  { prefix: '/spaces/operating', image: null, size: 'short', inheritHero: false },
+  { prefix: '/support', image: null, size: 'short', inheritHero: false },
 ] as const
 
 /** The fallback for a route no row covers: gradient band at the shipped directory height. */
 export const INDEX_HERO_FALLBACK: Omit<IndexHeroDefault, 'prefix'> = { image: null, size: 'large', inheritHero: true }
+
+// ── WHY THERE IS NO `'none'` TAIL HERE, AND WHY THERE WILL NOT BE ONE (LIVE-117 (a), ADR-1255) ──
+// `detail-hero.ts` has a `tail: 'none'`, and the obvious symmetry says this ladder should grow one
+// too, so an adoption could be staged invisibly. It should not, and the reason is structural rather
+// than stylistic: on a DETAIL page the cover is decoration under an `<h1>` the context header
+// already renders, so 'none' means "draw no decoration". On an INDEX the band CARRIES the `<h1>`
+// (`IndexTemplate`'s `heroOverlay` branch suppresses `PageHeading`), so a 'none' tail would not be
+// a hero resolution at all — it would be the page choosing a different HEADER GRAMMAR, which is
+// `IndexTemplate`'s decision and not this map's. Encoding it here would put `heroOverlay` back
+// under a per-page conditional, i.e. hand the choice back to the pages this map exists to take it
+// away from. Staging is done by ADOPTING IN SLICES, which is what LIVE-117 does.
 
 /** PURE: the section default for a route, longest prefix wins. Exported for the unit test and for
  *  any caller that wants the section cover without resolving the whole band. */

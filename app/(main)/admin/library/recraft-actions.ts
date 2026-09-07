@@ -64,6 +64,13 @@ async function gate(lane: RecraftLane) {
   return { error: null as string | null, ctx, lane }
 }
 
+/** One asset this generation filed into the Loom: enough for the Studio client to describe it
+ *  (HYG-021 — the browser computes the blurhash + palette a server generator cannot). */
+export interface GeneratedAsset {
+  id: string
+  url: string
+}
+
 /** Generate one or more assets with Recraft and store them in the Loom. */
 export async function generateWithRecraft(input: {
   prompt: string
@@ -72,7 +79,7 @@ export async function generateWithRecraft(input: {
   count?: number
   category?: string
   styleId?: string
-}): Promise<{ ok: true; count: number } | { error: string }> {
+}): Promise<{ ok: true; count: number; assets: GeneratedAsset[] } | { error: string }> {
   const g = await gate(input.lane)
   if (g.error || !g.ctx) return { error: g.error ?? 'Not available.' }
 
@@ -93,6 +100,7 @@ export async function generateWithRecraft(input: {
     after(() => recordAiUsage({ feature: FEATURE, model: 'recraft-v3', usage: { inputTokens: 0, outputTokens: 0 }, costUsd: cost, profileId: g.ctx!.profileId }))
 
     let n = 0
+    const assets: GeneratedAsset[] = []
     for (const [i, r] of results.entries()) {
       const { bytes, contentType } = await downloadRecraft(r.url)
       const stored = await store(spaceId, bytes, contentType, prompt)
@@ -105,7 +113,9 @@ export async function generateWithRecraft(input: {
       // twins. Dedupe is not applied as a REJECTION here (the caller asked for N images and paid for
       // them), it is recorded so D4's safe-delete and global-swap can see the duplication.
       const ingested = ingestImageBytes(bytes, stored.mime)
-      const { error } = await dbh().from('library_assets').insert({
+      // The id comes back so the CLIENT can describe the image it is about to look at (HYG-021,
+      // ADR-1254): blurhash and palette need decoded pixels, and the decoder stays in the browser.
+      const { data: row, error } = await dbh().from('library_assets').insert({
         space_id: spaceId,
         kind: 'image',
         title,
@@ -124,10 +134,16 @@ export async function generateWithRecraft(input: {
         ...(ingested.width ? { width: ingested.width, height: ingested.height } : {}),
         config: { source: 'recraft', prompt, lane: input.lane, ...(recraftStyleId ? { styleId: recraftStyleId } : {}) },
       })
-      if (!error) n++
+        .select('id')
+        .maybeSingle()
+      if (!error) {
+        n++
+        const id = (row as { id?: unknown } | null)?.id
+        if (id) assets.push({ id: String(id), url: stored.url })
+      }
     }
     revalidatePath('/admin/library')
-    return { ok: true, count: n }
+    return { ok: true, count: n, assets }
   } catch (e) {
     return { error: e instanceof Error ? e.message.slice(0, 200) : 'Recraft generation failed.' }
   }

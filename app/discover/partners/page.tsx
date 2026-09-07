@@ -6,6 +6,7 @@ import { SITE_NAME } from '@/lib/site'
 import { JsonLd } from '@/components/json-ld'
 import { partnerListSchema, breadcrumbSchema } from '@/lib/jsonld'
 import { IndexTemplate } from '@/components/templates'
+import { resolveIndexHero } from '@/lib/layout/index-hero'
 import { BetaCTA } from '@/components/marketing/marketing-ui'
 
 export const revalidate = 3600
@@ -25,6 +26,8 @@ export const metadata: Metadata = {
 export default async function PublicPartnersPage() {
   const partners = await listActivePartners().catch(() => [])
 
+  const hero = await resolveIndexHero('/discover/partners')
+
   return (
     <>
       <div className="mx-auto max-w-5xl px-6 py-20 sm:py-24">
@@ -39,7 +42,12 @@ export default async function PublicPartnersPage() {
         />
 
         {/* Public SEO surface: no operator admin bar (that's a member-app control). */}
-        <IndexTemplate title={TITLE} description={DESCRIPTION} adminBar={false}>
+        <IndexTemplate
+          {...hero}
+          title={TITLE}
+          description={DESCRIPTION}
+          adminBar={false}
+        >
           {partners.length === 0 ? (
             <p className="text-muted">No partners near you yet. The first ones are still signing on, so check back soon.</p>
           ) : (

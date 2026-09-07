@@ -73,6 +73,22 @@ export function posterHeightClass(height: CoverHeight): string {
   return POSTER_HEIGHT_CLASS[height]
 }
 
+// The SAME poster ladder as a CEILING rather than a height, for a band that knows its poster's own
+// aspect (events.theme.coverAspect, ADR-1248). Such a band sizes itself to the artwork and the tier
+// only caps it, so the host's Short / Standard / Tall choice still means what it says: the tallest
+// the band may be. Every token is the height ladder's token with `max-` in front, and
+// components/media/poster-band.test.tsx asserts that derivation rather than trusting it.
+const POSTER_MAX_HEIGHT_CLASS: Record<CoverHeight, string> = {
+  short: 'max-h-40 sm:max-h-56',
+  standard: 'max-h-52 sm:max-h-[22rem]',
+  tall: 'max-h-72 sm:max-h-[36rem]',
+}
+
+/** The responsive max-height utility for a poster band that sizes itself to its own aspect. Pure + total. */
+export function posterMaxHeightClass(height: CoverHeight): string {
+  return POSTER_MAX_HEIGHT_CLASS[height]
+}
+
 /** The width:height aspect ratio of the cover at a tier, for a shape-accurate focal-crop preview (the
  *  preview must be the same SHAPE as the live band). `maxWidthPx` is the band's REAL render width in its
  *  surface (e.g. the Space profile's 1044px center column). Pure + total. */
