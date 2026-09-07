@@ -474,8 +474,9 @@ so no write gate is weakened.
 OUT to `/journeys/<slug>/edit` rather than mounting a real `LayoutEditor` inline — the allowed fallback for a
 non-`<PageModules>`-driven surface (identical in spirit to hub/nexus's minimal Layout in §5.10), preferred over
 a fabricated broken picker. So `settings-panel.tsx`'s `layoutBlock` is NOT extended to `'journey'`. By contrast
-`JourneySettings` IS self-contained given its props, so it mounts truly inline — the "lightweight Settings
-inline" the directive prefers. Export stays inline (not banked): the bank is pure navigation and export is a
+the Journey Settings module renders the manifest's rail plan (`journey-rail-plan.ts`, ADR-1246) truly
+inline — the "lightweight Settings inline" the directive prefers; it mounted the self-contained
+`JourneySettings` editor whole until 2026-09-07. Export stays inline (not banked): the bank is pure navigation and export is a
 mutating client action with no navigable route.
 
 **Trigger.** A published-journey author is redirected to the LEARN page (`/journeys/<slug>/page.tsx`), so

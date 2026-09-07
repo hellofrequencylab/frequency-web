@@ -145,62 +145,20 @@ export function JourneySettings(props: JourneySettingsProps) {
   const [certificate, setCertificate] = useState(props.initialCertificateEnabled)
   const [drip, setDrip] = useState(props.initialDripIntervalDays)
 
-  const [visibility, setVisibility] = useState<PlanVisibility>(props.initialVisibility)
-  const [status, setStatus] = useState<PlanStatus>(props.initialStatus)
-  const [celebrate, setCelebrate] = useState<null | 'live' | 'review'>(null)
-
-  // Vera's rank-eligibility gate: the verdict + coaching, refreshed on publish/resubmit.
-  const [review, setReview] = useState<StoredVeraReview | null>(props.initialReview)
-  const [reviewing, setReviewing] = useState(false)
+  // The publish flow is shared with the Inspector rail (ADR-1246), so it lives in one hook below.
+  const { visibility, status, review, reviewing, celebrate, changeVisibility, resubmitForReview } =
+    useJourneyPublishing({
+      planId: props.planId,
+      initialVisibility: props.initialVisibility,
+      initialStatus: props.initialStatus,
+      initialReview: props.initialReview,
+    })
 
   const meta = (patch: Parameters<typeof saveJourneyMeta>[1]) => save(() => saveJourneyMeta(props.planId, patch))
 
-  const changeVisibility = (v: PlanVisibility) => {
-    const prev = visibility
-    setVisibility(v)
-    if (v === 'public') setReviewing(true)
-    start(async () => {
-      const res = await setJourneyVisibility(props.planId, v)
-      if (isError(res)) {
-        setVisibility(prev)
-      } else {
-        setStatus(res.data.status)
-        if (v === 'public') {
-          const live = res.data.status === 'approved'
-          setCelebrate(live ? 'live' : 'review')
-          setTimeout(() => setCelebrate(null), 3500)
-          setReview(res.data.review)
-        }
-      }
-      setReviewing(false)
-      router.refresh()
-    })
-  }
-
-  // Re-run Vera's rank gate after editing a published Journey (resubmit). Re-reviewing keeps a
-  // stale approval from surviving a material change.
-  const resubmitForReview = () => {
-    setReviewing(true)
-    start(async () => {
-      const res = await submitJourneyForReview(props.planId)
-      if (!isError(res)) setReview(res.data.review)
-      setReviewing(false)
-      router.refresh()
-    })
-  }
-
   return (
     <section className="space-y-6">
-      {celebrate === 'live' && (
-        <div className="flex items-center gap-2 rounded-xl border border-success/50 bg-success-bg px-4 py-3 text-body-sm font-medium text-success">
-          <PartyPopper className="h-5 w-5 shrink-0" /> Live in the community library. Anyone can adopt it now.
-        </div>
-      )}
-      {celebrate === 'review' && (
-        <div className="flex items-center gap-2 rounded-xl border border-warning/50 bg-warning-bg px-4 py-3 text-body-sm font-medium text-warning">
-          <PartyPopper className="h-5 w-5 shrink-0" /> Submitted. A Guide reviews it, then it goes live in the library.
-        </div>
-      )}
+      <PublishCelebration celebrate={celebrate} />
 
       {/* Identity — just the Journey title + a one-line summary. Both the icon picker AND the accent-dot
           picker were removed from this rail (owner ask): the Journey's leading mark is the logo/profile
@@ -501,6 +459,91 @@ export function JourneySettings(props: JourneySettingsProps) {
   )
 }
 
+/** What the publish flow tells the author right after a change of visibility. */
+export type PublishCelebration = null | 'live' | 'review'
+
+/**
+ * The publish flow (docs/JOURNEYS.md §11–§12): visibility + the moderation state it resolves to +
+ * Vera's rank-eligibility gate. ONE copy, used by this editor and by the Inspector rail's settings
+ * module (ADR-1246), so the two surfaces cannot celebrate, revert, or re-review differently.
+ */
+export function useJourneyPublishing({
+  planId,
+  initialVisibility,
+  initialStatus,
+  initialReview,
+}: {
+  planId: string
+  initialVisibility: PlanVisibility
+  initialStatus: PlanStatus
+  initialReview: StoredVeraReview | null
+}) {
+  const router = useRouter()
+  const [, start] = useTransition()
+  const [visibility, setVisibility] = useState<PlanVisibility>(initialVisibility)
+  const [status, setStatus] = useState<PlanStatus>(initialStatus)
+  const [celebrate, setCelebrate] = useState<PublishCelebration>(null)
+
+  // Vera's rank-eligibility gate: the verdict + coaching, refreshed on publish/resubmit.
+  const [review, setReview] = useState<StoredVeraReview | null>(initialReview)
+  const [reviewing, setReviewing] = useState(false)
+
+  const changeVisibility = (v: PlanVisibility) => {
+    const prev = visibility
+    setVisibility(v)
+    if (v === 'public') setReviewing(true)
+    start(async () => {
+      const res = await setJourneyVisibility(planId, v)
+      if (isError(res)) {
+        setVisibility(prev)
+      } else {
+        setStatus(res.data.status)
+        if (v === 'public') {
+          const live = res.data.status === 'approved'
+          setCelebrate(live ? 'live' : 'review')
+          setTimeout(() => setCelebrate(null), 3500)
+          setReview(res.data.review)
+        }
+      }
+      setReviewing(false)
+      router.refresh()
+    })
+  }
+
+  // Re-run Vera's rank gate after editing a published Journey (resubmit). Re-reviewing keeps a
+  // stale approval from surviving a material change.
+  const resubmitForReview = () => {
+    setReviewing(true)
+    start(async () => {
+      const res = await submitJourneyForReview(planId)
+      if (!isError(res)) setReview(res.data.review)
+      setReviewing(false)
+      router.refresh()
+    })
+  }
+
+  return { visibility, status, review, reviewing, celebrate, changeVisibility, resubmitForReview }
+}
+
+/** The moment-after-publish banner: live in the library, or submitted for a Guide's review. */
+export function PublishCelebration({ celebrate }: { celebrate: PublishCelebration }) {
+  if (celebrate === 'live') {
+    return (
+      <div className="flex items-center gap-2 rounded-xl border border-success/50 bg-success-bg px-4 py-3 text-body-sm font-medium text-success">
+        <PartyPopper className="h-5 w-5 shrink-0" /> Live in the community library. Anyone can adopt it now.
+      </div>
+    )
+  }
+  if (celebrate === 'review') {
+    return (
+      <div className="flex items-center gap-2 rounded-xl border border-warning/50 bg-warning-bg px-4 py-3 text-body-sm font-medium text-warning">
+        <PartyPopper className="h-5 w-5 shrink-0" /> Submitted. A Guide reviews it, then it goes live in the library.
+      </div>
+    )
+  }
+  return null
+}
+
 /** One touchpoint's form (ADR-302) — the same set of controls for the Circle Meetup and the Weekend
  *  Gathering: format, schedule + timezone, the format-fitted location/join-link, a linked event, and
  *  notes. `touchpoint` may be null (a Gathering that hasn't been started); a blank touchpoint renders
@@ -644,7 +687,7 @@ function TouchpointForm({
 /** Vera's rank-eligibility verdict + coaching. Three faces: approved (in the ranked library),
  *  rejected (notes to fix, with a resubmit), and pending (Vera couldn't reach a verdict — try
  *  again). All tokens only; no hex, no hardcoded sizes. */
-function VeraRankPanel({
+export function VeraRankPanel({
   review,
   reviewing,
   onResubmit,
