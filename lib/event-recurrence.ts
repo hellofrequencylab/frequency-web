@@ -397,14 +397,28 @@ export async function generateOccurrencesForAnchor(anchorId: string): Promise<nu
   return rows.length
 }
 
-// Roll occurrences forward for ALL active anchors. Called from the daily
-// cron. Returns { anchorCount, occurrencesCreated }.
-export async function generateAllOccurrences(): Promise<{
+// Roll occurrences forward for active anchors. Called from the daily cron.
+// Returns { anchorCount, occurrencesCreated, anchorsVisited, remaining, stoppedOnBudget }.
+//
+// LIVE-190: one run reads at most `limit` anchors, oldest series first, and stops on the clock.
+// ⚠️ There is NO resume cursor yet: generation writes nothing on the anchor, so a run that stops
+// early re-reads the same head tomorrow. The per-anchor work is idempotent (an upsert that ignores
+// duplicates), so the head costs one read each; an anchor past `limit` waits for a generated-at
+// column the row records as the missing piece. Until then `limit` is set well above the anchor
+// count and the clock is the bound that matters.
+export async function generateAllOccurrences(
+  opts: { limit?: number; exhausted?: () => boolean } = {},
+): Promise<{
   anchorCount:         number
   occurrencesCreated:  number
+  anchorsVisited:      number
+  remaining:           number
+  stoppedOnBudget:     boolean
 }> {
   const admin = createAdminClient()
   const now = new Date().toISOString()
+  const limit = Math.max(1, opts.limit ?? 2000)
+  const exhausted = opts.exhausted ?? (() => false)
 
   // A cancelled or moderator-removed anchor is skipped here as well as in the per-anchor path:
   // the cron rolls the horizon forward every day, so without this filter ending a weekly series
@@ -417,10 +431,26 @@ export async function generateAllOccurrences(): Promise<{
     .eq('is_cancelled', false)
     .is('removed_at', null)
     .or(`recurrence_until.is.null,recurrence_until.gt.${now}`)
+    .order('created_at', { ascending: true })
+    .limit(limit)
 
+  const list = (anchors ?? []) as { id: string }[]
   let total = 0
-  for (const a of (anchors ?? []) as { id: string }[]) {
+  let visited = 0
+  let stoppedOnBudget = false
+  for (const a of list) {
+    if (exhausted()) {
+      stoppedOnBudget = true
+      break
+    }
+    visited++
     total += await generateOccurrencesForAnchor(a.id)
   }
-  return { anchorCount: anchors?.length ?? 0, occurrencesCreated: total }
+  return {
+    anchorCount: list.length,
+    occurrencesCreated: total,
+    anchorsVisited: visited,
+    remaining: list.length - visited,
+    stoppedOnBudget,
+  }
 }

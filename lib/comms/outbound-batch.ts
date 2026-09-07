@@ -201,7 +201,10 @@ interface QueuedRow {
  *  UPDATE per row) before anything is enqueued, and only a run holding EVERY row of the burst sends; a run
  *  that loses any row releases what it took and skips. A claim older than BATCH_CLAIM_STALE_MINUTES is
  *  treated as abandoned and taken over (logged). */
-export async function flushConversationBatches(): Promise<{ conversations: number; emails: number; messages: number }> {
+export async function flushConversationBatches(
+  /** Queued rows one pass reads, oldest first (LIVE-190); the claim makes the tail resumable. */
+  limit = 1000,
+): Promise<{ conversations: number; emails: number; messages: number }> {
   const window = conversationBatchWindowMinutes()
   // The window governs the DEBOUNCE only, not whether we drain. When it is 0 (feature off, or just turned
   // off) we still flush any already-queued messages immediately, so disabling batching can never strand a
@@ -218,7 +221,7 @@ export async function flushConversationBatches(): Promise<{ conversations: numbe
       .eq('direction', 'outbound')
       .eq('delivery_status', 'queued')
       .order('occurred_at', { ascending: true })
-      .limit(1000)
+      .limit(limit)
     queued = (res?.data as QueuedRow[]) ?? []
   } catch (err) {
     console.error('[comms] flushConversationBatches read failed:', err)
@@ -364,7 +367,10 @@ interface DigestConvRow {
  *  after a digest still out-dates the watermark and rolls into the next one). No-op when the feature is off.
  *  The in-app `conversation_reply` notification still fires at receive time regardless — this only adds the
  *  batched email nudge. FAIL-SAFE. */
-export async function flushConversationDigests(): Promise<{ recipients: number; emails: number; conversations: number }> {
+export async function flushConversationDigests(
+  /** Conversations one pass reads (LIVE-190); `last_digested_at` is the watermark that resumes the tail. */
+  limit = 1000,
+): Promise<{ recipients: number; emails: number; conversations: number }> {
   const window = conversationDigestWindowMinutes()
   if (window === 0) return { recipients: 0, emails: 0, conversations: 0 }
   const cutoff = new Date(Date.now() - window * 60_000).toISOString()
@@ -384,7 +390,8 @@ export async function flushConversationDigests(): Promise<{ recipients: number; 
       .not('last_inbound_at', 'is', null)
       .gt('last_inbound_at', floor)
       .lt('last_inbound_at', cutoff)
-      .limit(1000)
+      .order('last_inbound_at', { ascending: true })
+      .limit(limit)
     convs = (res?.data as DigestConvRow[]) ?? []
   } catch (err) {
     console.error('[comms] flushConversationDigests read failed:', err)

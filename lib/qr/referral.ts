@@ -266,7 +266,17 @@ export async function releaseReferralReward(referredProfileId: string): Promise<
  *  looks the candidates' claims up in one query and skips every SETTLED pair (paid, or a fresh claim
  *  another run holds); only unclaimed pairs and stale zero-amount claims (L6-11) reach the release.
  *  `settled` reports how many were skipped that way. */
-export async function runReferralRelease(): Promise<{ released: number; checked: number; settled: number }> {
+export async function runReferralRelease(
+  opts: {
+    /** Unsettled candidates one run releases (LIVE-190). A released pair is settled and skipped
+     *  next run, so the tail resumes by itself. */
+    limit?: number
+    /** Wall-clock check from the cron budget; true means stop before the next candidate. */
+    exhausted?: () => boolean
+  } = {},
+): Promise<{ released: number; checked: number; settled: number }> {
+  const limit = Math.max(1, opts.limit ?? 200)
+  const exhausted = opts.exhausted ?? (() => false)
   const db = createAdminClient()
   const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
   const { data: events } = await db
@@ -299,10 +309,14 @@ export async function runReferralRelease(): Promise<{ released: number; checked:
     if (referralClaimState(c) !== 'stale') settledKeys.add(c.rule_key)
   }
 
+  // LIVE-190: one run releases at most `limit` unsettled pairs and stops on the clock. A released
+  // pair is settled next run, so the tail resumes on its own; the head is not re-done. The caller's
+  // budget object reports the clock, so the result shape stays the one the tests pin.
+  const unsettled = candidates.filter((r) => !settledKeys.has(referralRuleKey(r.id)))
   let released = 0
   let checked = 0
-  for (const r of candidates) {
-    if (settledKeys.has(referralRuleKey(r.id))) continue
+  for (const r of unsettled.slice(0, limit)) {
+    if (exhausted()) break
     checked++
     if (await releaseReferralReward(r.id)) released++
   }

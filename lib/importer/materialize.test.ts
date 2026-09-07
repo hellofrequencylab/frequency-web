@@ -177,6 +177,16 @@ vi.mock('./store', () => ({
   setStatus: async () => true,
 }))
 
+// The staging sweep (LIVE-120, ADR-1251) is a collaborator with its own tests; here we only pin that
+// an apply asks for it, in `materialized` mode, with the draft it must keep the live URLs from.
+const stagingSweeps = vi.hoisted(() => [] as { intakeId: string; mode: string; keepFrom: unknown }[])
+vi.mock('./harvest/staging-lifecycle', () => ({
+  sweepIntakeStaging: async (intakeId: string, opts: { mode: string; keepFrom?: unknown }) => {
+    stagingSweeps.push({ intakeId, mode: opts.mode, keepFrom: opts.keepFrom })
+    return { removed: 0, kept: 0 }
+  },
+}))
+
 import { materializeBusiness, applyIntake } from './materialize'
 import { wellnessStudioFixture } from './fixtures/wellness-studio'
 
@@ -463,6 +473,32 @@ describe('applyIntake — ledger-driven per-field gate end to end', () => {
     expect(offerings[0].currency).toBeUndefined()
     expect(offerings[0].title).toBe('Latte') // non-commercial survives
     expect(intakeStore.applied).toContain('intake-1')
+  })
+
+  it('sweeps the staging prefix AFTER the apply, keeping what the draft still publishes (LIVE-120)', async () => {
+    stagingSweeps.length = 0
+    const draft = {
+      name: 'Staged Cafe',
+      type: 'business',
+      media: { heroPath: 'https://x.supabase.co/storage/v1/object/public/site-media/importer/intake-2/hero-1.jpg' },
+    }
+    intakeStore.row = { id: 'intake-2', createdBy: 'owner-1', status: 'review', inputs: {}, draft, ledger: {}, targetSpaceId: null }
+    const res = await applyIntake('intake-2')
+    expect(res.ok).toBe(true)
+    expect(stagingSweeps).toHaveLength(1)
+    expect(stagingSweeps[0]).toMatchObject({ intakeId: 'intake-2', mode: 'materialized' })
+    // The keep set is derived from the row the apply published, so a referenced hero survives.
+    expect(JSON.stringify(stagingSweeps[0].keepFrom)).toContain('importer/intake-2/hero-1.jpg')
+    // The Space stores that URL as-is (mapIdentity): deleting it would break the live cover.
+    const space = H.tables.spaces.find((s) => s.id === res.spaceId)!
+    expect(space.cover_image_url).toBe(draft.media.heroPath)
+  })
+
+  it('does not sweep when the apply is refused', async () => {
+    stagingSweeps.length = 0
+    intakeStore.row = { id: 'y', createdBy: 'owner-1', status: 'researching', inputs: {}, draft: { name: 'Y' }, ledger: {}, targetSpaceId: null }
+    await applyIntake('y')
+    expect(stagingSweeps).toHaveLength(0)
   })
 
   it('refuses to apply from a mid-research status', async () => {
