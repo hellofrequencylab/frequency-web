@@ -52,13 +52,12 @@
             "LIVE-105",
             "LIVE-175",
             "LIVE-186",
-            "LIVE-183",
-            "LIVE-177",
             "LIVE-190",
             "LIVE-191",
             "LIVE-198",
             "LIVE-203",
-            "LIVE-204"
+            "LIVE-204",
+            "LIVE-205"
           ]
         },
         {
@@ -8615,7 +8614,7 @@
     {
       "id": "LIVE-177",
       "title": "Eight help articles were flagged for review by three scan-two splits, and all three merged without that review",
-      "status": "open",
+      "status": "done",
       "priority": "P1",
       "lane": "live",
       "size": "M",
@@ -8623,11 +8622,11 @@
         "file": "docs/SUPPORT-SYSTEM.md",
         "ref": "§6 help-autodoc"
       },
-      "detail": "The help-autodoc workflow (docs/SUPPORT-SYSTEM.md §6) reviews the help articles covering the areas a PR touches and posts an advisory comment naming the ones to check BEFORE merge. It is advisory and blocks nothing, and on the 2026-09-05 scan-two merge run it was not acted on: three splits merged carrying open advisories. E4 (#2370) flagged getting-started/how-to-rsvp.md and groups/events.md for guest seat claim and event access changes. D4a (#2374) flagged getting-started/your-feed.md, getting-started/notifications.md, groups/events.md, connecting/messages.md and safety/meeting-people-safely.md for feed loading, notification delivery, dispatch, group message creation and blocking. D6 (#2377) flagged groups/events.md, the-quest/zaps-and-gems.md and membership/partners.md for cancellation refunds, tips and partner offers. Eight distinct articles, all present in the tree. THE ADVISORY IS A PROMPT, NOT A FINDING: it says these articles COVER the changed areas, not that any is now wrong, so the work is to read each against the shipped behaviour and correct only what actually drifted. Three other splits (D1 #2372, D3 #2373, D4b #2375) got a clean bill from the same workflow, which is the control that says the flagging discriminates. ⚠️ Note what this row is NOT: it is not a case for making the advisory blocking. The gate is deliberately advisory because a copy judgement cannot be made by a workflow, and a blocking gate that cannot fire honestly gets routed around (ADR-970). What went wrong is that nobody read the comments, which is a process gap in the merge run, not a defect in the gate.",
+      "detail": "The help-autodoc workflow (docs/SUPPORT-SYSTEM.md §6) reviews the help articles covering the areas a PR touches and posts an advisory comment naming the ones to check BEFORE merge. It is advisory and blocks nothing, and on the 2026-09-05 scan-two merge run it was not acted on: three splits merged carrying open advisories. E4 (#2370) flagged getting-started/how-to-rsvp.md and groups/events.md for guest seat claim and event access changes. D4a (#2374) flagged getting-started/your-feed.md, getting-started/notifications.md, groups/events.md, connecting/messages.md and safety/meeting-people-safely.md for feed loading, notification delivery, dispatch, group message creation and blocking. D6 (#2377) flagged groups/events.md, the-quest/zaps-and-gems.md and membership/partners.md for cancellation refunds, tips and partner offers. Eight distinct articles, all present in the tree. THE ADVISORY IS A PROMPT, NOT A FINDING: it says these articles COVER the changed areas, not that any is now wrong, so the work is to read each against the shipped behaviour and correct only what actually drifted. Three other splits (D1 #2372, D3 #2373, D4b #2375) got a clean bill from the same workflow, which is the control that says the flagging discriminates. ⚠️ Note what this row is NOT: it is not a case for making the advisory blocking. The gate is deliberately advisory because a copy judgement cannot be made by a workflow, and a blocking gate that cannot fire honestly gets routed around (ADR-970). What went wrong is that nobody read the comments, which is a process gap in the merge run, not a defect in the gate.\n── CLOSED 2026-09-07. All eight named articles were read against what actually shipped in #2370, #2374 and #2377. SEVEN WERE ACCURATE and were deliberately left alone: rewriting correct copy to look busy is a worse outcome than a one-file diff. Several had become MORE true rather than less - the feed's failed-RPC path now renders an error instead of the empty state, so the article's quiet-feed advice is better advice; the refund path moved to a retried, dead-lettered outbox job, so \"everyone who paid is refunded automatically\" is more reliable than when the sentence was written.\n\nONE HAD DRIFTED, and it is NOT these three PRs' doing: membership/partners.md told members to open Partners \"from the Zap button\" and to \"hit Check In in the Zap menu\". Both tiles carry `soon` in components/feed/capture-launcher.tsx (:196, :198) and ZapTile renders a `soon` tile as an inert div labelled \"Soon\" rather than a Link (:259). They were live links the day the article was written (15a8a050c, 2026-06-11) and were made `soon` a week later (ec17a4a07, 2026-06-18) - two and a half months before any of these PRs. Each instruction had a correct half and a dead half, which is how it survived a skim. Reading the flagged area is what surfaced it.\n\n⚪ THREE GAPS RECORDED AND DELIBERATELY NOT WRITTEN, because a gap is not a drift and none of these articles says anything untrue: groups/events.md does not mention the new host-only refunds-owed notice; connecting/messages.md does not restate the friends-first gate on group chats (which predates the article, so it was an authoring choice); your-feed.md and notifications.md do not describe the new could-not-load states.",
       "verify": {
         "kind": "manual",
-        "evidence": "2026-09-05: help-autodoc comments on #2370, #2374 and #2377 name eight distinct articles under content/help/, each of which exists in the tree; all three pull requests merged with the advisory unaddressed. Closes when each named article has been read against the shipped behaviour and either corrected or confirmed accurate.",
-        "checked": "2026-09-05"
+        "evidence": "CLOSED 2026-09-07. Each of the eight articles named by the help-autodoc advisories on #2370, #2374 and #2377 was read against the shipped behaviour, established from the three merge commits (3d8504919, fe69857ab, de8177e20) and the current code. Seven confirmed accurate and unchanged; one corrected: membership/partners.md pointed members at two Zap-menu tiles that render inert (capture-launcher.tsx :196/:198 carry `soon`, and ZapTile returns a div rather than a Link at :259), a drift dating to ec17a4a07 on 2026-06-18 and predating all three PRs. check:vocab 0, check:canon 0, lib/help 81 tests, lint clean, CONTENT-VOICE §10 run on the edited passages.",
+        "checked": "2026-09-07"
       }
     },
     {
@@ -8722,7 +8721,7 @@
     {
       "id": "LIVE-183",
       "title": "All 57 help articles ship an Article node with no image and no datePublished, and share one OG card",
-      "status": "open",
+      "status": "done",
       "priority": "P1",
       "lane": "live",
       "size": "M",
@@ -8730,11 +8729,11 @@
         "file": "docs/BUILD-BACKLOG.json",
         "ref": "sweep 3, 2026-09-05"
       },
-      "detail": "Sweep 3 (SEO). app/(help)/help/[category]/[slug]/page.tsx calls articleSchema with title, description, path and updated only. lib/jsonld.ts emits image and datePublished only when passed, so all 57 nodes carry neither; Google lists image as REQUIRED for the Article rich result and datePublished as recommended. The frontmatter cannot supply the date: across all 57 the key set is title, description, category, order, updated, audience, featureKeys, status (+ role on 7). There is an updated, no published. Separately app/(help)/opengraph-image.tsx is a ROUTE-GROUP file with a fixed wordmark and the literal 'HELP CENTER', taking no params, so all 57 articles, 10 categories and /help/changelog share one identical card. Same defect SCAN-201 and SCAN-202 closed for podcast Shows and city hubs; help was not included. FIX in one PR: backfill a published date from git log --diff-filter=A and pass it through; pass image pointing at a per-article OG route; add app/(help)/help/[category]/[slug]/opengraph-image.tsx reading params, reusing cardResponse + loadNunito, keeping the group card as the fallback for /help and the category indexes. ⚠️ BUDGET IT: a new per-entity OG route costs check:og-trace headroom, which read 18 + 64 of 100 on the last production build.",
+      "detail": "Sweep 3 (SEO). app/(help)/help/[category]/[slug]/page.tsx calls articleSchema with title, description, path and updated only. lib/jsonld.ts emits image and datePublished only when passed, so all 57 nodes carry neither; Google lists image as REQUIRED for the Article rich result and datePublished as recommended. The frontmatter cannot supply the date: across all 57 the key set is title, description, category, order, updated, audience, featureKeys, status (+ role on 7). There is an updated, no published. Separately app/(help)/opengraph-image.tsx is a ROUTE-GROUP file with a fixed wordmark and the literal 'HELP CENTER', taking no params, so all 57 articles, 10 categories and /help/changelog share one identical card. Same defect SCAN-201 and SCAN-202 closed for podcast Shows and city hubs; help was not included. FIX in one PR: backfill a published date from git log --diff-filter=A and pass it through; pass image pointing at a per-article OG route; add app/(help)/help/[category]/[slug]/opengraph-image.tsx reading params, reusing cardResponse + loadNunito, keeping the group card as the fallback for /help and the category indexes. ⚠️ BUDGET IT: a new per-entity OG route costs check:og-trace headroom, which read 18 + 64 of 100 on the last production build.\n── CLOSED 2026-09-07, AND THE ROW WAS HALF-STALE 26 HOURS AFTER IT WAS WRITTEN. It was measured 2026-09-05; PR #2391 (9da46bf34, merged 2026-09-06) had already added a published key to all 57 articles AND wired both image and datePublished into the article page. Re-measured on origin/main before any work: 57/57 carry published in frontmatter, and page.tsx already passes published and image. So the row's central claim - \"the frontmatter cannot supply the date ... there is an updated, no published\" - was false, and the git log --diff-filter=A backfill it proposed was never needed. That backfill would also have been WRONG: Vercel builds from a shallow clone and CI checks out depth-1, so git history is absent at build time and every date would have come back empty with no gate noticing.\n\nWHAT ACTUALLY REMAINED was the OG-card half, and that is what shipped: a per-article opengraph-image route reading params, a matching twitter-image (required, because mergeStaticMetadata only overrides twitter when the segment declares its own file, so without it X and Slack keep the group card), and the schema extracted out of the page JSX into lib/help/article-jsonld.ts. The extraction is the point rather than tidiness: the inline node was untestable, which is how the fields went missing in the first place. The route-group card stays the fallback for /help, the category indexes and /help/changelog.\n\n🔴 A LIVE DEFECT WAS FOUND ON THE WAY, and it had shipped. The EXISTING /help card drew white type on a bright beach photograph: its scrim was styled position:absolute + inset:0 with no display, and Satori implements NEITHER the inset shorthand NOR CSS's initial display:block, so the gradient resolved to 0x0 and painted nothing. Measured mean luminance 207 against a legibility threshold of 60. NOTHING COULD HAVE CAUGHT IT: the route returned 200 with a valid JPEG of normal size, and check:og-trace was green - a swallowed failure with no gate that notices, the exact shape AGENTS.md names. Fixed with an explicit box and display, and pinned by a pixel-luminance assertion so it cannot regress silently.\n\nBUDGET, measured rather than argued: predicted +2 rasterising and +0 incidental (the only page below [slug]/ already inherited libvips from the group card above it), then built and read the gate: 18 -> 20 rasterising, incidental 64 -> 64, identical to the 2026-09-05 production reading, against a budget of 100. No budget raised. ⚠️ That is a LOCAL artifact read and the gate says so itself; the authoritative reading is postbuild on the Vercel deploy, which is where AGENTS.md puts the artifact gates.\n\n⚪ A SEPARATE FINDING IS FILED AS LIVE-205 rather than fixed here: lib/jsonld.ts emits unhashed per-entity OG URLs for events and Spaces, which 404.",
       "verify": {
         "kind": "manual",
-        "evidence": "2026-09-05: counted 57 articles and their frontmatter keys; read the article page and the route-group opengraph-image. Closes when help articles carry image + datePublished and a per-article card.",
-        "checked": "2026-09-05"
+        "checked": "2026-09-07",
+        "evidence": "CLOSED 2026-09-07. Help articles carry image + datePublished (the latter was already true as of #2391, re-measured 57/57 on origin/main) and now have a per-article OG card: app/(help)/help/[category]/[slug]/opengraph-image.tsx plus twitter-image.tsx, with the route-group card kept as the fallback for /help, the category indexes and /help/changelog. Schema extracted to lib/help/article-jsonld.ts so it is testable. Three red-then-green readings: reverting the schema call drops image/published and fails 5 tests with the corpus test naming all 57 articles; making the card ignore params fails \"draws two different articles as two different cards\" byte-identically; restoring inset:0 on the scrims fails at mean luminance 207 against a threshold of 60. check:help 57 articles / 36-of-36 core, check:seo 0, lint 0, tsc clean, 8 test files green. check:og-trace read 20 rasterising + 64 incidental of 100 on a local artifact; the authoritative reading is postbuild on the deploy."
       }
     },
     {
@@ -9440,6 +9439,24 @@
         "kind": "manual",
         "checked": "2026-09-07",
         "evidence": "Confirmed live 2026-09-07 against pages.published_data where slug=home: `isn't you friend` 1 match, `We all feeling` 1 match, `Show up Tuesda\"` 1 match (the closing quote proves the truncation — the stored string ends there), `third spaces` 1 match. Closes when the published document carries none of the four, re-measured the same way."
+      }
+    },
+    {
+      "id": "LIVE-205",
+      "title": "Structured data points at per-entity OG cards by their UNHASHED path, so every event and Space schema image is a 404",
+      "status": "open",
+      "lane": "live",
+      "size": "S",
+      "priority": "P1",
+      "source": {
+        "file": "lib/jsonld.ts",
+        "ref": "found 2026-09-07 while closing LIVE-183; proven against a built artifact"
+      },
+      "detail": "FOUND 2026-09-07 by the LIVE-183 work, and PROVEN ON AN ARTIFACT rather than argued.\n\nNext hash-suffixes a metadata image route whose parent path contains a ROUTE GROUP (getMetadataRouteSuffix). Both per-entity OG routes live under one:\n  app/(main)/events/[slug]/opengraph-image.tsx\n  app/(main)/spaces/[slug]/opengraph-image.tsx\nand the build emits them at opengraph-image-lyffkg and opengraph-image-tt3pwa respectively, read straight out of .next/server.\n\nBut lib/jsonld.ts emits the UNHASHED path:\n  :208  image: [abs(`/events/${event.slug}/opengraph-image`), abs('/opengraph-image')]\n  :539  const ogImage = abs(`/spaces/${space.slug}/opengraph-image`)\n\nSo the primary schema image on every event and every Space is a URL that does not exist. The same rule was independently confirmed for the help tree: the predicted suffix 12boxn for /(help)/help/[category]/[slug] matched the emitted artifact exactly.\n\n⚪ NOT A TOTAL OUTAGE, which is why it survived: both nodes carry a fallback image after the bad one (the site card for events, the operator logo and site card for Spaces), so the rich-result bar is still met and no validator screams. The PRIMARY image is simply always dead.\n\n⚪ THIS IS ALSO WHY the help article schema deliberately points at /images/hero.jpg (a real file) rather than at its new card, with a test pinning that so nobody hand-writes a card path in. Hand-writing the hashed path is NOT the fix - the hash is derived by Next and would drift. The fix is to stop hand-writing these URLs at all: let Next inject the card through the metadata API (which is what the help page now does by leaving openGraph.images unset), or resolve the suffix from the build manifest rather than from a template literal.\n\nNOT FIXED IN LIVE-183 because it is different pages with their own verification: this needs a build to confirm the emitted paths for events and Spaces, and the fix changes how two more schema nodes are composed.",
+      "verify": {
+        "kind": "manual",
+        "checked": "2026-09-07",
+        "evidence": "Confirmed 2026-09-07: app/(main)/events/[slug]/opengraph-image.tsx and app/(main)/spaces/[slug]/opengraph-image.tsx both sit under the (main) route group, while lib/jsonld.ts:208 and :539 emit the unhashed /opengraph-image path. The built artifact carries events/[slug]/opengraph-image-lyffkg and spaces/[slug]/opengraph-image-tt3pwa; the same rule predicted 12boxn for the help tree and the build matched. Closes when the schema image URL for an event and for a Space resolves 200 on a deployed build, measured rather than assumed."
       }
     },
     {
