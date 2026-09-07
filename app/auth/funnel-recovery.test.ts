@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
+import { sourceWithoutComments } from '@/test/source-shape'
 import { FUNNELS } from '@/lib/funnels/definitions'
 
 // ── A FUNNEL SIGNUP MUST SURVIVE THE BROWSER IT WAS NOT STARTED IN ──────────────────────────────
@@ -23,7 +24,9 @@ import { FUNNELS } from '@/lib/funnels/definitions'
 // a second carrier that a change of browser cannot lose — the funnel slug on the AUTH USER — read
 // back through the same map that wrote it.
 
-const signIn = readFileSync('app/sign-in/actions.ts', 'utf8')
+// Comment- and import-free (LIVE-167): every sign-in needle hits code, and FUNNELS can only be the
+// value the validation reads, never the import line that names it.
+const signIn = sourceWithoutComments('app/sign-in/actions.ts', { imports: true })
 const callback = readFileSync('app/auth/callback/route.ts', 'utf8')
 const funnel = readFileSync('app/join/(induction)/feature-funnel.tsx', 'utf8')
 const proxy = readFileSync('proxy.ts', 'utf8')
@@ -51,7 +54,7 @@ describe('the funnel slug rides on the auth user, not only in a cookie', () => {
 
 describe('the slug is validated against the code funnels before it becomes a path', () => {
   it('sign-in narrows it through the FUNNELS map, not a regex', () => {
-    expect(signIn).toContain("import { FUNNELS } from '@/lib/funnels/definitions'")
+    expect(signIn).not.toMatch(/const FUNNELS\b/)
     expect(signIn).toContain('hasOwnProperty.call(FUNNELS, v)')
   })
 

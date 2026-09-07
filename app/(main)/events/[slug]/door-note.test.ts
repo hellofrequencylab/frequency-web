@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
+import { sourceWithoutComments } from '@/test/source-shape'
 import { doorNoteFor, DOOR_REASONS, type DoorReason } from './door-note'
 
 // LIVE-157. The QR door has redirected to `/events/<slug>?door=<reason>` since SCAN-566, and the
@@ -15,7 +16,8 @@ const PAGE = 'app/(main)/events/[slug]/page.tsx'
 const ROUTE = 'app/q/[slug]/route.ts'
 const ACTIONS = 'app/(main)/events/actions.ts'
 
-const page = readFileSync(PAGE, 'utf8')
+// Comment- and import-free (LIVE-167): the page's needles must hit the call and the render.
+const page = sourceWithoutComments(PAGE, { imports: true })
 const route = readFileSync(ROUTE, 'utf8')
 const actions = readFileSync(ACTIONS, 'utf8')
 
@@ -98,7 +100,7 @@ describe('the event page reads the parameter and renders the line', () => {
   })
 
   it('resolves the note through the map rather than inlining copy', () => {
-    expect(page).toContain("from './door-note'")
+    expect(page).not.toMatch(/function doorNoteFor\b/)
     expect(page).toContain('doorNoteFor(sp.door)')
   })
 

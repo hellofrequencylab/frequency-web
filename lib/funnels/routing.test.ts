@@ -9,9 +9,11 @@ import {
 import { isSafeInAppPath, funnelLanding } from './destination'
 import {
   COACHES_FUNNEL,
+  FUNNEL_START_FALLBACK_HREF,
   funnelSlugs,
   getFunnelConfig,
   funnelStartDestination,
+  funnelStartHref,
 } from '@/lib/marketing/funnel-config'
 
 // Funnel routing (owner directive): "The general beta splash funnel should be the only one that goes to
@@ -76,23 +78,57 @@ describe('every niche funnel routes to its own section', () => {
 })
 
 describe('marketing door destinations agree with the onboarding side (one source of truth)', () => {
-  it('the coaches funnel door derives the same Space-create destination', () => {
+  // ADR-1238 (SCAN-538). The /for door slug (`coaches-and-healers`) and the funnel sequence slug
+  // (`coaches`) are two vocabularies on purpose; `FunnelConfig.niche` is the ONE bridge, and the Space
+  // Mode is declared ONCE, on the NICHE_FUNNEL_DESTINATIONS row. Until 2026-09-07 every door button was
+  // the literal '/spaces', so the map these assertions cover had no runtime reader at all.
+  it('the coaches funnel door reads the same Space-create destination the induction lands on', () => {
     expect(funnelStartDestination(COACHES_FUNNEL)).toEqual(nicheFunnelDestination('coaches'))
+    expect(funnelStartDestination(COACHES_FUNNEL)).toEqual({
+      mode: 'direct',
+      url: '/spaces/new?mode=business:packages',
+    })
   })
 
   // Phase 7 deletion sweep: this used to iterate a SECOND persona registry (lib/marketing/personas.ts)
   // that nothing but tests imported. The registry is gone; the assertion now runs over the ONE registry
   // /for/<slug> actually renders from, so it locks the live doors instead of a shadow copy of them.
-  it('every /for door yields a safe direct Space-create destination', () => {
+  it('every /for door names a niche with a destination row, and that row is a safe direct Space-create path', () => {
     for (const slug of funnelSlugs()) {
       const config = getFunnelConfig(slug)
       expect(config, slug).toBeDefined()
+      expect(Object.keys(NICHE_FUNNEL_DESTINATIONS), `${slug} -> ${config!.niche}`).toContain(config!.niche)
       const dest = funnelStartDestination(config!)
-      expect(dest.mode).toBe('direct')
-      if (dest.mode === 'direct') {
-        expect(dest.url).toBe(`/spaces/new?mode=${config!.mode.type}:${config!.mode.variant}`)
+      expect(dest?.mode, slug).toBe('direct')
+      if (dest?.mode === 'direct') {
+        expect(dest.url).toMatch(/^\/spaces\/new\?mode=[a-z]+:[a-z]+$/)
         expect(isSafeInAppPath(dest.url)).toBe(true)
       }
     }
+  })
+
+  it('every /for door starts ITS OWN funnel sequence, never the literal directory', () => {
+    // The consequence the row measured: the button must produce the URL whose completion reads the map.
+    for (const slug of funnelSlugs()) {
+      const config = getFunnelConfig(slug)!
+      expect(funnelStartHref(config)).toBe(`/join?seq=${config.niche}`)
+      expect(funnelStartHref(config)).not.toBe(FUNNEL_START_FALLBACK_HREF)
+    }
+  })
+
+  it('the five doors cover the five destination rows, so no row is unreachable from a door', () => {
+    const fromDoors = funnelSlugs()
+      .map((slug) => getFunnelConfig(slug)!.niche)
+      .sort()
+    expect(fromDoors).toEqual(Object.keys(NICHE_FUNNEL_DESTINATIONS).sort())
+  })
+
+  it('a door whose niche has no destination row falls back to the directory instead of the waitlist', () => {
+    // The fallback is the ONLY reason the runtime read exists: running this visitor through the
+    // induction would end on the general Beta list, which is a worse promise than the directory.
+    const orphan = { ...COACHES_FUNNEL, slug: 'a-sixth-door', niche: 'not-a-niche' }
+    expect(funnelStartDestination(orphan)).toBeUndefined()
+    expect(funnelStartHref(orphan)).toBe(FUNNEL_START_FALLBACK_HREF)
+    expect(FUNNEL_START_FALLBACK_HREF).toBe('/spaces')
   })
 })

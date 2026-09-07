@@ -142,8 +142,16 @@ export function spaceCreatePath(mode: { type: string; variant: string }): string
 
 /** Space-create destination per operator niche funnel (OPERATOR-FUNNELS §5): coaches -> business:packages,
  *  studios -> business:membership, hosts -> business:ticketed, communities -> business:cohort,
- *  nonprofits -> nonprofit:donations. Keyed by the niche funnel slug (the short /for/<niche> slugs,
- *  ADR-591). One row per niche = one data edit; add a niche here and its funnel routes to its section. */
+ *  nonprofits -> nonprofit:donations.
+ *
+ *  KEYED BY THE FUNNEL SEQUENCE SLUG, the `/join?seq=<slug>` vocabulary (the `sequence_overrides` slug and
+ *  the `beta_<slug>` cohort tag), NOT by the `/for/<slug>` door slug (ADR-1238). The two vocabularies are
+ *  different on purpose: the door slug is a search keyword (`coaches-and-healers`), the sequence slug is a
+ *  stored key. Each door names its sequence slug as `FunnelConfig.niche` (lib/marketing/funnel-config.ts),
+ *  and that field is the ONLY bridge between the two; the door's Start free builds `/join?seq=<niche>` and
+ *  the induction's completion reads THIS row (lib/funnels/resolve.ts withNicheDefaultDestination). This
+ *  comment said "the short /for/<niche> slugs" until 2026-09-07, which was false for three of five keys.
+ *  One row per niche = one data edit; add a niche here and its funnel routes to its section. */
 export const NICHE_FUNNEL_DESTINATIONS: Record<string, FunnelDestination> = {
   coaches: { mode: 'direct', url: spaceCreatePath({ type: 'business', variant: 'packages' }) },
   studios: { mode: 'direct', url: spaceCreatePath({ type: 'business', variant: 'membership' }) },

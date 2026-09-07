@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
+import { sourceWithoutComments } from '@/test/source-shape'
 import path from 'node:path'
 import { isAdmitted, isPendingApproval } from './admission'
 
@@ -54,8 +55,9 @@ const read = (p: string) => readFileSync(path.join(process.cwd(), p), 'utf8')
 
 describe('the venue disclosure and the check-in door consult the rule', () => {
   it('the event page decides "registered" through isAdmitted, with BOTH columns', () => {
-    const PAGE = read('app/(main)/events/[slug]/page.tsx')
-    expect(PAGE).toContain("from '@/lib/events/admission'")
+    // Comment- and import-free (LIVE-167): the call is the needle, never the import line.
+    const PAGE = sourceWithoutComments('app/(main)/events/[slug]/page.tsx', { imports: true })
+    expect(PAGE).not.toMatch(/function isAdmitted\b/)
     // Both halves passed, by name. A future edit that drops approval_status from this call is the
     // regression this pins — it is exactly the shape the original read had.
     expect(PAGE).toContain('isAdmitted({ status: myRsvpStatus, approval_status: myApprovalStatus })')

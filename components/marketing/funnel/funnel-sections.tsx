@@ -16,6 +16,7 @@ import {
   LOOP_COPY,
   FUNNEL_FOOTER,
   assuranceItems,
+  funnelStartHref,
 } from '@/lib/marketing/funnel-config'
 import {
   HeroProductGraphic,
@@ -27,21 +28,22 @@ import {
 } from './funnel-graphics'
 import { Wordmark } from '@/components/layout/wordmark'
 
-/** The Start-free destination. Interim = the Space directory (where a signed-in operator creates a free
- *  Space); funnels P2 replaces this with the real minimal-signup -> createSpace bridge. Attribution is
- *  cookie-based (first-touch captures the landing URL), so no query param is needed here. */
-export const FUNNEL_START_HREF = '/spaces'
+// THE START-FREE HREF IS DERIVED, NEVER A LITERAL (ADR-1238). Every button below reads
+// `funnelStartHref(config)`: the niche's funnel sequence (`/join?seq=<niche>`), whose completion lands the
+// operator in Create-a-Space pre-seeded in that niche's Mode. Until 2026-09-07 a literal '/spaces' sat here
+// and the whole destination map had no runtime reader. A door that renders a Start free without the config
+// has nothing to derive from, so the two chrome pieces take it as a prop rather than reaching for a default.
 
 // ── Chrome: splash header + sticky mobile CTA ─────────────────────────────────────────────────────
 
-export function SplashHeader() {
+export function SplashHeader({ config }: { config: FunnelConfig }) {
   return (
     <header className="sticky top-0 z-40 border-b border-border/60 bg-canvas/85 backdrop-blur-md">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-3 sm:px-8">
         <Link href="/" className="shrink-0" aria-label="Frequency home">
           <Wordmark className="h-6 w-auto dark:invert sm:h-7" priority />
         </Link>
-        <Button href={FUNNEL_START_HREF} size="sm">
+        <Button href={funnelStartHref(config)} size="sm">
           {FUNNEL_CTA_LABEL}
         </Button>
       </div>
@@ -49,10 +51,10 @@ export function SplashHeader() {
   )
 }
 
-export function StickyMobileCta() {
+export function StickyMobileCta({ config }: { config: FunnelConfig }) {
   return (
     <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-canvas/95 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur-md lg:hidden">
-      <Button href={FUNNEL_START_HREF} className="w-full justify-center" size="lg">
+      <Button href={funnelStartHref(config)} className="w-full justify-center" size="lg">
         {FUNNEL_CTA_LABEL}
       </Button>
     </div>
@@ -76,7 +78,7 @@ export function FunnelHero({ config }: { config: FunnelConfig }) {
           </h1>
           <p className="mt-5 max-w-xl text-body-lg leading-relaxed text-muted">{hero.subhead}</p>
           <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:items-center">
-            <Button href={FUNNEL_START_HREF} size="lg" className="whitespace-nowrap">
+            <Button href={funnelStartHref(config)} size="lg" className="whitespace-nowrap">
               {FUNNEL_CTA_LABEL}
             </Button>
             <Button href="#how-it-works" variant="ghost" size="lg" className="whitespace-nowrap">
@@ -296,7 +298,7 @@ export function PricingBeat({ config }: { config: FunnelConfig }) {
       <p className="mx-auto mt-6 max-w-2xl text-center text-body-sm leading-relaxed text-muted">{pricing.note}</p>
 
       <div className="mt-7 flex justify-center">
-        <Button href={FUNNEL_START_HREF} size="lg">
+        <Button href={funnelStartHref(config)} size="lg">
           {FUNNEL_CTA_LABEL}
         </Button>
       </div>
@@ -380,7 +382,7 @@ export function FinalCta({ config }: { config: FunnelConfig }) {
         <h2 className="font-display uppercase text-on-ink text-4xl sm:text-5xl">{finalCta.header}</h2>
         <p className="mt-4 text-body-lg leading-relaxed text-on-ink-muted">{finalCta.subhead}</p>
         <div className="mt-8 flex justify-center">
-          <Button href={FUNNEL_START_HREF} size="lg">
+          <Button href={funnelStartHref(config)} size="lg">
             {FUNNEL_CTA_LABEL}
           </Button>
         </div>

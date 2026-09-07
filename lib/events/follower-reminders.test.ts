@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
+import { sourceWithoutComments } from '@/test/source-shape'
 import { join } from 'node:path'
 import {
   selectFollowerReminderRecipients,
@@ -189,11 +190,11 @@ describe('every reminder/confirmation when-line threads the event time zone', ()
   })
 
   it('the RSVP reminder cron imports THIS formatter and passes ev.time_zone', () => {
-    const src = readFileSync(
-      join(__dirname, '../../app/api/cron/event-reminders/route.ts'),
-      'utf8',
-    )
-    expect(src).toContain("import { formatAbsolute } from '@/lib/events/follower-reminders'")
+    // Comment- and import-free (LIVE-167): the call is the needle, never the import line.
+    const src = sourceWithoutComments(join(__dirname, '../../app/api/cron/event-reminders/route.ts'), {
+      imports: true,
+    })
+    expect(src).toMatch(/\bformatAbsolute\(/)
     expect(src).toContain('formatAbsolute(ev.starts_at, ev.time_zone)')
     // The route must not regrow a private copy that pins HOME again.
     expect(src).not.toContain('function formatAbsolute')
