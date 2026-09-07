@@ -163,16 +163,33 @@ const ITEM_COLS =
   // journey-view load. The item's own est_minutes is the source of truth for a step's time.
   'practice:practices(id, title, description, domain_id, cadence)'
 
-/** A url-safe slug from the title + a short random suffix (slugs are unique). */
-function slugify(title: string): string {
-  const base =
+/** The url-safe ROOT of a title, before the uniqueness suffix. Split out of `slugify` for
+ *  LIVE-202: the re-mint gate below has to ask "is this slug still the untitled placeholder"
+ *  and "does the new title yield a real root", and neither question can be asked of a function
+ *  that appends randomness. */
+function slugRoot(title: string): string {
+  return (
     title
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-+|-+$/g, '')
       .slice(0, 48) || 'journey'
-  return `${base}-${Math.random().toString(36).slice(2, 8)}`
+  )
 }
+
+/** A url-safe slug from the title + a short random suffix (slugs are unique). */
+function slugify(title: string): string {
+  return `${slugRoot(title)}-${Math.random().toString(36).slice(2, 8)}`
+}
+
+/** The title `app/(main)/journeys/create-actions.ts` stamps on a journey nobody has named yet
+ *  (the no-template path), plus the slug shape `updatePlan`'s re-mint reads as "this URL was
+ *  never chosen by anyone". `slugify` appends `Math.random().toString(36).slice(2, 8)`, which is
+ *  one to six base-36 characters, so the placeholder shape is the root plus that suffix — and
+ *  nothing else, so `untitled-journey-recipes` (a real title) is never mistaken for one. */
+const PLACEHOLDER_JOURNEY_TITLE = 'Untitled journey'
+const PLACEHOLDER_JOURNEY_ROOT = slugRoot(PLACEHOLDER_JOURNEY_TITLE)
+const PLACEHOLDER_JOURNEY_SLUG = new RegExp(`^${PLACEHOLDER_JOURNEY_ROOT}-[0-9a-z]{1,6}$`)
 
 const touch = () => ({ updated_at: new Date().toISOString() })
 
@@ -556,7 +573,42 @@ export async function updatePlan(
   },
 ): Promise<JourneyWriteResult> {
   const update: Record<string, unknown> = {}
-  if (patch.title !== undefined) update.title = patch.title.trim().slice(0, 120) || 'Untitled journey'
+  // 🔴 SLUG RE-MINT (LIVE-202, ported from the fix LIVE-201 shipped on practices). `slugify` was
+  // called at CREATE, FORK and DUPLICATE and nowhere else, so a journey's public URL was frozen at
+  // the moment it was created — and a journey is created BEFORE it is named: the no-template path
+  // of app/(main)/journeys/create-actions.ts stamps the literal title 'Untitled journey', which
+  // slugs to `untitled-journey-<random>`. Naming it afterwards wrote the title and left the URL
+  // alone. app/sitemap.ts advertises /discover/journeys/<slug> for every journey
+  // `listPublicJourneys` returns, so a journey named after creation and then published was
+  // permanently crawled under a placeholder URL — the same defect as LIVE-188, one entity over.
+  //
+  // Every clause is load-bearing, and they are the four LIVE-201 found the hard way:
+  //   • only when a title is being written;
+  //   • only when the new title yields a real root that is NOT the placeholder again, so re-saving
+  //     a still-unnamed journey never churns its URL for nothing (checked first: it is free, and it
+  //     keeps the common save off the extra read below);
+  //   • only when the current slug is STILL the untitled placeholder — a slug that any real title
+  //     ever earned, at create, fork or duplicate, is never touched;
+  //   • only while the journey is still PRIVATE. A public journey keeps its URL: it is in the
+  //     sitemap, and a silent slug change on an indexed page splits its crawl signal, so renaming a
+  //     published journey stays a deliberate act (rename + a 308, exactly as LIVE-188 was handled).
+  //     That is also why no redirect row is written here — a private journey's placeholder URL was
+  //     never public, so there is nothing left resolving to it.
+  if (patch.title !== undefined) {
+    const nextTitle = patch.title.trim().slice(0, 120) || PLACEHOLDER_JOURNEY_TITLE
+    update.title = nextTitle
+    if (slugRoot(nextTitle) !== PLACEHOLDER_JOURNEY_ROOT) {
+      const { data } = await db()
+        .from('journey_plans')
+        .select('slug, visibility')
+        .eq('id', planId)
+        .maybeSingle()
+      const before = data as { slug: string | null; visibility: string | null } | null
+      if (before?.visibility === 'private' && before.slug && PLACEHOLDER_JOURNEY_SLUG.test(before.slug)) {
+        update.slug = slugify(nextTitle)
+      }
+    }
+  }
   if (patch.summary !== undefined) update.summary = patch.summary?.trim().slice(0, 280) || null
   if (patch.intro !== undefined) update.intro = patch.intro?.trim().slice(0, 8000) || null
   if (patch.emoji !== undefined) update.emoji = patch.emoji?.trim().slice(0, 16) || null
