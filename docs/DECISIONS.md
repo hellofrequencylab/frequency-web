@@ -35930,3 +35930,54 @@ Two things were re-tested and NOT changed. The host-payout failure logged at 20:
 Three behaviour changes ride along and are stated rather than buried: `/admin`'s "Events ahead" now excludes cancelled events (the old `head: true` had no `is_cancelled` filter at all, so it had been counting them); the Space calendar summary and the public hero stat move to `upcomingEventFloor()` so a 7pm class no longer drops off at 7:01pm; and five `head: true` tallies became row reads capped at `SERIES_WIDE_READ`.
 
 ⚪ **Deliberately not folded, each for a reason.** Two counts are computed inside Postgres (`circle_momentum`, `public_events`) and their RPCs do not return `parent_event_id` — a migration, not a TS change. `memberEventAllowanceOk` is inflated the same way but it is an ENTITLEMENT QUOTA, and folding it LOOSENS a cap, so it is an owner call rather than a bug fix. The weekly volume bars on `/admin` still count occurrences, because "how busy is the calendar" is honestly per-date.
+
+---
+
+## ADR-1219: the per-topic email digest was removed, not deferred, and a constant in one file was the only record (2026-09-07)
+
+**Status.** Accepted. **Amends [ADR-615](DECISIONS.md)** (CRM Phase 6), which introduced the per-category frequency selector and still described it as live. Closes LIVE-191.
+
+**Context.** ADR-615 shipped a per-topic **frequency** selector — `realtime` / `daily_digest` / `weekly_digest`, stored in the six `freq_*` columns on `notification_preferences` — on the stated design that "a per-category frequency selector defers the realtime send for the digest cron to batch". The cron was a follow-up and never shipped. `/api/cron/weekly-digest` is the COMMUNITY digest (`lib/digest`) and reads none of those columns.
+
+The consequence was worse than fewer emails. `isFrequencyDeferred` returned true for a non-realtime category, deferral means "suppress the realtime send, a cron will batch it later", and there was no cron — so a member who picked Daily received the realtime email never and the digest never. A preference that silently means "off" is not quieter, it is broken, and the member has no way to tell.
+
+The owner removed the selector on **2026-08-10**. That decision was recorded nowhere except a comment in `lib/notification-preferences.ts` and a parenthetical in the settings form, which is why a backlog row was filed a month later describing the control as still present, and why ADR-615 kept describing a feature that had been taken out.
+
+**Decision — record the removal, and keep the three pieces the removal deliberately did not touch.**
+
+- **The control is gone; the columns and the values stay.** `NOTIFICATION_FREQUENCIES` still carries both digest values and the check constraint still admits them. That is what makes a legacy stored value READABLE rather than a constraint violation; `normalizeFrequency` coerces anything unrecognised to `realtime`.
+- **🔴 Removing the control alone would have been the wrong half.** It would have left exactly the members affected by the bug muted forever, with the control to fix it taken away. So deferral is gated on `DIGEST_BATCHER_EXISTS`, which is `false`: every category sends realtime regardless of what is stored, which is what a member on a digest was expecting to receive eventually. The gate is the load-bearing half, not the UI removal.
+- **The constant remains the seam, and the batcher remains buildable.** Flipping it to `true` belongs in the same commit that ships a cron reading `freq_*` per profile and batching the deferred sends. This ADR records that the feature was withdrawn, not that the idea was rejected.
+
+**Consequences.** Measured on 2026-09-07 before closing the row: zero `.tsx` files under `app/` or `components/` mention either digest value, and production's `notification_preferences` carries one row whose six `freq_*` columns all read `realtime` — so no cohort is silently receiving nothing and there is no backfill to run. LIVE-191's probe is re-pointed from "the batcher exists" to the consequence of the path actually taken, in two mutation-proven arms: no rendered component offers a digest cadence, and the deferral is still gated. If the batcher is ever built, the first arm should fail and the probe goes back to measuring `DIGEST_BATCHER_EXISTS === true`.
+
+⚠️ **The general hazard, which is why this ADR exists at all.** A decision that lives only as a constant in the file it governs is invisible to everyone who reads the decision record instead of the code — including the audit that filed LIVE-191 against a control that had not existed for a month. A withdrawal is a decision and gets an ADR, the same as a launch.
+
+---
+
+## ADR-1220: a self-hosted image URL in structured data must name a file, because a wrong one answers 200 (2026-09-07)
+
+**Status.** Accepted. Closes LIVE-205 properly, after its own first fix failed the same way. Supersedes nothing; it adds the gate [ADR-1156](DECISIONS.md)'s reasoning implies.
+
+**Context.** `lib/jsonld.ts` emitted the primary schema.org `image` for every event and Space as `abs('/events/<slug>/opengraph-image')` — a metadata image route under the `(main)` route group, which Next serves at a six-character-hashed path. LIVE-205 named this, and #2407 repointed nine sites to `abs('/opengraph-image')`, the root card. **That URL is also dead**: `app/opengraph-image.jpg` is a STATIC metadata file, served with its extension, and the extensionless path is not a route.
+
+**🔴 Neither dead URL 404s, and that is the entire reason both shipped.** Measured on production 2026-09-07:
+
+| URL | Status | Content-Type | `x-matched-path` |
+| --- | --- | --- | --- |
+| `/opengraph-image` | 200 | `text/html` | `/` |
+| `/events/<slug>/opengraph-image` | 200 | `text/html` | `/` |
+| `/opengraph-image.jpg` | 200 | `image/jpeg` | `/opengraph-image.jpg` |
+
+Both wrong forms fall through the app's catch-all to the home page. Structured data was advertising an HTML document as an image — through a build, a lint, `check:seo`, `check:og-trace` and 14,000 tests, all green. A 404 would have been visible to any link checker; a 200 is visible to nothing but a content-type read.
+
+**Decision.**
+
+- **One constant, `SITE_OG_IMAGE` in `lib/site.ts`**, replaces ten hand-written call sites. A path spelled ten times is a path that can be wrong ten times.
+- **🔴 The gate asserts a FILE, not a shape.** `lib/jsonld.test.ts` walks twelve schema builders, collects every image URL on our own origin, and requires a real file at that path under `app/` or `public/`. This is deliberately not a regex over URL spelling: both defects were correctly-spelled URLs. A metadata ROUTE has no file, so the route-group shape fails the same arm — the file check subsumes the shape check rather than sitting beside it.
+- **Only a static file at a non-grouped root may be named by hand.** A metadata route's URL is Next's to derive and drifts whenever a route group is added, renamed or removed. Pages that want their own card leave `openGraph.images` unset and let the metadata API inject the suffixed URL.
+- **The image sitemap advertises nothing rather than something false.** `app/sitemap.ts` carried the same unhashed per-entity paths on every Space and every upcoming event, in a file the first fix never opened. Naming the one shared site card on every URL would be spam; carrying each entity's real cover needs the readers to project `cover_image_path` through the storage helper, which is LIVE-207.
+
+**Consequences.** Three mutation arms are proven and each fails naming the offending URL: the extensionless static file, a route-group per-entity card, and a restored sitemap entry. Two `spaceSchema` tests that had pinned a dead URL **twice** — first the per-entity card, then the extensionless root — now pin the constant, with the file check behind them; the comment there records both corrections, because a literal can be wrong twice and a file cannot.
+
+⚠️ **The transferable rule, and it is not about images.** LIVE-205's close condition read "resolves 200 on a deployed build". It was specific, measurable, and would have **passed on the defect**. A close condition can be perfectly checkable and still check the wrong thing; when a fail-safe's success and failure look identical from the outside, the probe has to reach for whatever distinguishes them — here, content-type, or offline, existence.

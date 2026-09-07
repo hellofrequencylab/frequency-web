@@ -4,7 +4,7 @@
 // location is CITY-LEVEL ONLY (addressLocality), never a precise venue. When a
 // city isn't known we describe the location generically rather than leak it.
 
-import { SITE_URL, SITE_NAME, SITE_DESCRIPTION, SITE_TAGLINE } from '@/lib/site'
+import { SITE_URL, SITE_NAME, SITE_DESCRIPTION, SITE_TAGLINE, SITE_OG_IMAGE } from '@/lib/site'
 import { eventIsoWithOffset } from '@/lib/time/zone'
 import type { PublicCircle, PublicEvent, TopicalChannel } from '@/lib/discover'
 import type { JourneyPlan, JourneyPlanItem } from '@/lib/journey-plans'
@@ -205,19 +205,27 @@ export function eventSchema(event: PublicEvent & EventSchemaEnrichment) {
     // Google lists `image` as required for Event rich results, and this is the SITE card because
     // the per-event one cannot be named from here (LIVE-205).
     //
-    // 🔴 THIS USED TO LEAD WITH abs(`/events/${event.slug}/opengraph-image`), AND THAT URL 404s.
+    // 🔴 THIS USED TO LEAD WITH abs(`/events/${event.slug}/opengraph-image`), AND THAT URL IS DEAD.
     // A metadata image route whose parent path contains a ROUTE GROUP gets a six-character hash
     // appended by Next (`getMetadataRouteSuffix`), and the per-event card sits under
     // app/(main)/, so it is served at `/events/<slug>/opengraph-image-lyffkg` and never at the
     // bare path — read straight out of .next/server on a real build, not inferred.
     //
+    // ⚠️ AND "DEAD" DOES NOT MEAN 404, WHICH IS WHY IT SURVIVED. Measured on production
+    // 2026-09-07, `/events/<slug>/opengraph-image` answers **200 with text/html** and
+    // `x-matched-path: /` — the home page, served through the app's own catch-all. Structured
+    // data was advertising an HTML document as an image. A 404 would at least have been visible
+    // to a link checker; a 200 is invisible to everything except a content-type read, which is
+    // exactly what the guard now does (LIVE-205, ADR-1220).
+    //
     // The hash is a build detail nobody should hardcode: it is derived from the parent path and
     // would drift the moment a route group is added, renamed or removed. So the schema names the
-    // ROOT card, which is a static file (app/opengraph-image.jpg) at a path with no route group
-    // in it and therefore no suffix. The SHARE card is unaffected and still per-event: this page
-    // deliberately leaves openGraph.images unset so Next injects the suffixed URL itself, which
-    // is the one mechanism that knows the hash.
-    image: [abs('/opengraph-image')],
+    // ROOT card via SITE_OG_IMAGE, a static file (app/opengraph-image.jpg) at a path with no
+    // route group in it and therefore no suffix — and WITH its extension, since the
+    // extensionless form is the same 200-HTML trap. The SHARE card is unaffected and still
+    // per-event: this page deliberately leaves openGraph.images unset so Next injects the
+    // suffixed URL itself, which is the one mechanism that knows the hash.
+    image: [SITE_OG_IMAGE],
     ...(event.description ? { description: event.description } : {}),
     location,
     url,
@@ -399,7 +407,7 @@ export function journeySchema(plan: JourneyPlan, items: JourneyPlanItem[]) {
     '@type': 'HowTo',
     name: plan.title,
     ...(plan.summary ? { description: plan.summary } : {}),
-    image: [abs('/opengraph-image')],
+    image: [SITE_OG_IMAGE],
     url,
     ...(totalMinutes > 0 ? { totalTime: `PT${totalMinutes}M` } : {}),
     step: items.map((it, i) => ({
@@ -450,7 +458,7 @@ export function localBusinessSchema(p: {
     '@type': 'LocalBusiness',
     name: p.name,
     url,
-    image: [abs('/opengraph-image')],
+    image: [SITE_OG_IMAGE],
     ...(p.description ? { description: p.description } : {}),
     ...(p.website ? { sameAs: [p.website] } : {}),
     ...(hasAddress
@@ -555,7 +563,7 @@ export function spaceSchema(space: SpaceSchemaInput) {
   // event one did (LIVE-205): app/(main)/spaces/[slug]/opengraph-image.tsx is under a route group,
   // so Next serves it at `/spaces/<slug>/opengraph-image-tt3pwa`. Removed rather than hardcoded —
   // the suffix is Next's to derive. The share card is unaffected and still per-Space.
-  const image = [...(space.logoUrl ? [space.logoUrl] : []), abs('/opengraph-image')]
+  const image = [...(space.logoUrl ? [space.logoUrl] : []), SITE_OG_IMAGE]
 
   const sameAs = cleanStrings(space.sameAs)
   const openingHours = cleanStrings(space.openingHours)
@@ -736,7 +744,7 @@ export function practiceSchema(p: {
     '@type': 'HowTo',
     name: p.title,
     ...(desc ? { description: desc } : {}),
-    image: [abs('/opengraph-image')],
+    image: [SITE_OG_IMAGE],
     url,
     step: [
       {
@@ -847,7 +855,7 @@ export function howToSchema(howTo: {
     ? (Array.isArray(howTo.image) ? howTo.image : [howTo.image]).map((src) =>
         src.startsWith('http') ? src : abs(src),
       )
-    : [abs('/opengraph-image')]
+    : [SITE_OG_IMAGE]
   return {
     '@context': 'https://schema.org',
     '@type': 'HowTo',
@@ -978,7 +986,7 @@ export function productSchema(p: {
     '@type': 'Product',
     name: p.title,
     ...(p.description ? { description: p.description } : {}),
-    image: [...(p.image ? [p.image] : []), abs('/opengraph-image')],
+    image: [...(p.image ? [p.image] : []), SITE_OG_IMAGE],
     url,
     ...(p.sellerName ? { brand: { '@type': 'Brand', name: p.sellerName } } : {}),
     ...(rating ? { aggregateRating: rating } : {}),
@@ -1103,7 +1111,7 @@ export function housingListingSchema(h: {
     '@type': h.roomType ? ROOM_TYPE_SCHEMA[h.roomType] ?? 'Accommodation' : 'Accommodation',
     name: h.title,
     ...(h.description ? { description: h.description } : {}),
-    image: [...(h.image ? [h.image] : []), abs('/opengraph-image')],
+    image: [...(h.image ? [h.image] : []), SITE_OG_IMAGE],
     url,
     ...(typeof h.bedrooms === 'number' ? { numberOfBedrooms: h.bedrooms } : {}),
     ...(h.city
@@ -1154,7 +1162,7 @@ export function podcastSchema(show: {
   publisherName?: string | null
 }) {
   const url = abs(show.path)
-  const image = [...(show.coverUrl ? [show.coverUrl] : []), abs('/opengraph-image')]
+  const image = [...(show.coverUrl ? [show.coverUrl] : []), SITE_OG_IMAGE]
   return {
     '@context': 'https://schema.org',
     '@type': 'PodcastSeries',

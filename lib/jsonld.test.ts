@@ -1,6 +1,12 @@
 import { describe, it, expect } from 'vitest'
+import { existsSync, readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import {
   articleSchema,
+  housingListingSchema,
+  localBusinessSchema,
+  podcastSchema,
+  practiceSchema,
   breadcrumbSchema,
   eventSchema,
   organizationSchema,
@@ -16,7 +22,7 @@ import {
   spaceOfferingsSchema,
   parseOpeningHours,
 } from './jsonld'
-import { SITE_URL, SITE_NAME } from './site'
+import { SITE_URL, SITE_NAME, SITE_OG_IMAGE } from './site'
 import type { PublicEvent, PublicCircle } from './discover'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -543,20 +549,25 @@ describe('spaceSchema', () => {
     expect(spaceSchema({ slug: 's', type: 'mystery', name: 'N' })['@type']).toBe('Organization')
   })
 
-  // ⚠️ THESE TWO TESTS USED TO PIN THE PER-SPACE OG CARD in the middle of the array, and that
-  // URL was a 404 (LIVE-205): the card lives under app/(main)/, so Next serves it at
-  // `/spaces/<slug>/opengraph-image-tt3pwa` and never at the bare path. The tests were asserting
-  // the defect, which is why nothing caught it for as long as it was live. They now pin the
-  // corrected ordering. The card is not replaced by a hardcoded hash — the suffix is Next's to
-  // derive and would drift; the SHARE card is still per-Space via the metadata API.
+  // ⚠️ THESE TWO TESTS HAVE PINNED A DEAD URL TWICE, WHICH IS THE WHOLE LESSON. They first
+  // asserted the PER-SPACE card in the middle of the array — dead, because that card lives under
+  // app/(main)/ and Next serves it at `/spaces/<slug>/opengraph-image-tt3pwa`. Corrected on
+  // 2026-09-07 to the ROOT card, written `${SITE_URL}/opengraph-image` — also dead, because the
+  // root card is a STATIC file and its URL carries `.jpg`; the extensionless path falls through
+  // to the home page as 200 text/html. Both corrections looked right and neither was checked
+  // against anything real.
+  //
+  // So they now pin SITE_OG_IMAGE, the single constant, and the `resolves to a file on disk`
+  // block below is what actually holds the line: a URL is only correct if something answers it.
+  // A literal here can be wrong twice; a file either exists or it does not.
   it('leads image with the operator logo, then the site image', () => {
     const result = spaceSchema({ slug: 'sp', type: 'business', name: 'N', logoUrl: 'https://cdn/l.png' })
-    expect(result.image).toEqual(['https://cdn/l.png', `${SITE_URL}/opengraph-image`])
+    expect(result.image).toEqual(['https://cdn/l.png', SITE_OG_IMAGE])
   })
 
   it('falls back to the site image when no logo, and includes tagline as description', () => {
     const result = spaceSchema({ slug: 'sp', type: 'business', name: 'N', tagline: 'Move well, locally.' })
-    expect(result.image).toEqual([`${SITE_URL}/opengraph-image`])
+    expect(result.image).toEqual([SITE_OG_IMAGE])
     expect(result).toHaveProperty('description', 'Move well, locally.')
   })
 
@@ -833,8 +844,10 @@ describe('LIVE-205 — no schema node hand-writes a per-entity OG card URL', () 
     expect(json, 'a hand-written per-event OG path is a 404 in live structured data').not.toMatch(
       PER_ENTITY_CARD,
     )
-    // POSITIVE CONTROL: the node still carries an image, so this is not passing by emptiness.
-    expect(json).toContain('/opengraph-image')
+    // POSITIVE CONTROL: the node still carries the site card, so this is not passing by
+    // emptiness. It pins SITE_OG_IMAGE rather than the substring '/opengraph-image', which the
+    // broken extensionless URL also contained — the control was passing on the defect.
+    expect(json).toContain(SITE_OG_IMAGE)
   })
 
   it('spaceSchema names no per-Space card, with or without an operator logo', () => {
@@ -847,7 +860,7 @@ describe('LIVE-205 — no schema node hand-writes a per-entity OG card URL', () 
       expect(json, `per-Space OG path leaked (logoUrl=${String(logoUrl)})`).not.toMatch(
         PER_ENTITY_CARD,
       )
-      expect(json).toContain('/opengraph-image')
+      expect(json).toContain(SITE_OG_IMAGE)
     }
   })
 
@@ -857,5 +870,139 @@ describe('LIVE-205 — no schema node hand-writes a per-entity OG card URL', () 
     expect(`https://x.test/spaces/some-slug/opengraph-image`).toMatch(PER_ENTITY_CARD)
     // …and must NOT fire on the root card, which is a static file at a path with no route group.
     expect(`https://x.test/opengraph-image`).not.toMatch(PER_ENTITY_CARD)
+  })
+})
+
+// ── LIVE-205, second half: a self-origin image URL is only correct if something answers it ─────
+//
+// 🔴 THE FIRST FIX FOR LIVE-205 REPLACED A DEAD URL WITH A DEAD URL, and every gate stayed green.
+// The per-entity cards were dead because a route group hashes them; the root card was then named
+// as `${SITE_URL}/opengraph-image`, which is dead because `app/opengraph-image.jpg` is a STATIC
+// metadata file and Next serves it WITH its extension. Measured on production 2026-09-07:
+//
+//   /opengraph-image      -> 200  text/html    x-matched-path: /        (the home page)
+//   /opengraph-image.jpg  -> 200  image/jpeg   84,049 bytes             (this file, byte for byte)
+//
+// Neither shape 404s. Both answer 200, which is why a link check, a build, a lint and 14,000 tests
+// all passed over them: structured data was advertising an HTML document as an image, and the only
+// thing that separates the two is content-type — or, offline, whether a file exists at all.
+//
+// So this block asserts the CONSEQUENCE and nothing about the spelling: take every image URL a
+// schema builder emits on our OWN origin, and require that a real file sits at that path under
+// `app/` or `public/`. A metadata ROUTE (`opengraph-image.tsx`) has no such file, so the route-group
+// shape fails here too — this arm subsumes the shape guard above rather than repeating it.
+describe('LIVE-205 — every self-origin schema image resolves to a file on disk', () => {
+  /** Every string under an image-bearing key, at any depth. */
+  function imageUrls(node: unknown): string[] {
+    const out: string[] = []
+    const KEYS = new Set(['image', 'images', 'logo', 'thumbnailUrl', 'contentUrl', 'primaryImageOfPage'])
+    const walk = (v: unknown, underImageKey: boolean) => {
+      if (typeof v === 'string') {
+        if (underImageKey) out.push(v)
+        return
+      }
+      if (Array.isArray(v)) {
+        for (const x of v) walk(x, underImageKey)
+        return
+      }
+      if (v && typeof v === 'object') {
+        for (const [k, x] of Object.entries(v as Record<string, unknown>)) {
+          walk(x, underImageKey || KEYS.has(k))
+        }
+      }
+    }
+    walk(node, false)
+    return out
+  }
+
+  /** Self-origin only: a CDN or operator-uploaded URL is not ours to verify. */
+  const ours = (url: string) => url.startsWith(`${SITE_URL}/`)
+
+  /** Next serves `app/<p>` for a static metadata file and `public/<p>` for everything else. */
+  function resolvesOnDisk(url: string): boolean {
+    const path = new URL(url).pathname
+    return existsSync(join('app', path)) || existsSync(join('public', path))
+  }
+
+  // One node per builder that can emit an image. Fixtures are deliberately MINIMAL — the point is
+  // the fallback path each takes when the entity supplies no image of its own, which is precisely
+  // when the site card gets named.
+  const NODES: [string, unknown][] = [
+    ['organizationSchema', organizationSchema()],
+    ['websiteSchema', websiteSchema()],
+    [
+      'eventSchema',
+      eventSchema({
+        id: 'e1',
+        slug: 'a-real-event',
+        title: 'An event',
+        starts_at: '2027-01-01T18:00:00Z',
+        time_zone: 'UTC',
+      } as Parameters<typeof eventSchema>[0]),
+    ],
+    ['spaceSchema (no logo)', spaceSchema({ slug: 'sp', type: 'business', name: 'N' })],
+    [
+      'spaceSchema (operator logo)',
+      spaceSchema({ slug: 'sp', type: 'business', name: 'N', logoUrl: 'https://cdn.example.com/l.png' }),
+    ],
+    ['personSchema', personSchema({ name: 'A Member', path: '/spotlight/a-member' })],
+    ['localBusinessSchema', localBusinessSchema({ name: 'A Partner', slug: 'a-partner' })],
+    ['practiceSchema', practiceSchema({ id: 'p1', title: 'A practice' })],
+    ['productSchema', productSchema({ title: 'A product', path: '/store/a-product' })],
+    ['housingListingSchema', housingListingSchema({ title: 'A room', path: '/housing/h1' })],
+    ['podcastSchema', podcastSchema({ title: 'A show', path: '/spaces/sp/podcasts/a-show' })],
+    [
+      'articleSchema',
+      articleSchema({ title: 'T', description: 'D', path: '/help/x/y', image: '/images/hero.jpg' }),
+    ],
+  ]
+
+  it.each(NODES)('%s emits only image URLs that exist on disk', (_name, node) => {
+    const mine = imageUrls(node).filter(ours)
+    for (const url of mine) {
+      expect(
+        resolvesOnDisk(url),
+        `${url} is on our origin but no file backs it — a schema image that answers with HTML ` +
+          `(or 404s) is worse than none, because nothing reports it`,
+      ).toBe(true)
+    }
+  })
+
+  it('at least one builder actually emits a self-origin image, so the sweep is not vacuous', () => {
+    const total = NODES.flatMap(([, n]) => imageUrls(n).filter(ours))
+    expect(total.length).toBeGreaterThan(0)
+    expect(total).toContain(SITE_OG_IMAGE)
+  })
+
+  // POSITIVE CONTROLS: the two URLs that were live, and would both pass any 200-based check.
+  it('would reject both of the URLs this row has already shipped', () => {
+    expect(resolvesOnDisk(`${SITE_URL}/opengraph-image`), 'the extensionless static file').toBe(false)
+    expect(
+      resolvesOnDisk(`${SITE_URL}/events/a-real-event/opengraph-image`),
+      'the route-group-hashed per-entity card',
+    ).toBe(false)
+    // …and accepts the two that are real.
+    expect(resolvesOnDisk(SITE_OG_IMAGE)).toBe(true)
+    expect(resolvesOnDisk(`${SITE_URL}/images/hero.jpg`)).toBe(true)
+  })
+})
+
+// ── LIVE-205, third half: the sitemap advertised the same non-images ───────────────────────────
+//
+// `app/sitemap.ts` carried `images: [`${SITE_URL}/events/<slug>/opengraph-image`]` on every event
+// and the same shape on every Space — the identical defect, in a file the first fix never opened,
+// and one that ships those URLs to Google directly rather than through a schema node. They are
+// removed rather than repointed: naming the one shared site card on every URL would be spam, and
+// carrying each entity's real cover needs the reader to project `cover_image_path` (LIVE-207).
+describe('LIVE-205 — the sitemap names no metadata-route image', () => {
+  it('emits no per-entity opengraph-image URL', () => {
+    const src = readFileSync('app/sitemap.ts', 'utf8')
+    const code = src
+      .split('\n')
+      .filter((l) => !/^\s*(\/\/|\*|\/\*)/.test(l))
+      .join('\n')
+    expect(code, 'an image sitemap entry that resolves to HTML is worse than none').not.toMatch(
+      /images:\s*\[[^\]]*opengraph-image/,
+    )
   })
 })

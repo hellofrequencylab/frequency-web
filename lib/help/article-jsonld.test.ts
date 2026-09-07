@@ -93,8 +93,11 @@ describe('the schema image is a URL that resolves on its own', () => {
     // 🔴 The trap this exists for. The per-article card next door is served at
     // `/help/<category>/<slug>/opengraph-image-12boxn` — Next appends a hash to any metadata image
     // route whose parent path contains a route group, and every help route sits under `app/(help)`.
-    // The bare path is a 404, so `abs('.../opengraph-image')` in structured data would be worse
-    // than the plain photograph. Next writes the suffixed URL into og:image itself; nothing
+    // ⚠️ AND THE BARE PATH IS NOT A 404 — it answers 200 with the HOME PAGE's HTML (measured on
+    // production 2026-09-07, `x-matched-path: /`), which is why the same mistake elsewhere in the
+    // schema survived a build, a lint and 14,000 tests. `abs('.../opengraph-image')` in structured
+    // data would advertise an HTML document as an image, which is worse than the plain photograph
+    // and reported by nothing. Next writes the suffixed URL into og:image itself; nothing
     // hand-written can.
     const images = articleNode(helpArticleJsonLd({ article, category }))?.image
     expect(Array.isArray(images)).toBe(true)
