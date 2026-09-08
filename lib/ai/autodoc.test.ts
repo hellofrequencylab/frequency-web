@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest'
+import { readFileSync } from 'node:fs'
 import {
   buildAutodocMessages,
   parseAutodocResponse,
@@ -151,5 +152,24 @@ describe('formatAdvisoryComment', () => {
   it('names AI_DISABLED when AI is switched off on purpose', () => {
     const c = formatAdvisoryComment(fallbackItems(articles), [], { kind: 'ai-disabled' })
     expect(c).toContain('AI_DISABLED')
+  })
+})
+
+// ── The load-bearing constraint: this module imports nothing ─────────────────────────────────
+//
+// scripts/help-autodoc.mts runs under `node --experimental-strip-types` and imports this file
+// directly, where a relative specifier must carry its file extension. An extensionless import
+// added here (`from './schema'`) fails the autodoc job at LOAD, before one line of it runs, and
+// the job's log is nearly empty because nothing got far enough to print. That happened once.
+//
+// The guard measures the consequence — no import statement survives in the source — rather than
+// the comment that asks for it.
+describe('autodoc.ts stays dependency-free so the CI script can load it directly', () => {
+  it('has no import statements', () => {
+    const src = readFileSync(new URL('./autodoc.ts', import.meta.url), 'utf8')
+    const imports = src
+      .split('\n')
+      .filter((l) => /^\s*import\s/.test(l) && !/^\s*\/\//.test(l))
+    expect(imports).toEqual([])
   })
 })

@@ -7,8 +7,12 @@
 //
 // Pure helpers here (prompt, parse, format, fallback) are unit-tested; the CI
 // script (scripts/help-autodoc.mts) does the I/O and the guarded model call.
-
-import { validateModelValue, z } from './schema'
+//
+// 🔴 THIS MODULE IMPORTS NOTHING, AND THAT IS LOAD-BEARING. scripts/help-autodoc.mts runs under
+// `node --experimental-strip-types` and imports this file directly, where a relative specifier
+// must carry its extension. An extensionless `./schema` import here fails the autodoc job at
+// load, before a line of it runs. Keep the row-shape check below in plain code rather than
+// reaching for the shared validator.
 
 export interface AutodocArticle {
   category: string
@@ -126,9 +130,10 @@ function salvageObjects(text: string): unknown[] {
 /** One review row as the model may shape it: the strict `{category, slug, needsUpdate, note}` the
  *  prompt asks for, or any of the near-miss shapes `identify` below can read. Rows that are not
  *  plain objects are dropped; the rest keep their keys for `identify`. */
-const AUTODOC_ROWS = z
-  .array(z.unknown())
-  .transform((items) => items.filter((r): r is Record<string, unknown> => !!r && typeof r === 'object' && !Array.isArray(r)))
+function autodocRows(raw: unknown): Record<string, unknown>[] {
+  if (!Array.isArray(raw)) return []
+  return raw.filter((r): r is Record<string, unknown> => !!r && typeof r === 'object' && !Array.isArray(r))
+}
 
 /** Output budget for the review call. One verdict object costs roughly 90 output
  *  tokens once it carries a note, so the old fixed 800 truncated any list past ~8
@@ -227,11 +232,11 @@ export function parseAutodocResponse(text: string, articles: AutodocArticle[]): 
   if (!Array.isArray(raw)) raw = salvageObjects(text)
   // The boundary (ADR-1287): every row must be a plain object before any key is read from it. A
   // scalar or a nested array in the list is dropped here, not coerced into an empty verdict.
-  const rows = validateModelValue(raw, AUTODOC_ROWS)
-  if (!rows.ok || rows.data.length === 0) return []
+  const rows = autodocRows(raw)
+  if (rows.length === 0) return []
 
   const out: AutodocItem[] = []
-  for (const r of rows.data) {
+  for (const r of rows) {
     const key = identify(r)
     if (!key) continue
     const [category, ...rest] = key.split('/')
