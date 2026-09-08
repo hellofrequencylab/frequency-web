@@ -37440,6 +37440,57 @@ So the code ships and the baseline does not move. `app-nearby` may go red on `pr
 
 ⚠️ **The generalisable part: "the sweep moves rendered pixels, deliberately" was true and still under-specified.** ADR-1124 wrote that sentence to make the red expected, and it did its job. What it did not say is *which kind* of pixels, and the difference decides what evidence a recapture can produce: a slice that moves layout leaves a signature in eleven bytes of PNG header that no rasteriser can forge, and a slice that only repaints leaves none. Both were called "moves pixels" and only one is provable. **Before promising a reviewer that a recapture will be verifiable, work out whether the change can move a dimension** — and if the answer comes from a code comment, read the CSS the comment is describing. This one had been wrong for three slices and nothing depended on it until the sweep reached a surface under a camera.
 ---
+
+## ADR-1282: LIVE-123 closes on a bound, not a cause: 0 stalls in 500 enumerated builds on the 8-core class (2026-09-08)
+
+**Status.** Accepted. Closes `LIVE-123`. Amends [ADR-1259](DECISIONS.md), which left the row open on the grounds that twenty green builds in one 35-minute window bound nothing, and set the closing condition this decision meets: *"capture a stall on the 8-core class, or state a bound over an enumerated population of builds on it — not another quiet window."*
+
+**Context.** ADR-1259 found that every stall in the row's ledger ran on a cle1 4-core / 8 GB builder, that the project moved to Vercel's Enhanced Build Machine (iad1, 8 cores, 16 GB) at the turn of 2026-09-02, and that the twenty builds it read were all on the new class and all clean. It refused to close the row on that reading, correctly: an intermittent failure with a ~27% historical rate can sit out a 35-minute window without saying anything. What it asked for instead was a population. This is the population.
+
+**The enumeration.** Every deployment of this project from 2026-09-02 00:00Z to 2026-09-08 05:27Z was listed from Vercel by created-time window, following each page's cursor until each window was exhausted, and a final query for anything newer than the last one returned nothing. Nothing was sampled at this step.
+
+| Day (UTC) | Total | Production | Preview | READY | ERROR | CANCELED |
+|---|---|---|---|---|---|---|
+| 2026-09-02 | 3 | 2 | 1 | 3 | 0 | 0 |
+| 2026-09-03 | 3 | 1 | 2 | 3 | 0 | 0 |
+| 2026-09-04 | 46 | 7 | 39 | 46 | 0 | 0 |
+| 2026-09-05 | 112 | 25 | 87 | 112 | 0 | 0 |
+| 2026-09-06 | 4 | 1 | 3 | 4 | 0 | 0 |
+| 2026-09-07 | 217 | 59 | 158 | 217 | 0 | 0 |
+| 2026-09-08 (to 05:27Z) | 115 | 26 | 89 | 115 | 0 | 0 |
+| **Total** | **500** | **121** | **379** | **500** | **0** | **0** |
+
+Five hundred of five hundred READY. The classification the enumeration was designed to feed, page-data stall / OOM report / real compile-or-gate failure / cancelled by a newer push, has nothing in it: 0, 0, 0, 0. The fourth zero is a reading of its own. The 09-05 and 09-07 merge bursts pushed the same branch minutes apart over and over, and Vercel let every one of those builds finish rather than cancelling the older.
+
+**🔴 The control, run before the zero was believed.** A listing that quietly filtered to READY would print this exact table for a project stalling every night, and the 2026-08-11 incident ([ADR-1002](DECISIONS.md)) is what happens when a gate measures the wrong thing convincingly. So the same listing was pointed at the ledger's own captures. The 2026-08-29 window returned `AnGdPo5f` and `2Yb7a9CW` as **ERROR**; `get_deployment` reads `9dC94yez` as **ERROR / out_of_memory** and `HRQttjaD` as **ERROR / BUILD_EXCEEDED_MAXIMUM_TIME** with a build span of 2,770,784 ms, which is the 46-minute ceiling the row measured to 136 ms. The instrument sees the failure this row is about. The 500 zeros are not a filter.
+
+**The machine and the durations.** The log head was read on eight builds spread across all seven days (`FBgU5EB3` 09-02, `HkTFyRyv` 09-03, `9dhDdJvR` 09-04, `AUFhqsQt` 09-05, `5Rex4cFT` 09-06, `AY72cwtK` 09-07, `CC7tpPYy` and `5MQXSiVV` 09-08): every one prints `Running build in Washington, D.C., USA (East) – iad1 (Enhanced Build Machine)` and `Build machine configuration: 8 cores, 16 GB`. Nineteen builds spread the same way were read for duration (`ready` minus `buildingAt`): **65s to 138s**, every one under the old class's *warm* control of 2m10s.
+
+The slowest of the nineteen is the build this row would have bet on. `CC7tpPYy` is a production redeploy triggered **without cache**: a cold install of 793 packages and a cold compile, on the new class. Read with `pnpm read:build-log`:
+
+| Phase | Reading |
+|---|---|
+| compile | 67s, cold |
+| collect page data | 7 workers, **10s** to the next line |
+| generate static pages | 254 pages in 4.5s |
+| build system report | "No memory or disk space problems detected", node_modules 1076 MB |
+| total | `Build Completed in /vercel/output [2m]` |
+
+Cold compile was this row's leading suspect for six weeks. On 8 cores it costs 67 seconds and nothing else. (The reader's one complaint on that log is that `check:notfound-routes` never printed; that build predates the sixth gate by 31 minutes, which is the dated-era case `scripts/read-build-log.test.ts` already pins.)
+
+**Decision.**
+
+- **`LIVE-123` is `done`, on the bound: 0 page-data stalls in 500 consecutive builds over 6 days on the 8-core class, against 6 captured of roughly 22 on the 4-core class.** With 500 clean builds a per-build stall rate above 0.6% is excluded at 95% (the rule of three), and the old class's ~27% is excluded at any confidence anyone would ask for.
+- **It is a bound, not a cause, and the row says so.** Nothing here explains why 4 cores and 8 GB stalled and 8 cores and 16 GB do not. The memory hypothesis stays neither confirmed nor refuted; the machine that produced the OOM no longer serves this project, so it cannot be tested from here. A row that closes with its cause unknown must say what reopens it, and this one does.
+- **What reopens it:** any Enhanced-class build that goes quiet at `Collecting page data` or ends ERROR with `BUILD_EXCEEDED_MAXIMUM_TIME` or `out_of_memory`. Save the log, run `pnpm read:build-log` on it, quote the `Build machine configuration` line, reopen with the reading. That is one command, and it is the first genuinely new evidence the row could get.
+- **No configuration moves.** ADR-1259's ruling stands: do not set `experimental.cpus`, do not touch `vercel.json`. The class that is not failing is not the class to slow down.
+- **The instrument stays.** `scripts/read-build-log.mjs` keeps both populations under `--baseline`, and its header now carries this bound beside them so the next reader starts from "500 of 500" rather than from "twenty of twenty".
+
+**One date corrected in passing.** ADR-1259 and the row's evidence dated captures D and E to 2026-09-01. Vercel's `createdAt` for `9dC94yez` is `1788220317007` (2026-08-31 23:51:57Z) and for `HRQttjaD` is `1788219660943` (2026-08-31 23:41:00Z). The left edge of the switch window is a day earlier than written; the right edge (`FBgU5EB3`, 09-02 00:28Z, Enhanced) and the production sighting (`4646RNG4`, 09-01 19:29Z) stand. The enumeration's start of 09-02 00:00Z is therefore conservative by more than a day, and the day of 2026-09-01, which this decision did not enumerate, sits inside the switch window rather than outside it.
+
+**Consequences.** The `live` lane loses its oldest P1. `docs/DEPLOY-SAFETY.md` now cites the row as closed beside the reader it recommends. The six captured logs, the four refuted hypotheses and the two populations remain in the row's detail as the trail; nothing in it should be re-run.
+
+⚠️ **The generalisable part: an intermittent failure closes on a population or not at all.** ADR-1259 had the right instinct and stopped one step short: it read twenty logs in full, which is the expensive half, and then declined to draw the bound because twenty is too few. The cheap half was never the reading, it was the counting. Listing 500 deployments by state took an hour of paging; reading 500 logs would have taken a week and added nothing to the bound, because the failure the row is about ends in a state the listing already carries. **When the symptom has a terminal state, count the states first and read logs second.** And run the control on the counter before believing a column of zeros. A listing that cannot show the failure would have printed the same table.
 ## ADR-1279: the Spotlight program closes — three more players behind one allowlist, one inventory read at two cosmetic seams, and a Guestbook note that can be reported, unhidden, and heard about (2026-09-08)
 
 **Status.** Accepted. Closes `PROG-SPOT`, whose first two increments were the Guestbook ([ADR-1132](DECISIONS.md)) and the sticker layer ([ADR-1275](DECISIONS.md)). Rests on the closed-allowlist embed idiom of `lib/spotlight/embeds.ts` ([ADR-437](DECISIONS.md)), the notification registry ([ADR-627](DECISIONS.md)), the wired-switch map (meta-scan B9, 2026-09-04), and the ownership rule `lib/awards/cosmetics.ts` already states from the granting side. Enforced by `lib/spotlight/embeds.test.ts`, `lib/awards/holdings.test.ts`, `lib/spotlight/cosmetics.test.ts`, `lib/profile/profile-theme-actions.test.ts`, `app/(main)/settings/profile/spotlight-actions.stickers.test.ts`, `lib/spotlight/guestbook-notify.test.ts`, `lib/notifications/{router,href,wired}.test.ts`, and the row's `cmd` probe.
