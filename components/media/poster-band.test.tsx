@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { PosterBand } from './poster-band'
-import { coverHeightClass, posterHeightClass, type CoverHeight } from '@/lib/layout/cover-height'
+import { coverHeightClass, posterHeightClass, posterMaxHeightClass, type CoverHeight } from '@/lib/layout/cover-height'
 
 // ── THE PHONE BAND: FULL BLEED, CROPPED, AIMED BY THE HOST ──────────────────────────────────────
 //
@@ -206,7 +206,10 @@ describe('the band takes its height, it does not know one', () => {
     const code = band.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '')
     expect(code).not.toMatch(/\bh-\d+\b/)
     expect(code).not.toMatch(/\bh-\[[\d.]+rem\]/)
-    expect(code).toContain('${heightClass}')
+    // Since ADR-1248 the band picks between the tier HEIGHT and the tier CEILING, and both arrive
+    // as props from the same ladder; the choice is the only thing it decides.
+    expect(code).toContain('${sizeClass}')
+    expect(code).toContain('shaped ? maxHeightClass : heightClass')
   })
 })
 
@@ -317,5 +320,142 @@ describe('the full bleed the owner asked for actually reaches both edges', () =>
     expect(cls).toContain('-mx-4')
     expect(cls, 'w-full with -mx-4 shifts the box instead of widening it').toContain('w-auto')
     expect(cls).toContain('sm:w-full')
+  })
+})
+
+// ── THE BAND TAKES THE POSTER'S OWN SHAPE WHEN IT KNOWS IT (ADR-1248, LIVE-200) ─────────────────
+//
+// Every block above measures the band with NO stored dimensions, and every one of them still holds
+// because that is still the fallback. This block measures the other path: the header controls read
+// the cover's intrinsic size off the focal picker's decoded <img> and store width / height on
+// events.theme.coverAspect (lib/events/cover-aspect.ts); the event page hands it here as `aspect`,
+// with the tier as a CEILING (`maxHeightClass`) rather than a height. The trade the whole file is
+// about then only applies to a cover TALLER than its tier at the band's width; a wider one is shown
+// whole at both widths, with no bars and no crop.
+
+/**
+ * Escape EVERY regex metacharacter in a class token, not the two that happen to appear today.
+ * A Tailwind arbitrary value carries brackets now and can carry a dot (`h-[22.5rem]`) or a slash
+ * (`h-1/2`) tomorrow, and an unescaped dot silently WIDENS the assertion below into "any
+ * character", which is how a guard stops guarding without ever going red. Flagged by CodeQL on
+ * the pull request that added the assertion.
+ */
+const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\/-]/g, '\\$&')
+
+describe('with the cover aspect known, the band is the poster and the tier is its ceiling', () => {
+  const SRC = 'https://example.test/p.png'
+  const plain = renderToStaticMarkup(
+    <PosterBand src={SRC} heightClass={posterHeightClass('standard')} focus="49% 48%" />,
+  )
+  const shaped = renderToStaticMarkup(
+    <PosterBand
+      src={SRC}
+      heightClass={posterHeightClass('standard')}
+      maxHeightClass={posterMaxHeightClass('standard')}
+      aspect={2.3333}
+      focus="49% 48%"
+    />,
+  )
+
+  it('🔴 sizes the band by aspect-ratio and swaps the tier height for the tier ceiling', () => {
+    expect(shaped).toContain('aspect-ratio:2.3333')
+    for (const token of posterMaxHeightClass('standard').split(/\s+/)) expect(shaped).toContain(token)
+    for (const token of posterHeightClass('standard').split(/\s+/)) {
+      expect(shaped, `the fixed height ${token} must not fight the aspect`).not.toMatch(
+        new RegExp(`class="[^"]*(^|\\s)${escapeRe(token)}(\\s|")`),
+      )
+    }
+  })
+
+  it('keeps both fits and the focal point, which take over exactly as before once the ceiling clamps', () => {
+    expect(shaped).toContain('object-cover sm:object-contain')
+    expect(shaped).toContain('object-position:49% 48%')
+  })
+
+  it('🔴 renders byte for byte what it rendered before when the value is absent', () => {
+    expect(plain).not.toContain('aspect-ratio')
+    expect(renderToStaticMarkup(
+      <PosterBand src={SRC} heightClass={posterHeightClass('standard')} aspect={null} focus="49% 48%" />,
+    )).toBe(plain)
+    expect(renderToStaticMarkup(
+      <PosterBand
+        src={SRC}
+        heightClass={posterHeightClass('standard')}
+        maxHeightClass={posterMaxHeightClass('standard')}
+        aspect={null}
+        focus="49% 48%"
+      />,
+    )).toBe(plain)
+  })
+
+  it('falls back on an unusable ratio, and on a ratio with no ceiling (an uncapped portrait band is worse than the guess)', () => {
+    for (const bad of [0, -1, NaN, Infinity]) {
+      expect(renderToStaticMarkup(
+        <PosterBand
+          src={SRC}
+          heightClass={posterHeightClass('standard')}
+          maxHeightClass={posterMaxHeightClass('standard')}
+          aspect={bad}
+          focus="49% 48%"
+        />,
+      ), `aspect ${bad}`).toBe(plain)
+    }
+    expect(renderToStaticMarkup(
+      <PosterBand src={SRC} heightClass={posterHeightClass('standard')} aspect={2.3333} focus="49% 48%" />,
+    )).toBe(plain)
+  })
+
+  it('🔴 the ceiling ladder IS the height ladder with max- in front, tier for tier, token for token', () => {
+    for (const tier of TIERS) {
+      const heights = posterHeightClass(tier).split(/\s+/)
+      const ceilings = posterMaxHeightClass(tier).split(/\s+/)
+      expect(ceilings, `tier ${tier}`).toEqual(heights.map((t) => t.replace(/(^|:)h-/, '$1max-h-')))
+    }
+  })
+
+  it('the 2026-08-31 flyer now renders WHOLE on a phone, and a square cover keeps its aimed crop', () => {
+    // 1400x600 at a 412px bleed is 177px tall, under the 221px standard ceiling: the band is the
+    // flyer, no crop on either axis. A 1:1 cover would be 412px tall, so the ceiling clamps it to
+    // 221 and the aimed phone crop above is exactly what still happens.
+    // The browser resolves `aspect-ratio` to a fractional height, so no rounding here either.
+    const flyer = 1400 / 600
+    expect(PHONE / flyer).toBeLessThan(PHONE_BAND_PX.standard)
+    expect(shownWidth(1400, 600, PHONE, PHONE / flyer)).toBeCloseTo(1, 6)
+    expect(shownArea(1400, 600, PHONE, PHONE / flyer)).toBeCloseTo(1, 6)
+    expect(PHONE / 1).toBeGreaterThan(PHONE_BAND_PX.standard)
+  })
+
+  it('the event page reads the stored aspect and passes it with the tier ceiling, only when the hero IS the cover', () => {
+    expect(eventPage).toContain("from '@/lib/events/cover-aspect'")
+    expect(eventPage).toContain('readEventCoverAspect(extra?.theme)')
+    const call = eventPage.slice(eventPage.indexOf('<PosterBand'), eventPage.indexOf('radiusClass="rounded-none sm:rounded-2xl"'))
+    expect(call).toContain('aspect={coverAspect}')
+    expect(call).toContain('maxHeightClass={posterMaxHeightCls}')
+    // A scanned poster can lead the band instead of the uploaded cover; it carries no measurement.
+    expect(eventPage).toMatch(/const coverAspect = heroIsCover \? readEventCoverAspect/)
+  })
+
+  it('and the band still declares no ceiling of its own; the ladder is the single source', () => {
+    const code = band.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '')
+    expect(code).not.toMatch(/\bmax-h-/)
+    expect(code).toContain('${sizeClass}')
+  })
+})
+
+describe('the class-token escape the assertion above depends on', () => {
+  it('escapes every metacharacter a Tailwind token can carry, the backslash included', () => {
+    expect(escapeRe('h-[22.5rem]')).toBe('h\\-\\[22\\.5rem\\]')
+    expect(escapeRe('h-1/2')).toBe('h\\-1\\/2')
+    expect(escapeRe('a\\b')).toBe('a\\\\b')
+  })
+
+  it('a dot left unescaped would match any character, which is the widening this prevents', () => {
+    // The escape this replaced took the brackets and left the dot. Its output for this token is
+    // written out literally rather than recomputed, so the control demonstrates the old pattern
+    // without reintroducing a partial escape for a scanner (or a reader) to find.
+    const asTheOldEscapeLeftIt = 'h-\\[2.5rem\\]'
+    expect(new RegExp(`^${asTheOldEscapeLeftIt}$`).test('h-[2X5rem]')).toBe(true)
+    expect(new RegExp(`^${escapeRe('h-[2.5rem]')}$`).test('h-[2X5rem]')).toBe(false)
+    expect(new RegExp(`^${escapeRe('h-[2.5rem]')}$`).test('h-[2.5rem]')).toBe(true)
   })
 })

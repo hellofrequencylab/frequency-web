@@ -12,6 +12,7 @@ import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { listEntryPointLeaderboard, signupsToNextTier } from '@/lib/entry-points/leaderboard'
 import { getCurrentSeason } from '@/lib/seasons'
 import { IndexTemplate } from '@/components/templates'
+import { resolveIndexHero } from '@/lib/layout/index-hero'
 import { EmptyState } from '@/components/ui/empty-state'
 import { SectionHeader } from '@/components/ui/section-header'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -308,8 +309,11 @@ export default async function LeaderboardPage({
   ])
   const myStandingRank = rankForCompletion(myFinishedCount)
 
+  const hero = await resolveIndexHero('/crew/leaderboard')
+
   return (
     <IndexTemplate
+      {...hero}
       title="Leaderboard"
       description="One shared goal first. Where people stand sits below it, scoped to your Circle, and yours to opt out of."
     >
@@ -365,8 +369,11 @@ async function EntryPointsBoard({ profileId }: { profileId: string }) {
   const me = myIdx >= 0 ? rows[myIdx] : null
   const nextTier = me ? signupsToNextTier(me.signups) : null
 
+  const hero = await resolveIndexHero('/crew/leaderboard')
+
   return (
     <IndexTemplate
+      {...hero}
       title="Entry points"
       description="Crew who build entry points and bring people in. A recognition board, separate from the season standing."
       back={{ href: '/crew/leaderboard', label: 'Back to the leaderboard' }}

@@ -101,7 +101,7 @@ export default async function StarterCirclePreview({
                       primary ? 'border-primary-bg bg-primary-bg/30' : 'border-border bg-surface'
                     }`}
                   >
-                    <p className="text-meta font-semibold uppercase tracking-wide text-subtle">
+                    <p className="eyebrow text-subtle">
                       {PILLAR_LABELS[p]}
                       {primary && <span className="ml-1.5 text-primary-strong">· leads</span>}
                     </p>

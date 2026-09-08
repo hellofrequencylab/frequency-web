@@ -1,3 +1,6 @@
+// LIVE-190 budget (ADR-1252): BOUNDED BY DESIGN. One promotion per invocation, by the seasons model
+// (only one season is live at a time), so the stated 1 is the work itself and the due count it
+// reports is the remainder. app/api/cron/budget.test.ts names this route in BOUNDED_BY_DESIGN.
 // Auto-go-live for Scheduled seasons. When a season's go-live time arrives, flip
 // it from Scheduled to Live (stored 'active') — the START side of the lifecycle.
 // The rich season ROLLOVER (mint trophies, convert Zaps->Gems, reset counters,
@@ -12,6 +15,7 @@
 import { NextResponse } from 'next/server'
 import { rejectUnauthorizedCron } from '@/lib/cron-auth'
 import { withCronHeartbeat } from '@/lib/observability/cron-heartbeat'
+import { cronBudget } from '@/lib/cron/budget'
 import { promoteDueScheduledSeasons } from '@/lib/seasons'
 import { log } from '@/lib/log'
 
@@ -23,9 +27,11 @@ async function handler(request: Request) {
   if (denied) return denied
 
   try {
+    const budget = cronBudget(1)
     const result = await promoteDueScheduledSeasons()
-
+    const summary = budget.summary(result.promoted, Math.max(0, result.scheduledDue - result.promoted))
     log.info('cron.season_go_live', {
+      ...summary,
       scheduledDue: result.scheduledDue,
       promoted: result.promoted,
       promotedId: result.promotedId,
@@ -38,6 +44,7 @@ async function handler(request: Request) {
       promoted: result.promoted,
       promotedId: result.promotedId,
       skippedBecauseActive: result.skippedBecauseActive,
+      budget: summary,
     })
   } catch (e) {
     // Never throw out of the cron handler: log and return a summary so a transient

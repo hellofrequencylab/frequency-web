@@ -164,26 +164,26 @@ export function StudioWizard({ channels }: { channels: Channel[] }) {
               {preview.circles.map((c, i) => <span key={i} className="rounded-pill bg-surface-elevated px-2 py-0.5 text-meta text-subtle">{c.name} · {c.members}</span>)}
             </div>
             <div className="rounded-card border border-border bg-canvas p-3">
-              <p className="mb-1 text-meta font-semibold uppercase tracking-wide text-subtle">Sample people</p>
+              <p className="mb-1 eyebrow text-subtle">Sample people</p>
               {preview.samplePeople.map((p, i) => <p key={i} className="text-text">{p.name} <span className="text-subtle">@{p.handle} · {p.rank}</span> · <span className="text-muted">{p.bio}</span></p>)}
             </div>
             {preview.sampleThread && (
               <div className="rounded-card border border-border bg-canvas p-3">
-                <p className="mb-1 text-meta font-semibold uppercase tracking-wide text-subtle">Sample thread</p>
+                <p className="mb-1 eyebrow text-subtle">Sample thread</p>
                 <p className="text-text"><b>{preview.sampleThread.author}</b>: {preview.sampleThread.body}</p>
                 {preview.sampleThread.replies.map((r, i) => <p key={i} className="ml-3 text-muted">↳ <b className="text-text">{r.author}</b>: {r.body}</p>)}
               </div>
             )}
             {preview.sampleDispatch && (
               <div className="rounded-card border border-border bg-canvas p-3">
-                <p className="mb-1 text-meta font-semibold uppercase tracking-wide text-subtle">Sample dispatch</p>
+                <p className="mb-1 eyebrow text-subtle">Sample dispatch</p>
                 <p className="text-text"><b>{preview.sampleDispatch.title}</b></p>
                 <p className="text-muted">{preview.sampleDispatch.body}</p>
               </div>
             )}
             {preview.sampleWall && (
               <div className="rounded-card border border-border bg-canvas p-3">
-                <p className="mb-1 text-meta font-semibold uppercase tracking-wide text-subtle">Sample wall post</p>
+                <p className="mb-1 eyebrow text-subtle">Sample wall post</p>
                 <p className="text-muted">{preview.sampleWall.body}</p>
               </div>
             )}

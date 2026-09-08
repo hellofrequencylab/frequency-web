@@ -1,6 +1,7 @@
 import { Sparkles } from 'lucide-react'
 import { listCollaborators } from '@/lib/partners/collaborators'
 import { IndexTemplate } from '@/components/templates'
+import { resolveIndexHero } from '@/lib/layout/index-hero'
 import { PersonCard } from '@/components/cards/person-card'
 import { EmptyState } from '@/components/ui/empty-state'
 
@@ -11,8 +12,11 @@ export const dynamic = 'force-dynamic'
 export default async function CollaboratorsPage() {
   const collaborators = await listCollaborators()
 
+  const hero = await resolveIndexHero('/partners/collaborators')
+
   return (
     <IndexTemplate
+      {...hero}
       title="Collaborators"
       description="Teachers, authors, and creators sharing their Practices and Journeys with the community. Follow their work and adopt a path."
     >

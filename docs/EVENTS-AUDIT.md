@@ -89,13 +89,22 @@ The public surface was ~80% there; **fixed this pass:**
 the index, public RPCs never expose venue/coords (city-level only), and answerable what/when/where/who is
 server-rendered for answer engines.
 
-**Remaining (tracked, lower priority):** the public per-event OG card at
-`app/discover/events/[slug]/opengraph-image.tsx` **exists**; what is left is teaching it to lead with
-the cover it already reads (`LIVE-139`, open, deliberately deferred on build cost). 🔴 This line used
-to say "clone `app/opengraph-image.tsx`" — do **not**. That file no longer exists: it was the root
+**The public per-event OG card** at `app/discover/events/[slug]/opengraph-image.tsx` leads with the
+event's cover and falls back to the brand text card, through the one layout in
+`lib/og/event-card.tsx` that the member card at `/events/<slug>` also renders
+([ADR-1257](DECISIONS.md#adr-1257), which closed `LIVE-139`). Two rules govern it. **Tier 1 only:**
+the cover is `cover_url` off the enrichment (the public `event-media` bucket, anon client, RLS the
+gate), never the private poster tiers, because a scanned flyer can carry the venue street this
+surface redacts to city level ([ADR-186](DECISIONS.md#adr-186)). **It renders on demand:** the page
+beside it prerenders ~200 slugs and a metadata image route inherits that set, and a cover-led card
+measured ~360 ms against a text card's ~88 ms, so the route drops out of the prerender and leans on
+the CDN headers `lib/og/deliver.ts` already sets. 🔴 This line used to say "clone
+`app/opengraph-image.tsx`" — do **not**. That file no longer exists: it was the root
 metadata route that put libvips into 403 functions and killed production for a day
 ([ADR-1002](DECISIONS.md#adr-1002)), and it is a committed `.jpg` now. Cloning it re-runs the
-incident. Also an
+incident.
+
+**Remaining (tracked, lower priority):** an
 **`offers` block** in `eventSchema` once the public RPC exposes `price_cents` (per DISCOVER-LAYER).
 
 ---

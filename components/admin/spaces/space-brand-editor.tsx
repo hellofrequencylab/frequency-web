@@ -28,7 +28,7 @@ export interface SkinOption {
   name: string
 }
 
-const labelClass = 'block text-meta font-semibold uppercase tracking-wide text-muted mb-1'
+const labelClass = 'block eyebrow text-muted mb-1'
 
 export function SpaceBrandEditor({
   space,

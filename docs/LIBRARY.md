@@ -155,10 +155,20 @@ resolver, not a table schema): `lib/library/renditions.ts`. Access is **service-
   `string | AssetRef` too: `sanitizeBlockContent` keeps a well-formed ref in the shape it arrived
   (bounded id, `safeUrl` on the cached url, `alt` only when present) and drops anything less, and
   every renderer on that side reads through `safeImageUrl` (`lib/entity-blocks/block-content.ts`),
-  which is `safeUrl` over `assetRefUrl`. A link field never takes the object shape. The pickers
-  there still write a URL string; adopting `onSelectAsset` is `HYG-029`, and the entity layout
-  blob has no refresh-on-load yet (there is no single load function to hang it on, and the cached
-  url is the designed fail-open until a writer stores refs).
+  which is `safeUrl` over `assetRefUrl`. A link field never takes the object shape. Its three
+  writers now STORE the reference ([ADR-1253](DECISIONS.md)): the rail photo control, the rail
+  gallery (`onSelectManyAssets`) and the on-canvas photo popup route the picker's asset hand-back
+  through `assetValueFromPick`, the one ref-or-url mapping, and each DROPS the url-only `onSelect`
+  (the picker fires both, so a control that keeps both writes the flat url over the ref). Editing a
+  neighbouring field carries the ref through rather than flattening it. The entity layout blob has
+  no refresh-on-load yet (there is no single load function to hang it on, and the cached url is the
+  designed fail-open).
+- **Column-backed image fields stay URL-only, for now.** `spaces.brand_logo_url`,
+  `spaces.cover_image_url`, `page_content.hero_image`, `page_settings.og_image_url`,
+  `page_settings.header_image_url` and `profiles.header_image_url` are text columns, so they cannot
+  hold a ref without companion `*_asset_id` columns or a ruling that column caches stay URL-only
+  until D4's usage index needs them (`HYG-068`). 🔴 Do not half-adopt by storing JSON in a text
+  column: every reader of those columns is typed `string`.
 - **One master, many renditions.** Serve web-optimized renditions (thumb/grid/hero/og), never the
   master, in pages and grids. Transforms are on-the-fly against the master.
 - **Non-destructive editing.** Every edit (Recraft op, Vera SVG save, Filerobot recipe) first
@@ -184,8 +194,14 @@ resolver, not a table schema): `lib/library/renditions.ts`. Access is **service-
     See `docs/DEPLOY-SAFETY.md`.
   - **Not everything can ingest.** A path that files an object already in storage (the importer, an
     event photo) never holds the bytes: it writes `bytes: null` — "unknown", not the `0` it used to
-    claim — and no checksum. A server-side generator gets a checksum and dimensions but no blurhash
-    (`HYG-021`).
+    claim — and neither a checksum nor dimensions. A server-side GENERATOR does hold them, so it gets
+    both, and the two columns a decode is needed for arrive one round-trip later
+    ([ADR-1254](DECISIONS.md), `HYG-021`): the Studio client that asked for the image decodes what it
+    is already looking at and posts the descriptor to `describeLibraryAssetAction`, which fills
+    `blurhash`/`colors` only where they are null and validates them exactly as the upload path does.
+    One shared client path (`lib/library/describe-generated.ts`) serves both generators. The importer
+    seeds and the event-photo copies have no browser anywhere in the flow (an apply, a cron, a claim),
+    so they stay without, and that is the whole remaining gap.
 
 - **Search is ranked over two indexes** ([ADR-1121](DECISIONS.md)). A query runs BOTH arms the schema
   already carries and merges them: full text (`search_tsv @@ websearch_to_tsquery`, stemmed and

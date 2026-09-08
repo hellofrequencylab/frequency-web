@@ -46,7 +46,7 @@ import {
 } from './controls/field-controls'
 import { RecordingPickerControl } from '@/components/airwaves/recording-picker-control'
 import { LoomImageField } from './controls/loom-image-field'
-import { assetRefUrl, isAssetRef, type AssetValue } from '@/lib/library/asset-ref'
+import { assetRefUrl, assetValueFromPick, isAssetRef, type AssetValue } from '@/lib/library/asset-ref'
 
 /** Read a stored image value for the rail: a URL string or an AssetRef (ADR-1245) is kept as is, so an
  *  edit to a neighbouring field never downgrades a reference to its cached url; anything else is ''. */
@@ -338,7 +338,7 @@ export function FieldEditor({
         label={field.label}
         value={imageValue(value)}
         scopeKey={loomScope}
-        onChange={(url) => onChange(url)}
+        onChange={(picked) => onChange(picked)}
       />
     )
   }
@@ -635,8 +635,9 @@ function MarginGroup({ style, onChange }: { style: BlockStyle; onChange: (next: 
 
 /** The image-gallery editor (ADR-542): a visual grid of the gallery's images with DRAG-to-reorder,
  *  per-image DELETE, and up/down buttons (keyboard + a11y fallback for the drag), plus ONE way to add more:
- *  the Loom picker in multi-select mode (owner directive). The first image leads the gallery. The value is
- *  always a clean string[]. */
+ *  the Loom picker in multi-select mode (owner directive). The first image leads the gallery. Each stored
+ *  entry is a URL string or an AssetRef ({ assetId, url }); a pick that carries a library row is added as a
+ *  ref (ADR-1253), and a reorder / remove keeps every existing entry in the shape it was stored. */
 function ImagesEditor({
   label,
   value,
@@ -743,7 +744,7 @@ function ImagesEditor({
         open={pickerOpen}
         onClose={() => setPickerOpen(false)}
         multiple
-        onSelectMany={(added) => onChange([...urls, ...added])}
+        onSelectManyAssets={(picks) => onChange([...urls, ...picks.map(assetValueFromPick)])}
         title="Add photos"
         scopeKey={loomScope}
         kinds={['image']}
@@ -944,7 +945,7 @@ function FeaturesEditor({
             label="Image"
             value={it.image}
             scopeKey={loomScope}
-            onChange={(url) => patch(i, { image: url ?? '' })}
+            onChange={(picked) => patch(i, { image: picked ?? '' })}
           />
           <label className="block space-y-1">
             <span className={labelCls}>Price (optional)</span>
@@ -1133,7 +1134,7 @@ function CardsEditor({
             label="Photo"
             value={c.image}
             scopeKey={loomScope}
-            onChange={(url) => patch(i, { image: url ?? '' })}
+            onChange={(picked) => patch(i, { image: picked ?? '' })}
           />
 
           {/* Stat box: a big value + a label. Use INSTEAD of a photo for a metric card. */}

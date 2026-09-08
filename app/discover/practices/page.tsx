@@ -5,6 +5,7 @@ import { SITE_NAME } from '@/lib/site'
 import { JsonLd } from '@/components/json-ld'
 import { practiceListSchema, breadcrumbSchema } from '@/lib/jsonld'
 import { IndexTemplate } from '@/components/templates'
+import { resolveIndexHero } from '@/lib/layout/index-hero'
 import { BetaCTA } from '@/components/marketing/marketing-ui'
 import { PracticeCard, PillarChips } from './practice-card'
 
@@ -28,6 +29,8 @@ export default async function PublicPracticesPage() {
     getPillars().catch(() => []),
   ])
 
+  const hero = await resolveIndexHero('/discover/practices')
+
   return (
     <>
       <div className="mx-auto max-w-5xl px-6 py-20 sm:py-24">
@@ -42,7 +45,12 @@ export default async function PublicPracticesPage() {
         />
 
         {/* Public SEO surface: no operator admin bar (that's a member-app control). */}
-        <IndexTemplate title={TITLE} description={DESCRIPTION} adminBar={false}>
+        <IndexTemplate
+          {...hero}
+          title={TITLE}
+          description={DESCRIPTION}
+          adminBar={false}
+        >
           {pillars.length > 0 && <PillarChips pillars={pillars} active="all" />}
 
           {practices.length === 0 ? (

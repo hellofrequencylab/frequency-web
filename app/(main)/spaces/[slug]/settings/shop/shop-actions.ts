@@ -21,6 +21,7 @@ import { upsertVariants } from '@/lib/commerce/variants'
 import { normalizeCategory, normalizeTags } from '@/lib/commerce/categories'
 import { readStorefrontConfig, withStorefrontConfig } from '@/lib/spaces/storefront'
 import { draftListingCopy, type ListingCopy } from '@/lib/ai/listing-copy'
+import { proposeAndConfirmCreate } from '@/lib/ai/vera/create-entity'
 import type { ProductStatus, ProductKind, CommerceVertical, ProductCondition, ServiceConfig, ServicePriceModel, VariantInput } from '@/lib/commerce/types'
 
 // Space Shop console write actions (ADR-596). Every action gates on resolveSpaceManageAccess (owner /
@@ -167,27 +168,59 @@ export async function createSpaceProductAction(slug: string, formData: FormData)
   // Condition applies to a product only (R3); a service/ticket carries none.
   const condition = productKind === 'physical' ? asCondition(formData.get('condition')) : null
 
-  const product = await createProduct({
-    ownerKind: 'space',
-    ownerSpaceId: gate.spaceId,
-    // MUST pass both explicitly — createProduct defaults product_kind='physical' and vertical='maker'.
-    productKind,
-    vertical,
-    title,
-    description: (formData.get('description') as string) || null,
-    category: normalizeCategory(formData.get('category') as string | null),
-    images: parseStringArray(formData.get('images')),
-    tags: normalizeTags(parseStringArray(formData.get('tags'))),
-    priceCents: Math.round(priceDollars * 100),
-    condition,
-    // A service books against the Space's own availability calendar (Phase 4, ADR-596).
-    bookingSpaceId: productKind === 'service' ? gate.spaceId : undefined,
-    // The full quote + policy (price model, duration, deposit, cancellation, no-show) in one write.
-    service,
-    // Market opt-in from the editor: list it in the global Market, or keep it to this Space's page only.
-    marketPublished: formData.get('marketPublished') === '1',
+  const description = (formData.get('description') as string) || null
+  const category = normalizeCategory(formData.get('category') as string | null)
+  const images = parseStringArray(formData.get('images'))
+  const tags = normalizeTags(parseStringArray(formData.get('tags')))
+  const priceCents = Math.round(priceDollars * 100)
+  // Market opt-in from the editor: list it in the global Market, or keep it to this Space's page only.
+  const marketPublished = formData.get('marketPublished') === '1'
+
+  // THE GOVERNED WRITE (ADR-988, ADR-1249): the team filled the item and tapped Save, so one call
+  // proposes, claims and commits through the same writer, and the audit row is written. This is
+  // the one road that makes a service, so the entity follows the kind; both gates are scoped to
+  // the Space's role ladder (gateSpaceWrite above), which the layer records and leaves here.
+  const governed = await proposeAndConfirmCreate({
+    entity: productKind === 'service' ? 'service' : 'product',
+    draft: {
+      title,
+      productKind,
+      description: description ?? '',
+      category: category ?? '',
+      images,
+      tags,
+      priceCents,
+      marketPublished,
+      ...(productKind === 'service' ? { bookingSpaceId: gate.spaceId } : {}),
+    },
+    spaceId: gate.spaceId,
+    rationale: 'Space Shop catalog: the team filled the item and tapped Save.',
+    commit: async () => {
+      const created = await createProduct({
+        ownerKind: 'space',
+        ownerSpaceId: gate.spaceId,
+        // MUST pass both explicitly — createProduct defaults product_kind='physical' and vertical='maker'.
+        productKind,
+        vertical,
+        title,
+        description,
+        category,
+        images,
+        tags,
+        priceCents,
+        condition,
+        // A service books against the Space's own availability calendar (Phase 4, ADR-596).
+        bookingSpaceId: productKind === 'service' ? gate.spaceId : undefined,
+        // The full quote + policy (price model, duration, deposit, cancellation, no-show) in one write.
+        service,
+        marketPublished,
+      })
+      if (!created) throw new Error('Could not add that item.')
+      return created
+    },
   })
-  if (!product) return
+  if ('error' in governed) return
+  const product = governed.data
 
   // Optional variants (Etsy-Grade Phase 2): only a product carries them (services book, tickets are
   // event spots). Persist the authored set; a plain product with no rows is unchanged.

@@ -62,8 +62,9 @@ import { listCohosts, listCohostInvites, getMyCohostInvite } from '@/lib/events/
 import { listCollaboratorSpacesForEvent } from '@/lib/events/event-share'
 import { posterSignedUrlMap } from '@/lib/events/poster-media'
 import { pointFromGeog } from '@/lib/events/geo'
-import { readEventHeroHeight, eventPosterHeightClass } from '@/lib/events/hero-height'
+import { readEventHeroHeight, eventPosterHeightClass, eventPosterMaxHeightClass } from '@/lib/events/hero-height'
 import { readEventCoverFocus } from '@/lib/events/cover-focus'
+import { readEventCoverAspect } from '@/lib/events/cover-aspect'
 import { EVENT_MEDIA_BUCKET, eventHeroCandidates } from '@/lib/events/hero-url'
 import { detailsMediaPaths, type EventDetailsWithMedia } from '@/lib/events/details-media'
 import type { EventMapPin } from '@/components/events/events-map'
@@ -560,6 +561,9 @@ export default async function EventDetailPage({
   // The hero is PUBLIC only when the winning candidate came from the public bucket; a signed
   // poster URL must stay unoptimized (next/image cannot re-fetch an expiring URL).
   let heroIsPublic = false
+  // Whether the hero IS the uploaded cover (events.cover_image_path), which is the only image the
+  // stored aspect below describes. A scanned poster leading the band carries no measurement.
+  let heroIsCover = false
   for (const c of heroCandidates) {
     const url =
       c.bucket === EVENT_MEDIA_BUCKET
@@ -568,6 +572,7 @@ export default async function EventDetailPage({
     if (url) {
       heroUrl = url
       heroIsPublic = c.bucket === EVENT_MEDIA_BUCKET
+      heroIsCover = heroIsPublic && c.path === extra?.cover_image_path
       break
     }
   }
@@ -575,10 +580,17 @@ export default async function EventDetailPage({
   // Business Space cover hero. Applied to both the cover and the no-cover placeholder.
   // The poster band's own ladder: same tiers, same desktop heights, one rung shorter on a phone
   // because a contain-fitted poster does not use the whole box (lib/layout/cover-height.ts).
-  const posterHeightCls = eventPosterHeightClass(readEventHeroHeight(extra?.theme))
+  const heroHeight = readEventHeroHeight(extra?.theme)
+  const posterHeightCls = eventPosterHeightClass(heroHeight)
+  // The same tier as a CEILING, for the band that knows its cover's own shape (below).
+  const posterMaxHeightCls = eventPosterMaxHeightClass(heroHeight)
   // Host-picked cover FOCAL POINT (object-position), stored on events.theme.coverFocus. Applied to
   // the cover <img> so the important part of the photo survives the crop; defaults centered.
   const coverFocus = readEventCoverFocus(extra?.theme)
+  // The cover's intrinsic width / height, measured in the browser by the header controls and stored
+  // on events.theme.coverAspect (ADR-1248). Null for an unmeasured cover, and null whenever the
+  // hero is not the cover, so the band never wears another image's shape.
+  const coverAspect = heroIsCover ? readEventCoverAspect(extra?.theme) : null
 
   // Gallery: the header image leads (clickable → full-screen), then any host-UPLOADED
   // extras. The scanner's crops are intentionally excluded: the original poster is the
@@ -1890,6 +1902,10 @@ export default async function EventDetailPage({
           <PosterBand
             src={heroUrl}
             heightClass={posterHeightCls}
+            // With the cover's own aspect known, the band is the poster's shape and the tier is
+            // its ceiling; without it, the tier height above applies unchanged (ADR-1248).
+            maxHeightClass={posterMaxHeightCls}
+            aspect={coverAspect}
             focus={coverFocus}
             unoptimized={!heroIsPublic}
             // FULL BLEED on a phone (owner, 2026-08-31): edge to edge, no gutter, no corners.
@@ -1921,7 +1937,7 @@ export default async function EventDetailPage({
               <span className="text-display-h3 font-bold leading-none">
                 {new Date(event.starts_at).toLocaleDateString('en-US', { day: 'numeric', timeZone: 'UTC' })}
               </span>
-              <span className="text-meta font-semibold uppercase tracking-wide text-muted">
+              <span className="eyebrow text-muted">
                 {new Date(event.starts_at).toLocaleDateString('en-US', { month: 'long', timeZone: 'UTC' })}
               </span>
             </div>

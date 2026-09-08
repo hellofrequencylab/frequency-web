@@ -33,7 +33,7 @@ export function ThemePreview({ tokens }: { tokens: ThemeTokens }) {
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <p className="text-meta font-semibold uppercase tracking-wide text-muted">Live preview</p>
+        <p className="eyebrow text-muted">Live preview</p>
         <div
           className="inline-flex rounded-lg border border-border bg-surface p-0.5"
           role="group"

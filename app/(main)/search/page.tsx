@@ -8,6 +8,7 @@ import {
   isListableInDirectory,
 } from '@/lib/connections/directory-visibility'
 import { IndexTemplate } from '@/components/templates'
+import { resolveIndexHero } from '@/lib/layout/index-hero'
 import { UnderlineTabs } from '@/components/ui/underline-tabs'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Input } from '@/components/ui/field'
@@ -102,7 +103,7 @@ function DateBlock({ iso }: { iso: string }) {
   const d = new Date(iso)
   return (
     <div className="flex h-11 w-11 shrink-0 flex-col items-center justify-center rounded-2xl bg-primary-bg text-primary-strong">
-      <span className="text-meta font-semibold uppercase leading-none tracking-wide">
+      <span className="eyebrow leading-none">
         {d.toLocaleDateString('en-US', { month: 'short' })}
       </span>
       <span className="text-body font-bold leading-tight">{d.getDate()}</span>
@@ -281,8 +282,11 @@ export default async function SearchPage({
     ? { people: 0, posts: 0, events: 0 }
     : { people: people.length, posts: posts.length, events: events.length }
 
+  const hero = await resolveIndexHero('/search')
+
   return (
     <IndexTemplate
+      {...hero}
       title="Search"
       toolbar={
         <form method="GET" action="/search">

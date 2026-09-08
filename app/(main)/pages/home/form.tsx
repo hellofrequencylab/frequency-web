@@ -97,7 +97,7 @@ export function HomeSeoForm({
 
       {/* How it reads in a search result */}
       <div className="rounded-card border border-border bg-surface p-5 lift-1">
-        <p className="mb-3 text-meta font-semibold uppercase tracking-wide text-subtle">Search preview</p>
+        <p className="mb-3 eyebrow text-subtle">Search preview</p>
         <p className="truncate text-body font-semibold text-broadcast">{effectiveTitle}</p>
         <p className="mt-0.5 text-meta text-success">{SITE_URL.replace(/^https?:\/\//, '')}</p>
         <p className="mt-1 line-clamp-2 text-body-sm leading-relaxed text-muted">{effectiveDescription}</p>

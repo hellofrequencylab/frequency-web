@@ -11,6 +11,7 @@ import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { NewRoomCompose } from '@/components/compose/new-room-compose'
 import { CrewLeadQuickAction } from '@/components/messages/crew-lead-quick-action'
 import { IndexTemplate } from '@/components/templates/index-template'
+import { resolveIndexHero } from '@/lib/layout/index-hero'
 import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
 import { EntityCard } from '@/components/cards/entity-card'
@@ -455,8 +456,11 @@ export default async function MessagesPage({
     </div>
   )
 
+  const hero = await resolveIndexHero('/messages')
+
   return (
     <IndexTemplate
+      {...hero}
       title={
         <span className="flex items-center gap-2">
           {pageTitle}

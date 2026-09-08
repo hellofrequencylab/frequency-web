@@ -444,6 +444,86 @@ export async function insertSpaceLibraryImage(input: {
   return (data as { id?: unknown } | null)?.id ? String((data as { id: unknown }).id) : null
 }
 
+/** The little an authorizer needs to know about an asset before it may be described (HYG-021). */
+export type LibraryDescriptorTarget = {
+  spaceId: string
+  createdBy: string | null
+  kind: string | null
+  /** True when the row already carries the field, so a backfill must leave it alone. */
+  hasBlurhash: boolean
+  hasColors: boolean
+}
+
+/** Read the ownership + descriptor state of one asset, for the describe-a-generated-asset action.
+ *  FAIL-SAFE to null (which the caller treats as "not authorized"), never a throw. */
+export async function getLibraryDescriptorTarget(assetId: string): Promise<LibraryDescriptorTarget | null> {
+  try {
+    const { data } = await db()
+      .from('library_assets')
+      .select('space_id, created_by, kind, blurhash, colors')
+      .eq('id', assetId)
+      .maybeSingle()
+    const row = data as
+      | { space_id?: unknown; created_by?: unknown; kind?: unknown; blurhash?: unknown; colors?: unknown }
+      | null
+    if (!row?.space_id) return null
+    return {
+      spaceId: String(row.space_id),
+      createdBy: row.created_by ? String(row.created_by) : null,
+      kind: row.kind ? String(row.kind) : null,
+      hasBlurhash: typeof row.blurhash === 'string' && row.blurhash.length > 0,
+      hasColors: Array.isArray(row.colors) && row.colors.length > 0,
+    }
+  } catch {
+    return null
+  }
+}
+
+/**
+ * BACKFILL the two descriptor fields a server-side generator cannot compute (HYG-021, ADR-1254).
+ *
+ * 🔴 IT ONLY EVER FILLS A HOLE. Both writes carry an `.is(<column>, null)` guard, so this can add a
+ * blurhash to a row that has none and can never overwrite or clear one that does — the values come
+ * from a client (the Studio, one round-trip after a generation), and the one thing a client must not
+ * be able to do is repaint an asset somebody already described. The two columns are written
+ * SEPARATELY for the same reason: they go null independently, and a single guarded update would
+ * silently drop both whenever one of them was already set.
+ *
+ * The caller authorizes the asset first. Returns the columns actually written, which is why each
+ * update asks for its row back: a guard that blocked the write returns zero rows and no error, and
+ * reporting that as written would make the return value a small lie. FAIL-SAFE to [] on any error.
+ */
+export async function backfillLibraryAssetDescriptor(
+  assetId: string,
+  descriptor: { blurhash?: string | null; colors?: readonly string[] | null },
+): Promise<string[]> {
+  const written: string[] = []
+  const wrote = (data: unknown, error: unknown) => !error && Array.isArray(data) && data.length > 0
+  try {
+    if (descriptor.blurhash) {
+      const { data, error } = await db()
+        .from('library_assets')
+        .update({ blurhash: descriptor.blurhash })
+        .eq('id', assetId)
+        .is('blurhash', null)
+        .select('id')
+      if (wrote(data, error)) written.push('blurhash')
+    }
+    if (descriptor.colors?.length) {
+      const { data, error } = await db()
+        .from('library_assets')
+        .update({ colors: [...descriptor.colors] })
+        .eq('id', assetId)
+        .is('colors', null)
+        .select('id')
+      if (wrote(data, error)) written.push('colors')
+    }
+  } catch {
+    return written
+  }
+  return written
+}
+
 /** Delete a library asset that belongs to a SPACE, bound to `space_id` so a caller authorized for one space
  *  can never delete another space's asset. Returns the stored object's bucket+path for best-effort storage
  *  cleanup, or null when nothing matched. Service-role; the CALLER must authorize the space first. */

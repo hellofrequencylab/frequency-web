@@ -1,3 +1,6 @@
+// LIVE-190 budget (ADR-1252): 200 events per lead per invocation; the sent ledger (space_follower_event_reminders_sent) is the claim, so a cut-off run resumes on the next quarter-hour.
+// The clock is CRON_TIME_BUDGET_MS from lib/cron/budget.ts; app/api/cron/budget.test.ts checks the
+// declaration is applied, not merely written down.
 // Space-follower event reminders cron — runs every 15 minutes via Vercel Cron.
 //
 // A SIBLING of /api/cron/event-reminders that reuses the same helpers (the tz-correct
@@ -13,6 +16,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { rejectUnauthorizedCron } from '@/lib/cron-auth'
 import { withCronHeartbeat } from '@/lib/observability/cron-heartbeat'
+import { cronBudget } from '@/lib/cron/budget'
 import { runSpaceFollowerEventReminders } from '@/lib/events/follower-reminders'
 import { log } from '@/lib/log'
 
@@ -22,9 +26,11 @@ async function handler(req: NextRequest) {
   const denied = rejectUnauthorizedCron(req)
   if (denied) return denied
 
-  const result = await runSpaceFollowerEventReminders()
-
+  const budget = cronBudget(200)
+  const result = await runSpaceFollowerEventReminders({ limit: budget.items, exhausted: budget.exhausted })
+  const summary = budget.summary(result['7d'].events + result['24h'].events + result['2h'].events, result.remaining)
   log.info('cron.space_follower_event_reminders', {
+    ...summary,
     sent7d:    result['7d'].sent,
     events7d:  result['7d'].events,
     sent24h:   result['24h'].sent,
@@ -33,7 +39,7 @@ async function handler(req: NextRequest) {
     events2h:  result['2h'].events,
   })
 
-  return NextResponse.json({ ok: true, ...result })
+  return NextResponse.json({ ok: true, ...result, budget: summary })
 }
 
 export const GET = withCronHeartbeat('space-follower-event-reminders', handler)

@@ -17,7 +17,7 @@ import { Button } from '@/components/ui/button'
 
 type Fallback = { title: string; cadence: string; why: string; steps: string[] }
 
-const LABEL = 'block text-meta font-semibold uppercase tracking-wide text-subtle'
+const LABEL = 'block eyebrow text-subtle'
 
 export function ClaimPractice({ templateId, fallback }: { templateId: string; fallback: Fallback }) {
   const router = useRouter()

@@ -311,6 +311,8 @@
     {
       "key": "shadow-literals",
       "description": "Literal Tailwind shadow-* instead of the DAWN depth language (lift-*)",
+      "note": "DECISION 2026-09-07 (HYG-055, ADR-1256): SLICE, by WHO CHOSE THE SHADOW. Read all 50 sites as a census plus 4 in source. THIRTY-THREE of the 50 are page-editor, email-studio, Space-canvas and block-control surfaces, and there the literal is a VALUE A MEMBER PICKED, not a leftover: `lib/page-editor/image-controls.ts` maps a `none | sm | md | lg` picker straight onto `shadow-none | shadow-sm | shadow-md | shadow-xl` and the block renderers read the stored key back. Those cannot move until the editor's own depth scale is retoned onto `lift-1/2/3`, which is a product change carrying a stored-value migration, not a rename. The other SEVENTEEN are CHROME the kit already owns -- the tooltip (`components/ui/hover-tip.tsx`, `info-tip.tsx`), the switch thumb (`components/ui/switch.tsx`), a host hovercard, the sticky marketing header, the Vera lightbox. A SLICE is that chrome half at one elevation: `shadow-sm` to `lift-1`, `shadow-md`/`shadow-lg` to `lift-2`, `shadow-xl`/`shadow-2xl` to `lift-3`. 35 of the 50 are on photographed surfaces, so the chrome slice is small AND mostly watched; cut it behind a baseline recapture, not in front of one. SLICE TARGET 33 = 50 minus the 17 chrome sites; 33 is the page-editor half, which waits on the depth-scale product change rather than on a sweep.",
+      "sliceTarget": 33,
       "mode": "matches",
       "patterns": [
         "\\bshadow-(?:sm|md|lg|xl|2xl)\\b"
@@ -701,6 +703,7 @@
     {
       "key": "adhoc-progress",
       "description": "Hand-rolled progress bars (pill/full track + inline width style) instead of the ProgressTrack primitive. The radius token is an alternation on purpose: this pattern originally keyed on `rounded-full`, which the radius sweep then RETIRED in favour of `rounded-pill` — including inside ProgressTrack itself. The gate went on reporting 0 not because no bar was hand-rolled but because the class it names had ceased to exist. `rounded-full` stays in the alternation so a reintroduction is still caught.",
+      "note": "DECISION 2026-09-07 (HYG-055, ADR-1256): KEEP -- and read the eight before believing the number. All 8 sites read in source. FOUR ARE NOT PROGRESS BARS: `components/people/member-viewer/member-detail-card.tsx` and `components/spaces/space-reviews.tsx` each render an avatar twice (a `rounded-pill object-cover` image, then an initials fallback) with `style={{ width: size, height: size }}`, which is this pattern's `rounded-pill ... style={{ width:` shape with no track and no fill behind it. Of the four real bars, the profile rank-climb bar already carries a written reason for staying ad hoc (ProgressTrack's `track` vocabulary has no warm/warning tone) and the Airwaves scrubber is an input rather than a readout. That leaves at most two candidates, which is not a slice. The class stays as a TRIPWIRE against a ninth site, not as a queue -- and if it is ever swept, the avatar shape has to leave the pattern first or the floor can never honestly reach 0.",
       "mode": "matches",
       "patterns": [
         "rounded-(?:pill|full)[\\s\\S]{0,240}?style=\\{\\{\\s*width:"
@@ -1005,6 +1008,7 @@
     {
       "key": "raw-px-arbitrary",
       "description": "Arbitrary px in SIZING/SPACING utilities (h-[18px], w-[22px], min-w-[180px] …) instead of the spacing scale. Ratcheted rather than hard-failed: ~140 sites predate the rule and no sweep owns them, so the gate holds the line while screen passes retire them (check:tokens still hard-fails text-[Npx], which has no legitimate use). Allowlisted: min-h/min-w-[44px] (the WCAG 2.5.5 tap-target floor, a load-bearing exact value), the -9999px offscreen idiom, the icon primitives (glyph optical sizing is their job), and the raster OG/print surfaces where px IS the unit.",
+      "note": "DECISION 2026-09-07 (HYG-055, ADR-1256): KEEP -- the `raw-input` precedent, which PROG-DAWN3 records as \"not a sweep\". Read all 116 sites as a census of utility + value, plus 6 in source. FIFTY of the 116 are CAPACITY minimums on scroll containers, canvases and email bodies (`lg:min-w-[860px]` on the practices table, `min-h-[320px]` on the email canvas shell, `max-w-[600px]` on an email body, `h-[420px]` on a Circle map). px is the correct unit there and the spacing scale has no step that means \"this table needs 860px before it scrolls\", so no rename exists to make. Of the 66 SIZING sites, exactly FIVE land on the spacing scale at all (a 4px multiple at or under 96px) and FOUR of those are the `h-[24px] w-[24px]` Zap glyph pair in `components/layout/app-shell.tsx`, whose own comment records the carve they encode. A sweep of five sites, four of them in the photographed shell, is not a slice; the ratchet's whole job in this class is to stop a 117th. If it is ever revisited, the honest first move is a lookahead that excludes min/max capacity values the way `min-h/min-w-[44px]` is already excluded, so the floor can approach 0 for a reason.",
       "mode": "matches",
       "patterns": [
         "(?<![-\\w])(?!min-[hw]-\\[44px\\]|(?:top|left|right|bottom|inset)-\\[-9999px\\])-?(?:h|w|size|min-w|min-h|max-w|max-h|basis|gap|gap-x|gap-y|p|px|py|pt|pb|pl|pr|m|mx|my|mt|mb|ml|mr|top|right|bottom|left|inset|translate-x|translate-y)-\\[-?\\d+(?:\\.\\d+)?px\\]"
@@ -1093,6 +1097,8 @@
     {
       "key": "literal-display-type",
       "description": "Literal DISPLAY sizes (text-3xl … text-9xl) instead of the DAWN display roles (--text-display-hero / h1 / h2 / h3 / card / stat). Deliberately a SEPARATE class from literal-type rather than an extra alternation branch on it: literal-type reached a defended 0, and folding 300 untouched display sites into it would turn a real win into a number nobody could read. Retiring these is pass 2b — a design decision per site (which role is this heading?), not a mechanical rename, which is why it is ratcheted and not swept.",
+      "note": "DECISION 2026-09-07 (HYG-055, ADR-1256): SLICE, by RESPONSIVE LADDER. Read all 94 sites as a census, grouped by element, plus 4 in source. 22 ELEMENTS carry a literal ladder that steps at a breakpoint -- `text-3xl sm:text-4xl` x11, `text-4xl sm:text-5xl` x6, `text-5xl sm:text-6xl` x2, three longer ones -- which is 48 of the 94 counted sites, and a ladder that steps at a breakpoint is a hand-rolled clamp, which is exactly what a `--text-display-*` role already is. A SLICE is one ladder, converted to the role whose clamp covers its top step: 3xl->4xl to `--text-display-h3` (clamp 1.75-2.25rem), 4xl->5xl to `--text-display-h2` (2.25-3rem), 5xl->6xl to `--text-display-h1` (2.75-4.5rem). The other 46 sites are SINGLE literals with no breakpoint step, and they are NOT sliceable: with nothing to read the intended role off, each is the per-site design judgment this entry's description already names. 61 of the 94 sit on surfaces the visual suite photographs (the marketing components, and the page-editor blocks that render EDITABLE_PAGES), so every slice here needs an owner-dispatched baseline recapture -- which is the second reason the ladder rather than the file is what makes the diff reviewable. SLICE TARGET 46 = 94 minus the 48 sites the 22 responsive ladders cover; 46 is the single-literal remainder this rule deliberately does not claim.",
+      "sliceTarget": 46,
       "mode": "matches",
       "patterns": [
         "\\btext-(?:3xl|4xl|5xl|6xl|7xl|8xl|9xl)\\b"
@@ -1217,6 +1223,7 @@
     {
       "key": "handrolled-icon-button",
       "description": "Icon-only <button>s sized and rounded by hand instead of composing IconButton. The primitive owns the 32px density floor, the 44px coarse-pointer tap target, the focus ring and the press affordance — every hand-rolled one re-derives those four, and the ones that get it wrong are invisible until someone tries to tap them on a phone (components/events/rsvp-controls.tsx ships a 28px stepper). DELIBERATELY CONSERVATIVE: the shape is `<button …size…rounded…>` then ONE self-closing element then `</button>`, so it counts only unambiguous icon-only buttons and undercounts the `{cond ? <A/> : <B/>}` forms. A first attempt merely looked for an icon SOMEWHERE inside the button and matched text buttons and whole card buttons — a ratchet on a number that means the wrong thing is worse than no ratchet, so this trades recall for precision. `(?:[^>=]|=>|=(?!>))` rather than `[^>]` because a JSX attribute list routinely contains `>` inside an arrow function.",
+      "note": "DECISION 2026-09-07 (HYG-055, ADR-1256): KEEP -- the `raw-input` precedent again, and this one is three sites. All 3 read in source, and all 3 are import-reachable from a surface the visual suite photographs. Two are in `components/layout/app-shell.tsx`: a 32px mobile search trigger whose own comment records the decision it encodes (render the 34px the design already chose, do not hardcode a new floor past the `--tap-min` axis) and a 36px rail toggle in the collapsed rail strip. The third is an icon-PICKER grid cell in `components/entity-blocks/controls/field-controls.tsx` -- a swatch in a six-column grid, not a control in a bar, and IconButton's tap-target floor would break the grid. Converting any of the three re-opens a density decision already made, in the one file every member page renders. A three-site class in the app shell is a tripwire; the population this ratchet exists to stop is the fourth one somebody hand-rolls.",
       "mode": "matches",
       "patterns": [
         "<button(?:[^>=]|=>|=(?!>))*?(?:\\bh-\\d|\\bw-\\d|\\bsize-\\d)(?:[^>=]|=>|=(?!>))*?rounded-(?:sm|md|lg|xl|2xl|3xl|full|pill|card|control)(?:[^>=]|=>|=(?!>))*>\\s*<(?:svg|[A-Z][A-Za-z0-9]*)(?:[^>=]|=>|=(?!>))*?/>\\s*</button>"
@@ -1518,6 +1525,8 @@
     {
       "key": "handrolled-eyebrow",
       "description": "Uppercase text tracked by a LITERAL (tracking-wide / wider / widest / an arbitrary em) instead of the eyebrow role token. The eyebrow is the small uppercase tracked label, and `app/globals.css` locks it at 0.75rem / 0.18em / bold behind the `eyebrow` utility and `--tracking-eyebrow`. Production splits it TEN ways. Deliberately a RATCHET and not a sweep: the population is heterogeneous — genuine eyebrows sit beside pill badges and dense table headers where 0.18em would blow the pill out — so each site is a judgment, not a rename. The half a machine CAN settle is guarded outright by lib/theme/eyebrow-role.test.ts, which fails on any slot the code itself names `eyebrow` that hand-rolls the role. `tracking-tight` and `tracking-normal` are excluded: on `font-display uppercase` they are display headings, not eyebrows, and counting them would make the class fire on the wrong subject.",
+      "note": "DECISION 2026-09-07 (HYG-055, ADR-1256): SLICE, cut by the CLASS LIST's own shape and never by directory, the way ADR-1119 cut the button sweep. The instrument is `node scripts/eyebrow-bucket.mjs`, in the repo so the membership claim is re-runnable rather than a claim about an intent (ADR-1124). It splits the population four ways, on the 550 that remain: BADGE 92 (the element carries chrome of its own, a background / border / radius / its own padding, so it is a pill or a table cell and 0.18em would blow it out; never a slice), ROLE-SIZE 107 (chrome-free and already at `text-meta`, which IS 0.75rem, which IS `--text-eyebrow` -- the role written out longhand, so converting moves tracking and weight only and one reading of one site is a reading of the bucket), SMALL 323 (chrome-free at `text-2xs` / `text-3xs`, a SMALLER register that cannot move until the owner rules whether it steps up to 0.75rem; sweeping it would book a design decision as a cleanup), OTHER 28 (another size, mostly the `text-body-sm` register ADR-1075 retired, or an interpolated class list no set query can decide). A SLICE is one `tracking-*` value inside ROLE-SIZE, cut again to the files NOT import-reachable from a surface `test/e2e/visual.spec.ts` photographs, because visual baselines are recaptured on a runner by the owner and a slice that moves one cannot self-certify. SLICE 1 SHIPPED 2026-09-07: `--tracking wide` with `font-semibold`, 73 sites in 52 files, of which the 39 unwatched ones converted to the composite `eyebrow` utility (589 -> 550) and the 34 watched ones stay. Read before cutting: the full 589-site census of class lists, all 73 slice-1 class lists, and all 39 converted sites in the diff. NEXT: `--tracking wider` (16 sites / 12 files) and `--tracking widest` (16 / 12), then the SMALL register once its ruling lands. SLICE TARGET 484 = 550 minus the 66 sites the three set-decidable tracking slices cover (34 + 16 + 16); the 41 role-size sites left over are interpolated or carry another weight and are per-site judgments, not slice members.",
+      "sliceTarget": 484,
       "mode": "matches",
       "patterns": [
         "\\buppercase\\b[^\"'`\\n<>]{0,140}?\\btracking-(?:wide|wider|widest)\\b",
@@ -1531,14 +1540,14 @@
       "exclude": [
         "**/*.{test,spec}.{ts,tsx}"
       ],
-      "baseline": 589,
+      "baseline": 550,
       "frozen": {
-        "at": "2026-09-05",
-        "value": 589,
-        "direction": "raised",
+        "at": "2026-09-07",
+        "value": 550,
+        "direction": "lowered",
         "basis": "b2a90e60b032",
-        "reason": "2026-09-05 (scan two, D6): +1 from the Tips received section, the first surface a member can see a tip on (L9-05). The label is the icon-plus-small-caps idiom its two sibling sections in settings/billing already use, and there is no component to adopt: SectionHeader is the h2 title-and-count header for a browse section, not an in-card label. Banked as one site rather than invented as a component in a repair PR.",
-        "from": 588
+        "reason": "HYG-055 eyebrow slice 1 (ADR-1256): the chrome-free text-meta sites carrying tracking-wide + font-semibold, converted to the composite eyebrow utility. 73 in the bucket, the 39 not import-reachable from a surface test/e2e/visual.spec.ts photographs shipped; the 34 that are stay for an owner-dispatched baseline recapture. Re-derive with node scripts/eyebrow-bucket.mjs --tracking wide",
+        "from": 589
       },
       "history": [
         {
@@ -1568,6 +1577,13 @@
           "to": 589,
           "direction": "raised",
           "reason": "2026-09-05 (scan two, D6): +1 from the Tips received section, the first surface a member can see a tip on (L9-05). The label is the icon-plus-small-caps idiom its two sibling sections in settings/billing already use, and there is no component to adopt: SectionHeader is the h2 title-and-count header for a browse section, not an in-card label. Banked as one site rather than invented as a component in a repair PR."
+        },
+        {
+          "at": "2026-09-07",
+          "from": 589,
+          "to": 550,
+          "direction": "lowered",
+          "reason": "HYG-055 eyebrow slice 1 (ADR-1256): the chrome-free text-meta sites carrying tracking-wide + font-semibold, converted to the composite eyebrow utility. 73 in the bucket, the 39 not import-reachable from a surface test/e2e/visual.spec.ts photographs shipped; the 34 that are stay for an owner-dispatched baseline recapture. Re-derive with node scripts/eyebrow-bucket.mjs --tracking wide"
         }
       ]
     }

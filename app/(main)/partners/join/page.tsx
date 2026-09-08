@@ -4,6 +4,7 @@ import { ArrowRight } from 'lucide-react'
 import { getMyProfileId } from '@/lib/auth'
 import { getPersonaStates, PARTNER_PERSONAS, PERSONA_META, LIVE_PERSONA_STATES } from '@/lib/personas'
 import { IndexTemplate } from '@/components/templates'
+import { resolveIndexHero } from '@/lib/layout/index-hero'
 import { PersonaToggle } from './persona-toggle'
 
 export const dynamic = 'force-dynamic'
@@ -16,8 +17,11 @@ export default async function PartnerProgramsPage() {
   if (!profileId) redirect('/sign-in?next=/partners/join')
   const states = await getPersonaStates(profileId)
 
+  const hero = await resolveIndexHero('/partners/join')
+
   return (
     <IndexTemplate
+      {...hero}
       title="Partner programs"
       description="Upgrade packages for what you do beyond membership. Claim any combination. The team verifies each before its tools go live. Billing for the money-moving programs comes at launch."
     >

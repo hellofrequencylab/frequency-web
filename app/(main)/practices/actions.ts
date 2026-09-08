@@ -6,6 +6,7 @@ import { atLeastRole } from '@/lib/core/roles'
 import { getCircleCapabilities, canCreate } from '@/lib/core/load-capabilities'
 import { crewCreateUpsell } from '@/lib/core/beta-notices'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
+import { proposeAndConfirmCreate } from '@/lib/ai/vera/create-entity'
 import { redirect } from 'next/navigation'
 import {
   logPractice,
@@ -271,16 +272,30 @@ export async function createPracticeAction(
   if ('error' in gate) return fail(gate.error)
   const t = title.trim()
   if (!t) return fail('Title is required')
-  const p = await createPractice({
-    title: t,
-    description: description?.trim() || null,
-    createdBy: gate.profileId,
-    // A Crew proposal lands PENDING + hidden until a Host+ approves it (which publishes it);
-    // a host+/staff author goes live at birth (the column default 'approved').
-    isPublic: gate.autoApprove,
-    status: gate.autoApprove ? 'approved' : 'pending',
+  // THE GOVERNED WRITE (ADR-988, ADR-1249): the author named the Practice and tapped Create, so
+  // one call proposes, claims and commits through the same writer, and the audit row is written.
+  // The review-status policy stays here (ADR-998); a writer failure keeps its generic line.
+  const cleanDescription = description?.trim() || null
+  const governed = await proposeAndConfirmCreate({
+    entity: 'practice',
+    draft: { title: t, description: cleanDescription ?? '' },
+    rationale: 'Practice library, title road: the author named the Practice and tapped Create.',
+    commit: async () => {
+      const created = await createPractice({
+        title: t,
+        description: cleanDescription,
+        createdBy: gate.profileId,
+        // A Crew proposal lands PENDING + hidden until a Host+ approves it (which publishes it);
+        // a host+/staff author goes live at birth (the column default 'approved').
+        isPublic: gate.autoApprove,
+        status: gate.autoApprove ? 'approved' : 'pending',
+      })
+      if (!created) throw new Error('Could not create practice')
+      return created
+    },
   })
-  if (!p) return fail('Could not create practice')
+  if ('error' in governed) return fail(governed.error)
+  const p = governed.data
   if (!gate.autoApprove) {
     // Best-effort — never blocks creation.
     await notifyStaffOfPendingPractice({ practiceId: p.id, title: t, proposedBy: gate.profileId })
@@ -304,15 +319,27 @@ export async function createPracticeDraftAction(): Promise<ActionResult<{ id: st
   // born public, listing an "Untitled practice" in the library instantly). A Host+/staff
   // author's row is 'approved' (live to them, publishable without review) but enters the
   // public library only when they choose.
-  const p = await createPractice({
-    title: 'Untitled practice',
-    createdBy: gate.profileId,
-    isPublic: false,
-    status: gate.autoApprove ? 'approved' : 'draft',
+  //
+  // THE GOVERNED WRITE (ADR-988, ADR-1249): the blank draft is still a member's create, so it
+  // proposes, claims and commits through the same writer and lands in the audit log.
+  const governed = await proposeAndConfirmCreate({
+    entity: 'practice',
+    draft: { title: 'Untitled practice' },
+    rationale: 'Practice library, blank road: the author opened a fresh draft in the builder.',
+    commit: async () => {
+      const created = await createPractice({
+        title: 'Untitled practice',
+        createdBy: gate.profileId,
+        isPublic: false,
+        status: gate.autoApprove ? 'approved' : 'draft',
+      })
+      if (!created) throw new Error('Could not create practice')
+      return created
+    },
   })
-  if (!p) return fail('Could not create practice')
+  if ('error' in governed) return fail(governed.error)
   revalidatePath('/practices')
-  return ok({ id: p.id })
+  return ok({ id: governed.data.id })
 }
 
 // Edit a practice you created. Partial flexibility: members shape content + cadence

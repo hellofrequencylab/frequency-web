@@ -286,7 +286,7 @@ export function SpaceLifecyclePanel({
           </div>
 
           <div className="mt-4">
-            <label htmlFor="new-owner" className="mb-1 block text-meta font-semibold uppercase tracking-wide text-muted">
+            <label htmlFor="new-owner" className="mb-1 block eyebrow text-muted">
               New owner
             </label>
             <Select

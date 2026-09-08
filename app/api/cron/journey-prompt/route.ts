@@ -1,3 +1,6 @@
+// LIVE-190 budget (ADR-1252): 2000 enrolled members per invocation; the per-day dedupe key keeps a prompt from sending twice, but there is NO cursor: a cut-off run re-reads the same sorted head next hour. The row records the missing watermark.
+// The clock is CRON_TIME_BUDGET_MS from lib/cron/budget.ts; app/api/cron/budget.test.ts checks the
+// declaration is applied, not merely written down.
 /**
  * Daily Journey-prompt cron (docs/JOURNEYS.md §15 P6). Runs once daily via Vercel Cron. For
  * every member enrolled in a Journey with a not-yet-done next lesson, sends the one prompt naming
@@ -39,6 +42,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import type { Database } from '@/lib/database.types'
 import { rejectUnauthorizedCron } from '@/lib/cron-auth'
 import { withCronHeartbeat } from '@/lib/observability/cron-heartbeat'
+import { cronBudget } from '@/lib/cron/budget'
 import { sendPushToProfile } from '@/lib/push'
 import { getDailyJourneyPrompt, formatJourneyPrompt, type JourneyPrompt } from '@/lib/journey-prompt'
 import { listEnrolledMemberIds } from '@/lib/journeys/progress'
@@ -81,7 +85,10 @@ async function handler(req: NextRequest) {
   const now = new Date()
 
   // Every member with at least one active (not-yet-completed) Journey enrollment.
-  const memberIds = await listEnrolledMemberIds()
+  const budget = cronBudget(2000)
+  const { batch: memberIds, remaining: tail } = budget.take((await listEnrolledMemberIds()).slice().sort())
+  let remaining = tail
+  let visited = 0
   const tzByProfile = memberIds.length ? await readHomeTimezones(admin, memberIds) : new Map<string, string>()
 
   let inapp = 0
@@ -91,7 +98,12 @@ async function handler(req: NextRequest) {
   let deduped = 0
   let failed = 0
   let loaderFailed = 0
-  for (const profileId of memberIds) {
+  for (const [i, profileId] of memberIds.entries()) {
+    if (budget.exhausted()) {
+      remaining += memberIds.length - i
+      break
+    }
+    visited++
     // The timezone gate runs FIRST: on 23 of 24 runs a member is simply not in their morning, and
     // that answer must not cost a loader call.
     const { due, day } = morningFor(now, tzByProfile.get(profileId))
@@ -156,7 +168,11 @@ async function handler(req: NextRequest) {
     }
   }
 
-  const counts = { candidates: memberIds.length, inapp, push, skipped, notDue, deduped, failed, loaderFailed }
+  const counts = {
+    candidates: memberIds.length + tail,
+    inapp, push, skipped, notDue, deduped, failed, loaderFailed,
+    ...budget.summary(visited, remaining),
+  }
   log.info('cron.journey_prompt', counts)
   // failed > 0 is a job failure the heartbeat must see (withCronHeartbeat fail-pings on a 5xx).
   // Every in-app row that did land carries its dedupe key, so the retry cannot double-send.

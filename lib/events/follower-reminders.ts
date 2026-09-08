@@ -254,7 +254,15 @@ type EventRow = {
 
 type ProfileRow = { id: string; display_name: string | null; auth_user_id: string | null }
 
-async function processLead(lead: ReminderLead): Promise<{ events: number; sent: number }> {
+/** LIVE-190: one lead reads at most `limit` events, soonest first, and stops on the clock inside
+ *  the recipient loop. `recordFollowerReminderSent` is the claim, so a run cut off mid-event
+ *  resumes next quarter-hour without re-sending; the window's slack covers the tail. */
+type LeadBudget = { limit: number; exhausted: () => boolean }
+
+async function processLead(
+  lead: ReminderLead,
+  budget: LeadBudget,
+): Promise<{ events: number; sent: number; remaining: number; stoppedOnBudget: boolean }> {
   const admin = createAdminClient()
   const now = Date.now()
   const { start, end } = reminderWindow(lead, now)
@@ -271,13 +279,17 @@ async function processLead(lead: ReminderLead): Promise<{ events: number; sent: 
     .eq('status', 'published')
     .eq('visibility', 'public')
     .not('space_id', 'is', null)
+    .order('starts_at', { ascending: true })
+    .limit(budget.limit)
 
   const events = ((rawEvents ?? []) as EventRow[]).filter((ev) => {
     if (!followerReminderEventEligible(ev)) return false
     const inst = eventInstant(ev.starts_at, resolveZone(ev.time_zone))
     return !!inst && inst.getTime() >= start && inst.getTime() < end
   })
-  if (!events.length) return { events: 0, sent: 0 }
+  if (!events.length) return { events: 0, sent: 0, remaining: 0, stoppedOnBudget: false }
+  let remaining = 0
+  let stoppedOnBudget = false
 
   // Only ACTIVE spaces surface follower reminders (a suspended/hidden space's public event must
   // not be blasted). Load the space name + slug for the copy.
@@ -295,7 +307,12 @@ async function processLead(lead: ReminderLead): Promise<{ events: number; sent: 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://frequencylocal.com'
   let sent = 0
 
-  for (const ev of events) {
+  for (const [evIndex, ev] of events.entries()) {
+    if (budget.exhausted()) {
+      stoppedOnBudget = true
+      remaining += events.length - evIndex
+      break
+    }
     const space = ev.space_id ? spaces.get(ev.space_id) : undefined
     if (!space) continue // space missing / not active -> skip the whole event
 
@@ -369,7 +386,12 @@ async function processLead(lead: ReminderLead): Promise<{ events: number; sent: 
 
     const recipients = selectFollowerReminderRecipients(candidates)
 
-    for (const pid of recipients) {
+    for (const [i, pid] of recipients.entries()) {
+      if (budget.exhausted()) {
+        stoppedOnBudget = true
+        remaining += recipients.length - i
+        break
+      }
       const profile = profiles.get(pid)
       const email = emailByProfile.get(pid)
       if (!profile || !email) continue
@@ -394,13 +416,33 @@ async function processLead(lead: ReminderLead): Promise<{ events: number; sent: 
     }
   }
 
-  return { events: events.length, sent }
+  return { events: events.length, sent, remaining, stoppedOnBudget }
 }
 
-/** Run all three touches. Returns per-lead stats for the cron log. */
-export async function runSpaceFollowerEventReminders(): Promise<Record<ReminderLead, { events: number; sent: number }>> {
-  const t7  = await processLead('7d')
-  const t24 = await processLead('24h')
-  const t2  = await processLead('2h')
-  return { '7d': t7, '24h': t24, '2h': t2 }
+export interface FollowerReminderRunResult {
+  '7d': { events: number; sent: number }
+  '24h': { events: number; sent: number }
+  '2h': { events: number; sent: number }
+  /** Events and recipients the clock cut off across the three leads (LIVE-190). */
+  remaining: number
+  stoppedOnBudget: boolean
+}
+
+/** Run all three touches. Returns per-lead stats for the cron log. `limit` is the events one lead
+ *  reads; `exhausted` is the cron budget's clock (LIVE-190). */
+export async function runSpaceFollowerEventReminders(
+  opts: { limit?: number; exhausted?: () => boolean } = {},
+): Promise<FollowerReminderRunResult> {
+  const budget: LeadBudget = { limit: Math.max(1, opts.limit ?? 200), exhausted: opts.exhausted ?? (() => false) }
+  const t7  = await processLead('7d', budget)
+  const t24 = await processLead('24h', budget)
+  const t2  = await processLead('2h', budget)
+  const lead = (t: { events: number; sent: number }) => ({ events: t.events, sent: t.sent })
+  return {
+    '7d': lead(t7),
+    '24h': lead(t24),
+    '2h': lead(t2),
+    remaining: t7.remaining + t24.remaining + t2.remaining,
+    stoppedOnBudget: t7.stoppedOnBudget || t24.stoppedOnBudget || t2.stoppedOnBudget,
+  }
 }

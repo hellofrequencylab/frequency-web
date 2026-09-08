@@ -19,7 +19,7 @@ export function TrainingNav({ categories }: { categories: TrainingNavCategory[] 
     <nav className="space-y-6" aria-label="Training topics">
       {categories.map((cat) => (
         <div key={cat.slug}>
-          <p className="text-meta font-semibold uppercase tracking-wide text-subtle">{cat.title}</p>
+          <p className="eyebrow text-subtle">{cat.title}</p>
           <ul className="mt-2 space-y-1">
             {cat.docs.map((d) => {
               const active = pathname === d.href
