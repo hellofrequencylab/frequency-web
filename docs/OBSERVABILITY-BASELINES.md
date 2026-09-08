@@ -194,7 +194,7 @@ monthly; the trend matters more than any single month.
 | Vendor | What it bills for | Plan / tier | Monthly spend (USD) | Primary cost driver | Notes |
 |---|---|---|---|---|---|
 | **Supabase** | Postgres, Auth, Storage, Realtime, egress | ✅ **pro** (org `hkveprznovcteywuczcv`, read from the management API 2026-09-07) | ⏳ owner | DB compute + storage + egress | watch egress as media grows (H3-6) |
-| **Vercel** | Hosting, edge, functions, bandwidth, Analytics | ✅ **pro** (team `team_BQT87yt90JOxQEh0efoVZnQh`, read from the platform API 2026-09-07) | ⏳ owner | function invocations + bandwidth | **27** crons + RSC traffic (counted in `vercel.json` 2026-09-07; this line said 18 until then) |
+| **Vercel** | Hosting, edge, functions, bandwidth, Analytics | ✅ **pro** (team `team_BQT87yt90JOxQEh0efoVZnQh`, read from the platform API 2026-09-07) | ⏳ owner | function invocations + bandwidth | **28** crons + RSC traffic (re-counted in `vercel.json` 2026-09-08; this line said 18 until 2026-09-07 and 27 until 2026-09-08) |
 | **Anthropic** | Vera + embeddings (Claude API) | ⏳ owner | ⏳ owner | tokens (Haiku-default) | governed by AI-CONTROLS.md caps |
 | **Resend** | Transactional + digest email | ⏳ owner | ⏳ owner | emails sent / month | digest + lifecycle + nurture |
 | **Upstash** | Redis (rate-limit, cache) | ⏳ owner | ⏳ owner | commands / month | sliding-window rate limits |
@@ -251,7 +251,7 @@ column names where the number is read from (all already wired or read from the v
 | **p95 latency, practice-log write** | **< 1000 ms** | 28d | Sentry perf | The write does an insert + idempotent ledger award; a slightly looser bar than reads, still sub-second-ish. |
 | **Error rate** (5xx + unhandled, per request) | **< 0.5%** | 28d | Sentry (H0-4) | 1 in 200 requests. Tight enough that a real regression pages; loose enough to absorb transient upstream blips. |
 | **Queue lag** (`process-queue` email worker backlog age) | **< 10 min** | live | worker log + heartbeat | The worker runs every 2 min; a backlog older than ~5 cycles means it is falling behind and a human should look (H4-2). |
-| **Cron freshness** (each of 18 jobs ran within its schedule + grace) | **100% of jobs fresh** | per job | cron heartbeat (H0-5) dead-man's-switch | A silently-dead cron is the exact future problem H0-5 exists to prevent. Grace = one interval. Any stale job = page. |
+| **Cron freshness** (each of 28 jobs ran within its schedule + grace) | **100% of jobs fresh** | per job | cron heartbeat (H0-5) dead-man's-switch — 🔴 **NOT CURRENTLY WORKING, see `OWN-065`** | A silently-dead cron is the exact future problem H0-5 exists to prevent. Grace = one interval. Any stale job = page. ⚠️ **As of 2026-09-08 no job can page**: every heartbeat ping is rejected `HTTP 404`, measured across all 27 live crons. The jobs themselves are fresh; the instrument named in this row is not running, so this target is currently unmeasured rather than met. |
 
 ### 4a. Per-cron freshness windows
 
@@ -324,7 +324,7 @@ node scripts/perf-baseline.mjs --json     # machine-readable output for pasting 
 node scripts/cost-baseline.mjs            # prints the template + any computed unit costs
 node scripts/cost-baseline.mjs --json     # machine-readable output
 
-# Cron freshness: reads vercel.json, derives each of the 18 jobs' §4a fresh-by window,
+# Cron freshness: reads vercel.json, derives each of the 28 jobs' §4a fresh-by window,
 # and reports which jobs have a heartbeat monitor configured (presence only — no secret
 # read). Use --strict in CI to fail when a cron is paging-blind.
 node scripts/cron-freshness.mjs           # print the freshness contract table

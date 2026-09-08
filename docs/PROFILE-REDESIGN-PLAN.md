@@ -177,7 +177,7 @@ Three separate things are wrong with the header, and they are not equally to bla
 | Gate | Flag | Covers | Blocked on | When |
 |---|---|---|---|---|
 | **A** | `chat_dm_routes_retired` | `app/(main)/messages/[id]/page.tsx` → `redirect('/feed?chat=dm&thread=<id>')` | Nothing. Ships with step 28. | This sprint |
-| **B** | `chat_room_routes_retired` | `app/(main)/messages/page.tsx`, `app/(main)/messages/r/[roomId]/page.tsx` | The 8-item room-admin port (P2-1..P2-8) | **Needs an owner decision and a date.** See open question O1 |
+| **B** | `chat_room_routes_retired` | `app/(main)/messages/page.tsx` only — 🔴 **`app/(main)/messages/r/[roomId]/page.tsx` is CARVED OUT and STAYS** | The 8-item room-admin port (P2-1..P2-8) | **RULED 2026-09-08 (O1): chat lives in the dock; room ADMIN keeps a full page.** |
 
 **Deep-link blast radius: near zero, and verified.** No email, push, digest or cron builds a `/messages` URL (`lib/notifications/registry.ts` has no message event). `/messages` is `Disallow`ed in `app/robots.ts:30` and absent from `app/sitemap.ts`. One surface does break: `public/.well-known/apple-app-site-association:13` registers `/messages/*` as an iOS universal-link path. A render-time redirect (not a delete) keeps that working.
 
@@ -801,7 +801,11 @@ Client links that must be repointed in the same commit, because a link that visi
 
 Blocked on P2-1..P2-8 (uncap the inbox, in-dock room list + create, room settings, membership ops, in-room search, non-member join preview, presence dots, mobile behaviour). Free with it: delete `components/messages/messages-popover.tsx`, 166 lines with zero importers.
 
-**This needs an owner decision, not an open-ended dependency.** See open question O1.
+**RULED 2026-09-08 (O1, `OWN-060`): chat lives in the dock; room ADMIN keeps a full page.**
+
+🔴 **Gate B closes WITH A CARVE-OUT: `app/(main)/messages/r/[roomId]` STAYS.** The gate is named
+`chat_room_routes_retired`, and an agent reading that name alone would delete the route it is
+explicitly meant to preserve. Only `app/(main)/messages/page.tsx` retires under this gate.
 
 ---
 
