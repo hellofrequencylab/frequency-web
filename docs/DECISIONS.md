@@ -36926,3 +36926,31 @@ That is not a defect in the reporter. `requiredFailure()` (`test/e2e/shell-cover
 - Nothing changes for any dispatch made today. With the variables unset — which is what the owner steps above assume — all four steps receive an empty string and behave exactly as they did; `flagOn()` also reads `0` and `false` as off, so a variable can be parked rather than deleted.
 
 ⚠️ **The generalisable part: "every fail-safe needs a gate that notices it fired" has a second half — the gate must be REACHABLE from every path that can fire the fail-safe.** This repo built the gate, unit-tested both of its directions, and wired it into one of the two workflows that can trip it. Everything about that reads as done: the pure function is right, the tests are honest, the annotation is loud. What no test could see is that the *capture* path — the more dangerous one, because it commits — never passed the argument. A guard proven at the function boundary is not proven at the process boundary, and the cheapest way to find the gap is to read a real run's conclusion, not its output.
+## ADR-1269: "owner-dispatched" was never true, and it spread to four rows because it was cited rather than measured (2026-09-08)
+
+**Status.** Accepted. A measurement pass over the owner-gated rows of `docs/BUILD-BACKLOG.json`, in the shape ADR-1082 prescribes. No product work; nine rows corrected, two `ownerAction` fields dropped, eleven premises confirmed with a dated line.
+
+**Context.** 31 rows carry an `ownerAction` (ruling / account / config / content) or say in prose that only the owner can settle them. Each was re-measured against a primary source on today's tree, database, workflow logs and production. Twenty premises held exactly. Nine had moved, and **four of the nine were the same sentence**.
+
+**The finding.** `LIVE-040`, `LIVE-114`, `HYG-055` and `LIVE-186` each said a visual-baseline recapture is *"an owner-dispatched `e2e-manual.yml` run"*. `.github/workflows/e2e-manual.yml` declares `workflow_dispatch:` at line 117. Run [34174895830](https://github.com/hellofrequencylab/frequency-web/actions/runs/34174895830) was dispatched by an agent against production at 2026-09-08 00:55Z with `update_baselines + capture_shell`; the member session minted, `update-baselines` succeeded, and the job committed baselines to its branch. Nobody had tested the claim, and it cost one tool call.
+
+🔴 **The propagation is the part worth an ADR, not the error.** One row did not get this wrong four times. It got it wrong once and the other three cited it: `LIVE-040` says *"it shares its blocker with LIVE-186"*, `LIVE-114` says *"gated on the same owner-dispatched baseline recapture as LIVE-040 and LIVE-186"*, `HYG-055` restates it as its own `⏳ OWNER ACTION`. Each of those sentences reads as corroboration and is actually a copy. **A blocker cited from a sibling row has been asserted twice and measured zero times**, and the ledger's own cross-references made the claim look better evidenced the more it spread.
+
+**Decision.**
+
+1. **A blocker claim names the artifact that would settle it, or it is not a blocker.** "The owner must dispatch it" is a claim about a mechanism — a workflow trigger, an API, a console page — and mechanisms are readable. Write the artifact into the row (`e2e-manual.yml`'s `on:` block; the Healthchecks project page; the Stripe webhooks list) so the next reader can check it instead of inheriting it.
+2. **Never inherit a blocker across rows.** Citing a sibling for the *finding* is good practice and stays. Citing a sibling for the *blocker* is forbidden: re-measure it on the row you are working, even when the sibling was measured last week.
+3. **When a blocker turns out to be false, sweep the phrase, not the row.** `grep` the backlog for the sentence and fix every carrier in the same change. Fixing one leaves three rows that will re-teach the wrong thing.
+
+**What this did NOT establish, and the discipline that says so.** `OWN-059` already wrote the rule this sweep had to obey, in its own detail: *"a premise sweep that finds the STATED blocker expired has established only that the stated blocker expired. It has not established that the work is unblocked."* `HYG-027` is the control that proves the discipline pays. Its owner ask had three steps, and step (2) was the same dispatch sentence — expired. But the run that disproved step (2) *also measured step (1)*, and step (1) held, in the reporter this repo built for exactly that purpose:
+
+> ⚠️ App shell covered; the OPERATOR CONSOLE was not looked at.
+> 7 /admin surface(s) bounced off the role floor … the account behind `PW_MEMBER_EMAIL` is signed in but is not platform staff.
+
+An instrument that names its own blind spot in a log turned an unfalsifiable owner ask into a two-step one with evidence. That is the return on the rule that a gate which cannot fire honestly gets routed around and then reads as coverage: this one fired, in a log, and named itself.
+
+**Also corrected in this pass**, each against its own primary source: `LIVE-165` (the code half was said to be waiting on a branch; it landed on main in #2386 the day before that note was written), `LIVE-208` (measured on production, a `notFound()` inside a matching route segment answers a real 404 with `noindex` — the 200-and-indexable claim is the catch-all's alone), `LIVE-114`'s count (13 → **14**, drifted while the prose stated it), `OWN-011`'s clock (63 → **77** days since a 72-hour review), `SCAN-205`'s traffic figure (12/18 → **14/21** over the same 31-day window), and `OWN-005`, whose own "Revisit ~2026-09-08" deferral expires on the date this was written.
+
+⚪ **A note on instruments, since two rows now price themselves on traffic.** `SCAN-205` re-prices against Vercel Web Analytics (14 visitors / 21 pageviews in 31 days). That is one instrument, and it is not the only one the product has. Before any further row is priced on "nobody is visiting", say which counter is being read and why it is the right one — the failure ADR-1082 recorded on `OWN-011`, where the wrong meter overstated a cap by 33x, is the same failure in a different direction.
+
+---
