@@ -37851,93 +37851,84 @@ walled behind the subscription it was meant to make worth buying.
 
 ---
 
-## ADR-1293: PROPOSED — one price for the software, and exposure that is earned rather than sold (2026-09-08)
+## ADR-1293: PROPOSED — everything freemium, seats carry scale, and exposure is earned rather than sold (2026-09-08)
 
-**Status:** 🔴 **PROPOSED, not accepted.** Awaiting an owner ruling on six questions
-(`docs/OFFER-MODEL.md` §11). Companion to [ADR-1292](DECISIONS.md); the measurements and the full
-argument live in [`OFFER-MODEL.md`](OFFER-MODEL.md), and status lives in
-[`BUILD-BACKLOG.json`](BUILD-BACKLOG.json) (`OWN-067`).
+**Status:** 🔴 **PROPOSED.** Five parts were ruled by the owner on 2026-09-08 and are recorded as such
+below; the rest awaits a ruling. Measurements and the full argument live in
+[`OFFER-MODEL.md`](OFFER-MODEL.md); status lives in [`BUILD-BACKLOG.json`](BUILD-BACKLOG.json)
+(`OWN-067`). Draft 2 — supersedes the one-price-plus-add-on-apps shape of the first draft.
 
-**Context.** The owner asked for a model where everyone is included and gets real value free, where
-businesses are the income and bring the members in, where the more a Space contributes to community
-the more exposure it gets, and where the ladder is stupid simple and feels fair with no gatekeeping.
+**Context.** The owner is re-engineering the model while it costs nothing to do so: the product is in
+alpha, nobody is paying except two cash arrangements, and no services are being used. The brief was
+everyone included and getting real value free, businesses carrying the financial load and bringing
+the members in, more contribution to community earning more exposure, and a simple ladder with no
+gatekeeping.
 
-Those constraints only reconcile if the two things a platform can sell are separated and never mixed:
-**software is sold; exposure is earned.** If exposure is purchasable, the network is a directory with
-ads and the mission is decoration. If exposure is earned by gathering people, the thing a business most
-wants is bought with the behaviour the mission most wants, and the business model stops competing with
-the mission.
+**The five rulings taken.**
 
-**Two measurements make this cheap rather than speculative:**
+1. **Everything freemium.** Every tool is available to every Space with usage caps; a new Space starts
+   with core tools on and the rest off but switchable. Not a cheaper core plus paid add-on apps, which
+   was the first draft's shape and would have meant a small business did not get the big tools.
+2. **Members consume, Spaces create.** A member gets every forward-facing feature free; creating is
+   what a Space does.
+3. **Crew is granted by an active paid membership to a community, at any price** — the platform stops
+   selling it.
+4. **$49 core, two seats included, $12 per extra seat.** Seats are the size axis.
+5. **Exposure is earned:** ordering, plus the four dormant `featured_at` slots.
 
-- 🔴 **The Space directory is sorted alphabetically.** `lib/spaces/discovery.ts:135` defaults the sort
-  to `name` and `:378-380` applies it. The most valuable exposure surface a business has on this
-  platform rewards nothing except starting with the letter A.
-- ✅ **Nothing on the platform can be bought into rank, anywhere.** An audit of every ranking surface
-  (the directory, all ten `/discover` families, `/nearby` and its map, `/events`, the calendar,
-  `/search`, the feed, `/network`, `/market`, `/library`, the rail panels, the digest, the sitemap)
-  found no plan, tier, entitlement or Stripe field in any `ORDER BY`, score or inclusion filter. Most
-  surfaces already rank on earned signals, and two scoring formulas already ship (`practices_ranked`
-  and the `community_library` RPC). **A per-Space score is the third instance of a pattern this repo
-  has already built twice.**
+**What the measurements changed about the design.**
 
-**Proposed decision.**
+- **"Every tool available" is nearly the shipped state.** All 22 keys in `lib/spaces/functions.ts` are
+  universal and default-on (`:334-340`); only four carry an entitlement. The work is not unlocking
+  tools, it is the **caps** — and five of them read **zero** on free
+  (`space_automation`, `space_crm_playbooks`, `space_collaborators`, `space_membership_tiers`,
+  `practice_publish`). A cap of zero is a lock wearing an allowance's clothes, and under Ruling 1 all
+  five must move.
+- **Bundles are subtractive only.** `CAPABILITY_BUNDLES` (`lib/pricing/bundles.ts`) can turn a tool
+  off for a Space but can never grant a paid one, so it cannot be the add-on mechanism. It is exactly
+  right as the **onboarding preset**, which is what Ruling 1 asks for, and OFFER-MODEL §3 is therefore
+  the bundle spec that open P1 row `OWN-048` has been waiting for.
+- **Seats are fully built and only need a price.** The checkout line, webhook reconciler, seat editor
+  and invite check all exist; `operator_seat` is a `placeholder: true` catalog item at a $9 stand-in
+  that the catalog sync skips, and **$12 is the figure ADR-811 already names**. Turning seats on is:
+  set the amount, clear the placeholder, sync the catalog, flip `catalog_operator_seat_active`.
+- **Crew is a tier, not a role**, and `membership_tier` is a **bare scalar with no provenance** —
+  unlike circle memberships, which carry `granted_by_tier_id` so a grant can be revoked without
+  touching a membership someone chose themselves. The Crew grant needs the same provenance, with the
+  effective tier resolving as `stripe_active OR EXISTS(active grant)`.
 
-1. **Members never pay for a feature.** Retire the five member-facing gates and the three tease-gates,
-   and remove the parallel `isPaid` walls, which are the ones actually refusing people today (the
-   `featureAllowed` gates short-circuit to granted while `gatesLive` is false). Keep Crew as
-   contribute-what-you-want patronage with **no feature difference**.
-2. **One paid tier.** Merge `collective` into `business` at a single price, recommended **$49/mo /
-   $490/yr**, carrying every operator tool, with Non Profit at $29 verified and Independent unchanged
-   as the off-network anchor. Today's split walls automation, team and collaboration behind $79, and
-   those are precisely the tools that make community-building possible. Production carries 14 free
-   Spaces, **6 comped `collective` Spaces and zero on `business`**, so nothing is at risk.
-3. **Any Space may sell memberships, gated on readiness rather than plan** — a payout-ready Connect
-   account, a published circle to deliver into, a stated cancellation policy. This applies ADR-914's
-   own rule ("never gate the transaction, gate the repeat") to the one transaction it was never applied
-   to. The existing gate defends a real concern, that a monthly membership is a promise to another
-   person; readiness tests that concern directly instead of proxying it with a price.
-4. **The take-rate collapses to two numbers**: 10% on network-sourced sales, 3% once paid, 0% for
-   non-profits, and 0% on your own audience always. The buy-down is checkable arithmetic: the
-   subscription pays for itself at roughly $700/month of network-sourced revenue.
-5. **Exposure is earned and never purchasable, stated as a public promise.** A per-Space score ships as
-   a derived read model on the nightly refresh cron, following the `resonance_density_cells` pattern,
-   and replaces `ORDER BY name` on the directory first. It decays on a rolling window so it cannot be
-   banked and an incumbent cannot lock the top; every input is capped; money is never an input.
-6. **Round-one inputs use only signals that have data.** Production is early-beta thin: `captures` is
-   0 so check-ins do not exist, `space_collaborations` is 0, `reports` is 0 so there is no moderation
-   record, `trust_scores` is 0, and `space_reviews` has one row. A score weighting those would read
-   zero for every Space. Round one is therefore gatherings held, people brought to the network
-   (referral, first-touch acquisition, QR scan and signup-lead attribution), circles kept alive, and
-   content other Spaces' members actually adopted. Attendance, collaboration, reviews and moderation
-   join in round two as their tables fill.
+🔴 **One risk recorded against Ruling 3, and it is not closed by it.** Anyone can create a Space,
+`setMembershipTiers` has **no minimum price check** (`lib/spaces/memberships.ts:415`), and
+`prevent_economy_self_edit` does **not** cover `membership_tier`. So "any paid membership, any price"
+still permits an operator to mint a $1 tier and grant themselves and their friends Crew. Two narrow
+guards preserve the ruling and close the hole, and both are **recommendations pending a decision**:
+a granted Crew must not buy down the platform take rate (keep `memberNetworkTakeRateBps` reading the
+Stripe tier, or a $1 tier becomes a machine for turning 10% into 8%), and a Space's own owners and
+admins must not be grantable by their own tier.
 
-**The anti-gaming rule already exists and should govern every input.** `NAMING.md`'s *validated
-creation* pays only on first use by a **distinct, established member** — email-verified, not the
-creator, not referred by the creator — implemented at `lib/rewards/creation.ts` and failing closed on
-any read error. Alongside it the repo already carries idempotency keys, rolling daily caps, an
-activation gate that refuses to pay a referral until the new member does something real, PostGIS
-proximity verification with signed node secrets, and a self-dealing trigger.
+**The ranking algorithm** (OFFER-MODEL §7) is built to look native rather than invented: the
+saturation curve `1 - e^(-n/k)` from `lib/resonance/score.ts`, the weight renormalisation over
+*present* signals and the `maxPerAuthor` diversity re-rank from `lib/feed/blend-rank.ts`, and the
+rollup shape from `resonance_density_cells`. Six saturated signals — gatherings held, upcoming,
+rooms, audience, commons, care — a freshness decay floored at 0.35, and a new-Space grace floor of
+0.35 for the first 30 days. It ships in two steps, and **v0 needs no migration and no query change**,
+because the directory already fetches the counts it needs and paginates in app code.
 
-**Cost, measured rather than estimated.** Roughly 110 to 140 files: removing the live walls (L), the
-tier merge (L, ~23 source files plus two migrations and one CI script), memberships-free (M, four
-enforcement points that must land in one commit because a drift test guards them), the take-rate (S),
-the pricing surfaces (M), the tests that pin the ladder by value (L), the score itself (M–L) and the
-operator receipt page (M). **One to one and a half focused weeks for the pricing rework, plus the
-score.** The one real gotcha is that Stripe prices cannot be deleted and the four `collective_base`
-keys sit in `FROZEN_SYNCED_KEYS`, so the merge needs a grandfathering path; today that means six comped
-Spaces, which makes **now the cheapest moment this will ever be.**
+⚠️ **The data caution that shapes the weights.** Of 20 networked Spaces, 8 have any published event,
+4 have an upcoming one, 1 has a circle, 7 have a follower, and **0 have a paid membership**. The only
+dense universal signal is `space.profile_view` (342 in 30 days, 20 of 20 Spaces). The renormalisation
+rule matters more than the weights, because it judges a Space on the signals it has rather than
+punishing it for the ones nobody has yet.
 
-**Blocked on two things, neither optional.** `OWN-050`, the only P0: the Stripe webhook was never
-registered and `stripe_webhook_events` has held zero rows for the life of the table, so no payment on
-any path has ever been recorded. And event attendance has no independent record, which round two of the
-score depends on.
+**Consequences if accepted.** The ladder collapses to two visible prices plus seats.
+`scripts/check-collective.mjs` pins the six tier names and needs rewriting or retiring;
+`VALUE-LADDER`, `PRICING` and `COMMUNITY-COLLECTIVE-STRATEGY` all need reconciling. Three **live**
+walls come down (`entry-points`, `codes`, `messages/rooms`) — unlike the feature gates, which
+currently short-circuit to granted. `OWN-048` closes on the bundle spec. The four `featured_at`
+consumers must each be added to **every** select branch, per the regression documented in
+`scripts/check-row-type-select-parity.test.ts:23-27`.
 
-**Consequences if accepted.** The ladder goes from seven rungs to two visible prices. `VALUE-LADDER`,
-`PRICING` and `COMMUNITY-COLLECTIVE-STRATEGY` all need reconciling, and `scripts/check-collective.mjs`
-must be rewritten or retired because it pins the six tier names. `OWN-046`, `OWN-048` and `OWN-063`
-each need answering against the ruling.
-
-**Consequences if declined.** The directory stays alphabetical, the dues engine stays walled behind the
-subscription it was meant to make worth buying, grandfathering gets more expensive with every real
-subscriber, and the gates begin enforcing against individuals on 2026-10-01 by default.
+**Still open:** the two Crew guards; a new grace window (`beta_grace` expires 2026-10-01, and
+2026-12-01 is proposed); and whether the earned measure gets a name, which is a `NAMING.md` decision
+rather than a drive-by. "Standing" is used in OFFER-MODEL as a plain descriptive word, not a proposed
+proper noun.
