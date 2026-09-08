@@ -8,6 +8,7 @@ import { SITE_NAME } from '@/lib/site'
 import { JsonLd } from '@/components/json-ld'
 import { practiceListSchema, breadcrumbSchema } from '@/lib/jsonld'
 import { IndexTemplate } from '@/components/templates'
+import { resolveIndexHero } from '@/lib/layout/index-hero'
 import { BetaCTA } from '@/components/marketing/marketing-ui'
 
 export const revalidate = 3600
@@ -69,6 +70,9 @@ export default async function PillarPracticesPage({
 
   const { pillar, pillars, rows } = data
   const title = `${pillar.name} Practices`
+  // The shared hero band (LIVE-117, ADR-1261): rung 1 reads the '/discover/practices' section key,
+  // so the operator's library cover heads every pillar page without one being picked per pillar.
+  const hero = await resolveIndexHero(`/discover/practices/pillar/${slug}`)
 
   return (
     <>
@@ -87,6 +91,7 @@ export default async function PillarPracticesPage({
         {/* Public SEO surface: no operator admin bar (that's a member-app control). A
             back-link returns to the full library, matching the breadcrumb trail. */}
         <IndexTemplate
+          {...hero}
           title={title}
           description={pillarDescription(pillar.name, pillar.description)}
           back={{ href: '/discover/practices', label: 'Practices' }}
