@@ -21,6 +21,8 @@ import { requireAdmin } from '@/lib/admin/guard'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { aiAvailable, featureOverBudget } from '@/lib/ai/usage'
 import { scanEventPoster } from '@/lib/ai/events-ai'
+import { proposeAndConfirmCreate } from '@/lib/ai/vera/create-entity'
+import { checkCreateDraft } from '@/lib/ai/vera/create-tools'
 import { downloadImageBase64, removeObject } from '@/lib/connections/store'
 import { mergePosterLinks } from '@/lib/events/seed/draft'
 import { stageScannedEvent } from '@/lib/events/seed/from-scan'
@@ -282,24 +284,60 @@ export async function saveDraft(input: DraftFormInput): Promise<{ id: string } |
     if (creators.includes(profileId)) spaceId = input.spaceId
   }
 
-  const created = await createEventDraft(profileId, {
+  const startsAt = cleanIso(input.startsAt)
+  const endsAt = cleanIso(input.endsAt)
+  const priceCents = cleanPrice(input)
+  const domain = coerceDomain(input.domain)
+  const details = sanitizeDetails(input.details, userId)
+
+  // THE GOVERNED WRITE (ADR-988, ADR-1249, ADR-1280). A draft-status Event IS a create: it inserts
+  // a row the member owns, and until today it was the one Event road the audit log never saw. It
+  // is born at stage 'draft', so the layer holds it to the manifest's create-time fields (a title,
+  // which the writer defaults to "Untitled event" and the draft below mirrors) and defers
+  // `startsAt`, which the manifest marks `requiredAt: 'publish'`; publishDraft enforces the full
+  // manifest before the row goes live. The gate is `event.create`, which every signed-in profile
+  // holds, re-checked at the write. The writer and its input are unchanged.
+  const governed = await proposeAndConfirmCreate({
+    entity: 'event',
+    stage: 'draft',
+    draft: {
+      title: (input.title ?? '').trim() || 'Untitled event',
+      description: input.description ?? '',
+      startsAt: startsAt ?? '',
+      endsAt: endsAt ?? '',
+      location: input.location ?? '',
+      isFree: input.isFree === true,
+      priceCents,
+      organizerName: input.organizerName ?? '',
+      organizerContact: input.organizerContact ?? '',
+      domain: domain ?? '',
+      coverImagePath: posterPath ?? '',
+    },
     spaceId,
-    title: input.title,
-    description: input.description,
-    startsAt: cleanIso(input.startsAt),
-    endsAt: cleanIso(input.endsAt),
-    location: input.location,
-    priceCents: cleanPrice(input),
-    organizerName: input.organizerName,
-    organizerContact: input.organizerContact,
-    domain: coerceDomain(input.domain),
-    posterPath,
-    details: sanitizeDetails(input.details, userId),
+    rationale: 'Poster scan: the member photographed a flyer and saved it as a draft to finish later.',
+    commit: async () => {
+      const created = await createEventDraft(profileId, {
+        spaceId,
+        title: input.title,
+        description: input.description,
+        startsAt,
+        endsAt,
+        location: input.location,
+        priceCents,
+        organizerName: input.organizerName,
+        organizerContact: input.organizerContact,
+        domain,
+        posterPath,
+        details,
+      })
+      if (!created) throw new Error('Could not save the draft. Try again.')
+      return created
+    },
   })
-  if (!created) return { error: 'Could not save the draft. Try again.' }
+  if ('error' in governed) return { error: governed.error }
 
   revalidatePath('/drafts')
-  return { id: created.id }
+  return { id: governed.data.id }
 }
 
 /** Patch a draft the caller owns (the editor's Save). */
@@ -351,6 +389,23 @@ export async function publishDraft(id: string, ownership: DraftOwnership): Promi
   if (startMs < Date.now()) {
     return { ok: false, error: 'That start date is in the past. Set a future date before publishing (the scan may have misread the year).' }
   }
+
+  // THE FULL MANIFEST AT PUBLISH (ADR-1280). The draft was allowed to be born without the fields
+  // the Event manifest marks `requiredAt: 'publish'`; going live is where that deferral ends, so
+  // the same check the governed layer runs at a create runs here at the strict stage. The date
+  // gate above keeps its friendlier sentence for the one field a scan most often lacks; this
+  // catches whatever else the manifest defers, today or later.
+  const manifest = checkCreateDraft('event', {
+    title: draft.title ?? '',
+    description: draft.description ?? '',
+    location: draft.location ?? '',
+    startsAt: draft.startsAt ?? '',
+    endsAt: draft.endsAt ?? '',
+    priceCents: draft.priceCents,
+    organizerName: draft.organizerName ?? '',
+    organizerContact: draft.organizerContact ?? '',
+  }, {}, 'publish')
+  if (!manifest.ok) return { ok: false, error: manifest.errors.join(' ') }
 
   const res = await publishEventDraft(profileId, id, kind)
   if (!res) return { ok: false, error: 'Could not publish. The draft may already be live.' }

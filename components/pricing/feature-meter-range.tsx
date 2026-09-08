@@ -101,7 +101,7 @@ export function FeatureMeterRange({ ladder, currentTier, upgradeHref, live = fal
 
   return (
     <section className="mt-4 rounded-2xl border border-border bg-surface p-4 lift-1">
-      <p className="text-meta font-semibold uppercase tracking-widest text-subtle">{ladder.dimension} allowance</p>
+      <p className="eyebrow text-subtle">{ladder.dimension} allowance</p>
 
       {/* The OPTIONAL usage readout: "X of N used" on the viewer's current tier. Informational only. */}
       {readout &&

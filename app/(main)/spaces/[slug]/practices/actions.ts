@@ -19,6 +19,7 @@ import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { canCreate } from '@/lib/core/load-capabilities'
 import { ok, fail, type ActionResult } from '@/lib/action-result'
+import { proposeAndConfirmCreate } from '@/lib/ai/vera/create-entity'
 import { createPractice, getPractice, setPracticeStatus, notifyStaffOfPendingPractice } from '@/lib/practices'
 
 async function authorizeSpaceAuthor(
@@ -43,18 +44,42 @@ export async function createSpacePracticeAction(slug: string): Promise<void> {
   const gate = await authorizeSpaceAuthor(slug)
   if ('error' in gate) redirect(`/spaces/${slug}/practices`)
 
-  const practice = await createPractice({
-    title: 'Untitled practice',
-    createdBy: gate.profileId,
+  // THE GOVERNED WRITE (ADR-988, ADR-1249, ADR-1280). A blank Space practice is still a member's
+  // create, so it proposes, claims and commits through the same writer and lands in the audit log.
+  // THIS ROAD DECLARES ITS OWN GATE. CREATE_GATES makes `practice` a Crew-only `practice.create`
+  // capability, which is the gate on the PUBLIC library (submitSpacePracticeToLibraryAction below
+  // still holds it). This road is deliberately open to anyone who manages the Space, and that
+  // check, authorizeSpaceAuthor, already ran above; the layer records it in place of the
+  // capability rather than refusing the free Space manager the road exists for. The road is named
+  // in ROAD_GATES (scripts/check-creates.mjs), so this declaration is reviewed, not silent.
+  const governed = await proposeAndConfirmCreate({
+    entity: 'practice',
+    draft: { title: 'Untitled practice' },
     spaceId: gate.spaceId,
-    // Usable by the Space's members immediately, but not in the public library and not library-approved:
-    // reaching the main library is the separate paid-Crew + review step.
-    isPublic: false,
-    status: 'draft',
+    roadGate: {
+      kind: 'scoped',
+      why: 'authorizeSpaceAuthor: the caller manages this Space (canEditProfile: owner, admin or editor). Own-Space practices are free to build; practice.create gates the public library, not this road.',
+    },
+    rationale: 'Space practices, blank road: a Space manager opened a fresh draft for their members.',
+    commit: async () => {
+      const practice = await createPractice({
+        title: 'Untitled practice',
+        createdBy: gate.profileId,
+        spaceId: gate.spaceId,
+        // Usable by the Space's members immediately, but not in the public library and not
+        // library-approved: reaching the main library is the separate paid-Crew + review step.
+        isPublic: false,
+        status: 'draft',
+      })
+      if (!practice) throw new Error('Could not create the practice.')
+      return practice
+    },
   })
-  if (!practice) redirect(`/spaces/${slug}/practices`)
+  // This road returns void and redirects back to the manager on any failure, exactly as it did
+  // when a failed write returned null; the layer's refusal is answered the same way.
+  if ('error' in governed) redirect(`/spaces/${slug}/practices`)
 
-  redirect(`/practices/${practice.id}/edit`)
+  redirect(`/practices/${governed.data.id}/edit`)
 }
 
 /**

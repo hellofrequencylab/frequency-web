@@ -371,7 +371,7 @@ function RewardsPanel({ payload }: { payload: RevealPayload }) {
       <RewardsArt className={ART} />
       {payload.logged ? (
         <>
-          <p className="mt-3 text-meta font-semibold uppercase tracking-widest text-subtle">
+          <p className="mt-3 eyebrow text-subtle">
             {payload.practiceTitle} · logged
           </p>
           <p className="relative mt-2 flex items-center justify-center gap-2 text-5xl font-bold tabular-nums text-text">
@@ -398,7 +398,7 @@ function RewardsPanel({ payload }: { payload: RevealPayload }) {
         </>
       ) : (
         <>
-          <p className="mt-3 text-meta font-semibold uppercase tracking-widest text-subtle">
+          <p className="mt-3 eyebrow text-subtle">
             {payload.practiceTitle}
           </p>
           <p className="mt-2 text-page-title font-bold text-text">Already counted today</p>
@@ -439,7 +439,7 @@ function StreakPanel({ payload }: { payload: RevealPayload }) {
   return (
     <div className="w-full max-w-sm">
       <StreakArt className={ART} />
-      <p className="mt-3 text-meta font-semibold uppercase tracking-widest text-subtle">Streak</p>
+      <p className="mt-3 eyebrow text-subtle">Streak</p>
       <p className="mt-2 flex items-center justify-center gap-2 text-6xl font-bold tabular-nums text-text">
         <Flame className="h-10 w-10 text-primary" />
         <span
@@ -498,7 +498,7 @@ function StatsPanel({ payload }: { payload: RevealPayload }) {
   return (
     <div className="w-full max-w-sm">
       <StatsArt className={ART} />
-      <p className="mt-2 text-meta font-semibold uppercase tracking-widest text-subtle">Stats</p>
+      <p className="mt-2 eyebrow text-subtle">Stats</p>
       <div className="mt-3 space-y-1.5 text-left">
         {rows.map(([k, v]) => (
           <div

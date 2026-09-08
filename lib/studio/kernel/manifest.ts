@@ -127,6 +127,20 @@ export type FieldChoices =
  */
 export type FieldPlacement = 'spark' | 'inline' | 'rail'
 
+/**
+ * WHEN a `required` field must be present (ADR-1280):
+ *  - `create`  — the row cannot be inserted without it. The default, and what `required` alone
+ *                has always meant.
+ *  - `publish` — the row may be born as a DRAFT without it, and it becomes required the moment
+ *                the entity is published. An Event scanned off a flyer is real, unaudited create
+ *                volume the day it is saved, and it has no start time until somebody reads the
+ *                date off the poster; `publish` is how the manifest says both things at once.
+ * A field declaring `requiredAt` must also declare `required` (the validator refuses the other
+ * shape), so the Spark still always asks for it: deferring WHEN it is enforced never makes it
+ * optional to ask.
+ */
+export type RequiredAt = 'create' | 'publish'
+
 // ── Field definition ─────────────────────────────────────────────────────────────────────
 
 /**
@@ -147,6 +161,11 @@ export interface FieldDef {
   placement?: FieldPlacement
   /** Creation cannot complete without it. Always asked in the Spark regardless of placement. */
   required?: boolean
+  /**
+   * When `required` is enforced: at the create (default) or only at publish, so a draft-status
+   * row may be born without it (ADR-1280). Only meaningful beside `required: true`.
+   */
+  requiredAt?: RequiredAt
   /**
    * PROSE: free narrative that can hide a commercial claim, so it publishes only when a
    * verified fact backs it OR nothing in the ledger claims it (hand-supplied === trusted).
@@ -345,6 +364,16 @@ export function validateManifest(m: EntityManifest): ManifestProblem[] {
       }
     } else if (f.options || f.optionsFrom) {
       problems.push(`${ctx} field "${f.path}" is a ${f.kind}, which has no dropdown to fill. Remove its options, or make it a select.`)
+    }
+    // `requiredAt` says WHEN a required field is enforced. On a field that is not required it
+    // says nothing, and a reader would take it for a requirement the check never applies.
+    if (f.requiredAt !== undefined) {
+      if (f.requiredAt !== 'create' && f.requiredAt !== 'publish') {
+        problems.push(`${ctx} field "${f.path}" declares \`requiredAt: "${String(f.requiredAt)}"\`. It is enforced at 'create' or at 'publish', and nothing else.`)
+      }
+      if (!f.required) {
+        problems.push(`${ctx} field "${f.path}" declares \`requiredAt\` without \`required\`. Deferring a requirement needs one to defer; add \`required: true\` or drop \`requiredAt\`.`)
+      }
     }
   }
 

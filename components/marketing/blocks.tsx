@@ -184,7 +184,7 @@ export function LivePostsBlock({ heading, live, pad, vis = '' }: { heading?: str
     return (
       <section className={`bg-marketing-canvas px-6 ${pad ?? 'py-20 sm:py-24'} ${vis}`}>
         <div className="max-w-2xl mx-auto">
-          {heading && <h2 className="text-center font-display uppercase text-text text-3xl sm:text-4xl mb-10 text-balance">{heading}</h2>}
+          {heading && <h2 className="text-center font-display uppercase text-text text-display-h3 mb-10 text-balance">{heading}</h2>}
           <LiveDataNote
             text={read.ok ? 'No posts to show right now. Check back soon.' : 'Posts are taking a moment to load.'}
           />
@@ -195,7 +195,7 @@ export function LivePostsBlock({ heading, live, pad, vis = '' }: { heading?: str
   return (
     <section className={`bg-marketing-canvas px-6 ${pad ?? 'py-20 sm:py-24'} ${vis}`}>
       <div className="max-w-2xl mx-auto">
-        {heading && <h2 className="text-center font-display uppercase text-text text-3xl sm:text-4xl mb-10 text-balance">{heading}</h2>}
+        {heading && <h2 className="text-center font-display uppercase text-text text-display-h3 mb-10 text-balance">{heading}</h2>}
         <div className="space-y-4">
           {posts.map((post) => {
             const a = post.author
