@@ -20,11 +20,13 @@ always pass.
 pushed the marketing menu button to x=404 on a 360px screen — off the viewport, on every phone.
 axe has no rule for "outside the viewport", and the shell root's `overflow-x-clip` means nothing
 scrolls, nothing errors and nothing logs; the UI is just amputated. `@visual` could not see it
-either, and the reason is worth knowing before trusting a green board: its captures are full-page,
-~18,000px tall, against `maxDiffPixelRatio: 0.02`, so a 64px header is ~0.35% of the image and the
-chrome at the top of every page can change **completely** while the baseline passes. This suite
-measures boxes instead of comparing pixels, so it needs no baseline and fails with a selector and a
-pixel offset. It drives its own widths (the `mobile` project is 390px only, and three of ADR-1035's
+either, and the reason is worth knowing before trusting a green board: its captures were full-page,
+~18,000px tall, against `maxDiffPixelRatio: 0.02`, so a 64px header was ~0.35% of the image and the
+chrome at the top of every page could change **completely** while the baseline passed. ✅ That ratio
+is retired ([ADR-1258](../../docs/DECISIONS.md)): the tolerance is an absolute `maxDiffPixels: 400`,
+which does not grow with the page, so a header control is back in `@visual`'s scope on a 21,777px
+capture as much as on a 844px one. `@overflow` still earns its place, because it measures boxes
+instead of comparing pixels, so it needs no baseline and fails with a selector and a pixel offset. It drives its own widths (the `mobile` project is 390px only, and three of ADR-1035's
 five defects first bite below that) and runs once, under `mobile`.
 
 A fourth tag, **`@shell`**, cuts across the other two: it marks every test that needs a
@@ -434,7 +436,7 @@ Read a `/discover` failure by **viewport before state**:
 Measured (run `31826333373`): mobile `390x9701` against a `390x9677` baseline on three of
 four states, desktop unchanged, and the retries reported 76,014 then 82,853 differing
 pixels at identical dimensions. Nothing in this harness can pin that: the render is stable
-per request, a mask preserves the box it paints over, `maxDiffPixelRatio` never runs on a
+per request, a mask preserves the box it paints over, the pixel tolerance never runs on a
 size mismatch, and even capture-time CSS (`stylePath`) cannot hold a section that vanishes
 when its query comes back empty. `viewportOnly` was tried and reverted — it is per surface,
 not per project, so it cost eight baselines to buy an occasional recapture (ADR-1042).

@@ -32,6 +32,51 @@ const executablePath = existsSync(PREINSTALLED_CHROMIUM)
   ? PREINSTALLED_CHROMIUM
   : undefined;
 
+/**
+ * THE SCREENSHOT TOLERANCE, AS AN ABSOLUTE PIXEL COUNT (LIVE-125, ADR-1258).
+ *
+ * It was `maxDiffPixelRatio: 0.02`, with the sound reason written beside it: tolerate font
+ * and antialiasing drift. A RATIO scales with the canvas, and this suite takes FULL-PAGE
+ * captures, so the tolerance grew with page height and the gate went blindest on exactly
+ * the content-rich pages that carry the most. Measured on the COMMITTED baselines
+ * (test/e2e/__screenshots__/visual.spec.ts), not on estimates:
+ *
+ *   pricing                desktop  1280 x 16110 = 20,620,800 px  ->  2% forgave 412,416 px
+ *   how-to-build-community mobile    390 x 21777 =  8,493,030 px  ->  2% forgave 169,860 px
+ *   discover               mobile    390 x  9541 =  3,720,990 px  ->  2% forgave  74,419 px
+ *   app-space-console      mobile    390 x  2859 =  1,115,010 px  ->  2% forgave  22,300 px
+ *   app-feed               mobile    390 x   844 =    329,160 px  ->  2% forgave   6,583 px
+ *
+ * One tolerance, a 62.6x spread in what it forgives, and the widest end is the one no
+ * reviewer scrolls to. 412,416 pixels is 610 copies of the SMALLEST control this design
+ * system draws (`--tap-min` dips to 26px in one preset, app/globals.css, so 26 x 26 = 676 px).
+ *
+ * WHY 400, from the arithmetic rather than a round guess. The value has to sit inside a
+ * band with a measured floor and a measured ceiling:
+ *   FLOOR  - the noise this tolerance exists for. Six consecutive full-page captures from
+ *            FRESH browser contexts differed by 0 pixels (ADR-1165), and pr-compare then
+ *            read 123 of 144 committed surfaces, up to 20.6 megapixels each, under 400
+ *            against baselines captured on a DIFFERENT runner. 400 is the only value with
+ *            a real cross-runner measurement behind it; anything lower is unmeasured.
+ *   CEILING - 676 px, the smallest control the product draws. A budget at or above that
+ *            lets a whole control appear, vanish or move with the gate reporting green.
+ * 400 is 59% of that control, so a change touching more than three-fifths of the smallest
+ * control on the page fails, on a 390 x 844 capture and a 1280 x 16110 one alike.
+ *
+ * WHAT IT STILL FORGIVES: `threshold` (Playwright's per-pixel colour delta) is untouched at
+ * its default, so faint antialiasing shifts are not counted as differing pixels at all; 400
+ * is the budget for pixels that clear it. WHAT IT NO LONGER FORGIVES: a header control, a
+ * moved button, a changed icon, on any page of any height.
+ *
+ * NOT ZERO, deliberately. One Chromium patch bump that moves a subpixel would fail every
+ * surface at once, and a gate that fails on nothing gets routed around (ADR-970).
+ *
+ * `test/e2e/screenshot-tolerance.test.ts` pins this arithmetic: it re-measures the forgiven
+ * count on every committed baseline and fails if it varies with page height, or rises to
+ * where a control can hide.
+ */
+export const SCREENSHOT_MAX_DIFF_PIXELS = 400;
+
 export default defineConfig({
   testDir: './test/e2e',
   // `*.spec.ts` ONLY. Playwright's default testMatch also picks up `*.test.ts`, which is
@@ -75,12 +120,14 @@ export default defineConfig({
     : [['list'], ['./test/e2e/shell-reporter.ts']],
   expect: {
     toHaveScreenshot: {
-      // Deterministic captures: freeze animations, hide the caret, snapshot
-      // at CSS pixel scale, and tolerate sub-2% pixel drift (fonts/AA).
+      // Deterministic captures: freeze animations, hide the caret, snapshot at CSS pixel
+      // scale, and tolerate a FIXED number of differing pixels (fonts/AA). The tolerance is
+      // absolute on purpose and there is no ratio beside it: see SCREENSHOT_MAX_DIFF_PIXELS
+      // above for the measurement, and for what a ratio cost this gate.
       animations: 'disabled',
       caret: 'hide',
       scale: 'css',
-      maxDiffPixelRatio: 0.02,
+      maxDiffPixels: SCREENSHOT_MAX_DIFF_PIXELS,
     },
   },
   use: {

@@ -13,11 +13,14 @@
 //
 //   @a11y    axe has no rule for "off the viewport". The button had a fine name and role.
 //   @visual  full-page baselines ~18,000px tall against `maxDiffPixelRatio: 0.02`. A 64px header
-//            is ~0.35% of that image, so the chrome at the top of every page can change
+//            is ~0.35% of that image, so the chrome at the top of every page could change
 //            COMPLETELY and still pass. Measured, not assumed: the ADR-1035 fix moved the header
 //            on every marketing page and the tab bar on every shell page, and the only baselines
 //            that failed were four `/pricing` mobile ones — those only because a 368px body
-//            reflow reached 7%.
+//            reflow reached 7%. (That ratio is retired: the tolerance is an absolute
+//            `maxDiffPixels`, ADR-1258, so `@visual` would see the header today. This gate still
+//            earns its place — it needs no baseline, no deploy URL and no opt-in flag, and it
+//            names the selector and the offset rather than handing back a diff image.)
 //
 // So the gate is a MEASUREMENT, not a picture: walk the DOM and assert every painted box sits
 // inside the viewport. It is cheap (no baseline, no artifact) and it fails with a selector and a

@@ -283,7 +283,9 @@ export function publicSurfaces(): readonly Surface[] {
  *     on every attempt, after `settle()` had already held `scrollHeight` still. The variance is
  *     between REQUESTS, not within one.
  *   · A MASK. A mask paints over a box and the box keeps its size (see `Surface.viewportOnly`).
- *   · `maxDiffPixelRatio`. `toHaveScreenshot` fails a size mismatch before it counts a pixel.
+ *   · THE PIXEL TOLERANCE, whatever its shape. `toHaveScreenshot` fails a size mismatch before it
+ *     counts a pixel, so neither the retired `maxDiffPixelRatio` nor today's absolute
+ *     `maxDiffPixels` (ADR-1258) ever runs on this failure.
  *   · CSS injected at capture time (`toHaveScreenshot({ stylePath })`) genuinely CAN pin a height,
  *     and it still cannot pin this one: six live regions feed the page, and three of them (events,
  *     circles, posts) drop their entire section when the query comes back empty, which no clamp on
