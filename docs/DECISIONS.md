@@ -37026,6 +37026,25 @@ That last reading is the one worth keeping. The ratchet's trigger is "every budg
 
 ⚠️ **The generalisable part: a deferral is a decision with an expiry date, and the expiry belongs where the work happens.** `HYG-061` was filed to give three thresholds an owner and it was already half wrong on the day it was written — not through carelessness, but because a row records what was true when someone looked, and nothing re-looks. A number written beside the constant it governs is re-read by everyone who touches that constant, and a probe that compares the two makes the re-reading compulsory. That is the same trade the adoption ratchet already makes: the machine-readable state beats prose, and the way to keep prose honest is to bind it to something a machine can measure.
 
+## ADR-1234: SUPPORT_CHAT loses its fallback, and the second step of a rename is gated on a value no agent can read (2026-09-07)
+
+**Status.** Accepted. Closes LIVE-165. Completes the two-step rename whose first step shipped on 2026-09-06.
+
+**Context.** The live-chat switch was `NEXT_PUBLIC_SUPPORT_CHAT`, read by three prerendered server layouts and nothing else, so the prefix published a value to the browser bundle that no browser code read. LIVE-165 laid out the safe order: add `SUPPORT_CHAT` in Vercel, make the reader prefer it with a fallback to the old name, then remove the old variable and the fallback. Step one had already landed when this row was picked up (the reader, its tests and `.env.example` all carried the fallback), so the premise was half expired and the remaining work was step two.
+
+**Decision.**
+
+- **`supportChatFlagEnabled` reads `SUPPORT_CHAT` alone**, through `envStringOrNull`, so blank counts as unset and anything but `"1"` is off. The literal `process.env.NEXT_PUBLIC_SUPPORT_CHAT` read is gone, and with it the one reason that read had to be a textual literal (Next inlines `NEXT_PUBLIC_*` by substitution at build time).
+- **Every mention of the old name leaves with the fallback**: the `.env.example` legacy entry, the three layout comments, the widget comment and two lines in `docs/CHAT-SHELL-PLAN.md`. Only the backlog row and this record still spell it.
+- **The test block tests the new name only** and says why it does not spell the old one: the row's probe greps `app/`, `lib/` and `components/` for the literal, and a test that constructs the name to dodge a grep would be the shape-not-truth failure the backlog rules name. The absence of the fallback is proven by the probe, which is a source-shape gate, and by the reader being a single line.
+- **Nothing about timing changed.** The three callers are prerendered, so the variable is evaluated at build time under either name. What was dropped is the prefix, not the build-time read; the reader's comment says so to stop the next person expecting a runtime toggle.
+
+**Consequences.** LIVE-165's probe passes; `chat-token.test.ts` covers on, off, unset and blank. `.env.example` documents `SUPPORT_CHAT` as server-only with the date it stopped being public.
+
+🔴 **The precondition this step rests on cannot be measured from the repo, and that is the part to carry forward.** Vercel `get_project` exposes no env names, and a production payload built with either name looks identical, so nothing available to an agent can prove `SUPPORT_CHAT=1` is set in Production. If it is not set when this merges, the widget disappears on that deploy and nothing fails: the layouts simply render without it. The owner sets `SUPPORT_CHAT=1` in Vercel Production before the merge and deletes `NEXT_PUBLIC_SUPPORT_CHAT` after it.
+
+⚠️ **The generalisable part.** A two-step rename is safe only if the second step waits for the first to be proven in the environment, and "proven" here means a dashboard read no agent has. The honest close is to state the precondition beside the code change and in the row, not to add a build guard that has never seen a real artifact (the 2026-08-11 rule), and not to leave the fallback in forever because the check is inconvenient.
+
 ## ADR-1274: the signup lead recovery note ships as one cron, one column and one claim, seven months after the table it needed was built for it (2026-09-08)
 
 **Status.** Accepted. Closes `LIVE-170`. Completes the purpose ADR-959 gave `signup_leads`, and extends the claim-then-send discipline of ADR-1212 to the last cron that table was waiting on.
