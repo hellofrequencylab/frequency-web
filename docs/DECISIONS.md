@@ -36898,7 +36898,6 @@ Only one side can move, and both directions are real changes: drop `required` fr
 ⚠️ **A housing listing created before today with no city cannot be saved from the edit form until one is typed.** The compose and edit surfaces are the same component, so the rule reaches both. That is the shape of the ruling rather than a side effect of it: the decision is about what a housing listing IS, not about when it was made. The ask is one field, on a form the member is already editing.
 
 ⚠️ **The generalisable part: "the form and the manifest disagree" is not a blocker, it is an unmade decision wearing a blocker's clothes.** This line sat in `UNROUTED` for 28 days reading as work, and the work was ten lines; what it actually needed was somebody to say which of the two was right. When an allowlist entry names a disagreement between two parts of the repo, the expensive part is the ruling and the cheap part is the code, so read the entry for which one it is before budgeting the row — and write the ruling down, because the next reader will otherwise re-derive it from scratch.
-
 ## ADR-1269: "owner-dispatched" was never true, and it spread to four rows because it was cited rather than measured (2026-09-08)
 
 **Status.** Accepted. A measurement pass over the owner-gated rows of `docs/BUILD-BACKLOG.json`, in the shape ADR-1082 prescribes. No product work; nine rows corrected, two `ownerAction` fields dropped, eleven premises confirmed with a dated line.
