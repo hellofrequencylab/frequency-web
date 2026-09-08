@@ -197,7 +197,7 @@ export default async function UpgradePage({
 
         {/* Benefits */}
         <div className="px-6 py-6">
-          <p className="text-meta font-semibold uppercase tracking-widest text-muted mb-4">
+          <p className="eyebrow text-muted mb-4">
             What you get
           </p>
           <ul className="space-y-3.5">

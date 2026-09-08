@@ -73,7 +73,7 @@ export function FunnelHero({ config }: { config: FunnelConfig }) {
       <div className="grid items-center gap-10 lg:grid-cols-2">
         <div>
           <p className="eyebrow text-primary-strong">{hero.eyebrow}</p>
-          <h1 className="mt-4 font-display text-4xl uppercase leading-[1.02] text-text sm:text-5xl lg:text-6xl">
+          <h1 className="mt-4 font-display text-display-h1 uppercase leading-[1.02] text-text">
             {hero.h1}
           </h1>
           <p className="mt-5 max-w-xl text-body-lg leading-relaxed text-muted">{hero.subhead}</p>
@@ -124,7 +124,7 @@ export function ProblemSection({ config }: { config: FunnelConfig }) {
     <Section tone="surface">
       <div className="grid items-center gap-10 lg:grid-cols-2">
         <div>
-          <h2 className="font-display text-3xl uppercase leading-tight text-text sm:text-4xl">{problem.header}</h2>
+          <h2 className="font-display text-display-h3 uppercase leading-tight text-text">{problem.header}</h2>
           <p className="mt-5 max-w-xl text-body-lg leading-relaxed text-muted">{problem.body}</p>
         </div>
         <figure className="m-0">
@@ -144,7 +144,7 @@ export function HowItWorks({ config }: { config: FunnelConfig }) {
     <Section tone="canvas" className="scroll-mt-20" >
       <div id="how-it-works" className="scroll-mt-24" />
       <div className="text-center">
-        <h2 className="font-display text-3xl uppercase text-text sm:text-4xl">{howItWorks.header}</h2>
+        <h2 className="font-display text-display-h3 uppercase text-text">{howItWorks.header}</h2>
       </div>
       {/* One row: the enlarged step graphic on top, its number + title + copy beneath. */}
       <ol className="mx-auto mt-12 grid max-w-5xl gap-10 sm:grid-cols-3 sm:gap-8">
@@ -218,7 +218,7 @@ export function LoopSection({ config, prominent = false, echo = false }: { confi
   return (
     <Section tone="ink" pad={echo ? 'py-12' : prominent ? 'py-20 sm:py-28' : 'py-16 sm:py-24'}>
       <div className="mx-auto max-w-2xl text-center">
-        <h2 className="font-display uppercase text-on-ink text-4xl sm:text-5xl">{header}</h2>
+        <h2 className="font-display uppercase text-on-ink text-display-h2">{header}</h2>
         {intro && <p className="mx-auto mt-4 max-w-xl text-body-lg leading-relaxed text-on-ink-muted">{intro}</p>}
       </div>
       <div className={`mx-auto mt-10 ${prominent ? 'max-w-2xl' : echo ? 'max-w-sm' : 'max-w-lg'}`}>
@@ -255,7 +255,7 @@ export function PricingBeat({ config }: { config: FunnelConfig }) {
   return (
     <Section tone="canvas">
       <div className="mx-auto max-w-2xl text-center">
-        <h2 className="font-display text-3xl uppercase text-text sm:text-4xl">{pricing.header}</h2>
+        <h2 className="font-display text-display-h3 uppercase text-text">{pricing.header}</h2>
         <p className="mt-4 text-body-lg leading-relaxed text-muted">{pricing.intro}</p>
       </div>
 
@@ -340,7 +340,7 @@ export function MissionSection() {
   return (
     <Section tone="canvas">
       <div className="mx-auto max-w-2xl text-center">
-        <h2 className="font-display text-3xl uppercase text-text sm:text-4xl">{MISSION_COPY.header}</h2>
+        <h2 className="font-display text-display-h3 uppercase text-text">{MISSION_COPY.header}</h2>
         <p className="mt-5 text-body-lg leading-relaxed text-muted">{MISSION_COPY.body}</p>
       </div>
     </Section>
@@ -353,7 +353,7 @@ export function FaqSection({ config }: { config: FunnelConfig }) {
   return (
     <Section tone="surface">
       <div className="mx-auto max-w-2xl">
-        <h2 className="text-center font-display text-3xl uppercase text-text sm:text-4xl">Questions, answered plainly.</h2>
+        <h2 className="text-center font-display text-display-h3 uppercase text-text">Questions, answered plainly.</h2>
         <div className="mt-8 divide-y divide-border rounded-2xl border border-border">
           {config.faq.map((f) => (
             <details key={f.q} className="group px-5 py-4 sm:px-6">
@@ -379,7 +379,7 @@ export function FinalCta({ config }: { config: FunnelConfig }) {
   return (
     <Section tone="ink" pad="py-20 sm:py-24">
       <div className="mx-auto max-w-2xl text-center">
-        <h2 className="font-display uppercase text-on-ink text-4xl sm:text-5xl">{finalCta.header}</h2>
+        <h2 className="font-display uppercase text-on-ink text-display-h2">{finalCta.header}</h2>
         <p className="mt-4 text-body-lg leading-relaxed text-on-ink-muted">{finalCta.subhead}</p>
         <div className="mt-8 flex justify-center">
           <Button href={funnelStartHref(config)} size="lg">

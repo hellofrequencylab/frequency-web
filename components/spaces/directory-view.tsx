@@ -184,7 +184,7 @@ export function StartBusinessCTA() {
   return (
     <section className="mt-12 overflow-hidden rounded-card border border-border bg-surface p-8 sm:p-10">
       <div className="max-w-2xl">
-        <p className="mb-2 text-meta font-semibold uppercase tracking-widest text-primary-strong">Go Business</p>
+        <p className="mb-2 eyebrow text-primary-strong">Go Business</p>
         <h2 className="text-balance text-page-title font-bold text-text sm:text-3xl">Run your whole business here</h2>
         <p className="mt-3 text-body leading-relaxed text-muted">
           One page for everything you sell, everyone you serve, and every event you run. Your people find
