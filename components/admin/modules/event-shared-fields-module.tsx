@@ -17,22 +17,6 @@
 // is built later, re-extract from the consumer that exists then. An extraction with one caller is
 // an extraction waiting to drift.
 
-/** The curated IANA zones the event/circle editors offer, HOME first. The event's own saved
- *  zone is prepended by the module when it falls outside this list, so no zone is ever lost. */
-export const COMMON_TIME_ZONES: { value: string; label: string }[] = [
-  { value: 'America/Los_Angeles', label: 'Pacific (Los Angeles)' },
-  { value: 'America/Denver', label: 'Mountain (Denver)' },
-  { value: 'America/Chicago', label: 'Central (Chicago)' },
-  { value: 'America/New_York', label: 'Eastern (New York)' },
-  { value: 'America/Anchorage', label: 'Alaska (Anchorage)' },
-  { value: 'Pacific/Honolulu', label: 'Hawaii (Honolulu)' },
-  { value: 'UTC', label: 'UTC' },
-  { value: 'Europe/London', label: 'London' },
-  { value: 'Europe/Paris', label: 'Central Europe (Paris)' },
-  { value: 'Europe/Athens', label: 'Eastern Europe (Athens)' },
-  { value: 'Asia/Dubai', label: 'Gulf (Dubai)' },
-  { value: 'Asia/Kolkata', label: 'India (Kolkata)' },
-  { value: 'Asia/Singapore', label: 'Singapore' },
-  { value: 'Asia/Tokyo', label: 'Japan (Tokyo)' },
-  { value: 'Australia/Sydney', label: 'Sydney' },
-]
+// The list itself moved to lib/events/time-zones.ts (ADR-1281), a PURE module the Event manifest
+// can import; this re-export keeps the remaining consumer (circle-place-time-module) working.
+export { COMMON_TIME_ZONES } from '@/lib/events/time-zones'
