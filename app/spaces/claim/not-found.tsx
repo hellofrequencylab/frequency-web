@@ -1,6 +1,10 @@
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
+import { NOT_FOUND_METADATA } from '@/lib/seo/not-found-metadata'
+
+// One robots directive in the head, never two (LIVE-214, ADR-1276): see the module.
+export const metadata = NOT_FOUND_METADATA
 
 // The 404 a DEAD CLAIM LINK lands on. Without it, notFound() from the claim page fell all the way to
 // the ROOT boundary, which is written for a signed-in member — so a business owner following an
