@@ -12,6 +12,7 @@
     "start": "next start",
     "lint": "eslint --max-warnings=0",
     "test": "vitest run",
+    "gen:visual-fingerprints": "UPDATE_TEMPLATE_FINGERPRINTS=1 vitest run test/e2e/template-fingerprints.test.ts",
     "test:e2e": "playwright test --grep-invert @visual",
     "test:e2e:visual": "playwright test --grep @visual",
     "test:e2e:update": "playwright test --update-snapshots --grep @visual",

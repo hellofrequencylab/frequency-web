@@ -326,6 +326,25 @@ jobs:
           PW_REQUIRE_SHELL: ${{ inputs.capture_shell && (vars.PW_REQUIRE_SHELL || secrets.PW_REQUIRE_SHELL) || '' }}
           PW_REQUIRE_OPERATOR: ${{ inputs.capture_shell && (vars.PW_REQUIRE_OPERATOR || secrets.PW_REQUIRE_OPERATOR) || '' }}
         run: pnpm test:e2e:update
+      # ── Re-stamp what the PNGs just photographed (LIVE-040, ADR-1272) ────────────────────────
+      # test/e2e/template-fingerprints.json records the RENDER INPUT each committed baseline
+      # depicts, and test/e2e/template-fingerprints.test.ts fails when a template drifts from it.
+      # Regenerating here is what keeps the two halves in one commit: a capture that landed PNGs
+      # and left the fingerprints behind would re-create, in a new file, exactly the staleness this
+      # replaced.
+      #
+      # ⚠️ IT STAMPS THE BRANCH'S SOURCE, AND THE CAPTURE PHOTOGRAPHED `base_url`. Those are the
+      # same thing only when base_url serves this branch. Dispatching against PRODUCTION from a
+      # branch that edits a template therefore records a fingerprint no PNG has ever shown - point
+      # base_url at the branch's PREVIEW whenever the branch touches lib/page-editor/templates/.
+      #
+      # Deliberately NOT `always()`, unlike the commit step below. A capture that died part-way
+      # still lands the PNGs it got, and that is the right call for pictures; stamping every
+      # fingerprint as current on the back of a PARTIAL capture is the opposite, because it claims
+      # baselines that were never retaken now depict the source. On a failed capture the stamps
+      # stay where they were and the gate stays honestly red.
+      - name: Re-stamp the template fingerprints
+        run: pnpm gen:visual-fingerprints
       - name: Commit baselines to the branch
         # The runner commits the captures directly: artifact downloads redirect to a
         # storage host the agent sandbox's network policy blocks, so an artifact-only
@@ -342,7 +361,7 @@ jobs:
         run: |
           git config user.email noreply@anthropic.com
           git config user.name Claude
-          git add test/e2e/__screenshots__/
+          git add test/e2e/__screenshots__/ test/e2e/template-fingerprints.json
           if git diff --cached --quiet; then
             echo "No baseline changes to commit."
           else
