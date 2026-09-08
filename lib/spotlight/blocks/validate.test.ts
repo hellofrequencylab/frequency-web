@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { validateSpotlightLayout, validateSpotlightBackground } from './validate'
-import { MAX_BLOCKS, MAX_GALLERY_IMAGES } from './schema'
+import { validateSpotlightLayout, validateSpotlightBackground, validateSpotlightStickers } from './validate'
+import { MAX_BLOCKS, MAX_GALLERY_IMAGES, MAX_STICKERS, EMPTY_STICKERS } from './schema'
 
 const OWNER = '8b0d1087-ed37-4bc4-8439-8a109de1a48d'
 
@@ -203,5 +203,87 @@ describe('validateSpotlightBackground', () => {
   it('clamps focal point to 0..100 and zoom to 100..200', () => {
     expect(validateSpotlightBackground({ assetPath: `${OWNER}/spotlight/bg.webp`, focusX: 200, focusY: -10, zoom: 999 }, OWNER))
       .toEqual({ assetPath: `${OWNER}/spotlight/bg.webp`, dim: 0, focusX: 100, focusY: 0, zoom: 200 })
+  })
+})
+
+describe('validateSpotlightStickers — the sticker layer boundary (ADR-1275)', () => {
+  it('never throws, and yields the empty layer for missing / non-object / malformed input', () => {
+    for (const junk of [null, undefined, 42, 'x', true, [], {}, { items: 'nope' }, { items: [null, 1, 'x', {}] }]) {
+      expect(() => validateSpotlightStickers(junk)).not.toThrow()
+      expect(validateSpotlightStickers(junk)).toEqual(EMPTY_STICKERS)
+    }
+    expect(validateSpotlightStickers({ items: [] })).toEqual(EMPTY_STICKERS)
+  })
+
+  it('keeps an allowlisted sticker with its coordinates', () => {
+    expect(validateSpotlightStickers({ items: [{ id: 'star', x: 12, y: 88 }] })).toEqual({
+      items: [{ id: 'star', x: 12, y: 88 }],
+    })
+  })
+
+  it('drops an unknown id WHOLE (never a fallback glyph), keeping the known ones around it', () => {
+    const out = validateSpotlightStickers({
+      items: [
+        { id: 'star', x: 10, y: 10 },
+        { id: 'skull', x: 50, y: 50 },
+        { id: '<img onerror=1>', x: 50, y: 50 },
+        { id: 42, x: 50, y: 50 },
+        { id: 'heart', x: 90, y: 90 },
+      ],
+    })
+    expect(out.items.map((s) => s.id)).toEqual(['star', 'heart'])
+  })
+
+  it('clamps both coordinates at both bounds and rounds', () => {
+    const out = validateSpotlightStickers({
+      items: [
+        { id: 'star', x: -40, y: 150 },
+        { id: 'star', x: 1e9, y: -1e9 },
+        { id: 'star', x: 33.6, y: 66.4 },
+      ],
+    })
+    expect(out.items.map((s) => [s.x, s.y])).toEqual([
+      [0, 100],
+      [100, 0],
+      [34, 66],
+    ])
+  })
+
+  it('centres a non-numeric or non-finite coordinate on that axis instead of dropping the sticker', () => {
+    const out = validateSpotlightStickers({
+      items: [
+        { id: 'star', x: '10', y: 20 },
+        { id: 'star', x: NaN, y: Infinity },
+        { id: 'star' },
+      ],
+    })
+    expect(out.items.map((s) => [s.x, s.y])).toEqual([
+      [50, 20],
+      [50, 50],
+      [50, 50],
+    ])
+  })
+
+  it('caps the layer at MAX_STICKERS, keeping stored order', () => {
+    const items = Array.from({ length: MAX_STICKERS * 3 }, (_, i) => ({ id: 'star', x: i, y: i }))
+    const out = validateSpotlightStickers({ items })
+    expect(out.items).toHaveLength(MAX_STICKERS)
+    expect(out.items[0]).toEqual({ id: 'star', x: 0, y: 0 })
+    expect(out.items[MAX_STICKERS - 1].x).toBe(MAX_STICKERS - 1)
+  })
+
+  it('the cap is applied BEFORE the id filter, so junk cannot be padded in front of real stickers', () => {
+    // The slice runs over the raw array (the MAX_BLOCKS idiom): a blob that front-loads unknown ids
+    // starves its own layer rather than smuggling extra entries past the cap.
+    const junk = Array.from({ length: MAX_STICKERS }, () => ({ id: 'nope', x: 0, y: 0 }))
+    const out = validateSpotlightStickers({ items: [...junk, { id: 'star', x: 5, y: 5 }] })
+    expect(out).toEqual(EMPTY_STICKERS)
+  })
+
+  it('strips every field but id / x / y', () => {
+    const out = validateSpotlightStickers({
+      items: [{ id: 'star', x: 1, y: 2, glyph: '<script>', href: 'javascript:1', z: 9 }],
+    })
+    expect(Object.keys(out.items[0]).sort()).toEqual(['id', 'x', 'y'])
   })
 })

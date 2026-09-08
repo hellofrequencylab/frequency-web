@@ -10,6 +10,7 @@ import {
   MAX_SPOTLIGHT_THEMES,
   SPOTLIGHT_THEME_NAME_MAX,
   readSpotlightDraftRaw,
+  readSpotlightStickersRaw,
   withSpotlightDraft,
   clearSpotlightDraft,
   resolveSpotlightEditorSeed,
@@ -17,6 +18,14 @@ import {
 } from './spotlight-flags'
 
 describe('spotlight-flags', () => {
+  it('reads the raw sticker layer off meta.spotlight.stickers, undefined when absent (ADR-1275)', () => {
+    for (const m of [null, undefined, {}, { spotlight: {} }, { stickers: { items: [] } }]) {
+      expect(readSpotlightStickersRaw(m)).toBeUndefined()
+    }
+    const raw = { items: [{ id: 'star', x: 1, y: 2 }] }
+    expect(readSpotlightStickersRaw({ spotlight: { stickers: raw } })).toBe(raw)
+  })
+
   it('defaults to false for null / undefined / empty / missing key', () => {
     for (const m of [null, undefined, {}, { spotlight: {} }, { other: 1 }]) {
       expect(readSpotlightEnabled(m)).toBe(false)

@@ -6,7 +6,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { mergeProfileMeta, mergeProfileMetaPath, removeProfileMetaKeys } from '@/lib/profiles/meta'
 import { readSpotlightEnabled } from '@/lib/profile/spotlight-flags'
 import { validateSpotlightTheme } from '@/lib/spotlight/theme'
-import { validateSpotlightBackground } from '@/lib/spotlight/blocks/validate'
+import { validateSpotlightBackground, validateSpotlightStickers } from '@/lib/spotlight/blocks/validate'
 import {
   normalizeTopFriendIds,
   keepAcceptedFriends,
@@ -188,6 +188,36 @@ export async function setSpotlightBackground(rawBackground: unknown): Promise<{ 
   const safe = validateSpotlightBackground(rawBackground, user.id)
   // 2026-09-07 (LIVE-171): only `background` is sent, merged INSIDE the `spotlight` key server-side.
   const { error } = await mergeProfileMetaPath(supabase, (me as { id: string }).id, ['spotlight'], { background: safe })
+  if (error) return { error }
+
+  revalidateSpotlight((me as { handle?: string | null }).handle ?? null)
+  return {}
+}
+
+/**
+ * Save the member's Spotlight sticker layer (PROG-SPOT increment 2, ADR-1275): a list of allowlisted
+ * sticker ids at percentage coordinates. validateSpotlightStickers is the same boundary the public read
+ * applies: unknown ids drop whole, coordinates clamp to 0..100, the list caps at MAX_STICKERS, so a
+ * tampered blob can at worst place fewer stickers. Owner-only, session-derived, requires Spotlight enabled.
+ */
+export async function setSpotlightStickers(rawStickers: unknown): Promise<{ error?: string }> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Unauthorized' }
+
+  const { data: me } = await supabase
+    .from('profiles')
+    .select('id, handle, meta')
+    .eq('auth_user_id', user.id)
+    .maybeSingle()
+  if (!me) return { error: 'Profile not found' }
+  if (!readSpotlightEnabled((me as { meta?: unknown }).meta)) {
+    return { error: 'Your Spotlight page is not turned on yet.' }
+  }
+
+  const safe = validateSpotlightStickers(rawStickers)
+  // Only `stickers` is sent, merged INSIDE the `spotlight` key server-side (the LIVE-171 shape).
+  const { error } = await mergeProfileMetaPath(supabase, (me as { id: string }).id, ['spotlight'], { stickers: safe })
   if (error) return { error }
 
   revalidateSpotlight((me as { handle?: string | null }).handle ?? null)

@@ -7,8 +7,9 @@
 // Round 1 shipped 5 safe types (heading, text, links, image, divider); round 2 turned on
 // image/background UPLOAD. Round 3 adds 3 more SELF-CONTAINED composition blocks — gallery
 // (multi-image), quote (callout), stats (member picks which gamification numbers to show) —
-// all rendered from the same closed allowlist, no new external hosts. Embeds/music (which
-// need a per-host iframe allowlist) and earned cosmetics are still deferred.
+// all rendered from the same closed allowlist, no new external hosts. Embeds landed later behind a
+// per-host allowlist (lib/spotlight/embeds.ts). The sticker layer (ADR-1275) is page CHROME beside
+// `background`, not a block; earned cosmetics are still deferred.
 
 export const SPOTLIGHT_LAYOUT_VERSION = 1
 export const MAX_BLOCKS = 40
@@ -155,6 +156,28 @@ export interface SpotlightBackground {
   /** Zoom, 100–200 (%). Default 100. */
   zoom: number
 }
+
+/** The most stickers a Spotlight can carry (PROG-SPOT increment 2, ADR-1275). */
+export const MAX_STICKERS = 12
+
+/** One placed sticker: an id from the CLOSED allowlist (lib/spotlight/stickers.ts) at a point on the
+ *  page, both axes as percentages of the Spotlight column. The blob never carries the glyph itself; the
+ *  renderer resolves the id against the allowlist, so a tampered id can at worst contribute nothing. */
+export interface SpotlightSticker {
+  id: string
+  /** 0..100, percent across the column (left edge = 0). */
+  x: number
+  /** 0..100, percent down the column (top edge = 0). */
+  y: number
+}
+
+/** Page chrome (sibling of `background`, not a block): the decorative sticker layer. Stored at
+ *  profiles.meta.spotlight.stickers and validated on read AND write (validateSpotlightStickers). */
+export interface SpotlightStickers {
+  items: SpotlightSticker[]
+}
+
+export const EMPTY_STICKERS: SpotlightStickers = { items: [] }
 
 export const EMPTY_LAYOUT: SpotlightLayout = { version: SPOTLIGHT_LAYOUT_VERSION, blocks: [] }
 

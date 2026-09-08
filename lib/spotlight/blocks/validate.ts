@@ -12,7 +12,11 @@ import {
   type GalleryItem,
   type SpotlightStatKey,
   type BlockTint,
+  type SpotlightSticker,
+  type SpotlightStickers,
   EMPTY_LAYOUT,
+  EMPTY_STICKERS,
+  MAX_STICKERS,
   SPOTLIGHT_LAYOUT_VERSION,
   SPOTLIGHT_STAT_KEYS,
   MAX_BLOCKS,
@@ -26,6 +30,7 @@ import {
   ALT_MAX,
 } from './schema'
 import { validateEmbedRef } from '../embeds'
+import { spotlightStickerById } from '../stickers'
 
 function clampStr(v: unknown, max: number): string {
   return typeof v === 'string' ? v.slice(0, max) : ''
@@ -204,4 +209,29 @@ export function validateSpotlightBackground(raw: unknown, ownerAuthUserId: strin
     focusY: clampN(r.focusY, 0, 100, 50),
     zoom: clampN(r.zoom, 100, 200, 100),
   }
+}
+
+/**
+ * Validate the optional sticker layer (page chrome, ADR-1275). The same boundary as the background:
+ * FAIL-OPEN, never throws, and every rule drops or coerces rather than rejecting the whole blob.
+ *   - an entry whose id is not in the closed allowlist is dropped WHOLE (never rendered as a fallback);
+ *   - x and y are clamped to 0..100 and rounded; a non-numeric coordinate centres on that axis (50);
+ *   - at most MAX_STICKERS entries survive, in stored order;
+ *   - anything that is not an object, or a layer with no usable entries, yields EMPTY_STICKERS.
+ * `requiredItem` on a sticker definition is NOT consulted here yet: every allowlisted sticker is free
+ * until the cosmetics lane lands an inventory to gate on.
+ */
+export function validateSpotlightStickers(raw: unknown): SpotlightStickers {
+  if (!raw || typeof raw !== 'object') return EMPTY_STICKERS
+  const r = raw as Record<string, unknown>
+  const rawItems = Array.isArray(r.items) ? r.items.slice(0, MAX_STICKERS) : []
+  const items: SpotlightSticker[] = []
+  for (const it of rawItems) {
+    if (!it || typeof it !== 'object') continue
+    const s = it as Record<string, unknown>
+    const def = spotlightStickerById(s.id)
+    if (!def) continue // unknown id → drop whole
+    items.push({ id: def.id, x: clampN(s.x, 0, 100, 50), y: clampN(s.y, 0, 100, 50) })
+  }
+  return items.length === 0 ? EMPTY_STICKERS : { items }
 }
