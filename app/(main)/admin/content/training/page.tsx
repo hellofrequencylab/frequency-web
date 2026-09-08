@@ -106,7 +106,7 @@ export default async function AdminContentTrainingPage() {
               </div>
 
               <div>
-                <p className="mb-2 text-meta font-semibold uppercase tracking-wider text-subtle">
+                <p className="mb-2 eyebrow text-subtle">
                   Curriculum steps
                 </p>
                 <ol className="divide-y divide-border/50 overflow-hidden rounded-2xl border border-border bg-surface">
@@ -131,7 +131,7 @@ export default async function AdminContentTrainingPage() {
               </div>
 
               <div>
-                <p className="mb-2 text-meta font-semibold uppercase tracking-wider text-subtle">
+                <p className="mb-2 eyebrow text-subtle">
                   Role-tagged help articles ({taggedSteps.length})
                 </p>
                 {taggedSteps.length === 0 ? (

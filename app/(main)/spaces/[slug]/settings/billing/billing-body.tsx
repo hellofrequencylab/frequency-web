@@ -152,7 +152,7 @@ export async function BillingBody({ slug }: { slug: string }) {
 
       <div className="space-y-8">
         <div className="rounded-card border border-border bg-surface px-5 py-4 lift-1">
-          <p className="text-meta font-semibold uppercase tracking-widest text-subtle">Current plan</p>
+          <p className="eyebrow text-subtle">Current plan</p>
           <p className="mt-1 text-body-lg font-bold text-text">{SPACE_PLAN_LABEL[currentPlan]}</p>
         </div>
 
@@ -161,7 +161,7 @@ export async function BillingBody({ slug }: { slug: string }) {
             No self-serve controls on purpose: the crew manages the deal. */}
         {manualAgreement && (
           <div className="rounded-card border border-border bg-surface px-5 py-4 lift-1">
-            <p className="text-meta font-semibold uppercase tracking-widest text-subtle">Billing agreement</p>
+            <p className="eyebrow text-subtle">Billing agreement</p>
             <p className="mt-1 text-body-sm font-semibold text-text">
               {SPACE_PLAN_LABEL[asSpacePlan(manualAgreement.plan)]} plan, billed{' '}
               {manualAgreement.interval === 'year' ? 'yearly' : 'monthly'}

@@ -234,7 +234,7 @@ export function JourneyGuide({
       <WizardProgress current={meta.step} total={5} label={meta.label} />
 
       <div className="mt-7">
-        <p className="mb-1.5 text-meta font-semibold uppercase tracking-widest text-primary-strong">
+        <p className="mb-1.5 eyebrow text-primary-strong">
           New Journey · {plan.title}
         </p>
         <h1 className="text-page-title font-bold text-text">{meta.title}</h1>

@@ -137,7 +137,7 @@ function NoSpacesSplash() {
   return (
     <section className="overflow-hidden rounded-card border border-border bg-surface p-8 sm:p-10">
       <div className="max-w-2xl">
-        <p className="mb-2 text-meta font-semibold uppercase tracking-widest text-primary-strong">Go Business</p>
+        <p className="mb-2 eyebrow text-primary-strong">Go Business</p>
         <h2 className="text-balance text-display-h3 font-bold text-text">Run your whole business here</h2>
         <p className="mt-3 text-body leading-relaxed text-muted">
           You do not run any Spaces yet. A Business Space is one page for everything you sell, everyone
