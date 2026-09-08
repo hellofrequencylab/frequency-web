@@ -110,7 +110,7 @@ jobs:
             ''|*[!0-9]*) echo "::error::pr input must be a number, got '${PR_NUMBER}'."; exit 1 ;;
           esac
 
-          pr=$(curl -sS --fail-with-body \
+          pr=$(curl -sS --retry 5 --retry-delay 2 --retry-connrefused --fail-with-body \
             -H "Authorization: Bearer ${GH_TOKEN}" \
             -H "Accept: application/vnd.github+json" \
             "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}")
@@ -148,7 +148,7 @@ jobs:
           page=1
           : > /tmp/changed.txt
           while : ; do
-            body=$(curl -sS --fail-with-body \
+            body=$(curl -sS --retry 5 --retry-delay 2 --retry-connrefused --fail-with-body \
               -H "Authorization: Bearer ${GH_TOKEN}" \
               -H "Accept: application/vnd.github+json" \
               "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}/files?per_page=100&page=${page}")
@@ -240,7 +240,7 @@ jobs:
 
           # The read-back. Without this the step asserts "the API accepted my write", when what the
           # merge actually depends on is "the context exists on this SHA".
-          if ! curl -sS --fail-with-body \
+          if ! curl -sS --retry 5 --retry-delay 2 --retry-connrefused --fail-with-body \
             -H "Authorization: Bearer ${GH_TOKEN}" \
             -H "Accept: application/vnd.github+json" \
             "${api}/commits/${HEAD_SHA}/status" \
