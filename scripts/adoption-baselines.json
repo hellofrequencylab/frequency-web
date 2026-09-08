@@ -330,14 +330,14 @@
       "exclude": [
         "**/*.{test,spec}.{ts,tsx}"
       ],
-      "baseline": 50,
+      "baseline": 49,
       "frozen": {
-        "at": "2026-09-05",
-        "value": 50,
+        "at": "2026-09-08",
+        "value": 49,
         "direction": "lowered",
         "basis": "9b2a23dd2c68",
-        "reason": "Scan two phase A (#2360) retired the legacy admin New Channel composer (components/compose/new-channel-compose.tsx, deleted) and rebuilt the unsubscribe page on the kit card; phase B re-freezes the floor so the ratchet holds at the lower number",
-        "from": 51
+        "reason": "HYG-055 watched pass (ADR-1283): the two watched chrome sites that pass all three ADR-1260 preconditions take lift-1, the onboarding review-step card in PR 1 and the Pages-workspace TABLE_WRAP here; the other seven watched chrome sites are read in the note and cannot move. Measured from 51, not 50: a drop-shadow-sm filter on the Spotlight sticker glyph arrived on main in #2471 and the pattern matches inside it",
+        "from": 50
       },
       "history": [
         {
@@ -388,6 +388,13 @@
           "to": 50,
           "direction": "lowered",
           "reason": "Scan two phase A (#2360) retired the legacy admin New Channel composer (components/compose/new-channel-compose.tsx, deleted) and rebuilt the unsubscribe page on the kit card; phase B re-freezes the floor so the ratchet holds at the lower number"
+        },
+        {
+          "at": "2026-09-08",
+          "from": 50,
+          "to": 49,
+          "direction": "lowered",
+          "reason": "HYG-055 watched pass (ADR-1283): the two watched chrome sites that pass all three ADR-1260 preconditions take lift-1, the onboarding review-step card in PR 1 and the Pages-workspace TABLE_WRAP here; the other seven watched chrome sites are read in the note and cannot move. Measured from 51, not 50: a drop-shadow-sm filter on the Spotlight sticker glyph arrived on main in #2471 and the pattern matches inside it"
         }
       ]
     },
@@ -1111,8 +1118,8 @@
     {
       "key": "literal-display-type",
       "description": "Literal DISPLAY sizes (text-3xl … text-9xl) instead of the DAWN display roles (--text-display-hero / h1 / h2 / h3 / card / stat). Deliberately a SEPARATE class from literal-type rather than an extra alternation branch on it: literal-type reached a defended 0, and folding 300 untouched display sites into it would turn a real win into a number nobody could read. Retiring these is pass 2b — a design decision per site (which role is this heading?), not a mechanical rename, which is why it is ratcheted and not swept.",
-      "note": "DECISION 2026-09-07 (HYG-055, ADR-1256): SLICE, by RESPONSIVE LADDER. Read all 94 sites as a census, grouped by element, plus 4 in source. 22 ELEMENTS carry a literal ladder that steps at a breakpoint -- `text-3xl sm:text-4xl` x11, `text-4xl sm:text-5xl` x6, `text-5xl sm:text-6xl` x2, three longer ones -- which is 48 of the 94 counted sites, and a ladder that steps at a breakpoint is a hand-rolled clamp, which is exactly what a `--text-display-*` role already is. A SLICE is one ladder, converted to the role whose clamp covers its top step: 3xl->4xl to `--text-display-h3` (clamp 1.75-2.25rem), 4xl->5xl to `--text-display-h2` (2.25-3rem), 5xl->6xl to `--text-display-h1` (2.75-4.5rem). The other 46 sites are SINGLE literals with no breakpoint step, and they are NOT sliceable: with nothing to read the intended role off, each is the per-site design judgment this entry's description already names. 61 of the 94 sit on surfaces the visual suite photographs (the marketing components, and the page-editor blocks that render EDITABLE_PAGES), so every slice here needs an owner-dispatched baseline recapture -- which is the second reason the ladder rather than the file is what makes the diff reviewable. SLICE TARGET 46 = 94 minus the 48 sites the 22 responsive ladders cover; 46 is the single-literal remainder this rule deliberately does not claim. SLICE 1 SHIPPED 2026-09-08 (HYG-055, ADR-1260), a pure continuation of the rule above. Re-measured first: 94 sites, 22 ladder elements over 48 of them, exactly as recorded. Cut to the files NOT import-reachable from a photographed surface, which is `components/marketing/funnel/funnel-sections.tsx` alone (reached only from `app/for/[niche]`, which the visual suite does not photograph): 8 ladder elements over 17 counted sites, each taking the role covering its top step -- `text-4xl sm:text-5xl lg:text-6xl` to `text-display-h1`, `text-4xl sm:text-5xl` to `text-display-h2`, `text-3xl sm:text-4xl` to `text-display-h3` -- and each keeping its own explicit `leading-*` where it had one, so only size moves. 94 -> 77. The remaining 14 ladder elements / 31 sites are ALL watched (the marketing components, `marketing-ui`, and the page-editor DAWN / profile / sections blocks), so like the eyebrow class the distance from 77 to the 46 target is an owner-dispatched recapture, not a sweep.",
-      "sliceTarget": 46,
+      "note": "DECISION 2026-09-07 (HYG-055, ADR-1256): SLICE, by RESPONSIVE LADDER. Read all 94 sites as a census, grouped by element, plus 4 in source. 22 ELEMENTS carry a literal ladder that steps at a breakpoint -- `text-3xl sm:text-4xl` x11, `text-4xl sm:text-5xl` x6, `text-5xl sm:text-6xl` x2, three longer ones -- which is 48 of the 94 counted sites, and a ladder that steps at a breakpoint is a hand-rolled clamp, which is exactly what a `--text-display-*` role already is. A SLICE is one ladder, converted to the role whose clamp covers its top step: 3xl->4xl to `--text-display-h3` (clamp 1.75-2.25rem), 4xl->5xl to `--text-display-h2` (2.25-3rem), 5xl->6xl to `--text-display-h1` (2.75-4.5rem). The other 46 sites are SINGLE literals with no breakpoint step, and they are NOT sliceable: with nothing to read the intended role off, each is the per-site design judgment this entry's description already names. 61 of the 94 sit on surfaces the visual suite photographs (the marketing components, and the page-editor blocks that render EDITABLE_PAGES), so every slice here needs an owner-dispatched baseline recapture -- which is the second reason the ladder rather than the file is what makes the diff reviewable. SLICE TARGET 46 = 94 minus the 48 sites the 22 responsive ladders cover; 46 is the single-literal remainder this rule deliberately does not claim. SLICE 1 SHIPPED 2026-09-08 (HYG-055, ADR-1260), a pure continuation of the rule above. Re-measured first: 94 sites, 22 ladder elements over 48 of them, exactly as recorded. Cut to the files NOT import-reachable from a photographed surface, which is `components/marketing/funnel/funnel-sections.tsx` alone (reached only from `app/for/[niche]`, which the visual suite does not photograph): 8 ladder elements over 17 counted sites, each taking the role covering its top step -- `text-4xl sm:text-5xl lg:text-6xl` to `text-display-h1`, `text-4xl sm:text-5xl` to `text-display-h2`, `text-3xl sm:text-4xl` to `text-display-h3` -- and each keeping its own explicit `leading-*` where it had one, so only size moves. 94 -> 77. The remaining 14 ladder elements / 31 sites are ALL watched (the marketing components, `marketing-ui`, and the page-editor DAWN / profile / sections blocks), so like the eyebrow class the distance from 77 to the 46 target is an owner-dispatched recapture, not a sweep. WATCHED PASS SHIPPED 2026-09-08 (HYG-055, ADR-1283), now that ADR-1269 showed the recapture is agent-dispatchable. Re-measured first: 78, not 77, because #2471 added a `text-3xl` sticker glyph (components/spotlight/sticker-layer.tsx), a single literal outside the ladder rule. The ladder census then read 15 elements over 31 sites in five watched files. TWENTY-SEVEN CONVERTED to the role covering their top step, each keeping its own explicit `leading-*`: the marketing kit (components/marketing/blocks.tsx, marketing-ui.tsx: `text-3xl sm:text-4xl` to `text-display-h3`, `text-4xl sm:text-5xl` to `text-display-h2`) and the DAWN, profile and sections blocks (components/page-editor/blocks/dawn.tsx, profile.tsx, sections.tsx, where `text-3xl sm:text-4xl lg:text-5xl` goes to h2 and `text-page-title sm:text-3xl lg:text-4xl` to h3). 🔴 FOUR DO NOT, and the census could not see why: `text-5xl sm:text-6xl` on the pricing page's `sizeFor` (app/(marketing)/pricing/page.tsx) and on the DAWN plan block's `PlanPrice` (dawn.tsx) is the featured-short branch of ADR-947's length-driven price-fitting algorithm, whose own comment records that the stat ladder has no rung between `stat-md` (2.25rem) and the fluid hero `stat` (3.5rem floor); a numeral on `--text-display-h1`'s fluid clamp could wrap mid-price, the exact thing the function prevents. They stay, cited. `PlanPrice` is that function copied, so its long branch and its two non-featured single literals take the byte-identical `text-stat-sm` / `text-stat-md` swaps ADR-947 made on the pricing page (both elements carry `leading-none`, so only size is named). 78 -> 49. SLICE TARGET RE-SET 46 -> 49: 46 was 94 minus all 48 ladder sites; the four price sites are ADR-947's and the sticker glyph is a new single literal, which is 51 the rule does not claim, less the two PlanPrice singles retired on the stat precedent. What remains is 45 single literals plus the four price figures, all per-site judgments this entry's description already names.",
+      "sliceTarget": 49,
       "mode": "matches",
       "patterns": [
         "\\btext-(?:3xl|4xl|5xl|6xl|7xl|8xl|9xl)\\b"
@@ -1123,14 +1130,14 @@
       "exclude": [
         "**/*.{test,spec}.{ts,tsx}"
       ],
-      "baseline": 77,
+      "baseline": 49,
       "frozen": {
         "at": "2026-09-08",
-        "value": 77,
+        "value": 49,
         "direction": "lowered",
         "basis": "64ff33cabd79",
-        "reason": "HYG-055 display-ladder slice 1 (ADR-1260): the responsive-ladder half of the class, cut to the files not import-reachable from a surface test/e2e/visual.spec.ts photographs. Eight ladder elements (five distinct class lists) / 17 counted sites in components/marketing/funnel/funnel-sections.tsx (reached only from app/for/[niche]) take the display role covering their top step: text-4xl sm:text-5xl lg:text-6xl to text-display-h1, text-4xl sm:text-5xl to text-display-h2, text-3xl sm:text-4xl to text-display-h3. The other 14 ladder elements / 31 sites sit on photographed marketing and page-editor surfaces and wait on an owner-dispatched baseline recapture",
-        "from": 94
+        "reason": "HYG-055 watched pass (ADR-1283): 27 of the 31 display-ladder sites on photographed surfaces take the display role covering their top step (text-3xl sm:text-4xl to text-display-h3, text-4xl sm:text-5xl and text-3xl sm:text-4xl lg:text-5xl to text-display-h2, text-page-title sm:text-3xl lg:text-4xl to text-display-h3), each keeping its explicit leading-*; the four text-5xl sm:text-6xl price figures stay under ADR-947's fitting rule, and the DAWN PlanPrice copy of that function takes the byte-identical text-stat-sm / text-stat-md swaps ADR-947 made on the pricing page. Measured from 78, not 77: a text-3xl sticker glyph arrived on main in #2471",
+        "from": 77
       },
       "history": [
         {
@@ -1174,6 +1181,13 @@
           "to": 77,
           "direction": "lowered",
           "reason": "HYG-055 display-ladder slice 1 (ADR-1260): the responsive-ladder half of the class, cut to the files not import-reachable from a surface test/e2e/visual.spec.ts photographs. Eight ladder elements (five distinct class lists) / 17 counted sites in components/marketing/funnel/funnel-sections.tsx (reached only from app/for/[niche]) take the display role covering their top step: text-4xl sm:text-5xl lg:text-6xl to text-display-h1, text-4xl sm:text-5xl to text-display-h2, text-3xl sm:text-4xl to text-display-h3. The other 14 ladder elements / 31 sites sit on photographed marketing and page-editor surfaces and wait on an owner-dispatched baseline recapture"
+        },
+        {
+          "at": "2026-09-08",
+          "from": 77,
+          "to": 49,
+          "direction": "lowered",
+          "reason": "HYG-055 watched pass (ADR-1283): 27 of the 31 display-ladder sites on photographed surfaces take the display role covering their top step (text-3xl sm:text-4xl to text-display-h3, text-4xl sm:text-5xl and text-3xl sm:text-4xl lg:text-5xl to text-display-h2, text-page-title sm:text-3xl lg:text-4xl to text-display-h3), each keeping its explicit leading-*; the four text-5xl sm:text-6xl price figures stay under ADR-947's fitting rule, and the DAWN PlanPrice copy of that function takes the byte-identical text-stat-sm / text-stat-md swaps ADR-947 made on the pricing page. Measured from 78, not 77: a text-3xl sticker glyph arrived on main in #2471"
         }
       ]
     },

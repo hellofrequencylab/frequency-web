@@ -552,7 +552,7 @@ export function OutcomePanel({
       )}
       <Heading
         className={`font-display uppercase text-text ${
-          as === 'h1' ? 'text-4xl sm:text-5xl' : 'text-3xl sm:text-4xl'
+          as === 'h1' ? 'text-display-h2' : 'text-display-h3'
         }`}
       >
         {title}
@@ -844,7 +844,7 @@ export function ZigZag({
             </p>
           )}
           <h2
-            className={`font-display uppercase text-4xl sm:text-5xl ${
+            className={`font-display uppercase text-display-h2 ${
               isInk ? 'text-on-ink' : 'text-text'
             }`}
           >
@@ -1016,7 +1016,7 @@ export function BetaCTA({
       <div className="light-strip absolute inset-x-0 top-0" />
       <div className="amber-glow absolute inset-0 pointer-events-none" />
       <div className="relative max-w-2xl mx-auto">
-        <h2 className="font-display uppercase text-on-ink text-4xl sm:text-5xl mb-6">{heading}</h2>
+        <h2 className="font-display uppercase text-on-ink text-display-h2 mb-6">{heading}</h2>
         {body && <p className="text-lead text-on-ink-muted mb-9 leading-relaxed">{body}</p>}
         <Button href={BETA_CTA_HREF} size="lg">
           {BETA_CTA_LABEL} <ArrowRight className="w-5 h-5" />
