@@ -69,6 +69,17 @@
 # the floor. The job summary's shell-coverage table names every /admin route it could not
 # photograph; read it before believing the capture was complete (backlog HYG-027).
 #
+# ⚠️ AS OF 2026-09-08 IT IS STILL NOT, AND THAT IS MEASURED RATHER THAN ASSUMED. Run
+# 34174895830 pointed this workflow at production with capture_shell on. The mint step printed
+# `is signed in but is NOT platform staff: /admin redirected to /feed`, all 21 operator @a11y
+# tests skipped, and the reporter printed
+# `::error ... bounced off the /admin role floor` naming all seven routes — and the `smoke` job
+# concluded SUCCESS anyway, because this file read neither PW_REQUIRE_SHELL nor
+# PW_REQUIRE_OPERATOR. It reads both now, gated on capture_shell (ADR-1266), so the owner's one
+# repo variable makes the CAPTURE path red too and "read the summary before believing it" is
+# backed by a gate rather than by attention. That is the standing rule: every fail-safe needs a
+# gate that notices it fired.
+#
 # Since 2026-09-07 (ADR-1239) the SAME seven routes are in the @a11y matrix, held to 21
 # READINGS of 0 in test/e2e/a11y-baselines.json that nothing has measured: the zero-tolerance
 # join rule written down, not a count. The mint step now prints whether the account clears
@@ -204,6 +215,20 @@ jobs:
           PW_STORAGE_STATE: ${{ steps.session.outputs.path }}
           PW_ROOM_PATH: ${{ vars.PW_ROOM_PATH }}
           PW_SPACE_SLUG: ${{ vars.PW_SPACE_SLUG }}
+          # THE SAME TWO OPT-IN RATCHETS THE PR GATE READS (e2e.yml), so the owner's ONE repo
+          # variable covers BOTH paths. Until 2026-09-08 this file read neither, which made the
+          # opt-in half a switch: setting PW_REQUIRE_OPERATOR=1 would have turned the PR gate red
+          # and left the CAPTURE path — this workflow, the one you dispatch to take the operator
+          # baselines — green over a capture that photographed none of them. Measured, not
+          # theorised: run 34174895830 (2026-09-08, production) printed
+          # `::error ... bounced off the /admin role floor` for all seven operator routes and the
+          # `smoke` job still concluded SUCCESS (ADR-1266).
+          #
+          # Gated on `capture_shell` because a marketing-only dispatch asks for neither half, and a
+          # ratchet that fires on a run that never wanted the shell is the red-X-that-means-nothing
+          # this file's header refuses to ship. Read from EITHER tab for e2e.yml's stated reason.
+          PW_REQUIRE_SHELL: ${{ inputs.capture_shell && (vars.PW_REQUIRE_SHELL || secrets.PW_REQUIRE_SHELL) || '' }}
+          PW_REQUIRE_OPERATOR: ${{ inputs.capture_shell && (vars.PW_REQUIRE_OPERATOR || secrets.PW_REQUIRE_OPERATOR) || '' }}
         run: pnpm test:e2e
       - name: Upload report
         if: failure()
@@ -262,6 +287,20 @@ jobs:
           PW_STORAGE_STATE: ${{ steps.session.outputs.path }}
           PW_ROOM_PATH: ${{ vars.PW_ROOM_PATH }}
           PW_SPACE_SLUG: ${{ vars.PW_SPACE_SLUG }}
+          # THE SAME TWO OPT-IN RATCHETS THE PR GATE READS (e2e.yml), so the owner's ONE repo
+          # variable covers BOTH paths. Until 2026-09-08 this file read neither, which made the
+          # opt-in half a switch: setting PW_REQUIRE_OPERATOR=1 would have turned the PR gate red
+          # and left the CAPTURE path — this workflow, the one you dispatch to take the operator
+          # baselines — green over a capture that photographed none of them. Measured, not
+          # theorised: run 34174895830 (2026-09-08, production) printed
+          # `::error ... bounced off the /admin role floor` for all seven operator routes and the
+          # `smoke` job still concluded SUCCESS (ADR-1266).
+          #
+          # Gated on `capture_shell` because a marketing-only dispatch asks for neither half, and a
+          # ratchet that fires on a run that never wanted the shell is the red-X-that-means-nothing
+          # this file's header refuses to ship. Read from EITHER tab for e2e.yml's stated reason.
+          PW_REQUIRE_SHELL: ${{ inputs.capture_shell && (vars.PW_REQUIRE_SHELL || secrets.PW_REQUIRE_SHELL) || '' }}
+          PW_REQUIRE_OPERATOR: ${{ inputs.capture_shell && (vars.PW_REQUIRE_OPERATOR || secrets.PW_REQUIRE_OPERATOR) || '' }}
         run: pnpm test:e2e:update
       - name: Commit baselines to the branch
         # The runner commits the captures directly: artifact downloads redirect to a
@@ -349,6 +388,20 @@ jobs:
           PW_STORAGE_STATE: ${{ steps.session.outputs.path }}
           PW_ROOM_PATH: ${{ vars.PW_ROOM_PATH }}
           PW_SPACE_SLUG: ${{ vars.PW_SPACE_SLUG }}
+          # THE SAME TWO OPT-IN RATCHETS THE PR GATE READS (e2e.yml), so the owner's ONE repo
+          # variable covers BOTH paths. Until 2026-09-08 this file read neither, which made the
+          # opt-in half a switch: setting PW_REQUIRE_OPERATOR=1 would have turned the PR gate red
+          # and left the CAPTURE path — this workflow, the one you dispatch to take the operator
+          # baselines — green over a capture that photographed none of them. Measured, not
+          # theorised: run 34174895830 (2026-09-08, production) printed
+          # `::error ... bounced off the /admin role floor` for all seven operator routes and the
+          # `smoke` job still concluded SUCCESS (ADR-1266).
+          #
+          # Gated on `capture_shell` because a marketing-only dispatch asks for neither half, and a
+          # ratchet that fires on a run that never wanted the shell is the red-X-that-means-nothing
+          # this file's header refuses to ship. Read from EITHER tab for e2e.yml's stated reason.
+          PW_REQUIRE_SHELL: ${{ inputs.capture_shell && (vars.PW_REQUIRE_SHELL || secrets.PW_REQUIRE_SHELL) || '' }}
+          PW_REQUIRE_OPERATOR: ${{ inputs.capture_shell && (vars.PW_REQUIRE_OPERATOR || secrets.PW_REQUIRE_OPERATOR) || '' }}
         run: pnpm test:e2e:a11y
       # Merge is asymmetric and exits non-zero on a rise, so a regression cannot be quietly
       # absorbed by re-running this job. No always() here for exactly that reason.
@@ -424,6 +477,20 @@ jobs:
           PW_STORAGE_STATE: ${{ steps.session.outputs.path }}
           PW_ROOM_PATH: ${{ vars.PW_ROOM_PATH }}
           PW_SPACE_SLUG: ${{ vars.PW_SPACE_SLUG }}
+          # THE SAME TWO OPT-IN RATCHETS THE PR GATE READS (e2e.yml), so the owner's ONE repo
+          # variable covers BOTH paths. Until 2026-09-08 this file read neither, which made the
+          # opt-in half a switch: setting PW_REQUIRE_OPERATOR=1 would have turned the PR gate red
+          # and left the CAPTURE path — this workflow, the one you dispatch to take the operator
+          # baselines — green over a capture that photographed none of them. Measured, not
+          # theorised: run 34174895830 (2026-09-08, production) printed
+          # `::error ... bounced off the /admin role floor` for all seven operator routes and the
+          # `smoke` job still concluded SUCCESS (ADR-1266).
+          #
+          # Gated on `capture_shell` because a marketing-only dispatch asks for neither half, and a
+          # ratchet that fires on a run that never wanted the shell is the red-X-that-means-nothing
+          # this file's header refuses to ship. Read from EITHER tab for e2e.yml's stated reason.
+          PW_REQUIRE_SHELL: ${{ inputs.capture_shell && (vars.PW_REQUIRE_SHELL || secrets.PW_REQUIRE_SHELL) || '' }}
+          PW_REQUIRE_OPERATOR: ${{ inputs.capture_shell && (vars.PW_REQUIRE_OPERATOR || secrets.PW_REQUIRE_OPERATOR) || '' }}
         run: pnpm test:e2e:visual
       - name: Upload report + diffs
         if: failure()
