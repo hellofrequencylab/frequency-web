@@ -36824,3 +36824,24 @@ The failure is silent in both directions, which is what makes it a measurement p
 
 ⚠️ **The generalisable part: re-test the premise against the PLATFORM, not only the repo.** [ADR-1082](DECISIONS.md) established that a row's blocker is a claim with an expiry date, and this repo now reflexively re-measures a row's *code* premise before working it. This row's premise was not about code. It was about a machine — 4 cores, 8 GB, 3 workers — printed on line 2 of every single build log, and it expired six days before anyone looked. Six captures were filed with timestamps, cache ids, compile durations and commit ranges, and exactly one of them ever quoted the configuration line sitting above all of it. **When a row names an environment, the environment is part of the premise, and it is usually the cheapest half to re-read.**
 
+
+## ADR-1264: a wholesale baseline recapture is a laundering risk, so it is taken apart before it is taken (2026-09-08)
+
+**Context.** `LIVE-186` had four stale visual baselines and a recorded blocker: the recapture is "an owner-dispatched `e2e-manual.yml` run". That premise was tested rather than accepted, and it had expired — `e2e-manual.yml` is a `workflow_dispatch`, so run `34174895830` was dispatched against production with `update_baselines + capture_shell`. It succeeded, minted a member session, and committed **142 changed PNGs** to the branch: every committed baseline the suite holds, for a row that names four files.
+
+**Decision.** Take the four and leave the 138, on a measurement rather than on caution.
+
+Both halves were compared against `origin/main` before anything was committed:
+
+| | files | dimensions | differing pixels |
+|---|---|---|---|
+| This row's surface | 4 | **moved** (mobile 2859 → 2765, desktop 1985 → 1972) | n/a — a dimension mismatch aborts the compare |
+| Everything else | 138 | **byte-identical** | **15,000 – 26,543 each**, worst `app-nearby` desktop |
+
+The 138 were measured with pixelmatch's own YIQ colour delta at Playwright's configured `threshold` (0.2), anti-alias detection omitted so every figure is an **upper bound**. All 138 clear [ADR-1258](DECISIONS.md)'s 400 px budget, by up to 66x.
+
+**The dimensions are the whole argument.** A full-page capture of a page whose content changed moves its *height*. Not one of the 138 moved a single pixel in height while 15,000+ pixels inside it changed. Content does not do that; a different rasteriser does. So the 138 are [ADR-1165](DECISIONS.md)'s cross-runner divergence, and committing them under this row would have written a 138-surface rendering difference into the baselines with nothing to notice it later. They are filed as `LIVE-212`, which is where they belong, because they qualify the *budget* rather than this row's recapture.
+
+**Consequences.** `LIVE-186` gets today's four checks comparable again — they were aborting on a dimension mismatch, which reports nothing at all — and it does **not** close, because the run also refuted one of its own three options. `pr-compare` read this surface at 390x3017 at 16:21Z on 2026-09-07; this capture read it at 390x2765 at 00:56Z on 2026-09-08. **252 px in eight hours, same production, no deploy touching the route.** Option (c), "keep recapturing on a schedule", cannot hold a baseline that drifts that fast, so the ruling narrows from three options to two and stays the owner's.
+
+⚠️ **The generalisable part: a capture job's output is evidence, not a result.** `update_baselines` is a job that overwrites the thing the gate compares against, which makes it the one job in this repo that can turn a regression green by succeeding. Its exit code says the browser ran; it says nothing about what it wrote. This one exited 0 and rewrote 138 surfaces nobody asked it to. **Diff a capture before committing it, and split the diff by whether each file changed the way the row predicted** — here, four files that were supposed to move dimensions did, and 138 that were supposed not to change at all changed by five figures each. Both halves of that sentence were needed; either alone would have read as success.
