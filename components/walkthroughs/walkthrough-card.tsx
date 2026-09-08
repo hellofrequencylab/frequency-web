@@ -5,6 +5,7 @@ import { Sparkles, ArrowRight } from 'lucide-react'
 import type { Walkthrough } from '@/lib/walkthroughs'
 import { WalkthroughLightbox } from '@/components/walkthroughs/walkthrough-lightbox'
 import { dismissWalkthroughAction } from '@/app/(main)/walkthrough-actions'
+import { Button } from '@/components/ui/button'
 
 // Walkthroughs Phase B — the gentle, dismissible in-feed card. NOT an auto-popup: it
 // sits quietly in the feed with the walkthrough's name + description, a "Start" that
@@ -41,13 +42,12 @@ export function WalkthroughCard({ walkthrough }: { walkthrough: Walkthrough }) {
               <p className="mt-1 text-body-sm leading-relaxed text-muted">{walkthrough.description}</p>
             )}
             <div className="mt-3 flex items-center gap-2">
-              <button
+              <Button
                 type="button"
                 onClick={() => setOpen(true)}
-                className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
               >
                 Start <ArrowRight className="h-3.5 w-3.5" aria-hidden />
-              </button>
+              </Button>
               <button
                 type="button"
                 onClick={notNow}

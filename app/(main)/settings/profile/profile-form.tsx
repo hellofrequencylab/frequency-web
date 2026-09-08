@@ -7,6 +7,7 @@ import { updateProfile, setSpotlightPublished, setMySpotlightEnabled, setProfile
 import { LocationAutocomplete } from '@/components/admin/location-autocomplete'
 import { Input, Textarea } from '@/components/ui/field'
 import { HeaderImageField } from '@/components/ui/header-image-field'
+import { Button } from '@/components/ui/button'
 import { DEFAULT_OBJECT_POSITION } from '@/lib/images/focal-point'
 import { heroAspect } from '@/lib/spaces/hero-config'
 
@@ -469,15 +470,14 @@ export function ProfileForm({
               </p>
             </div>
           </div>
-          <button
+          <Button
             type="button"
             onClick={() => handleToggleEnable(true)}
             disabled={spotPending}
-            className="inline-flex items-center gap-1.5 rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
           >
             {spotPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
             Turn on your Spotlight
-          </button>
+          </Button>
           {spotError && <p className="text-meta text-danger">{spotError}</p>}
         </div>
       )}
