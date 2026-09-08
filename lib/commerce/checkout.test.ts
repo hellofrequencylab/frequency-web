@@ -126,12 +126,13 @@ vi.mock('./order-source', () => ({ classifyOrderSource: vi.fn(async () => ({ sou
 vi.mock('@/lib/pricing/network-world', () => ({ effectiveOrderSource: (s: string) => s }))
 vi.mock('@/lib/spaces/booking', () => booking)
 vi.mock('@/lib/finance/record', () => ledger)
-// The role gate. Default = production truth (space / platform only). The SCAN-539 block below flips
-// `allowProfile` so the individual-seller branch of resolveCharge — which canTakePayments currently
-// keeps unreachable from this entry point — can still be exercised.
-const selling = vi.hoisted(() => ({ allowProfile: false }))
+// The role gate. Production truth since OWN-046 (2026-09-08): EVERY owner kind may take payments.
+// This mock previously defaulted `profile` to false and carried an `allowProfile` escape hatch so
+// the individual-seller branch of resolveCharge could be exercised at all — that branch was
+// unreachable from this entry point. It is reachable now, so the hatch is gone and the mock states
+// the real predicate. A mock that disagrees with production is a test that proves nothing.
 vi.mock('./selling', () => ({
-  canTakePayments: (k: string) => k === 'space' || k === 'platform' || (selling.allowProfile && k === 'profile'),
+  canTakePayments: (k: string) => k === 'space' || k === 'platform' || k === 'profile',
 }))
 vi.mock('./variants', () => ({ getVariantsByIds: vi.fn(async () => new Map()) }))
 
@@ -164,7 +165,6 @@ function hasFilter(c: Call, op: string, k: string, v?: unknown): boolean {
 
 beforeEach(() => {
   state.reset()
-  selling.allowProfile = false
   vi.clearAllMocks()
   stripeFake.checkout.sessions.create.mockImplementation(async () => ({ id: 'cs_1', url: 'https://stripe.test/cs_1' }))
   stripeFake.checkout.sessions.expire.mockImplementation(async () => ({}))
@@ -466,7 +466,6 @@ describe('createCommerceCheckout — an unreadable seller tier never charges an 
   }
 
   it('refuses the checkout, writes no order and opens no session', async () => {
-    selling.allowProfile = true
     handler({ data: null, error: { message: '57014 statement timeout' } })
 
     const res = await createCommerceCheckout(input)
@@ -479,7 +478,6 @@ describe('createCommerceCheckout — an unreadable seller tier never charges an 
   })
 
   it('still sells on a clean read (the guard bites only on an unreadable tier)', async () => {
-    selling.allowProfile = true
     handler({ data: { membership_tier: 'crew' } })
 
     const res = await createCommerceCheckout(input)

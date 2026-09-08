@@ -41,8 +41,45 @@ function envSlug(jobName: string): string {
   return jobName.toUpperCase().replace(/[^A-Z0-9]+/g, '_')
 }
 
-/** Resolve the dead-man's-switch monitor URL for a job, or null if unconfigured. */
+/** Job names that deliberately have NO monitor, from `CRON_HEARTBEAT_SKIP` (comma-separated).
+ *
+ *  🔴 WHY THIS EXISTS, because "fewer log lines" is not the reason (LIVE-217). A monitor plan
+ *  smaller than the cron fleet — Healthchecks' free tier caps at 20 checks and `vercel.json`
+ *  declares 28 — leaves some jobs pinging a check that does not exist, and the monitor answers
+ *  404. That 404 is byte-identical to the one that means someone deleted a check, rotated the
+ *  ping key, or let the account lapse. `OWN-065` (the whole fleet silently unmonitored) was
+ *  findable only because that line was rare; at ~200 a day it is background, and the next real
+ *  one is invisible. An expected failure that looks exactly like an unexpected one is how the
+ *  original defect hid.
+ *
+ *  ⚠️ THE LIST IS AN ALLOW-LIST OF SILENCE, AND IT MUST STAY SHORT AND EXPLICIT. Read the
+ *  default carefully: a job NOT named here still pings, so a cron added next month is monitored
+ *  the day it ships. Inverting that — "no monitor unless configured" — would silently unmonitor
+ *  whatever someone forgot to wire, which is the same class of failure this mechanism exists to
+ *  end. A typo in this list is safe in the same direction: the job keeps pinging and keeps
+ *  saying so. */
+function heartbeatOptOut(jobName: string): boolean {
+  const raw = process.env.CRON_HEARTBEAT_SKIP
+  if (!raw) return false
+  return raw
+    .split(',')
+    .map((name) => name.trim())
+    .filter(Boolean)
+    .includes(jobName)
+}
+
+/** Resolve the dead-man's-switch monitor URL for a job, or null if it has none.
+ *
+ *  Null means "do not ping", and it covers two different situations that are deliberately
+ *  identical HERE and different in the record: nothing is configured at all (the safe no-op this
+ *  module has always had), or this job is named in `CRON_HEARTBEAT_SKIP` as having no monitor on
+ *  purpose. Either way `pingHeartbeat` returns before it can emit a `ping_failed` line, which is
+ *  the point — an expected silence must not be reported as a failure. */
 export function resolveHeartbeatUrl(jobName: string): string | null {
+  // Checked BEFORE the per-job override and the base URL, so opting a job out is one edit and
+  // does not require also unsetting whatever would otherwise resolve for it.
+  if (heartbeatOptOut(jobName)) return null
+
   const perJob = process.env[`CRON_HEARTBEAT_URL_${envSlug(jobName)}`]
   if (perJob) return perJob
 

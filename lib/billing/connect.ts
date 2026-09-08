@@ -20,8 +20,7 @@ import type { Database } from '@/lib/database.types'
 import { stripe, appUrl, billingEnabled } from './stripe'
 import { hostPayoutsEnabledFlag } from '@/lib/platform-flags'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { atLeastRole, type CommunityRole } from '@/lib/core/roles'
-import { getPersonaStates } from '@/lib/personas'
+import { type CommunityRole } from '@/lib/core/roles'
 
 /** The single live-gate for every Connect payout channel: a configured Stripe key
  *  AND the operator-controlled `host_payouts_enabled` flag (default OFF). Tips,
@@ -31,16 +30,30 @@ export async function payoutsLive(): Promise<boolean> {
   return billingEnabled() && (await hostPayoutsEnabledFlag())
 }
 
-// ── Connect payouts eligibility (ADR-175, AUTHZ-4) ───────────────────────────
-// Who may receive payouts ("earners"): a community host+ (runs paid circles/events)
-// OR anyone holding a partner persona (a business/practitioner who sells or is
-// tipped). A plain member with no persona can't, so the card stays hidden for them.
+// ── Connect payouts eligibility (ADR-175, AUTHZ-4; WIDENED by OWN-046, 2026-09-08) ───────────
+// Who may receive payouts ("earners"): EVERY signed-in member. The owner ruled on 2026-09-08 that
+// member-to-member Market sales settle in-app, and a seller who may take payment must be able to
+// open the funnel that pays them out — a gate that admits the sale and refuses the payout is a
+// dead end, not a safeguard.
+//
+// 🔴 THIS REPAIRS AN EXISTING BROKEN LINK RATHER THAN OPENING A NEW SURFACE.
+// app/(main)/market/manage/page.tsx:127-130 already renders a "Set up payouts" button to
+// /settings/billing for any maker whose `connect.ready` is false — and the card at that
+// destination was hidden by this predicate. The funnel was already advertised and already
+// unreachable for a plain member.
+//
+// ⚠️ THIS IS NOT THE LIVE SWITCH, and widening it moves no money on its own. Every real call site
+// ANDs `payoutsLive()` (above), which is fail-closed on the operator `host_payouts_enabled` flag,
+// and Stripe still refuses a charge for an account that has not completed onboarding
+// (lib/commerce/checkout.ts:69). What changes here is only who is OFFERED the onboarding.
+//
+// Kept as a predicate rather than deleted for the same reason as `canTakePayments`: it is the one
+// named place to narrow eligibility again, and two call sites read it. Signature unchanged so the
+// callers and their `role` argument stay honest about what the answer used to depend on.
 // Lives here (server-only plumbing), NOT in a `'use server'` module — it is a pure
 // capability predicate, not a callable RPC.
-export async function canReceivePayouts(profileId: string, role: CommunityRole): Promise<boolean> {
-  if (atLeastRole(role, 'host')) return true
-  const personas = await getPersonaStates(profileId)
-  return Object.values(personas).some((s) => s !== null && s !== 'suspended')
+export async function canReceivePayouts(_profileId: string, _role: CommunityRole): Promise<boolean> {
+  return true
 }
 
 /** Payout-readiness for a profile, derived from the mirrored Stripe flags. */
