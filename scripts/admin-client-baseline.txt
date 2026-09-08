@@ -547,6 +547,7 @@ lib/crm/people-search.ts
 lib/crm/person.ts
 lib/crm/pipeline.ts
 lib/crm/relationships.ts
+lib/crm/signup-lead-recovery.ts
 lib/crm/signup-leads.ts
 lib/crm/space-contact-detail.ts
 lib/crm/space-tasks.ts
