@@ -274,9 +274,15 @@ describe('every path read out of public/ is a literal, so the tracer never globs
     // The four modules that used to hold the glob open. A `node:fs` import returning to any of them
     // is how this regresses: the helper gets re-inlined "just for one image" and the directory
     // comes back with it.
+    //
+    // ⚠️ `app/(main)/events/[slug]/opengraph-image.tsx` was on this list until ADR-1257 moved the
+    // event card's LAYOUT — and with it the mark read — into lib/og/event-card.tsx, which the
+    // public twin at /discover/events/<slug> now renders too. The file that draws a public asset is
+    // the file that must reach it through local-image, so the shared module took its place here and
+    // both routes stay under the fs half below. The net did not get narrower.
     const CARDS = [
       'app/(main)/spaces/[slug]/opengraph-image.tsx',
-      'app/(main)/events/[slug]/opengraph-image.tsx',
+      'lib/og/event-card.tsx',
       'app/events/claim/[token]/opengraph-image.tsx',
       'lib/og/claim-card.tsx',
     ]
@@ -285,6 +291,18 @@ describe('every path read out of public/ is a literal, so the tracer never globs
       expect(card, path).toBeDefined()
       expect(card!.src, path).toMatch(/from ['"]@\/lib\/og\/local-image['"]/)
       expect(card!.src, path).not.toMatch(/from ['"]node:fs/)
+    }
+    // The two event routes delegate their layout to that module and must keep their own hands off
+    // public/: re-inlining a read "just for the mark" is how the glob comes back. (The help cards
+    // legitimately read hero.jpg by a LITERAL path in the route file, which is why this arm names
+    // the routes it covers instead of sweeping every opengraph-image.tsx.)
+    for (const path of [
+      'app/(main)/events/[slug]/opengraph-image.tsx',
+      'app/discover/events/[slug]/opengraph-image.tsx',
+    ]) {
+      const route = FILES.find((f) => f.path === path)
+      expect(route, path).toBeDefined()
+      expect(route!.src, path).not.toMatch(/from ['"]node:fs/)
     }
   })
 })
