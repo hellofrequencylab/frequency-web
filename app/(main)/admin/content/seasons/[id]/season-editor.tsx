@@ -133,7 +133,7 @@ export function SeasonEditor({
       {/* Lifecycle */}
       <div className="border-t border-border pt-4">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-meta font-semibold uppercase tracking-wide text-subtle">Lifecycle</span>
+          <span className="eyebrow text-subtle">Lifecycle</span>
           <StateBadge state={state} size="sm" />
         </div>
 

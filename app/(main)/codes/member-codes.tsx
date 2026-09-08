@@ -116,7 +116,7 @@ function CodeCard({
 
   return (
     <div className="rounded-card border border-border bg-surface lift-1 p-4 flex flex-col">
-      <div className="flex items-center gap-1.5 text-meta font-semibold uppercase tracking-wide text-subtle">
+      <div className="flex items-center gap-1.5 eyebrow text-subtle">
         <Icon className="w-3.5 h-3.5" /> {card.title}
       </div>
 

@@ -102,7 +102,7 @@ export function ProfileSettingsDrawer({
               {/* Profile (name + bio) — the old "Edit (mod)" */}
               {canModerate && (
                 <section className="space-y-2">
-                  <p className="text-meta font-semibold uppercase tracking-wide text-subtle">Profile</p>
+                  <p className="eyebrow text-subtle">Profile</p>
                   <Input
                     aria-label="Display name"
                     value={name}
@@ -132,7 +132,7 @@ export function ProfileSettingsDrawer({
               {/* Spotlight admin controls (janitor) */}
               {isJanitor && (
                 <section className="space-y-2 border-t border-border pt-4">
-                  <p className="flex items-center gap-1.5 text-meta font-semibold uppercase tracking-wide text-subtle">
+                  <p className="flex items-center gap-1.5 eyebrow text-subtle">
                     <Sparkles className="h-3.5 w-3.5" /> Spotlight page
                   </p>
                   <button

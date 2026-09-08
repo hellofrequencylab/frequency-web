@@ -443,14 +443,14 @@ export default function OnboardingForm({ userId, userEmail, initialHandle, regio
 
                   {bio && (
                     <div className="px-5 py-4">
-                      <p className="mb-1 text-meta font-semibold uppercase tracking-wide text-subtle">Bio</p>
+                      <p className="mb-1 eyebrow text-subtle">Bio</p>
                       <p className="whitespace-pre-wrap text-body-sm text-text">{bio}</p>
                     </div>
                   )}
 
                   {regionId && (
                     <div className="px-5 py-4">
-                      <p className="mb-1 text-meta font-semibold uppercase tracking-wide text-subtle">Region</p>
+                      <p className="mb-1 eyebrow text-subtle">Region</p>
                       <p className="text-body-sm text-text">{regions.find((r) => r.id === regionId)?.name}</p>
                     </div>
                   )}

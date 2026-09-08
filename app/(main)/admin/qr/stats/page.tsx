@@ -173,7 +173,7 @@ export default async function QrStatsPage() {
             <RankTile title="By channel" rows={acquisition.byChannel} />
             <RankTile title="By source / campaign" rows={acquisition.bySource} />
             <div className="lg:col-span-2">
-              <p className="mb-2 text-meta font-semibold uppercase tracking-wide text-muted">Top codes (scan → signup)</p>
+              <p className="mb-2 eyebrow text-muted">Top codes (scan → signup)</p>
               <DataTable
                 rows={topAcqCodes}
                 getRowId={(c) => c.slug}
@@ -200,7 +200,7 @@ export default async function QrStatsPage() {
 function RankTile({ title, rows }: { title: string; rows: { key: string; count: number }[] }) {
   return (
     <div className="rounded-2xl border border-border bg-surface p-4 sm:p-5">
-      <p className="text-meta font-semibold uppercase tracking-wide text-muted">{title}</p>
+      <p className="eyebrow text-muted">{title}</p>
       {rows.length === 0 ? (
         <p className="mt-2 text-body-sm text-muted">No data yet.</p>
       ) : (

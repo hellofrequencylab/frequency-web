@@ -93,7 +93,7 @@ export default async function ClaimListingPage({ params }: { params: Promise<{ t
               <img src={preview.image} alt="" className="max-h-56 w-full object-cover" />
             )}
             <div className="p-4">
-              <p className="flex items-center gap-2 text-meta font-semibold uppercase tracking-wide text-primary">
+              <p className="flex items-center gap-2 eyebrow text-primary">
                 <Tag className="h-3.5 w-3.5 shrink-0" />
                 {preview.kindLabel}
               </p>

@@ -103,7 +103,7 @@ function DateBlock({ iso }: { iso: string }) {
   const d = new Date(iso)
   return (
     <div className="flex h-11 w-11 shrink-0 flex-col items-center justify-center rounded-2xl bg-primary-bg text-primary-strong">
-      <span className="text-meta font-semibold uppercase leading-none tracking-wide">
+      <span className="eyebrow leading-none">
         {d.toLocaleDateString('en-US', { month: 'short' })}
       </span>
       <span className="text-body font-bold leading-tight">{d.getDate()}</span>

@@ -1937,7 +1937,7 @@ export default async function EventDetailPage({
               <span className="text-display-h3 font-bold leading-none">
                 {new Date(event.starts_at).toLocaleDateString('en-US', { day: 'numeric', timeZone: 'UTC' })}
               </span>
-              <span className="text-meta font-semibold uppercase tracking-wide text-muted">
+              <span className="eyebrow text-muted">
                 {new Date(event.starts_at).toLocaleDateString('en-US', { month: 'long', timeZone: 'UTC' })}
               </span>
             </div>

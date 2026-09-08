@@ -72,7 +72,7 @@ export function EventsAdminList({ upcoming, past }: { upcoming: AdminEvent[]; pa
     <div className="space-y-4">
       {upcoming.length > 0 && (
         <div className="space-y-2">
-          <p className="text-meta font-semibold uppercase tracking-wide text-subtle">Upcoming</p>
+          <p className="eyebrow text-subtle">Upcoming</p>
           {upcoming.map((event) => (
             <EventRow key={event.id} event={event} />
           ))}
