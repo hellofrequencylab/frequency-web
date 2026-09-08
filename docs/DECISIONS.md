@@ -36956,6 +36956,8 @@ An instrument that names its own blind spot in a log turned an unfalsifiable own
 ---
 ## ADR-1264: a wholesale baseline recapture is a laundering risk, so it is taken apart before it is taken (2026-09-08)
 
+> 🔴 **AMENDED the same day by ADR-1273.** The refusal below stands; its EXPLANATION does not. The claim that 138 byte-identical-dimension files must therefore be cross-runner rasterisation is false — a measurable part of that divergence is shipped CTA copy from #2348 that no baseline caught up with. A dimension reading is a filter, never a classifier. Read ADR-1273 before citing anything in this entry about *why* the 138 differ.
+
 **Context.** `LIVE-186` had four stale visual baselines and a recorded blocker: the recapture is "an owner-dispatched `e2e-manual.yml` run". That premise was tested rather than accepted, and it had expired — `e2e-manual.yml` is a `workflow_dispatch`, so run `34174895830` was dispatched against production with `update_baselines + capture_shell`. It succeeded, minted a member session, and committed **142 changed PNGs** to the branch: every committed baseline the suite holds, for a row that names four files.
 
 **Decision.** Take the four and leave the 138, on a measurement rather than on caution.
@@ -37196,3 +37198,51 @@ which is the argument for a probe that measures a consequence over one that meas
 - `update_baselines` alone writes the 4 header-band PNGs (the band is anonymous);
   `update_baselines + capture_shell` adds the 8 shell ones. Both are noted in
   `e2e-manual.yml`'s header beside the flags they belong to.
+## ADR-1273: ADR-1264's "identical dimensions therefore rasterisation" is wrong, and the 138 files carry real shipped copy (2026-09-08)
+
+**Amends:** ADR-1264 · **Row:** LIVE-212
+
+ADR-1264 recorded a refusal that still stands — a wholesale baseline recapture is taken apart before
+it is taken — and then explained the 138 files it refused with a diagnosis that is false.
+
+The diagnosis was: 138 of 138 kept byte-identical dimensions while 15,000-26,543 pixels inside them
+changed; a content change moves a full-page height; therefore the divergence is cross-runner
+rasterisation. It was asserted confidently, in a merged PR body and in ADR-1264 itself, on reasoning
+rather than on a reading.
+
+**Two independent measurements the same day disproved it.**
+
+| source | measurement |
+|---|---|
+| this PR (ADR-1270) | the committed `the-community--dawn-light-mobile.png` renders **"Start a Circle"**; production renders **"Join free"**. Identical 390x12325. 21,594 differing pixels. |
+| LIVE-040 (#2466) | #2348 changed `BETA_CTA_LABEL` and `BETA_CTA_SECONDARY_LABEL` in `lib/site.ts`. Resolving each template at the commit its own baselines were captured in: **15 of 15 stale, every diff button text.** |
+
+Cropping the CTA-pill region across six marketing pages returns identical deltas — 1544 px on five,
+1792 px on home, of ~6000 in the crop. One shared header band changed once and replicated across
+roughly 138 captures.
+
+**Where the reasoning failed.** "A content change moves a full-page height" is true of a content
+change that *reflows*. A text swap inside a fixed-width pill does not reflow: "Start a Circle" and
+"Join free" occupy the same box, so the page height is unchanged and the glyphs are not. The
+heuristic is blind to exactly the class of change a shared header carries — which is also the class
+that replicates across every surface at once, and therefore looks most like a systemic rasteriser
+difference. The signature read as *proof of* rasterisation is the signature a site-wide copy change
+produces.
+
+**What this does and does not settle.** It does not prove there is no rasteriser component; some of
+those 15,000-26,543 px may still be cross-runner. It proves the divergence is **not purely** that, so
+LIVE-212 may not be closed by settling the runner question alone, and the capture-against-capture
+experiment it proposes is now a *partial* answer rather than the whole one. LIVE-212 stays open with
+its premise corrected rather than closed on a diagnosis that has expired.
+
+**The rule this pays for.** A dimension reading is a cheap, honest *filter* — it is how LIVE-186's
+four target files were separated from 138 others, and that separation was correct. It is not a
+*classifier*. `scripts/dims.mjs` answers "which files moved a box", never "which files changed for a
+reason". LIVE-040's fingerprint gate is the classifier, because it measures the render input rather
+than a property of the output.
+
+**The failure mode underneath is the one this repo keeps naming.** ADR-1082: a blocker phrased as a
+certainty is a claim with an expiry date. This one was phrased as physics, held for nine hours, and
+was overturned by two agents who went and looked. It cost nothing except an explanation — but had
+the explanation been used to raise the 400 px budget, the action ADR-1264 explicitly refused, it
+would have laundered a site-wide copy regression into the baselines as tolerance.
