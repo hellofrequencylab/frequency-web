@@ -190,7 +190,7 @@ export async function AdminInfoRail({
 
       <section>
         <div className="flex items-baseline justify-between px-1 pb-2">
-          <p className="text-meta font-semibold uppercase tracking-wide text-muted">Just joined</p>
+          <p className="eyebrow text-muted">Just joined</p>
           <Link href="/admin/members" className="text-meta font-semibold text-primary-strong hover:underline">
             Roster →
           </Link>

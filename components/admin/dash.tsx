@@ -133,7 +133,7 @@ export function Tile({
 }) {
   return (
     <div className={`flex h-full flex-col rounded-2xl border border-border bg-surface p-4 sm:p-5 ${SPAN[span]}`}>
-      {label && <p className="text-meta font-semibold uppercase tracking-wide text-muted">{label}</p>}
+      {label && <p className="eyebrow text-muted">{label}</p>}
       <div className={`${label ? 'mt-3 ' : ''}min-h-12 flex-1`}>{children}</div>
       {caption && <p className="mt-2 text-meta text-subtle">{caption}</p>}
     </div>
@@ -157,7 +157,7 @@ export function GraphTile({
   return (
     <div className={`flex h-full flex-col rounded-2xl border border-border bg-surface p-4 sm:p-5 ${SPAN[span]}`}>
       <div className="flex items-baseline justify-between gap-2">
-        <p className="text-meta font-semibold uppercase tracking-wide text-muted">{label}</p>
+        <p className="eyebrow text-muted">{label}</p>
         {value !== undefined && <p className="text-body font-bold tabular-nums text-text">{value}</p>}
       </div>
       <div className="mt-3 min-h-12 flex-1">{children}</div>

@@ -130,7 +130,7 @@ function SectionSorter({ scope }: { scope: DashScope }) {
   return (
     <div className="mt-4 border-t border-border/60 px-0 pt-3">
       <div className="flex items-baseline justify-between px-2 pb-2">
-        <p className="text-meta font-semibold uppercase tracking-wide text-muted">Sort sections</p>
+        <p className="eyebrow text-muted">Sort sections</p>
         <span className="text-meta text-subtle">{isPending ? 'Saving…' : 'Drag to reorder'}</span>
       </div>
       <ul className="space-y-1">

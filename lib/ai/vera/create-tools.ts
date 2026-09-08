@@ -35,7 +35,7 @@
 //     commits an entity. A human calls the confirm half directly, from their own session.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import type { EntityManifest } from '@/lib/studio/kernel/manifest'
+import type { EntityManifest, FieldDef } from '@/lib/studio/kernel/manifest'
 import { isCatalogOnly } from '@/lib/studio/kernel/manifest'
 import type { ProvenanceLedger } from '@/lib/studio/kernel/ledger'
 import { buildFieldModel } from '@/lib/studio/kernel/review-kernel'
@@ -180,6 +180,70 @@ export function createGateFor(entity: string): CreateGate | null {
   return CREATE_GATES[entity] ?? null
 }
 
+// ── The per-road scoped gate (ADR-1280) ──────────────────────────────────────────────────
+//
+// CREATE_GATES declares ONE gate per entity, and for four entities that gate is a global
+// capability. One road disagrees with its entity on purpose: the Space Practice road is open to
+// anyone who MANAGES the Space (owner / admin / editor), so a free member running a Space can
+// build the practices their members do, while `practice.create` is the Crew-only gate on the
+// public library. Re-checking the entity's capability at that road's write would refuse a create
+// the road has always accepted, which is why it sat in UNROUTED for 28 days.
+//
+// A road may therefore declare the gate it ALREADY enforces, in the same shape a `scoped` entry
+// in CREATE_GATES takes, and the layer records that gate instead of re-applying the entity's.
+// This is a statement, not a hole, for the same reason the entity-level `scoped` arm is one:
+// `why` has to name the check the road runs ahead of the layer, the audit row records it beside
+// the entity, and scripts/check-creates.mjs names every road that declares one (ROAD_GATES),
+// so a road cannot quietly opt out of a capability by writing three words in a call.
+
+/** A gate a ROAD declares for itself. Only ever the scoped shape: a road cannot pick a
+ *  capability, because the capability it could name is the one the entity already declares. */
+export type RoadGate = { kind: 'scoped'; why: string }
+
+/**
+ * The gate that holds the line for THIS create: the road's own scoped gate when it declared one,
+ * otherwise the entity's. Total: an unknown or catalog-only entity is null with or without a
+ * road gate, so a road cannot make an uncreatable entity creatable by scoping it.
+ */
+export function resolveCreateGate(entity: string, roadGate?: RoadGate | null): CreateGate | null {
+  const declared = createGateFor(entity)
+  if (!declared) return null
+  if (roadGate && roadGate.kind === 'scoped' && roadGate.why.trim().length > 0) {
+    return { kind: 'scoped', why: roadGate.why }
+  }
+  return declared
+}
+
+/**
+ * Read a road gate back off a stored audit payload. Fail-closed: anything that is not exactly
+ * the scoped shape with a non-empty reason reads as "no road gate", so the confirm re-applies
+ * the entity's own gate rather than trusting a malformed record.
+ */
+export function readRoadGate(raw: unknown): RoadGate | null {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null
+  const r = raw as Record<string, unknown>
+  if (r.kind !== 'scoped' || typeof r.why !== 'string' || r.why.trim().length === 0) return null
+  return { kind: 'scoped', why: r.why }
+}
+
+// ── The create stage (ADR-1280) ──────────────────────────────────────────────────────────
+//
+// A draft-status row IS a create: it inserts a row a member owns, and it is real, unaudited
+// create volume until the layer sees it. What a draft may lack is a field the manifest defers
+// to publish (`requiredAt: 'publish'`). The stage says which check applies. It defaults to
+// 'publish', the strict reading, so every caller that does not say otherwise keeps requiring
+// everything it required before.
+
+/** Whether the create being checked is a draft-status insert or a live one. */
+export type CreateStage = 'draft' | 'publish'
+
+/** Whether a manifest field must be present at this stage. PURE. A field with no `requiredAt`
+ *  is enforced at the create, the meaning `required` has always had. */
+export function requiredAtStage(field: Pick<FieldDef, 'required' | 'requiredAt'>, stage: CreateStage): boolean {
+  if (!field.required) return false
+  return stage === 'publish' || (field.requiredAt ?? 'create') === 'create'
+}
+
 // ── The tool definition (derived from the catalog) ────────────────────────────────────────
 
 /** The member-facing confirm label for an entity's create. Voice canon: plain, no dashes. */
@@ -266,7 +330,9 @@ export interface CreateDraftCheck {
  *
  * Three rules, all of them the kernel's own:
  *   1. the entity must be a KNOWN, creatable one (an unknown id is rejected, never coerced);
- *   2. every `required` field the manifest declares must be present;
+ *   2. every `required` field the manifest declares must be present — at the STAGE being
+ *      checked (ADR-1280): a `draft` create may omit a field the manifest marks
+ *      `requiredAt: 'publish'`; a `publish` create, the default, may omit nothing;
  *   3. no commercial fact may be red — `buildFieldModel(...).summary.blocked` is the one
  *      clearance rule, and this re-runs it rather than restating it. Passing no ledger is the
  *      honest default for an entity with `verify: 'none'`, and correctly BLOCKS an entity that
@@ -276,6 +342,7 @@ export function checkCreateDraft(
   entity: string,
   draft: Record<string, unknown>,
   ledger: ProvenanceLedger = {},
+  stage: CreateStage = 'publish',
 ): CreateDraftCheck {
   const manifest = studioManifest(entity)
   if (!manifest) {
@@ -293,7 +360,7 @@ export function checkCreateDraft(
 
   const errors: string[] = []
   for (const f of manifest.fields) {
-    if (f.required && !present(at(draft, f.path))) errors.push(`${manifest.label} needs a ${f.label}.`)
+    if (requiredAtStage(f, stage) && !present(at(draft, f.path))) errors.push(`${manifest.label} needs a ${f.label}.`)
   }
 
   const model = buildFieldModel(manifest, draft, ledger)

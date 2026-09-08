@@ -81,7 +81,7 @@ function TopFriendsView({ title, friends, cardStyle, headingFont }: {
   if (friends.length === 0) return null
   return (
     <section>
-      <h2 className="mb-3 text-meta font-semibold uppercase tracking-wide text-subtle" style={{ fontFamily: headingFont }}>
+      <h2 className="mb-3 eyebrow text-subtle" style={{ fontFamily: headingFont }}>
         {title || 'Top Friends'}
       </h2>
       <div className="grid grid-cols-4 gap-3">

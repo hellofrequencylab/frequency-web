@@ -260,7 +260,7 @@ function IdentityLockup({
           <div className="flex flex-wrap items-center gap-2">
             <h1
               className={`min-w-0 break-words font-bold leading-tight ${
-                overlay ? 'text-3xl text-on-ink sm:text-4xl' : 'text-page-title text-text'
+                overlay ? 'text-display-h3 text-on-ink' : 'text-page-title text-text'
               }`}
             >
               {identity.name}
@@ -1273,7 +1273,7 @@ export function SpaceSectionTitleBlock({
           {eyebrow}
         </p>
       )}
-      <h2 className={`font-section mt-1.5 text-3xl font-bold tracking-tight sm:text-4xl ${ink ? 'text-on-ink' : 'text-text'}`}>
+      <h2 className={`font-section mt-1.5 text-display-h3 font-bold tracking-tight ${ink ? 'text-on-ink' : 'text-text'}`}>
         {heading}
       </h2>
       {subheading && (
