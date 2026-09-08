@@ -37510,7 +37510,7 @@ It stopped being read.
 | `components/spotlight/sticker-layer.tsx` | `literal-display-type` | +1 | `ea76f9b` (#2471) |
 | `components/spotlight/sticker-layer.tsx` | `shadow-literals` | +1 | `ea76f9b` (#2471) |
 
-**The compounding step, which is the part worth remembering.** #2471 merged with the ratchet advisory, so nothing stopped it. #2473 then ran `--update` on a branch cut BEFORE #2471 landed, and banked numbers `main` had already exceeded. So the scoreboard's freeze date reads `2026-09-08` on three of the four risen classes: the baseline is newer than the debt it is supposed to be guarding. `literal-type`'s defended `0` — a number four documents cite as a win — had been `2` for a day, and every one of the nine open PRs re-reported the same four red classes as noise no author could act on.
+**The compounding step, which is the part worth remembering.** #2471 merged with the ratchet advisory, so nothing stopped it. #2473 then ran `--update` on a branch cut BEFORE #2471 landed, and banked numbers `main` had already exceeded. So the scoreboard's freeze date reads `2026-09-08` on three of the four risen classes: the baseline is newer than the debt it is supposed to be guarding. `literal-type`'s defended `0` — a number four documents cite as a win — had been `2` for a day, and every open PR whose `checks` job actually ran re-reported the same four red classes as noise no author could act on. (Three of the nine open PRs have no CI run on their head commit at all, so they did not report it either way — a separate defect, and one this decision does not cover.)
 
 **Decision.**
 
