@@ -74,6 +74,46 @@ describe('routeScopeChain — the scopes, most specific first', () => {
   })
 })
 
+describe('longestPrefixRow — the `_` wildcard segment (LIVE-117, ADR-1261)', () => {
+  const rows = [
+    { prefix: '/spaces' },
+    { prefix: '/spaces/directory' },
+    { prefix: '/spaces/_/podcasts' },
+    { prefix: '/spaces/_/manage/circles' },
+  ]
+
+  it('matches any one segment where the row says `_`', () => {
+    expect(longestPrefixRow('/spaces/acme/podcasts', rows)?.prefix).toBe('/spaces/_/podcasts')
+    expect(longestPrefixRow('/spaces/other-brand/manage/circles', rows)?.prefix).toBe('/spaces/_/manage/circles')
+  })
+
+  it('matches ONE segment and not several, so a pattern cannot swallow the tree', () => {
+    // '/spaces/acme/manage/circles' must not be reachable through '/spaces/_/podcasts'.
+    expect(longestPrefixRow('/spaces/acme/manage', rows)?.prefix).toBe('/spaces')
+    expect(longestPrefixRow('/spaces/acme/loom', rows)?.prefix).toBe('/spaces')
+  })
+
+  it('a literal row still wins over a pattern that reaches the same depth', () => {
+    expect(longestPrefixRow('/spaces/directory', rows)?.prefix).toBe('/spaces/directory')
+    expect(
+      longestPrefixRow('/spaces/acme/podcasts', [{ prefix: '/spaces/acme/podcasts' }, ...rows])?.prefix,
+    ).toBe('/spaces/acme/podcasts')
+  })
+
+  it('an EMPTY segment is not a segment', () => {
+    expect(longestPrefixRow('/spaces//podcasts', rows)?.prefix).toBe('/spaces')
+  })
+
+  it('a table with no wildcard resolves exactly as it did before the wildcard existed', () => {
+    // The whole safety property of the change: every shipped map is `_`-free.
+    const plain = [{ prefix: '/journeys' }, { prefix: '/journeys/mine' }, { prefix: '/network' }]
+    expect(longestPrefixRow('/journeys/mine/x', plain)?.prefix).toBe('/journeys/mine')
+    expect(longestPrefixRow('/journeys', plain)?.prefix).toBe('/journeys')
+    expect(longestPrefixRow('/journeysabc', plain)).toBeNull()
+    expect(longestPrefixRow('/library', plain)).toBeNull()
+  })
+})
+
 describe('longestPrefixRow — the shared primitive', () => {
   const rows = [{ prefix: '/network' }, { prefix: '/network/friends' }, { prefix: '/journeys' }]
 
