@@ -72,6 +72,38 @@ describe('the @wizard slot', () => {
     const file = join(SLOT, '[...catchAll]', 'page.tsx')
     expect(existsSync(file)).toBe(true)
     expect(read(file)).toMatch(/return null/)
+    // 🔴 AND IT MUST STAY null. Measured on a running build (LIVE-208, ADR-1267): this page renders
+    // on EVERY route in the (main) layout, not only on unmatched ones — instrumented, it logged for
+    // /events, /spaces/[slug] and /market/[id] alike, which is exactly how it closes the modal. A
+    // notFound() here would therefore fire on every member page in the product.
+    //
+    // Comment-stripped, because the file EXPLAINS the call it must not make — the ADR-1097 mistake
+    // this suite already strips for elsewhere.
+    expect(stripComments(read(file))).not.toMatch(/\bnotFound\s*\(\s*\)/)
+  })
+
+  // ── PROPERTY 5: the closer's HOISTED ROUTE has an explicit owner (LIVE-208, ADR-1267) ────────
+  //
+  // The compiler lifts the catch-all above out of the slot into a real top-level route
+  // (`/[...catchAll]`, regex `^/(.+?)(?:/)?$` in `.next/routes-manifest.json`, attributed to
+  // `/(main)/@wizard/[...catchAll]/page` in `.next/app-path-routes-manifest.json`). Nothing in the
+  // SOURCE tree says so, which is why an unmatched URL answered `307 Location: /` for a year: it
+  // matched the slot's catch-all and resolved through the member tree instead of 404ing.
+  //
+  // The children page beside the slot is what answers that route now. These two files are one
+  // mechanism, and deleting either alone re-opens the defect in one direction or the other — so the
+  // slot's own contract file is where the pairing is pinned. The ARTIFACT half runs after a build,
+  // in `pnpm check:notfound-routes`.
+  it('pairs with a children catch-all that is an explicit not-found', () => {
+    const file = join('app', '(main)', '[...catchAll]', 'page.tsx')
+    expect(existsSync(file)).toBe(true)
+    const src = read(file)
+    expect(src).toMatch(/from 'next\/navigation'/)
+    expect(src).toMatch(/\bnotFound\s*\(\s*\)/)
+    // Declaring the params CLOSED is what moves the 404 to ROUTING time, ahead of the layout's
+    // signed-out redirect. Without it the page renders too late to change the status.
+    expect(src).toMatch(/export const dynamicParams = false/)
+    expect(src).toMatch(/export function generateStaticParams/)
   })
 
   it('carries at least the six wizards this shipped with', () => {

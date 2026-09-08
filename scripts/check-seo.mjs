@@ -374,6 +374,33 @@ export function overLongDescriptions(src, max = DESCRIPTION_MAX) {
     .map((d) => ({ line: d.line, length: d.value.length, text: d.value }))
 }
 
+/** ── A ROUTE THAT CAN RESOLVE TO NOTHING IS NOT A BACKER (LIVE-208, ADR-1267) ─────────────────
+ *
+ * 🔴 Scan B's whole job is to fail a sitemap entry with no backing page. It finds the backer by
+ * matching the entry against the DYNAMIC route patterns in the tree — so the moment the tree gains
+ * a top-level catch-all, EVERY unbacked entry matches it and the dead-entry failure quietly
+ * becomes a warning. `app/(main)/[...catchAll]/page.tsx` is exactly such a page.
+ *
+ * It is also, by construction, a page nothing can resolve to: it declares `dynamicParams = false`
+ * beside a `generateStaticParams` that returns an EMPTY array, so Next answers 404 at routing time
+ * and no URL ever renders it. That pair is the test — not "does it look like a not-found page",
+ * which would be a heuristic, and not `dynamicParams = false` alone, which
+ * `app/(marketing)/vs/[slug]` sets while backing five real URLs.
+ */
+export function resolvesToNothing(src) {
+  const code = src.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1')
+  if (!/export\s+const\s+dynamicParams\s*=\s*false/.test(code)) return false
+  if (!/export\s+(?:async\s+)?function\s+generateStaticParams\b/.test(code)) return false
+  // Read the declaration's BODY by hand rather than with one regex: a return-type annotation
+  // (`(): { catchAll: string[] }[]`) carries braces of its own, and a `[^{]*` lead-in silently
+  // stops at the first of them and reports every such page as "resolves to something".
+  const start = code.indexOf('generateStaticParams')
+  const after = code.slice(start)
+  const end = after.indexOf('\n}')
+  if (end < 0) return false
+  return /\{\s*return\s*\[\s*\]\s*;?\s*$/.test(after.slice(0, end))
+}
+
 function run() {
   const failures = []
   const warnings = []
@@ -382,10 +409,24 @@ function run() {
   const allFiles = collectRouteFiles(APP_DIR, ['page', 'route'])
   const staticRoutes = new Set()
   const dynamicPatterns = []
+  const resolveNothing = []
   for (const f of allFiles) {
     const route = normalize(routeForFile(f))
-    if (isDynamic(route)) dynamicPatterns.push(route)
-    else staticRoutes.add(route)
+    if (isDynamic(route)) {
+      // A page nothing can resolve to cannot back a sitemap entry — and letting a top-level
+      // catch-all into this set would downgrade every DEAD ENTRY failure to a warning.
+      if (readFile(f) !== null && resolvesToNothing(readFile(f))) {
+        resolveNothing.push(route)
+        continue
+      }
+      dynamicPatterns.push(route)
+    } else staticRoutes.add(route)
+  }
+  for (const r of resolveNothing) {
+    warnings.push(
+      `route ${r} is NOT counted as a dynamic backer: it declares dynamicParams = false beside an ` +
+        `empty generateStaticParams, so no URL resolves to it (LIVE-208, ADR-1267).`,
+    )
   }
 
   const advertised = sitemapLiteralRoutes()
