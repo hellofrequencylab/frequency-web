@@ -333,6 +333,15 @@ describe('the full bleed the owner asked for actually reaches both edges', () =>
 // about then only applies to a cover TALLER than its tier at the band's width; a wider one is shown
 // whole at both widths, with no bars and no crop.
 
+/**
+ * Escape EVERY regex metacharacter in a class token, not the two that happen to appear today.
+ * A Tailwind arbitrary value carries brackets now and can carry a dot (`h-[22.5rem]`) or a slash
+ * (`h-1/2`) tomorrow, and an unescaped dot silently WIDENS the assertion below into "any
+ * character", which is how a guard stops guarding without ever going red. Flagged by CodeQL on
+ * the pull request that added the assertion.
+ */
+const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\/-]/g, '\\$&')
+
 describe('with the cover aspect known, the band is the poster and the tier is its ceiling', () => {
   const SRC = 'https://example.test/p.png'
   const plain = renderToStaticMarkup(
@@ -353,7 +362,7 @@ describe('with the cover aspect known, the band is the poster and the tier is it
     for (const token of posterMaxHeightClass('standard').split(/\s+/)) expect(shaped).toContain(token)
     for (const token of posterHeightClass('standard').split(/\s+/)) {
       expect(shaped, `the fixed height ${token} must not fight the aspect`).not.toMatch(
-        new RegExp(`class="[^"]*(^|\\s)${token.replace(/[[\]]/g, '\\$&')}(\\s|")`),
+        new RegExp(`class="[^"]*(^|\\s)${escapeRe(token)}(\\s|")`),
       )
     }
   })
@@ -430,5 +439,22 @@ describe('with the cover aspect known, the band is the poster and the tier is it
     const code = band.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '')
     expect(code).not.toMatch(/\bmax-h-/)
     expect(code).toContain('${sizeClass}')
+  })
+})
+
+describe('the class-token escape the assertion above depends on', () => {
+  it('escapes every metacharacter a Tailwind token can carry, the backslash included', () => {
+    expect(escapeRe('h-[22.5rem]')).toBe('h\\-\\[22\\.5rem\\]')
+    expect(escapeRe('h-1/2')).toBe('h\\-1\\/2')
+    expect(escapeRe('a\\b')).toBe('a\\\\b')
+  })
+
+  it('a dot left unescaped would match any character, which is the widening this prevents', () => {
+    // The escape this replaced took the brackets and left the dot, so the dot became "any
+    // character" and the assertion passed on a class the page never rendered.
+    const bracketsOnly = (t: string) => t.replace(/[[\]]/g, '\\$&')
+    expect(new RegExp(`^${bracketsOnly('h-[2.5rem]')}$`).test('h-[2X5rem]')).toBe(true)
+    expect(new RegExp(`^${escapeRe('h-[2.5rem]')}$`).test('h-[2X5rem]')).toBe(false)
+    expect(new RegExp(`^${escapeRe('h-[2.5rem]')}$`).test('h-[2.5rem]')).toBe(true)
   })
 })
