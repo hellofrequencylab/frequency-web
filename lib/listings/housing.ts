@@ -617,3 +617,74 @@ export async function upsertSeekerProfile(
       preferences: input.preferences ?? {},
     })
 }
+
+// ── Housing match ALERTS: the data access the alerts layer needs (ADR-1278) ─────────────────
+// The decision (which pairs, what copy, which channels) lives in ./housing-match-alerts.ts and
+// is pure or seam-injected; these three are its real seams, kept here because this is the
+// housing module that already holds the service-role client (scripts/admin-client-baseline.txt).
+
+/** The row shape of one claim; the alerts layer's HousingMatchAlert satisfies it. */
+export interface HousingMatchClaim {
+  recipientProfileId: string
+  counterpartProfileId: string
+  kind: 'seeker' | 'listing'
+  listingId: string | null
+  score: number
+}
+
+/** Write the (recipient, counterpart, kind) pairs with ignore-duplicates and return ONLY the
+ *  ones this call inserted: the once-per-pair claim (claim, then send: ADR-1212). Throws on a
+ *  write error so the caller never routes an unclaimed alert. */
+export async function claimHousingMatchAlerts<T extends HousingMatchClaim>(alerts: T[]): Promise<T[]> {
+  if (alerts.length === 0) return []
+  const { data, error } = await db()
+    .from('housing_match_alerts')
+    .upsert(
+      alerts.map((a) => ({
+        recipient_profile_id: a.recipientProfileId,
+        counterpart_profile_id: a.counterpartProfileId,
+        kind: a.kind,
+        listing_id: a.listingId,
+        score: a.score,
+      })),
+      { onConflict: 'recipient_profile_id,counterpart_profile_id,kind', ignoreDuplicates: true },
+    )
+    .select('recipient_profile_id, kind')
+  if (error) throw new Error(error.message)
+  const inserted = new Set((data ?? []).map((r) => `${r.kind}:${r.recipient_profile_id}`))
+  return alerts.filter((a) => inserted.has(`${a.kind}:${a.recipientProfileId}`))
+}
+
+/** A member's deliverable email (on the auth user; null when none) + display name, for a send.
+ *  Null when the profile does not exist. */
+export async function housingMatchRecipient(
+  profileId: string,
+): Promise<{ email: string | null; name: string } | null> {
+  const admin = db()
+  const { data: profile } = await admin
+    .from('profiles')
+    .select('display_name, auth_user_id')
+    .eq('id', profileId)
+    .maybeSingle()
+  if (!profile) return null
+  const name = profile.display_name?.trim() || 'there'
+  if (!profile.auth_user_id) return { email: null, name }
+  const {
+    data: { user },
+  } = await admin.auth.admin.getUserById(profile.auth_user_id)
+  return { email: user?.email ?? null, name }
+}
+
+/** A member's public card for an alert about them: display name + handle. Null when unreadable. */
+export async function housingMatchCounterpart(
+  profileId: string,
+): Promise<{ name: string; handle: string | null } | null> {
+  const { data: profile } = await db()
+    .from('profiles')
+    .select('display_name, handle')
+    .eq('id', profileId)
+    .maybeSingle()
+  if (!profile) return null
+  const handle = typeof profile.handle === 'string' && profile.handle ? profile.handle : null
+  return { name: profile.display_name?.trim() || handle || 'A member', handle }
+}

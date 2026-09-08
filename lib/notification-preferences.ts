@@ -25,6 +25,7 @@ export type NotificationCategory =
   | 'lifecycle'
   | 'comments'
   | 'practice'
+  | 'matches'
 
 export const NOTIFICATION_CATEGORIES: readonly NotificationCategory[] = [
   'dispatches',
@@ -33,6 +34,9 @@ export const NOTIFICATION_CATEGORIES: readonly NotificationCategory[] = [
   'lifecycle',
   'comments',
   'practice',
+  // Housing match alerts (DEF-HOUS, ADR-1278): a new roommate match that lines up with the
+  // member's search. Preference-governed like the other community categories.
+  'matches',
 ] as const
 
 // The full topic vocabulary the preference model + per-subject/contact surfaces speak
@@ -59,18 +63,21 @@ export type NotificationPreferences = {
   email_lifecycle:  boolean
   email_comments:   boolean
   email_practice:   boolean
+  email_matches:    boolean
   inapp_dispatches: boolean
   inapp_events:     boolean
   inapp_mentions:   boolean
   inapp_lifecycle:  boolean
   inapp_comments:   boolean
   inapp_practice:   boolean
+  inapp_matches:    boolean
   push_dispatches:  boolean
   push_events:      boolean
   push_mentions:    boolean
   push_lifecycle:   boolean
   push_comments:    boolean
   push_practice:    boolean
+  push_matches:     boolean
   // Opt-IN, default OFF (20261204000000): remind me about upcoming public events
   // from Spaces I follow that I have not RSVP'd to. NOT part of the channel x
   // category grid — a single email-only opt-in, read via wantsSpaceEventReminders().
@@ -86,18 +93,23 @@ export const DEFAULT_PREFERENCES: NotificationPreferences = {
   // Practice reminders by email are OFF by default (a daily reminder email is churn fuel; the
   // weekly digest carries the recap). ADR-920 Phase 3.
   email_practice:   false,
+  // A match alert is rare by construction (once per member per counterpart, only past the
+  // strong-match bar), so email follows the community default: on. ADR-1278.
+  email_matches:    true,
   inapp_dispatches: true,
   inapp_events:     true,
   inapp_mentions:   true,
   inapp_lifecycle:  true,
   inapp_comments:   true,
   inapp_practice:   true,
+  inapp_matches:    true,
   push_dispatches:  false,
   push_events:      false,
   push_mentions:    false,
   push_lifecycle:   false,
   push_comments:    false,
   push_practice:    false,
+  push_matches:     false,
   // Strictly opt-in: OFF until the member turns it on in /settings/notifications.
   space_event_reminders: false,
 }
@@ -114,6 +126,7 @@ export const DEFAULT_FREQUENCIES: CategoryFrequencies = {
   freq_lifecycle:  'realtime',
   freq_comments:   'realtime',
   freq_practice:   'realtime',
+  freq_matches:    'realtime',
 }
 
 // The combined shape the settings form round-trips (grid + frequency), one upsert.
@@ -158,6 +171,7 @@ export async function getFrequencies(profileId: string): Promise<CategoryFrequen
       freq_lifecycle:  normalizeFrequency(row.freq_lifecycle),
       freq_comments:   normalizeFrequency(row.freq_comments),
       freq_practice:   normalizeFrequency((row as Record<string, unknown>).freq_practice),
+      freq_matches:    normalizeFrequency((row as Record<string, unknown>).freq_matches),
     }
   } catch {
     return { ...DEFAULT_FREQUENCIES }

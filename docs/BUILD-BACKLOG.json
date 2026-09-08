@@ -130,7 +130,6 @@
           "name": "W8 · commerce + verticals (Resonance launch stays GO-gated)",
           "ids": [
             "DEF-MONEY",
-            "DEF-HOUS",
             "DEF-RESON"
           ]
         },
@@ -1755,7 +1754,7 @@
     {
       "id": "DEF-HOUS",
       "title": "Housing: natal-chart matching + Resonance match alerts",
-      "status": "open",
+      "status": "done",
       "priority": "P2",
       "lane": "program",
       "size": "S",
@@ -1763,7 +1762,7 @@
         "file": "docs/MASTER-TODO.md",
         "ref": "Housing"
       },
-      "detail": "Natal-chart compatibility beyond the shipped sun-sign quiet-5%, as an opt-in both-sides factor — NEEDS AN EPHEMERIS/COMPUTE DECISION BEFORE BUILD. Alerts are the notification layer on matching RPCs that already exist.\n\n── UNPARKED 2026-08-20 (owner ruling): scheduled into the build-out; sequence in meta.slate. ── LANE CORRECTED 2026-08-24: this row was printing under the DEFERRED heading of `pnpm backlog` while meta.slate scheduled it, which is the working view contradicting the owner ruling it is meant to carry. The ids never moved; only the lane label was wrong.\n\n── NATAL HALF SHIPPED 2026-08-25 (ADR-1138): the ephemeris/compute decision is RULED (in-process JS ephemeris astronomy-engine, computed server-side at profile save, stored on member_match_prefs.natal_chart; no external API, never per-request). Charts are date-only v1; both housing match RPCs and the romance lane score stored-chart synastry natal-first with the shipped sun-sign compat as fallback; both-sides opt-in and the quiet 5% weight unchanged. Migration 20270326000000 (apply before its code merges, ADR-1111). REMAINING SCOPE = the alerts half only: the notification layer on the existing match RPCs. The probe below measures that consequence (a housing.match event in the notification registry, ADR-627's one-row-per-type catalog); make it pass to close the row.\n\n── RE-SIZED M -> S on 2026-09-07 by the program-lane audit: its \"APPLY PENDING\" blocker is stale for the same reason: the migration is applied.",
+      "detail": "Natal-chart compatibility beyond the shipped sun-sign quiet-5%, as an opt-in both-sides factor — NEEDS AN EPHEMERIS/COMPUTE DECISION BEFORE BUILD. Alerts are the notification layer on matching RPCs that already exist.\n\n── UNPARKED 2026-08-20 (owner ruling): scheduled into the build-out; sequence in meta.slate. ── LANE CORRECTED 2026-08-24: this row was printing under the DEFERRED heading of `pnpm backlog` while meta.slate scheduled it, which is the working view contradicting the owner ruling it is meant to carry. The ids never moved; only the lane label was wrong.\n\n── NATAL HALF SHIPPED 2026-08-25 (ADR-1138): the ephemeris/compute decision is RULED (in-process JS ephemeris astronomy-engine, computed server-side at profile save, stored on member_match_prefs.natal_chart; no external API, never per-request). Charts are date-only v1; both housing match RPCs and the romance lane score stored-chart synastry natal-first with the shipped sun-sign compat as fallback; both-sides opt-in and the quiet 5% weight unchanged. Migration 20270326000000 (apply before its code merges, ADR-1111). REMAINING SCOPE = the alerts half only: the notification layer on the existing match RPCs. The probe below measures that consequence (a housing.match event in the notification registry, ADR-627's one-row-per-type catalog); make it pass to close the row.\n\n── RE-SIZED M -> S on 2026-09-07 by the program-lane audit: its \"APPLY PENDING\" blocker is stale for the same reason: the migration is applied.\n\n── DONE 2026-09-08 (ADR-1278): the alerts half. Premise re-measured (registry had two rows, neither housing; nothing alerted anyone). Matches are computed on read from auth.uid(), so the seam is the seeker save (app/(main)/marketplace/actions.ts): the RPCs are asked as the saver, the symmetric blend makes each match mutual, and the COUNTERPARTS are told once each (the other seeker, or the room's owner), past a 0.6 strong-match bar. housing_match_alerts keys (recipient, counterpart, kind) and is claimed with ignore-duplicates before routing (migration 20270345002500, apply before merge). A seventh preference category `matches` (email on, push off) carries the switch, the unsubscribe link and the manage-emails row; the registry row housing.match declares it and the router gates it. Proven in lib/listings/housing-match-alerts.test.ts with no database. Scope note: a room published after a seeker's last save raises nothing until that seeker saves again; closing that direction needs a profile-id variant of the RPC for the service role, filed in the ADR, not built.",
       "verify": {
         "kind": "grep-present",
         "pattern": "'housing\\.match'",
