@@ -19,12 +19,14 @@ ARTIFACT. Full rules and the incident: [`docs/DEPLOY-SAFETY.md`](docs/DEPLOY-SAF
 - **The artifact is gated in `postbuild`, not CI** — CI never builds, Vercel does. **`postbuild` is
   proven to run**: a real production log ([ADR-1081](docs/DECISIONS.md)) shows `Running "pnpm run
   build"`, then `prebuild`, then `postbuild` printing its gates. `vercel.json` now pins
-  `buildCommand: pnpm build` so a dashboard edit cannot silently take the lifecycle away. **Five
+  `buildCommand: pnpm build` so a dashboard edit cannot silently take the lifecycle away. **Six
   gates run there and fail the build** (four wired and proven on real artifacts as of #2194,
   2026-08-19 — LIVE-035/LIVE-048/LIVE-029 closed; the fifth, `check:build-fanout`, joined on
   2026-09-05 (ADR-1211); its first real artifact, 2026-09-05 12:19Z, read **456 functions**, 2 icon
   chunks in 3 functions, 6 site photos at the 6 ceiling, and the floor moved 450 to 400 beside that
-  reading because the 496 it was set against was three weeks stale):
+  reading because the 496 it was set against was three weeks stale; the sixth,
+  `check:notfound-routes`, joined on 2026-09-08 ([ADR-1267](docs/DECISIONS.md), LIVE-208) and is the
+  only one that reads the ROUTE TABLE rather than the output size):
   - `check:build-budget` — total per-function output under 8 GB. **6.27 GB across 456 functions**
     (production `18c997f`, 2026-09-05), 78% of ceiling, and flat across the three most recent
     production deploys. Largest single cost, named by the gate itself: ~1456 MB of libvips
@@ -62,6 +64,14 @@ ARTIFACT. Full rules and the incident: [`docs/DEPLOY-SAFETY.md`](docs/DEPLOY-SAF
     is statically imported below a `use client` boundary — so it runs in
     `scripts/check-shell-weight.test.ts`, on every PR, which is earlier and equally strong. Reading:
     0 leaks, 668 client modules walked across four routes, 2 detector controls firing.
+  - `check:notfound-routes` ([ADR-1267](docs/DECISIONS.md)) — the ROUTE-TABLE gate: no route may
+    swallow an arbitrary URL without saying "not found". It reads `.next/routes-manifest.json` for
+    every route whose regex matches a path the app declares nowhere, attributes each through
+    `.next/app-path-routes-manifest.json`, and fails unless a CHILDREN page owns it and calls
+    `notFound()`. The defect it was written against was invisible to source: a parallel-route SLOT
+    page (the Spark modal's closer) was hoisted by the compiler into a real top-level
+    `/[...catchAll]` with regex `^/(.+?)(?:/)?$`, so every dead URL on the domain matched something
+    and answered `307 Location: /` instead of 404. `check:seo` reads source and passed throughout.
 
   **The rule that keeps being right:** a build-blocking gate that has never seen a real artifact is
   the 2026-08-11 incident with the roles reversed. `check:cache-budget` passed its own unit tests,
