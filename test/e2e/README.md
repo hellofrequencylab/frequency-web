@@ -171,13 +171,13 @@ bands said otherwise: the header CTA, the footer CTA and one settings row, i.e. 
 Two production captures fourteen minutes apart agreed to the pixel on every surface
 that is not live data, which is what "deterministic" looks like.
 
-Which URL to capture against: production (`https://frequencylocal.com`) is the
-reference `pr-compare` needs, since a PR's preview is main plus the PR. The 2026-08-31
-worry about "production-only differences" was measured on 2026-09-08 and none appeared:
-six surfaces captured on production were byte-for-byte the preview-captured baselines,
-and no band anywhere sat where a production-only element would render. A preview URL
-of a branch that has main merged is equivalent; a preview that lacks main's latest
-merges is not, and the 2026-09-04 baselines were exactly that.
+Which URL to capture against: **a preview deployment of a branch that has main merged**,
+because that is what `pr-compare` photographs. Production renders two fixed elements
+differently (the support-chat button is Production-only while `SUPPORT_CHAT` is set there
+alone; Vera's edge tab shows on previews and not on production), so a production capture
+is red by ~2,500 px on every public page before a PR changes anything (`LIVE-213`). A
+branch preview that lacks main's latest merges is not a valid source either: the
+2026-09-04 baselines were exactly that.
 
 ### A reading is not a ceiling (a11y counts)
 
