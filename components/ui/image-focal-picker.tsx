@@ -35,6 +35,7 @@ export function ImageFocalPicker({
   className,
   rounded = false,
   heightClassName,
+  onImageLoad,
 }: {
   /** The image to preview. Required — the picker is meaningless without it. */
   imageUrl: string
@@ -63,6 +64,11 @@ export function ImageFocalPicker({
    *  the frame height and the `aspect` ratio is ignored, so the preview matches exactly what the render site
    *  paints (used by the Space header control to preview at the hero's chosen height). */
   heightClassName?: string
+  /** Called once the preview image has decoded, with its INTRINSIC pixel size (`naturalWidth` and
+   *  `naturalHeight`). The browser has already paid for that decode to paint the preview, so a
+   *  caller that needs the image's real shape (the event header controls store its aspect on
+   *  events.theme, ADR-1248) reads it here instead of decoding again anywhere else. */
+  onImageLoad?: (size: { width: number; height: number }) => void
 }) {
   const { x, y } = objectPositionToXY(value)
   const frameRef = useRef<HTMLDivElement>(null)
@@ -221,6 +227,14 @@ export function ImageFocalPicker({
             draggable={false}
             style={{ objectPosition }}
             className="pointer-events-none absolute inset-0 h-full w-full object-cover"
+            onLoad={
+              onImageLoad
+                ? (e) => {
+                    const { naturalWidth, naturalHeight } = e.currentTarget
+                    onImageLoad({ width: naturalWidth, height: naturalHeight })
+                  }
+                : undefined
+            }
           />
         )}
         {/* Marker only — a high-contrast ring that reads over any photo. The crosshair guide lines

@@ -6,6 +6,7 @@ import { listMyTickets } from '@/lib/support/store'
 import { relativeTime } from '@/lib/utils'
 import { ReportButton } from '@/components/support/report-button'
 import { IndexTemplate } from '@/components/templates'
+import { resolveIndexHero } from '@/lib/layout/index-hero'
 import { EmptyState } from '@/components/ui/empty-state'
 import {
   TYPE_LABELS, STATUS_LABELS, statusChipClass, type SupportTicket,
@@ -20,9 +21,12 @@ export default async function SupportPage() {
   if (!me) redirect('/sign-in?next=/support')
   const tickets = await listMyTickets(me.id)
 
+  const hero = await resolveIndexHero('/support')
+
   return (
     <div className="mx-auto w-full max-w-3xl">
       <IndexTemplate
+        {...hero}
         title={
           <span className="inline-flex items-center gap-2">
             <LifeBuoy className="h-5 w-5 shrink-0 text-primary-strong" /> Your reports

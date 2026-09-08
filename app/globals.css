@@ -2038,7 +2038,14 @@ h1, h2, h3, h4, h5, h6 {
    you can tab to that painted nothing when you got there. 30 `<summary>` elements across 24
    files were in that state; only 4 carried a ring of their own. Listing it here fixes all of
    them at once rather than asking every future `<details>` to remember. */
-:where(button, a, select, summary, [tabindex]:not([tabindex="-1"])):focus-visible {
+/* `[contenteditable]` joined the list on 2026-09-07 (HYG-065, ADR-1250) for the same reason
+   `summary` did: a Tiptap / ProseMirror editor is a contenteditable <div>, NATIVELY focusable with
+   no tabindex, so it matched none of the branches above, and both editor slots (the email canvas
+   and the Space canvas) handed it `class: 'outline-none'`. A keyboard user tabbing into an
+   editable slot saw nothing painted. Listing it here rings every editor at once; the
+   `:not([contenteditable="false"])` arm keeps an explicitly read-only region out.
+   Guarded by scripts/check-focus-visible.test.ts, which reads this list out of the sheet. */
+:where(button, a, select, summary, [tabindex]:not([tabindex="-1"]), [contenteditable]:not([contenteditable="false"])):focus-visible {
   outline: none;
   box-shadow: 0 0 0 3px var(--color-focus-ring);
 }
@@ -2667,6 +2674,27 @@ h1, h2, h3, h4, h5, h6 {
    affordance, so check:contrast measures one colour for all of them. */
 .ring-focus:focus-visible,
 .ring-focus:has(:focus-visible) {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+/* 🔴 THE SAME FIX, BY CONSTRUCTION, FOR EVERY LIFTED CONTROL (HYG-065, ADR-1250, 2026-09-07).
+   `.ring-focus` fixed the card kit and then stopped: the 2026-09-07 census found 107 lifted,
+   keyboard-reachable controls in 81 files with no `ring-focus` on them (buttons, links, three
+   search inputs, the Space console's module rows, both lightboxes), and 2 (EntityCard and
+   RowCard) that had remembered the class. Every one of the 107 painted its drop shadow over
+   the global ring on tab, and a good third of them carried a `focus-visible:ring-2` utility
+   that had been dead CSS since the day it was written. A guarantee that rests on every author remembering a class decays into
+   two-of-109, so the sheet carries it instead: any element the global ring reaches that also
+   carries a lift gets the card's outline here, with nothing to add at the call site.
+
+   The reach list is the ring rule's list, on purpose, and scripts/check-focus-visible.test.ts
+   reads BOTH out of this file: drop `button` from this list and every lifted <button> in the
+   tree goes red. Specificity is `:where(…)` (0) + `:focus-visible` (0,1,0), the same as the
+   global rule's `outline: none`, so this rule wins by sitting later in the sheet; keep it below
+   that rule. `.ring-focus` stays for the surface that CONTAINS the focusable thing (the `:has`
+   arm above), which no element-level rule can express. */
+:where(.lift-1, .lift-2, .lift-3):where(button, a, select, summary, input, textarea, [tabindex]:not([tabindex="-1"]), [contenteditable]:not([contenteditable="false"])):focus-visible {
   outline: 2px solid var(--color-focus-ring);
   outline-offset: 2px;
 }

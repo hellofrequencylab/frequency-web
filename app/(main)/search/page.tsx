@@ -8,6 +8,7 @@ import {
   isListableInDirectory,
 } from '@/lib/connections/directory-visibility'
 import { IndexTemplate } from '@/components/templates'
+import { resolveIndexHero } from '@/lib/layout/index-hero'
 import { UnderlineTabs } from '@/components/ui/underline-tabs'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Input } from '@/components/ui/field'
@@ -281,8 +282,11 @@ export default async function SearchPage({
     ? { people: 0, posts: 0, events: 0 }
     : { people: people.length, posts: posts.length, events: events.length }
 
+  const hero = await resolveIndexHero('/search')
+
   return (
     <IndexTemplate
+      {...hero}
       title="Search"
       toolbar={
         <form method="GET" action="/search">

@@ -29,6 +29,7 @@ import { isValidTimeZone } from '@/lib/time/zone'
 import { posterSignedUrl } from '@/lib/events/poster-media'
 import { writeEventHeroHeight, type EventHeroHeight } from '@/lib/events/hero-height'
 import { writeEventCoverFocus } from '@/lib/events/cover-focus'
+import { normalizeCoverAspect, writeEventCoverAspect } from '@/lib/events/cover-aspect'
 import { writeEventMarketListed } from '@/lib/events/market-listing'
 import { writeEventCheckInEnabled } from '@/lib/events/checkin-enabled'
 import { pointFromGeog } from '@/lib/events/geo'
@@ -625,18 +626,27 @@ export async function updateEventHeroHeight(
 /** Set the event cover FOCAL POINT (where the cover sits in its cropped hero), a CSS
  *  `object-position` string. Stored on events.theme.coverFocus (read-merge-write so other theme
  *  keys survive; the centered default is dropped so a plain event keeps a sparse theme). Same
- *  event.editSettings gate. */
+ *  event.editSettings gate.
+ *
+ *  `aspect` is the cover's INTRINSIC width / height as the BROWSER measured it (ADR-1248, the
+ *  header controls read it off the focal picker's decoded image). Omitted, the stored aspect is
+ *  left alone, so a plain focus drag never disturbs it; a number is validated here and stored on
+ *  events.theme.coverAspect; null drops it. The server never measures an image itself: that is
+ *  `sharp`, and the fan-out rule in docs/DEPLOY-SAFETY.md is why this arrives as a number. */
 export async function updateEventCoverFocus(
   id: string,
   slug: string,
   focus: string,
+  aspect?: number | null,
 ): Promise<{ ok: true } | { error: string }> {
   const caps = await getEventCapabilities(id)
   if (!caps.has('event.editSettings')) return { error: 'Unauthorized' }
 
   const admin = createAdminClient()
   const { data: current } = await admin.from('events').select('theme').eq('id', id).maybeSingle()
-  const nextTheme = writeEventCoverFocus((current as { theme?: unknown } | null)?.theme, focus)
+  const focused = writeEventCoverFocus((current as { theme?: unknown } | null)?.theme, focus)
+  const nextTheme =
+    aspect === undefined ? focused : writeEventCoverAspect(focused, normalizeCoverAspect(aspect))
 
   const { error } = await admin
     .from('events')
