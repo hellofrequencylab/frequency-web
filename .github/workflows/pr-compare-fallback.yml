@@ -57,6 +57,14 @@
 # which is the rule the POST step already argues for. Do not add `--retry-all-errors`: it would
 # retry the honest failures too.
 #
+# 🔴 AND EVERY RETRIED GET WRITES TO A FILE WITH `-o`, WHICH IS NOT COSMETIC. The first version of
+# this fix put `--retry` on the GETs and left them writing to stdout. `--fail-with-body` emits the
+# ERROR BODY on every attempt, so five retries concatenated five JSON error documents and the
+# `json.load` downstream died with `Extra data: line 13 column 1` — a worse failure than the 500 it
+# was meant to survive, because it no longer looks like a network problem. `-o` truncates the file
+# per attempt, so only the final response survives. The POST step below already did this; the GETs
+# now match it.
+#
 # The path list is READ OUT OF e2e.yml by scripts/pixel-paths.mjs, never restated here. A second
 # copy would drift, and it would drift silently in the direction that matters: a path missing from
 # the copy means a pixel-moving PR gets a free green.
@@ -103,10 +111,11 @@ jobs:
           page=1
           : > /tmp/changed.txt
           while : ; do
-            body=$(curl -sS --retry 5 --retry-delay 2 --retry-connrefused --fail-with-body \
+            curl -sS --retry 5 --retry-delay 2 --retry-connrefused --fail-with-body -o /tmp/page.json \
               -H "Authorization: Bearer ${GH_TOKEN}" \
               -H "Accept: application/vnd.github+json" \
-              "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/pulls/${{ github.event.pull_request.number }}/files?per_page=100&page=${page}")
+              "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/pulls/${{ github.event.pull_request.number }}/files?per_page=100&page=${page}"
+            body=$(cat /tmp/page.json)
             count=$(printf '%s' "$body" | python3 -c 'import json,sys; d=json.load(sys.stdin); print(len(d)); [print(f["filename"]) for f in d]' | tee /tmp/page.txt | head -1)
             tail -n +2 /tmp/page.txt >> /tmp/changed.txt
             [ "$count" -lt 100 ] && break
@@ -212,11 +221,11 @@ jobs:
 
           # The read-back. Without this the step asserts "the API accepted my write", when what
           # the merge actually depends on is "the context exists on this SHA".
-          if ! curl -sS --retry 5 --retry-delay 2 --retry-connrefused --fail-with-body \
+          if ! { curl -sS --retry 5 --retry-delay 2 --retry-connrefused --fail-with-body -o /tmp/status.json \
             -H "Authorization: Bearer ${GH_TOKEN}" \
             -H "Accept: application/vnd.github+json" \
             "${api}/commits/${HEAD_SHA}/status" \
-            | python3 -c 'import json,sys; sys.exit(0 if any(s["context"] == "pr-compare" for s in json.load(sys.stdin)["statuses"]) else 1)'
+            && python3 -c 'import json,sys; sys.exit(0 if any(s["context"] == "pr-compare" for s in json.load(sys.stdin)["statuses"]) else 1)' < /tmp/status.json; }
           then
             echo "::error::Posted pr-compare and got 201, but the context is absent when read back on ${HEAD_SHA}. Do not trust the write; investigate before merging."
             exit 1

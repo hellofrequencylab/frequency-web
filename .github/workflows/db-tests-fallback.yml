@@ -110,10 +110,11 @@ jobs:
             ''|*[!0-9]*) echo "::error::pr input must be a number, got '${PR_NUMBER}'."; exit 1 ;;
           esac
 
-          pr=$(curl -sS --retry 5 --retry-delay 2 --retry-connrefused --fail-with-body \
+          curl -sS --retry 5 --retry-delay 2 --retry-connrefused --fail-with-body -o /tmp/pr.json \
             -H "Authorization: Bearer ${GH_TOKEN}" \
             -H "Accept: application/vnd.github+json" \
-            "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}")
+            "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}"
+          pr=$(cat /tmp/pr.json)
 
           state=$(printf '%s' "$pr" | python3 -c 'import json,sys; print(json.load(sys.stdin)["state"])')
           head=$(printf '%s' "$pr" | python3 -c 'import json,sys; print(json.load(sys.stdin)["head"]["sha"])')
@@ -148,10 +149,11 @@ jobs:
           page=1
           : > /tmp/changed.txt
           while : ; do
-            body=$(curl -sS --retry 5 --retry-delay 2 --retry-connrefused --fail-with-body \
+            curl -sS --retry 5 --retry-delay 2 --retry-connrefused --fail-with-body -o /tmp/page.json \
               -H "Authorization: Bearer ${GH_TOKEN}" \
               -H "Accept: application/vnd.github+json" \
-              "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}/files?per_page=100&page=${page}")
+              "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}/files?per_page=100&page=${page}"
+            body=$(cat /tmp/page.json)
             count=$(printf '%s' "$body" | python3 -c 'import json,sys; d=json.load(sys.stdin); print(len(d)); [print(f["filename"]) for f in d]' | tee /tmp/page.txt | head -1)
             tail -n +2 /tmp/page.txt >> /tmp/changed.txt
             [ "$count" -lt 100 ] && break
@@ -240,11 +242,11 @@ jobs:
 
           # The read-back. Without this the step asserts "the API accepted my write", when what the
           # merge actually depends on is "the context exists on this SHA".
-          if ! curl -sS --retry 5 --retry-delay 2 --retry-connrefused --fail-with-body \
+          if ! { curl -sS --retry 5 --retry-delay 2 --retry-connrefused --fail-with-body -o /tmp/status.json \
             -H "Authorization: Bearer ${GH_TOKEN}" \
             -H "Accept: application/vnd.github+json" \
             "${api}/commits/${HEAD_SHA}/status" \
-            | python3 -c 'import json,sys; sys.exit(0 if any(s["context"] == "db-tests" for s in json.load(sys.stdin)["statuses"]) else 1)'
+            && python3 -c 'import json,sys; sys.exit(0 if any(s["context"] == "db-tests" for s in json.load(sys.stdin)["statuses"]) else 1)' < /tmp/status.json; }
           then
             echo "::error::Posted db-tests and got 201, but the context is absent when read back on ${HEAD_SHA}. Do not trust the write; investigate before merging."
             exit 1
