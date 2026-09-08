@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import type { EntityManifest, FieldDef } from './manifest'
+import { validateManifest, type EntityManifest, type FieldDef } from './manifest'
 import { editPlan, railForm } from './edit-plan'
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -7,7 +7,7 @@ import { editPlan, railForm } from './edit-plan'
 //
 // A toy manifest with one field on each plane plus the two awkward cases the real catalog has: a
 // spark field that is ALSO prose (on the inline plane, ADR-450) and a spark field that is not (on
-// no edit plane at all).
+// no edit plane at all until it declares one, ADR-1281).
 // ─────────────────────────────────────────────────────────────────────────────
 
 const FIELDS: FieldDef[] = [
@@ -87,5 +87,64 @@ describe('railForm', () => {
   it('moves a field onto the rail when its placement arrives there', () => {
     expect(railForm(TOY, ['blurb']).fields).toEqual([])
     expect(railForm(placed('blurb', 'rail'), ['blurb']).fields.map((f) => f.path)).toEqual(['blurb'])
+  })
+})
+
+
+// ── The ruling ADR-1240 deferred (ADR-1281): where a NON-PROSE spark field is edited later ──────
+//
+// `name` above is asked at creation and is not prose, so nothing derives a later plane for it and
+// `railForm` drops it as `spark-only`. The manifest says where it goes, with `editPlane`, and the
+// selectors honour that one word. Prose keeps deriving its plane; everything else keeps its
+// placement; and the validator refuses the declaration anywhere it would restate a derived fact.
+
+/** The same manifest with one field's `editPlane` set, and nothing else. */
+function editedOn(path: string, editPlane: FieldDef['editPlane']): EntityManifest {
+  return { ...TOY, fields: TOY.fields.map((f) => (f.path === path ? { ...f, editPlane } : f)) }
+}
+
+describe('editPlane (ADR-1281)', () => {
+  it('puts a non-prose spark field on the rail when it says so, in manifest order, and the drop is gone', () => {
+    const m = editedOn('name', 'rail')
+    expect(editPlan(m).rail.map((f) => f.path)).toEqual(['name', 'nickname', 'phone'])
+    expect(editPlan(m).inline.map((f) => f.path)).toEqual(['why', 'blurb'])
+    const form = railForm(m, ['name', 'nickname'])
+    expect(form.fields.map((f) => f.path)).toEqual(['name', 'nickname'])
+    expect(form.dropped).toEqual([])
+  })
+
+  it('puts a non-prose spark field on the inline canvas when it says so, so a rail only hosts it', () => {
+    const m = editedOn('name', 'inline')
+    expect(editPlan(m).inline.map((f) => f.path)).toEqual(['name', 'why', 'blurb'])
+    expect(editPlan(m).rail.map((f) => f.path)).toEqual(['nickname', 'phone'])
+    expect(railForm(m, ['name']).dropped).toEqual([{ path: 'name', reason: 'inline' }])
+    expect(railForm(m, ['name'], { hostInline: true }).fields.map((f) => f.path)).toEqual(['name'])
+  })
+
+  it('leaves a non-prose spark field on no edit plane when it declares none (the spark-only case stands)', () => {
+    expect(railForm(TOY, ['name'], { hostInline: true }).dropped).toEqual([{ path: 'name', reason: 'spark-only' }])
+    expect(editPlan(TOY).rail.map((f) => f.path)).toEqual(['nickname', 'phone'])
+  })
+
+  it('is still asked in the Spark: a later plane never removes a field from creation', () => {
+    const m = editedOn('name', 'rail')
+    const name = m.fields.find((f) => f.path === 'name')
+    expect(name?.placement).toBe('spark')
+    expect(validateManifest(m)).toEqual([])
+  })
+
+  it('is refused where the plane is already derived: a rail field, an inline field, and prose', () => {
+    expect(validateManifest(editedOn('nickname', 'rail'))).toEqual([
+      expect.stringContaining('"nickname" declares `editPlane` without `placement: \'spark\''),
+    ])
+    expect(validateManifest(editedOn('blurb', 'rail'))).toEqual([
+      expect.stringContaining('"blurb" declares `editPlane` without `placement: \'spark\''),
+    ])
+    expect(validateManifest(editedOn('why', 'rail'))).toEqual([expect.stringContaining('"why" is prose and declares `editPlane`')])
+  })
+
+  it('is refused with a value that is not one of the two edit planes', () => {
+    const m = editedOn('name', 'spark' as unknown as FieldDef['editPlane'])
+    expect(validateManifest(m)).toEqual([expect.stringContaining('"name" declares `editPlane: "spark"`')])
   })
 })
