@@ -68,11 +68,25 @@ const SIZE: Record<ButtonSize, string> = {
 //   sm  →  py-1.5 (12.75px) + text-meta's 17px box     = 29.75px
 //   md  →  py-2   (17px)    + text-body-sm's 21.25px   = 38.25px
 //
-// Both are under the 44px touch floor, and this primitive is the most-used interactive element
-// in the app — so every <Button> and every buttonClasses()-styled <Link> was undersized on a
-// phone. The repo already had the tool: `--tap-min` is 32px and rises to 44px under
-// `@media (pointer: coarse)` (globals.css), and `@utility tap-target` consumes it. It simply was
-// never composed here.
+// The repo already had the tool: `--tap-min` (globals.css) is the per-generation minimum target
+// size, and `@utility tap-target` consumes it as a min-block-size / min-inline-size pair. It
+// simply was never composed here.
+//
+// ⚠️ THIS PARAGRAPH CLAIMED A MEDIA QUERY THAT DOES NOT EXIST, and the claim decided whether a
+// sweep moves layout. It said `--tap-min` "is 32px and rises to 44px under
+// `@media (pointer: coarse)`", so both sizes were "under the 44px touch floor" and converting a
+// site grew it on a phone. There is no pointer-coarse rule anywhere in the CSS — grep it — and
+// `--tap-min` moves on the `data-generation` axis alone (26px at the dense end, 56px at the
+// spacious end, 32px at the default). At the DEFAULT generation the floor is therefore 32px on
+// every viewport, which raises `sm` (29.75 → 32px) and leaves `md` (38.25px) untouched.
+//
+// The consequence, and why it is written here rather than in a commit body: a `primary × md`
+// conversion is DIMENSION-INVARIANT. It gains `lift-1`'s two box-shadows and `press`, both of
+// which repaint without reflowing, so a full-page screenshot of a converted surface changes
+// pixels at a byte-identical height. That is the one signature `LIVE-212`'s cross-runner
+// divergence also has, which is what made this comment worth correcting (ADR-1271). The tap
+// floor still bites on the OTHER sizes and on the generations that raise `--tap-min`; it does
+// not bite on this pair.
 //
 // `min-block-size` does not fight an explicit `h-*` from a caller — a minimum only ever raises,
 // so shape overrides like the dock trigger's `h-full w-11` keep their geometry. On a mouse the

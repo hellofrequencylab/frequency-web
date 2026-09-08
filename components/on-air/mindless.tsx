@@ -35,6 +35,7 @@ import { MovementSession } from '@/components/on-air/movement-session'
 import { LotusIcon } from '@/components/on-air/icons'
 import { loadLiveSession, type LiveSessionRecord } from '@/lib/on-air/live-session'
 import type { MovementMode } from '@/lib/movement'
+import { Button } from '@/components/ui/button'
 
 /** The two member-facing modes of the one timer: the sit ('still', "Be Still") and
  *  the movement timer ('move', "Get Moving"). */
@@ -391,13 +392,12 @@ export function MindlessProvider({ children }: { children: React.ReactNode }) {
         <MindlessShell onClose={close}>
           <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4 text-center">
             <p className="text-body-sm font-medium text-text">That didn&rsquo;t open. Give it another go.</p>
-            <button
+            <Button
               type="button"
               onClick={() => open()}
-              className="rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary hover:bg-primary-hover"
             >
               Try again
-            </button>
+            </Button>
           </div>
         </MindlessShell>
       )}

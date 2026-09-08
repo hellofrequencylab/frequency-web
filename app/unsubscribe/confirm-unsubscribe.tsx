@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react'
 import { processUnsubscribe } from './actions'
 import { isError } from '@/lib/action-result'
 import { Layout, Body, ManageLink } from './card'
+import { Button } from '@/components/ui/button'
 
 // The member unsubscribe confirm step (L2-01). The page used to opt the member out DURING RENDER,
 // so any HTTP GET of the link did it: corporate link scanners and mail-client prefetchers fetch
@@ -64,14 +65,13 @@ export function ConfirmUnsubscribe({
       description={`You'll stop getting ${label} from Frequency by email. Everything else stays as it is.`}
     >
       <div className="pt-3">
-        <button
+        <Button
           type="button"
           onClick={confirm}
           disabled={isPending}
-          className="inline-flex items-center gap-1.5 rounded-control bg-primary text-on-primary text-body-sm font-semibold px-4 py-2 hover:bg-primary-hover transition-colors disabled:opacity-60"
         >
           {isPending ? 'Unsubscribing…' : 'Unsubscribe'}
-        </button>
+        </Button>
       </div>
       <Body>Changed your mind? Just close this page. Nothing changes until you click.</Body>
     </Layout>
