@@ -109,8 +109,17 @@ describe('parseLines', () => {
   })
 })
 
+// The gate list as `postbuild` ran it AT 00:11Z on 2026-09-08, the moment the HEALTHY fixture was
+// captured. The fixture is a RECORDING of a real production build, so it can only ever contain the
+// gates that existed when it was taken; reading it against today's package.json would make this
+// arm go red every time a sixth gate is wired, which is the reader working rather than the build
+// breaking. `check:notfound-routes` joined `postbuild` later the same day (LIVE-208, ADR-1267) and
+// is deliberately absent here. The live list is still asserted — by `expectedGates` from
+// package.json in its own describe, and by the drift arm directly below this one.
+const GATES_AT_57a4adff8 = ['build-budget', 'og-trace', 'cache-budget', 'shell-weight', 'build-fanout']
+
 describe('a healthy build', () => {
-  const r = readBuildLog(HEALTHY)
+  const r = readBuildLog(HEALTHY, { expectedGates: GATES_AT_57a4adff8 })
 
   it('names the machine, including the Enhanced class the region string hides', () => {
     // The region itself carries parentheses, so a lazy one-regex parse reads "(East) … (Enhanced
@@ -145,6 +154,18 @@ describe('a healthy build', () => {
     ])
     expect(r.gates.every((g) => g.status === '✅')).toBe(true)
     expect(r.missingGates).toEqual([])
+  })
+
+  it('reads that same log as INCOMPLETE once a gate it predates is expected of it', () => {
+    // The control for the arm above, and the reason it is allowed to pin an era rather than today.
+    // Feed the identical text the CURRENT postbuild list and the reader must notice the gate that
+    // never printed — otherwise pinning the era would be hiding a real silence rather than dating a
+    // fixture. This is also the shape of a genuine regression: a gate wired into package.json that
+    // then stops appearing in production logs.
+    const drifted = readBuildLog(HEALTHY, { expectedGates: [...GATES_AT_57a4adff8, 'notfound-routes'] })
+    expect(drifted.missingGates).toEqual(['notfound-routes'])
+    expect(drifted.verdict.state).toBe('incomplete')
+    expect(drifted.verdict.reason).toContain('notfound-routes')
   })
 
   it('reads the build system report and its folder sizes', () => {
