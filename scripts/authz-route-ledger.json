@@ -106,6 +106,12 @@
       "checked": "2026-09-05",
       "digest": "a2d07c56b8f58fba"
     },
+    "app/api/vera/turn/route.ts": {
+      "verdict": "public",
+      "reason": "The streaming Vera concierge door (ADR-1287, PROG-E8): the same turn as the intentionally PUBLIC `conciergeTurn` server action in app/onboarding/vera-actions.ts, answered as NDJSON so the reply streams. Anonymous by design because the concierge serves signed-out visitors. The handler itself reads no DB and holds no admin client: it validates the body with a zod schema, throttles per IP, and forwards to lib/ai/vera/turn, where the only identity is the caller's OWN session (optional personalization, null for anonymous) and write proposals are RETURNED for confirmation, never executed. Nothing caller-supplied selects another principal.",
+      "checked": "2026-09-08",
+      "digest": "1d6921ef8bb45e61"
+    },
     "app/api/vitals/route.ts": {
       "verdict": "public",
       "reason": "Core Web Vitals field sink, anonymous by design: vitals describe the page and device, not a member. Writes through the admin client but never resolves or stores a profile_id (rows land with profile_id NULL and surface NULL), which is what keeps it outside the `analytics` consent scope. Batch cap + normalizer bound each request. Re-read 2026-08-17 after LIVE-036 replaced the inline props literal with vitalProps(v): the change adds `vp`, the viewport BUCKET, which is a property of the page view and not of the person (ADR-922). Nothing about the boundary moved - the handler still takes no session, reads no headers or cookies, and writes profile_id null on every row whatever the payload claims, which app/api/vitals/route.test.ts now asserts with an attacker-shaped payload. The `public` verdict holds. Re-read 2026-09-05 (scan2 L2-08, ADR-1212): the insert's { error } is now read and logged with the table name instead of dropped; the route still reads no headers or cookies, still writes profile_id null, still answers 204. Verdict unchanged.",

@@ -2,7 +2,8 @@
 
 import { useState, useRef, useEffect, useTransition } from 'react'
 import { Check, X, Send, Bug } from 'lucide-react'
-import { conciergeTurn, confirmProposal } from '@/app/onboarding/vera-actions'
+import { confirmProposal } from '@/app/onboarding/vera-actions'
+import { streamConciergeTurn } from '@/components/vera/vera-stream'
 import { openSupport } from '@/components/support/support-launcher'
 import { UpsellTease } from '@/components/upsell/upsell-tease'
 import { Button } from '@/components/ui/button'
@@ -15,8 +16,9 @@ import { Input } from '@/components/ui/field'
 // writes, extracted so the onboarding lightbox AND the persistent companion
 // launcher share one implementation (AI-VERA §4.0). It renders the transcript +
 // composer + suggestion chips only; the host (lightbox / launcher) provides the
-// surrounding chrome. Every turn runs the live Claude loop when the kernel is on
-// and the deterministic concierge otherwise — both via `conciergeTurn`.
+// surrounding chrome. Every turn runs the live loop when the kernel is on and the
+// deterministic concierge otherwise, both through `streamConciergeTurn` (ADR-1287): the
+// reply streams into a draft bubble as it is generated, then lands in the transcript whole.
 
 interface Msg {
   from: 'vera' | 'you'
@@ -73,13 +75,16 @@ export function VeraChat({ opening, veraTease }: { opening: VeraOpeningSeed; ver
   const [proposals, setProposals] = useState<ProposedToolCall[]>([])
   const [suggestions, setSuggestions] = useState<string[]>(opening.suggestions)
   const [input, setInput] = useState('')
+  // Vera's reply while it is still arriving (ADR-1287). Shown as its own bubble under the
+  // transcript and cleared the moment the whole reply is appended to `messages`.
+  const [draft, setDraft] = useState('')
   const [pending, start] = useTransition()
   const scrollRef = useRef<HTMLDivElement>(null)
 
-  // Keep the transcript pinned to the latest message.
+  // Keep the transcript pinned to the latest message, and to the draft as it grows.
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' })
-  }, [messages, proposals])
+  }, [messages, proposals, draft])
 
   function turn(text: string) {
     const history: VeraMessage[] = messages.map((m) => ({ role: m.from === 'you' ? 'user' : 'assistant', text: m.text }))
@@ -92,8 +97,21 @@ export function VeraChat({ opening, veraTease }: { opening: VeraOpeningSeed; ver
     }
     setProposals([])
     setSuggestions([])
+    setDraft('')
     start(async () => {
-      const r = await conciergeTurn(stage, text, history)
+      let round = -1
+      const r = await streamConciergeTurn(stage, text, history, {
+        onDelta: (delta, at) => {
+          // A new round is a fresh reply (a read tool ran); within a round, append.
+          if (at !== round) {
+            round = at
+            setDraft(delta)
+          } else {
+            setDraft((d) => d + delta)
+          }
+        },
+      })
+      setDraft('')
       setMessages((m) => [...m, { from: 'vera', text: r.message }])
       setStage(r.stage)
       setProposals(r.proposals)
@@ -119,10 +137,11 @@ export function VeraChat({ opening, veraTease }: { opening: VeraOpeningSeed; ver
           reader: the reply lands in a scroll container nobody's focus is in, so nothing is spoken.
           `role="log"` (not `status`/`alert`) is the right primitive because this is an append-only
           record where order matters and only the NEW entry is news.
-          Politeness is `polite` because a turn arrives WHOLE: `conciergeTurn` is awaited once and
-          the entire reply is appended in a single `setMessages`. There is no token-by-token stream
-          anywhere in this path, so there is no machine-gun to defend against — but the defence is
-          spelled out anyway so a future streaming rewrite has to confront it:
+          Politeness is `polite` because a reply still lands in the log WHOLE: the reply STREAMS
+          (ADR-1287) into a separate draft bubble that is `aria-hidden`, and only when the turn
+          completes is the entire reply appended in a single `setMessages`. So the live region never
+          sees token-by-token mutation; the defence the old comment asked a streaming rewrite to
+          confront is the draft bubble sitting outside the announced tree.
           `aria-relevant="additions"` announces only nodes that were ADDED (never a re-read of the
           whole thread, and never in-place text mutation, which is exactly what token streaming
           would produce), and `aria-atomic="false"` keeps the announcement to the new bubble instead
@@ -145,7 +164,13 @@ export function VeraChat({ opening, veraTease }: { opening: VeraOpeningSeed; ver
           </div>
         ))}
 
-        {pending && <p className="text-meta text-subtle">Vera is thinking…</p>}
+        {/* The streaming draft: same bubble, hidden from assistive tech until it lands whole. */}
+        {pending && draft && (
+          <div className="flex justify-start" aria-hidden>
+            <div className={VERA_BUBBLE}>{draft}</div>
+          </div>
+        )}
+        {pending && !draft && <p className="text-meta text-subtle">Vera is thinking…</p>}
 
         {proposals.map((p, i) => (
           <div key={i} className="lift-1 rounded-card border border-border bg-surface-elevated p-3">

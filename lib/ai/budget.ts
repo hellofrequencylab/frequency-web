@@ -6,14 +6,47 @@
 import { MODEL_PRICES, type ModelTier } from './models'
 
 export interface TokenUsage {
+  /** Prompt tokens billed at the full input rate (the UNCACHED remainder once a prefix caches). */
   inputTokens: number
   outputTokens: number
+  /** Prompt tokens served from the prompt cache (billed at CACHE_READ_MULTIPLIER of input). */
+  cacheReadInputTokens?: number
+  /** Prompt tokens written to the prompt cache this call (billed at CACHE_WRITE_MULTIPLIER). */
+  cacheCreationInputTokens?: number
 }
 
-/** USD cost of a call, from its token usage at the tier's price. */
+// Prompt-cache price multipliers against the tier's input rate (ADR-041's caching rule, wired in
+// ADR-1287): a cache read costs a tenth of a fresh input token, a 5-minute cache write costs a
+// quarter more. These are the published ratios, not per-model figures, so they move with MODEL_PRICES.
+export const CACHE_READ_MULTIPLIER = 0.1
+export const CACHE_WRITE_MULTIPLIER = 1.25
+
+/** USD cost of a call, from its token usage at the tier's price. Cache reads and writes are priced
+ *  at their multipliers; a usage with neither field prices exactly as before. */
 export function estimateCostUsd(tier: ModelTier, usage: TokenUsage): number {
   const p = MODEL_PRICES[tier]
-  return (usage.inputTokens * p.inPerM + usage.outputTokens * p.outPerM) / 1_000_000
+  const cached = (usage.cacheReadInputTokens ?? 0) * CACHE_READ_MULTIPLIER
+  const written = (usage.cacheCreationInputTokens ?? 0) * CACHE_WRITE_MULTIPLIER
+  return ((usage.inputTokens + cached + written) * p.inPerM + usage.outputTokens * p.outPerM) / 1_000_000
+}
+
+/** Sum two usages field by field. The cache fields stay absent when neither side carries one, so a
+ *  path that never caches keeps the two-field shape every existing test asserts on. */
+export function addUsage(a: TokenUsage, b: TokenUsage): TokenUsage {
+  const out: TokenUsage = { inputTokens: a.inputTokens + b.inputTokens, outputTokens: a.outputTokens + b.outputTokens }
+  if (a.cacheReadInputTokens !== undefined || b.cacheReadInputTokens !== undefined) {
+    out.cacheReadInputTokens = (a.cacheReadInputTokens ?? 0) + (b.cacheReadInputTokens ?? 0)
+  }
+  if (a.cacheCreationInputTokens !== undefined || b.cacheCreationInputTokens !== undefined) {
+    out.cacheCreationInputTokens = (a.cacheCreationInputTokens ?? 0) + (b.cacheCreationInputTokens ?? 0)
+  }
+  return out
+}
+
+/** The whole prompt, for the ledger: `input_tokens` from the API is the uncached remainder only, so a
+ *  turn that hit the cache would read as almost free. The ledger row records what was actually sent. */
+export function promptTokensOf(usage: TokenUsage): number {
+  return usage.inputTokens + (usage.cacheReadInputTokens ?? 0) + (usage.cacheCreationInputTokens ?? 0)
 }
 
 /** Would this call keep a feature at/under its budget cap? Spend is inclusive. */

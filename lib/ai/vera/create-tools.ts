@@ -41,6 +41,7 @@ import type { ProvenanceLedger } from '@/lib/studio/kernel/ledger'
 import { buildFieldModel } from '@/lib/studio/kernel/review-kernel'
 import { STUDIO_ENTITIES, studioManifest } from '@/lib/studio/registry'
 import { effectiveAutonomyTier, type AutonomyTier } from '@/lib/playbooks/registry'
+import { jsonObject, parseModelJson, validateModelValue } from '@/lib/ai/schema'
 // TYPE-ONLY, deliberately: lib/core/load-capabilities.ts is a server seam (it reaches for the
 // admin client and React `cache`), and an `import type` is erased, so naming a capability the
 // policy layer does not know is a COMPILE error while this file stays pure and testable.
@@ -386,13 +387,8 @@ export function checkCreateDraft(
  * plain JSON object reads as null, and the caller refuses rather than creating an empty thing.
  */
 export function parseDraftArg(raw: unknown): Record<string, unknown> | null {
-  if (raw && typeof raw === 'object' && !Array.isArray(raw)) return raw as Record<string, unknown>
-  if (typeof raw !== 'string') return null
-  try {
-    const parsed: unknown = JSON.parse(raw)
-    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return null
-    return parsed as Record<string, unknown>
-  } catch {
-    return null
-  }
+  // One schema (ADR-1287) for both shapes the argument arrives in: an object the SDK already
+  // parsed, or the JSON string the scalar-only tool surface carries.
+  const res = typeof raw === 'string' ? parseModelJson(raw, jsonObject) : validateModelValue(raw, jsonObject)
+  return res.ok ? res.data : null
 }

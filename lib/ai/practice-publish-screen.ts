@@ -16,6 +16,7 @@ import { computeQualityScore } from '@/lib/practices/quality'
 import { aiAvailable, featureOverBudget, recordAiUsage } from './usage'
 import { completeText, AiUnavailableError } from './complete'
 import { withVoice } from './voice'
+import { noteList, parseModelJson, z } from './schema'
 
 const FEATURE = 'practice-publish-screen'
 
@@ -47,30 +48,19 @@ Return STRICT JSON only, no prose around it, in exactly this shape:
 {"voice":["..."],"completeness":["..."],"safety":["..."]}
 Each array holds short plain-language notes (zero to four each). An empty array means nothing to flag on that axis. Use no em dashes in your notes.`
 
+/** The reply contract (ADR-1287): three note lists, each zero to four short notes. A missing axis
+ *  reads as nothing to flag; a stray non-string inside a list is dropped, not fatal. */
+const SCREEN_NOTES = z.object({
+  voice: noteList(4, 200).default([]),
+  completeness: noteList(4, 200).default([]),
+  safety: noteList(4, 200).default([]),
+})
+
 /** Parse Vera's JSON reply into the three note arrays, tolerating fenced code blocks + junk.
- *  A note is trimmed, capped, and a stray non-string is dropped — a malformed reply degrades
- *  to empty arrays rather than throwing. */
-function parseScreenJson(text: string): { voice: string[]; completeness: string[]; safety: string[] } {
-  const empty = { voice: [], completeness: [], safety: [] }
-  if (!text) return empty
-  const start = text.indexOf('{')
-  const end = text.lastIndexOf('}')
-  if (start < 0 || end <= start) return empty
-  let parsed: unknown
-  try {
-    parsed = JSON.parse(text.slice(start, end + 1))
-  } catch {
-    return empty
-  }
-  if (!parsed || typeof parsed !== 'object') return empty
-  const obj = parsed as Record<string, unknown>
-  const arr = (v: unknown): string[] =>
-    (Array.isArray(v) ? v : [])
-      .filter((x): x is string => typeof x === 'string')
-      .map((s) => s.trim().slice(0, 200))
-      .filter(Boolean)
-      .slice(0, 4)
-  return { voice: arr(obj.voice), completeness: arr(obj.completeness), safety: arr(obj.safety) }
+ *  A malformed reply degrades to empty arrays rather than throwing. Exported for its test. */
+export function parseScreenJson(text: string): { voice: string[]; completeness: string[]; safety: string[] } {
+  const res = parseModelJson(text, SCREEN_NOTES)
+  return res.ok ? res.data : { voice: [], completeness: [], safety: [] }
 }
 
 /**

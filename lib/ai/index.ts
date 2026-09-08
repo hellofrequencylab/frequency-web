@@ -9,7 +9,10 @@ export {
   completeText,
   completeRaw,
   runToolLoop,
+  buildRequestPrefix,
+  usageOf,
   AiUnavailableError,
+  type SystemPrompt,
   type CompleteParams,
   type CompleteResult,
   type CompleteRawParams,
@@ -20,6 +23,8 @@ export {
 } from './complete'
 export {
   estimateCostUsd,
+  addUsage,
+  promptTokensOf,
   withinBudget,
   dailyCapFor,
   FEATURE_DAILY_CAP_USD,
