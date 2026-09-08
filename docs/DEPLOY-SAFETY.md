@@ -99,7 +99,7 @@ question. Let it run and read the log, unless the queue is genuinely blocking a 
 
 > 🔵 **And when you read it, read it with the tool.** Save the build log and run
 > `pnpm read:build-log <file>` ([ADR-1259](DECISIONS.md)). It prints the machine line, the cache
-> lineage, every phase boundary, **the page-data gap**, the five `postbuild` gate readings and the
+> lineage, every phase boundary, **the page-data gap**, the `postbuild` gate readings and the
 > build system report, with `--baseline` carrying the recorded healthy and stalled bands to compare
 > against. It is a reader, never a gate — see `LIVE-123`, which spent four hypotheses on timestamps
 > people subtracted by hand.
@@ -256,11 +256,14 @@ keyword apart in review and 1.6 MB apart in the artifact.
 > outage was gates that passed while the artifact was broken; this would be a gate that fails while
 > the artifact is fine, and it kills deploys just as dead. So each went to `--warn-only` first, printed
 > green on real production artifacts, and was promoted in the same change as the build that proved it
-> (LIVE-029 / LIVE-035 / LIVE-048; ADR-1064, ADR-1066, ADR-1086). ⚠️ **`postbuild` today runs FIVE**
+> (LIVE-029 / LIVE-035 / LIVE-048; ADR-1064, ADR-1066, ADR-1086). ⚠️ **`postbuild` today runs SIX**
 > — `package.json`'s `postbuild` script is the authority, quote it rather than restating it:
 > `check-build-budget && check-og-trace && check-cache-budget && check-shell-weight &&
-> check-build-fanout`. This sentence said "all four" until 2026-09-05, the third restatement of
-> this list to drift; `check:build-fanout` joined on 2026-09-05 (ADR-1211). And
+> check-build-fanout && check-notfound-routes`. This sentence said "all four" until 2026-09-05 and
+> "FIVE" until 2026-09-08, the third and fourth restatements of this list to drift;
+> `check:build-fanout` joined on 2026-09-05 (ADR-1211) and `check:notfound-routes` on 2026-09-08
+> ([ADR-1267](DECISIONS.md), LIVE-208 — the only one of the six that reads the ROUTE TABLE rather
+> than the output size, and the only one whose defect was a page the compiler moved). And
 > `scripts/check-cache-budget-warn-only.test.ts` + `check-shell-weight-warn-only.test.ts` fail a
 > re-added `--warn-only` as a silent demotion. It reads
 `entryJSFiles['[project]/app/(main)/layout']` from the client-reference manifests, which **is** the
@@ -292,8 +295,9 @@ chunks. That is not a new trick; it is how dc47b89 proved the bug was real, by f
 
 1. `pnpm build` locally, then read the `postbuild` output. **Every** gate must be ✅ —
    `check:build-budget` (rule 1), `check:og-trace` (rule 6), `check:shell-weight` (rule 11),
-   `check:cache-budget` (rule 10), `check:build-fanout` (ADR-1211). That is **five**; if you count
-   four, your copy of this list is stale — check `package.json`'s `postbuild`. A ⚠️ trim line from
+   `check:cache-budget` (rule 10), `check:build-fanout` (ADR-1211), `check:notfound-routes`
+   (ADR-1267). That is **six**; if you count fewer, your copy of this list is stale — check
+   `package.json`'s `postbuild`. A ⚠️ trim line from
    `check:cache-budget` is not a failure, but it is telling you the cache is at its ceiling.
 2. `pnpm exec tsc --noEmit` · `pnpm lint` · `pnpm test` (which now carries six of the contract
    guards directly — ADR-1011) · every guard in `ci.yml`'s `guards=( )` array (the workflow prints

@@ -14,6 +14,7 @@ import {
   siteName,
   overLongDescriptions,
   metadataStrings,
+  resolvesToNothing,
 } from './check-seo.mjs'
 
 // Locks the SEO/sitemap coherence gate. Scans A and B (coverage + resolution) reason about
@@ -274,5 +275,52 @@ describe('metadataStrings — the interpolation split', () => {
 
   it('reads it when asked (a hardcoded brand suffix IS measurable)', () => {
     expect(metadataStrings(src, ['title'], { allowInterpolated: true })).toHaveLength(1)
+  })
+})
+
+describe('resolvesToNothing — a route nothing can resolve to is not a sitemap backer', () => {
+  // 🔴 SCAN B'S TEETH. It fails a sitemap entry with no backing page by matching the entry against
+  // the tree's DYNAMIC route patterns, so a top-level catch-all in that set turns every DEAD ENTRY
+  // failure into a warning. `app/(main)/[...catchAll]/page.tsx` (LIVE-208, ADR-1267) is such a
+  // page, and it is kept out of the set by the one property that makes it safe to ignore: nothing
+  // can resolve to it.
+  const closed = [
+    'export const dynamicParams = false',
+    'export function generateStaticParams(): { catchAll: string[] }[] {',
+    '  return []',
+    '}',
+  ].join('\n')
+
+  it('reads the committed catch-all as resolving to nothing', () => {
+    expect(resolvesToNothing(readFileSync('app/(main)/[...catchAll]/page.tsx', 'utf8'))).toBe(true)
+  })
+
+  it('reads a return-type annotation with braces of its own', () => {
+    // The first version of this helper used a `[^{]*` lead-in and stopped at the annotation's brace,
+    // reporting this exact shape as "resolves to something".
+    expect(resolvesToNothing(closed)).toBe(true)
+  })
+
+  it('is NOT satisfied by dynamicParams = false alone', () => {
+    // app/(marketing)/vs/[slug] sets it while backing five real URLs, so this arm is the difference
+    // between a property and a heuristic.
+    const real = [
+      'export const dynamicParams = false',
+      'export function generateStaticParams() {',
+      "  return SLUGS.map((slug) => ({ slug }))",
+      '}',
+    ].join('\n')
+    expect(resolvesToNothing(real)).toBe(false)
+    expect(resolvesToNothing(readFileSync('app/(marketing)/vs/[slug]/page.tsx', 'utf8'))).toBe(false)
+  })
+
+  it('is NOT satisfied by an empty generateStaticParams alone', () => {
+    expect(resolvesToNothing('export function generateStaticParams() {\n  return []\n}')).toBe(false)
+  })
+
+  it('does not read a COMMENTED declaration as the declaration', () => {
+    expect(
+      resolvesToNothing(['// export const dynamicParams = false', '// return []'].join('\n')),
+    ).toBe(false)
   })
 })

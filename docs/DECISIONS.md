@@ -37044,6 +37044,7 @@ That last reading is the one worth keeping. The ratchet's trigger is "every budg
 🔴 **The precondition this step rests on cannot be measured from the repo, and that is the part to carry forward.** Vercel `get_project` exposes no env names, and a production payload built with either name looks identical, so nothing available to an agent can prove `SUPPORT_CHAT=1` is set in Production. If it is not set when this merges, the widget disappears on that deploy and nothing fails: the layouts simply render without it. The owner sets `SUPPORT_CHAT=1` in Vercel Production before the merge and deletes `NEXT_PUBLIC_SUPPORT_CHAT` after it.
 
 ⚠️ **The generalisable part.** A two-step rename is safe only if the second step waits for the first to be proven in the environment, and "proven" here means a dashboard read no agent has. The honest close is to state the precondition beside the code change and in the row, not to add a build guard that has never seen a real artifact (the 2026-08-11 rule), and not to leave the fallback in forever because the check is inconvenient.
+## ADR-1267: the Spark modal's closer keeps its catch-all, and the route it creates gets an explicit not-found page (2026-09-08)
 
 ## ADR-1274: the signup lead recovery note ships as one cron, one column and one claim, seven months after the table it needed was built for it (2026-09-08)
 
@@ -37064,3 +37065,52 @@ The premise was re-measured before any code was written, as ADR-1082 requires. E
 **Consequences.** `lib/database.types.ts` carries `recovery_sent_at` by hand until the next regeneration, as `claim_token_hash` did. `app/api/cron/budget.test.ts` walks 28 routes; `ARCHITECTURE.md`'s cron table reads 28 as of 2026-09-08 (it read 27 as of 2026-08-17, and every prose "27 crons" elsewhere in the tree is now a dated reading, not a count). The stamp moves `updated_at` through the table's own trigger, so on the operator page a mailed lead's last touch IS the note; the migration says so. The Healthchecks free tier holds 20 checks and this is the 28th job, which is `OWN-005`'s ask and not changed here.
 
 ⚠️ **The generalisable part.** A table built for a job it never got is a promise with no expiry, and this one sat for seven months with its purpose written into its index name. The reader shipped first because it was the cheaper half and made the gap visible, which is the right order; but "visible" is not "done", and a row that says "the recovery job is not built yet" in three docs is prose recording status, which ADR-1043 forbids for a reason. The fix is the same as always: the job, its probe, and the docs that said "not yet" all move in one change.
+**Status.** Accepted. Closes `LIVE-208`. The owner's ruling on the three options that row carried, plus the two things implementing it measured. Amends nothing in [ADR-1017](DECISIONS.md) — the closer stays exactly as it was — and adds the sixth gate to `postbuild` ([`DEPLOY-SAFETY.md`](DEPLOY-SAFETY.md), [ADR-1003](DECISIONS.md)).
+
+**Context.** `LIVE-208` proved its mechanism from the built artifact rather than from source, after retracting the same hypothesis once for reading the docs and finding no support for it. A production build emits, in `.next/routes-manifest.json`, a top-level dynamic route `/[...catchAll]` whose regex is `^/(.+?)(?:/)?$` — every path on the domain — and `.next/app-path-routes-manifest.json` attributes it without ambiguity:
+
+```
+"/(main)/@wizard/[...catchAll]/page"  =>  "/[...catchAll]"
+```
+
+That page is the Spark modal's closer (ADR-1017): a parallel-route slot page that returns `null` so a member who opens a Spark and follows a link inside it does not carry the modal onto the next page. It is the pattern Next's own doc prescribes. The compiler hoists it out of the slot into a real route, so every unmatched URL matched something and nothing 404ed: served locally on a production build, `/this-path-does-not-exist` answered **`307 Location: /`** — the signed-out redirect at `app/(main)/layout.tsx` — where a 404 belongs.
+
+The row offered three options and asked for a ruling, because deleting the closer trades an SEO defect for a UX one.
+
+**Decision — option (b): keep the catch-all, and make the not-found path explicit.**
+
+**1. The children page beside the slot is the one that says "not found".** `app/(main)/[...catchAll]/page.tsx` is new and calls `notFound()`. The slot's `@wizard/[...catchAll]/page.tsx` is unchanged and keeps returning `null`.
+
+🔴 **That split is a measurement, not a preference, and it is the first thing implementing the ruling found out.** The ruling's words were "have the catch-all page itself call `notFound()`", and the obvious reading — put it in the slot page — is wrong. Instrumented on a running build, the slot's catch-all logged for `/events`, `/spaces/<slug>` and `/market/<id>` alike: it renders on **every** route in the (main) layout, because rendering null everywhere the modal is not is precisely how it closes the modal. A `notFound()` there would fire on every member page in the product. The page that renders *only* when no real route matched is the least specific page in the `children` slot, so that is where the not-found went.
+
+**2. The params are declared CLOSED, and that is what actually changes the status.** The new page exports `dynamicParams = false` with an empty `generateStaticParams()`.
+
+🔴 **The second measurement, and the one that would have made a bare `notFound()` a silent no-op.** A `notFound()` in a page cannot beat a `redirect()` in a layout above it: `app/(main)/layout.tsx` throws its signed-out redirect from its own body, before React renders any page, so the page-level not-found never ran. Verified in both directions on a running build — with the layout's redirect bypassed, an unmatched path already answered a real 404 (Next's documented children-slot miss); with it in place, a bare `notFound()` in the page still answered 307. An empty param set with `dynamicParams = false` means no URL resolves to that segment, so Next answers **404 at routing time** and the layout never runs. The `notFound()` call stays: it is the statement of intent the gate reads, and it is what serves if the segment config is ever loosened.
+
+**3. `check:notfound-routes` is the sixth `postbuild` gate.** `scripts/check-notfound-routes.mjs` reads `.next/routes-manifest.json` for every route whose regex matches a URL the app declares nowhere, attributes each through `.next/app-path-routes-manifest.json`, and fails unless a **children** page owns it and calls `notFound()`. A route whose only owner is a `@slot` page is the LIVE-208 state exactly, and it fails by name.
+
+- **It is in `postbuild`, not the CI guards array, because it reads the ARTIFACT.** `check:seo` claimed this ground and passed throughout: it reads source, and no source file says a slot page becomes a route. That is the same source-versus-artifact split as the 2026-08-11 ENOSPC incident ([ADR-1002](DECISIONS.md)), reached from the opposite direction.
+- **The row's acceptance test said "assert the manifest carries no route matching an arbitrary path". Under this ruling that arm cannot be taken literally**, because the ruling keeps the catch-all: the route stays, and the manifest still carries it. What the gate asserts instead is the consequence the arm was reaching for — a route that eats arbitrary URLs must say so out loud, and the artifact is what says which routes those are.
+- **Non-triviality both ways.** The classifier proves itself on a known catch-all regex and two known narrow ones before it trusts a reading; floors on the route and app-path counts refuse a manifest too small to judge rather than reporting it clean; and `scripts/check-notfound-routes.test.ts` drives the gate against a faithful reconstruction of the pre-fix artifact, which **must fail**, on every PR — because `postbuild` never runs on a PR.
+
+**Readings taken.** On a local production build of this tree, served with `next start`:
+
+| Path | Before | After |
+|---|---|---|
+| `/this-path-does-not-exist-9f3c2a` | 307 → `/` | ✅ **404** + not-found body + `noindex` |
+| `/zzz-no-such/deeper/9f3c2a` | 307 → `/` | ✅ **404** |
+| `/` · `/events` · `/help` · `/sitemap.xml` | 200 | 200 |
+| `/circles` | 307 → `/sign-in?next=/circles` | 307 → `/sign-in?next=/circles` |
+| `/events/no-such-event-9f3c2a` | 200 + `noindex` | 200 + `noindex` |
+| `.next` route table | 171 dynamic / 285 static | 171 dynamic / 285 static |
+| `/[...catchAll]` owners | slot page only | slot page **+** children not-found page |
+
+The gate reads, on that artifact: `171 dynamic + 285 static routes read (floor 200), 457 app paths (floor 200); 1 route matches an arbitrary URL, with an explicit not-found owner`.
+
+⚠️ **What did NOT change, deliberately.** The entity shape (`/events/no-such-event`) still answers 200 with the not-found body and Next's injected `noindex`. That is documented streaming behaviour — a `notFound()` thrown after the first Suspense boundary cannot change a status whose headers are already gone — and `LIVE-208` had already corrected itself twice on this point: the `noindex` was there all along, and a hard 404 per entity route needs the existence check moved above that route's `loading.tsx`, which is a per-entity UX call about what a member sees when a link rots, not an SEO emergency.
+
+**Consequences.** A dead link on the domain now answers 404 instead of quietly landing on the front door, and it does so from a prerendered page rather than a function invocation. The two catch-all files are one mechanism, so `app/(main)/@wizard/wizard-routes.test.ts` — the slot's own contract file — now pins the pairing and pins the slot closer at `return null`, and both files' comments say why the other exists.
+
+⚠️ **The generalisable part: the routing table is part of the artifact, and nothing in the source tree describes it.** This repo already knew that a build can multiply a module across hundreds of functions without any source file saying so. It did not know the same is true of ROUTES: a file whose entire body is `return null`, sitting inside a slot, became the route that answered every dead URL on the domain. Both directions of this row's history are the same lesson — the docs said the hypothesis was unsupported and the artifact said it was right — and the gate that now guards it had to read `.next`, because there was never a line of source to read.
+
+---
