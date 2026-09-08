@@ -37241,6 +37241,23 @@ four target files were separated from 138 others, and that separation was correc
 reason". LIVE-040's fingerprint gate is the classifier, because it measures the render input rather
 than a property of the output.
 
+**Confirmed on a fresh capture, 2026-09-08 03:29Z — and this is the reading that settles it.**
+LIVE-040's recapture (run `34183299479`, production, `update_baselines` alone) committed 128 PNGs
+across 16 slugs. Reading the IHDR on both sides of that commit:
+
+```
+PNGs compared: 128 | DIMENSIONS MOVED: 0 | identical dims: 128 | unreadable: 0
+```
+
+**128 of 128 changed at byte-identical dimensions**, and in the same commit the fingerprint gate
+went from 15 failures to 18/18 passing — so an instrument that reads the RENDER INPUT, not the
+output, certifies those files as genuine copy changes. Under ADR-1264's heuristic all 128 would
+have been refused as rasterisation. The heuristic and the classifier disagree on the same 128
+files, and the classifier is the one that can be checked against source.
+
+That is the whole of ADR-1273 demonstrated on a capture taken after it was written, rather than
+argued from the two cases that prompted it.
+
 **The failure mode underneath is the one this repo keeps naming.** ADR-1082: a blocker phrased as a
 certainty is a claim with an expiry date. This one was phrased as physics, held for nine hours, and
 was overturned by two agents who went and looked. It cost nothing except an explanation — but had
