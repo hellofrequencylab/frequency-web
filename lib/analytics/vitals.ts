@@ -129,8 +129,21 @@ export function normalizeVitalBatch(raw: unknown): CleanVital[] {
 
 // ── Browser-only buffer ─────────────────────────────────────────────────────────
 // Head-based sampling decided ONCE per page load (never per metric — per-metric
-// sampling desynchronizes LCP/INP/CLS for the same load). 1.0 during beta; drop to
-// 0.25 once daily page loads pass ~10k (p75 over 7 days keeps ample n at that rate).
+// sampling desynchronizes LCP/INP/CLS for the same load).
+//
+// 🔴 THE RELEASE THRESHOLD LIVES HERE, BESIDE THE CONSTANT, NOT IN A BACKLOG ROW
+// (HYG-061, ADR-1263). The rate is held on a NUMBER, not on a decision:
+//
+//   SAMPLE_RATE: 1 during beta -> 0.25 past ~10,000 page loads a day.
+//
+// A p75 over the 7-day window keeps ample n at that rate. Those two are the ONLY
+// values this constant may hold — a third is a rate nobody recorded, and check:backlog
+// refuses it. Reading 2026-09-08: 398 measured loads over 7 days (~57/day), 0.6% of
+// the threshold, so it stays at 1. Sampling stays head-based and ACCOUNT-FREE either
+// way; the account-free half is the consent posture (ADR-922), not a tuning knob.
+// Lift 7d's other half, the viewport_class dimension, already shipped (above).
+// Tabled with the other two traffic-held instruments in
+// docs/ANALYTICS.md § Instruments held until there is traffic.
 const SAMPLE_RATE = 1
 const ENDPOINT = '/api/vitals'
 let sampled: boolean | null = null

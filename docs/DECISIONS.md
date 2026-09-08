@@ -36769,3 +36769,39 @@ The failure is silent in both directions, which is what makes it a measurement p
 
 ⚠️ **The generalisable part: a threshold has a unit, and the unit has to match the thing it forgives.** Renderer noise is roughly constant per capture, because it is a property of the browser build. A ratio prices it as a share of the canvas. Those two only agree at one page height, and everywhere else the gate is over-tight on short pages and blind on tall ones, in proportion to how much there is to get wrong. The comment beside the setting was accurate about the intent for a year and still described an instrument that could not do the job. Before trusting a tolerance, ask what the smallest thing the gate must SEE costs in the gate's own units, and set the number under it.
 
+
+## ADR-1263: an instrument held on a number records that number beside the constant it governs, not in the backlog row that noticed it (2026-09-08)
+
+**Status.** Accepted. Closes `HYG-061`. Amends nothing; it gives [ADR-922](DECISIONS.md)'s three deferred instruments a home that a gate can read, and it is the reason `docs/ANALYTICS.md § Instruments held until there is traffic` now names a constant per row.
+
+**Context.** Three instruments in `UX-MATURITY-PLAN` are designed and deliberately unbuilt, each waiting on volume rather than on a decision: the vitals ratchet (the [ADR-928](DECISIONS.md) shape applied to live field p75), the collector's `SAMPLE_RATE` drop, and consent-gated session-replay lite. `HYG-061` was filed on 2026-09-06 because no row owned any of them, and it said so in its own detail: *"the row is the place the thresholds live."*
+
+Re-measuring the premise on 2026-09-08 found it half expired, in both directions.
+
+| The row said | What the tree said |
+|---|---|
+| the thresholds are recorded nowhere a reader would look | ⚠️ **Half wrong.** #2385 tabled all three in `ANALYTICS.md` on the day the row was filed, and `UX-MATURITY-PLAN` cites that section from three places. The gap was never the docs — it was the CODE, where nobody had written the number beside the constant |
+| the collector needs a `SAMPLE_RATE` drop **and** a `viewport_class` dimension | ⚠️ **Half done.** `viewport_class` already ships on the beacon (`props.vp`), so only the rate half was open |
+| traffic is well below every threshold (six visitors in three months) | ⚠️ **Stale for one of the three.** 398 measured page loads over 7 days (~57/day, 0.6% of 10k) and 5 weekly active members (0.5% of 1k) — but the **ratchet trigger is one class short**, not untouched |
+
+That last reading is the one worth keeping. The ratchet's trigger is "every budget class scores all three budgeted metrics — no `⏳` cell, each clearing `MIN_SAMPLES` — on two consecutive weekly reads". Scored with the repo's own `budgetClassFor` over the last fourteen days:
+
+| Budget class | Week to 2026-09-01 (LCP / INP / CLS) | Week to 2026-09-08 | Verdict |
+|---|---|---|---|
+| marketing | 82 / 61 / 55 | 65 / 39 / 46 | ✅ clears in both |
+| app | 23 / 18 / 17 | 17 / 12 / 5 | ✅ clears in both |
+| operator | 1 / 1 / 0 | 3 / 2 / 2 | ⏳ the only class still unscored |
+
+**Decision.** A threshold that releases a deferred instrument is recorded in the comment block **directly above the constant it governs**, and the backlog probe measures that adjacency rather than trusting it.
+
+- `SAMPLE_RATE` in `lib/analytics/vitals.ts` — `1` during beta, `0.25` past ~10,000 page loads a day, **and no third value**.
+- `MIN_SAMPLES` in `lib/analytics/vitals-budgets.ts` — the per-cell floor of 5 loads IS the ratchet's trigger, together with the two-consecutive-weekly-reads clause.
+- `HealthSummary.weeklyActive` in `lib/dashboard/scores.ts` — session-replay lite is revisited past 1,000 WAM, and the default answer stays no new vendor.
+
+`HYG-061`'s probe moves from `manual` to a pure-node `cmd`. It reads each live constant and the contiguous comment run above it, fails if the two disagree, fails if the note is moved away from the declaration, and fails if `ANALYTICS.md` stops naming the same numbers. For session-replay it also fails on the consequence of the deferral ending: a replay vendor in `package.json`, or Sentry replay switched on in `instrumentation-client.ts`, while the note still reads as held. Fourteen mutation arms were run against it and all fourteen fired; the one legitimate change — dropping `SAMPLE_RATE` to the recorded `0.25` — correctly passed.
+
+**Consequences.** The row closes, and the three instruments are carried by the numbers in code plus the `ANALYTICS.md` table instead of by a backlog row that has to be re-read to be useful. An engineer who moves `MIN_SAMPLES` from 5 to 8 is told, by CI, that they have moved the ratchet's trigger and left its description behind — which is the failure the old arrangement could not detect, because prose and constant lived in different files and nothing compared them.
+
+⚠️ **The operator class is the actionable finding, and it is not a code change.** One class stands between the readout and a real ratchet, on the surfaces the team uses most. It is also the class most easily moved by ordinary work rather than by marketing traffic, so re-read the table before assuming the ratchet is still years away.
+
+⚠️ **The generalisable part: a deferral is a decision with an expiry date, and the expiry belongs where the work happens.** `HYG-061` was filed to give three thresholds an owner and it was already half wrong on the day it was written — not through carelessness, but because a row records what was true when someone looked, and nothing re-looks. A number written beside the constant it governs is re-read by everyone who touches that constant, and a probe that compares the two makes the re-reading compulsory. That is the same trade the adoption ratchet already makes: the machine-readable state beats prose, and the way to keep prose honest is to bind it to something a machine can measure.
