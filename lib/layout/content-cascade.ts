@@ -62,17 +62,57 @@ export function routeScopeChain(route: string): string[] {
   return chain
 }
 
+/** The prefix segment that matches ANY ONE route segment: `/spaces/_/podcasts` covers
+ *  `/spaces/<any space>/podcasts`. `_` rather than `*` or `[slug]` because this is already the
+ *  repo's placeholder for "every tenant's copy of this surface" — `page-chrome.ts` keys the Space
+ *  CRM board's chrome override on `/spaces/_/crm` — and because `isSafeRoute` admits `_`, so a
+ *  pattern prefix is still a legal `page_settings` route string.
+ *
+ *  It exists for the DYNAMIC segment a leading prefix cannot reach. A section whose dynamic part is
+ *  at the END (`/practices/<id>`) is covered by its literal prefix; a section whose dynamic part is
+ *  in the MIDDLE (`/spaces/<slug>/podcasts`) has no literal prefix that names the tab, and before
+ *  this the only row that matched it was `/spaces` — one row for five different tabs. */
+export const PREFIX_WILDCARD = '_'
+
 /** PURE: the longest-prefix winner from a table of route-prefixed rows. `'/journeys/mine'` takes
  *  the `/journeys/mine` row over the `/journeys` row; `'/journeysabc'` takes neither.
+ *
+ *  Matching is SEGMENT-WISE (it always was, in effect — the old string form asked for `route ===
+ *  prefix || route.startsWith(prefix + '/')`, which is the same question), so a `_` segment in a
+ *  row's prefix can stand for any one route segment. Specificity is the number of prefix SEGMENTS,
+ *  ties broken by FEWER wildcards, so a literal row always beats a pattern row that reaches the
+ *  same depth. No row in this repo carried a `_` before 2026-09-08, so every existing table
+ *  resolves exactly as it did (`content-cascade.test.ts` pins that).
  *
  *  Extracted here because `index-hero.ts` and `detail-hero.ts` each wrote this loop by hand, and a
  *  third copy was about to be written for this module. It is the ONE thing all three genuinely
  *  share — see the ADR on why the rest of their ladders are deliberately not shared. */
 export function longestPrefixRow<T extends { prefix: string }>(route: string, rows: readonly T[]): T | null {
+  const path = route.split('/')
   let best: T | null = null
+  let bestScore = -1
   for (const row of rows) {
-    if (route !== row.prefix && !route.startsWith(`${row.prefix}/`)) continue
-    if (!best || row.prefix.length > best.prefix.length) best = row
+    const parts = row.prefix.split('/')
+    if (parts.length > path.length) continue
+    let wildcards = 0
+    let matched = true
+    for (let i = 0; i < parts.length; i++) {
+      // i === 0 is the empty string before the leading slash, never a wildcard.
+      if (i > 0 && parts[i] === PREFIX_WILDCARD) {
+        // A wildcard matches one segment, and an EMPTY segment is not one: '/spaces//loom' and a
+        // trailing '/spaces/' must not be handed a tenant row.
+        if (!path[i]) { matched = false; break }
+        wildcards++
+        continue
+      }
+      if (parts[i] !== path[i]) { matched = false; break }
+    }
+    if (!matched) continue
+    const score = parts.length * 10 - wildcards
+    if (score > bestScore) {
+      best = row
+      bestScore = score
+    }
   }
   return best
 }

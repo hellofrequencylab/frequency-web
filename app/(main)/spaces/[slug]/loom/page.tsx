@@ -6,6 +6,7 @@ import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { spaceManageHref } from '@/lib/spaces/types'
 import { listLoomScopeImages, listLoomScopeTags } from '@/lib/library/store'
 import { IndexTemplate } from '@/components/templates'
+import { resolveIndexHero } from '@/lib/layout/index-hero'
 import { SpaceLoomStudio } from '@/components/spaces/loom/space-loom-studio'
 
 // THE SPACE LOOM STUDIO page (SPACE_MODULES `space.loom`): the full-page image-library manager for one Space.
@@ -35,8 +36,13 @@ export default async function SpaceLoomStudioPage({ params }: { params: Promise<
     listLoomScopeTags({ spaceId: space.id }, ['image']),
   ])
 
+  // The shared hero band (LIVE-117, ADR-1261): the '/spaces/_/loom' row, short utility band, rung 1
+  // on this Space's own pathname.
+  const hero = await resolveIndexHero(`/spaces/${space.slug}/loom`)
+
   return (
     <IndexTemplate
+      {...hero}
       back={{ href: spaceManageHref(space.type, space.slug), label: 'Back to manage' }}
       eyebrow={brandName}
       title="Loom Studio"

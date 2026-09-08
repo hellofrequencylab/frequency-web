@@ -78,7 +78,11 @@ export async function updateHousingListingAction(listingId: string, formData: Fo
   const leaseNum = Number(leaseRaw)
   const leaseMonths = leaseRaw !== null && leaseRaw !== '' && Number.isFinite(leaseNum) && leaseNum >= 0 ? Math.round(leaseNum) : null
 
-  const city = (formData.get('city') as string) || null
+  // City is required on edit for the same reason it is required on create (ADR-1262): the
+  // manifest declares it, the board places listings by it, and this action's contract is that it
+  // mirrors createHousingListingAction field for field. A save that would blank it is refused.
+  const city = String(formData.get('city') ?? '').trim() || null
+  if (!city) return
   const neighborhood = (formData.get('neighborhood') as string) || null
 
   // Re-geocode on edit exactly as create does (ADR-863): without this, changing the city left

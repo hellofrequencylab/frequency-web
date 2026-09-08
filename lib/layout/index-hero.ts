@@ -28,7 +28,11 @@ import type { PageHeroVariant } from '@/components/templates/page-hero'
 
 /** The precedence ladder, as data. `image` null = no section cover, i.e. the neutral gradient band. */
 export interface IndexHeroDefault {
-  /** The route or route-prefix this default covers ('/journeys' also covers '/journeys/x'). */
+  /** The route or route-prefix this default covers ('/journeys' also covers '/journeys/x').
+   *
+   *  A segment may be the wildcard `_` (`PREFIX_WILDCARD`), which matches any ONE route segment:
+   *  '/spaces/_/podcasts' covers every Space's Shows index. That is for the dynamic segment sitting
+   *  in the MIDDLE of a path, which a leading prefix cannot name — see the ADR-1261 block below. */
   prefix: string
   /** The section's default cover under `public/images/site/`, or null for the gradient band. */
   image: string | null
@@ -41,6 +45,19 @@ export interface IndexHeroDefault {
    *  short/large note below spells out. The flag is what makes that decision survive the cascade
    *  instead of being quietly reversed by it. */
   inheritHero?: boolean
+  /** WHICH KEY rungs 1 reads for a route under this row (ADR-1261).
+   *
+   *  `'route'` (the default, and what all 17 pages of the 2026-09-07 slice do) reads
+   *  `page_settings` on the LITERAL pathname, so what an operator saves standing on the page is
+   *  what the page reads back.
+   *
+   *  `'section'` reads it on THIS ROW'S PREFIX instead, which is the treatment `detail-hero.ts`
+   *  has always given rung 2: one operator image behind every route in the section. Set it on a
+   *  row whose section root is ITSELF a page an operator can stand on ('/help', '/discover/
+   *  practices'), so the key a dynamic child reads is a key the Settings panel can write. Do NOT
+   *  set it on a pattern row: the panel keys on `usePathname()`, so nothing can write
+   *  '/spaces/_/podcasts' and the rung would be dead. */
+  keyOn?: 'route' | 'section'
 }
 
 // ── SHORT vs LARGE IS A PRODUCT DECISION, HELD HERE SO IT CANNOT BECOME PER-PAGE TASTE ──────────
@@ -88,11 +105,15 @@ export const INDEX_HERO_DEFAULTS: readonly IndexHeroDefault[] = [
   // Discovery — the section IS the destination, so the band is `large` and a section hero reaches
   // it. '/partners/collaborators' is deliberately absent: it is part of the Partners section and
   // takes the '/partners' row, which is what a prefix map is for.
-  { prefix: '/help', image: null, size: 'large' },
+  //
+  // `keyOn: 'section'` on two of the five is the 2026-09-08 slice, not a 2026-09-07 change: for
+  // '/help' and '/discover/practices' THEMSELVES the section key IS the pathname, so both pages
+  // resolve byte-identically to the day they adopted. What it buys is their dynamic children.
+  { prefix: '/help', image: null, size: 'large', keyOn: 'section' },
   { prefix: '/partners', image: null, size: 'large' },
   { prefix: '/housing/roommates', image: null, size: 'large' },
   { prefix: '/discover/partners', image: null, size: 'large' },
-  { prefix: '/discover/practices', image: null, size: 'large' },
+  { prefix: '/discover/practices', image: null, size: 'large', keyOn: 'section' },
   // Utility — a member or an operator came here to get something done, so `short` + the gradient,
   // and `inheritHero: false` so the section photo above them cannot quietly overturn that.
   { prefix: '/circles/templates', image: null, size: 'short', inheritHero: false },
@@ -106,6 +127,31 @@ export const INDEX_HERO_DEFAULTS: readonly IndexHeroDefault[] = [
   { prefix: '/search', image: null, size: 'short', inheritHero: false },
   { prefix: '/spaces/operating', image: null, size: 'short', inheritHero: false },
   { prefix: '/support', image: null, size: 'short', inheritHero: false },
+
+  // ── THE 2026-09-08 SLICE (LIVE-117, ADR-1261) — THE DYNAMIC ROUTES ───────────────────────────
+  // The five Space tabs that render OUTSIDE the (profile) route group, so nothing draws a band
+  // above them (ADR-1255 re-measured that). Their dynamic segment is in the MIDDLE of the path, so
+  // they are reached by a `_` pattern prefix; the only literal prefix that matched them was
+  // '/spaces', which is one row for five different surfaces and would also have swallowed
+  // '/spaces/directory'.
+  //
+  // THEY DO NOT TAKE `keyOn: 'section'`, and that is the honest half of this slice. A pattern
+  // prefix is a fine MATCHER and a dead KEY: the Settings panel writes `page_settings` on
+  // `usePathname()`, so the only key any UI can write for these is the tenant's own literal path.
+  // Rung 1 therefore stays per Space, which is also the right answer for a tenant surface: each
+  // Space's own operator sets their own band. What no key can express today is one image behind
+  // every Space's copy of a tab; that is a writer question, not a resolver one.
+  //
+  // `inheritHero: false` on all five, INCLUDING the public Shows index. The copy cascade climbs a
+  // tenant path through '/spaces/<slug>' to '/spaces' — the site's own marketing page — and one
+  // brand's Space must never wear the house photo from a page about Spaces in general.
+  { prefix: '/spaces/_/journeys', image: null, size: 'short', inheritHero: false },
+  { prefix: '/spaces/_/loom', image: null, size: 'short', inheritHero: false },
+  { prefix: '/spaces/_/manage/circles', image: null, size: 'short', inheritHero: false },
+  { prefix: '/spaces/_/practices', image: null, size: 'short', inheritHero: false },
+  // The one PUBLIC surface of the five: a Space's Shows catalog, anonymous-reachable and
+  // sitemap-advertised, so it is a destination and takes the discovery band.
+  { prefix: '/spaces/_/podcasts', image: null, size: 'large', inheritHero: false },
 ] as const
 
 /** The fallback for a route no row covers: gradient band at the shipped directory height. */
@@ -131,6 +177,35 @@ export function indexHeroDefaultsFor(route: string): Omit<IndexHeroDefault, 'pre
   return best
     ? { image: best.image, size: best.size, inheritHero: best.inheritHero ?? true }
     : INDEX_HERO_FALLBACK
+}
+
+// ── THE SETTINGS KEY, AND WHAT A PREFIX KEY CAN AND CANNOT EXPRESS (LIVE-117, ADR-1261) ────────
+// `resolveIndexHero`'s route argument used to be BOTH the thing the ladder is resolved for and the
+// `page_settings` key rung 1 reads. For a literal pathname those are the same string, which is why
+// nothing separated them for the first 17 adopters. For a DYNAMIC route they are not: a page whose
+// pathname carries a slug has no key an operator can reach, so rung 1 read a per-URL key nobody
+// could write, which is exactly why those seven pages were deferred rather than adopted blind.
+//
+// The key is now its own function, and the map decides it. `detail-hero.ts` has always done this
+// (`detailHeroDefaultsFor` returns the SECTION prefix and rung 2 reads `page_settings` on that,
+// with an optional `spaceId` for the tenant layer); the index side gets the same treatment behind
+// a per-row opt-in, so no shipped page changes key.
+//
+// WHAT IT CAN EXPRESS: one operator image standing behind every route in a section whose root is
+// itself a page — '/help/<category>' reads the image an operator set on '/help'.
+// WHAT IT CANNOT: a key for every tenant's copy of a tab. `page_settings` is an exact-match read
+// and the only writer (the on-page Settings panel) keys on `usePathname()`, so '/spaces/_/podcasts'
+// would be a key with no writer. Those rows keep the literal pathname and the tenant sets their
+// own. Nor does this side grow a `spaceId` option to match the detail hero's: the panel passes no
+// space, so every index read must stay on the root tenant to see what the panel actually wrote.
+// A parameter no writer can honour is the same dead rung wearing a different name.
+
+/** PURE: the `page_settings` key for an index route — the row's prefix when the row asks for the
+ *  section key, else the literal route. Exported for the unit test and for any caller that needs
+ *  to name the key an operator would have to write. */
+export function indexHeroKeyFor(route: string): string {
+  const row = longestPrefixRow(route, INDEX_HERO_DEFAULTS)
+  return row?.keyOn === 'section' ? row.prefix : route
 }
 
 /** What a page can say about its own hero, over and above the route defaults. */
@@ -205,6 +280,11 @@ export async function resolveIndexHero(
   opts: IndexHeroOptions = {},
 ): Promise<IndexHeroProps> {
   const section = indexHeroDefaultsFor(route)
+  // Rung 1's key (see the block above): the section prefix where the map asks for it, else the
+  // literal pathname. Rung 2 is deliberately NOT re-keyed — the copy cascade climbs a route's real
+  // ancestors on its own, so a dynamic path already inherits '/help' or '/spaces/<slug>' without a
+  // synthetic key, and handing it a pattern would only cost it the rungs in between.
+  const settingsKey = indexHeroKeyFor(route)
   const defaults = { layout: opts.layout ?? ('overlay' as const), height: opts.size ?? section.size }
   try {
     // The header element resolves the operator's layout / height / scrim masters over this
@@ -212,11 +292,11 @@ export async function resolveIndexHero(
     // so a route with none costs one page_settings read, not two (both are request-cached anyway).
     // The copy cascade is read here too, so rung 2 fills itself in (see below).
     const [operatorImage, header, cascade] = await Promise.all([
-      getPageHeaderImage(route),
+      getPageHeaderImage(settingsKey),
       resolveHeaderElement({ defaults }),
       opts.contentImage !== undefined ? Promise.resolve(null) : resolveContentCascade(route, {}),
     ])
-    const operatorFocus = operatorImage ? await getPageHeaderFocus(route) : null
+    const operatorFocus = operatorImage ? await getPageHeaderFocus(settingsKey) : null
     // RUNG 2, RESOLVED RATHER THAN PASSED. Every adopter that wanted the page-content hero had to
     // hand it in, and `/network` is the proof that this fails silently: it resolves the very same
     // content for its title and description, drops `heroImage` on the floor, and its operator's
