@@ -1,0 +1,76 @@
+{
+  "_comment": [
+    "What the committed @visual baselines DEPICT, as a hash of the render input rather than a date.",
+    "Regenerate with `pnpm gen:visual-fingerprints` in the SAME commit as a baseline capture; the",
+    "capture job in .github/workflows/e2e-manual.yml does it for you and stamps capturedIn with the",
+    "runner's SHA. Never hand-edit a fingerprint to silence test/e2e/template-fingerprints.test.ts:",
+    "that says the PNGs show something they do not.",
+    "This is a drift DETECTOR with a visible manual override, not an unforgeable proof. A local",
+    "regeneration stamps capturedIn 'local', which greens the gate but marks in the file that no",
+    "capture stands behind it - and LIVE-040's probe rejects 'local', so only a runner capture closes",
+    "that row. capturedIn is provenance for a reader, not an input to the gate: the gate compares",
+    "fingerprints only, so it works in the depth-1 clone CI and agents actually get."
+  ],
+  "surfaces": {
+    "about": {
+      "fingerprint": "b84e40dc9efaffe4",
+      "capturedIn": "2a201e301"
+    },
+    "calm-down-fast": {
+      "fingerprint": "aa4be3d3024912a0",
+      "capturedIn": "2a201e301"
+    },
+    "friendship-as-an-adult": {
+      "fingerprint": "ededef081a7f0c26",
+      "capturedIn": "2a201e301"
+    },
+    "home": {
+      "fingerprint": "57b77832a9ff42a2",
+      "capturedIn": "2a201e301"
+    },
+    "how-to-be-more-social": {
+      "fingerprint": "b0957db4d1cbf775",
+      "capturedIn": "2a201e301"
+    },
+    "how-to-build-community": {
+      "fingerprint": "ef8ee8dd269baed2",
+      "capturedIn": "2a201e301"
+    },
+    "how-to-start-a-circle": {
+      "fingerprint": "378c89eff4d1d75d",
+      "capturedIn": "2a201e301"
+    },
+    "loneliness": {
+      "fingerprint": "e0be2d994902b478",
+      "capturedIn": "2a201e301"
+    },
+    "pricing": {
+      "fingerprint": "743e3b38faa29483",
+      "capturedIn": "2a201e301"
+    },
+    "spaces": {
+      "fingerprint": "460c1157cefbbdcf",
+      "capturedIn": "2a201e301"
+    },
+    "the-community": {
+      "fingerprint": "59b6bd659c409d99",
+      "capturedIn": "2a201e301"
+    },
+    "the-lab": {
+      "fingerprint": "7397c066dd3290ec",
+      "capturedIn": "2a201e301"
+    },
+    "the-quest": {
+      "fingerprint": "d8a2f3689cfa0f2e",
+      "capturedIn": "2a201e301"
+    },
+    "tools-for-community-builders": {
+      "fingerprint": "8ed24e759d52a689",
+      "capturedIn": "2a201e301"
+    },
+    "what-is-frequency": {
+      "fingerprint": "9aeae182b417f57c",
+      "capturedIn": "2a201e301"
+    }
+  }
+}

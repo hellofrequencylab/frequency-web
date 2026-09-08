@@ -36926,6 +36926,74 @@ That is not a defect in the reporter. `requiredFailure()` (`test/e2e/shell-cover
 - Nothing changes for any dispatch made today. With the variables unset — which is what the owner steps above assume — all four steps receive an empty string and behave exactly as they did; `flagOn()` also reads `0` and `false` as off, so a variable can be parked rather than deleted.
 
 ⚠️ **The generalisable part: "every fail-safe needs a gate that notices it fired" has a second half — the gate must be REACHABLE from every path that can fire the fail-safe.** This repo built the gate, unit-tested both of its directions, and wired it into one of the two workflows that can trip it. Everything about that reads as done: the pure function is right, the tests are honest, the annotation is loud. What no test could see is that the *capture* path — the more dangerous one, because it commits — never passed the argument. A guard proven at the function boundary is not proven at the process boundary, and the cheapest way to find the gap is to read a real run's conclusion, not its output.
+## ADR-1272: a visual baseline is stale when its RENDER INPUT changed, not when its file did (2026-09-08)
+
+**What the recapture actually produced, read rather than assumed (run `34183299479`, 2026-09-08
+03:27Z, production, `update_baselines` alone).** ADR-1264 requires a recapture to be taken apart
+before it is taken, and that applies to a dispatch made by the agent that wrote the rule:
+
+| check | result |
+|---|---|
+| files committed | 129 — **128 PNGs** (16 slugs x 8) + `test/e2e/template-fingerprints.json` |
+| `app-*` files | **0**, correct for a run without `capture_shell` |
+| slugs | the 15 templates plus `discover`, which was disclosed in advance as possible |
+| stamped fingerprints vs. the values CI computed independently beforehand | **15 / 15 exact** |
+| gate afterwards | `template-fingerprints.test.ts` **18/18 pass**, from 15 failures |
+
+**And the dimension reading, which is this ADR's contribution to `LIVE-212`:**
+
+```
+PNGs compared: 128 | DIMENSIONS MOVED: 0 | identical dims: 128 | unreadable: 0
+```
+
+128 of 128 changed at byte-identical dimensions while an instrument reading the RENDER INPUT
+certified them as genuine copy changes. See the LIVE-212 correction carried on #2464: a dimension reading is a filter, not a
+classifier, and this is that claim tested on a capture taken after it was written.
+
+🔴 **A runner-committed baseline push does NOT get CI, and the PR will not say so plainly.** The
+capture job commits with `GITHUB_TOKEN`, so GitHub declines to run workflows on that commit:
+run `34183620429` on `eb606dad9` reads **`action_required`**, and the PR's check list simply goes
+quiet rather than red. Nothing in the timeline announces that the fifteen failures were never
+re-evaluated. The next commit authored by a person or an agent re-triggers CI normally, which is
+what this one does; do not read a post-recapture PR as green until a run exists on a commit the
+runner did not author.
+
+
+**Status.** Accepted. Replaces `LIVE-040`'s commit-date freshness arm with a content fingerprint; adds `test/e2e/template-fingerprints.json` + `test/e2e/template-fingerprints.test.ts` and a re-stamp step in `.github/workflows/e2e-manual.yml`.
+
+**Context.** `LIVE-040` carried a two-arm probe. The first arm asserts both marketing templates render a FAQ Accordion with question/answer pairs, and it is honest. The second asked whether the committed `@visual` PNGs still depict the page, by comparing the template file's last-commit date against its baselines' last-commit date. That arm has now failed twice in two different ways.
+
+**The first failure is the one already recorded.** It opens with `git rev-parse --is-shallow-repository` and exits 79 on a shallow clone. `actions/checkout@v7` defaults to depth 1, so it had never been evaluated in CI, and was first evaluated on 2026-09-06 only because an unrelated task ran `git fetch --unshallow`. A check that only fires on a full clone never fires.
+
+🔴 **The second failure is worse, and it was found by re-measuring rather than by re-reading.** A file's commit date is a PROXY for what the page renders, and the two came apart in #2348. That PR changed `BETA_CTA_LABEL` in `lib/site.ts` from "Start a Circle" to "Find your people" (and `BETA_CTA_SECONDARY_LABEL` from "or just join as a member" to "or join as a member"). Those are visible button labels. Fifteen template-served marketing pages import them, so #2348 moved pixels on all fifteen. What the date arm reported instead:
+
+| | measured on a deepened clone of `main` @ `88bda6882` |
+|---|---|
+| Surfaces the date arm looks at | 2 of 15 |
+| Surfaces it called stale | 1 (`/the-community`) |
+| Why it called that one stale | #2348 edited a **comment** in `the-community.ts` |
+| Surfaces actually stale | **15 of 15**, every fingerprint changed |
+| Notable false clean | `/the-lab` — its own primary button changed words |
+
+The arm was right once, for the wrong reason, and silent about thirteen surfaces it never looked at. Resolving each of the fifteen templates at the commit its own PNGs were captured in confirms the mechanism rather than assuming it: the only two whose fingerprints moved between the 2026-08-29 and 2026-09-01 captures are `the-quest` and `calm-down-fast`, which are exactly the two slugs `d49590a19` recaptured.
+
+**Decision. Fingerprint the render input, and store what the PNGs depict.**
+
+1. **The measure is `sha256(JSON.stringify(getTemplate(slug)))`, truncated to 16 hex.** Every template is a static literal, so the constants it imports are already folded into the document. A change three modules away enters the hash exactly when it enters the page, and a comment edit does not — which is precisely the two errors above, inverted.
+2. **`test/e2e/template-fingerprints.json` records what each committed baseline set DEPICTS**, seeded per slug from the commit its own PNGs were captured in. It is data about the PNGs, not about the source, and hand-editing a fingerprint to go green asserts that a picture shows something it does not.
+3. **The gate is a vitest file, so it runs on every PR.** It reads two files and computes a hash; nothing about it needs history, so the depth-1 clone that defeated the old arm is not a problem for this one. This follows ARM C of `check:shell-weight` ([ADR-1140](DECISIONS.md)): a check that can be made to measure SOURCE belongs where it runs earliest.
+4. **The capture workflow re-stamps the file in the same commit as the PNGs** (`pnpm gen:visual-fingerprints`). A capture that landed pictures and left the fingerprints behind would rebuild this exact staleness in a new file.
+5. **The gate lives in `pnpm test`; the backlog probe stays plain `node`.** The first draft had `LIVE-040`'s probe spawn the vitest file. `check:backlog` went red naming `LIVE-034`, whose probe forbids precisely that — *"check:backlog costs 24s and grows ~2s per closed row, because ten probes each spawn a vitest run"* — and had already priced this one at 4,902 ms, twice the previous slowest probe. It is worth writing down because nothing about the draft looked wrong: the probe measured the right thing, ran clean, and was caught in one run by a contract someone else had settled. The probe now reads the same file cheaply, failing while any surface still carries a `capturedIn` that predates #2348. ⚠️ `LIVE-034` then caught it a SECOND time, on a probe that spawns nothing: its `RUNNER` regex is a text search over the whole `cmd`, so the words "pnpm test" inside the probe's own *error message* trip it. That is a false positive on a guard whose value is worth the cost, and it is cheaper to know than to rediscover — word a probe's message around the runner names.
+
+⚠️ **The one way to make this file lie, written into the workflow beside the step that can do it.** The gate stamps the BRANCH's source; the capture photographs `base_url`. Those agree only when `base_url` serves that branch. Dispatching against production from a branch that edits a template records a fingerprint no PNG has ever shown — so a branch touching `lib/page-editor/templates/` must capture against its own preview.
+
+⚪ **It is a drift DETECTOR with a visible override, not an unforgeable proof, and pretending otherwise would be the failure it fixes.** Anything that regenerates a stamp in place can be run without a capture behind it. So the override is made to leave a mark instead of being wished away: a local run stamps `capturedIn: "local"` rather than a runner SHA. That greens `pnpm test` — deliberately, because a gate that turns every template PR red until someone dispatches a capture is the gate that gets routed around ([ADR-970](DECISIONS.md)) — while `LIVE-040`'s probe rejects `"local"`, so only a real runner capture closes the row. Day-to-day work has a way through; the ledger still requires the picture.
+
+**What this does NOT cover, said rather than implied.** The page body only. The shared header, footer and rails are not in the document; `/discover` is a coded route with no template; the four app-shell surfaces are behind auth. That is fifteen of the sixteen public baseline sets, and the remainder still needs a human to notice. A gate that names its own blind spot is the standard [ADR-1269](DECISIONS.md) credits for turning an unfalsifiable ask into a measurable one.
+
+**Consequences.** The gate is RED on arrival for all fifteen surfaces, which is the true state of the tree and the reason it lands with a recapture rather than before one. `LIVE-040` stays open until that capture and its re-stamp land together. This is the third time baseline staleness has been the finding ([ADR-1264](DECISIONS.md), `SCAN-507`, this row); it is the first time the instrument measures the thing that goes stale.
+
+---
 ## ADR-1269: "owner-dispatched" was never true, and it spread to four rows because it was cited rather than measured (2026-09-08)
 
 **Status.** Accepted. A measurement pass over the owner-gated rows of `docs/BUILD-BACKLOG.json`, in the shape ADR-1082 prescribes. No product work; nine rows corrected, two `ownerAction` fields dropped, eleven premises confirmed with a dated line.
