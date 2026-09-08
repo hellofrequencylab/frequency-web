@@ -604,12 +604,17 @@ export const STORAGE_STATE: string | undefined =
    Every selector below is a NO-OP when it matches nothing, so the list is safe to apply
    to every surface. Each entry names the drift it kills.
 
-   NOTE for whoever owns components/: none of these are semantic hooks — the codebase has
-   no `data-testid`/`data-visual-mask` convention yet, so a few are structural (class
-   combinations verified unique at the time of writing). Adding `data-visual-mask` to the
-   live blocks would let this list shrink to one selector. Until then, treat a mask edit
-   as part of the change that moved the markup. */
-const GLOBAL_MASK_SELECTORS: readonly string[] = [
+   `[data-visual-mask]` is the semantic hook (LIVE-213, ADR-1277): a component that knows its
+   own box is live data, or renders in one environment and not another, declares it on its
+   root and this list needs no edit. Every site that does so is enumerated in
+   VISUAL_MASK_SITES below, and test/e2e/visual-masks.test.ts holds the components to that
+   registry in both directions. The structural selectors that follow predate the hook and
+   stay until their markup is moved onto it; treat an edit to one of them as part of the
+   change that moved the markup. */
+export const GLOBAL_MASK_SELECTORS: readonly string[] = [
+  // Anything the app declares as live or environment-bound. One selector; the sites are
+  // VISUAL_MASK_SITES.
+  '[data-visual-mask]',
   // Absolute + relative timestamps ("3 days ago" moves every day).
   'time, [datetime]',
   // Anything the app itself declares as changing. sr-only live regions have a zero-size
@@ -629,6 +634,94 @@ const GLOBAL_MASK_SELECTORS: readonly string[] = [
   // Member avatars — different per account, and the beta account's may change.
   '[data-tour-anchor="avatar"]',
   'img[alt*="avatar" i]',
+]
+
+/**
+ * EVERY `data-visual-mask` SITE IN THE PRODUCT, by value, with the file that carries it and
+ * why its box is painted over. `test/e2e/visual-masks.test.ts` reads this list against the
+ * tree: a value listed here must appear in its file, and a `data-visual-mask` in
+ * components/ or app/ that is not listed here fails — so the reason for every mask is
+ * written down once, beside the selector that applies it, and cannot go stale in silence.
+ *
+ * A mask PAINTS A BOX AND CHANGES NO LAYOUT. It answers "this box holds different pixels on
+ * two honest captures of the same commit"; it cannot answer "this box is a different SIZE on
+ * two captures", which is `Surface.viewportOnly`'s job (see its note). Three kinds of box
+ * earn one:
+ *   ENV      the element mounts in one Vercel environment and not another. The support-chat
+ *            widget is the one such element: SUPPORT_CHAT is set for Production alone, so a
+ *            production capture carried it and a preview capture did not (LIVE-213).
+ *   LIVE     the element is a database reading. The right rail's panels, the Vault head's
+ *            three numbers, the chat trigger's unread badge.
+ *   ROUTE    the element renders on some routes and not others for a reason the picture cannot
+ *            show. The edge pill renders only where no dock slot exists.
+ *
+ * ⚠️ The Vercel preview toolbar is NOT here, because it is not ours to mark: Vercel injects it
+ * into every preview response, and `playwright.config.ts` sends `x-vercel-skip-toolbar` so it
+ * is never in the document at all (ADR-1277). It was the mid-right band LIVE-213 first read
+ * as Vera's edge tab.
+ */
+export const VISUAL_MASK_SITES: readonly {
+  readonly value: string
+  readonly file: string
+  readonly kind: 'env' | 'live' | 'route'
+  readonly why: string
+}[] = [
+  {
+    value: 'support-chat',
+    file: 'components/chat/support-chat-widget.tsx',
+    kind: 'env',
+    why: 'Mounts only where SUPPORT_CHAT=1, which is Production and not Preview.',
+  },
+  {
+    value: 'edge-pill',
+    file: 'components/layout/edge-pill.tsx',
+    kind: 'route',
+    why: 'The fallback launcher where no dock slot exists; its label and badge are live.',
+  },
+  {
+    value: 'dock-chat-tab',
+    file: 'components/vera/vera-launcher.tsx',
+    kind: 'live',
+    why: 'The phone chat tab: unread count and waiting peek.',
+  },
+  {
+    value: 'dock-chat-trigger',
+    file: 'components/vera/vera-launcher.tsx',
+    kind: 'live',
+    why: 'The docked chat trigger: unread badge and waiting dot.',
+  },
+  {
+    value: 'vault-head',
+    file: 'components/sidebar/game-stats-dock.tsx',
+    kind: 'live',
+    why: 'Zaps, Gems and streak at rest in the desktop dock.',
+  },
+  // `rail-panel` is carried by several files: WidgetCard stamps it on every rail panel, and
+  // the rail's own sections, the demo notice and the streaming skeleton carry it directly.
+  {
+    value: 'rail-panel',
+    file: 'components/modules/module-card.tsx',
+    kind: 'live',
+    why: 'WidgetCard, the rail panel wrapper: every panel it wraps is a database reading.',
+  },
+  {
+    value: 'rail-panel',
+    file: 'components/sidebar/right-sidebar.tsx',
+    kind: 'live',
+    why: 'The activity chart and the Frequency Signature dial, both readings of the member logs.',
+  },
+  {
+    value: 'rail-panel',
+    file: 'components/sidebar/demo-notice.tsx',
+    kind: 'live',
+    why: 'Two live headcounts, and the panel comes and goes with the demo flag.',
+  },
+  {
+    value: 'rail-panel',
+    file: 'components/sidebar/rail-panels.tsx',
+    kind: 'live',
+    why: 'PanelSkeleton, so a capture that lands mid-stream paints the same box.',
+  },
 ]
 
 /** Escape hatch for the flaky-surface policy: quiet a surface the same week it flakes,

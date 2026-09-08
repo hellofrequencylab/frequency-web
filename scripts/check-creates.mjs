@@ -71,10 +71,16 @@
 //
 // It stays BLOCKING, deliberately, and that is a judgement worth stating: its unrouted creates
 // are a NAMED SET (UNROUTED: 18 on 2026-08-11, 3 on 2026-09-07 after ADR-1249 routed fifteen in
-// one pass, 2 on 2026-09-08 after ADR-1262 routed Housing), not a count, so this gate is green
-// today and only fires when a NEW ungoverned create appears. An unrelated PR cannot trip it, and
-// the two ways out — route it, or add a dated line to UNROUTED — are both one edit. That is a
-// ratchet, not a tracker.
+// one pass, 2 on 2026-09-08 after ADR-1262 routed Housing, 0 later the same day after ADR-1280
+// took the last two rulings), not a count, so this gate is green today and only fires when a
+// NEW ungoverned create appears. An unrelated PR cannot trip it, and the two ways out — route it,
+// or add a dated line to UNROUTED — are both one edit. That is a ratchet, not a tracker.
+//
+//   RULE 2b — THE ROAD GATES (ADR-1280). A road may hand the governed layer a `roadGate`, the
+//     scoped gate it already enforces, and the layer then records that gate INSTEAD of re-checking
+//     the entity's capability. That is the one way a create can walk past a capability, so every
+//     road that does it is NAMED in ROAD_GATES with the check it runs; an entry point that declares
+//     one and is not named FAILS, and a ROAD_GATES row whose road no longer declares one is stale.
 //
 // Still runnable by hand for the friendly report: `node scripts/check-creates.mjs`. Exits 1 on
 // violation.
@@ -277,23 +283,28 @@ export const NOT_PROPOSE_AND_CONFIRM = new Map([
 // its line. An entry that HAS adopted but is still listed FAILS as a stale allowance, so this
 // cannot rot into a permanent amnesty. Anything not on this list fails on sight.
 //
-// 🔴 Every line below is real, unaudited create volume. Fifteen of the original eighteen routed on
-// 2026-09-07 (ADR-1249), and the Housing road followed on 2026-09-08 once ADR-1262 settled the
-// ruling its line named: the form now asks for the city its manifest has always required. The two
-// that remain are NOT waiting on effort: each one, routed as it stands, would refuse a create the
-// road accepts today, because the governed layer validates the draft against the entity's manifest
-// and re-checks a `capability` gate the road deliberately does not hold. Each therefore waits on a
-// ruling (a manifest change, or a scoped gate for a road that already has one), and the ruling each
-// needs is written on its line. Route it, delete the line.
+// ✅ EMPTY since 2026-09-08 (ADR-1280). Eighteen lines on 2026-08-11; fifteen routed on 2026-09-07
+// (ADR-1249); Housing on 2026-09-08 (ADR-1262); the last two the same day, once the two rulings
+// their lines named were taken: a road may declare the scoped gate it already enforces
+// (ROAD_GATES below), and a draft-status Event is a create whose manifest defers `startsAt` to
+// publish (`requiredAt: 'publish'`, `stage: 'draft'`). The map stays, empty, because it is the
+// ONLY place a new ungoverned create may be named while it waits — with a date, and the ruling it
+// waits on — and the companion test caps it at zero, so naming one is a visible, reviewed act.
 // ─────────────────────────────────────────────────────────────────────────────────────────────
-export const UNROUTED = new Map([
-  [
-    'app/(main)/events/scan/actions.ts::saveDraft',
-    '2026-08-11 — the flyer-scan Event draft. 2026-09-07 (ADR-1249): NOT routable as it stands. The draft row is born with no start time (createEventDraft writes starts_at null and titles it "Untitled event"), and the Event manifest requires `startsAt`, so checkCreateDraft would refuse every flyer draft. Needs a ruling on whether a draft-status Event is a create at all, or a manifest that knows a draft; then route.',
-  ],
+export const UNROUTED = new Map([])
+
+// ─────────────────────────────────────────────────────────────────────────────────────────────
+// ROAD_GATES — the entry points that hand the governed layer a `roadGate` (ADR-1280): the scoped
+// gate the road already enforces ahead of the layer, recorded on the audit row in place of the
+// entity's capability. This is the one shape that lets a create walk past a `capability` gate in
+// CREATE_GATES, so it is the one shape that must be written down here, with the check the road
+// runs. Rule 2b enforces it both ways: a road that declares a gate and is not named FAILS, and a
+// row whose road no longer declares one is stale.
+// ─────────────────────────────────────────────────────────────────────────────────────────────
+export const ROAD_GATES = new Map([
   [
     'app/(main)/spaces/[slug]/practices/actions.ts::createSpacePracticeAction',
-    '2026-08-11 — the Space Practice road. 2026-09-07 (ADR-1249): NOT routable as it stands. The road is deliberately open to anyone who MANAGES the Space, so a free member running a Space can build for their members, while CREATE_GATES declares `practice` a `practice.create` capability gate (Crew-only). confirmCreate re-checks that capability at the write and would refuse the free Space manager. Needs a per-road scoped gate (the kernel ruling ADR-1240 also deferred); then route.',
+    '2026-09-08 (ADR-1280) — authorizeSpaceAuthor: the caller manages the Space (getSpaceCapabilities canEditProfile: owner, admin or editor), re-derived from the session ahead of the layer. Own-Space practices are free to build; `practice.create` (Crew) gates the PUBLIC library through submitSpacePracticeToLibraryAction, which still holds it.',
   ],
 ])
 
@@ -425,6 +436,50 @@ export function routesThroughGovernedLayer(file, src, fnName) {
   return calls
 }
 
+/**
+ * Whether an exported function DECLARES A ROAD GATE: a `roadGate:` property inside a call to one
+ * of GOVERNED_CALLS, in the named function's own body (ADR-1280). Per FUNCTION BODY, like
+ * `routesThroughGovernedLayer`, so one gated road cannot launder its neighbours, and only a call
+ * to the governed layer counts, so a local object that happens to carry the key does not. PURE.
+ */
+export function declaresRoadGate(file, src, fnName) {
+  const sf = parse(file, src)
+  let body = null
+  for (const st of sf.statements) {
+    if (ts.isFunctionDeclaration(st) && st.name?.text === fnName) body = st.body ?? null
+    else if (ts.isVariableStatement(st)) {
+      for (const d of st.declarationList.declarations) {
+        if (ts.isIdentifier(d.name) && d.name.text === fnName && d.initializer) body = d.initializer
+      }
+    }
+  }
+  if (!body) return false
+
+  let found = false
+  const hasRoadGateProp = (n) => {
+    let hit = false
+    const walk = (x) => {
+      if (hit) return
+      if (ts.isPropertyAssignment(x) || ts.isShorthandPropertyAssignment(x)) {
+        const name = x.name
+        if ((ts.isIdentifier(name) || ts.isStringLiteral(name)) && name.text === 'roadGate') hit = true
+      }
+      ts.forEachChild(x, walk)
+    }
+    walk(n)
+    return hit
+  }
+  const visit = (n) => {
+    if (found) return
+    if (ts.isCallExpression(n) && ts.isIdentifier(n.expression) && GOVERNED_CALLS.includes(n.expression.text)) {
+      for (const arg of n.arguments) if (hasRoadGateProp(arg)) found = true
+    }
+    ts.forEachChild(n, visit)
+  }
+  visit(body)
+  return found
+}
+
 /** Whether a file exports a symbol by that name (function or const). */
 function exportsSymbol(src, name) {
   const esc = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
@@ -521,6 +576,22 @@ export function runCheck() {
       continue
     }
     const routed = routesThroughGovernedLayer(file, src, fn)
+    // RULE 2b — a road that hands the layer its own gate must be named, and vice versa.
+    const gated = declaresRoadGate(file, src, fn)
+    if (gated && !ROAD_GATES.has(key)) {
+      violations.push({
+        file,
+        kind: 'unnamed-road-gate',
+        text: `\`${fn}\` passes a \`roadGate\` to the governed layer but is not named in ROAD_GATES — a road that stands in for a capability gate says so here, with the check it runs`,
+      })
+    }
+    if (!gated && ROAD_GATES.has(key)) {
+      violations.push({
+        file,
+        kind: 'stale-road-gate',
+        text: `\`${key}\` is named in ROAD_GATES but no longer passes a \`roadGate\` to the governed layer — delete its row rather than letting the list describe a check that is not there`,
+      })
+    }
     if (routed) {
       ratchet.routed.push(key)
       if (UNROUTED.has(key)) {
@@ -548,6 +619,15 @@ export function runCheck() {
         file: key.split('::')[0],
         kind: 'stale-allowance',
         text: `\`${key}\` is in UNROUTED but is not a registered create entry — delete its line`,
+      })
+    }
+  }
+  for (const key of ROAD_GATES.keys()) {
+    if (!CREATE_ENTRIES.has(key)) {
+      violations.push({
+        file: key.split('::')[0],
+        kind: 'stale-road-gate',
+        text: `\`${key}\` is in ROAD_GATES but is not a registered create entry — a road gate belongs to an entry point`,
       })
     }
   }
@@ -596,6 +676,8 @@ const WHY = {
   'stale-census': 'has a stale ENTITY_WRITES entry',
   'ungoverned-create': 'creates a Studio entity outside the governed layer',
   'stale-allowance': 'has a stale UNROUTED entry',
+  'unnamed-road-gate': 'declares a road gate nobody has written down',
+  'stale-road-gate': 'has a stale ROAD_GATES entry',
   'stale-exclusion': 'has a stale NOT_PROPOSE_AND_CONFIRM entry',
   autonomy: 'weakens the autonomy wall',
   integrity: "breaks the guard's own integrity",
@@ -625,6 +707,9 @@ function main() {
           '  This gate is honest, not satisfied. Route one, delete its line.',
       )
     }
+    if (ROAD_GATES.size > 0) {
+      console.log(`  ${ROAD_GATES.size} road(s) declare the scoped gate they enforce (ROAD_GATES): ` + [...ROAD_GATES.keys()].join(', '))
+    }
     return
   }
 
@@ -642,7 +727,8 @@ function main() {
       're-implement it inside the governance layer.\n' +
       'If a write is genuinely not a member create, classify it in ENTITY_WRITES with a reason. If an\n' +
       'entry point genuinely should not propose-and-confirm, say so in NOT_PROPOSE_AND_CONFIRM. Do NOT\n' +
-      'grow UNROUTED — it may only shrink. See ADR-988 in docs/DECISIONS.md.\n',
+      'grow UNROUTED — it may only shrink. A road that enforces its own gate ahead of the layer passes\n' +
+      'it as `roadGate` AND is named in ROAD_GATES (ADR-1280). See ADR-988 in docs/DECISIONS.md.\n',
   )
   process.exit(1)
 }

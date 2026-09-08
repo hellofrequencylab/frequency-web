@@ -48,8 +48,12 @@ import {
   createConfirmLabel,
   createGateFor,
   parseDraftArg,
+  readRoadGate,
+  resolveCreateGate,
   type CreateAutonomyTier,
   type CreateGate,
+  type CreateStage,
+  type RoadGate,
 } from './create-tools'
 import { createCommitFor, hasCreateCommit } from './create-commits'
 
@@ -90,6 +94,20 @@ export interface ProposeCreateInput {
   aiDrafted?: boolean
   /** One plain line on why this draft, readable by the member and by whoever reads the ledger. */
   rationale?: string
+  /**
+   * The gate THIS ROAD already enforces, when it deliberately differs from the entity's (ADR-1280).
+   * Recorded on the audit row in place of the entity's gate and left to the road, exactly as a
+   * `scoped` entry in CREATE_GATES is. Every road that declares one is named in
+   * scripts/check-creates.mjs (ROAD_GATES); an unnamed one fails the build.
+   */
+  roadGate?: RoadGate
+  /**
+   * Whether this create is born a DRAFT (ADR-1280). A draft may omit a field the manifest marks
+   * `requiredAt: 'publish'`; the default, 'publish', requires everything. Recorded on the audit
+   * row and re-applied at confirm, so the confirmed draft is held to the same stage as the
+   * proposed one.
+   */
+  stage?: CreateStage
 }
 
 export interface CreateProposal {
@@ -158,10 +176,13 @@ export async function proposeCreate(input: ProposeCreateInput): Promise<ActionRe
   if (!caller) return fail('Sign in first.')
 
   const manifest = studioManifest(input.entity)
-  const gate = createGateFor(input.entity)
+  // The road's own scoped gate wins when it declared one; the entity's declared gate otherwise.
+  // Both are total over an unknown entity, so a road cannot scope its way into creating one.
+  const gate = resolveCreateGate(input.entity, input.roadGate)
   if (!manifest || !gate) return fail(`"${input.entity}" is not a thing the Studio knows how to make.`)
 
-  const check = checkCreateDraft(input.entity, input.draft, input.ledger)
+  const stage: CreateStage = input.stage === 'draft' ? 'draft' : 'publish'
+  const check = checkCreateDraft(input.entity, input.draft, input.ledger, stage)
   if (!check.ok) return fail(check.errors.join(' '))
 
   const gated = await passesGate(gate)
@@ -184,7 +205,12 @@ export async function proposeCreate(input: ProposeCreateInput): Promise<ActionRe
         space_id: input.spaceId ?? null,
         actor_profile_id: caller.id,
         ai_drafted: input.aiDrafted === true,
-        gate: gate.kind === 'capability' ? gate.capability : `scoped:${input.entity}`,
+        // Which gate held the line: the capability re-checked here, the entity's scoped gate, or
+        // the road's own (`road:<entity>`, with the road's reason beside it so the ledger reads
+        // which check stood in for the capability).
+        gate: gate.kind === 'capability' ? gate.capability : input.roadGate ? `road:${input.entity}` : `scoped:${input.entity}`,
+        ...(input.roadGate ? { road_gate: { kind: 'scoped', why: input.roadGate.why } } : {}),
+        stage,
         tier: CREATE_AUTONOMY_TIER,
       },
     })
@@ -263,11 +289,15 @@ export async function confirmCreate<T>(input: ConfirmCreateInput<T>): Promise<Ac
   }
 
   const entity = String(payload.entity ?? '')
-  const gate = createGateFor(entity)
+  // The gate and the stage the PROPOSAL recorded (ADR-1280). A road gate is read back
+  // fail-closed: a malformed record re-applies the entity's own gate. The row is written by this
+  // module alone, through the service role, so what it says is what the propose decided.
+  const gate = resolveCreateGate(entity, readRoadGate(payload.road_gate))
   if (!gate) return fail('That draft is for something the Studio no longer makes.')
+  const stage: CreateStage = payload.stage === 'draft' ? 'draft' : 'publish'
 
   const draft = input.draft ?? parseDraftArg(payload.draft) ?? {}
-  const check = checkCreateDraft(entity, draft, input.ledger)
+  const check = checkCreateDraft(entity, draft, input.ledger, stage)
   if (!check.ok) return fail(check.errors.join(' '))
 
   // THE RE-CHECK THAT MATTERS: the gate, taken now, against the caller who is confirming.
@@ -349,9 +379,10 @@ export interface ProposeAndConfirmCreateInput<T> extends ProposeCreateInput {
  * Propose and confirm in one call, for a surface where the human is already tapping Create.
  *
  * Every gate is the two phases' own: the caller is re-derived from the session twice, the draft
- * is validated against the manifest, a capability gate is checked at propose and again at the
- * write, a scoped gate is recorded and left to the commit, and the proposal is claimed with the
- * single-use conditional update before the commit runs. A refusal at either phase is returned as
+ * is validated against the manifest at the stage the road declared, a capability gate is checked
+ * at propose and again at the write, a scoped gate (the entity's, or the road's own) is recorded
+ * and left to the commit, and the proposal is claimed with the single-use conditional update
+ * before the commit runs. A refusal at either phase is returned as
  * the phase's own plain sentence, and a commit that throws closes the audit row out `failed` and
  * returns its message, so a wizard keeps whatever error surface its writer already had.
  *

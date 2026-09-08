@@ -41,7 +41,7 @@ export function RecraftEditRow({
 
   return (
     <div className="space-y-2">
-      <p className="flex items-center gap-1.5 text-meta font-semibold uppercase tracking-wide text-subtle">
+      <p className="flex items-center gap-1.5 eyebrow text-subtle">
         <Wand className="h-3.5 w-3.5" /> Image studio {busy && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
       </p>
       <div className="flex flex-wrap gap-2">
@@ -101,7 +101,7 @@ export function AssetVersions({ assetId }: { assetId: string }) {
 
   return (
     <div className="space-y-2">
-      <p className="flex items-center gap-1.5 text-meta font-semibold uppercase tracking-wide text-subtle">
+      <p className="flex items-center gap-1.5 eyebrow text-subtle">
         <History className="h-3.5 w-3.5" /> Versions {busy && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
       </p>
       <ul className="divide-y divide-border overflow-hidden rounded-card border border-border">

@@ -197,7 +197,7 @@ function CardsCanvas({ label, value, onChange }: { label: string; value: unknown
             ) : statValue || statLabel ? (
               <div style={{ padding: '18px 16px 6px', background: C.surfaceElevated }}>
                 <div className="text-3xl font-black" style={{ color: C.primaryStrong, lineHeight: 1 }}>{statValue || '000'}</div>
-                {statLabel && <div className="mt-1 text-meta font-semibold uppercase tracking-wide" style={{ color: C.subtle }}>{statLabel}</div>}
+                {statLabel && <div className="mt-1 eyebrow" style={{ color: C.subtle }}>{statLabel}</div>}
               </div>
             ) : null}
             <div style={{ padding: 14 }}>

@@ -181,7 +181,7 @@ export function TagGovernancePanel({
 
       <div className="overflow-hidden rounded-2xl border border-border bg-surface">
         <div className="border-b border-border bg-surface-elevated/50 px-4 py-2">
-          <p className="text-meta font-semibold uppercase tracking-wide text-muted">
+          <p className="eyebrow text-muted">
             Canonical tags
             <span className="ml-1.5 font-medium tabular-nums text-subtle">{canonical.length}</span>
           </p>
@@ -207,7 +207,7 @@ export function TagGovernancePanel({
 
       <div className="overflow-hidden rounded-2xl border border-border bg-surface">
         <div className="border-b border-border bg-surface-elevated/50 px-4 py-2">
-          <p className="text-meta font-semibold uppercase tracking-wide text-muted">
+          <p className="eyebrow text-muted">
             Proposed tags
             <span className="ml-1.5 font-medium tabular-nums text-subtle">{proposed.length}</span>
           </p>

@@ -469,7 +469,7 @@ const reviewContent = z
 
 function ReviewStep({ draft, ctx }: StepViewProps) {
   return (
-    <div className="mt-2 divide-y divide-border overflow-hidden rounded-card border border-border bg-surface shadow-sm">
+    <div className="mt-2 divide-y divide-border overflow-hidden rounded-card border border-border bg-surface lift-1">
       <div className="flex items-center gap-4 p-5">
         <Avatar url={draft.avatarUrl} name={draft.displayName} email={ctx.userEmail} size="lg" />
         <div className="min-w-0">
@@ -480,14 +480,14 @@ function ReviewStep({ draft, ctx }: StepViewProps) {
 
       {draft.bio && (
         <div className="px-5 py-4">
-          <p className="mb-1 text-meta font-semibold uppercase tracking-wide text-subtle">Bio</p>
+          <p className="mb-1 eyebrow text-subtle">Bio</p>
           <p className="whitespace-pre-wrap text-body-sm text-text">{draft.bio}</p>
         </div>
       )}
 
       {draft.regionId && (
         <div className="px-5 py-4">
-          <p className="mb-1 text-meta font-semibold uppercase tracking-wide text-subtle">Region</p>
+          <p className="mb-1 eyebrow text-subtle">Region</p>
           <p className="text-body-sm text-text">{ctx.regions.find((r) => r.id === draft.regionId)?.name}</p>
         </div>
       )}

@@ -83,7 +83,7 @@ export function HostCohostSection({
           sits above it. */}
       {hasCohosts ? (
         <div className={hasHost ? 'mt-4 border-t border-border pt-4' : ''}>
-          <p className="mb-2 text-meta font-semibold uppercase tracking-wide text-subtle">Co Hosts</p>
+          <p className="mb-2 eyebrow text-subtle">Co Hosts</p>
 
           {/* 2a. SPACES — same surface, same row shape as the Host above them. */}
           {hasSpaceCohosts ? (

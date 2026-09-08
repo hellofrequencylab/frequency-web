@@ -665,7 +665,8 @@ export async function PulsePanel() {
   )
 }
 
-// A quiet skeleton while a panel streams in (its own Suspense boundary).
+// A quiet skeleton while a panel streams in (its own Suspense boundary). It carries the same
+// mask as the panel it stands in for, so a capture that lands on either paints the same box.
 export function PanelSkeleton() {
-  return <div className="h-32 rounded-card border border-border bg-surface animate-pulse" />
+  return <div data-visual-mask="rail-panel" className="h-32 rounded-card border border-border bg-surface animate-pulse" />
 }

@@ -184,9 +184,13 @@ export const EVENT_MANIFEST: EntityManifest = {
     // ── When. The start is the second thing Vera cannot invent, so the Spark asks it. ──
     // Wall-clock date AND time: `datetime`, not `date`. An event start without a time of day is
     // useless, and this pairing is what prompted the kind to be added to the kernel (ADR-597).
-    // Asked at creation and edited in the rail after (ADR-1281): a start is a fact about the
-    // gathering, never page content, and the settings rail has always carried it.
-    { path: 'startsAt', label: 'Starts', kind: 'datetime', section: 'when', placement: 'spark', required: true, editPlane: 'rail' },
+    // Asked at creation, edited in the rail after (ADR-1281), and required AT PUBLISH rather than
+    // at the create (ADR-1280). A start is a fact about the gathering, never page content, so the
+    // settings rail carries it. A flyer scan saves a draft-status Event before anyone has read the
+    // date off the poster, and that draft is a real create the governed layer records: the Spark
+    // still always asks for a start, the Event builder still refuses a live event without one, and
+    // `publishDraft` enforces the full manifest before a draft goes live. Only the draft insert defers.
+    { path: 'startsAt', label: 'Starts', kind: 'datetime', section: 'when', placement: 'spark', required: true, requiredAt: 'publish', editPlane: 'rail' },
     { path: 'endsAt', label: 'Ends', kind: 'datetime', section: 'when', omitWhenEmpty: true },
     // Repeats default to a one-time event; the cadence re-materialises the occurrence window on save.
     // A `select`, not a `cadence`: this is a closed set the server re-validates, and only a kind
