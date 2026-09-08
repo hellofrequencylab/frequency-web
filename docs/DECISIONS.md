@@ -36824,3 +36824,32 @@ The failure is silent in both directions, which is what makes it a measurement p
 
 ⚠️ **The generalisable part: re-test the premise against the PLATFORM, not only the repo.** [ADR-1082](DECISIONS.md) established that a row's blocker is a claim with an expiry date, and this repo now reflexively re-measures a row's *code* premise before working it. This row's premise was not about code. It was about a machine — 4 cores, 8 GB, 3 workers — printed on line 2 of every single build log, and it expired six days before anyone looked. Six captures were filed with timestamps, cache ids, compile durations and commit ranges, and exactly one of them ever quoted the configuration line sitting above all of it. **When a row names an environment, the environment is part of the premise, and it is usually the cheapest half to re-read.**
 
+
+## ADR-1260: the eyebrow and display slices continue, and the shadow slice rule learns three preconditions before it ships anything (2026-09-08)
+
+**Status.** Accepted. Advances `HYG-055`. Continues [ADR-1256](DECISIONS.md) (the six ratchet decisions and the eyebrow slice rule) and amends the third of its three slice rules. Applies the cut-by-shape discipline of [ADR-1119](DECISIONS.md) and its correction [ADR-1124](DECISIONS.md) (the query lives in the repo). Enforced by `pnpm check:adoption` plus the `HYG-055` probe.
+
+**Context.** Re-measured on main first, per [ADR-1082](DECISIONS.md), and all three slice-bearing classes read exactly what ADR-1256 recorded: `handrolled-eyebrow` 550, `literal-display-type` 94, `shadow-literals` 50. The counts had not expired.
+
+Two of the three slices are pure continuations and needed no new decision. The third did not survive contact with its sites.
+
+**Decision.**
+
+1. **Eyebrow slices 2 and 3 ship, by the recorded rule.** `node scripts/eyebrow-bucket.mjs --tracking wider` reads 16 sites in 12 files and `--tracking widest` 16 in 12; the 17 sites in 14 files NOT import-reachable from a surface `test/e2e/visual.spec.ts` photographs took the composite `eyebrow` utility and kept their layout and colour tokens. 550 to 533.
+2. **The display-ladder slice ships its unwatched half.** 22 ladder elements over 48 sites, re-measured and unchanged; exactly one file carrying them is unwatched — `components/marketing/funnel/funnel-sections.tsx`, reached only from `app/for/[niche]` — and its 8 elements over 17 sites took the role covering their top step (`text-4xl sm:text-5xl lg:text-6xl` to `text-display-h1`, `text-4xl sm:text-5xl` to `text-display-h2`, `text-3xl sm:text-4xl` to `text-display-h3`), each keeping its own explicit `leading-*`. 94 to 77.
+3. **🔴 The shadow slice ships NOTHING, and that is the finding.** Its 17 chrome sites are 9 watched and 8 unwatched, and reading the 8 says none of them converts under the rule as ADR-1256 wrote it. The rule now carries three preconditions a site must meet before `shadow-*` may become a lift:
+   - **No coloured companion.** Four sites pair the literal with `shadow-primary/20` or `/25` (the two `/upgrade` CTAs, the two induction badges). `.lift-*` paints its own ink shadow, so a conversion swaps a brand glow for neutral depth — a design change wearing a rename's clothes.
+   - **No variant prefix.** One is `md:shadow-2xl` (the induction phone shell). `.lift-3` is a plain CSS class, not a Tailwind utility, so no breakpoint variant can reach it.
+   - **No transition the element depends on.** The last three are floating popovers — the host hovercard, the Space location typeahead, the info tip — whose `transition-[opacity,transform]` IS the affordance. `.lift-1/2/3` are UNLAYERED and set `transition` themselves, so a lift clobbers the fade, and `.lift-2:hover` adds 2px of travel under the cursor of a menu you are choosing from.
+4. **The slice targets stay where they are.** 484 / 46 / 33 are still the floors these rules reach; what changed is that no sweep can reach them from here.
+
+**Consequences.**
+
+- ⚠️ **All three classes are now blocked on the same one thing, and it is an owner action, not more agent work.** Everything between 533 and 484 (34 slice-1 leftovers + 15 from these two slices = 49 sites), and everything between 77 and 46 (14 ladder elements / 31 sites), and 9 of the 17 shadow chrome sites, sit on surfaces the visual suite photographs. A baseline recapture runs on a runner and is owner-dispatched, so a slice that would move one cannot self-certify. After ONE recapture, 49 + 31 sites convert mechanically and the instrument names them.
+- The membership of every slice stays re-derivable rather than listed in prose: `node scripts/eyebrow-bucket.mjs --tracking wider|widest` for the eyebrow class, and the ladder census is the class's own pattern grouped by class list.
+- `handrolled-eyebrow` 550 to 533 and `literal-display-type` 94 to 77, each re-frozen with its own reason. No floor was raised.
+- The 96 existing sites that already combine `lift-*` with a `transition-*` utility are worth a look by somebody: by the unlayered rule that made this decision, their transitions are being replaced today. Not touched here, and not a claim that any of them is visibly wrong — a lift's own `transition` covers `box-shadow` and `transform`, which is what most of those sites were animating anyway.
+
+⚠️ **The generalisable part: a slice rule is a hypothesis until you read the sites it names.** ADR-1256 read all 50 shadow sites and correctly split them by WHO CHOSE THE SHADOW — that half of the rule held. What it could not see from the census is that the destination utility has properties the source utility does not: a colour it overrides, a variant it cannot take, a `transition` it clobbers. Two of this row's three rules survived intact and one did not, and the cheap way to find out which is to cut the unwatched half first and try to write the diff.
+
+---
