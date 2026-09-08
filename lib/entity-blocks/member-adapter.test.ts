@@ -36,6 +36,7 @@ function data(layout: SpotlightLayout, over: Partial<SpotlightData> = {}): Spotl
     hostedEvents: [],
     layout,
     background: { assetPath: null, dim: 0, focusX: 50, focusY: 50, zoom: 100 },
+    stickers: { items: [] },
     theme: { header: { show: false, height: 0, focusY: 50 } } as unknown as SpotlightData['theme'],
     totalZaps: 1234,
     topFriends: [{ profileId: 'f1', handle: 'bob', displayName: 'Bob', avatarUrl: null }],

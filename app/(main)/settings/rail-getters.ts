@@ -24,12 +24,13 @@ import {
   readSpotlightPublished,
   readSpotlightThemeRaw,
   readSpotlightBackgroundRaw,
+  readSpotlightStickersRaw,
 } from '@/lib/profile/spotlight-flags'
 import { readProfileHeaderFocus, readProfileAvatarFocus, readProfileOverlayStyle, readProfileOverlayColor } from '@/lib/profile/header-focus'
 import { avatarSrc } from '@/lib/images/avatar-focus'
 import { validateSpotlightTheme, type SpotlightTheme } from '@/lib/spotlight/theme'
-import { validateSpotlightBackground } from '@/lib/spotlight/blocks/validate'
-import type { SpotlightBackground } from '@/lib/spotlight/blocks/schema'
+import { validateSpotlightBackground, validateSpotlightStickers } from '@/lib/spotlight/blocks/validate'
+import type { SpotlightBackground, SpotlightStickers } from '@/lib/spotlight/blocks/schema'
 import { getTopFriendsForOwner, getAcceptedFriendsForPicker } from '@/lib/spotlight/top-friends'
 import type { TopFriend } from '@/lib/spotlight/top-friends.types'
 import { computeCompleteness } from '@/lib/profile/completeness'
@@ -303,6 +304,8 @@ export interface AppearanceRailData {
   theme: SpotlightTheme
   /** The validated Spotlight page background (assetPath pinned to the owner + focus/dim/zoom). */
   background: SpotlightBackground
+  /** The validated sticker layer (allowlisted ids at clamped percentage coordinates, ADR-1275). */
+  stickers: SpotlightStickers
   /** The member's current ordered Top Friends (resolved to public identity fields). */
   topFriends: TopFriend[]
   /** Every accepted friend, as the picker's source list (only the caller's own friends). */
@@ -342,6 +345,7 @@ export async function getAppearanceRailData(): Promise<AppearanceRailData | null
     theme: validateSpotlightTheme(readSpotlightThemeRaw(meta)),
     // The auth user id pins the background asset path to the owner's own folder, exactly as the public read.
     background: validateSpotlightBackground(readSpotlightBackgroundRaw(meta), user.id),
+    stickers: validateSpotlightStickers(readSpotlightStickersRaw(meta)),
     topFriends,
     friendOptions,
   }

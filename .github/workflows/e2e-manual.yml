@@ -124,8 +124,11 @@
 #
 # FIRST CAPTURE OF THE OPERATOR BASELINES (28 PNGs — 7 routes x 2 modes x 2 viewports):
 #     base_url = <the PR's preview URL>, capture_shell ✔, update_baselines ✔
-# Expect the commit to name `admin*` files only. Anything else in that diff is a regression,
-# not a capture (ADR-948's attribution property).
+# Expect the commit to name `admin*` files only IF nothing else has changed since the last
+# capture. A capture rewrites every PNG whose page renders differently from the day that file
+# was taken, so anything else in the diff is a page that changed since then — read it with
+# `pnpm visual:bands origin/main HEAD` before deciding whether it is a regression, a copy change
+# to take, or live data (ADR-1273; ADR-948's attribution property still holds per file).
 #
 # ⚠️ WHETHER THE COMMIT THIS MAKES RE-RUNS CI IS NOT RELIABLE — DO NOT PLAN AROUND EITHER ANSWER.
 #
@@ -344,7 +347,12 @@ jobs:
             echo "No baseline changes to commit."
           else
             git commit -m "Visual baselines: capture against ${{ inputs.base_url }} (runner-committed)"
-            git pull --rebase origin "${GITHUB_REF_NAME}"
+            # -X theirs: two captures queued on one ref (the concurrency group serialises them)
+            # both rewrite the same PNGs, and a plain rebase cannot merge a binary, so the second
+            # run died at "could not apply" with its capture only in the debug artifact (run
+            # 34181623788, ADR-1273). During a rebase "theirs" is the commit being replayed, i.e.
+            # THIS run's capture, which is the newer photograph and the one that should win.
+            git pull --rebase -X theirs origin "${GITHUB_REF_NAME}"
             git push origin "HEAD:${GITHUB_REF_NAME}"
           fi
       - name: Upload baselines (debug copy)
