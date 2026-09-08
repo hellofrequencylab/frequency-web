@@ -90,7 +90,6 @@ element_settings                     internal
 email_events                         internal
 email_webhook_events                 internal
 email_suppressions                   internal
-email_templates                      internal
 engagement_events                    authenticated
 entities                             public
 entry_campaigns                      internal

@@ -25,6 +25,9 @@ import 'server-only'
 // (the transactional presets and EMAIL_PRESETS, imported by nothing outside their own test). Every
 // transactional sender renders its hardcoded copy; nothing here reads email_templates any more. Only
 // job 1 (resolveProductRefs + productVarsFromLayout, consumed by lib/email-studio/send.ts) remains.
+//
+// 2026-09-07 (LIVE-164): with no writer and no reader left, the email_templates table itself is dropped
+// by supabase/migrations/20270345002200. The paragraphs above describe a table that no longer exists.
 
 import { getProduct } from '@/lib/commerce/products'
 import { formatPriceCents } from '@/lib/commerce/types'

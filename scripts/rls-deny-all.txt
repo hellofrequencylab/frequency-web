@@ -27,7 +27,6 @@ element_settings
 email_events
 email_webhook_events
 email_suppressions
-email_templates
 entry_campaigns
 entry_point_conversions
 entry_point_variants

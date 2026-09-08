@@ -16,7 +16,8 @@
     },
     "email_templates.block_json": {
       "kind": "email",
-      "documents": 7
+      "documents": 7,
+      "note": "TABLE DROPPED by supabase/migrations/20270345002200 (LIVE-164, 2026-09-07): its seven rows were one never-edited seed batch. The seven template-* documents stay here as fixture (real email-kind layouts still prove the fold); the next recapture will find no such store and should lower MIN_STORES to 2 naming this deletion."
     },
     "profiles.meta.entityGrid": {
       "kind": "member",

@@ -59,7 +59,6 @@
         {
           "name": "W0d · P3 — the perf set and the deferred niceties. 12 visitors / 18 pageviews in 31 days: the funnel, not the page speed, is the constraint, and these are priced against that rather than against merit.",
           "ids": [
-            "LIVE-164",
             "LIVE-165",
             "LIVE-149",
             "LIVE-170"
@@ -7634,12 +7633,13 @@
       "status": "open",
       "priority": "P3",
       "lane": "live",
+      "ownerAction": "config",
       "size": "XS",
       "source": {
         "file": "app/(marketing)/layout.tsx",
         "ref": "ADR-1211"
       },
-      "detail": "Scan two L3-08 (b). The three readers are server layouts. Renaming it in code without renaming the Vercel variable in the same window would hide the widget on the next deploy, so this is a two-step change: add SUPPORT_CHAT in Vercel, switch the readers to prefer it with a fallback to the old name, then remove the old variable and the fallback.\n\n── RE-PRICED P2 -> P3 on 2026-09-07 in the full re-prioritisation pass: housekeeping with no member-facing consequence: the NEXT_PUBLIC_ prefix buys nothing, and buying nothing is not a defect.",
+      "detail": "Scan two L3-08 (b). The three readers are server layouts. Renaming it in code without renaming the Vercel variable in the same window would hide the widget on the next deploy, so this is a two-step change: add SUPPORT_CHAT in Vercel, switch the readers to prefer it with a fallback to the old name, then remove the old variable and the fallback.\n\n── RE-PRICED P2 -> P3 on 2026-09-07 in the full re-prioritisation pass: housekeeping with no member-facing consequence: the NEXT_PUBLIC_ prefix buys nothing, and buying nothing is not a defect.\n\n── SPLIT OUT OF #2423 ON 2026-09-07, and the reason is a production risk an agent must not take. That PR carried this row beside LIVE-164 (the email_templates drop). LIVE-164 needs nothing from anyone and ships on its own; this half cannot, because step two removes the fallback to NEXT_PUBLIC_SUPPORT_CHAT, and the three readers are PRERENDERED server layouts whose env is read at build time. If SUPPORT_CHAT is not set in Vercel Production before the next build, the support widget disappears from every public page and nothing in CI would say so. Production today proves the OLD name is '1': /what-is-frequency carries SupportChatWidget in its RSC payload with its three client chunks (OWN-052, 2026-09-05), which also proves CONVERSATION_TOKEN_SECRET and CRM_INBOX_OWNER_PROFILE_ID are set. So the whole ask is one dashboard edit: add SUPPORT_CHAT=1 to Vercel Production. The code half is written and waiting on branch claude/live-164-165-dead-table-env-cysiw8; once the variable is set, that half lands and the old variable can be removed in the same window.",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e \"const fs=require('fs'),pa=require('path');function*w(d){for(const e of fs.readdirSync(d,{withFileTypes:true})){const f=pa.join(d,e.name);if(e.isDirectory()){if(e.name!=='node_modules'&&!e.name.startsWith('.'))yield*w(f)}else yield f}}const hits=['app','lib','components'].flatMap(d=>[...w(d)]).filter(f=>/\\\\.tsx?$/.test(f)&&/NEXT_PUBLIC_SUPPORT_CHAT/.test(fs.readFileSync(f,'utf8')));process.exit(hits.length===0?0:1)\"",
@@ -7821,7 +7821,7 @@
     {
       "id": "LIVE-164",
       "title": "The email_templates table has no writer and, since SCAN-597, no reader",
-      "status": "open",
+      "status": "done",
       "priority": "P3",
       "lane": "live",
       "size": "XS",
@@ -7829,11 +7829,11 @@
         "file": "lib/email-studio/product-block.ts",
         "ref": "ADR-1211"
       },
-      "detail": "RLS deny-all, no insert anywhere, and the one reader (renderTransactionalTemplate) is deleted. Drop it in a migration (and its table-grants and rls-deny-all lines) or record why it stays.\n\n── RE-PRICED P2 -> P3 on 2026-09-07 in the full re-prioritisation pass: housekeeping with no member-facing consequence — a table with no writer and no reader costs nothing until somebody writes to it.",
+      "detail": "RLS deny-all, no insert anywhere, and the one reader (renderTransactionalTemplate) is deleted. Drop it in a migration (and its table-grants and rls-deny-all lines) or record why it stays.\n\n── RE-PRICED P2 -> P3 on 2026-09-07 in the full re-prioritisation pass: housekeeping with no member-facing consequence — a table with no writer and no reader costs nothing until somebody writes to it.\n\n── ✅ CLOSED 2026-09-07 (ADR-1233). Re-measured first: zero `.from('email_templates')` chains under app/, lib/, components/ and scripts/ (check-schema-contract walks 4,174 chains and finds none), so the premise held. But the table was NOT empty: production held 7 rows, all created inside one second on 2026-07-12 02:56:11Z, none ever updated, named for the seven EMAIL_PRESETS starters whose module #2368 deleted, so one seed batch and no operator work. Dropped by supabase/migrations/20270345002200 (NOT applied; the owner applies it and repairs the ledger per supabase/migrations/README.md), with positive controls asserting space_email_templates and campaigns.block_json survive. Removed in the same change: the scripts/table-grants.txt and scripts/rls-deny-all.txt lines, the SUSPENSION_EXEMPT entry, the callerless EmailTemplate interface, and the table's block in lib/database.types.ts (hand-removed; the maintenance types-drift sweep reads a one-table gap until the migration is applied, then regenerated types match). The seven template-* documents stay in scripts/entity-layout-corpus.json as fixture, with a note. ⚠️ The probe's lib arm was repointed, not weakened: `/email_templates/` also matched the live, unrelated `space_email_templates` (lib/spaces/email-templates.ts and its types), so as written the arm could only pass by deleting a working feature. It now matches the bare name; the migration arm is unchanged.",
       "verify": {
         "kind": "cmd",
-        "cmd": "node -e \"const fs=require('fs'),pa=require('path');function*w(d){for(const e of fs.readdirSync(d,{withFileTypes:true})){const f=pa.join(d,e.name);if(e.isDirectory()){if(e.name!=='node_modules'&&!e.name.startsWith('.'))yield*w(f)}else yield f}}const mig=[...w('supabase/migrations')].some(f=>f.endsWith('.sql')&&/drop table if exists public\\\\.email_templates/.test(fs.readFileSync(f,'utf8')));const lib=[...w('lib')].some(f=>/\\\\.tsx?$/.test(f)&&/email_templates/.test(fs.readFileSync(f,'utf8').replace(/\\\\/\\\\/.*$/gm,'')));process.exit(mig&&!lib?0:1)\"",
-        "note": "Passes once a migration drops the table and no lib code names it."
+        "cmd": "node -e \"const fs=require('fs'),pa=require('path');function*w(d){for(const e of fs.readdirSync(d,{withFileTypes:true})){const f=pa.join(d,e.name);if(e.isDirectory()){if(e.name!=='node_modules'&&!e.name.startsWith('.'))yield*w(f)}else yield f}}const mig=[...w('supabase/migrations')].some(f=>f.endsWith('.sql')&&/drop table if exists public\\\\.email_templates/.test(fs.readFileSync(f,'utf8')));const lib=[...w('lib')].some(f=>/\\\\.tsx?$/.test(f)&&/(^|[^a-z_])email_templates/.test(fs.readFileSync(f,'utf8').replace(/\\\\/\\\\/.*$/gm,'')));process.exit(mig&&!lib?0:1)\"",
+        "note": "Passes once a migration drops the table and no lib code names it. The lib arm matches the BARE name: `space_email_templates` is a different, live table (ADR-1233)."
       }
     },
     {
