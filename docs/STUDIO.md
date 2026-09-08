@@ -58,10 +58,21 @@ drift apart: `spark` (guided creation) · `inline` (ADR-450's inline canvas) · 
 (ADR-450's Inspector, the default). Same declaration, filtered three ways. The Spark reads
 `sparkFields()`; a rail form reads `railForm(manifest, writes)` from
 `lib/studio/kernel/edit-plan.ts` (ADR-1240) and declares only the columns its save action
-writes. As of 2026-09-07 the Practice (ADR-1240) and Journey (ADR-1246) rails derive this way;
-`HYG-050` in the backlog is the record of which rails still hand-declare. A rail whose actions
-take JSON patches (the Journey's) keeps its column-to-key maps beside the plan, restating each
-action's signature once where a test holds it against the manifest.
+writes. All four Guided rails derive this way: Practice (ADR-1240), Journey (ADR-1246), Circle and
+Event (ADR-1281, 2026-09-08, which closed `HYG-050`). A rail whose server speaks another dialect
+keeps the translation beside the plan, restating each action's signature once where a test holds
+it against the manifest: the Journey's JSON-patch key maps, the Circle's and Event's snake_case
+column maps and FormData builders.
+
+A NON-prose `spark` field (a name, a start, a place, a price) has no plane to derive after
+creation, so it declares one: `editPlane: 'rail'` or `'inline'` (ADR-1281). Without it the field
+is asked once and never edited, and `railForm()` reports a rail that writes it as `spark-only`.
+Prose asked at creation keeps landing on the inline canvas by what it is (ADR-450), and
+`validateManifest` refuses `editPlane` on any field whose plane is already derived. A column a
+rail persists has to be a field: the Circle and Event manifests gained the columns their rails
+wrote undeclared (a status, the two privacy axes, the Channel, the cover; a join mode, the RSVP
+window, four switches, the permalink), and one hand-written option that the database never
+accepted (a "Paused" Circle status) went with the hand list.
 
 ## 1. The shell (built, keep it)
 

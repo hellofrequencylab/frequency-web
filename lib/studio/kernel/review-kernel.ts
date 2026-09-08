@@ -341,12 +341,20 @@ export function sparkFields(manifest: EntityManifest): FieldDef[] {
  * to choose between "the guided flow asks for it" and "the author can edit it in place" — so the
  * three commerce manifests picked `inline` and silently dropped Details from their own wizard.
  * Where a field is EDITED is derivable from what it is; it does not need a second declaration.
+ *
+ * A NON-prose spark field has nothing to derive from, so it joins a plane only by declaring one
+ * (`editPlane`, ADR-1281). Without it a name or a start asked at creation is on no edit plane.
  */
 export function inlineFields(manifest: EntityManifest): FieldDef[] {
-  return manifest.fields.filter((f) => f.placement === 'inline' || (f.placement === 'spark' && f.prose))
+  return manifest.fields.filter(
+    (f) => f.placement === 'inline' || (f.placement === 'spark' && (f.prose === true || f.editPlane === 'inline')),
+  )
 }
 
-/** The fields edited in the Inspector rail (ADR-450 rail plane). The default placement. */
+/** The fields edited in the Inspector rail (ADR-450 rail plane). The default placement, plus every
+ *  non-prose spark field that declares the rail as its later plane (ADR-1281). */
 export function railFields(manifest: EntityManifest): FieldDef[] {
-  return manifest.fields.filter((f) => (f.placement ?? 'rail') === 'rail')
+  return manifest.fields.filter(
+    (f) => (f.placement ?? 'rail') === 'rail' || (f.placement === 'spark' && !f.prose && f.editPlane === 'rail'),
+  )
 }
