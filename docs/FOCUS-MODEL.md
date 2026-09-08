@@ -3,7 +3,7 @@
 > **Status: PROPOSAL, awaiting an owner ruling.** Nothing here is decided.
 > Status for any work it produces lives in [`BUILD-BACKLOG.json`](BUILD-BACKLOG.json), never in this
 > file. Filed 2026-09-08 from an eight-lane repo sweep plus live production reads.
-> Decision record, once ruled: [ADR-1291](DECISIONS.md).
+> Decision record, once ruled: [ADR-1292](DECISIONS.md).
 >
 > **This document explains a reframe. It does not track whether the reframe is done.**
 
@@ -24,7 +24,7 @@ Three things are true, all measured, none of them obvious:
 | # | Finding | Evidence |
 |---|---|---|
 | 1 | **The marketing says Collective; the app says Quest.** 0 of 13 home blocks mention the game. Inside, the game holds 5 of 16 rail rows, 1 of 5 mobile tabs, the raised centre button, the entire feed hero, and a permanent Vault dock. | `lib/page-editor/templates/home.ts:63`, `lib/nav-areas.ts:120-134`, `components/layout/app-shell.tsx:1572-1610`, `app/(main)/feed/page.tsx:245-270` |
-| 2 | **The revenue model the owner wants is ~85% built and dark.** Paid tiers → Stripe Connect subscription → webhook → automatic circle membership all exist. It cannot complete because the Stripe webhook was never registered, and it is walled behind a $29/mo plan the operator must buy first. | `lib/billing/space-membership-checkout.ts`, `lib/spaces/tier-circle.ts`, `OWN-050` (P0), `lib/pricing/gates.ts:144` |
+| 2 | **The revenue model the owner wants is ~85% built and dark.** Paid tiers → Stripe Connect subscription → webhook → automatic circle membership all exist, and as of 2026-09-08 the rails are **proven**: live payouts went live and one real webhook event closed `OWN-050`. What still stops it is one thing, not two: it is walled behind a $29/mo plan the operator must buy first. | `lib/billing/space-membership-checkout.ts`, `lib/spaces/tier-circle.ts`, [ADR-1291](DECISIONS.md), `lib/pricing/gates.ts:144` |
 | 3 | **"Communities run their own program" is an accepted ADR that was never sequenced.** [ADR-252](DECISIONS.md) already ruled Journeys are group-coaching programs a Circle moves through together. The engine exists: `journey_runs` + cohort meter + drip + kickoff event. | `supabase/migrations/20260621000000_journeys_v2.sql`, `lib/journeys/cohort.ts`, `components/journey/v2/cohort-meter.tsx` |
 
 **The one thing that is genuinely new** in the owner's framing, and the one that should be ruled
@@ -196,10 +196,11 @@ Flags read live: `billing_live = true` (since 2026-07-21), `host_payouts_enabled
 
 ### The four things stopping it
 
-1. 🔴 **`OWN-050`, the backlog's only P0: the Stripe webhook endpoint was never registered.**
-   `stripe_webhook_events` has held 0 rows for the life of the table. **No payment on any path has
-   ever been recorded.** This is a Stripe dashboard task, not code, and it blocks every revenue idea
-   in this document.
+1. ✅ **`OWN-050` closed on 2026-09-08, and the rails are proven rather than blocked.** The webhook
+   destination was never misconfigured; it had simply never been sent a subscribed event. One real
+   `account.updated` now proves URL, signature verification, the deployed handler and the database
+   write end to end, and live payouts went live the same day ([ADR-1291](DECISIONS.md)). What is
+   still true: **no payment event has ever arrived, because nothing has ever been sold.**
 2. **There is no member-facing "my memberships" surface.** No route exists. A member who starts paying
    a community has nowhere to see or manage it.
 3. **`payment_status` is never enforced.** Both the RLS helper and the app predicate read `status`
@@ -316,8 +317,8 @@ There is one backlog. Nothing here becomes a parallel roadmap.
 
 | Order | Work | Where it goes | Depends on |
 |---|---|---|---|
-| **0** | Register the Stripe webhook | `OWN-050`, already P0 and already filed | owner, dashboard |
-| **0** | Rule the focus model (§7) and the grace window (§8) | new owner row, `ownerAction: ruling` | owner, before 1 Oct |
+| ~~0~~ | ~~Register the Stripe webhook~~ | ✅ Closed 2026-09-08 (`OWN-050`); live payouts went live the same day | done |
+| **0** | Rule the focus model (§7) and the grace window (§8) | `OWN-066`, `ownerAction: ruling` | owner, before 1 Oct |
 | **1** | Give event attendance its own record, independent of the reward ledger | W0b, prerequisite for everything in Move 1 | — |
 | **2** | Rail collapse, centre button, feed hero, shared-bar default | W0b/W2, closes `QUEST-IA-DEBT` (ADR-293) | step 1 |
 | **3** | Membership wall → readiness; member "my memberships" surface; enforce `payment_status` | W8 money lane, pulled forward | step 0 |
@@ -327,7 +328,7 @@ There is one backlog. Nothing here becomes a parallel roadmap.
 **Untouched:** the Editor program E0–E9 (W4) and the four parked programs (App Platform, White label,
 Etsy-grade store, Mobile). Nothing in this proposal competes with them.
 
-**Rows that must be reconciled with any ruling:** `OWN-050` (P0, webhook), `OWN-046` (do member sales
+**Rows that must be reconciled with any ruling:** `OWN-046` (do member sales
 settle in-app), `OWN-048` (capability bundles and the 22-key function registry — the definition of what
 a Space *is*), `OWN-063` (does a recurring series cost one event allowance or one per date),
 `LIVE-204` (front-door wording), `HYG-033` (the mobile tab bar this proposal changes).

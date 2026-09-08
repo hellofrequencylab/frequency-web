@@ -3,7 +3,7 @@
 > **Status: PROPOSAL, awaiting an owner ruling.** Nothing here is decided. Status for any work it
 > produces lives in [`BUILD-BACKLOG.json`](BUILD-BACKLOG.json), never in this file.
 > Filed 2026-09-08. Companion to [`FOCUS-MODEL.md`](FOCUS-MODEL.md), which establishes the findings
-> this model rests on. Decision record, once ruled: [ADR-1292](DECISIONS.md).
+> this model rests on. Decision record, once ruled: [ADR-1293](DECISIONS.md).
 >
 > **This document explains an offer. It does not track whether the offer is built.**
 
@@ -324,11 +324,14 @@ in `FROZEN_SYNCED_KEYS`. Collapsing the tier needs a grandfathering path for any
 delete. Today that is six comped Spaces, so **the cheapest moment to do this is now** and it gets more
 expensive with every real subscriber.
 
-**Two things must land first, and neither is optional:**
+**One thing must land first, and one has just landed:**
 
-1. 🔴 **Register the Stripe webhook.** `OWN-050`, the backlog's only P0. `stripe_webhook_events` has
-   held zero rows for the life of the table, so **no payment on any path has ever been recorded.** Every
-   revenue line here is theoretical until that endpoint exists.
+1. ✅ **The payment rails are proven, as of 2026-09-08.** `OWN-050` closed: the webhook destination was
+   never misconfigured, it had simply never been sent a subscribed event, and one real `account.updated`
+   now proves URL, signature verification, the deployed handler and the database write end to end. Live
+   payouts went live the same day and the funds flow is pinned as destination charges on Express accounts
+   ([ADR-1291](DECISIONS.md)). No payment event has arrived yet only because nothing has ever been sold.
+   **This model no longer has a blocked revenue path; it has an unopened one.**
 2. 🔴 **Give event attendance its own record.** There is no `checked_in` column; attendance exists only
    as an engagement-ledger row written by the same path that pays Zaps, and `captures` is empty. Round
    two of the score depends on it, and so does any change to the game's reward visibility.
@@ -341,7 +344,7 @@ Sequenced so something visible ships in week one and nothing waits on a ruling i
 
 | Order | Work | Why here |
 |---|---|---|
-| **0** | Register the Stripe webhook (`OWN-050`) | Owner, dashboard. Everything monetary is theoretical without it. |
+| ~~0~~ | ~~Register the Stripe webhook~~ | ✅ **Done 2026-09-08.** `OWN-050` closed and live payouts went live the same day. The rails are proven. |
 | **1** | **Change the directory sort from `name` to a score** | The single highest-leverage line in the plan. Ship it against a crude v1 score if need be; alphabetical is worse than anything. |
 | **2** | Remove the live `isPaid` walls and member gates | Independent of pricing. Makes "free" true before 1 October. |
 | **3** | Memberships free on readiness, not plan | Opens the dues engine, which is otherwise built and dark. |

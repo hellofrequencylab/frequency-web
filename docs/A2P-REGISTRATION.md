@@ -12,7 +12,7 @@
 | Step | Who | Status |
 |---|---|---|
 | 1. Gather the legal + business facts (§2) | Operator | ⏳ |
-| 2. Stand up the **terms of service** page (privacy is already live) (§6) | Eng | 🔴 blocker, see §6 |
+| 2. Stand up the **terms of service** page (privacy is already live) (§6) | Eng | ✅ **done 2026-08-19** — `app/terms/page.tsx` is live |
 | 3. Register the **brand** in Twilio (EIN-backed) (§3) | Operator | ⏳ |
 | 4. Register the **campaign** with the in-voice sample messages (§4) | Operator | ⏳ |
 | 5. Wait out carrier review (~10 to 15 days) | — | ⏳ |
@@ -196,7 +196,7 @@ Run this before clicking submit on the campaign. Worst-first.
 
 | Severity | Item | State |
 |---|---|---|
-| 🔴 | **Terms of service URL is live.** Only `/privacy` exists today (`app/privacy/page.tsx`). A terms page must ship before the campaign is filed (carrier requirement as of 2026-06-30). | ⏳ |
+| ✅ | **Terms of service URL is live.** `app/terms/page.tsx` shipped 2026-08-19 alongside `app/privacy/page.tsx`. The carrier requirement (2026-06-30) is met and this is no longer an engineering blocker. ⚠️ This row read 🔴 for three weeks after the page shipped — an owner opening this packet to file was told a red blocker stood when it did not. | ✅ |
 | 🔴 | Privacy policy URL is live and public at `https://frequencylocal.com/privacy`. | ✅ live (`app/privacy/page.tsx`) |
 | ⚠️ | EIN, legal name, and address match the IRS record exactly (§2). | ⏳ |
 | ⚠️ | Opt-in language compliant: single unchecked checkbox, "message and data rates may apply," privacy link, consent not bundled (§4b). | ⏳ |
