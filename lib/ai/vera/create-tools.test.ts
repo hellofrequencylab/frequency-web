@@ -20,6 +20,9 @@ import {
   effectiveCreateTier,
   isCreatableEntity,
   parseDraftArg,
+  readRoadGate,
+  requiredAtStage,
+  resolveCreateGate,
 } from './create-tools'
 import { VERA_TOOLS, getTool, requiresConfirmation, validateToolCall } from './tools'
 import { STUDIO_ENTITIES, studioEntityIds } from '@/lib/studio/registry'
@@ -184,6 +187,81 @@ describe('draft validation', () => {
       expect(typeof r.ok).toBe('boolean')
       expect(Array.isArray(r.errors)).toBe(true)
     }
+  })
+})
+
+// ADR-1280. Two rulings that let the last two wizard roads route without refusing a create the
+// road accepts: a road may declare the scoped gate it already enforces, and a draft-status create
+// may omit a field the manifest defers to publish. Both are pure, both fail closed.
+describe('the road gate (ADR-1280)', () => {
+  it('lets a road stand in its own scoped gate for a capability gate', () => {
+    expect(createGateFor('practice')).toEqual({ kind: 'capability', capability: 'practice.create' })
+    const gate = resolveCreateGate('practice', { kind: 'scoped', why: 'the caller manages the Space' })
+    expect(gate).toEqual({ kind: 'scoped', why: 'the caller manages the Space' })
+  })
+
+  it("falls back to the entity's declared gate when the road declares none", () => {
+    expect(resolveCreateGate('practice')).toEqual(createGateFor('practice'))
+    expect(resolveCreateGate('practice', null)).toEqual(createGateFor('practice'))
+    expect(resolveCreateGate('listing')).toEqual(createGateFor('listing'))
+  })
+
+  it('cannot make an unknown or catalog-only entity creatable', () => {
+    const road = { kind: 'scoped' as const, why: 'anything at all' }
+    expect(resolveCreateGate('not-an-entity', road)).toBeNull()
+    expect(resolveCreateGate('channel', road)).toBeNull()
+  })
+
+  it('ignores a road gate with no reason, so a bare declaration re-applies the capability', () => {
+    expect(resolveCreateGate('practice', { kind: 'scoped', why: '   ' })).toEqual(createGateFor('practice'))
+  })
+
+  it('reads a stored road gate back fail-closed', () => {
+    expect(readRoadGate({ kind: 'scoped', why: 'the caller manages the Space' })).toEqual({ kind: 'scoped', why: 'the caller manages the Space' })
+    for (const bad of [null, undefined, 'scoped', 7, [], {}, { kind: 'capability', why: 'x' }, { kind: 'scoped' }, { kind: 'scoped', why: '' }, { kind: 'scoped', why: 3 }]) {
+      expect(readRoadGate(bad), JSON.stringify(bad)).toBeNull()
+    }
+  })
+})
+
+describe('the create stage (ADR-1280)', () => {
+  it('enforces a plain required field at both stages', () => {
+    expect(requiredAtStage({ required: true }, 'draft')).toBe(true)
+    expect(requiredAtStage({ required: true }, 'publish')).toBe(true)
+    expect(requiredAtStage({ required: true, requiredAt: 'create' }, 'draft')).toBe(true)
+  })
+
+  it('defers a publish-required field at the draft stage only', () => {
+    expect(requiredAtStage({ required: true, requiredAt: 'publish' }, 'draft')).toBe(false)
+    expect(requiredAtStage({ required: true, requiredAt: 'publish' }, 'publish')).toBe(true)
+  })
+
+  it('never requires a field that is not required, whatever requiredAt says', () => {
+    expect(requiredAtStage({ requiredAt: 'publish' }, 'publish')).toBe(false)
+    expect(requiredAtStage({}, 'draft')).toBe(false)
+  })
+
+  // The consequence on the real manifest: the flyer scan's draft has a title and no start.
+  it('lets a draft-status Event be born without a start, and refuses to publish one', () => {
+    const flyer = { title: 'Untitled event' }
+    expect(checkCreateDraft('event', flyer, {}, 'draft')).toEqual({ ok: true, errors: [] })
+    const strict = checkCreateDraft('event', flyer, {}, 'publish')
+    expect(strict.ok).toBe(false)
+    expect(strict.errors.join(' ')).toContain('Starts')
+    // The default stage is the strict one, so every caller that says nothing keeps requiring it.
+    expect(checkCreateDraft('event', flyer).ok).toBe(false)
+  })
+
+  it('still requires the create-time fields of a draft', () => {
+    const r = checkCreateDraft('event', {}, {}, 'draft')
+    expect(r.ok).toBe(false)
+    expect(r.errors.join(' ')).toContain('Title')
+    expect(r.errors.join(' ')).not.toContain('Starts')
+  })
+
+  it('changes nothing for an entity that defers no field', () => {
+    expect(checkCreateDraft('circle', {}, {}, 'draft').ok).toBe(false)
+    expect(checkCreateDraft('circle', { name: 'Sunrise Swim' }, {}, 'draft').ok).toBe(true)
   })
 })
 

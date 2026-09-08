@@ -184,6 +184,72 @@ describe('proposeAndConfirmCreate: the wizard road (ADR-1249)', () => {
     expect((only().payload as Record<string, unknown>).gate).toBe('scoped:listing')
   })
 
+  // ADR-1280 (a). The Space Practice road is open to a free Space manager while `practice` is a
+  // Crew-only capability. The road declares the gate it enforces; the layer records it and does
+  // not re-apply the capability. Without the declaration the same call is refused, which is the
+  // control that proves the road gate is what let it through.
+  it('records a road gate in place of the capability and commits without it granted', async () => {
+    granted.clear()
+    const commit = vi.fn(async () => ({ id: 'pr1' }))
+    const roadGate = { kind: 'scoped' as const, why: 'authorizeSpaceAuthor: the caller manages this Space.' }
+    const refused = await proposeAndConfirmCreate({ entity: 'practice', draft: { title: 'Untitled practice' }, commit })
+    expect('error' in refused).toBe(true)
+    expect(commit).not.toHaveBeenCalled()
+    expect(rows.size).toBe(0)
+
+    const res = await proposeAndConfirmCreate({ entity: 'practice', draft: { title: 'Untitled practice' }, spaceId: 's1', roadGate, commit })
+    expect(res).toEqual({ data: { id: 'pr1' } })
+    expect(commit).toHaveBeenCalledTimes(1)
+    const payload = only().payload as Record<string, unknown>
+    expect(payload.gate).toBe('road:practice')
+    expect(payload.road_gate).toEqual(roadGate)
+    expect(payload.stage).toBe('publish')
+    expect(only().status).toBe('executed')
+  })
+
+  it('cannot scope its way into an entity the Studio does not make', async () => {
+    const commit = vi.fn()
+    const res = await proposeAndConfirmCreate({
+      entity: 'channel',
+      draft: { name: 'x' },
+      roadGate: { kind: 'scoped', why: 'the caller manages the Space' },
+      commit,
+    })
+    expect('error' in res).toBe(true)
+    expect(commit).not.toHaveBeenCalled()
+    expect(rows.size).toBe(0)
+  })
+
+  // ADR-1280 (b). A draft-status Event is a create, and the manifest defers `startsAt` to publish.
+  // At stage 'draft' the flyer's row is proposed, claimed and committed; at the default stage the
+  // same draft is refused, so the wizard's live create still needs a start.
+  it('lets a draft-status Event be created without a start, and records the stage', async () => {
+    granted.add('event.create')
+    const commit = vi.fn(async () => ({ id: 'e1' }))
+    const flyer = { title: 'Untitled event', description: '', startsAt: '' }
+    const strict = await proposeAndConfirmCreate({ entity: 'event', draft: flyer, commit })
+    expect(strict).toEqual({ error: 'Event needs a Starts.' })
+    expect(commit).not.toHaveBeenCalled()
+    expect(rows.size).toBe(0)
+
+    const res = await proposeAndConfirmCreate({ entity: 'event', draft: flyer, stage: 'draft', commit })
+    expect(res).toEqual({ data: { id: 'e1' } })
+    expect(commit).toHaveBeenCalledTimes(1)
+    const row = only()
+    expect(row.status).toBe('executed')
+    expect((row.payload as Record<string, unknown>).stage).toBe('draft')
+    expect((row.payload as Record<string, unknown>).gate).toBe('event.create')
+  })
+
+  it('still holds a draft to its create-time fields', async () => {
+    granted.add('event.create')
+    const commit = vi.fn()
+    const res = await proposeAndConfirmCreate({ entity: 'event', draft: {}, stage: 'draft', commit })
+    expect(res).toEqual({ error: 'Event needs a Title.' })
+    expect(commit).not.toHaveBeenCalled()
+    expect(rows.size).toBe(0)
+  })
+
   it('carries the Space the create lands under into the audit row and the commit', async () => {
     const commit = vi.fn(async (input: { spaceId: string | null }) => ({ spaceId: input.spaceId }))
     const res = await proposeAndConfirmCreate({

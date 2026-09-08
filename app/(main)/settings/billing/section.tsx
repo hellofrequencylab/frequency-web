@@ -77,7 +77,7 @@ export async function PlanSection({
       )}
 
       <div className="rounded-card border border-border bg-surface p-5 lift-1">
-        <p className="text-meta font-semibold uppercase tracking-wide text-subtle">Current plan</p>
+        <p className="eyebrow text-subtle">Current plan</p>
         <p className="mt-1 text-body-lg font-bold text-text">
           {ENTITLEMENT_LABEL[tier]}
           {paid ? '' : <span className="font-normal text-muted"> · free tier</span>}
@@ -111,7 +111,7 @@ export async function PlanSection({
         <div id="payouts" className="mt-4 scroll-mt-24 rounded-card border border-border bg-surface p-5 lift-1">
           <div className="flex items-center gap-2">
             <Wallet className="h-4 w-4 text-subtle" />
-            <p className="text-meta font-semibold uppercase tracking-wide text-subtle">Receive payments</p>
+            <p className="eyebrow text-subtle">Receive payments</p>
           </div>
 
           {!live ? (

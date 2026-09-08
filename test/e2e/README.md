@@ -140,10 +140,47 @@ Flaky-surface policy: a surface that flakes twice gets a mask or a wait fix the
 same week — never a deletion. `PW_VISUAL_EXTRA_MASK=".foo,.bar"` quiets one
 immediately without waiting on a code change.
 
-The selectors are structural because the app has no `data-visual-mask`
-convention yet. Adding that attribute to the live blocks would collapse the list
-to a single selector; until then, moving that markup means updating the mask in
-the same change.
+**A mask paints a box and moves nothing.** It answers "this box holds different
+pixels on two honest captures of the same commit". It cannot answer "this box is a
+different *size*", which is `viewportOnly`'s job; see the note on
+`Surface.viewportOnly` and the `/discover` section below.
+
+### `data-visual-mask` (ADR-1277)
+
+Since 2026-09-08 the app declares its own live and environment-bound boxes: a
+component stamps `data-visual-mask="<value>"` on its root, `GLOBAL_MASK_SELECTORS`
+applies `[data-visual-mask]` once, and `VISUAL_MASK_SITES` in `surfaces.ts` records
+every site with its file and its reason. `visual-masks.test.ts` holds the tree to that
+registry in both directions on every PR (a registered site whose markup moved fails;
+an attribute with no registry row fails), so a mask cannot go stale in silence.
+
+| Value | Where | Kind | Why it is painted over |
+| :--- | :--- | :--- | :--- |
+| `support-chat` | the support-chat widget root | env | Mounts only where `SUPPORT_CHAT=1`, which is Production and not Preview. A capture that photographed it recorded the environment, not the page. |
+| `rail-panel` | every right-rail panel (`WidgetCard`), the activity chart, the Signature dial, the demo notice, the streaming skeleton | live | Every panel in the rail is a database reading: upcoming events, who is online, the newest circles, the member's own logs. |
+| `vault-head` | the desktop dock's Vault head | live | Zaps, Gems and streak at rest. |
+| `dock-chat-trigger`, `dock-chat-tab` | the chat trigger in the dock, and its phone tab | live | Unread badge, waiting dot, waiting peek. |
+| `edge-pill` | the edge tab (Vera's fallback, Next Steps) | route | Renders only where no dock slot exists; its label and badge are live. |
+
+What stays in the picture, deliberately: the rail's two static rows (Report a bug,
+Invite a friend), the dock bar's own crest and geometry, the tab bar, the header. A
+mask covers a reading, never chrome.
+
+**The Vercel preview toolbar is not masked; it is declined.** Vercel injects its
+toolbar into every HTML response a preview deployment serves, to every visitor,
+signed in or not: a black 34px disc at the right edge, vertically centred. It was in
+every committed preview baseline (rows 400-435 at 1280x800, 284-323 at 320x568), and
+production never carries it. `playwright.config.ts` sends Vercel's documented
+`x-vercel-skip-toolbar: 1` on every run, so the toolbar is never in the document at
+all. That is the mechanism `LIVE-213` first recorded as "Vera's edge tab renders on
+the preview and not on production" (see the correction in *Which URL to capture
+against* below).
+
+With the masks and the header in place, a preview capture and a production capture of
+the same commit should read **0 px** on every public surface (`pnpm visual:bands`),
+and the four desktop shell surfaces should stop failing on the rail. The first
+`pr-compare` after the masks land is the measurement; the masks change what every
+baseline holds, so that run needs a recapture first.
 
 ## Baselines
 
@@ -189,12 +226,18 @@ Two production captures fourteen minutes apart agreed to the pixel on every surf
 that is not live data, which is what "deterministic" looks like.
 
 Which URL to capture against: **a preview deployment of a branch that has main merged**,
-because that is what `pr-compare` photographs. Production renders two fixed elements
-differently (the support-chat button is Production-only while `SUPPORT_CHAT` is set there
-alone; Vera's edge tab shows on previews and not on production), so a production capture
-is red by ~2,500 px on every public page before a PR changes anything (`LIVE-213`). A
-branch preview that lacks main's latest merges is not a valid source either: the
-2026-09-04 baselines were exactly that.
+because that is what `pr-compare` photographs. Until 2026-09-08 production and a preview
+rendered two fixed elements differently, so a production capture was red by ~2,500 px on
+every public page before a PR changed anything (`LIVE-213`): the support-chat button is
+Production-only while `SUPPORT_CHAT` is set there alone (now masked, `data-visual-mask`),
+and the preview carried a mid-right element that production did not. ⚠️ That element was
+recorded here and in the row as "Vera's edge tab". **It was not.** Cropped and looked at,
+it is Vercel's preview toolbar: a 34px black disc inset from the edge, not the 44px amber
+tab flush to it, and the app mounts no Vera launcher on a marketing page (the launcher
+lives in the `(main)` layout, behind sign-in). Vercel injects the toolbar into every preview
+response; `playwright.config.ts` now declines it with `x-vercel-skip-toolbar: 1`
+(ADR-1277). A branch preview that lacks main's latest merges is not a valid source either:
+the 2026-09-04 baselines were exactly that.
 
 ### A reading is not a ceiling (a11y counts)
 

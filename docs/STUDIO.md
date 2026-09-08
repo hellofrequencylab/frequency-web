@@ -63,6 +63,28 @@ writes. As of 2026-09-07 the Practice (ADR-1240) and Journey (ADR-1246) rails de
 take JSON patches (the Journey's) keeps its column-to-key maps beside the plan, restating each
 action's signature once where a test holds it against the manifest.
 
+### Required at the create, or required at publish (ADR-1280)
+
+`required: true` means the Spark always asks for the field and the row cannot be inserted
+without it. A field may add `requiredAt: 'publish'` to say the row may be BORN a draft without
+it and must have it before it goes live (the Event's `startsAt`: a flyer scan saves a draft
+before anyone has read the date off the poster). The validator refuses `requiredAt` on a field
+that is not `required`, so deferring WHEN it is enforced never makes it optional to ask. The
+governed create layer checks a draft against the stage the road declares
+(`checkCreateDraft(entity, draft, ledger, stage)`, default `'publish'`, the strict reading),
+and the publish path runs the same check at the strict stage.
+
+### The governed create, and a road that enforces its own gate (ADR-988, ADR-1249, ADR-1280)
+
+Every creation road calls `proposeAndConfirmCreate` (`lib/ai/vera/create-entity.ts`) with the
+entity's own writer as the commit; `scripts/check-creates.mjs` holds every entry point to it,
+and its `UNROUTED` list has read zero since 2026-09-08. `CREATE_GATES` declares one gate per
+entity. A road that deliberately enforces a DIFFERENT, narrower authority ahead of the layer
+(the Space Practice road: managing the Space, not Crew) passes it as `roadGate`, the same
+`{ kind: 'scoped', why }` shape a scoped entity gate takes, and the layer records that gate
+instead of re-applying the capability. Every such road is named in `ROAD_GATES` in the same
+script; an unnamed one fails the build.
+
 ## 1. The shell (built, keep it)
 
 `components/studio/studio-window.tsx`. An entity passes its `eyebrow`, its tools

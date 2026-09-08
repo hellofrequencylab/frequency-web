@@ -368,7 +368,7 @@ export function QuoteSection({
       >
         <figure className={`max-w-4xl mx-auto ${centered ? 'text-center' : ''}`}>
           <blockquote
-            className={`font-display uppercase text-3xl sm:text-4xl lg:text-5xl leading-[1.08] text-balance ${
+            className={`font-display uppercase text-display-h2 leading-[1.08] text-balance ${
               ink ? 'text-on-ink' : 'text-text'
             }`}
           >
@@ -397,7 +397,7 @@ export function QuoteSection({
         }`}
       >
         <blockquote
-          className={`font-display uppercase text-page-title sm:text-3xl lg:text-4xl leading-[1.1] text-balance ${
+          className={`font-display uppercase text-display-h3 leading-[1.1] text-balance ${
             ink ? 'text-on-ink' : 'text-text'
           }`}
         >
