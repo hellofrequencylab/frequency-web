@@ -63,5 +63,8 @@ create index if not exists housing_match_alerts_listing_idx
 
 alter table public.housing_match_alerts enable row level security;
 drop policy if exists housing_match_alerts_self on public.housing_match_alerts;
+-- SCHEMA-QUALIFIED, like the other 38 call sites: the helper lives in `private`, and an
+-- unqualified call resolves against the search path a policy is created under, which does not
+-- carry that schema. Only the 2024 bootstrap still spells it bare, from before the move.
 create policy housing_match_alerts_self on public.housing_match_alerts
-  for select using (recipient_profile_id = get_my_profile_id());
+  for select using (recipient_profile_id = private.get_my_profile_id());
