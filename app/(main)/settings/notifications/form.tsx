@@ -120,7 +120,7 @@ export function NotificationsForm({ initial }: { initial: NotificationSettings }
           it has not disappeared. */}
       <div className="rounded-card border border-border bg-surface lift-1 overflow-x-auto">
         <div className="grid grid-cols-[1fr_auto_auto_auto_auto] gap-3 px-4 py-3 border-b border-border bg-surface-elevated">
-          <span className="text-meta font-semibold text-muted uppercase tracking-wide">Topic</span>
+          <span className="eyebrow text-muted">Topic</span>
           {CHANNELS.map(({ key, label, Icon, disabled }) => (
             <div key={key} className="flex items-center gap-1.5 w-16 justify-center">
               <Icon className={`w-3.5 h-3.5 ${disabled ? 'text-subtle' : 'text-muted'}`} />
@@ -131,7 +131,7 @@ export function NotificationsForm({ initial }: { initial: NotificationSettings }
           ))}
           <div className="flex items-center gap-1.5 w-12 justify-center" title={SMS_PLACEHOLDER_TITLE}>
             <MessageSquare className="w-3.5 h-3.5 text-subtle" />
-            <span className="text-meta font-semibold uppercase tracking-wide text-subtle">SMS</span>
+            <span className="eyebrow text-subtle">SMS</span>
           </div>
         </div>
 

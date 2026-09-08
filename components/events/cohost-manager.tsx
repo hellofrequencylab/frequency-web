@@ -78,7 +78,7 @@ export function CohostManager({
           cancels the invite (same delete path as removing a cohost). */}
       {canManage && pendingInvites.length > 0 && (
         <div className="mt-4">
-          <p className="mb-2 text-meta font-semibold uppercase tracking-wide text-subtle">Pending invites</p>
+          <p className="mb-2 eyebrow text-subtle">Pending invites</p>
           <ul className="space-y-0.5">
             {pendingInvites.map((p) => (
               <li key={p.id} className="flex items-center gap-3 rounded-control px-3 py-2 -mx-3 hover:bg-surface transition-colors">

@@ -114,7 +114,7 @@ export function AssetAvPanel({
       {/* Where is this used (A/V only) */}
       {isAv && (
         <div className="border-t border-border pt-3">
-          <p className="mb-2 flex items-center gap-1.5 text-meta font-semibold uppercase tracking-wide text-subtle">
+          <p className="mb-2 flex items-center gap-1.5 eyebrow text-subtle">
             <Radio className="h-3.5 w-3.5" aria-hidden /> Where this is used
           </p>
           {loadingUsage ? (

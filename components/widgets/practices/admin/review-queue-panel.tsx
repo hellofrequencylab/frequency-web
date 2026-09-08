@@ -318,7 +318,7 @@ export function ReviewQueuePanel({ rows }: { rows: ReviewRow[] }) {
               if (el) el.indeterminate = someSelected
             }}
             onChange={(e) => toggleAll(e.target.checked)}
-            label={<span className="text-meta font-semibold uppercase tracking-wide text-muted">Select all</span>}
+            label={<span className="eyebrow text-muted">Select all</span>}
           />
         </div>
         <div className="divide-y divide-border/60">

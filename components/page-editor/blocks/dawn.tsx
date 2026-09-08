@@ -461,7 +461,7 @@ export function BuildTimelineBlock({
               <Reveal key={i}>
                 <Card tone={chosen ? 'highlight' : 'feature'} className="lift-2 h-full">
                   <span
-                    className={`font-display text-4xl leading-none sm:text-5xl ${
+                    className={`font-display text-display-h2 leading-none ${
                       chosen || !hasChosen ? 'text-primary-strong' : 'text-text'
                     }`}
                   >
@@ -692,11 +692,11 @@ function PlanPrice({ plan, ink }: { plan: ResolvedPlan; ink: boolean }) {
   const long = plan.price.length > 8
   const size = plan.featured
     ? long
-      ? 'text-3xl sm:text-4xl'
+      ? 'text-stat-sm sm:text-stat-md'
       : 'text-5xl sm:text-6xl'
     : long
-      ? 'text-3xl'
-      : 'text-4xl'
+      ? 'text-stat-sm'
+      : 'text-stat-md'
   return (
     <div className="mt-4">
       {plan.strikePrice && (
@@ -1112,7 +1112,7 @@ export function DawnHowToStepsBlock({
               )}
               <div className="p-6">
                 <span
-                  className={`font-display text-4xl leading-none sm:text-5xl ${
+                  className={`font-display text-display-h2 leading-none ${
                     ink ? 'text-primary' : 'text-primary-strong'
                   }`}
                 >

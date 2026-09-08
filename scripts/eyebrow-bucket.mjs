@@ -28,6 +28,13 @@
 // `--tracking wide --weight font-semibold`: 73 sites in 52 files, of which the 39 unwatched ones
 // shipped, taking the class 589 → 550.
 //
+// 2026-09-08 (ADR-1283): the "cannot self-certify" half of that sentence expired. ADR-1269 read
+// `.github/workflows/e2e-manual.yml` and it is a `workflow_dispatch` an agent can run, so the
+// recapture is a step in the PR that moves the pixels, not a reason to leave a site behind. The
+// 49 watched sites the three slices had left (34 wide / 8 wider / 7 widest) shipped, and every
+// `--tracking` query below now reads 0. What remains in ROLE-SIZE is interpolated or carries
+// another weight, and no slice claims it.
+//
 // Usage:
 //   node scripts/eyebrow-bucket.mjs                       # the four buckets, with counts
 //   node scripts/eyebrow-bucket.mjs --tracking wide       # one slice's sites
