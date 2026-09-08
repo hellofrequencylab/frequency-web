@@ -54,8 +54,8 @@ export default function DiscoverLayout({ children }: { children: React.ReactNode
       </footer>
       {/* Anonymous live chat (ADR-816) — this PUBLIC surface owns the bottom-right corner
           (docs/CHAT-SHELL-PLAN.md §2); the member shell owns its own via the dock. Off unless the
-          SUPPORT_CHAT switch is enabled (supportChatFlagEnabled prefers SUPPORT_CHAT and still falls
-          back to the legacy NEXT_PUBLIC_SUPPORT_CHAT — LIVE-165 step one, 2026-09-06). */}
+          SUPPORT_CHAT switch is enabled (supportChatFlagEnabled in lib/comms/chat-token.ts; the
+          prefixed name it once carried is no longer read, LIVE-165, 2026-09-07). */}
       {/* 2026-09-05 (scan2 L3-06): the build flag alone mounted the widget even when the server could
           not mint its token (CONVERSATION_TOKEN_SECRET unset in production) or had no inbox owner, so
           every chat attempt failed after writing rows. isSupportChatAvailable is the server-side gate. */}
