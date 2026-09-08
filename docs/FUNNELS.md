@@ -180,8 +180,13 @@ block the flow. The follow-up this enables is **transactional** ("finish setting
 so nothing here records or implies marketing consent, which stays on `contacts.consent_state`
 behind the `/subscribe` double opt-in. The table is fail-closed to anon (RLS on, no policy); writes
 go through three SECURITY DEFINER functions, and the capture returns a bare uuid so it cannot be
-used to test whether an address is already registered. The recovery job that actually sends the
-note is not built yet.
+used to test whether an address is already registered. The recovery job is `/api/cron/signup-lead-recovery`
+([ADR-1274](DECISIONS.md)): daily at 15:00 UTC it mails one transactional note to each lead with
+`converted_at` null, `step_reached` at least 2 and `updated_at` at least 24 hours old, claiming the
+row by stamping `recovery_sent_at` BEFORE the note is enqueued so a lead is mailed at most once. The
+rule is `selectRecoveryLeads` in `lib/crm/signup-lead-recovery.ts`; the note is
+`sendSignupRecoveryEmail` in `lib/email.ts`, with the non-member footer, sending them back to `/join`
+(carrying `?seq=<slug>` when the payload names the Funnel).
 
 ## Vera: scripted now, live later
 

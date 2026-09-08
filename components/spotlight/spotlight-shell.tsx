@@ -9,6 +9,7 @@ import { ROLE_LABEL, roleBadgeStyle, type RoleChipKey } from '@/lib/community-ro
 import type { SpotlightData } from '@/lib/spotlight/data'
 import { spotlightThemeStyles } from '@/lib/spotlight/theme'
 import { SPOTLIGHT_PUBLIC_BASE } from '@/lib/spotlight/puck/resolve'
+import { SpotlightStickerLayer } from './sticker-layer'
 
 // THE SHARED PUBLIC SPOTLIGHT CHROME. The member's identity header + theme wrapper + optional
 // background + join CTA footer, with the BLOCK BODY handed in as `children`. Since ADR-523 the ONLY body
@@ -33,7 +34,7 @@ export function SpotlightShell({
   /** The block body (Puck <BlockRender> or <MemberProfileModules>), placed where the body renders. */
   children: React.ReactNode
 }) {
-  const { profile, background, theme } = data
+  const { profile, background, stickers, theme } = data
   const skin = resolveProfileSkin(profile.profile_theme)
   const themeStyles = spotlightThemeStyles(theme)
   const name = profile.display_name || `@${profile.handle}`
@@ -57,7 +58,8 @@ export function SpotlightShell({
         </div>
       )}
       <div className="relative z-10">
-        <main className="mx-auto max-w-xl px-4 pb-16">
+        <main className="relative mx-auto max-w-xl px-4 pb-16">
+          <SpotlightStickerLayer stickers={stickers} />
           {theme.header.show && profile.header_image_url ? (
             <div className="relative -mx-4 overflow-hidden sm:rounded-b-3xl" style={{ height: theme.header.height }}>
               <Image

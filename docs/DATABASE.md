@@ -303,6 +303,11 @@ ADR-180/206), `pages` + `pillars` + `sequence_overrides` (page editor), `team_me
 > `/subscribe` double opt-in. RLS on with **no policy**: anon can write but never read, through
 > `capture_signup_lead` / `update_signup_lead` / `mark_signup_lead_converted` (SECURITY DEFINER).
 > The capture returns a bare uuid so it cannot be used to test whether an address is registered.
+> `recovery_sent_at` (migration `20270345002400`, ADR-1274) is the one column the recovery cron
+> writes: `/api/cron/signup-lead-recovery` stamps it with a conditional update BEFORE it enqueues
+> the note, so a lead is mailed at most once; NULL means never mailed. The partial index
+> `signup_leads_recovery_due_idx` covers exactly the cron's read (unconverted, unmailed, by
+> `updated_at`). Note the `set_updated_at` trigger: the stamp itself moves `updated_at`.
 
 > **My Contacts CRM · Phase 1** (ADR-361; migration `20260723000000_network_contacts_crm_p1.sql`,
 > additive). `network_contact_reminders` is the owner-scoped follow-up table

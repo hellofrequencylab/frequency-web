@@ -453,6 +453,11 @@ cleanly by audience and this section pins which is which.
   Signing is "sign", not "write in" or "submit". Internal: table
   `spotlight_guestbook`, block id `guestbook`. **Not "wall"** (retired MySpace
   framing; a wall implies a feed, and this is a one-note-per-person book).
+- **Stickers** = the decorative layer a member places over their Spotlight (ADR-1275).
+  Member-facing copy: "stickers", lowercase mid-sentence ("place a sticker", "move it",
+  "remove it"); the set is a closed list of emoji. **Not "decals"** in copy (the
+  BUILD-LIST spec used both; the rail and the page say stickers only). Internal:
+  `meta.spotlight.stickers`, allowlist `SPOTLIGHT_STICKERS`, writer `setSpotlightStickers`.
 
 ## Business pages (Spaces): two designators
 
