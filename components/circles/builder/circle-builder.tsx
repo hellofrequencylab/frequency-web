@@ -178,7 +178,7 @@ export function CircleBuilder({ draft }: { draft: CircleDraft }) {
           >
             <ArrowLeft className="h-4 w-4" aria-hidden /> Starter Circles
           </Link>
-          <p className="mb-1.5 text-meta font-semibold uppercase tracking-widest text-primary-strong">
+          <p className="mb-1.5 eyebrow text-primary-strong">
             Circle builder · Make it yours
           </p>
           <h1 className="text-page-title font-bold text-text">{name || 'Your circle'}</h1>
