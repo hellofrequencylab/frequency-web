@@ -808,15 +808,23 @@ prerequisites with no owner at all. Those five are the ones that turn a phase fr
 | **T-4** | Usage index shape | **Both** — an `app_instances` trigger *and* a periodic JSONB scan | The trigger is exact but only sees Layer-3 placements; the scan is the only thing that can see blocks embedded in stored documents. D-6's aggressive retirements make a single-source index the risk, not the cost. Rebuildable from scratch by design |
 | **T-5** | CRDT choice | **Yjs** | Tiptap's collaboration extension is built on `y-prosemirror`, so E4's rich text and E0's sync are one technology instead of two. ⚠️ The installed base is Tiptap 3.29 + ProseMirror; **`yjs`, `y-prosemirror` and `@tiptap/extension-collaboration` are three NEW dependencies** (v3 dropped v2's re-export). The saving is integration risk, not install cost |
 
+### 10.3 Ruled — 2026-09-08
+
+Recorded here because a ruling that lives only in `docs/BUILD-BACKLOG.json` is a ruling the next
+person reading this section will re-ask. Both came from `OWN-060`.
+
+| # | Question | Ruling |
+|---|---|---|
+| **O-2** | Does a member's Spotlight commerce carry the same platform fee as a Space's? | **The same fee.** Two fees would create a routing incentive, and a seller choosing a surface to minimise our fee is a seller spending attention on our pricing table instead of on their thing. Read the fee from ONE source for both paths, so a later edit cannot reintroduce the split by touching one of two constants. Gates E7 |
+| **O-5** | Does multiplayer extend to Spotlight, or only Space profiles and Sites? | **Spaces first; Spotlight behind a flag.** Build the CRDT so Spotlight is *possible*, ship E4 with it off there. The flag is the deliverable, not a TODO: a CRDT built without the second surface in mind is one that needs rewriting for it. Gates E4 |
+
 ### 10.3 Still open — and who owns each
 
 | # | Question | Owner | Needed by |
 |---|---|---|---|
 | **O-1** | Which Stripe Connect account type — Express (Stripe hosts onboarding + dashboard, fastest) or Custom (we own the whole UI, most work, most control)? | Owner + whoever owns billing | **Before E7 starts.** Not before E0 |
-| **O-2** | Does a member's Spotlight commerce carry the same platform fee as a Space's, or a different one? | Owner | Before E7 |
 | **O-3** | "Any paid plan" (D-7) — does that include the entry tier, and is there a Site quota per plan? | Owner | Before E10 |
 | **O-4** | Who owns token coverage, and what is the SLA on a token request? D-1 converts to a support queue without an answer | Owner | **Before the first paid Site ships** |
-| **O-5** | Does multiplayer extend to Spotlight, or only Space profiles and Sites? A member's Spotlight has one editor by definition | This doc, once E0 lands | Before E4 |
 
 ⚠️ **None of O-1…O-5 blocks E0.** They are recorded here so they are answered on time rather than
 discovered late — which is the failure mode this whole document exists to avoid.
