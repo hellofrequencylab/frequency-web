@@ -38,6 +38,11 @@ import {
   ENERGY_OPTIONS,
   VISIBILITY_OPTIONS,
 } from '@/lib/events/options'
+// Three more PURE modules (zero imports each), read for the same reason: the curated zones and the
+// two theme-bag switches' member-facing words have one source, and the manifest is not a second.
+import { COMMON_TIME_ZONES, HOME_TIME_ZONE } from '@/lib/events/time-zones'
+import { CHECK_IN_LABEL } from '@/lib/events/checkin-enabled'
+import { MARKET_LISTING_LABEL } from '@/lib/events/market-listing'
 
 /** Recurrence is NOT one of the vocabularies lib/events/options.ts owns, so it is restated here.
  *  It mirrors RECURRENCE_OPTIONS in the create form and VALID_RECURRENCE in events/actions.ts.
@@ -48,6 +53,14 @@ const RECURRENCE_OPTIONS: readonly FieldOption[] = [
   { value: 'daily', label: 'Every day' },
   { value: 'weekly', label: 'Weekly' },
   { value: 'monthly', label: 'Monthly' },
+]
+
+/** How people get in (ADR-826): one join function per event. Mirrors the CHECK constraint on
+ *  `events.join_mode` and the settings action's own allow-list (`['auto', 'rsvp', 'tickets']`). */
+const JOIN_MODE_OPTIONS: readonly FieldOption[] = [
+  { value: 'auto', label: 'Automatic (tickets when priced, else RSVP)' },
+  { value: 'rsvp', label: 'RSVP, first come first served (prices are informational)' },
+  { value: 'tickets', label: 'Tickets (buying is how people attend)' },
 ]
 
 // ── The closed choice sets ───────────────────────────────────────────────────────────────
@@ -143,6 +156,8 @@ export const EVENT_MANIFEST: EntityManifest = {
     // ── Identity. The title is both the page's headline and the one thing creation cannot
     //    do without, so it is inline content AND always asked (required implies the Spark). ──
     { path: 'title', label: 'Title', kind: 'text', section: 'identity', placement: 'inline', required: true },
+    // Derived from the title at create, renamed in the rail after (a rename redirects the page).
+    { path: 'slug', label: 'Permalink', kind: 'slug', section: 'identity', omitWhenEmpty: true, veraDrafts: false },
     // Category defaults to 'gathering' when the draft leaves it unset (the create form's default).
     { path: 'category', label: 'Kind of gathering', kind: 'select', section: 'identity', options: CATEGORY_OPTIONS, read: (d) => str(d.category) || 'gathering' },
     { path: 'domain', label: 'Domain', kind: 'select', section: 'identity', options: DOMAINS, veraDrafts: true, omitWhenEmpty: true },
@@ -169,23 +184,28 @@ export const EVENT_MANIFEST: EntityManifest = {
     // ── When. The start is the second thing Vera cannot invent, so the Spark asks it. ──
     // Wall-clock date AND time: `datetime`, not `date`. An event start without a time of day is
     // useless, and this pairing is what prompted the kind to be added to the kernel (ADR-597).
-    // Required AT PUBLISH, not at the create (ADR-1280): a flyer scan saves a draft-status Event
-    // before anyone has read the date off the poster, and that draft is a real create the governed
-    // layer records. The Spark still always asks for a start (required implies the Spark), the
-    // Event builder's own check still refuses a live event without one, and `publishDraft` enforces
-    // the full manifest before a draft goes live. Only the draft-status insert is allowed to defer.
-    { path: 'startsAt', label: 'Starts', kind: 'datetime', section: 'when', placement: 'spark', required: true, requiredAt: 'publish' },
+    // Asked at creation, edited in the rail after (ADR-1281), and required AT PUBLISH rather than
+    // at the create (ADR-1280). A start is a fact about the gathering, never page content, so the
+    // settings rail carries it. A flyer scan saves a draft-status Event before anyone has read the
+    // date off the poster, and that draft is a real create the governed layer records: the Spark
+    // still always asks for a start, the Event builder still refuses a live event without one, and
+    // `publishDraft` enforces the full manifest before a draft goes live. Only the draft insert defers.
+    { path: 'startsAt', label: 'Starts', kind: 'datetime', section: 'when', placement: 'spark', required: true, requiredAt: 'publish', editPlane: 'rail' },
     { path: 'endsAt', label: 'Ends', kind: 'datetime', section: 'when', omitWhenEmpty: true },
     // Repeats default to a one-time event; the cadence re-materialises the occurrence window on save.
     // A `select`, not a `cadence`: this is a closed set the server re-validates, and only a kind
     // in CHOICE_KINDS may declare its options. `cadence` stays for the genuinely free-text case.
     { path: 'recurrenceType', label: 'Repeats', kind: 'select', section: 'when', options: RECURRENCE_OPTIONS, read: (d) => str(d.recurrenceType) || 'none' },
     { path: 'recurrenceUntil', label: 'Repeats until', kind: 'date', section: 'when', omitWhenEmpty: true },
-    // The venue's IANA zone. Seeded from the creator, then refined from the geocoded point.
-    { path: 'timeZone', label: 'Time zone', kind: 'text', section: 'when', veraDrafts: false, omitWhenEmpty: true },
+    // The venue's IANA zone. Seeded from the creator, then refined from the geocoded point. A
+    // `select` over the curated list (ADR-1281): every surface that ever edited it offered the
+    // list, never a bare zone string, and the kit keeps a stored off-list zone selectable.
+    { path: 'timeZone', label: 'Time zone', kind: 'select', section: 'when', options: COMMON_TIME_ZONES, veraDrafts: false, read: (d) => str(d.timeZone) || HOME_TIME_ZONE },
 
     // ── Where. The one-line place is what the Spark asks and what the geocoder falls back to. ──
-    { path: 'location', label: 'Place', kind: 'place', section: 'where', placement: 'spark' },
+    // The one-line place is edited in the rail after creation too (ADR-1281): the public page
+    // prints it and the Maps link reads it, and a venue pick recomposes it.
+    { path: 'location', label: 'Place', kind: 'place', section: 'where', placement: 'spark', editPlane: 'rail' },
     { path: 'attendanceMode', label: 'How people attend', kind: 'select', section: 'where', options: ATTENDANCE_OPTIONS, read: (d) => str(d.attendanceMode) || 'in_person' },
     { path: 'onlineUrl', label: 'Join link', kind: 'url', section: 'where', omitWhenEmpty: true },
     // The structured address, one field per persisted column, because each is separately
@@ -196,6 +216,9 @@ export const EVENT_MANIFEST: EntityManifest = {
     { path: 'region', label: 'State or province', kind: 'text', section: 'where', omitWhenEmpty: true },
     { path: 'postalCode', label: 'Postal code', kind: 'text', section: 'where', omitWhenEmpty: true },
     { path: 'country', label: 'Country', kind: 'text', section: 'where', omitWhenEmpty: true },
+    // Hidden address (ADR-825), `events.hide_address`: people browsing see the city only until
+    // they RSVP or hold a ticket. The rail persisted it without declaring it until ADR-1281.
+    { path: 'hideAddress', label: 'Hide the address until someone registers', kind: 'toggle', section: 'where', veraDrafts: false },
 
     // ── Tickets and price. Both asked in the Spark: a flyer without a price is a real gap,
     //    and nobody but the host can settle it. Not `commercial` (no ledger, host is the source). ──
@@ -206,9 +229,17 @@ export const EVENT_MANIFEST: EntityManifest = {
       kind: 'price',
       section: 'tickets',
       placement: 'spark',
+      // Edited in the rail after creation (ADR-1281); an emptied price is a free RSVP event.
+      editPlane: 'rail',
       omitWhenEmpty: true,
       read: (d) => (d.isFree ? 'Free' : money(d.priceCents)),
     },
+    // The three the settings rail persisted without declaring until ADR-1281. The join mode is
+    // its own column; the RSVP window is the real persisted path inside `events.details`, so the
+    // row a board shows and the key the action writes are the same string (ADR-992).
+    { path: 'joinMode', label: 'How people join', kind: 'select', section: 'tickets', options: JOIN_MODE_OPTIONS, veraDrafts: false, read: (d) => str(d.joinMode) || 'auto' },
+    { path: 'details.rsvpWindow.opensAt', label: 'RSVPs open', kind: 'datetime', section: 'tickets', veraDrafts: false, omitWhenEmpty: true },
+    { path: 'details.rsvpWindow.closesAt', label: 'RSVPs close', kind: 'datetime', section: 'tickets', veraDrafts: false, omitWhenEmpty: true },
 
     // ── Lineup and schedule: the flat list; the acts and set times are repeats below. ──
     { path: 'details.sponsors', label: 'Sponsors', kind: 'tags', section: 'lineup', omitWhenEmpty: true, read: (d) => list((d.details as Record<string, unknown> | undefined)?.sponsors) },
@@ -227,6 +258,12 @@ export const EVENT_MANIFEST: EntityManifest = {
     { path: 'visibility', label: 'Who can see it', kind: 'select', section: 'settings', options: VISIBILITY_OPTIONS, veraDrafts: false, read: (d) => str(d.visibility) || 'circle_only' },
     { path: 'capacity', label: 'Group size', kind: 'number', section: 'settings', omitWhenEmpty: true },
     { path: 'energyTag', label: 'Energy', kind: 'select', section: 'settings', options: ENERGY_OPTIONS, omitWhenEmpty: true },
+    // Three switches the settings rail persisted without declaring until ADR-1281. Approval is a
+    // column (`rsvp_requires_approval`); the other two live in the `events.theme` bag beside the
+    // cover focus, read and written by their own pure helpers, and their labels are those helpers'.
+    { path: 'rsvpRequiresApproval', label: 'Approve each person before they are in', kind: 'toggle', section: 'settings', veraDrafts: false },
+    { path: 'checkInEnabled', label: CHECK_IN_LABEL, kind: 'toggle', section: 'settings', veraDrafts: false },
+    { path: 'marketListed', label: MARKET_LISTING_LABEL, kind: 'toggle', section: 'settings', veraDrafts: false },
   ],
 
   // The flyer's repeated collections. Each item expands into its own rows, so a tier's price
