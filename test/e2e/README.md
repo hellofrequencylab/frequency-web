@@ -164,6 +164,10 @@ font or rasteriser change: the suite moved, not the page. Bands only on surfaces
 also differ between two captures minutes apart are live data (`/nearby`, `/feed`, the
 room). Crop a band and look at it before deciding what it is.
 
+A full recapture is one mechanical edit across every PNG, so its PR carries the
+`[sweep]` tag in its title for the 40-file size gate (`docs/WORKFLOW.md`); the gate
+reads the title from the pull-request event, so tag before the push, not after.
+
 **A count is not a cause.** On 2026-09-08 a 138-file recapture was rejected as
 "rasterisation" because every file kept its height while 5,000-26,000 px changed. The
 bands said otherwise: the header CTA, the footer CTA and one settings row, i.e. the
