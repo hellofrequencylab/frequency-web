@@ -29,11 +29,21 @@ const cascaded = (heroImage: string | null, hero: 'page' | 'section' | 'site' | 
 const {
   INDEX_HERO_DEFAULTS,
   indexHeroDefaultsFor,
+  indexHeroKeyFor,
   pickIndexHero,
   resolveIndexHero,
   asMarketHero,
   resolveMarketHero,
 } = await import('./index-hero')
+
+/** Every route the 2026-09-07 slice adopted (ADR-1255), by its literal pathname. The 2026-09-08
+ *  kernel change must leave all of them resolving against that exact string. */
+const SHIPPED_2026_09_07 = [
+  '/help', '/circles/templates', '/crew/leaderboard', '/drafts', '/housing/roommates',
+  '/lead/training-library', '/market/manage', '/messages', '/orders', '/partners',
+  '/partners/collaborators', '/partners/join', '/search', '/spaces/operating', '/support',
+  '/discover/partners', '/discover/practices',
+] as const
 
 const SHIPPED_HEADER = { layout: 'overlay' as const, height: 'large' as const, scrim: true }
 
@@ -367,5 +377,124 @@ describe('the 2026-09-07 adoption rows (LIVE-117, ADR-1255)', () => {
     expect(indexHeroDefaultsFor('/circles').size).toBe('large')
     expect(indexHeroDefaultsFor('/spaces/directory').size).toBe('large')
     expect(indexHeroDefaultsFor('/discover/spaces').size).toBe('large')
+  })
+})
+
+describe('the prefix key, and the dynamic-route slice (LIVE-117, ADR-1261)', () => {
+  describe('the flat lookups the 17 shipped with are unchanged', () => {
+    it('every route of the 2026-09-07 slice still keys rung 1 on its own literal pathname', () => {
+      // THE PIN. The kernel change makes the settings key a decision of the MAP rather than a
+      // synonym for the argument, and the whole safety property is that no shipped page moved:
+      // '/help' and '/discover/practices' now carry `keyOn: 'section'`, and for the pages
+      // themselves the section key IS the pathname.
+      for (const route of SHIPPED_2026_09_07) expect(indexHeroKeyFor(route)).toBe(route)
+    })
+
+    it('an unmapped route keys on itself, and a MarketHero route with no row does too', () => {
+      expect(indexHeroKeyFor('/somewhere/nobody/mapped')).toBe('/somewhere/nobody/mapped')
+      expect(indexHeroKeyFor('/store')).toBe('/store')
+      expect(indexHeroKeyFor('/spaces/directory')).toBe('/spaces/directory')
+    })
+
+    it('resolveIndexHero reads page_settings on the literal route for a static adopter', async () => {
+      await resolveIndexHero('/partners/collaborators')
+      expect(getPageHeaderImage).toHaveBeenCalledWith('/partners/collaborators')
+    })
+  })
+
+  describe('a section key, for the dynamic routes a literal prefix DOES reach', () => {
+    it('a help category reads the image an operator set on /help', async () => {
+      getPageHeaderImage.mockImplementation(async (route: string) =>
+        route === '/help' ? '/uploads/help.jpg' : null,
+      )
+      getPageHeaderFocus.mockResolvedValue('30% 70%')
+      const hero = await resolveIndexHero('/help/getting-started')
+      expect(indexHeroKeyFor('/help/getting-started')).toBe('/help')
+      expect(hero).toMatchObject({ heroImage: '/uploads/help.jpg', heroFocus: '30% 70%' })
+      // The FOCAL POINT has to follow the image to the same key, or it crops a photo by
+      // coordinates picked against a different one.
+      expect(getPageHeaderFocus).toHaveBeenCalledWith('/help')
+    })
+
+    it('a pillar page reads the image an operator set on /discover/practices', async () => {
+      getPageHeaderImage.mockImplementation(async (route: string) =>
+        route === '/discover/practices' ? '/uploads/library.jpg' : null,
+      )
+      expect((await resolveIndexHero('/discover/practices/pillar/connection')).heroImage).toBe(
+        '/uploads/library.jpg',
+      )
+    })
+
+    it('RUNG 2 IS NOT RE-KEYED — the copy cascade still climbs the route it was given', async () => {
+      // The cascade walks a route's real ancestors, so '/help/x' already inherits '/help'. Handing
+      // it the section key instead would cost it every rung in between for no gain.
+      await resolveIndexHero('/help/getting-started')
+      expect(resolveContentCascade).toHaveBeenCalledWith('/help/getting-started', {})
+    })
+
+    it('both dynamic children take their section BAND as well as its key', () => {
+      expect(indexHeroDefaultsFor('/help/getting-started').size).toBe('large')
+      expect(indexHeroDefaultsFor('/discover/practices/pillar/connection').size).toBe('large')
+    })
+  })
+
+  describe('the five Space tabs, whose dynamic segment sits in the MIDDLE', () => {
+    const TABS = ['journeys', 'loom', 'manage/circles', 'practices'] as const
+
+    it('a pattern row reaches every Space, and names the TAB rather than the section', () => {
+      for (const tab of TABS) {
+        expect(indexHeroDefaultsFor(`/spaces/acme/${tab}`)).toEqual({
+          image: null, size: 'short', inheritHero: false,
+        })
+      }
+      // The public Shows catalog is the one destination of the five.
+      expect(indexHeroDefaultsFor('/spaces/acme/podcasts').size).toBe('large')
+    })
+
+    it('KEEPS THE LITERAL KEY: a pattern prefix is a matcher, not a key any UI can write', async () => {
+      // The on-page Settings panel keys on usePathname(), so '/spaces/_/loom' would be a rung with
+      // no writer. Each Space's operator sets their own band, at their own path.
+      expect(indexHeroKeyFor('/spaces/acme/loom')).toBe('/spaces/acme/loom')
+      await resolveIndexHero('/spaces/acme/loom')
+      expect(getPageHeaderImage).toHaveBeenCalledWith('/spaces/acme/loom')
+      expect(getPageHeaderImage).not.toHaveBeenCalledWith('/spaces/_/loom')
+    })
+
+    it('refuses an inherited hero, so one brand never wears the /spaces marketing photo', async () => {
+      resolveContentCascade.mockResolvedValue(cascaded('/uploads/spaces-marketing.jpg', 'section'))
+      for (const tab of [...TABS, 'podcasts']) {
+        expect((await resolveIndexHero(`/spaces/acme/${tab}`)).heroImage).toBeNull()
+      }
+    })
+
+    it('a hero set on the tab ITSELF still wins — that is not inheritance', async () => {
+      resolveContentCascade.mockResolvedValue(cascaded('/uploads/mine.jpg', 'page'))
+      expect((await resolveIndexHero('/spaces/acme/podcasts')).heroImage).toBe('/uploads/mine.jpg')
+    })
+
+    it('the tenant rows disturb neither the static /spaces siblings nor the Space profile', () => {
+      // '/spaces/operating' and '/spaces/directory' sit at the same depth as a Space slug, and the
+      // Space PROFILE tabs (which draw the profile chrome's own band) must stay unmapped.
+      expect(indexHeroDefaultsFor('/spaces/operating')).toEqual({ image: null, size: 'short', inheritHero: false })
+      expect(indexHeroKeyFor('/spaces/operating')).toBe('/spaces/operating')
+      expect(indexHeroDefaultsFor('/spaces/directory')).toEqual({ image: null, size: 'large', inheritHero: true })
+      expect(indexHeroDefaultsFor('/spaces/acme')).toEqual({ image: null, size: 'large', inheritHero: true })
+      expect(indexHeroDefaultsFor('/spaces/acme/events')).toEqual({ image: null, size: 'large', inheritHero: true })
+    })
+
+    it('invents no cover: all five resolve to the gradient band', () => {
+      for (const tab of [...TABS, 'podcasts']) {
+        expect(indexHeroDefaultsFor(`/spaces/acme/${tab}`).image).toBeNull()
+      }
+    })
+  })
+
+  it('a pattern row is only ever a MATCHER: no row carries both a wildcard and a section key', () => {
+    // The dead-rung guard, in the map itself rather than in prose. `page_settings` is an
+    // exact-match read and its only writer keys on the live pathname, so a wildcard prefix used as
+    // a key would read a row nothing can create.
+    for (const row of INDEX_HERO_DEFAULTS) {
+      if (row.prefix.split('/').includes('_')) expect(row.keyOn).not.toBe('section')
+    }
   })
 })
