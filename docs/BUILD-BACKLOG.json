@@ -182,7 +182,8 @@
             "DEF-A2P",
             "OWN-063",
             "HYG-068",
-            "OWN-064"
+            "OWN-064",
+            "OWN-065"
           ]
         }
       ],
@@ -9599,6 +9600,25 @@
       "verify": {
         "kind": "manual",
         "evidence": "2026-09-08: measured live. platform_flags beta_grace = 2026-10-01, billing_live = true, host_payouts_enabled = true. lib/pricing/gates.ts:144 space_memberships minEntitlement business; lib/pricing/feature-meters.ts:129 free = 0 tiers. 20 of 21 non-root spaces have 0 circles. Closes when the six FOCUS-MODEL §10 questions are answered and ADR-1291 moves from PROPOSED to Accepted or Rejected.",
+        "checked": "2026-09-08"
+      },
+      "ownerAction": "ruling"
+    },
+    {
+      "id": "OWN-065",
+      "title": "Ruling: one price for the software, and exposure earned rather than sold",
+      "status": "open",
+      "priority": "P1",
+      "lane": "owner",
+      "size": "L",
+      "source": {
+        "file": "docs/OFFER-MODEL.md",
+        "ref": "§11"
+      },
+      "detail": "FILED 2026-09-08 (docs/OFFER-MODEL.md, ADR-1292 PROPOSED). The owner asked for a model where everyone is included and gets real value free, businesses are the income and bring the members in, the more a Space contributes to community the more exposure it gets, and the ladder is stupid simple with no gatekeeping. Those reconcile only if software is SOLD and exposure is EARNED, never mixed.\n\nTWO MEASUREMENTS make it cheap rather than speculative. (1) The Space directory is sorted ALPHABETICALLY: lib/spaces/discovery.ts:135 defaults sort to name and :378-380 applies .order(name). The most valuable exposure surface a business has rewards nothing except starting with the letter A. (2) Nothing on the platform can be bought into rank anywhere: an audit of every ranking surface (directory, ten discover families, nearby and its map, events, calendar, search, feed, network, market, library, rail panels, digest, sitemap) found no plan, tier, entitlement or Stripe field in any ORDER BY, score or inclusion filter. Two scoring formulas already ship (practices_ranked and the community_library RPC), so a per-Space score is the third instance of a pattern already built twice.\n\nSIX QUESTIONS (OFFER-MODEL §11): 1 members never pay for a feature, remove the live isPaid walls; 2 merge collective into business at one price, recommended 49/mo; 3 any Space may sell memberships gated on readiness rather than plan; 4 exposure is earned and never purchasable, stated as a public promise; 5 take-rate collapses to 10 percent free, 3 percent paid, 0 non-profit, 0 own audience always; 6 the name for the earned thing, or a ruling to ship it unnamed.\n\nDATA CAUTION recorded so a score is not built on empty tables: captures is 0 so check-ins do not exist, space_collaborations 0, reports 0 so there is no moderation record, trust_scores 0, space_reviews 1 row. Round one inputs must be gatherings held, people brought to the network (referral, first-touch acquisition, QR scan, signup-lead attribution), circles kept alive, and content other Spaces members adopted.\n\nCOST measured, not estimated: roughly 110-140 files. Removing the live walls L, the tier merge L (~23 source files, 2 migrations, 1 CI script), memberships-free M (four enforcement points that must land in one commit because a drift test guards them), take-rate S, pricing surfaces M, the ~20 tests that pin the ladder by value L, the score M-L, the operator receipt page M. One to one and a half focused weeks plus the score. GOTCHA: Stripe prices cannot be deleted and the four collective_base keys sit in FROZEN_SYNCED_KEYS, so the merge needs a grandfathering path; today that is 6 comped spaces and zero on business, which makes now the cheapest moment it will ever be.\n\nBLOCKED ON: OWN-050 (P0, the Stripe webhook was never registered, zero rows for the life of the table) and the missing attendance record (OWN-064).",
+      "verify": {
+        "kind": "manual",
+        "evidence": "2026-09-08: measured. lib/spaces/discovery.ts:135 normalizeSpaceSort defaults to name; :378-380 orders by name ascending. spaces by plan: free 14, collective 6, business 0, root 1. platform_flags beta_grace 2026-10-01. Closes when the six OFFER-MODEL §11 questions are answered and ADR-1292 moves from PROPOSED to Accepted or Rejected.",
         "checked": "2026-09-08"
       },
       "ownerAction": "ruling"
