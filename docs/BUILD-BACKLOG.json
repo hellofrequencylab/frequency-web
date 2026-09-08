@@ -73,7 +73,10 @@
             "HYG-027",
             "HYG-050",
             "SCAN-502",
-            "HYG-053"
+            "HYG-053",
+            "HYG-070",
+            "HYG-071",
+            "HYG-072"
           ]
         },
         {
@@ -9698,6 +9701,60 @@
         "kind": "manual",
         "evidence": "2026-09-08: production fetch of a dead path shows both meta robots tags in the head (other session's reading, 03:55Z).",
         "checked": "2026-09-08"
+      }
+    },
+    {
+      "id": "HYG-070",
+      "title": "The design-debt ratchet has no reader on main, so a rise merges and the next freeze banks it",
+      "status": "open",
+      "priority": "P2",
+      "lane": "hygiene",
+      "size": "S",
+      "source": {
+        "file": ".github/workflows/ci.yml",
+        "ref": "Advisory trackers (reported, never blocking)"
+      },
+      "detail": "FILED 2026-09-08 by the stabilisation audit (ADR-1290). check:adoption is advisory by owner decision (OWN-004) and that posture is RIGHT: a count ratchet fires on legitimate growth, and an advisory finding forced through a blocking gate teaches everyone to route around it (ADR-970). The workflow comment recording the decision names the condition it depends on -- \"It reports into the run summary on every PR so a rise is visible the day it happens. If it ever stops being read, that is an argument for deleting it, not for making it block again.\"\n\nIT STOPPED BEING READ, and the mechanism is structural rather than anyone's inattention. A PR compares its own tree against the frozen baseline. Once main carries a rise, EVERY subsequent PR inherits it and re-reports it, so the finding reads as pre-existing noise no author can act on -- and is therefore correctly ignored, by each author in turn. #2471 landed five literals across four classes on 2026-09-07; #2473 then ran --update from a branch cut before it and banked numbers main had already exceeded, so three of the four risen classes carry a freeze date NEWER than the debt they guard. literal-type's defended 0 had been 2 for a day, and all nine open PRs re-reported the same four red classes.\n\nTHE WORK is not to make the gate block. It is to give the advisory gate a reading on a FIXED reference, on a schedule, with an owner: a step in .github/workflows/maintenance.yml that runs check:adoption against main and opens/updates the weekly tracking issue when a class is above baseline -- the same shape as the existing \"Cron heartbeat coverage\" step, which exists for the same reason (a finding no PR can fix still needs somewhere to land). ADR-1290 retired the five literals, so the classes are green today; this row is the instrument that notices the next time.\n\nP2 and W2: instrument and record debt goes to the foundation wave, because a guard that cannot fire is what every later wave is measured by.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const f=\".github/workflows/maintenance.yml\";if(!fs.existsSync(f)){console.error(\"maintenance.yml is gone; the scheduled reading has no home\");process.exit(1)}const s=fs.readFileSync(f,\"utf8\");if(s.indexOf(\"check:adoption\")<0){console.error(\"maintenance.yml does not run check:adoption: the ratchet still has no reader on a fixed reference\");process.exit(1)}process.exit(0)'",
+        "note": "Measures the CONSEQUENCE -- that the advisory ratchet is WIRED somewhere it reads a fixed reference on a schedule -- not the row's title. CI's per-PR advisory step is deliberately not what this looks for: that step is the reader that structurally cannot tell a new rise from an inherited one, which is the defect. Pure node, no shell pipeline."
+      }
+    },
+    {
+      "id": "HYG-071",
+      "title": "shadow-literals counts drop-shadow-*, a filter family the lift-* box-shadows cannot express",
+      "status": "open",
+      "priority": "P3",
+      "lane": "hygiene",
+      "size": "S",
+      "source": {
+        "file": "scripts/adoption-baselines.json",
+        "ref": "shadow-literals"
+      },
+      "detail": "FILED 2026-09-08 by the stabilisation audit (ADR-1290). The class pattern is \\\\bshadow-(?:sm|md|lg|xl|2xl)\\\\b and its description names the alternative as \"the DAWN depth language (lift-*)\". It also matches INSIDE drop-shadow-sm / drop-shadow-md, because - is a word boundary.\n\nThat is a false positive with no available fix at the site. drop-shadow is a CSS `filter`; .lift-1/.lift-2/.lift-3 are `box-shadow` (app/globals.css). On a transparent subject -- an emoji glyph, a PNG wordmark -- a box-shadow paints a rectangle behind the object instead of tracing it, so there is no conversion to make and the counted site can only be resolved by deleting the effect. ADR-1290 hit exactly this on components/spotlight/sticker-layer.tsx and removed the shadow to clear the rise; the remaining site is components/layout/marketing-header.tsx:144 (drop-shadow-md on the inverted wordmark), where the effect IS load-bearing.\n\nEXACTLY TWO SITES REPO-WIDE, which is why this is P3 and not a sweep. THE WORK is a pattern correction -- exclude a preceding drop- -- and that changes frozen.basis, so it forces a re-freeze of shadow-literals with direction \"rebased\" and a reason. Do it in the same change as the re-freeze, and do NOT bundle it with a HYG-055 slice: that row's shadow rule is about WHO CHOSE the shadow (17 chrome sites vs 33 member-picked values) and already carries three preconditions; this is a measurement defect underneath it. Re-read both sites before changing the pattern -- if marketing-header has since dropped its filter, the class has one site and the correction is cheaper than the re-freeze.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const j=require(\"./scripts/adoption-baselines.json\");const e=j.entries.find(x=>x.key===\"shadow-literals\");if(!e){console.error(\"shadow-literals entry is gone\");process.exit(1)}const hit=e.patterns.some(p=>new RegExp(p).test(\"class=\\\"drop-shadow-sm\\\"\"));if(hit){console.error(\"the shadow-literals pattern still matches drop-shadow-sm, a filter the lift-* box-shadows cannot express\");process.exit(1)}process.exit(0)'",
+        "note": "Measures the CONSEQUENCE: feed the class's own patterns the exact string that is being miscounted and require that none of them match. Passes only when the pattern has been corrected -- not when the two sites happen to have been deleted, which would leave the defect armed for the next drop-shadow anyone writes. Pure node, no shell pipeline."
+      }
+    },
+    {
+      "id": "HYG-072",
+      "title": "The PR-size gate counts generated visual baselines, so a recapture trips the 40-file gate on volume it did not author",
+      "status": "open",
+      "priority": "P2",
+      "lane": "hygiene",
+      "size": "S",
+      "source": {
+        "file": ".github/workflows/ci.yml",
+        "ref": "PR size gate"
+      },
+      "detail": "FILED 2026-09-08 by the stabilisation audit (ADR-1290). The gate reads github.event.pull_request.changed_files -- the API's own count, deliberately, because a depth-1 checkout has no merge base -- and fails above 40 unless the title carries [sweep]. It cannot see WHAT the files are.\n\nMEASURED ON THE PR IT IS CURRENTLY BLOCKING. #2477 (LIVE-213) changes 87 files: 72 of them are PNGs under test/e2e/__screenshots__/visual.spec.ts/, and the other 15 are the authored change (8 tsx, 3 ts, 2 md, 2 json). Fifteen is INSIDE the 15-file guidance and nowhere near the 40-file gate; the PR is blocked entirely on generated output a runner wrote. All 156 baselines in the repo live in that one directory, so the scope is unambiguous.\n\nTHE PRECEDENT WORKAROUND IS THE WRONG SHAPE. The repo's answer so far has been the [sweep] tag (f2cf16a / #2472 is a baseline recapture tagged that way), but [sweep] is defined as \"single-purpose mechanical changes where every file takes the same one edit\", and a recapture PR carrying 15 differently-edited authored files is not that. Tagging it teaches the reviewer that [sweep] means \"big\", which is the one thing the tag must not mean on a repo where merging deploys to production.\n\nTHE WORK is to count AUTHORED files: list the PR's files (paginated -- a recapture can exceed 100) and subtract test/e2e/__screenshots__/**, then gate on that number. It needs pull-requests: read on the checks job.\n\n\\U0001f534 DO NOT SHIP THIS BLIND. It edits a REQUIRED status check on a protected branch, and it cannot be exercised locally -- which is the 2026-08-11 shape this repo names in AGENTS.md: a build-blocking gate that has never seen a real artifact. Land it with a deliberate control in the same change: one PR that must still FAIL (>40 authored files) and one that must now PASS (a recapture), both observed before it is relied on.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const s=fs.readFileSync(\".github/workflows/ci.yml\",\"utf8\");const i=s.indexOf(\"PR size gate\");if(i<0){console.error(\"the PR size gate is gone from ci.yml\");process.exit(1)}const step=s.slice(i,i+4000);if(step.indexOf(\"__screenshots__\")<0){console.error(\"the PR size gate still counts generated visual baselines toward the 40-file limit\");process.exit(1)}process.exit(0)'",
+        "note": "Measures the CONSEQUENCE in the workflow that actually gates a PR: the size step must name the generated-baseline directory it excludes. Scoped to the step rather than the file, so an unrelated mention of __screenshots__ elsewhere in ci.yml cannot pass it. Pure node, no shell pipeline."
       }
     }
   ]
