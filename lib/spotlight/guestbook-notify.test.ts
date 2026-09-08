@@ -59,7 +59,7 @@ describe('notifyGuestbookSigned', () => {
 
   it('skips the bell row when inapp_comments is off, and still offers the push to the gate', async () => {
     const route = vi.fn(async () => ({ event: 'guestbook.sign' as const, outcomes: [], enqueuedCount: 0 }))
-    const out = await notifyGuestbookSigned(input, { client: client({ handle: 'grace' }), gate: async () => ({ allowed: false, reason: 'preference-off' as const }), route })
+    const out = await notifyGuestbookSigned(input, { client: client({ handle: 'grace' }), gate: async () => ({ allowed: false, reason: 'pref_off' as const }), route })
     expect(out).toEqual({ inapp: false, push: 0 })
     expect(inserts).toEqual([])
     expect(route).toHaveBeenCalledTimes(1)
