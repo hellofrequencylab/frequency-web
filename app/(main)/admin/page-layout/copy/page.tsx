@@ -34,7 +34,7 @@ export default async function SiteCopyAdminPage() {
       width="default"
     >
       <AdminSection>
-        <div className="flex items-start gap-3 rounded-2xl border border-border bg-surface p-4 text-body-sm text-muted">
+        <div className="flex items-start gap-3 rounded-card border border-border bg-surface p-4 text-body-sm text-muted">
           <Info className="mt-0.5 h-4 w-4 shrink-0 text-subtle" aria-hidden />
           <p>
             Pages inherit down the route tree: a page reads its own row, then each section above it,

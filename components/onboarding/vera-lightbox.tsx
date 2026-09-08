@@ -261,8 +261,8 @@ export function VeraLightbox({
                   <div
                     className={
                       m.from === 'you'
-                        ? 'max-w-[80%] rounded-2xl rounded-br-sm bg-primary px-3.5 py-2 text-body-sm text-on-primary'
-                        : 'max-w-[85%] rounded-2xl rounded-bl-sm border border-border bg-surface-elevated px-3.5 py-2 text-body-sm text-text'
+                        ? 'max-w-[80%] rounded-card rounded-br-sm bg-primary px-3.5 py-2 text-body-sm text-on-primary'
+                        : 'max-w-[85%] rounded-card rounded-bl-sm border border-border bg-surface-elevated px-3.5 py-2 text-body-sm text-text'
                     }
                   >
                     {m.text}
@@ -273,7 +273,7 @@ export function VeraLightbox({
               {/* The streaming draft (ADR-1287): hidden from assistive tech until it lands whole. */}
               {pending && draft && (
                 <div className="flex justify-start" aria-hidden>
-                  <div className="max-w-[85%] rounded-2xl rounded-bl-sm border border-border bg-surface-elevated px-3.5 py-2 text-body-sm text-text">{draft}</div>
+                  <div className="max-w-[85%] rounded-card rounded-bl-sm border border-border bg-surface-elevated px-3.5 py-2 text-body-sm text-text">{draft}</div>
                 </div>
               )}
               {pending && !draft && <p className="text-meta text-subtle">Vera is thinking…</p>}
