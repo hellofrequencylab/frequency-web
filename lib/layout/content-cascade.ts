@@ -2,6 +2,7 @@ import 'server-only'
 
 import { cache } from 'react'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { SITE_SCOPE } from '@/lib/layout/editable-content'
 
 // THE COPY CASCADE — the ONE resolver for operator-editable page copy, inherited down the route
 // tree (PROG-P6, ADR-1122, PAGE-FRAMEWORK §8.6).
@@ -38,8 +39,12 @@ import { createAdminClient } from '@/lib/supabase/admin'
  *  CONTENT_EDIT_ROUTES for its SEO title + meta description alone), so making `'/'` the site rung
  *  would quietly promote the home page's `<title>` to the default title of every page in the app.
  *  Production's `'/'`-row fields are empty today, so nothing would have broken visibly, which is
- *  precisely what makes it the expensive kind of mistake. */
-export const SITE_SCOPE = '*'
+ *  precisely what makes it the expensive kind of mistake.
+ *
+ *  DECLARED in lib/layout/editable-content.ts since ADR-1284 and re-exported here, because this
+ *  module is `server-only` and the operator editor (a client component) has to name the key to
+ *  edit the site row. Every reader of the cascade keeps importing it from here. */
+export { SITE_SCOPE }
 
 /** PURE: the scope chain for a route, MOST SPECIFIC FIRST, always ending at the site rung.
  *
@@ -121,6 +126,9 @@ export function longestPrefixRow<T extends { prefix: string }>(route: string, ro
 export interface CascadeContent {
   title: string
   description: string
+  /** Intro copy under the header (`page_content.body`, migration 20270345002700, ADR-1284). Plain
+   *  text, paragraphs split on a blank line; `PageIntro` (components/templates) renders it. */
+  body: string | null
   heroImage: string | null
   ctaLabel: string | null
   ctaHref: string | null
@@ -133,7 +141,13 @@ export type CascadeOrigin = 'page' | 'section' | 'site' | 'fallback'
 export interface CascadeResult extends CascadeContent {
   /** The scope each field resolved at. Exposed so an operator surface can say "inherited from
    *  /events" rather than showing an empty box over a filled-in page. */
-  origin: { title: CascadeOrigin; description: CascadeOrigin; hero: CascadeOrigin; cta: CascadeOrigin }
+  origin: {
+    title: CascadeOrigin
+    description: CascadeOrigin
+    body: CascadeOrigin
+    hero: CascadeOrigin
+    cta: CascadeOrigin
+  }
 }
 
 // ── THE PER-FIELD POLICY, AND WHY IT IS NOT UNIFORM ────────────────────────────────────────────
@@ -151,6 +165,12 @@ export interface CascadeResult extends CascadeContent {
 //
 // `heroImage` DOES inherit. It is the section's look, it is the only field production actually
 // sets, and it is the reason this module exists.
+//
+// `body` DOES inherit (ADR-1284). It is the section's VOICE — the paragraph of intro under the
+// header — and not the page's identity: a child of `/events` wearing the Events intro is the same
+// child wearing the Events photo. It never feeds `<title>` or a meta description, so inheriting
+// it manufactures none of the duplicate metadata that keeps `title` and `description` at the
+// page rung. A page that sets its own `body` still wins, which is the per-field rule above.
 //
 // The CTA inherits AS A PAIR — see `pickCascade`.
 
@@ -193,6 +213,8 @@ export function pickCascade(
   const description = clean(page.description)
 
   // Inherited: first non-blank down the chain.
+  let body: string | null = null
+  let bodyOrigin: CascadeOrigin = 'fallback'
   let heroImage: string | null = null
   let heroOrigin: CascadeOrigin = 'fallback'
   let ctaLabel: string | null = null
@@ -203,6 +225,10 @@ export function pickCascade(
     const row = rows[chain[i]]
     if (!row) continue
     const where: CascadeOrigin = chain[i] === SITE_SCOPE ? 'site' : i === 0 ? 'page' : 'section'
+    if (!body) {
+      const v = clean(row.body)
+      if (v) { body = v; bodyOrigin = where }
+    }
     if (!heroImage) {
       const v = clean(row.heroImage)
       if (v) { heroImage = v; heroOrigin = where }
@@ -217,6 +243,10 @@ export function pickCascade(
     }
   }
 
+  if (!body && clean(fallback.body)) {
+    body = clean(fallback.body)
+    bodyOrigin = 'fallback'
+  }
   if (!heroImage && clean(fallback.heroImage)) {
     heroImage = clean(fallback.heroImage)
     heroOrigin = 'fallback'
@@ -236,12 +266,14 @@ export function pickCascade(
   return {
     title: title ?? fallback.title ?? '',
     description: description ?? fallback.description ?? '',
+    body,
     heroImage,
     ctaLabel,
     ctaHref,
     origin: {
       title: title ? 'page' : 'fallback',
       description: description ? 'page' : 'fallback',
+      body: body ? bodyOrigin : 'fallback',
       hero: heroImage ? heroOrigin : 'fallback',
       cta: ctaLabel && ctaHref ? ctaOrigin : 'fallback',
     },
@@ -263,6 +295,7 @@ export const loadCascadeRows = cache(
         out[row.route] = {
           title: row.title,
           description: row.description,
+          body: row.body,
           heroImage: row.hero_image,
           ctaLabel: row.cta_label,
           ctaHref: row.cta_href,

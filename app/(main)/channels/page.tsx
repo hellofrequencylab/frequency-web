@@ -6,6 +6,7 @@ import { MarketHero } from '@/components/marketplace/market-hero'
 import { HERO_PRIMARY_BTN, HERO_SECONDARY_BTN } from '@/components/marketplace/hero-buttons'
 import { MarketplaceStats } from '@/components/marketplace/marketplace-bar'
 import { PageAdminBar } from '@/components/layout/page-admin-bar'
+import { PageIntro } from '@/components/templates'
 import { PageModules } from '@/components/widgets/page-modules'
 import { resolvePageContent, pageContentMetadata } from '@/lib/page-content'
 import { resolveMarketHero } from '@/lib/layout/index-hero'
@@ -42,7 +43,7 @@ export default async function ChannelsPage() {
   const supabase = await createClient()
 
   // Operator-editable page header (ADR-180) — falls back to the coded defaults.
-  const { title: pageTitle, description: pageDescription, heroImage, ctaLabel, ctaHref } =
+  const { title: pageTitle, description: pageDescription, body: pageBody, heroImage, ctaLabel, ctaHref } =
     await resolvePageContent('/channels', CONTENT_FALLBACK)
 
   const { data: { user } } = await supabase.auth.getUser()
@@ -121,6 +122,10 @@ export default async function ChannelsPage() {
       {/* The on-page operator Settings affordance IndexTemplate used to draw — kept under the hero
           as its divider rule so nothing an operator had was lost in the move to MarketHero. */}
       <PageAdminBar asDivider />
+
+      {/* The operator's intro copy (page_content.body, ADR-1284), inherited from the site row when
+          this section sets none. */}
+      <PageIntro text={pageBody} className="" />
 
       {/* The whole pillar-grouped browse is module-driven and arranged by the operator. The block
           self-fetches (viewer-scoped) and renders the toc, the Pillars, and the jump-nav. */}

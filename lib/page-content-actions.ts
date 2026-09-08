@@ -5,7 +5,7 @@ import { getCallerProfile } from '@/lib/auth'
 import { atLeastRole } from '@/lib/core/roles'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
-import { CONTENT_EDIT_ROUTES } from '@/lib/layout/editable-content'
+import { CONTENT_EDIT_ROUTES, SITE_SCOPE } from '@/lib/layout/editable-content'
 import { isLoomPublicImageUrl } from '@/lib/loom/urls'
 
 // Who may edit page content (ADR-180) — role-specific: admin+ (operators who tune
@@ -18,11 +18,16 @@ const MAX_TITLE = 200
 const MAX_DESCRIPTION = 600
 const MAX_CTA_LABEL = 80
 const MAX_URL = 2048
+// The intro copy is a paragraph or three under the header, not a page: long-form belongs to the
+// page editor (docs/EDITOR-ARCHITECTURE.md). Caps are trims, never errors, the same as title.
+const MAX_BODY = 4000
 
 /** Editable content shape handed to the editor (empty string = no override). */
 export type EditablePageContent = {
   title: string
   description: string
+  /** Intro copy under the header (page_content.body, ADR-1284). Inherits down the route tree. */
+  body: string
   heroImage: string
   ctaLabel: string
   ctaHref: string
@@ -39,9 +44,23 @@ function cleanLink(raw: FormDataEntryValue | null): string | null | 'invalid' {
 
 /** Only the routes wired for content editing (the registry) are accepted — the
  *  route comes from the client (usePathname), so it's validated against the allowlist
- *  rather than trusted, even though the action is already admin-gated. */
-function isEditableRoute(route: string): route is (typeof CONTENT_EDIT_ROUTES)[number] {
-  return (CONTENT_EDIT_ROUTES as readonly string[]).includes(route)
+ *  rather than trusted, even though the action is already admin-gated.
+ *
+ *  PLUS THE SITE RUNG (PROG-P6 (b), ADR-1284). `'*'` is the reserved key the copy cascade reads
+ *  last (lib/layout/content-cascade.ts, SITE_SCOPE): the row every page inherits from when neither
+ *  it nor its section says anything. It is not a route and never will be, so it lives beside the
+ *  registry rather than in it, and the same admin gate covers it: the row that reaches every page
+ *  is edited by exactly the role that may edit any one of them. */
+function isEditableRoute(route: string): route is (typeof CONTENT_EDIT_ROUTES)[number] | typeof SITE_SCOPE {
+  return route === SITE_SCOPE || (CONTENT_EDIT_ROUTES as readonly string[]).includes(route)
+}
+
+/** Refresh what a write can have changed. A page row changes one path; the site row can reach
+ *  every page under the root layout, so it invalidates the root layout's subtree (Next's
+ *  `revalidatePath(path, 'layout')` form) rather than a path that does not exist. */
+function revalidateScope(route: string) {
+  if (route === SITE_SCOPE) revalidatePath('/', 'layout')
+  else revalidatePath(route)
 }
 
 /** Current editable content for a route, or null if the caller can't edit it. */
@@ -62,6 +81,7 @@ export async function getEditablePageContent(
   const row = data as {
     title?: string | null
     description?: string | null
+    body?: string | null
     hero_image?: string | null
     cta_label?: string | null
     cta_href?: string | null
@@ -69,6 +89,7 @@ export async function getEditablePageContent(
   return {
     title: row?.title ?? '',
     description: row?.description ?? '',
+    body: row?.body ?? '',
     heroImage: row?.hero_image ?? '',
     ctaLabel: row?.cta_label ?? '',
     ctaHref: row?.cta_href ?? '',
@@ -80,8 +101,14 @@ export async function savePageContent(route: string, fd: FormData): Promise<Acti
   const me = await getCallerProfile()
   if (!me || !atLeastRole(me.community_role, MIN_ROLE)) return fail('Not allowed.')
   if (!isEditableRoute(route)) return fail('That page isn’t editable.')
-  const title = ((fd.get('title') as string) ?? '').trim().slice(0, MAX_TITLE) || null
-  const description = ((fd.get('description') as string) ?? '').trim().slice(0, MAX_DESCRIPTION) || null
+  // Identity never inherits (ADR-1122), so the site row cannot carry any: a title stored on '*'
+  // would be a value no reader ever resolves, and a later reader might. Nulled at the write.
+  const site = route === SITE_SCOPE
+  const title = site ? null : ((fd.get('title') as string) ?? '').trim().slice(0, MAX_TITLE) || null
+  const description = site
+    ? null
+    : ((fd.get('description') as string) ?? '').trim().slice(0, MAX_DESCRIPTION) || null
+  const body = ((fd.get('body') as string) ?? '').trim().slice(0, MAX_BODY) || null
   const cta_href = cleanLink(fd.get('cta_href'))
   if (cta_href === 'invalid') {
     return fail('Links must start with “/” or “http(s)://”.')
@@ -96,11 +123,11 @@ export async function savePageContent(route: string, fd: FormData): Promise<Acti
   const { error } = await db
     .from('page_content')
     .upsert({
-      route, title, description, cta_label, cta_href,
+      route, title, description, body, cta_label, cta_href,
       updated_by: me.id, updated_at: new Date().toISOString(),
     })
   if (error) return fail(error.message)
-  revalidatePath(route)
+  revalidateScope(route)
   return ok()
 }
 
@@ -120,7 +147,7 @@ export async function setPageHeroUrl(route: string, url: string): Promise<{ erro
     updated_at: new Date().toISOString(),
   })
   if (error) return { error: error.message }
-  revalidatePath(route)
+  revalidateScope(route)
 }
 
 /** Clear a route's hero image. Admin-gated; mirrors removeCircleCover. */
@@ -140,5 +167,5 @@ export async function removePageHero(route: string): Promise<void> {
     })
   if (error) throw new Error(error.message)
 
-  revalidatePath(route)
+  revalidateScope(route)
 }

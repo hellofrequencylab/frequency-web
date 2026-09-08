@@ -808,10 +808,11 @@ of nine `?? SOMETHING` expressions.
 
 ## 8.6 The copy cascade: site → section → page (ADR-1122)
 
-`page_content` (ADR-180/182) holds the operator-editable title, description, hero image and CTA for
-a route. It was read with `.eq('route', route)`, so only the exact route ever saw its own row.
-[`lib/layout/content-cascade.ts`](../lib/layout/content-cascade.ts) makes it inherit, in one query,
-with no schema change: the rows that already exist become the section rung by being where they are.
+`page_content` (ADR-180/182) holds the operator-editable title, description, hero image, CTA and,
+since ADR-1284, the `body` intro copy for a route. It was read with `.eq('route', route)`, so only
+the exact route ever saw its own row.
+[`lib/layout/content-cascade.ts`](../lib/layout/content-cascade.ts) makes it inherit, in one query:
+the rows that already exist become the section rung by being where they are.
 
 ```ts
 const c = await resolvePageContent('/events/calendar', CONTENT_FALLBACK) // inherits /events
@@ -832,9 +833,21 @@ Three rules make it a cascade rather than a fallback chain:
   `pageContentMetadata`, so inheriting them would emit one meta description across a whole section.
 - **The CTA is ONE unit.** `ctaLabel` and `ctaHref` come from the nearest scope that sets either,
   never spliced across rungs, and render only when both survive.
+- **`body` inherits like the hero** (ADR-1284, migration `20270345002700`). It is the section's
+  voice, not the page's identity, and never feeds metadata. Plain text, a blank line between
+  paragraphs; [`PageIntro`](../components/templates/page-intro.tsx) is the one place it becomes
+  markup. `IndexTemplate` renders it from its `intro` slot, between the heading rule and the
+  toolbar; a `MarketHero` page places `<PageIntro>` under the hero by hand.
 
 `getPageContent` is deliberately unchanged and still exact-route: the operator editor has to show
 what THIS route stores, never what it borrows.
+
+**Where each rung is written.** A page or section row is edited from that route's Settings panel
+(`PageContentModule`, routes in `CONTENT_EDIT_ROUTES`). The site row `'*'` is not a route, so no
+page can stand on it: it is set from **`/admin/page-layout/copy`** (the Page layout manager's third
+tab), which renders the same module pointed at `SITE_SCOPE` under the same admin gate. The site
+form carries no title or description, because identity never inherits and a value stored there
+would be a value no reader resolves.
 
 ### The standard Detail cover: `coverImage`
 

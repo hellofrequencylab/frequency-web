@@ -239,6 +239,8 @@ export interface EventsIndexData {
   content: {
     title: string
     description: string
+    /** Intro copy under the hero (page_content.body, ADR-1284); inherits down the cascade. */
+    body: string | null
     heroImage: string | null
     ctaLabel: string | null
     ctaHref: string | null
@@ -336,7 +338,7 @@ export async function getEventsIndexData(params: EventsIndexParams): Promise<Eve
   // viewerHidesDemo is a cookie read with no I/O and no side effects, and the boolean it feeds
   // is identical either way.
   const [
-    { title: pageTitle, description: pageDescription, heroImage, ctaLabel, ctaHref },
+    { title: pageTitle, description: pageDescription, body: pageBody, heroImage, ctaLabel, ctaHref },
     horizonDays,
     demoOn,
     viewerHidesDemoContent,
@@ -788,6 +790,7 @@ export async function getEventsIndexData(params: EventsIndexParams): Promise<Eve
     content: {
       title: pageTitle,
       description: pageDescription,
+      body: pageBody ?? null,
       heroImage: heroImage ?? null,
       ctaLabel: ctaLabel ?? null,
       ctaHref: ctaHref ?? null,

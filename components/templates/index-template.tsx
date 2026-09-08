@@ -14,6 +14,7 @@ import Link from 'next/link'
 import { ChevronLeft } from 'lucide-react'
 import { PageHeading } from './page-heading'
 import { PageHero, type PageHeroSize, type PageHeroVariant } from './page-hero'
+import { PageIntro } from './page-intro'
 import { Breadcrumbs } from '@/components/layout/breadcrumbs'
 import { PageAdminBar } from '@/components/layout/page-admin-bar'
 
@@ -24,6 +25,7 @@ export function IndexTemplate({
   eyebrow,
   title,
   description,
+  intro,
   action,
   back,
   toolbar,
@@ -43,6 +45,9 @@ export function IndexTemplate({
   eyebrow?: React.ReactNode
   title: React.ReactNode
   description?: React.ReactNode
+  /** The operator's intro copy under the header (`page_content.body`, ADR-1284): a paragraph or
+   *  three between the heading rule and the toolbar, rendered by <PageIntro>. Blank = nothing. */
+  intro?: string | null
   /** Header-right action, e.g. a "New circle" button. */
   action?: React.ReactNode
   /** Back-link for a nested index (e.g. a sub-page under a dashboard). */
@@ -122,6 +127,7 @@ export function IndexTemplate({
         <div className="mt-4">
           {adminBar ? <PageAdminBar asDivider /> : <div className="mb-5 border-b border-border sm:mb-6" />}
         </div>
+        <PageIntro text={intro} />
         {toolbar && <div className="mb-4">{toolbar}</div>}
         {children}
       </div>
@@ -154,6 +160,7 @@ export function IndexTemplate({
         </div>
       )}
       <PageHeading eyebrow={eyebrow} title={title} description={description} actions={action} back={back} adminBar={adminBar} />
+      <PageIntro text={intro} />
       {toolbar && <div className="mb-4">{toolbar}</div>}
       {children}
     </div>

@@ -61,7 +61,7 @@ export default async function LibraryPage({
   const q = (t: string) => (t === 'all' ? '/library' : `/library?type=${t}`)
 
   // Operator-editable page header (ADR-180) — falls back to the coded defaults.
-  const { title, description, heroImage: contentHero, ctaLabel, ctaHref } = await resolvePageContent('/library', CONTENT_FALLBACK)
+  const { title, description, body, heroImage: contentHero, ctaLabel, ctaHref } = await resolvePageContent('/library', CONTENT_FALLBACK)
   // The uniform overlay Hero Header, resolved by the ONE browse-hero ladder (lib/layout/index-hero,
   // PROG-P4): operator Settings image, then the page-content hero, then the '/library' row of
   // INDEX_HERO_DEFAULTS ('/images/site/community-1.jpg'), then the gradient band. The page-content
@@ -72,6 +72,7 @@ export default async function LibraryPage({
     <IndexTemplate
       title={title}
       description={description}
+      intro={body}
       trail={[
         { href: '/network', label: 'Community' },
         { href: '/library', label: 'Library' },

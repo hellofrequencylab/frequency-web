@@ -29,6 +29,7 @@ const row = (route: string, o: Record<string, string | null> = {}) => ({
   route,
   title: null,
   description: null,
+  body: null,
   hero_image: null,
   cta_label: null,
   cta_href: null,
@@ -231,6 +232,69 @@ describe('identity fields do NOT inherit', () => {
   })
 })
 
+describe('body copy INHERITS, per field, on the same ladder as the hero (ADR-1284)', () => {
+  const chain = routeScopeChain('/events/calendar')
+
+  it('rung 1 — the PAGE row beats the section, the site and the code', () => {
+    const r = pickCascade(
+      chain,
+      {
+        '/events/calendar': { body: 'Page intro' },
+        '/events': { body: 'Section intro' },
+        [SITE_SCOPE]: { body: 'Site intro' },
+      },
+      { body: 'Coded intro' },
+    )
+    expect(r.body).toBe('Page intro')
+    expect(r.origin.body).toBe('page')
+  })
+
+  it('rung 2 — the SECTION row beats the site and the code', () => {
+    const r = pickCascade(
+      chain,
+      { '/events': { body: 'Section intro' }, [SITE_SCOPE]: { body: 'Site intro' } },
+      { body: 'Coded intro' },
+    )
+    expect(r.body).toBe('Section intro')
+    expect(r.origin.body).toBe('section')
+  })
+
+  it("rung 3 — the SITE row '*' beats the code, so a site-wide intro reaches every page", () => {
+    const r = pickCascade(chain, { [SITE_SCOPE]: { body: 'Site intro' } }, { body: 'Coded intro' })
+    expect(r.body).toBe('Site intro')
+    expect(r.origin.body).toBe('site')
+  })
+
+  it("rung 4 — the coded fallback, and null when the code has none", () => {
+    expect(pickCascade(chain, {}, { body: 'Coded intro' })).toMatchObject({ body: 'Coded intro', origin: { body: 'fallback' } })
+    expect(pickCascade(chain, {}, {})).toMatchObject({ body: null, origin: { body: 'fallback' } })
+  })
+
+  it('a blank stored body is not a body — it falls through', () => {
+    const r = pickCascade(chain, { '/events/calendar': { body: '   \n' }, '/events': { body: 'Section intro' } }, {})
+    expect(r.body).toBe('Section intro')
+  })
+
+  it('it is per FIELD: a page that sets only its body still inherits the section hero, and vice versa', () => {
+    const r = pickCascade(
+      chain,
+      { '/events/calendar': { body: 'Page intro' }, '/events': { heroImage: '/section.jpg', body: 'Section intro' } },
+      {},
+    )
+    expect(r).toMatchObject({ body: 'Page intro', heroImage: '/section.jpg' })
+    expect(r.origin).toMatchObject({ body: 'page', hero: 'section' })
+  })
+
+  it("the site row's title and description are STILL not read — identity never inherits, even from '*'", () => {
+    const r = pickCascade(
+      chain,
+      { [SITE_SCOPE]: { title: 'Site title', description: 'Site description', body: 'Site intro' } },
+      { title: 'Calendar', description: 'Coded description' },
+    )
+    expect(r).toMatchObject({ title: 'Calendar', description: 'Coded description', body: 'Site intro' })
+  })
+})
+
 describe('the CTA resolves as ONE unit', () => {
   const chain = routeScopeChain('/circles/mindless')
 
@@ -293,6 +357,19 @@ describe('resolveContentCascade (the async wrapper)', () => {
     const r = await resolveContentCascade('/practices/8add58b1', { title: 'A Practice', description: 'd' })
     expect(r.heroImage).toBe('/uploads/practices.jpg')
     expect(r.origin.hero).toBe('section')
+  })
+
+  it('the site row reaches a page through the one query, and a page row still wins over it', async () => {
+    withRows([
+      row(SITE_SCOPE, { body: 'Site intro', hero_image: '/site.jpg' }),
+      row('/journeys/mine', { body: 'Mine intro' }),
+    ])
+    const mine = await resolveContentCascade('/journeys/mine', { title: 'My Journeys', description: 'd' })
+    expect(mine).toMatchObject({ body: 'Mine intro', heroImage: '/site.jpg' })
+    expect(mine.origin).toMatchObject({ body: 'page', hero: 'site' })
+    const other = await resolveContentCascade('/library/x', { title: 'Coded', description: 'd' })
+    expect(other).toMatchObject({ body: 'Site intro', heroImage: '/site.jpg' })
+    expect(other.origin.body).toBe('site')
   })
 
   it('a route with no row anywhere resolves to its coded copy', async () => {

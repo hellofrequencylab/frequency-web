@@ -10,7 +10,7 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { EntityCard } from '@/components/cards/entity-card'
 import { SectionHeader } from '@/components/ui/section-header'
 import { ModuleCard } from '@/components/modules/module-card'
-import { StreamTemplate } from '@/components/templates'
+import { StreamTemplate, PageIntro } from '@/components/templates'
 import { resolvePageContent, pageContentMetadata } from '@/lib/page-content'
 import { Suspense } from 'react'
 import { NearbyMapHeader } from '@/components/nearby/nearby-map-header'
@@ -248,7 +248,7 @@ export default async function NearbyPage({
   // Operator-editable page header (ADR-180) + the operator-tunable header ELEMENT (ADR-793: which
   // layout, height and overlay the band paints in). Both are cached reads and neither depends on the
   // other, so they run together.
-  const [{ title, description, heroImage, ctaLabel, ctaHref }, header] = await Promise.all([
+  const [{ title, description, body, heroImage, ctaLabel, ctaHref }, header] = await Promise.all([
     resolvePageContent('/nearby', CONTENT_FALLBACK),
     resolveHeaderElement({ defaults: { layout: 'overlay', height: 'large' } }),
   ])
@@ -333,6 +333,10 @@ export default async function NearbyPage({
         </p>
       }
     >
+      {/* The operator's intro copy (page_content.body, ADR-1284), inherited from the site row when
+          this section sets none. */}
+      <PageIntro text={body} />
+
       {/* ── Highlight hero: the latest Dispatch ──────────────────────────────────────────────
               The "next event" FALLBACK that used to sit here is gone: the four Coming up cards
               beside the map now do that job, with four gatherings instead of one. Keeping both

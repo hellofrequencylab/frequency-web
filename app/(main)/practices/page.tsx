@@ -101,7 +101,7 @@ export default async function PracticesPage({
   }
 
   // Operator-editable page header (ADR-180) — falls back to the coded defaults.
-  const { title, description, heroImage: contentHero, ctaLabel, ctaHref } =
+  const { title, description, body, heroImage: contentHero, ctaLabel, ctaHref } =
     await resolvePageContent('/practices', CONTENT_FALLBACK)
   // The uniform overlay Hero Header, resolved by the ONE browse-hero ladder (lib/layout/index-hero,
   // PROG-P4). This page used to re-type the whole stanza — operator image, then page-content hero,
@@ -115,6 +115,7 @@ export default async function PracticesPage({
     <IndexTemplate
       title={title}
       description={description}
+      intro={body}
       action={
         (signedIn || (ctaLabel && ctaHref)) ? (
           <div className="flex items-center gap-2">

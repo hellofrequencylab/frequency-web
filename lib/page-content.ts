@@ -15,6 +15,9 @@ import { resolveContentCascade } from '@/lib/layout/content-cascade'
 //   • heroImage / ctaLabel / ctaHref — optional hero banner + call-to-action
 //     (migration 20260612050000). NULL/blank = the page's coded default (usually:
 //     nothing). The CTA renders only when BOTH label and href are set.
+//   • body — optional intro copy under the header (migration 20270345002700,
+//     ADR-1284), rendered by <PageIntro> where the page's template has a place
+//     for it. INHERITS down the route tree like the hero; see the cascade.
 //
 // Cached per request so the header, metadata, and hero/CTA all share one read.
 //
@@ -43,6 +46,8 @@ export interface PageContent {
   /** Optional call-to-action — renders only when BOTH label and href are set. */
   ctaLabel?: string | null
   ctaHref?: string | null
+  /** Optional intro copy under the header. Plain text; blank lines split paragraphs. */
+  body?: string | null
 }
 
 export const getPageContent = cache(async (route: string): Promise<PageContent | null> => {
@@ -63,6 +68,7 @@ export const getPageContent = cache(async (route: string): Promise<PageContent |
       heroImage: row.hero_image ?? null,
       ctaLabel: row.cta_label ?? null,
       ctaHref: row.cta_href ?? null,
+      body: row.body ?? null,
     }
   } catch {
     return null
@@ -89,6 +95,7 @@ export async function resolvePageContent(
     heroImage: c.heroImage,
     ctaLabel: c.ctaLabel,
     ctaHref: c.ctaHref,
+    body: c.body,
   }
 }
 

@@ -5,6 +5,7 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { EventCard } from '@/components/events/event-card'
 import { UnderlineTabs } from '@/components/ui/underline-tabs'
 import { MarketHero } from '@/components/marketplace/market-hero'
+import { PageIntro } from '@/components/templates/page-intro'
 import { MarketSearchProvider, MarketSearchBar, InstantGrid } from '@/components/marketplace/market-search'
 import { MarketplaceBar } from '@/components/marketplace/marketplace-bar'
 import { MarketplaceGuide } from '@/components/marketplace/marketplace-guide'
@@ -114,6 +115,10 @@ export async function EventsSurface({
     <MarketSearchProvider>
       <div className="space-y-6">
         {hero}
+
+        {/* The operator's intro copy (page_content.body, ADR-1284), inherited from the site row
+            when the Events section sets none. */}
+        <PageIntro text={content.body} className="" />
 
         <div className="space-y-5">
           <MarketplaceBar

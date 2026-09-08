@@ -34,7 +34,7 @@ export async function generateMetadata() {
 
 export default async function JourneysPage() {
   // Operator-editable page header (ADR-180) — falls back to the coded defaults.
-  const { title, description, heroImage, ctaLabel, ctaHref } =
+  const { title, description, body, heroImage, ctaLabel, ctaHref } =
     await resolvePageContent('/journeys', CONTENT_FALLBACK)
   // The uniform overlay Hero Header, resolved by the ONE browse-hero ladder (lib/layout/index-hero,
   // PROG-P4): operator Settings image, then the page-content hero, then the '/journeys' row of
@@ -56,6 +56,7 @@ export default async function JourneysPage() {
       {...hero}
       title={title}
       description={description}
+      intro={body}
       action={
         <div className="flex items-center gap-2">
           <NewJourneyButton canCreate={canBuildJourney} />

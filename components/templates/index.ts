@@ -6,6 +6,9 @@
 export { PageHeading } from './page-heading'
 export { PageHero, HERO_ACTION_CLASS, HERO_ACTION_CLASS_ADAPTIVE, type PageHeroProps, type PageHeroVariant, type PageHeroSize, type HeroOverlayStyle, type HeroZoneName } from './page-hero'
 export { IndexTemplate } from './index-template'
+// The operator's intro copy under a header (page_content.body, ADR-1284): a PIECE IndexTemplate
+// renders from its `intro` slot and a MarketHero page places under its hero by hand.
+export { PageIntro, splitIntroParagraphs } from './page-intro'
 export { StreamTemplate } from './stream-template'
 export { DetailTemplate, type DetailTab } from './detail-template'
 // The standard block layout for every page-like EVENT surface — a composition of DetailTemplate,

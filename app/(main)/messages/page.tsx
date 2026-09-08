@@ -412,7 +412,7 @@ export default async function MessagesPage({
 
   // Operator-editable page header (ADR-180), resolved in the second wave above. The unread badge
   // stays dynamic; only the static title + description flow through resolvePageContent.
-  const { title: pageTitle, description: pageDescription, ctaLabel, ctaHref } = pageContent
+  const { title: pageTitle, description: pageDescription, body: pageBody, ctaLabel, ctaHref } = pageContent
 
   // Segmented filter + sort — both live in the "Your threads" section header, and
   // each preserves the other's choice in the link.
@@ -472,6 +472,7 @@ export default async function MessagesPage({
         </span>
       }
       description={pageDescription}
+      intro={pageBody}
       action={
         <div className="flex flex-wrap items-center justify-end gap-2">
           <CrewLeadQuickAction />

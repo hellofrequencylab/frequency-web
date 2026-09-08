@@ -126,6 +126,8 @@ export interface CirclesIndexData {
   content: {
     title: string
     description: string
+    /** Intro copy under the hero (page_content.body, ADR-1284); inherits down the cascade. */
+    body: string | null
     heroImage: string | null
     ctaLabel: string | null
     ctaHref: string | null
@@ -162,7 +164,7 @@ export async function getCirclesIndexData(params: CirclesIndexParams): Promise<C
   // needs the resolved profile id), and the circles read keeps its demo gating BEFORE the query
   // executes, so the facet/sort/myCircles-first tail downstream is byte-for-byte identical.
   const [
-    { title, description, heroImage, ctaLabel, ctaHref },
+    { title, description, body, heroImage, ctaLabel, ctaHref },
     { user, myCircleIds },
     rawCircles,
     interests,
@@ -380,6 +382,7 @@ export async function getCirclesIndexData(params: CirclesIndexParams): Promise<C
     content: {
       title,
       description,
+      body: body ?? null,
       heroImage: heroImage ?? null,
       ctaLabel: ctaLabel ?? null,
       ctaHref: ctaHref ?? null,
