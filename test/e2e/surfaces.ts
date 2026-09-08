@@ -372,9 +372,20 @@ export function appSurfaces(
   }
   if (spaceSlug) {
     surfaces.push({
+      // viewportOnly, and NOT for the reason this flag usually carries. The Space console's body is
+      // LIVE PRODUCTION DATA - a card list that grows as the account's Space gains content - so a
+      // fullPage baseline of it measures WHEN it was taken, which is exactly what the note on
+      // `Surface.viewportOnly` says a full-page shot of a live stream does. LIVE-186 recorded the
+      // consequence twice: the surface went 158 px stale in three weeks, was recaptured, and then
+      // read 390x3017 at 16:21Z on 2026-09-07 and 390x2765 at 00:56Z on 2026-09-08 - 252 px in eight
+      // hours, same production, no deploy touching the route. No recapture cadence holds that, and
+      // every gap between chores is a red check everyone learns to merge past (ADR-970). Owner
+      // ruling 2026-09-08, ADR-1265. The cost is real and is stated rather than hidden: below-fold
+      // coverage on this one surface is gone.
       path: `/spaces/${spaceSlug}/manage`,
       slug: 'app-space-console',
       audience: 'member',
+      viewportOnly: true,
     })
   }
   return surfaces
