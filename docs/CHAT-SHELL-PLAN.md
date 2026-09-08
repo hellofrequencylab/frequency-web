@@ -21,7 +21,7 @@
 | System | Shell | Mount | Auth / realtime |
 |---|---|---|---|
 | **Old tabbed dock** (`components/vera/vera-launcher.tsx`, ADR-086) | EdgePill + panel (bottom sheet on mobile, anchored card on desktop, `z-50`), tabs **Chat · Vera · Help**, last tab in `localStorage fq_dock_tab`, window events `open-vera`/`open-chat` | `app/(main)/layout.tsx` via `VeraLauncherSlot` (Suspense, streams help index + tease gate) | Authed. DMs/rooms: RLS user client + postgres_changes (`components/messages/dock-chat.tsx` opens threads inline). Vera: server-action turns (`conciergeTurn`), client-state transcript. Help: in-panel search + links. |
-| **New live-chat widget** (`components/chat/support-chat-widget.tsx`, ADR-816) | Round FAB + `rounded-2xl` panel (`bottom-4 right-4 z-50`, `w-[22rem] h-[32rem]`, `shadow-pop`), header/body/composer, typing dots | `app/layout.tsx` root, behind the `SUPPORT_CHAT` switch (`supportChatFlagEnabled()`, legacy `NEXT_PUBLIC_SUPPORT_CHAT` still honoured) (renders EVERYWHERE when on) | Anonymous. Comms-spine conversation (`kind:'crm'`, `channel:'in_app'`), HMAC capability token, Supabase **Broadcast** (`chat:<token>`), rate-limited public actions. |
+| **New live-chat widget** (`components/chat/support-chat-widget.tsx`, ADR-816) | Round FAB + `rounded-2xl` panel (`bottom-4 right-4 z-50`, `w-[22rem] h-[32rem]`, `shadow-pop`), header/body/composer, typing dots | `app/layout.tsx` root, behind the `SUPPORT_CHAT` switch (`supportChatFlagEnabled()`; the `NEXT_PUBLIC_` name it carried until LIVE-165 is no longer read) (renders EVERYWHERE when on) | Anonymous. Comms-spine conversation (`kind:'crm'`, `channel:'in_app'`), HMAC capability token, Supabase **Broadcast** (`chat:<token>`), rate-limited public actions. |
 | **Contact / tickets** (`components/support/support-launcher.tsx` + `report-dialog.tsx`, ADR-159) | App-wide dialog on the `open-support` window event | `app/(main)/layout.tsx` | Authed. Files `support_tickets`; inline RAG deflection (`askHelp`); member list at `/support`. |
 
 **The problem today:** two independent floating systems can double-mount in the same corner
@@ -76,7 +76,7 @@ One owner of the bottom-right corner per surface, decided by layout (never by z-
 | Surface | Corner owner |
 |---|---|
 | `(main)` member app | **The dock** (EdgePill → panel). The live-chat widget does NOT mount. |
-| `(marketing)`, `(help)`, public/anon pages | **SupportChatWidget** (when `SUPPORT_CHAT=1`; the legacy `NEXT_PUBLIC_SUPPORT_CHAT=1` still works). |
+| `(marketing)`, `(help)`, public/anon pages | **SupportChatWidget** (when `SUPPORT_CHAT=1`). |
 | `/admin/**` | The admin page-dock owns the corner; the dock pill stays hidden (existing rule), panel still openable via events. |
 
 Implementation: move the `SupportChatWidget` mount OUT of the root layout into the public route
