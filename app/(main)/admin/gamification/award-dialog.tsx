@@ -113,7 +113,7 @@ export function AwardDialog({
               <div>
                 {/* Heading: what follows is either the picked-member chip or a search box that
                     names its own input. */}
-                <p className="text-meta font-semibold text-muted uppercase tracking-wider">Member</p>
+                <p className="eyebrow text-muted">Member</p>
                 {selectedMember ? (
                   <div className="mt-1 flex items-center gap-2 rounded-lg border border-border px-3 py-2">
                     <span className="text-body-sm text-text flex-1">{selectedMember.display_name}</span>
@@ -163,7 +163,7 @@ export function AwardDialog({
 
               {/* Achievement picker */}
               <div>
-                <label className="text-meta font-semibold text-muted uppercase tracking-wider" htmlFor="award-achievement">Achievement</label>
+                <label className="eyebrow text-muted" htmlFor="award-achievement">Achievement</label>
                 <Select
                   id="award-achievement"
                   value={selectedAchievement?.id ?? ''}

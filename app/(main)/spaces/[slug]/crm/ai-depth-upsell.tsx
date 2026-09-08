@@ -75,7 +75,7 @@ export async function AiDepthUpsell({
     >
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="flex-1 min-w-[16rem]">
-          <p className="flex items-center gap-1.5 text-meta font-semibold uppercase tracking-wider text-primary-strong">
+          <p className="flex items-center gap-1.5 eyebrow text-primary-strong">
             <Icon className="h-3.5 w-3.5" aria-hidden /> Your engine is ready for more
           </p>
           <h3 id="ai-depth-upsell-heading" className="mt-1.5 text-body font-semibold text-text">

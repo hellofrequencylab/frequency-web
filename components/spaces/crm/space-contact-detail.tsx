@@ -320,7 +320,7 @@ function InsightBand({ insight }: { insight: SpaceContactInsight }) {
   return (
     <section>
       <div className="rounded-card border border-border bg-surface p-4 lift-1">
-        <p className="flex items-center gap-1.5 text-meta font-semibold uppercase tracking-wider text-subtle">
+        <p className="flex items-center gap-1.5 eyebrow text-subtle">
           <Sparkles className="h-3.5 w-3.5" aria-hidden /> Where this person is
         </p>
         <p className="mt-1.5 text-body-sm text-text">{contextLine}</p>
