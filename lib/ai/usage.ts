@@ -8,7 +8,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { Database } from '@/lib/database.types'
 import { aiEnabled } from './client'
-import { withinBudget, dailyCapFor, spaceDailyCapFor, GLOBAL_DAILY_CAP_USD, type TokenUsage } from './budget'
+import { withinBudget, dailyCapFor, spaceDailyCapFor, GLOBAL_DAILY_CAP_USD, promptTokensOf, type TokenUsage } from './budget'
 
 /** Env switch AND the operator switch (platform_flags.ai_enabled). Both must pass.
  *  Defaults to OFF on any read failure — fail closed for spend safety. */
@@ -45,7 +45,10 @@ export async function recordAiUsage(input: {
     const row: Database['public']['Tables']['ai_usage']['Insert'] = {
       feature: input.feature,
       model: input.model,
-      input_tokens: input.usage.inputTokens,
+      // The whole prompt (uncached + cache reads + cache writes), not the API's `input_tokens`, which
+      // is only the uncached remainder once a prefix caches (ADR-1287). `cost_usd` already prices the
+      // three parts at their multipliers, so the row's two numbers agree with each other.
+      input_tokens: promptTokensOf(input.usage),
       output_tokens: input.usage.outputTokens,
       cost_usd: input.costUsd,
       profile_id: input.profileId ?? null,

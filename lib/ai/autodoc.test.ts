@@ -63,6 +63,12 @@ describe('parseAutodocResponse', () => {
     expect(items).toHaveLength(1)
     expect(items[0].slug).toBe('join-a-circle')
   })
+  it('drops rows that are not objects instead of scoring them as verdicts (ADR-1287)', () => {
+    const text = `[7, "join-a-circle", null, ["getting-started","join-a-circle"], {"category":"getting-started","slug":"join-a-circle","needsUpdate":true,"note":"ok"}]`
+    const items = parseAutodocResponse(text, articles)
+    expect(items).toHaveLength(1)
+    expect(items[0]).toMatchObject({ slug: 'join-a-circle', needsUpdate: true, note: 'ok' })
+  })
   it('is not fooled by braces inside strings', () => {
     const text = `[{"category":"getting-started","slug":"join-a-circle","needsUpdate":false,"note":"see {this} \\" thing"}]`
     expect(parseAutodocResponse(text, articles)).toHaveLength(1)

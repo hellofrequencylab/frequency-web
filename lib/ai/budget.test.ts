@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { estimateCostUsd, withinBudget, dailyCapFor } from './budget'
+import { estimateCostUsd, withinBudget, dailyCapFor, addUsage, promptTokensOf, CACHE_READ_MULTIPLIER, CACHE_WRITE_MULTIPLIER } from './budget'
 
 describe('estimateCostUsd', () => {
   it('prices haiku input + output at list rate', () => {
@@ -19,6 +19,39 @@ describe('estimateCostUsd', () => {
 
   it('is zero for an empty call', () => {
     expect(estimateCostUsd('haiku', { inputTokens: 0, outputTokens: 0 })).toBe(0)
+  })
+
+  it('prices a cache read at a tenth of input and a cache write at a quarter over it (ADR-1287)', () => {
+    expect(CACHE_READ_MULTIPLIER).toBe(0.1)
+    expect(CACHE_WRITE_MULTIPLIER).toBe(1.25)
+    // haiku input is $1/M: 1M cached reads = $0.10, 1M cache writes = $1.25, nothing uncached.
+    expect(estimateCostUsd('haiku', { inputTokens: 0, outputTokens: 0, cacheReadInputTokens: 1_000_000 })).toBeCloseTo(0.1)
+    expect(estimateCostUsd('haiku', { inputTokens: 0, outputTokens: 0, cacheCreationInputTokens: 1_000_000 })).toBeCloseTo(1.25)
+  })
+
+  it('a cached turn costs less than the same prompt sent cold', () => {
+    const cold = estimateCostUsd('haiku', { inputTokens: 3000, outputTokens: 200 })
+    const warm = estimateCostUsd('haiku', { inputTokens: 500, outputTokens: 200, cacheReadInputTokens: 2500 })
+    expect(warm).toBeLessThan(cold)
+  })
+})
+
+describe('addUsage + promptTokensOf (the loop sums rounds, the ledger records the whole prompt)', () => {
+  it('sums the two base fields and keeps the two-field shape when nothing cached', () => {
+    expect(addUsage({ inputTokens: 1, outputTokens: 2 }, { inputTokens: 3, outputTokens: 4 })).toEqual({ inputTokens: 4, outputTokens: 6 })
+  })
+
+  it('sums the cache fields once either side carries one', () => {
+    const sum = addUsage(
+      { inputTokens: 1, outputTokens: 1, cacheCreationInputTokens: 2000 },
+      { inputTokens: 1, outputTokens: 1, cacheReadInputTokens: 2000 },
+    )
+    expect(sum).toEqual({ inputTokens: 2, outputTokens: 2, cacheReadInputTokens: 2000, cacheCreationInputTokens: 2000 })
+  })
+
+  it('promptTokensOf counts uncached + read + written, so a cache hit does not read as a free prompt', () => {
+    expect(promptTokensOf({ inputTokens: 100, outputTokens: 9, cacheReadInputTokens: 2400 })).toBe(2500)
+    expect(promptTokensOf({ inputTokens: 100, outputTokens: 9 })).toBe(100)
   })
 })
 
