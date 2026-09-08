@@ -200,23 +200,25 @@ describe('lib/notifications/wired.ts agrees with the tree, both ways', () => {
     expect(mismatches, `\n${mismatches.join('\n')}\n`).toEqual([])
   })
 
-  it('pins the hidden set (meta-scan B9 D1/D6, the SCAN-528 shape): ten of eighteen', () => {
-    // The five in-app switches outside Practice, both Mentions/Replies rows on every channel, and
-    // Practice email. If this changes, an emitter shipped (good) or a reader was removed (say so).
+  it('pins the hidden set (meta-scan B9 D1/D6, the SCAN-528 shape): eight of eighteen', () => {
+    // The four in-app switches outside Practice and Replies, the Mentions row on every channel,
+    // Replies email, and Practice email. The Guestbook sign notice (ADR-1279) turned the Replies
+    // in-app + push pair back on (this pin read ten of eighteen until 2026-09-08). If this changes,
+    // an emitter shipped (good) or a reader was removed (say so).
     expect(WIRED_PREFERENCE_CHANNELS).toEqual({
       dispatches: ['email', 'push'],
       events:     ['email', 'push'],
       mentions:   [],
       lifecycle:  ['email', 'push'],
-      comments:   [],
+      comments:   ['inapp', 'push'],
       practice:   ['inapp', 'push'],
     })
     const hidden: string[] = []
     for (const category of NOTIFICATION_CATEGORIES) {
       for (const channel of CHANNELS) if (!isPreferenceWired(channel, category)) hidden.push(`${channel}_${category}`)
     }
-    expect(hidden).toHaveLength(10)
-    expect(wiredCategories(NOTIFICATION_CATEGORIES)).toEqual(['dispatches', 'events', 'lifecycle', 'practice'])
+    expect(hidden).toHaveLength(8)
+    expect(wiredCategories(NOTIFICATION_CATEGORIES)).toEqual(['dispatches', 'events', 'lifecycle', 'comments', 'practice'])
   })
 })
 

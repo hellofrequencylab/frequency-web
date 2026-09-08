@@ -1,14 +1,16 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { Trash2, EyeOff } from 'lucide-react'
+import { Trash2, EyeOff, Eye, Flag } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/field'
 import { IconButton } from '@/components/ui/icon-button'
+import { ContentReportDialog } from '@/components/report-dialog'
 import {
   signSpotlightGuestbook,
   removeGuestbookEntry,
   hideGuestbookEntry,
+  unhideGuestbookEntry,
 } from '@/app/spotlight/[handle]/guestbook-actions'
 import { GUESTBOOK_MESSAGE_MAX } from '@/lib/spotlight/guestbook.shared'
 
@@ -77,20 +79,29 @@ export function GuestbookSignForm({
 }
 
 /**
- * Per-entry controls. The OWNER sees hide + remove (moderation); a SIGNER sees remove on
- * their own note only. RLS enforces both server-side; unauthorized calls change nothing.
+ * Per-entry controls. The OWNER sees hide + remove on a visible note and unhide + remove on a
+ * hidden one (moderation, ADR-1279); a SIGNER sees remove on their own note only; any other
+ * signed-in member sees report, which files a `guestbook` report through the same dialog posts
+ * and comments use. RLS enforces every write server-side; unauthorized calls change nothing.
  */
 export function GuestbookEntryControls({
   entryId,
   ownerHandle,
   canModerate,
+  isMine = false,
+  hidden = false,
 }: {
   entryId: string
   ownerHandle: string
   canModerate: boolean
+  /** The viewer wrote this note (remove is theirs; report is not). */
+  isMine?: boolean
+  /** The note is currently hidden (owner-only view): unhide replaces hide. */
+  hidden?: boolean
 }) {
   const [error, setError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
+  const [reporting, setReporting] = useState(false)
 
   const run = (action: () => Promise<{ error?: string }>) => {
     setError(null)
@@ -100,10 +111,13 @@ export function GuestbookEntryControls({
     })
   }
 
+  const canRemove = canModerate || isMine
+  const canReport = !canModerate && !isMine
+
   return (
     <span className="flex shrink-0 items-center gap-1">
       {error && <span className="text-meta text-danger">{error}</span>}
-      {canModerate && (
+      {canModerate && !hidden && (
         <IconButton
           label="Hide this note"
           loading={pending}
@@ -112,14 +126,38 @@ export function GuestbookEntryControls({
           <EyeOff className="h-4 w-4" aria-hidden />
         </IconButton>
       )}
-      <IconButton
-        label="Remove this note"
-        tone="danger"
-        loading={pending}
-        onClick={() => run(() => removeGuestbookEntry(entryId, ownerHandle))}
-      >
-        <Trash2 className="h-4 w-4" aria-hidden />
-      </IconButton>
+      {canModerate && hidden && (
+        <IconButton
+          label="Show this note again"
+          loading={pending}
+          onClick={() => run(() => unhideGuestbookEntry(entryId, ownerHandle))}
+        >
+          <Eye className="h-4 w-4" aria-hidden />
+        </IconButton>
+      )}
+      {canRemove && (
+        <IconButton
+          label="Remove this note"
+          tone="danger"
+          loading={pending}
+          onClick={() => run(() => removeGuestbookEntry(entryId, ownerHandle))}
+        >
+          <Trash2 className="h-4 w-4" aria-hidden />
+        </IconButton>
+      )}
+      {canReport && (
+        <>
+          <IconButton label="Report this note" onClick={() => setReporting(true)}>
+            <Flag className="h-4 w-4" aria-hidden />
+          </IconButton>
+          <ContentReportDialog
+            targetType="guestbook"
+            targetId={entryId}
+            open={reporting}
+            onClose={() => setReporting(false)}
+          />
+        </>
+      )}
     </span>
   )
 }

@@ -2,8 +2,8 @@ import { describe, it, expect } from 'vitest'
 import { SPOTLIGHT_STICKERS, spotlightStickerById } from './stickers'
 
 // The closed sticker allowlist (ADR-1275). What these lock: ids are stable, unique, and safe as a
-// stored token; every entry carries a glyph and a label; nothing is gated yet (the `requiredItem`
-// seam is present and unused, so a cosmetics inventory can gate later without a shape change).
+// stored token; every entry carries a glyph and a label; the `requiredItem` seam is set only on the
+// earned rows (ADR-1279), and lib/spotlight/cosmetics.test.ts proves each names a seeded store item.
 
 describe('SPOTLIGHT_STICKERS', () => {
   it('has unique, stable, token-safe ids', () => {
@@ -19,8 +19,12 @@ describe('SPOTLIGHT_STICKERS', () => {
     }
   })
 
-  it('is entirely free today: the requiredItem seam exists on the type and no row sets it', () => {
-    for (const s of SPOTLIGHT_STICKERS) expect(s.requiredItem).toBeUndefined()
+  it('is free by default, with the earned rows naming a store item slug', () => {
+    const earned = SPOTLIGHT_STICKERS.filter((s) => s.requiredItem !== undefined)
+    expect(earned.length).toBeGreaterThan(0)
+    expect(earned.length).toBeLessThan(SPOTLIGHT_STICKERS.length)
+    for (const s of earned) expect(s.requiredItem).toMatch(/^[a-z][a-z0-9-]+$/)
+    expect(spotlightStickerById('spectrum')?.requiredItem).toBe('full-spectrum-banner')
   })
 })
 

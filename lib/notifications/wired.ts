@@ -35,8 +35,9 @@ export const WIRED_PREFERENCE_CHANNELS: Record<NotificationCategory, readonly No
   // ⏳ No mention emitter on any channel. Re-enable per channel when one ships (router checklist).
   mentions:   [],
   lifecycle:  ['email', 'push'],
-  // ⏳ No reply emitter on any channel. Same.
-  comments:   [],
+  // The Guestbook sign notice (ADR-1279) reads inapp_comments directly and push_comments through
+  // the registry row `guestbook.sign`; no reply EMAIL emitter exists yet.
+  comments:   ['inapp', 'push'],
   // In-app + push are read by lib/practices/lifecycle.ts; email is not read anywhere.
   practice:   ['inapp', 'push'],
 }

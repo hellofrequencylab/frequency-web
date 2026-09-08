@@ -23,7 +23,7 @@ import type { PushPayload } from '@/lib/push'
 /** The domain events the registry can route. Adding a notification = add a key here +
  *  its context shape in `NotificationContexts` + a row in `NOTIFICATION_REGISTRY`. The
  *  compiler then forces the three to stay in lock-step. */
-export type NotificationEvent = 'event.dispatch' | 'booking.reminder'
+export type NotificationEvent = 'event.dispatch' | 'booking.reminder' | 'guestbook.sign'
 
 /** The typed payload each event's `render` receives. Keyed by event, so a registry row
  *  and its call sites share one shape and a typo is a compile error, not a runtime one. */
@@ -34,6 +34,10 @@ export interface NotificationContexts {
   /** The 24h-before booking reminder (ADR-605). The caller renders the full email from the
    *  existing transactional template and hands it in, so the router only transports it. */
   'booking.reminder': { email: EmailPayload }
+  /** Someone signed the recipient's Spotlight Guestbook (ADR-1279). The caller
+   *  (lib/spotlight/guestbook.ts notifyGuestbookSigned) authors the copy in-voice and the URL of
+   *  the owner's own guestbook. */
+  'guestbook.sign': { title: string; body: string; url: string }
 }
 
 /** Per-channel rendered payloads. A type renders only the channels it declares; a channel
@@ -96,6 +100,18 @@ export const NOTIFICATION_REGISTRY: { [E in NotificationEvent]: NotificationType
     channels: ['email'],
     transactional: true,
     render: (ctx) => ({ email: ctx.email }),
+  },
+  // A Guestbook note (ADR-1279). A note is the closest thing to a reply someone leaves on your
+  // own page, so it rides the `comments` category: the owner's push_comments switch decides
+  // the push, and the caller checks inapp_comments for the bell row (the in-app channel is not
+  // on the outbox yet, see the router's checklist).
+  'guestbook.sign': {
+    event: 'guestbook.sign',
+    category: 'comments',
+    channels: ['push'],
+    render: (ctx) => ({
+      push: { title: ctx.title, body: ctx.body, url: ctx.url },
+    }),
   },
 }
 

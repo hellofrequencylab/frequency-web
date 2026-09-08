@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import type { MemberBlockProps } from '@/lib/entity-blocks/member-adapter'
 import type { GuestbookEntry } from '@/lib/spotlight/guestbook.shared'
+import { getHiddenGuestbookForOwner } from '@/lib/spotlight/guestbook'
 import { getInitials } from '@/lib/utils'
 import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { GuestbookEntryControls, GuestbookSignForm } from '@/components/spotlight/guestbook-form'
@@ -16,7 +17,9 @@ import { MemberSection } from './section'
 //
 // VIEWER-AWARE (an async RSC): one session read decides which tail the block shows —
 // the sign form (a signed-in member who has not signed), "you signed" (they have),
-// per-entry moderation controls (the owner), or a sign-in line (signed out). Both pages
+// per-entry moderation controls plus the hidden-notes list with unhide (the owner,
+// ADR-1279), a report control on other people's notes (any other member), or a sign-in
+// line (signed out). Both pages
 // that mount this block render dynamically, so the session read adds no static/dynamic
 // tension. FAIL-SAFE: with no entries and no session the block still renders the empty
 // line (an invitation is the point of a guestbook), and any auth error degrades to the
@@ -33,11 +36,15 @@ function EntryRow({
   ownerHandle,
   canModerate,
   isMine,
+  signedIn,
+  hidden = false,
 }: {
   entry: GuestbookEntry
   ownerHandle: string
   canModerate: boolean
   isMine: boolean
+  signedIn: boolean
+  hidden?: boolean
 }) {
   const name = entry.signerDisplayName || `@${entry.signerHandle}`
   return (
@@ -68,8 +75,14 @@ function EntryRow({
           </Link>
           <span className="text-meta text-subtle">{whenLabel(entry.createdAt)}</span>
         </div>
-        {(canModerate || isMine) && (
-          <GuestbookEntryControls entryId={entry.id} ownerHandle={ownerHandle} canModerate={canModerate} />
+        {signedIn && (
+          <GuestbookEntryControls
+            entryId={entry.id}
+            ownerHandle={ownerHandle}
+            canModerate={canModerate}
+            isMine={isMine}
+            hidden={hidden}
+          />
         )}
       </div>
       <p className="mt-3 whitespace-pre-line text-pretty text-body-sm leading-relaxed text-text">
@@ -105,6 +118,10 @@ export async function GuestbookBlock({ member, data }: MemberBlockProps) {
   const hasSigned =
     viewerProfileId !== null && entries.some((e) => e.signerProfileId === viewerProfileId)
 
+  // The owner's hidden notes (ADR-1279): read only once the session says this IS the owner, so
+  // the list never reaches a visitor. Best-effort, like the visible read.
+  const hiddenEntries = isOwner ? await getHiddenGuestbookForOwner(member.id).catch(() => []) : []
+
   return (
     <MemberSection anchor="guestbook">
       <section>
@@ -125,9 +142,34 @@ export async function GuestbookBlock({ member, data }: MemberBlockProps) {
                 ownerHandle={ownerHandle}
                 canModerate={isOwner}
                 isMine={viewerProfileId !== null && entry.signerProfileId === viewerProfileId}
+                signedIn={viewerProfileId !== null}
               />
             ))}
           </ul>
+        )}
+
+        {isOwner && hiddenEntries.length > 0 && (
+          <details className="mt-4">
+            <summary className="cursor-pointer text-body-sm font-semibold text-muted">
+              Hidden notes ({hiddenEntries.length})
+            </summary>
+            <p className="mt-1 text-meta text-subtle">
+              Only you can see these. A hidden note keeps its place, so the same person cannot sign again until you remove it.
+            </p>
+            <ul className="mt-3 space-y-3 opacity-80">
+              {hiddenEntries.map((entry) => (
+                <EntryRow
+                  key={entry.id}
+                  entry={entry}
+                  ownerHandle={ownerHandle}
+                  canModerate
+                  isMine={false}
+                  signedIn
+                  hidden
+                />
+              ))}
+            </ul>
+          </details>
         )}
 
         {viewerProfileId === null ? (

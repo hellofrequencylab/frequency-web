@@ -7,6 +7,9 @@ import { mergeProfileMeta, mergeProfileMetaPath, removeProfileMetaKeys } from '@
 import { readSpotlightEnabled } from '@/lib/profile/spotlight-flags'
 import { validateSpotlightTheme } from '@/lib/spotlight/theme'
 import { validateSpotlightBackground, validateSpotlightStickers } from '@/lib/spotlight/blocks/validate'
+import { SPOTLIGHT_STICKERS } from '@/lib/spotlight/stickers'
+import { missingRequiredItems, requiredItemsFor } from '@/lib/spotlight/cosmetics'
+import { memberHeldItems } from '@/lib/awards/holdings'
 import {
   normalizeTopFriendIds,
   keepAcceptedFriends,
@@ -216,6 +219,18 @@ export async function setSpotlightStickers(rawStickers: unknown): Promise<{ erro
   }
 
   const safe = validateSpotlightStickers(rawStickers)
+
+  // The earned gate (ADR-1279): a sticker with a requiredItem is refused unless the owner holds
+  // the item. The inventory is read only when a pick needs it, under the owner's own session
+  // (store_redemptions lets a member read their own rows). Same gate as updateProfileTheme.
+  const pickedIds = safe.items.map((s) => s.id)
+  if (requiredItemsFor(SPOTLIGHT_STICKERS, pickedIds).length > 0) {
+    const held = await memberHeldItems(supabase, (me as { id: string }).id)
+    if (missingRequiredItems(SPOTLIGHT_STICKERS, pickedIds, held).length > 0) {
+      return { error: 'That sticker is earned. Unlock it and it will be here.' }
+    }
+  }
+
   // Only `stickers` is sent, merged INSIDE the `spotlight` key server-side (the LIVE-171 shape).
   const { error } = await mergeProfileMetaPath(supabase, (me as { id: string }).id, ['spotlight'], { stickers: safe })
   if (error) return { error }

@@ -16,6 +16,9 @@ const { getUser, maybeSingle, update, rpc, eq } = vi.hoisted(() => ({
 
 vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }))
 vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: () => ({ from: () => ({}) }) }))
+// The inventory read behind the earned gate (ADR-1279), stubbed per test.
+const { memberHeldItems } = vi.hoisted(() => ({ memberHeldItems: vi.fn() }))
+vi.mock('@/lib/awards/holdings', () => ({ memberHeldItems }))
 vi.mock('@/lib/supabase/server', () => ({
   createClient: async () => ({
     auth: { getUser },
@@ -48,6 +51,7 @@ function sent(): Sent {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  memberHeldItems.mockResolvedValue(new Set<string>())
   getUser.mockResolvedValue({ data: { user: { id: 'auth-1' } } })
   rpc.mockResolvedValue({ data: {}, error: null })
   maybeSingle.mockResolvedValue({ data: { id: 'prof-1', handle: 'ada', meta: { spotlight: { enabled: true } } } })
@@ -120,5 +124,31 @@ describe('setSpotlightStickers', () => {
   it('surfaces a write error', async () => {
     rpc.mockResolvedValue({ data: null, error: { message: 'boom' } })
     expect(await setSpotlightStickers({ items: [] })).toEqual({ error: 'boom' })
+  })
+})
+
+// ── The earned gate (ADR-1279) ─────────────────────────────────────────────────────────────────
+// `spectrum` requires the full-spectrum-banner item. A free layer never reads the inventory; an
+// earned pick reads it under the owner's session and is refused unless the item is held.
+
+describe('setSpotlightStickers — earned stickers', () => {
+  it('never reads the inventory for a free layer', async () => {
+    await setSpotlightStickers({ items: [{ id: 'star', x: 1, y: 1 }] })
+    expect(memberHeldItems).not.toHaveBeenCalled()
+  })
+
+  it('refuses an earned sticker the owner has not earned, and writes nothing', async () => {
+    const res = await setSpotlightStickers({ items: [{ id: 'star', x: 1, y: 1 }, { id: 'spectrum', x: 50, y: 50 }] })
+    expect(res).toEqual({ error: 'That sticker is earned. Unlock it and it will be here.' })
+    expect(memberHeldItems).toHaveBeenCalledTimes(1)
+    expect(memberHeldItems.mock.calls[0][1]).toBe('prof-1')
+    expect(rpc).not.toHaveBeenCalled()
+  })
+
+  it('accepts the earned sticker once the item is held', async () => {
+    memberHeldItems.mockResolvedValue(new Set(['full-spectrum-banner']))
+    const res = await setSpotlightStickers({ items: [{ id: 'spectrum', x: 50, y: 50 }] })
+    expect(res).toEqual({})
+    expect(sent().p_patch.stickers.items).toEqual([{ id: 'spectrum', x: 50, y: 50 }])
   })
 })

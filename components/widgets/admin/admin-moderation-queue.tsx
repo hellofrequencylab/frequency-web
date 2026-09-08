@@ -49,11 +49,13 @@ export async function AdminModerationQueue() {
   const dispatchIds = reports.filter((r) => r.target_type === 'dispatch').map((r) => r.target_id)
   const memberIds = reports.filter((r) => r.target_type === 'member').map((r) => r.target_id)
   const eventIds = reports.filter((r) => r.target_type === 'event').map((r) => r.target_id)
+  const guestbookIds = reports.filter((r) => r.target_type === 'guestbook').map((r) => r.target_id)
 
   const postPreviews: Record<string, string> = {}
   const dispatchPreviews: Record<string, string> = {}
   const memberPreviews: Record<string, string> = {}
   const eventPreviews: Record<string, string> = {}
+  const guestbookPreviews: Record<string, string> = {}
 
   if (postIds.length > 0) {
     const { data } = await admin.from('posts').select('id, body').in('id', postIds)
@@ -87,6 +89,15 @@ export async function AdminModerationQueue() {
     }
   }
 
+  if (guestbookIds.length > 0) {
+    // A reported Guestbook note (ADR-1279): the note text is the only member-supplied field.
+    const { data } = await admin.from('spotlight_guestbook').select('id, message').in('id', guestbookIds)
+    for (const g of data ?? []) {
+      const message = (g as { id: string; message: string | null }).message ?? ''
+      guestbookPreviews[g.id] = message.length > 120 ? message.slice(0, 120) + '...' : message
+    }
+  }
+
   // For member-targeted reports, also fetch prior report count so the mod
   // can see "this member has been reported N times" inline. One grouped
   // query (was N+1: one count query per reported member) — fetch every
@@ -117,6 +128,8 @@ export async function AdminModerationQueue() {
       priorReports = memberPriorCounts[r.target_id]
     } else if (r.target_type === 'event') {
       preview = eventPreviews[r.target_id] ?? '[Event not found]'
+    } else if (r.target_type === 'guestbook') {
+      preview = guestbookPreviews[r.target_id] ?? '[Note not found]'
     }
     return { ...r, preview, priorReports }
   })

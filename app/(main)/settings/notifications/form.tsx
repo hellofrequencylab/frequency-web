@@ -27,7 +27,7 @@ const CATEGORIES: { key: NotificationCategory; label: string; description: strin
   {
     key:         'comments',
     label:       'Replies',
-    description: 'Replies and mentions on posts and comments you wrote.',
+    description: 'Replies and mentions on posts and comments you wrote, and notes in your guestbook.',
   },
   {
     key:         'mentions',

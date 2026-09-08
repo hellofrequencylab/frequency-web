@@ -27,6 +27,16 @@ describe('resolveNotificationType — pure registry lookup', () => {
     expect(t.transactional).toBe(true)
   })
 
+  it('maps guestbook.sign to the comments push type and renders the push from the context (ADR-1279)', () => {
+    const t = resolveNotificationType('guestbook.sign')
+    expect(t.category).toBe('comments')
+    expect(t.channels).toEqual(['push'])
+    expect(t.transactional ?? false).toBe(false)
+    expect(t.render({ title: 'T', body: 'B', url: '/people/ada#guestbook' })).toEqual({
+      push: { title: 'T', body: 'B', url: '/people/ada#guestbook' },
+    })
+  })
+
   it('throws on an unknown event (a catalogue bug, not a runtime denial)', () => {
     expect(() => resolveNotificationType('nope.nope' as NotificationEvent)).toThrow(/no registry entry/)
   })
