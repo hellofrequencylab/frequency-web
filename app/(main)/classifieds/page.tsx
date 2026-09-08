@@ -6,6 +6,7 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { NewListingButton } from '@/components/studio/market/new-listing-button'
 import { MarketGrid, type GridListing } from '@/components/market/market-grid'
 import { MarketHero } from '@/components/marketplace/market-hero'
+import { PageIntro } from '@/components/templates'
 import { MarketSearchProvider, MarketSearchBar } from '@/components/marketplace/market-search'
 import { MarketplaceColumnsProvider, MarketplaceColumns } from '@/components/marketplace/column-selector'
 import { MarketplaceBar } from '@/components/marketplace/marketplace-bar'
@@ -47,7 +48,7 @@ export default async function ClassifiedsPage({ searchParams }: { searchParams: 
   const { kind } = await searchParams
   const activeKind = LISTING_KINDS.some((k) => k.key === kind) ? (kind as ListingKind) : null
 
-  const { description, ctaLabel, ctaHref } = await resolvePageContent('/classifieds', CONTENT_FALLBACK)
+  const { description, body, ctaLabel, ctaHref } = await resolvePageContent('/classifieds', CONTENT_FALLBACK)
   // One unfiltered read powers the stats; the grid filters to the active kind in-process. The hero
   // search bar filters the grid instantly on the client (MarketGrid reads the shared query).
   const [profileId, allListings] = await Promise.all([getMyProfileId(), listListings({})])
@@ -100,6 +101,10 @@ export default async function ClassifiedsPage({ searchParams }: { searchParams: 
           ) : undefined
         }
       />
+
+      {/* The operator's intro copy (page_content.body, ADR-1284), inherited from the site row when
+          this section sets none. */}
+      <PageIntro text={body} className="" />
 
       {/* One compact bar under the hero: the area picker + this surface's headline stats (C1). */}
       <MarketplaceBar

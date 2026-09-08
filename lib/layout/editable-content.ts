@@ -10,6 +10,18 @@
 // This is the single registry for the site-wide content sweep: add a route here AND
 // wire its page to resolvePageContent (+ pageContentMetadata), and the page becomes
 // editable in place.
+/** The reserved SITE rung of the copy cascade (PROG-P6, ADR-1122 / ADR-1284): the `page_content`
+ *  row every page inherits from when neither it nor its section says anything. It is not a route
+ *  (`page_content.route` is free text and no router path can be `'*'`), so it is NOT in
+ *  `CONTENT_EDIT_ROUTES` below; the save action admits it beside the registry, and the operator
+ *  sets it from `/admin/page-layout/copy`. Declared here rather than in `content-cascade.ts`
+ *  (which re-exports it) because that module is `server-only` and the client editor needs the key.
+ *
+ *  🔴 IT IS DELIBERATELY NOT `'/'`. The home page owns the `'/'` row (it is in the registry for
+ *  its SEO title + meta description alone), so making `'/'` the site rung would quietly promote
+ *  the home page's `<title>` to the default title of every page in the app. */
+export const SITE_SCOPE = '*'
+
 export const CONTENT_EDIT_ROUTES = [
   // Home: SEO title + meta description ONLY (edited from /pages/home). The page
   // itself is a coded experience (live counts, parallax) and stays in code — it

@@ -220,7 +220,9 @@ ADR-201)
 `stripe_webhook_events` (replay/idempotency claim), `connection_settings` (ADR-186),
 `admin_audit_log` (crown-jewel action log), `platform_flags`, `platform_flag_events`,
 `area_permissions`, `page_content` (operator-editable headers/SEO/hero/CTA,
-ADR-180/206), `pages` + `pillars` + `sequence_overrides` (page editor), `team_members`,
+ADR-180/206; `body` intro copy since migration `20270345002700`, ADR-1284, inherited down the
+route tree by the copy cascade with the reserved site row `'*'` set from `/admin/page-layout/copy`),
+`pages` + `pillars` + `sequence_overrides` (page editor), `team_members`,
 `email_events`, `email_suppressions`, `notification_queue` (durable outbox),
 `profile_personas` (partner hats, P3.1), `conversation_room_migration`,
 `pricing_settings` + `pricing_feature_gates` (pricing P1, ADR-362),

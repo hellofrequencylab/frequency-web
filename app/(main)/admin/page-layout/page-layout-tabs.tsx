@@ -1,8 +1,8 @@
 import { UnderlineTabs, type UnderlineTabItem } from '@/components/ui/underline-tabs'
 
-// The two sections of the Page layout manager, rendered as tabs by the shared layout so both the
-// Chrome (right-rail) manager and the Apps (per-scope override) manager sit under one surface
-// (/admin/page-layout).
+// The sections of the Page layout manager, rendered as tabs by the shared layout so the Chrome
+// (right-rail) manager, the Apps (per-scope override) manager and the Site copy editor (the copy
+// cascade's '*' row, ADR-1284) sit under one surface (/admin/page-layout).
 //
 // PATTERN: UnderlineTabs — the one tab vocabulary (DAWN readme §"The composition system":
 // "UnderlineTabs …, so pill tabs do not exist"). WHY: these are two sibling views of one surface,
@@ -13,6 +13,8 @@ import { UnderlineTabs, type UnderlineTabItem } from '@/components/ui/underline-
 const TABS: UnderlineTabItem[] = [
   { href: '/admin/page-layout', label: 'Chrome' },
   { href: '/admin/page-layout/apps', label: 'Apps' },
+  // The site rung of the copy cascade (PROG-P6 (b), ADR-1284): the one place the '*' row is set.
+  { href: '/admin/page-layout/copy', label: 'Site copy' },
 ]
 
 export function PageLayoutTabs() {

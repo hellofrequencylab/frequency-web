@@ -8,6 +8,7 @@ import { getTemplate, isWellFormed } from '@/lib/page-editor/templates'
 import { MarketHero } from '@/components/marketplace/market-hero'
 import { HERO_PRIMARY_BTN, HERO_SECONDARY_BTN } from '@/components/marketplace/hero-buttons'
 import { PageAdminBar } from '@/components/layout/page-admin-bar'
+import { PageIntro } from '@/components/templates'
 import { DirectorySearch } from '@/components/ui/directory-search'
 import { NewCircleCompose } from '@/components/compose/new-circle-compose'
 import { pageContentMetadata } from '@/lib/page-content'
@@ -95,6 +96,10 @@ export default async function CirclesPage({
           as its divider rule so nothing an operator had was lost in the move to MarketHero. The
           format/sort + channel controls stay in the body blocks below (already under the hero). */}
       <PageAdminBar asDivider />
+
+      {/* The operator's intro copy (page_content.body, ADR-1284), inherited from the site row when
+          this section sets none. */}
+      <PageIntro text={content.body} className="" />
 
       {/* The body: the standardized, rearrangeable Circles blocks, fed the live data. */}
       <BlockRender config={config} data={data} metadata={{ circlesIndex }} />

@@ -165,7 +165,7 @@ export default async function CommunityPage({
   })()
 
   // Operator-editable page header (ADR-180) — falls back to the coded defaults.
-  const { title, description, ctaLabel, ctaHref } = await contentPromise
+  const { title, description, body, ctaLabel, ctaHref } = await contentPromise
 
   // Geolocation / city-autocomplete search → nearest REAL circles (the
   // circles_near RPC hard-excludes demo content). Only runs when a place is set.
@@ -421,6 +421,7 @@ export default async function CommunityPage({
           </span>
         }
         description={description}
+        intro={body}
         action={
           <div className="flex items-center gap-2">
             {/* Operator-set CTA (PX.1) — shows only when both label + link are set. */}

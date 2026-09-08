@@ -8998,6 +8998,7 @@ export type Database = {
       }
       page_content: {
         Row: {
+          body: string | null
           cta_href: string | null
           cta_label: string | null
           description: string | null
@@ -9008,6 +9009,7 @@ export type Database = {
           updated_by: string | null
         }
         Insert: {
+          body?: string | null
           cta_href?: string | null
           cta_label?: string | null
           description?: string | null
@@ -9018,6 +9020,7 @@ export type Database = {
           updated_by?: string | null
         }
         Update: {
+          body?: string | null
           cta_href?: string | null
           cta_label?: string | null
           description?: string | null
