@@ -380,6 +380,9 @@ export function GameStatsDockClient({ data }: { data: DockData }) {
         onClick={() => (open ? setOpen(false) : openVault())}
         aria-expanded={open}
         aria-label="The Vault. Your Zaps, Gems and streak"
+        // Masked by the visual suite (test/e2e/surfaces.ts, VISUAL_MASK_SITES): three live
+        // numbers at rest. The bar around it is chrome and stays in the picture.
+        data-visual-mask="vault-head"
         // The head height is SHARED with the left rail's account tab (owner: both tabs the same
         // height). It is imported rather than restated — see DOCK_HEAD_H_CLASS.
         className={`flex ${DOCK_HEAD_H_CLASS} w-full items-center gap-2 rounded-lg px-1.5 transition-colors hover:bg-surface-elevated`}
