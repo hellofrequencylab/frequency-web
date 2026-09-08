@@ -108,6 +108,10 @@
     {
       "path": "/api/cron/practice-lifecycle",
       "schedule": "5 * * * *"
+    },
+    {
+      "path": "/api/cron/signup-lead-recovery",
+      "schedule": "0 15 * * *"
     }
   ]
 }

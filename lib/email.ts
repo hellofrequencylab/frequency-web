@@ -322,6 +322,62 @@ A one-time invite from ${who}; we won't add you to any marketing list. To opt ou
 ${addr ? addr : `Frequency™ · ${BASE_URL}`}`
 }
 
+// ── Signup recovery (the one note signup_leads was built for, LIVE-170 / ADR-1274) ─────────────
+// A SINGLE transactional note to a visitor who gave an email at /join and stopped partway. The
+// same category as a password reset (ADR-959): no consent is claimed, none is implied, and there
+// is no second note. Custom footer (not the member footer) because the reader is NOT a member
+// yet and must not be told they are one. Enqueued by lib/crm/signup-lead-recovery.ts AFTER the
+// row is claimed; the global suppression list still applies when the outbox drains.
+
+export async function sendSignupRecoveryEmail(params: {
+  to: string
+  firstName: string | null
+  /** /join, carrying the Funnel they were on when it is known. */
+  resumeUrl: string
+}) {
+  const { to, firstName, resumeUrl } = params
+  await enqueueEmail({
+    to,
+    subject: 'Finish setting up your Frequency account',
+    html: signupRecoveryHtml({ firstName, resumeUrl }),
+    text: signupRecoveryText({ firstName, resumeUrl }),
+  })
+}
+
+function signupRecoveryHtml({ firstName, resumeUrl }: { firstName: string | null; resumeUrl: string }): string {
+  const heading = firstName
+    ? `${escapeHtml(firstName)}, your account is one step from done.`
+    : 'Your account is one step from done.'
+  const footer = `One note, sent once, because this address was used to start an account at Frequency. We will not add you to any list. If that was not you, ignore this and nothing happens.<br>Frequency™ · ${orgContactLine()}`
+  return emailShell(`
+    <h1 style="${h1Style}">${heading}</h1>
+    <p style="${pStyle}">
+      You started setting up a Frequency account and stopped partway. Picking it back up takes
+      about two minutes, and the same door at /join is still open.
+    </p>
+    <p style="margin:0 0 28px;">
+      <a href="${resumeUrl}" style="${btnStyle}">Finish signing up</a>
+    </p>
+    <p style="${pStyle}font-size:13px;color:#888;">
+      Button not working? Paste this into your browser:<br>
+      <a href="${resumeUrl}" style="color:#888;">${resumeUrl}</a>
+    </p>
+  `, footer)
+}
+
+function signupRecoveryText({ firstName, resumeUrl }: { firstName: string | null; resumeUrl: string }): string {
+  const heading = firstName ? `${firstName}, your account is one step from done.` : 'Your account is one step from done.'
+  const addr = process.env.COMPANY_POSTAL_ADDRESS
+  return `${heading}
+
+You started setting up a Frequency account and stopped partway. Picking it back up takes about two minutes, and the same door at /join is still open.
+
+Finish signing up: ${resumeUrl}
+
+One note, sent once, because this address was used to start an account at Frequency. We will not add you to any list. If that was not you, ignore this and nothing happens.
+${addr ? addr : `Frequency™ · ${BASE_URL}`}`
+}
+
 // ── Weekly community digest ───────────────────────────────────────────────────
 
 export async function sendWeeklyDigestEmail(params: {
