@@ -24,12 +24,36 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import sharp from 'sharp'
 import { describe, expect, it } from 'vitest'
+import config from '../../playwright.config'
 import { coverageSurfaces } from './surfaces'
 
 const DIR = join('test', 'e2e', '__screenshots__', 'visual.spec.ts')
 
-/** The Playwright projects' viewports, mirrored from playwright.config.ts. */
-const VIEWPORT = { desktop: { width: 1280, height: 800 }, mobile: { width: 390, height: 844 } }
+/**
+ * The Playwright projects' viewports, READ FROM THE CONFIG rather than mirrored.
+ *
+ * 🔴 It WAS a mirror — `{ desktop: 1280x800, mobile: 390x844 }` beside a comment saying so —
+ * and a mirror of a list is a list that goes wrong on the day the list grows. The `narrow`
+ * project (320x568, ADR-1270) is what proved it: the project resolver below was
+ * `file.includes('-mobile') ? mobile : desktop`, so every `*-narrow.png` would have been held
+ * to DESKTOP's 1280 width, failed as "width 320, expected 1280", and the obvious fix — adding
+ * `-narrow` to the ternary — would have left the next project to rediscover the same thing.
+ * Deriving both halves means a project added to the config arrives here with its real numbers,
+ * and one that is REMOVED makes its orphaned baselines fail loudly instead of being measured
+ * against whichever branch the ternary fell through to.
+ */
+const VIEWPORT: Record<string, { width: number; height: number }> = Object.fromEntries(
+  (config.projects ?? []).flatMap((project) => {
+    const viewport = project.use?.viewport
+    return project.name && viewport ? [[project.name, viewport] as const] : []
+  }),
+)
+
+/** `<slug>--<state>-<project>.png` → the project that took it. The state ids carry hyphens
+ *  (`dawn-light`), the project names do not, so the last segment is the project. */
+function projectOf(variant: string): string {
+  return variant.slice(variant.lastIndexOf('-') + 1)
+}
 
 /** Slugs captured at viewport height, read off the surface registry rather than re-listed.
  *  The stub env is what makes the two env-gated rows visible here; see appSurfaces().
@@ -130,6 +154,16 @@ describe('visual baselines are distinct per surface', () => {
     ).toEqual([])
   }, 60_000)
 
+  it('knows every project the config declares', () => {
+    // The resolver below is a lookup now, so an unknown project must fail here rather than
+    // silently return `undefined` and skip the width check for a whole column of baselines.
+    expect(Object.keys(VIEWPORT).sort()).toEqual(['desktop', 'mobile', 'narrow'])
+    for (const [name, vp] of Object.entries(VIEWPORT)) {
+      expect(vp.width, name).toBeGreaterThan(0)
+      expect(vp.height, name).toBeGreaterThan(0)
+    }
+  })
+
   it('every baseline is a real PNG at the height its capture mode implies', () => {
     const bad: string[] = []
     for (const file of files) {
@@ -141,7 +175,19 @@ describe('visual baselines are distinct per surface', () => {
       }
       const width = b.readUInt32BE(16)
       const height = b.readUInt32BE(20)
-      const vp = file.includes('-mobile') ? VIEWPORT.mobile : VIEWPORT.desktop
+      const project = projectOf(parse(file)?.variant ?? '')
+      const vp = VIEWPORT[project]
+      if (!vp) {
+        // A baseline whose project is not in the config is an ORPHAN: either a project was
+        // renamed or removed and its PNGs were left behind, or the file was hand-placed. Both
+        // are references nothing can ever re-capture, so say so instead of measuring it against
+        // a fallback.
+        bad.push(
+          `${file}: no project named "${project}" in playwright.config.ts — an orphaned baseline, ` +
+            `not a comparison. Known projects: ${Object.keys(VIEWPORT).join(', ')}.`,
+        )
+        continue
+      }
       if (width !== vp.width) bad.push(`${file}: width ${width}, expected ${vp.width}`)
 
       if (VIEWPORT_ONLY.has(parse(file)?.slug ?? '')) {

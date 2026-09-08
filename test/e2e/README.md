@@ -14,7 +14,7 @@ always pass.
 | `@smoke` | `smoke.spec.ts` | Routes answer 2xx, no console errors, `llms.txt`/`robots.txt` serve | ✅ |
 | `@a11y` | `a11y.spec.ts` | axe-core WCAG 2.x A/AA: **0 serious+ violations** | ✅ |
 | `@overflow` | `overflow.spec.ts` | Nothing runs off the side of a phone, at **320 / 360 / 390** | ✅ |
-| `@visual` | `visual.spec.ts` | Pixel baselines across four render states × two viewports | ⚠️ opt-in |
+| `@visual` | `visual.spec.ts` | Pixel baselines across four render states × two full-matrix viewports, plus a narrow (320) column over the shell + header band | ⚠️ opt-in |
 
 `@overflow` exists because neither of the other two could see ADR-1035, where a re-cropped wordmark
 pushed the marketing menu button to x=404 on a 360px screen — off the viewport, on every phone.
@@ -109,10 +109,23 @@ The member shell captures the two **mode** states only: the authed shell renders
 `[data-skin]` server-side on the shell root, a descendant of `<html>`, so it wins
 over anything the harness stamps. The other two states would be duplicate PNGs.
 
-**Viewports.** The `desktop` (1280×800) and `mobile` (390×844) projects in
-`playwright.config.ts`.
+**Viewports.** Three projects in `playwright.config.ts`: `desktop` (1280×800),
+`mobile` (390×844) and `narrow` (320×568).
 
-The a11y suite runs the *full* WCAG rule set in `dawn-light` on both viewports,
+`narrow` is not a third column of the matrix. It carries a per-project
+`testMatch` limiting it to `visual.spec.ts` — so it never triples `@smoke` and
+never mints a third set of `@a11y` contexts — and inside that file it captures
+only two things (ADR-1270):
+
+| At 320 | Why, and why not the rest |
+|---|---|
+| The member shell (`appSurfaces()`) | Rail, dock and the seven `min-w-0 flex-1` tab slots lay out by division: 45.7px a slot at 320 against 55.7px at 390, so the labels give way in a different order. No marketing page reports that. |
+| The header band (`/how-to-build-community`, `viewportOnly`) | The one thing nothing photographs below 390 — an anonymous visitor's chrome, where ADR-1035's off-screen menu button lived. **The path is a measurement**: `viewportOnly` gives up the height signal, so the wall detector falls back to light-vs-dark repaint at a 90% bar — and a *first screen* is hero-dominated. `/` scores 92.8% and would fail on capture; this page scores 1.1%, renders the same band, and frames it without a hero. Table in `headerBandSurfaces()`. |
+| ~~The 16 public surfaces~~ | Body copy reflowing. `overflow.spec.ts` already drives all of them at 320 as a *measurement*: no baseline, no capture run, and a failure that names the selector. |
+| ~~The 7 operator routes~~ | Nobody moderates from a 320px phone, and those baselines do not exist yet (HYG-027). |
+
+The a11y suite runs the *full* WCAG rule set in `dawn-light` on both of the two
+projects it is collected under (`desktop`, `mobile`),
 and a `color-contrast`-only pass in the other three states on desktop. Almost
 every axe rule is state-insensitive; contrast is the family that is not, and
 colour tokens do not vary by viewport.

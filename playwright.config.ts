@@ -169,5 +169,41 @@ export default defineConfig({
         deviceScaleFactor: 1,
       },
     },
+    /**
+     * THE NARROW PHONE (HYG-057, ADR-1270). 320 x 568 — iPhone SE 1st gen, and any phone at
+     * large browser zoom.
+     *
+     * WHY A THIRD PROJECT. `overflow.spec.ts` has driven 320 / 360 / 390 since ADR-1035, but it
+     * MEASURES boxes; nothing PHOTOGRAPHS the product at the narrow floor the contract commits
+     * to. Three of ADR-1035's five defects first bite below 390, and the committed
+     * `app-feed--dawn-light-mobile.png` shows the consequence of that gap directly: at 390 the
+     * tab bar already renders `Communi…` and `The QuestMarketpL…`, frozen into the reference
+     * because it was there when the reference was taken. A picture catches CHANGE, and there
+     * was no picture at all below 390 to change.
+     *
+     * `testMatch` IS LOAD-BEARING AND IS NOT A GREP. The config header's warning is about
+     * `grep`/`grepInvert`, which intersect with the CLI flags in package.json and can empty a
+     * run; a per-project `testMatch` is a FILE filter that composes with them instead. Without
+     * it a third project would triple `@smoke`, and — the expensive half — mint a third set of
+     * `@a11y` contexts (`contextKey()` carries the project name) that nothing has ever
+     * measured, so every one of them would be held to the zero default and fail on debt this
+     * row did not create. `overflow.spec.ts` would collect here too and then skip itself, since
+     * it already pins itself to `mobile` and drives its own widths.
+     *
+     * So this project photographs, and only photographs. `visual.spec.ts` narrows it further to
+     * the surfaces where a narrow capture buys something the other two projects do not: the
+     * member shell, and the header band. See the notes there.
+     */
+    {
+      name: 'narrow',
+      testMatch: '**/visual.spec.ts',
+      use: {
+        ...devices['iPhone 14'],
+        browserName: 'chromium',
+        defaultBrowserType: 'chromium',
+        viewport: { width: 320, height: 568 },
+        deviceScaleFactor: 1,
+      },
+    },
   ],
 });
