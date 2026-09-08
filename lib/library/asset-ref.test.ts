@@ -6,6 +6,7 @@ import {
   deepResolveAssetRefs,
   collectAssetRefIds,
   applyAssetUrls,
+  assetValueFromPick,
 } from './asset-ref'
 
 // The AssetField seam (PROG-D2, ADR-1130). The properties proven here are the ones the
@@ -42,6 +43,28 @@ describe('assetRefUrl / assetRefId — the one read', () => {
   it('yields the id only for a real ref', () => {
     expect(assetRefId(REF)).toBe(REF.assetId)
     expect(assetRefId('https://x/y.png')).toBeNull()
+  })
+})
+
+// ADR-1253: the ONE mapping from a picker's hand-back to the value a document stores. It exists so a
+// control cannot half-adopt the seam by keeping the url and dropping the id, which is what all thirteen
+// non-adopting picker consumers did.
+describe('assetValueFromPick: what a picker consumer stores', () => {
+  it('stores the reference when the pick has a library row', () => {
+    expect(assetValueFromPick({ url: REF.url, assetId: REF.assetId })).toEqual(REF)
+  })
+
+  it('stores the bare url when the pick has no row (a house site icon)', () => {
+    expect(assetValueFromPick({ url: 'https://cdn.example/icons/star.svg', alt: null })).toBe(
+      'https://cdn.example/icons/star.svg',
+    )
+    expect(assetValueFromPick({ url: 'https://cdn.example/icons/star.svg', assetId: '' })).toBe(
+      'https://cdn.example/icons/star.svg',
+    )
+  })
+
+  it('does NOT fold the asset alt into the value: a photo keeps one alt, its own field', () => {
+    expect(assetValueFromPick({ url: REF.url, assetId: REF.assetId, alt: 'from the library' })).toEqual(REF)
   })
 })
 

@@ -18,7 +18,7 @@ import { BlockIcon } from '../block-icon'
 import { useProfileLayout } from '../profile-layout-context'
 import { SpaceEditableSlot } from './space-editable-slot'
 import { SpaceImagePopup } from './space-image-popup'
-import { assetRefUrl } from '@/lib/library/asset-ref'
+import { assetRefUrl, isAssetRef, type AssetValue } from '@/lib/library/asset-ref'
 
 // ONE SPACE BLOCK, RENDERED TO THE LIVE WYSIWYG CANVAS so the EDIT surface MATCHES the published page. Each
 // block's authored TEXT (text / textarea, plus each Features / Cards item's title + text) is an inline-editable
@@ -103,27 +103,36 @@ function str(props: Record<string, unknown>, key: string): string {
   return typeof v === 'string' ? v : ''
 }
 
+/** Read a stored image value for the canvas: a URL string or an AssetRef is kept AS IS, so the photo popup
+ *  is handed the reference the block was stored with; anything else is ''. Mirrors the rail's imageValue. */
+function imageValue(raw: unknown): AssetValue {
+  return isAssetRef(raw) || typeof raw === 'string' ? raw : ''
+}
+
 /** A clickable photo slot on the canvas: shows the current image (or a placeholder) and opens the photo popup
  *  to pick from the Loom and write alt text. Empty value clears the slot. */
 function ImageSlot({
-  url,
+  value,
   alt,
   loomScope,
   onChange,
   className,
   fill,
 }: {
-  url: string
+  /** The slot's STORED value: a URL string or an AssetRef ({ assetId, url }). Threaded WHOLE, not as its
+   *  cached url, so a pick keeps its reference and an alt-only edit never downgrades one (ADR-1253). */
+  value: AssetValue
   alt: string
   /** The Loom library the popup opens into (a Space id or slug, or 'mine'). */
   loomScope?: string
-  onChange: (url: string, alt: string) => void
+  onChange: (value: AssetValue, alt: string) => void
   /** Extra classes on the trigger (e.g. an aspect / rounding to match the published crop). */
   className?: string
   /** Overlay layout: the image fills its (relative) parent instead of sizing to its own height. */
   fill?: boolean
 }) {
   const [open, setOpen] = useState(false)
+  const url = assetRefUrl(value)
   return (
     <>
       <button
@@ -158,7 +167,7 @@ function ImageSlot({
       </button>
       <SpaceImagePopup
         open={open}
-        currentUrl={url}
+        currentValue={value}
         currentAlt={alt}
         loomScope={loomScope}
         onClose={() => setOpen(false)}
@@ -686,13 +695,13 @@ export function SpaceCanvasBlock({
     return (
       <ImageSlot
         key={key}
-        url={assetRefUrl(props[key])}
+        value={imageValue(props[key])}
         alt={altKey ? str(props, altKey) : ''}
         loomScope={loomScope}
         className={opts?.className}
         fill={opts?.fill}
-        onChange={(u, a) => {
-          onField(key, u || undefined)
+        onChange={(v, a) => {
+          onField(key, v === '' ? undefined : v)
           if (altKey) onField(altKey, a || undefined)
         }}
       />

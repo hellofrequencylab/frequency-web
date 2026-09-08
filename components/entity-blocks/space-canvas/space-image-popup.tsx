@@ -5,13 +5,18 @@ import { ImagePlus, Trash2 } from 'lucide-react'
 import { Dialog } from '@/components/ui/dialog'
 import { LoomPicker } from '@/components/loom/loom-picker'
 import { Textarea } from '@/components/ui/field'
+import { assetRefUrl, assetValueFromPick, isAssetRef, type AssetValue } from '@/lib/library/asset-ref'
 
 // THE ON-CANVAS PHOTO POPUP for the WYSIWYG Space page editor. Clicking a photo slot on the live space canvas
 // opens this dialog to manage the slot's photo: CHOOSE it from the Loom (browse the library, or upload into
 // it there) and write ALT text, then confirm or remove. The Loom is the ONLY way in (owner directive): there
-// is no file dialog and no paste-a-URL box here. Every image is a plain public URL, so the block just stores
-// that URL plus a sibling alt string. App-chrome DAWN tokens only (this is admin UI), no hex; voice canon (no
-// em dashes).
+// is no file dialog and no paste-a-URL box here.
+//
+// The block stores the REFERENCE the Loom hands back, not just its URL (ADR-1253): a pick with a library row
+// commits `{ assetId, url }`, a pick without one (a house site icon) commits the bare URL, and a value that
+// arrived as a ref commits UNCHANGED when the operator only edits the alt text, so writing alt never
+// downgrades a reference to its cached url. The alt itself stays the block's own sibling field, as before.
+// App-chrome DAWN tokens only (this is admin UI), no hex; voice canon (no em dashes).
 
 /** A photo URL is only SAFE when its scheme is on the allowlist (http(s), a root/protocol-relative path,
  *  or a data:image/ URI) AND it contains no HTML metacharacters (" ' < >). Values now only ever arrive from
@@ -26,30 +31,27 @@ function safeImageUrl(raw: string): string {
 
 export function SpaceImagePopup({
   open,
-  currentUrl,
+  currentValue,
   currentAlt,
   loomScope,
   onClose,
   onSelect,
 }: {
   open: boolean
-  /** The slot's current image URL (pre-filled), or '' when empty. */
-  currentUrl: string
+  /** The slot's current image value (pre-filled): a URL string, an AssetRef, or '' when empty. */
+  currentValue: AssetValue
   /** The slot's current alt text. */
   currentAlt: string
   /** The Loom library this popup opens into: the Space being edited (id or slug), or 'mine'. UX plumbing
    *  only — the Loom re-resolves and re-gates the scope server-side. */
   loomScope?: string
   onClose: () => void
-  /** Commit the chosen photo: the URL (empty string clears the slot) and its alt text. */
-  onSelect: (url: string, alt: string) => void
+  /** Commit the chosen photo: the stored value (a ref or a URL string; '' clears the slot) and its alt. */
+  onSelect: (value: AssetValue, alt: string) => void
 }) {
-  const [url, setUrl] = useState(currentUrl)
+  // The whole VALUE, so a ref survives an alt-only edit. Its url is the only thing rendered or guarded.
+  const [value, setValue] = useState<AssetValue>(currentValue)
   const [loomOpen, setLoomOpen] = useState(false)
-  // The image PREVIEW renders only from TRUSTED sources: the already-saved image (the currentUrl prop) or a
-  // URL the Loom just returned. There is no text input feeding it, so no DOM-typed string can ever be echoed
-  // into an img src.
-  const [previewSrc, setPreviewSrc] = useState(currentUrl)
   const [alt, setAlt] = useState(currentAlt)
   const [error, setError] = useState<string | null>(null)
   const [prevOpen, setPrevOpen] = useState(open)
@@ -59,19 +61,21 @@ export function SpaceImagePopup({
   if (open !== prevOpen) {
     setPrevOpen(open)
     if (open) {
-      setUrl(currentUrl)
-      setPreviewSrc(currentUrl)
+      setValue(currentValue)
       setAlt(currentAlt)
       setError(null)
     }
   }
 
-  // A Loom pick returns a trusted public URL: set it as both the committed value and the preview.
-  const onPickFromLoom = (picked: string) => {
+  // A Loom pick returns a trusted public URL plus, for a real library row, its asset id: store the pair.
+  const onPickFromLoom = (picked: AssetValue) => {
     setError(null)
-    setUrl(picked)
-    setPreviewSrc(picked)
+    setValue(picked)
   }
+
+  // The URL the popup renders and guards, whichever shape the value has. There is no text input feeding it,
+  // so no DOM-typed string can ever be echoed into an img src; the allowlist stays as defence in depth.
+  const url = assetRefUrl(value)
 
   const commit = () => {
     const safe = safeImageUrl(url)
@@ -79,7 +83,9 @@ export function SpaceImagePopup({
       setError('That photo could not be used. Choose another one from your Loom.')
       return
     }
-    onSelect(safe, alt.trim())
+    // A ref commits WHOLE once its cached url passes the allowlist (the sanitizer re-guards it on save);
+    // a bare string commits normalised, exactly as before.
+    onSelect(isAssetRef(value) ? value : safe, alt.trim())
     onClose()
   }
   const clear = () => {
@@ -107,11 +113,11 @@ export function SpaceImagePopup({
         <div className="space-y-4 p-5">
           {/* Preview */}
           <div className="overflow-hidden rounded-card border border-border bg-surface-elevated/30">
-            {/* Renders only a TRUSTED previewSrc: the saved image, or a URL the Loom just returned. The
-                allowlist guard stays as defense in depth. */}
-            {SAFE_IMAGE_URL.test(previewSrc.trim()) ? (
+            {/* Renders only a TRUSTED url: the saved image, or one the Loom just returned. The allowlist
+                guard stays as defense in depth. */}
+            {SAFE_IMAGE_URL.test(url.trim()) ? (
               // eslint-disable-next-line @next/next/no-img-element -- operator asset URL, not a build asset
-              <img src={previewSrc.trim()} alt={alt} className="max-h-52 w-full object-contain" />
+              <img src={url.trim()} alt={alt} className="max-h-52 w-full object-contain" />
             ) : (
               <p className="px-3 py-10 text-center text-meta text-muted">Choose a photo from your Loom to preview it here.</p>
             )}
@@ -127,7 +133,7 @@ export function SpaceImagePopup({
           <LoomPicker
             open={loomOpen}
             onClose={() => setLoomOpen(false)}
-            onSelect={onPickFromLoom}
+            onSelectAsset={(pick) => onPickFromLoom(assetValueFromPick(pick))}
             title="Choose a photo"
             scopeKey={loomScope}
             kinds={['image']}
@@ -159,7 +165,7 @@ export function SpaceImagePopup({
             >
               Use this photo
             </button>
-            {currentUrl && (
+            {assetRefUrl(currentValue) && (
               <button
                 type="button"
                 onClick={clear}

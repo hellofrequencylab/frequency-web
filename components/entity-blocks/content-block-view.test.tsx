@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { renderToStaticMarkup } from 'react-dom/server'
+import { sanitizeContentMap } from '@/lib/entity-blocks/block-content'
 import { ContentBlockView } from './content-block-view'
 
 // Fix 8 render gate for the Callout content block: the button ALWAYS renders once it has a label (a no-link
@@ -161,5 +162,43 @@ describe('ContentBlockView reads an AssetRef through its cached url (ADR-1245)',
       renderToStaticMarkup(<ContentBlockView id="image" props={{ src: { assetId: ref.assetId, url: 'javascript:1' } }} />),
     ).toBe('')
     expect(renderToStaticMarkup(<ContentBlockView id="image" props={{ src: { url: ref.url } }} />)).toBe('')
+  })
+})
+
+// ADR-1253 (HYG-029): the END-TO-END shape of the seam, the one thing neither the sanitizer's own pins nor
+// the view's own pins can show. What the three entity-block writers now hand the save action is run through
+// the REAL save-path sanitizer (sanitizeContentMap, what spaces/[slug]/settings/profile/actions.ts calls) and
+// the survivor is rendered. A ref must come back out as a picture; a legacy string must be unchanged.
+describe('a picked reference survives the save path and renders (ADR-1253)', () => {
+  const ref = { assetId: 'a1b2c3d4-1111-4222-8333-444455556666', url: 'https://cdn.example.com/loom/a.jpg' }
+
+  it('a ref stored by each of the writers renders its cached url after the save path', () => {
+    const saved = sanitizeContentMap({
+      image: { src: ref, alt: 'A photo' },
+      gallery: { images: [ref, 'https://cdn.example.com/loom/b.jpg'] },
+      callout: { title: 'T', image: ref },
+      features: { items: [{ title: 'A', image: ref }] },
+    })
+    if (!saved) throw new Error('the save path dropped every block')
+    // Same shape in, same shape out: the reference is still a reference in storage, not its cached url.
+    expect(saved.image.src).toEqual(ref)
+    expect(saved.gallery.images).toEqual([ref, 'https://cdn.example.com/loom/b.jpg'])
+    for (const id of ['image', 'gallery', 'callout', 'features']) {
+      const html = renderToStaticMarkup(<ContentBlockView id={id} props={saved[id]} />)
+      expect(html, id).toContain(`src="${ref.url}"`)
+    }
+  })
+
+  it('a bare string stored the old way still round-trips and renders', () => {
+    const saved = sanitizeContentMap({ image: { src: 'https://cdn.example.com/loom/legacy.jpg', alt: 'A photo' } })
+    expect(saved?.image.src).toBe('https://cdn.example.com/loom/legacy.jpg')
+    expect(renderToStaticMarkup(<ContentBlockView id="image" props={saved?.image ?? {}} />)).toContain(
+      'src="https://cdn.example.com/loom/legacy.jpg"',
+    )
+  })
+
+  it('a ref whose cached url is unsafe is dropped on save, so nothing unsafe can reach the page', () => {
+    const saved = sanitizeContentMap({ image: { src: { assetId: ref.assetId, url: 'javascript:1' }, alt: 'A' } })
+    expect(saved?.image.src).toBeUndefined()
   })
 })
