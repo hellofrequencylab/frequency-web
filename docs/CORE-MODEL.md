@@ -124,7 +124,7 @@ M ≤2 days · L ≤1 week.
 
 | # | Change | Done when | Verify |
 |---|---|---|---|
-| 0.1 | ADR for the model; supersede the OFFER-MODEL §5 membership argument | ADR accepted, not proposed | `grep -c "ADR-1294" docs/DECISIONS.md` |
+| 0.1 | Write the model's ADR at the next free number; it supersedes the `OFFER-MODEL` §5 membership argument | The entry exists and is Accepted, not Proposed | `pnpm check:adr` (it fails on an ADR cited but never written, which is how this row was caught) |
 | 0.2 | Move `beta_grace` to **2026-12-01** | `platform_flags` / `pricing_settings` reads the new date | SQL read |
 | 0.3 | File every item below as a backlog row with a probe | `pnpm check:backlog` counts them open | `pnpm check:backlog` |
 
