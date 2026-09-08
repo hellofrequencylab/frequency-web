@@ -71,9 +71,10 @@
 //
 // It stays BLOCKING, deliberately, and that is a judgement worth stating: its unrouted creates
 // are a NAMED SET (UNROUTED: 18 on 2026-08-11, 3 on 2026-09-07 after ADR-1249 routed fifteen in
-// one pass), not a count, so this gate is green today and only fires when a NEW ungoverned create
-// appears. An unrelated PR cannot trip it, and the two ways out — route it, or add a dated line
-// to UNROUTED — are both one edit. That is a ratchet, not a tracker.
+// one pass, 2 on 2026-09-08 after ADR-1262 routed Housing), not a count, so this gate is green
+// today and only fires when a NEW ungoverned create appears. An unrelated PR cannot trip it, and
+// the two ways out — route it, or add a dated line to UNROUTED — are both one edit. That is a
+// ratchet, not a tracker.
 //
 // Still runnable by hand for the friendly report: `node scripts/check-creates.mjs`. Exits 1 on
 // violation.
@@ -277,11 +278,13 @@ export const NOT_PROPOSE_AND_CONFIRM = new Map([
 // cannot rot into a permanent amnesty. Anything not on this list fails on sight.
 //
 // 🔴 Every line below is real, unaudited create volume. Fifteen of the original eighteen routed on
-// 2026-09-07 (ADR-1249). The three that remain are NOT waiting on effort: each one, routed as it
-// stands, would refuse a create the road accepts today, because the governed layer validates the
-// draft against the entity's manifest and re-checks a `capability` gate the road deliberately does
-// not hold. Each therefore waits on a ruling (a manifest change, or a scoped gate for a road that
-// already has one), and the ruling each needs is written on its line. Route it, delete the line.
+// 2026-09-07 (ADR-1249), and the Housing road followed on 2026-09-08 once ADR-1262 settled the
+// ruling its line named: the form now asks for the city its manifest has always required. The two
+// that remain are NOT waiting on effort: each one, routed as it stands, would refuse a create the
+// road accepts today, because the governed layer validates the draft against the entity's manifest
+// and re-checks a `capability` gate the road deliberately does not hold. Each therefore waits on a
+// ruling (a manifest change, or a scoped gate for a road that already has one), and the ruling each
+// needs is written on its line. Route it, delete the line.
 // ─────────────────────────────────────────────────────────────────────────────────────────────
 export const UNROUTED = new Map([
   [
@@ -291,10 +294,6 @@ export const UNROUTED = new Map([
   [
     'app/(main)/spaces/[slug]/practices/actions.ts::createSpacePracticeAction',
     '2026-08-11 — the Space Practice road. 2026-09-07 (ADR-1249): NOT routable as it stands. The road is deliberately open to anyone who MANAGES the Space, so a free member running a Space can build for their members, while CREATE_GATES declares `practice` a `practice.create` capability gate (Crew-only). confirmCreate re-checks that capability at the write and would refuse the free Space manager. Needs a per-road scoped gate (the kernel ruling ADR-1240 also deferred); then route.',
-  ],
-  [
-    'app/(main)/marketplace/actions.ts::createHousingListingAction',
-    '2026-08-11 — the Housing listing road. 2026-09-07 (ADR-1249): NOT routable as it stands. The housing form does not require a city (app/(main)/housing/new/housing-form.tsx, and the action stores null), while the Housing manifest declares `city` required, so checkCreateDraft would refuse a listing the road accepts today. Routing it as `listing` instead would audit a housing post under the wrong manifest. Needs the form and the manifest to agree on city; then route.',
   ],
 ])
 
