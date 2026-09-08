@@ -47,7 +47,9 @@ const csp = [
   "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.frequencylocal.com wss://api.frequencylocal.com https://www.google-analytics.com https://region1.google-analytics.com https://vercel.live https://*.vercel.live https://tiles.openfreemap.org https://maps.googleapis.com https://maps.gstatic.com https://photon.komoot.io https://ipapi.co",
   // frame-src — the only hosts we may embed. Spotlight media embeds (lib/spotlight/embeds.ts)
   // reconstruct iframe srcs ONLY for these allowlisted players; keep the two lists in sync.
-  "frame-src 'self' https://vercel.live https://*.vercel.live https://www.youtube.com https://player.vimeo.com https://open.spotify.com https://w.soundcloud.com",
+  // Bandcamp, Apple Music and Twitch (two player hosts: clips have their own) joined on
+  // 2026-09-08 (PROG-SPOT, ADR-1279).
+  "frame-src 'self' https://vercel.live https://*.vercel.live https://www.youtube.com https://player.vimeo.com https://open.spotify.com https://w.soundcloud.com https://bandcamp.com https://embed.music.apple.com https://player.twitch.tv https://clips.twitch.tv",
   "media-src 'self' blob: https:",
   "worker-src 'self' blob:",
   'report-uri /api/csp-report', // keep reporting even while enforcing — catch any miss

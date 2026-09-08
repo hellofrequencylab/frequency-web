@@ -37,6 +37,7 @@ import { computeCompleteness } from '@/lib/profile/completeness'
 import { deriveTier, ENTITLEMENT_LABEL } from '@/lib/core/entitlement'
 import type { EntitlementTier } from '@/lib/core/entitlement'
 import { readMemberGridLayout } from '@/lib/entity-blocks/member-grid-meta'
+import { memberHeldItems } from '@/lib/awards/holdings'
 import { resolveRows, type RowDef } from '@/lib/entity-blocks/layout'
 import type { BlockStyle } from '@/lib/entity-blocks/block-content'
 
@@ -306,6 +307,9 @@ export interface AppearanceRailData {
   background: SpotlightBackground
   /** The validated sticker layer (allowlisted ids at clamped percentage coordinates, ADR-1275). */
   stickers: SpotlightStickers
+  /** The store item slugs the member holds (ADR-1279): the picker offers an earned skin or sticker
+   *  only when its requiredItem is in here. The writers re-check, so this is the honest list, not the gate. */
+  heldItems: string[]
   /** The member's current ordered Top Friends (resolved to public identity fields). */
   topFriends: TopFriend[]
   /** Every accepted friend, as the picker's source list (only the caller's own friends). */
@@ -332,9 +336,10 @@ export async function getAppearanceRailData(): Promise<AppearanceRailData | null
   const profileId = profile.id as string
   const canEnableSpotlight = (await getProfileCapabilities(profileId)).has('spotlight.enable')
 
-  const [topFriends, friendOptions] = await Promise.all([
+  const [topFriends, friendOptions, held] = await Promise.all([
     getTopFriendsForOwner(profileId),
     getAcceptedFriendsForPicker(profileId),
+    memberHeldItems(supabase, profileId),
   ])
 
   return {
@@ -346,6 +351,7 @@ export async function getAppearanceRailData(): Promise<AppearanceRailData | null
     // The auth user id pins the background asset path to the owner's own folder, exactly as the public read.
     background: validateSpotlightBackground(readSpotlightBackgroundRaw(meta), user.id),
     stickers: validateSpotlightStickers(readSpotlightStickersRaw(meta)),
+    heldItems: [...held],
     topFriends,
     friendOptions,
   }

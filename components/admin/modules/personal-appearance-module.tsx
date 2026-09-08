@@ -20,6 +20,7 @@ import { PROFILE_SKINS } from '@/lib/theme/profile-skins'
 import { SPOTLIGHT_FONTS, type SpotlightTheme } from '@/lib/spotlight/theme'
 import { MAX_STICKERS, type SpotlightBackground, type SpotlightStickers } from '@/lib/spotlight/blocks/schema'
 import { SPOTLIGHT_STICKERS, spotlightStickerById } from '@/lib/spotlight/stickers'
+import { unlockedCosmetics } from '@/lib/spotlight/cosmetics'
 import type { TopFriend } from '@/lib/spotlight/top-friends.types'
 import { SPOTLIGHT_PUBLIC_BASE } from '@/lib/spotlight/puck/resolve'
 import { prepareImageForUpload } from '@/lib/library/image-shrink'
@@ -56,6 +57,12 @@ export function PersonalAppearanceModule() {
   const [error, setError] = useState('')
   const [uploading, setUploading] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
+
+  // The earned gate's picker half (ADR-1279): an earned skin or sticker is offered only when the
+  // member holds its item. The writers re-check server-side, so hiding here is honesty, not security.
+  const held = new Set(data?.heldItems ?? [])
+  const skinOptions = unlockedCosmetics(PROFILE_SKINS, held)
+  const stickerOptions = unlockedCosmetics(SPOTLIGHT_STICKERS, held)
 
   useEffect(() => {
     let active = true
@@ -201,7 +208,7 @@ export function PersonalAppearanceModule() {
       <div>
         <SectionHeader title="Skin" />
         <div className="flex flex-wrap gap-2">
-          {PROFILE_SKINS.map((s) => {
+          {skinOptions.map((s) => {
             const active = (profileTheme ?? 'default') === s.id
             return (
               <button
@@ -436,7 +443,7 @@ export function PersonalAppearanceModule() {
             <div className={stickers.items.length > 0 ? 'border-t border-border pt-3' : ''}>
               <p className="mb-2 eyebrow text-muted">Add a sticker</p>
               <div className="flex flex-wrap gap-1.5">
-                {SPOTLIGHT_STICKERS.map((def) => (
+                {stickerOptions.map((def) => (
                   <button
                     key={def.id}
                     type="button"

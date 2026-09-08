@@ -476,7 +476,7 @@ Cosmetic (`profile_border/flair/theme`), presence (`last_seen_at`), and moderati
 | dispatch type | `post`, `poll`, `challenge`, `article` |
 | recurrence type | `none`, `daily`, `weekly`, `monthly` |
 | report `status` | `pending`, `reviewed`, `actioned`, `dismissed` |
-| report `target_type` | `post`, `dispatch`, `comment`, `member`, `event` |
+| report `target_type` | `post`, `dispatch`, `comment`, `member`, `event`, `guestbook` (a Spotlight Guestbook note, ADR-1279) |
 
 ## Conventions & invariants
 

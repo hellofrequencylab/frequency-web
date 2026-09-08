@@ -38,6 +38,13 @@ describe('notificationHref', () => {
       .toBe('/network/friends')
   })
 
+  it('routes a guestbook note to the owner\'s own guestbook by handle (ADR-1279)', () => {
+    expect(notificationHref(notif({ type: 'guestbook_signed', reference_type: 'guestbook', reference_id: 'ada' })))
+      .toBe('/people/ada#guestbook')
+    expect(notificationHref(notif({ type: 'guestbook_signed', reference_type: 'guestbook', reference_id: null })))
+      .toBe('/settings/profile')
+  })
+
   it('routes a profile reference to that person by handle (gift, referral, welcome, nudge)', () => {
     expect(notificationHref(notif({ type: 'gift_received', reference_type: 'profile', reference_id: 'a1' })))
       .toBe('/people/ada')

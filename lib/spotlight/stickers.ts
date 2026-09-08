@@ -5,9 +5,12 @@
 // public page is exactly this list. Pure: no IO, no React, safe to import from a Server Component,
 // a client module, or the validator alike.
 //
-// `requiredItem` is the seam for EARNED stickers and is unused today: every sticker here is free.
-// It mirrors `ProfileSkin.requiredItem` (lib/theme/profile-skins.ts) so the cosmetics lane can gate
-// both with one inventory read when it lands. Until then the validator treats the field as absent.
+// `requiredItem` is the seam for EARNED stickers (ADR-1279): the store item slug a member must hold
+// (a `store_redemptions` row, read by lib/awards/holdings.ts) before the writer accepts the sticker
+// and the rail offers it. It mirrors `ProfileSkin.requiredItem` (lib/theme/profile-skins.ts), and
+// lib/spotlight/cosmetics.ts is the one pure gate both consult. The READ-side validator does not
+// consult it: a placed sticker keeps rendering if an item is later season-scoped away, and the
+// public render stays a pure function of the stored blob.
 
 export interface SpotlightStickerDef {
   /** The stable id stored in meta. Never renamed; retiring a sticker drops it from placed layers. */
@@ -38,6 +41,9 @@ export const SPOTLIGHT_STICKERS: readonly SpotlightStickerDef[] = [ // menu-ok: 
   { id: 'butterfly', glyph: '🦋', label: 'Butterfly' },
   { id: 'bolt', glyph: '⚡', label: 'Bolt' },
   { id: 'smile', glyph: '😊', label: 'Smile' },
+  // EARNED: the Full Spectrum banner is granted for finishing all four Pillar Journeys in a season
+  // (lib/awards/cosmetics.ts). Only a member who holds it can place this one.
+  { id: 'spectrum', glyph: '🏆', label: 'Spectrum', requiredItem: 'full-spectrum-banner' },
 ]
 
 const BY_ID = new Map(SPOTLIGHT_STICKERS.map((s) => [s.id, s]))

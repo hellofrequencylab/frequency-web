@@ -69,6 +69,11 @@ export function notificationHref(n: NotificationItem): string {
     case 'bundle_invite':
       return '/settings#plan'
 
+    // A Guestbook note (ADR-1279) references the OWNER's handle, an addressable key, so the notice
+    // lands on the owner's own guestbook rather than on the signer.
+    case 'guestbook':
+      return id ? `/people/${id}#guestbook` : '/settings/profile'
+
     case 'dispatch':
       return id ? `/nearby/${id}` : '/nearby'
 

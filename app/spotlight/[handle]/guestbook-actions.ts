@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
-import { resolveGuestbookOwner } from '@/lib/spotlight/guestbook'
+import { resolveGuestbookOwner, notifyGuestbookSigned } from '@/lib/spotlight/guestbook'
 import {
   normalizeGuestbookMessage,
   GUESTBOOK_SIGNS_PER_HOUR,
@@ -13,9 +13,11 @@ import {
 //   sign   -> insert as yourself only (signer_profile_id = get_my_profile_id()).
 //   remove -> delete allowed for the guestbook owner, the signer, or staff.
 //   hide   -> update allowed for the guestbook owner or staff (the moderation seam).
+//   unhide -> the same update policy, clearing hidden_at (ADR-1279).
 // The app layer adds what RLS cannot express: message normalization, the friendly
-// self-sign refusal (the schema also enforces it), and the hourly rate limit (counted
-// over the signer's own rows, which their session can read).
+// self-sign refusal (the schema also enforces it), the hourly rate limit (counted
+// over the signer's own rows, which their session can read), and the owner's sign
+// notice, sent after the row lands and gated on the owner's preferences.
 //
 // Postgres error codes the sign path translates to member copy:
 const UNIQUE_VIOLATION = '23505' // one note per person per guestbook
@@ -81,6 +83,9 @@ export async function signSpotlightGuestbook(
     return { error: 'Could not save your note. Try again.' }
   }
 
+  // The owner's sign notice (ADR-1279): best-effort, preference-gated, never undoes the note.
+  await notifyGuestbookSigned({ ownerProfileId: ownerId, ownerHandle, signerProfileId: me })
+
   revalidateGuestbook(ownerHandle)
   return {}
 }
@@ -128,6 +133,30 @@ export async function hideGuestbookEntry(
     .eq('id', entryId)
     .select('id')
   if (error) return { error: 'Could not hide that note. Try again.' }
+  if (!data || data.length === 0) return { error: 'That note is already gone.' }
+
+  revalidateGuestbook(ownerHandle)
+  return {}
+}
+
+/**
+ * Bring a hidden note back (owner/staff, the same RLS update policy as hide; ADR-1279). The
+ * note renders again and its slot was never released. An unauthorized call updates nothing.
+ */
+export async function unhideGuestbookEntry(
+  entryId: string,
+  ownerHandle: string,
+): Promise<{ error?: string }> {
+  const supabase = await createClient()
+  const me = await myProfileId(supabase)
+  if (!me) return { error: 'Sign in first.' }
+
+  const { data, error } = await supabase
+    .from('spotlight_guestbook')
+    .update({ hidden_at: null })
+    .eq('id', entryId)
+    .select('id')
+  if (error) return { error: 'Could not bring that note back. Try again.' }
   if (!data || data.length === 0) return { error: 'That note is already gone.' }
 
   revalidateGuestbook(ownerHandle)

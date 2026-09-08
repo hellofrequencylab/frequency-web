@@ -10,12 +10,14 @@ import { getStaffMember } from '@/lib/staff'
 import { staffCan } from '@/lib/core/staff-roles'
 import { cancelAudit } from '@/lib/events/event-lifecycle'
 
-type TargetType = 'post' | 'dispatch' | 'comment' | 'member' | 'event'
+export type ReportTargetType = 'post' | 'dispatch' | 'comment' | 'member' | 'event' | 'guestbook'
+type TargetType = ReportTargetType
 type ReportReason = 'spam' | 'harassment' | 'inappropriate' | 'misinformation' | 'other'
 
 // Runtime allowlists (site-audit SEC-4): the TS unions are compile-time only, so a forged
-// client could pass any string. Validate before any DB write.
-const VALID_TARGETS: readonly TargetType[] = ['post', 'dispatch', 'comment', 'member', 'event']
+// client could pass any string. Validate before any DB write. The list mirrors the schema's
+// reports_target_type_check; 'guestbook' (a spotlight_guestbook note) joined in ADR-1279.
+const VALID_TARGETS: readonly TargetType[] = ['post', 'dispatch', 'comment', 'member', 'event', 'guestbook']
 const VALID_REASONS: readonly ReportReason[] = ['spam', 'harassment', 'inappropriate', 'misinformation', 'other']
 const MAX_REPORT_DETAILS = 2000
 
@@ -105,6 +107,8 @@ export async function reportContent(
 // Action semantics by target_type:
 //   post/comment → soft-hide (sets hidden_at, hidden_by — recoverable)
 //   dispatch     → soft-hide
+//   guestbook    → soft-hide (spotlight_guestbook.hidden_at — the owner's own hide seam,
+//                  so the note keeps its slot and the signer cannot re-sign; ADR-1279)
 //   member       → use warnMember() or suspendMember() instead; this call
 //                  on a member target is a no-op apart from status flip
 //                  (kept for backwards compatibility — UI no longer calls
@@ -143,6 +147,10 @@ export async function reviewReport(
         hidden = { targetType: report.target_type, targetId: report.target_id }
       } else if (report.target_type === 'dispatch') {
         await admin.from('dispatches').update(hidePayload).eq('id', report.target_id)
+        hidden = { targetType: report.target_type, targetId: report.target_id }
+      } else if (report.target_type === 'guestbook') {
+        // The guestbook table carries hidden_at only (no hidden_by); the audit row below names the moderator.
+        await admin.from('spotlight_guestbook').update({ hidden_at: hidePayload.hidden_at }).eq('id', report.target_id)
         hidden = { targetType: report.target_type, targetId: report.target_id }
       }
       // member/event handled via dedicated helpers; reviewReport just closes them.
