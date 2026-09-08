@@ -6,6 +6,7 @@ import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { spaceManageHref } from '@/lib/spaces/types'
 import { listJourneyPlansForSpace, type JourneyPlan } from '@/lib/journey-plans'
 import { IndexTemplate } from '@/components/templates'
+import { resolveIndexHero } from '@/lib/layout/index-hero'
 import { StatCard } from '@/components/ui/stat-card'
 import { EmptyState } from '@/components/ui/empty-state'
 import { JourneyManageCard, type ManagePlan } from '@/components/journeys/journey-manage-card'
@@ -66,8 +67,14 @@ export default async function SpaceJourneysManagerPage({ params }: { params: Pro
   const published = plans.filter((p) => p.visibility !== 'private')
   const inLibrary = plans.filter((p) => p.visibility === 'public')
 
+  // The shared hero band (LIVE-117, ADR-1261). This tab renders OUTSIDE the (profile) route group,
+  // so nothing draws a band above it; the map's '/spaces/_/journeys' row gives it the short utility
+  // band, and rung 1 stays on this Space's own pathname (the only key the Settings panel writes).
+  const hero = await resolveIndexHero(`/spaces/${space.slug}/journeys`)
+
   return (
     <IndexTemplate
+      {...hero}
       back={{ href: spaceManageHref(space.type, space.slug), label: 'Back to manage' }}
       eyebrow={space.brandName ?? space.name}
       title="Journeys"

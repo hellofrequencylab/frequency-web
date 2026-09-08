@@ -187,7 +187,29 @@ export const BUDGET_STATUS_LABEL: Record<BudgetStatus, string> = {
 }
 
 /** Below this many samples a p75 is noise, not a measurement. Web Vitals field
- *  guidance wants far more; this is the floor at which we will show a number at all. */
+ *  guidance wants far more; this is the floor at which we will show a number at all.
+ *
+ *  🔴 THIS FLOOR IS ALSO THE VITALS RATCHET'S RELEASE TRIGGER (HYG-061, ADR-1263).
+ *  UX-MATURITY-PLAN Lift 7 holds the real gate — the ADR-928 ratchet shape applied to
+ *  live field p75: freeze a number per budget class, fail a rise, annotate and
+ *  re-freeze a fall — until the readout can score it. That is held on a NUMBER, not on
+ *  a decision, and the number is this one:
+ *
+ *    the ratchet is built when every budget class scores all three budgeted metrics
+ *    (no ⏳ cell), each cell clearing the floor of 5 loads, on two consecutive
+ *    weekly reads.
+ *
+ *  Its own seeding floor is then set FROM that first real window rather than guessed,
+ *  which is the lesson 7e's first-run Lighthouse thresholds already carry. Move this
+ *  floor and you move the trigger, so move the sentence above with it — check:backlog
+ *  reads the two against each other.
+ *
+ *  Reading 2026-09-08, the two weeks to date, distinct loads per class per metric:
+ *  marketing 65/39/46 and app 17/12/5 clear the floor in BOTH weeks; operator is the
+ *  only ⏳ class left (LCP 3 / INP 2 / CLS 2 this week, 1 / 1 / 0 the week before).
+ *  The trigger is one class short, not the no-traffic case the plan was written in.
+ *  Tabled with the other two traffic-held instruments in
+ *  docs/ANALYTICS.md § Instruments held until there is traffic. */
 export const MIN_SAMPLES = 5
 
 /** Within 10% under the budget is a warning: it is one regression from a breach. */

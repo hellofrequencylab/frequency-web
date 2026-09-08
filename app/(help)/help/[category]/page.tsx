@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { getAllCategories, helpHref } from '@/lib/help/content'
 import { IndexTemplate } from '@/components/templates'
+import { resolveIndexHero } from '@/lib/layout/index-hero'
 import { JsonLd } from '@/components/json-ld'
 import { breadcrumbSchema } from '@/lib/jsonld'
 
@@ -29,8 +30,14 @@ export default async function HelpCategoryPage({ params }: Params) {
   const cat = (await getAllCategories()).find((c) => c.slug === category)
   if (!cat) notFound()
 
+  // The shared hero band (LIVE-117, ADR-1261). A category page is a DYNAMIC route, so rung 1 reads
+  // `page_settings` on '/help' — the section key the map hands it — and the Help image an operator
+  // set on the section root stands behind every category.
+  const hero = await resolveIndexHero(`/help/${cat.slug}`)
+
   return (
     <IndexTemplate
+      {...hero}
       title={cat.title}
       description={cat.description}
       back={{ href: '/help', label: 'Help center' }}

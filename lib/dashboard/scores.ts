@@ -28,7 +28,22 @@ export interface HealthSummary {
   resonant: number
   cooling: number
   atRisk: number
-  /** Weekly-active members (wam_status true). */
+  /** Weekly-active members (wam_status true).
+   *
+   *  🔴 THIS NUMBER IS SESSION-REPLAY LITE'S RELEASE THRESHOLD (HYG-061, ADR-1263).
+   *  Consent-gated session-replay lite (UX-MATURITY-PLAN Lift 1d) is deliberately not
+   *  built, and it is held on a NUMBER, not on a decision:
+   *
+   *    revisit session-replay lite past 1,000 weekly active members.
+   *
+   *  Below that a replay sample is anecdote rather than a distribution, and an
+   *  instrument that reports noise gets muted and then reads as coverage. Revisit
+   *  only: the default answer stays NO NEW VENDOR (the ADR-922 stance); if one is ever
+   *  adopted it gates on the existing `analytics` consent scope
+   *  (lib/consent/scopes.ts) and the adoption is recorded as its own ADR.
+   *  Reading 2026-09-08: 5 members with an interaction in the last 7 days, 0.5% of the
+   *  threshold. Tabled with the other two traffic-held instruments in
+   *  docs/ANALYTICS.md § Instruments held until there is traffic. */
   weeklyActive: number
 }
 

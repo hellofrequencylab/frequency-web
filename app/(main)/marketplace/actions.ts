@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { getMyProfileId } from '@/lib/auth'
+import { proposeAndConfirmCreate } from '@/lib/ai/vera/create-entity'
 import { createListing, setListingStatus, deleteListing, listingOwnerId } from '@/lib/listings'
 import {
   sanitizeSeekerPreferences,
@@ -76,7 +77,14 @@ export async function createHousingListingAction(formData: FormData): Promise<vo
   const leaseNum = Number(leaseRaw)
   const leaseMonths = leaseRaw !== null && leaseRaw !== '' && Number.isFinite(leaseNum) && leaseNum >= 0 ? Math.round(leaseNum) : null
 
-  const city = (formData.get('city') as string) || null
+  // CITY IS REQUIRED (ADR-1262). The Housing manifest has declared `city` required since it was
+  // written (lib/studio/entities/housing.ts) — it is one of the eight questions the Spark asks,
+  // and without it the area geocode below has nothing to place — while this form left it optional.
+  // That one disagreement is the whole reason this road sat in UNROUTED. The form asks for it now;
+  // this is the server half of the same rule, ahead of the layer, so a hand-posted body cannot
+  // walk past the input's `required`.
+  const city = String(formData.get('city') ?? '').trim() || null
+  if (!city) return
   const neighborhood = (formData.get('neighborhood') as string) || null
 
   // Best-effort area geocode (ADR-861): the housing form captures no coordinates, so
@@ -94,18 +102,52 @@ export async function createHousingListingAction(formData: FormData): Promise<vo
     }
   }
 
-  const listing = await createListing(profileId, {
-    vertical: 'housing',
-    title,
-    description: (formData.get('description') as string) || null,
-    city,
-    neighborhood,
-    latitude,
-    longitude,
-    priceNote: rentDollars ? `$${rentDollars}/mo` : null,
-    images: parseImages(formData.get('images')),
+  const description = (formData.get('description') as string) || null
+  const images = parseImages(formData.get('images'))
+  const availableFrom = (formData.get('available_from') as string) || null
+
+  // THE GOVERNED WRITE (ADR-988, ADR-1249, ADR-1262). The member filled the listing in and tapped
+  // Post, so one call proposes, claims and commits through the same writer, and the audit row the
+  // autonomy ladder is read from gets written. Housing's gate is `scoped` (CREATE_GATES in
+  // lib/ai/vera/create-tools.ts): signed in with a profile is the whole of it, and that check is
+  // the redirect at the top of this action, so the layer records the gate rather than becoming a
+  // second one. The draft is keyed by the manifest's own field paths; the writer, its input and
+  // the housing extension row below are unchanged.
+  const governed = await proposeAndConfirmCreate({
+    entity: 'housing',
+    draft: {
+      title,
+      listingType,
+      roomType: roomType ?? '',
+      rentDollars: rentDollars ?? '',
+      availableFrom: availableFrom ?? '',
+      images,
+      description: description ?? '',
+      city,
+      neighborhood: neighborhood ?? '',
+    },
+    rationale: 'Housing form: the member filled the listing in and tapped Post.',
+    commit: async () => {
+      const created = await createListing(profileId, {
+        vertical: 'housing',
+        title,
+        description,
+        city,
+        neighborhood,
+        latitude,
+        longitude,
+        priceNote: rentDollars ? `$${rentDollars}/mo` : null,
+        images,
+      })
+      if (!created) throw new Error('Could not post the listing. Try again.')
+      return created
+    },
   })
-  if (!listing) return
+  // This road returns void and has no error surface of its own: it returned silently on a failed
+  // write before this change too, and every refusal the layer can reach here (signed out, no
+  // title, no city) is already answered ahead of it. Routing did not take a message away.
+  if ('error' in governed) return
+  const listing = governed.data
 
   await upsertHousingDetail(listing.id, {
     listingType,
@@ -115,7 +157,7 @@ export async function createHousingListingAction(formData: FormData): Promise<vo
     bathrooms,
     roomType,
     leaseMonths,
-    availableFrom: (formData.get('available_from') as string) || null,
+    availableFrom,
     furnished: checkbox(formData, 'furnished'),
     utilitiesIncluded: checkbox(formData, 'utilities_included'),
     petsOk: checkbox(formData, 'pets_ok'),

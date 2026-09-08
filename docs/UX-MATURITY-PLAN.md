@@ -63,7 +63,9 @@ vendor by default (mirrors the ADR-922 no-vendor stance). **The threshold is >1k
 active members**, and crossing it buys a revisit, not an adoption: if one is adopted it
 gates on the existing `analytics` consent scope and the decision is recorded as its own ADR.
 Tabled beside the other two traffic-held instruments in
-[`ANALYTICS.md` § Instruments held until there is traffic](ANALYTICS.md).
+[`ANALYTICS.md` § Instruments held until there is traffic](ANALYTICS.md), and the number
+itself is recorded beside `HealthSummary.weeklyActive` in `lib/dashboard/scores.ts` — the
+WAM figure that crosses it ([ADR-1263](DECISIONS.md)). Reading 2026-09-08: **5 WAM**.
 
 **Gate:** 🔴 **none, and that is the honest state.** A `check:research-freshness` script
 existed until 2026-08-12; it ran in no workflow, and its own output ended *"Nothing a PR
@@ -365,7 +367,9 @@ takes it as an optional filter. The other half is held on a number — **`SAMPLE
 from `1` to `0.25` once daily page loads pass ~10k** (ADR-922's own note; a p75 over the
 7-day window keeps ample n at that rate), and it stays head-based, decided once per page
 load. Keep it account-free — that invariant is the consent posture. The threshold and what
-ships at it are tabled in [`ANALYTICS.md` § Instruments held until there is traffic](ANALYTICS.md).
+ships at it are tabled in [`ANALYTICS.md` § Instruments held until there is traffic](ANALYTICS.md)
+and recorded beside `SAMPLE_RATE` itself, which may hold only the two recorded values
+([ADR-1263](DECISIONS.md)). Reading 2026-09-08: **~57 loads/day**, 0.6% of the threshold.
 
 **7e. The lab smoke alarm (S, shipped 2026-08-04, ADR-930).** A Lighthouse run on the
 PR's own preview, inside the existing `pr-compare` job: LCP / CLS / TBT, three runs,
@@ -389,7 +393,11 @@ runs rather than defended.
   loads — on two consecutive weekly reads. The ratchet's own seeding floor is then set from
   that first real window rather than guessed, which is the lesson 7e's first-run thresholds
   already carry. Tabled with the other two traffic-held instruments in
-  [`ANALYTICS.md` § Instruments held until there is traffic](ANALYTICS.md).
+  [`ANALYTICS.md` § Instruments held until there is traffic](ANALYTICS.md), and the trigger is
+  recorded beside `MIN_SAMPLES` in `lib/analytics/vitals-budgets.ts`, which is the floor it is
+  defined on ([ADR-1263](DECISIONS.md)). ⚠️ **Read 2026-09-08: one class short, not untouched.**
+  Marketing and app clear all three budgeted metrics on two consecutive weekly reads; the
+  **operator** class is the only `⏳` left (LCP 3 / INP 2 / CLS 2 this week, 1 / 1 / 0 last).
 - ⚠️ **Sitemap `lastmod` for the dynamic sets.** ADR-930 stopped the sitemap fabricating
   timestamps, and the entries that had a real date keep it. Several dynamic sets could
   carry one but do not, because their list functions never project `updated_at`

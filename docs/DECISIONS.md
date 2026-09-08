@@ -36601,6 +36601,28 @@ So the row was true, and it was describing four paths as one thing when they are
 
 ⚠️ **The generalisable part: when a constraint pushes work out of one process, the fix is usually the same work one step later, not the same work somewhere heavier.** The row's own cheapest option was to close it as not worth doing, and its most tempting was an isolated decoding service. Both were reasoning about WHERE a decoder should live. The answer was that a decoder already existed, in the one process that was guaranteed to be holding the image, and the only thing missing was an id to point it at. Before building a place to do the work, check whether the thing that asked for the work can simply be asked again.
 
+## ADR-1261: the index hero's settings key is a decision of the map, so a dynamic route resolves against its section (2026-09-08)
+
+**Status.** Accepted. Closes `LIVE-117`, whose first slice was [ADR-1255](DECISIONS.md) (#2447, 17 static-route pages). Kernel change to `lib/layout/index-hero.ts` plus the shared prefix primitive in `lib/layout/content-cascade.ts`.
+
+**Context.** ADR-1255 adopted the shared hero band on the 17 `IndexTemplate` pages whose pathname is a literal, and deferred 7 with a dynamic segment on a stated rule: `resolveIndexHero`'s route argument was simultaneously the ladder's route, the `page_settings` key rung 1 reads, and the copy-cascade key rung 2 reads. For a literal pathname those are one string, which is why nothing had ever separated them. For `/spaces/<slug>/podcasts` they are not: rung 1 would read a per-URL key an operator can reach only one Space at a time, and there is no site-wide key at all.
+
+`detail-hero.ts` had already met this. `detailHeroDefaultsFor` returns the matched row's PREFIX as `section`, rung 2 reads `getPageHeaderImage(section, spaceId)` on that prefix rather than on the entity path, and an unmapped route (`section === null`) skips the read entirely. Its `spaceId` threads to both settings reads and to `resolveHeaderElement`, so a Space's override layer can answer instead of the root tenant; no caller passes one today.
+
+The seven were re-measured before any edit. All seven still composed `IndexTemplate` with no band. The photographed set was re-checked against them specifically, per ADR-1255's own finding that surfaces match by exact path: `coverageSurfaces()` is the 16 parsed `EDITABLE_PAGES` routes plus `/discover`, `/feed`, `/settings`, `/nearby`, `PW_ROOM_PATH`, `/spaces/<slug>/manage` and seven `/admin` routes, and the 20 committed baseline slugs agree. The intersection with these seven is empty, and it is empty by one segment twice over: `/spaces/<slug>/manage` is photographed and `/spaces/<slug>/manage/circles` is not; `/help` is not photographed at all. No baseline moves and no owner recapture run is owed.
+
+**Decision.**
+
+- **The settings key is its own function, and the MAP decides it.** `indexHeroKeyFor(route)` returns the row's prefix when the row says `keyOn: 'section'`, else the literal route. Rung 1 (`getPageHeaderImage`, and the focal point that must follow it to the same key) reads that; everything else still reads the route it was given. The default is `'route'`, so all 17 pages of the first slice resolve against the exact string they did on the day they adopted, and a test pins every one of them by name.
+- **Rung 2 is deliberately NOT re-keyed.** The copy cascade climbs a route's real ancestors, so `/help/<category>` already inherits `/help` and a tenant path already inherits `/spaces/<slug>`. Handing it a section key would cost it every rung in between and buy nothing.
+- **A `_` segment in a prefix matches any ONE route segment.** The wildcard lives in `longestPrefixRow`, the primitive both hero maps share, because the dynamic segment of the five Space tabs sits in the MIDDLE of the path and no leading prefix names the tab: the only literal row that matched them was `/spaces`, one row for five surfaces, which would also have swallowed `/spaces/directory`. `_` rather than `*` because `page-chrome.ts` already keys the Space CRM board's chrome override on `/spaces/_/crm` and `isSafeRoute` admits it. Specificity is prefix SEGMENT count, ties broken by fewer wildcards, so a literal row always wins at equal depth. No map in the repo carried a `_` before this change, so every existing table resolves exactly as it did.
+- **A pattern prefix is a matcher and never a key, and that is what the prefix key CANNOT express.** It can express one operator image standing behind every route in a section whose root is itself a page: `/help/<category>` reads what an operator set on `/help`. It cannot express one image behind every tenant's copy of a tab, because `page_settings` is an exact-match read whose only writer, the on-page Settings panel, keys on `usePathname()`. `/spaces/_/podcasts` would be a rung with no writer, which is the same dead rung as an upload that saves and never shows, only inverted. So the five tenant rows keep the literal pathname and each Space's operator sets their own band, which is also the right answer for a tenant surface. A map-level test fails any row that carries both a wildcard and a section key. For the same reason the index side grows no `spaceId` option to match the detail hero's: the panel passes no space, so an index read must stay on the root tenant to see what the panel actually wrote, and a parameter no writer can honour is that dead rung wearing a different name.
+- **Seven rows, no cover invented, and `inheritHero: false` on all five tenant rows.** Two existing rows gain `keyOn: 'section'`; five pattern rows join the map, four `short` (the owner-gated Journeys, Loom, Practices and Circles managers) and one `large` (the Shows catalog, the one publicly reachable and sitemap-advertised surface of the five). Every one carries `image: null`. They refuse an inherited hero because the cascade climbs a tenant path through `/spaces/<slug>` to `/spaces`, the site's own marketing page, and one brand's Space must never wear the house photo from a page about Spaces in general.
+
+**Consequences.** All 32 `IndexTemplate` render sites now resolve a hero band; the row's probe reads 0 and `LIVE-117` closes. Each of the seven pages stays a Server Component, keeps its right rail (`railFor` untouched), and gains one `await resolveIndexHero(path)` and one `{...hero}`. No image file is added, so `check:build-fanout`'s six-site-photo ceiling is unmoved, and no committed baseline moves. Pins: the 17 shipped routes each keying on their own pathname (a mutation that section-keys `/partners` turns two of them red), the two section-keyed children reading `/help` and `/discover/practices` with the focal point following the image to the same key, the cascade still receiving the literal route, the five tenant rows resolving per tab and refusing an inherited hero while a hero on the tab itself still wins, `/spaces/operating` and `/spaces/directory` untouched by the pattern rows, and the wildcard's own behaviour in `content-cascade.test.ts` including a `_`-free table resolving exactly as before.
+
+⚠️ **The generalisable part: when one argument is doing three jobs, the case that breaks it is the one you deferred.** The route string was the ladder's subject, the settings key and the cascade key at once, and nothing was wrong with that for 24 static pages; the seven dynamic ones were not a harder version of the same page, they were the measurement that the three jobs were different. The fix was to name the key separately and let the map answer it, and naming it immediately made the second question askable: WHICH keys can anything write? A resolver may read any string it likes, so a read-side design that never checks what the write side keys on will happily ship a rung that can never fire and look complete doing it.
+
 ## ADR-1255: the index hero adopts by slice, and "the baselines will move" is a claim you measure before you pay for it (2026-09-07)
 
 **Status.** Accepted. Advances `LIVE-117`, which stays open on the 7 dynamic-route pages. Settles the three questions [ADR-1127](DECISIONS.md) deferred into that row. Re-tests the row's premise first, per [ADR-1082](DECISIONS.md).
@@ -36768,6 +36790,241 @@ The failure is silent in both directions, which is what makes it a measurement p
 ⚠️ **This makes `pr-compare` stricter and it may come back red, which is the measurement rather than a setback.** The 21 surfaces ADR-1165 exposed are no longer in that set: they were baselines from 2026-08-21, and #2366 recaptured all 144 on 2026-09-05. Two commits have touched `app/globals.css` since, and several touched marketing and discover routes, so a newly-red capture cannot be ruled out from a container that cannot run the suite. When one appears, the reading is ADR-1165's: the threshold is right and the baseline is stale, so recapture (`e2e-manual.yml` with `update_baselines` AND `capture_shell`) after looking at what moved. Raising the number back above the drift restores exactly the blindness this closes.
 
 ⚠️ **The generalisable part: a threshold has a unit, and the unit has to match the thing it forgives.** Renderer noise is roughly constant per capture, because it is a property of the browser build. A ratio prices it as a share of the canvas. Those two only agree at one page height, and everywhere else the gate is over-tight on short pages and blind on tall ones, in proportion to how much there is to get wrong. The comment beside the setting was accurate about the intent for a year and still described an instrument that could not do the job. Before trusting a tolerance, ask what the smallest thing the gate must SEE costs in the gate's own units, and set the number under it.
+## ADR-1259: LIVE-123's builder changed underneath it, so the row gets a reader instead of a config flip (2026-09-08)
+
+**Status.** Accepted. Advances `LIVE-123`; the row stays **open**. No build configuration was changed — that is half the decision, and the reason is below.
+
+**Context — the measurement, taken before any theorising.** Twenty deployments went through between 2026-09-07 23:38Z and 2026-09-08 00:13Z. Every one was read from its own build log, because `LIVE-123`'s own finding is that a stalled build is invisible to the error group and DURATION is the instrument.
+
+| # | Deployment | Target | Commit | Compile | Page-data gap | Outcome |
+|---|---|---|---|---|---|---|
+| 1 | `8KYbk5m5` | preview | `3376a12` | 32.6s | **4s** | READY |
+| 2 | `BegxDwyU` | production | `57a4adf` | 13.6s | **4s** | READY |
+| 3 | `3RLdSSUS` | preview | `f576e7e` | 14.6s | **4s** | READY |
+| 4 | `BoMpn4p5` | preview | `23342c3` | 62s | **10s** | READY |
+| 5 | `8Z6ganqL` | preview | `37ded29` | 12.7s | **6s** | READY |
+| 6 | `HMpfD49Z` | production | `4eb1303` | 62s | **10s** | READY |
+| 7 | `8egQ7fpN` | production | `1e1e404` | 51s | **8s** | READY |
+| 8 | `FwCaPqti` | preview | `0e9b9a0` | 40s | **8s** | READY |
+| 9 | `JasSmx96` | preview | `12ca526` | 35.7s | **4s** | READY |
+| 10 | `4B1UPu6b` | preview | `277ca4c` | 14.3s | **4s** | READY |
+| 11 | `D4E92tNu` | production | `1b3f3cf` | 23.7s | **4s** | READY |
+| 12 | `6LxvEZZr` | preview | `f4f1644` | 13.1s | **5s** | READY |
+| 13 | `5bLbaMMQ` | production | `3b765d8` | 32.7s | **6s** | READY |
+| 14 | `bNXcpYAP` | preview | `a67f10c` | 26.9s | **4s** | READY |
+| 15 | `9a1uauT8` | preview | `2d5c14a` | 15.9s | **4s** | READY |
+| 16 | `9ZmUw4fG` | production | `188dfa8` | 22.0s | **7s** | READY |
+| 17 | `Gy2AiMdM` | preview | `91e8654` | 22.6s | **4s** | READY |
+| 18 | `9hKhVmCV` | preview | `95623cc` | 22.8s | **7s** | READY |
+| 19 | `Hi6uKJVA` | production | `59223c4` | 26.4s | **6s** | READY |
+| 20 | `BVporXDJ` | preview | `c1c1ecc` | 22.2s | **6s** | READY |
+
+**🔴 The finding is not in the outcome column, it is in the column the row never had.** All twenty ran on `Running build in Washington, D.C., USA (East) – iad1 (**Enhanced Build Machine**)` / `Build machine configuration: **8 cores, 16 GB**`, and page data ran with **7 workers**. `LIVE-123` is built on 4 cores, 8 GB and 3 workers, and every capture in its ledger was re-read from Vercel to confirm the machine each one actually ran on:
+
+| Capture | Deployment | Date | Machine |
+|---|---|---|---|
+| production stall | `7Dbat8eb` | 2026-08-25 | cle1, 4 cores, 8 GB |
+| preview stall | `6kWwu78A` | 2026-08-25 | cle1, 4 cores, 8 GB |
+| `BUILD_EXCEEDED_MAXIMUM_TIME` | `FL6voNiR` | 2026-08-29 | cle1, 4 cores, 8 GB |
+| `BUILD_EXCEEDED_MAXIMUM_TIME` | `AnGdPo5f` | 2026-08-29 | cle1, 4 cores, 8 GB |
+| capture D, the OOM | `9dC94yez` | 2026-09-01 23:52Z | cle1, 4 cores, 8 GB |
+| capture E | `HRQttjaD` | 2026-09-01 23:41Z | cle1, 4 cores, 8 GB |
+
+**Enhanced Builds was switched on between 2026-09-01 23:52Z and 2026-09-02 00:28Z** — bounded by `9dC94yez` (cle1, 4 cores, the OOM capture) and `FBgU5EB3` (iad1, Enhanced, 8 cores). Production had already been seen on an Enhanced machine at 2026-09-01 19:29Z (`4646RNG4`), so previews were the half that moved; the first Enhanced preview measured is `HD9wzK9K` at 2026-09-02 00:59Z. Sampled deployments on 2026-09-02, 09-05, 09-06 and 09-07 are all Enhanced. **That is exactly the remedy Vercel's own build system report named on capture D** — *"To expand your machine size to get additional memory and disk space, consider enabling Enhanced Builds"* — which the row recorded as an owner/billing decision it could not take. The owner took it within the hour, and nobody told the row.
+
+**What that does and does not settle.** It does NOT close the row. Twenty green builds on one night at a historical ~27% failure rate is a weak bound, the failure was always intermittent, and the row's own history contains a four-hour confident reading and two leads that died within a day. What it settles is narrower and still worth writing down: **the row's stated next step has already been performed**, so the row was, until today, proposing to raise a builder that was raised six days ago. It also quietly weakens the surviving cold-and-concurrent conjunction: page data now finishes in 4-10s, so two builds can barely be in that phase at once — no pair tonight was — which means tonight neither confirms nor refutes it, and cannot.
+
+**Decision.**
+
+- **Do NOT set `experimental.cpus`, and do not touch `vercel.json`.** The row proposed lowering the collector's worker count *or* raising the builder. The builder is raised, and the 7 in tonight's logs is Vercel's `modifyConfig` choosing for an 8-core machine — so pinning `experimental.cpus` now would *lower* concurrency on the machine class that is not showing the failure. That trades a slower build on every deploy for a failure nobody can currently reproduce, and it ships through a production deploy on a repo where a merge is a deploy ([`DEPLOY-SAFETY.md`](DEPLOY-SAFETY.md) rule 5). The row's own warning still governs: at an intermittent rate, one green build after a config change proves nothing, so the change and the reading of its rate belong together, and there is nothing to read yet.
+- **The row stays `open`, at P1, with `verify.kind: manual`.** The per-invocation bound is not established. A `cmd` probe here would have to pass on a quiet night, and a quiet night is precisely what [ADR-970](DECISIONS.md) warns reads as coverage without being coverage.
+- **Land the instrument instead: `scripts/read-build-log.mjs` (`pnpm read:build-log`).** Pure node, no dependencies, no network. It takes a saved build log and prints the machine line, the cache lineage and any `check:cache-budget` trim, every phase boundary, **the page-data gap**, the five `postbuild` gate lines, the build system report, and one verdict. `--baseline` prints the two populations above so a new reading has something to be compared against. The gate names it expects are read out of `package.json`'s `postbuild` rather than restated, because that list has drifted three times in prose.
+- **It is a READER, not a gate.** It never fails a build and is not wired into `postbuild`. It judges a LOG, and a log is not the artifact; a build-blocking gate that has never seen what it judges is this repo's own 2026-08-11 incident with the roles reversed.
+- **Its own fail-safe has a gate that notices it fired** ([`AGENTS.md`](../AGENTS.md), DEPLOY-SAFETY rule 6). Handed the wrong text — a runtime log, a tail-only excerpt, an empty file — a naive parser finds no stall, no OOM and no missing gate, and prints a clean bill of health for text it never read. The verdict has an `unrecognised` arm and an `incomplete` arm, and `scripts/read-build-log.test.ts` drives both, because SILENCE is this row's entire symptom and a reader that cannot tell "nothing wrong" from "nothing read" is worse than no reader at all.
+
+**Consequences.** The next stall is one command to characterise instead of a session of scrolling, and the characterisation lands beside a recorded band rather than a memory. `LIVE-123` carries the dated measurement, so the next reader starts from "the machine changed on 2026-09-02, and here is what healthy looks like on it" rather than from a description of hardware this project no longer runs on. Two incidental readings from tonight's production `postbuild` blocks, recorded because they were free and neither is this row's business: `check:cache-budget` predicted 1.37 GB against an `Uploading build cache [1.41 GB]` line, the estimate running ~3% LOW in the direction `LIVE-175` is watching; and `check:shell-weight` read 1027 KB across 22 chunks (73% of the 1400 KB ceiling), `check:build-budget` 6.12 GB across 458 functions, `check:og-trace` 20 rasterising plus 64 incidental of 100.
+
+⚠️ **The generalisable part: re-test the premise against the PLATFORM, not only the repo.** [ADR-1082](DECISIONS.md) established that a row's blocker is a claim with an expiry date, and this repo now reflexively re-measures a row's *code* premise before working it. This row's premise was not about code. It was about a machine — 4 cores, 8 GB, 3 workers — printed on line 2 of every single build log, and it expired six days before anyone looked. Six captures were filed with timestamps, cache ids, compile durations and commit ranges, and exactly one of them ever quoted the configuration line sitting above all of it. **When a row names an environment, the environment is part of the premise, and it is usually the cheapest half to re-read.**
+
+
+## ADR-1260: the eyebrow and display slices continue, and the shadow slice rule learns three preconditions before it ships anything (2026-09-08)
+
+**Status.** Accepted. Advances `HYG-055`. Continues [ADR-1256](DECISIONS.md) (the six ratchet decisions and the eyebrow slice rule) and amends the third of its three slice rules. Applies the cut-by-shape discipline of [ADR-1119](DECISIONS.md) and its correction [ADR-1124](DECISIONS.md) (the query lives in the repo). Enforced by `pnpm check:adoption` plus the `HYG-055` probe.
+
+**Context.** Re-measured on main first, per [ADR-1082](DECISIONS.md), and all three slice-bearing classes read exactly what ADR-1256 recorded: `handrolled-eyebrow` 550, `literal-display-type` 94, `shadow-literals` 50. The counts had not expired.
+
+Two of the three slices are pure continuations and needed no new decision. The third did not survive contact with its sites.
+
+**Decision.**
+
+1. **Eyebrow slices 2 and 3 ship, by the recorded rule.** `node scripts/eyebrow-bucket.mjs --tracking wider` reads 16 sites in 12 files and `--tracking widest` 16 in 12; the 17 sites in 14 files NOT import-reachable from a surface `test/e2e/visual.spec.ts` photographs took the composite `eyebrow` utility and kept their layout and colour tokens. 550 to 533.
+2. **The display-ladder slice ships its unwatched half.** 22 ladder elements over 48 sites, re-measured and unchanged; exactly one file carrying them is unwatched — `components/marketing/funnel/funnel-sections.tsx`, reached only from `app/for/[niche]` — and its 8 elements over 17 sites took the role covering their top step (`text-4xl sm:text-5xl lg:text-6xl` to `text-display-h1`, `text-4xl sm:text-5xl` to `text-display-h2`, `text-3xl sm:text-4xl` to `text-display-h3`), each keeping its own explicit `leading-*`. 94 to 77.
+3. **🔴 The shadow slice ships NOTHING, and that is the finding.** Its 17 chrome sites are 9 watched and 8 unwatched, and reading the 8 says none of them converts under the rule as ADR-1256 wrote it. The rule now carries three preconditions a site must meet before `shadow-*` may become a lift:
+   - **No coloured companion.** Four sites pair the literal with `shadow-primary/20` or `/25` (the two `/upgrade` CTAs, the two induction badges). `.lift-*` paints its own ink shadow, so a conversion swaps a brand glow for neutral depth — a design change wearing a rename's clothes.
+   - **No variant prefix.** One is `md:shadow-2xl` (the induction phone shell). `.lift-3` is a plain CSS class, not a Tailwind utility, so no breakpoint variant can reach it.
+   - **No transition the element depends on.** The last three are floating popovers — the host hovercard, the Space location typeahead, the info tip — whose `transition-[opacity,transform]` IS the affordance. `.lift-1/2/3` are UNLAYERED and set `transition` themselves, so a lift clobbers the fade, and `.lift-2:hover` adds 2px of travel under the cursor of a menu you are choosing from.
+4. **The slice targets stay where they are.** 484 / 46 / 33 are still the floors these rules reach; what changed is that no sweep can reach them from here.
+
+**Consequences.**
+
+- ⚠️ **All three classes are now blocked on the same one thing, and it is an owner action, not more agent work.** Everything between 533 and 484 (34 slice-1 leftovers + 15 from these two slices = 49 sites), and everything between 77 and 46 (14 ladder elements / 31 sites), and 9 of the 17 shadow chrome sites, sit on surfaces the visual suite photographs. A baseline recapture runs on a runner and is owner-dispatched, so a slice that would move one cannot self-certify. After ONE recapture, 49 + 31 sites convert mechanically and the instrument names them.
+- The membership of every slice stays re-derivable rather than listed in prose: `node scripts/eyebrow-bucket.mjs --tracking wider|widest` for the eyebrow class, and the ladder census is the class's own pattern grouped by class list.
+- `handrolled-eyebrow` 550 to 533 and `literal-display-type` 94 to 77, each re-frozen with its own reason. No floor was raised.
+- The 96 existing sites that already combine `lift-*` with a `transition-*` utility are worth a look by somebody: by the unlayered rule that made this decision, their transitions are being replaced today. Not touched here, and not a claim that any of them is visibly wrong — a lift's own `transition` covers `box-shadow` and `transform`, which is what most of those sites were animating anyway.
+
+⚠️ **The generalisable part: a slice rule is a hypothesis until you read the sites it names.** ADR-1256 read all 50 shadow sites and correctly split them by WHO CHOSE THE SHADOW — that half of the rule held. What it could not see from the census is that the destination utility has properties the source utility does not: a colour it overrides, a variant it cannot take, a `transition` it clobbers. Two of this row's three rules survived intact and one did not, and the cheap way to find out which is to cut the unwatched half first and try to write the diff.
+
+---
+## ADR-1262: a housing listing needs a city, so the form yields to the manifest and the Housing road routes (2026-09-08)
+
+**Status.** Accepted. Advances `HYG-053` and takes the smallest of the three rulings [ADR-1249](DECISIONS.md) left written on the `UNROUTED` lines. Does not touch the other two: `createSpacePracticeAction` still waits on the per-road scoped gate [ADR-1240](DECISIONS.md) deferred, and `saveDraft` still waits on whether a draft-status Event is a create.
+
+**Context.** The row's premise was re-measured on `main` (`02587021b`) before any work: `node scripts/check-creates.mjs` printed **16 of 19 entry points routed, 3 named in `UNROUTED`**. The row's title still said eighteen, which had expired the day ADR-1249 landed; the work had not.
+
+Housing's line named one disagreement, and it is a single field. `HOUSING_MANIFEST` (`lib/studio/entities/housing.ts`) declares `city` `required` — it is one of the eight questions its Spark asks, and the manifest's own comment lists those eight as what a member cannot post WITHOUT. `app/(main)/housing/new/housing-form.tsx` rendered the city input optional, and `createHousingListingAction` stored `null` when it came back empty. `checkCreateDraft` validates a draft against its manifest at propose and again at the moment of the write, so routing this road unchanged would have refused a post the road accepts today — the exact failure ADR-1249 refused to ship.
+
+Only one side can move, and both directions are real changes: drop `required` from the manifest, or ask for the city on the form.
+
+**Decision.**
+
+- **The manifest wins, and the form asks for a city.** Four things point the same way, and none of them is a preference. (1) The manifest is the single source for an entity's fields ([ADR-986](DECISIONS.md)); the form is the hand-rolled surface that predates it, so this is drift being closed rather than a contract being loosened. (2) The Spark already asks for the city and has since it was written, so the two creation roads disagreed with each other, not only with the manifest. (3) The area geocode in `createHousingListingAction` ([ADR-861](DECISIONS.md)) has nothing to place without a city or a neighbourhood, so a cityless housing listing has a NULL geocell and is permanently unfindable by area on a board whose whole job is "near me". (4) `addressPrecision` defaults to `'city'`: the coarsest thing a listing will ever show was the one field it was allowed to omit.
+- **Both housing actions enforce it server-side, ahead of the layer.** `required` on the input is a client courtesy; the rule lives in `createHousingListingAction` and in `updateHousingListingAction`, which states in its own docstring that it mirrors create field for field. A save that would blank an existing listing's city is refused for the same reason a create with none is.
+- **The road routes through `proposeAndConfirmCreate` (ADR-1249's wrapper), and nothing else about it changes.** `entity: 'housing'`, a draft keyed by the manifest's own field paths, and `commit` calling `createListing` with exactly the input it had before; the housing extension row still follows the base row. Housing's gate is `scoped` in `CREATE_GATES` — signed in with a profile is the whole of it — so the layer records which gate holds the line and does not become a second one, and the redirect at the top of the action is still that gate.
+- **The road keeps the error surface it had, which is none.** This action returns `void` and returned silently on a failed write before this change. Every refusal the layer can reach here (signed out, no title, no city) is answered ahead of it, so routing took no message away from anybody. Giving this form a real error surface is a separate change and is not smuggled in here.
+- **The consequence is tested, not the title.** `scripts/check-creates.test.ts` asserts the routed key positively (so a road that quietly stops calling the layer fails before it can be re-listed), caps `UNROUTED` at **2**, and asserts the city rule in all three places that must agree: both actions and the shared form. The gate's own run is the second reading: 17 of 19 routed, 2 named.
+
+**Consequences.** `UNROUTED` reads **2**, from 18 on 2026-08-11 and 3 on 2026-09-07. Every housing listing a member posts now lands in `agent_actions` under `studio_create` with the derived caller and the gate in its payload, which before this change none of them did.
+
+⚠️ **A housing listing created before today with no city cannot be saved from the edit form until one is typed.** The compose and edit surfaces are the same component, so the rule reaches both. That is the shape of the ruling rather than a side effect of it: the decision is about what a housing listing IS, not about when it was made. The ask is one field, on a form the member is already editing.
+
+⚠️ **The generalisable part: "the form and the manifest disagree" is not a blocker, it is an unmade decision wearing a blocker's clothes.** This line sat in `UNROUTED` for 28 days reading as work, and the work was ten lines; what it actually needed was somebody to say which of the two was right. When an allowlist entry names a disagreement between two parts of the repo, the expensive part is the ruling and the cheap part is the code, so read the entry for which one it is before budgeting the row — and write the ruling down, because the next reader will otherwise re-derive it from scratch.
+## ADR-1266: the capture workflow reads the operator ratchet too, because a warning nothing can fail on is a warning (2026-09-08)
+
+**Status.** Accepted. Advances `HYG-027` (half two; half one closed in [ADR-1239](DECISIONS.md)). Extends [ADR-1128](DECISIONS.md) (the seven operator surfaces) and completes the two opt-in ratchets `requiredFailure()` introduced. Re-measures the row's premise per [ADR-1082](DECISIONS.md). Enforced by `test/e2e/shell-coverage.test.ts` on every PR, plus the `HYG-027` probe.
+
+**Context.** `HYG-027` said the `PW_MEMBER_EMAIL` e2e account "may not" clear the `/admin` role floor, and every reading of it so far was an inference from absence: no `admin*` PNG exists, so no capture ever cleared it. [ADR-1239](DECISIONS.md) taught `pnpm e2e:session` to probe `/admin` with the minted cookies and say so before any suite runs; this is that probe's first reading in anger. `e2e-manual.yml` is a `workflow_dispatch`, its logs are readable through the API, and run **34174895830** (2026-09-08, `base_url=https://frequencylocal.com`, `capture_shell` on) answers the question three times over:
+
+- the mint step, before any suite ran — `*** is signed in but is NOT platform staff: /admin redirected to /feed, which is requireAdminFloor()'s denial target`;
+- all 21 operator `@a11y` contexts reported as skipped, inside `140 skipped / 166 passed`;
+- the reporter — `⚠️ App shell covered; the OPERATOR CONSOLE was not looked at. 7 /admin surface(s) bounced off the role floor`, followed by an `::error` naming every route.
+
+The premise did not expire. It hardened: the account is confirmed non-staff against production, and the fix is still the one grant the row has named since it was filed.
+
+**Decision.** The finding is not the account — it is the fourth line of that log, which nobody had reason to look for: **the `smoke` job concluded SUCCESS.** Every warning the design intends, printed, over a green check.
+
+That is not a defect in the reporter. `requiredFailure()` (`test/e2e/shell-coverage.ts`) already turns a denied console into a failure under `PW_REQUIRE_OPERATOR`, and `shell-coverage.test.ts` already proved both directions of it without a Playwright run. The defect was one level up: **`e2e-manual.yml` read neither `PW_REQUIRE_SHELL` nor `PW_REQUIRE_OPERATOR`, while `e2e.yml` read both.** So the owner action the row asks for was half a switch. Setting the variable would have turned the PR gate red and left the CAPTURE path — the very dispatch the row asks the owner to make, to take the operator baselines — green over a capture that photographed none of them, which is exactly the "commits the member-shell PNGs and silently no operator ones" failure that workflow's own header warns a human to catch by reading the summary.
+
+1. **All four suite-running steps in `e2e-manual.yml` read both ratchets** (`smoke`, `update-baselines`, `update-a11y`, `visual`), from either the Variables or the Secrets tab, for the reason `e2e.yml` already gives. One repo variable now covers both paths.
+2. **Gated on `capture_shell`.** A marketing-only dispatch asks for neither half, and `PW_REQUIRE_SHELL` fires on a `partial` verdict — which is precisely what a sessionless run produces. A ratchet that goes red on a run that never wanted the shell is the red-X-that-means-nothing this file's own header refuses to ship.
+3. **`shell-coverage.test.ts` reads the workflow SOURCE and fails if any of those steps stops passing them.** It fails on the shape rather than on a CI run it would have to dispatch to observe, and it carries a positive control: on the pre-change tree two of its assertions go red, watched.
+4. **The `HYG-027` probe measures three consequences, not one.** The operator contexts are still enumerated in the a11y ratchet (a regression arm, guarding what ADR-1239 closed); the capture workflow can still be made red by the variable; and no `admin*` PNG exists yet — the arm the owner closes. All three were observed firing.
+
+**Consequences.**
+
+- The row is now narrowed to exactly what remains, and its title no longer claims the a11y half is missing. Three owner steps, in order: grant `web_role` `janitor` (production holds two janitors and zero `admin`s, so `janitor` is the role that exists); dispatch `capture_shell + update_baselines` for the 28 operator PNGs and `capture_shell + update_a11y` for the 21 real a11y counts; set `PW_REQUIRE_OPERATOR=1`.
+- ⚠️ **After the grant, the first `update_a11y` dispatch measures 21 contexts that are currently written down as 0.** A rise is the debt list and it is FIXED or WAIVED, never raised: the merge step never passes `--force` and `LIVE-023` holds the file at zero ceiling objects. A capture with debt fails at the merge with the numbers in the log — by design, and now on a path that can actually fail.
+- Nothing changes for any dispatch made today. With the variables unset — which is what the owner steps above assume — all four steps receive an empty string and behave exactly as they did; `flagOn()` also reads `0` and `false` as off, so a variable can be parked rather than deleted.
+
+⚠️ **The generalisable part: "every fail-safe needs a gate that notices it fired" has a second half — the gate must be REACHABLE from every path that can fire the fail-safe.** This repo built the gate, unit-tested both of its directions, and wired it into one of the two workflows that can trip it. Everything about that reads as done: the pure function is right, the tests are honest, the annotation is loud. What no test could see is that the *capture* path — the more dangerous one, because it commits — never passed the argument. A guard proven at the function boundary is not proven at the process boundary, and the cheapest way to find the gap is to read a real run's conclusion, not its output.
+## ADR-1269: "owner-dispatched" was never true, and it spread to four rows because it was cited rather than measured (2026-09-08)
+
+**Status.** Accepted. A measurement pass over the owner-gated rows of `docs/BUILD-BACKLOG.json`, in the shape ADR-1082 prescribes. No product work; nine rows corrected, two `ownerAction` fields dropped, eleven premises confirmed with a dated line.
+
+**Context.** 31 rows carry an `ownerAction` (ruling / account / config / content) or say in prose that only the owner can settle them. Each was re-measured against a primary source on today's tree, database, workflow logs and production. Twenty premises held exactly. Nine had moved, and **four of the nine were the same sentence**.
+
+**The finding.** `LIVE-040`, `LIVE-114`, `HYG-055` and `LIVE-186` each said a visual-baseline recapture is *"an owner-dispatched `e2e-manual.yml` run"*. `.github/workflows/e2e-manual.yml` declares `workflow_dispatch:` at line 117. Run [34174895830](https://github.com/hellofrequencylab/frequency-web/actions/runs/34174895830) was dispatched by an agent against production at 2026-09-08 00:55Z with `update_baselines + capture_shell`; the member session minted, `update-baselines` succeeded, and the job committed baselines to its branch. Nobody had tested the claim, and it cost one tool call.
+
+🔴 **The propagation is the part worth an ADR, not the error.** One row did not get this wrong four times. It got it wrong once and the other three cited it: `LIVE-040` says *"it shares its blocker with LIVE-186"*, `LIVE-114` says *"gated on the same owner-dispatched baseline recapture as LIVE-040 and LIVE-186"*, `HYG-055` restates it as its own `⏳ OWNER ACTION`. Each of those sentences reads as corroboration and is actually a copy. **A blocker cited from a sibling row has been asserted twice and measured zero times**, and the ledger's own cross-references made the claim look better evidenced the more it spread.
+
+**Decision.**
+
+1. **A blocker claim names the artifact that would settle it, or it is not a blocker.** "The owner must dispatch it" is a claim about a mechanism — a workflow trigger, an API, a console page — and mechanisms are readable. Write the artifact into the row (`e2e-manual.yml`'s `on:` block; the Healthchecks project page; the Stripe webhooks list) so the next reader can check it instead of inheriting it.
+2. **Never inherit a blocker across rows.** Citing a sibling for the *finding* is good practice and stays. Citing a sibling for the *blocker* is forbidden: re-measure it on the row you are working, even when the sibling was measured last week.
+3. **When a blocker turns out to be false, sweep the phrase, not the row.** `grep` the backlog for the sentence and fix every carrier in the same change. Fixing one leaves three rows that will re-teach the wrong thing.
+
+**What this did NOT establish, and the discipline that says so.** `OWN-059` already wrote the rule this sweep had to obey, in its own detail: *"a premise sweep that finds the STATED blocker expired has established only that the stated blocker expired. It has not established that the work is unblocked."* `HYG-027` is the control that proves the discipline pays. Its owner ask had three steps, and step (2) was the same dispatch sentence — expired. But the run that disproved step (2) *also measured step (1)*, and step (1) held, in the reporter this repo built for exactly that purpose:
+
+> ⚠️ App shell covered; the OPERATOR CONSOLE was not looked at.
+> 7 /admin surface(s) bounced off the role floor … the account behind `PW_MEMBER_EMAIL` is signed in but is not platform staff.
+
+An instrument that names its own blind spot in a log turned an unfalsifiable owner ask into a two-step one with evidence. That is the return on the rule that a gate which cannot fire honestly gets routed around and then reads as coverage: this one fired, in a log, and named itself.
+
+**Also corrected in this pass**, each against its own primary source: `LIVE-165` (the code half was said to be waiting on a branch; it landed on main in #2386 the day before that note was written), `LIVE-208` (measured on production, a `notFound()` inside a matching route segment answers a real 404 with `noindex` — the 200-and-indexable claim is the catch-all's alone), `LIVE-114`'s count (13 → **14**, drifted while the prose stated it), `OWN-011`'s clock (63 → **77** days since a 72-hour review), `SCAN-205`'s traffic figure (12/18 → **14/21** over the same 31-day window), and `OWN-005`, whose own "Revisit ~2026-09-08" deferral expires on the date this was written.
+
+⚪ **A note on instruments, since two rows now price themselves on traffic.** `SCAN-205` re-prices against Vercel Web Analytics (14 visitors / 21 pageviews in 31 days). That is one instrument, and it is not the only one the product has. Before any further row is priced on "nobody is visiting", say which counter is being read and why it is the right one — the failure ADR-1082 recorded on `OWN-011`, where the wrong meter overstated a cap by 33x, is the same failure in a different direction.
+
+---
+## ADR-1264: a wholesale baseline recapture is a laundering risk, so it is taken apart before it is taken (2026-09-08)
+
+**Context.** `LIVE-186` had four stale visual baselines and a recorded blocker: the recapture is "an owner-dispatched `e2e-manual.yml` run". That premise was tested rather than accepted, and it had expired — `e2e-manual.yml` is a `workflow_dispatch`, so run `34174895830` was dispatched against production with `update_baselines + capture_shell`. It succeeded, minted a member session, and committed **142 changed PNGs** to the branch: every committed baseline the suite holds, for a row that names four files.
+
+**Decision.** Take the four and leave the 138, on a measurement rather than on caution.
+
+Both halves were compared against `origin/main` before anything was committed:
+
+| | files | dimensions | differing pixels |
+|---|---|---|---|
+| This row's surface | 4 | **moved** (mobile 2859 → 2765, desktop 1985 → 1972) | n/a — a dimension mismatch aborts the compare |
+| Everything else | 138 | **byte-identical** | **15,000 – 26,543 each**, worst `app-nearby` desktop |
+
+The 138 were measured with pixelmatch's own YIQ colour delta at Playwright's configured `threshold` (0.2), anti-alias detection omitted so every figure is an **upper bound**. All 138 clear [ADR-1258](DECISIONS.md)'s 400 px budget, by up to 66x.
+
+**The dimensions are the whole argument.** A full-page capture of a page whose content changed moves its *height*. Not one of the 138 moved a single pixel in height while 15,000+ pixels inside it changed. Content does not do that; a different rasteriser does. So the 138 are [ADR-1165](DECISIONS.md)'s cross-runner divergence, and committing them under this row would have written a 138-surface rendering difference into the baselines with nothing to notice it later. They are filed as `LIVE-212`, which is where they belong, because they qualify the *budget* rather than this row's recapture.
+
+**Consequences.** `LIVE-186` gets today's four checks comparable again — they were aborting on a dimension mismatch, which reports nothing at all — and it does **not** close, because the run also refuted one of its own three options. `pr-compare` read this surface at 390x3017 at 16:21Z on 2026-09-07; this capture read it at 390x2765 at 00:56Z on 2026-09-08. **252 px in eight hours, same production, no deploy touching the route.** Option (c), "keep recapturing on a schedule", cannot hold a baseline that drifts that fast, so the ruling narrows from three options to two and stays the owner's.
+
+⚠️ **The generalisable part: a capture job's output is evidence, not a result.** `update_baselines` is a job that overwrites the thing the gate compares against, which makes it the one job in this repo that can turn a regression green by succeeding. Its exit code says the browser ran; it says nothing about what it wrote. This one exited 0 and rewrote 138 surfaces nobody asked it to. **Diff a capture before committing it, and split the diff by whether each file changed the way the row predicted** — here, four files that were supposed to move dimensions did, and 138 that were supposed not to change at all changed by five figures each. Both halves of that sentence were needed; either alone would have read as success.
+
+## ADR-1265: the Space console photographs its first screen, because a full-page shot of live data measures the clock (2026-09-08)
+
+**Context.** `app-space-console` is a fullPage visual baseline of `/spaces/<slug>/manage`, whose body is a card list that grows as the account's Space gains content. It went 158 px stale in three weeks ([SCAN-507](BUILD-BACKLOG.json)), was recaptured, and went stale again. `LIVE-186` put three options to the owner: (a) mark it `viewportOnly`, (b) seed a fixture Space, (c) keep recapturing on a schedule.
+
+**What settled it was a measurement, not a preference.** `pr-compare` read the surface at 390x3017 at 16:21Z on 2026-09-07. A capture dispatched at 00:56Z on 2026-09-08 read 390x2765 — **252 px in eight hours**, against the same production, with no deploy touching the route. Option (c) requires a recapture cadence faster than the drift, and no cadence is faster than that. It was eliminated by arithmetic rather than by taste.
+
+**Decision (owner ruling, 2026-09-08).** Option (a). `app-space-console` carries `viewportOnly: true`.
+
+`visual.spec.ts` already prescribed this for exactly this shape — its own note on `Surface.viewportOnly` says a full-page baseline of a live, shared stream "measures WHEN it was taken, not how it looks". The surface matched that description and was not marked. `/feed` was already marked for the same reason, so this is the existing rule reaching the second surface it always covered.
+
+**Consequences.** The four checks stop failing on a dimension mismatch, which reported nothing at all — a mismatch aborts the comparison before any pixel is examined, so the surface has been *unmeasured* rather than *failing* for three weeks. `baseline-distinctness.test.ts` enforces the new shape immediately and precisely: it demanded exactly 800 px (desktop) and 844 px (mobile) the moment the flag landed, against baselines of 1972 and 2765, so the flag cannot be set without the matching capture.
+
+⚠️ **The cost is real and is stated rather than hidden: below-fold coverage on this one surface is gone.** Anything under the first screen of the Space console is now unwatched by the visual suite. That is the price of the ruling, and option (b) — a seeded fixture Space — remains the way to buy it back if the console's lower half ever earns a camera.
+
+⚪ **The generalisable part.** A gate whose input is live production data is not measuring the product; it is measuring the product *and* the clock, and the clock always wins eventually. Before adding a full-page baseline, ask whether the page's height is a property of the CODE or of the DATA. If it is data, the capture belongs at viewport height, or behind a fixture — never on a recapture chore, which is a promise to lose a race.
+## ADR-1263: an instrument held on a number records that number beside the constant it governs, not in the backlog row that noticed it (2026-09-08)
+
+**Status.** Accepted. Closes `HYG-061`. Amends nothing; it gives [ADR-922](DECISIONS.md)'s three deferred instruments a home that a gate can read, and it is the reason `docs/ANALYTICS.md § Instruments held until there is traffic` now names a constant per row.
+
+**Context.** Three instruments in `UX-MATURITY-PLAN` are designed and deliberately unbuilt, each waiting on volume rather than on a decision: the vitals ratchet (the [ADR-928](DECISIONS.md) shape applied to live field p75), the collector's `SAMPLE_RATE` drop, and consent-gated session-replay lite. `HYG-061` was filed on 2026-09-06 because no row owned any of them, and it said so in its own detail: *"the row is the place the thresholds live."*
+
+Re-measuring the premise on 2026-09-08 found it half expired, in both directions.
+
+| The row said | What the tree said |
+|---|---|
+| the thresholds are recorded nowhere a reader would look | ⚠️ **Half wrong.** #2385 tabled all three in `ANALYTICS.md` on the day the row was filed, and `UX-MATURITY-PLAN` cites that section from three places. The gap was never the docs — it was the CODE, where nobody had written the number beside the constant |
+| the collector needs a `SAMPLE_RATE` drop **and** a `viewport_class` dimension | ⚠️ **Half done.** `viewport_class` already ships on the beacon (`props.vp`), so only the rate half was open |
+| traffic is well below every threshold (six visitors in three months) | ⚠️ **Stale for one of the three.** 398 measured page loads over 7 days (~57/day, 0.6% of 10k) and 5 weekly active members (0.5% of 1k) — but the **ratchet trigger is one class short**, not untouched |
+
+That last reading is the one worth keeping. The ratchet's trigger is "every budget class scores all three budgeted metrics — no `⏳` cell, each clearing `MIN_SAMPLES` — on two consecutive weekly reads". Scored with the repo's own `budgetClassFor` over the last fourteen days:
+
+| Budget class | Week to 2026-09-01 (LCP / INP / CLS) | Week to 2026-09-08 | Verdict |
+|---|---|---|---|
+| marketing | 82 / 61 / 55 | 65 / 39 / 46 | ✅ clears in both |
+| app | 23 / 18 / 17 | 17 / 12 / 5 | ✅ clears in both |
+| operator | 1 / 1 / 0 | 3 / 2 / 2 | ⏳ the only class still unscored |
+
+**Decision.** A threshold that releases a deferred instrument is recorded in the comment block **directly above the constant it governs**, and the backlog probe measures that adjacency rather than trusting it.
+
+- `SAMPLE_RATE` in `lib/analytics/vitals.ts` — `1` during beta, `0.25` past ~10,000 page loads a day, **and no third value**.
+- `MIN_SAMPLES` in `lib/analytics/vitals-budgets.ts` — the per-cell floor of 5 loads IS the ratchet's trigger, together with the two-consecutive-weekly-reads clause.
+- `HealthSummary.weeklyActive` in `lib/dashboard/scores.ts` — session-replay lite is revisited past 1,000 WAM, and the default answer stays no new vendor.
+
+`HYG-061`'s probe moves from `manual` to a pure-node `cmd`. It reads each live constant and the contiguous comment run above it, fails if the two disagree, fails if the note is moved away from the declaration, and fails if `ANALYTICS.md` stops naming the same numbers. For session-replay it also fails on the consequence of the deferral ending: a replay vendor in `package.json`, or Sentry replay switched on in `instrumentation-client.ts`, while the note still reads as held. Fourteen mutation arms were run against it and all fourteen fired; the one legitimate change — dropping `SAMPLE_RATE` to the recorded `0.25` — correctly passed.
+
+**Consequences.** The row closes, and the three instruments are carried by the numbers in code plus the `ANALYTICS.md` table instead of by a backlog row that has to be re-read to be useful. An engineer who moves `MIN_SAMPLES` from 5 to 8 is told, by CI, that they have moved the ratchet's trigger and left its description behind — which is the failure the old arrangement could not detect, because prose and constant lived in different files and nothing compared them.
+
+⚠️ **The operator class is the actionable finding, and it is not a code change.** One class stands between the readout and a real ratchet, on the surfaces the team uses most. It is also the class most easily moved by ordinary work rather than by marketing traffic, so re-read the table before assuming the ratchet is still years away.
+
+⚠️ **The generalisable part: a deferral is a decision with an expiry date, and the expiry belongs where the work happens.** `HYG-061` was filed to give three thresholds an owner and it was already half wrong on the day it was written — not through carelessness, but because a row records what was true when someone looked, and nothing re-looks. A number written beside the constant it governs is re-read by everyone who touches that constant, and a probe that compares the two makes the re-reading compulsory. That is the same trade the adoption ratchet already makes: the machine-readable state beats prose, and the way to keep prose honest is to bind it to something a machine can measure.
 ## ADR-1234: SUPPORT_CHAT loses its fallback, and the second step of a rename is gated on a value no agent can read (2026-09-07)
 
 **Status.** Accepted. Closes LIVE-165. Completes the two-step rename whose first step shipped on 2026-09-06.

@@ -158,6 +158,27 @@ follow-up someone has to remember.
 Below its threshold, each instrument would report noise, and a gate that reports noise is the
 thing four ADRs in this repo warn about: it gets muted, and then it reads as coverage.
 
+**Each threshold is also recorded beside the constant it governs, and that adjacency is gated**
+([ADR-1263](DECISIONS.md), 2026-09-08). A table a reader has to already know about is not where an
+engineer stands when they change one of these numbers, so the number now sits in the comment block
+directly above the code, and `pnpm check:backlog` fails if it drifts from the live value or goes
+missing:
+
+| Instrument | The constant it is recorded beside |
+|---|---|
+| Vitals ratchet | `MIN_SAMPLES` in [`lib/analytics/vitals-budgets.ts`](../lib/analytics/vitals-budgets.ts) — the per-cell floor of 5 loads IS the trigger |
+| Collector sample rate | `SAMPLE_RATE` in [`lib/analytics/vitals.ts`](../lib/analytics/vitals.ts) — 1 during beta, 0.25 past the threshold, and no third value |
+| Session-replay lite | `weeklyActive` on `HealthSummary` in [`lib/dashboard/scores.ts`](../lib/dashboard/scores.ts) — the WAM number that crosses 1k |
+
+**Where the readings stood on 2026-09-08**, measured against the three triggers rather than assumed
+(the first re-measurement since the instruments were tabled):
+
+| Instrument | Trigger | Reading | Distance |
+|---|---|---|---|
+| Vitals ratchet | every budget class scores all three metrics, two weeks running | marketing ✅ and app ✅ clear the 5-load floor in both weeks; **operator** is ⏳ on all three (LCP 3 / INP 2 / CLS 2 this week, 1 / 1 / 0 last) | ⚠️ **one class short** — closer than "no traffic", and the operator class is the one a synthetic visit could move, so read it before assuming |
+| Collector sample rate | ~10k page loads / day | 398 measured loads over 7 days, ~57/day | 🔴 0.6% of the threshold |
+| Session-replay lite | >1k weekly active members | 5 members with an interaction in the last 7 days | 🔴 0.5% of the threshold |
+
 ## Event taxonomy (canonical)
 
 Every key action in the member journey emits a named event. Initial set:
