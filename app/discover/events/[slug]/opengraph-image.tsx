@@ -1,7 +1,7 @@
 import { getPublicEventBySlug } from '@/lib/discover'
 import { getEventEnrichment } from '../_data'
 import { SITE_NAME } from '@/lib/site'
-import { cardResponse } from '@/lib/og/deliver'
+import { eventCardResponse } from '@/lib/og/event-card'
 import { OG_CONTENT_TYPE } from '@/lib/og/content-type'
 
 export const runtime = 'nodejs'
@@ -12,18 +12,48 @@ export const size = { width: 1200, height: 630 }
 // cache headers (lib/og/deliver.ts).
 export const contentType = OG_CONTENT_TYPE
 
-// Per-event dynamic OG image (BUILD-LIST P3) — the share card for
-// /discover/events/[slug] and the `image` in the Event JSON-LD. Same privacy
-// rules as the page: title, date, city, hosting circle — never the venue or the
-// members-only join link. Brand-styled with plain CSS (Satori); no remote font
-// fetch so this can never slow or fail a crawl — the built-in font carries it.
+// 🔴 RENDERED ON DEMAND, NOT AT BUILD, AND THAT IS THE POINT OF ADR-1257 — do not delete this line
+// to "make the card faster". `page.tsx` beside this file prerenders ~200 upcoming slugs through
+// `generateStaticParams`, and a metadata image route inherits that set, so before this change every
+// one of those slugs rasterised a FLAT TEXT card during `next build`. Leading with the cover makes
+// each of those a photographic raster plus a remote image fetch, and the cost was measured rather
+// than argued (2026-09-07, this repo's own pipeline: next/og + sharp q85, 1200x630):
+//
+//     flat text card    ~88 ms/card    26 KB jpeg
+//     cover-led card   ~360 ms/card   139 KB jpeg    steady-state RSS ~400 MB per worker
+//
+// That is ~+310 ms of raster per slug BEFORE the remote fetch, ~200 slugs, across 3 prerender
+// workers on a 4-core / 8 GB builder that already renders ~330 routes — and `LIVE-123` is an OPEN
+// row about builds stalling in "Collecting page data" whose leading untested hypothesis is memory
+// pressure. Paying that at build time buys nothing a crawler can perceive: `lib/og/deliver.ts` sets
+// `s-maxage=86400, stale-while-revalidate=604800`, so the FIRST fetch of a given card renders it
+// and every fetch after that is a CDN hit for a day, with a week of instant stale hits behind it.
+// The member twin at /events/<slug> has always rendered this way, on the same events.
+export const dynamic = 'force-dynamic'
+
+// Per-event dynamic OG image (BUILD-LIST P3) — the share card for /discover/events/[slug] and the
+// `image` in the Event JSON-LD. It leads with the event's COVER when there is one and falls back to
+// the brand text card when there is not; the layout is the one in lib/og/event-card.tsx, shared with
+// the member card at /events/<slug> so the two can never drift (ADR-1179 is what a second copy
+// costs). No remote FONT fetch on either branch — the built-in font carries the text card and the
+// committed Nunito faces carry the poster card (lib/og/load-nunito.ts).
+//
+// 🔴 PRIVACY: THIS IS THE PUBLIC SURFACE AND IT GETS TIER 1 ONLY. The member card resolves three
+// artwork sources through lib/events/hero-url.ts, two of which live in the PRIVATE poster bucket.
+// Those must never reach this card: a scanned flyer routinely carries the venue's street address,
+// which this surface deliberately redacts to city level (ADR-186), and the private bucket is not
+// anon-readable in the first place. The cover here is `cover_url` from the enrichment — the public
+// `event-media` bucket, built with `getPublicUrl` on the ANON client, so RLS is the gate (LIVE-133).
+// Same rule for the strings: title, date, city, hosting circle. Never the venue, never the
+// members-only join link.
 
 export default async function Image({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
   // `.catch(() => null)` mirrors the circles OG card, which has always guarded its read, and the
-  // asymmetry mattered: getPublicEventBySlug is a detailRead, so it THROWS, and this route is
+  // asymmetry mattered: getPublicEventBySlug is a detailRead, so it THROWS, and this route was
   // prerendered for the same ~200 slugs as the page. A share card that already renders a branded
   // fallback for a missing event must not be the thing that ends a production export (LIVE-084).
+  // Still true now that the route renders on demand: a throw here is a 500 in front of a crawler.
   //
   // The PAGE deliberately keeps throwing: there, swallowing a read failure would answer a crawler
   // with a genuine 404 on a sitemapped URL and de-index it. An OG image has no such consequence.
@@ -54,76 +84,17 @@ export default async function Image({ params }: { params: Promise<{ slug: string
         ? 'In person + online'
         : null
 
-  // Visual language of the site OG image (app/opengraph-image.tsx): near-black
-  // ground, the indigo brand bar (#6366f1 — Satori has no access to the CSS
-  // token system, so the literal mirrors the root image), white display type.
-  return cardResponse(
-    (
-      <div
-        style={{
-          width: '100%',
-          height: '100%',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'space-between',
-          padding: 72,
-          backgroundImage: 'linear-gradient(180deg, rgba(13,13,18,1) 0%, rgba(23,21,38,1) 100%)',
-          color: '#ffffff',
-          fontFamily: 'sans-serif',
-        }}
-      >
-        <div style={{ display: 'flex', fontSize: 28, fontWeight: 700, letterSpacing: '0.32em', color: 'rgba(255,255,255,0.85)' }}>
-          {SITE_NAME.toUpperCase()}
-        </div>
-
-        <div style={{ display: 'flex', flexDirection: 'column' }}>
-          {chip && (
-            <div
-              style={{
-                display: 'flex',
-                alignSelf: 'flex-start',
-                marginBottom: 20,
-                padding: '8px 18px',
-                borderRadius: 9999,
-                fontSize: 24,
-                fontWeight: 700,
-                letterSpacing: '0.04em',
-                // Cancelled reads in a muted warning tone; format flags ride the
-                // indigo brand surface. Literals mirror the root OG image (Satori
-                // has no access to the CSS token system).
-                color: enrichment?.is_cancelled ? '#fca5a5' : '#c7d2fe',
-                backgroundColor: enrichment?.is_cancelled
-                  ? 'rgba(248,113,113,0.16)'
-                  : 'rgba(99,102,241,0.22)',
-              }}
-            >
-              {chip}
-            </div>
-          )}
-          <div style={{ width: 84, height: 8, borderRadius: 9999, backgroundColor: '#6366f1', marginBottom: 28 }} />
-          <div
-            style={{
-              display: 'flex',
-              fontSize: title.length > 60 ? 52 : 68,
-              fontWeight: 800,
-              lineHeight: 1.12,
-              letterSpacing: '-0.02em',
-              maxWidth: 1000,
-            }}
-          >
-            {title.length > 110 ? `${title.slice(0, 107)}…` : title}
-          </div>
-          <div style={{ display: 'flex', gap: 24, fontSize: 30, marginTop: 22, color: 'rgba(255,255,255,0.9)', flexWrap: 'wrap' }}>
-            {when && <span>{when}</span>}
-            {where && <span>· {where}</span>}
-          </div>
-        </div>
-
-        <div style={{ display: 'flex', fontSize: 26, color: 'rgba(255,255,255,0.72)' }}>
-          {circle ? `Hosted by ${circle}` : 'A community gathering'}
-        </div>
-      </div>
-    ),
-    size,
-  )
+  return eventCardResponse({
+    title,
+    when,
+    where,
+    // The text card falls back to "A community gathering" on its own.
+    hostLine: circle ? `Hosted by ${circle}` : null,
+    chip,
+    isCancelled: Boolean(enrichment?.is_cancelled),
+    // ⚠️ Gated on `event`, not on the cover alone. When the RPC read found nothing this card is the
+    // identity-free fallback, and an identity-free card must not carry the entity's artwork either.
+    coverUrl: event ? enrichment?.cover_url : null,
+    coverFocus: enrichment?.cover_focus,
+  })
 }
