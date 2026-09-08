@@ -104,6 +104,10 @@ export function EdgePill({
       onClick={handleClick}
       aria-label={ariaLabel}
       aria-haspopup="dialog"
+      // The visual suite paints over this tab (test/e2e/surfaces.ts, VISUAL_MASK_SITES): its
+      // badge count and its label ("3 chores") are live data, and the tab itself renders only
+      // where no dock slot exists, which differs by route rather than by design.
+      data-visual-mask="edge-pill"
       className={`fixed top-1/2 -translate-y-1/2 z-40 flex h-11 items-center justify-center text-body-sm font-semibold lift-1 transition-all duration-300 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] ${
         expanded
           ? `gap-1.5 px-4 ${onLeft ? 'flex-row-reverse pl-3' : 'pr-3'}`

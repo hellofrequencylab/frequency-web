@@ -223,7 +223,10 @@ async function ActivityPanel({ profileId }: { profileId: string }) {
   const activity = await getMemberActivity(profileId)
   if (!activity.hasAny) return null
   return (
-    <section>
+    // `data-visual-mask`: the visual suite paints over the rail's live panels (test/e2e/surfaces.ts,
+    // VISUAL_MASK_SITES). This chart is the member's practice log; the rail's other panels carry
+    // the same attribute through WidgetCard.
+    <section data-visual-mask="rail-panel">
       <div className="mb-2 px-1">
         <h3 className="text-body-sm font-bold tracking-tight text-text">Your activity</h3>
       </div>
@@ -238,7 +241,8 @@ async function ActivityPanel({ profileId }: { profileId: string }) {
 async function SignaturePanel({ profileId }: { profileId: string }) {
   const signature = await getMemberSignature(profileId)
   return (
-    <section>
+    // Masked for the same reason as ActivityPanel: the dial is a reading of the member's logs.
+    <section data-visual-mask="rail-panel">
       <div className="mb-2 px-1">
         <h3 className="text-body-sm font-bold tracking-tight text-text">Your Frequency Signature</h3>
       </div>

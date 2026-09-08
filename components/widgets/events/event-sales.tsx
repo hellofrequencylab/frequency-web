@@ -14,7 +14,7 @@ export const EventSales = async () => {
 
   return (
     <div className="rounded-2xl border border-border bg-surface p-4">
-      <p className="text-meta font-semibold uppercase tracking-wide text-subtle">
+      <p className="eyebrow text-subtle">
         Sales <span className="ml-1 font-normal normal-case text-muted">{soldTickets.length} sold</span>
       </p>
       {soldTickets.length === 0 ? (

@@ -26,7 +26,7 @@ export async function TipsReceivedSection() {
     <div id="tips" className="mt-4 scroll-mt-24 rounded-card border border-border bg-surface p-5 lift-1">
       <div className="flex items-center gap-2">
         <HandCoins className="h-4 w-4 text-subtle" />
-        <p className="text-meta font-semibold uppercase tracking-wide text-subtle">Tips received</p>
+        <p className="eyebrow text-subtle">Tips received</p>
       </div>
       <div className="mt-3">
         <StatCard
