@@ -6,6 +6,7 @@ import { startTicket, refundTicketAction } from './ticket-actions'
 import { isError } from '@/lib/action-result'
 import { ticketRowToPrice, type Price } from '@/lib/commerce/types'
 import { PriceInput, type PriceSelection } from '@/components/commerce/price-input'
+import { Button } from '@/components/ui/button'
 
 export type TicketTierView = {
   id: string
@@ -153,14 +154,13 @@ export function TicketButton({
   if (!hasTiers) {
     return (
       <div className="space-y-2">
-        <button
+        <Button
           onClick={go}
           disabled={isPending || previewMode}
-          className="inline-flex items-center gap-1.5 rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
         >
           {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Ticket className="h-4 w-4" />}
           Get ticket · {priceLabel}
-        </button>
+        </Button>
         {error && <p className="text-body-sm text-danger">{error}</p>}
       </div>
     )
@@ -267,14 +267,13 @@ export function TicketButton({
         />
       )}
 
-      <button
+      <Button
         onClick={go}
         disabled={ctaDisabled}
-        className="inline-flex items-center gap-1.5 rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
       >
         {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Ticket className="h-4 w-4" />}
         {selected?.pricingMode === 'free' ? 'Claim ticket' : 'Get ticket'}
-      </button>
+      </Button>
       {error && <p className="text-body-sm text-danger">{error}</p>}
     </div>
   )

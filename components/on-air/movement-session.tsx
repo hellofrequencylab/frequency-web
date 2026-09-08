@@ -88,6 +88,7 @@ import {
   clearActiveSession,
 } from '@/lib/on-air/active-session'
 import { clampLoggedSeconds, runOverStateAt } from '@/lib/on-air/run-over'
+import { Button } from '@/components/ui/button'
 
 // What a saved Movement run carries beyond the shared record fields: the config the plan is
 // rebuilt from. Everything else (startedAt, pausedAt, practiceId, banked, target) is on the record.
@@ -1064,16 +1065,15 @@ export function MovementSession({
       <Overlay>
         <CenterScreen>
           <p className="text-body-sm font-medium text-text">That did not save. Your movement still happened.</p>
-          <button
+          <Button
             type="button"
             onClick={() => {
               const done = resumeOffset + Math.round((Date.now() - startedAt) / 1000)
               void finishWith(Math.max(0, finishCap === null ? done : Math.min(done, finishCap)))
             }}
-            className="rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary hover:bg-primary-hover"
           >
             Try again
-          </button>
+          </Button>
         </CenterScreen>
       </Overlay>
     )
