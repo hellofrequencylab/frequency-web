@@ -36768,4 +36768,59 @@ The failure is silent in both directions, which is what makes it a measurement p
 ⚠️ **This makes `pr-compare` stricter and it may come back red, which is the measurement rather than a setback.** The 21 surfaces ADR-1165 exposed are no longer in that set: they were baselines from 2026-08-21, and #2366 recaptured all 144 on 2026-09-05. Two commits have touched `app/globals.css` since, and several touched marketing and discover routes, so a newly-red capture cannot be ruled out from a container that cannot run the suite. When one appears, the reading is ADR-1165's: the threshold is right and the baseline is stale, so recapture (`e2e-manual.yml` with `update_baselines` AND `capture_shell`) after looking at what moved. Raising the number back above the drift restores exactly the blindness this closes.
 
 ⚠️ **The generalisable part: a threshold has a unit, and the unit has to match the thing it forgives.** Renderer noise is roughly constant per capture, because it is a property of the browser build. A ratio prices it as a share of the canvas. Those two only agree at one page height, and everywhere else the gate is over-tight on short pages and blind on tall ones, in proportion to how much there is to get wrong. The comment beside the setting was accurate about the intent for a year and still described an instrument that could not do the job. Before trusting a tolerance, ask what the smallest thing the gate must SEE costs in the gate's own units, and set the number under it.
+## ADR-1259: LIVE-123's builder changed underneath it, so the row gets a reader instead of a config flip (2026-09-08)
+
+**Status.** Accepted. Advances `LIVE-123`; the row stays **open**. No build configuration was changed — that is half the decision, and the reason is below.
+
+**Context — the measurement, taken before any theorising.** Twenty deployments went through between 2026-09-07 23:38Z and 2026-09-08 00:13Z. Every one was read from its own build log, because `LIVE-123`'s own finding is that a stalled build is invisible to the error group and DURATION is the instrument.
+
+| # | Deployment | Target | Commit | Compile | Page-data gap | Outcome |
+|---|---|---|---|---|---|---|
+| 1 | `8KYbk5m5` | preview | `3376a12` | 32.6s | **4s** | READY |
+| 2 | `BegxDwyU` | production | `57a4adf` | 13.6s | **4s** | READY |
+| 3 | `3RLdSSUS` | preview | `f576e7e` | 14.6s | **4s** | READY |
+| 4 | `BoMpn4p5` | preview | `23342c3` | 62s | **10s** | READY |
+| 5 | `8Z6ganqL` | preview | `37ded29` | 12.7s | **6s** | READY |
+| 6 | `HMpfD49Z` | production | `4eb1303` | 62s | **10s** | READY |
+| 7 | `8egQ7fpN` | production | `1e1e404` | 51s | **8s** | READY |
+| 8 | `FwCaPqti` | preview | `0e9b9a0` | 40s | **8s** | READY |
+| 9 | `JasSmx96` | preview | `12ca526` | 35.7s | **4s** | READY |
+| 10 | `4B1UPu6b` | preview | `277ca4c` | 14.3s | **4s** | READY |
+| 11 | `D4E92tNu` | production | `1b3f3cf` | 23.7s | **4s** | READY |
+| 12 | `6LxvEZZr` | preview | `f4f1644` | 13.1s | **5s** | READY |
+| 13 | `5bLbaMMQ` | production | `3b765d8` | 32.7s | **6s** | READY |
+| 14 | `bNXcpYAP` | preview | `a67f10c` | 26.9s | **4s** | READY |
+| 15 | `9a1uauT8` | preview | `2d5c14a` | 15.9s | **4s** | READY |
+| 16 | `9ZmUw4fG` | production | `188dfa8` | 22.0s | **7s** | READY |
+| 17 | `Gy2AiMdM` | preview | `91e8654` | 22.6s | **4s** | READY |
+| 18 | `9hKhVmCV` | preview | `95623cc` | 22.8s | **7s** | READY |
+| 19 | `Hi6uKJVA` | production | `59223c4` | 26.4s | **6s** | READY |
+| 20 | `BVporXDJ` | preview | `c1c1ecc` | 22.2s | **6s** | READY |
+
+**🔴 The finding is not in the outcome column, it is in the column the row never had.** All twenty ran on `Running build in Washington, D.C., USA (East) – iad1 (**Enhanced Build Machine**)` / `Build machine configuration: **8 cores, 16 GB**`, and page data ran with **7 workers**. `LIVE-123` is built on 4 cores, 8 GB and 3 workers, and every capture in its ledger was re-read from Vercel to confirm the machine each one actually ran on:
+
+| Capture | Deployment | Date | Machine |
+|---|---|---|---|
+| production stall | `7Dbat8eb` | 2026-08-25 | cle1, 4 cores, 8 GB |
+| preview stall | `6kWwu78A` | 2026-08-25 | cle1, 4 cores, 8 GB |
+| `BUILD_EXCEEDED_MAXIMUM_TIME` | `FL6voNiR` | 2026-08-29 | cle1, 4 cores, 8 GB |
+| `BUILD_EXCEEDED_MAXIMUM_TIME` | `AnGdPo5f` | 2026-08-29 | cle1, 4 cores, 8 GB |
+| capture D, the OOM | `9dC94yez` | 2026-09-01 23:52Z | cle1, 4 cores, 8 GB |
+| capture E | `HRQttjaD` | 2026-09-01 23:41Z | cle1, 4 cores, 8 GB |
+
+**Enhanced Builds was switched on between 2026-09-01 23:52Z and 2026-09-02 00:28Z** — bounded by `9dC94yez` (cle1, 4 cores, the OOM capture) and `FBgU5EB3` (iad1, Enhanced, 8 cores). Production had already been seen on an Enhanced machine at 2026-09-01 19:29Z (`4646RNG4`), so previews were the half that moved; the first Enhanced preview measured is `HD9wzK9K` at 2026-09-02 00:59Z. Sampled deployments on 2026-09-02, 09-05, 09-06 and 09-07 are all Enhanced. **That is exactly the remedy Vercel's own build system report named on capture D** — *"To expand your machine size to get additional memory and disk space, consider enabling Enhanced Builds"* — which the row recorded as an owner/billing decision it could not take. The owner took it within the hour, and nobody told the row.
+
+**What that does and does not settle.** It does NOT close the row. Twenty green builds on one night at a historical ~27% failure rate is a weak bound, the failure was always intermittent, and the row's own history contains a four-hour confident reading and two leads that died within a day. What it settles is narrower and still worth writing down: **the row's stated next step has already been performed**, so the row was, until today, proposing to raise a builder that was raised six days ago. It also quietly weakens the surviving cold-and-concurrent conjunction: page data now finishes in 4-10s, so two builds can barely be in that phase at once — no pair tonight was — which means tonight neither confirms nor refutes it, and cannot.
+
+**Decision.**
+
+- **Do NOT set `experimental.cpus`, and do not touch `vercel.json`.** The row proposed lowering the collector's worker count *or* raising the builder. The builder is raised, and the 7 in tonight's logs is Vercel's `modifyConfig` choosing for an 8-core machine — so pinning `experimental.cpus` now would *lower* concurrency on the machine class that is not showing the failure. That trades a slower build on every deploy for a failure nobody can currently reproduce, and it ships through a production deploy on a repo where a merge is a deploy ([`DEPLOY-SAFETY.md`](DEPLOY-SAFETY.md) rule 5). The row's own warning still governs: at an intermittent rate, one green build after a config change proves nothing, so the change and the reading of its rate belong together, and there is nothing to read yet.
+- **The row stays `open`, at P1, with `verify.kind: manual`.** The per-invocation bound is not established. A `cmd` probe here would have to pass on a quiet night, and a quiet night is precisely what [ADR-970](DECISIONS.md) warns reads as coverage without being coverage.
+- **Land the instrument instead: `scripts/read-build-log.mjs` (`pnpm read:build-log`).** Pure node, no dependencies, no network. It takes a saved build log and prints the machine line, the cache lineage and any `check:cache-budget` trim, every phase boundary, **the page-data gap**, the five `postbuild` gate lines, the build system report, and one verdict. `--baseline` prints the two populations above so a new reading has something to be compared against. The gate names it expects are read out of `package.json`'s `postbuild` rather than restated, because that list has drifted three times in prose.
+- **It is a READER, not a gate.** It never fails a build and is not wired into `postbuild`. It judges a LOG, and a log is not the artifact; a build-blocking gate that has never seen what it judges is this repo's own 2026-08-11 incident with the roles reversed.
+- **Its own fail-safe has a gate that notices it fired** ([`AGENTS.md`](../AGENTS.md), DEPLOY-SAFETY rule 6). Handed the wrong text — a runtime log, a tail-only excerpt, an empty file — a naive parser finds no stall, no OOM and no missing gate, and prints a clean bill of health for text it never read. The verdict has an `unrecognised` arm and an `incomplete` arm, and `scripts/read-build-log.test.ts` drives both, because SILENCE is this row's entire symptom and a reader that cannot tell "nothing wrong" from "nothing read" is worse than no reader at all.
+
+**Consequences.** The next stall is one command to characterise instead of a session of scrolling, and the characterisation lands beside a recorded band rather than a memory. `LIVE-123` carries the dated measurement, so the next reader starts from "the machine changed on 2026-09-02, and here is what healthy looks like on it" rather than from a description of hardware this project no longer runs on. Two incidental readings from tonight's production `postbuild` blocks, recorded because they were free and neither is this row's business: `check:cache-budget` predicted 1.37 GB against an `Uploading build cache [1.41 GB]` line, the estimate running ~3% LOW in the direction `LIVE-175` is watching; and `check:shell-weight` read 1027 KB across 22 chunks (73% of the 1400 KB ceiling), `check:build-budget` 6.12 GB across 458 functions, `check:og-trace` 20 rasterising plus 64 incidental of 100.
+
+⚠️ **The generalisable part: re-test the premise against the PLATFORM, not only the repo.** [ADR-1082](DECISIONS.md) established that a row's blocker is a claim with an expiry date, and this repo now reflexively re-measures a row's *code* premise before working it. This row's premise was not about code. It was about a machine — 4 cores, 8 GB, 3 workers — printed on line 2 of every single build log, and it expired six days before anyone looked. Six captures were filed with timestamps, cache ids, compile durations and commit ranges, and exactly one of them ever quoted the configuration line sitting above all of it. **When a row names an environment, the environment is part of the premise, and it is usually the cheapest half to re-read.**
 
