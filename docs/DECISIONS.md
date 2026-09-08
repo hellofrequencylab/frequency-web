@@ -36954,6 +36954,42 @@ An instrument that names its own blind spot in a log turned an unfalsifiable own
 ⚪ **A note on instruments, since two rows now price themselves on traffic.** `SCAN-205` re-prices against Vercel Web Analytics (14 visitors / 21 pageviews in 31 days). That is one instrument, and it is not the only one the product has. Before any further row is priced on "nobody is visiting", say which counter is being read and why it is the right one — the failure ADR-1082 recorded on `OWN-011`, where the wrong meter overstated a cap by 33x, is the same failure in a different direction.
 
 ---
+## ADR-1264: a wholesale baseline recapture is a laundering risk, so it is taken apart before it is taken (2026-09-08)
+
+**Context.** `LIVE-186` had four stale visual baselines and a recorded blocker: the recapture is "an owner-dispatched `e2e-manual.yml` run". That premise was tested rather than accepted, and it had expired — `e2e-manual.yml` is a `workflow_dispatch`, so run `34174895830` was dispatched against production with `update_baselines + capture_shell`. It succeeded, minted a member session, and committed **142 changed PNGs** to the branch: every committed baseline the suite holds, for a row that names four files.
+
+**Decision.** Take the four and leave the 138, on a measurement rather than on caution.
+
+Both halves were compared against `origin/main` before anything was committed:
+
+| | files | dimensions | differing pixels |
+|---|---|---|---|
+| This row's surface | 4 | **moved** (mobile 2859 → 2765, desktop 1985 → 1972) | n/a — a dimension mismatch aborts the compare |
+| Everything else | 138 | **byte-identical** | **15,000 – 26,543 each**, worst `app-nearby` desktop |
+
+The 138 were measured with pixelmatch's own YIQ colour delta at Playwright's configured `threshold` (0.2), anti-alias detection omitted so every figure is an **upper bound**. All 138 clear [ADR-1258](DECISIONS.md)'s 400 px budget, by up to 66x.
+
+**The dimensions are the whole argument.** A full-page capture of a page whose content changed moves its *height*. Not one of the 138 moved a single pixel in height while 15,000+ pixels inside it changed. Content does not do that; a different rasteriser does. So the 138 are [ADR-1165](DECISIONS.md)'s cross-runner divergence, and committing them under this row would have written a 138-surface rendering difference into the baselines with nothing to notice it later. They are filed as `LIVE-212`, which is where they belong, because they qualify the *budget* rather than this row's recapture.
+
+**Consequences.** `LIVE-186` gets today's four checks comparable again — they were aborting on a dimension mismatch, which reports nothing at all — and it does **not** close, because the run also refuted one of its own three options. `pr-compare` read this surface at 390x3017 at 16:21Z on 2026-09-07; this capture read it at 390x2765 at 00:56Z on 2026-09-08. **252 px in eight hours, same production, no deploy touching the route.** Option (c), "keep recapturing on a schedule", cannot hold a baseline that drifts that fast, so the ruling narrows from three options to two and stays the owner's.
+
+⚠️ **The generalisable part: a capture job's output is evidence, not a result.** `update_baselines` is a job that overwrites the thing the gate compares against, which makes it the one job in this repo that can turn a regression green by succeeding. Its exit code says the browser ran; it says nothing about what it wrote. This one exited 0 and rewrote 138 surfaces nobody asked it to. **Diff a capture before committing it, and split the diff by whether each file changed the way the row predicted** — here, four files that were supposed to move dimensions did, and 138 that were supposed not to change at all changed by five figures each. Both halves of that sentence were needed; either alone would have read as success.
+
+## ADR-1265: the Space console photographs its first screen, because a full-page shot of live data measures the clock (2026-09-08)
+
+**Context.** `app-space-console` is a fullPage visual baseline of `/spaces/<slug>/manage`, whose body is a card list that grows as the account's Space gains content. It went 158 px stale in three weeks ([SCAN-507](BUILD-BACKLOG.json)), was recaptured, and went stale again. `LIVE-186` put three options to the owner: (a) mark it `viewportOnly`, (b) seed a fixture Space, (c) keep recapturing on a schedule.
+
+**What settled it was a measurement, not a preference.** `pr-compare` read the surface at 390x3017 at 16:21Z on 2026-09-07. A capture dispatched at 00:56Z on 2026-09-08 read 390x2765 — **252 px in eight hours**, against the same production, with no deploy touching the route. Option (c) requires a recapture cadence faster than the drift, and no cadence is faster than that. It was eliminated by arithmetic rather than by taste.
+
+**Decision (owner ruling, 2026-09-08).** Option (a). `app-space-console` carries `viewportOnly: true`.
+
+`visual.spec.ts` already prescribed this for exactly this shape — its own note on `Surface.viewportOnly` says a full-page baseline of a live, shared stream "measures WHEN it was taken, not how it looks". The surface matched that description and was not marked. `/feed` was already marked for the same reason, so this is the existing rule reaching the second surface it always covered.
+
+**Consequences.** The four checks stop failing on a dimension mismatch, which reported nothing at all — a mismatch aborts the comparison before any pixel is examined, so the surface has been *unmeasured* rather than *failing* for three weeks. `baseline-distinctness.test.ts` enforces the new shape immediately and precisely: it demanded exactly 800 px (desktop) and 844 px (mobile) the moment the flag landed, against baselines of 1972 and 2765, so the flag cannot be set without the matching capture.
+
+⚠️ **The cost is real and is stated rather than hidden: below-fold coverage on this one surface is gone.** Anything under the first screen of the Space console is now unwatched by the visual suite. That is the price of the ruling, and option (b) — a seeded fixture Space — remains the way to buy it back if the console's lower half ever earns a camera.
+
+⚪ **The generalisable part.** A gate whose input is live production data is not measuring the product; it is measuring the product *and* the clock, and the clock always wins eventually. Before adding a full-page baseline, ask whether the page's height is a property of the CODE or of the DATA. If it is data, the capture belongs at viewport height, or behind a fixture — never on a recapture chore, which is a promise to lose a race.
 ## ADR-1263: an instrument held on a number records that number beside the constant it governs, not in the backlog row that noticed it (2026-09-08)
 
 **Status.** Accepted. Closes `HYG-061`. Amends nothing; it gives [ADR-922](DECISIONS.md)'s three deferred instruments a home that a gate can read, and it is the reason `docs/ANALYTICS.md § Instruments held until there is traffic` now names a constant per row.
