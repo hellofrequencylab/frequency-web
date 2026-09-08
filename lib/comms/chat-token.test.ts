@@ -75,17 +75,16 @@ describe('isSupportChatAvailable', () => {
   })
 })
 
-// ── LIVE-165 step one (2026-09-06): the switch prefers SUPPORT_CHAT, falls back to the old name ──
+// ── LIVE-165 (closed 2026-09-07): the switch is SUPPORT_CHAT alone. The fallback to the old
+// NEXT_PUBLIC_ name is gone; the row's probe greps app/, lib/ and components/ for that literal, which is
+// why this block does not spell it either. ──
 
 describe('supportChatFlagEnabled', () => {
-  const KEYS = ['SUPPORT_CHAT', 'NEXT_PUBLIC_SUPPORT_CHAT'] as const
   const saved = new Map<string, string | undefined>()
-  function setEnv(patch: Partial<Record<(typeof KEYS)[number], string | undefined>>) {
-    for (const k of KEYS) if (!saved.has(k)) saved.set(k, process.env[k])
-    for (const [k, v] of Object.entries(patch)) {
-      if (v === undefined) delete (process.env as Record<string, string | undefined>)[k]
-      else (process.env as Record<string, string>)[k] = v
-    }
+  function setEnv(value: string | undefined) {
+    if (!saved.has('SUPPORT_CHAT')) saved.set('SUPPORT_CHAT', process.env.SUPPORT_CHAT)
+    if (value === undefined) delete (process.env as Record<string, string | undefined>).SUPPORT_CHAT
+    else (process.env as Record<string, string>).SUPPORT_CHAT = value
   }
   afterEach(() => {
     for (const [k, v] of saved) {
@@ -96,31 +95,18 @@ describe('supportChatFlagEnabled', () => {
   })
 
   it('is on for SUPPORT_CHAT=1 and off for any other value', () => {
-    setEnv({ SUPPORT_CHAT: '1', NEXT_PUBLIC_SUPPORT_CHAT: undefined })
+    setEnv('1')
     expect(supportChatFlagEnabled()).toBe(true)
-    setEnv({ SUPPORT_CHAT: '0' })
+    setEnv('0')
     expect(supportChatFlagEnabled()).toBe(false)
-    setEnv({ SUPPORT_CHAT: 'true' })
+    setEnv('true')
     expect(supportChatFlagEnabled()).toBe(false)
   })
 
-  it('FALLS BACK to the legacy NEXT_PUBLIC_ name while it is still the Vercel variable', () => {
-    setEnv({ SUPPORT_CHAT: undefined, NEXT_PUBLIC_SUPPORT_CHAT: '1' })
-    expect(supportChatFlagEnabled()).toBe(true)
-    // Blank counts as unset, so an empty new variable does not shadow a live old one.
-    setEnv({ SUPPORT_CHAT: '  ' })
-    expect(supportChatFlagEnabled()).toBe(true)
-  })
-
-  it('an explicit SUPPORT_CHAT WINS over the legacy name in both directions', () => {
-    setEnv({ SUPPORT_CHAT: '0', NEXT_PUBLIC_SUPPORT_CHAT: '1' })
+  it('is off when unset, and blank counts as unset', () => {
+    setEnv(undefined)
     expect(supportChatFlagEnabled()).toBe(false)
-    setEnv({ SUPPORT_CHAT: '1', NEXT_PUBLIC_SUPPORT_CHAT: '0' })
-    expect(supportChatFlagEnabled()).toBe(true)
-  })
-
-  it('is off when neither is set', () => {
-    setEnv({ SUPPORT_CHAT: undefined, NEXT_PUBLIC_SUPPORT_CHAT: undefined })
+    setEnv('  ')
     expect(supportChatFlagEnabled()).toBe(false)
   })
 })

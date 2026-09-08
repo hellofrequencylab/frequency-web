@@ -12,8 +12,7 @@
 // (magic-link sign-in IS registration); a signed-in member on a public page gets a pointer into the
 // app, where the full dock (Messages + Vera) lives. Auth detection mirrors the marketing header's
 // getSession() pattern (cookie read, no network). Off unless the SUPPORT_CHAT switch is enabled
-// (supportChatFlagEnabled in lib/comms/chat-token.ts; the legacy NEXT_PUBLIC_SUPPORT_CHAT is still
-// honoured as a fallback until the Vercel variable is renamed — LIVE-165 step one, 2026-09-06).
+// (supportChatFlagEnabled in lib/comms/chat-token.ts, a server-only variable since LIVE-165, 2026-09-07).
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
