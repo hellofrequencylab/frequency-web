@@ -62,6 +62,10 @@ export function readSpotlightBackgroundRaw(meta: unknown): unknown {
 export function readSpotlightThemeRaw(meta: unknown): unknown {
   return (meta as { spotlight?: { theme?: unknown } } | null | undefined)?.spotlight?.theme
 }
+/** The raw (UNVALIDATED) sticker layer (ADR-1275). Callers MUST run validateSpotlightStickers. */
+export function readSpotlightStickersRaw(meta: unknown): unknown {
+  return (meta as { spotlight?: { stickers?: unknown } } | null | undefined)?.spotlight?.stickers
+}
 
 /** Merge a new layout into meta, preserving enabled/published/background. */
 export function withSpotlightLayout(meta: unknown, layout: unknown): Record<string, unknown> {
