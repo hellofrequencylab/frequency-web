@@ -23,7 +23,7 @@ import type { PushPayload } from '@/lib/push'
 /** The domain events the registry can route. Adding a notification = add a key here +
  *  its context shape in `NotificationContexts` + a row in `NOTIFICATION_REGISTRY`. The
  *  compiler then forces the three to stay in lock-step. */
-export type NotificationEvent = 'event.dispatch' | 'booking.reminder' | 'guestbook.sign'
+export type NotificationEvent = 'event.dispatch' | 'booking.reminder' | 'guestbook.sign' | 'housing.match'
 
 /** The typed payload each event's `render` receives. Keyed by event, so a registry row
  *  and its call sites share one shape and a typo is a compile error, not a runtime one. */
@@ -38,6 +38,11 @@ export interface NotificationContexts {
    *  (lib/spotlight/guestbook.ts notifyGuestbookSigned) authors the copy in-voice and the URL of
    *  the owner's own guestbook. */
   'guestbook.sign': { title: string; body: string; url: string }
+  /** A new housing match that lines up with the recipient (DEF-HOUS, ADR-1278). The caller
+   *  (lib/listings/housing-match-alerts.ts) authors the push copy in-voice and renders the email
+   *  from lib/email's builder; `tag` collapses a repeat push for the same counterpart on the
+   *  device, on top of the once-per-pair claim the caller already made. */
+  'housing.match': { title: string; body: string; url: string; tag: string; email?: EmailPayload }
 }
 
 /** Per-channel rendered payloads. A type renders only the channels it declares; a channel
@@ -111,6 +116,18 @@ export const NOTIFICATION_REGISTRY: { [E in NotificationEvent]: NotificationType
     channels: ['push'],
     render: (ctx) => ({
       push: { title: ctx.title, body: ctx.body, url: ctx.url },
+  // A new housing match (ADR-1278). Community category `matches`: the member's own
+  // email_matches / push_matches switches gate it, one-click unsubscribe carries the category,
+  // and the caller claims the (recipient, counterpart, kind) pair before routing so a member is
+  // told about a person once. Email is rendered by the caller; a caller with no deliverable
+  // address hands in no email and the channel is a clean skip.
+  'housing.match': {
+    event: 'housing.match',
+    category: 'matches',
+    channels: ['email', 'push'],
+    render: (ctx) => ({
+      push: { title: ctx.title, body: ctx.body, url: ctx.url, tag: ctx.tag },
+      ...(ctx.email ? { email: ctx.email } : {}),
     }),
   },
 }

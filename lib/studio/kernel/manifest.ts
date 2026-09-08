@@ -119,13 +119,22 @@ export type FieldChoices =
 
 /**
  * WHERE a field is edited, across the entity's whole life:
- *  - `spark`  — asked during guided creation (the wizard's scoped questions). Also editable later.
+ *  - `spark`  — asked during guided creation (the wizard's scoped questions). Where it is edited
+ *               LATER is derived when it can be and declared when it cannot (see `editPlane`).
  *  - `inline` — content that IS the page; edited in place on the live entity (ADR-450 inline canvas).
  *  - `rail`   — configuration; edited in the Inspector rail (ADR-450 rail plane).
  * One list, three filters. The Spark shows `spark`; Edit Mode splits `inline` from `rail`.
  * Absent === 'rail' (config by default; content opts in).
  */
 export type FieldPlacement = 'spark' | 'inline' | 'rail'
+
+/**
+ * The two planes a field can be edited on AFTER creation. A `spark` field that is prose lands on
+ * the inline canvas from what it is (a description is content, ADR-450); one that is not (a name,
+ * a start, a place, a price) has nothing to derive from, so it declares its later plane here or
+ * is asked once and never edited (ADR-1281).
+ */
+export type EditPlane = Exclude<FieldPlacement, 'spark'>
 
 /**
  * WHEN a `required` field must be present (ADR-1280):
@@ -159,6 +168,15 @@ export interface FieldDef {
   /** The `SectionDef.key` this field groups under. */
   section: string
   placement?: FieldPlacement
+  /**
+   * Where a NON-PROSE `spark` field is edited after creation (ADR-1281). Until this existed such
+   * a field was on no edit plane at all: the selectors could derive a plane for prose (inline) and
+   * for everything not asked at creation (rail by default), and had no rule for a name or a start
+   * that the wizard asks and a rail then edits, so every rail that rendered one was hand-declared.
+   * Meaningful ONLY on a non-prose `spark` field; `validateManifest` rejects it anywhere else,
+   * because everywhere else the plane is already derived and a second statement could disagree.
+   */
+  editPlane?: EditPlane
   /** Creation cannot complete without it. Always asked in the Spark regardless of placement. */
   required?: boolean
   /**
@@ -348,6 +366,21 @@ export function validateManifest(m: EntityManifest): ManifestProblem[] {
     }
     if (f.section !== undefined && !sectionKeys.has(f.section)) {
       problems.push(`${ctx} field "${f.path}" points at section "${f.section}", which is not declared.`)
+    }
+    // A later plane is only a DECLARATION where nothing derives one (ADR-1281). On an inline or a
+    // rail field it restates the placement; on a prose spark field it competes with the ADR-450
+    // rule that prose is content. Either way two statements of one fact is how they come to disagree.
+    if (f.editPlane !== undefined) {
+      // Read as a plain string: the type says 'inline' | 'rail', and this guard exists for the
+      // manifest that says otherwise, which the type cannot see.
+      const plane: string = f.editPlane
+      if (plane !== 'inline' && plane !== 'rail') {
+        problems.push(`${ctx} field "${f.path}" declares \`editPlane: "${plane}"\`. A field is edited later on 'inline' or 'rail', and nowhere else.`)
+      } else if (f.placement !== 'spark') {
+        problems.push(`${ctx} field "${f.path}" declares \`editPlane\` without \`placement: 'spark'\`. Its plane is already its placement; remove editPlane.`)
+      } else if (f.prose) {
+        problems.push(`${ctx} field "${f.path}" is prose and declares \`editPlane\`. Prose asked at creation is edited inline by what it is (ADR-450); remove editPlane.`)
+      }
     }
     // A choice field with no source of choices renders an empty dropdown: the field exists, looks
     // editable, and can never be set. Catch it at build time rather than in front of an operator.

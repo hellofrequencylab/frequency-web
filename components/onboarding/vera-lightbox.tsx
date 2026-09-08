@@ -4,7 +4,8 @@ import { useState, useEffect, useRef, useTransition, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Sparkles, Check, X, Send, ArrowRight, ArrowLeft, Compass } from 'lucide-react'
-import { conciergeTurn, confirmProposal } from '@/app/onboarding/vera-actions'
+import { confirmProposal } from '@/app/onboarding/vera-actions'
+import { streamConciergeTurn } from '@/components/vera/vera-stream'
 import type { ProposedToolCall } from '@/lib/ai/vera/concierge'
 import type { VeraMessage } from '@/lib/ai/vera/agent-claude'
 import type { DeckSlide, VeraOpening } from '@/lib/onboarding/vera-welcome'
@@ -82,6 +83,8 @@ export function VeraLightbox({
   const [suggestions, setSuggestions] = useState<string[]>(opening.suggestions)
   const [done, setDone] = useState(false)
   const [input, setInput] = useState('')
+  // Vera's reply while it is still arriving (ADR-1287); cleared once the whole reply lands.
+  const [draft, setDraft] = useState('')
   const [pending, start] = useTransition()
   // Sleep mode: after a stretch of no interaction the window settles back, fading
   // further so it recedes while you think. Any movement, key, or tap wakes it.
@@ -98,7 +101,7 @@ export function VeraLightbox({
   // Keep the transcript pinned to the latest message.
   useEffect(() => {
     if (phase === 'chat') scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' })
-  }, [messages, proposals, phase])
+  }, [messages, proposals, phase, draft])
 
   // Sleep when idle: settle (fade further) after a stretch of stillness; any
   // movement, key, or tap wakes it. Mirrors the onboarding cue's recede behaviour.
@@ -126,8 +129,20 @@ export function VeraLightbox({
     if (text) setMessages((m) => [...m, { from: 'you', text }])
     setProposals([])
     setSuggestions([])
+    setDraft('')
     start(async () => {
-      const r = await conciergeTurn(stage, text, history)
+      let round = -1
+      const r = await streamConciergeTurn(stage, text, history, {
+        onDelta: (delta, at) => {
+          if (at !== round) {
+            round = at
+            setDraft(delta)
+          } else {
+            setDraft((d) => d + delta)
+          }
+        },
+      })
+      setDraft('')
       setMessages((m) => [...m, { from: 'vera', text: r.message }])
       setStage(r.stage)
       setProposals(r.proposals)
@@ -255,7 +270,13 @@ export function VeraLightbox({
                 </div>
               ))}
 
-              {pending && <p className="text-meta text-subtle">Vera is thinking…</p>}
+              {/* The streaming draft (ADR-1287): hidden from assistive tech until it lands whole. */}
+              {pending && draft && (
+                <div className="flex justify-start" aria-hidden>
+                  <div className="max-w-[85%] rounded-2xl rounded-bl-sm border border-border bg-surface-elevated px-3.5 py-2 text-body-sm text-text">{draft}</div>
+                </div>
+              )}
+              {pending && !draft && <p className="text-meta text-subtle">Vera is thinking…</p>}
 
               {proposals.map((p, i) => (
                 <div key={i} className="rounded-card border border-border bg-surface-elevated p-3">

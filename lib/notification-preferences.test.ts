@@ -17,8 +17,9 @@ import {
 
 describe('DEFAULT_PREFERENCES', () => {
   const channels: NotificationChannel[] = ['email', 'inapp', 'push']
-  // The full category list (drives the grid). `practice` joined in ADR-920 Phase 3.
-  const categories: NotificationCategory[] = ['dispatches', 'events', 'mentions', 'lifecycle', 'comments', 'practice']
+  // The full category list (drives the grid). `practice` joined in ADR-920 Phase 3; `matches`
+  // (housing match alerts) in ADR-1278.
+  const categories: NotificationCategory[] = ['dispatches', 'events', 'mentions', 'lifecycle', 'comments', 'practice', 'matches']
 
   it('the local list mirrors NOTIFICATION_CATEGORIES exactly (grid drift guard)', () => {
     expect([...NOTIFICATION_CATEGORIES]).toEqual(categories)
@@ -47,9 +48,9 @@ describe('DEFAULT_PREFERENCES', () => {
     }
   })
 
-  it('has the 18 category×channel grid keys, plus any standalone feature opt-ins', () => {
+  it('has the 21 category×channel grid keys, plus any standalone feature opt-ins', () => {
     const gridKeys = categories.flatMap((c) => [`email_${c}`, `inapp_${c}`, `push_${c}`])
-    expect(gridKeys).toHaveLength(18)
+    expect(gridKeys).toHaveLength(21)
     for (const k of gridKeys) expect(k in DEFAULT_PREFERENCES).toBe(true)
     // Standalone opt-ins that are not part of the channel grid (a specific email feature, off by default),
     // e.g. space_event_reminders (space-follower event reminders, ADR-806).

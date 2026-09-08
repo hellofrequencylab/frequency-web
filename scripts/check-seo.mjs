@@ -401,6 +401,45 @@ export function resolvesToNothing(src) {
   return /\{\s*return\s*\[\s*\]\s*;?\s*$/.test(after.slice(0, end))
 }
 
+const NOT_FOUND_METADATA_FILE = join('lib', 'seo', 'not-found-metadata.ts')
+
+/**
+ * Scan F's reader (LIVE-214, ADR-1276): what a `not-found.tsx` says about robots.
+ *
+ * A not-found page renders inside the root layout and inherits its `robots: { index: true,
+ * follow: true }`, while Next injects its own `noindex` for every 404 — so an UNDECLARED not-found
+ * file puts two contradicting directives in one head (measured on production, 2026-09-08). The
+ * fix is one explicit declaration per file, and this reads which of three states a file is in:
+ *
+ *   'shared'    it exports the one shared `NOT_FOUND_METADATA` object (the supported way)
+ *   'inline'    it declares `robots:` by hand — returned with the parsed directive, so the caller
+ *               can still fail an inline `index: true`
+ *   'missing'   it declares nothing, so the root default leaks in and the head says two things
+ *
+ * Comments are stripped first: a note ABOUT the directive is not the directive.
+ */
+export function notFoundRobots(src) {
+  const code = stripComments(src)
+  const shared =
+    /import\s*\{\s*NOT_FOUND_METADATA\s*\}\s*from\s*['"]@\/lib\/seo\/not-found-metadata['"]/.test(code) &&
+    /export\s+const\s+metadata\s*=\s*NOT_FOUND_METADATA\b/.test(code)
+  if (shared) return { state: 'shared', directive: null }
+  if (/robots\s*:\s*null\b/.test(code)) return { state: 'inline', directive: { index: false, follow: false, silent: true } }
+  const directive = robotsDirective(src)
+  if (directive) return { state: 'inline', directive }
+  return { state: 'missing', directive: null }
+}
+
+/** The shared object itself must say `robots:` explicitly and never `index: true` — the same rule,
+ *  read once, so a future edit to the one module cannot quietly re-open every boundary. */
+export function sharedNotFoundMetadataIsExplicit(src) {
+  const code = stripComments(src)
+  if (!/export\s+const\s+NOT_FOUND_METADATA\b/.test(code)) return false
+  if (/robots\s*:\s*null\b/.test(code)) return true
+  const directive = robotsDirective(src)
+  return directive != null && directive.index === false
+}
+
 function run() {
   const failures = []
   const warnings = []
@@ -562,7 +601,36 @@ function run() {
     }
   }
 
-  return { failures, warnings, coverageChecked, resolutionChecked, declarationChecked, noindexed, skippedPrivate, titlesChecked }
+  // ── Scan F: every not-found boundary declares robots explicitly, so the head carries ONE directive. ──
+  //
+  // LIVE-214 (ADR-1276). Next resolves the `not-found` module's metadata LAST on the error path, so
+  // the nearest not-found file is the one that can override the root's `index, follow`; a file that
+  // declares nothing inherits it, beside the framework's own injected `noindex`. Every one must
+  // declare, and the shared object they declare through must itself be explicit.
+  const notFoundFiles = collectRouteFiles(APP_DIR, ['not-found'])
+  const notFoundChecked = []
+  const sharedSrc = readFile(NOT_FOUND_METADATA_FILE)
+  if (sharedSrc === null || !sharedNotFoundMetadataIsExplicit(sharedSrc)) {
+    failures.push({
+      kind: 'NOT-FOUND ROBOTS',
+      detail: `${NOT_FOUND_METADATA_FILE} must export NOT_FOUND_METADATA with an explicit robots (null, or index: false) — it is the one object every not-found boundary declares through`,
+    })
+  }
+  for (const file of notFoundFiles) {
+    notFoundChecked.push(relative('.', file))
+    const { state, directive } = notFoundRobots(readFileSync(file, 'utf8'))
+    if (state === 'shared') continue
+    if (state === 'inline' && directive?.index === false) continue
+    failures.push({
+      kind: 'NOT-FOUND ROBOTS',
+      detail:
+        state === 'missing'
+          ? `${relative('.', file)} declares no robots, so it inherits the root layout's index, follow beside Next's injected noindex — two directives in one head. Export NOT_FOUND_METADATA from lib/seo/not-found-metadata.ts as its metadata.`
+          : `${relative('.', file)} declares robots.index=true on a not-found boundary — a 404 that asks to be indexed. Export NOT_FOUND_METADATA from lib/seo/not-found-metadata.ts instead.`,
+    })
+  }
+
+  return { failures, warnings, coverageChecked, resolutionChecked, declarationChecked, noindexed, skippedPrivate, titlesChecked, notFoundChecked }
 }
 
 /** Scan D already fails when SITE_NAME is unreadable, and says why in its own words: "a scan that
@@ -572,15 +640,17 @@ function run() {
  *  2026-08-10; the floors sit under those and far above zero. */
 const MIN_COVERAGE_PAGES = 15
 const MIN_DECLARATION_PAGES = 25
+/** Scan F's floor: 20 not-found files on 2026-09-08. A walk that finds fewer than a handful is broken, not clean. */
+const MIN_NOT_FOUND_FILES = 5
 
 function main() {
-  const { failures, warnings, coverageChecked, resolutionChecked, declarationChecked, noindexed, skippedPrivate, titlesChecked } = run()
+  const { failures, warnings, coverageChecked, resolutionChecked, declarationChecked, noindexed, skippedPrivate, titlesChecked, notFoundChecked } = run()
 
-  if (coverageChecked.length < MIN_COVERAGE_PAGES || declarationChecked.length < MIN_DECLARATION_PAGES) {
+  if (coverageChecked.length < MIN_COVERAGE_PAGES || declarationChecked.length < MIN_DECLARATION_PAGES || notFoundChecked.length < MIN_NOT_FOUND_FILES) {
     console.error(
       `✗ check:seo enumerated only ${coverageChecked.length} forward-facing and ` +
-        `${declarationChecked.length} declaration-checked page(s), expected at least ` +
-        `${MIN_COVERAGE_PAGES} and ${MIN_DECLARATION_PAGES}.\n  The route walk is broken, so its ` +
+        `${declarationChecked.length} declaration-checked page(s) and ${notFoundChecked.length} not-found file(s), expected at least ` +
+        `${MIN_COVERAGE_PAGES}, ${MIN_DECLARATION_PAGES} and ${MIN_NOT_FOUND_FILES}.\n  The route walk is broken, so its ` +
         'silence about coverage means nothing.',
     )
     process.exit(1)
@@ -590,7 +660,7 @@ function main() {
     `SEO/sitemap coherence — checked ${coverageChecked.length} forward-facing page(s) for coverage, ` +
       `${resolutionChecked.length} literal sitemap route(s) for resolution, and ${declarationChecked.length} ` +
       `crawler-reachable page(s) outside (marketing) for a declaration (${skippedPrivate} correctly-private page(s) skipped), ` +
-      `${titlesChecked} page title(s) for double-branding, and every meta description for length.`,
+      `${titlesChecked} page title(s) for double-branding, every meta description for length, and ${notFoundChecked.length} not-found file(s) for an explicit robots.`,
   )
   if (noindexed.length > 0) {
     console.log(`  ${noindexed.length} reachable page(s) consciously kept OUT of the index:`)
@@ -616,7 +686,8 @@ function main() {
       '  every literal sitemap route resolves to a real page, and every crawler-reachable page\n' +
       '  outside (marketing) declares its intent (advertised, or noindex), and no page title\n' +
       '  re-appends the site name the root title.template already adds, and no description runs\n' +
-      `  past the ~${DESCRIPTION_MAX} characters a search result shows.`,
+      `  past the ~${DESCRIPTION_MAX} characters a search result shows, and every not-found boundary\n` +
+      '  declares its robots explicitly so a 404 head carries one directive.',
   )
 }
 

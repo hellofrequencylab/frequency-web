@@ -93,8 +93,10 @@ const REQUIRED_IMPORTS = [
   { file: 'components/spaces/space-business-info-form.tsx', module: '@/lib/taxonomy/subjects', symbols: ['SUBJECTS'] },
   { file: 'components/spaces/space-business-info-form.tsx', module: '@/lib/spaces/categories', symbols: ['SPACE_KINDS'] },
   { file: 'components/spaces/spaces-toolbar.tsx', module: '@/lib/taxonomy/subjects', symbols: ['SUBJECTS'] },
-  // Event category pickers + write gate.
-  { file: 'components/admin/modules/event-settings-module.tsx', module: '@/lib/events/options', symbols: ['CATEGORY_OPTIONS'] },
+  // Event category pickers + write gate. The settings rail's picker is the Event MANIFEST's select
+  // (ADR-1281): the rail renders EVENT_MANIFEST through the kernel's edit plan, so the manifest is
+  // the file that must import the vocabulary, and the module declares no picker of its own.
+  { file: 'lib/studio/entities/event.ts', module: '@/lib/events/options', symbols: ['CATEGORY_OPTIONS'] },
   { file: 'app/(main)/events/new/event-form.tsx', module: '@/lib/events/options', symbols: ['CATEGORY_OPTIONS'] },
   { file: 'app/(main)/events/index-data.ts', module: '@/lib/events/options', symbols: ['CATEGORY_OPTIONS'] },
   { file: 'app/(main)/events/admin-actions.ts', module: '@/lib/events/options', symbols: ['CATEGORY_VALUES'] },

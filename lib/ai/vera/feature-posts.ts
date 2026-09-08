@@ -11,6 +11,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { completeText } from '../complete'
 import { aiAvailable, featureOverBudget, recordAiUsage } from '../usage'
+import { parseModelJson, z } from '@/lib/ai/schema'
 
 const FEATURE = 'feature-posts'
 // How many recent posts Vera reads, and how many she features.
@@ -51,19 +52,14 @@ function buildCandidateList(candidates: Candidate[]): string {
 /** Parse the model's reply into ids that exist in the candidate set. Tolerant of
  *  stray prose / code fences; returns only valid, deduped ids (capped). Pure. */
 export function parseChosenIds(text: string, validIds: Set<string>): string[] {
-  const match = text.match(/\[[\s\S]*\]/)
-  if (!match) return []
-  let parsed: unknown
-  try {
-    parsed = JSON.parse(match[0])
-  } catch {
-    return []
-  }
-  if (!Array.isArray(parsed)) return []
+  // The reply contract (ADR-1287): an array of strings. One non-string entry is a refused reply,
+  // because a model that answered in the wrong shape did not do the curation it was asked for.
+  const res = parseModelJson(text, z.array(z.string()), 'array')
+  if (!res.ok) return []
   const out: string[] = []
   const seen = new Set<string>()
-  for (const v of parsed) {
-    const id = typeof v === 'string' ? v.trim() : ''
+  for (const v of res.data) {
+    const id = v.trim()
     if (id && validIds.has(id) && !seen.has(id)) {
       seen.add(id)
       out.push(id)

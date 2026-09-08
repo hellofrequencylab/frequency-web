@@ -2,18 +2,14 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
-import { aiEnabled } from '@/lib/ai'
-import { isStaff, type WebRole } from '@/lib/core/roles'
-import { getMemberContext } from '@/lib/ai/memory'
-import { supportSummaryForVera } from '@/lib/support/store'
-import { runVeraTurn } from '@/lib/ai/vera/loop'
-import { runVeraClaudeTurn, type VeraMessage } from '@/lib/ai/vera/agent-claude'
+import type { VeraMessage } from '@/lib/ai/vera/agent-claude'
+import { runConciergeTurn, type ConciergeTurnResult } from '@/lib/ai/vera/turn'
 import { executeConfirmedTool } from '@/lib/ai/vera/execute'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { isError } from '@/lib/action-result'
 import { joinCircle } from '@/app/(main)/circles/actions'
-import type { EntitlementTier } from '@/lib/core/entitlement'
-import type { ConciergeStage, ProposedToolCall } from '@/lib/ai/vera/concierge'
+
+export type { ConciergeTurnResult }
 
 // The tools a MEMBER may run from their own confirm path. Each self-scopes its write to the
 // caller (memory, own profile, an intro post in their voice). join_circle is handled separately
@@ -28,59 +24,15 @@ async function callerProfileId(): Promise<string | null> {
   return data?.id ?? null
 }
 
-/** The caller's id + both role axes (ADR-208), so Vera can answer to the depth their
- *  permissions allow — operator-to-operator for staff, companion scope for members. */
-async function callerIdentity(): Promise<{ id: string; communityRole: string; webRole: WebRole; tier: EntitlementTier } | null> {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return null
-  const { data } = await supabase
-    .from('profiles')
-    .select('id, community_role, web_role, membership_tier')
-    .eq('auth_user_id', user.id)
-    .maybeSingle()
-  if (!data?.id) return null
-  return {
-    id: data.id,
-    communityRole: (data.community_role as string) ?? 'member',
-    webRole: ((data.web_role as WebRole | null) ?? 'none'),
-    // The billing tier feeds the vera_unlimited daily-cap gate (ADR-370). INERT while billing is OFF.
-    tier: ((data.membership_tier as EntitlementTier | null) ?? 'free'),
-  }
-}
-
-export interface ConciergeTurnResult {
-  message: string
-  /** 'chat' once the live loop is driving (the deterministic stages no longer apply). */
-  stage: ConciergeStage | 'chat'
-  proposals: ProposedToolCall[]
-  suggestions: string[]
-  done: boolean
-}
-
 // authz-ok: intentionally PUBLIC — the onboarding concierge serves signed-out visitors. The
-// callerIdentity() call inside the AI branch is optional personalization (null for anonymous,
-// and the turn proceeds either way), not a gate; write proposals are returned, never executed.
-/** One concierge turn. Live Claude when the kernel is on (grounded in memory, with
- *  the bounded tools); the deterministic concierge otherwise. Either way, write
- *  proposals are returned, never executed. */
+// identity lookup inside lib/ai/vera/turn is optional personalization (null for anonymous, and
+// the turn proceeds either way), not a gate; write proposals are returned, never executed.
+/** One concierge turn, the whole reply at once. The live loop when the kernel is on (grounded in
+ *  memory, with the bounded tools); the deterministic concierge otherwise. The streaming door is
+ *  app/api/vera/turn (ADR-1287); both run lib/ai/vera/turn, and the client falls back to this one
+ *  when a stream cannot be opened. Write proposals are returned, never executed. */
 export async function conciergeTurn(stage: string, memberText: string, history: VeraMessage[] = []): Promise<ConciergeTurnResult> {
-  if (aiEnabled()) {
-    const ident = await callerIdentity()
-    const profileId = ident?.id ?? null
-    const [memberContext, supportSummary] = profileId
-      ? await Promise.all([getMemberContext(profileId), supportSummaryForVera(profileId).catch(() => '')])
-      : [null, '']
-    const viewer = ident
-      ? { isOperator: isStaff(ident.webRole), roleLabel: isStaff(ident.webRole) ? ident.webRole : ident.communityRole }
-      : null
-    const live = await runVeraClaudeTurn({ history, memberText, memberContext, supportSummary, profileId, tier: ident?.tier ?? null, viewer })
-    if (live) return { message: live.reply, stage: 'chat', proposals: live.proposals, suggestions: live.suggestions, done: false }
-  }
-
-  // Deterministic fallback (also the path when AI is off / over budget).
-  const turn = await runVeraTurn({ stage: stage === 'chat' ? 'done' : (stage as ConciergeStage), memberText })
-  return { message: turn.message, stage: turn.stage, proposals: turn.proposals, suggestions: turn.suggestions, done: turn.done }
+  return runConciergeTurn(stage, memberText, history)
 }
 
 /** The member confirmed a proposed write — execute it (consent-gated). */

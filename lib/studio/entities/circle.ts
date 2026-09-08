@@ -23,6 +23,9 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { REPEAT_ITEM_SELF, type EntityManifest, type FieldOption } from '@/lib/studio/kernel/manifest'
+// PURE (lib/circles/visibility.ts: no Supabase, no Next, no React), so the manifest reads the access
+// vocabulary from its one source rather than restating six modes and their member-facing labels.
+import { CIRCLE_ACCESS_LABEL, CIRCLE_ACCESS_MODES } from '@/lib/circles/visibility'
 
 /** Render a scalar as display text. Mirrors the kernel's own reader. PURE + total. */
 function str(v: unknown): string {
@@ -46,6 +49,23 @@ const PILLAR_OPTIONS: readonly FieldOption[] = [
   { value: 'expression', label: 'Expression' },
 ]
 
+/**
+ * `circles.status`, which is the `group_status` enum (lib/database.types.ts). RESTATED because the
+ * enum is a type, not a value. The settings rail used to offer a sixth word, "Paused", that the
+ * enum does not contain, so picking it failed at the database; the manifest declares the five
+ * the column accepts (ADR-1281).
+ */
+const STATUS_OPTIONS: readonly FieldOption[] = [
+  { value: 'draft', label: 'Draft (only you can see it)' },
+  { value: 'forming', label: 'Forming' },
+  { value: 'active', label: 'Active' },
+  { value: 'inactive', label: 'Inactive' },
+  { value: 'archived', label: 'Archived' },
+]
+
+/** AXIS 2 (ADR-1015) as choices. The surface narrows the list to what the owning Space allows. */
+const ACCESS_OPTIONS: readonly FieldOption[] = CIRCLE_ACCESS_MODES.map((mode) => ({ value: mode, label: CIRCLE_ACCESS_LABEL[mode] }))
+
 export const CIRCLE_MANIFEST: EntityManifest = {
   entity: 'circle',
   label: 'Circle',
@@ -68,17 +88,24 @@ export const CIRCLE_MANIFEST: EntityManifest = {
     { key: 'shape', title: 'How it runs', desc: 'In person or online, the headcount that works, and the cap.' },
     { key: 'agreements', title: 'Agreements', desc: 'The plain norms of the group, stated once.' },
     { key: 'remix', title: 'Remix and next steps', desc: 'Variations another Host could run, and the Journey you would point members at.' },
+    { key: 'publishing', title: 'Publishing', desc: 'Where it stands, who can find it, who can get in, and the Channel it practices in.' },
   ],
 
   fields: [
     // ── Identity. The three the wizard actually asks for, plus the slug it derives. ──
-    { path: 'name', label: 'Name', kind: 'text', section: 'identity', placement: 'spark', required: true },
+    // The name is asked at creation and edited in the rail after (ADR-1281): a rename is
+    // configuration, not page content, and the settings rail has always carried it.
+    { path: 'name', label: 'Name', kind: 'text', section: 'identity', placement: 'spark', required: true, editPlane: 'rail' },
     // The Card / one-liner lands in the Circle's About (createBlankCircleDraft: oneLiner ?? identity).
     { path: 'about', label: 'About', kind: 'longtext', section: 'identity', placement: 'spark', prose: true, veraDrafts: true },
     // The lean. The other three Pillars live inside it; a Circle is never sorted by it.
     { path: 'primaryPillar', label: 'Primary Pillar', kind: 'select', section: 'identity', placement: 'spark', options: PILLAR_OPTIONS },
     // Derived from the name at create (uniqueCircleSlug), editable after.
     { path: 'slug', label: 'Handle', kind: 'slug', section: 'identity', omitWhenEmpty: true },
+    // The cover, `circles.image_url`. Self-saves through the Loom (setCircleCoverUrl); the rail
+    // persisted it without declaring it until ADR-1281. Its focal point, height, and scrim ride
+    // on the cover control (CircleHeaderControls) and are not fields, as the Journey's are not.
+    { path: 'imageUrl', label: 'Cover image', kind: 'image', section: 'identity', omitWhenEmpty: true, veraDrafts: false },
 
     // ── The four Pillars inside. Content, edited in place on the live Circle. ──
     { path: 'pillarsInside.mind', label: 'Mind', kind: 'text', section: 'pillars', placement: 'inline', veraDrafts: true },
@@ -113,6 +140,20 @@ export const CIRCLE_MANIFEST: EntityManifest = {
 
     // ── The Journey a Host points members at. One Pillar, optional. ──
     { path: 'recommendedJourneyPillar', label: 'Recommended Journey Pillar', kind: 'select', section: 'remix', options: PILLAR_OPTIONS, omitWhenEmpty: true },
+
+    // ── Publishing. The Host's own calls, never Vera's. Four columns the settings rail persisted
+    //    without declaring until ADR-1281 (the AGENTS.md rule read the other way: a column a rail
+    //    writes has to be a field). ──
+    // A Circle is created `draft` (lib/circles/draft.ts). Mirrors `CircleDraft['status']`.
+    { path: 'status', label: 'Status', kind: 'select', section: 'publishing', options: STATUS_OPTIONS, veraDrafts: false, read: (d) => str(d.status) || 'draft' },
+    // AXIS 1 (ADR-1015): unlisted keeps the Circle off the directory, map, search, and sitemap
+    // while the link still works and members always see it.
+    { path: 'unlisted', label: 'Unlisted', kind: 'toggle', section: 'publishing', veraDrafts: false },
+    // AXIS 2 (ADR-1015): who may enter. `circles.access`; open is the column's default.
+    { path: 'access', label: 'Who can join', kind: 'select', section: 'publishing', options: ACCESS_OPTIONS, veraDrafts: false, read: (d) => str(d.access) || 'open' },
+    // The Channel this Circle practices in (ADR-871), `circles.topical_channel_id`. A real foreign
+    // key the surface loads, grouped by Pillar; the manifest names the collection.
+    { path: 'topicalChannelId', label: 'Channel', kind: 'reference', section: 'publishing', optionsFrom: 'channels', veraDrafts: false, omitWhenEmpty: true },
   ],
 
   // The two lists a Host adds to and removes from one row at a time. Each row is its own

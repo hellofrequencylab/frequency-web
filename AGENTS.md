@@ -259,21 +259,22 @@ same guard locally and prints what to fix.
 - A field's `placement` (`spark` / `inline` / `rail`) is the intended ONE seam between creating and
   editing (the "one verb, two planes" model of ADR-450, spelled out in
   [`docs/EDITING-SYSTEM.md`](docs/EDITING-SYSTEM.md) §2 — ADR-450 itself has no numbered sections).
-  ⏳ **Both halves consume it now, but only TWO rails are wired.** `sparkFields()` drives every Spark.
-  The edit side reads placement through `lib/studio/kernel/edit-plan.ts` ([ADR-1240](docs/DECISIONS.md),
-  2026-09-07): `railForm(manifest, writes, { hostInline })` gives a rail form its fields from the
-  manifest, and the only thing the form says for itself is the columns its save action writes.
-  The Practice and Journey settings rails derive from it (`components/admin/modules/practice-rail-plan.ts`
-  and `journey-rail-plan.ts`, rendered through `RailManifestFields`; the Journey's plan also carries
-  the column-to-key maps its JSON-patch actions need, [ADR-1246](docs/DECISIONS.md)); the Circle and
-  Event rails still hand-declare their fields, so for those two nothing yet prevents drift. Both
-  render spark-only, non-prose fields the selectors place on no edit plane (the Circle's `name`;
-  the Event's `starts_at` and `location`), so each waits on the kernel ruling ADR-1240 deferred (a
-  PLACEMENT question; the per-road create GATE that ADR-1249 filed under the same name is settled,
-  [ADR-1280](docs/DECISIONS.md)). `HYG-050` stays open and its probe passes
-  only when those two derive. Keep declaring placement for all three planes (`FieldPlacement` in
-  `lib/studio/kernel/manifest.ts`), and when you touch one of the two remaining rails, wire it
-  through a `<entity>-rail-plan.ts` beside the module rather than editing its field list.
+  ✅ **Both halves consume it, and all four Guided rails derive from it** (2026-09-08,
+  [ADR-1281](docs/DECISIONS.md), `HYG-050` closed). `sparkFields()` drives every Spark. The edit
+  side reads placement through `lib/studio/kernel/edit-plan.ts` ([ADR-1240](docs/DECISIONS.md)):
+  `railForm(manifest, writes, { hostInline })` gives a rail form its fields from the manifest, and
+  the only thing the form says for itself is the columns its save action writes. The Practice,
+  Journey, Circle and Event settings rails each render a `components/admin/modules/<entity>-rail-plan.ts`
+  through `RailManifestFields`, and each plan is pinned by its own `*-rail-plan.test.ts` (fields by
+  zone, zero dropped columns, the drift case, a source-shape guard that the module declares no
+  field). A rail whose server speaks another dialect keeps the translation beside its plan: the
+  Journey's JSON-patch key maps ([ADR-1246](docs/DECISIONS.md)); the Circle's and Event's
+  snake_case column maps and FormData builders (ADR-1281). The ruling ADR-1240 deferred is made: a
+  NON-prose `spark` field is on no edit plane unless it declares one with `editPlane: 'rail' | 'inline'`
+  (`FieldDef.editPlane`, `lib/studio/kernel/manifest.ts`); prose keeps deriving its plane, and
+  `validateManifest` refuses the declaration anywhere the plane is already derived. Keep declaring
+  placement for all three planes (`FieldPlacement`), and when you add a rail, wire it through a
+  `<entity>-rail-plan.ts` beside the module rather than writing a field list.
 
 # Admin menu — a locked, machine-enforced contract (extend the catalog, never rewrite the rail)
 

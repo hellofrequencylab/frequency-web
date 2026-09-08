@@ -127,6 +127,7 @@ gem_transactions                     authenticated
 help_chunks                          internal
 household_bundle_invites             internal
 housing_listings                     authenticated
+housing_match_alerts                 authenticated
 housing_seeker_profiles              authenticated
 hubs                                 public
 interaction_events                   authenticated
