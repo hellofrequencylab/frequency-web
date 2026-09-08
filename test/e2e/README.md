@@ -144,6 +144,41 @@ Baselines live in `test/e2e/__screenshots__/visual.spec.ts/` and are named
 Member-shell files are the `app-*` ones (`app-feed`, `app-room`, `app-settings`,
 `app-space-console`) and are captured only with `capture_shell` ticked.
 
+### Reading a capture before taking it (ADR-1273)
+
+A capture rewrites **every** PNG whose page renders differently from the day that
+file was last taken, not only the files the dispatching row named, and the runner
+reports nothing but the file count. Read the diff before committing it, and read
+**where** the pixels sit, not how many there are:
+
+```
+pnpm visual:bands origin/main HEAD          # the committed set vs the runner's commit
+pnpm visual:bands origin/main HEAD --only app-nearby --top 6
+```
+
+It prints each changed file's differing-pixel count (pixelmatch's YIQ delta at the
+suite's threshold, so it means what `toHaveScreenshot` means) and the contiguous row
+bands holding them. The bands are the reading. A handful at the header, a CTA and the
+footer is a copy or control change: take the capture. A band on every text row is a
+font or rasteriser change: the suite moved, not the page. Bands only on surfaces that
+also differ between two captures minutes apart are live data (`/nearby`, `/feed`, the
+room). Crop a band and look at it before deciding what it is.
+
+**A count is not a cause.** On 2026-09-08 a 138-file recapture was rejected as
+"rasterisation" because every file kept its height while 5,000-26,000 px changed. The
+bands said otherwise: the header CTA, the footer CTA and one settings row, i.e. the
+2026-09-04 CTA sweep the committed set predated. Copy inside a fixed box moves no rows.
+Two production captures fourteen minutes apart agreed to the pixel on every surface
+that is not live data, which is what "deterministic" looks like.
+
+Which URL to capture against: production (`https://frequencylocal.com`) is the
+reference `pr-compare` needs, since a PR's preview is main plus the PR. The 2026-08-31
+worry about "production-only differences" was measured on 2026-09-08 and none appeared:
+six surfaces captured on production were byte-for-byte the preview-captured baselines,
+and no band anywhere sat where a production-only element would render. A preview URL
+of a branch that has main merged is equivalent; a preview that lacks main's latest
+merges is not, and the 2026-09-04 baselines were exactly that.
+
 ### A reading is not a ceiling (a11y counts)
 
 `test/e2e/a11y-baselines.json` holds one post-waiver serious+ count per
