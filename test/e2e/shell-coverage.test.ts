@@ -2,6 +2,7 @@
 // announce a silence, so the test that matters most is the negative control — a run that did
 // photograph the shell must NOT be able to print the partial banner. Without that, the banner
 // is decoration that reads like evidence.
+import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import {
   renderShellCoverage,
@@ -390,5 +391,76 @@ describe('requiredFailure: two opt-in ratchets, one per owner precondition', () 
     // must not fire on it — the two silences have two fixes and two switches.
     expect(requiredFailure(denied, { requireShell: '1' })).toBeNull()
     expect(requiredFailure(partial, { requireOperator: '1' })).toBeNull()
+  })
+})
+
+// ── THE PURE FUNCTION IS PROVEN ABOVE; THIS IS THE PROOF THAT THE WORKFLOWS FEED IT ──────────────
+//
+// 🔴 requiredFailure() cannot fire on a value nothing passes it, and for a year one of the two
+// workflows that run this suite passed neither. Measured against production on 2026-09-08, run
+// 34174895830 (e2e-manual.yml, capture_shell on):
+//
+//     ##[warning]*** is signed in but is NOT platform staff: /admin redirected to /feed,
+//                which is requireAdminFloor()'s denial target.
+//     ⚠️  App shell covered; the OPERATOR CONSOLE was not looked at.
+//     ##[error]/admin, /admin/library, … bounced off the /admin role floor.
+//     smoke → SUCCESS
+//
+// Everything the reporter is supposed to say, said — and a green job over it. The PR gate
+// (e2e.yml) reads both ratchets, so the owner's `PW_REQUIRE_OPERATOR=1` would have turned THAT
+// path red while leaving the CAPTURE path — the dispatch the owner is asked to make to take the
+// operator baselines in the first place — green over a capture that photographed none of them.
+//
+// So the switch has to reach every step that runs a suite, and something has to notice when it
+// stops. AGENTS.md: "Every fail-safe needs a gate that notices it fired." This is that gate one
+// level up — it reads the workflow SOURCE, so it fails on the shape rather than on a CI run it
+// would have to dispatch to observe. HYG-027, ADR-1266.
+describe('both e2e workflows hand the ratchets to every step that runs a suite', () => {
+  /** Steps are 6-space list items; a step "runs a suite" iff its own `run:` invokes one. */
+  function suiteSteps(source: string): string[] {
+    return source
+      .split(/\n(?= {6}- (?:name|uses):)/)
+      .filter((step) => /^ +run: pnpm test:e2e/m.test(step))
+  }
+
+  const prGate = readFileSync('.github/workflows/e2e.yml', 'utf8')
+  const manual = readFileSync('.github/workflows/e2e-manual.yml', 'utf8')
+
+  it('e2e.yml: both suite steps read both ratchets, from either tab', () => {
+    const steps = suiteSteps(prGate)
+    expect(steps).toHaveLength(2) // Smoke + a11y suite, Visual compare
+    for (const step of steps) {
+      expect(step).toContain('vars.PW_REQUIRE_SHELL || secrets.PW_REQUIRE_SHELL')
+      expect(step).toContain('vars.PW_REQUIRE_OPERATOR || secrets.PW_REQUIRE_OPERATOR')
+    }
+  })
+
+  it('e2e-manual.yml: ALL FOUR suite steps read both ratchets — the half that was missing', () => {
+    const steps = suiteSteps(manual)
+    // smoke, update-baselines, update-a11y, visual. A fifth suite-running step added without the
+    // pass-through is exactly the regression this asserts against.
+    expect(steps).toHaveLength(4)
+    for (const step of steps) {
+      expect(step).toContain('vars.PW_REQUIRE_SHELL || secrets.PW_REQUIRE_SHELL')
+      expect(step).toContain('vars.PW_REQUIRE_OPERATOR || secrets.PW_REQUIRE_OPERATOR')
+    }
+  })
+
+  it('and gates them on capture_shell, so a marketing-only dispatch cannot go red for a half it never asked for', () => {
+    for (const step of suiteSteps(manual)) {
+      expect(step).toMatch(/PW_REQUIRE_SHELL: \$\{\{ inputs\.capture_shell &&/)
+      expect(step).toMatch(/PW_REQUIRE_OPERATOR: \$\{\{ inputs\.capture_shell &&/)
+    }
+  })
+
+  it('POSITIVE CONTROL: the reader finds the suite steps, and notices when the wiring is removed', () => {
+    // ADR-949 — a guard is not trusted until it has been observed failing. Both halves: the
+    // splitter must actually find steps (a broken regex would vacuously pass every loop above),
+    // and a tree with the pass-through deleted must be detected.
+    expect(suiteSteps(manual).length).toBeGreaterThan(0)
+    const blinded = manual.replace(/^ +PW_REQUIRE_(SHELL|OPERATOR):.*$/gm, '')
+    expect(
+      suiteSteps(blinded).every((step) => step.includes('PW_REQUIRE_OPERATOR:')),
+    ).toBe(false)
   })
 })
