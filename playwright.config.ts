@@ -134,20 +134,38 @@ export default defineConfig({
     baseURL: process.env.PW_BASE_URL,
     trace: 'on-first-retry',
     ...(executablePath ? { launchOptions: { executablePath } } : {}),
-    // Vercel preview deployments sit behind Deployment Protection: without the
-    // bypass header every SSR route serves Vercel's auth interstitial (viewport-tall
-    // pages, /login redirects) and both e2e suites test the wall, not the app.
-    // Set VERCEL_AUTOMATION_BYPASS_SECRET (Vercel project settings -> Deployment
-    // Protection -> Protection Bypass for Automation) to run against previews;
-    // production needs no header.
-    ...(process.env.VERCEL_AUTOMATION_BYPASS_SECRET
-      ? {
-          extraHTTPHeaders: {
+    extraHTTPHeaders: {
+      // THE VERCEL TOOLBAR IS NOT PART OF THE PRODUCT, AND IT WAS IN EVERY PREVIEW BASELINE
+      // (LIVE-213, ADR-1277). Vercel injects its preview toolbar into every HTML response a
+      // preview deployment serves, to every visitor, signed in to Vercel or not. It paints a
+      // fixed black disc at the right edge, vertically centred (rows 400-435 at 1280x800,
+      // 284-323 at 320x568). Production never carries it, so a capture taken from a preview and
+      // one taken from production differed at that spot on every public page, and the
+      // difference was read as "Vera's edge tab" for a day until the band was cropped and looked
+      // at: it is a 34px disc inset from the edge, not the 44px amber tab that sits flush to it,
+      // and the app mounts no Vera launcher on a marketing page at all.
+      //
+      // `x-vercel-skip-toolbar: 1` is Vercel's documented per-request off switch for exactly this
+      // (docs: vercel-toolbar/managing-toolbar, "disable toolbar for automation"). It is sent on
+      // EVERY run, secret or no secret: production and a local dev server ignore it, and a header
+      // that only shipped beside the bypass secret would put the toolbar back into any capture
+      // taken without one. The alternative is the project-level env var
+      // VERCEL_PREVIEW_FEEDBACK_ENABLED=0 in the Preview environment, which would also hide the
+      // toolbar from the humans who use it on previews; this header hides it from the camera only.
+      'x-vercel-skip-toolbar': '1',
+      // Vercel preview deployments sit behind Deployment Protection: without the
+      // bypass header every SSR route serves Vercel's auth interstitial (viewport-tall
+      // pages, /login redirects) and both e2e suites test the wall, not the app.
+      // Set VERCEL_AUTOMATION_BYPASS_SECRET (Vercel project settings -> Deployment
+      // Protection -> Protection Bypass for Automation) to run against previews;
+      // production needs no header.
+      ...(process.env.VERCEL_AUTOMATION_BYPASS_SECRET
+        ? {
             'x-vercel-protection-bypass': process.env.VERCEL_AUTOMATION_BYPASS_SECRET,
             'x-vercel-set-bypass-cookie': 'true',
-          },
-        }
-      : {}),
+          }
+        : {}),
+    },
   },
   projects: [
     {

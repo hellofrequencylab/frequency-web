@@ -1510,7 +1510,7 @@ export function MovementSession({
 
 function Label({ id, children }: { id?: string; children: React.ReactNode }) {
   return (
-    <p id={id} className="text-meta font-semibold uppercase tracking-wider text-subtle">
+    <p id={id} className="eyebrow text-subtle">
       {children}
     </p>
   )

@@ -4,12 +4,14 @@ import { resolve } from 'node:path'
 import {
   entityWriteSites,
   routesThroughGovernedLayer,
+  declaresRoadGate,
   autonomyWallViolations,
   runCheck,
   ENTITY_WRITES,
   CREATE_ENTRIES,
   NOT_PROPOSE_AND_CONFIRM,
   UNROUTED,
+  ROAD_GATES,
   MIN_WRITE_SITES,
 } from './check-creates.mjs'
 
@@ -176,6 +178,53 @@ export async function createThingAction() {
   })
 })
 
+describe('check-creates · rule 2b (a road that declares its own gate, ADR-1280)', () => {
+  const gated = `import { proposeAndConfirmCreate } from '@/lib/ai/vera/create-entity'
+export async function createThingAction() {
+  return proposeAndConfirmCreate({
+    entity: 'practice',
+    draft: { title: 'x' },
+    roadGate: { kind: 'scoped', why: 'the caller manages the Space' },
+    commit: () => writeThing(),
+  })
+}
+`
+
+  it('sees a roadGate passed to the governed layer', () => {
+    expect(declaresRoadGate('app/x/actions.ts', gated, 'createThingAction')).toBe(true)
+  })
+
+  it('does not see one on a road that passes none', () => {
+    const src = `import { proposeAndConfirmCreate } from '@/lib/ai/vera/create-entity'
+export async function createThingAction() {
+  return proposeAndConfirmCreate({ entity: 'practice', draft: { title: 'x' }, commit: () => writeThing() })
+}
+`
+    expect(declaresRoadGate('app/x/actions.ts', src, 'createThingAction')).toBe(false)
+  })
+
+  // A `roadGate` key on some unrelated object is not a declaration; only one handed to the
+  // governed layer stands in for a capability, so only that one needs a ROAD_GATES row.
+  it('ignores a roadGate key that never reaches the governed layer', () => {
+    const src = `export async function createThingAction() {
+  const opts = { roadGate: { kind: 'scoped', why: 'nothing' } }
+  return writeThing(opts)
+}
+`
+    expect(declaresRoadGate('app/x/actions.ts', src, 'createThingAction')).toBe(false)
+  })
+
+  it('is per function body, so a gated road does not gate its neighbour', () => {
+    const src = gated + `
+export async function createOtherThingAction() {
+  return proposeAndConfirmCreate({ entity: 'practice', draft: { title: 'y' }, commit: () => writeOther() })
+}
+`
+    expect(declaresRoadGate('app/x/actions.ts', src, 'createThingAction')).toBe(true)
+    expect(declaresRoadGate('app/x/actions.ts', src, 'createOtherThingAction')).toBe(false)
+  })
+})
+
 describe('check-creates · rule 3 (the autonomy wall)', () => {
   it('is intact in the live repo', () => {
     expect(autonomyWallViolations()).toEqual([])
@@ -232,6 +281,16 @@ describe('check-creates · the lists are honest', () => {
     }
   })
 
+  // A road gate is the one way a create walks past a capability, so its row has to say which
+  // check stands in for it: dated, citing the ADR that allowed the shape, and naming the check.
+  it('every ROAD_GATES row names a registered create entry and the check the road runs', () => {
+    for (const [key, why] of ROAD_GATES) {
+      expect(CREATE_ENTRIES.has(key), key).toBe(true)
+      expect(why, key).toMatch(/^\d{4}-\d{2}-\d{2} \(ADR-\d+\) — /)
+      expect(why.length, key).toBeGreaterThan(60)
+    }
+  })
+
   it('every deliberate exclusion says WHY it is not propose-and-confirm', () => {
     for (const [key, why] of NOT_PROPOSE_AND_CONFIRM) {
       expect(why, key).toMatch(/^(OPERATOR|ALREADY PROPOSE-AND-CONFIRM|MATERIALIZATION|COPY|FIXTURE|CURRICULUM TOOLING)\./)
@@ -276,11 +335,11 @@ describe('check-creates · the live repo', () => {
     expect(UNROUTED.has('app/(main)/drafts/actions.ts::confirmDraftAction')).toBe(false)
   })
 
-  // THE RATCHET TURNED (ADR-1249, ADR-1262, HYG-053). Sixteen of the eighteen wizard roads named on
-  // 2026-08-11 route through the governed layer: fifteen on 2026-09-07, and Housing on 2026-09-08.
-  // Each is asserted POSITIVELY here, so a road that quietly stops calling the layer fails this
-  // test before it can be re-added to UNROUTED; and the allowlist's size is a ceiling that may fall
-  // and never rise.
+  // THE RATCHET TURNED ALL THE WAY (ADR-1249, ADR-1262, ADR-1280, HYG-053). All eighteen wizard
+  // roads named on 2026-08-11 route through the governed layer: fifteen on 2026-09-07, Housing on
+  // 2026-09-08, and the last two the same day once their rulings were taken. Each is asserted
+  // POSITIVELY here, so a road that quietly stops calling the layer fails this test before it can
+  // be re-added to UNROUTED; and the allowlist's size is a ceiling that may fall and never rise.
   const ROUTED_ON_2026_09_07 = [
     'app/(main)/circles/builder-actions.ts::createDraftFromSparkAction',
     'app/(main)/circles/builder-actions.ts::createBlankDraftAction',
@@ -304,13 +363,68 @@ describe('check-creates · the live repo', () => {
   // refuse a listing with no city, and the road routes.
   const ROUTED_ON_2026_09_08 = ['app/(main)/marketplace/actions.ts::createHousingListingAction']
 
-  it('recognises the sixteen wizard roads routed so far, and UNROUTED never grows past two', () => {
+  // ADR-1280 (2026-09-08). The last two lines each named a kernel ruling, and both were taken: the
+  // Space Practice road declares the scoped gate it already enforces (`roadGate`), and the flyer
+  // scan's draft-status Event is a create born at `stage: 'draft'`, with `startsAt` deferred to
+  // publish by the manifest (`requiredAt: 'publish'`).
+  const ROUTED_ON_2026_09_08_LAST_TWO = [
+    'app/(main)/spaces/[slug]/practices/actions.ts::createSpacePracticeAction',
+    'app/(main)/events/scan/actions.ts::saveDraft',
+  ]
+
+  it('recognises every wizard road as routed, and UNROUTED is empty', () => {
     const { ratchet } = runCheck()
-    for (const key of [...ROUTED_ON_2026_09_07, ...ROUTED_ON_2026_09_08]) {
+    for (const key of [...ROUTED_ON_2026_09_07, ...ROUTED_ON_2026_09_08, ...ROUTED_ON_2026_09_08_LAST_TWO]) {
       expect(ratchet.routed, key).toContain(key)
       expect(UNROUTED.has(key), key).toBe(false)
     }
-    expect(UNROUTED.size).toBeLessThanOrEqual(2)
+    expect(UNROUTED.size).toBe(0)
+    expect(ratchet.routed.length).toBe(CREATE_ENTRIES.size)
+  })
+
+  // The two rulings are consequences in source, not titles: the road gate is on the practice road
+  // and named in ROAD_GATES; the draft stage is on the scan road, and the field it defers says so
+  // in the manifest.
+  it('the Space Practice road declares its gate and is named for it (ADR-1280)', () => {
+    const key = 'app/(main)/spaces/[slug]/practices/actions.ts::createSpacePracticeAction'
+    const src = readFileSync(resolve(process.cwd(), key.split('::')[0]), 'utf8')
+    expect(declaresRoadGate(key.split('::')[0], src, 'createSpacePracticeAction')).toBe(true)
+    expect(ROAD_GATES.has(key)).toBe(true)
+    // The public-library gate the road does NOT hold is still held where it belongs.
+    expect(src).toMatch(/canCreate\('practice\.create'\)/)
+  })
+
+  it('the flyer-scan draft is a stage-draft create, and the manifest defers its start to publish (ADR-1280)', () => {
+    const scan = readFileSync(resolve(process.cwd(), 'app/(main)/events/scan/actions.ts'), 'utf8')
+    const manifest = readFileSync(resolve(process.cwd(), 'lib/studio/entities/event.ts'), 'utf8')
+    expect(scan).toMatch(/entity: 'event',\s*stage: 'draft'/)
+    expect(manifest).toMatch(/path: 'startsAt'[^\n]*required: true[^\n]*requiredAt: 'publish'/)
+    // Publishing still enforces the full manifest, at the strict stage.
+    expect(scan).toMatch(/checkCreateDraft\('event',[\s\S]*?'publish'\)/)
+  })
+
+  // Rule 2b in both directions, against the live tree: unname the one road that declares a gate
+  // and the run must go red; name a road that declares none and it must go red the other way.
+  it('rule 2b fires when a road gate is unnamed, and when a name has no gate behind it', () => {
+    const key = 'app/(main)/spaces/[slug]/practices/actions.ts::createSpacePracticeAction'
+    const why = ROAD_GATES.get(key)
+    expect(why).toBeTruthy()
+    ROAD_GATES.delete(key)
+    try {
+      const { violations } = runCheck()
+      expect(violations.some((v) => v.kind === 'unnamed-road-gate' && v.file === key.split('::')[0])).toBe(true)
+    } finally {
+      ROAD_GATES.set(key, why as string)
+    }
+    const stale = 'app/(main)/practices/actions.ts::createPracticeDraftAction'
+    ROAD_GATES.set(stale, '2026-09-08 (ADR-1280) — a control row: this road declares no gate, so this row is stale by construction.')
+    try {
+      const { violations } = runCheck()
+      expect(violations.some((v) => v.kind === 'stale-road-gate' && v.file === stale.split('::')[0])).toBe(true)
+    } finally {
+      ROAD_GATES.delete(stale)
+    }
+    expect(runCheck().violations).toEqual([])
   })
 
   // The city rule is the CONSEQUENCE of ADR-1262, and it is what makes the Housing road routable:
@@ -328,9 +442,10 @@ describe('check-creates · the live repo', () => {
     expect(form).toMatch(/name="city"[^>]*required/)
   })
 
-  // The two that remain each say, on their own line, which ruling they wait on. A bare date is
-  // not a reason; the reader of this list must be able to tell effort from a blocked premise.
-  it('every remaining UNROUTED line names the ruling it waits on', () => {
+  // Should a line ever be named again, it must say which ruling it waits on. A bare date is not
+  // a reason; the reader of this list must be able to tell effort from a blocked premise. The map
+  // is empty today, so this holds vacuously and starts biting the day someone adds a line.
+  it('any UNROUTED line names the ruling it waits on', () => {
     for (const [key, why] of UNROUTED) {
       expect(why, key).toMatch(/NOT routable as it stands/)
       expect(why, key).toMatch(/Needs /)

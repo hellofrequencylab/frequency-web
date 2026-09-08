@@ -37,7 +37,9 @@ export async function DemoNotice() {
   if (demoCount === 0) return null // nothing to explain — likely already purged
 
   return (
-    <section className="overflow-hidden rounded-2xl border border-warning/40 bg-gradient-to-b from-warning-bg/80 to-warning-bg/30 lift-1">
+    // Masked by the visual suite (test/e2e/surfaces.ts, VISUAL_MASK_SITES): the headcount line
+    // is two live counts, and the panel itself comes and goes with the demo flag.
+    <section data-visual-mask="rail-panel" className="overflow-hidden rounded-2xl border border-warning/40 bg-gradient-to-b from-warning-bg/80 to-warning-bg/30 lift-1">
       {/* Bold header band — a big bolt + a punchy line, so it reads as an ad, not a footnote. */}
       <div className="flex items-center gap-2.5 border-b border-warning/20 bg-warning-bg/60 px-3.5 py-3">
         <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-pill bg-warning text-on-warning lift-1">

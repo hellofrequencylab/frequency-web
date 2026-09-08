@@ -399,7 +399,7 @@ export function CreateStudio({ recraftEnabled }: { recraftEnabled: boolean }) {
               dangerouslySetInnerHTML={{ __html: safeSvg }}
             />
             <label className="flex-1">
-              <span className="mb-1 block text-meta font-semibold uppercase tracking-wide text-subtle">Title</span>
+              <span className="mb-1 block eyebrow text-subtle">Title</span>
               <Input value={title} onChange={(e) => setTitle(e.target.value)} />
             </label>
             <button

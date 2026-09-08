@@ -68,7 +68,7 @@ export async function MeterUpsell({
       data-meter-upsell={featureKey}
       data-meter-surface={surface?.kind ?? 'unregistered'}
     >
-      <p className="flex items-center gap-1.5 text-meta font-semibold uppercase tracking-widest text-subtle">
+      <p className="flex items-center gap-1.5 eyebrow text-subtle">
         <Gauge className="h-3.5 w-3.5 shrink-0" aria-hidden />
         {copy.dimension}
       </p>
