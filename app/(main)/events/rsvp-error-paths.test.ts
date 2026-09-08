@@ -182,7 +182,9 @@ vi.mock('@/lib/events/capacity', () => ({
 vi.mock('@/lib/events/waitlist-notify', () => ({ notifyPromotedSeat: fx.notifyPromotedSeat }))
 vi.mock('@/lib/events/store', () => ({ stampEventSpaceId: async (id?: string | null) => id ?? null }))
 vi.mock('@/lib/circles/store', () => ({ spaceIdForCircle: async () => null }))
-vi.mock('@/lib/events/checkin-enabled', () => ({ readEventCheckInEnabled: () => true }))
+// CHECK_IN_LABEL rides along because the Event manifest reads it at module scope (ADR-1281):
+// a partial mock of a module the manifest imports breaks every importer of the manifest.
+vi.mock('@/lib/events/checkin-enabled', () => ({ readEventCheckInEnabled: () => true, CHECK_IN_LABEL: 'Let guests check in' }))
 vi.mock('@/lib/events/checkin-window', () => ({ checkInWindowOpen: () => state.checkInWindowOpen }))
 vi.mock('@/lib/events/admission', () => ({
   isPendingApproval: (r: { approval_status?: string }) => r.approval_status === 'pending',
