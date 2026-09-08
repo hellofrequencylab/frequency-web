@@ -37764,3 +37764,171 @@ The funds flow was never written down. It was inferred, repeatedly, and wrongly.
 **Consequences.** `PROG-D8` (split payments — one checkout paying more than one seller) is filed with its real shape: it cannot be done by looping, because one destination charge pays exactly one account. It requires separate charges and transfers, a per-transfer ledger with its own failure states, a proportional refund rule that needs a product ruling, and seller/operator surfaces. It is sized L and gated with `DEF-MONEY` on PMF and a legal entity — zero payments have been taken to date.
 
 ⚠️ **The generalisable part, and it is the fourth time this repo has written a version of it.** `OWN-040` produced six wrong diagnoses over sixteen days against a system that was answering honestly the whole time. Five were cheap: they suggested a test, the test failed, the next reading followed. **The expensive one was the one that justified waiting** — an identity document with a plausible real-world ETA, which converted a diagnosis into a two-week park and stopped anyone from trying the thing that turned out to work. A wrong diagnosis you can test costs an hour; a wrong diagnosis that explains why you cannot test costs whatever it claims to be waiting for. The row's own earlier lesson — *when an error carries a URL, open the URL before theorising* — was right and incomplete. **Opening it is not reading it:** the banner this row seized on and the incomplete setup that was actually blocking were on the same page, and the row picked the one that came with a story.
+## ADR-1292: PROPOSED — the Quest becomes the Collective's own program, individuals never pay, and dues to a community become the second revenue leg (2026-09-08)
+
+**Status:** 🔴 **PROPOSED, not accepted.** Awaiting an owner ruling on six questions
+(`docs/FOCUS-MODEL.md` §10). Filed so the proposal has a decision record rather than a rival plan
+document; the reasoning and the measurements live in [`FOCUS-MODEL.md`](FOCUS-MODEL.md), and status
+lives in [`BUILD-BACKLOG.json`](BUILD-BACKLOG.json) (`OWN-066`).
+
+**Context.** The owner re-stated the product's centre: Frequency is a community collective that gives
+*other* communities the tools to connect and run their thing, the Quest should be the light thing we
+all do together rather than the spine, a community should be able to run its own program or adopt the
+Quest's as a template, and access should be free to individuals with revenue coming from business
+Spaces and from members paying memberships toward a given circle.
+
+An eight-lane sweep of the repo plus live production reads found that **most of this is already ruled
+or already built, and the gap is between the strategy and the app's interior**:
+
+- [ADR-811](DECISIONS.md) locked "Frequency is a Community Collective" on 2026-07-23. The marketing
+  site leads with it; **0 of 13 home blocks mention the game**. Inside the app the game holds 5 of 16
+  rail rows, 1 of 5 mobile tabs, the raised centre button, the whole feed hero, and a permanent Vault
+  dock. The induction tour and Vera's welcome deck both point at Circles, and then drop the member on
+  a practice board.
+- [ADR-252](DECISIONS.md) already ruled that Journeys are **group-coaching programs a Circle moves
+  through together**, on research showing cohort programs complete at 85-96% against 5-15% self-paced
+  and that global leaderboards demotivate. The engine shipped (`journey_runs`, cohort meter, drip,
+  kickoff event). It was never surfaced as the operator headline.
+- Member dues are **~85% built and dark**: `space_membership_tiers` → Connect destination charge →
+  webhook → `syncTierCircleAccess` grants a real `memberships` row in the linked Circle.
+  `billing_live` and `host_payouts_enabled` are both true in production.
+- Production is pre-launch and shaped unlike the strategy: 58 profiles, 21 real Spaces, and **20 of
+  21 Spaces have zero Circles**. Six of the seven Circles and 36 of the 67 events belong to the root
+  Frequency space.
+
+**Two facts make this urgent rather than merely worth doing.** `OWN-050` (the backlog's only P0)
+records that the **Stripe webhook was never registered and `stripe_webhook_events` has held 0 rows for
+the life of the table**, so no payment on any path has ever been recorded. And `beta_grace` is set to
+**2026-10-01**, after which `featureGatesLive()` starts enforcing the Crew gates against individuals
+for the first time.
+
+**The contradiction this proposal exists to resolve.** `lib/pricing/gates.ts:144` sets
+`space_memberships: { minEntitlement: 'business' }` and gives free Spaces zero tiers, so an operator
+must buy a $29/mo subscription before collecting a dollar from their own members. ADR-914 already
+ruled the opposite principle for every other transaction: *"Never gate the transaction. Gate the
+repeat."* The gate's own comment defends the wall as protecting a promise made to another person,
+which is a **readiness** concern wearing a pricing gate's clothes.
+
+**Proposed decision** (three moves, no new proper nouns, no new tables):
+
+1. **The Quest keeps its name and stops being the spine.** Collapse the rail section from five rows to
+   one, return the raised mobile button to a community verb, re-lead the feed with a community board,
+   and make the collective bar (`getCollective('global')`, already argued for in its own source
+   comments citing Festinger 1954) the default rather than a query parameter. Quiet the **REWARD**
+   stage of `ENGAGEMENT-ARCHITECTURE`'s pipeline while SOURCE → VERIFY → LEDGER keep running, so the
+   CRM, funnels, trust and analytics never notice. **Nothing is deleted.**
+2. **Every community runs its own program, and the Quest is one template among them.** Surface a
+   Circle **Run** of a Journey as the operator headline (ADR-252, sequenced at last); a Space adopts,
+   remixes or authors. `circle_challenge_adoptions` becomes the collective opt-in: built, rendered,
+   zero rows.
+3. **Free to be here, pay to belong to a community.** Retire the member-facing gates and the four
+   parallel `isPaid` walls, keep Crew as contribute-what-you-want patronage with no feature
+   difference, move the membership wall from the plan onto **readiness** (payout-ready Connect
+   account, a published circle to deliver into, a stated cancellation policy), and let the plan ladder
+   act as the take-rate buy-down it already is (free Space 10% → Business 5% → Collective 3% → Non
+   Profit 0%, and 0% on your own audience forever).
+
+**The prerequisite that gates all of move 1.** Event attendance has **no independent record**: there
+is no `checked_in` column, and attendance exists only as an idempotent engagement-ledger row written
+by the same path that pays Zaps (`app/(main)/events/actions.ts:1597-1685`). Attendance must be given
+its own record before any reward-visibility change, or check-in history is lost.
+
+**The counter-argument, recorded rather than argued away.** Dues cannot pay a bill in 2026: 10% of a
+$10/month circle is $1 per member per month, against 7 circles and 0 paying members. This proposal
+therefore does **not** replace subscriptions with dues. It removes the membership wall from the
+subscription and re-justifies the subscription on tools (CRM, campaign email, automation, the
+multi-page site). Removing the wall costs nothing today because today it collects nothing.
+
+**Consequences if accepted.** `QUEST-IA-DEBT` (ADR-293) closes. `HYG-033` (the mobile tab bar) and
+`LIVE-204` (front-door wording) are touched. `OWN-046`, `OWN-048` and `OWN-063` each need reconciling
+against the ruling. The Editor program E0-E9 and the four parked programs are untouched. Six named
+operator gaps become the feature runway: sell a course, gate content to a tier, a member directory,
+space-level discussion, completion analytics, and space-scoped posts.
+
+**Consequences if declined.** The gates close on individuals on 2026-10-01 by default, the app keeps
+opening on a personal game while every other surface sells a collective, and the dues engine stays
+walled behind the subscription it was meant to make worth buying.
+
+---
+
+## ADR-1293: PROPOSED — everything freemium, seats carry scale, and exposure is earned rather than sold (2026-09-08)
+
+**Status:** 🔴 **PROPOSED.** Five parts were ruled by the owner on 2026-09-08 and are recorded as such
+below; the rest awaits a ruling. Measurements and the full argument live in
+[`OFFER-MODEL.md`](OFFER-MODEL.md); status lives in [`BUILD-BACKLOG.json`](BUILD-BACKLOG.json)
+(`OWN-067`). Draft 2 — supersedes the one-price-plus-add-on-apps shape of the first draft.
+
+**Context.** The owner is re-engineering the model while it costs nothing to do so: the product is in
+alpha, nobody is paying except two cash arrangements, and no services are being used. The brief was
+everyone included and getting real value free, businesses carrying the financial load and bringing
+the members in, more contribution to community earning more exposure, and a simple ladder with no
+gatekeeping.
+
+**The five rulings taken.**
+
+1. **Everything freemium.** Every tool is available to every Space with usage caps; a new Space starts
+   with core tools on and the rest off but switchable. Not a cheaper core plus paid add-on apps, which
+   was the first draft's shape and would have meant a small business did not get the big tools.
+2. **Members consume, Spaces create.** A member gets every forward-facing feature free; creating is
+   what a Space does.
+3. **Crew is granted by an active paid membership to a community, at any price** — the platform stops
+   selling it.
+4. **$49 core, two seats included, $12 per extra seat.** Seats are the size axis.
+5. **Exposure is earned:** ordering, plus the four dormant `featured_at` slots.
+
+**What the measurements changed about the design.**
+
+- **"Every tool available" is nearly the shipped state.** All 22 keys in `lib/spaces/functions.ts` are
+  universal and default-on (`:334-340`); only four carry an entitlement. The work is not unlocking
+  tools, it is the **caps** — and five of them read **zero** on free
+  (`space_automation`, `space_crm_playbooks`, `space_collaborators`, `space_membership_tiers`,
+  `practice_publish`). A cap of zero is a lock wearing an allowance's clothes, and under Ruling 1 all
+  five must move.
+- **Bundles are subtractive only.** `CAPABILITY_BUNDLES` (`lib/pricing/bundles.ts`) can turn a tool
+  off for a Space but can never grant a paid one, so it cannot be the add-on mechanism. It is exactly
+  right as the **onboarding preset**, which is what Ruling 1 asks for, and OFFER-MODEL §3 is therefore
+  the bundle spec that open P1 row `OWN-048` has been waiting for.
+- **Seats are fully built and only need a price.** The checkout line, webhook reconciler, seat editor
+  and invite check all exist; `operator_seat` is a `placeholder: true` catalog item at a $9 stand-in
+  that the catalog sync skips, and **$12 is the figure ADR-811 already names**. Turning seats on is:
+  set the amount, clear the placeholder, sync the catalog, flip `catalog_operator_seat_active`.
+- **Crew is a tier, not a role**, and `membership_tier` is a **bare scalar with no provenance** —
+  unlike circle memberships, which carry `granted_by_tier_id` so a grant can be revoked without
+  touching a membership someone chose themselves. The Crew grant needs the same provenance, with the
+  effective tier resolving as `stripe_active OR EXISTS(active grant)`.
+
+🔴 **One risk recorded against Ruling 3, and it is not closed by it.** Anyone can create a Space,
+`setMembershipTiers` has **no minimum price check** (`lib/spaces/memberships.ts:415`), and
+`prevent_economy_self_edit` does **not** cover `membership_tier`. So "any paid membership, any price"
+still permits an operator to mint a $1 tier and grant themselves and their friends Crew. Two narrow
+guards preserve the ruling and close the hole, and both are **recommendations pending a decision**:
+a granted Crew must not buy down the platform take rate (keep `memberNetworkTakeRateBps` reading the
+Stripe tier, or a $1 tier becomes a machine for turning 10% into 8%), and a Space's own owners and
+admins must not be grantable by their own tier.
+
+**The ranking algorithm** (OFFER-MODEL §7) is built to look native rather than invented: the
+saturation curve `1 - e^(-n/k)` from `lib/resonance/score.ts`, the weight renormalisation over
+*present* signals and the `maxPerAuthor` diversity re-rank from `lib/feed/blend-rank.ts`, and the
+rollup shape from `resonance_density_cells`. Six saturated signals — gatherings held, upcoming,
+rooms, audience, commons, care — a freshness decay floored at 0.35, and a new-Space grace floor of
+0.35 for the first 30 days. It ships in two steps, and **v0 needs no migration and no query change**,
+because the directory already fetches the counts it needs and paginates in app code.
+
+⚠️ **The data caution that shapes the weights.** Of 20 networked Spaces, 8 have any published event,
+4 have an upcoming one, 1 has a circle, 7 have a follower, and **0 have a paid membership**. The only
+dense universal signal is `space.profile_view` (342 in 30 days, 20 of 20 Spaces). The renormalisation
+rule matters more than the weights, because it judges a Space on the signals it has rather than
+punishing it for the ones nobody has yet.
+
+**Consequences if accepted.** The ladder collapses to two visible prices plus seats.
+`scripts/check-collective.mjs` pins the six tier names and needs rewriting or retiring;
+`VALUE-LADDER`, `PRICING` and `COMMUNITY-COLLECTIVE-STRATEGY` all need reconciling. Three **live**
+walls come down (`entry-points`, `codes`, `messages/rooms`) — unlike the feature gates, which
+currently short-circuit to granted. `OWN-048` closes on the bundle spec. The four `featured_at`
+consumers must each be added to **every** select branch, per the regression documented in
+`scripts/check-row-type-select-parity.test.ts:23-27`.
+
+**Still open:** the two Crew guards; a new grace window (`beta_grace` expires 2026-10-01, and
+2026-12-01 is proposed); and whether the earned measure gets a name, which is a `NAMING.md` decision
+rather than a drive-by. "Standing" is used in OFFER-MODEL as a plain descriptive word, not a proposed
+proper noun.
