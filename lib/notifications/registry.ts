@@ -116,6 +116,9 @@ export const NOTIFICATION_REGISTRY: { [E in NotificationEvent]: NotificationType
     channels: ['push'],
     render: (ctx) => ({
       push: { title: ctx.title, body: ctx.body, url: ctx.url },
+    }),
+  },
+
   // A new housing match (ADR-1278). Community category `matches`: the member's own
   // email_matches / push_matches switches gate it, one-click unsubscribe carries the category,
   // and the caller claims the (recipient, counterpart, kind) pair before routing so a member is
