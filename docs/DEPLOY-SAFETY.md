@@ -101,7 +101,8 @@ question. Let it run and read the log, unless the queue is genuinely blocking a 
 > `pnpm read:build-log <file>` ([ADR-1259](DECISIONS.md)). It prints the machine line, the cache
 > lineage, every phase boundary, **the page-data gap**, the `postbuild` gate readings and the
 > build system report, with `--baseline` carrying the recorded healthy and stalled bands to compare
-> against. It is a reader, never a gate — see `LIVE-123`, which spent four hypotheses on timestamps
+> against. It is a reader, never a gate — see `LIVE-123` (closed 2026-09-08 on a 500-build bound,
+> [ADR-1282](DECISIONS.md)), which spent four hypotheses on timestamps
 > people subtracted by hand.
 
 ### 5. A green CI is not a green deploy. `main` is protected, so a merge *is* a deploy
