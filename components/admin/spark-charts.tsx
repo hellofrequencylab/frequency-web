@@ -101,7 +101,7 @@ export function ChartCard({
   return (
     <div className="flex h-full flex-col rounded-2xl border border-border bg-surface p-4">
       <div className="flex items-baseline justify-between gap-2">
-        <p className="text-meta font-semibold uppercase tracking-wider text-subtle">{title}</p>
+        <p className="eyebrow text-subtle">{title}</p>
         {delta && <p className="text-meta font-semibold text-success">{delta}</p>}
       </div>
       {value && <p className="mt-0.5 text-lead font-bold leading-tight text-text">{value}</p>}

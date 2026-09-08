@@ -640,7 +640,7 @@ function Bucket({
       }}
       className="mt-3"
     >
-      {title && <p className="mb-1 text-meta font-semibold uppercase tracking-wide text-subtle">{title}</p>}
+      {title && <p className="mb-1 eyebrow text-subtle">{title}</p>}
       {hint && <p className="mb-2 text-meta text-subtle">{hint}</p>}
       <ul className="space-y-1.5">
         {pinnedLead && (

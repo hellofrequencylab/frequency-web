@@ -45,7 +45,7 @@ export async function CrmToday() {
 function OwnerBriefGuidance() {
   return (
     <div className="mt-6 rounded-2xl border border-border bg-surface/50 p-5">
-      <p className="text-meta font-semibold uppercase tracking-wide text-subtle">Your daily brief</p>
+      <p className="eyebrow text-subtle">Your daily brief</p>
       <p className="mt-1.5 text-body-sm text-text">
         Each morning Vera emails you these same moves, so you do not have to remember to check. She
         drafts the note, never sends on your behalf, and never touches a member. Every move is still

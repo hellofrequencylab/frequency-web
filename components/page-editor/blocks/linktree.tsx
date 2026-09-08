@@ -283,7 +283,7 @@ function TopFriendsView({ title, meta }: { title?: string; meta: SpotlightRender
   if (friends.length === 0) {
     return (
       <section>
-        <h2 className="mb-3 text-meta font-semibold uppercase tracking-wide text-subtle">{title?.trim() || 'Top Friends'}</h2>
+        <h2 className="mb-3 eyebrow text-subtle">{title?.trim() || 'Top Friends'}</h2>
         <p className="rounded-card border border-dashed border-border px-3 py-4 text-center text-meta text-subtle">
           Pick your Top Friends to fill this grid
         </p>
@@ -292,7 +292,7 @@ function TopFriendsView({ title, meta }: { title?: string; meta: SpotlightRender
   }
   return (
     <section>
-      <h2 className="mb-3 text-meta font-semibold uppercase tracking-wide text-subtle">{title?.trim() || 'Top Friends'}</h2>
+      <h2 className="mb-3 eyebrow text-subtle">{title?.trim() || 'Top Friends'}</h2>
       <div className="grid grid-cols-4 gap-3">
         {friends.map((f) => {
           const name = f.displayName || `@${f.handle}`

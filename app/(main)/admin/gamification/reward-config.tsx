@@ -132,7 +132,7 @@ function RewardTable({
     <div className="p-4">
       <div className="mb-3 flex items-center gap-1.5">
         {unitIcon}
-        <h3 className="text-meta font-semibold uppercase tracking-wider text-text">{label}</h3>
+        <h3 className="eyebrow text-text">{label}</h3>
       </div>
 
       <div className="space-y-2">
