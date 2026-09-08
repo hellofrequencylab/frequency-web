@@ -144,6 +144,45 @@ Baselines live in `test/e2e/__screenshots__/visual.spec.ts/` and are named
 Member-shell files are the `app-*` ones (`app-feed`, `app-room`, `app-settings`,
 `app-space-console`) and are captured only with `capture_shell` ticked.
 
+### Reading a capture before taking it (ADR-1273)
+
+A capture rewrites **every** PNG whose page renders differently from the day that
+file was last taken, not only the files the dispatching row named, and the runner
+reports nothing but the file count. Read the diff before committing it, and read
+**where** the pixels sit, not how many there are:
+
+```
+pnpm visual:bands origin/main HEAD          # the committed set vs the runner's commit
+pnpm visual:bands origin/main HEAD --only app-nearby --top 6
+```
+
+It prints each changed file's differing-pixel count (pixelmatch's YIQ delta at the
+suite's threshold, so it means what `toHaveScreenshot` means) and the contiguous row
+bands holding them. The bands are the reading. A handful at the header, a CTA and the
+footer is a copy or control change: take the capture. A band on every text row is a
+font or rasteriser change: the suite moved, not the page. Bands only on surfaces that
+also differ between two captures minutes apart are live data (`/nearby`, `/feed`, the
+room). Crop a band and look at it before deciding what it is.
+
+A full recapture is one mechanical edit across every PNG, so its PR carries the
+`[sweep]` tag in its title for the 40-file size gate (`docs/WORKFLOW.md`); the gate
+reads the title from the pull-request event, so tag before the push, not after.
+
+**A count is not a cause.** On 2026-09-08 a 138-file recapture was rejected as
+"rasterisation" because every file kept its height while 5,000-26,000 px changed. The
+bands said otherwise: the header CTA, the footer CTA and one settings row, i.e. the
+2026-09-04 CTA sweep the committed set predated. Copy inside a fixed box moves no rows.
+Two production captures fourteen minutes apart agreed to the pixel on every surface
+that is not live data, which is what "deterministic" looks like.
+
+Which URL to capture against: **a preview deployment of a branch that has main merged**,
+because that is what `pr-compare` photographs. Production renders two fixed elements
+differently (the support-chat button is Production-only while `SUPPORT_CHAT` is set there
+alone; Vera's edge tab shows on previews and not on production), so a production capture
+is red by ~2,500 px on every public page before a PR changes anything (`LIVE-213`). A
+branch preview that lacks main's latest merges is not a valid source either: the
+2026-09-04 baselines were exactly that.
+
 ### A reading is not a ceiling (a11y counts)
 
 `test/e2e/a11y-baselines.json` holds one post-waiver serious+ count per
