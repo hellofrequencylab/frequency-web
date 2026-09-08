@@ -48,8 +48,7 @@
           "ids": [
             "LIVE-186",
             "LIVE-204",
-            "LIVE-213",
-            "LIVE-214"
+            "LIVE-213"
           ]
         },
         {
@@ -9688,16 +9687,16 @@
     {
       "id": "LIVE-214",
       "title": "The not-found page emits both robots tags: noindex from the boundary and index, follow from the root layout default",
-      "status": "open",
+      "status": "done",
       "lane": "live",
       "size": "XS",
       "priority": "P3",
       "source": "Named while verifying #2463 (LIVE-208) on production, 2026-09-08.",
-      "detail": "FOUND 2026-09-08 while confirming LIVE-208 live: GET /this-path-does-not-exist answers 404 with the not-found body (the row's main claim, confirmed on production), and its head carries TWO robots directives: <meta name=\"robots\" content=\"noindex\"/> from the not-found boundary and <meta name=\"robots\" content=\"index, follow\"/> from the root layout's default metadata. Crawlers resolve conflicting directives to the most restrictive, so noindex wins and this is not a live SEO defect; but the head is not clean and LIVE-208's second sentence (\"the head still says index, follow\") is still literally true. Override the root default on the not-found path so the head carries one directive. Probe: a source-shape test that the not-found route's metadata sets robots explicitly, and a check:seo arm if it can read the artifact.",
+      "detail": "FOUND 2026-09-08 while confirming LIVE-208 live: GET /this-path-does-not-exist answers 404 with the not-found body (the row's main claim, confirmed on production), and its head carries TWO robots directives: <meta name=\"robots\" content=\"noindex\"/> from the not-found boundary and <meta name=\"robots\" content=\"index, follow\"/> from the root layout's default metadata. Crawlers resolve conflicting directives to the most restrictive, so noindex wins and this is not a live SEO defect; but the head is not clean and LIVE-208's second sentence (\"the head still says index, follow\") is still literally true. Override the root default on the not-found path so the head carries one directive. Probe: a source-shape test that the not-found route's metadata sets robots explicitly, and a check:seo arm if it can read the artifact.\n\n── DONE 2026-09-08 (ADR-1276): both tags measured to their source. The index, follow was the root layout's robots default, inherited by every not-found boundary (twenty files, not one: Next places the NEAREST not-found module's metadata last on the error path); the noindex is the framework's own, injected for every 404 and not removable. lib/seo/not-found-metadata.ts exports NOT_FOUND_METADATA with robots: null (a nested field, so it overwrites the root default with nothing and the head carries exactly one directive) and every not-found.tsx exports it as its metadata. Scan F in check:seo fails a not-found file that declares nothing or declares index: true, and the shared module if it stops being explicit; the control (one file reverted) failed as expected. Production check after deploy: fetch any dead path and count <meta name=\"robots\" in the head; it should read one.",
       "verify": {
-        "kind": "manual",
-        "evidence": "2026-09-08: production fetch of a dead path shows both meta robots tags in the head (other session's reading, 03:55Z).",
-        "checked": "2026-09-08"
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs'),path=require('path');const strip=(t)=>t.replace(/\\/\\*[\\s\\S]*?\\*\\//g,'').replace(/^\\s*\\/\\/.*$/gm,'');const walk=(d,out=[])=>{for(const e of fs.readdirSync(d,{withFileTypes:true})){const f=path.join(d,e.name);if(e.isDirectory())walk(f,out);else if(e.name==='not-found.tsx')out.push(f)}return out};const files=walk('app');const shared=strip(fs.readFileSync('lib/seo/not-found-metadata.ts','utf8'));const sharedOk=/export const NOT_FOUND_METADATA\\b/.test(shared)&&/robots\\s*:\\s*null\\b/.test(shared);const bad=files.filter((f)=>{const c=strip(fs.readFileSync(f,'utf8'));return !(/import\\s*\\{\\s*NOT_FOUND_METADATA\\s*\\}\\s*from\\s*'@\\/lib\\/seo\\/not-found-metadata'/.test(c)&&/export const metadata\\s*=\\s*NOT_FOUND_METADATA\\b/.test(c))});const scan=/export function notFoundRobots/.test(fs.readFileSync('scripts/check-seo.mjs','utf8'));if(!sharedOk)console.error('lib/seo/not-found-metadata.ts must export NOT_FOUND_METADATA with robots: null');if(bad.length)console.error('not-found files without the shared metadata export: '+bad.join(', '));if(!scan)console.error('scripts/check-seo.mjs has no Scan F reader (notFoundRobots)');process.exit(sharedOk&&bad.length===0&&scan&&files.length>=5?0:1)\"",
+        "note": "Measures the consequence: every app/**/not-found.tsx exports the one shared NOT_FOUND_METADATA, that module declares robots: null explicitly, and check-seo.mjs carries the Scan F reader that fails a future not-found file arriving without it. Fails if any of the three is removed. The head itself is read on production after deploy (one robots tag), not here."
       }
     }
   ]
