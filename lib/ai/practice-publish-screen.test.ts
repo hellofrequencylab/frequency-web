@@ -31,7 +31,7 @@ vi.mock('./complete', () => ({
   AiUnavailableError: class AiUnavailableError extends Error {},
 }))
 
-import { screenPracticeForPublish } from './practice-publish-screen'
+import { screenPracticeForPublish, parseScreenJson } from './practice-publish-screen'
 
 beforeEach(() => {
   fakePractice = null
@@ -83,5 +83,24 @@ describe('screenPracticeForPublish — deterministic fallback (AI off)', () => {
     expect(res.ok).toBe(false)
     expect(res.score).toBe(0)
     expect(res.completeness).toContain('Practice not found.')
+  })
+})
+
+describe('parseScreenJson (the reply boundary, ADR-1287)', () => {
+  it('reads the three note lists, dropping non-strings and capping at four', () => {
+    const r = parseScreenJson('Notes:\n{"voice":["em dash"," hype ",3,""],"completeness":[],"safety":["a","b","c","d","e"]}')
+    expect(r).toEqual({ voice: ['em dash', 'hype'], completeness: [], safety: ['a', 'b', 'c', 'd'] })
+  })
+
+  it('reads a missing axis as nothing to flag', () => {
+    expect(parseScreenJson('{"voice":["x"]}')).toEqual({ voice: ['x'], completeness: [], safety: [] })
+  })
+
+  it('degrades to empty lists on a wrong-typed axis, truncated JSON, or no JSON (never throws)', () => {
+    const empty = { voice: [], completeness: [], safety: [] }
+    expect(parseScreenJson('{"voice":"not a list"}')).toEqual(empty)
+    expect(parseScreenJson('{"voice":["x"')).toEqual(empty)
+    expect(parseScreenJson('looks fine to me')).toEqual(empty)
+    expect(parseScreenJson('')).toEqual(empty)
   })
 })

@@ -7,11 +7,21 @@
 // Runs on the kernel's Haiku tier (ADR-041 cost tiering — this is high-volume,
 // member-facing). Returns null when the kernel is unavailable so the caller falls
 // back to the deterministic concierge. Bounded turns cap the spiral (AI-VERA §3).
+//
+// TWO THINGS THE LOOP DOES SINCE ADR-1287 (PROG-E8):
+//   • The system prompt is two blocks. `stable` (voice primer + persona) is the same bytes for
+//     every member on every round and carries the cache marker; `volatile` (this member's facts,
+//     the operator's knobs, who is asking) follows it unmarked. `buildVeraSystem` is pure and its
+//     test pins the split, because one interpolated byte in the stable half silently uncaches
+//     everything behind it.
+//   • The reply streams. A caller that passes `onText` gets the prose as it is generated, with the
+//     trailing CHIPS line held back by `createChipsFilter` so a member never watches the chip
+//     syntax type itself out. The ledger still records usage from the final message of each round.
 
 import type Anthropic from '@anthropic-ai/sdk'
 import type { ContentBlock } from '@anthropic-ai/sdk/resources/messages'
 import { aiEnabled } from '@/lib/ai'
-import { runToolLoop, type CompleteMessage } from '@/lib/ai/complete'
+import { runToolLoop, type CompleteMessage, type SystemPrompt } from '@/lib/ai/complete'
 import { estimateCostUsd } from '@/lib/ai/budget'
 import { aiAvailable, featureOverBudget, recordAiUsage } from '@/lib/ai/usage'
 import { aiRateLimited } from '@/lib/ai/rate-limit'
@@ -64,6 +74,68 @@ export function extractSuggestions(raw: string): { reply: string; suggestions: s
   return { reply: kept.join('\n').trim(), suggestions: suggestions.slice(0, MAX_CHIPS) }
 }
 
+const CHIPS_LINE = /^\s*CHIPS:/i
+// A line that could still turn into `CHIPS:` once more deltas land. Held back, never shown.
+const CHIPS_PREFIX = /^\s*(?:c|ch|chi|chip|chips)?$/i
+
+/**
+ * Pure: a streaming-safe version of `extractSuggestions`. Text deltas arrive a few characters at
+ * a time, so the `CHIPS:` line (which the member must never see) can start mid-delta. The filter
+ * emits prose as soon as the current line has diverged from `CHIPS:`, holds a line that could
+ * still become one, and drops everything from the first CHIPS line onward. `flush` releases any
+ * held tail at the end of a round; `reset` starts a fresh round. Unit-tested.
+ */
+export function createChipsFilter(emit: (text: string) => void): {
+  push: (delta: string) => void
+  flush: () => void
+  reset: () => void
+} {
+  let held = ''
+  let lineEmitted = ''
+  let done = false
+  return {
+    push(delta) {
+      if (done) return
+      held += delta
+      for (;;) {
+        const nl = held.indexOf('\n')
+        if (nl === -1) break
+        const line = held.slice(0, nl)
+        if (CHIPS_LINE.test(lineEmitted + line)) {
+          done = true
+          held = ''
+          return
+        }
+        emit(line + '\n')
+        held = held.slice(nl + 1)
+        lineEmitted = ''
+      }
+      const current = lineEmitted + held
+      if (CHIPS_LINE.test(current)) {
+        done = true
+        held = ''
+        return
+      }
+      if (!lineEmitted && CHIPS_PREFIX.test(current)) return
+      if (held) {
+        emit(held)
+        lineEmitted += held
+        held = ''
+      }
+    },
+    flush() {
+      if (!done && held && !CHIPS_LINE.test(lineEmitted + held)) emit(held)
+      held = ''
+      lineEmitted = ''
+    },
+    reset() {
+      held = ''
+      lineEmitted = ''
+      done = false
+    },
+  }
+}
+
 /** Pure: the bounded tool surface as Anthropic tool definitions. Unit-tested. */
 export function toAnthropicTools(tools: readonly VeraToolDef[]): Anthropic.Tool[] {
   return tools.map((t) => ({
@@ -99,13 +171,19 @@ export interface VeraViewer {
   roleLabel: string
 }
 
-/** Vera's voice + the bridge doctrine + the member's known context + operator tuning. */
-function buildSystemPrompt(
+/**
+ * Vera's system prompt in two blocks (ADR-1287). `stable` is her voice + the bridge doctrine +
+ * the tool contract: pure code, the same bytes for every member and every round, and the block
+ * that carries the cache marker. `volatile` is everything about THIS conversation: what she knows
+ * about the member, their support history, the operator's knobs, and who is asking. Pure; the
+ * test pins that the stable half never depends on any argument.
+ */
+export function buildVeraSystem(
   ctx: MemberContext | null | undefined,
   cfg: VeraConfig,
   supportSummary?: string,
   viewer?: VeraViewer | null,
-): string {
+): { stable: string; volatile: string } {
   const facts = ctx?.facts
   const known: string[] = []
   if (facts?.interests?.length) known.push(`interests: ${facts.interests.join(', ')}`)
@@ -136,7 +214,7 @@ function buildSystemPrompt(
     ? `\n\nWHO YOU'RE TALKING TO: an OPERATOR of Frequency (staff — ${viewer.roleLabel}), not a member to onboard. Drop the welcome nudges and speak plainly, operator to operator: answer their questions about RUNNING the place directly — the dashboard and metrics, members, moderation and reports, growth, content, and settings — to the depth their access allows. Be candid and concise. Never invent a number; when you don't have a figure to hand, point them to the exact admin surface (e.g. /admin, /admin/insights, /admin/moderation, /admin/growth). The CHIPS you offer should be operator next-steps, not member ones.`
     : ''
 
-  return withVoice(`You are Vera, the heart of this community and a companion to the people in it. You came in from a hard road and chose to take care of people; this place is what you protect. Warm, present, a little dry. You love the people here and it shows, but your warmth is honest, never confetti, never fake-cheerful.
+  const stable = withVoice(`You are Vera, the heart of this community and a companion to the people in it. You came in from a hard road and chose to take care of people; this place is what you protect. Warm, present, a little dry. You love the people here and it shows, but your warmth is honest, never confetti, never fake-cheerful.
 
 How you show up:
 - Attune first. Meet them where they actually are: read the feeling under the words and reflect it back before you point anywhere. A nervous person needs warmth; someone hurting needs to feel seen, not handed a to-do. Make them feel genuinely welcome and met.
@@ -154,7 +232,10 @@ Working with your tools:
 
 Quick replies: end EVERY reply with one final line in exactly this format, CHIPS: first option | second option, giving 1 to 3 short things the member might naturally say next, in THEIR voice (e.g. CHIPS: Find me a circle | Yes, introduce me | I'll explore first). Keep each under about six words. That line is stripped out and shown as tappable chips, so never refer to it in your prose, and never leave it off; a turn without chips dead-ends the conversation.
 
-Read the room on tone: gentle if they're nervous, playful (volley, never mean) if they're a smartass, but always on their side, always quietly moving them toward each other and toward their best expression.${grounding}${support}${register}${style}${length}${greeting}${viewerNote}`)
+Read the room on tone: gentle if they're nervous, playful (volley, never mean) if they're a smartass, but always on their side, always quietly moving them toward each other and toward their best expression.`)
+
+  const volatile = `${grounding}${support}${register}${style}${length}${greeting}${viewerNote}`.trim()
+  return { stable, volatile }
 }
 
 /** One live Vera turn. Null ⇒ kernel unavailable / kill switch off / over budget
@@ -172,6 +253,9 @@ export async function runVeraClaudeTurn(input: {
   tier?: EntitlementTier | null
   /** Who's asking (ADR-208) — operators get operator-to-operator candor. */
   viewer?: VeraViewer | null
+  /** Stream the prose as it is generated (the CHIPS line is held back). Each round of the tool
+   *  loop is a fresh reply, so a consumer resets its draft when `round` moves. */
+  onText?: (delta: string, round: number) => void
 }): Promise<VeraClaudeResult | null> {
   if (!aiEnabled()) return null
 
@@ -190,7 +274,7 @@ export async function runVeraClaudeTurn(input: {
     if (await veraDailyCapReached(input.profileId ?? null, input.tier ?? null)) return null
 
     const cfg = await getVeraConfig()
-    const system = buildSystemPrompt(input.memberContext, cfg, input.supportSummary, input.viewer)
+    const system: SystemPrompt = buildVeraSystem(input.memberContext, cfg, input.supportSummary, input.viewer)
     const tools = toAnthropicTools(VERA_TOOLS)
     const messages: CompleteMessage[] = [
       ...input.history.map((m) => ({ role: m.role, content: m.text })),
@@ -199,16 +283,36 @@ export async function runVeraClaudeTurn(input: {
 
     const proposals: ProposedToolCall[] = []
 
+    // Streaming (ADR-1287): one chips filter per round, so the member sees prose and never the
+    // CHIPS line. A round change flushes the old filter and starts a fresh one.
+    let onText: ((delta: string, round: number) => void) | undefined
+    let filter = createChipsFilter(() => {})
+    if (input.onText) {
+      const emitTo = input.onText
+      let current = -1
+      onText = (delta, round) => {
+        if (round !== current) {
+          filter.flush()
+          current = round
+          filter = createChipsFilter((text) => emitTo(text, round))
+        }
+        filter.push(delta)
+      }
+    }
+
     // Bounded tool-use loop through the shared chokepoint (lib/ai/complete). READ
     // tools run server-side and feed back; WRITE tools are captured as proposals and
-    // stubbed (never executed here, ADR-028). Identical contract to the prior loop.
+    // stubbed (never executed here, ADR-028). Identical contract to the prior loop, and
+    // the stable half of the prompt carries the cache marker (cacheSystem).
     const result = await runToolLoop({
       tier: cfg.tier,
       maxTokens: MAX_TOKENS,
       maxRounds: MAX_ROUNDS,
       system,
+      cacheSystem: true,
       tools,
       messages,
+      onText,
       onToolCalls: async (toolCalls) => {
         // Capture valid write proposals — never executed here.
         for (const c of toolCalls) {
@@ -234,6 +338,9 @@ export async function runVeraClaudeTurn(input: {
         return results
       },
     })
+
+    // Release any prose the chips filter was still holding when the last round ended.
+    filter.flush()
 
     // Ledger entry (best-effort, never blocks the reply).
     void recordAiUsage({

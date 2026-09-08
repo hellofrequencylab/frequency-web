@@ -20,6 +20,7 @@ import { aiRateLimited } from './rate-limit'
 import { withVoice } from './voice'
 import { stripEmDashes } from './space-copilot'
 import type { ProductKind, ServicePriceModel } from '@/lib/commerce/types'
+import { parseModelJson, z } from './schema'
 
 const FEATURE = 'listing-copy'
 
@@ -102,20 +103,18 @@ function factsFor(input: ListingCopyInput): string {
     .join('\n')
 }
 
+/** The reply contract (ADR-1287): either field may be missing, but at least one must carry text.
+ *  A non-string in either slot is a refused reply, not a silently empty field. */
+const LISTING_COPY = z
+  .object({ title: z.string().optional(), description: z.string().optional() })
+  .transform((o) => ({ title: o.title ?? '', description: o.description ?? '' }))
+  .refine((o) => o.title || o.description, 'neither field carries text')
+
 /** Parse the model's JSON object into {title, description}, tolerating a stray code fence or prose
- *  around it. Returns null when nothing usable is found (the caller falls back). */
-function parseCopy(raw: string): { title: string; description: string } | null {
-  const match = raw.match(/\{[\s\S]*\}/)
-  if (!match) return null
-  try {
-    const obj = JSON.parse(match[0]) as { title?: unknown; description?: unknown }
-    const title = typeof obj.title === 'string' ? obj.title : ''
-    const description = typeof obj.description === 'string' ? obj.description : ''
-    if (!title && !description) return null
-    return { title, description }
-  } catch {
-    return null
-  }
+ *  around it. Returns null when nothing usable is found (the caller falls back). Exported for its test. */
+export function parseCopy(raw: string): { title: string; description: string } | null {
+  const res = parseModelJson(raw, LISTING_COPY)
+  return res.ok ? res.data : null
 }
 
 /**

@@ -147,7 +147,8 @@ member surfaces. Each surface has a deterministic fallback and rides the shared 
 | 5 | **Guardian** | The serious gear; flags/routes cruelty to the existing moderation flow (does not adjudicate) | Reports + system account | Member reporting UI |
 | 6 | **Host/Guide copilot** | Helps *humans* run great circles: summarize activity, surface at-risk members, draft an announcement | Circle data, Sonnet | Manual host tools |
 
-Surfaces 1 to 2 are **sync** (interactive, streamed). Surfaces 3 to 4 are **async** (proactive, via the
+Surfaces 1 to 2 are **sync** (interactive; surface 1 streams as of [ADR-1287](DECISIONS.md), surface 2 still
+answers whole). Surfaces 3 to 4 are **async** (proactive, via the
 existing `notification_queue` + `/api/cron/process-queue`, Batch API) so they're cheap and
 frequency-capped. Surface 6 is the human-amplifier.
 
