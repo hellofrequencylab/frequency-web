@@ -12,14 +12,17 @@ vi.mock('@sentry/nextjs', () => ({
 import { DEFAULT_CRON_BUDGET_MS, CRON_CEILING_MS, withCronHeartbeat, resolveHeartbeatUrl } from '@/lib/observability/cron-heartbeat'
 
 // A fresh env per test so configured/unconfigured paths are isolated.
-const ENV_KEYS = [
-  'CRON_HEARTBEAT_BASE_URL',
-  'CRON_HEARTBEAT_URL_WEEKLY_DIGEST',
-  'CRON_HEARTBEAT_URL_PROCESS_QUEUE',
-]
-
+//
+// ⚠️ Swept by PREFIX, not by a hardcoded list. The list version held three names and silently
+// leaked any other CRON_HEARTBEAT_* var a later test set — which is exactly what happened when
+// the opt-out tests below were added: `CRON_HEARTBEAT_URL_EMBED_EVENTS` survived into the next
+// test and made it assert the wrong resolution. A per-job override is a var whose NAME is
+// derived from a job name, so the set is open-ended by construction and cannot be enumerated
+// ahead of time.
 function clearEnv() {
-  for (const k of ENV_KEYS) delete process.env[k]
+  for (const k of Object.keys(process.env)) {
+    if (k.startsWith('CRON_HEARTBEAT')) delete process.env[k]
+  }
 }
 
 const okRes = () => new Response(JSON.stringify({ ok: true }), { status: 200 })
@@ -64,6 +67,56 @@ describe('resolveHeartbeatUrl', () => {
   it('maps hyphens to underscores for the per-job env suffix', () => {
     process.env.CRON_HEARTBEAT_URL_PROCESS_QUEUE = 'https://direct.example/pq'
     expect(resolveHeartbeatUrl('process-queue')).toBe('https://direct.example/pq')
+  })
+})
+
+// LIVE-217. The free tier monitors 20 of 28 crons, so the other 8 ping a check that does not
+// exist and the monitor answers 404 — a line byte-identical to the one meaning a check was
+// deleted or the ping key rotated. These tests pin the opt-out AND its default, because the
+// default is the half that can silently unmonitor a cron nobody remembered to wire.
+describe('resolveHeartbeatUrl — deliberate opt-out (CRON_HEARTBEAT_SKIP)', () => {
+  it('returns null for a job named in the skip list, even with a base URL set', () => {
+    process.env.CRON_HEARTBEAT_BASE_URL = 'https://hc.example/ping'
+    process.env.CRON_HEARTBEAT_SKIP = 'embed-events'
+    expect(resolveHeartbeatUrl('embed-events')).toBeNull()
+  })
+
+  it('THE CONTROL: a job NOT on the list still pings, so a new cron is monitored by default', () => {
+    process.env.CRON_HEARTBEAT_BASE_URL = 'https://hc.example/ping'
+    process.env.CRON_HEARTBEAT_SKIP = 'embed-events'
+    expect(resolveHeartbeatUrl('process-queue')).toBe('https://hc.example/ping/process-queue')
+  })
+
+  it('beats a per-job override, so opting out is ONE edit and not two', () => {
+    process.env.CRON_HEARTBEAT_URL_EMBED_EVENTS = 'https://direct.example/ee'
+    process.env.CRON_HEARTBEAT_SKIP = 'embed-events'
+    expect(resolveHeartbeatUrl('embed-events')).toBeNull()
+  })
+
+  it('reads a whole comma-separated list, with whitespace tolerated', () => {
+    process.env.CRON_HEARTBEAT_BASE_URL = 'https://hc.example/ping'
+    process.env.CRON_HEARTBEAT_SKIP = 'embed-events, embed-room-messages ,refresh-traits'
+    expect(resolveHeartbeatUrl('embed-events')).toBeNull()
+    expect(resolveHeartbeatUrl('embed-room-messages')).toBeNull()
+    expect(resolveHeartbeatUrl('refresh-traits')).toBeNull()
+    expect(resolveHeartbeatUrl('weekly-digest')).toBe('https://hc.example/ping/weekly-digest')
+  })
+
+  it('matches the WHOLE job name, so a prefix cannot silence a longer sibling', () => {
+    // 'event-reminders' must not be silenced by 'space-follower-event-reminders' or vice versa;
+    // both are real jobs and one is monitored while the other could be opted out.
+    process.env.CRON_HEARTBEAT_BASE_URL = 'https://hc.example/ping'
+    process.env.CRON_HEARTBEAT_SKIP = 'event-reminders'
+    expect(resolveHeartbeatUrl('event-reminders')).toBeNull()
+    expect(resolveHeartbeatUrl('space-follower-event-reminders')).toBe(
+      'https://hc.example/ping/space-follower-event-reminders',
+    )
+  })
+
+  it('an empty or whitespace-only list opts nobody out', () => {
+    process.env.CRON_HEARTBEAT_BASE_URL = 'https://hc.example/ping'
+    process.env.CRON_HEARTBEAT_SKIP = '  , ,'
+    expect(resolveHeartbeatUrl('embed-events')).toBe('https://hc.example/ping/embed-events')
   })
 })
 
