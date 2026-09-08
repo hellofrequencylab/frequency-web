@@ -20,23 +20,6 @@ export interface EmailDoc {
   preheader: string
 }
 
-/** A saved, reusable EMAIL TEMPLATE — the camelCase mirror of the `email_templates` row (see the migration
- *  supabase/migrations/20261135000000_email_studio.sql). `blockJson` is the template's `EntityLayout` body;
- *  loading a template seeds a fresh EmailDoc. The send / template agents map this to/from the table. */
-export interface EmailTemplate {
-  id: string
-  name: string
-  description: string | null
-  category: string | null
-  /** The template body: an `EntityLayout` (kind `'email'`). Stored in `block_json`. */
-  blockJson: EntityLayout
-  subject: string | null
-  preheader: string | null
-  createdBy: string | null
-  createdAt: string | null
-  updatedAt: string | null
-}
-
 /** One curated MERGE-TAG variable the composer offers (the picker UI comes later). `token` is the dotted
  *  name used inside `{{ ... }}` (see applyMergeTags); `label` is the human name; `example` seeds a preview. */
 export interface MergeTagVar {

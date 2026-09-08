@@ -104,7 +104,6 @@ export const SUSPENSION_EXEMPT: Record<string, string> = {
   client_notes: 'operator-authored (CRM)',
   contact_interactions: 'operator-authored (CRM)',
   comms_messages: 'the Space inbox; author_kind may be a contact or the system, not a member post',
-  email_templates: 'operator-authored (Email Studio)',
   funnels: 'operator-authored (growth)',
   segments: 'operator-authored (traits)',
   qr_codes: 'operator- or owner-authored entry points, behind entry-point authz',
