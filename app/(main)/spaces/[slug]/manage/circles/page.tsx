@@ -9,6 +9,7 @@ import { listSpaceCirclesWithRuns } from '@/lib/circles/store'
 import { pendingOfferForCircle } from '@/lib/circles/handoff'
 import { journeysOfferedBySpace } from '@/lib/journeys/run-gate'
 import { IndexTemplate } from '@/components/templates'
+import { resolveIndexHero } from '@/lib/layout/index-hero'
 import { buttonClasses } from '@/components/ui/button'
 import { StatCard } from '@/components/ui/stat-card'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -62,8 +63,13 @@ export default async function SpaceCirclesPage({ params }: { params: Promise<{ s
   const running = circles.filter((c) => c.run).length
   const members = circles.reduce((n, c) => n + (c.member_count ?? 0), 0)
 
+  // The shared hero band (LIVE-117, ADR-1261): the '/spaces/_/manage/circles' row, short utility
+  // band, rung 1 on this Space's own pathname.
+  const hero = await resolveIndexHero(`/spaces/${space.slug}/manage/circles`)
+
   return (
     <IndexTemplate
+      {...hero}
       back={{ href: spaceManageHref(space.type, space.slug), label: 'Back to manage' }}
       eyebrow={space.brandName ?? space.name}
       title="Circles"

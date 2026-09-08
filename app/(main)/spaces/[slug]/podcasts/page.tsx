@@ -5,6 +5,7 @@ import { getSpaceBySlug } from '@/lib/spaces/store'
 import { listShowsForSpace, getAssetMeta } from '@/lib/airwaves/shows'
 import type { Show } from '@/lib/airwaves/types'
 import { IndexTemplate } from '@/components/templates'
+import { resolveIndexHero } from '@/lib/layout/index-hero'
 import { EntityCard } from '@/components/cards/entity-card'
 
 // Airwaves P3 — the public SHOWS INDEX for a Space (ADR-608). Lists every published, public-feed Show
@@ -71,9 +72,14 @@ export default async function ShowsIndexPage({ params }: { params: Promise<{ slu
 
   const { space, shows } = resolved
   const name = space.brandName ?? space.name
+  // The shared hero band (LIVE-117, ADR-1261). The one PUBLIC surface of the five Space tabs, so
+  // the '/spaces/_/podcasts' row gives it the discovery band; rung 1 stays on this Space's own
+  // pathname, so a Space's operator can set the catalog's cover for their Space alone.
+  const hero = await resolveIndexHero(`/spaces/${slug}/podcasts`)
 
   return (
     <IndexTemplate
+      {...hero}
       eyebrow="Airwaves"
       title="Shows"
       description={`Podcasts from ${name}. Subscribe in your favorite app or listen right here.`}

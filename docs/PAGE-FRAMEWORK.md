@@ -768,6 +768,26 @@ IMAGE.** `/events/calendar` is the row that shows the difference — it takes `s
 a work surface) while keeping `inheritHero: true`, because the calendar *is* the Events section
 wearing a different body, so the photo an operator uploaded for `/events` belongs on it.
 
+**A DYNAMIC route resolves against its section, and the map says how** ([ADR-1261](DECISIONS.md)).
+`resolveIndexHero`'s argument used to be both the ladder's route and the `page_settings` key rung 1
+reads; for a literal pathname those are one string, for a dynamic one they are not. Two row fields
+separate them:
+
+- **`keyOn: 'section'`** makes rung 1 read `page_settings` on the ROW'S PREFIX instead of the
+  pathname, the treatment `detail-hero.ts` has always given its own rung 2. `/help` and
+  `/discover/practices` carry it, so `/help/<category>` and `/discover/practices/pillar/<slug>` show
+  the image an operator set on the section root. Rung 2 is **not** re-keyed: the copy cascade climbs
+  a route's real ancestors on its own (§8.6).
+- **A `_` segment in a prefix** matches any one route segment (`PREFIX_WILDCARD`, the same
+  placeholder `page-chrome.ts` uses for `/spaces/_/crm`), for the dynamic segment sitting in the
+  MIDDLE of a path: `/spaces/_/podcasts` is one row for every Space's Shows index. Specificity is
+  segment count, then fewer wildcards, so a literal row always wins at the same depth.
+
+🔴 **A pattern prefix is a MATCHER, never a KEY.** `page_settings` is an exact-match read and its
+only writer is the on-page Settings panel, which keys on `usePathname()` — so a row with a `_` keeps
+rung 1 on the literal path and each Space's operator sets their own band. A wildcard key would be a
+rung nothing can write, and `index-hero.test.ts` fails any row that carries both.
+
 **The editable index uses the SAME ladder — call `resolveMarketHero`** (PROG-P4,
 [ADR-1127](DECISIONS.md)). The nine `MarketHero` surfaces below already render the same `PageHero`,
 so the band was never the problem; the ladder was. Measured 2026-08-25: `getPageHeaderImage` — rung

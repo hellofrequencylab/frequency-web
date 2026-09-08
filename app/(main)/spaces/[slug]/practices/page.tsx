@@ -7,6 +7,7 @@ import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { spaceManageHref } from '@/lib/spaces/types'
 import { listPracticesForSpace } from '@/lib/practices'
 import { IndexTemplate } from '@/components/templates'
+import { resolveIndexHero } from '@/lib/layout/index-hero'
 import { StatCard } from '@/components/ui/stat-card'
 import { EmptyState } from '@/components/ui/empty-state'
 import { NewSpacePracticeButton } from '@/components/spaces/new-space-practice-button'
@@ -43,8 +44,13 @@ export default async function SpacePracticesManagerPage({ params }: { params: Pr
   const liveInSpace = practices.filter((p) => p.status === 'approved').length
   const inLibrary = practices.filter((p) => p.is_public).length
 
+  // The shared hero band (LIVE-117, ADR-1261): the '/spaces/_/practices' row, short utility band,
+  // rung 1 on this Space's own pathname.
+  const hero = await resolveIndexHero(`/spaces/${space.slug}/practices`)
+
   return (
     <IndexTemplate
+      {...hero}
       back={{ href: spaceManageHref(space.type, space.slug), label: 'Back to manage' }}
       eyebrow={brandName}
       title="Practices"
