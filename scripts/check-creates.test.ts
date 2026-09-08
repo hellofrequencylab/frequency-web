@@ -1,4 +1,6 @@
 import { describe, it, expect } from 'vitest'
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import {
   entityWriteSites,
   routesThroughGovernedLayer,
@@ -274,10 +276,11 @@ describe('check-creates · the live repo', () => {
     expect(UNROUTED.has('app/(main)/drafts/actions.ts::confirmDraftAction')).toBe(false)
   })
 
-  // THE RATCHET TURNED (ADR-1249, HYG-053). Fifteen of the eighteen wizard roads named on
-  // 2026-08-11 route through the governed layer as of 2026-09-07. Each is asserted POSITIVELY here,
-  // so a road that quietly stops calling the layer fails this test before it can be re-added to
-  // UNROUTED; and the allowlist's size is a ceiling that may fall and never rise.
+  // THE RATCHET TURNED (ADR-1249, ADR-1262, HYG-053). Sixteen of the eighteen wizard roads named on
+  // 2026-08-11 route through the governed layer: fifteen on 2026-09-07, and Housing on 2026-09-08.
+  // Each is asserted POSITIVELY here, so a road that quietly stops calling the layer fails this
+  // test before it can be re-added to UNROUTED; and the allowlist's size is a ceiling that may fall
+  // and never rise.
   const ROUTED_ON_2026_09_07 = [
     'app/(main)/circles/builder-actions.ts::createDraftFromSparkAction',
     'app/(main)/circles/builder-actions.ts::createBlankDraftAction',
@@ -296,16 +299,36 @@ describe('check-creates · the live repo', () => {
     'app/(main)/spaces/[slug]/settings/shop/shop-actions.ts::createSpaceProductAction',
   ]
 
-  it('recognises the fifteen wizard roads routed on 2026-09-07, and UNROUTED never grows past three', () => {
+  // ADR-1262 (2026-09-08). The Housing road's line named one ruling — the form and the manifest
+  // disagreeing about `city` — and that ruling was taken: the manifest won, both housing actions
+  // refuse a listing with no city, and the road routes.
+  const ROUTED_ON_2026_09_08 = ['app/(main)/marketplace/actions.ts::createHousingListingAction']
+
+  it('recognises the sixteen wizard roads routed so far, and UNROUTED never grows past two', () => {
     const { ratchet } = runCheck()
-    for (const key of ROUTED_ON_2026_09_07) {
+    for (const key of [...ROUTED_ON_2026_09_07, ...ROUTED_ON_2026_09_08]) {
       expect(ratchet.routed, key).toContain(key)
       expect(UNROUTED.has(key), key).toBe(false)
     }
-    expect(UNROUTED.size).toBeLessThanOrEqual(3)
+    expect(UNROUTED.size).toBeLessThanOrEqual(2)
   })
 
-  // The three that remain each say, on their own line, which ruling they wait on. A bare date is
+  // The city rule is the CONSEQUENCE of ADR-1262, and it is what makes the Housing road routable:
+  // the layer validates the draft against the manifest, which requires `city`, so a road that
+  // stopped asking for one would start refusing real posts at the write instead of at the form.
+  // Asserted on both housing actions and on the shared form, because all three have to agree.
+  it('both housing actions and the shared form require a city (ADR-1262)', () => {
+    const create = readFileSync(resolve(process.cwd(), 'app/(main)/marketplace/actions.ts'), 'utf8')
+    const edit = readFileSync(resolve(process.cwd(), 'app/(main)/housing/[id]/edit/actions.ts'), 'utf8')
+    const form = readFileSync(resolve(process.cwd(), 'app/(main)/housing/new/housing-form.tsx'), 'utf8')
+    for (const [name, src] of [['create', create], ['edit', edit]] as const) {
+      expect(src, name).toMatch(/const city = String\(formData\.get\('city'\) \?\? ''\)\.trim\(\) \|\| null/)
+      expect(src, name).toMatch(/if \(!city\) return/)
+    }
+    expect(form).toMatch(/name="city"[^>]*required/)
+  })
+
+  // The two that remain each say, on their own line, which ruling they wait on. A bare date is
   // not a reason; the reader of this list must be able to tell effort from a blocked premise.
   it('every remaining UNROUTED line names the ruling it waits on', () => {
     for (const [key, why] of UNROUTED) {
