@@ -15,6 +15,8 @@ import {
   overLongDescriptions,
   metadataStrings,
   resolvesToNothing,
+  notFoundRobots,
+  sharedNotFoundMetadataIsExplicit,
 } from './check-seo.mjs'
 
 // Locks the SEO/sitemap coherence gate. Scans A and B (coverage + resolution) reason about
@@ -156,6 +158,69 @@ describe('check-seo — the shipped tree', () => {
     for (const route of ['/market', '/housing', '/classifieds']) {
       expect(result.noindexed, `${route} must be seen, and seen as noindex+follow`).toContain(`${route} (noindex, follow)`)
     }
+  })
+})
+
+describe('Scan F — every not-found boundary declares robots explicitly (LIVE-214, ADR-1276)', () => {
+  // Measured on production 2026-09-08: a dead path answered 404 with BOTH `<meta name="robots"
+  // content="noindex"/>` (Next's injection) and `content="index, follow"` (the root layout's
+  // default, inherited because no not-found file declared anything). Next resolves the nearest
+  // not-found module's metadata last on the error path, so one explicit declaration per file is
+  // the whole fix, and this scan is what keeps the next not-found file from arriving undeclared.
+  const shared = `import { NOT_FOUND_METADATA } from '@/lib/seo/not-found-metadata'
+export const metadata = NOT_FOUND_METADATA
+export default function NotFound() { return null }`
+
+  it('reads the shared export as declared', () => {
+    expect(notFoundRobots(shared)).toEqual({ state: 'shared', directive: null })
+  })
+
+  it('reads a bare not-found file as missing — the production defect', () => {
+    expect(notFoundRobots('export default function NotFound() { return null }').state).toBe('missing')
+  })
+
+  it('does not read a comment about the shared object as the declaration', () => {
+    const src = `// import { NOT_FOUND_METADATA } from '@/lib/seo/not-found-metadata'
+// export const metadata = NOT_FOUND_METADATA
+export default function NotFound() { return null }`
+    expect(notFoundRobots(src).state).toBe('missing')
+  })
+
+  it('reads an inline declaration and keeps its directive, so index: true can still fail', () => {
+    expect(notFoundRobots("export const metadata = { robots: { index: false, follow: false } }")).toEqual({
+      state: 'inline',
+      directive: { index: false, follow: false },
+    })
+    expect(notFoundRobots("export const metadata = { robots: { index: true, follow: true } }").directive?.index).toBe(true)
+    expect(notFoundRobots("export const metadata = { robots: null }").directive?.index).toBe(false)
+  })
+
+  it('holds the shared object itself to the same rule', () => {
+    expect(sharedNotFoundMetadataIsExplicit("export const NOT_FOUND_METADATA = { title: 'x', robots: null }")).toBe(true)
+    expect(sharedNotFoundMetadataIsExplicit("export const NOT_FOUND_METADATA = { robots: { index: false } }")).toBe(true)
+    expect(sharedNotFoundMetadataIsExplicit("export const NOT_FOUND_METADATA = { robots: { index: true } }")).toBe(false)
+    expect(sharedNotFoundMetadataIsExplicit("export const NOT_FOUND_METADATA = { title: 'x' }")).toBe(false)
+    expect(sharedNotFoundMetadataIsExplicit("export const SOMETHING_ELSE = { robots: null }")).toBe(false)
+  })
+
+  it('the committed module is explicit, and it is `robots: null` on purpose', () => {
+    // `null` overwrites the root's nested `robots` with NOTHING, so the Metadata API emits no tag
+    // and the head carries exactly one directive: the framework's own noindex, which cannot be
+    // removed. `{ index: false }` would trade the contradiction for a duplicate.
+    const src = readFileSync('lib/seo/not-found-metadata.ts', 'utf8')
+    expect(sharedNotFoundMetadataIsExplicit(src)).toBe(true)
+    expect(stripComments(src)).toMatch(/robots\s*:\s*null/)
+  })
+
+  it('the shipped tree: every not-found file declares through the shared object', () => {
+    const result = run()
+    // 20 on 2026-09-08. The floor is what makes a broken walk fail rather than pass on nothing.
+    expect(result.notFoundChecked.length).toBeGreaterThanOrEqual(5)
+    expect(result.notFoundChecked).toContain('app/not-found.tsx')
+    for (const file of result.notFoundChecked) {
+      expect(notFoundRobots(readFileSync(file, 'utf8')).state, `${file} must export NOT_FOUND_METADATA`).toBe('shared')
+    }
+    expect(result.failures.filter((f) => f.kind === 'NOT-FOUND ROBOTS')).toEqual([])
   })
 })
 

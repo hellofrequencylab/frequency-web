@@ -21,6 +21,8 @@ import { type ActionResult, ok, fail } from '@/lib/action-result'
 // unsubscribable.
 const VALID_CATEGORIES: NotificationCategory[] = [
   'dispatches', 'events', 'mentions', 'comments', 'lifecycle',
+  // Housing match alerts (ADR-1278): the match email carries this category's one-click link.
+  'matches',
 ]
 
 // Flip email_<category> to false for the given profile, verifying the

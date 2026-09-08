@@ -10,8 +10,10 @@ export interface ProfileSkin {
   id: SkinId
   label: string
   description: string
-  /** Reserved for the cosmetics layer: the store item that unlocks this skin. Empty
-   *  today (all listed skins are free) — when set, the picker will gate on ownership. */
+  /** The store item slug that unlocks this skin (ADR-1279). Unset = free. When set, the writer
+   *  (lib/profile/profile-theme-actions.ts) refuses a member who does not hold it and the
+   *  appearance rail hides it, both through lib/spotlight/cosmetics.ts + lib/awards/holdings.ts.
+   *  Every listed skin is free today; the sticker list carries the first earned row. */
   requiredItem?: string
 }
 

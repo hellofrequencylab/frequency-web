@@ -48,6 +48,7 @@ const TARGET_LABEL: Record<string, string> = {
   comment:  'Comment',
   member:   'Member',
   event:    'Event',
+  guestbook: 'Guestbook note',
 }
 
 export function ModerationQueue({ reports }: { reports: ReportItem[] }) {
@@ -194,8 +195,8 @@ export function ModerationQueue({ reports }: { reports: ReportItem[] }) {
 
             {/* Action buttons — vary by target_type */}
             <div className="flex gap-2 pt-3 border-t border-border flex-wrap">
-              {/* Post / comment / dispatch → soft-hide */}
-              {(report.target_type === 'post' || report.target_type === 'comment' || report.target_type === 'dispatch') && (
+              {/* Post / comment / dispatch / guestbook note → soft-hide */}
+              {(report.target_type === 'post' || report.target_type === 'comment' || report.target_type === 'dispatch' || report.target_type === 'guestbook') && (
                 <Button
                   variant="warning"
                   size="sm"

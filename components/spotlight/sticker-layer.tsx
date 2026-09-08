@@ -23,7 +23,7 @@ export function SpotlightStickerLayer({ stickers }: { stickers: SpotlightSticker
       {placed.map((s, i) => (
         <span
           key={`${s.def.id}-${i}`}
-          className="absolute text-3xl leading-none drop-shadow-sm"
+          className="absolute text-display-h3 leading-none"
           style={{ left: `${s.x}%`, top: `${s.y}%`, transform: 'translate(-50%, -50%)' }}
         >
           {s.def.glyph}

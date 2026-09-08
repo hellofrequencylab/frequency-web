@@ -5741,6 +5741,55 @@ export type Database = {
           },
         ]
       }
+      housing_match_alerts: {
+        Row: {
+          counterpart_profile_id: string
+          created_at: string
+          kind: string
+          listing_id: string | null
+          recipient_profile_id: string
+          score: number
+        }
+        Insert: {
+          counterpart_profile_id: string
+          created_at?: string
+          kind: string
+          listing_id?: string | null
+          recipient_profile_id: string
+          score: number
+        }
+        Update: {
+          counterpart_profile_id?: string
+          created_at?: string
+          kind?: string
+          listing_id?: string | null
+          recipient_profile_id?: string
+          score?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "housing_match_alerts_counterpart_profile_id_fkey"
+            columns: ["counterpart_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "housing_match_alerts_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "housing_match_alerts_recipient_profile_id_fkey"
+            columns: ["recipient_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       housing_seeker_profiles: {
         Row: {
           active: boolean
@@ -8530,18 +8579,21 @@ export type Database = {
           email_lifecycle: boolean
           email_mentions: boolean
           email_practice: boolean
+          email_matches: boolean
           freq_comments: string
           freq_dispatches: string
           freq_events: string
           freq_lifecycle: string
           freq_mentions: string
           freq_practice: string
+          freq_matches: string
           inapp_comments: boolean
           inapp_dispatches: boolean
           inapp_events: boolean
           inapp_lifecycle: boolean
           inapp_mentions: boolean
           inapp_practice: boolean
+          inapp_matches: boolean
           profile_id: string
           push_comments: boolean
           push_dispatches: boolean
@@ -8549,6 +8601,7 @@ export type Database = {
           push_lifecycle: boolean
           push_mentions: boolean
           push_practice: boolean
+          push_matches: boolean
           sms_dispatches: boolean
           sms_enabled: boolean
           sms_events: boolean
@@ -8565,18 +8618,21 @@ export type Database = {
           email_lifecycle?: boolean
           email_mentions?: boolean
           email_practice?: boolean
+          email_matches?: boolean
           freq_comments?: string
           freq_dispatches?: string
           freq_events?: string
           freq_lifecycle?: string
           freq_mentions?: string
           freq_practice?: string
+          freq_matches?: string
           inapp_comments?: boolean
           inapp_dispatches?: boolean
           inapp_events?: boolean
           inapp_lifecycle?: boolean
           inapp_mentions?: boolean
           inapp_practice?: boolean
+          inapp_matches?: boolean
           profile_id: string
           push_comments?: boolean
           push_dispatches?: boolean
@@ -8584,6 +8640,7 @@ export type Database = {
           push_lifecycle?: boolean
           push_mentions?: boolean
           push_practice?: boolean
+          push_matches?: boolean
           sms_dispatches?: boolean
           sms_enabled?: boolean
           sms_events?: boolean
@@ -8600,18 +8657,21 @@ export type Database = {
           email_lifecycle?: boolean
           email_mentions?: boolean
           email_practice?: boolean
+          email_matches?: boolean
           freq_comments?: string
           freq_dispatches?: string
           freq_events?: string
           freq_lifecycle?: string
           freq_mentions?: string
           freq_practice?: string
+          freq_matches?: string
           inapp_comments?: boolean
           inapp_dispatches?: boolean
           inapp_events?: boolean
           inapp_lifecycle?: boolean
           inapp_mentions?: boolean
           inapp_practice?: boolean
+          inapp_matches?: boolean
           profile_id?: string
           push_comments?: boolean
           push_dispatches?: boolean
@@ -8619,6 +8679,7 @@ export type Database = {
           push_lifecycle?: boolean
           push_mentions?: boolean
           push_practice?: boolean
+          push_matches?: boolean
           sms_dispatches?: boolean
           sms_enabled?: boolean
           sms_events?: boolean

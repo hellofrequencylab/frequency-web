@@ -136,6 +136,7 @@ export async function routeNotification<E extends NotificationEvent>(
 // PROVEN (migrated, this change):
 //   ✅ event.dispatch  — lib/events/dispatch.ts `fanOutEventPush` (push, community)
 //   ✅ booking.reminder — lib/spaces/booking-notify.ts `runBookingReminder` (email, transactional)
+//   ✅ guestbook.sign   — lib/spotlight/guestbook.ts `notifyGuestbookSigned` (push, comments; ADR-1279)
 //
 // TO MIGRATE (each is a registry row + a call-site swap; do NOT rip out in one pass):
 //   ⏳ automations `email_actor` / `push_actor` — lib/automations.ts (email + push). Note: its
@@ -147,11 +148,12 @@ export async function routeNotification<E extends NotificationEvent>(
 //   ⏳ booking confirm / cancel  — lib/spaces/booking-notify.ts (transactional email)
 //   ⏳ email-studio broadcast    — lib/email-studio/send.ts (marketing; owned by email-studio)
 //   ⏳ mentions / comments in-app — needs an 'inapp' outbox handler first (channel groundwork)
-//       ⚠️ Until then the in-app switches (other than Practice reminders) and both Mentions /
-//       Replies rows are HIDDEN from the settings grid by lib/notifications/wired.ts, because a
-//       switch nothing reads is a lie (meta-scan B9 D1/D6). Shipping the handler, or any mention /
-//       reply email or push emitter, means flipping that map in the same commit; its test walks
-//       the tree for readers and fails until the map agrees.
+//       ⚠️ Until then the in-app switches (other than Practice reminders and the Replies row, whose
+//       inapp + push pairs the Guestbook emitter reads, ADR-1279) and the Mentions row are HIDDEN
+//       from the settings grid by lib/notifications/wired.ts, because a switch nothing reads is a
+//       lie (meta-scan B9 D1/D6). Shipping the handler, or any mention / reply email or push
+//       emitter, means flipping that map in the same commit; its test walks the tree for readers
+//       and fails until the map agrees.
 //
 // PATTERN for each: add the event to `NotificationEvent` + `NotificationContexts` + a
 // `NOTIFICATION_REGISTRY` row (category/channels/render), then replace the site's hand-rolled

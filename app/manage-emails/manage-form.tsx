@@ -14,7 +14,7 @@ import { isError } from '@/lib/action-result'
 const CATEGORY_LABELS: { key: NotificationCategory; label: string; help: string }[] = [
   { key: 'dispatches', label: 'Dispatches', help: 'Dispatch posts from your Hosts and the wider community.' },
   { key: 'events', label: 'Events', help: 'RSVP changes and reminders before an event starts.' },
-  { key: 'comments', label: 'Replies', help: 'Replies and mentions on posts and comments you wrote.' },
+  { key: 'comments', label: 'Replies', help: 'Replies and mentions on posts and comments you wrote, and notes in your guestbook.' },
   { key: 'mentions', label: 'Mentions', help: 'When someone @mentions you anywhere else.' },
   { key: 'lifecycle', label: 'Onboarding nudges', help: 'Day 1, Day 3, and Day 7 check-ins after you join a circle.' },
 ]

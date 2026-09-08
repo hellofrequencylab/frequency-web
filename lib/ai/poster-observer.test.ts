@@ -94,7 +94,7 @@ vi.mock('@/lib/supabase/admin', () => ({
   createAdminClient: () => ({ from: (table: string) => qbuilder(table) }),
 }))
 
-import { needsReview, reviewCandidates } from './poster-observer'
+import { needsReview, reviewCandidates, parseVerdict } from './poster-observer'
 import { scorePosterCounts } from '@/lib/events/poster-quality'
 
 /** Add N published outreach posts (poster_scan) for one poster. */
@@ -205,5 +205,20 @@ describe('reviewCandidates', () => {
     for (let i = 0; i < 12; i++) addPosts(`spammer-${i}`, 8) // all throttled
     const out = await reviewCandidates()
     expect(out).toHaveLength(10)
+  })
+})
+
+describe('parseVerdict (the reply boundary, ADR-1287)', () => {
+  it('reads a tip or a flag, fence-tolerant, note trimmed and capped', () => {
+    expect(parseVerdict('```json\n{"kind":"tip","text":"  Nice work. "}\n```')).toEqual({ kind: 'tip', text: 'Nice work.' })
+    expect(parseVerdict(`{"kind":"flag","text":"${'x'.repeat(1200)}"}`)?.text).toHaveLength(1000)
+  })
+
+  it('refuses an unknown kind, an empty note, a wrong type, or no JSON (the poster is skipped)', () => {
+    expect(parseVerdict('{"kind":"warn","text":"x"}')).toBeNull()
+    expect(parseVerdict('{"kind":"tip","text":"   "}')).toBeNull()
+    expect(parseVerdict('{"kind":"tip","text":["not","a","string"]}')).toBeNull()
+    expect(parseVerdict('{"kind":"tip"')).toBeNull()
+    expect(parseVerdict('No verdict.')).toBeNull()
   })
 })

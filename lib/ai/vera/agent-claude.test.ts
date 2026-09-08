@@ -1,7 +1,9 @@
 import { describe, it, expect } from 'vitest'
 import type { ContentBlock } from '@anthropic-ai/sdk/resources/messages'
-import { toAnthropicTools, parseAssistantContent, extractSuggestions } from './agent-claude'
+import { toAnthropicTools, parseAssistantContent, extractSuggestions, buildVeraSystem, createChipsFilter } from './agent-claude'
 import { VERA_TOOLS } from './tools'
+import { DEFAULT_VERA_CONFIG } from './config'
+import { VOICE_PRIMER } from '@/lib/ai/voice'
 
 describe('toAnthropicTools', () => {
   it('maps the bounded surface to Anthropic tool schemas', () => {
@@ -64,5 +66,95 @@ describe('extractSuggestions (live-loop chips, ONBOARDING-BUILD-LIST §1.5)', ()
     const { reply, suggestions } = extractSuggestions('Line one.\nCHIPS: Tap me\nLine two.')
     expect(reply).toBe('Line one.\nLine two.')
     expect(suggestions).toEqual(['Tap me'])
+  })
+})
+
+describe('buildVeraSystem (the cache split, ADR-1287)', () => {
+  const ctxA = { facts: { interests: ['swimming'], goals: ['make friends'], neighborhood: 'Mission' } } as never
+  const ctxB = { facts: { interests: ['chess'] } } as never
+  const hotCfg = { ...DEFAULT_VERA_CONFIG, register: 'hot' as const, styleNote: 'be brief', greeting: 'Yo.' }
+
+  it('keeps the STABLE block byte-identical across members, configs, support history and viewers', () => {
+    const a = buildVeraSystem(ctxA, DEFAULT_VERA_CONFIG, 'two open tickets', { isOperator: true, roleLabel: 'janitor' })
+    const b = buildVeraSystem(ctxB, hotCfg, undefined, null)
+    const c = buildVeraSystem(null, DEFAULT_VERA_CONFIG)
+    expect(a.stable).toBe(b.stable)
+    expect(b.stable).toBe(c.stable)
+    // Every per-request fact lives in the volatile half, never the stable one.
+    for (const needle of ['swimming', 'Mission', 'two open tickets', 'janitor', 'be brief', 'Yo.', 'HOT']) {
+      expect(a.stable + b.stable, needle).not.toContain(needle)
+    }
+    expect(a.volatile).toContain('swimming')
+    expect(a.volatile).toContain('two open tickets')
+    expect(a.volatile).toContain('janitor')
+    expect(b.volatile).toContain('be brief')
+    expect(b.volatile).toContain('HOT')
+  })
+
+  it('opens the stable block with the voice primer, so the cache covers voice + persona + tools', () => {
+    const { stable } = buildVeraSystem(null, DEFAULT_VERA_CONFIG)
+    expect(stable.startsWith(VOICE_PRIMER)).toBe(true)
+    expect(stable).toContain('You are Vera')
+    expect(stable).toContain('CHIPS:')
+  })
+
+  it('always writes the operator knobs and the bug-report line into the volatile half', () => {
+    const { volatile } = buildVeraSystem(null, DEFAULT_VERA_CONFIG)
+    expect(volatile).toContain('Report a bug')
+    expect(volatile).toContain(String(DEFAULT_VERA_CONFIG.maxReplyChars))
+    expect(volatile).toContain(DEFAULT_VERA_CONFIG.greeting)
+  })
+})
+
+describe('createChipsFilter (streaming-safe chip stripping, ADR-1287)', () => {
+  function run(deltas: string[]): string {
+    let out = ''
+    const f = createChipsFilter((t) => (out += t))
+    for (const d of deltas) f.push(d)
+    f.flush()
+    return out
+  }
+
+  it('emits prose as it arrives and drops the CHIPS line, even when it lands mid-delta', () => {
+    expect(run(['Glad you ', 'made it.\nCHI', 'PS: Find me a circle | Yes'])).toBe('Glad you made it.\n')
+  })
+
+  it('never shows a partial CHIPS prefix, then releases it when it turns out to be prose', () => {
+    let out = ''
+    const f = createChipsFilter((t) => (out += t))
+    f.push('Hey.\nCh')
+    expect(out).toBe('Hey.\n')
+    f.push('ess is on Tuesdays.')
+    expect(out).toBe('Hey.\nChess is on Tuesdays.')
+    f.flush()
+    expect(out).toBe('Hey.\nChess is on Tuesdays.')
+  })
+
+  it('streams a single-line reply character by character (no line buffering on prose)', () => {
+    let out = ''
+    const f = createChipsFilter((t) => (out += t))
+    f.push('S')
+    f.push('o')
+    f.push(' glad.')
+    expect(out).toBe('So glad.')
+  })
+
+  it('drops everything after the CHIPS line, across later deltas', () => {
+    expect(run(['Reply.\n', 'chips: a | b\n', 'stray text after'])).toBe('Reply.\n')
+  })
+
+  it('matches extractSuggestions on the whole reply once flushed', () => {
+    const whole = 'Line one.\nLine two.\nCHIPS: One | Two'
+    expect(run(whole.split(/(?=[ .])/)).trim()).toBe(extractSuggestions(whole).reply)
+  })
+
+  it('reset starts a fresh round', () => {
+    let out = ''
+    const f = createChipsFilter((t) => (out += t))
+    f.push('First.\nCHIPS: x')
+    f.reset()
+    f.push('Second.')
+    f.flush()
+    expect(out).toBe('First.\nSecond.')
   })
 })

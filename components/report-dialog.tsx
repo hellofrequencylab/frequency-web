@@ -1,14 +1,14 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { reportContent } from '@/app/(main)/feed/report-actions'
+import { reportContent, type ReportTargetType } from '@/app/(main)/feed/report-actions'
 import { isError } from '@/lib/action-result'
 import { Dialog } from '@/components/ui/dialog'
 import { Textarea } from '@/components/ui/field'
 import { Button } from '@/components/ui/button'
 
 type ReportDialogProps = {
-  targetType: 'post' | 'dispatch' | 'comment' | 'member' | 'event'
+  targetType: ReportTargetType
   targetId: string
   open: boolean
   onClose: () => void
@@ -24,10 +24,21 @@ const REASONS = [
 
 type ReportReason = (typeof REASONS)[number]['value']
 
+// The noun the dialog names. A guestbook target is a NOTE in member copy (NAMING.md § Guestbook).
+const TARGET_NOUN: Record<ReportTargetType, string> = {
+  post: 'post',
+  dispatch: 'dispatch',
+  comment: 'comment',
+  member: 'member',
+  event: 'event',
+  guestbook: 'note',
+}
+
 // The content-moderation report dialog (distinct from the support `ReportDialog` in
 // components/support/report-dialog.tsx, which files support tickets). This one flags
-// a post/comment/member/event for moderator review.
+// a post/comment/member/event/guestbook note for moderator review.
 export function ContentReportDialog({ targetType, targetId, open, onClose }: ReportDialogProps) {
+  const noun = TARGET_NOUN[targetType] ?? targetType
   const [reason, setReason] = useState<ReportReason | null>(null)
   const [details, setDetails] = useState('')
   const [submitted, setSubmitted] = useState(false)
@@ -59,7 +70,7 @@ export function ContentReportDialog({ targetType, targetId, open, onClose }: Rep
     <Dialog
       open={open}
       onClose={handleClose}
-      ariaLabel={`Report ${targetType}`}
+      ariaLabel={`Report ${noun}`}
       className="max-w-sm"
     >
       <div className="bg-surface rounded-2xl lift-3 border border-border p-6 w-full">
@@ -83,7 +94,7 @@ export function ContentReportDialog({ targetType, targetId, open, onClose }: Rep
         ) : (
           <>
             <h3 className="text-body-sm font-semibold text-text mb-2">
-              Report {targetType}
+              Report {noun}
             </h3>
             <p className="text-meta text-muted mb-4 leading-relaxed">
               Why are you reporting this? Select the reason that best applies.

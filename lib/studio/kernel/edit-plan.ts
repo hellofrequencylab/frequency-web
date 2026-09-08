@@ -36,7 +36,7 @@ export function editPlan(manifest: EntityManifest): EditPlan {
  * Why a written column did not become a rail field. Every reason is a drift the old hand list
  * hid: an `unknown` path is a column the manifest never declared; an `inline` path belongs on
  * the canvas and the rail is not hosting it; a `spark-only` path is asked at creation and is on
- * no edit plane at all.
+ * no edit plane at all, because it is not prose and declares no `editPlane` (ADR-1281).
  */
 export type RailDropReason = 'unknown' | 'inline' | 'spark-only'
 

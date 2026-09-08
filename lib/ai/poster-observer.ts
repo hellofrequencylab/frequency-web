@@ -27,6 +27,7 @@ import { aiAvailable, featureOverBudget, recordAiUsage } from './usage'
 import { completeText, AiUnavailableError } from './complete'
 import { withVoice } from './voice'
 import { getPosterQuality, type PosterQuality } from '@/lib/events/poster-quality'
+import { parseModelJson, shortText, z } from './schema'
 
 function db(): SupabaseClient {
   return createAdminClient()
@@ -189,23 +190,18 @@ interface ObserverVerdict {
   text: string
 }
 
+/** The reply contract, as a schema (ADR-1287): a kind the moderation queue knows and a non-empty
+ *  note. Anything else is refused at the boundary and the poster is skipped. */
+const VERDICT = z.object({
+  kind: z.enum(['tip', 'flag']),
+  text: shortText(1000).refine((t) => t.length > 0, 'empty note'),
+})
+
 /** Parse the model's `{kind, text}` JSON, tolerating code fences. Returns null
  *  on anything malformed so the caller skips instead of inserting junk. */
 export function parseVerdict(raw: string): ObserverVerdict | null {
-  const cleaned = raw
-    .trim()
-    .replace(/^```(?:json)?\s*/i, '')
-    .replace(/\s*```$/, '')
-    .trim()
-  try {
-    const parsed = JSON.parse(cleaned) as { kind?: unknown; text?: unknown }
-    const kind = parsed.kind
-    const text = typeof parsed.text === 'string' ? parsed.text.trim() : ''
-    if ((kind === 'tip' || kind === 'flag') && text) return { kind, text: text.slice(0, 1000) }
-  } catch {
-    // fall through
-  }
-  return null
+  const res = parseModelJson(raw, VERDICT)
+  return res.ok ? res.data : null
 }
 
 function evidenceBlock(quality: PosterQuality, recent: RecentPostedEvent[]): string {

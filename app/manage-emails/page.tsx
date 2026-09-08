@@ -28,7 +28,7 @@ export const metadata = { robots: { index: false } }
 // live-looking subscriptions, default ON, to email no emitter has ever sent (meta-scan B9 D6, the
 // SCAN-528 shape); a member reading this page believed they were subscribed to mail that could not
 // arrive. The vocabulary stays in order so a shipped emitter reappears in its place.
-const DISPLAY_ORDER: NotificationCategory[] = ['dispatches', 'events', 'comments', 'mentions', 'lifecycle']
+const DISPLAY_ORDER: NotificationCategory[] = ['dispatches', 'events', 'comments', 'mentions', 'lifecycle', 'matches']
 const VISIBLE_CATEGORIES = DISPLAY_ORDER.filter((category) => isPreferenceWired('email', category))
 
 // `p` = profile id, `c` = the category the token was minted for, `t` = the HMAC token. Same shape as the

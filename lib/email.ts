@@ -1039,6 +1039,64 @@ View booking: ${params.manageUrl}
   }
 }
 
+// ── Housing match alert (DEF-HOUS, ADR-1278) ──────────────────────────────────
+// Built, not sent: the notification router (lib/notifications/router.ts) transports it on the
+// `matches` category once the member's own switch and the suppression list have been read, and
+// lib/listings/housing-match-alerts.ts is the one caller. Same one-click unsubscribe shape as
+// every category email. Voice: plain, one concrete fact (who, where), no feelings narrated.
+
+export interface HousingMatchEmailParams {
+  to: string
+  recipientName: string
+  recipientProfileId: string
+  /** The member who lined up with the recipient, by display name. */
+  counterpartName: string
+  /** `seeker`: they are looking too. `listing`: they line up with the recipient's room. */
+  kind: 'seeker' | 'listing'
+  city: string | null
+  /** Site-relative path the button opens (made absolute here). */
+  matchPath: string
+}
+
+export function buildHousingMatchEmail(params: HousingMatchEmailParams): EmailPayload {
+  const { to, recipientName, recipientProfileId, counterpartName, kind, city, matchPath } = params
+  const unsubscribeUrl = buildUnsubscribeUrl({ baseUrl: BASE_URL, profileId: recipientProfileId, category: 'matches' })
+  const matchUrl = `${BASE_URL}${matchPath}`
+  const where = city ? ` in ${city}` : ''
+  const subject = kind === 'seeker'
+    ? `New roommate match: ${counterpartName}`
+    : `${counterpartName} lines up with your room`
+  const lead = kind === 'seeker'
+    ? `${counterpartName} is looking for a place${where} too, and their search lines up with yours on Roommate matches.`
+    : `${counterpartName} is looking for a room${where}, and their search lines up with your listing.`
+  const cta = kind === 'seeker' ? 'See the match' : 'See their profile'
+  const name = escapeHtml(recipientName)
+  return {
+    to,
+    subject,
+    headers: listUnsubscribeHeaders(unsubscribeUrl),
+    html: emailShell(`
+      <p style="font-size:11px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:#9A5E12;margin:28px 0 8px;">
+        Roommate matches
+      </p>
+      <h1 style="${h1Style}">${escapeHtml(subject)}</h1>
+      <p style="${pStyle}">Hi ${name}, ${escapeHtml(lead)}</p>
+      <p style="${pStyle}">You hear about each person once. Matching stays opt-in on both sides, and you can switch these notes off any time.</p>
+      <a href="${matchUrl}" style="${btnStyle}">${cta} &rarr;</a>
+    `),
+    text: `${subject}
+
+Hi ${recipientName}, ${lead}
+
+You hear about each person once. Matching stays opt-in on both sides, and you can switch these notes off any time.
+
+${cta}: ${matchUrl}
+
+Unsubscribe from match emails: ${unsubscribeUrl}
+`,
+  }
+}
+
 export async function sendBookingCancelledEmail(params: {
   to: string
   recipientName: string

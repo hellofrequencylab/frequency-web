@@ -27,7 +27,7 @@ const CATEGORIES: { key: NotificationCategory; label: string; description: strin
   {
     key:         'comments',
     label:       'Replies',
-    description: 'Replies and mentions on posts and comments you wrote.',
+    description: 'Replies and mentions on posts and comments you wrote, and notes in your guestbook.',
   },
   {
     key:         'mentions',
@@ -43,6 +43,11 @@ const CATEGORIES: { key: NotificationCategory; label: string; description: strin
     key:         'practice',
     label:       'Practice reminders',
     description: 'A nudge on days a practice is still waiting, at the time you usually practice. One a day at most, plus the note when a commitment completes.',
+  },
+  {
+    key:         'matches',
+    label:       'Roommate matches',
+    description: 'When someone new lines up with your roommate search or your room. Once per person, never a repeat.',
   },
 ]
 

@@ -218,8 +218,9 @@ export function validateSpotlightBackground(raw: unknown, ownerAuthUserId: strin
  *   - x and y are clamped to 0..100 and rounded; a non-numeric coordinate centres on that axis (50);
  *   - at most MAX_STICKERS entries survive, in stored order;
  *   - anything that is not an object, or a layer with no usable entries, yields EMPTY_STICKERS.
- * `requiredItem` on a sticker definition is NOT consulted here yet: every allowlisted sticker is free
- * until the cosmetics lane lands an inventory to gate on.
+ * `requiredItem` on a sticker definition is NOT consulted here, by design (ADR-1279): the read side is
+ * a pure function of the stored blob, and the earned gate runs where the inventory can be read, in
+ * setSpotlightStickers (write) and the appearance rail (picker), through lib/spotlight/cosmetics.ts.
  */
 export function validateSpotlightStickers(raw: unknown): SpotlightStickers {
   if (!raw || typeof raw !== 'object') return EMPTY_STICKERS
