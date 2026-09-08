@@ -37743,3 +37743,90 @@ It stopped being read.
 **Consequences.** All 18 debt classes hold or shrink on this branch. `HYG-055`'s slice targets are untouched (`handrolled-eyebrow` 532 against a 484 target, so the row correctly stays open). Three rows are filed: `HYG-070` (the scheduled reading), `HYG-071` (the `drop-shadow` false positive), `HYG-072` (the PR-size gate counting generated baselines, which is what actually blocks #2477).
 
 ⚠️ **The generalisable part, and this repo has now written it twice.** *Every fail-safe needs a gate that notices it fired* — `AGENTS.md` says so about swallowed errors, and an advisory gate is a swallowed error with a nicer report. The failure here was not that the ratchet was advisory; it was that the ONLY reader of an advisory gate was a per-PR diff against a moving baseline, which structurally cannot distinguish "this PR did it" from "`main` already had it". **An advisory gate needs a reading on a fixed reference, on a schedule, with an owner — or it is a gate that reports to nobody.**
+
+---
+
+## ADR-1291: PROPOSED — the Quest becomes the Collective's own program, individuals never pay, and dues to a community become the second revenue leg (2026-09-08)
+
+**Status:** 🔴 **PROPOSED, not accepted.** Awaiting an owner ruling on six questions
+(`docs/FOCUS-MODEL.md` §10). Filed so the proposal has a decision record rather than a rival plan
+document; the reasoning and the measurements live in [`FOCUS-MODEL.md`](FOCUS-MODEL.md), and status
+lives in [`BUILD-BACKLOG.json`](BUILD-BACKLOG.json) (`OWN-064`).
+
+**Context.** The owner re-stated the product's centre: Frequency is a community collective that gives
+*other* communities the tools to connect and run their thing, the Quest should be the light thing we
+all do together rather than the spine, a community should be able to run its own program or adopt the
+Quest's as a template, and access should be free to individuals with revenue coming from business
+Spaces and from members paying memberships toward a given circle.
+
+An eight-lane sweep of the repo plus live production reads found that **most of this is already ruled
+or already built, and the gap is between the strategy and the app's interior**:
+
+- [ADR-811](DECISIONS.md) locked "Frequency is a Community Collective" on 2026-07-23. The marketing
+  site leads with it; **0 of 13 home blocks mention the game**. Inside the app the game holds 5 of 16
+  rail rows, 1 of 5 mobile tabs, the raised centre button, the whole feed hero, and a permanent Vault
+  dock. The induction tour and Vera's welcome deck both point at Circles, and then drop the member on
+  a practice board.
+- [ADR-252](DECISIONS.md) already ruled that Journeys are **group-coaching programs a Circle moves
+  through together**, on research showing cohort programs complete at 85-96% against 5-15% self-paced
+  and that global leaderboards demotivate. The engine shipped (`journey_runs`, cohort meter, drip,
+  kickoff event). It was never surfaced as the operator headline.
+- Member dues are **~85% built and dark**: `space_membership_tiers` → Connect destination charge →
+  webhook → `syncTierCircleAccess` grants a real `memberships` row in the linked Circle.
+  `billing_live` and `host_payouts_enabled` are both true in production.
+- Production is pre-launch and shaped unlike the strategy: 58 profiles, 21 real Spaces, and **20 of
+  21 Spaces have zero Circles**. Six of the seven Circles and 36 of the 67 events belong to the root
+  Frequency space.
+
+**Two facts make this urgent rather than merely worth doing.** `OWN-050` (the backlog's only P0)
+records that the **Stripe webhook was never registered and `stripe_webhook_events` has held 0 rows for
+the life of the table**, so no payment on any path has ever been recorded. And `beta_grace` is set to
+**2026-10-01**, after which `featureGatesLive()` starts enforcing the Crew gates against individuals
+for the first time.
+
+**The contradiction this proposal exists to resolve.** `lib/pricing/gates.ts:144` sets
+`space_memberships: { minEntitlement: 'business' }` and gives free Spaces zero tiers, so an operator
+must buy a $29/mo subscription before collecting a dollar from their own members. ADR-914 already
+ruled the opposite principle for every other transaction: *"Never gate the transaction. Gate the
+repeat."* The gate's own comment defends the wall as protecting a promise made to another person,
+which is a **readiness** concern wearing a pricing gate's clothes.
+
+**Proposed decision** (three moves, no new proper nouns, no new tables):
+
+1. **The Quest keeps its name and stops being the spine.** Collapse the rail section from five rows to
+   one, return the raised mobile button to a community verb, re-lead the feed with a community board,
+   and make the collective bar (`getCollective('global')`, already argued for in its own source
+   comments citing Festinger 1954) the default rather than a query parameter. Quiet the **REWARD**
+   stage of `ENGAGEMENT-ARCHITECTURE`'s pipeline while SOURCE → VERIFY → LEDGER keep running, so the
+   CRM, funnels, trust and analytics never notice. **Nothing is deleted.**
+2. **Every community runs its own program, and the Quest is one template among them.** Surface a
+   Circle **Run** of a Journey as the operator headline (ADR-252, sequenced at last); a Space adopts,
+   remixes or authors. `circle_challenge_adoptions` becomes the collective opt-in: built, rendered,
+   zero rows.
+3. **Free to be here, pay to belong to a community.** Retire the member-facing gates and the four
+   parallel `isPaid` walls, keep Crew as contribute-what-you-want patronage with no feature
+   difference, move the membership wall from the plan onto **readiness** (payout-ready Connect
+   account, a published circle to deliver into, a stated cancellation policy), and let the plan ladder
+   act as the take-rate buy-down it already is (free Space 10% → Business 5% → Collective 3% → Non
+   Profit 0%, and 0% on your own audience forever).
+
+**The prerequisite that gates all of move 1.** Event attendance has **no independent record**: there
+is no `checked_in` column, and attendance exists only as an idempotent engagement-ledger row written
+by the same path that pays Zaps (`app/(main)/events/actions.ts:1597-1685`). Attendance must be given
+its own record before any reward-visibility change, or check-in history is lost.
+
+**The counter-argument, recorded rather than argued away.** Dues cannot pay a bill in 2026: 10% of a
+$10/month circle is $1 per member per month, against 7 circles and 0 paying members. This proposal
+therefore does **not** replace subscriptions with dues. It removes the membership wall from the
+subscription and re-justifies the subscription on tools (CRM, campaign email, automation, the
+multi-page site). Removing the wall costs nothing today because today it collects nothing.
+
+**Consequences if accepted.** `QUEST-IA-DEBT` (ADR-293) closes. `HYG-033` (the mobile tab bar) and
+`LIVE-204` (front-door wording) are touched. `OWN-046`, `OWN-048` and `OWN-063` each need reconciling
+against the ruling. The Editor program E0-E9 and the four parked programs are untouched. Six named
+operator gaps become the feature runway: sell a course, gate content to a tier, a member directory,
+space-level discussion, completion analytics, and space-scoped posts.
+
+**Consequences if declined.** The gates close on individuals on 2026-10-01 by default, the app keeps
+opening on a personal game while every other surface sells a collective, and the dues engine stays
+walled behind the subscription it was meant to make worth buying.
