@@ -39,6 +39,13 @@ import { pathToFileURL } from 'node:url'
 // DIFFERENT HARDWARE, which is the whole point of writing the numbers down here: every stall in the
 // ledger was measured on a 4-core/8 GB cle1 builder, and that machine class no longer serves this
 // project. Compare a new reading against the row that matches its machine, never across the two.
+//
+// 2026-09-08, ADR-1282: LIVE-123 CLOSED ON A BOUND, not a cause. Every deployment from 2026-09-02
+// 00:00Z to 2026-09-08 05:27Z was enumerated from Vercel: 500 of 500 READY (121 production, 379
+// preview), 0 ERROR, 0 CANCELED, so 0 stalls on the Enhanced class against 6 of ~22 on the old one.
+// The slowest of nineteen builds read for duration was a no-cache redeploy (cold compile 67s, page-data
+// gap 10s, 2m total). A stall on the 8-core class REOPENS the row, and this reader is the first thing
+// to run on its log: quote the machine line beside the verdict.
 export const BASELINE = Object.freeze({
   measured: '2026-09-08',
   row: 'LIVE-123',
