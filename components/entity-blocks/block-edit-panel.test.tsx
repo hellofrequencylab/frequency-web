@@ -1,5 +1,19 @@
 import { describe, it, expect, vi } from 'vitest'
 import { renderToStaticMarkup } from 'react-dom/server'
+
+// The gallery + photo fields open the ONE Loom picker. Stub it and keep every set of props it was
+// rendered with, so a pick can be replayed here (the real picker needs a browser, gated server
+// actions and a click, none of which a render test has).
+type Pick = { url: string; assetId?: string; alt?: string | null }
+type PickerProps = { onSelectManyAssets?: (picks: Pick[]) => void; onSelectMany?: unknown }
+const pickers = vi.hoisted(() => ({ seen: [] as PickerProps[] }))
+vi.mock('@/components/loom/loom-picker', () => ({
+  LoomPicker: (props: PickerProps) => {
+    pickers.seen.push(props)
+    return null
+  },
+}))
+
 import { BlockEditPanel } from './block-edit-panel'
 import {
   AlignControl,
@@ -164,5 +178,54 @@ describe('BlockEditPanel redesign', () => {
     renderToStaticMarkup(<ColorControl value="default" onSelect={onSelect} />)
     // static render does not fire events; this asserts the component mounts without throwing.
     expect(onSelect).not.toHaveBeenCalled()
+  })
+})
+
+// ADR-1253 (HYG-029): the rail's gallery adds each pick as the REFERENCE the Loom handed back, and a
+// reorder / remove leaves every existing entry in the shape it was stored; the sanitizer keeps both
+// (ADR-1245), so a half-adopted editor would silently rewrite refs to bare urls on the next edit.
+describe('the gallery editor keeps the reference (ADR-1253)', () => {
+  const ref = { assetId: 'a1b2c3d4-1111-4222-8333-444455556666', url: 'https://cdn.test/loom/b.jpg' }
+  const gallery = (images: unknown, onContent: (next: Record<string, unknown>) => void) => {
+    pickers.seen.length = 0
+    renderToStaticMarkup(
+      <BlockEditPanel
+        id="gallery"
+        content={{ images }}
+        style={{}}
+        hidden={false}
+        editHref={null}
+        onContent={onContent}
+        onStyle={noop}
+        onToggleHide={noop}
+      />,
+    )
+    const p = pickers.seen.find((x) => x.onSelectManyAssets || x.onSelectMany)
+    if (!p) throw new Error('the gallery editor rendered no Loom picker')
+    return p
+  }
+
+  it('appends a pick with a library row as { assetId, url }, and one without as its url', () => {
+    const onContent = vi.fn()
+    const p = gallery(['https://cdn.test/loom/a.jpg'], onContent)
+    // The url-only handler is gone: the picker fires both, so keeping it would re-flatten every pick.
+    expect(p.onSelectMany).toBeUndefined()
+    p.onSelectManyAssets?.([{ url: ref.url, assetId: ref.assetId }, { url: 'https://cdn.test/icons/star.svg' }])
+    expect(onContent).toHaveBeenCalledWith({
+      images: ['https://cdn.test/loom/a.jpg', ref, 'https://cdn.test/icons/star.svg'],
+    })
+  })
+
+  it('carries a stored ref through an append untouched (a legacy string beside it is untouched too)', () => {
+    const onContent = vi.fn()
+    const p = gallery([ref, 'https://cdn.test/loom/a.jpg'], onContent)
+    p.onSelectManyAssets?.([{ url: 'https://cdn.test/loom/c.jpg', assetId: 'b2c3d4e5-1111-4222-8333-444455556666' }])
+    expect(onContent).toHaveBeenCalledWith({
+      images: [
+        ref,
+        'https://cdn.test/loom/a.jpg',
+        { assetId: 'b2c3d4e5-1111-4222-8333-444455556666', url: 'https://cdn.test/loom/c.jpg' },
+      ],
+    })
   })
 })
