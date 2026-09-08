@@ -36928,6 +36928,37 @@ That is not a defect in the reporter. `requiredFailure()` (`test/e2e/shell-cover
 ⚠️ **The generalisable part: "every fail-safe needs a gate that notices it fired" has a second half — the gate must be REACHABLE from every path that can fire the fail-safe.** This repo built the gate, unit-tested both of its directions, and wired it into one of the two workflows that can trip it. Everything about that reads as done: the pure function is right, the tests are honest, the annotation is loud. What no test could see is that the *capture* path — the more dangerous one, because it commits — never passed the argument. A guard proven at the function boundary is not proven at the process boundary, and the cheapest way to find the gap is to read a real run's conclusion, not its output.
 ## ADR-1272: a visual baseline is stale when its RENDER INPUT changed, not when its file did (2026-09-08)
 
+**What the recapture actually produced, read rather than assumed (run `34183299479`, 2026-09-08
+03:27Z, production, `update_baselines` alone).** ADR-1264 requires a recapture to be taken apart
+before it is taken, and that applies to a dispatch made by the agent that wrote the rule:
+
+| check | result |
+|---|---|
+| files committed | 129 — **128 PNGs** (16 slugs x 8) + `test/e2e/template-fingerprints.json` |
+| `app-*` files | **0**, correct for a run without `capture_shell` |
+| slugs | the 15 templates plus `discover`, which was disclosed in advance as possible |
+| stamped fingerprints vs. the values CI computed independently beforehand | **15 / 15 exact** |
+| gate afterwards | `template-fingerprints.test.ts` **18/18 pass**, from 15 failures |
+
+**And the dimension reading, which is this ADR's contribution to `LIVE-212`:**
+
+```
+PNGs compared: 128 | DIMENSIONS MOVED: 0 | identical dims: 128 | unreadable: 0
+```
+
+128 of 128 changed at byte-identical dimensions while an instrument reading the RENDER INPUT
+certified them as genuine copy changes. See the LIVE-212 correction carried on #2464: a dimension reading is a filter, not a
+classifier, and this is that claim tested on a capture taken after it was written.
+
+🔴 **A runner-committed baseline push does NOT get CI, and the PR will not say so plainly.** The
+capture job commits with `GITHUB_TOKEN`, so GitHub declines to run workflows on that commit:
+run `34183620429` on `eb606dad9` reads **`action_required`**, and the PR's check list simply goes
+quiet rather than red. Nothing in the timeline announces that the fifteen failures were never
+re-evaluated. The next commit authored by a person or an agent re-triggers CI normally, which is
+what this one does; do not read a post-recapture PR as green until a run exists on a commit the
+runner did not author.
+
+
 **Status.** Accepted. Replaces `LIVE-040`'s commit-date freshness arm with a content fingerprint; adds `test/e2e/template-fingerprints.json` + `test/e2e/template-fingerprints.test.ts` and a re-stamp step in `.github/workflows/e2e-manual.yml`.
 
 **Context.** `LIVE-040` carried a two-arm probe. The first arm asserts both marketing templates render a FAQ Accordion with question/answer pairs, and it is honest. The second asked whether the committed `@visual` PNGs still depict the page, by comparing the template file's last-commit date against its baselines' last-commit date. That arm has now failed twice in two different ways.
