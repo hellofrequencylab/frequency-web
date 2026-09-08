@@ -1,6 +1,6 @@
 import 'server-only'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { shouldSend as shouldSendPref } from '@/lib/notification-preferences'
+import { resolveSendGate as resolveSendGateSeam } from '@/lib/comms/send-gate'
 import { routeNotification } from '@/lib/notifications/router'
 import { GUESTBOOK_ENTRIES_SHOWN, type GuestbookEntry } from './guestbook.shared'
 
@@ -93,7 +93,7 @@ export async function resolveGuestbookOwner(handle: string): Promise<string | nu
 /** The injectable seams of the sign notice, so the decision is unit-testable without IO. */
 export interface GuestbookNotifyDeps {
   client?: Pick<ReturnType<typeof createAdminClient>, 'from'>
-  shouldSend?: typeof shouldSendPref
+  gate?: typeof resolveSendGateSeam
   route?: typeof routeNotification
   log?: (message: string, detail: Record<string, unknown>) => void
 }
@@ -111,8 +111,12 @@ export async function notifyGuestbookSigned(
   deps: GuestbookNotifyDeps = {},
 ): Promise<{ inapp: boolean; push: number }> {
   const client = deps.client ?? createAdminClient()
-  // Named `shouldSend` on purpose: lib/notifications/wired.test.ts finds preference readers by this literal call.
-  const shouldSend = deps.shouldSend ?? shouldSendPref
+  // THE SEAM, not the raw preference read (ADR-169): it applies suppression, consent and the
+  // per-subject mute on top of the switch, and lib/comms/send-gate-seam.test.ts refuses any send
+  // site that reaches past it. Bound to its own NAME on purpose, the way the preference read used
+  // to be: lib/notifications/wired.test.ts finds preference readers by the literal call
+  // `resolveSendGate(id, 'inapp', 'comments')`, so an alias here would make the switch read unwired.
+  const resolveSendGate = deps.gate ?? resolveSendGateSeam
   const route = deps.route ?? routeNotification
   const log = deps.log ?? ((m, d) => console.error(m, d))
   const out = { inapp: false, push: 0 }
@@ -131,7 +135,7 @@ export async function notifyGuestbookSigned(
   const url = `/people/${ownerHandle}#guestbook`
 
   try {
-    if (await shouldSend(ownerProfileId, 'inapp', 'comments')) {
+    if ((await resolveSendGate(ownerProfileId, 'inapp', 'comments')).allowed) {
       const { error } = await client.from('notifications').insert({
         recipient_id: ownerProfileId,
         actor_id: signerProfileId,

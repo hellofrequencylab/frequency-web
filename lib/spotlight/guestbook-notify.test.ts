@@ -1,13 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 // The Guestbook sign notice (ADR-1279): two channels, both behind the OWNER's `comments`
-// preferences. In-app is a direct `inapp_comments` read (shouldSend) before the bell row is
+// preferences. In-app goes through the send-gate seam (resolveSendGate) before the bell row is
 // written; push rides the registry row `guestbook.sign` (category `comments`), so the router's
 // gate reads `push_comments`. Every seam is injected here, so what these lock is the DECISION:
 // what is written, under which preference, with which copy, and that nothing ever throws.
 
 vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: () => ({ from: () => ({}) }) }))
-vi.mock('@/lib/notification-preferences', () => ({ shouldSend: vi.fn() }))
+vi.mock('@/lib/comms/send-gate', () => ({ resolveSendGate: vi.fn() }))
 vi.mock('@/lib/notifications/router', () => ({ routeNotification: vi.fn() }))
 
 import { notifyGuestbookSigned, type GuestbookNotifyDeps } from './guestbook'
@@ -33,12 +33,12 @@ beforeEach(() => {
 
 describe('notifyGuestbookSigned', () => {
   it('writes the bell row and routes the push when both comments switches are on', async () => {
-    const shouldSend = vi.fn(async () => true)
+    const gate = vi.fn(async () => ({ allowed: true, reason: 'ok' as const }))
     const route = vi.fn(async () => ({ event: 'guestbook.sign' as const, outcomes: [], enqueuedCount: 1 }))
-    const out = await notifyGuestbookSigned(input, { client: client({ display_name: 'Grace', handle: 'grace' }), shouldSend, route })
+    const out = await notifyGuestbookSigned(input, { client: client({ display_name: 'Grace', handle: 'grace' }), gate, route })
 
     expect(out).toEqual({ inapp: true, push: 1 })
-    expect(shouldSend).toHaveBeenCalledWith('owner-1', 'inapp', 'comments')
+    expect(gate).toHaveBeenCalledWith('owner-1', 'inapp', 'comments')
     expect(inserts).toEqual([
       {
         table: 'notifications',
@@ -59,7 +59,7 @@ describe('notifyGuestbookSigned', () => {
 
   it('skips the bell row when inapp_comments is off, and still offers the push to the gate', async () => {
     const route = vi.fn(async () => ({ event: 'guestbook.sign' as const, outcomes: [], enqueuedCount: 0 }))
-    const out = await notifyGuestbookSigned(input, { client: client({ handle: 'grace' }), shouldSend: async () => false, route })
+    const out = await notifyGuestbookSigned(input, { client: client({ handle: 'grace' }), gate: async () => ({ allowed: false, reason: 'preference-off' as const }), route })
     expect(out).toEqual({ inapp: false, push: 0 })
     expect(inserts).toEqual([])
     expect(route).toHaveBeenCalledTimes(1)
@@ -71,7 +71,7 @@ describe('notifyGuestbookSigned', () => {
     const log = vi.fn()
     const out = await notifyGuestbookSigned(input, {
       client: client(null, { message: 'nope' }),
-      shouldSend: async () => true,
+      gate: async () => ({ allowed: true, reason: 'ok' as const }),
       route: async () => { throw new Error('outbox down') },
       log,
     })
@@ -83,7 +83,7 @@ describe('notifyGuestbookSigned', () => {
 
   it('does nothing with an incomplete input', async () => {
     const route = vi.fn()
-    const out = await notifyGuestbookSigned({ ...input, ownerHandle: '' }, { client: client(null), shouldSend: async () => true, route })
+    const out = await notifyGuestbookSigned({ ...input, ownerHandle: '' }, { client: client(null), gate: async () => ({ allowed: true, reason: 'ok' as const }), route })
     expect(out).toEqual({ inapp: false, push: 0 })
     expect(route).not.toHaveBeenCalled()
     expect(inserts).toEqual([])
