@@ -297,7 +297,10 @@ export function HousingForm({
           <label htmlFor="city" className={LABEL}>
             City
           </label>
-          <Input id="city" name="city" defaultValue={initial?.city ?? ''} placeholder="Where is it?" />
+          {/* Required (ADR-1262): the Housing manifest has always declared `city` required, and a
+              listing with no city cannot be placed on the board or matched by area. Both housing
+              actions enforce the same rule server-side. */}
+          <Input id="city" name="city" required defaultValue={initial?.city ?? ''} placeholder="Where is it?" />
         </div>
       </div>
 
