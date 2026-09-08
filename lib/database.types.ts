@@ -11976,6 +11976,7 @@ export type Database = {
           id: string
           last_name: string | null
           payload: Json
+          recovery_sent_at: string | null
           source: string
           step_reached: number
           updated_at: string
@@ -11993,6 +11994,7 @@ export type Database = {
           id?: string
           last_name?: string | null
           payload?: Json
+          recovery_sent_at?: string | null
           source: string
           step_reached?: number
           updated_at?: string
@@ -12010,6 +12012,7 @@ export type Database = {
           id?: string
           last_name?: string | null
           payload?: Json
+          recovery_sent_at?: string | null
           source?: string
           step_reached?: number
           updated_at?: string
