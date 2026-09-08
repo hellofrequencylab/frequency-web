@@ -126,8 +126,9 @@ describe('visual gate tolerance', () => {
   })
 
   it('does not grow with page height', () => {
-    // Every capture in the suite is one of two widths; height is the axis that runs away.
-    for (const width of [390, 1280]) {
+    // Every capture in the suite is one of THREE widths (320 joined on ADR-1270); height is
+    // the axis that runs away.
+    for (const width of [320, 390, 1280]) {
       const heights = [844, 2859, 9541, 16110, 21777, 100_000]
       const forgiven = heights.map((h) => forgivenPixels(tolerance, width * h))
       expect(new Set(forgiven).size).toBe(1)

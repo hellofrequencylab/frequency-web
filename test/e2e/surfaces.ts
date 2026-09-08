@@ -471,6 +471,65 @@ export function operatorSurfaces(): readonly Surface[] {
   }))
 }
 
+/* ── The narrow phone, and the header band (HYG-057, ADR-1270) ──────────────── */
+
+/** The Playwright project that photographs at 320px. Named once, so a spec can ask
+ *  `testInfo.project.name === NARROW_PROJECT` without a string literal per call site. */
+export const NARROW_PROJECT = 'narrow'
+
+/**
+ * THE HEADER BAND AS ITS OWN SURFACE — the second follow-up ADR-1035 named, and NOT for the
+ * reason ADR-1035 gave.
+ *
+ * 🔴 THE ORIGINAL REASON HAS EXPIRED, and re-implementing it as written would have bought
+ * nothing. ADR-1035 asked for this because the tolerance was `maxDiffPixelRatio: 0.02`, so a
+ * 64px header was ~0.35% of an 18,000px capture and "the chrome at the top of every page could
+ * change COMPLETELY and still pass". ADR-1258 retired that ratio for an absolute
+ * `maxDiffPixels: 400` — 59% of the smallest control the design system draws, on a 390x844
+ * capture and a 1280x16110 one alike. A marketing header that moves today fails `home`,
+ * `about` and every other full-page baseline at both existing widths. Re-framing those same
+ * pixels as a second surface at 1280 and 390 would be eight PNGs that re-photograph what is
+ * already gated, and re-photographing something is not covering it.
+ *
+ * WHAT DOES NOT EXIST AT ANY TOLERANCE is a picture of the marketing header BELOW 390 — which
+ * is exactly where ADR-1035's own defect lived: the menu button, the only navigation a
+ * signed-out visitor has under `md`, at x=404 on a 360px screen. The member shell is reachable
+ * at 320 through `appSurfaces()`; an anonymous visitor's chrome was reachable nowhere. So the
+ * band is a NARROW-PROJECT surface, and `visual.spec.ts` runs it there only.
+ *
+ * `viewportOnly` for the reason the flag exists: the subject is the band, and a full-page shot
+ * at 320 would bury a 64px header under ten thousand pixels of marketing copy — the framing
+ * problem ADR-1035 described, reproduced at a third width. One screen, four states, one project:
+ * 4 PNGs.
+ *
+ * 🔴 THE PATH IS `/how-to-build-community`, NOT `/`, AND THAT IS A MEASUREMENT RATHER THAN A
+ * PREFERENCE. `viewportOnly` gives up the height signal that tells a real capture from a
+ * protection wall, so `baseline-distinctness.test.ts` substitutes a different kind of evidence:
+ * our surfaces repaint between light and dark, a wall does not, and a light/dark similarity
+ * above 90% is read as a wall. That bar was measured on FULL-PAGE captures, where body copy
+ * inverts across thousands of pixels. A FIRST SCREEN is hero-dominated and much more
+ * theme-insensitive, so the two do not have the same headroom at all. Measured 2026-09-08 by
+ * cropping the committed 390-wide baselines to their first 568px, dawn light vs dawn dark:
+ *
+ *   /                        92.8%   🔴 OVER the bar — a `/` band would have failed on capture
+ *   /discover                87.0%
+ *   /pricing                 85.1%
+ *   /about                   84.4%
+ *   ... eleven more between 69% and 83% ...
+ *   /how-to-build-community   1.1%   ✅ two orders of magnitude of headroom
+ *
+ * The home hero is a full-bleed image that barely repaints; the article page is header + title +
+ * prose on a ground that inverts completely. Every marketing page renders the SAME band
+ * (wordmark, the Start a Circle CTA, the menu button — ADR-1035's exact trio), so the choice
+ * costs nothing in subject and buys the whole margin. It also frames better: no hero competes
+ * with the band for the screen.
+ */
+export function headerBandSurfaces(): readonly Surface[] {
+  return [
+    { path: '/how-to-build-community', slug: 'header-band', audience: 'anon', viewportOnly: true },
+  ]
+}
+
 /**
  * THE VISUAL SUITE'S OWN SURFACE LIST — the union, and the answer to HYG-026.
  *
@@ -479,6 +538,11 @@ export function operatorSurfaces(): readonly Surface[] {
  *       template conversion still joins the matrix the day it lands, with no edit here.
  *   (b) the public extras inside (a) (`EXTRA_PUBLIC_PATHS`) — routes with no editor row.
  *   (c) `operatorSurfaces()` — chosen above, by measurement.
+ *   (d) `headerBandSurfaces()` — the narrow project's own surface (ADR-1270). It is in the union
+ *       because `baseline-distinctness.test.ts` reads THIS function to learn which slugs are
+ *       `viewportOnly`, and a surface it cannot see reads as a compromised capture rather than
+ *       as an unknown — the fail-closed property that file's header insists on. A narrow-only
+ *       surface is precisely the kind the old `appSurfaces()`-only read would have missed.
  * plus `appSurfaces()`, the member shell, which was already its own list.
  *
  * ⚠️ IT IS A UNION, NOT A REPLACEMENT, and the ORDER of the inputs is not the point — the point
@@ -489,7 +553,7 @@ export function operatorSurfaces(): readonly Surface[] {
 export function coverageSurfaces(
   env?: { roomPath?: string; spaceSlug?: string },
 ): readonly Surface[] {
-  return [...publicSurfaces(), ...appSurfaces(env), ...operatorSurfaces()]
+  return [...publicSurfaces(), ...appSurfaces(env), ...operatorSurfaces(), ...headerBandSurfaces()]
 }
 
 /**

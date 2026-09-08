@@ -297,8 +297,11 @@ green, zero template-vs-coded visual diffs in the snapshot suite.
 blast radius is the whole site in four render states.
 
 **Mature means:** the suite covers every templated marketing page + the load-bearing app
-states, in all four render states, on both viewports, and runs automatically where it
-can be trusted.
+states, in all four render states, on the two full-matrix viewports, and runs
+automatically where it can be trusted. A third project, `narrow` (320x568), joined on
+ADR-1270 and is deliberately NOT a third column: it photographs the member shell and the
+header band only, because at 320 the marketing pages' extra answer is body copy
+reflowing and `overflow.spec.ts` already measures that width without a baseline.
 
 ### Workstreams
 

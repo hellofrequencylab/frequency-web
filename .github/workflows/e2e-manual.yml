@@ -101,6 +101,27 @@
 # comment that tells you to check a thing that cannot be true is worse than no comment, because
 # you check it, find nothing, and cannot tell whether that means "not set up" or "doc is wrong".
 #
+# ── THE THIRD VIEWPORT, AND WHICH FLAG WRITES IT (ADR-1270) ───────────────────────────────
+# Since 2026-09-08 `playwright.config.ts` carries a `narrow` project (320x568) alongside desktop
+# and mobile. It photographs and only photographs — a per-project `testMatch` limits it to
+# `visual.spec.ts` — and inside that file it captures two things, which land under DIFFERENT
+# flags. Read this before deciding a capture was complete:
+#
+#   `update_baselines` ALONE            → 4 PNGs, `header-band--*-narrow.png`. The band is an
+#                                         ANONYMOUS surface (`/`, viewportOnly), so it needs no
+#                                         session, and it is captured at 320 ONLY: at 1280 and 390
+#                                         the full-page marketing baselines already gate the same
+#                                         pixels under the absolute tolerance (ADR-1258).
+#   `update_baselines + capture_shell`  → those 4, plus 8 more, `app-*--dawn-{light,dark}-narrow.png`
+#                                         (4 member-shell surfaces x 2 modes). Twelve in total.
+#
+# The 16 public surfaces and the 7 operator routes are SKIPPED under `narrow`, with the reason on
+# each skip — so a narrow column of skips in the report is the design, not a missing session.
+#
+# ⚠️ `viewportOnly` now has THREE exact heights, not two: 800 desktop, 844 mobile, 568 narrow.
+# `baseline-distinctness.test.ts` fails immediately when the flag and the committed baseline
+# disagree, so the flag and the capture still have to move together (ADR-1265).
+#
 # FIRST CAPTURE OF THE OPERATOR BASELINES (28 PNGs — 7 routes x 2 modes x 2 viewports):
 #     base_url = <the PR's preview URL>, capture_shell ✔, update_baselines ✔
 # Expect the commit to name `admin*` files only IF nothing else has changed since the last

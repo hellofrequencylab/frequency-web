@@ -37024,6 +37024,8 @@ An instrument that names its own blind spot in a log turned an unfalsifiable own
 ---
 ## ADR-1264: a wholesale baseline recapture is a laundering risk, so it is taken apart before it is taken (2026-09-08)
 
+> 🔴 **AMENDED the same day by ADR-1273.** The refusal below stands; its EXPLANATION does not. The claim that 138 byte-identical-dimension files must therefore be cross-runner rasterisation is false — a measurable part of that divergence is shipped CTA copy from #2348 that no baseline caught up with. A dimension reading is a filter, never a classifier. Read ADR-1273 before citing anything in this entry about *why* the 138 differ.
+
 **Context.** `LIVE-186` had four stale visual baselines and a recorded blocker: the recapture is "an owner-dispatched `e2e-manual.yml` run". That premise was tested rather than accepted, and it had expired — `e2e-manual.yml` is a `workflow_dispatch`, so run `34174895830` was dispatched against production with `update_baselines + capture_shell`. It succeeded, minted a member session, and committed **142 changed PNGs** to the branch: every committed baseline the suite holds, for a row that names four files.
 
 **Decision.** Take the four and leave the 138, on a measurement rather than on caution.
@@ -37094,6 +37096,176 @@ That last reading is the one worth keeping. The ratchet's trigger is "every budg
 
 ⚠️ **The generalisable part: a deferral is a decision with an expiry date, and the expiry belongs where the work happens.** `HYG-061` was filed to give three thresholds an owner and it was already half wrong on the day it was written — not through carelessness, but because a row records what was true when someone looked, and nothing re-looks. A number written beside the constant it governs is re-read by everyone who touches that constant, and a probe that compares the two makes the re-reading compulsory. That is the same trade the adoption ratchet already makes: the machine-readable state beats prose, and the way to keep prose honest is to bind it to something a machine can measure.
 
+---
+
+## ADR-1270: the narrow phone gets a camera, and the header band gets one for a reason ADR-1035 no longer has (2026-09-08)
+
+**Status:** accepted · closes both follow-ups [ADR-1035](DECISIONS.md) named · backlog `HYG-057`
+
+### The premise, re-measured before the work
+
+`HYG-057` made three claims. Two hold exactly; the third is wrong, and it is the one the row leaned on.
+
+| Claim | Verdict |
+|---|---|
+| `playwright.config.ts` has exactly two projects, desktop 1280 and mobile 390 | ✅ holds |
+| `overflow.spec.ts` measures 320 / 360 / 390 but nothing PHOTOGRAPHS at 320 | ✅ holds — all 144 committed baselines are 390 or 1280 wide |
+| `HYG-033` is a truncation "only a 320px capture would have caught" | 🔴 **false** |
+
+The third was checked by looking at the picture. The bottom 70px of the committed
+`app-feed--dawn-light-mobile.png` — a 390-wide baseline that has been in the tree the whole
+time — renders the tab bar as `Menu · Feed · Communi… · Zap · Events · The QuestMarketpL…`.
+The truncation is not below 390 and never was: two labels are cut and two more collide with no
+gap, at the width the suite already photographs.
+
+**So the row's stated mechanism was the wrong one, and the correct one is worth more than the
+row it corrects.** A baseline does not catch a defect; it catches a CHANGE. Everything visible
+in that capture was visible when the capture was taken, so it is the reference, and the gate
+holds the product to it faithfully. No third viewport would have changed that. What a picture at
+320 actually buys is the ordinary thing pictures buy — the next change at that width fails —
+plus the fact that the seven tab slots are `min-w-0 flex-1`, so they lay out by DIVISION: 45.7px
+a slot at 320 against 55.7px at 390, and the labels give way in a different order. That is a
+shell fact no other width reports.
+
+### The header band: the follow-up's reason has expired, the follow-up has not
+
+ADR-1035 asked for "a viewport-only capture of the header band as its own surface" because the
+tolerance was `maxDiffPixelRatio: 0.02`: a 64px header was ~0.35% of an 18,000px capture, so
+"the chrome at the top of every page could change COMPLETELY and still pass". That is no longer
+true. [ADR-1258](DECISIONS.md) retired the ratio for an absolute `maxDiffPixels: 400` — 59% of
+the smallest control the design system draws, identical on a 390x844 capture and a 1280x16110
+one. A marketing header that moves today fails `home`, `about` and fourteen more baselines at
+both existing widths.
+
+Implementing the follow-up as written would therefore have shipped eight PNGs that
+re-photograph pixels already gated, and re-photographing something is not covering it. What is
+genuinely uncovered is the same band **below 390** — where ADR-1035's own defect lived: the menu
+button, the only navigation a signed-out visitor has under `md`, at x=404 on a 360px screen. So
+the band is captured at 320 and only at 320, `viewportOnly`, four render states: 4 PNGs.
+
+### The path was chosen by measurement, and `/` would have failed on capture
+
+`viewportOnly` gives up the height signal that tells a real capture from a Vercel protection
+wall, so `baseline-distinctness.test.ts` substitutes a different kind of evidence: our surfaces
+repaint between light and dark, a wall does not, and a light/dark similarity above **90%** is
+read as a wall. That bar was measured on FULL-PAGE captures, where body copy inverts across
+thousands of pixels. A **first screen** is hero-dominated and far more theme-insensitive, so it
+does not inherit that headroom — a fact nothing in the tree said out loud.
+
+Measured before dispatching anything, by cropping the committed 390-wide baselines to their
+first 568px and running the file's own fingerprint, dawn light against dawn dark:
+
+| First screen | light vs dark |
+|---|---|
+| `/` | **92.8%** 🔴 over the bar |
+| `/discover` | 87.0% |
+| `/pricing` | 85.1% |
+| `/about` | 84.4% |
+| eleven more marketing pages | 69% – 83% |
+| `/how-to-build-community` | **1.1%** ✅ |
+
+So the obvious choice — the home page — was the one choice that could not work: its hero is a
+full-bleed image that barely repaints, and the band would have come back red on the first
+capture run, after the runner time was spent. Every marketing page renders the SAME band
+(wordmark, the Start a Circle CTA, the menu button — ADR-1035's exact trio), so moving the
+subject to an article page costs nothing and buys two orders of magnitude of margin. It also
+frames better: header, title and prose, with no hero competing for the screen.
+
+⚠️ **The generalisable half:** a threshold measured on one capture MODE does not transfer to
+another. `viewportOnly` was introduced for live-data surfaces, all of which happen to be app
+shell — and the app shell repaints almost completely (0.2% – 0.6% on the committed baselines).
+The first anon surface to take the flag would have found the bar sitting where nothing told it
+to look.
+
+### The decision
+
+A third Playwright project, `narrow` (320x568 — iPhone SE 1st gen, and any phone at large
+browser zoom), that **photographs and only photographs**.
+
+- It carries a per-project `testMatch` limiting it to `visual.spec.ts`. This is not the
+  `grep`/`grepInvert` the config header warns about — that intersects with the CLI flags in
+  `package.json` and can empty a run; `testMatch` is a file filter that composes with them.
+  Without it the project would triple `@smoke` and, expensively, mint a third set of `@a11y`
+  contexts (`contextKey()` carries the project name) that nothing has ever measured, so each
+  would be held to the zero default and fail on debt this change did not create.
+- Inside that file it captures the member shell and the header band. The 16 public surfaces are
+  skipped with the reason attached: at 320 the extra answer is body copy reflowing, and
+  `overflow.spec.ts` already drives all 16 at that width as a measurement — no baseline, no
+  capture run, and a failure that names the selector. The 7 operator routes are skipped too;
+  nobody moderates from a 320px phone, and those baselines do not exist yet (`HYG-027`).
+- The subset is a runtime skip on the project name, the same mechanism `overflow.spec.ts`
+  already uses to pin itself to one project. A file-level split would remove the skipped rows
+  from the report; this repo's standing complaint is about silences, not about skip counts.
+
+**Twelve new PNGs, zero moved.** Nothing about an existing surface's path, flags or capture mode
+changes, so every one of the 144 committed baselines keeps its dimensions — which is also what
+makes the capture run reviewable under [ADR-1264](DECISIONS.md): the files this change is
+allowed to touch are exactly the files that did not exist before.
+
+### The mirror that would have broken, and now cannot
+
+`baseline-distinctness.test.ts` resolved a baseline's expected width with
+`file.includes('-mobile') ? mobile : desktop`, against a `VIEWPORT` map its own comment called
+"mirrored from playwright.config.ts". Every `*-narrow.png` would have been held to desktop's
+1280 and failed as `width 320, expected 1280` — and the obvious fix, adding a third branch to
+the ternary, leaves the NEXT project to rediscover the same thing.
+
+Both halves are now derived from `config.projects`: the viewport map is built from it, and the
+project is parsed off the filename's last segment and looked up. A project added to the config
+arrives with its real numbers; a baseline whose project is not in the config is reported as an
+**orphan** rather than measured against whichever branch a ternary fell through to. A new test
+asserts the map is non-empty and names all three, so an import that silently returns nothing
+fails loudly instead of skipping the width check for every file.
+
+### The guard that a glob had been fooling since the day it was written
+
+Adding the third project turned `LIVE-125`'s probe red, and the probe was right to be surprised —
+about the wrong thing. It reported *"playwright.config.ts sets no absolute maxDiffPixels the guard
+can read"* against a config whose second line declares `SCREENSHOT_MAX_DIFF_PIXELS = 400`.
+
+The cause is one glob. The probe strips block comments before reading the config, so a note
+*explaining* the retired ratio cannot be mistaken for a setting that uses it — correct, and it
+strips them with `/\/\*[\s\S]*?\*\//g` on the raw source. `testMatch: '**/*.spec.ts'` contains
+a literal `/*`. To that regex the glob is an OPEN comment, and everything up to the next `*/`
+disappears.
+
+It never mattered, because until this change no block comment followed line 87, so the opener
+found no closer and nothing was stripped. The new project's doc comment supplied one — and the
+region swallowed between them was the `expect.toHaveScreenshot` block itself. A guard that had
+been one comment away from blindness for its whole life, reporting green.
+
+**Strings are now blanked before comments are stripped.** Every number the probe reads is code,
+never a string, so it costs nothing. Four controls re-run on the fixed probe: budget 700 fires the
+control-size arm alone; restoring `maxDiffPixelRatio: 0.02` fires all three (6,583 forgiven on the
+shortest committed baseline against 412,416 on the tallest); deleting the setting fires the
+readable-budget and control-size arms; the committed 400 exits 0.
+
+⚠️ **The generalisable half.** This probe was written carefully, with its controls recorded in its
+own note, and it was still load-bearing on an accident — that no one had yet written a block
+comment below line 87. A parser built from one regex over a language it does not parse is not
+wrong the day it ships; it is wrong the day the file changes shape, and nothing announces that
+day. It was found only because a change happened to trip it while `check:backlog` was watching,
+which is the argument for a probe that measures a consequence over one that measures a shape.
+
+### Consequences
+
+- `viewportOnly` now has three exact heights to satisfy, not two: 800 desktop, 844 mobile, 568
+  narrow. The flag and the capture still have to be set together ([ADR-1265](DECISIONS.md)).
+- `HYG-033` is unchanged by this and stays an owner row. This ADR removes one wrong sentence
+  from its neighbourhood — a 320px capture would not have caught it — and leaves the IA question
+  exactly where it was.
+- The narrow column is deliberately narrow. Widening it is a decision with a cost (every added
+  surface is a permanent recapture obligation at a third width), so it is made here rather than
+  by whoever next adds a surface.
+- **`HYG-057` does not close on this ADR, and its probe was rewritten so it cannot.** The old
+  probe grepped `playwright.config.ts` for a sub-390 width — which passes the moment the project
+  is declared, while the suite still photographs nothing at that width. It now reads the
+  committed baselines: a `header-band--*-narrow.png` AND an `app-*-narrow.png` must exist, and
+  the PNG's IHDR must say 320. It stays red until a capture run against a real deployment commits
+  the twelve files, which is the only thing that makes the coverage real.
+- `update_baselines` alone writes the 4 header-band PNGs (the band is anonymous);
+  `update_baselines + capture_shell` adds the 8 shell ones. Both are noted in
+  `e2e-manual.yml`'s header beside the flags they belong to.
 ## ADR-1275: the Spotlight sticker layer is page chrome in `meta.spotlight`, validated on both sides of the row, with the earned-sticker seam declared and unused (2026-09-08)
 
 **Status.** Accepted. Closes `LIVE-122`, the second increment of `PROG-SPOT` (the first was the Guestbook, [ADR-1132](DECISIONS.md)). Rests on the read-side validator idiom of `lib/spotlight/blocks/validate.ts` and the session-derived writer shape of `saveMemberGridLayout` ([ADR-1212](DECISIONS.md), [ADR-1235](DECISIONS.md)). Enforced by `lib/spotlight/blocks/validate.test.ts`, `lib/spotlight/stickers.test.ts`, `app/(main)/settings/profile/spotlight-actions.stickers.test.ts`, `components/spotlight/sticker-layer.test.tsx`, and the row's probe.
