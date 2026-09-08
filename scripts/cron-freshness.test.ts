@@ -246,7 +246,8 @@ describe('the floor', () => {
 
   it('sits under the live corpus with real headroom', () => {
     const { jobs } = readModel()
-    expect(jobs.length).toBe(27)
+    // 28 since 2026-09-08: signup-lead-recovery joined the 27 (ADR-1274).
+    expect(jobs.length).toBe(28)
     expect(jobs.length).toBeGreaterThan(MIN_JOBS)
   })
 })

@@ -60,8 +60,7 @@
         {
           "name": "W0d · P3 — the perf set and the deferred niceties. 12 visitors / 18 pageviews in 31 days: the funnel, not the page speed, is the constraint, and these are priced against that rather than against merit.",
           "ids": [
-            "LIVE-149",
-            "LIVE-170"
+            "LIVE-149"
           ]
         },
         {
@@ -8193,7 +8192,7 @@
     {
       "id": "LIVE-170",
       "title": "Abandoned signup leads are now visible; nobody is followed up",
-      "status": "open",
+      "status": "done",
       "priority": "P3",
       "lane": "live",
       "size": "S",
@@ -8201,11 +8200,11 @@
         "file": "app/api/cron/lifecycle-triggers/route.ts",
         "ref": "ADR-1212"
       },
-      "detail": "SCAN-634 gave signup_leads a reader. The recovery job the table was built for is still missing: a cron that emails a lead with converted_at null, step_reached at least 2 and updated_at older than 24 hours, once (a recovery_sent_at column via migration), transactional copy only, registered in vercel.json. Probe: the route exists and a test proves a converted or already-mailed lead is skipped.\n\n── RE-PRICED P2 -> P3 on 2026-09-07. Vercel Web Analytics, 31 days to 2026-09-07: 12 visitors, 18 pageviews. An SEO or funnel refinement cannot be P1 while the funnel itself has no traffic to refine — the constraint is upstream of every one of these rows. Re-priced by the live-lane audit on that reading, not on merit.",
+      "detail": "SCAN-634 gave signup_leads a reader. The recovery job the table was built for is still missing: a cron that emails a lead with converted_at null, step_reached at least 2 and updated_at older than 24 hours, once (a recovery_sent_at column via migration), transactional copy only, registered in vercel.json. Probe: the route exists and a test proves a converted or already-mailed lead is skipped.\n\n── RE-PRICED P2 -> P3 on 2026-09-07. Vercel Web Analytics, 31 days to 2026-09-07: 12 visitors, 18 pageviews. An SEO or funnel refinement cannot be P1 while the funnel itself has no traffic to refine — the constraint is upstream of every one of these rows. Re-priced by the live-lane audit on that reading, not on merit.\n\n── ✅ CLOSED 2026-09-08 (ADR-1274). PREMISE RE-TESTED FIRST and it held in every part: signup_leads carries converted_at, step_reached and updated_at and had no recovery_sent_at; app/api/cron held 27 routes and vercel.json 27 entries, none of them this; lib/crm/signup-leads.ts still said the job lives in a separate change. One thing the row did not say and the code did: the induction credits step 1 for the address alone and step 2 for going on, so \"at least 2\" is the floor that separates a typed email from a half-finished signup. WHAT SHIPPED: migration 20270345002400 adds recovery_sent_at timestamptz (NULL = never mailed) plus a partial index over the exact set the cron reads; lib/crm/signup-lead-recovery.ts holds the pure rule (selectRecoveryLeads: converted_at null, recovery_sent_at null, step_reached >= 2, updated_at at least 24h old) and the runner, which claims each row with a conditional update BEFORE enqueueing the note (ADR-1212) and never undoes a claim on an enqueue failure; sendSignupRecoveryEmail in lib/email.ts is transactional, on the transactional outbox lane, with the non-member footer; app/api/cron/signup-lead-recovery/route.ts declares cronBudget(200), applies it to the query and the loop, and answers 500 on any per-lead failure. SCHEDULE: daily at 15:00 UTC (0 15 * * *), the 28th entry in vercel.json, so a cold lead is mailed between 24 and 48 hours after walking away, once. PROVEN: lib/crm/signup-lead-recovery.test.ts pins the rule (a converted lead, an already-mailed lead, step below 2 and a touch inside 24h are each skipped; the qualifying lead is selected) and the claim-then-send order; app/api/cron/signup-lead-recovery/route.test.ts runs the real handler and runner against a mocked database. The probe now measures the consequence (route, both tests, lib module, migration, vercel.json path) instead of the route file existing.",
       "verify": {
         "kind": "cmd",
-        "cmd": "node -e \"const fs=require('fs');const R=(f)=>fs.readFileSync(f,'utf8');const C=(f)=>R(f).replace(/\\\\/\\\\*[\\\\s\\\\S]*?\\\\*\\\\//g,'').replace(/^\\\\s*\\\\/\\\\/.*$/gm,'');process.exit(fs.existsSync('app/api/cron/signup-lead-recovery/route.ts')?0:1)\"",
-        "note": "Passes once the recovery cron exists."
+        "cmd": "node -e \"const fs=require('fs');const R=(f)=>fs.readFileSync(f,'utf8');const ok=fs.existsSync('app/api/cron/signup-lead-recovery/route.ts')&&fs.existsSync('app/api/cron/signup-lead-recovery/route.test.ts')&&fs.existsSync('lib/crm/signup-lead-recovery.test.ts')&&/export function selectRecoveryLeads/.test(R('lib/crm/signup-lead-recovery.ts'))&&/recovery_sent_at/.test(R('app/api/cron/signup-lead-recovery/route.ts')+R('lib/crm/signup-lead-recovery.ts'))&&fs.readdirSync('supabase/migrations').some((f)=>/signup_leads_recovery_sent_at\\\\.sql$/.test(f))&&JSON.parse(R('vercel.json')).crons.some((c)=>c.path==='/api/cron/signup-lead-recovery');process.exit(ok?0:1)\"",
+        "note": "Fails if the route, either test, the pure selector, the recovery_sent_at migration, or the vercel.json entry is removed."
       }
     },
     {
