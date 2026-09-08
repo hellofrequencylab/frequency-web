@@ -884,19 +884,19 @@ function DetailDrawer({
           <AssetAvPanel assetId={asset.id} kind={asset.kind} hasFile={!!asset.url} />
 
           <label className="block">
-            <span className="mb-1 block text-meta font-semibold uppercase tracking-wide text-subtle">Title</span>
+            <span className="mb-1 block eyebrow text-subtle">Title</span>
             <Input value={title} onChange={(e) => setTitle(e.target.value)} />
           </label>
           <label className="block">
-            <span className="mb-1 block text-meta font-semibold uppercase tracking-wide text-subtle">Alt text</span>
+            <span className="mb-1 block eyebrow text-subtle">Alt text</span>
             <Input value={alt} onChange={(e) => setAlt(e.target.value)} placeholder="Describe the image" />
           </label>
           <label className="block">
-            <span className="mb-1 block text-meta font-semibold uppercase tracking-wide text-subtle">Category</span>
+            <span className="mb-1 block eyebrow text-subtle">Category</span>
             <Input value={category} onChange={(e) => setCategory(e.target.value)} />
           </label>
           <label className="block">
-            <span className="mb-1 block text-meta font-semibold uppercase tracking-wide text-subtle">Tags</span>
+            <span className="mb-1 block eyebrow text-subtle">Tags</span>
             <Input value={tags} onChange={(e) => setTags(e.target.value)} placeholder="comma, separated" />
           </label>
 

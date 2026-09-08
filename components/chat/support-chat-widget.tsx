@@ -123,7 +123,14 @@ export function SupportChatWidget() {
   )
 
   return (
-    <div className="fixed bottom-[max(1rem,env(safe-area-inset-bottom))] right-4 z-50 print:hidden">
+    // `data-visual-mask`: the visual suite paints over this box (test/e2e/surfaces.ts,
+    // VISUAL_MASK_SITES). The widget mounts only where SUPPORT_CHAT is set, which is one
+    // Vercel environment and not another, so a capture that photographed it would encode
+    // the environment it was taken on rather than the page (LIVE-213, ADR-1277).
+    <div
+      data-visual-mask="support-chat"
+      className="fixed bottom-[max(1rem,env(safe-area-inset-bottom))] right-4 z-50 print:hidden"
+    >
       {open && (
         <div className="mb-3 flex h-[32rem] max-h-[calc(100dvh-6rem)] w-[22rem] max-w-[calc(100vw-2rem)] flex-col overflow-hidden overscroll-contain rounded-2xl border border-border bg-surface shadow-pop">
           <div className="flex items-center justify-between gap-2 border-b border-border px-4 py-3">

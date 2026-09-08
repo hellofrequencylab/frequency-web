@@ -268,7 +268,9 @@ same guard locally and prints what to fix.
   the column-to-key maps its JSON-patch actions need, [ADR-1246](docs/DECISIONS.md)); the Circle and
   Event rails still hand-declare their fields, so for those two nothing yet prevents drift. Both
   render spark-only, non-prose fields the selectors place on no edit plane (the Circle's `name`;
-  the Event's `starts_at` and `location`), so each waits on the kernel ruling ADR-1240 deferred. `HYG-050` stays open and its probe passes
+  the Event's `starts_at` and `location`), so each waits on the kernel ruling ADR-1240 deferred (a
+  PLACEMENT question; the per-road create GATE that ADR-1249 filed under the same name is settled,
+  [ADR-1280](docs/DECISIONS.md)). `HYG-050` stays open and its probe passes
   only when those two derive. Keep declaring placement for all three planes (`FieldPlacement` in
   `lib/studio/kernel/manifest.ts`), and when you touch one of the two remaining rails, wire it
   through a `<entity>-rail-plan.ts` beside the module rather than editing its field list.

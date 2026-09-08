@@ -2,7 +2,7 @@
 // In-app and Marketing blocks reuse). Kept in a no-JSX module so both server blocks
 // import the same class strings. See lib/widgets/modules.ts for the module ids.
 
-export const TABLE_WRAP = 'overflow-x-auto rounded-2xl border border-border bg-surface shadow-sm'
+export const TABLE_WRAP = 'overflow-x-auto rounded-2xl border border-border bg-surface lift-1'
 export const HEAD_ROW = 'border-b border-border text-left text-meta uppercase tracking-wider text-subtle'
 export const TH = 'px-4 py-2.5 font-semibold'
 export const BODY_ROW = 'border-b border-border/60 last:border-0'

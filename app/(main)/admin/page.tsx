@@ -218,7 +218,7 @@ function HeaderKpis({
     <div className="flex gap-7 pr-2 sm:gap-9 sm:pr-8">
       {items.map((k) => (
         <div key={k.label}>
-          <p className="whitespace-nowrap text-meta font-semibold uppercase tracking-wide text-muted">
+          <p className="whitespace-nowrap eyebrow text-muted">
             {k.label}
           </p>
           {/* text-stat-sm, not text-stat: this is a four-up strip inside the page header, and

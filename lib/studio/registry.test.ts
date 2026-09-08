@@ -145,6 +145,38 @@ describe('validateManifest', () => {
     expect(problems.join(' ')).toContain('not declared')
   })
 
+  // ADR-1280: `requiredAt` defers WHEN a requirement is enforced. On a field that is not required
+  // it describes a requirement the check never applies, so the validator refuses the shape.
+  it('reports requiredAt on a field that is not required', () => {
+    const problems = validateManifest({
+      entity: 'broken',
+      label: 'Broken',
+      sections: [{ key: 'a', title: 'A', desc: 'x' }],
+      fields: [{ path: 'p', label: 'P', kind: 'text', section: 'a', requiredAt: 'publish' }],
+    })
+    expect(problems.join(' ')).toContain('without `required`')
+  })
+
+  it('reports a requiredAt value that is neither create nor publish', () => {
+    const problems = validateManifest({
+      entity: 'broken',
+      label: 'Broken',
+      sections: [{ key: 'a', title: 'A', desc: 'x' }],
+      fields: [{ path: 'p', label: 'P', kind: 'text', section: 'a', required: true, requiredAt: 'later' as never }],
+    })
+    expect(problems.join(' ')).toContain("'create' or at 'publish'")
+  })
+
+  it('accepts a required field deferred to publish', () => {
+    const problems = validateManifest({
+      entity: 'fine',
+      label: 'Fine',
+      sections: [{ key: 'a', title: 'A', desc: 'x' }],
+      fields: [{ path: 'p', label: 'P', kind: 'text', section: 'a', required: true, requiredAt: 'publish' }],
+    })
+    expect(problems).toEqual([])
+  })
+
   it('reports a choice field with no source of choices', () => {
     const problems = validateManifest({
       entity: 'broken',

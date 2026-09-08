@@ -964,6 +964,10 @@ function ChatTrigger({
               : 'Open messages, Vera, and help'
           }
           style={{ bottom: 'var(--tab-bar-h)' }}
+          // Masked by the visual suite (test/e2e/surfaces.ts, VISUAL_MASK_SITES): the unread
+          // count and the waiting peek are live data, and the mask paints the box without
+          // moving it.
+          data-visual-mask="dock-chat-tab"
           // The hit area extends `--dock-tab-reach` (1rem = 17px at this app's 17px root) ABOVE
           // the visible tab via the ::before, because the peek is what a thumb can actually reach
           // — the rest of the button is behind an opaque bar and cannot receive the tap. 26px of
@@ -1030,6 +1034,9 @@ function ChatTrigger({
       aria-controls={panelMounted ? 'fq-dock-panel' : undefined}
       aria-label="Open messages, Vera, and help"
       title="Messages, Vera and help"
+      // Masked by the visual suite (test/e2e/surfaces.ts, VISUAL_MASK_SITES): the unread badge
+      // and the waiting dot are live data.
+      data-visual-mask="dock-chat-trigger"
       className={buttonClasses(
         // `!yielding &&` is the whole of the owner's rule: nothing beside an open Vault wears the
         // active fill. `open` cannot be true here anyway (the two panels are exclusive), so this
