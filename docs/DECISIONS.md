@@ -37647,3 +37647,35 @@ Re-testing that premise found it intact and found more beside it. Held against t
 - `HYG-050`'s probe passes: both plans exist, call `railForm()`, and both settings modules import them. AGENTS.md, STUDIO.md and EDITING-SYSTEM.md say all four Guided rails derive.
 
 ⚠️ **The generalisable part is the shape of a deferral that ends.** Two ADRs declined the same ruling and each got more precise about what it was: ADR-1240 called it "a placement question", ADR-1246 "a placement ruling, not a data conversion". By the time it had to be made, the question had one honest answer, and the answer was one word on the declaration rather than a rule in the selectors, because the selectors had already proven there was nothing to derive. **A deferral that names its question exactly is cheap to close; one that names a file is not.** The second lesson is older and repeats: the hand lists were wrong in ways nothing could see, including an option the database had never accepted, and the manifest found all fifteen the moment it was held against them.
+
+## ADR-1290: The design-debt ratchet went red on `main` and stayed red through five merges, because nothing measures it there (2026-09-08)
+
+**Status.** Accepted. Repairs the four risen classes. Files `HYG-070`, `HYG-071`, `HYG-072`.
+
+**Context.** `check:adoption` is advisory in CI by owner decision ([ADR-970](DECISIONS.md) reasoning, `OWN-004`), and that decision is right: a COUNT ratchet fires on legitimate growth, and an advisory finding forced through a blocking gate teaches everyone to route around the gate. The workflow comment that records this ends with the condition the posture depends on — *"It reports into the run summary on every PR so a rise is visible the day it happens. If it ever stops being read, that is an argument for deleting it, not for making it block again."*
+
+It stopped being read.
+
+**What was measured.** On `main` at `77fd060`, `pnpm check:adoption` reports **four classes above baseline**: `literal-type` 0 → 2, `shadow-literals` 50 → 51, `literal-display-type` 77 → 78, `handrolled-eyebrow` 533 → 534. Walking the last four commits with the gate's own `countEntry`, the rise is present at all of them, including `43cd362` — **the commit that froze the baselines**. Diffing per-file counts between `9f22f55` and `77fd060` attributes the whole regression to **one PR and two files**:
+
+| file | class | delta | added by |
+| --- | --- | --- | --- |
+| `components/admin/modules/personal-appearance-module.tsx` | `literal-type` | +2 | `ea76f9b` (#2471) |
+| `components/admin/modules/personal-appearance-module.tsx` | `handrolled-eyebrow` | +1 | `ea76f9b` (#2471) |
+| `components/spotlight/sticker-layer.tsx` | `literal-display-type` | +1 | `ea76f9b` (#2471) |
+| `components/spotlight/sticker-layer.tsx` | `shadow-literals` | +1 | `ea76f9b` (#2471) |
+
+**The compounding step, which is the part worth remembering.** #2471 merged with the ratchet advisory, so nothing stopped it. #2473 then ran `--update` on a branch cut BEFORE #2471 landed, and banked numbers `main` had already exceeded. So the scoreboard's freeze date reads `2026-09-08` on three of the four risen classes: the baseline is newer than the debt it is supposed to be guarding. `literal-type`'s defended `0` — a number four documents cite as a win — had been `2` for a day, and every open PR whose `checks` job actually ran re-reported the same four red classes as noise no author could act on. (Three of the nine open PRs have no CI run on their head commit at all, so they did not report it either way — a separate defect, and one this decision does not cover.)
+
+**Decision.**
+
+- **The five literals are retired onto the roles that already exist, at their exact values.** `text-2xl` → `text-display-card` (both 1.5rem), `text-xl` → `text-lead` (both 1.25rem), and the two hand-rolled eyebrows (`text-2xs font-semibold uppercase tracking-wide`) → the self-sufficient `eyebrow` utility, which carries size, weight, case and tracking in one class. `literal-type` is back to `0`, and `handrolled-eyebrow` shrank to 532.
+- **The sticker glyph's `text-3xl` becomes `text-display-h3`.** This is the one change that is not value-for-value: `text-3xl` is a fixed 1.875rem, `--text-display-h3` is `clamp(1.75rem, 3vw, 2.25rem)`. A decorative glyph floating on a member's Spotlight column should scale with the page rather than sit at one size, and the layer renders `null` when a member has placed no stickers, so no visual baseline moves.
+- **`drop-shadow-sm` is removed rather than converted, and the pattern defect is filed instead of papered over** (`HYG-071`). `\bshadow-(?:sm|md|lg|xl|2xl)\b` matches inside `drop-shadow-sm`, because `-` is a word boundary. `drop-shadow` is a CSS `filter`; the DAWN depth language the class names as its alternative — `.lift-1/2/3` — is `box-shadow`, which on a transparent emoji paints a rectangle behind the glyph. There is no conversion to make. Exactly two sites repo-wide are affected, and correcting the pattern is a `frozen.basis` change that forces a re-freeze, so it is a row rather than a drive-by.
+- **`scripts/adoption-baselines.json` is deliberately NOT re-frozen here.** #2480 (`HYG-055`) is open, green and edits that file; banking a one-site shrink would hand a ready PR a conflict for no gain. `current` below `baseline` passes the gate, and `HYG-055`'s own sweep re-freezes it.
+
+**The gap that let it run, stated as the thing to fix.** Nothing measures this ratchet ON `main`. A PR compares its own tree to the frozen baseline, so once `main` carries a rise, every subsequent PR inherits it and reports it — which reads as pre-existing noise rather than as anyone's regression, and is therefore correctly ignored by every author in turn. The advisory posture is not the defect and should not change; the missing half is a scheduled reading with an owner, which `.github/workflows/maintenance.yml` already exists to carry. That is `HYG-070`.
+
+**Consequences.** All 18 debt classes hold or shrink on this branch. `HYG-055`'s slice targets are untouched (`handrolled-eyebrow` 532 against a 484 target, so the row correctly stays open). Three rows are filed: `HYG-070` (the scheduled reading), `HYG-071` (the `drop-shadow` false positive), `HYG-072` (the PR-size gate counting generated baselines, which is what actually blocks #2477).
+
+⚠️ **The generalisable part, and this repo has now written it twice.** *Every fail-safe needs a gate that notices it fired* — `AGENTS.md` says so about swallowed errors, and an advisory gate is a swallowed error with a nicer report. The failure here was not that the ratchet was advisory; it was that the ONLY reader of an advisory gate was a per-PR diff against a moving baseline, which structurally cannot distinguish "this PR did it" from "`main` already had it". **An advisory gate needs a reading on a fixed reference, on a schedule, with an owner — or it is a gate that reports to nobody.**
