@@ -44,6 +44,11 @@ const CATEGORIES: { key: NotificationCategory; label: string; description: strin
     label:       'Practice reminders',
     description: 'A nudge on days a practice is still waiting, at the time you usually practice. One a day at most, plus the note when a commitment completes.',
   },
+  {
+    key:         'matches',
+    label:       'Roommate matches',
+    description: 'When someone new lines up with your roommate search or your room. Once per person, never a repeat.',
+  },
 ]
 
 const CHANNELS = [

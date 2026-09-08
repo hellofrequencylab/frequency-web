@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { getMyProfileId } from '@/lib/auth'
+import { createClient } from '@/lib/supabase/server'
 import { proposeAndConfirmCreate } from '@/lib/ai/vera/create-entity'
 import { createListing, setListingStatus, deleteListing, listingOwnerId } from '@/lib/listings'
 import {
@@ -16,6 +17,7 @@ import {
   upsertHousingDetail,
   upsertSeekerProfile,
 } from '@/lib/listings/housing'
+import { alertHousingMatchesFor } from '@/lib/listings/housing-match-alerts'
 import type { HousingType, ListingStatus, RoomType } from '@/lib/listings/types'
 import { approxCoordsForArea } from '@/lib/marketplace/area-geocode'
 
@@ -249,8 +251,9 @@ export async function saveSeekerProfileAction(formData: FormData): Promise<void>
     age_max: str('age_max'),
   })
 
+  const active = formData.get('active') !== null
   await upsertSeekerProfile(profileId, {
-    active: formData.get('active') !== null,
+    active,
     budgetMinCents: dollarsToCents('budget_min'),
     budgetMaxCents: dollarsToCents('budget_max'),
     searchCity: (formData.get('city') as string)?.trim() || null,
@@ -260,5 +263,13 @@ export async function saveSeekerProfileAction(formData: FormData): Promise<void>
     searchRadiusM: radiusM,
     preferences,
   })
+  // The alerts seam (ADR-1278): this save is the moment a NEW match can first exist, so ask the
+  // two consent-gated RPCs, as this member, who now lines up with them and tell the counterparts
+  // once each. Runs on the caller's authed client (the RPCs resolve auth.uid()); best-effort, the
+  // save above is already committed. An inactive search enters no pool and raises no alert.
+  if (active) {
+    const supabase = await createClient()
+    await alertHousingMatchesFor(profileId, supabase as unknown as Parameters<typeof alertHousingMatchesFor>[1])
+  }
   revalidatePath('/housing/roommates')
 }
