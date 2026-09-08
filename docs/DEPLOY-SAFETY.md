@@ -97,6 +97,13 @@ At least one cancelled production build might have completed. **Cancelling mid-f
 evidence you are trying to collect**, and the log you killed is usually the one that answers the
 question. Let it run and read the log, unless the queue is genuinely blocking a fix that is ready.
 
+> 🔵 **And when you read it, read it with the tool.** Save the build log and run
+> `pnpm read:build-log <file>` ([ADR-1259](DECISIONS.md)). It prints the machine line, the cache
+> lineage, every phase boundary, **the page-data gap**, the five `postbuild` gate readings and the
+> build system report, with `--baseline` carrying the recorded healthy and stalled bands to compare
+> against. It is a reader, never a gate — see `LIVE-123`, which spent four hypotheses on timestamps
+> people subtracted by hand.
+
 ### 5. A green CI is not a green deploy. `main` is protected, so a merge *is* a deploy
 
 CI never builds — Vercel owns that. So `lint`, `test`, `checks` and `analyze` all being green tells
