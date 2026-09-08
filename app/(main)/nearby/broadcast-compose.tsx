@@ -6,6 +6,7 @@ import { createAndPublishDispatch } from './actions'
 import { CreateModal, cmLabel } from '@/components/create-modal'
 import { Input, Textarea } from '@/components/ui/field'
 import { Select } from '@/components/ui/select'
+import { Button } from '@/components/ui/button'
 
 type DispatchType = 'post' | 'poll' | 'challenge' | 'article'
 const TYPE_LABELS: Record<DispatchType, string> = {
@@ -79,13 +80,13 @@ export function BroadcastCompose({
 
   return (
     <>
-      <button
+      <Button
         onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-1.5 rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary hover:bg-primary-hover transition-colors whitespace-nowrap"
+        className="whitespace-nowrap"
       >
         <Plus className="w-4 h-4" />
         New Dispatch
-      </button>
+      </Button>
 
       <CreateModal
         open={open}

@@ -87,6 +87,7 @@ import {
 } from '@/lib/on-air/active-session'
 import { clampLoggedSeconds, runOverStateAt } from '@/lib/on-air/run-over'
 import { Field, Textarea } from '@/components/ui/field'
+import { Button } from '@/components/ui/button'
 
 // What a saved Mindless run carries beyond the shared record fields: the mode + cue settings the
 // live clock is rebuilt from. startedAt/pausedAt/practiceId/banked are on the record itself.
@@ -1419,7 +1420,7 @@ export function OnAirSession({
       <Overlay>
       <CenterScreen>
         <p className="text-body-sm font-medium text-text">That didn’t save. Your sit still happened.</p>
-        <button
+        <Button
           type="button"
           onClick={() => {
             // Replay the failed attempt's exact args (real seconds + started_at) so the timer-proof
@@ -1428,10 +1429,9 @@ export function OnAirSession({
             if (a) void finishWith(a.seconds, a.startedIso, a.practiceIdOverride, a.modeOverride)
             else void finishWith(Math.round((Date.now() - startedAt) / 1000), new Date(startedAt).toISOString())
           }}
-          className="rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary hover:bg-primary-hover"
         >
           Try again
-        </button>
+        </Button>
       </CenterScreen>
       </Overlay>
     )

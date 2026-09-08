@@ -19,9 +19,17 @@
 //
 // NEAR-MISS, NOT EQUALITY — and the difference is the point of the program. No raw <button> in the
 // tree is set-EQUAL to the primitive, because BASE adds three things on purpose that a hand-rolled
-// string never carries: `tap-target` (min-block-size, the 44px touch floor under a coarse
-// pointer), `press` (the one sanctioned pressed look) and `lift-1` (two box-shadows). Converting a
-// site GAINS those. The sweep therefore moves rendered pixels, deliberately.
+// string never carries: `tap-target` (a min-block-size / min-inline-size pair at the active
+// `--tap-min`), `press` (the one sanctioned pressed look) and `lift-1` (two box-shadows).
+// Converting a site GAINS those. The sweep therefore moves rendered pixels, deliberately.
+//
+// ⚠️ BUT NOT ALWAYS LAYOUT, AND WHICH ONE DECIDES HOW A SLICE IS PROVEN (ADR-1271). This header
+// used to call `tap-target` "the 44px touch floor under a coarse pointer". There is no
+// pointer-coarse media query in the CSS; `--tap-min` moves on the `data-generation` axis alone and
+// is 32px at the default. So the floor raises `sm` (29.75 → 32px) and does NOT reach `md`
+// (38.25px). A `primary × sm` slice moves heights and can be verified by reading a baseline PNG's
+// IHDR on both sides; a `primary × md` slice is DIMENSION-INVARIANT and cannot. Read the size
+// before promising a reviewer which kind of evidence a recapture will produce.
 //
 // Usage:
 //   node scripts/dawn-bucket.mjs                       # every variant × size, counts + sites

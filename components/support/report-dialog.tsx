@@ -16,6 +16,7 @@ import type { HelpCitation } from '@/lib/ai/help-rag'
 import { Dialog } from '@/components/ui/dialog'
 import { safeUploadPreviewSrc } from '@/lib/safe-image-src'
 import { Input, Textarea } from '@/components/ui/field'
+import { Button } from '@/components/ui/button'
 
 const TYPE_META: { key: TicketType; icon: typeof Bug }[] = [
   { key: 'bug', icon: Bug },
@@ -339,15 +340,14 @@ export function ReportDialog({
                 {asking ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
                 Ask Vera first
               </button>
-              <button
+              <Button
                 type="button"
                 onClick={submit}
                 disabled={pending || !subject.trim()}
-                className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
               >
                 {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                 {pending ? 'Sending…' : vera ? 'Send to the team' : 'Send report'}
-              </button>
+              </Button>
               <button type="button" onClick={onClose} className="rounded-xl px-3 py-2 text-body-sm font-semibold text-muted hover:text-text">
                 Cancel
               </button>

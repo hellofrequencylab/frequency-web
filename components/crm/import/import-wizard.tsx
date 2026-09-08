@@ -478,15 +478,14 @@ export function ImportWizard({
               title="Bring in your contacts"
               description="Drop files here, or choose them. A spreadsheet, an export from another CRM, your phone contacts, or even a plain note all work. CSV, Excel, vCard, JSON, text, and a .zip export are all fine, and you can bring in more than one at once. Vera reads whatever you give it and matches the columns on the next step."
               action={
-                <button
+                <Button
                   type="button"
                   onClick={() => fileRef.current?.click()}
                   disabled={!canIngest}
-                  className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
                 >
                   {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <UploadCloud className="h-4 w-4" />}
                   {busy ? 'Reading…' : 'Choose files'}
-                </button>
+                </Button>
               }
             />
           </div>
@@ -536,13 +535,12 @@ export function ImportWizard({
 
           {importId && (
             <div className="flex justify-end">
-              <button
+              <Button
                 type="button"
                 onClick={() => setStep('map')}
-                className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
               >
                 Continue to matching <ArrowRight className="h-4 w-4" />
-              </button>
+              </Button>
             </div>
           )}
 
@@ -667,15 +665,14 @@ export function ImportWizard({
             <button type="button" onClick={() => setStep('upload')} className="inline-flex items-center gap-1.5 text-meta font-medium text-muted hover:text-text">
               <ArrowLeft className="h-3.5 w-3.5" /> Choose a different file
             </button>
-            <button
+            <Button
               type="button"
               onClick={goPreview}
               disabled={busy}
-              className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
             >
               {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />}
               Review before import
-            </button>
+            </Button>
           </div>
         </div>
       )}
@@ -768,15 +765,14 @@ export function ImportWizard({
             <button type="button" onClick={() => setStep('map')} className="inline-flex items-center gap-1.5 text-meta font-medium text-muted hover:text-text">
               <ArrowLeft className="h-3.5 w-3.5" /> Back to columns
             </button>
-            <button
+            <Button
               type="button"
               onClick={commit}
               disabled={busy || (validation.diff.created === 0 && validation.diff.merged === 0)}
-              className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
             >
               {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
               {busy ? 'Importing…' : `Import ${validation.diff.created + validation.diff.merged} contacts`}
-            </button>
+            </Button>
           </div>
         </div>
       )}

@@ -61,14 +61,14 @@
       "exclude": [
         "**/*.{test,spec}.{ts,tsx}"
       ],
-      "baseline": 2180,
+      "baseline": 2171,
       "frozen": {
-        "at": "2026-09-07",
-        "value": 2180,
+        "at": "2026-09-08",
+        "value": 2171,
         "direction": "lowered",
         "basis": "db695768f455",
-        "reason": "LIVE-168's consent step first duplicated app/onboarding/form.tsx's opt-in card; extracting the two copies into components/onboarding/email-opt-in.tsx removed the duplicate and took the checkbox from the literal rounded-md to the rounded-control role radius",
-        "from": 2181
+        "reason": "PROG-DAWN3 slice 3 (LIVE-114): the same 14 sites retire 9 literal radii — 6 rounded-xl (import-wizard x4, report-dialog, walkthrough-card) and 3 rounded-lg (the three on-air error overlays) — for the skinnable rounded-control role BASE emits. 2180 -> 2171, all 9 this sweep's; the base tree reads exactly 2180 with the change stashed.",
+        "from": 2180
       },
       "history": [
         {
@@ -245,6 +245,13 @@
           "to": 2180,
           "direction": "lowered",
           "reason": "LIVE-168's consent step first duplicated app/onboarding/form.tsx's opt-in card; extracting the two copies into components/onboarding/email-opt-in.tsx removed the duplicate and took the checkbox from the literal rounded-md to the rounded-control role radius"
+        },
+        {
+          "at": "2026-09-08",
+          "from": 2180,
+          "to": 2171,
+          "direction": "lowered",
+          "reason": "PROG-DAWN3 slice 3 (LIVE-114): the same 14 sites retire 9 literal radii — 6 rounded-xl (import-wizard x4, report-dialog, walkthrough-card) and 3 rounded-lg (the three on-air error overlays) — for the skinnable rounded-control role BASE emits. 2180 -> 2171, all 9 this sweep's; the base tree reads exactly 2180 with the change stashed."
         }
       ]
     },
@@ -562,14 +569,14 @@
         "components/ui/button.tsx",
         "components/ui/icon-button.tsx"
       ],
-      "baseline": 418,
+      "baseline": 404,
       "frozen": {
-        "at": "2026-09-05",
-        "value": 418,
+        "at": "2026-09-08",
+        "value": 404,
         "direction": "lowered",
         "basis": "c478ed64ec1e",
-        "reason": "Scan two phase A (#2360) retired the legacy admin New Channel composer (components/compose/new-channel-compose.tsx, deleted) and rebuilt the unsubscribe page on the kit card; phase B re-freezes the floor so the ratchet holds at the lower number",
-        "from": 423
+        "reason": "PROG-DAWN3 slice 3 (LIVE-114): the 14 deferred primary x md near-miss sites become the Button primitive, in 10 files. 418 -> 404, and all 14 are this sweep's — measured on the base tree with the change stashed, the class reads exactly 418, so no fall is banked that was not bought.",
+        "from": 418
       },
       "history": [
         {
@@ -697,6 +704,13 @@
           "to": 418,
           "direction": "lowered",
           "reason": "Scan two phase A (#2360) retired the legacy admin New Channel composer (components/compose/new-channel-compose.tsx, deleted) and rebuilt the unsubscribe page on the kit card; phase B re-freezes the floor so the ratchet holds at the lower number"
+        },
+        {
+          "at": "2026-09-08",
+          "from": 418,
+          "to": 404,
+          "direction": "lowered",
+          "reason": "PROG-DAWN3 slice 3 (LIVE-114): the 14 deferred primary x md near-miss sites become the Button primitive, in 10 files. 418 -> 404, and all 14 are this sweep's — measured on the base tree with the change stashed, the class reads exactly 418, so no fall is banked that was not bought."
         }
       ]
     },
