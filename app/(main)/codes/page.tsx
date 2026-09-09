@@ -2,7 +2,6 @@ import { notFound } from 'next/navigation'
 import { QrCode, ScanLine } from 'lucide-react'
 import { requireProfileId, getCallerProfile } from '@/lib/auth'
 import { resolveQrStudio, type QrStudioConfig } from '@/lib/elements/qr-studio'
-import { isPaidViewer } from '@/lib/core/viewer-hats'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { shortLinkUrl } from '@/lib/qr/links'
@@ -45,8 +44,6 @@ export default async function CodesPage() {
     .select('id', { count: 'exact', head: true })
     .eq('referred_by_profile_id', profileId)
 
-  const isCrew = await isPaidViewer()
-
   // The qr-studio ELEMENT config (LIVE-066, mirrors the header pages' resolveHeaderElement call): which
   // design controls THIS member may use. Role-gated, so a plain member loses the editor-tier controls
   // (eye color, gradient, logo, frame) unless the operator lowers those tiers in /admin/elements.
@@ -86,7 +83,7 @@ export default async function CodesPage() {
 
         <VcardEditor config={parseVcard(me.vcard)} handle={me.handle} onSave={updateMyVcard} />
 
-        {isCrew && <CrewMarketing profileId={profileId} qrConfig={qrConfig} />}
+        <MarketingCodesSection profileId={profileId} qrConfig={qrConfig} />
 
         <div className="rounded-card border border-border bg-surface-elevated/50 p-4">
           <h2 className="flex items-center gap-2 text-body-sm font-bold text-text">
@@ -102,13 +99,17 @@ export default async function CodesPage() {
   )
 }
 
-// Crew-only: up to MARKETING_CODE_LIMIT funnel codes pointing at a circle/event
-// the member is promoting. Rendered as a child so its data load stays out of the
-// member-codes path for non-crew.
-async function CrewMarketing({ profileId, qrConfig }: { profileId: string; qrConfig?: QrStudioConfig }) {
+// Up to MARKETING_CODE_LIMIT funnel codes pointing at a circle/event the member is
+// promoting. Rendered as a child so its data load stays off the member-codes path.
+//
+// 🔴 FREE FOR ANY SIGNED-IN MEMBER (LIVE-221). This section used to render only for a
+// paid viewer (`isPaidViewer()`), so a free member never saw the codes that bring
+// people to what they host. The remaining limit is a QUANTITY every member shares
+// (MARKETING_CODE_LIMIT), not a tier.
+async function MarketingCodesSection({ profileId, qrConfig }: { profileId: string; qrConfig?: QrStudioConfig }) {
   const db = createAdminClient()
   const [{ data: rows }, targets] = await Promise.all([
-    // Personal crew marketing codes ONLY: owner-owned, purpose-null, and NOT tenant-scoped to a Space.
+    // Personal marketing codes ONLY: owner-owned, purpose-null, and NOT tenant-scoped to a Space.
     // A Space code now stamps owner_profile_id (for scan attribution) AND space_id, so this list must
     // exclude space codes or a member who created one for their Space would see it in their personal
     // funnel list.

@@ -78,8 +78,6 @@
             "LIVE-251",
             "LIVE-256",
             "LIVE-262",
-            "LIVE-266",
-            "LIVE-267",
             "HYG-078",
             "HYG-080",
             "HYG-082",
@@ -10483,7 +10481,7 @@
     {
       "id": "LIVE-266",
       "title": "Un-gate starting a Circle - the single highest-value change in the plan",
-      "status": "open",
+      "status": "done",
       "priority": "P0",
       "lane": "live",
       "size": "S",
@@ -10503,7 +10501,7 @@
     {
       "id": "LIVE-267",
       "title": "Remove the three live isPaid walls on member creation paths",
-      "status": "open",
+      "status": "done",
       "priority": "P1",
       "lane": "live",
       "size": "S",

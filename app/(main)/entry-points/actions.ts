@@ -1,6 +1,6 @@
 'use server'
 
-// Entry-point mutations (ADR-126, docs/ENTRY-POINTS.md). Crew-gated. An entry point
+// Entry-point mutations (ADR-126, docs/ENTRY-POINTS.md). Any signed-in member. An entry point
 // is a qr_codes row owned by the member with template_id set (purpose NULL). It
 // reuses the whole QR pipeline; this just writes the template + flyer + destination
 // and rewards setting one up. The new qr_codes columns aren't in the generated types
@@ -9,7 +9,6 @@
 import { revalidatePath } from 'next/cache'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { getCallerProfile } from '@/lib/auth'
-import { isPaid } from '@/lib/core/entitlement'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { generateSlug } from '@/lib/qr/codes'
 import { STYLE_PRESETS, DEFAULT_STYLE, parseStyle } from '@/lib/qr/style'
@@ -47,11 +46,15 @@ interface CleanEntry {
   style: Json
 }
 
-// Crew = the paid membership tier. Entry points are a paid (Crew) feature.
-async function requireCrew(): Promise<{ id: string } | string> {
+// 🔴 MAKING AN ENTRY POINT IS FREE (LIVE-221). This used to demand the paid Crew tier
+// (a paid-entitlement check on the caller's membership tier), which is a wall on a
+// member CREATION path: people join
+// free, businesses host free, and you pay when you start charging. Sign-in is the whole
+// gate now. Do not reintroduce a tier check here — if entry points ever need a limit, it
+// is a QUANTITY (a meter), not a locked door.
+async function requireMember(): Promise<{ id: string } | string> {
   const me = await getCallerProfile()
   if (!me) return 'Sign in first.'
-  if (!isPaid(me.membershipTier)) return 'Entry points are a Crew (paid membership) feature.'
   return { id: me.id }
 }
 
@@ -77,8 +80,8 @@ function clean(input: EntryPointInput): CleanEntry | string {
 }
 
 export async function createEntryPoint(input: EntryPointInput): Promise<ActionResult<{ id: string }>> {
-  const crew = await requireCrew()
-  if (typeof crew === 'string') return fail(crew)
+  const member = await requireMember()
+  if (typeof member === 'string') return fail(member)
   const row = clean(input)
   if (typeof row === 'string') return fail(row)
 
@@ -88,7 +91,7 @@ export async function createEntryPoint(input: EntryPointInput): Promise<ActionRe
   const campaignId = input.campaignId && (await campaignExists(input.campaignId)) ? input.campaignId : null
 
   // Count BEFORE inserting — drives the reward cap + the idempotency key.
-  const prior = await countMyEntryPoints(crew.id)
+  const prior = await countMyEntryPoints(member.id)
 
   const { data, error } = await db
     .from('qr_codes')
@@ -97,8 +100,8 @@ export async function createEntryPoint(input: EntryPointInput): Promise<ActionRe
       title: row.title,
       destination_type: 'url',
       target_url: row.target_url,
-      owner_profile_id: crew.id,
-      created_by: crew.id,
+      owner_profile_id: member.id,
+      created_by: member.id,
       template_id: row.template_id,
       flyer: row.flyer,
       style: row.style,
@@ -112,13 +115,13 @@ export async function createEntryPoint(input: EntryPointInput): Promise<ActionRe
   if (prior < CREATE_REWARD_CAP) {
     try {
       const { recorded } = await recordEngagementEvent({
-        idempotencyKey: `entry_point_created:${crew.id}:${prior + 1}`,
+        idempotencyKey: `entry_point_created:${member.id}:${prior + 1}`,
         source: 'system',
         eventType: 'entry_point.created',
-        actorProfileId: crew.id,
+        actorProfileId: member.id,
         context: { entryPointId: (data as { id: string }).id, templateId: row.template_id },
       })
-      if (recorded) await awardZapsForAction(crew.id, 'entry_point_created').catch(() => {})
+      if (recorded) await awardZapsForAction(member.id, 'entry_point_created').catch(() => {})
     } catch {
       // reward is a bonus, never blocks creation
     }
@@ -139,13 +142,13 @@ async function ownEntryPoint(db: SupabaseClient, id: string, ownerId: string): P
 }
 
 export async function updateEntryPoint(id: string, input: EntryPointInput): Promise<ActionResult> {
-  const crew = await requireCrew()
-  if (typeof crew === 'string') return fail(crew)
+  const member = await requireMember()
+  if (typeof member === 'string') return fail(member)
   const row = clean(input)
   if (typeof row === 'string') return fail(row)
 
   const db = createAdminClient()
-  if (!(await ownEntryPoint(db, id, crew.id))) return fail('That isn’t your entry point.')
+  if (!(await ownEntryPoint(db, id, member.id))) return fail('That isn’t your entry point.')
 
   const campaignId = input.campaignId && (await campaignExists(input.campaignId)) ? input.campaignId : undefined
   const { error } = await db
@@ -157,7 +160,7 @@ export async function updateEntryPoint(id: string, input: EntryPointInput): Prom
       flyer: row.flyer,
       style: row.style,
       // Claim a legacy/ownerless code on first edit, so it's fully owned afterward.
-      owner_profile_id: crew.id,
+      owner_profile_id: member.id,
       ...(campaignId ? { campaign_id: campaignId } : {}),
     })
     .eq('id', id)
@@ -169,11 +172,11 @@ export async function updateEntryPoint(id: string, input: EntryPointInput): Prom
 }
 
 export async function deleteEntryPoint(id: string): Promise<ActionResult> {
-  const crew = await requireCrew()
-  if (typeof crew === 'string') return fail(crew)
+  const member = await requireMember()
+  if (typeof member === 'string') return fail(member)
 
   const db = createAdminClient()
-  if (!(await ownEntryPoint(db, id, crew.id))) return fail('That isn’t your entry point.')
+  if (!(await ownEntryPoint(db, id, member.id))) return fail('That isn’t your entry point.')
 
   const { error } = await db.from('qr_codes').delete().eq('id', id)
   if (error) return fail('Could not delete the entry point.')
