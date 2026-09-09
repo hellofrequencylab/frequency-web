@@ -32,7 +32,7 @@ interface TaskRow {
 export async function QuestTasks() {
   const ctx = await getCrewContext()
   if (!ctx) return null
-  const { profileId, isCrew, membership } = ctx
+  const { profileId, membership } = ctx
   const admin = createAdminClient()
 
   // Available GLOBAL catalogue tasks (circle_id IS NULL). Circle-scoped tasks render in their own
@@ -66,7 +66,6 @@ export async function QuestTasks() {
           circleId={membership.circleId}
           circleName={membership.circleName}
           viewerProfileId={profileId}
-          isCrew={isCrew}
         />
       )}
 
@@ -152,7 +151,6 @@ export async function QuestTasks() {
                       isDone={isDone}
                       isRepeatable={task.is_repeatable ?? false}
                       requiresVerification={task.requires_verification ?? false}
-                      isCrew={isCrew}
                     />
                   </div>
                 </div>
