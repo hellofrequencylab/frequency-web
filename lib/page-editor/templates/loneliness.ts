@@ -284,7 +284,7 @@ export const spec: ArticleSpec = {
 
   close: {
     heading: 'The opposite of lonely is a standing plan.',
-    body: 'Frequency turns a screen full of strangers into a few people who expect you on Thursday. Join the Beta and find your room.',
+    body: 'Frequency turns a screen full of strangers into a few people who expect you on Thursday. Join free and find your room.',
   },
 }
 

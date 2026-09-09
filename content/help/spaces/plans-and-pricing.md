@@ -4,14 +4,17 @@ description: What each Space plan costs, what it includes, and how to pick the o
 category: spaces
 order: 2
 published: 2026-07-27
-updated: 2026-09-03
+updated: 2026-09-09
 audience: member
 featureKeys: [billing]
 status: published
 ---
 
-Every Space starts free and stays useful. A paid plan adds depth: the tools you need once your Space
-is how you actually run things. This page covers what each plan costs and what it turns on.
+People join free. Businesses host free. You pay when you start charging.
+
+Every Space starts free and stays a real Space: your page, your events, your posts, your members.
+A plan is what you take once money is moving through it. This page covers what each plan costs and
+what it turns on.
 
 ## The plans
 
@@ -21,10 +24,13 @@ is how you actually run things. This page covers what each plan costs and what i
 | **Business** | $29 | $290 | Running your practice: contacts, email, reporting, your full website |
 | **Collective** | $79 | $790 | Scale and team: everything in Business plus automation, multiple pipelines, seats, and Programs |
 | **Non Profit** | $39 | $390 | Verified nonprofits, with the full Collective toolkit |
-| **Independent** | $249 | $2,490 | White label, run on your own terms, disconnected from the network |
 
 Those are the prices, and they are the same whenever you start. There is no beta rate any more: the
 Opening Beta pricing closed on 17 August 2026.
+
+There is one more plan, **Independent**: white label, run on your own terms, off the shared network.
+It is arranged directly rather than bought from this page, so if that is what you need,
+[ask us](/help) and we will walk you through it.
 
 Paying yearly gives you **two months free**: a yearly plan is ten months of the monthly price.
 
@@ -48,7 +54,8 @@ Every paid plan starts with a **14 day free trial**.
 
 **Non Profit** grants the full Collective set at the nonprofit rate once your 501(c)(3) is verified.
 
-**Independent** adds white-label branding and takes your Space off the shared network.
+**Independent** adds white-label branding and takes your Space off the shared network. It is
+arranged directly, not bought from the plan picker.
 
 ## What Frequency takes
 
@@ -76,6 +83,10 @@ takes payments from day one. You do not buy the ability to charge, you buy the r
 lowers what Frequency takes on the sales the network brings you, and it gives you the tools that turn
 those buyers into your own people, where the rate is 0% on every plan.
 
+Three things do genuinely need a plan, and they are all about money: **selling memberships**
+(Business), **campaigns and funnels** (Business), and **splitting revenue between businesses**
+(Collective). Nothing about being here, gathering people, or being found needs one.
+
 On your personal account the same shape applies: a free Member sells at 10%, and **Crew** brings that
 to 8%. Crew is contribute what you want, from $4.99 a month.
 
@@ -84,7 +95,7 @@ yourself.
 
 ## Picking a plan
 
-- Stay **Free** until a tool you actually want sits behind a plan. There is no rush.
+- Stay **Free** until you start charging for something. There is no rush, and no clock.
 - Take **Business** when you are running your practice here and want contacts, email, and your own
   website.
 - Take **Collective** when other people work in your Space with you, or when you want to run a
@@ -105,7 +116,8 @@ the allowances apply as written, and we will tell you what changes before it cha
 
 ## What Free gives you
 
-Free is a real plan, not a countdown. Every plan does what this page says it does.
+Free is a real plan, not a countdown, and it does not expire. Every plan does what this page says
+it does.
 
 Your Space keeps everything already in it. The free allowances apply to what you add from here, so
 nothing you have made is hidden, moved, or deleted, and you can always read and export it. When an

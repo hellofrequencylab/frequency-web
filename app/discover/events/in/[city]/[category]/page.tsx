@@ -169,7 +169,7 @@ export default async function CityCategoryHubPage({ params }: Params) {
       <div className="mt-16">
         <BetaCTA
           heading="See you there"
-          body={`Join the beta to RSVP to ${cat.noun} in ${hub.city}, meet your neighbors, and get the exact venue.`}
+          body={`Joining is free. RSVP to ${cat.noun} in ${hub.city}, meet your neighbors, and get the exact venue.`}
         />
       </div>
     </div>

@@ -14,13 +14,17 @@ export const revalidate = 3600
 
 export const metadata: Metadata = {
   title: 'How does The Quest work? Zaps, Gems, Journeys',
+  // 🔴 THE QUEST IS A SIDE THING WE ALL DO TOGETHER, NOT THE CENTRE (LIVE-254). The product is a
+  // Space, a Circle, an Event and a Practice; the game rides alongside them. This description used
+  // to open on the game as though it were the offer, which is how a page carrying the same sitemap
+  // priority as The Community reads to a crawler and to an answer engine.
   description:
-    'The Quest is a light game where showing up counts. Earn Zaps in person and Gems online, finish three Journeys a season, and climb the ranks.',
+    'The Quest is the light game everyone plays alongside their Circle. Earn Zaps in person and Gems online, finish three Journeys a season, and climb the ranks.',
   alternates: { canonical: '/the-quest' },
   openGraph: {
     title: 'The Quest · Frequency',
     description:
-      'Real life is the reward. Zaps, Gems, season ranks, and Journeys: a path that rewards showing up, not scrolling.',
+      'Real life is the reward. The game everyone plays alongside their Circle: Zaps, Gems, season ranks, and Journeys.',
     url: '/the-quest',
   },
   // Metadata merges per TOP-LEVEL KEY: setting only `openGraph` inherits the root `twitter`
@@ -29,7 +33,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'The Quest · Frequency',
     description:
-      'Real life is the reward. Zaps, Gems, season ranks, and Journeys: a path that rewards showing up, not scrolling.',
+      'Real life is the reward. The game everyone plays alongside their Circle: Zaps, Gems, season ranks, and Journeys.',
   },
 }
 

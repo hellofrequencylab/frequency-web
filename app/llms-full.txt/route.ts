@@ -66,7 +66,7 @@ export async function GET() {
     '',
     '### The honest-money model',
     '',
-    'Selling is free on every tier. A free Member and a free Space can sell tickets and take payments and donations from day one; a paid plan buys a lower rate, not permission. You keep 100% of your own bookings, always, and tips carry no fee on any rung. We earn only a small, shrinking take-rate on the business the network sends you, never on what you bring in yourself. That network-only rate drops as your plan rises:',
+    'People join free. Businesses host free. You pay when you start charging. Selling is free on every tier: a free Member and a free Space can sell tickets and take payments and donations from day one, and a paid plan buys a lower rate, not permission. You keep 100% of your own bookings, always, and tips carry no fee on any rung. We earn only a small, shrinking take-rate on the business the network sends you, never on what you bring in yourself. That network-only rate drops as your plan rises:',
     ...takeRateLines(offerings),
     '',
     'Three capabilities need a paid plan, and nothing else does: selling memberships (Business), campaigns and funnels (Business), and revenue splits (Collective). Everything else is a meter with a real free allowance, and a full meter stops new writes without ever hiding, deleting, or locking what is already there.',

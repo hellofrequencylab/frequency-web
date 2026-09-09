@@ -100,7 +100,7 @@ export const data: Data = {
         title: 'We made the good habits a game so people actually do them.',
         titleAccent: 'a game',
         subtitle:
-          "Yes, a lot of it is meditation and movement. We know how that lands. So we built a game around it, because a streak you want to keep beats a resolution you forget by February.",
+          "The Quest is the thing we all do together on the side. Your Circle, your events, and your practices are the point; this is the light layer over them. Yes, a lot of it is meditation and movement. We know how that lands. So we built a game around it, because a streak you want to keep beats a resolution you forget by February.",
         image: '/images/site/sunset.jpg',
         focal: 'center',
         minHeight: 'auto',

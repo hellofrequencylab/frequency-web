@@ -11,10 +11,16 @@
 // "Email + Automations" (never "Dispatch", a reserved broadcast term), the Space site is "Profile and
 // brand" / "your page", the CRM tool is "Contacts", the scheduler is "Bookings", the code tool is
 // "QR Studio". The free tier RUNS THE BUSINESS: it sells, takes payments, and holds a contact list, on
-// starter caps. Three things genuinely need a paid plan and the copy names them plainly rather than
-// implying a subset: selling memberships (Business), campaigns and funnels (Business), and revenue
-// splits (Collective). Everything else is a meter, and the caps are never typed here, they live in
-// lib/pricing/feature-meters.ts (ADR-837) and the copy stays qualitative.
+// starter caps.
+//
+// 🔴 THE ARGUMENT FOR PAYING IS MONEY, NOT MORE (LIVE-255). Every door says the same sentence in its
+// own words: PEOPLE JOIN FREE, BUSINESSES HOST FREE, YOU PAY WHEN YOU START CHARGING. The three
+// capabilities that genuinely need a plan are still named plainly, because naming them is what makes
+// the promise checkable, but they are the CONSEQUENCE of that sentence rather than the pitch: selling
+// memberships (Business), campaigns and funnels (Business), and revenue splits (Collective). Do not
+// reintroduce a "paid does more / lifts the caps / unlocks" beat here. Everything else is a meter, and
+// the caps are never typed here, they live in lib/pricing/feature-meters.ts (ADR-837) and the copy
+// stays qualitative.
 
 import { OPERATOR_CTA_LABEL } from '@/lib/site'
 import { NICHE_FUNNEL_DESTINATIONS, type FunnelDestination } from '@/lib/funnels/definitions'
@@ -48,13 +54,13 @@ function breakEvenCaption(keep: string): string {
  *  wall, so what a paid rung buys is a smaller number and the tools that make it smaller still. The
  *  per-niche clause names the moment a door's reader would actually step up. */
 function pricingIntro(stepUp: string): string {
-  return `Selling is never behind a plan. A free Space takes payments from day one, and your own people are always free. ${stepUp} No add-on menu, no surprise fees.`
+  return `People join free, businesses host free, and you pay when you start charging. Selling is never behind a plan: a free Space takes payments from day one, and your own people are always free. ${stepUp} No add-on menu, no surprise fees.`
 }
 
 /** The shared what-does-it-cost FAQ answer, with the per-niche "you keep 100% of ..." clause and an
  *  optional extra sentence (the community-builders Collective line). One template, five doors. */
 function costAnswer(keep: string, extra = ''): string {
-  return `Nothing to start selling. A free Space takes payments from day one at ${RATE.free} on the sales the network introduces, and 0% on the people already yours. Business is ${P.businessList} a month, or two months free if you pay for the year: it takes that rate to ${RATE.business}, and adds memberships and campaigns. You keep 100% of ${keep} either way.${extra} You always see the full number, nothing hidden.`
+  return `Nothing to be here, and nothing to start selling. A free Space takes payments from day one at ${RATE.free} on the sales the network introduces, and 0% on the people already yours. You pay when you start charging: Business is ${P.businessList} a month, or two months free if you pay for the year, and it takes that rate to ${RATE.business} and turns on memberships and campaigns. You keep 100% of ${keep} either way.${extra} You always see the full number, nothing hidden.`
 }
 
 // ── The small, consistent feature-icon set (drawn once, house tokens) ─────────────────────────────
@@ -207,7 +213,7 @@ export const COACHES_FUNNEL: FunnelConfig = {
     seoTitle: 'Booking + contacts software for coaches and healers',
     subhead:
       "Bookings, payments, and every person you've met, together in one place. Frequency keeps your relationships close, so the people you meet come back, and bring the next ones. Start free.",
-    microcopy: 'No card. Free while you grow.',
+    microcopy: 'No card. You pay when you start charging.',
     trustLine: 'You keep 100% of what you bring in.',
   },
   metaDescription:
@@ -250,7 +256,7 @@ export const COACHES_FUNNEL: FunnelConfig = {
     {
       icon: 'spark',
       soft: true,
-      title: "When you're ready, it does more.",
+      title: "When you start charging, it does more.",
       body: "Email to bring quiet clients back. Reminders that send themselves, so no one slips. And a nudge when someone's drifting, while there's still time to reach them.",
     },
   ],
@@ -261,7 +267,7 @@ export const COACHES_FUNNEL: FunnelConfig = {
   },
   pricing: {
     header: 'One honest price.',
-    intro: pricingIntro('When your practice takes off, Business buys the rate down and adds memberships and campaigns.'),
+    intro: pricingIntro('When your practice starts selling memberships or running campaigns, that is Business, and the network rate drops with it.'),
     rows: [
       { kind: 'free', name: 'Free', detail: FREE_ROW_DETAIL },
       { kind: 'business', name: 'Business', detail: BUSINESS_ROW_DETAIL, featured: true },
@@ -287,7 +293,7 @@ export const COACHES_FUNNEL: FunnelConfig = {
   finalCta: {
     header: 'Come home to one place.',
     subhead: "Your bookings, your payments, and every person you've met, held together. Start free, and grow through the people you meet.",
-    microcopy: 'No card. Free while you grow.',
+    microcopy: 'No card. You pay when you start charging.',
   },
 }
 
@@ -302,7 +308,7 @@ export const STUDIOS_FUNNEL: FunnelConfig = {
     seoTitle: 'Membership + class booking software for studios',
     subhead:
       "Recurring classes, memberships, and check-in at the door, together in one place. Frequency keeps your members close, so the regulars come back and bring the next ones. Start free.",
-    microcopy: 'No card. Free while you grow.',
+    microcopy: 'No card. You pay when you start charging.',
     trustLine: 'You keep 100% of what you bring in.',
   },
   metaDescription:
@@ -340,7 +346,7 @@ export const STUDIOS_FUNNEL: FunnelConfig = {
     {
       icon: 'spark',
       soft: true,
-      title: 'When you are ready, it does more.',
+      title: 'When you start charging, it does more.',
       body: 'Email to bring quiet members back, reminders that send themselves, and a nudge when someone is drifting.',
     },
   ],
@@ -351,7 +357,7 @@ export const STUDIOS_FUNNEL: FunnelConfig = {
   },
   pricing: {
     header: 'One honest price.',
-    intro: pricingIntro('When your studio fills, Business buys the rate down and turns on memberships and class packs.'),
+    intro: pricingIntro('When your studio starts selling memberships and class packs, that is Business, and the network rate drops with it.'),
     rows: [
       { kind: 'free', name: 'Free', detail: FREE_ROW_DETAIL },
       { kind: 'business', name: 'Business', detail: BUSINESS_ROW_DETAIL, featured: true },
@@ -377,7 +383,7 @@ export const STUDIOS_FUNNEL: FunnelConfig = {
   finalCta: {
     header: 'Run the studio, not the back office.',
     subhead: 'Your classes, your memberships, and every member, held together in one place. Start free, and grow through the members you already have.',
-    microcopy: 'No card. Free while you grow.',
+    microcopy: 'No card. You pay when you start charging.',
   },
 }
 
@@ -392,7 +398,7 @@ export const EVENTS_FUNNEL: FunnelConfig = {
     seoTitle: 'Ticketing + check-in software for event hosts',
     subhead:
       'Tickets, check-in, and everyone who has one, together in one place. Frequency keeps the people who showed up, so your next event fills from the last. Start free.',
-    microcopy: 'No card. Free while you grow.',
+    microcopy: 'No card. You pay when you start charging.',
     trustLine: 'You keep 100% of what you bring in.',
   },
   metaDescription:
@@ -430,7 +436,7 @@ export const EVENTS_FUNNEL: FunnelConfig = {
     {
       icon: 'spark',
       soft: true,
-      title: 'When you are ready, it does more.',
+      title: 'When you start charging, it does more.',
       body: 'Email everyone who holds a ticket, send reminders that run themselves, and reach quiet guests before the next date.',
     },
   ],
@@ -441,7 +447,7 @@ export const EVENTS_FUNNEL: FunnelConfig = {
   },
   pricing: {
     header: 'One honest price.',
-    intro: pricingIntro('When your events take off, Business buys the rate down and adds campaigns and memberships.'),
+    intro: pricingIntro('When your events start selling memberships or running campaigns off the ticket list, that is Business, and the network rate drops with it.'),
     rows: [
       { kind: 'free', name: 'Free', detail: FREE_ROW_DETAIL },
       { kind: 'business', name: 'Business', detail: BUSINESS_ROW_DETAIL, featured: true },
@@ -467,7 +473,7 @@ export const EVENTS_FUNNEL: FunnelConfig = {
   finalCta: {
     header: 'Keep the room you filled.',
     subhead: 'Your tickets, your door, and everyone who came, held together in one place. Start free, and let each event fill the next.',
-    microcopy: 'No card. Free while you grow.',
+    microcopy: 'No card. You pay when you start charging.',
   },
 }
 
@@ -483,7 +489,7 @@ export const COMMUNITY_FUNNEL: FunnelConfig = {
     seoTitle: 'Membership + community software for organizers',
     subhead:
       'Circles, memberships, and the right introductions, together in one place. Frequency holds your community, so members stay and bring the people who belong here next. Start free.',
-    microcopy: 'No card. Free while you grow.',
+    microcopy: 'No card. You pay when you start charging.',
     trustLine: 'You keep 100% of what you bring in.',
   },
   metaDescription:
@@ -521,7 +527,7 @@ export const COMMUNITY_FUNNEL: FunnelConfig = {
     {
       icon: 'envelope',
       soft: true,
-      title: 'When you are ready, it does more.',
+      title: 'When you start charging, it does more.',
       body: 'Email to bring quiet members back, reminders that send themselves, and a nudge when someone is drifting.',
     },
   ],
@@ -532,7 +538,7 @@ export const COMMUNITY_FUNNEL: FunnelConfig = {
   },
   pricing: {
     header: 'One honest price.',
-    intro: pricingIntro('When your community grows a team, Business buys the rate down and turns on memberships and campaigns.'),
+    intro: pricingIntro('When your community starts selling memberships or running campaigns, that is Business, and the network rate drops with it.'),
     rows: [
       { kind: 'free', name: 'Free', detail: FREE_ROW_DETAIL },
       { kind: 'business', name: 'Business', detail: BUSINESS_ROW_DETAIL, featured: true },
@@ -561,7 +567,7 @@ export const COMMUNITY_FUNNEL: FunnelConfig = {
   finalCta: {
     header: 'Hold your community in one place.',
     subhead: 'Your Circles, your memberships, and every member, held together, with the right people introduced. Start free, and grow through the people who belong here.',
-    microcopy: 'No card. Free while you grow.',
+    microcopy: 'No card. You pay when you start charging.',
   },
 }
 
@@ -577,7 +583,7 @@ export const NONPROFITS_FUNNEL: FunnelConfig = {
     seoTitle: 'Donations + supporter software for nonprofits',
     subhead:
       'Donations, supporters, and your programs, together in one place. Frequency holds your supporters, so giving repeats and the word travels to the next donor. Start free.',
-    microcopy: 'No card. Free while you grow.',
+    microcopy: 'No card. You pay when you start charging.',
     trustLine: 'No take-rate on what you raise, ever.',
   },
   metaDescription:
@@ -615,7 +621,7 @@ export const NONPROFITS_FUNNEL: FunnelConfig = {
     {
       icon: 'spark',
       soft: true,
-      title: 'When you are ready, it does more.',
+      title: 'When you start charging, it does more.',
       body: 'Email to bring lapsed donors back, receipts and reminders that send themselves, and a nudge when a recurring gift is about to end.',
     },
   ],
@@ -653,7 +659,7 @@ export const NONPROFITS_FUNNEL: FunnelConfig = {
   finalCta: {
     header: 'Put the money where the mission is.',
     subhead: 'Your donations, your supporters, and your programs, held together in one place, with nothing taken on what you raise. Start free.',
-    microcopy: 'No card. Free while you grow.',
+    microcopy: 'No card. You pay when you start charging.',
   },
 }
 

@@ -87,7 +87,7 @@ export default async function DiscoverJourneysPage() {
               kicker="Every Journey starts as one person's daily Practice, written down."
             />
             <p className="mt-6 text-body-lg text-muted leading-relaxed">
-              The library is quiet for now. Join the beta and you can build the first ones:
+              The library is quiet for now. Join free and you can build the first ones:
               a handful of small Practices, in order, with a five-minute way in. Share one, and
               your Circle can run it beside you.
             </p>
@@ -170,7 +170,7 @@ export default async function DiscoverJourneysPage() {
 
       <BetaCTA
         heading="Start your first Journey"
-        body="Join the North County San Diego beta: adopt a Journey, run it with your Circle, and finish the season together."
+        body="Joining is free. Adopt a Journey, run it with your Circle, and finish the season together."
       />
     </>
   )

@@ -119,7 +119,7 @@ export default async function PillarPracticesPage({
 
       <BetaCTA
         heading="Practices stick when people are counting on you."
-        body={`Pick a ${pillar.name} practice, then find a Circle near you doing it on a standing rhythm. Join the Beta and start showing up.`}
+        body={`Pick a ${pillar.name} practice, then find a Circle near you doing it on a standing rhythm. Join free and start showing up.`}
       />
     </>
   )

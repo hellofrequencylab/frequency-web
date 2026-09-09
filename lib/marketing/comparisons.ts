@@ -84,7 +84,7 @@ export const COMPARISONS: Comparison[] = [
     forReader:
       'You have the followers and the links. You are missing the part where it turns into people you actually know.',
     moneyBeat:
-      'Selling from your Spotlight page is open on a free account, from day one. Frequency takes 0% on your own bookings, always, and 0% on anyone already yours: a follower, a contact, or someone who bought from you before. A paid plan does not switch selling on. It buys down the rate on the people the network introduces you to. One honest price, and never a cut of the business you bring yourself.',
+      'People join free, businesses host free, and you pay when you start charging. Selling from your Spotlight page is open on a free account, from day one. Frequency takes 0% on your own bookings, always, and 0% on anyone already yours: a follower, a contact, or someone who bought from you before. A paid plan does not switch selling on, it lowers what we take on the people the network introduces you to. One honest price, and never a cut of the business you bring yourself.',
   },
   {
     slug: 'calendly',
@@ -124,7 +124,7 @@ export const COMPARISONS: Comparison[] = [
     forReader:
       'You have been to plenty of events. You want the few that turn into people you keep seeing, not another ticket stub.',
     moneyBeat:
-      'Eventbrite charges a fee on every ticket you sell, to everyone, every time. Frequency takes 0% on anyone already yours: a follower, a contact, or someone who bought from you before. You can sell on a free account from day one, and a paid plan buys down the rate on the people the network introduces you to. Frequency runs on one honest price and earns only a small, shrinking slice of the business the network brings you, never a cut of the business you bring yourself.',
+      'Eventbrite charges a fee on every ticket you sell, to everyone, every time. On Frequency people join free, businesses host free, and you pay when you start charging. We take 0% on anyone already yours: a follower, a contact, or someone who bought from you before. You can sell on a free account from day one, and a paid plan lowers what we take on the people the network introduces you to. One honest price, and only a small, shrinking slice of the business the network brings you, never a cut of the business you bring yourself.',
   },
   {
     slug: 'mighty-networks',

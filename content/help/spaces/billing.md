@@ -4,14 +4,15 @@ description: Where your plan, payments, and invoices live, and how a cash agreem
 category: spaces
 order: 3
 published: 2026-07-27
-updated: 2026-09-04
+updated: 2026-09-09
 audience: member
 featureKeys: [billing]
 status: published
 ---
 
-Everything about what your Space pays lives in one place: **Manage, then Plan and billing**. This
-page covers what you find there and how each kind of payment works.
+Your Space does not have to pay anything to exist. Hosting is free, and it stays free: you pay when
+you start charging. Everything about what your Space does pay lives in one place: **Manage, then Plan
+and billing**. This page covers what you find there and how each kind of payment works.
 
 ## Where billing lives
 
@@ -29,8 +30,9 @@ Pick the plan you want on the billing page and follow the checkout. A few things
 - **Yearly saves two months.** A yearly plan costs ten months of the monthly price.
 - Moving up takes effect right away. Moving down takes effect at the end of what you have paid for,
   so you keep what you bought.
-- Your plan is what unlocks your tools. If a tool is greyed out, the billing page tells you which
-  plan turns it on.
+- Your plan is what turns on the paid tools. Three of them are about money (selling memberships,
+  campaigns and funnels, and revenue splits) and the rest are allowances. If a tool is greyed out,
+  the billing page tells you which plan turns it on.
 - Your plan is not the only switch. You can also turn a feature off for your own Space in **Manage,
   then Menu and features**, and it stays off whether or not your plan pays for it. So if billing
   says a tool is included and you still cannot find it, look there before you look at your plan.

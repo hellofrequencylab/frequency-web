@@ -354,7 +354,7 @@ export const spec: ArticleSpec = {
 
   close: {
     heading: 'Come see what it actually is.',
-    body: "The fastest way to understand Frequency is to walk into one room. Join the Beta and we'll point you at the first move.",
+    body: "The fastest way to understand Frequency is to walk into one room. Join free and we'll point you at the first move.",
   },
 }
 

@@ -315,13 +315,13 @@ export const spec: ArticleSpec = {
     },
     {
       q: 'What does Frequency cost to build community here?',
-      a: 'Connection is free: joining, Circles, and showing up never cost anything. Charging for what you host is free too, on every plan, including the free one. You keep 100% of your own bookings, always. Frequency is a Community Collective, so we earn only on the business the network brings you, at a rate that drops as your plan rises. See the plans on the pricing page. Month to month, take your data and leave anytime.',
+      a: 'People join free and businesses host free. Joining, Circles, showing up, and starting a Space to host from never cost anything. You pay when you start charging, and even then you keep 100% of your own bookings, always. Frequency is a Community Collective, so we earn only on a sale the network brought you, at a rate that drops as your plan rises. See the plans on the pricing page. Month to month, take your data and leave anytime.',
     },
   ],
 
   close: {
     heading: 'Be the reason your people have somewhere to go.',
-    body: 'We hand you the format and the script, so you are never building it alone. Join the Beta and start one Circle.',
+    body: 'We hand you the format and the script, so you are never building it alone. Join free and start one Circle.',
   },
 }
 
