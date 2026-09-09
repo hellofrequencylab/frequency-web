@@ -47,10 +47,16 @@ export const UPGRADE_COPY: Record<string, { title: string; blurb: string }> = {
   },
 }
 
+// 🔴 THE DEFAULT NO LONGER SELLS THE QUEST (ADR-1295, owner ruling 2026-09-09, OWN-071). It read
+// "Play the full Quest / Crew members earn Zaps and Gems, climb the ranks, and spend in the Vault
+// Store", and every clause of that is now something every signed-in member does: the `vault_cash_in`
+// and `gamification_full` gates are deleted. This dialog is raised from every gate in the app, so a
+// default that names what everyone already gets is the most-seen false sentence in the product. What
+// Crew actually adds is the rate, the AI cap, and the badge.
 const DEFAULT_COPY = {
-  title: 'Play the full Quest',
+  title: 'Join the Crew',
   blurb:
-    'Crew members earn Zaps and Gems, climb the ranks, and spend in the Vault Store. Upgrade to start playing. You keep everything you have.',
+    'Crew is the personal tier: a lower fee on the business the network sends you, Vera without the daily cap, and the Crew badge.',
 }
 
 export function UpgradeLightbox({

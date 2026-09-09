@@ -2,7 +2,6 @@ import { describe, it, expect } from 'vitest'
 import {
   deriveTier,
   isPaid,
-  canCashIn,
   ENTITLEMENT_TIERS,
   ENTITLEMENT_LABEL,
   resolveEffectiveTier,
@@ -54,7 +53,6 @@ describe('the ladder is exactly two rungs (Supporter retired, 2026-08-24)', () =
     const retired = 'supporter' as unknown as 'free'
     expect(ENTITLEMENT_TIERS).not.toContain(retired)
     expect(isPaid(retired)).toBe(false)
-    expect(canCashIn(retired)).toBe(false)
   })
 })
 
@@ -67,32 +65,25 @@ describe('isPaid', () => {
   })
 })
 
-describe('canCashIn — the Vault cash-in (spend/claim) gate (P2.6, ADR-226)', () => {
-  it('only the paid tier can cash in; free accrues but cannot spend', () => {
-    expect(canCashIn('free')).toBe(false)
-    expect(canCashIn('crew')).toBe(true)
-    expect(canCashIn(null)).toBe(false)
-    expect(canCashIn(undefined)).toBe(false)
-  })
-
-  it('is the TIER predicate — never a function of the community role (ADR-207)', () => {
-    // A free-tier Host is a steward, not "paid"; they cannot cash in via their role.
-    // canCashIn sees only the tier, so the decoupling holds by construction.
-    expect(canCashIn('free')).toBe(false)
-  })
-
-  it('agrees with the Vault matrix gate (both are isPaid(tier))', () => {
+// 🔴 `canCashIn` AND ITS THREE TESTS ARE GONE (ADR-1295, owner ruling 2026-09-09, OWN-071). The
+// predicate answered "may this tier spend Gems / claim Vault rewards", and the answer is now yes for
+// every signed-in member. What replaces the tests is the assertion below: the Vault stopped being a
+// paid row of the access matrix in the same change, so nothing is left claiming spending is a rung.
+describe('the Vault is a Quest surface, not a paid one (ADR-1295)', () => {
+  it('a free member has FULL access to the Vault, same as every other Quest surface', () => {
     for (const tier of ENTITLEMENT_TIERS) {
-      const matrixFull = accessTo('vault', { loggedIn: true, role: 'member', tier }) === 'full'
-      expect(canCashIn(tier)).toBe(matrixFull)
+      expect(accessTo('vault', { loggedIn: true, role: 'member', tier })).toBe('full')
+    }
+    // It tracks its four siblings exactly. If someone puts the Vault back on PAID_FULL, this fails.
+    for (const surface of ['quest', 'journeys', 'practices', 'library'] as const) {
+      expect(accessTo('vault', { loggedIn: true, role: 'member', tier: 'free' })).toBe(
+        accessTo(surface, { loggedIn: true, role: 'member', tier: 'free' }),
+      )
     }
   })
-})
 
-describe('entitlement feeds the access matrix (the ✋ gate tracks the tier)', () => {
-  it('free member is gated on the Vault; Crew unlocks it', () => {
-    expect(accessTo('vault', { loggedIn: true, role: 'member', tier: 'free' })).toBe('limited')
-    expect(accessTo('vault', { loggedIn: true, role: 'member', tier: 'crew' })).toBe('full')
+  it('a visitor still only previews it (browsing is open, playing needs an account)', () => {
+    expect(accessTo('vault', { loggedIn: false })).toBe('limited')
   })
 })
 

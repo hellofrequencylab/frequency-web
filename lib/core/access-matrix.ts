@@ -116,12 +116,20 @@ export const ACCESS_MATRIX: Record<Surface, Row> = {
   people: { member: 'full' }, // visitor 🚫 (sheet)
   messageBoards: { member: 'full' }, // visitor 🚫 — maps to Messages
 
-  // ── The Quest — everyone plays; only the Vault (cash-in) is paid-gated ───────────
+  // ── The Quest — everyone plays, the Vault included ──────────────────────────────
+  // 🔴 THE VAULT IS NO LONGER A ✋→✅ ROW (ADR-1295, owner ruling 2026-09-09, OWN-071). It carried
+  // PAID_FULL, so a free Member read 'limited' and the Vault Store grid rendered muted behind a
+  // CrewGate with an upgrade lightbox on click. The Quest is a side thing we all do together, and a
+  // member who earns Gems but can never spend them is not playing the same game as one who can, so
+  // the row joins its four siblings. What bounds a redemption is the Gem balance, the season, the
+  // rank requirement and the remaining stock, none of which is a tier. Do not put it back on
+  // PAID_FULL: the `vault_cash_in` gate and the `canCashIn` predicate that agreed with it are both
+  // deleted, so this row would become the only surviving opinion that spending is paid.
   quest: QUEST_OPEN,
   journeys: QUEST_OPEN,
   practices: QUEST_OPEN,
   library: QUEST_OPEN,
-  vault: { visitor: 'limited', ...PAID_FULL }, // preview → paid; stewards/partners/staff full
+  vault: QUEST_OPEN,
 
   // ── Lead — the consolidated LEADER dashboard, host+ on the trust ladder only ─────
   // (ADR network-scoped leader surface, /lead). NOT a paid/preview surface and NOT

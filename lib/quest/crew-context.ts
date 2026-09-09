@@ -6,10 +6,7 @@ import { rankForCompletion, type SeasonRank } from '@/lib/season-ranks'
 import { journeysFinishedThisSeason } from '@/lib/quest/completion-read'
 import { getCurrentSeason, type Season } from '@/lib/seasons'
 import type { EntitlementTier } from '@/lib/core/entitlement'
-import {
-  resolveGamificationAccessWithFlags,
-  gamificationFullAllowed,
-} from '@/lib/pricing/gamification-access'
+import { resolveGamificationAccessWithFlags } from '@/lib/pricing/gamification-access'
 import { loadPricingFlags } from '@/lib/pricing/settings'
 import type { GamificationAccess } from '@/lib/pricing/gamification'
 
@@ -31,15 +28,12 @@ export interface CrewContext {
   rank: SeasonRank
   /** The viewer's first active circle membership, or null. */
   membership: { circleId: string; circleName: string | null } | null
-  /** The viewer's resolved gamification access (the third flag, ADR-362/370): 'full' = the complete
-   *  loop (compete/claim/spend), 'earn_only' = accrue but cannot cash in. Folds the per-profile
-   *  override, the operator per-role flags, then derive-from-tier. While billing is OFF this is the
-   *  same line as today (crew = full, member = earn_only). */
+  /** The viewer's OPERATOR-set gamification access (the third flag, ADR-362/370): the per-profile
+   *  override, else a per-role operator flag, else derive-from-tier. It is a pin an operator can set
+   *  from /admin/pricing, NOT a billing door: the `gamification_full` gate was deleted by the owner
+   *  ruling of 2026-09-09 (ADR-1295, OWN-071), so earning, spending and competing are open to every
+   *  signed-in member and no Quest surface asks permission to play. */
   gamificationAccess: GamificationAccess
-  /** The standalone full-gamification gate (gamification_full via featureAllowed). INERT (true) while
-   *  billing is OFF, so surfaces that consult it behave exactly as today until an operator turns
-   *  billing on. */
-  gamificationFull: boolean
 }
 
 export const getCrewContext = cache(async (): Promise<CrewContext | null> => {
@@ -60,7 +54,7 @@ export const getCrewContext = cache(async (): Promise<CrewContext | null> => {
   const profileId = profile.id
   const tier = ((profile.membership_tier as EntitlementTier | null) ?? 'free') as EntitlementTier
 
-  const [isCrew, finishedCount, season, membershipRow, flags, gamificationFull] = await Promise.all([
+  const [isCrew, finishedCount, season, membershipRow, flags] = await Promise.all([
     isPaidViewer(),
     journeysFinishedThisSeason(profileId),
     getCurrentSeason(),
@@ -72,7 +66,6 @@ export const getCrewContext = cache(async (): Promise<CrewContext | null> => {
       .limit(1)
       .maybeSingle(),
     loadPricingFlags(),
-    gamificationFullAllowed(tier),
   ])
 
   const circleId = membershipRow.data?.circle_id as string | null | undefined
@@ -93,6 +86,5 @@ export const getCrewContext = cache(async (): Promise<CrewContext | null> => {
       { membership_tier: tier, gamification_access_override: profile.gamification_access_override },
       flags,
     ),
-    gamificationFull,
   }
 })

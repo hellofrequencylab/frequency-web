@@ -435,11 +435,11 @@ export const NON_METERED_FEATURES: Record<string, string> = {
   // longer gated has nothing to account for, and leaving it here would describe a tier ladder that no
   // surface reads. Branding is still enforced by the pure `whitelabel` entitlement key, and the
   // read-only resonance view still rides the space_crm_resonance_ai meter below.
-  // Spending Gems / claiming rewards is an on/off unlock on the Crew tier, not a metered quantity (the
-  // Gem balance itself is the natural limit, not a per-tier allowance).
-  vault_cash_in: 'On/off unlock (spend Gems / claim rewards); the Gem balance is the natural limit.',
-  // The full rewards loop (streaks, seasons, ladder) is an on/off experience, not a "use more" dial.
-  gamification_full: 'On/off experience (the full rewards loop), no natural quantity to meter.',
+  // 🔴 `vault_cash_in` and `gamification_full` were listed here until ADR-1295 (owner ruling
+  // 2026-09-09, OWN-071) and are gone with their gates. This map exists so every GATE states whether
+  // it has a quantity; a key that is no longer gated has nothing to account for. Spending the Gems
+  // you earned is open to every signed-in member now, bounded by the balance and the stock rather
+  // than by a tier, and there was never a quantity to meter in the first place.
   // Restricting a ticket tier to the space's own members (ADR-823) is an on/off gate on the tier
   // editor, not a quantity — ticket volume is already the space's own sales, never charged per use.
   space_membership_tickets: 'On/off capability (members-only ticket tiers), no natural quantity to meter.',

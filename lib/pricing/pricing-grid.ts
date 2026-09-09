@@ -825,24 +825,12 @@ const MEMBER_GROUPS: GroupDef[] = [
       },
     ],
   },
-  {
-    key: 'rewards',
-    label: 'Rewards and status',
-    rows: [
-      {
-        key: 'gamification_full',
-        label: 'The full rewards loop',
-        detail: 'Streaks, seasons, and the ladder. Free members earn; Crew plays the whole loop.',
-        source: { from: 'gate', feature: 'gamification_full' },
-      },
-      {
-        key: 'vault_cash_in',
-        label: 'Spend Gems and claim rewards',
-        detail: 'Turn what you have earned into something real.',
-        source: { from: 'gate', feature: 'vault_cash_in' },
-      },
-    ],
-  },
+  // 🔴 THE 'rewards' GROUP USED TO SIT HERE and is deliberately gone (ADR-1295, owner ruling
+  // 2026-09-09, OWN-071). Its two rows were sourced `{ from: 'gate' }` on `gamification_full` and
+  // `vault_cash_in`, and both gates were deleted: the Quest is a side thing we all do together, so
+  // earning, spending and competing are open to every signed-in member. With the gates gone the
+  // rows would have read "Included" in every column, which is a comparison table describing a
+  // distinction that no longer exists. Removed rather than left true-but-empty.
   {
     key: 'ai',
     label: 'AI',

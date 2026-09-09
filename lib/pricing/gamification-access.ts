@@ -1,38 +1,29 @@
-// GAMIFICATION ACCESS — the LIVE (server-side, IO) consumers of the third flag (ADR-362,
-// ADR-370). The PURE resolver lives in lib/pricing/gamification.ts (override ?? derive(tier));
-// this module is the seam that READS a profile + the operator flags and answers two questions
-// every gamification surface can ask:
+// GAMIFICATION ACCESS — the LIVE (server-side, IO) consumer of the third flag (ADR-362, ADR-370).
+// The PURE resolver lives in lib/pricing/gamification.ts (override ?? derive(tier)); this module is
+// the seam that READS a profile + the operator flags and answers one question:
 //
-//   1. resolveViewerGamificationAccess() — the effective access ('earn_only' | 'full') for the
-//      signed-in viewer, folding: the per-profile override (pinned), then the operator per-role
-//      gamification_full_* flags, then the derive-from-tier default. This is the live consumer
-//      the deferred build (REMAINING-WORK #2) was missing.
-//   2. gamificationFullAllowed(tier) — the STANDALONE gate for the full gamification entitlement
-//      (REMAINING-WORK #5), routed through featureAllowed('gamification_full', …) so it is INERT
-//      while the feature gates are not live (short-circuits to grant) and only bites once the beta
-//      grace window ends. It mirrors how vault_cash_in routes through featureAllowed (P3).
+//   resolveViewerGamificationAccess() — the effective access ('earn_only' | 'full') for the
+//   signed-in viewer, folding: the per-profile override (pinned), then the operator per-role
+//   gamification_full_* flags, then the derive-from-tier default.
 //
-// CRITICAL — OFF preserves current behavior (the ABSOLUTE INVARIANT, ADR-370):
-//   * While featureGatesLive() is false (billing off, or the beta grace window still open, ADR-874),
-//     gamificationFullAllowed short-circuits to TRUE (featureAllowed grants everything), so nothing a
-//     surface gates on this changes.
-//   * resolveViewerGamificationAccess folds in the per-role flags whose DEFAULTS already mirror
-//     today's derive-from-tier line (crew = full, member = earn_only), so with the
-//     seeded flags it returns EXACTLY what deriveGamificationAccess(tier) returns today.
-// Every read is FAIL-SAFE: any DB/flag error degrades to the pure derive (today's behavior),
-// never to a lockout.
+// 🔴 THIS IS AN OPERATOR OVERRIDE, NOT A BILLING DOOR, and after ADR-1295 that is the whole of it.
+// The `gamification_full` GATE it used to sit beside was deleted by the owner ruling of 2026-09-09
+// (OWN-071): the Quest is a side thing we all do together, so earning, spending and competing are
+// open to every signed-in member and no surface asks a tier for permission to play. What is left
+// here is the per-profile / per-tier pin an operator can set from /admin/pricing.
+//
+// Every read is FAIL-SAFE: any DB/flag error degrades to the pure derive, never to a lockout.
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { EntitlementTier } from '@/lib/core/entitlement'
 import { getCachedUser } from '@/lib/auth'
-import { featureAllowed } from './gates'
 import {
   type GamificationAccess,
   asGamificationAccess,
   deriveGamificationAccess,
   resolveGamificationAccess,
 } from './gamification'
-import { featureGatesLive, loadPricingFlags } from './settings'
+import { loadPricingFlags } from './settings'
 
 /** The per-role gamification_full_* flag key for a tier (the operator's per-tier override).
  *  Two rungs, two flags: the Supporter rung was retired from EntitlementTier (2026-08-24), and its
@@ -78,9 +69,9 @@ export async function resolveViewerGamificationAccess(): Promise<GamificationAcc
       .select('membership_tier, gamification_access_override')
       .eq('auth_user_id', user.id)
       .maybeSingle()
-    // DIRECTION — FAIL OPEN (SCAN-539), which is what this module's header has always promised and what
-    // its sibling gamificationFullAllowed already does ("any error degrades to today's behavior, never to
-    // a lockout"). A PostgREST error arrives in `error`, not as a throw, so the try/catch below never
+    // DIRECTION — FAIL OPEN (SCAN-539), which is what this module's header has always promised ("any
+    // error degrades to today's behavior, never to a lockout"). A PostgREST error arrives in `error`,
+    // not as a throw, so the try/catch below never
     // engaged and the unchecked null fell into the `!data` arm: a signed-in, paid, full-access member was
     // silently DOWNGRADED to 'earn_only' — the entitlement they bought disappearing with no error shown.
     // On an unreadable profile we cannot derive a tier, so the two candidate answers are "assume free"
@@ -106,24 +97,15 @@ export async function resolveViewerGamificationAccess(): Promise<GamificationAcc
   }
 }
 
-/** The STANDALONE gate for the full gamification entitlement (REMAINING-WORK #5). Routed through
- *  featureAllowed('gamification_full', …) so it is INERT while the gates are not live (grants
- *  everything) and only applies the crew minimum once the beta grace window ends (ADR-874). The single point a surface asks "may
- *  this viewer use the full gamification loop (compete / claim / spend)?" by tier. FAIL-SAFE: any
- *  error degrades to TRUE (today's behavior — never lock anyone out). */
-export async function gamificationFullAllowed(tier: EntitlementTier | null | undefined): Promise<boolean> {
-  try {
-    const gatesLive = await featureGatesLive()
-    // While the gates are not live this short-circuits to true inside featureAllowed; we pass it
-    // explicitly so the resolver stays free of its own flag IO (the contract vault_cash_in uses).
-    return await featureAllowed('gamification_full', { tier: tier ?? 'free' }, { gatesLive })
-  } catch {
-    return true
-  }
-}
-
-// 2026-09-05 (scan2 L9-13): the resolveViewerGamification convenience (access + full in one call) was
-// removed; the leaderboard and crew context call the two readers above directly.
+// 🔴 `gamificationFullAllowed` USED TO SIT HERE and is deliberately gone (ADR-1295, owner ruling
+// 2026-09-09, OWN-071). It wrapped featureAllowed('gamification_full', …) and was the one place a
+// surface asked "may this viewer compete / claim / spend?". The Quest is a side thing we all do
+// together, so the answer is yes for every signed-in member and the question no longer exists. Its
+// three consumers went with it: the leaderboard's compete gate, the Quest page's season-reset
+// upgrade nudge, and the `gamificationFull` field on CrewContext. Do not re-add it.
+//
+// (2026-09-05, scan2 L9-13: the resolveViewerGamification convenience — access + full in one call —
+// was removed first, which is what left the two readers separate.)
 
 // Re-export the pure resolver so a caller that already has a profile in hand can resolve without IO.
 export { resolveGamificationAccess }

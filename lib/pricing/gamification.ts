@@ -4,19 +4,24 @@
 //
 // PURE + framework-independent (no Supabase/Next) so it's unit-testable on its own. The DB
 // READ (loading the profile) lives at the call site; this module just decides the access given
-// the two inputs. Mirrors lib/core/entitlement.ts canCashIn (the "is this gamification full?"
-// predicate), but separates the *axis* (access) from billing so an operator can grant/deny it
+// the two inputs. It separates the *axis* (access) from billing so an operator can grant or deny it
 // independently — e.g. comp a free member full access, or revoke a paying member's.
+//
+// 🔴 THIS IS NOT A GATE, and after ADR-1295 (owner ruling 2026-09-09, OWN-071) nothing beside it is
+// either. It used to mirror `canCashIn` in lib/core/entitlement.ts and sit next to the
+// `gamification_full` FEATURE_GATES row; the predicate and the gate are both deleted, because the
+// Quest is a side thing we all do together and earning, spending and competing are open to every
+// signed-in member. What survives here is the operator PIN, and the `earn_only` rung it can still
+// express is an operator's choice about one account, never a tier's default answer.
 
 import { isPaid, type EntitlementTier } from '@/lib/core/entitlement'
 
-/** The two gamification access levels. earn_only = accrue Zaps/Gems/rank but cannot cash in /
- *  compete; full = the complete loop (claim, spend, compete). Matches the canCashIn split. */
+/** The two gamification access levels an operator can pin. earn_only = accrue Zaps/Gems/rank without
+ *  the claim/spend/compete half; full = the complete loop. */
 export type GamificationAccess = 'earn_only' | 'full'
 
-/** The DEFAULT access derived from the billing tier: paid (crew) = full, free = earn-only.
- *  This is the same line canCashIn draws (lib/core/entitlement.ts) — kept here as the pure derive so
- *  the override can layer over it. */
+/** The DEFAULT access derived from the billing tier: paid (crew) = full, free = earn-only. The pure
+ *  derive the operator override layers over. It gates NOTHING on its own (ADR-1295). */
 export function deriveGamificationAccess(tier: EntitlementTier | null | undefined): GamificationAccess {
   return isPaid(tier) ? 'full' : 'earn_only'
 }

@@ -1,14 +1,14 @@
 import { getVaultData } from '@/lib/vault/vault-data'
-import { CrewGate } from '@/components/crew/upgrade-lightbox'
 import { StoreGrid } from '@/app/(main)/crew/store/store-grid'
 import { GiftGemsDialog } from '@/app/(main)/crew/store/gift-gems-dialog'
 import { SectionHeader } from '@/components/ui/section-header'
-import { UpsellTease } from '@/components/upsell/upsell-tease'
-import { resolvePersonalTeaseGate } from '@/lib/pricing/tease-gate'
 
-// Vault layout module: the Vault Store categories. Members can browse everything but can't spend —
-// CrewGate renders the grid muted and a click opens the upgrade lightbox; the redeem action is the
-// real authority server-side.
+// Vault layout module: the Vault Store categories.
+//
+// 🔴 NOTHING HERE IS GATED. A `CrewGate` muted the whole grid for a free member and an `UpsellTease`
+// above it offered to unlock spending; both are gone with the `vault_cash_in` gate (ADR-1295, owner
+// ruling 2026-09-09, OWN-071). Any signed-in member may spend the Gems they earned, and the redeem
+// action is still the authority server-side (balance, season, rank, stock, and the atomic charge).
 const CATEGORIES = [
   { key: 'cosmetic', label: 'Profile Cosmetics', desc: 'Borders, flair icons, and visual upgrades' },
   { key: 'title', label: 'Custom Titles', desc: 'Display a special title on your profile' },
@@ -20,51 +20,29 @@ export async function VaultStore() {
   const d = await getVaultData()
   if (!d) return null
 
-  // Phase E upsell tease gate (ADR-466): the Gems earned have value the moment there is something to
-  // spend them on. When cash-in is locked AND a balance has built up, tease the Crew cash-in unlock —
-  // ONLY when billing is live (resolvePersonalTeaseGate is HIDDEN while OFF). Dormant until billing_live ON.
-  const cashInTease = !d.canSpend && d.balance > 0 ? await resolvePersonalTeaseGate('vault_cash_in') : null
-
   return (
     <div className="space-y-6">
-      {/* The tease sits OUTSIDE the CrewGate so it stays interactive (the gate mutes + intercepts its
-          muted children). It is the success-moment prompt; the gate still muffles the store itself. */}
-      {cashInTease && (
-        <UpsellTease
-          target="vault-cash-in"
-          live={cashInTease.live}
-          locked={cashInTease.locked}
-          notice={cashInTease.notice}
-          href="/upgrade"
-          title="Spend the Gems you have earned"
-          body="You have Gems banked. Crew turns them in: profile cosmetics, titles, badges, and membership credits in the Vault Store."
-          cta="See what Crew adds"
-        />
-      )}
-      {/* Gift Gems (ADR-305 §8) sits OUTSIDE the CrewGate so it stays interactive. Open to ANY
-          member with a spendable balance — gifting is deliberately tier-agnostic (unlike Vault
-          cash-in, which is a Crew perk): generosity isn't gated, and no spendable value is created,
-          only moved between members. The server action is the authority (advisory-locked recheck). */}
+      {/* Gift Gems (ADR-305 §8). Open to ANY member with a spendable balance: no spendable value is
+          created, only moved between members. The server action is the authority (advisory-locked
+          recheck). */}
       {d.balance > 0 && (
         <div className="flex justify-end">
           <GiftGemsDialog balance={d.balance} />
         </div>
       )}
-      <CrewGate locked={!d.canSpend}>
-        <div className="space-y-8">
-          {CATEGORIES.map((cat) => {
-            const catItems = d.items.filter((i) => i.category === cat.key)
-            if (catItems.length === 0) return null
-            return (
-              <section key={cat.key}>
-                <SectionHeader title={cat.label} />
-                <p className="-mt-2 mb-3 text-meta text-subtle">{cat.desc}</p>
-                <StoreGrid items={catItems} balance={d.balance} />
-              </section>
-            )
-          })}
-        </div>
-      </CrewGate>
+      <div className="space-y-8">
+        {CATEGORIES.map((cat) => {
+          const catItems = d.items.filter((i) => i.category === cat.key)
+          if (catItems.length === 0) return null
+          return (
+            <section key={cat.key}>
+              <SectionHeader title={cat.label} />
+              <p className="-mt-2 mb-3 text-meta text-subtle">{cat.desc}</p>
+              <StoreGrid items={catItems} balance={d.balance} />
+            </section>
+          )
+        })}
+      </div>
     </div>
   )
 }

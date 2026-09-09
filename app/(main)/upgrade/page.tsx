@@ -99,8 +99,15 @@ export default async function UpgradePage({
   const pwyw = catalog.pwyw
 
   // Crew never sells back the community itself: joining, Circles, events, and Channels stay free for
-  // everyone. The list below is what Crew actually adds (lib/pricing/gates.ts: vault_cash_in,
-  // gamification_full, vera_unlimited, journey_library_list, entry_points) plus the badge and the rate.
+  // everyone. The list below is what Crew actually adds (lib/pricing/gates.ts: vera_unlimited, plus
+  // journey_library_list and entry_points, each enforced by its own parallel ladder) with the badge
+  // and the rate.
+  //
+  // 🔴 THE QUEST IS NOT ON THIS LIST ANY MORE (ADR-1295, owner ruling 2026-09-09, OWN-071). Two
+  // bullets named "the full rewards loop" and "spend your Gems in the Vault Store" as Crew perks;
+  // the `gamification_full` and `vault_cash_in` gates behind them are deleted, so every signed-in
+  // member earns, spends and competes. The Crew pitch must stop naming what everyone now gets, or it
+  // is selling something the buyer already has.
   //
   // 🔴 THE RATE LEADS, AND IT IS DERIVED (ADR-914). This page is the member-facing half of /pricing and
   // used not to mention the rate at all, which left the two surfaces selling different products: the
@@ -115,8 +122,7 @@ export default async function UpgradePage({
     { icon: BarChart3, label: rateLine },
     { icon: Radio, label: 'Branded QR codes, short links, and print-ready flyers for what you run' },
     { icon: MessageSquare, label: 'Vera without the daily cap' },
-    { icon: Zap, label: 'The full rewards loop: streaks, seasons, and the whole ladder' },
-    { icon: Star, label: 'Spend your Gems in the Vault Store, and wear the Crew badge' },
+    { icon: Star, label: 'The Crew badge on your profile' },
     { icon: Users, label: 'List what you author in the public library' },
   ]
 
@@ -124,7 +130,7 @@ export default async function UpgradePage({
     <FocusTemplate
       width="narrow"
       title="Membership"
-      description="Belonging is free, and stays free. Crew is the personal tier: the badge, the whole game, and a way to back the community."
+      description="Belonging is free, and stays free. Crew is the personal tier: a lower fee on network sales, the badge, and a way to back the community."
     >
       {/* Supporter-contribution thanks — the confirmed Stripe success redirect. Plain and concrete. */}
       {supporterThanks && (
@@ -165,7 +171,7 @@ export default async function UpgradePage({
             <Zap className="w-7 h-7 text-on-primary" />
           </div>
           <p className="text-page-title font-bold text-on-primary mb-1">Join the Crew</p>
-          <p className="text-primary-bg/80 text-body-sm">The personal tier: your badge, the whole game, and backing the community</p>
+          <p className="text-primary-bg/80 text-body-sm">The personal tier: a lower fee, your badge, and backing the community</p>
           {/* PWYW (ADR-908): Crew has no single price to headline, so the hero states the FLOOR and
               the picker below carries the choice. Never render a struck-through anchor here: there is
               no list price to discount against when the member sets the amount. */}

@@ -46,7 +46,11 @@ const SHEET: Record<Surface, AccessLevel[]> = {
   journeys: [L, F, F, F, F, F, F, F, F, F, F, F, F],
   practices: [L, F, F, F, F, F, F, F, F, F, F, F, F],
   library: [L, F, F, F, F, F, F, F, F, F, F, F, F],
-  vault: [L, L, F, F, F, F, F, F, F, F, F, F, F],
+  // 🔴 THE VAULT ROW CHANGED FROM [L, L, F, …] TO MATCH ITS FOUR QUEST SIBLINGS (ADR-1295, owner
+  // ruling 2026-09-09, OWN-071). The owner sheet's ✋→✅ shape here meant a free Member could browse
+  // the Vault Store but not spend the Gems they had earned. The Quest is a side thing we all do
+  // together, so the gate, the `canCashIn` predicate and this row all opened in one change.
+  vault: [L, F, F, F, F, F, F, F, F, F, F, F, F],
   // Studio
   studioOverview: [L, L, F, F, F, F, F, F, F, F, F, F, F],
   support: [L, L, F, F, F, F, F, F, F, F, F, F, F],

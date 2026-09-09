@@ -1,5 +1,5 @@
 // Shared, request-cached Vault data (ADR-270/294). The Vault page is module-driven, so its blocks
-// each self-fetch — but they all need the same core read (profile + store + season + access). One
+// each self-fetch — but they all need the same core read (profile + store + season). One
 // React.cache()'d loader gives every Vault module a single shared fetch per request instead of N.
 // Server-only.
 
@@ -9,7 +9,6 @@ import { getStoreData } from '@/app/(main)/crew/store/actions'
 import { rankForCompletion, type SeasonRank } from '@/lib/season-ranks'
 import { journeysFinishedThisSeason } from '@/lib/quest/completion-read'
 import { getCurrentSeason } from '@/lib/seasons'
-import { surfaceAccess } from '@/lib/core/viewer-hats'
 
 type StoreData = Awaited<ReturnType<typeof getStoreData>>
 
@@ -26,9 +25,13 @@ export interface VaultData {
   items: StoreData['items']
   balance: StoreData['balance']
   equipped: StoreData['equipped']
-  /** Whether the viewer can actually spend Gems (the paid Vault unlock). */
-  canSpend: boolean
 }
+
+// 🔴 `canSpend` USED TO SIT ON THIS SHAPE and is deliberately gone (ADR-1295, owner ruling
+// 2026-09-09, OWN-071). It was `surfaceAccess('vault') === 'full'`, and it muted the Vault Store
+// grid and raised a preview banner for a free member. Spending the Gems you earned is not a rung:
+// the Vault row of the access matrix is now a Quest row (member = full), so the flag had one value
+// and two dead consumers. Do not re-add it.
 
 export const getVaultData = cache(async (): Promise<VaultData | null> => {
   const supabase = await createClient()
@@ -49,11 +52,10 @@ export const getVaultData = cache(async (): Promise<VaultData | null> => {
   } | null
   const profileId = p?.id ?? null
 
-  const [store, finished, season, access] = await Promise.all([
+  const [store, finished, season] = await Promise.all([
     getStoreData(),
     profileId ? journeysFinishedThisSeason(profileId) : Promise.resolve(0),
     getCurrentSeason(),
-    surfaceAccess('vault'),
   ])
 
   return {
@@ -69,6 +71,5 @@ export const getVaultData = cache(async (): Promise<VaultData | null> => {
     items: store.items,
     balance: store.balance,
     equipped: store.equipped,
-    canSpend: access === 'full',
   }
 })
