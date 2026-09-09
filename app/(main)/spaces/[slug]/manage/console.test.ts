@@ -53,9 +53,6 @@ describe('groupForModule (every module folds into one of the console groups)', (
       'space.booking',
       'space.memberships',
       'space.donations',
-      'space.enroll',
-      'space.tickets',
-      'space.checkin',
       'space.services',
     ]) {
       expect(groupForModule(byId(id))).toBe('engage')
@@ -91,14 +88,15 @@ describe('panelHrefForModule (on-page panel first, else deep link, no regression
   })
 
   it('opens each split commerce module on-page via ?panel= (modular menu P2, ADR-545)', () => {
-    // P2: the six independent commerce services gained full inline bodies, so they open on-page like the
-    // rest (no longer deep-linking to their /settings/* page).
+    // P2: the independent commerce services gained full inline bodies, so they open on-page like the
+    // rest (no longer deep-linking to their /settings/* page). Enrollment, Tickets and Check in were
+    // three more rows here until LIVE-226 retired their functions and removed their catalog rows.
     expect(panelHrefForModule(byId('space.booking'), slug)).toBe(`/spaces/${slug}?panel=booking`)
     expect(panelHrefForModule(byId('space.memberships'), slug)).toBe(`/spaces/${slug}?panel=memberships`)
     expect(panelHrefForModule(byId('space.donations'), slug)).toBe(`/spaces/${slug}?panel=donations`)
-    expect(panelHrefForModule(byId('space.enroll'), slug)).toBe(`/spaces/${slug}?panel=enroll`)
-    expect(panelHrefForModule(byId('space.tickets'), slug)).toBe(`/spaces/${slug}?panel=tickets`)
-    expect(panelHrefForModule(byId('space.checkin'), slug)).toBe(`/spaces/${slug}?panel=checkin`)
+    for (const gone of ['space.enroll', 'space.tickets', 'space.checkin']) {
+      expect(spaceModuleById(gone)).toBeNull()
+    }
   })
 
   it('opens the Offerings and money box on-page, and falls through to the deep link for Content', () => {

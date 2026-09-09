@@ -3,13 +3,9 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { getCallerProfile, getMyProfileId, type CommunityRole } from '@/lib/auth'
+import { getCallerProfile, getMyProfileId } from '@/lib/auth'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
-import { isPaid } from '@/lib/core/entitlement'
 import { searchRoom, type RoomSearchHit } from '@/lib/ai/room-search'
-
-// Room creation = the paid Crew TIER or a steward (host+) — PB.1/ADR-207.
-const STEWARD_ROLES: CommunityRole[] = ['host', 'guide', 'mentor', 'admin', 'janitor'] as CommunityRole[]
 
 type RoomVisibility = 'public' | 'private' | 'circle' | 'hub' | 'nexus' | 'outpost'
 
@@ -26,13 +22,14 @@ export async function searchRoomAction(
   return ok(res)
 }
 
+// 🔴 STARTING A ROOM IS FREE (LIVE-221). This used to demand the paid Crew TIER or a
+// steward role (a paid-entitlement check plus a steward-role list), so a free
+// member could not make a place for people to talk. People join free and businesses
+// host free; sign-in is the whole gate. Do not reintroduce a tier check — a limit on
+// rooms, if one is ever wanted, is a QUANTITY (a meter), not a locked door.
 export async function createRoom(fd: FormData): Promise<ActionResult<{ id: string }>> {
   const caller = await getCallerProfile()
   if (!caller) return fail('Not signed in')
-  const paid = isPaid(caller.membershipTier)
-  if (!paid && !STEWARD_ROLES.includes(caller.community_role)) {
-    return fail('Crew membership required to create rooms')
-  }
 
   const name = (fd.get('name') as string)?.trim().slice(0, 120)
   const description = (fd.get('description') as string)?.trim().slice(0, 500) || null

@@ -212,7 +212,11 @@ export const FINGERPRINTS = [
   // NOT an admin module: the pricing catalog, reached only through `surface-summary-card.tsx`'s
   // allowance nudge. It was 8 modules and ~160 KB of plans/tiers/keys on every member page, to
   // render a meter only an operator sees. This row is what notices if that door reopens.
-  { text: 'Preview only, and be a Collaborator on other Spaces for free', source: 'lib/pricing/feature-meters.ts' },
+  // Re-pointed 2026-09-09 (ADR-1294, LIVE-225): the old needle was the free collaborator allowance
+  // text, and raising that cap from 0 to 1 rewrote the sentence and blinded this gate. Needles must be
+  // strings the copy churn cannot reach, so this one is the membership-tier wall note, which states a
+  // deliberate invariant rather than a number that moves.
+  { text: 'Selling memberships is a WALL at Business', source: 'lib/pricing/feature-meters.ts' },
 ]
 
 /** The POSITIVE CONTROL. Shell chrome copy that is unconditionally in the shell's eager JS. If this

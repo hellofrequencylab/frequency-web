@@ -7,13 +7,11 @@ import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { resolveSpaceManageAccess } from '@/lib/spaces/entitlements'
 import { offeringSectionsForType } from '@/lib/spaces/offerings'
+import { isRetiredSpaceFunctionKey } from '@/lib/spaces/functions'
 import type { Space } from '@/lib/spaces/types'
 import { AvailabilitySection } from '../availability/section'
 import { MembershipsSection } from '../memberships/section'
 import { DonationsSection } from '../donations/section'
-import { EnrollSection } from '../enroll/section'
-import { TicketsSection } from '../tickets/section'
-import { CheckinSection } from '../checkin/section'
 
 // OFFERINGS BODY — the chrome-free unified commerce surface, lifted out of the standalone
 // /settings/offerings page (Stage D2) so it renders in TWO places from one source: (1) that page, wrapped
@@ -23,12 +21,17 @@ import { CheckinSection } from '../checkin/section'
 // manage this Space (the standalone page still 404s via its own gate, so a null here never renders a bare
 // 200).
 //
-// It stacks whichever commerce sub-surfaces apply to THIS space's type (practitioner -> Availability;
-// business -> Memberships; organization -> Donations + Enrollment; event_space -> Tickets + Check in; the
-// remaining types get a tasteful empty state). Each section re-checks its OWN per-tool gate and renders the
-// SAME forms whose server actions stay the source of truth. SPEED (PAGE-FRAMEWORK §5): every section does
-// slow awaits, so each renders behind its own <Suspense> and its fetches run in parallel. COPY: plain
-// labels, no em/en dashes.
+// It stacks the commerce sub-surfaces a Space configures HERE: Availability, Memberships, Donations. Each
+// section re-checks its OWN per-tool gate and renders the SAME forms whose server actions stay the source
+// of truth. SPEED (PAGE-FRAMEWORK §5): every section does slow awaits, so each renders behind its own
+// <Suspense> and its fetches run in parallel. COPY: plain labels, no em/en dashes.
+//
+// THREE SECTIONS CAME OUT HERE (LIVE-226). Enrollment, Tickets and Check in each stacked a second door
+// onto a tool the product already had, so Offerings read as six products instead of three: enrollment is
+// a Journey plus the Memberships roster, tickets are the event ticket flow, and checking someone in at
+// the door is an event mechanic. Their function keys are retired (lib/spaces/functions.ts
+// RETIRED_SPACE_FUNCTIONS), and this body drops any catalog section whose required function is retired,
+// so a stale catalog row can never put one back on the page.
 
 /** Per-section header copy (CONTENT-VOICE: plain, no em/en dashes). Keyed by the offering anchor. */
 const SECTION_META: Record<string, { title: string; blurb: string }> = {
@@ -38,23 +41,11 @@ const SECTION_META: Record<string, { title: string; blurb: string }> = {
   },
   memberships: {
     title: 'Memberships',
-    blurb: 'Define the tiers members can join, and see who has joined. Paid billing comes later.',
+    blurb: 'Define the tiers members can join, set what each one costs, and see who has joined.',
   },
   donations: {
     title: 'Donations',
     blurb: 'Set up your fund and the amounts supporters can pick. Paid giving comes later.',
-  },
-  enroll: {
-    title: 'Enrollment',
-    blurb: 'Define your program and see who has enrolled. Paid enrollment comes later.',
-  },
-  tickets: {
-    title: 'Tickets',
-    blurb: 'Set up free or RSVP ticket tiers, and see who has reserved a spot.',
-  },
-  checkin: {
-    title: 'Check in',
-    blurb: 'Show the door code and see who has checked in.',
   },
 }
 
@@ -73,12 +64,6 @@ function renderSection(
       return <MembershipsSection {...common} />
     case 'donations':
       return <DonationsSection {...common} />
-    case 'enroll':
-      return <EnrollSection {...common} />
-    case 'tickets':
-      return <TicketsSection {...common} />
-    case 'checkin':
-      return <CheckinSection {...common} />
     default:
       return null
   }
@@ -102,7 +87,11 @@ export async function OfferingsBody({ slug }: { slug: string }) {
   if (!canManage && !staffViewing) return null
 
   const brandName = space.brandName ?? space.name
-  const sections = offeringSectionsForType(space.type)
+  // Drop any catalog section whose required function was retired (LIVE-226): the section body may still
+  // exist for another surface, but Offerings is no longer where it is configured.
+  const sections = offeringSectionsForType(space.type).filter(
+    (s) => !isRetiredSpaceFunctionKey(s.requiredFunction),
+  )
 
   return (
     <>
@@ -112,7 +101,7 @@ export async function OfferingsBody({ slug }: { slug: string }) {
         <EmptyState
           icon={HandHeart}
           title="No offerings for this space yet."
-          description="This space type does not run bookings, memberships, giving, or tickets. Change your space type to add them."
+          description="This space type does not run bookings, memberships, or giving. Change your space type to add them."
         />
       ) : (
         <div className="space-y-12">

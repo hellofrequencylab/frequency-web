@@ -55,14 +55,13 @@ export const FEATURE_GATES: Record<string, FeatureGate> = {
   gamification_full: { axis: 'tier', minEntitlement: 'crew', enabled: true }, // full loop; free = earn-only
   vera_unlimited: { axis: 'tier', minEntitlement: 'crew', enabled: true }, // Vera beyond the free daily cap
 
-  // §4b personal LEADERSHIP gates (the Crew tier's real job). A free Member leads at the FIRST-ONE-FREE
-  // allowance (1 Circle hosted, 1 Journey published unlisted, 3 Practices, 2 active free events — the
-  // meters in feature-meters.ts); Crew leads at scale, in public, and for money. These four are the
-  // genuine ON/OFF splits that a quantity cannot express, so they gate rather than meter. A free Member
-  // is never gated out of Frequency, only out of scaling what they lead.
+  // §4b personal LEADERSHIP gates — THIS SECTION IS NOW EMPTY, and that is the finished state.
   //
   // The community_role ladder is UNTOUCHED (ADR-207: role is earned, never billing). Hosting the first
-  // Circle still makes a free Member a Host; these gates sit on the billing axis beside it.
+  // Circle still makes a free Member a Host. What a free Member may lead is a QUANTITY, metered in
+  // feature-meters.ts (circle_host, journey_publish, journey_enrollees, practice_publish, event_create),
+  // never a door on this map.
+  //
   // 🔴 `event_paid_tickets` and `personal_payouts` USED TO SIT HERE and are deliberately gone
   // (ADR-914, docs/VALUE-LADDER.md Phase 1). Selling is free on every tier; the ladder is the RATE,
   // not the permission. Do not re-add them.
@@ -73,8 +72,17 @@ export const FEATURE_GATES: Record<string, FeatureGate> = {
   // `membership_tier`. `event_paid_tickets` had zero call sites too — a parallel predicate
   // (`ticketSellerVerdict`) enforced the rule instead, and that predicate is what Phase 1 reversed.
   // So this deletion removes two claims that were never true, rather than opening two doors.
-  journey_library_list: { axis: 'tier', minEntitlement: 'crew', enabled: true }, // list a Journey publicly
-  entry_points: { axis: 'tier', minEntitlement: 'crew', enabled: true }, // QR codes, short links, flyers
+  //
+  // 🔴 `journey_library_list` and `entry_points` USED TO SIT HERE and are deliberately gone (HYG-079).
+  // Same shape as the two above: both were decorative, and both were enforced by a parallel ladder that
+  // is still doing the work. `journey_library_list` is enforced by `canListJourneyInLibrary({ paid })`
+  // in lib/journeys/publish-gate.ts, a PURE paid check that bites today; `entry_points` is enforced by
+  // the nav registry (`minAccess: 'crew'` on /entry-points), and the per-Space QR volume it stood in
+  // for is the `space_qr` METER counted in lib/qr/space-codes.ts. Neither gate had a call site of its
+  // own, so neither ever refused anyone. Keeping them would have been worse than useless: while the
+  // grace window is open `featureAllowed` grants everything, so the day the gates went live these two
+  // would have STARTED enforcing rules that no surface knows how to explain or refuse. Do not re-add
+  // them — if a personal on/off gate is ever needed, declare it beside the code that enforces it.
 
   // §5 space plans (reuse spaces.plan). COLLAPSED to the new ladder (ADR-552): the paid floor is
   // 'business' for every paid space feature, since free-vs-paid is a usage state within Business rather
@@ -109,7 +117,11 @@ export const FEATURE_GATES: Record<string, FeatureGate> = {
   // plan's BASE seat count, which is what `checkSeatForOperatorInvite` has always enforced against.
   // Pipelines stay display-only for now, honestly: nothing counts pipelines yet, and a gate that
   // cannot fire is a worse answer than a meter that admits it is a preview.
-  space_whitelabel: { axis: 'plan', minEntitlement: 'independent', enabled: true }, // Branding, Independent tier only
+  // 🔴 `space_whitelabel` USED TO SIT HERE and is deliberately gone (HYG-079). It was decorative in
+  // exactly the way ADR-917 named: the real lock is the pure `whitelabel` ENTITLEMENT key, which is
+  // default-deny and therefore survives `featureAllowed` short-circuiting to granted while the gates
+  // are soft. This gate had no call site, so it enforced nothing and would have begun enforcing a
+  // second, parallel opinion about branding the day the grace window closed.
   // COLLABORATOR HOSTING (ADR-799 §B / ADR-810 / ADR-835). Hosting other businesses inside your space,
   // or hosting an EVENT with Collaborator Spaces, is a Collective capability of the HOST side only:
   // the venue / the event's home Space needs the plan, while BEING a collaborator (the guest, incl. an
@@ -121,17 +133,21 @@ export const FEATURE_GATES: Record<string, FeatureGate> = {
   // to granted (today's free universal behavior), so nothing changes until the grace window ends.
   // COLLABORATION IS NOW A LADDER, NOT A WALL. Hosting collaborators opens at BUSINESS (basic: a small
   // metered number of hosted collaborators + co-hosted events, see feature-meters space_collaborators);
-  // the Collective depth is what a collective actually needs, and it rides `space_revenue_splits` below.
+  // the Collective depth is what a collective actually needs, and it rides the `space_collaborators`
+  // METER (unlimited hosting on Collective), not a second gate.
   // A free Space still gets the locked preview, and BEING a collaborator stays free for any active
   // Business / Non Profit Space. Moving the floor down converts a locked preview (which converts badly)
   // into a used feature with a ceiling (which converts well), the same usage-meter model as every other
   // dimension (ADR-519).
   space_collaborators: { axis: 'plan', minEntitlement: 'business', enabled: true },
-  // Splitting money automatically with your collaborators is the true Collective line: hosting a few
-  // partners is Business, sharing revenue with them is the collaboration ENGINE.
-  space_revenue_splits: { axis: 'plan', minEntitlement: 'collective', enabled: true },
-  // Group SMS to your own members (rides the A2P 10DLC registration, docs/A2P-REGISTRATION.md).
-  space_sms: { axis: 'plan', minEntitlement: 'collective', enabled: true },
+  // 🔴 `space_revenue_splits` and `space_sms` USED TO SIT HERE and are deliberately gone (HYG-079).
+  // Neither had a call site anywhere in the app, and neither had anything to refuse yet: revenue
+  // splitting is not built, and group SMS rides an A2P 10DLC registration that is not live
+  // (docs/A2P-REGISTRATION.md). A gate declared ahead of the feature it gates reads as enforcement to
+  // everyone who finds it, and it becomes real enforcement the day the grace window closes, against a
+  // surface with no upgrade path to offer. Whichever of the two ships first declares its wall in the
+  // SAME change as the code that enforces it, so the gate and its call site are never more than one
+  // file apart.
   // ── THE THREE WALLS (ADR-914, docs/VALUE-LADDER.md §3) ──────────────────────────────────────
   // Everything else on this ladder is a METER with a real free allowance, because a used feature with
   // a ceiling converts and a locked preview does not. These are walls because a quantity cannot
@@ -156,22 +172,25 @@ export const FEATURE_GATES: Record<string, FeatureGate> = {
   // Storefront (ADR-39X/Z) — available from the FREE plan (a free Space can sell; the plan
   // only buys the rake down + features). A per-Space toggle decides ON/OFF.
   space_storefront: { axis: 'plan', minEntitlement: 'free', enabled: true },
-  // Full website / multi-page profile (owner decision) — a Space gets ONE continuous profile page by
-  // default; the multi-page "Pages" manager is a paid UPSELL tied to the full website (not built yet).
-  // DISABLED here so this coarse plan-ladder gate never binds; the LOCK is enforced by the pure
-  // `space_full_website` ENTITLEMENT key (spaceCanUseFullWebsite, lib/spaces/entitlements.ts), which
-  // stays default-deny regardless of the gate switch (featureAllowed would short-circuit to granted
-  // while the gates are not live, which would un-gate the upsell — the enforcement does NOT ride it).
-  space_full_website: { axis: 'plan', minEntitlement: 'business', enabled: false },
+  // 🔴 `space_full_website` USED TO SIT HERE and is deliberately gone (HYG-079). It was the one row on
+  // this map that was correct rather than owed, and that is exactly why it did not belong: it carried
+  // `enabled: false` so it could never bind, because the LOCK is the pure `space_full_website`
+  // ENTITLEMENT key (spaceCanUseFullWebsite, lib/spaces/entitlements.ts), which is default-deny and so
+  // survives featureAllowed short-circuiting to granted while the gates are soft. A permanently
+  // disabled gate beside the key that does the work is a second, mute opinion about the same rule.
+  // The entitlement key is unchanged and still enforces the upsell; only the decoy is gone.
 
   // §5 space AI-depth (Resonance Engine Phase 6 · ADR-387). The paid DEPTH of the engine. The free
   // wedge (Today suggest-only + summaries + read-only scoring) is NEVER a gate, so it has no entry
-  // here. Business grants governed playbooks + advanced segments; the AI Engine add-on grants the
-  // resonance surface + the full Resonance Graph. The plan-rank floor is 'business' for all three; the
-  // resonance keys additionally gate on their entitlement key (the AI Engine add-on). While the gates
-  // are not live, featureAllowed short-circuits to true and these never bind (today's behavior).
-  space_crm_playbooks: { axis: 'plan', minEntitlement: 'business', enabled: true },
-  space_crm_resonance: { axis: 'plan', minEntitlement: 'business', enabled: true },
+  // here. The AI Engine add-on grants the full Resonance Graph, whose USAGE is metered
+  // (space_crm_resonance_ai). While the gates are not live, featureAllowed short-circuits to true and
+  // this never binds (today's behavior).
+  //
+  // 🔴 `space_crm_playbooks` and `space_crm_resonance` USED TO SIT HERE and are deliberately gone
+  // (HYG-079). `spaceCanRunPlaybooksLive` and `spaceCanSeeResonanceLive` each had zero callers, so
+  // both gates were wrappers around nothing. The playbook DEPTH keeps its meter in feature-meters.ts
+  // (a real per-plan run allowance, which is the honest shape for a cost dial), and the read-only
+  // resonance VIEW never needed a gate of its own: its AI usage is metered on space_crm_resonance_ai.
   space_crm_resonance_ai: { axis: 'plan', minEntitlement: 'business', enabled: true },
 }
 

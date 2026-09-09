@@ -22,6 +22,7 @@ import {
   type ScopeType,
 } from './stewardship'
 import { type CommunityRole, roleRank } from './roles'
+import { effectiveTierFor } from '@/lib/billing/crew-grants'
 import { deriveTier } from './entitlement'
 import {
   accessTo,
@@ -60,17 +61,25 @@ export const getViewerHats = cache(async (): Promise<Hats> => {
   const profile = await getCallerProfile()
   if (!profile) return { loggedIn: false }
 
-  const [staff, personas] = await Promise.all([
+  const [staff, personas, effective] = await Promise.all([
     getStaffMember().catch(() => null),
     getActivePersonas(profile.id).catch(() => []),
+    // GRANTED CREW (LIVE-223): the effective tier is `stripe_active OR EXISTS(active grant)`, so a
+    // member who pays dues to a community reads as Crew without anything being written into the
+    // provenance-free `profiles.membership_tier` column. Fail-closed inside (an unreadable grant
+    // reads as no grant), so this never widens access on an error.
+    effectiveTierFor(profile.id, profile.membershipTier).catch(() => null),
   ])
   return {
     loggedIn: true,
     // Community standing from the derived level (floored by community_role) — a no-op
     // for member…mentor, and keeps a global admin/janitor's matrix column. (ADR-221.)
     role: communityStanding(profile.communityLevel, profile.community_role),
-    // Entitlement (membership) — the real billing flag, decoupled from the role.
-    tier: deriveTier(profile.membershipTier),
+    // Entitlement (membership) — the billing flag UNIONED with an active paid-community grant,
+    // decoupled from the role. 🔴 This is the ACCESS tier. Pricing must never read it: the take
+    // rate reads the Stripe rung through `billedTier` (lib/core/entitlement.ts), or a $1
+    // membership tier buys the member network take rate down from 10% to 8% (LIVE-224).
+    tier: effective?.tier ?? deriveTier(profile.membershipTier),
     // Partner personas (P3) — each active persona lights its matrix columns.
     personas,
     staff: staff?.role ?? null,

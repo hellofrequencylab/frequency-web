@@ -15,19 +15,20 @@ import { describe, it, expect } from 'vitest'
 
 import { catalogConfigByKey, defaultCatalogConfig } from './catalog-config'
 import { effectiveCatalogAmounts, isBetaPricingActive, BETA_PRICING_ENDS_AT } from './beta'
-import { effectiveTierPrice, PAID_SPACE_PLANS, spacePlanRows } from './display'
+import { ADVERTISED_SPACE_PLANS, effectiveTierPrice, spacePlanRows } from './display'
 import { spaceOfferings, type PricingGridInput } from './pricing-grid'
 import { PRICING_DEFAULTS } from './settings'
 import type { CatalogItemKey } from '@/lib/billing/pricing-keys'
 
 const catalog = catalogConfigByKey(defaultCatalogConfig())
 
-/** The catalog item each sellable plan is BILLED from (space-plan-checkout catalogKeysForLoadout). */
+/** The catalog item each ADVERTISED plan is BILLED from (space-plan-checkout catalogKeysForLoadout).
+ *  Independent is billed from `independent_base` exactly as before; it is absent here only because it
+ *  is no longer quoted on a public surface (LIVE-227), so there is no page number to compare. */
 const BASE_ITEM: Record<string, CatalogItemKey> = {
   business: 'business_base',
   collective: 'collective_base',
   nonprofit: 'nonprofit_seat',
-  independent: 'independent_base',
 }
 
 /** What the CHECKOUT charges for a plan at an interval, in cents: the founding price key during the
@@ -46,7 +47,7 @@ const input = (betaActive: boolean): PricingGridInput => ({
 describe('page price == checkout price, on BOTH sides of the cutover', () => {
   for (const betaActive of [true, false]) {
     const window = betaActive ? 'during the beta window' : 'after the cutover'
-    for (const plan of PAID_SPACE_PLANS) {
+    for (const plan of ADVERTISED_SPACE_PLANS) {
       it(`${plan}, ${window}: the monthly and yearly the page prints are the ones Stripe takes`, () => {
         const row = spacePlanRows(PRICING_DEFAULTS, betaActive).find((r) => r.key === plan)!
         expect(row.monthlyCents, `${plan} monthly`).toBe(checkoutCents(plan, 'month', betaActive))
@@ -91,9 +92,17 @@ describe('the beta framing appears exactly while the beta rate does', () => {
       const byId = Object.fromEntries(spaceOfferings(input(betaActive)).map((o) => [o.id, o]))
       expect(byId.nonprofit!.monthly).toBe('$39/mo')
       expect(byId.nonprofit!.listAnchor).toBeNull()
-      expect(byId.independent!.monthly).toBe('$249/mo')
-      expect(byId.independent!.listAnchor).toBeNull()
     }
+    // Independent was the second unanchored plan checked here. It is no longer an offering at all
+    // (owner ruling 2026-09-08, LIVE-227: sold by hand, advertised nowhere), so there is no page
+    // number to hold still. The rule it stood for is unchanged and Non Profit still proves it; the
+    // arm below pins that its absence is deliberate rather than a plan that quietly lost its price.
+    for (const betaActive of [true, false]) {
+      expect(spaceOfferings(input(betaActive)).map((o) => o.id)).not.toContain('independent')
+    }
+    expect(effectiveTierPrice(PRICING_DEFAULTS.plan.independent, false)).toEqual(
+      PRICING_DEFAULTS.plan.independent,
+    )
   })
 
   it('Free is free on both sides, and is never an Offer', () => {

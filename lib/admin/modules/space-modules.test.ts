@@ -35,10 +35,11 @@ describe('SPACE_MODULES catalog', () => {
     }
   })
 
-  // ADR-846 REVERSES the ADR-544b split: the six commerce services keep their own rows (own gate, own
-  // panel, own anchored section) but are TOOLS inside the one "Offerings and money" box again.
+  // ADR-846 REVERSES the ADR-544b split: the commerce services keep their own rows (own gate, own
+  // panel, own anchored section) but are TOOLS inside the one "Offerings and money" box again. It was
+  // six until LIVE-226 retired Enrollment, Tickets and Check in with their function keys.
   it('keeps each commerce service a real module, owned by the Offerings and money box', () => {
-    for (const id of ['space.booking', 'space.memberships', 'space.donations', 'space.enroll', 'space.tickets', 'space.checkin']) {
+    for (const id of ['space.booking', 'space.memberships', 'space.donations']) {
       const m = spaceModuleById(id)
       expect(m, `${id} should still be its own module`).not.toBeNull()
       expect(m!.parent, `${id} belongs to the Offerings and money box`).toBe('space.offerings')
@@ -283,9 +284,6 @@ describe('the twelve boxes (ADR-846)', () => {
       'space.booking': 'space.offerings',
       'space.memberships': 'space.offerings',
       'space.donations': 'space.offerings',
-      'space.enroll': 'space.offerings',
-      'space.tickets': 'space.offerings',
-      'space.checkin': 'space.offerings',
       'space.practices': 'space.content',
       'space.journeys': 'space.content',
       'space.circles': 'space.content',
@@ -303,8 +301,14 @@ describe('the twelve boxes (ADR-846)', () => {
     }
   })
 
-  it('retired only the one row whose destination duplicated its box (Scans and insights)', () => {
+  it('retires a row whose destination duplicated something the product already had', () => {
+    // Scans and insights duplicated its own box.
     expect(spaceModuleById('space.insights')).toBeNull()
+    // Enrollment, Tickets and Check in each duplicated a tool that already existed (LIVE-226): a
+    // Journey plus the Memberships roster, and the event ticket + door flows.
+    expect(spaceModuleById('space.enroll')).toBeNull()
+    expect(spaceModuleById('space.tickets')).toBeNull()
+    expect(spaceModuleById('space.checkin')).toBeNull()
     // The box it folded into now says so, and still opens the page that carries the scans readout.
     const reach = spaceModuleById('space.reach')!
     expect(reach.label).toBe('QR codes and insights')
@@ -316,9 +320,6 @@ describe('the twelve boxes (ADR-846)', () => {
       'space.booking',
       'space.memberships',
       'space.donations',
-      'space.enroll',
-      'space.tickets',
-      'space.checkin',
     ])
     expect(spaceModuleChildren('space.content').map((m) => m.id)).toEqual([
       'space.practices',
@@ -336,7 +337,7 @@ describe('the twelve boxes (ADR-846)', () => {
 // sublabel (freeNote) that makes the upgrade lever legible.
 describe('access badges match the real free-tier caps (ADR-784)', () => {
   it('badges the metered offerings Freemium (they are capped on free, not fully Included)', () => {
-    for (const id of ['space.booking', 'space.memberships', 'space.tickets']) {
+    for (const id of ['space.booking', 'space.memberships']) {
       expect(spaceModuleById(id)!.access, `${id} is capped on free`).toBe('freemium')
     }
   })

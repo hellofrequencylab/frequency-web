@@ -113,9 +113,22 @@ describe('the 80% goal-gradient threshold', () => {
   })
 
   it('says nothing on a zero allowance (a wall is not a meter)', () => {
+    // `space_collaborators` was the example here until LIVE-225 gave it a real free allowance of 1,
+    // which is the whole point of that row: a cap of zero is a wall wearing a meter's clothes, and
+    // this assertion is what proves the copy layer treats the two differently. The example moved to
+    // `space_membership_tiers`, the ONE row that stays at zero on purpose, because selling a
+    // recurring membership is the paid line rather than a dial.
+    expect(
+      buildMeterUpsell({ featureKey: 'space_membership_tiers', currentTier: 'free', usage: 5, rates }),
+    ).toBeNull()
+  })
+
+  it('DOES speak on the collaborator ladder now that its free rung is a real allowance', () => {
+    // The other half of LIVE-225: the same input that must stay silent on a wall must speak on a
+    // meter, or "we turned the wall into an allowance" is a claim nothing checks.
     expect(
       buildMeterUpsell({ featureKey: 'space_collaborators', currentTier: 'free', usage: 5, rates }),
-    ).toBeNull()
+    ).not.toBeNull()
   })
 
   it('says nothing for a key with no meter', () => {

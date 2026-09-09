@@ -13,7 +13,6 @@ import { revalidatePath } from 'next/cache'
 import { getCallerProfile, getMyProfileId } from '@/lib/auth'
 import { atLeastRole } from '@/lib/core/roles'
 import { canCreate } from '@/lib/core/load-capabilities'
-import { crewCreateUpsell } from '@/lib/core/beta-notices'
 import { ok, fail, type ActionResult } from '@/lib/action-result'
 import { proposeAndConfirmCreate } from '@/lib/ai/vera/create-entity'
 import type { MovementConfig } from '@/lib/movement'
@@ -45,10 +44,14 @@ async function authorizeCreatePractice(): Promise<
 > {
   const caller = await getCallerProfile()
   if (!caller) return { error: 'Not signed in' }
-  // Real-Crew create gate (ADR-414) — reads the true tier (pre beta-override) so a free
-  // member is sold the one-tap free-beta upgrade rather than silently allowed.
+  // The capability check stays as this module's own gate (the server owns its authorization,
+  // never the hidden button), but it is no longer a TIER check: `practice.create` opened to any
+  // signed-in member in LIVE-222, so the only way to fail it is to have no session, which the
+  // line above already answered. The Crew upsell copy that used to live here is deleted rather
+  // than reworded: it told a signed-in member to buy a rung that would not change this answer,
+  // which is the worst kind of dead string because it reads as a live rule.
   if (!(await canCreate('practice.create'))) {
-    return { error: crewCreateUpsell('a practice') }
+    return { error: 'Not signed in' }
   }
   const autoApprove = atLeastRole(caller.community_role, 'host') || caller.webRole !== 'none'
   return { profileId: caller.id, autoApprove }
@@ -193,10 +196,11 @@ export async function createPracticeFromSparkAction(input: {
 export async function submitPracticeForReviewAction(practiceId: string): Promise<ActionResult> {
   const profileId = await getMyProfileId()
   if (!profileId) return fail('Not signed in')
-  // The public library is the paid surface (same gate as submitSpacePracticeToLibraryAction —
-  // review defect: without this, a free Space manager could route around the Crew wall by
-  // drafting through their Space and submitting here).
-  if (!(await canCreate('practice.create'))) return fail(crewCreateUpsell('a practice'))
+  // Same gate as submitSpacePracticeToLibraryAction, kept so this module owns its own
+  // authorization. It is no longer a paid wall: `practice.create` needs only a sign-in
+  // (LIVE-222), which the line above already checked. How many Practices a free member gets to
+  // publish is the `practice_publish` meter, not this door.
+  if (!(await canCreate('practice.create'))) return fail('Not signed in')
   const practice = await getPractice(practiceId)
   if (!practice || practice.created_by !== profileId) return fail('Not yours to submit.')
   if (practice.status === 'pending') return ok()

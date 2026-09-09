@@ -298,7 +298,7 @@ export const METER_UPSELL_SURFACES: Record<string, MeterUpsellSurface> = {
   space_crm_playbooks: {
     mount: 'app/(main)/spaces/[slug]/settings/billing/billing-body.tsx',
     kind: 'ladder',
-    note: 'Free allowance is zero, so the 80% prompt never applies; the plan hub carries the ladder.',
+    note: 'Playbook runs are a background rollup with no console of their own; the plan hub carries the ladder.',
   },
   space_crm_resonance_ai: {
     mount: 'app/(main)/spaces/[slug]/settings/billing/billing-body.tsx',
@@ -308,7 +308,7 @@ export const METER_UPSELL_SURFACES: Record<string, MeterUpsellSurface> = {
   space_collaborators: {
     mount: 'app/(main)/spaces/[slug]/settings/billing/billing-body.tsx',
     kind: 'ladder',
-    note: 'Free allowance is zero, so the 80% prompt never applies; the plan hub carries the ladder.',
+    note: 'Hosted collaborators span the venue and event grains, so no single surface holds the count; the plan hub carries the ladder.',
   },
   space_membership_tiers: {
     mount: 'app/(main)/spaces/[slug]/settings/memberships/section.tsx',

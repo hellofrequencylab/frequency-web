@@ -92,6 +92,7 @@ email_webhook_events                 internal
 email_suppressions                   internal
 engagement_events                    authenticated
 entities                             public
+entitlement_grants                   authenticated
 entry_campaigns                      internal
 entry_point_conversions              internal
 entry_point_variants                 internal

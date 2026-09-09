@@ -5,7 +5,6 @@
 
 import { revalidatePath } from 'next/cache'
 import { getMyProfileId, getCallerProfile } from '@/lib/auth'
-import { isPaid } from '@/lib/core/entitlement'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { parseStyle, type QrStyle } from '@/lib/qr/style'
 import { generateSlug } from '@/lib/qr/codes'
@@ -37,11 +36,16 @@ export interface MarketingInput {
   style: QrStyle
 }
 
-/** Crew (paid-tier)-gated caller id, or an error message. */
-async function requireCrew(): Promise<{ id: string } | string> {
+/** Signed-in caller id, or an error message.
+ *
+ *  🔴 MARKETING CODES ARE FREE (LIVE-221). This used to demand the paid Crew tier
+ *  (a paid-entitlement check on the caller's membership tier), a wall on a member
+ *  creation path. People join free
+ *  and businesses host free; the only limit left is a QUANTITY every member shares
+ *  (MARKETING_CODE_LIMIT, enforced in createMarketingCode), not a locked door. */
+async function requireMember(): Promise<{ id: string } | string> {
   const me = await getCallerProfile()
   if (!me) return 'Sign in first.'
-  if (!isPaid(me.membershipTier)) return 'Marketing codes are a Crew (paid membership) feature.'
   return { id: me.id }
 }
 
@@ -74,11 +78,11 @@ export async function updateMyCodeStyle(codeId: string, style: QrStyle): Promise
   return ok()
 }
 
-// ── Crew marketing codes (≤3 per member, point at a circle/event) ──────────────
+// ── Marketing codes (≤3 per member, point at a circle/event) ──────────────────
 
 export async function createMarketingCode(input: MarketingInput): Promise<ActionResult<{ id: string }>> {
-  const crew = await requireCrew()
-  if (typeof crew === 'string') return fail(crew)
+  const member = await requireMember()
+  if (typeof member === 'string') return fail(member)
   const row = cleanMarketing(input)
   if (typeof row === 'string') return fail(row)
 
@@ -86,7 +90,7 @@ export async function createMarketingCode(input: MarketingInput): Promise<Action
   const { count } = await db
     .from('qr_codes')
     .select('id', { count: 'exact', head: true })
-    .eq('owner_profile_id', crew.id)
+    .eq('owner_profile_id', member.id)
     .is('purpose', null)
   if ((count ?? 0) >= MARKETING_CODE_LIMIT) {
     return fail(`You can have up to ${MARKETING_CODE_LIMIT} marketing codes. Delete one to add another.`)
@@ -99,8 +103,8 @@ export async function createMarketingCode(input: MarketingInput): Promise<Action
       title: row.title,
       destination_type: 'url',
       target_url: row.target_url,
-      owner_profile_id: crew.id,
-      created_by: crew.id,
+      owner_profile_id: member.id,
+      created_by: member.id,
       style: row.style,
     })
     .select('id')
@@ -112,8 +116,8 @@ export async function createMarketingCode(input: MarketingInput): Promise<Action
 }
 
 export async function updateMarketingCode(id: string, input: MarketingInput): Promise<ActionResult> {
-  const crew = await requireCrew()
-  if (typeof crew === 'string') return fail(crew)
+  const member = await requireMember()
+  if (typeof member === 'string') return fail(member)
   const row = cleanMarketing(input)
   if (typeof row === 'string') return fail(row)
 
@@ -124,7 +128,7 @@ export async function updateMarketingCode(id: string, input: MarketingInput): Pr
     .select('owner_profile_id, purpose')
     .eq('id', id)
     .maybeSingle()
-  if (!code || code.owner_profile_id !== crew.id || code.purpose !== null) return fail('That isn’t your code.')
+  if (!code || code.owner_profile_id !== member.id || code.purpose !== null) return fail('That isn’t your code.')
 
   const { error } = await db
     .from('qr_codes')
@@ -137,8 +141,8 @@ export async function updateMarketingCode(id: string, input: MarketingInput): Pr
 }
 
 export async function deleteMarketingCode(id: string): Promise<ActionResult> {
-  const crew = await requireCrew()
-  if (typeof crew === 'string') return fail(crew)
+  const member = await requireMember()
+  if (typeof member === 'string') return fail(member)
 
   const db = createAdminClient()
   const { data: code } = await db
@@ -146,7 +150,7 @@ export async function deleteMarketingCode(id: string): Promise<ActionResult> {
     .select('owner_profile_id, purpose')
     .eq('id', id)
     .maybeSingle()
-  if (!code || code.owner_profile_id !== crew.id || code.purpose !== null) return fail('That isn’t your code.')
+  if (!code || code.owner_profile_id !== member.id || code.purpose !== null) return fail('That isn’t your code.')
 
   const { error } = await db.from('qr_codes').delete().eq('id', id)
   if (error) return fail('Could not delete the code.')

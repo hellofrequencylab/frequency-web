@@ -6,18 +6,20 @@ import { resolveSpaceManageAccess } from '@/lib/spaces/entitlements'
 import { OfferingsBody } from './offerings-body'
 
 // THE UNIFIED OFFERINGS SURFACE (the deeper Offerings merge). One adaptive, no-rail Focus surface that
-// stacks whichever commerce sub-surfaces apply to THIS space's type, instead of the five separate
-// type-gated settings sub-pages it replaces:
-//   practitioner -> Availability
-//   business     -> Memberships
-//   organization -> Donations + Enrollment
-//   event_space  -> Tickets + Check in
-//   (lab / partner / coaching / root have no commerce section -> a tasteful empty state)
+// stacks the commerce sub-surfaces a Space configures here, instead of the separate settings sub-pages it
+// replaces: Availability, Memberships, Donations. Every Space type composes all three (functions have been
+// universal since ADR-517 Phase F); the empty state is the fail-safe for a type that resolves to none.
+//
+// It used to stack six. Enrollment, Tickets and Check in came off in LIVE-226: each was a second door onto
+// a tool that already existed, so Offerings read as six products where there were three. Enrollment is a
+// Journey plus the Memberships roster, tickets are the event ticket flow, and checking someone in is an
+// event mechanic. Their function keys are retired in lib/spaces/functions.ts; their section bodies stay for
+// the `?panel=` workspaces that still mount them.
 //
 // This IS the commerce home. The old individual routes (/settings/availability, /memberships,
 // /donations, /tickets, /checkin) were deleted in ADR-552 Phase 4; every in-app link now points straight
-// here anchored to its section (#<anchor>). Enrollment keeps its own /settings/enroll page. The section +
-// panel body components (section.tsx / *-body.tsx) still live in those folders and compose here + inline.
+// here anchored to its section (#<anchor>). The section + panel body components (section.tsx /
+// *-body.tsx) still live in those folders.
 // This page owns the ROUTE + AUTH gate ONCE (resolveSpaceManageAccess, notFound), then
 // wraps the chrome-free <OfferingsBody> in the FocusTemplate. The same body ALSO renders inline in the
 // Space profile as the Offerings `?panel=` workspace (Stage D2); it composes each section BODY (the

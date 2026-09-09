@@ -7,7 +7,12 @@
 // variant. The founder variant is stored archived (not offered publicly) but referenced by a
 // founding member's profiles.locked_price_id at checkout.
 
-import { deriveTier, isPaid, type EntitlementTier } from '@/lib/core/entitlement'
+import {
+  billedTier,
+  isPaid,
+  type EffectiveTier,
+  type EntitlementTier,
+} from '@/lib/core/entitlement'
 import { type SpacePlan, asSpacePlan } from '@/lib/pricing/plans'
 
 /** A subscription billing period. */
@@ -230,23 +235,37 @@ export function sourceAwareTakeRateCents(
 /** The individual (profile) seller's NETWORK take-rate bps for their tier: 10% on free Member, 8% on
  *  Crew (ADR-914).
  *
+ *  🔴 IT READS THE STRIPE TIER, NEVER THE EFFECTIVE TIER, AND THAT IS LOAD-BEARING (LIVE-224).
+ *  Under the new model Crew is also GRANTED by an active paid community membership (LIVE-223,
+ *  lib/billing/crew-grants.ts). If a granted Crew inherited this rung, a Space could open a $1
+ *  membership tier and hand every buyer 8% instead of 10% — the grant would pay for itself and then
+ *  some, and the platform would be funding its own discount. So the question this function asks is
+ *  "which rung did this seller PAY US for?", which is `profiles.membership_tier` alone. The narrowing
+ *  goes through `billedTier`, which collapses an `EffectiveTier` record to its `stripeTier` — so even
+ *  a future caller who hands over the whole resolved record gets the billed rung, not the granted one.
+ *  Locked by lib/billing/granted-crew-take-rate.test.ts; if you change this line, that test is the
+ *  thing you have to argue with.
+ *
  *  Takes the whole rate blob rather than a bare number so a partial operator override can never resolve
  *  to `undefined` → a NaN fee: an absent rung falls back to the seeded rate, never to 0.
  *
  *  🔴 FAIL-SAFE DIRECTION IS THE SELLER'S, NOT OURS. Paid-ness is asked through `isPaid`, the repo's
  *  canonical ALLOW-LIST predicate (crew), so anything unrecognised prices at the HIGHER
- *  free rung. Note `deriveTier` alone is NOT enough here: it passes an unknown label straight through,
- *  so a `!== 'free'` test would read a typo as PAID and hand out the discount. That exact inversion was
+ *  free rung. Note `billedTier` (like the `deriveTier` beneath it) alone is NOT enough here: it passes
+ *  an unknown label straight through, so a `!== 'free'` test would read a typo as PAID and hand out
+ *  the discount. That exact inversion was
  *  written first and caught by the test below; keep the allow-list. That is deliberate and it is the opposite of
  *  the audience check's direction: there, an unproven answer means we do not charge, because the
  *  0%-on-your-own-people promise is public. Here the question is only WHICH published rate applies to a
  *  sale we have already established the network sourced, and quoting the lower rate to a seller whose
  *  tier we could not read would be under-collecting on a sale nobody disputes. PURE. */
 export function memberNetworkTakeRateBps(
-  sellerTier?: string | null,
+  sellerTier?: string | null | EffectiveTier,
   rate: NetworkTakeRate = NETWORK_TAKE_RATE_DEFAULT,
 ): number {
-  const paid = isPaid(deriveTier((sellerTier ?? null) as EntitlementTier | null))
+  // 🔴 THE STRIPE RUNG, NOT THE EFFECTIVE TIER (LIVE-224). `billedTier` reads
+  // profiles.membership_tier and nothing else. Do not "simplify" it to the resolved tier.
+  const paid = isPaid(billedTier(sellerTier))
   const rung = paid ? rate.member : rate.memberFree
   const fallback = paid ? NETWORK_TAKE_RATE_DEFAULT.member : NETWORK_TAKE_RATE_DEFAULT.memberFree
   return typeof rung === 'number' ? rung : fallback
@@ -259,7 +278,7 @@ export function sourceAwareMemberTakeRateCents(
   grossCents: number,
   source: OrderSource,
   rate: NetworkTakeRate = NETWORK_TAKE_RATE_DEFAULT,
-  sellerTier?: string | null,
+  sellerTier?: string | null | EffectiveTier,
 ): number {
   if (source === 'self') return 0
   if (!Number.isFinite(grossCents) || grossCents <= 0) return 0

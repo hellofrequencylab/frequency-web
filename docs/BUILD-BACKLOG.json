@@ -67,27 +67,10 @@
           "name": "WR · the core-model rework (ADR-1294), phases 0-11 in order. Three lines, four nouns. Phases 1-3 are one pass over the same files: the feature gates are inert until the grace window ends on 2026-12-01, which makes this the safe window to move paywalls. Phase 5 is the commercial unlock and phase 11 is the only phase that can say whether any of it worked.",
           "ids": [
             "PROG-R0",
-            "PROG-R1",
-            "HYG-075",
-            "HYG-076",
-            "HYG-077",
             "HYG-078",
-            "HYG-079",
             "HYG-080",
-            "HYG-081",
             "HYG-082",
-            "HYG-083",
-            "PROG-R2",
-            "LIVE-220",
-            "LIVE-221",
-            "LIVE-222",
-            "LIVE-223",
-            "LIVE-224",
-            "PROG-R3",
-            "LIVE-225",
-            "LIVE-226",
-            "HYG-084",
-            "LIVE-227",
+            "OWN-071",
             "PROG-R4",
             "LIVE-228",
             "LIVE-229",
@@ -10113,7 +10096,7 @@
     {
       "id": "PROG-R1",
       "title": "Rework phase 1: delete what is not the model",
-      "status": "open",
+      "status": "done",
       "priority": "P1",
       "lane": "program",
       "size": "M",
@@ -10131,7 +10114,7 @@
     {
       "id": "PROG-R2",
       "title": "Rework phase 2: people join free",
-      "status": "open",
+      "status": "done",
       "priority": "P1",
       "lane": "program",
       "size": "M",
@@ -10149,7 +10132,7 @@
     {
       "id": "PROG-R3",
       "title": "Rework phase 3: businesses host free",
-      "status": "open",
+      "status": "done",
       "priority": "P1",
       "lane": "program",
       "size": "M",
@@ -10311,7 +10294,7 @@
     {
       "id": "HYG-075",
       "title": "Delete the two /dev showcase routes",
-      "status": "open",
+      "status": "done",
       "priority": "P3",
       "lane": "hygiene",
       "size": "XS",
@@ -10326,71 +10309,35 @@
       }
     },
     {
-      "id": "HYG-076",
-      "title": "Delete the restaurant-menu CRUD: 5 tables, 23 writes, no reader",
+      "id": "HYG-078",
+      "title": "Drop the orphan gamification_full_supporter platform_flags row",
       "status": "open",
-      "priority": "P2",
+      "priority": "P3",
+      "lane": "hygiene",
+      "size": "XS",
+      "source": {
+        "file": "docs/CORE-MODEL.md",
+        "ref": "§5"
+      },
+      "detail": "NARROWED 2026-09-09 after the original row was found FALSE. The row said \"delete the Supporter tier remnants\". It conflated two different things that share the word: ADR-458 retired Supporter as a TIER, and it became the pay-what-you-want profiles.is_supporter BADGE, which is LIVE. lib/billing/supporter.ts is the PWYW contribution charge and Foundation donation ledger, imported by app/(main)/upgrade/actions.ts:18 and app/api/webhooks/stripe/route.ts:53, and it gained a NEW refund path on 2026-09-05 (migration 20270345000300, ADR-1208). billing_live is true, so that code takes the live branch today. supporter_contributions holds 0 rows because nobody has contributed yet, not because nothing writes it.\n\ntier_supporter_enabled must also STAY: supporter-retired.test.ts:59,92 deliberately loads every flag ON to prove memberTierSellable('supporter') still refuses. Deleting the key would make that guard vacuous, which is the \"gate that can no longer fire honestly\" shape ADR-970 warns about.\n\nWHAT IS ACTUALLY LEFT: platform_flags.gamification_full_supporter is true in production and NO code reads it. lib/pricing/settings.ts:150 records that it was deliberately dropped from PRICING_FLAG_KEYS by owner directive on 2026-08-24. It is a bare data row. Note migration 20260723010000 re-seeds it on replay, so removing the row alone is not enough.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "platform_flags has no gamification_full_supporter row, and the seeding migration no longer re-creates it. Read the table; the code cannot answer this.",
+        "checked": "2026-09-09"
+      }
+    },
+    {
+      "id": "HYG-079",
+      "title": "Delete the seven feature gates with zero enforcement call sites",
+      "status": "done",
+      "priority": "P1",
       "lane": "hygiene",
       "size": "M",
       "source": {
         "file": "docs/CORE-MODEL.md",
         "ref": "§5"
       },
-      "detail": "lib/menus/actions.ts carries 23 write paths across menus, menu_items, menu_categories, menu_rail_cards and menu_settings. All five tables hold ZERO rows in production and NOTHING in the app reads any of them. It is a restaurant-menu builder, not one of the four nouns.\n\nCAUTION: do not confuse these with the four REGISTERED MENU CATALOGS the admin rail derives from (SPACE_MODULES, ADMIN_MODULES, LAYOUT_MODULES, STUDIO_LEAVES). Those are code, they are load-bearing, and MENU-CONTRACT governs them. These five tables are unrelated despite the name.",
-      "verify": {
-        "kind": "grep-absent",
-        "pattern": "from\\('menus'\\)|from\\('menu_items'\\)|from\\('menu_categories'\\)|from\\('menu_rail_cards'\\)|from\\('menu_settings'\\)",
-        "paths": [
-          "lib/menus/actions.ts"
-        ]
-      }
-    },
-    {
-      "id": "HYG-077",
-      "title": "Delete the household bundle: built, never sold, flag off since ship",
-      "status": "open",
-      "priority": "P2",
-      "lane": "hygiene",
-      "size": "S",
-      "source": {
-        "file": "docs/CORE-MODEL.md",
-        "ref": "§5"
-      },
-      "detail": "bundle_household_enabled has been false since it shipped (ADR-370). household_bundle_invites holds 0 rows and has 0 app writers - lib/billing/bundle-invites.ts:176 is a COMMENT saying the table is not in the generated types. Remove lib/billing/bundle-{checkout,seats,invites}.ts, lib/pricing/bundle.ts, the flag, and the table. It also contradicts \"people join free\": a bundle is a way to pay for other people to be members.",
-      "verify": {
-        "kind": "cmd",
-        "cmd": "node -e 'const fs=require(\"fs\");const p=[\"lib/billing/bundle-checkout.ts\",\"lib/billing/bundle-seats.ts\",\"lib/billing/bundle-invites.ts\",\"lib/pricing/bundle.ts\"];const left=p.filter(x=>fs.existsSync(x));if(left.length)console.error(\"still present: \"+left.join(\", \"));process.exit(left.length?1:0)'"
-      }
-    },
-    {
-      "id": "HYG-078",
-      "title": "Delete the Supporter tier remnants (retired by ADR-878)",
-      "status": "open",
-      "priority": "P2",
-      "lane": "hygiene",
-      "size": "S",
-      "source": {
-        "file": "docs/CORE-MODEL.md",
-        "ref": "§5"
-      },
-      "detail": "memberTierSellable('supporter') returns false BEFORE it reads tier_supporter_enabled, and lib/pricing/supporter-retired.ts says the tier is INERT. Remove lib/billing/supporter.ts, the supporter_contributions table (0 rows), the tier_supporter_enabled flag, and the orphan gamification_full_supporter platform_flags row that no code reads at all.",
-      "verify": {
-        "kind": "cmd",
-        "cmd": "node -e 'const fs=require(\"fs\");const p=[\"lib/billing/supporter.ts\"];const left=p.filter(x=>fs.existsSync(x));if(left.length)console.error(\"still present: \"+left.join(\", \"));process.exit(left.length?1:0)'"
-      }
-    },
-    {
-      "id": "HYG-079",
-      "title": "Delete the seven feature gates with zero enforcement call sites",
-      "status": "open",
-      "priority": "P1",
-      "lane": "hygiene",
-      "size": "S",
-      "source": {
-        "file": "docs/CORE-MODEL.md",
-        "ref": "§5"
-      },
-      "detail": "Verified 2026-09-08: space_whitelabel, space_sms, space_revenue_splits, space_crm_playbooks, space_crm_resonance, journey_library_list and entry_points each have ZERO references outside lib/pricing/gates.ts and its tests. Each is a promise the code cannot keep, and each would have begun refusing a feature nothing knows how to refuse when the grace window ends. gates.ts already documents six prior such deletions as the right move.\n\nRULING DEPENDENCY: space_whitelabel is the Independent tier's gate. The owner ruled Independent is KEPT but hidden from public pricing, so deleting the gate is correct - the tier is hand-sold and its entitlement is not enforced by a gate that does nothing. Do NOT archive the four Independent Stripe prices.",
+      "detail": "Verified 2026-09-08: space_whitelabel, space_sms, space_revenue_splits, space_crm_playbooks, space_crm_resonance, journey_library_list and entry_points each have ZERO references outside lib/pricing/gates.ts and its tests. Each is a promise the code cannot keep, and each would have begun refusing a feature nothing knows how to refuse when the grace window ends. gates.ts already documents six prior such deletions as the right move.\n\nRULING DEPENDENCY: space_whitelabel is the Independent tier's gate. The owner ruled Independent is KEPT but hidden from public pricing, so deleting the gate is correct - the tier is hand-sold and its entitlement is not enforced by a gate that does nothing. Do NOT archive the four Independent Stripe prices.\n\n── SCOPE CORRECTED 2026-09-09, and the correction is a lesson about the verification, not the finding. The seven gates have no ENFORCEMENT call sites, which is what the row claims and it is true. But each also has a DISPLAY LADDER in lib/pricing/feature-tiers.ts (FEATURE_TIER_LADDERS), and feature-tiers.test.ts:62 asserts every ladder key has a FEATURE_GATES entry, so deleting the gates alone fails that test seven times.\n\nWHY THIS WAS MISSED: the sweep grepped for the key QUOTED ('space_sms'), and the ladders declare it as a bare object key (space_sms: {). Quoted-only found 0 references; a word-boundary grep finds 2. Any future \"unreferenced\" claim in this repo must be measured with a word-boundary grep, never a quoted one.\n\nALSO IN SCOPE: the NON_METERED_FEATURES entries; the KNOWN_DECORATIVE_GATES and KNOWN_GATE_METER_COLLISIONS lists in gate-meter-drift.test.ts, both of which have only-ever-shrinks guards; beta-notice.test.ts:50,53; and free-seller.test.tsx:188-193.",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e 'const s=require(\"fs\").readFileSync(\"lib/pricing/gates.ts\",\"utf8\");const dead=[\"space_whitelabel\",\"space_sms\",\"space_revenue_splits\",\"space_crm_playbooks\",\"space_crm_resonance\",\"journey_library_list\",\"entry_points\"].filter(k=>new RegExp(\"^\\\\s*\"+k+\":\",\"m\").test(s));if(dead.length)console.error(\"still declared: \"+dead.join(\", \"));process.exit(dead.length?1:0)'"
@@ -10399,15 +10346,15 @@
     {
       "id": "HYG-080",
       "title": "Delete the second Space-creation door",
-      "status": "open",
+      "status": "blocked",
       "priority": "P2",
       "lane": "hygiene",
-      "size": "S",
+      "size": "M",
       "source": {
         "file": "docs/CORE-MODEL.md",
         "ref": "§5"
       },
-      "detail": "app/(main)/spaces/new/business/ (page.tsx + business-quickstart-form.tsx) plus createBusinessSpace. A second creation flow for the same noun, reachable only from /spaces/new itself. One noun, one door.",
+      "detail": "app/(main)/spaces/new/business/ (page.tsx + business-quickstart-form.tsx) plus createBusinessSpace. A second creation flow for the same noun, reachable only from /spaces/new itself. One noun, one door.\n\n🔴 BLOCKED 2026-09-09. The orphan premise expired: three pins landed since the survey, and one of them is not a reference but a CONTROL.\n  1. scripts/check-a11y-names.test.ts:443 reads business-quickstart-form.tsx from disk as the POSITIVE CONTROL for the forwarder chain - \"blind, it is the single placeholder-only control that held the ceiling at 1\". Deleting the file needs a REPLACEMENT control, not a line removal, or the mutation test silently stops proving anything.\n  2. check:creates Rule 4 (scripts/check-creates.mjs:165,221) registers createBusinessSpace twice, in ENTITY_WRITES as the business create road and in the governed-call map.\n  3. scripts/check-creates.test.ts:355 asserts lib/spaces/provision.ts::createBusinessSpace POSITIVELY in ROUTED_ON_2026_09_07 - a road that quietly stops calling the layer fails that test.\nNote the action lives in lib/spaces/provision.ts:272, not lib/spaces/create.ts as the row said.\n\nThis is one change that retires the door and all three pins together, including deciding what replaces the a11y control. It is not a phase-1 sweep.",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e 'const fs=require(\"fs\");const p=[\"app/(main)/spaces/new/business\"];const left=p.filter(x=>fs.existsSync(x));if(left.length)console.error(\"still present: \"+left.join(\", \"));process.exit(left.length?1:0)'"
@@ -10415,19 +10362,22 @@
     },
     {
       "id": "HYG-081",
-      "title": "Delete the orphaned partner listing surface",
-      "status": "open",
-      "priority": "P3",
+      "title": "Do NOT delete the operator partner surface: it writes the rewards program",
+      "status": "done",
+      "priority": "P2",
       "lane": "hygiene",
       "size": "S",
       "source": {
         "file": "docs/CORE-MODEL.md",
         "ref": "§5"
       },
-      "detail": "app/(main)/partners/listing/ (5 files incl. offers-section.tsx) plus partners/collaborators. Referenced only from lib/personas-core.ts. Production: partners 0 rows, partner_offers 2, partner_redemptions 0. A Partner is a Space; the public /partners directory can point at /spaces/[slug].",
+      "detail": "🔴 CLOSED WITHOUT ACTION 2026-09-09 - the row was WRONG, and acting on it would have broken a live program. Kept as a record because the surface was deleted twice during phase 1 before this was understood, and the next sweep will find the same route and reach the same wrong conclusion.\n\nOWNER, 2026-09-09: \"Partners are business partners who can be a part of the check in / rewards program.\" So Partner is not a stray fifth noun; it is a ROLE inside the rewards economy, and it is live.\n\nTHE CHAIN THE ROW MISSED: lib/engagement/capture.ts is the scan-to-rewards pipeline. When a scanned node carries partner_id, it reads that partner's live offer from partner_offers and writes a partner_redemptions row. app/(main)/partners/listing/actions.ts:101 is the ONLY WRITER of partner_offers - it is where a business partner sets the offer that the plaque unlocks. Deleting it would have left the reader with nothing to read, which is the exact defect SCAN-635 was filed for and ADR-1212 closed by ADDING that writer days earlier.\n\nWHY THE ROW LOOKED RIGHT: the sweep tested for INBOUND LINKS and found none. Nothing links to a writer. For any row that proposes deleting a write path, the test is the ledger - what created this, and what reads what it writes - not the nav graph. partner_offers holding 2 rows was the available evidence and it was not weighed.\n\nNothing to do. The public /partners directory, /partners/[slug], the operator listing surface and lib/partners/collaborators.ts all stay.",
       "verify": {
-        "kind": "cmd",
-        "cmd": "node -e 'const fs=require(\"fs\");const p=[\"app/(main)/partners/listing\"];const left=p.filter(x=>fs.existsSync(x));if(left.length)console.error(\"still present: \"+left.join(\", \"));process.exit(left.length?1:0)'"
+        "kind": "grep-present",
+        "pattern": "from\\('partner_offers'\\)",
+        "paths": [
+          "app/(main)/partners/listing/actions.ts"
+        ]
       }
     },
     {
@@ -10451,7 +10401,7 @@
     {
       "id": "HYG-083",
       "title": "Collapse three byte-identical broadcast-channel literals into one",
-      "status": "open",
+      "status": "done",
       "priority": "P3",
       "lane": "hygiene",
       "size": "XS",
@@ -10468,7 +10418,7 @@
     {
       "id": "LIVE-220",
       "title": "Un-gate starting a Circle - the single highest-value change in the plan",
-      "status": "open",
+      "status": "done",
       "priority": "P0",
       "lane": "live",
       "size": "S",
@@ -10476,7 +10426,7 @@
         "file": "docs/CORE-MODEL.md",
         "ref": "§5"
       },
-      "detail": "components/compose/new-circle-compose.tsx:26-35 wraps the circle-create CTA in CrewGateButton, so a free member cannot start a Circle. Under \"people join free\" this is the most important act in the product sitting behind a paywall. Also lib/circles/index-data.ts:379.\n\nThis is one component deletion and it is P0 for that reason: it costs half an hour and it removes the contradiction at the centre of the model.",
+      "detail": "components/compose/new-circle-compose.tsx:26-35 wraps the circle-create CTA in CrewGateButton, so a free member cannot start a Circle. Under \"people join free\" this is the most important act in the product sitting behind a paywall. Also lib/circles/index-data.ts:379.\n\nThis is one component deletion and it is P0 for that reason: it costs half an hour and it removes the contradiction at the centre of the model.\n\n── PREMISE CORRECTED 2026-09-09, on implementing it. The row called this \"a paywall on the most important act in the product\", biting today. It was not biting. lib/core/capabilities.ts:223-227 already grants circle.create to ANY signed-in profile under FIRST ONE FREE (ADR-908), whose comment says gating the door \"would put a paywall in front of the Latent Leader\". So canCreate('circle.create') was already true for every member and the CrewGateButton refused nobody.\n\nWhat came down was DORMANT paywall wiring - a gate that would have started biting the instant that capability was tightened, in the highest-consequence place on the platform. Removing it is still right, and the row is still done; it was worth less than claimed and the claim should not have survived unmeasured.",
       "verify": {
         "kind": "grep-absent",
         "pattern": "CrewGateButton",
@@ -10488,7 +10438,7 @@
     {
       "id": "LIVE-221",
       "title": "Remove the three live isPaid walls on member creation paths",
-      "status": "open",
+      "status": "done",
       "priority": "P1",
       "lane": "live",
       "size": "S",
@@ -10509,8 +10459,8 @@
     },
     {
       "id": "LIVE-222",
-      "title": "Delete the five tier-axis gates and un-gate Practice authoring",
-      "status": "open",
+      "title": "Un-gate Practice authoring, and retire the two unenforced tier gates",
+      "status": "done",
       "priority": "P1",
       "lane": "live",
       "size": "S",
@@ -10518,16 +10468,16 @@
         "file": "docs/CORE-MODEL.md",
         "ref": "§5"
       },
-      "detail": "FEATURE_GATES carries five axis:'tier' rows - vault_cash_in, gamification_full, vera_unlimited, journey_library_list, entry_points (lib/pricing/gates.ts:54-56,76-77). Under the new model a member never pays for a forward-facing feature, so the tier axis should not exist at all. Also lib/core/capabilities.ts:228 Crew-gates practice.create while event/circle/journey create are open to any signed-in member - an inconsistency with no argument behind it.",
+      "detail": "NARROWED 2026-09-09. The row originally said \"delete the five tier-axis gates\". Two of the five (journey_library_list, entry_points) have no enforcement and are handled by HYG-079. The other three are NOT decorative and must not be deleted as hygiene:\n  - vault_cash_in    enforced at app/(main)/crew/store/actions.ts:72\n  - gamification_full enforced at lib/pricing/gamification-access.ts:119\n  - vera_unlimited    enforced at lib/ai/vera/usage-gate.ts:70\nplus two personal tease surfaces (vault-store.tsx:26, layout.tsx:855) and two pricing-grid rows.\n\nfeatureAllowed default-ALLOWS an undeclared key, so deleting them would not error. It would silently and permanently grant Gem cash-in, the full rewards loop, and uncapped Vera to every free member. gate-meter-drift.test.ts already records vera_unlimited as a known collision deferred to a later phase.\n\nWHAT REMAINS IN THIS ROW: un-gate practice.create in lib/core/capabilities.ts:228, which is Crew-gated while event.create, circle.create and journey.create are open to any signed-in member. That inconsistency has no argument behind it. Requires updating load-capabilities.test.ts:141,239 and removing the now-unreachable crewCreateUpsell copy at practices/create-actions.ts:199.\n\nThe tier AXIS itself cannot be removed: six METERS still use axis tier (vera_unlimited, journey_publish, journey_enrollees, circle_host, practice_publish, event_create), and GateAxis is imported by six modules.",
       "verify": {
         "kind": "cmd",
-        "cmd": "node -e 'const s=require(\"fs\").readFileSync(\"lib/pricing/gates.ts\",\"utf8\");const n=(s.match(/axis:\\s*.tier./g)||[]).length;if(n)console.error(n+\" tier-axis gates remain\");process.exit(n?1:0)'"
+        "cmd": "node -e 'const s=require(\"fs\").readFileSync(\"lib/core/capabilities.ts\",\"utf8\");const m=s.match(/caps\\.add\\(.event\\.create.\\)[\\s\\S]{0,260}?\\n\\s*\\}/);if(!m){console.error(\"the member create block was not found\");process.exit(1)}if(!/practice\\.create/.test(m[0])){console.error(\"practice.create is still gated separately from its three siblings\");process.exit(1)}process.exit(0)'"
       }
     },
     {
       "id": "LIVE-223",
       "title": "Crew becomes granted by an active paid community membership, with provenance",
-      "status": "open",
+      "status": "done",
       "priority": "P1",
       "lane": "live",
       "size": "M",
@@ -10535,7 +10485,7 @@
         "file": "docs/CORE-MODEL.md",
         "ref": "§5"
       },
-      "detail": "Owner ruling 2026-09-08: any active PAID membership, any price, grants Crew. Crew is a TIER today, not a role, and the tier has no provenance - nothing records WHY a profile is crew, so a grant cannot be revoked when the membership lapses without also downgrading someone who pays Stripe directly. Needs a crew_grants record (or the household_bundle_prior_tier pattern) and siblings at all six lifecycle sites.\n\nSELF-GRANT GUARD, and the owner already narrowed it: only PAID Spaces can create membership tiers, so the $1-tier loophole costs a Business subscription to open. setMembershipTiers still has no minimum price check (lib/spaces/memberships.ts:415) and prevent_economy_self_edit does not cover membership_tier, so an owner must not be grantable by their own tier.",
+      "detail": "Owner ruling 2026-09-08: any active PAID membership, any price, grants Crew. Crew is a TIER today, not a role, and the tier has no provenance - nothing records WHY a profile is crew, so a grant cannot be revoked when the membership lapses without also downgrading someone who pays Stripe directly. Needs a crew_grants record (or the household_bundle_prior_tier pattern) and siblings at all six lifecycle sites.\n\nSELF-GRANT GUARD, and the owner already narrowed it: only PAID Spaces can create membership tiers, so the $1-tier loophole costs a Business subscription to open. setMembershipTiers still has no minimum price check (lib/spaces/memberships.ts:415) and prevent_economy_self_edit does not cover membership_tier, so an owner must not be grantable by their own tier.\n\n── SHIPPED 2026-09-09. The tier resolves as a union over two facts that are never collapsed: profiles.membership_tier stays the STRIPE rung and is never written by this feature, and the grant is its own provenance-stamped row in entitlement_grants. lib/core/entitlement.ts carries EffectiveTier { stripeTier, granted, tier } so the access question and the pricing question cannot be confused, and billedTier() collapses to stripeTier and never to tier - which is what makes LIVE-224 hold.\n\nA row IS the grant; revoke DELETES it. No revoked_at, because two representations of \"not granted\" is one more than can be kept in step. Revoke filters on (profile_id, granted_by_tier_id), so a Stripe-paid Crew or a grant from another community can never be touched.\n\nAll six lifecycle sites ride syncTierCircleAccess, the one seam the five code sites already call, and it runs BEFORE the circle early-returns because all four live tiers have circle_id null - a grant gated behind the circle link would have reached nobody. The sixth site is the SCHEMA: granted_by_tier_id ON DELETE CASCADE, so deleting a tier removes exactly the grants it made with no app code to forget.\n\nThe self-grant guard is a BEFORE INSERT/UPDATE trigger refusing owners, admins and any tier priced at zero, plus membership_tier added to prevent_economy_self_edit.\n\n⚠️ The minimum-price check is NOT wired: its site is setMembershipTiers, and the pure guard ships as lib/billing/membership-tier-price.ts (MIN_PAID_TIER_PRICE_CENTS = 300) awaiting one call. Not urgent - the grant path already refuses a zero-price tier and the trigger refuses the row.\n\n⚠️ The migration is UNAPPLIED and ships with this change. scripts/check-schema-contract.mjs carries a dated ALLOWLIST entry because the table exists only in the migration; DELETE that entry once it is applied and the types regenerated, or the guard goes stale.",
       "verify": {
         "kind": "manual",
         "evidence": "Resolver unit tests: a paid member resolves crew, cancelling revokes it, a Stripe-paying member is never downgraded, an owner is not granted by their own tier.",
@@ -10545,7 +10495,7 @@
     {
       "id": "LIVE-224",
       "title": "A granted Crew must not buy down the take rate",
-      "status": "open",
+      "status": "done",
       "priority": "P1",
       "lane": "live",
       "size": "S",
@@ -10562,7 +10512,7 @@
     {
       "id": "LIVE-225",
       "title": "Five zero caps become real free allowances",
-      "status": "open",
+      "status": "done",
       "priority": "P1",
       "lane": "live",
       "size": "S",
@@ -10579,7 +10529,7 @@
     {
       "id": "LIVE-226",
       "title": "Retire tickets; fold enroll into journeys+memberships and checkin into events",
-      "status": "open",
+      "status": "done",
       "priority": "P2",
       "lane": "live",
       "size": "M",
@@ -10596,7 +10546,7 @@
     {
       "id": "HYG-084",
       "title": "Fix three code comments that now state the opposite of what the code does",
-      "status": "open",
+      "status": "done",
       "priority": "P2",
       "lane": "hygiene",
       "size": "XS",
@@ -10617,7 +10567,7 @@
     {
       "id": "LIVE-227",
       "title": "Resolve /sites/[slug]: hide Independent from public pricing, keep the tier",
-      "status": "open",
+      "status": "done",
       "priority": "P1",
       "lane": "live",
       "size": "S",
@@ -11307,6 +11257,25 @@
         "kind": "manual",
         "evidence": "The Reach box carries a receipt page showing network-sourced reach and the levers that move it.",
         "checked": "2026-09-08"
+      }
+    },
+    {
+      "id": "OWN-071",
+      "title": "Ruling: do free members get the full Quest loop, and is uncapped Vera still a Crew perk?",
+      "status": "open",
+      "priority": "P1",
+      "lane": "owner",
+      "size": "S",
+      "source": {
+        "file": "docs/CORE-MODEL.md",
+        "ref": "§4b"
+      },
+      "ownerAction": "ruling",
+      "detail": "SURFACED 2026-09-09 while working LIVE-222, and CORRECTED the same day by the owner.\n\n🔴 THE CORRECTION FIRST, because the original framing was wrong and it changed the answer. This row said vault_cash_in \"lets a member turn Gems into money\". It does not. OWNER, 2026-09-09: \"Gem cash trade in is ONLY for store merch.\" The code agrees - app/(main)/crew/store/actions.ts redeemItem spends Gems against store_items (gem_cost, stock, season_id, expires_at), which is the VAULT at /crew/store, a rewards catalog. It is not a payout, and it is a different surface from the Frequency Store (commerce_products, owner_kind=platform). So the cost of opening it is merch fulfilment and stock, not cash out of the business.\n\nTHE THREE GATES, correctly described:\n  - vault_cash_in     spend earned Gems on Vault items. Cost: fulfilment + stock.\n  - gamification_full the full earn-and-spend loop rather than earn-only. Cost: none directly.\n  - vera_unlimited    removes the free daily AI cap. Cost: inference spend, per user, unbounded.\n\nWHY IT STILL NEEDS A RULING: the owner ruled the Quest is demoted from the centre of the product to \"a side thing we all do together\". Two of these three are what makes it a thing we all do - a member who can earn but never spend is not playing the same game as a member who can. The third is not about the game at all; it is an AI budget that happens to sit on the same axis.\n\nRECOMMENDATION, revised on the correction: open vault_cash_in AND gamification_full, keep vera_unlimited gated. Everyone plays the whole loop including spending what they earned, which is what \"together\" means; the one gate that survives is the one with a real marginal cost per user, and it is an AI cap rather than a game rung. Fulfilment cost is real but it is bounded by stock and by what a member can plausibly earn, and the Vault already enforces both.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Owner ruling recorded in DECISIONS.md and reflected in FEATURE_GATES.",
+        "checked": "2026-09-09"
       }
     }
   ]

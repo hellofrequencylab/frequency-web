@@ -2,7 +2,10 @@
 // type composes onto the unified Offerings settings page (/spaces/<slug>/settings/offerings).
 //
 // The console's Offerings group used to show up to five separate type-gated cards, each linking to
-// its own settings sub-page (availability / memberships / donations / enrollment / tickets / check-in).
+// its own settings sub-page (availability / memberships / donations). Enrollment, tickets and
+// check-in were retired into journeys and events (ADR-1294, LIVE-226): their anchors are gone from
+// this catalog rather than filtered out of it downstream, so the list cannot describe a section the
+// Offerings page will never compose.
 // This collapses them into ONE adaptive surface: the Offerings page stacks whichever of these
 // sections apply to THIS space's type, and the console shows a single Offerings card.
 //
@@ -37,9 +40,6 @@ export const OFFERING_SECTIONS: readonly OfferingSection[] = [
   { anchor: 'availability', requiredFunction: 'availability', types: ['*'] }, // origin: practitioner
   { anchor: 'memberships', requiredFunction: 'memberships', types: ['*'] }, // origin: business
   { anchor: 'donations', requiredFunction: 'donations', types: ['*'] }, // origin: organization
-  { anchor: 'enroll', requiredFunction: 'enroll', types: ['*'] }, // origin: organization
-  { anchor: 'tickets', requiredFunction: 'tickets', types: ['*'] }, // origin: event_space
-  { anchor: 'checkin', requiredFunction: 'checkin', types: ['*'] }, // origin: event_space
 ] as const
 
 /** Does a section compose onto this Space type? ('*' = every type.) Under universal functions every

@@ -6,10 +6,12 @@ import { isError } from '@/lib/action-result'
 import { startSpaceLoadoutCheckout } from './actions'
 
 // CHOOSE PLAN BUTTON (client · ADR-811). The inline upgrade action for a ladder rung the checkout can
-// sell directly (Collective / Independent). It wires to startSpaceLoadoutCheckout, which is DOUBLE-GATED
-// server-side (billingLive AND the per-plan switch), so the parent only renders this when the plan is
-// sellable. Business keeps its own richer CTA (GoBusinessCta) with the seat picker; this is the plain
-// one-click choose for the flat higher rungs. No em dashes (CONTENT-VOICE §10).
+// sell self-serve, which today is Collective alone: Independent came off the self-serve path when the
+// owner made it a hand-sold tier (LIVE-227), so the prop type names the one plan this button offers and
+// a second one cannot be added without a decision. It wires to startSpaceLoadoutCheckout, which is
+// DOUBLE-GATED server-side (billingLive AND the per-plan switch), so the parent only renders this when
+// the plan is sellable. Business keeps its own richer CTA (GoBusinessCta) with the seat picker; this is
+// the plain one-click choose for the flat higher rung. No em dashes (CONTENT-VOICE §10).
 
 export function ChoosePlanButton({
   slug,
@@ -17,8 +19,8 @@ export function ChoosePlanButton({
   label,
 }: {
   slug: string
-  /** The loadout plan to buy. Business runs through its own CTA, so this is the higher flat rungs. */
-  plan: 'collective' | 'independent'
+  /** The loadout plan to buy. Business runs through its own CTA, so this is the higher flat rung. */
+  plan: 'collective'
   /** The button label, e.g. "Choose Collective". */
   label: string
 }) {

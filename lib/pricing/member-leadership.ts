@@ -18,10 +18,11 @@
 //
 // ⚠️ WHAT DOES NOT BELONG HERE: a capability already enforced on a PURE paid check that bites TODAY.
 // Routing one of those through `featureAllowed` would LOOSEN it (grant-all until the grace window
-// ends), which is a regression dressed as a refactor. `journey_library_list` is exactly that case:
-// lib/journeys/publish-gate.ts already enforces it via `canListJourneyInLibrary({ paid })` and must
-// keep doing so. Its FEATURE_GATES entry exists for the DERIVED pricing surfaces (/pricing reads the
-// gate map), not for enforcement — the same split `space_full_website` uses.
+// ends), which is a regression dressed as a refactor. Journey library listing is exactly that case:
+// lib/journeys/publish-gate.ts enforces it via `canListJourneyInLibrary({ paid })` and must keep
+// doing so. It no longer has a FEATURE_GATES entry at all: the declarative `journey_library_list`
+// gate enforced nothing and was deleted with six others in HYG-079 (ADR-1294), along with
+// `space_full_website`, which this comment used to cite as the parallel case.
 //
 // The tier passed in must be the caller's REAL tier (`getCallerProfile().realMembershipTier`, ADR-414),
 // never the beta-overridden display tier, so a beta comp cannot silently lift a creation cap.

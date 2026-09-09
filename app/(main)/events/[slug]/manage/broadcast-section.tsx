@@ -1,6 +1,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { BroadcastComposer } from '@/components/comms/broadcast-composer'
 import type { BroadcastChannelOption } from '@/components/comms/broadcast-types'
+import { SMS_CHANNEL } from '@/lib/comms/broadcast-channels'
 import { loadEventBroadcastSegments } from '@/lib/events/broadcast-audience'
 import {
   loadEventCrmAccess,
@@ -98,9 +99,9 @@ export async function EventBroadcastSection({ eventId, slug }: { eventId: string
       enabled: true,
       note: 'Posts to the event page and reaches the whole event audience, whatever segments you pick.',
     },
-    // Refuse-first SMS (ADR-256): the infrastructure exists but A2P is not filed, so Text
-    // is a disabled chip with an honest note, never a toggle that silently does nothing.
-    { key: 'sms', enabled: false, note: 'Coming soon' },
+    // Refuse-first SMS: the one channel whose answer is the same on every surface, so it is the
+    // shared chip (lib/comms/broadcast-channels.ts) rather than a fourth copy of the same literal.
+    SMS_CHANNEL,
   ]
 
   return (

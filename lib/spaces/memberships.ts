@@ -7,11 +7,21 @@
 // space" and "what may this caller do here" (P5): every write re-checks authorization; reads
 // fail-safe (empty/null) and writes fail-closed on a permission miss.
 //
-// v1 IS NOT BILLING. price_cents + interval are DISPLAY ONLY: joining a tier RECORDS a membership,
-// it does NOT take a payment. The join surface frames this honestly (CONTENT-VOICE skeptic test) so
-// no copy implies a charge. Stripe billing / dunning / proration and member-only content gating are
-// Phase 4 and deliberately NOT built here (additive later: a payments table + a subscription id
-// column, never a refactor, P4).
+// MONEY IS LIVE HERE, and this module is the FREE HALF of it. price_cents + interval are real: a paid
+// tier is bought through startSpaceMembershipCheckout -> createSpaceMembershipCheckout (a Stripe
+// Connect subscription whose application fee is the Space plan's take rate), and the webhook writes
+// space_memberships.stripe_subscription_id + payment_status back onto the row (lib/billing/
+// space-membership-checkout.ts, lib/billing/space-subscriptions.ts, ADR-363).
+//
+// What still lives in THIS file is the no-charge path and the lifecycle around it:
+//   - joinTier RECORDS a membership without taking a payment. It is the path for a free tier, and the
+//     fallback the join card uses when checkout cannot start (billing off, the tier is free, or the
+//     Space owner is not payout ready), so a member is never left at a broken button.
+//   - cancelMembership cancels the Stripe subscription BEFORE it flips the row, so a paid cancel stops
+//     the money as well as the access (ADR-859).
+//   - setMembershipTiers is behind the Business plan wall (ADR-914): publishing any tier at all is a
+//     paid capability, enforced at the write rather than on the settings surface.
+// Dunning, proration and member-only content gating are still not built here.
 //
 // SHAPE: the PURE helpers (tier normalization + validation) have no Supabase/Next imports, so they
 // are fully unit-testable (lib/spaces/memberships.test.ts). The IO (the admin-client reads/writes)
@@ -36,12 +46,13 @@ import { stripe } from '@/lib/billing/stripe'
 
 // ── Types ─────────────────────────────────────────────────────────────────────────────────────
 
-/** A billing cadence shown to members. DISPLAY ONLY in v1 (no charge is taken). */
+/** A membership's billing cadence. Real: it is the interval the Stripe subscription is created on for
+ *  a paid tier, and the cadence shown on the join card for a free one. */
 export type MembershipInterval = 'month' | 'year' | 'once'
 
-/** One membership tier as the app consumes it (camelCased). priceCents + interval are DISPLAY ONLY
- *  in v1 (what membership will cost; joining takes no charge). benefits is a list of plain strings
- *  the join card renders. */
+/** One membership tier as the app consumes it (camelCased). priceCents + interval are the real price:
+ *  a tier priced above zero is joined through Stripe Checkout, a zero-priced one through the free
+ *  joinTier path below. benefits is a list of plain strings the join card renders. */
 export interface MembershipTier {
   /** The tier id (absent for a not-yet-saved draft from the editor). */
   id?: string
@@ -495,8 +506,10 @@ export async function getMyMembership(spaceId: string): Promise<MyMembership | n
 }
 
 /**
- * Join a tier. Any authenticated member (resolved via getMyProfileId). v1 RECORDS the membership;
- * it does NOT take a payment (billing is Phase 4). The server re-validates that the tier is real +
+ * Join a tier WITHOUT taking a payment. Any authenticated member (resolved via getMyProfileId). This
+ * is the free path plus the fallback for a paid tier whose checkout cannot start (billing off, the
+ * owner is not payout ready); the paid path is startSpaceMembershipCheckout, and its webhook writes
+ * the same row with a subscription id attached. The server re-validates that the tier is real +
  * active in this Space, then inserts an active membership — or, when the tier is FULL (ADR-824)
  * and takes a waitlist, a `waitlist` row instead. A friendly fail if the member already holds an
  * open row here (the one-open unique index is the final guard against a race). Returns

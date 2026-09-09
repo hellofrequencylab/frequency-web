@@ -43,7 +43,8 @@ describe('sectionForModule (the hub IA)', () => {
   })
 
   it('routes the Offerings and money box and every service in it to Offerings & Money', () => {
-    for (const id of ['space.offerings', 'space.booking', 'space.memberships', 'space.donations', 'space.enroll', 'space.tickets', 'space.checkin', 'space.services']) {
+    // space.enroll / space.tickets / space.checkin were three more rows here until LIVE-226.
+    for (const id of ['space.offerings', 'space.booking', 'space.memberships', 'space.donations', 'space.services']) {
       expect(sectionForModule(spaceModuleById(id)!)).toBe('offerings')
     }
   })

@@ -37,8 +37,7 @@ import { PLACEHOLDER_METER_LIMITS, NON_METERED_FEATURES } from './feature-meters
 const KNOWN_GATE_METER_COLLISIONS: Record<string, string> = {
   space_crm_resonance_ai: 'Phase 3b: pick the meter; the gate wrapper has no callers.',
   space_automation: 'Phase 3b: the real lock is the pure `automation` entitlement key, not this gate.',
-  space_collaborators: 'Phase 3b: the ladder is genuinely metered; the gate marks the free preview.',
-  space_crm_playbooks: 'Phase 3b: the gate wrapper has no callers; the meter is display only.',
+  space_collaborators: 'Phase 3b: the ladder is genuinely metered (free 1 since LIVE-225); the gate floor is the second promise.',
   // The personal Vera gate DOES enforce (usage-gate.ts), against an operator cap in pricing_settings
   // rather than against this meter. ADR-917 collapsed the NUMBERS (the operator cap now defaults to
   // the meter's own free rung, so a member is shown and stopped at one figure), but the SHAPE is
@@ -51,21 +50,23 @@ const KNOWN_GATE_METER_COLLISIONS: Record<string, string> = {
  *
  *  ✅ DELETED FROM THIS LIST BY PHASE 3b (ADR-917): `space_team` and `space_multi_pipeline`, both by
  *  removing the gate rather than by wiring it. A decorative gate is a claim that was never true; the
- *  honest fix is usually deletion, not a call site invented to justify it. */
+ *  honest fix is usually deletion, not a call site invented to justify it.
+ *
+ *  ✅ AND BY HYG-079, which took the ratchet to ONE: `space_whitelabel`, `space_sms`,
+ *  `space_revenue_splits`, `space_crm_playbooks`, `space_crm_resonance`, `journey_library_list`,
+ *  `entry_points` and `space_full_website` all left by deletion, on the same reasoning. The last of
+ *  those is worth naming because it was exempted here as INTENTIONAL, permanently: it carried
+ *  `enabled: false` so a pure default-deny entitlement key could do the real work. That made it
+ *  correct and still redundant, which is a state this list had no way to express. The entitlement key
+ *  (spaceCanUseFullWebsite) is untouched and still enforces the upsell.
+ *
+ *  🔴 These gates were INERT, not merely unused, and that is the reason the deletion could not wait:
+ *  featureAllowed short-circuits to GRANT while the beta grace window is open (now 2026-12-01), so
+ *  every one of them enforced nothing today and would have STARTED enforcing on that date, against
+ *  surfaces with no refusal path and, in two cases, features that are not built. */
 const KNOWN_DECORATIVE_GATES: Record<string, string> = {
-  space_crm_playbooks: 'spaceCanRunPlaybooksLive has zero callers. Wire it or delete it.',
-  space_crm_resonance: 'spaceCanSeeResonanceLive has zero callers.',
   space_crm_resonance_ai: 'spaceCanUseResonanceAiLive has zero callers.',
-  space_revenue_splits: 'Zero references outside gates.ts and docs. One of the three named walls (VALUE-LADDER §3), so it stays and is owed a call site when splits are built.',
-  space_sms: 'Zero references outside gates.ts. Rides the A2P registration, which is not live.',
-  journey_library_list: 'The real lock is canListJourneyInLibrary, a parallel ladder.',
-  entry_points: 'The per-Space QR volume it stands in for is the space_qr METER, enforced in lib/qr/space-codes.ts (ADR-917). This tier-axis gate still has no call site of its own.',
   space_automation: 'The real lock is the pure `automation` entitlement key.',
-  space_whitelabel: 'The real lock is the `whitelabel` entitlement key.',
-  // Intentional and permanent: enforced by a PURE default-deny entitlement key precisely so it
-  // survives featureAllowed short-circuiting to granted while the gates are not live. This is the one
-  // row here that is correct rather than owed.
-  space_full_website: 'INTENTIONAL — enforced by the pure spaceCanUseFullWebsite key, by design.',
 }
 
 const gateKeys = Object.keys(FEATURE_GATES)

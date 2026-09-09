@@ -44,7 +44,8 @@ function routeExists(href: string): boolean {
 // contents (that would just re-type the drift we are preventing); it is to prove the DERIVATION:
 //
 //   * change a tier depth key set, and the grid's cells change with it;
-//   * every sellable tier (SPACE_PLANS + both member tiers) has a column;
+//   * every ADVERTISED tier (ADVERTISED_SPACE_PLANS + free + both member tiers) has a column, and a
+//     tier the owner sells by hand rather than publishing has none;
 //   * a crossed-out anchor appears exactly where the config carries one and nowhere else;
 //   * the take-rate row is the real network rate the fee code charges;
 //   * the page source contains no hard-coded dollar figure at all.
@@ -52,7 +53,7 @@ function routeExists(href: string): boolean {
 import { yearlyFromMonthly } from '@/lib/billing/pricing-keys'
 import { isBetaPricingActive } from './beta'
 import { catalogConfigByKey, defaultCatalogConfig } from './catalog-config'
-import { formatCents } from './display'
+import { ADVERTISED_SPACE_PLANS, formatCents } from './display'
 import { FEATURE_GATES, meetsGate } from './gates'
 import {
   ADDON_ENTITLEMENT_KEYS,
@@ -82,6 +83,17 @@ const input: PricingGridInput = {
   catalog: catalogConfigByKey(defaultCatalogConfig()),
 }
 
+/** The Space tiers the public grid SHOWS: the free baseline plus the advertised paid ladder.
+ *
+ *  🔴 DELIBERATELY NARROWER THAN SPACE_PLANS (owner ruling 2026-09-08, LIVE-227). SPACE_PLANS is every
+ *  tier that EXISTS, including Independent, which is still sellable but only by hand: the standalone
+ *  white-label site it is sold on renders "Coming soon", so publishing a price for it was the sharpest
+ *  honesty risk in the repo. ADVERTISED_SPACE_PLANS (lib/pricing/display.ts) is the one list every
+ *  public surface derives from, so this constant follows it rather than restating a ladder. Every
+ *  column-by-column assertion below sweeps THIS, and `no public surface advertises a hand-sold tier`
+ *  further down proves the difference is real rather than merely untested. */
+const SHOWN_SPACE_PLANS: readonly SpacePlan[] = ['free', ...ADVERTISED_SPACE_PLANS]
+
 /** Find one row anywhere in a grid by its key. */
 function row(grid: FeatureGrid, key: string) {
   const found = grid.groups.flatMap((g) => g.rows).find((r) => r.key === key)
@@ -98,11 +110,12 @@ function cellsByColumn(grid: FeatureGrid, key: string): Record<string, string> {
 // ── Every offering is present, priced, and detailed ─────────────────────────────────────────────────
 
 describe('offerings: every sellable tier is on the page', () => {
-  it('covers both member tiers and every SPACE_PLANS tier, in ladder order', () => {
+  it('covers both member tiers and every ADVERTISED Space tier, in ladder order', () => {
     expect(memberOfferings(input).map((o) => o.id)).toEqual(['member', 'crew'])
-    // The Space columns ARE the plan ladder: adding a tier to SPACE_PLANS adds a column here.
-    expect(spaceOfferings(input).map((o) => o.tier)).toEqual([...SPACE_PLANS])
-    expect(allOfferings(input)).toHaveLength(2 + SPACE_PLANS.length)
+    // The Space columns ARE the advertised ladder: adding a tier to ADVERTISED_SPACE_PLANS adds a
+    // column here, and taking one off removes it from every public surface at once.
+    expect(spaceOfferings(input).map((o) => o.tier)).toEqual([...SHOWN_SPACE_PLANS])
+    expect(allOfferings(input)).toHaveLength(2 + SHOWN_SPACE_PLANS.length)
   })
 
   it('labels every Space column from the naming canon', () => {
@@ -245,9 +258,9 @@ describe('beta pricing: the crossed-out anchor idiom (ADR-463)', () => {
     expect(BETA_RATE_NOTE).toMatch(/as long as you keep the plan/)
   })
 
-  it('invents no beta rate for Non Profit or Independent (single price, no strike)', () => {
+  it('invents no beta rate for the free Space or Non Profit (single price, no strike)', () => {
     const byId = Object.fromEntries(spaceOfferings(open).map((o) => [o.id, o]))
-    for (const id of ['free', 'nonprofit', 'independent']) {
+    for (const id of ['free', 'nonprofit']) {
       expect(byId[id]!.listAnchor).toBeNull()
       expect(byId[id]!.betaNote).toBeNull()
     }
@@ -273,8 +286,8 @@ describe('beta pricing: the crossed-out anchor idiom (ADR-463)', () => {
 describe('feature grid: cells derive from the tier depth key sets', () => {
   const grid = spaceFeatureGrid(input)
 
-  it('has one column per Space tier and at least one row per group', () => {
-    expect(grid.columns.map((c) => c.tier)).toEqual([...SPACE_PLANS])
+  it('has one column per ADVERTISED Space tier and at least one row per group', () => {
+    expect(grid.columns.map((c) => c.tier)).toEqual([...SHOWN_SPACE_PLANS])
     expect(grid.groups.length).toBeGreaterThanOrEqual(8)
     for (const g of grid.groups) expect(g.rows.length).toBeGreaterThan(0)
   })
@@ -292,22 +305,23 @@ describe('feature grid: cells derive from the tier depth key sets', () => {
       business: 'Included',
       collective: 'Included',
       nonprofit: 'Included',
-      independent: 'Included',
     })
     expect(cellsByColumn(grid, 'team')).toEqual({
       free: 'Not included',
       business: 'Not included',
       collective: 'Included',
       nonprofit: 'Included',
-      independent: 'Included',
     })
-    expect(cellsByColumn(grid, 'whitelabel')).toEqual({
+    // The third separator used to be `whitelabel`, the key that split Independent from Collective.
+    // With Independent off the advertised ladder that row read "Not included" in every column, so it
+    // was removed with the tier (LIVE-227) and `space_full_website` separates free from paid instead.
+    expect(cellsByColumn(grid, 'space_full_website')).toEqual({
       free: 'Not included',
-      business: 'Not included',
-      collective: 'Not included',
-      nonprofit: 'Not included',
-      independent: 'Included',
+      business: 'Included',
+      collective: 'Included',
+      nonprofit: 'Included',
     })
+    expect(grid.groups.flatMap((g) => g.rows).map((r) => r.key)).not.toContain('whitelabel')
   })
 
   it('EVERY entitlement-backed row agrees with planEntitlementKeys, key by key', () => {
@@ -322,32 +336,40 @@ describe('feature grid: cells derive from the tier depth key sets', () => {
       ['multi_pipeline', 'multi_pipeline'],
       ['team', 'team'],
       ['program', 'program'],
-      ['whitelabel', 'whitelabel'],
     ]
     for (const [rowKey, entitlementKey] of entitlementRows) {
       const cells = cellsByColumn(grid, rowKey)
-      for (const plan of SPACE_PLANS) {
+      for (const plan of SHOWN_SPACE_PLANS) {
         const granted = planEntitlementKeys(plan).includes(entitlementKey)
         expect(cells[plan], `${rowKey} @ ${plan}`).toBe(granted ? 'Included' : 'Not included')
       }
     }
   })
 
-  it('covers every key in the three depth sets with a row (no silent gap)', () => {
+  it('covers every key an ADVERTISED tier grants with a row (no silent gap)', () => {
+    // 🔴 SCOPED TO WHAT THE PAGE SELLS, and that is the whole point of the guard. It asks "does a
+    // reader comparing plans see every capability a plan they can buy actually grants". Sweeping the
+    // Independent depth set too would demand a row for `whitelabel`, which no advertised tier grants,
+    // and the row that satisfied it read "Not included" in all four columns (LIVE-227). Derived from
+    // the columns themselves rather than a hand-listed set, so restoring a tier restores its keys here.
     const rowKeys = new Set(grid.groups.flatMap((g) => g.rows).map((r) => r.key))
-    const depthKeys = new Set([
+    const advertisedKeys = new Set(grid.columns.flatMap((c) => planEntitlementKeys(c.tier as SpacePlan)))
+    const missing = [...advertisedKeys].filter((k) => !rowKeys.has(k))
+    expect(missing, 'every key an advertised tier grants needs a grid row').toEqual([])
+    // NON-VACUITY: the set is real and is exactly Business + Collective depth, not an empty sweep.
+    expect([...advertisedKeys].sort()).toEqual([...new Set([
       ...BUSINESS_DEPTH_ENTITLEMENT_KEYS,
       ...COLLECTIVE_DEPTH_ENTITLEMENT_KEYS,
-      ...INDEPENDENT_DEPTH_ENTITLEMENT_KEYS,
-    ])
-    const missing = [...depthKeys].filter((k) => !rowKeys.has(k))
-    expect(missing, 'every depth key needs a grid row').toEqual([])
+    ])].sort())
+    // And the one key the advertised ladder does NOT grant is the one that lost its row.
+    expect(advertisedKeys.has('whitelabel')).toBe(false)
+    expect(INDEPENDENT_DEPTH_ENTITLEMENT_KEYS).toContain('whitelabel')
   })
 
   it('a gate row agrees with the real FEATURE_GATES minimum', () => {
     for (const feature of ['space_storefront', 'space_collaborators', 'space_membership_tickets']) {
       const cells = cellsByColumn(grid, feature)
-      for (const plan of SPACE_PLANS) {
+      for (const plan of SHOWN_SPACE_PLANS) {
         const allowed = meetsGate(FEATURE_GATES[feature]!, { plan })
         expect(cells[plan], `${feature} @ ${plan}`).toBe(allowed ? 'Included' : 'Not included')
       }
@@ -360,7 +382,7 @@ describe('feature grid: cells derive from the tier depth key sets', () => {
     // config carries, so an owner rate change moves the page and this test together (ADR-913).
     const net = PRICING_DEFAULTS.take_rate.network_bps
     const cells = cellsByColumn(grid, 'take_rate')
-    for (const plan of SPACE_PLANS) {
+    for (const plan of SHOWN_SPACE_PLANS) {
       expect(cells[plan], `take_rate @ ${plan}`).toBe(`${net[plan] / 100}%`)
     }
   })
@@ -383,7 +405,7 @@ describe('feature grid: cells derive from the tier depth key sets', () => {
     expect(contacts.free).toBe('Up to 200 contacts')
     expect(contacts.business).toBe('Unlimited contacts')
     // A tier above the top rung reads the top rung, exactly as the enforcement seam resolves it.
-    expect(contacts.independent).toBe('Unlimited contacts')
+    expect(contacts.nonprofit).toBe('Unlimited contacts')
     const sends = cellsByColumn(grid, 'space_email')
     expect(sends.free).toBe('Up to 300 sends/mo')
     expect(sends.collective).toBe('Up to 25,000 sends/mo')
@@ -399,7 +421,7 @@ describe('seats and the AI add-on', () => {
     const cells = cellsByColumn(grid, 'addon_ai')
     const price = formatCents(input.catalog.addon_ai.month.foundingCents)
     expect(cells.free).toBe('Not sold on the free plan')
-    for (const plan of ['business', 'collective', 'nonprofit', 'independent']) {
+    for (const plan of ADVERTISED_SPACE_PLANS) {
       expect(cells[plan]).toBe(`Add-on, ${price}/mo`)
     }
   })
@@ -413,7 +435,7 @@ describe('seats and the AI add-on', () => {
 
   it('offers extra seats exactly on the tiers whose depth includes the team key', () => {
     const cells = cellsByColumn(grid, 'seats')
-    for (const plan of SPACE_PLANS) {
+    for (const plan of SHOWN_SPACE_PLANS) {
       const hasTeam = planEntitlementKeys(plan).includes('team')
       expect(cells[plan] === 'Not on this plan', `seats @ ${plan}`).toBe(!hasTeam)
     }
@@ -501,21 +523,25 @@ describe('derivation guard: changing a depth key set changes the grid', () => {
   afterEach(() => vi.doUnmock('./plans'))
 
   it('flips a cell when a key moves into a lower tier depth set', async () => {
+    // This used to fold `whitelabel` down into Business. That key's row left the grid with the
+    // Independent tier (LIVE-227), and a derivation guard whose row does not exist proves nothing, so
+    // it now folds `team` down instead: a Collective-depth key, one rung above Business, which is the
+    // same shape of move on a row the page still renders.
     const actual = await vi.importActual<typeof import('./plans')>('./plans')
     vi.doMock('./plans', () => ({
       ...actual,
-      // White-label folded down into the Business depth: nothing else changes.
+      // Team roles folded down into the Business depth: nothing else changes.
       planEntitlementKeys: (plan: SpacePlan) =>
-        plan === 'business' ? [...actual.BUSINESS_DEPTH_ENTITLEMENT_KEYS, 'whitelabel'] : actual.planEntitlementKeys(plan),
+        plan === 'business' ? [...actual.BUSINESS_DEPTH_ENTITLEMENT_KEYS, 'team'] : actual.planEntitlementKeys(plan),
     }))
     const mod = await import('./pricing-grid')
     const moved = mod.spaceFeatureGrid(input)
     const cells = Object.fromEntries(
-      moved.columns.map((c, i) => [c.id, row(moved, 'whitelabel').cells[i]!.text]),
+      moved.columns.map((c, i) => [c.id, row(moved, 'team').cells[i]!.text]),
     )
     expect(cells.business).toBe('Included')
     // And the unmocked grid still reads the real answer, so this is the key set talking, not a literal.
-    expect(cellsByColumn(spaceFeatureGrid(input), 'whitelabel').business).toBe('Not included')
+    expect(cellsByColumn(spaceFeatureGrid(input), 'team').business).toBe('Not included')
   })
 
   it('flips the AI add-on row to Included when its keys join a tier base', async () => {
@@ -586,6 +612,84 @@ describe('operator gate overrides move the comparison cell', () => {
 
   it('no overrides is exactly the code map (today\'s behavior, unchanged)', () => {
     expect(spaceFeatureGrid({ ...input, gateOverrides: {} })).toEqual(spaceFeatureGrid(input))
+  })
+})
+
+// ── A HAND-SOLD TIER REACHES NO PUBLIC SURFACE ──────────────────────────────────────────────────────
+//
+// 🔴 THE CONSEQUENCE, NOT THE TITLE (owner ruling 2026-09-08, LIVE-227). It is not enough that the
+// column assertions above stopped naming Independent: a sweep that only checks what it was told to
+// check passes by being narrow. This block walks EVERY string the public model can produce and fails
+// on the tier's name, its price, or the entitlement key it is sold on appearing anywhere in it, plus
+// the /pricing page source itself.
+//
+// WHY THE TIER STILL EXISTS. Independent is sellable, by hand: the catalog item, its four Stripe
+// prices, its entitlement depth and its plan rank are all untouched, so a Space the crew sells it to
+// gets exactly what it pays for. What is not true yet is the standalone white-label site the tier is
+// sold on (app/sites/[slug]/page.tsx still renders "Coming soon"), which is why advertising it was the
+// sharpest honesty risk in the repo. The NON-VACUITY arm below proves the tier is still fully modelled,
+// so this file is measuring a display decision rather than a deleted plan.
+
+describe('the hand-sold Independent tier is on no public pricing surface', () => {
+  /** Every string the public pricing model can hand a visitor or an answer engine. */
+  function publicStrings(): string[] {
+    const out: string[] = []
+    const walk = (v: unknown): void => {
+      if (typeof v === 'string') out.push(v)
+      else if (Array.isArray(v)) v.forEach(walk)
+      else if (v && typeof v === 'object') Object.values(v).forEach(walk)
+    }
+    for (const betaActive of [true, false]) {
+      const i: PricingGridInput = { ...input, betaActive }
+      walk(allOfferings(i))
+      walk(spaceFeatureGrid(i))
+      walk(memberFeatureGrid(i))
+      walk(planExtras(i))
+    }
+    return out
+  }
+
+  it('names the tier nowhere in the offerings, the grids, or the add-on cards', () => {
+    for (const text of publicStrings()) {
+      expect(text, `"${text}" names a tier that is not sold publicly`).not.toMatch(/independent/i)
+    }
+  })
+
+  it('quotes its price nowhere either, at either interval or in cents', () => {
+    const price = PRICING_DEFAULTS.plan.independent
+    for (const text of publicStrings()) {
+      expect(text, `"${text}" quotes the hand-sold tier's price`).not.toContain(formatCents(price.monthly_cents))
+    }
+    for (const o of allOfferings(input)) expect(o.monthlyCents).not.toBe(price.monthly_cents)
+  })
+
+  it('has no column for it on either comparison grid', () => {
+    for (const grid of [spaceFeatureGrid(input), memberFeatureGrid(input)]) {
+      expect(grid.columns.map((c) => c.tier)).not.toContain('independent')
+      expect(grid.columns.map((c) => c.id)).not.toContain('independent')
+    }
+  })
+
+  it('leaves no empty column behind: every grid column still has a matching offering', () => {
+    // The failure mode this catches is a grid that dropped the tier from its ladder but kept a header,
+    // which renders as a column of blanks under a plan name nobody can buy.
+    const byId = new Map(spaceOfferings(input).map((o) => [o.id, o]))
+    for (const c of spaceFeatureGrid(input).columns) {
+      expect(byId.get(c.id), `column ${c.id} has no offering behind it`).toBeTruthy()
+    }
+  })
+
+  it('NON-VACUITY: the tier is still fully priced, entitled and ranked, it is just not advertised', () => {
+    // Every one of these is what "sold by hand" needs to keep working. If a later change actually
+    // deletes the tier, this arm fails and says so, rather than the removal passing as more of the
+    // same cleanup.
+    expect(SPACE_PLANS).toContain('independent')
+    expect(SPACE_PLAN_LABEL.independent).toBe('Independent')
+    expect(PRICING_DEFAULTS.plan.independent.monthly_cents).toBeGreaterThan(0)
+    expect(planEntitlementKeys('independent')).toContain('whitelabel')
+    // And the sweep above can genuinely fail: the tier's own name and price are real strings that a
+    // ladder including it would print.
+    expect(SPACE_PLAN_LABEL.independent).toMatch(/independent/i)
   })
 })
 
