@@ -53,6 +53,9 @@ export const USAGE_UPGRADE_THRESHOLD = 0.8
 /** The ONE nudge sentence a meter surface shows once usage crosses USAGE_UPGRADE_THRESHOLD (ADR-837).
  *  Exported so every surface prints the same line and none invents urgency. It always rides next to a
  *  plain "See plans" link; it never blocks, never counts down, never warns. */
+// ⚠️ This exact string is a check:shell-weight FINGERPRINT (scripts/check-shell-weight.mjs). The gate
+// finds this module in the built chunks by looking for it, so rewording it blinds a build-blocking
+// artifact gate rather than failing loudly. Change the needle in the same commit if you change this.
 export const ALLOWANCE_NUDGE = 'Nearly full. Move up a plan for a higher allowance.'
 
 /** The sentinel for an UNLIMITED allowance (a tier with no cap on this dimension). PURE data, so the

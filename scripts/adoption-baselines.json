@@ -61,14 +61,14 @@
       "exclude": [
         "**/*.{test,spec}.{ts,tsx}"
       ],
-      "baseline": 2171,
+      "baseline": 2167,
       "frozen": {
-        "at": "2026-09-08",
-        "value": 2171,
+        "at": "2026-09-09",
+        "value": 2167,
         "direction": "lowered",
         "basis": "db695768f455",
-        "reason": "PROG-DAWN3 slice 3 (LIVE-114): the same 14 sites retire 9 literal radii — 6 rounded-xl (import-wizard x4, report-dialog, walkthrough-card) and 3 rounded-lg (the three on-air error overlays) — for the skinnable rounded-control role BASE emits. 2180 -> 2171, all 9 this sweep's; the base tree reads exactly 2180 with the change stashed.",
-        "from": 2180
+        "reason": "Sites left with the code that carried them, not with a sweep (ADR-1294, phases 1-3): the IndependentStrip removed from /pricing under LIVE-227, and the three Offerings sections retired by LIVE-226. Nothing was converted to a radius token; the floor moves because the corpus shrank.",
+        "from": 2171
       },
       "history": [
         {
@@ -252,6 +252,13 @@
           "to": 2171,
           "direction": "lowered",
           "reason": "PROG-DAWN3 slice 3 (LIVE-114): the same 14 sites retire 9 literal radii — 6 rounded-xl (import-wizard x4, report-dialog, walkthrough-card) and 3 rounded-lg (the three on-air error overlays) — for the skinnable rounded-control role BASE emits. 2180 -> 2171, all 9 this sweep's; the base tree reads exactly 2180 with the change stashed."
+        },
+        {
+          "at": "2026-09-09",
+          "from": 2171,
+          "to": 2167,
+          "direction": "lowered",
+          "reason": "Sites left with the code that carried them, not with a sweep (ADR-1294, phases 1-3): the IndependentStrip removed from /pricing under LIVE-227, and the three Offerings sections retired by LIVE-226. Nothing was converted to a radius token; the floor moves because the corpus shrank."
         }
       ]
     },
@@ -330,14 +337,14 @@
       "exclude": [
         "**/*.{test,spec}.{ts,tsx}"
       ],
-      "baseline": 49,
+      "baseline": 48,
       "frozen": {
-        "at": "2026-09-08",
-        "value": 49,
+        "at": "2026-09-09",
+        "value": 48,
         "direction": "lowered",
         "basis": "9b2a23dd2c68",
-        "reason": "HYG-055 watched pass (ADR-1283): the two watched chrome sites that pass all three ADR-1260 preconditions take lift-1, the onboarding review-step card in PR 1 and the Pages-workspace TABLE_WRAP here; the other seven watched chrome sites are read in the note and cannot move. Measured from 51, not 50: a drop-shadow-sm filter on the Spotlight sticker glyph arrived on main in #2471 and the pattern matches inside it",
-        "from": 50
+        "reason": "One site left with the IndependentStrip removed from app/(marketing)/pricing/page.tsx under LIVE-227 (ADR-1294), when the Independent tier came off every public pricing surface. Not a conversion to a shadow token.",
+        "from": 49
       },
       "history": [
         {
@@ -395,6 +402,13 @@
           "to": 49,
           "direction": "lowered",
           "reason": "HYG-055 watched pass (ADR-1283): the two watched chrome sites that pass all three ADR-1260 preconditions take lift-1, the onboarding review-step card in PR 1 and the Pages-workspace TABLE_WRAP here; the other seven watched chrome sites are read in the note and cannot move. Measured from 51, not 50: a drop-shadow-sm filter on the Spotlight sticker glyph arrived on main in #2471 and the pattern matches inside it"
+        },
+        {
+          "at": "2026-09-09",
+          "from": 49,
+          "to": 48,
+          "direction": "lowered",
+          "reason": "One site left with the IndependentStrip removed from app/(marketing)/pricing/page.tsx under LIVE-227 (ADR-1294), when the Independent tier came off every public pricing surface. Not a conversion to a shadow token."
         }
       ]
     },
@@ -576,14 +590,14 @@
         "components/ui/button.tsx",
         "components/ui/icon-button.tsx"
       ],
-      "baseline": 404,
+      "baseline": 403,
       "frozen": {
-        "at": "2026-09-08",
-        "value": 404,
+        "at": "2026-09-09",
+        "value": 403,
         "direction": "lowered",
         "basis": "c478ed64ec1e",
-        "reason": "PROG-DAWN3 slice 3 (LIVE-114): the 14 deferred primary x md near-miss sites become the Button primitive, in 10 files. 418 -> 404, and all 14 are this sweep's — measured on the base tree with the change stashed, the class reads exactly 418, so no fall is banked that was not bought.",
-        "from": 418
+        "reason": "One site left with the IndependentStrip's call to action, removed from app/(marketing)/pricing/page.tsx under LIVE-227 (ADR-1294). Not a conversion to the button primitive.",
+        "from": 404
       },
       "history": [
         {
@@ -718,6 +732,13 @@
           "to": 404,
           "direction": "lowered",
           "reason": "PROG-DAWN3 slice 3 (LIVE-114): the 14 deferred primary x md near-miss sites become the Button primitive, in 10 files. 418 -> 404, and all 14 are this sweep's — measured on the base tree with the change stashed, the class reads exactly 418, so no fall is banked that was not bought."
+        },
+        {
+          "at": "2026-09-09",
+          "from": 404,
+          "to": 403,
+          "direction": "lowered",
+          "reason": "One site left with the IndependentStrip's call to action, removed from app/(marketing)/pricing/page.tsx under LIVE-227 (ADR-1294). Not a conversion to the button primitive."
         }
       ]
     },
@@ -1130,14 +1151,14 @@
       "exclude": [
         "**/*.{test,spec}.{ts,tsx}"
       ],
-      "baseline": 49,
+      "baseline": 48,
       "frozen": {
-        "at": "2026-09-08",
-        "value": 49,
+        "at": "2026-09-09",
+        "value": 48,
         "direction": "lowered",
         "basis": "64ff33cabd79",
-        "reason": "HYG-055 watched pass (ADR-1283): 27 of the 31 display-ladder sites on photographed surfaces take the display role covering their top step (text-3xl sm:text-4xl to text-display-h3, text-4xl sm:text-5xl and text-3xl sm:text-4xl lg:text-5xl to text-display-h2, text-page-title sm:text-3xl lg:text-4xl to text-display-h3), each keeping its explicit leading-*; the four text-5xl sm:text-6xl price figures stay under ADR-947's fitting rule, and the DAWN PlanPrice copy of that function takes the byte-identical text-stat-sm / text-stat-md swaps ADR-947 made on the pricing page. Measured from 78, not 77: a text-3xl sticker glyph arrived on main in #2471",
-        "from": 77
+        "reason": "One site left with the deleted UI under phases 1-3 (ADR-1294) - the /dev showcase routes and the retired pricing and Offerings sections. Not a conversion to a semantic type token.",
+        "from": 49
       },
       "history": [
         {
@@ -1188,6 +1209,13 @@
           "to": 49,
           "direction": "lowered",
           "reason": "HYG-055 watched pass (ADR-1283): 27 of the 31 display-ladder sites on photographed surfaces take the display role covering their top step (text-3xl sm:text-4xl to text-display-h3, text-4xl sm:text-5xl and text-3xl sm:text-4xl lg:text-5xl to text-display-h2, text-page-title sm:text-3xl lg:text-4xl to text-display-h3), each keeping its explicit leading-*; the four text-5xl sm:text-6xl price figures stay under ADR-947's fitting rule, and the DAWN PlanPrice copy of that function takes the byte-identical text-stat-sm / text-stat-md swaps ADR-947 made on the pricing page. Measured from 78, not 77: a text-3xl sticker glyph arrived on main in #2471"
+        },
+        {
+          "at": "2026-09-09",
+          "from": 49,
+          "to": 48,
+          "direction": "lowered",
+          "reason": "One site left with the deleted UI under phases 1-3 (ADR-1294) - the /dev showcase routes and the retired pricing and Offerings sections. Not a conversion to a semantic type token."
         }
       ]
     },
@@ -1575,14 +1603,14 @@
       "exclude": [
         "**/*.{test,spec}.{ts,tsx}"
       ],
-      "baseline": 485,
+      "baseline": 481,
       "frozen": {
-        "at": "2026-09-08",
-        "value": 485,
+        "at": "2026-09-09",
+        "value": 481,
         "direction": "lowered",
         "basis": "b2a90e60b032",
-        "reason": "HYG-055 watched pass (ADR-1283): the 49 chrome-free text-meta sites the three tracking slices left on photographed surfaces (34 tracking-wide + 8 tracking-wider + 7 tracking-widest, in 34 files) took the composite eyebrow utility and kept their layout and colour tokens, now that ADR-1269 showed the baseline recapture is agent-dispatchable. Measured from 534, not 533: one SMALL-register site (text-2xs, the Spotlight sticker label, #2471) arrived on main after the last freeze and is outside every slice. Re-derive with node scripts/eyebrow-bucket.mjs --tracking wide|wider|widest, each now 0",
-        "from": 533
+        "reason": "Sites left with the code that carried them, not with a sweep (ADR-1294, phases 1-3). Two came out of app/dev/editor-controls/showcase.tsx, deleted with both /dev showcase routes under HYG-075 as unreferenced across all 6,011 source files; the rest came out of the IndependentStrip on /pricing and the three Offerings sections (tickets, enroll, checkin) that LIVE-226 stopped composing. No eyebrow was converted to the kit, so the class is not more adopted than it was - the corpus is smaller.",
+        "from": 485
       },
       "history": [
         {
@@ -1633,6 +1661,13 @@
           "to": 485,
           "direction": "lowered",
           "reason": "HYG-055 watched pass (ADR-1283): the 49 chrome-free text-meta sites the three tracking slices left on photographed surfaces (34 tracking-wide + 8 tracking-wider + 7 tracking-widest, in 34 files) took the composite eyebrow utility and kept their layout and colour tokens, now that ADR-1269 showed the baseline recapture is agent-dispatchable. Measured from 534, not 533: one SMALL-register site (text-2xs, the Spotlight sticker label, #2471) arrived on main after the last freeze and is outside every slice. Re-derive with node scripts/eyebrow-bucket.mjs --tracking wide|wider|widest, each now 0"
+        },
+        {
+          "at": "2026-09-09",
+          "from": 485,
+          "to": 481,
+          "direction": "lowered",
+          "reason": "Sites left with the code that carried them, not with a sweep (ADR-1294, phases 1-3). Two came out of app/dev/editor-controls/showcase.tsx, deleted with both /dev showcase routes under HYG-075 as unreferenced across all 6,011 source files; the rest came out of the IndependentStrip on /pricing and the three Offerings sections (tickets, enroll, checkin) that LIVE-226 stopped composing. No eyebrow was converted to the kit, so the class is not more adopted than it was - the corpus is smaller."
         }
       ]
     }
