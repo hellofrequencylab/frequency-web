@@ -102,9 +102,10 @@ export function priceStrings(): PriceStrings {
 export const PLAN_STORY = {
   /** The whole spine in one breath. */
   spine:
-    'Frequency is where your local community happens. Connection is free. Businesses pay for reach and scale, never for access to people. Paid plans raise the limits.',
+    'Frequency is where your local community happens. People join free. Businesses host free. You pay when you start charging, and never for access to people.',
   /** The meter framing: paid is how much, never whether. */
-  meters: 'Everything is included. Paid plans raise the limits.',
+  meters:
+    'Everything is included on every plan. The free allowances are real, and a full meter never hides, deletes, or locks what is already there.',
   /** The honest yearly framing. It used to carry the Opening Beta line ("beta rates hold through the
    *  Summer of Frequency"), which stopped being true when the owner closed the window on 2026-08-17
    *  (ADR-1060). What replaces it is the deal that survived: the same price whenever you start, and two
