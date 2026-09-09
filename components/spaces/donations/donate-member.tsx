@@ -5,6 +5,8 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { AdminSetupPrompt } from '@/components/spaces/admin-setup-prompt'
 import { DonateCtaTracker } from '@/components/spaces/donations/donate-cta-tracker'
 import { PriceInput } from '@/components/commerce/price-input'
+import { DonateForm } from '@/components/spaces/donations/donate-form'
+import { spaceCanTakeDonations } from '@/lib/billing/space-donation-checkout'
 import { formatPriceCents, type Price } from '@/lib/commerce/types'
 
 // MEMBER DONATE SURFACE (ENTITY-SPACES-SYSTEM §2.6 "Donate", MASTER-PLAN ADMIN-04). The self-fetching
@@ -14,9 +16,15 @@ import { formatPriceCents, type Price } from '@/lib/commerce/types'
 // fetch sits behind a <Suspense> in the caller (entity-cta) so the tab paints instantly
 // (PAGE-FRAMEWORK §5).
 //
-// HONESTY (CONTENT-VOICE skeptic test): v1 takes NO payment. There is no Stripe path and giving is
-// not wired up yet, so the suggested amounts are a preview of what the owner plans to ask for. The
-// copy says so plainly, with no narrated feelings and no em/en dashes (CONTENT-VOICE §10).
+// GIVING IS WIRED (LIVE-235). The paragraph that stood here said "v1 takes NO payment. There is no
+// Stripe path and giving is not wired up yet", and that was honest for as long as it was true. It is
+// not any more: lib/billing/space-donation-checkout.ts opens a Stripe Connect destination charge to
+// the space owner, so this card renders a real Give button whenever the fund can actually take one.
+//
+// HONESTY IS STILL THE RULE, it just has a new subject (CONTENT-VOICE skeptic test). The card asks
+// spaceCanTakeDonations first, and a fund whose owner has no payout account keeps the preview copy
+// rather than showing a button that resolves to a refusal. The OPERATOR gets the shared Connect
+// prompt on their Offerings surface (LIVE-233), which is where that gap gets closed. No em dashes.
 
 /** Cents to a plain dollar chip label, e.g. 2500 -> "$25", 2550 -> "$25.50". Whole dollars drop the
  *  cents. USD only in v1 (a currency column is a later, additive expansion). DISPLAY ONLY. */
@@ -36,11 +44,13 @@ export async function DonateMember({
   slug: string
   ownerProfileId: string | null
 }) {
-  const ask = await getDonationAsk(spaceId)
+  // Both reads run together: the ask is what to render, and the readiness is whether the Give button
+  // may exist at all (a fund whose owner has no payout account keeps the preview control).
+  const [ask, canGive] = await Promise.all([getDonationAsk(spaceId), spaceCanTakeDonations(spaceId)])
 
-  // The fund is a `choose` + donation offer (Pricing Options P2): the quick-pick chips are the fund's
-  // suggested amounts. DISPLAY + validation only, so the buyer control renders the gift choice but
-  // nothing charges (giving is not wired up yet; the copy below says so).
+  // The fund as a `choose` + donation offer (Pricing Options P2). This is now the FALLBACK control,
+  // rendered only when the fund cannot take a gift: it shows the choice without charging, which is
+  // the honest thing to render when there is no payout account behind the button.
   const donationPrice: Price = {
     mode: 'choose',
     donation: true,
@@ -91,11 +101,20 @@ export async function DonateMember({
         <div className="mt-4">
           <p className="text-meta font-semibold text-text">Pick an amount</p>
           <div className="mt-2">
-            {/* Pricing Options P2 buyer control: quick-pick chips + a custom gift field. DISPLAY only,
-                no charge (giving is not wired up yet, per the note below). */}
+            {/* The REAL buyer control when the fund can take a gift (LIVE-235), and the Pricing
+                Options P2 DISPLAY-only picker when it cannot, so a donor is never handed a button
+                that resolves to a refusal. */}
             {ask.id ? (
               <DonateCtaTracker spaceId={spaceId}>
-                <PriceInput price={donationPrice} idPrefix={`donate-${spaceId}`} />
+                {canGive ? (
+                  <DonateForm
+                    spaceId={spaceId}
+                    suggestedAmountsCents={ask.suggestedAmountsCents}
+                    idPrefix={`donate-${spaceId}`}
+                  />
+                ) : (
+                  <PriceInput price={donationPrice} idPrefix={`donate-${spaceId}`} />
+                )}
               </DonateCtaTracker>
             ) : (
               <PriceInput price={donationPrice} idPrefix={`donate-${spaceId}`} />
@@ -104,10 +123,16 @@ export async function DonateMember({
         </div>
       </div>
 
-      <p className="text-2xs text-muted">
-        Giving is not wired up yet, so these amounts are a preview of what this fund plans to ask for.
-        We do not take a payment. Follow this space to hear when giving opens.
-      </p>
+      {canGive ? (
+        <p className="text-2xs text-muted">
+          Gifts are handled by Stripe and go straight to this space. You will get a receipt by email.
+        </p>
+      ) : (
+        <p className="text-2xs text-muted">
+          This fund is not taking gifts yet, so these amounts are a preview of what it plans to ask
+          for. We do not take a payment. Follow this space to hear when giving opens.
+        </p>
+      )}
     </div>
   )
 }

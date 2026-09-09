@@ -20,7 +20,10 @@ import type { DonationAsk } from '@/lib/spaces/donations'
 // the quick-pick amounts map onto the stored `suggestedAmountsCents` (NO schema change). Persistence
 // through setDonationAsk is unchanged.
 //
-// HONESTY (CONTENT-VOICE skeptic test): v1 takes no payment and there is no Stripe path. The editor
+// HONESTY (CONTENT-VOICE skeptic test), UPDATED FOR LIVE-235: giving now takes a real payment
+// through lib/billing/space-donation-checkout.ts, so the note under this form says what actually
+// happens and names the one prerequisite (a payout account) instead of promising it "comes later".
+// The previous note read "v1 takes no payment and there is no Stripe path". The editor
 // states plainly that giving is not yet wired. Plain labels, no narrated feelings, no em or en dashes.
 
 export function DonationAskForm({
@@ -119,8 +122,9 @@ export function DonationAskForm({
       </div>
 
       <p className="text-meta text-subtle">
-        This sets up your ask. We do not take a payment yet, so giving is not wired and no money
-        changes hands. Paid giving and tax receipts come later.
+        This sets up your ask. Supporters give through Stripe and the money lands in your payout
+        account. You need a payout account before the Give button shows on your page. Tax receipts
+        come later.
       </p>
 
       {error && (

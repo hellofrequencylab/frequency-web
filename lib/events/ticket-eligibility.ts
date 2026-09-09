@@ -28,6 +28,8 @@
 // onboarding is triggered AT FIRST SALE, on the surface where someone has just decided to charge, and
 // never buried in a settings page nobody visits.
 
+import { NEEDS_PAYOUT_ACCOUNT } from '@/lib/billing/payout-prompt'
+
 /** What the seller still has to do before this event can take money. `null` = nothing, sell away. */
 export type TicketSetupStep = 'connect_payouts' | null
 
@@ -46,9 +48,14 @@ export interface TicketSellerContext {
 export type TicketSellerVerdict = { allowed: true; step: null } | { allowed: false; step: TicketSetupStep; reason: string }
 
 /** The one seller-facing line, so every seam says the same sentence. Not a refusal: an invitation with
- *  a next action. CONTENT-VOICE §10 — plain, no guilt, names the time cost honestly. */
-export const NEEDS_PAYOUT_ACCOUNT =
-  'Add a payout account to start selling tickets. It takes about two minutes, and the money lands in your bank.'
+ *  a next action. CONTENT-VOICE §10 — plain, no guilt, names the time cost honestly.
+ *
+ *  🔴 NO LONGER WRITTEN HERE (LIVE-233). Tickets were the FIRST path to model onboarding as a setup
+ *  step, and then memberships, bookings, orders and donations each grew their own dead end with their
+ *  own wording. The sentence now comes from lib/billing/payout-prompt.ts, which generates it for all
+ *  five channels from one template, so the ticket seam and the other four cannot drift apart. Both
+ *  modules are import-free and PURE, so this re-export costs a client bundle nothing. */
+export { NEEDS_PAYOUT_ACCOUNT }
 
 /** What a BUYER sees when the seller has not finished setup. A stranger is never told anything about
  *  the host's account state. */

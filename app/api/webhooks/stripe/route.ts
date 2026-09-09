@@ -52,6 +52,11 @@ import {
   recordSupporterContributionRefundFromCharge,
 } from '@/lib/billing/supporter'
 import {
+  recordSpaceDonationFromSession,
+  abandonSpaceDonationFromSession,
+  recordSpaceDonationRefundFromCharge,
+} from '@/lib/billing/space-donation-checkout'
+import {
   recordCommerceOrderFromSession,
   recordCommerceRefundFromCharge,
   abandonCommerceOrderFromSession,
@@ -160,6 +165,11 @@ export async function POST(req: Request) {
     await recordTicketFromSession(s)
     await recordSupporterContributionFromSession(s)
     await recordCommerceOrderFromSession(s)
+    // LIVE-235: a gift to a Space fund settles here like every other one-off channel. It no-ops on a
+    // session that is not a donation, so adding it to THIS list (the one both `completed` and
+    // `async_payment_succeeded` consume) is what stops a delayed-payment donation from being the
+    // recorder someone forgets.
+    await recordSpaceDonationFromSession(s)
   }
 
   // A transient handler failure must NOT leave the claim row behind (the next Stripe retry
@@ -244,6 +254,9 @@ export async function POST(req: Request) {
         // non-commerce session.
         const s = event.data.object as Stripe.Checkout.Session
         await abandonCommerceOrderFromSession(s)
+        // A donation holds no slot, but a `pending` row that can never settle would sit in the fund
+        // view forever and read as money that is coming. Release it (idempotent, pending only).
+        await abandonSpaceDonationFromSession(s)
         break
       }
 
@@ -351,6 +364,7 @@ export async function POST(req: Request) {
         await recordCommerceRefundFromCharge(charge)
         await recordTipRefundFromCharge(charge)
         await recordSupporterContributionRefundFromCharge(charge)
+        await recordSpaceDonationRefundFromCharge(charge)
         break
       }
 

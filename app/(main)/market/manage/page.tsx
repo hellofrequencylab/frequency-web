@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { Hammer, Plus, Wallet, CheckCircle2, Rocket, PackageX, EyeOff, Trash2 } from 'lucide-react'
+import { Hammer, Plus, Rocket, PackageX, EyeOff, Trash2 } from 'lucide-react'
 import { IndexTemplate } from '@/components/templates'
 import { resolveIndexHero } from '@/lib/layout/index-hero'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -11,6 +11,8 @@ import { getMyProfileId } from '@/lib/auth'
 import { listMyMakerProducts } from '@/lib/commerce/products'
 import { listOrdersForSeller } from '@/lib/commerce/orders'
 import { getConnectStatus, payoutsLive } from '@/lib/billing/connect'
+import { payoutPrompt } from '@/lib/billing/payout-prompt'
+import { PayoutPromptCard } from '@/components/billing/payout-setup-prompt'
 import type { CommerceProduct } from '@/lib/commerce/types'
 import { setMyProductStatusAction, deleteMyProductAction } from '../../marketplace/commerce-actions'
 
@@ -88,6 +90,15 @@ export default async function MakerManagePage() {
     payoutsLive(),
   ])
   const salesTotal = sales.reduce((sum, o) => sum + o.amountCents, 0)
+  // The ONE prompt (LIVE-233). Resolved here rather than through <PayoutSetupPrompt> because this
+  // page already read the maker's Connect status and the payouts flag for its own use; the pure
+  // kernel turns those two reads into the same card every other money path renders.
+  const payoutPromptForMaker = payoutPrompt({
+    channels: ['orders'],
+    status: connect,
+    payoutsLive: live,
+    relation: 'self',
+  })
 
   const hero = await resolveIndexHero('/market/manage')
 
@@ -103,33 +114,12 @@ export default async function MakerManagePage() {
         </Link>
       }
     >
-      {/* Payout readiness */}
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-card border border-border bg-surface-elevated p-4">
-        <div className="flex items-center gap-3">
-          {connect.ready ? (
-            <CheckCircle2 className="h-5 w-5 text-primary" aria-hidden />
-          ) : (
-            <Wallet className="h-5 w-5 text-subtle" aria-hidden />
-          )}
-          <div>
-            <p className="text-body-sm font-medium text-text">
-              {connect.ready ? 'Payouts are set up' : 'Set up payouts to get paid'}
-            </p>
-            <p className="text-meta text-subtle">
-              {!live
-                ? 'Listing is open now. Paid checkout turns on when the platform enables payments.'
-                : connect.ready
-                  ? 'Money from a sale lands in your connected account.'
-                  : 'Connect a payout account so a buyer can check out with you.'}
-            </p>
-          </div>
-        </div>
-        {!connect.ready && (
-          <Link href="/settings/billing" className={buttonClasses('secondary', 'sm')}>
-            Set up payouts
-          </Link>
-        )}
-      </div>
+      {/* PAYOUT READINESS. LIVE-233: this was one of four hand-written payout prompts, each with its
+          own sentence and each offering a LINK to /settings/billing rather than onboarding. It is now
+          the shared prompt, which starts Stripe's hosted form inline and renders NOTHING once the
+          maker is ready (the confirmation line it used to show was the only thing lost, and a
+          standing "you are fine" banner on a storefront is not worth a row of vertical space). */}
+      <PayoutPromptCard prompt={payoutPromptForMaker} className="mb-6" />
 
       {sales.length > 0 && (
         <p className="mb-6 text-body-sm text-muted">
