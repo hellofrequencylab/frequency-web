@@ -37,7 +37,8 @@ const size = { width: 1200, height: 630 };
 
 
 export async function GET() {
-  // Dev-only, like its /dev siblings (editor-controls, business-seeder-review): 404 in production.
+  // Dev-only: 404 in production. It is now the ONLY route under /dev, since its two siblings were
+  // deleted as unreferenced (ADR-1294, HYG-075).
   if (process.env.NODE_ENV === 'production') notFound();
 
   const wordmark = SITE_NAME.toUpperCase();

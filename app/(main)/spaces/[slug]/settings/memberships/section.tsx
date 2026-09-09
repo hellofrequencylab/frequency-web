@@ -24,7 +24,12 @@ import type { Space } from '@/lib/spaces/types'
 // of truth (canEditProfile server-side). This component re-checks the memberships function gate and
 // loads the same data the page always loaded.
 //
-// HONESTY (CONTENT-VOICE skeptic test): v1 takes no payment. No em/en dashes.
+// MONEY IS REAL ON THIS SURFACE. The price and interval an owner sets here are what a member is charged:
+// a paid tier is joined through Stripe Connect Checkout (lib/billing/space-membership-checkout.ts), and a
+// cancel stops the subscription. That is why the section carries the plan ladder rather than a "later"
+// note: publishing any tier at all is a Business capability (ADR-914, enforced in setMembershipTiers), the
+// FeatureLockedNotice names space_membership_tiers so a plan-reason lock renders its upsell, and MeterUpsell
+// warns at 80% of the tier allowance. Active members stay unmetered on purpose. No em/en dashes.
 
 export async function MembershipsSection({
   space,

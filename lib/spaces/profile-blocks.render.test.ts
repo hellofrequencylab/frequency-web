@@ -25,10 +25,11 @@ describe('enabledFunctionKeys', () => {
   })
 
   it('offers every function on every type (no per-type restriction under universal functions)', () => {
-    // A business now offers availability, tickets, donations, etc. — every profile is the same functionally.
+    // A business now offers availability, events, donations, etc. — every profile is the same functionally.
+    // ('tickets' used to be asserted here; it was retired into 'events' by LIVE-226.)
     const keys = enabledFunctionKeys({ type: 'business', entitlements: {} })
     expect(keys.has('availability')).toBe(true)
-    expect(keys.has('tickets')).toBe(true)
+    expect(keys.has('events')).toBe(true)
     expect(keys.has('donations')).toBe(true)
   })
 

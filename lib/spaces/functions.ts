@@ -40,8 +40,9 @@ export function isSpaceType(value: unknown): value is SpaceType {
 
 // ── The function registry (the catalog of gateable Space tools) ──────────────────────────────────
 
-/** Every gateable per-Space function. A new tool is one key here (+ one entitlement key if plan-gated). */
-export type SpaceFunctionKey =
+/** Every LIVE gateable per-Space function: one key here is one row in SPACE_FUNCTIONS below, and a new
+ *  tool is one key here (+ one entitlement key if plan-gated). */
+export type LiveSpaceFunctionKey =
   | 'crm'
   | 'email'
   | 'members'
@@ -49,9 +50,6 @@ export type SpaceFunctionKey =
   | 'availability'
   | 'memberships'
   | 'donations'
-  | 'enroll'
-  | 'tickets'
-  | 'checkin'
   | 'shop'
   | 'billing'
   | 'profile'
@@ -65,6 +63,37 @@ export type SpaceFunctionKey =
   | 'events'
   | 'program'
 
+/** A function key that was RETIRED because it was never its own tool, only a second door onto one that
+ *  already exists (LIVE-226). It is NOT in the registry and has no settings section of its own; it
+ *  RESOLVES to the live function it folded into (see RETIRED_SPACE_FUNCTIONS), so an existing gate
+ *  keyed by the old name keeps answering about the real tool instead of silently denying. */
+export type RetiredSpaceFunctionKey = 'enroll' | 'tickets' | 'checkin'
+
+/** Every function key the app may still speak: the live registry keys plus the retired aliases. Gates
+ *  accept either; only the live keys appear in SPACE_FUNCTIONS, the menus, and the settings surfaces. */
+export type SpaceFunctionKey = LiveSpaceFunctionKey | RetiredSpaceFunctionKey
+
+/**
+ * THE RETIREMENT MAP (LIVE-226). Each retired key names the LIVE function it folded into:
+ *   - `tickets`  → `events`.   Selling or reserving a seat is the EVENT ticket flow. A Space-level
+ *                              copy of it was a second product that answered the same question.
+ *   - `checkin`  → `events`.   Checking someone in at the door is an event mechanic, not a Space tool.
+ *   - `enroll`   → `journeys`. "Define the program and see who enrolled" is a Journey plus the
+ *                              Memberships roster; there was no third thing to configure.
+ * Reading a retired key through spaceFunctionDef / spaceFunctionAccess resolves to the successor's
+ * switch + min-role, so no caller that still holds an old key loses access to the tool that absorbed it.
+ */
+export const RETIRED_SPACE_FUNCTIONS = {
+  enroll: 'journeys',
+  tickets: 'events',
+  checkin: 'events',
+} as const satisfies Record<RetiredSpaceFunctionKey, LiveSpaceFunctionKey>
+
+/** Is `value` a retired function key (one that resolves to a live function rather than owning a row)? */
+export function isRetiredSpaceFunctionKey(value: unknown): value is RetiredSpaceFunctionKey {
+  return typeof value === 'string' && value in RETIRED_SPACE_FUNCTIONS
+}
+
 /** A Space type, or the wildcard '*' meaning "every type offers this function". */
 type FunctionTypeScope = SpaceType | '*'
 
@@ -72,6 +101,8 @@ type FunctionTypeScope = SpaceType | '*'
  *  for a universal function whose on/off is a free toggle), its CODE default min-role, and which Space
  *  TYPES offer it ('*' = all). */
 export interface SpaceFunctionDef {
+  /** Always a LIVE key in practice (every row below is one); typed as the wide union so a caller that
+   *  still holds a retired key can compare against it without a cast. */
   key: SpaceFunctionKey
   /** Operator-facing label (plain voice, no em dashes). */
   label: string
@@ -150,30 +181,10 @@ export const SPACE_FUNCTIONS: readonly SpaceFunctionDef[] = [
     defaultMinRole: 'editor',
     types: ['*'],
   },
-  {
-    key: 'enroll',
-    label: 'Enrollment',
-    description: 'Define the program and see who has enrolled.',
-    entitlement: null,
-    defaultMinRole: 'editor',
-    types: ['*'],
-  },
-  {
-    key: 'tickets',
-    label: 'Tickets',
-    description: 'Set up free or RSVP ticket tiers, and see who has reserved a spot.',
-    entitlement: null,
-    defaultMinRole: 'editor',
-    types: ['*'],
-  },
-  {
-    key: 'checkin',
-    label: 'Check in',
-    description: 'Show the door code and see who checked in.',
-    entitlement: null,
-    defaultMinRole: 'moderator',
-    types: ['*'],
-  },
+  // `enroll`, `tickets` and `checkin` used to sit here. All three were retired (LIVE-226): each was a
+  // second door onto a tool the product already had, so each carried its own settings section and read
+  // as a separate product. They now RESOLVE to the function that absorbed them (RETIRED_SPACE_FUNCTIONS
+  // above) instead of being their own switch.
   {
     key: 'shop',
     label: 'Shop',
@@ -283,25 +294,36 @@ export const SPACE_FUNCTIONS: readonly SpaceFunctionDef[] = [
   },
 ] as const
 
-/** Fast lookup of a function def by key (null for an unknown key). */
+/** Fast lookup of a LIVE function def by key (null for an unknown key). Retired keys are NOT here;
+ *  spaceFunctionDef resolves those through RETIRED_SPACE_FUNCTIONS first. */
 const FUNCTION_BY_KEY: Record<string, SpaceFunctionDef> = Object.fromEntries(
   SPACE_FUNCTIONS.map((fn) => [fn.key, fn]),
 )
 
-/** The function def for a key, or null if the key is unknown (fail-closed callers branch on null). */
+/** The function def for a key, or null if the key is unknown (fail-closed callers branch on null). A
+ *  RETIRED key (LIVE-226) resolves to the def of the live function it folded into, so the def that
+ *  comes back carries the SUCCESSOR's key, label, switch and min-role, never the retired name. */
 export function spaceFunctionDef(fn: string): SpaceFunctionDef | null {
-  return FUNCTION_BY_KEY[fn] ?? null
+  const live = isRetiredSpaceFunctionKey(fn) ? RETIRED_SPACE_FUNCTIONS[fn] : fn
+  return FUNCTION_BY_KEY[live] ?? null
 }
 
-/** Is `value` a known function key? */
+/** Is `value` a function key the app still answers for: a live registry key OR a retired alias. (The
+ *  retired names stay speakable on purpose, so stored operator rows and older links resolve rather
+ *  than fail closed; `spaceFunctionDef` is what turns one into the live tool.) */
 export function isSpaceFunctionKey(value: unknown): value is SpaceFunctionKey {
-  return typeof value === 'string' && value in FUNCTION_BY_KEY
+  return typeof value === 'string' && (value in FUNCTION_BY_KEY || value in RETIRED_SPACE_FUNCTIONS)
 }
 
-/** The CODE default min-role for every function key (the dense map the grids seed from). */
-export const DEFAULT_FUNCTION_ROLE: Record<SpaceFunctionKey, SpaceRole> = Object.fromEntries(
-  SPACE_FUNCTIONS.map((fn) => [fn.key, fn.defaultMinRole]),
-) as Record<SpaceFunctionKey, SpaceRole>
+/** The CODE default min-role for every function key (the dense map the grids seed from). A retired key
+ *  carries its successor's default, so a lookup by an old key answers about the live tool. */
+export const DEFAULT_FUNCTION_ROLE: Record<SpaceFunctionKey, SpaceRole> = Object.fromEntries([
+  ...SPACE_FUNCTIONS.map((fn) => [fn.key, fn.defaultMinRole]),
+  ...Object.entries(RETIRED_SPACE_FUNCTIONS).map(([retired, live]) => [
+    retired,
+    FUNCTION_BY_KEY[live].defaultMinRole,
+  ]),
+]) as Record<SpaceFunctionKey, SpaceRole>
 
 /** Does a function apply to a Space type? ('*' scope = every type.) */
 export function functionAppliesToType(fn: SpaceFunctionDef, type: SpaceType | null | undefined): boolean {

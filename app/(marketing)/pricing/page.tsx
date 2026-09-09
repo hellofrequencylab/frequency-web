@@ -104,11 +104,6 @@ function networkRate(offering: Offering): string {
 function ladderCompact(offerings: Offering[]): string {
   return offerings
     .filter((o) => o.monthlyCents > 0)
-    // Independent is dropped HERE ONLY. It is a real tier and the page lists it, but it is a
-    // network-disconnected white-label plan nobody arrives at from a search result, and at ~$249 it is
-    // the longest string on the ladder. Spending a quarter of the description's budget on the rung
-    // least likely to be the reader's next step is the wrong trade in a field this short.
-    .filter((o) => o.tier !== 'independent')
     .map((o) => `${o.label} ${o.monthly}`)
     .join(', ')
 }
@@ -261,8 +256,8 @@ export default async function PricingPage() {
   const spaces = spaceOfferings(input)
 
   // The named offerings the DAWN 2 card rows place (row one: the free trio; row two: the paid Space
-  // plans, with Independent on its quiet strip). Looked up by stable id, so a ladder reorder in the
-  // model cannot shuffle the reference layout; every one is still the model's own object.
+  // plans). Looked up by stable id, so a ladder reorder in the model cannot shuffle the reference
+  // layout; every one is still the model's own object.
   const member = members[0]!
   const crew = members[1]!
   const spacesById = new Map(spaces.map((o) => [o.id, o]))
@@ -270,7 +265,6 @@ export default async function PricingPage() {
   const business = spacesById.get('business')!
   const collective = spacesById.get('collective')!
   const nonprofit = spacesById.get('nonprofit')!
-  const independent = spacesById.get('independent')
 
   // 🔴 THE PRICE SCHEMA IS EMITTED ON BOTH BRANCHES, and hoisting it here is the whole point.
   //
@@ -368,11 +362,12 @@ export default async function PricingPage() {
       {/* THE PLANS (DAWN 2 structure, design_handoff/dawn/ui_kits/marketing/pricing.html). Two bands
           instead of two side-by-side ladders. Row one, cream: everything a person starts free, Member ·
           Crew · Space, with Crew the wide, floating middle card. Row two, ink: the paid Space plans,
-          Business · Collective · Non Profit, Collective floating. Independent stays on the page as the
-          quiet full-width strip under the ink row. Every figure still reads off the offering model
-          (operator config), never this file; the float reads Offering.featured, so the emphasized card
-          and the model's emphasis cannot disagree. One billing toggle governs both bands, so a reader
-          compares monthly against monthly. */}
+          Business · Collective · Non Profit, Collective floating. Every figure still reads off the
+          offering model (operator config), never this file; the float reads Offering.featured, so the
+          emphasized card and the model's emphasis cannot disagree. One billing toggle governs both
+          bands, so a reader compares monthly against monthly.
+          The ladder is exactly what lib/pricing/display.ts advertises, so a tier the owner takes off
+          the public ladder leaves this page with no edit here. */}
       <PricingIntervalScope>
         <Section tone="canvas" width="wide">
           <SectionHeading
@@ -402,7 +397,6 @@ export default async function PricingPage() {
               <PlanCard offering={collective} tone="ink" />
               <PlanCard offering={nonprofit} tone="ink" />
             </div>
-            {independent && <IndependentStrip offering={independent} />}
             <p className="mx-auto mt-10 max-w-2xl text-center text-body leading-relaxed text-on-ink-muted">
               {annualDiscountNote(input.values)} Never a wall in front of the transaction.{' '}
               {PLAN_STORY.meters} You keep 100% of your own bookings on every rung: the take-rate
@@ -452,7 +446,7 @@ export default async function PricingPage() {
         <div className="mt-14">
           <ComparisonBlock
             title="Spaces"
-            kicker="What a Space gets on each plan, from free to Independent."
+            kicker="What a Space gets on each plan, from the free Space up."
             grid={spaceFeatureGrid(input)}
             offerings={spaces}
             openId={spaces.find((o) => o.featured)?.id ?? spaces[0]!.id}
@@ -742,40 +736,6 @@ function PlanCta({
     >
       {offering.cta.label}
     </Link>
-  )
-}
-
-/** Independent, the off-network white-label build, as the quiet full-width strip under the ink row
- *  (the reference keeps the six-card grid and hands Independent one line; the strip keeps its real
- *  operator-set price and copy on the page instead). */
-function IndependentStrip({ offering }: { offering: Offering }) {
-  return (
-    <Reveal
-      as="article"
-      className="lift-1 mt-8 flex flex-col gap-5 rounded-card border border-on-ink/10 bg-on-ink/5 p-6 sm:flex-row sm:items-center sm:justify-between"
-    >
-      <div>
-        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-          <h3 className="font-display uppercase text-page-title text-on-ink">{offering.label}</h3>
-          {/* The strip sits inside the interval scope too, so its figure flips with the toggle. */}
-          <span className="font-display text-lead text-primary">
-            <span data-interval-show="month">{offering.monthly}</span>
-            <span data-interval-show="year">{offering.yearly ?? offering.monthly}</span>
-          </span>
-        </div>
-        <p className="mt-1 text-body-sm font-semibold text-on-ink-muted">{offering.tagline}</p>
-        <p className="mt-2 max-w-2xl text-body-sm leading-relaxed text-on-ink-muted">{offering.forWho}</p>
-        <p className="mt-2 text-body-sm text-on-ink-subtle">{offering.takeRate}</p>
-      </div>
-      <div className="shrink-0">
-        <Link
-          href={offering.cta.href}
-          className="inline-flex items-center justify-center gap-2 rounded-2xl border border-on-ink/20 bg-on-ink/10 px-8 py-3.5 text-body font-bold text-on-ink transition-colors hover:bg-on-ink/15"
-        >
-          {offering.cta.label}
-        </Link>
-      </div>
-    </Reveal>
   )
 }
 

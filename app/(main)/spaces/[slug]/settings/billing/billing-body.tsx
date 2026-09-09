@@ -94,7 +94,6 @@ export async function BillingBody({ slug }: { slug: string }) {
     values,
     businessSellable,
     collectiveSellable,
-    independentSellable,
     seatsSellable,
     seatUsage,
     billingIsLive,
@@ -107,7 +106,6 @@ export async function BillingBody({ slug }: { slug: string }) {
     getPricingValues(),
     spaceLoadoutSellable('business'),
     spaceLoadoutSellable('collective'),
-    spaceLoadoutSellable('independent'),
     operatorSeatsSellable(),
     getSeatUsage(space.id),
     billingLive(),
@@ -195,13 +193,14 @@ export async function BillingBody({ slug }: { slug: string }) {
         )}
 
         {/* The Community Collective ladder (ADR-811): where this Space sits + the buy-down-your-rate
-            promise. A free Space gets a one-click Choose on each sellable higher flat rung (Collective /
-            Independent); Business keeps its richer CTA below. Each action is gated server-side. */}
+            promise. A free Space gets a one-click Choose on the sellable higher flat rung (Collective);
+            Business keeps its richer CTA below. Each action is gated server-side. Independent is sold by
+            hand and is not offered here, so no sellable flag is resolved for it (LIVE-227). */}
         <PlanLadder
           currentPlan={currentPlan}
           slug={space.slug}
           isFree={!isPaid && !staffViewing}
-          sellable={{ collective: collectiveSellable, independent: independentSellable }}
+          sellable={{ collective: collectiveSellable }}
         />
 
         {/* The honest receipt (Phase 5, ADR-811 §A): the real dollars the network sourced, proving promise

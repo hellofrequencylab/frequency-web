@@ -8,14 +8,14 @@ import { FeatureLockedNotice } from '@/components/spaces/feature-locked-notice'
 import { SectionHeader } from '@/components/ui/section-header'
 import type { Space } from '@/lib/spaces/types'
 
-// TICKETS section BODY (extracted from tickets/page.tsx so the unified Offerings surface can compose it
-// as one stacked section). Tickets are an event_space feature only; the Offerings page composes this
-// section ONLY for an event_space (OFFERING_SECTIONS types), so the type check lives on the caller now.
-// The route + auth gate stays on the caller. The WRITE action (setTicketTiers, behind TicketTierForm)
-// is unchanged and stays the source of truth (canEditProfile server-side). This component re-checks the
-// tickets function gate and loads the same tiers the page always loaded.
+// TICKETS section BODY. Its ONE caller is ./tickets-body.tsx, the `?panel=tickets` workspace. Offerings
+// does not compose it: a Space-level copy of the ticket flow answered the same question as the EVENT one,
+// so the section came off that page and the `tickets` function key is retired to `events` (LIVE-226,
+// lib/spaces/functions.ts RETIRED_SPACE_FUNCTIONS). Selling a seat belongs to an event.
 //
-// NO MONEY (CONTENT-VOICE skeptic test): v1 takes no payment. No em/en dashes.
+// The route + auth gate stays on the caller. The WRITE action (setTicketTiers, behind TicketTierForm) is
+// unchanged and stays the source of truth (canEditProfile server-side). The gate below resolves through
+// the retired key to the `events` switch + min-role. No em/en dashes.
 
 export async function TicketsSection({
   space,

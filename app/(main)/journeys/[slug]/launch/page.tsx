@@ -9,6 +9,7 @@ import { SITE_URL } from '@/lib/site'
 import { FocusTemplate } from '@/components/templates'
 import { BroadcastComposer } from '@/components/comms/broadcast-composer'
 import type { BroadcastChannelOption, BroadcastSegment } from '@/components/comms/broadcast-types'
+import { SMS_CHANNEL } from '@/lib/comms/broadcast-channels'
 import { resolveJourneyLaunchContext } from '@/lib/journeys/launch-access'
 import { buildLaunchCampaignDrafts } from '@/lib/journeys/launch-campaigns'
 import { allowedLaunchKeys, LAUNCH_SERIES_PAID_MESSAGE } from '@/lib/journeys/launch-surface'
@@ -56,7 +57,7 @@ async function EnrolleeBroadcastSection({ planId }: { planId: string }) {
     { key: 'dm', enabled: true, note: 'Lands in each person’s Frequency inbox as a message from you.' },
     { key: 'email', enabled: false, note: 'Use the launch series above to email your list' },
     { key: 'dispatch', enabled: false, note: 'Not wired for Journeys yet' },
-    { key: 'sms', enabled: false, note: 'Coming soon' },
+    SMS_CHANNEL,
   ]
 
   return (
