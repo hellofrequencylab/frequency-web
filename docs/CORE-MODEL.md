@@ -1,13 +1,16 @@
 # The core model
 
-> **Status: PROPOSAL.** Status for any work it produces lives in
+> **Status: ACCEPTED** as [ADR-1294](DECISIONS.md) (owner, 2026-09-08). Status for any work it produces lives in
 > [`BUILD-BACKLOG.json`](BUILD-BACKLOG.json), never in this file. Filed 2026-09-08 from sixteen
 > research lanes plus live production reads. Supersedes the shape in
 > [`OFFER-MODEL.md`](OFFER-MODEL.md) §5 on one point (memberships stay paid-gated) and corrects one
 > argument in it (see §2). Companion: [`FOCUS-MODEL.md`](FOCUS-MODEL.md).
 >
 > **This document explains a model and the work to make it true. It does not track whether the work
-> is done.**
+> is done.** The row-level state is `PROG-R0`…`PROG-R11` and their children in the backlog.
+>
+> **Revised 2026-09-09** against four full-website surveys (432 routes). Two phases were added that
+> this document did not have, and the phase numbers below shifted accordingly.
 
 ---
 
@@ -114,9 +117,34 @@ catalogs.
 
 ---
 
+## 4b. The six rulings
+
+Taken by the owner on 2026-09-08 and recorded in [ADR-1294](DECISIONS.md). They close the questions
+`OFFER-MODEL` and `FOCUS-MODEL` left open.
+
+| # | Question | Ruling |
+|---|---|---|
+| 1 | The grace window | **1 December 2026.** Written to production the same day; the 1 October gate cliff is gone. |
+| 2 | The marketplace | **One umbrella with real sub-tabs** — Classifieds · Housing · Market · Events. It is not four nav areas, and the tab bar was never built. |
+| 3 | The six Collective Spaces | **Grandfather at $49.** Collective merges into Business, which rises $29 → $49 with two seats. |
+| 4 | The Independent tier | **Keep it, hide it from public pricing.** Hand-sold; its four Stripe prices stay live. |
+| 5 | Hubs and Nexuses | **Fold both into Space.** Each reads as "a Space that contains other Spaces". |
+| 6 | Channels | **Fold into Circles.** A Channel reads as a topic Circle, and there are zero channels. |
+
+⚠️ **Ruling 2 carries a cost worth naming now rather than discovering later.** Events becomes a
+marketplace tab while staying one of the four nouns with its own rail row, so it appears twice. The
+tab should read as the *commerce face* of Events, paid and ticketed, not a second Events index.
+
+🔴 **The Store ruling was taken on a corrected measurement.** "49 items behind an off switch" first
+reached the owner as an argument for publishing. Those 49 are `store_items`, which is **the Vault**
+at `/crew/store` — a different surface. The Frequency Store holds **four products, all
+`is_demo = true`**. It stays off until there is real merch.
+
+---
+
 ## 5. The plan
 
-Nine phases. **Each phase makes one sentence of the model literally true**, and each item carries
+Twelve phases. **Each phase makes one sentence of the model literally true**, and each item carries
 what to change, where, what "done" means, and how a machine proves it. Sizes: XS ≤1h · S ≤½ day ·
 M ≤2 days · L ≤1 week.
 
@@ -128,7 +156,22 @@ M ≤2 days · L ≤1 week.
 | 0.2 | Move `beta_grace` to **2026-12-01** | `platform_flags` / `pricing_settings` reads the new date | SQL read |
 | 0.3 | File every item below as a backlog row with a probe | `pnpm check:backlog` counts them open | `pnpm check:backlog` |
 
-### Phase 1 — "People join free" · **M**
+### Phase 1 — Delete what is not the model · **M**
+
+Everything after this is cheaper once the dead weight is gone. Every item is verified unreferenced,
+unwritten or unsold by the 2026-09-08 dead-surface sweep, so there are no judgement calls here.
+
+| # | Change | Why it is safe |
+|---|---|---|
+| 1.1 | The **restaurant-menu CRUD**: `lib/menus/actions.ts` writers + 5 tables | 23 write paths, **no reader, no rows**. Not one of the four nouns. Unrelated to the four registered *menu catalogs*, despite the name. |
+| 1.2 | The **household bundle** and the **Supporter tier** | Both built, never sold, flags off since ship. `household_bundle_invites` has 0 rows and 0 writers; `memberTierSellable('supporter')` refuses before it reads its own flag. |
+| 1.3 | The **seven gates with zero call sites** + `space_full_website` | Each is a promise the code cannot keep, and each would have started refusing a feature nothing knows how to refuse when the grace window ends. |
+| 1.4 | Two `/dev/*` routes, the second Space-creation door, the orphaned partner listing | Zero references across 6,011 source files; a duplicate door; an orphan with 0/2/0 rows. |
+| 1.5 | Three byte-identical broadcast-channel literals become one | The same "Coming soon" SMS chip is hand-typed in three files. |
+
+---
+
+### Phase 2 — "People join free" · **M**
 
 | # | Change | Files | Done when | Verify |
 |---|---|---|---|---|
@@ -138,7 +181,7 @@ M ≤2 days · L ≤1 week.
 | 1.4 | Crew becomes granted by an active **paid** community membership, with provenance | new `crew_grants` (or the `household_bundle_prior_tier` pattern), `lib/spaces/tier-circle.ts` siblings at all six lifecycle sites | A paid member resolves `crew`; cancelling revokes it; a Stripe-paying member is never downgraded | unit tests on the resolver |
 | 1.5 | A granted Crew does **not** buy down the take rate | `lib/billing/pricing-keys.ts` `memberNetworkTakeRateBps` reads the Stripe tier | Granted Crew still pays the member rate | `take-rate-ladder.test.ts` |
 
-### Phase 2 — "Businesses host free" · **M**
+### Phase 3 — "Businesses host free" · **M**
 
 | # | Change | Files | Done when | Verify |
 |---|---|---|---|---|
@@ -147,7 +190,7 @@ M ≤2 days · L ≤1 week.
 | 2.3 | Fix stale comments that now lie | `lib/spaces/memberships.ts:10`, `settings/memberships/section.tsx:27`, `settings/checkin/section.tsx:17` | No "v1 IS NOT BILLING" / "takes no payment" / "event_space only" | `grep -c` → 0 |
 | 2.4 | Hide the dead "Publish website" button and the "Coming soon" plan rungs behind a flag | `components/spaces/space-page-panel.tsx:68,187`, `billing/plan-ladder.tsx:62,68` | No enabled surface says "Coming soon" | `grep` over enabled surfaces |
 
-### Phase 3 — "Pay when you charge" · **L**
+### Phase 4 — "Pay when you charge" · **L**
 
 | # | Change | Files | Done when | Verify |
 |---|---|---|---|---|
@@ -157,7 +200,7 @@ M ≤2 days · L ≤1 week.
 | 3.4 | Memberships stay paid-gated; make the **upsell honest at the point of tier creation** ("charging your members is part of Business") | `settings/memberships/section.tsx` | A free Space sees why, not a lock | copy review |
 | 3.5 | Pricing page, grid, FAQ, JSON-LD and llms.txt all derive from the catalog | `/admin/pricing` data edit; `pricing-grid.ts` | No `$`+digit or `N%` literal in marketing source | `marketing-figures.test.ts` |
 
-### Phase 4 — Connect onboarding push · **M** · ⚡ *highest commercial leverage*
+### Phase 5 — Connect onboarding push · **M** · ⚡ *highest commercial leverage*
 
 | # | Change | Done when | Verify |
 |---|---|---|---|
@@ -166,7 +209,21 @@ M ≤2 days · L ≤1 week.
 | 4.3 | Add the donation checkout, cloned from `space-membership-checkout.ts` | `donations` leaves 🔴 | SQL: ≥1 paid ask |
 | 4.4 | Wire the per-space email event writer so operators can see whether sends landed | `space_email_events` non-empty | SQL |
 
-### Phase 5 — The product looks like the model · **L**
+### Phase 6 — One editor per entity · **L**
+
+**The largest simplification available, and this document did not have it** — the 2026-09-08 route
+survey counted the editors and nobody had before.
+
+| # | Change | Today |
+|---|---|---|
+| 6.1 | One editor per entity | Circles and Events each ship `edit` **and** `manage` **and** `settings`; Practices ship `edit` and `manage`. Keep the registry-driven one: `STUDIO.md` already rules that field lists derive from the manifest. |
+| 6.2 | One Space-settings door | Three doors over two implementations, with the file comments narrating an ADR-785 → ADR-788 flip-flop. |
+| 6.3 | Resolve the **nine duplicate console pairs** | Four Circle consoles · three Event consoles · four CRMs at four scopes · three funnel builders · two contact rosters. |
+| 6.4 | Pick **one** onboarding engine | Three exist for one job and **all three are dark**: Next Steps, Walkthroughs, and the tour provider. Phase 9 cannot turn the lights on until this is settled. |
+
+---
+
+### Phase 7 — The product looks like the model · **L**
 
 | # | Change | Files | Done when |
 |---|---|---|---|
@@ -177,7 +234,7 @@ M ≤2 days · L ≤1 week.
 | 5.5 | Bundle presets as the setup shape (studio · practice · venue · non-profit), core on and the rest off-but-switchable | `lib/pricing/bundles.ts` | ≥4 bundles; closes **OWN-048** |
 | 5.6 | Public header **6 → 4** tabs; fix the two footer drifts (`market`→`/classifieds`, dead `maker` key) | `lib/nav/registry.ts:146-212,296-352` | 4 triggers, no dead navKey |
 
-### Phase 6 — The story matches · **M**
+### Phase 8 — The story matches · **M**
 
 | # | Change | Where | Note |
 |---|---|---|---|
@@ -189,7 +246,7 @@ M ≤2 days · L ≤1 week.
 | 6.6 | Raise `/pricing` sitemap priority above the SEO guides | `app/sitemap.ts` | Currently 0.6, below 0.7 guides |
 | 6.7 | Help articles for anything newly core | `content/help/**` | `check:help` **fails CI** without them |
 
-### Phase 7 — First run teaches the model · **M**
+### Phase 9 — First run teaches the model · **M**
 
 | # | Change | Files |
 |---|---|---|
@@ -200,7 +257,7 @@ M ≤2 days · L ≤1 week.
 | 7.5 | Fix the Practitioner reel's "worldwide marketplace" line — off-model | `lib/onboarding/personas.ts:85-88` |
 | 7.6 | Re-point empty states; `/spaces/directory` stops reading as a business directory | `directory-view.tsx:264-283`, `directory/page.tsx:94-95` |
 
-### Phase 8 — Placement is earned · **L**
+### Phase 10 — Placement is earned · **L**
 
 | # | Change | Note |
 |---|---|---|
@@ -209,23 +266,29 @@ M ≤2 days · L ≤1 week.
 | 8.3 | Wire the four dormant `featured_at` columns | ⚠️ add to **every** select branch — `check-row-type-select-parity.test.ts:23-27` |
 | 8.4 | Operator receipt page at `space.reach`: *what did the network send me, and what would send more* | The reason to open the app on a Tuesday |
 
-### Phase 9 — Prove it · **6 weeks, no code**
+### Phase 11 — Prove it · **6 weeks, no code**
 
 **One city. Three businesses. One real gathering each per week. Each brings ten of their own people.**
 
-Instrument three numbers and nothing else: **circles per Space** (0.05 today) · **gatherings actually
+Instrument three numbers and nothing else: **circles per Space** (0.32 today: 7 circles across 22 Spaces) · **gatherings actually
 held** · **attendance**. Every other number in this model is a guess until these three move.
 
 ---
 
 ## 6. The order, and why
 
-Phases 1, 2 and 4 are the ones that change outcomes. **Phase 1.1 alone** — deleting one gate
+Phases 2, 3 and 5 are the ones that change outcomes. **Phase 2.1 alone** — deleting one gate
 component from the circle builder — removes a paywall from the single most important act in the
-product. **Phase 4** unblocks five functions with one push. Everything else is expression: menus,
-copy, ranking.
+product. **Phase 5** unblocks five money loops with one push, and none of the five has ever
+completed once in production. Everything else is expression: menus, copy, ranking.
 
-Phase 9 is the only one that can tell you whether the model is right, and it is the only one that
+**Phases 1, 2 and 3 are one pass, not three.** They touch the same files, and the feature gates are
+inert until the grace window ends on 1 December, which makes this the safe window to move paywalls.
+
+**Phases 6 and 7 are 44% of the total** — 32 of the 72 engineering days. Both came out of the
+surveys. If the number has to come down, that is the only place it can meaningfully come from.
+
+Phase 11 is the only one that can tell you whether the model is right, and it is the only one that
 needs no engineer.
 
 ---

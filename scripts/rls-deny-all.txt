@@ -1,15 +1,19 @@
-
 #
 #
+# (owner-only send/revoke, invitee-only accept/decline), and the seat write itself is a
 # (which bypasses RLS); anon/authenticated get nothing. It is the correct posture for a table
+# Bundle seat invites (ADR-370). Deliberately deny-all, following circle_transfer_offers: both
 # RLS-on-no-policy = FAIL-CLOSED: the table is reachable ONLY by the service-role client
 # This file IS the documented posture. The guard (scripts/check-rls.mjs) fails a NEW table
 # app-layer authz (server actions, crons, webhooks). This mirrors Supabase's own advisor,
 # check:rls deny-all allowlist — tables that intentionally have RLS ENABLED but NO POLICY.
 # conscious "is this deny-all on purpose?" decision at PR time. To intentionally add a
 # no caller-role should ever touch directly — written/read via the admin client behind
+# service-role SECURITY DEFINER function. A client policy would have to expose an invite row to
 # service-role-only table, add its name below. One table per line; # comments allowed.
+# sides are read and written ONLY through the gated server actions in lib/billing/bundle-invites.ts
 # that has RLS off (real exposure) OR RLS-on-no-policy and is NOT listed here — forcing a
+# the anon key, and the surface that renders it is a Server Component that already has the data.
 # which rates `rls_enabled_no_policy` as INFO (safe), not a vulnerability.
 agent_actions
 ai_help_queries
@@ -25,8 +29,8 @@ creator_tips
 cron_run_markers
 element_settings
 email_events
-email_webhook_events
 email_suppressions
+email_webhook_events
 entry_campaigns
 entry_point_conversions
 entry_point_variants
@@ -39,11 +43,6 @@ event_placement_requests
 financial_transactions
 founding_members
 help_chunks
-# Bundle seat invites (ADR-370). Deliberately deny-all, following circle_transfer_offers: both
-# sides are read and written ONLY through the gated server actions in lib/billing/bundle-invites.ts
-# (owner-only send/revoke, invitee-only accept/decline), and the seat write itself is a
-# service-role SECURITY DEFINER function. A client policy would have to expose an invite row to
-# the anon key, and the surface that renders it is a Server Component that already has the data.
 household_bundle_invites
 invite_links
 journey_drip_sends
@@ -84,8 +83,10 @@ segments
 signup_leads
 space_availability_overrides
 space_collaborations
+space_donations
 space_follower_event_reminders_sent
 space_function_type_defaults
+space_standing
 space_venue_holds
 stripe_webhook_events
 studio_draft

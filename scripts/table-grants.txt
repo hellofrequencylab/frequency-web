@@ -72,13 +72,13 @@ content_ratings                      internal
 conversation_participants            authenticated
 conversations                        authenticated
 creator_tips                         internal
-cron_run_markers                     internal
 crew_completions                     authenticated
 crew_tasks                           public
 crm_activities                       authenticated
 crm_deals                            authenticated
 crm_stages                           authenticated
 crm_tasks                            authenticated
+cron_run_markers                     internal
 custom_field_registry                authenticated
 dispatch_comments                    authenticated
 dispatch_likes                       authenticated
@@ -88,10 +88,11 @@ dispatch_recipients                  authenticated
 dispatches                           authenticated
 element_settings                     internal
 email_events                         internal
-email_webhook_events                 internal
 email_suppressions                   internal
+email_webhook_events                 internal
 engagement_events                    authenticated
 entities                             public
+entitlement_grants                   authenticated
 entry_campaigns                      internal
 entry_point_conversions              internal
 entry_point_variants                 internal
@@ -244,6 +245,7 @@ space_billing_agreements             authenticated
 space_bookings                       authenticated
 space_collaborations                 internal
 space_donation_asks                  authenticated
+space_donations                      internal
 space_drip_enrollments               authenticated
 space_drip_sequences                 authenticated
 space_drip_steps                     authenticated
@@ -263,6 +265,7 @@ space_programs                       authenticated
 space_reviews                        authenticated
 space_segments                       authenticated
 space_service_types                  authenticated
+space_standing                       internal
 space_subscription_items             authenticated
 space_ticket_rsvps                   authenticated
 space_ticket_tiers                   authenticated

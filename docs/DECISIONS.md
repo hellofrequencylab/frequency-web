@@ -37932,3 +37932,284 @@ consumers must each be added to **every** select branch, per the regression docu
 2026-12-01 is proposed); and whether the earned measure gets a name, which is a `NAMING.md` decision
 rather than a drive-by. "Standing" is used in OFFER-MODEL as a plain descriptive word, not a proposed
 proper noun.
+
+## ADR-1294: ACCEPTED — the core model is three lines and four nouns, and the six open questions are ruled (2026-09-08)
+
+**Status:** ✅ **ACCEPTED.** Supersedes the open questions left by [ADR-1292](DECISIONS.md) and
+[ADR-1293](DECISIONS.md), both of which stay PROPOSED as the argument that produced this. The plan
+lives in [`CORE-MODEL.md`](CORE-MODEL.md); status lives in [`BUILD-BACKLOG.json`](BUILD-BACKLOG.json)
+(`PROG-R0`…`PROG-R11`).
+
+**The model, and it is the whole thing.**
+
+> **People join free.**
+> **Businesses host free.**
+> **You pay when you start charging.**
+
+Four nouns, and no fifth: **Space** · **Circle** · **Event** · **Practice**.
+
+**Why this shape.** ADR-811 already ruled the reframe in July — Frequency is a Community Collective,
+not a community — and the marketing site leads with it. What four parallel surveys of 432 routes
+found on 2026-09-08 was an interior that had never been told, and a great deal of machinery built for
+a business that has not happened yet. Production holds 22 Spaces, 58 members, 7 Circles, 67 Events,
+21 Practices, and **zero orders, zero tickets, zero subscription items, ever**. The six Collective
+Spaces were granted by hand. There are no paying customers to migrate and no revenue to protect,
+which makes this the cheapest the change will ever be — and is the reason to make it now rather than
+to make it carefully later.
+
+### The P0, which was a date
+
+`pricing_settings.beta_grace` read `{"until":"2026-10-01"}`. `featureGatesLive()` short-circuits every
+gate to **grant** while `betaGraceActive()` is true, so **all 18 feature gates were inert** — and all
+18 would have begun enforcing simultaneously on 1 October, with no deploy and no announcement. Seven
+of them have **zero enforcement call sites**, so they would have started refusing features nothing
+knows how to refuse. One of them, `space_whitelabel`, is the product sold on the $249 Independent
+tier, whose only public surface renders *"Coming soon."*
+
+Moved to **2026-12-01** in production on 2026-09-08 at 23:27:46Z. The code default
+(`BETA_GRACE_DEFAULT`, `lib/pricing/beta.ts`) is deliberately **not** updated to match: that module
+documents at length why following the live value would reverse its fail-safe direction, so a failed
+read would enforce every gate. Read the row, never the constant.
+
+### The six rulings
+
+| # | Question | Ruling |
+|---|---|---|
+| 1 | The grace window | **1 December 2026.** Done in production. |
+| 2 | The marketplace | **One umbrella with real sub-tabs**, not four nav areas — Classifieds · Housing · Market · Events. The Store is a fifth tab **only when there is real merch**. |
+| 3 | The six Collective Spaces | **Grandfather at $49.** Collective merges into Business; Business rises $29 → $49 with 2 seats. |
+| 4 | The Independent tier | **Keep it, hide it from public pricing.** Hand-sold only; its four Stripe prices stay live. |
+| 5 | Hubs and Nexuses | **Fold both into Space.** A Hub and a Nexus each read as "a Space that contains other Spaces". |
+| 6 | Channels | **Fold into Circles.** A Channel reads as a topic Circle. |
+
+**Ruling 2 corrects the record, and the correction matters.** The first analysis put to the owner
+called the marketplace four nav areas and proposed dropping it. It is one experience with sub-tabs —
+which is what ADR-868 intended, since the `market` vertical contributes a single umbrella row at
+`/marketplace`. **The tab bar was never built.** What exists instead is `MarketplaceGuide`, a
+*bottom-of-page* "What's where" card, and `lib/marketplace/last-visited.ts` remembers only two
+surfaces (`classifieds | market`) rather than the set. The umbrella is half-built, not wrong.
+
+**Ruling 2 also carries a cost worth naming rather than discovering later.** Events becomes a
+marketplace tab while remaining one of the four nouns with its own rail row, so it appears twice. The
+tab should read as the *commerce face* of Events — paid and ticketed — not as a second Events index.
+
+**The Store ruling was taken on a corrected measurement, and the first one was wrong.** "49 items
+behind an off switch" reached the owner as an argument for publishing. Those 49 are `store_items`,
+which is **the Vault** — the Gems store at `/crew/store`, a different surface (the table carries
+`gem_cost` and `season_id`). The Frequency Store is backed by `commerce_products` where
+`owner_kind = 'platform'`, and its entire catalog is **four products, all `is_demo = true`**:
+Logo Tee $32, Enamel Pin Set $14, Field Tote Bag $28, Sticker Pack $8. Publishing it would have put a
+storefront of placeholders live. `marketplace_shop_published` stays false.
+
+### What the surveys changed about the plan
+
+Three phases exist that the nine-phase draft did not have, and each came from a count rather than an
+opinion.
+
+- **Deleting what is not the model** is now its own phase, because the dead-surface sweep found
+  enough verified-unreferenced code that doing it first makes every later phase cheaper: a
+  restaurant-menu CRUD with 23 write paths, five tables, **no reader and no rows**; the household
+  bundle and the Supporter tier, both built and never sold; two `/dev` routes with zero references
+  across 6,011 files.
+- **One editor per entity** is the largest single simplification available and nobody had counted it.
+  Circles and Events each ship `edit` **and** `manage` **and** `settings`; Practices ship `edit` and
+  `manage`. Beside them sit nine duplicate console pairs — four Circle consoles, three Event
+  consoles, four CRMs at four scopes, three funnel builders, two contact rosters.
+- **Prove it** was always the last phase, but its number moved: circles per Space is **0.32**, not the
+  0.05 first reported.
+
+### Two facts that change how the work is done
+
+**The home page is a database edit, not a pull request.** `app/page.tsx:145-147` resolves
+`getPublishedData('home')` first, and a 13-block document has been published since 2026-07-13.
+`lib/page-editor/templates/home.ts` is **unreachable**, so a PR to it moves nothing. This was a
+deliberate decision, recorded at `app/page.tsx:57-65`.
+
+**The pricing page is already one third correct.** `app/(marketing)/pricing/page.tsx:198` says
+*"Selling memberships needs Business, because a membership is a recurring promise to another
+person."* That is this model's own sentence, already live. Keep that argument and build the page on
+it; what gets re-argued is the other two thirds — rate buydown and cap lifting — which are the
+literal inverse of the model.
+
+### Consequences
+
+`scripts/check-collective.mjs` pins the six tier names and must be rewritten in the same change that
+merges the tier. `VALUE-LADDER`, `PRICING` and `COMMUNITY-COLLECTIVE-STRATEGY` need reconciling.
+`OWN-048` closes on the bundle spec. Three **live** walls come down (`entry-points`, `codes`,
+`messages/rooms`) — unlike the feature gates, which currently short-circuit to granted, these bite
+today. The four `featured_at` consumers must each be added to **every** select branch, per the
+regression documented in `scripts/check-row-type-select-parity.test.ts:23-27`.
+
+**The invariant that must survive the whole rework:** nothing on this platform can be bought into
+rank. An audit of every ranking surface found no plan, tier, entitlement or Stripe field in any
+`ORDER BY`, score or inclusion filter. Earned exposure means earned, and the ranking work in phase 10
+must not be the thing that quietly ends it.
+
+**One measurement gap blocks part of phase 10 and all of phase 11.** Event attendance has **no
+independent record** — there is no `checked_in` column; attendance exists only as an
+engagement-ledger row written by the path that pays Zaps. Demoting the game would silently destroy
+the metric the field test depends on. Fix that before phase 11 starts, not during.
+
+**Still open, and deliberately not ruled here:** the four contested operator-console placements
+(`space.content`, `space.airwaves`, `space.enroll`/`space.checkin`, `space.billing`), and whether the
+earned measure gets a proper noun — that is a `NAMING.md` decision rather than a drive-by, and
+"standing" is used in the plan as a plain descriptive word.
+
+## ADR-1295: ACCEPTED — the Quest loop is not a rung: `vault_cash_in` and `gamification_full` are deleted, `vera_unlimited` stays (2026-09-09)
+
+**Status:** ✅ **ACCEPTED.** Owner ruling, 2026-09-09. Closes `OWN-071`. Reverses the cash-in half of
+ADR-226 and the compete/nudge half of [ADR-370](DECISIONS.md); narrows the surviving personal-gate set
+recorded in [ADR-914](DECISIONS.md) and HYG-079 to one key.
+
+**Context.** The owner ruled that the Quest is demoted from the centre of the product to "a side
+thing we all do together". Three tier-axis gates stood on the personal ladder, and `LIVE-222` had
+established that all three were genuinely ENFORCED, not decorative, so none could be removed as
+hygiene:
+
+| Gate | What it refused | Marginal cost of opening it |
+|---|---|---|
+| `vault_cash_in` | spending earned Gems in the Vault (`redeemItem`) | merch fulfilment + stock |
+| `gamification_full` | the full earn-and-spend loop rather than earn-only | none directly |
+| `vera_unlimited` | Vera beyond the free daily cap | inference spend, per user, unbounded |
+
+The row that surfaced the question first described `vault_cash_in` as letting a member "turn Gems
+into money". The owner corrected that the same day: **"Gem cash trade in is ONLY for store merch."**
+The code agrees. `redeemItem` spends Gems against `store_items` (`gem_cost`, `stock`, `season_id`,
+`expires_at`) at `/crew/store`, which is a rewards catalog, not a payout, and a different surface
+from the Frequency Store (`commerce_products`, `owner_kind='platform'`). So the cost of opening it is
+fulfilment and stock, both of which the Vault already bounds.
+
+**Decision.** Delete `vault_cash_in` and `gamification_full` from `FEATURE_GATES`, and every call
+site that enforced them. Keep `vera_unlimited` exactly as it is, ladder, tease surface and
+pricing-grid row included.
+
+The line the ruling draws is **marginal cost, not game design**. Two of the three are what make the
+Quest a thing we all do: a member who earns Gems but can never spend them is not playing the same
+game as one who can, and "together" is not true if half the room is watching. The third is not about
+the game at all. It is an AI budget that happens to sit on the same axis, with a real per-user cost
+and no natural ceiling, so it is a cost control and it survives on that argument alone.
+
+**What changed, in one pass.** `featureAllowed` default-ALLOWS an undeclared key, so deleting the two
+rows would have granted them silently. That was the intended outcome but not an acceptable
+implementation: a dead check reads as a live rule to the next person who finds it. So every
+enforcement site went with the keys.
+
+- **Server:** the two guards in `app/(main)/crew/store/actions.ts` `redeemItem` (the `canCashIn(tier)`
+  predicate and the `featureAllowed('vault_cash_in', …)` re-check) and both "Cashing in the Vault is
+  a Crew perk" failure strings. `canCashIn` itself is deleted from `lib/core/entitlement.ts`; that
+  guard was its only call site.
+- **The gate wrapper:** `gamificationFullAllowed` in `lib/pricing/gamification-access.ts`, with its
+  three consumers — the leaderboard's `canCompete` gate, the `gamificationFull` field on
+  `CrewContext`, and the `/crew` season-reset nudge.
+- **The access matrix:** `vault` was the Quest's one ✋→✅ row (`PAID_FULL`) and is now `QUEST_OPEN`,
+  like its four siblings. This was the gate that actually bit in the UI: `canSpend` in
+  `lib/vault/vault-data.ts` was `surfaceAccess('vault') === 'full'`, and it muted the whole Vault
+  Store grid behind a `CrewGate`. Leaving it would have made the matrix the last surviving opinion
+  that spending is paid.
+- **Dead upsells, deleted rather than reworded:** `CompeteLocked`, `SeasonResetPrompt`,
+  `CrewPreviewBanner`, `lib/pricing/conversion.ts`, the Vault Store's `vault_cash_in` `UpsellTease`,
+  the two `rewards` rows of the pricing grid, and both `FEATURE_TIER_LADDERS` entries. The upgrade
+  lightbox's DEFAULT copy ("Crew members earn Zaps and Gems, climb the ranks, and spend in the Vault
+  Store") was the most-seen of them, since it is raised from every gate in the app.
+- **The Crew pitch stopped naming what everyone now gets:** `/upgrade`'s two Quest bullets are gone,
+  and the two help-center pages that taught the old rule (`the-vault.md`, `the-gem-store.md`) teach
+  the new one.
+
+**What deliberately did NOT change.** The earning side, the Gem ledger, seasons, `stock`,
+`expires_at`, the rank requirements and the atomic `redeem_store_item_atomic` charge are untouched.
+This opens WHO may spend and nothing else — what bounds a redemption is still the balance, the
+season, the rank and the stock, none of which is a tier. The `gamification_access` third flag
+(`profiles.gamification_access_override` + the `gamification_full_*` operator flags) also stays: it
+is an operator PIN, not a billing door, and deleting the gate is what makes that distinction clean
+rather than duplicated.
+
+**Consequences.** `lib/pricing/gamification-access.ts` is no longer a gating seam and left the
+`GATING_SEAMS` source-shape guard in `gates-live.test.ts` — because it stopped calling a gate, not
+because the guard was inconvenient. `gate-meter-drift.test.ts` gains two locks: the Quest keys may
+not come back, and the tier-axis gate set is asserted to be exactly `['vera_unlimited']`, so a second
+personal gate has to make its own cost argument rather than inheriting the Quest's. One personal gate
+is a much smaller surface to reason about than three, and `vera_unlimited` remains the one
+`KNOWN_GATE_METER_COLLISIONS` entry on the tier axis, unchanged.
+
+---
+
+## ADR-1296: ACCEPTED — the Space directory orders by an earned standing score, and no paid signal may ever enter it (2026-09-09)
+
+**Status:** ✅ **ACCEPTED.** Implements `docs/CORE-MODEL.md` Phase 10 ("Placement is earned"),
+closing `LIVE-262`, `LIVE-264` and `LIVE-265`; `LIVE-263` ships its code here and waits on one
+config action (applying the migration).
+
+**Context.** `lib/spaces/discovery.ts` defaulted `normalizeSpaceSort` to `'name'` and applied
+`.order('name', { ascending: true })`. The most valuable exposure surface a business has on this
+platform rewarded exactly one thing: starting with the letter A.
+
+The audit that preceded this work found something worth protecting. Across every ranking surface on
+the platform there is **no plan, tier, entitlement or Stripe field in any `ORDER BY`, score, or
+inclusion filter**. Nothing here has ever been buyable into rank. Replacing an alphabetical sort
+with a computed one is precisely the change that could have quietly ended that, so the invariant is
+stated first and enforced by a test rather than left to good intentions.
+
+**Decision.**
+
+1. **The default sort is `standing`**, an earned-exposure score in `[0, 1]`. The alphabetical order
+   is not deleted; it is one click away in the sort menu, alongside newest and most members.
+2. **The score lives in ONE pure module, `lib/spaces/standing.ts`.** No IO, no clock, and no imports
+   at all, so there is no seam a commercial signal could arrive through without an obvious diff. The
+   live directory read and the nightly rollup both call it, so a Space's stored standing and its
+   live standing can differ only in which signals each reader could measure, never in formula.
+3. **Six signals, each a thing the Space DID:** gatherings held, gatherings ahead, Circles open,
+   followers, members, and how much of the public page the operator filled in. Each saturates on the
+   repo's existing `1 - e^-n` curve (`lib/resonance/score.ts`) with a per-signal SCALE, because the
+   raw curve reads one follower as a saturated audience and would degenerate the sort into "has at
+   least one of anything".
+4. **Weights renormalise over the signals PRESENT**, the `lib/feed/blend-rank.ts` rule, and the two
+   halves (doing, belonging) are joined by a **harmonic mean**, the `lib/resonance/score.ts` rule, so
+   a Space that gathers for nobody and a Space with a following that never opens its doors both
+   score below a Space doing some of each. Each half is lifted off a `0.15` floor first, mirroring
+   the propensity floor in the resonance scorer, so a zero half discounts rather than annihilates.
+   Without it, the majority of Spaces would collapse to a hard 0 and fall back to alphabetical.
+
+**🔴 The rule that makes renormalisation safe, because the other reading inverts the ranking.** A
+signal is PRESENT when **the reader could measure it**, never when the Space has a non-zero amount of
+it. A Space with zero followers has an audience signal worth 0. A Space whose follower count was
+never fetched has no audience signal, and its weight goes to the ones that were. Read the other way
+("zero means absent") the score would reward emptiness: a Space with one follower and nothing else
+would score 0.63 on its single present signal and beat a Space doing five things moderately well.
+Read this way, every Space inside one ranking pass is scored on the same signal set, so
+renormalisation never advantages one Space over another. It has exactly one job: to let the score
+exist before every signal does.
+
+**🔴 Attendance is declared absent, not weighted at zero.** Whether anyone turned up to a gathering
+has **no independent record** on this platform. There is no `checked_in` column; the only trace is an
+engagement-ledger row written by the path that pays Zaps, which makes "attended" and "was paid for
+attending" the same fact and unreadable for any Space that does not run Zaps. Weighting it would be
+inventing data, so it is not a signal at all. `gatherings_held` counts gatherings that HAPPENED,
+which the data can stand behind. The renormalisation rule is what lets this ship honestly: the day an
+independent attendance record exists it becomes a seventh signal, every Space is re-scored at once,
+and no existing weight changes. This is said in the module header, the migration comment, the
+operator receipt page, and a test.
+
+**How the invariant is enforced.** `lib/spaces/standing.test.ts` strips the module's comments and
+fails on any of fourteen commercial tokens (plan, tier, entitlement, Stripe, price, subscription,
+seat, billing, invoice, paid, founding, premium, upgrade, cents) appearing in its executable source,
+and asserts the module imports nothing. `foundingBadgesForSpaces` resolves in the SAME batch as the
+counts the score reads and is deliberately not passed in: founding status badges a card, it does not
+rank one. The rollup test pins the written row to exactly six earned counts, a score and a timestamp.
+
+**What else shipped in the same pass.** The four dormant `featured_at` columns now reach a sort
+(`LIVE-264`): posts already did through the `public_featured_posts` RPC; circles, events, and
+practices/journeys were dark, with a write path and a badge and no reader. Each is confined to its
+surface's DEFAULT sort branch, because an explicit sort is the member saying how they want the list
+ordered and a curated pick must not quietly outrank a stated intent. And the operator receipt at
+`/spaces/<slug>/settings/reach` (`LIVE-265`) prints the same six signals back to the operator with
+the one next move beside each, plus the promise in writing. That page is the point of the whole
+phase: a ranking nobody can see reads as favouritism, and earned exposure is only worth having if
+it is legible.
+
+**Consequences.** The directory pays one extra batched read per page (the rollup's two signals),
+fail-safe to the live-count subset. The nightly `refresh-traits` cron gains a step that reports
+failures at ERROR under its own `.failed` event, because a rollup whose failure is indistinguishable
+from an empty success is a rollup nobody notices has stopped (the lesson of
+[ADR-1207](DECISIONS.md) and the density rollup's silent fortnight). `space_standing` is additive,
+idempotent and service-role only; until it is applied the score simply runs on four signals instead
+of six.

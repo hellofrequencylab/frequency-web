@@ -67,6 +67,71 @@
           ]
         },
         {
+          "name": "WR · the core-model rework (ADR-1294), phases 0-11 in order. Three lines, four nouns. Phases 1-3 are one pass over the same files: the feature gates are inert until the grace window ends on 2026-12-01, which makes this the safe window to move paywalls. Phase 5 is the commercial unlock and phase 11 is the only phase that can say whether any of it worked.",
+          "ids": [
+            "PROG-R0",
+            "HYG-079",
+            "HYG-083",
+            "HYG-084",
+            "HYG-085",
+            "LIVE-222",
+            "LIVE-224",
+            "LIVE-225",
+            "LIVE-226",
+            "LIVE-227",
+            "LIVE-251",
+            "LIVE-256",
+            "LIVE-262",
+            "LIVE-266",
+            "LIVE-267",
+            "HYG-078",
+            "HYG-080",
+            "HYG-082",
+            "PROG-R4",
+            "LIVE-228",
+            "LIVE-229",
+            "LIVE-230",
+            "LIVE-231",
+            "LIVE-232",
+            "PROG-R5",
+            "LIVE-233",
+            "LIVE-234",
+            "LIVE-235",
+            "LIVE-236",
+            "PROG-R6",
+            "LIVE-237",
+            "LIVE-238",
+            "LIVE-239",
+            "PROG-R7",
+            "LIVE-241",
+            "LIVE-242",
+            "LIVE-243",
+            "LIVE-244",
+            "LIVE-245",
+            "LIVE-246",
+            "LIVE-247",
+            "LIVE-248",
+            "LIVE-249",
+            "LIVE-250",
+            "PROG-R8",
+            "LIVE-252",
+            "LIVE-253",
+            "LIVE-254",
+            "LIVE-255",
+            "LIVE-257",
+            "PROG-R9",
+            "LIVE-260",
+            "LIVE-240",
+            "LIVE-258",
+            "LIVE-259",
+            "LIVE-261",
+            "OWN-071",
+            "PROG-R10",
+            "LIVE-263",
+            "PROG-R11"
+          ]
+        },
+        {
           "name": "W1 · content pipeline (5c/5d must land before Editor E3)",
           "ids": []
         },
@@ -10078,6 +10143,1207 @@
         "checked": "2026-09-08",
         "evidence": "2026-09-08: both fallback workflows carry --retry AND -o on every API GET (5 call sites), so a transient 5xx is retried and no attempt can concatenate onto another. Probe exits 0."
       }
+    },
+    {
+      "id": "PROG-R0",
+      "title": "Rework phase 0: record the decision, defuse the gate cliff",
+      "status": "open",
+      "priority": "P0",
+      "lane": "program",
+      "size": "S",
+      "source": {
+        "file": "docs/CORE-MODEL.md",
+        "ref": "§5"
+      },
+      "detail": "The core model is ruled (owner, 2026-09-08). Three lines: people join free, businesses host free, you pay when you start charging. Four nouns: Space, Circle, Event, Practice.\n\nP0 WAS THE DATE, and it is closed: pricing_settings.beta_grace read {\"until\":\"2026-10-01\"} on 2026-09-08, and featureGatesLive() short-circuits every gate to GRANT while betaGraceActive() is true. All 18 feature gates were inert, and would have begun enforcing simultaneously on 1 October with no deploy - including seven with zero enforcement call sites and space_whitelabel, which sells the $249 Independent tier whose only public surface renders \"Coming soon\". Moved to 2026-12-01 in production at 23:27Z.\n\nNOTE the code default is deliberately NOT updated to match. lib/pricing/beta.ts documents at length why BETA_GRACE_DEFAULT must stay a window rather than track the live row: following the live value would reverse the module's fail-safe direction, so a failed read would enforce every gate. Read the row, never the constant.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "pricing_settings.beta_grace = {\"until\":\"2026-12-01\"}, written 2026-09-08 23:27:46Z. Re-read the row; the code constant is not the answer.",
+        "checked": "2026-09-08"
+      }
+    },
+    {
+      "id": "PROG-R1",
+      "title": "Rework phase 1: delete what is not the model",
+      "status": "done",
+      "priority": "P1",
+      "lane": "program",
+      "size": "M",
+      "source": {
+        "file": "docs/CORE-MODEL.md",
+        "ref": "§5"
+      },
+      "detail": "Everything after this is cheaper once the dead weight is gone. Every item is verified unreferenced, unwritten or unsold by the 2026-09-08 dead-surface sweep - no judgement calls in this phase. Broken out into the HYG rows below.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Program phase; proven by its child rows. Sequence in docs/CORE-MODEL.md §5 phase 1.",
+        "checked": "2026-09-08"
+      }
+    },
+    {
+      "id": "PROG-R2",
+      "title": "Rework phase 2: people join free",
+      "status": "done",
+      "priority": "P1",
+      "lane": "program",
+      "size": "M",
+      "source": {
+        "file": "docs/CORE-MODEL.md",
+        "ref": "§5"
+      },
+      "detail": "Line one of the model. The highest-value single change in the whole plan is one component deletion: starting a Circle is behind a Crew paywall today (components/compose/new-circle-compose.tsx:26-35). Broken out into the LIVE rows below.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Program phase; proven by its child rows. Sequence in docs/CORE-MODEL.md §5 phase 2.",
+        "checked": "2026-09-08"
+      }
+    },
+    {
+      "id": "PROG-R3",
+      "title": "Rework phase 3: businesses host free",
+      "status": "done",
+      "priority": "P1",
+      "lane": "program",
+      "size": "M",
+      "source": {
+        "file": "docs/CORE-MODEL.md",
+        "ref": "§5"
+      },
+      "detail": "Line two. Five feature meters read free: 0 - a cap of zero is a wall wearing a meter's clothes. Only space_membership_tiers stays at zero, because that one IS the paid line.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Program phase; proven by its child rows. Sequence in docs/CORE-MODEL.md §5 phase 3.",
+        "checked": "2026-09-08"
+      }
+    },
+    {
+      "id": "PROG-R4",
+      "title": "Rework phase 4: pay when you charge",
+      "status": "open",
+      "priority": "P1",
+      "lane": "program",
+      "size": "L",
+      "source": {
+        "file": "docs/CORE-MODEL.md",
+        "ref": "§5"
+      },
+      "detail": "Line three, and the only phase that changes money. Collective merges into Business at $49 (a raise from $29); the six granted Collective Spaces grandfather at $49 (owner ruling); seats go live at $12; the take rate collapses to two numbers. Independent is KEPT but hidden from public pricing (owner ruling) - so its four Stripe prices stay live for a hand-sold deal and no public surface offers it.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Program phase; proven by its child rows. Sequence in docs/CORE-MODEL.md §5 phase 4.",
+        "checked": "2026-09-08"
+      }
+    },
+    {
+      "id": "PROG-R5",
+      "title": "Rework phase 5: the Connect onboarding push",
+      "status": "open",
+      "priority": "P0",
+      "lane": "program",
+      "size": "M",
+      "source": {
+        "file": "docs/CORE-MODEL.md",
+        "ref": "§5"
+      },
+      "detail": "Highest commercial leverage in the plan, and the reason it is P0 rather than P1: nothing has EVER been charged on this platform. Production on 2026-09-08 read 0 commerce_orders, 0 event_tickets, 0 space_subscription_items, 0 financial_transactions. Five money loops are built and none has completed once. Surfacing Stripe Connect onboarding at the first sell attempt unblocks all five with one push.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Program phase; proven by its child rows. Sequence in docs/CORE-MODEL.md §5 phase 5.",
+        "checked": "2026-09-08"
+      }
+    },
+    {
+      "id": "PROG-R6",
+      "title": "Rework phase 6: one editor per entity",
+      "status": "open",
+      "priority": "P1",
+      "lane": "program",
+      "size": "L",
+      "source": {
+        "file": "docs/CORE-MODEL.md",
+        "ref": "§5"
+      },
+      "detail": "The largest simplification available, found by the 2026-09-08 route survey and NOT present in the nine-phase draft. Circles, Events and Practices each ship THREE editors: a hand-built edit, a hand-built manage, and a registry-driven settings. Space settings has three doors over two implementations, with the ADR record narrating a flip-flop (ADR-785 -> ADR-788). Nine further duplicate console pairs sit beside them: four Circle consoles, three Event consoles, four CRMs at four scopes, three funnel builders, two contact rosters.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Program phase; proven by its child rows. Sequence in docs/CORE-MODEL.md §5 phase 6.",
+        "checked": "2026-09-08"
+      }
+    },
+    {
+      "id": "PROG-R7",
+      "title": "Rework phase 7: the product looks like the model",
+      "status": "open",
+      "priority": "P1",
+      "lane": "program",
+      "size": "L",
+      "source": {
+        "file": "docs/CORE-MODEL.md",
+        "ref": "§5"
+      },
+      "detail": "Menus and shape. The operator half is cheaper than it looks: the 2026-09-08 operator survey mapped all 34 SPACE_MODULES rows onto five boxes (Your page 5, Your people 9, Gather 9, Money 7, Reach 4) with NOTHING dropped, so it is a data edit against the registered catalog, not a rail rewrite. Four contested placements need a ruling: space.content, space.airwaves, space.enroll/space.checkin, space.billing.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Program phase; proven by its child rows. Sequence in docs/CORE-MODEL.md §5 phase 7.",
+        "checked": "2026-09-08"
+      }
+    },
+    {
+      "id": "PROG-R8",
+      "title": "Rework phase 8: the story matches",
+      "status": "open",
+      "priority": "P1",
+      "lane": "program",
+      "size": "M",
+      "source": {
+        "file": "docs/CORE-MODEL.md",
+        "ref": "§5"
+      },
+      "detail": "Public copy. TWO THINGS TO KNOW BEFORE STARTING. (1) The home page is a DATABASE edit, not a pull request: / renders getPublishedData('home') - a 13-block document published 2026-07-13 - and lib/page-editor/templates/home.ts is unreachable, so a PR to it moves nothing. (2) The pricing page is already one third correct: app/(marketing)/pricing/page.tsx:198 says \"Selling memberships needs Business, because a membership is a recurring promise to another person\", which IS the new model's sentence. The other two thirds - rate buydown and cap lifting - get re-argued.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Program phase; proven by its child rows. Sequence in docs/CORE-MODEL.md §5 phase 8.",
+        "checked": "2026-09-08"
+      }
+    },
+    {
+      "id": "PROG-R9",
+      "title": "Rework phase 9: first run teaches the model",
+      "status": "open",
+      "priority": "P2",
+      "lane": "program",
+      "size": "M",
+      "source": {
+        "file": "docs/CORE-MODEL.md",
+        "ref": "§5"
+      },
+      "detail": "Whatever the menus say, the first ten minutes are what a new member learns the product to be. Depends on phase 6 picking ONE onboarding engine first - today three exist (Next Steps, Walkthroughs, TourProvider) and all three are dark.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Program phase; proven by its child rows. Sequence in docs/CORE-MODEL.md §5 phase 9.",
+        "checked": "2026-09-08"
+      }
+    },
+    {
+      "id": "PROG-R10",
+      "title": "Rework phase 10: placement is earned",
+      "status": "open",
+      "priority": "P2",
+      "lane": "program",
+      "size": "L",
+      "source": {
+        "file": "docs/CORE-MODEL.md",
+        "ref": "§5"
+      },
+      "detail": "The most valuable exposure surface a business has - the Space directory - is sorted ALPHABETICALLY (lib/spaces/discovery.ts:135, applied :378-380). Meanwhile nothing on the platform can be bought into rank anywhere: no plan, tier, entitlement or Stripe field appears in any ORDER BY, score or inclusion filter. That is a real asset and it must stay true: earned exposure means EARNED, never sold.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Program phase; proven by its child rows. Sequence in docs/CORE-MODEL.md §5 phase 10.",
+        "checked": "2026-09-08"
+      }
+    },
+    {
+      "id": "PROG-R11",
+      "title": "Rework phase 11: prove it",
+      "status": "open",
+      "priority": "P1",
+      "lane": "program",
+      "size": "M",
+      "source": {
+        "file": "docs/CORE-MODEL.md",
+        "ref": "§5"
+      },
+      "detail": "One city. Three businesses. One real gathering each per week. Each brings ten of their own people. Instrument three numbers and nothing else: circles per Space (0.32 on 2026-09-08 - 7 circles across 22 spaces), gatherings actually held, attendance. Every other number in this model is a guess until those three move. No code, and no engineer.\n\nBLOCKED ON A MEASUREMENT GAP: event attendance has no independent record. There is no checked_in column; attendance exists only as an engagement-ledger row written by the path that pays Zaps, so demoting the game would silently destroy the metric. Fix that before phase 11 starts, not during.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Owner-run field test. Three numbers, read from SQL at the start and end of the six weeks.",
+        "checked": "2026-09-08"
+      }
+    },
+    {
+      "id": "HYG-085",
+      "title": "Delete the two /dev showcase routes",
+      "status": "open",
+      "priority": "P3",
+      "lane": "hygiene",
+      "size": "XS",
+      "source": {
+        "file": "docs/CORE-MODEL.md",
+        "ref": "§5"
+      },
+      "detail": "app/dev/business-seeder-review/ and app/dev/editor-controls/ (page.tsx + showcase.tsx each). Both notFound() in production. The 2026-09-08 sweep grepped all 6,011 source files: business-seeder-review has ZERO references anywhere, editor-controls is mentioned only in docs/DECISIONS.md.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const p=[\"app/dev/business-seeder-review\",\"app/dev/editor-controls\"];const left=p.filter(x=>fs.existsSync(x));if(left.length)console.error(\"still present: \"+left.join(\", \"));process.exit(left.length?1:0)'"
+      }
+    },
+    {
+      "id": "HYG-078",
+      "title": "Drop the orphan gamification_full_supporter platform_flags row",
+      "status": "open",
+      "priority": "P3",
+      "lane": "hygiene",
+      "size": "XS",
+      "source": {
+        "file": "docs/CORE-MODEL.md",
+        "ref": "§5"
+      },
+      "detail": "NARROWED 2026-09-09 after the original row was found FALSE. The row said \"delete the Supporter tier remnants\". It conflated two different things that share the word: ADR-458 retired Supporter as a TIER, and it became the pay-what-you-want profiles.is_supporter BADGE, which is LIVE. lib/billing/supporter.ts is the PWYW contribution charge and Foundation donation ledger, imported by app/(main)/upgrade/actions.ts:18 and app/api/webhooks/stripe/route.ts:53, and it gained a NEW refund path on 2026-09-05 (migration 20270345000300, ADR-1208). billing_live is true, so that code takes the live branch today. supporter_contributions holds 0 rows because nobody has contributed yet, not because nothing writes it.\n\ntier_supporter_enabled must also STAY: supporter-retired.test.ts:59,92 deliberately loads every flag ON to prove memberTierSellable('supporter') still refuses. Deleting the key would make that guard vacuous, which is the \"gate that can no longer fire honestly\" shape ADR-970 warns about.\n\nWHAT IS ACTUALLY LEFT: platform_flags.gamification_full_supporter is true in production and NO code reads it. lib/pricing/settings.ts:150 records that it was deliberately dropped from PRICING_FLAG_KEYS by owner directive on 2026-08-24. It is a bare data row. Note migration 20260723010000 re-seeds it on replay, so removing the row alone is not enough.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "platform_flags has no gamification_full_supporter row, and the seeding migration no longer re-creates it. Read the table; the code cannot answer this.",
+        "checked": "2026-09-09"
+      }
+    },
+    {
+      "id": "HYG-079",
+      "title": "Delete the seven feature gates with zero enforcement call sites",
+      "status": "open",
+      "priority": "P1",
+      "lane": "hygiene",
+      "size": "M",
+      "source": {
+        "file": "docs/CORE-MODEL.md",
+        "ref": "§5"
+      },
+      "detail": "Verified 2026-09-08: space_whitelabel, space_sms, space_revenue_splits, space_crm_playbooks, space_crm_resonance, journey_library_list and entry_points each have ZERO references outside lib/pricing/gates.ts and its tests. Each is a promise the code cannot keep, and each would have begun refusing a feature nothing knows how to refuse when the grace window ends. gates.ts already documents six prior such deletions as the right move.\n\nRULING DEPENDENCY: space_whitelabel is the Independent tier's gate. The owner ruled Independent is KEPT but hidden from public pricing, so deleting the gate is correct - the tier is hand-sold and its entitlement is not enforced by a gate that does nothing. Do NOT archive the four Independent Stripe prices.\n\n── SCOPE CORRECTED 2026-09-09, and the correction is a lesson about the verification, not the finding. The seven gates have no ENFORCEMENT call sites, which is what the row claims and it is true. But each also has a DISPLAY LADDER in lib/pricing/feature-tiers.ts (FEATURE_TIER_LADDERS), and feature-tiers.test.ts:62 asserts every ladder key has a FEATURE_GATES entry, so deleting the gates alone fails that test seven times.\n\nWHY THIS WAS MISSED: the sweep grepped for the key QUOTED ('space_sms'), and the ladders declare it as a bare object key (space_sms: {). Quoted-only found 0 references; a word-boundary grep finds 2. Any future \"unreferenced\" claim in this repo must be measured with a word-boundary grep, never a quoted one.\n\nALSO IN SCOPE: the NON_METERED_FEATURES entries; the KNOWN_DECORATIVE_GATES and KNOWN_GATE_METER_COLLISIONS lists in gate-meter-drift.test.ts, both of which have only-ever-shrinks guards; beta-notice.test.ts:50,53; and free-seller.test.tsx:188-193.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const s=require(\"fs\").readFileSync(\"lib/pricing/gates.ts\",\"utf8\");const dead=[\"space_whitelabel\",\"space_sms\",\"space_revenue_splits\",\"space_crm_playbooks\",\"space_crm_resonance\",\"journey_library_list\",\"entry_points\"].filter(k=>new RegExp(\"^\\\\s*\"+k+\":\",\"m\").test(s));if(dead.length)console.error(\"still declared: \"+dead.join(\", \"));process.exit(dead.length?1:0)'"
+      }
+    },
+    {
+      "id": "HYG-080",
+      "title": "Delete the second Space-creation door",
+      "status": "blocked",
+      "priority": "P2",
+      "lane": "hygiene",
+      "size": "M",
+      "source": {
+        "file": "docs/CORE-MODEL.md",
+        "ref": "§5"
+      },
+      "detail": "app/(main)/spaces/new/business/ (page.tsx + business-quickstart-form.tsx) plus createBusinessSpace. A second creation flow for the same noun, reachable only from /spaces/new itself. One noun, one door.\n\n🔴 BLOCKED 2026-09-09. The orphan premise expired: three pins landed since the survey, and one of them is not a reference but a CONTROL.\n  1. scripts/check-a11y-names.test.ts:443 reads business-quickstart-form.tsx from disk as the POSITIVE CONTROL for the forwarder chain - \"blind, it is the single placeholder-only control that held the ceiling at 1\". Deleting the file needs a REPLACEMENT control, not a line removal, or the mutation test silently stops proving anything.\n  2. check:creates Rule 4 (scripts/check-creates.mjs:165,221) registers createBusinessSpace twice, in ENTITY_WRITES as the business create road and in the governed-call map.\n  3. scripts/check-creates.test.ts:355 asserts lib/spaces/provision.ts::createBusinessSpace POSITIVELY in ROUTED_ON_2026_09_07 - a road that quietly stops calling the layer fails that test.\nNote the action lives in lib/spaces/provision.ts:272, not lib/spaces/create.ts as the row said.\n\nThis is one change that retires the door and all three pins together, including deciding what replaces the a11y control. It is not a phase-1 sweep.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const p=[\"app/(main)/spaces/new/business\"];const left=p.filter(x=>fs.existsSync(x));if(left.length)console.error(\"still present: \"+left.join(\", \"));process.exit(left.length?1:0)'"
+      }
+    },
+    {
+      "id": "HYG-081",
+      "title": "Do NOT delete the operator partner surface: it writes the rewards program",
+      "status": "done",
+      "priority": "P2",
+      "lane": "hygiene",
+      "size": "S",
+      "source": {
+        "file": "docs/CORE-MODEL.md",
+        "ref": "§5"
+      },
+      "detail": "🔴 CLOSED WITHOUT ACTION 2026-09-09 - the row was WRONG, and acting on it would have broken a live program. Kept as a record because the surface was deleted twice during phase 1 before this was understood, and the next sweep will find the same route and reach the same wrong conclusion.\n\nOWNER, 2026-09-09: \"Partners are business partners who can be a part of the check in / rewards program.\" So Partner is not a stray fifth noun; it is a ROLE inside the rewards economy, and it is live.\n\nTHE CHAIN THE ROW MISSED: lib/engagement/capture.ts is the scan-to-rewards pipeline. When a scanned node carries partner_id, it reads that partner's live offer from partner_offers and writes a partner_redemptions row. app/(main)/partners/listing/actions.ts:101 is the ONLY WRITER of partner_offers - it is where a business partner sets the offer that the plaque unlocks. Deleting it would have left the reader with nothing to read, which is the exact defect SCAN-635 was filed for and ADR-1212 closed by ADDING that writer days earlier.\n\nWHY THE ROW LOOKED RIGHT: the sweep tested for INBOUND LINKS and found none. Nothing links to a writer. For any row that proposes deleting a write path, the test is the ledger - what created this, and what reads what it writes - not the nav graph. partner_offers holding 2 rows was the available evidence and it was not weighed.\n\nNothing to do. The public /partners directory, /partners/[slug], the operator listing surface and lib/partners/collaborators.ts all stay.",
+      "verify": {
+        "kind": "grep-present",
+        "pattern": "from\\('partner_offers'\\)",
+        "paths": [
+          "app/(main)/partners/listing/actions.ts"
+        ]
+      }
+    },
+    {
+      "id": "HYG-082",
+      "title": "Stop resolving pricing against eight archived Stripe list prices",
+      "status": "open",
+      "priority": "P2",
+      "lane": "hygiene",
+      "size": "S",
+      "source": {
+        "file": "docs/CORE-MODEL.md",
+        "ref": "§5"
+      },
+      "detail": "pricing_stripe_prices holds 20 rows; 8 are archived: true - every *_list anchor variant (business_base_month_list, collective_base_year_list, independent_base_month_list, nonprofit_seat_*_list, addon_ai_*_list). catalogPriceKey(..., list=true) at lib/billing/pricing-keys.ts:524-537 still asks for them, so the pricing surface resolves anchors against IDs Stripe has archived. Either re-mint or stop asking. Phase 4 removes the Collective anchors anyway, so do this AFTER the merge to avoid doing it twice.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Read pricing_stripe_prices where archived = true, and confirm no live code path resolves those keys.",
+        "checked": "2026-09-08"
+      }
+    },
+    {
+      "id": "HYG-083",
+      "title": "Collapse three byte-identical broadcast-channel literals into one",
+      "status": "open",
+      "priority": "P3",
+      "lane": "hygiene",
+      "size": "XS",
+      "source": {
+        "file": "docs/CORE-MODEL.md",
+        "ref": "§5"
+      },
+      "detail": "The same {key:'sms', enabled:false, note:'Coming soon'} chip is hand-typed in three places: app/(main)/journeys/[slug]/launch/page.tsx:55-60, app/(main)/events/[slug]/manage/broadcast-section.tsx:97-104, app/(main)/spaces/[slug]/messages/space-broadcast-section.tsx:36-43. One shared constant. SMS cannot ship without an A2P filing regardless (lib/comms/sms.ts:105-114 requires four env vars), so the chip is honest but it should be honest in one place.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const p=[\"app/(main)/journeys/[slug]/launch/page.tsx\",\"app/(main)/events/[slug]/manage/broadcast-section.tsx\",\"app/(main)/spaces/[slug]/messages/space-broadcast-section.tsx\"];const bad=p.filter(f=>fs.existsSync(f)&&/key:\\s*\"?.sms\"?/.test(fs.readFileSync(f,\"utf8\")));if(bad.length)console.error(\"still declares the chip inline: \"+bad.join(\", \"));process.exit(bad.length?1:0)'"
+      }
+    },
+    {
+      "id": "LIVE-266",
+      "title": "Un-gate starting a Circle - the single highest-value change in the plan",
+      "status": "open",
+      "priority": "P0",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "docs/CORE-MODEL.md",
+        "ref": "§5"
+      },
+      "detail": "components/compose/new-circle-compose.tsx:26-35 wraps the circle-create CTA in CrewGateButton, so a free member cannot start a Circle. Under \"people join free\" this is the most important act in the product sitting behind a paywall. Also lib/circles/index-data.ts:379.\n\nThis is one component deletion and it is P0 for that reason: it costs half an hour and it removes the contradiction at the centre of the model.\n\n── PREMISE CORRECTED 2026-09-09, on implementing it. The row called this \"a paywall on the most important act in the product\", biting today. It was not biting. lib/core/capabilities.ts:223-227 already grants circle.create to ANY signed-in profile under FIRST ONE FREE (ADR-908), whose comment says gating the door \"would put a paywall in front of the Latent Leader\". So canCreate('circle.create') was already true for every member and the CrewGateButton refused nobody.\n\nWhat came down was DORMANT paywall wiring - a gate that would have started biting the instant that capability was tightened, in the highest-consequence place on the platform. Removing it is still right, and the row is still done; it was worth less than claimed and the claim should not have survived unmeasured.",
+      "verify": {
+        "kind": "grep-absent",
+        "pattern": "CrewGateButton",
+        "paths": [
+          "components/compose/new-circle-compose.tsx"
+        ]
+      }
+    },
+    {
+      "id": "LIVE-267",
+      "title": "Remove the three live isPaid walls on member creation paths",
+      "status": "open",
+      "priority": "P1",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "docs/CORE-MODEL.md",
+        "ref": "§5"
+      },
+      "detail": "Entry points (app/(main)/entry-points/actions.ts:50 and page.tsx:31), personal QR codes (app/(main)/codes/actions.ts:41, page.tsx:48) and message rooms (app/(main)/messages/rooms/actions.ts:29) are hard isPaid() walls that bite regardless of gatesLive. A free member should be able to make an entry point, a code and a room. 64 isPaid call sites exist across 23 files; these are the member-facing ones.",
+      "verify": {
+        "kind": "grep-absent",
+        "pattern": "isPaid",
+        "paths": [
+          "app/(main)/entry-points/actions.ts",
+          "app/(main)/codes/actions.ts",
+          "app/(main)/messages/rooms/actions.ts"
+        ]
+      }
+    },
+    {
+      "id": "LIVE-222",
+      "title": "Un-gate Practice authoring, and retire the two unenforced tier gates",
+      "status": "open",
+      "priority": "P1",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "docs/CORE-MODEL.md",
+        "ref": "§5"
+      },
+      "detail": "NARROWED 2026-09-09. The row originally said \"delete the five tier-axis gates\". Two of the five (journey_library_list, entry_points) have no enforcement and are handled by HYG-079. The other three are NOT decorative and must not be deleted as hygiene:\n  - vault_cash_in    enforced at app/(main)/crew/store/actions.ts:72  [DELETED 2026-09-09, ADR-1295]\n  - gamification_full enforced at lib/pricing/gamification-access.ts:119  [DELETED 2026-09-09, ADR-1295]\n  - vera_unlimited    enforced at lib/ai/vera/usage-gate.ts:70\nplus two personal tease surfaces (vault-store.tsx:26, layout.tsx:855) and two pricing-grid rows.\n\nfeatureAllowed default-ALLOWS an undeclared key, so deleting them would not error. It would silently and permanently grant Gem cash-in, the full rewards loop, and uncapped Vera to every free member. gate-meter-drift.test.ts already records vera_unlimited as a known collision deferred to a later phase.\n\nWHAT REMAINS IN THIS ROW: un-gate practice.create in lib/core/capabilities.ts:228, which is Crew-gated while event.create, circle.create and journey.create are open to any signed-in member. That inconsistency has no argument behind it. Requires updating load-capabilities.test.ts:141,239 and removing the now-unreachable crewCreateUpsell copy at practices/create-actions.ts:199.\n\nThe tier AXIS itself cannot be removed: six METERS still use axis tier (vera_unlimited, journey_publish, journey_enrollees, circle_host, practice_publish, event_create), and GateAxis is imported by six modules.\n\nUPDATE 2026-09-09 (ADR-1295, OWN-071): the owner ruled on the two Quest gates this row had protected. They were opened, not wired: the Quest is a side thing we all do together, so vault_cash_in and gamification_full are deleted along with every enforcement site, the two tease surfaces and the two pricing-grid rows. vera_unlimited stays, on marginal cost. What this row itself closed (practice.create) is untouched.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const s=require(\"fs\").readFileSync(\"lib/core/capabilities.ts\",\"utf8\");const m=s.match(/caps\\.add\\(.event\\.create.\\)[\\s\\S]{0,260}?\\n\\s*\\}/);if(!m){console.error(\"the member create block was not found\");process.exit(1)}if(!/practice\\.create/.test(m[0])){console.error(\"practice.create is still gated separately from its three siblings\");process.exit(1)}process.exit(0)'"
+      }
+    },
+    {
+      "id": "LIVE-223",
+      "title": "Crew becomes granted by an active paid community membership, with provenance",
+      "status": "done",
+      "priority": "P1",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "docs/CORE-MODEL.md",
+        "ref": "§5"
+      },
+      "detail": "Owner ruling 2026-09-08: any active PAID membership, any price, grants Crew. Crew is a TIER today, not a role, and the tier has no provenance - nothing records WHY a profile is crew, so a grant cannot be revoked when the membership lapses without also downgrading someone who pays Stripe directly. Needs a crew_grants record (or the household_bundle_prior_tier pattern) and siblings at all six lifecycle sites.\n\nSELF-GRANT GUARD, and the owner already narrowed it: only PAID Spaces can create membership tiers, so the $1-tier loophole costs a Business subscription to open. setMembershipTiers still has no minimum price check (lib/spaces/memberships.ts:415) and prevent_economy_self_edit does not cover membership_tier, so an owner must not be grantable by their own tier.\n\n── SHIPPED 2026-09-09. The tier resolves as a union over two facts that are never collapsed: profiles.membership_tier stays the STRIPE rung and is never written by this feature, and the grant is its own provenance-stamped row in entitlement_grants. lib/core/entitlement.ts carries EffectiveTier { stripeTier, granted, tier } so the access question and the pricing question cannot be confused, and billedTier() collapses to stripeTier and never to tier - which is what makes LIVE-224 hold.\n\nA row IS the grant; revoke DELETES it. No revoked_at, because two representations of \"not granted\" is one more than can be kept in step. Revoke filters on (profile_id, granted_by_tier_id), so a Stripe-paid Crew or a grant from another community can never be touched.\n\nAll six lifecycle sites ride syncTierCircleAccess, the one seam the five code sites already call, and it runs BEFORE the circle early-returns because all four live tiers have circle_id null - a grant gated behind the circle link would have reached nobody. The sixth site is the SCHEMA: granted_by_tier_id ON DELETE CASCADE, so deleting a tier removes exactly the grants it made with no app code to forget.\n\nThe self-grant guard is a BEFORE INSERT/UPDATE trigger refusing owners, admins and any tier priced at zero, plus membership_tier added to prevent_economy_self_edit.\n\n⚠️ The minimum-price check is NOT wired: its site is setMembershipTiers, and the pure guard ships as lib/billing/membership-tier-price.ts (MIN_PAID_TIER_PRICE_CENTS = 300) awaiting one call. Not urgent - the grant path already refuses a zero-price tier and the trigger refuses the row.\n\n⚠️ The migration is UNAPPLIED and ships with this change. scripts/check-schema-contract.mjs carries a dated ALLOWLIST entry because the table exists only in the migration; DELETE that entry once it is applied and the types regenerated, or the guard goes stale.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Resolver unit tests: a paid member resolves crew, cancelling revokes it, a Stripe-paying member is never downgraded, an owner is not granted by their own tier.",
+        "checked": "2026-09-08"
+      }
+    },
+    {
+      "id": "LIVE-224",
+      "title": "A granted Crew must not buy down the take rate",
+      "status": "open",
+      "priority": "P1",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "docs/CORE-MODEL.md",
+        "ref": "§5"
+      },
+      "detail": "Crew takes the member network rate from 10% to 8%. If a granted Crew inherited that, a $1 membership tier becomes a machine for turning 10% into 8% - the grant would pay for itself and then some. memberNetworkTakeRateBps (lib/billing/pricing-keys.ts) must keep reading the STRIPE tier, not the resolved one. This is the guard that makes ruling 3 safe; it is not optional.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const t=\"lib/billing/granted-crew-take-rate.test.ts\";if(!fs.existsSync(t)){console.error(\"guard test missing: \"+t);process.exit(1)}const s=fs.readFileSync(t,\"utf8\");if(!/grant/i.test(s)||!/take.?rate|Bps/i.test(s)){console.error(\"guard test does not exercise a granted-Crew take rate\");process.exit(1)}process.exit(0)'"
+      }
+    },
+    {
+      "id": "LIVE-225",
+      "title": "Five zero caps become real free allowances",
+      "status": "open",
+      "priority": "P1",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "docs/CORE-MODEL.md",
+        "ref": "§5"
+      },
+      "detail": "lib/pricing/feature-meters.ts:98-142 sets free: 0 on space_automation, space_crm_playbooks, space_collaborators, space_membership_tiers and practice_publish. A cap of zero is a wall wearing a meter's clothes, and it is the opposite of \"businesses host free\".\n\nProposed: automation 50/mo, playbooks 100/mo, collaborators 1, practice publish 3. space_membership_tiers STAYS at zero - that one is the paid line, and it is the whole model.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const s=require(\"fs\").readFileSync(\"lib/pricing/feature-meters.ts\",\"utf8\");const zeros=[...s.matchAll(/^\\s*([a-z_]+):\\s*\\{[^}]*free:\\s*0\\b/gm)].map(m=>m[1]);const bad=zeros.filter(k=>k!==\"space_membership_tiers\");if(bad.length)console.error(\"still capped at zero: \"+bad.join(\", \"));process.exit(bad.length?1:0)'"
+      }
+    },
+    {
+      "id": "LIVE-226",
+      "title": "Retire tickets; fold enroll into journeys+memberships and checkin into events",
+      "status": "open",
+      "priority": "P2",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "docs/CORE-MODEL.md",
+        "ref": "§5"
+      },
+      "detail": "SPACE_FUNCTIONS carries 22 keys. Three of them are not their own thing: tickets duplicates the event ticket flow, enroll duplicates journeys plus memberships, checkin is an event mechanic. Folding them takes the list to 19 and removes three settings sections that read as separate products.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const m=require(\"fs\").readFileSync(\"lib/spaces/functions.ts\",\"utf8\");const n=(m.match(/^    key: ./gm)||[]).length;console.error(\"SPACE_FUNCTIONS keys: \"+n);process.exit(n===19?0:1)'"
+      }
+    },
+    {
+      "id": "HYG-084",
+      "title": "Fix three code comments that now state the opposite of what the code does",
+      "status": "open",
+      "priority": "P2",
+      "lane": "hygiene",
+      "size": "XS",
+      "source": {
+        "file": "docs/CORE-MODEL.md",
+        "ref": "§5"
+      },
+      "detail": "lib/spaces/memberships.ts:10 says \"v1 IS NOT BILLING\"; app/(main)/spaces/[slug]/settings/memberships/section.tsx:27 says it takes no payment; settings/checkin/section.tsx:17 says event_space only. All three were true once and are false now. AGENTS.md forbids status in prose precisely because nothing re-reads it - these are the in-code instance of the same failure.",
+      "verify": {
+        "kind": "grep-absent",
+        "pattern": "v1 IS NOT BILLING|takes no payment",
+        "paths": [
+          "lib/spaces/memberships.ts",
+          "app/(main)/spaces/[slug]/settings/memberships/section.tsx"
+        ]
+      }
+    },
+    {
+      "id": "LIVE-227",
+      "title": "Resolve /sites/[slug]: hide Independent from public pricing, keep the tier",
+      "status": "open",
+      "priority": "P1",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "docs/CORE-MODEL.md",
+        "ref": "§5"
+      },
+      "detail": "OWNER RULING 2026-09-08: keep the Independent tier for a hand-sold deal, remove it from every public pricing surface. Today the tier is enabled, four Stripe prices are minted and unarchived, and app/sites/[slug]/page.tsx:53-57 renders \"Coming soon\" for the white-label site it sells. That combination - a live public price for a page that says the product is on its way - is the sharpest honesty risk in the repo.\n\nDO: drop Independent from /pricing, the comparison grid, the plan ladder, the JSON-LD Offer set and llms.txt. KEEP: the catalog item, the four Stripe prices, and the route (noindex, unchanged). The space_whitelabel gate goes with HYG-079 since it enforces nothing.",
+      "verify": {
+        "kind": "grep-absent",
+        "pattern": "independent",
+        "paths": [
+          "app/(marketing)/pricing/page.tsx"
+        ]
+      }
+    },
+    {
+      "id": "LIVE-228",
+      "title": "Merge Collective into Business at $49; grandfather the six granted Spaces",
+      "status": "open",
+      "priority": "P1",
+      "lane": "live",
+      "size": "L",
+      "source": {
+        "file": "docs/CORE-MODEL.md",
+        "ref": "§5"
+      },
+      "detail": "OWNER RULING 2026-09-08: one paid tier at $49 with 2 seats included. Business is $29 today and Collective is $79 list / $49 founding, so this is a 67% raise on Business and a hold at the founding rate for Collective.\n\nProduction on 2026-09-08: spaces.plan = free 15, collective 6, null 1. ZERO Business, zero Nonprofit, zero Independent. space_subscription_items = 0 and space_billing_agreements = 1, so the six Collective Spaces were GRANTED by hand (lib/billing/space-beta-grant.ts), never bought. Nobody has ever been charged, which makes this the cheapest a price change will ever be - but the six still need telling, and the owner ruled they grandfather AT $49 rather than dropping to free.\n\nTouches lib/pricing/plans.ts, pricing-keys.ts (+ RETIRED_CATALOG_ITEM_KEYS for collective_base), one migration, and scripts/check-collective.mjs which pins the six tier names and must be rewritten in the same PR.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const s=require(\"fs\").readFileSync(\"lib/pricing/plans.ts\",\"utf8\");const m=s.match(/SPACE_PLANS[^=]*=\\s*\\[([^\\]]*)\\]/);if(!m){console.error(\"SPACE_PLANS not found\");process.exit(1)}if(/collective/.test(m[1])){console.error(\"collective still in SPACE_PLANS\");process.exit(1)}process.exit(0)'"
+      }
+    },
+    {
+      "id": "LIVE-229",
+      "title": "Take the operator seat live at $12",
+      "status": "open",
+      "priority": "P1",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "docs/CORE-MODEL.md",
+        "ref": "§5"
+      },
+      "detail": "The seat machinery is fully built and deliberately inert: pricing-keys.ts:490 marks operator_seat placeholder: true, so the catalog sync SKIPS it, no Stripe price is minted, and resolveLoadoutPriceId stays null. That is a good safety design - a routine sync can never mint a live seat price the owner did not approve. Clearing it is the deliberate act: set $12, remove placeholder, sync, flip catalog_operator_seat_active. lib/billing/operator-seats.ts, lib/spaces/seats.ts and space-subscription-items.ts already exist for it.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "One real checkout mints a seat line item. Read space_subscription_items for the seat row.",
+        "checked": "2026-09-08"
+      }
+    },
+    {
+      "id": "LIVE-230",
+      "title": "Collapse the take rate to two numbers",
+      "status": "open",
+      "priority": "P1",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "docs/CORE-MODEL.md",
+        "ref": "§5"
+      },
+      "detail": "pricing_settings.take_rate.network_bps currently carries five rates (free 1000, business 500, collective 300, nonprofit 0, independent 0), none of which has ever been applied to a transaction. With Collective merged the ladder is: 10% free, 3% paid, 0% non-profit, 0% on your own audience. Two rungs a person can hold in their head.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const s=require(\"fs\").readFileSync(\"lib/billing/pricing-keys.ts\",\"utf8\");const m=s.match(/NETWORK_TAKE_RATE_DEFAULT[^=]*=\\s*\\{([\\s\\S]*?)\\n\\}/);if(!m){console.error(\"NETWORK_TAKE_RATE_DEFAULT not found\");process.exit(1)}if(/collective:/.test(m[1])){console.error(\"collective rung still in the take-rate ladder\");process.exit(1)}process.exit(0)'"
+      }
+    },
+    {
+      "id": "LIVE-231",
+      "title": "Make the membership upsell honest at the point of tier creation",
+      "status": "open",
+      "priority": "P2",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "docs/CORE-MODEL.md",
+        "ref": "§5"
+      },
+      "detail": "Memberships stay paid-gated - that is the model's third line, and ADR-914 (\"never gate the transaction, gate the repeat\") supports it: a recurring membership IS the repeat. What must change is the presentation. A free Space creating a membership tier should read \"charging your members is part of Business\", with the reason, not a lock icon. app/(main)/spaces/[slug]/settings/memberships/section.tsx.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Copy review against docs/CONTENT-VOICE.md §10. No lock iconography on the tier-creation path.",
+        "checked": "2026-09-08"
+      }
+    },
+    {
+      "id": "LIVE-232",
+      "title": "Every marketing figure derives from the catalog, none is typed",
+      "status": "open",
+      "priority": "P1",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "docs/CORE-MODEL.md",
+        "ref": "§5"
+      },
+      "detail": "Prices and rates appear across /pricing (859 lines), lib/page-editor/templates/pricing.ts (402 lines, currently unreachable), the comparison grid, 12 FAQ answers, a Product/Offer JSON-LD block, llms.txt and llms-full.txt. They already derive from CATALOG in most places; the guard is that no literal survives. llms.txt matters more than it looks: app/robots.ts opts in 18 AI crawlers by name, and neither llms file is human-reviewed, so a stale figure there gets quoted back at prospects.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const files=[\"app/(marketing)/pricing/page.tsx\",\"lib/pricing/pricing-page.ts\",\"lib/page-editor/templates/pricing.ts\"];const bad=files.filter(f=>fs.existsSync(f)&&/Collective/.test(fs.readFileSync(f,\"utf8\")));if(bad.length)console.error(\"retired tier still named in: \"+bad.join(\", \"));process.exit(bad.length?1:0)'"
+      }
+    },
+    {
+      "id": "LIVE-233",
+      "title": "Surface Connect onboarding at the first sell attempt on every money path",
+      "status": "open",
+      "priority": "P0",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "docs/CORE-MODEL.md",
+        "ref": "§5"
+      },
+      "detail": "An operator who tries to sell anything hits a dead end unless their Stripe Connect account is already onboarded, and there is no single prompt that offers to fix it. Five paths need the same prompt: memberships, bookings, orders, donations, tickets. One prompt instead of five dead ends.\n\nThis is the highest commercial leverage item in the plan and the reason phase 5 is P0.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Manual walk of all five sell paths as an operator with no Connect account. Each offers onboarding rather than failing.",
+        "checked": "2026-09-08"
+      }
+    },
+    {
+      "id": "LIVE-234",
+      "title": "Prove each money loop once in production",
+      "status": "open",
+      "priority": "P0",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "docs/CORE-MODEL.md",
+        "ref": "§5"
+      },
+      "detail": "Nothing has ever been charged. Production 2026-09-08: commerce_orders 0, event_tickets 0, space_subscription_items 0, financial_transactions 0, tips 0, creator_tips 0, store_redemptions 0, supporter_contributions 0. stripe_webhook_events holds exactly 1 row.\n\nFive non-zero row counts is the whole probe: a membership reaching active, a booking with a deposit, one order, one donation, one Space subscription. Until then every revenue number in this model is arithmetic, not evidence.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "SQL: five tables non-zero. Read them, do not infer from Stripe dashboard.",
+        "checked": "2026-09-08"
+      }
+    },
+    {
+      "id": "LIVE-235",
+      "title": "Add the donation checkout",
+      "status": "open",
+      "priority": "P1",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "docs/CORE-MODEL.md",
+        "ref": "§5"
+      },
+      "detail": "space_donation_asks holds 0 rows and there is no donation checkout, while the membership checkout (lib/billing/space-membership-checkout.ts) works and is the obvious template. Donations are the lowest-friction way a community pays a business, and the ask surface already exists.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "SQL: at least one paid donation ask exists and one donation has completed.",
+        "checked": "2026-09-08"
+      }
+    },
+    {
+      "id": "LIVE-236",
+      "title": "Wire the per-Space email event writer",
+      "status": "open",
+      "priority": "P2",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "docs/CORE-MODEL.md",
+        "ref": "§5"
+      },
+      "detail": "space_email_events is read but never written, so an operator who sends email cannot see whether it landed. Sending without delivery feedback is worse than not sending.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "SQL: space_email_events is non-empty after a real send.",
+        "checked": "2026-09-08"
+      }
+    },
+    {
+      "id": "LIVE-237",
+      "title": "One editor per entity: Circles, Events, Practices",
+      "status": "open",
+      "priority": "P1",
+      "lane": "live",
+      "size": "L",
+      "source": {
+        "file": "docs/CORE-MODEL.md",
+        "ref": "§5"
+      },
+      "detail": "Verified 2026-09-08. Circles and Events each ship app/(main)/<noun>/[slug]/{edit,manage,settings}; Practices ship {edit,manage}. The settings route is registry-driven; edit and manage are hand-built and overlap it. Keep the registry-driven one - docs/STUDIO.md already rules that field lists derive from the manifest through lib/studio/kernel/edit-plan.ts, and ADR-1281 closed the last rail that did not.\n\nThis is the largest simplification in the plan and it was missed by the nine-phase draft because nobody had counted the editors.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const dup=[\"app/(main)/circles/[slug]/edit\",\"app/(main)/circles/[slug]/settings\",\"app/(main)/events/[slug]/edit\",\"app/(main)/events/[slug]/settings\",\"app/(main)/practices/[id]/manage\"].filter(p=>fs.existsSync(p));if(dup.length)console.error(\"duplicate editors remain: \"+dup.join(\", \"));process.exit(dup.length?1:0)'"
+      }
+    },
+    {
+      "id": "LIVE-238",
+      "title": "Collapse Space settings to one door",
+      "status": "open",
+      "priority": "P2",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "docs/CORE-MODEL.md",
+        "ref": "§5"
+      },
+      "detail": "Three doors over two implementations: /spaces/[slug]/settings/basics has its own copy of the form (a \"hotfix\" sub-page), /spaces/[slug]/manage/settings renders the shared SpaceSettingsSurface, and the /manage hub carries a tab for it. The file comments narrate an ADR-785 -> ADR-788 flip-flop. Keep the shared surface.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const p=[\"app/(main)/spaces/[slug]/settings/basics\"];const left=p.filter(x=>fs.existsSync(x));if(left.length)console.error(\"still present: \"+left.join(\", \"));process.exit(left.length?1:0)'"
+      }
+    },
+    {
+      "id": "LIVE-239",
+      "title": "Resolve the nine duplicate operator consoles",
+      "status": "open",
+      "priority": "P2",
+      "lane": "live",
+      "size": "L",
+      "source": {
+        "file": "docs/CORE-MODEL.md",
+        "ref": "§5"
+      },
+      "detail": "Found 2026-09-08: four Circle consoles (manage/circles, circles/[slug]/manage, circles/[slug]/settings, admin/circles), three Event consoles (settings/calendar, events/[slug]/manage, admin/events), four CRMs at four scopes (spaces, hubs, nexuses, admin), three funnel builders (admin/growth/funnels, admin/marketing/funnels, pages/sequences), two contact rosters (admin/crm/contacts, admin/marketing/contacts), plus manage/settings vs settings/basics and manage/modules vs manage/mode.\n\nThe hub/nexus CRMs disappear with LIVE-242 rather than needing their own work.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "One console per job per scope. Enumerate the nine pairs and show each resolved or deliberately kept with a reason.",
+        "checked": "2026-09-08"
+      }
+    },
+    {
+      "id": "LIVE-240",
+      "title": "Pick one onboarding engine and delete the other two",
+      "status": "open",
+      "priority": "P1",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "docs/CORE-MODEL.md",
+        "ref": "§5"
+      },
+      "detail": "DONE 2026-09-09. WALKTHROUGHS KEPT, the other two DELETED (not flagged off).\n\nThe evidence, re-measured rather than inherited: Walkthroughs is the only engine with data (2 rows), the only one with an operator authoring surface (/admin/walkthroughs + the slide editor), the only one NOT behind a kill flag (its runtime is live and unconditional in the feed; it was dark only because no row is `active`), the only one both other engines name as their successor in their own comments, and the one that already owns the first-run checklist through the reserved `onboarding-next-steps` slug, so keeping it orphaned nothing.\n\nDeleted: the chores / Founder's First Week coach (CoachOverlaySlot, ChoresOverlay, lib/onboarding/profile-chores.ts, app/(main)/feed/chores-actions.ts, FOUNDER_COACH) and the ambient coachmark tour (TourProvider, lib/onboarding/tips.ts, lib/onboarding/select.ts, recordTourEvent). Both kill flags went with them: lib/onboarding/flags.ts is gone and nextStepsEnabled is gone from lib/onboarding/status.ts, so `auto_popups_enabled` and `next_steps_enabled` are now inert platform_flags rows nothing reads.\n\nKEPT and deliberately NOT counted as an engine: the SpotlightTour, because a member asks for it by tapping \"Take the tour\" on the checklist; and DailyCheckIn, which is a rewards heartbeat.\n\nONE DEVIATION FROM THE ACCEPTANCE LINE, stated so it can be corrected in one line: the surviving engine renders where it was designed to, as a gentle card in the feed, so app/(main)/layout.tsx now mounts ZERO onboarding engines rather than one. Moving the card into the shell would put it on every admin page and every editor, and mounting it in the overlay lane would make it exactly the auto-popup this row deleted.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const gone=['components/onboarding/tour-provider.tsx','components/onboarding/chores-overlay.tsx','lib/onboarding/tips.ts','lib/onboarding/select.ts','lib/onboarding/profile-chores.ts','lib/onboarding/flags.ts','app/(main)/feed/chores-actions.ts'];const left=gone.filter(f=>fs.existsSync(f));if(left.length){console.error('a deleted onboarding engine is still on disk: '+left.join(', '));process.exit(1)}const L='app/(main)/layout.tsx';if(!fs.existsSync(L))process.exit(79);const l=fs.readFileSync(L,'utf8');const imports=l.split(String.fromCharCode(10)).filter(x=>x.trim().indexOf('import')===0).join(String.fromCharCode(10));const bad=['tour-provider','chores-overlay','onboarding/tips','onboarding/select','onboarding/profile-chores','onboarding/flags'].filter(m=>imports.indexOf(m)>=0);if(bad.length){console.error('the shell still imports a deleted engine: '+bad.join(', '));process.exit(1)}if(!fs.existsSync('lib/walkthroughs.ts')||!fs.existsSync('lib/walkthroughs/runtime.ts')){console.error('the surviving engine (Walkthroughs) is missing');process.exit(1)}\""
+      }
+    },
+    {
+      "id": "LIVE-241",
+      "title": "Member rail: 16 rows to 7",
+      "status": "open",
+      "priority": "P2",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "docs/CORE-MODEL.md",
+        "ref": "§5"
+      },
+      "detail": "Feed, Around You, Circles, Events, Members, Messages, The Quest. Market's rows collapse into the one Marketplace umbrella (LIVE-243); Channels folds into Circles (LIVE-244); Library, Journal, Practices, Journeys and Vault move under their parent. lib/nav-areas.ts and lib/verticals/*.\n\nThe Quest KEEPS a row. The owner ruling is that the game is demoted from the centre to a side thing we all do together - not removed. Five of sixteen rows is the centre; one is a side thing.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Count member-visible rows in the rendered rail as a free member. Seven.",
+        "checked": "2026-09-08"
+      }
+    },
+    {
+      "id": "LIVE-242",
+      "title": "Fold Hubs and Nexuses into Space",
+      "status": "open",
+      "priority": "P2",
+      "lane": "live",
+      "size": "L",
+      "source": {
+        "file": "docs/CORE-MODEL.md",
+        "ref": "§5"
+      },
+      "detail": "OWNER RULING 2026-09-08. Both are a fifth and sixth noun with full detail pages, management consoles and their own CRMs - duplicating the Space CRM at two more scopes. Production holds 3 hubs and 2 nexuses. A Hub and a Nexus both read as \"a Space that contains other Spaces\", so they become a Space with a parent. Removes two nouns, two consoles and two duplicate CRMs.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const p=[\"app/(main)/hubs\",\"app/(main)/nexuses\"];const left=p.filter(x=>fs.existsSync(x));if(left.length)console.error(\"still present: \"+left.join(\", \"));process.exit(left.length?1:0)'"
+      }
+    },
+    {
+      "id": "LIVE-243",
+      "title": "Build the Marketplace tab bar the umbrella has always implied",
+      "status": "open",
+      "priority": "P2",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "docs/CORE-MODEL.md",
+        "ref": "§5"
+      },
+      "detail": "OWNER CORRECTION 2026-09-08: the Marketplace is ONE experience with sub-tabs, not four nav areas. That is what ADR-868 intended - the market vertical contributes one umbrella row at /marketplace - but the tab bar was never built. What exists instead is MarketplaceGuide, a BOTTOM-of-page \"What's where\" card, and lib/marketplace/last-visited.ts remembers only TWO surfaces (classifieds | market) rather than the full set.\n\nBUILD: a real top sub-nav across Classifieds, Housing, Market and Events. Extend COMMERCE_SURFACES to match so /marketplace returns you where you were.\n\nEvents is a tab by owner ruling. Note the consequence and design around it: Events also holds its own member rail row as one of the four nouns, so it appears twice. The tab should read as the commerce face of Events (paid and ticketed), not a second Events index.\n\nStore is NOT a tab yet - see LIVE-245.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "The four tabs render at the top of all four surfaces, and /marketplace returns to the last one visited.",
+        "checked": "2026-09-08"
+      }
+    },
+    {
+      "id": "LIVE-244",
+      "title": "Fold Channels into Circles",
+      "status": "open",
+      "priority": "P2",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "docs/CORE-MODEL.md",
+        "ref": "§5"
+      },
+      "detail": "OWNER RULING 2026-09-08. Channels ship an index, a detail page (720 lines), an editor and a 1,400-line console - and the channels table holds ZERO rows. channel_memberships is also empty, has no writer, and app/(main)/channels/actions.test.ts:233 literally asserts the app never writes it. A Channel reads as a topic Circle. Nothing is lost because there are no channels; redirect old links at /circles.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const p=[\"app/(main)/channels\"];const left=p.filter(x=>fs.existsSync(x));if(left.length)console.error(\"still present: \"+left.join(\", \"));process.exit(left.length?1:0)'"
+      }
+    },
+    {
+      "id": "LIVE-245",
+      "title": "Keep the Frequency Store off until there is real merch",
+      "status": "open",
+      "priority": "P3",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "docs/CORE-MODEL.md",
+        "ref": "§5"
+      },
+      "detail": "OWNER RULING 2026-09-08, taken on a corrected measurement. The Store's catalog is FOUR products, all is_demo = true: Frequency Logo Tee $32, Enamel Pin Set $14, Field Tote Bag $28, Sticker Pack $8. The \"49 items\" figure that first reached the owner was store_items, which is the VAULT (gem_cost, season_id) at /crew/store - a different surface. The Store is backed by commerce_products where owner_kind = platform.\n\nSo: marketplace_shop_published stays false, /store stays out of the tab bar, the route and commerce plumbing stay ready. Flipping it the day real merch exists is a one-row change.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "platform_flags.marketplace_shop_published is false, and /store is absent from the Marketplace tab set.",
+        "checked": "2026-09-08"
+      }
+    },
+    {
+      "id": "LIVE-246",
+      "title": "Operator console: 34 modules into 5 boxes",
+      "status": "open",
+      "priority": "P2",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "docs/CORE-MODEL.md",
+        "ref": "§5"
+      },
+      "detail": "Your page (5) / Your people (9) / Gather (9) / Money (7) / Reach (4). The 2026-09-08 survey mapped all 34 SPACE_MODULES rows with NOTHING dropped, so this is a data edit on the registered catalog - lib/admin/modules/space-modules.ts parents only, plus space-hub.ts - not a rail rewrite. MENU-CONTRACT forbids touching the rail render to change what is IN the menu.\n\nFOUR CONTESTED PLACEMENTS need a ruling: space.content (its deepLink is a query param into the hub, not a route - it must become a real page or dissolve into Gather), space.airwaves (Gather or Reach), space.enroll + space.checkin (money-adjacent and gather-adjacent), space.billing (Money, or a settings tail under Your page).",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const s=require(\"fs\").readFileSync(\"lib/admin/modules/space-modules.ts\",\"utf8\");const rows=(s.match(/id: .space\\.[a-z]+./g)||[]).length;const kids=(s.match(/parent: ./g)||[]).length;const tops=rows-kids;console.error(\"rows \"+rows+\", parentless \"+tops);process.exit(rows===34&&tops===5?0:1)'"
+      }
+    },
+    {
+      "id": "LIVE-247",
+      "title": "The mobile centre button creates something",
+      "status": "open",
+      "priority": "P2",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "docs/CORE-MODEL.md",
+        "ref": "§5"
+      },
+      "detail": "components/layout/app-shell.tsx:1573-1583 - the raised centre button fires an open-capture event instead of opening the create menu. The most prominent affordance in the mobile product should start a post, an event or a circle.",
+      "verify": {
+        "kind": "grep-absent",
+        "pattern": "open-capture",
+        "paths": [
+          "components/layout/app-shell.tsx"
+        ]
+      }
+    },
+    {
+      "id": "LIVE-248",
+      "title": "The feed hero becomes a community board",
+      "status": "open",
+      "priority": "P2",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "docs/CORE-MODEL.md",
+        "ref": "§5"
+      },
+      "detail": "app/(main)/feed/page.tsx:245-290 - the whole feed hero is the game today. It becomes your circles' next gathering and your spaces' activity; PracticePrompt and JourneyBoard move to the rail. The first module above the composer should be community, which is the demotion the owner asked for expressed in the one place a member actually looks.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "The first module above the composer on /feed is community, not game.",
+        "checked": "2026-09-08"
+      }
+    },
+    {
+      "id": "LIVE-249",
+      "title": "Bundle presets become the Space setup shape (closes OWN-048)",
+      "status": "open",
+      "priority": "P2",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "docs/CORE-MODEL.md",
+        "ref": "§5"
+      },
+      "detail": "Owner ruling 1: a new Space starts with its CORE features on and the rest off but switchable. CAPABILITY_BUNDLES is exactly right for this and only this - it is SUBTRACTIVE, it can turn a tool off for a Space but never grant a paid one, which is why it could not be the add-on mechanism draft 1 proposed. Four presets: studio, practice, venue, non-profit. lib/pricing/bundles.ts.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const b=require(\"fs\").readFileSync(\"lib/pricing/bundles.ts\",\"utf8\");const m=b.match(/CAPABILITY_BUNDLES[^=]*=\\s*\\[([^\\]]*)\\]/);const n=m?m[1].split(\",\").filter(x=>x.trim()).length:0;if(n<4)console.error(\"only \"+n+\" bundle(s)\");process.exit(n>=4?0:1)'"
+      }
+    },
+    {
+      "id": "LIVE-250",
+      "title": "Public header: 6 tabs to 4, and fix the two footer drifts",
+      "status": "open",
+      "priority": "P2",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "docs/CORE-MODEL.md",
+        "ref": "§5"
+      },
+      "detail": "lib/nav/registry.ts:146-212 and :296-352. The footer points market at /market when the umbrella door is /classifieds, and carries a dead maker navKey.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Four header triggers; no dead navKey in the footer.",
+        "checked": "2026-09-08"
+      }
+    },
+    {
+      "id": "LIVE-251",
+      "title": "Retire /beta - it sells a window that closed on 17 August",
+      "status": "open",
+      "priority": "P1",
+      "lane": "live",
+      "size": "XS",
+      "source": {
+        "file": "docs/CORE-MODEL.md",
+        "ref": "§5"
+      },
+      "detail": "app/(marketing)/beta/page.tsx says \"Free during the beta\", \"Free for the whole beta, no card\", and \"when paid membership launches\". The beta pricing window closed 2026-08-17 (lib/billing/pricing-keys.ts:440-448, ADR-1067/1060). Under the new model free is PERMANENT, so the page's premise is gone, not just its dates.\n\nIt also carries sitemap priority 0.9 - the second-highest URL on the site, above /pricing - while nothing links to it: the only references are default props in six page-editor block files, and the live home document uses /discover and /join. It exists almost entirely for crawlers.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const p=[\"app/(marketing)/beta\"];const left=p.filter(x=>fs.existsSync(x));if(left.length)console.error(\"still present: \"+left.join(\", \"));process.exit(left.length?1:0)'"
+      }
+    },
+    {
+      "id": "LIVE-252",
+      "title": "Rewrite the home page - in the DATABASE, not the template",
+      "status": "open",
+      "priority": "P1",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "docs/CORE-MODEL.md",
+        "ref": "§5"
+      },
+      "detail": "app/page.tsx:145-147 resolves getPublishedData('home') then getTemplate('home') then EMPTY. A 13-block document has been published since 2026-07-13, so lib/page-editor/templates/home.ts is UNREACHABLE and a pull request to it moves nothing. This was recorded as a deliberate owner decision at app/page.tsx:57-65.\n\nLive H1: \"Frequency exists to create and support healthy community\" - singular community, no Space story, no money promise. It becomes the three lines. Do it at /edit/home, or unpublish and let the template take over; either way, decide which surface is authoritative and say so in the same pass.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Read the published home document. Its H1 states the model.",
+        "checked": "2026-09-08"
+      }
+    },
+    {
+      "id": "LIVE-253",
+      "title": "Rewrite /pricing - two thirds of it, not all of it",
+      "status": "open",
+      "priority": "P1",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "docs/CORE-MODEL.md",
+        "ref": "§5"
+      },
+      "detail": "The page already names three things that need a paid plan (app/(marketing)/pricing/page.tsx:198) and the FIRST is the new model's own sentence: \"Selling memberships needs Business, because a membership is a recurring promise to another person.\" Keep that argument and build the page on it.\n\nWhat gets re-argued is the other two thirds, which are the literal inverse of the model: \"Paid plans raise the limits\" (lib/pricing/pricing-page.ts:105,107), \"The paid plans buy the rate down and lift the caps\" (page.tsx:398), \"A paid plan does not switch selling on\" (lib/marketing/comparisons.ts:87), and eleven more strings inventoried in the 2026-09-08 public survey.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Copy review: no surviving string says a paid plan buys lower rates or higher caps as the reason to upgrade.",
+        "checked": "2026-09-08"
+      }
+    },
+    {
+      "id": "LIVE-254",
+      "title": "Demote /the-quest from a top-level pillar",
+      "status": "open",
+      "priority": "P2",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "docs/CORE-MODEL.md",
+        "ref": "§5"
+      },
+      "detail": "The Quest is 1 of 3 top-level pillars in BOTH live nav menus (header and footer, from the menu_items table), holds sitemap priority 0.8 equal to /the-community and /the-lab, and appears in a PillarNav triptych cross-linking Lab / Quest / Community as peers. It is also sold as a Crew feature (\"adds the full game, with Gems, Vault cash-in, your own Quest to author\").\n\nThe page, its two nav entries, its sitemap priority and its role in the Crew upsell move together. The Quest survives as the side thing we all do together; it stops being a third of the story.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Read menu_items: The Quest is not a top-level pillar in the header or footer menu.",
+        "checked": "2026-09-08"
+      }
+    },
+    {
+      "id": "LIVE-255",
+      "title": "Rewrite the five /for niche doors from their one shared config",
+      "status": "open",
+      "priority": "P2",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "docs/CORE-MODEL.md",
+        "ref": "§5"
+      },
+      "detail": "lib/marketing/funnel-config.ts drives all five doors (coaches-and-healers, studios, event-hosts, community-builders, nonprofits). Its lead comment at :14-17 names the three feature gates as the paid argument, :51 repeats \"Selling is never behind a plan\" on every door, and :253/343/433/524/618 each close with \"When you're ready, it does more.\" One rewrite, five pages.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Copy review of funnel-config.ts against the three lines.",
+        "checked": "2026-09-08"
+      }
+    },
+    {
+      "id": "LIVE-256",
+      "title": "Free AIO and SEO wins available in the same pass",
+      "status": "open",
+      "priority": "P2",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "docs/CORE-MODEL.md",
+        "ref": "§5"
+      },
+      "detail": "Three cheap ones found by the 2026-09-08 public survey. (1) lib/jsonld.ts:29-59 accepts sameAs social edges for the Organization schema and NO caller passes any. (2) /pricing sits at sitemap priority 0.6, below the 0.7 SEO guides. (3) Five real SEO pillar pages are ORPHANED - /vs, /vs/[slug], /calm-down-fast, /how-to-be-more-social, /friendship-as-an-adult are in the sitemap and llms.txt but nothing on the site links to them, so they earn no internal link equity.\n\n── ONE THIRD OF THIS ROW HAD ALREADY EXPIRED. It claimed lib/jsonld.ts accepts sameAs and \"no caller passes any\". lib/site.ts:249 defines SOCIAL_PROFILES and app/layout.tsx:190 passes it; that landed under SCAN-205 and nobody closed the row. The sitemap re-weighting and the orphaned-pillar links were real and are done.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const s=require(\"fs\").readFileSync(\"app/sitemap.ts\",\"utf8\");const m=s.match(/.pricing[^}]*priority:\\s*([0-9.]+)/);if(!m){console.error(\"no /pricing sitemap entry\");process.exit(1)}const p=parseFloat(m[1]);console.error(\"/pricing priority \"+p);process.exit(p>=0.8?0:1)'"
+      }
+    },
+    {
+      "id": "LIVE-257",
+      "title": "Help articles for anything newly core",
+      "status": "open",
+      "priority": "P2",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "docs/CORE-MODEL.md",
+        "ref": "§5"
+      },
+      "detail": "content/help/** currently holds 57 markdown files. check:help FAILS CI when a core surface has no article, so this is not optional once the menus change.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const n=require(\"child_process\").execSync(\"find content/help -name \\\"*.md\\\" | wc -l\").toString().trim();console.error(\"help articles: \"+n);process.exit(Number(n)>57?0:1)' && pnpm check:help >/dev/null 2>&1"
+      }
+    },
+    {
+      "id": "LIVE-258",
+      "title": "Rewrite the Vera welcome deck to the four nouns",
+      "status": "open",
+      "priority": "P2",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "docs/CORE-MODEL.md",
+        "ref": "§5"
+      },
+      "detail": "DONE 2026-09-09. The deck now runs home, Circle (the heart, unchanged), Event, Practice, Space, Vera. The Zaps slide is gone: the Quest is one line inside the Practice slide, named as a side thing we all do together, where it used to take a whole slide teaching a member to collect points before they had met anyone. The Space slide is new and says hosting is free, which is the shape of the model. Its art is new too (lib/onboarding/vera-welcome.ts DeckArt gained `spaces` and dropped the now-unused `zaps`; components/onboarding/welcome-art.tsx follows).\n\nlib/onboarding/personas.ts: the Practitioner reel and track no longer promise a global marketplace reaching past your zip code. They promise a free Space in your own town, which is both on-model and true.",
+      "verify": {
+        "kind": "grep-absent",
+        "pattern": "worldwide marketplace",
+        "paths": [
+          "lib/onboarding/personas.ts"
+        ]
+      }
+    },
+    {
+      "id": "LIVE-259",
+      "title": "The first-run checklist becomes the model",
+      "status": "open",
+      "priority": "P2",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "docs/CORE-MODEL.md",
+        "ref": "§5"
+      },
+      "detail": "DONE 2026-09-09. OnboardingStepKey went from avatar/circle/practice/log to avatar/circle/event/host, so the checklist reads photo, join a Circle, come to an Event, host something. It used to spend half the funnel inside one noun (adopt a practice, then log that practice) and never once said Event or Space.\n\nThe done-detection in lib/onboarding/status.ts moved with it: `event` is an event_rsvps row with status 'going' (a not_going RSVP is an answer, not an arrival), and `host` is any one of the three things a person can host, as three cheap existence probes (circles.host_id, events.host_id, spaces.owner_profile_id). app/(main)/feed/chores-actions was deleted with LIVE-240; the force-complete hatch in app/(main)/feed/onboarding-actions.ts now derives its accepted keys FROM ONBOARDING_CRITERIA rather than repeating them, so the next change to the nouns cannot leave that validator behind.\n\n⚠️ ONE CONSEQUENCE FOR THE OWNER, in LIVE-260: the `onboarding-next-steps` walkthrough row still carries slides tagged `practice` and `log`, which are no longer criteria. Activating that row AS IS would shrink the rendered checklist to two steps.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const S='lib/onboarding/steps.ts';if(!fs.existsSync(S))process.exit(79);const s=fs.readFileSync(S,'utf8');const m=/DEFAULT_ONBOARDING_ORDER[^=]*=\\\\s*\\\\[([^\\\\]]*)\\\\]/.exec(s);if(!m)process.exit(79);const got=m[1].split(',').map(x=>x.trim().replace(/'/g,'')).filter(Boolean).join(',');if(got!=='avatar,circle,event,host'){console.error('the first-run checklist is not the four nouns in order: '+got);process.exit(1)}const D='DEFAULT_ONBOARDING_STEPS';const i=s.indexOf(D);if(i<0)process.exit(79);for(const k of ['avatar','circle','event','host'])if(s.indexOf(k+': {',i)<0){console.error('no default copy for checklist step '+k);process.exit(1)}\""
+      }
+    },
+    {
+      "id": "LIVE-260",
+      "title": "Turn the onboarding lights on",
+      "status": "open",
+      "priority": "P1",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "docs/CORE-MODEL.md",
+        "ref": "§5"
+      },
+      "detail": "THE CODE HALF IS DONE (2026-09-09) AND THE PREMISE HAS PARTLY EXPIRED: there are no flags left to flip. LIVE-240 deleted both kill flags with the engines they gated, so the first-run checklist now renders unconditionally on the feed (FeedOnboardingGuide), the next-step panel renders in the right rail on every member page (ControlCenterPanel, which used to self-hide behind next_steps_enabled), and Vera's welcome deck renders whenever induction hands a member to /feed?welcome=vera. A new member is taught something on the first screen without anyone touching a row.\n\nWHAT IS LEFT IS THREE DATABASE ROWS, and only the owner can do them. Read as of 2026-09-09:\n  1. platform_flags.auto_popups_enabled = false (updated 2026-09-05). INERT, nothing reads it. Delete the row or leave it; it decides nothing either way.\n  2. platform_flags.next_steps_enabled = false (updated 2026-09-05). INERT, same.\n  3. walkthrough rows: 'onboarding-next-steps' (active=false, 4 slides, trigger new_member) and 'new-walkthrough' (active=false, 0 slides, an empty draft). 🔴 DO NOT ACTIVATE 'onboarding-next-steps' AS IT STANDS: two of its four slides are tagged with the retired criteria `practice` and `log`, which LIVE-259 replaced with `event` and `host`, so an active row would render a TWO-step checklist and silently override the four-step default. Either retag those two slides in the editor at /admin/walkthroughs, or leave the row inactive, in which case the code default (photo, Circle, Event, host) renders, which is the model. The empty draft can be deleted.",
+      "ownerAction": "config",
+      "verify": {
+        "kind": "manual",
+        "evidence": "A brand-new member account sees the checklist and Vera's deck on its first screen. The two inert platform_flags rows are cleaned up, and the 'onboarding-next-steps' walkthrough is either retagged to the four current criteria or left inactive.",
+        "checked": "2026-09-09"
+      }
+    },
+    {
+      "id": "LIVE-261",
+      "title": "Operator first run lands on hosting, not the CRM",
+      "status": "open",
+      "priority": "P2",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "docs/CORE-MODEL.md",
+        "ref": "§5"
+      },
+      "detail": "DONE 2026-09-09. lib/spaces/provision.ts now redirects a new owner to /spaces/{slug}/manage/circles, the Space's Circles manager, instead of /spaces/{slug}/manage, the console command center (revenue, pipeline, contacts). A person who has owned a Space for four seconds has no revenue and no contacts, so the first thing the product said to them was \"here is your CRM\". The money surfaces are one click away through the console's own Back to manage link.\n\nThe directory empty states and hero copy now describe a Space as the home a studio, a shop or a nonprofit keeps here, with the Circles and Events they host hanging off it, and the foot CTA says hosting is free and you pay when you start charging (it said \"Free to start\", which implies you pay later just for existing). The hero TITLE stays \"Business Spaces\": NAMING.md wins on names and that name is used by the public twin at /discover/spaces, the breadcrumbs and the sitemap.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const S='lib/spaces/provision.ts';if(!fs.existsSync(S))process.exit(79);const q=String.fromCharCode(96);const code=fs.readFileSync(S,'utf8').split(String.fromCharCode(10)).filter(x=>x.trim().indexOf('//')!==0).join(String.fromCharCode(10));const i=code.indexOf('redirect('+q+'/spaces/');if(i<0){console.error('no post-provision redirect found');process.exit(79)}const seg=code.slice(i,code.indexOf(')',i));if(seg.indexOf('/manage/circles')<0){console.error('a new Space owner still lands on '+seg+', not on hosting');process.exit(1)}\""
+      }
+    },
+    {
+      "id": "LIVE-262",
+      "title": "Space directory sort: alphabetical to a v0 standing score",
+      "status": "open",
+      "priority": "P1",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "docs/CORE-MODEL.md",
+        "ref": "§5"
+      },
+      "detail": "CLOSED 2026-09-09. lib/spaces/discovery.ts no longer defaults to the alphabetical sort: normalizeSpaceSort returns DEFAULT_SPACE_SORT ('standing'), and the app-code sort branch orders by the earned score with name as the stable tie-break. The score itself is lib/spaces/standing.ts, PURE and shared with the nightly rollup so the two can never disagree: six signals (gatherings held, upcoming, rooms, audience, commons, care), each saturated on its own scale, weights renormalised over the signals THE READER MEASURED (never over 'this Space has zero'), and the doing half joined to the belonging half by a harmonic mean so a one-sided Space cannot top the directory. v0 measures four of the six from counts the query already fetched, so no migration and no query change; the other two arrive from LIVE-263's rollup and renormalise away until it runs.\n\nTHE INVARIANT HELD: no plan, tier, entitlement or Stripe field enters the score. lib/spaces/standing.test.ts carries a source-shape guard that fails on any commercial token in the module, and the module imports nothing at all so there is no seam for one to arrive through. Founding status is resolved in the same batch and is deliberately NOT passed in: it badges a card, it does not rank one.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const s=require(\"fs\").readFileSync(\"lib/spaces/discovery.ts\",\"utf8\");const m=s.match(/export function normalizeSpaceSort[\\s\\S]*?\\n\\}/);if(!m){console.error(\"normalizeSpaceSort not found\");process.exit(1)}if(/return[^\\n]*.name./.test(m[0])){console.error(\"directory still defaults to the alphabetical sort\");process.exit(1)}process.exit(0)'"
+      }
+    },
+    {
+      "id": "LIVE-263",
+      "title": "Nightly space_standing rollup",
+      "status": "open",
+      "priority": "P2",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "docs/CORE-MODEL.md",
+        "ref": "§5"
+      },
+      "detail": "CODE IS IN THE TREE (2026-09-09); the remaining step is applying the migration. lib/spaces/standing-rollup.ts computes all six signals for every active non-root Space in six grouped reads and upserts them plus the resolved score; it runs on the nightly refresh-traits cron beside the density rollup, and reports failures the way lib/resonance/density.ts had to be taught to (an error message, logged at error level, never a silent 'wrote nothing'). The table is supabase/migrations/20270345002900_space_standing.sql: additive, idempotent, service-role only, six earned counts and a score, no commercial column.\n\nTHE ATTENDANCE GAP, handled in the open rather than quietly: event attendance has no independent record (no checked_in column; it exists only as an engagement-ledger row written by the path that pays Zaps, so 'attended' and 'was paid for attending' are the same fact). It is therefore NOT a signal and NOT a zero-weighted one. gatherings_held counts gatherings that happened, which the data can stand behind. The score renormalises over the signals present, so adding attendance later re-scores everyone at once and changes no existing weight. Said in the module header, the migration comment, the operator receipt page, and pinned by a test.\n\nOWNER ACTION (config): apply supabase/migrations/20270345002900_space_standing.sql and repair the ledger (supabase/migrations/README.md, the two-step protocol), then confirm the next nightly refresh-traits run logs cron.refresh_space_standing with a non-zero spaces count. Until then the directory runs on the v0 subset BY DESIGN: an unreadable or empty space_standing means two signals were not measured, and the score renormalises over the four that were.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "space_standing is non-empty and refreshes nightly (cron.refresh_space_standing, spaces > 0). The signal list names what it does NOT include: attendance, and why.",
+        "checked": "2026-09-09"
+      },
+      "ownerAction": "config"
+    },
+    {
+      "id": "LIVE-264",
+      "title": "Wire the four dormant featured_at columns",
+      "status": "done",
+      "priority": "P2",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "docs/CORE-MODEL.md",
+        "ref": "§5"
+      },
+      "detail": "CLOSED 2026-09-09. All four featured_at columns now reach a sort. posts already did (the public_featured_posts RPC orders by featured_at desc). The three dark ones were wired: circles in lib/circles/index-data.ts (featured lead the DEFAULT browse order, most-recently featured first), events in app/(main)/events/index-data.ts (same, leading the soonest-first default), and practices + journeys in lib/library.ts (getLibrary enriches featured_at in two batched reads, the way lib/practices.ts already does for the admin library, because the community_library RPC's columns are frozen and predate the column, then leads the ranked order with a stable sort).\n\nEach is confined to the DEFAULT sort branch on purpose: an explicit sort (distance, popularity, relevance, most active, newest, openings) is the member saying how they want the list ordered, and a curated pick must not quietly outrank a stated intent. No select branch was widened, so scripts/check-row-type-select-parity.test.ts stays green; the events index already shares one EVENT_SELECT across all three branches.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Each of the four surfaces reads featured_at in its sort (posts via the RPC; circles, events, practices/journeys in their default sort branch), and check-row-type-select-parity passes.",
+        "checked": "2026-09-09"
+      }
+    },
+    {
+      "id": "LIVE-265",
+      "title": "The operator receipt: what did the network send me",
+      "status": "done",
+      "priority": "P2",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "docs/CORE-MODEL.md",
+        "ref": "§5"
+      },
+      "detail": "CLOSED 2026-09-09. app/(main)/spaces/[slug]/settings/reach, a read-only Focus surface under the Reach box (space.reachreceipt in SPACE_MODULES, parented to space.reach). It answers the two questions in order: WHAT THE NETWORK SENT YOU (page views and button taps from the engagement ledger over 30 days, followers, members, and the Space's actual position in the directory, read from the same request-cached list the directory itself renders, so the two cannot disagree) and WHAT WOULD SEND MORE (every standing signal, weakest first, each with what it measures and the one next move, from standingLevers).\n\nIt also prints the promise in writing: placement is earned and cannot be bought; a Space is judged on the signals it has, not marked down for ones nobody can measure yet; doing and belonging both count; and attendance is not counted, because there is no reliable record of it. Ungated on purpose - every Space is ranked whether or not it pays for anything, so every Space can see why. A ranking nobody can see reads as favouritism.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "The Reach box carries a receipt page (/spaces/<slug>/settings/reach) showing network-sourced reach, the Space's directory position, and the levers that move it.",
+        "checked": "2026-09-09"
+      }
+    },
+    {
+      "id": "OWN-071",
+      "title": "Ruling: free members get the full Quest loop; uncapped Vera stays a Crew perk",
+      "status": "open",
+      "lane": "owner",
+      "size": "S",
+      "source": {
+        "file": "docs/CORE-MODEL.md",
+        "ref": "§4b"
+      },
+      "detail": "✅ RULED AND SHIPPED 2026-09-09 (ADR-1295). The owner ruled the Quest is demoted from the centre of the product to \"a side thing we all do together\", and that two of the three personal gates are what make that literally true.\n\nOPENED, gate + every enforcement site deleted in one change:\n  - vault_cash_in     spend earned Gems on Vault items. The framing was corrected first: it is NOT a cash-out. OWNER, 2026-09-09: \"Gem cash trade in is ONLY for store merch.\" redeemItem spends Gems against store_items (gem_cost, stock, season_id, expires_at) at /crew/store, a rewards catalog, so the cost is fulfilment and stock, both already bounded by the Vault.\n  - gamification_full the full earn-and-spend loop rather than earn-only.\nKEPT: vera_unlimited, untouched including its ladder, tease surface and pricing-grid row. It is the one gate with a real marginal cost per user (inference spend, no natural ceiling), so it is a cost control rather than a game rung.\n\nfeatureAllowed default-ALLOWS an undeclared key, so deleting the rows alone would have granted them silently; every call site went with them so no dead check reads as a live rule. Removed: both redeemItem guards and the canCashIn predicate (its only call site); gamificationFullAllowed and its three consumers (the leaderboard compete gate, CrewContext.gamificationFull, the /crew season-reset nudge); the access-matrix `vault` row, which was the gate that actually bit in the UI (canSpend = surfaceAccess('vault') === 'full' muted the whole Vault Store grid behind a CrewGate) and is now QUEST_OPEN like its four siblings; the dead upsells CompeteLocked, SeasonResetPrompt, CrewPreviewBanner, lib/pricing/conversion.ts, the Vault UpsellTease, both FEATURE_TIER_LADDERS entries, both pricing-grid rewards rows and both NON_METERED_FEATURES entries; the upgrade lightbox DEFAULT copy; the two /upgrade Quest bullets; and the two help pages that taught the old rule.\n\nUNCHANGED by design: the earning side, the Gem ledger, seasons, stock, expires_at, the rank requirements and the atomic redeem_store_item_atomic charge. This opened WHO may spend, nothing else. The gamification_access third flag (the override column + the gamification_full_* operator flags) also stays: it is an operator pin, not a billing door.\n\nLocked by gate-meter-drift.test.ts: neither key may return, and the tier-axis gate set is asserted to be exactly ['vera_unlimited'], so a second personal gate has to make its own cost argument.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const s=require(\"fs\").readFileSync(\"lib/pricing/gates.ts\",\"utf8\").replace(/\\/\\/.*$/gm,\"\").replace(/\\/\\*[\\s\\S]*?\\*\\//g,\"\");const back=[\"vault_cash_in\",\"gamification_full\"].filter(k=>s.includes(k));if(back.length){console.error(\"back on the gate map: \"+back.join(\", \"));process.exit(1)}if(!/vera_unlimited:\\s*\\{[^}]*minEntitlement:\\s*.crew./.test(s)){console.error(\"vera_unlimited is no longer a crew gate; the ruling kept it\");process.exit(1)}process.exit(0)'"
+      },
+      "priority": "P1",
+      "ownerAction": "ruling"
     }
   ]
 }
