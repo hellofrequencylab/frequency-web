@@ -19,7 +19,8 @@ import {
 } from './capabilities'
 import { type CommunityRole } from './roles'
 import { crewCreateUpsell } from './beta-notices'
-import { deriveTier } from './entitlement'
+import { resolveEffectiveTier } from './entitlement'
+import { hasActiveCrewGrant } from '@/lib/billing/crew-grants'
 import { isPaid } from './access-matrix'
 import {
   leadsScope as edgeLeadsScope,
@@ -45,15 +46,25 @@ import { readSpotlightEnabled, readSpotlightPublished } from '@/lib/profile/spot
 // getCallerProfile() + one getStewardships() round-trip.
 const currentViewer = cache(async (): Promise<Viewer> => {
   const p = await getCallerProfile()
-  const edges = p?.id ? await getStewardships(p.id) : []
+  const [edges, crewGrant] = await Promise.all([
+    p?.id ? getStewardships(p.id) : Promise.resolve([]),
+    // GRANTED CREW (LIVE-223): Crew is granted by an active PAID community membership, recorded as
+    // its own provenance-stamped row rather than written into `profiles.membership_tier`. The tier
+    // both fields below resolve to is the union `stripe_active OR EXISTS(active grant)`. One read,
+    // shared by both, and request-cached inside — never two round trips.
+    p?.id ? hasActiveCrewGrant(p.id) : Promise.resolve(false),
+  ])
   return {
     profileId: p?.id ?? null,
     role: (p?.community_role ?? 'member') as CommunityRole,
     webRole: p?.webRole ?? 'none',
-    tier: deriveTier(p?.membershipTier),
+    tier: resolveEffectiveTier(p?.membershipTier, crewGrant).tier,
     // The real DB tier (pre beta-override) feeds the creation gates so the upgrade
-    // popup still fires for a genuinely free member during the beta (ADR-414).
-    realTier: deriveTier(p?.realMembershipTier),
+    // popup still fires for a genuinely free member during the beta (ADR-414). A GRANT is not a
+    // beta override — someone paying a community's dues really is Crew — so the grant counts here
+    // too, and only the beta comp is stripped. 🔴 Neither field is a pricing input: the take rate
+    // reads the Stripe rung through `billedTier`, never a resolved tier (LIVE-224).
+    realTier: resolveEffectiveTier(p?.realMembershipTier, crewGrant).tier,
     leadsScope: (scopeType, scopeId) => edgeLeadsScope(edges, scopeType, scopeId),
   }
 })

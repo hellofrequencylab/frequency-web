@@ -70,13 +70,9 @@
           "name": "WR · the core-model rework (ADR-1294), phases 0-11 in order. Three lines, four nouns. Phases 1-3 are one pass over the same files: the feature gates are inert until the grace window ends on 2026-12-01, which makes this the safe window to move paywalls. Phase 5 is the commercial unlock and phase 11 is the only phase that can say whether any of it worked.",
           "ids": [
             "PROG-R0",
-            "HYG-079",
             "HYG-083",
             "HYG-084",
             "HYG-085",
-            "LIVE-222",
-            "LIVE-224",
-            "LIVE-225",
             "LIVE-226",
             "LIVE-227",
             "LIVE-251",
@@ -10398,7 +10394,7 @@
     {
       "id": "HYG-079",
       "title": "Delete the seven feature gates with zero enforcement call sites",
-      "status": "open",
+      "status": "done",
       "priority": "P1",
       "lane": "hygiene",
       "size": "M",
@@ -10529,7 +10525,7 @@
     {
       "id": "LIVE-222",
       "title": "Un-gate Practice authoring, and retire the two unenforced tier gates",
-      "status": "open",
+      "status": "done",
       "priority": "P1",
       "lane": "live",
       "size": "S",
@@ -10564,7 +10560,7 @@
     {
       "id": "LIVE-224",
       "title": "A granted Crew must not buy down the take rate",
-      "status": "open",
+      "status": "done",
       "priority": "P1",
       "lane": "live",
       "size": "S",
@@ -10581,7 +10577,7 @@
     {
       "id": "LIVE-225",
       "title": "Five zero caps become real free allowances",
-      "status": "open",
+      "status": "done",
       "priority": "P1",
       "lane": "live",
       "size": "S",

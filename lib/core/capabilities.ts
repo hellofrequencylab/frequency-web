@@ -215,18 +215,23 @@ export function resolveCapabilities(viewer: Viewer, scope: Scope): Set<Capabilit
       // free" while this gate still demanded Crew, so a free Member was promised one
       // published Journey they could not begin to draft.
       //
-      // PRACTICES stay Real-Crew (paid tier) OR a community steward (crew+ on the trust
-      // ladder): authoring reusable library content is the Crew job, and the
-      // `practice_publish` meter (free 0) mirrors this gate. We read `realTier` (the DB
-      // tier BEFORE the beta open-access override) so a genuinely free member still meets
-      // the upgrade popup during the beta (ADR-414). Staff create everything.
+      // PRACTICES joined them in LIVE-222, which makes this list the whole set: every one of
+      // the four creation verbs is open to any signed-in member, and none of them is a door.
+      // Practices were the last Real-Crew holdout here, on the rule that authoring reusable
+      // library content is the Crew job. That rule made the practice verb the odd one out in
+      // its own block: a member could draft an Event, a Circle and a Journey, and was refused
+      // at the one act that costs the platform nothing and teaches the most. Under the new
+      // model a member never pays for a forward-facing feature, so what a free Member publishes
+      // is a QUANTITY (the `practice_publish` meter, free 3, feature-meters.ts), enforced where
+      // the Practice actually goes live, exactly like `circle_host` and `journey_publish`.
+      //
+      // 🔴 THE METER STAYS AND THE DOOR OPENS. Those are two different statements and both are
+      // deliberate: authoring is free, publishing volume is metered. Do NOT re-add a tier read
+      // here to "mirror" the meter, which is what the deleted branch below was doing.
       if (profileId) {
         caps.add('event.create')
         caps.add('circle.create')
         caps.add('journey.create')
-      }
-      const realTier = viewer.realTier ?? viewer.tier
-      if (isPaid(realTier) || atLeastRole(viewer.role, 'crew') || isStaff) {
         caps.add('practice.create')
       }
       break

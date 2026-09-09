@@ -23,19 +23,18 @@ describe('resolveCapabilities · global (admin.access rides the STAFF axis, ADR-
   })
 })
 
-describe('resolveCapabilities · global creation gates (ADR-414 · event opened ADR-810)', () => {
-  // The DEEPER creation gate (practice) stays real-Crew (ADR-414): authoring reusable library
-  // content is the Crew job, mirrored by the `practice_publish` meter (free 0). event.create is
-  // open to any signed-in member (ADR-810); circle.create AND journey.create joined it under
-  // FIRST ONE FREE (ADR-908/838) — a free Member hosts the one Circle and publishes the one
-  // Journey their membership includes, capped as a QUANTITY at publish (`circle_host` /
-  // `journey_publish` meters), never by this door. `OPEN` is the set needing only a sign-in.
-  const CREATES = ['practice.create'] as const
-  const OPEN = ['event.create', 'circle.create', 'journey.create'] as const
-  const hasAllCreates = (caps: ReturnType<typeof resolveCapabilities>) => CREATES.every((c) => caps.has(c))
-  const hasNoCreates = (caps: ReturnType<typeof resolveCapabilities>) => CREATES.every((c) => !caps.has(c))
+describe('resolveCapabilities · global creation gates (ADR-810 · ADR-908 · LIVE-222)', () => {
+  // THERE IS NO LONGER A DEEPER CREATION GATE. All four creation verbs need a sign-in and
+  // nothing else: event.create opened in ADR-810, circle.create and journey.create joined it
+  // under FIRST ONE FREE (ADR-908/838), and practice.create was the last holdout until
+  // LIVE-222. What a free Member may PUBLISH is a quantity (`circle_host`, `journey_publish`,
+  // `practice_publish`, `event_create` in feature-meters.ts), enforced where the thing goes
+  // live, never by this door. `OPEN` is therefore the whole set.
+  const OPEN = ['event.create', 'circle.create', 'journey.create', 'practice.create'] as const
+  const hasAllCreates = (caps: ReturnType<typeof resolveCapabilities>) => OPEN.every((c) => caps.has(c))
+  const hasNoCreates = (caps: ReturnType<typeof resolveCapabilities>) => OPEN.every((c) => !caps.has(c))
 
-  it('event.create + circle.create are granted to ANY signed-in member (ADR-810 / ADR-908)', () => {
+  it('grants every create verb to ANY signed-in member, whatever their tier', () => {
     const free = resolveCapabilities({ profileId: 'p', role: 'member', tier: 'free', realTier: 'free' }, { kind: 'global' })
     const crew = resolveCapabilities({ profileId: 'p', role: 'member', realTier: 'crew' }, { kind: 'global' })
     for (const c of OPEN) {
@@ -44,49 +43,38 @@ describe('resolveCapabilities · global creation gates (ADR-414 · event opened 
     }
   })
 
-  it('grants the deeper create gates to a real paid Crew member', () => {
-    // Crew is the only paid rung: the Supporter rung left EntitlementTier on 2026-08-24.
-    expect(hasAllCreates(resolveCapabilities({ profileId: 'p', role: 'member', realTier: 'crew' }, { kind: 'global' }))).toBe(true)
+  it('🔴 practice.create is NOT a paid door any more (LIVE-222)', () => {
+    // The regression this pins: re-reading a tier here to "mirror" the practice_publish meter.
+    // The meter stays (free 3) and the door stays open. Authoring is free; volume is metered.
+    const free = resolveCapabilities({ profileId: 'p', role: 'member', tier: 'free', realTier: 'free' }, { kind: 'global' })
+    expect(free.has('practice.create')).toBe(true)
   })
 
-  it('denies the deeper gates to a genuinely free member EVEN under the beta tier override', () => {
-    // The beta override sets the effective `tier` to crew while the REAL tier stays free.
-    // The deeper gates read realTier, so the upgrade popup still fires (the whole point of ADR-414).
+  it('the beta tier override changes nothing, because no create verb reads a tier at all', () => {
+    // This used to be the ADR-414 case: the override set the effective `tier` to crew while the
+    // REAL tier stayed free, and the deeper gates read realTier so the upgrade popup still fired.
+    // With no deeper gate left there is nothing for either tier field to move.
     const betaFree = resolveCapabilities({ profileId: 'p', role: 'member', tier: 'crew', realTier: 'free' }, { kind: 'global' })
-    expect(hasNoCreates(betaFree)).toBe(true)
-    // ...but the OPEN pair is granted regardless of tier.
-    for (const c of OPEN) expect(betaFree.has(c), `${c} should stay open`).toBe(true)
+    expect(hasAllCreates(betaFree)).toBe(true)
   })
 
-  it('grants the deeper gates to community stewards (crew+ on the trust ladder) regardless of billing', () => {
+  it('grants them to community stewards and to platform staff, as it always did', () => {
     expect(hasAllCreates(resolveCapabilities({ profileId: 'p', role: 'crew', realTier: 'free' }, { kind: 'global' }))).toBe(true)
     expect(hasAllCreates(resolveCapabilities({ profileId: 'p', role: 'host', realTier: 'free' }, { kind: 'global' }))).toBe(true)
     expect(hasAllCreates(resolveCapabilities({ profileId: 'p', role: 'mentor', realTier: 'free' }, { kind: 'global' }))).toBe(true)
-  })
-
-  it('grants the deeper gates to platform staff (web_role) regardless of billing', () => {
     expect(hasAllCreates(resolveCapabilities({ profileId: 'p', role: 'member', webRole: 'admin', realTier: 'free' }, { kind: 'global' }))).toBe(true)
   })
 
-  it('falls back to `tier` when realTier is omitted (no beta override in play)', () => {
-    expect(hasAllCreates(resolveCapabilities({ profileId: 'p', role: 'member', tier: 'crew' }, { kind: 'global' }))).toBe(true)
-    expect(hasNoCreates(resolveCapabilities({ profileId: 'p', role: 'member', tier: 'free' }, { kind: 'global' }))).toBe(true)
-  })
-
-  it('an anonymous viewer gets no create gates at all (the OPEN pair still needs a sign-in)', () => {
+  it('an anonymous viewer gets no create verbs at all (sign-in is the only bar left)', () => {
     const anon = resolveCapabilities({ profileId: null, role: 'member' }, { kind: 'global' })
     expect(hasNoCreates(anon)).toBe(true)
-    for (const c of OPEN) expect(anon.has(c), `${c} needs a sign-in`).toBe(false)
   })
 
-  it('a free member reaches the deeper gates via the paid rung; the OPEN pair is not a gap', () => {
+  it('no create verb is a GAP for a free member, so no surface may upsell one', () => {
     const gaps = capabilityGaps({ profileId: 'p', role: 'member', tier: 'free', realTier: 'free' }, { kind: 'global' })
-    // Neither is a GAP: an upsell here would be a lie, because a free member really can do both.
-    // circle.create's limit is a quantity enforced at publish (ADR-908), never a locked door.
-    expect(gaps['event.create']).toBeUndefined()
-    expect(gaps['circle.create']).toBeUndefined()
-    expect(gaps['journey.create']).toBeUndefined()
-    expect(gaps['practice.create']).toBe('needs-paid-tier')
+    // An upsell on any of these would be a lie: a free member really can do all four. The limit
+    // is a quantity at publish (ADR-908), never a locked door.
+    for (const c of OPEN) expect(gaps[c], `${c} should not be a gap`).toBeUndefined()
   })
 })
 

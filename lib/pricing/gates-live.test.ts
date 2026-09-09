@@ -248,7 +248,7 @@ describe('featureAllowed({ gatesLive })', () => {
     expect(await featureAllowed('vera_unlimited', { tier: 'free' }, { gatesLive: false })).toBe(true)
     expect(await featureAllowed('space_memberships', { plan: 'free' }, { gatesLive: false })).toBe(true)
     expect(await featureAllowed('space_collaborators', { plan: 'free' }, { gatesLive: false })).toBe(true)
-    expect(await featureAllowed('space_whitelabel', { plan: 'free' }, { gatesLive: false })).toBe(true)
+    expect(await featureAllowed('space_campaigns', { plan: 'free' }, { gatesLive: false })).toBe(true)
   })
 
   it('enforces the ladder once the gates ARE live', async () => {
@@ -258,12 +258,13 @@ describe('featureAllowed({ gatesLive })', () => {
     // plan axis: free < business < collective ~ nonprofit ~ independent
     expect(await featureAllowed('space_memberships', { plan: 'free' }, { gatesLive: true })).toBe(false)
     expect(await featureAllowed('space_memberships', { plan: 'business' }, { gatesLive: true })).toBe(true)
-    // Collaborator HOSTING opens at Business (basic collaboration, metered to a few collaborators);
-    // the Collective depth is revenue splits.
+    // Collaborator HOSTING opens at Business (basic collaboration, metered to a few collaborators).
     expect(await featureAllowed('space_collaborators', { plan: 'free' }, { gatesLive: true })).toBe(false)
     expect(await featureAllowed('space_collaborators', { plan: 'business' }, { gatesLive: true })).toBe(true)
-    expect(await featureAllowed('space_revenue_splits', { plan: 'business' }, { gatesLive: true })).toBe(false)
-    expect(await featureAllowed('space_revenue_splits', { plan: 'collective' }, { gatesLive: true })).toBe(true)
+    // The Collective rung of the ladder, which `space_revenue_splits` used to demonstrate until
+    // HYG-079 deleted that gate (nothing enforced it, and revenue splitting is not built).
+    expect(await featureAllowed('space_automation', { plan: 'business' }, { gatesLive: true })).toBe(false)
+    expect(await featureAllowed('space_automation', { plan: 'collective' }, { gatesLive: true })).toBe(true)
   })
 
   it('an undeclared feature is ungated either way', async () => {

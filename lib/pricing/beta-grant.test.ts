@@ -176,10 +176,11 @@ function readableTexts(betaActive: boolean): string[] {
  * table's rendered headline + struck anchor at both intervals.
  *
  * 🔴 WHY A SCOPED COLLECTOR AND NOT A SWEEP OF THE WHOLE BLOB. A blanket "does 4900 appear anywhere"
- * fires on prices that have nothing to do with the beta rate: Independent's $249 is `24900` cents, and
- * a Business-plus-Vera persona loadout legitimately totals `$49/mo` ($29 + $20) once the window is
- * shut. Both were live false positives on the first draft of this test. A gate that cries wolf gets
- * loosened, so this collects the fields that actually quote a Space plan and pins them EXACTLY.
+ * fires on prices that have nothing to do with the beta rate: a Business-plus-Vera persona loadout
+ * legitimately totals `$49/mo` ($29 + $20) once the window is shut, and Independent's $249 did the
+ * same before it came off the public ladder. Both were live false positives on the first draft of this
+ * test. A gate that cries wolf gets loosened, so this collects the fields that actually quote a Space
+ * plan and pins them EXACTLY.
  */
 function spacePlanQuotes(betaActive: boolean): { labels: string[]; cents: number[] } {
   const input: PricingGridInput = { values: PRICING_DEFAULTS, catalog, betaActive }
@@ -243,11 +244,11 @@ describe('the public grid is IDENTICAL with and without a granted Space', () => 
     // The whole public quote, pinned. A beta amount reaching any of these three surfaces adds a member
     // to one of these sets, and an exact match is the only assertion a "helpful" partial leak cannot
     // slip past.
+    // Independent's $249 / $2,490 used to head this list. It is gone because the tier is no longer
+    // advertised (owner ruling 2026-09-08, LIVE-227), not because its price changed: the catalog item
+    // and its Stripe prices are untouched, and a hand-sold Space is still charged from them. The tier
+    // simply reaches no public surface any more, so it quotes nothing here.
     expect(labels).toEqual([
-      '$2,490', // Independent, yearly (the row form carries no suffix, the card form does)
-      '$2,490/yr',
-      '$249',
-      '$249/mo',
       '$29', // Business — the list price, and the ONLY Business number a visitor sees
       '$29/mo',
       '$290',
@@ -262,7 +263,7 @@ describe('the public grid is IDENTICAL with and without a granted Space', () => 
       '$790/yr',
       'Free',
     ])
-    expect(cents).toEqual([0, 2900, 3900, 7900, 24900, 29000, 39000, 79000, 249000])
+    expect(cents).toEqual([0, 2900, 3900, 7900, 29000, 39000, 79000])
     // The founding amounts a GRANTED Space is charged, absent from both sets.
     for (const amount of ['$19/mo', '$190/yr', '$49/mo', '$490/yr', '$19', '$49']) {
       expect(labels, `${amount} is quoted on a public surface`).not.toContain(amount)

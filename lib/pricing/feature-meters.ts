@@ -103,7 +103,7 @@ export const PLACEHOLDER_METER_LIMITS: Record<string, Record<string, Allowance>>
   space_journey_publish: { free: 1, business: null },
   space_tickets: { free: 50, business: null },
   space_qr: { free: 3, business: 500, collective: null },
-  space_automation: { free: 0, collective: 1_000 },
+  space_automation: { free: 50, collective: 1_000 },
   // Business is stated EXPLICITLY at 1 rather than inheriting the free rung. It resolved to 1 either
   // way (currentMeterStepIndex falls back to the highest rung at/below the tier), but a Business
   // operator reading the ladder saw a gap where their own tier should be and had to know that rule to
@@ -112,12 +112,17 @@ export const PLACEHOLDER_METER_LIMITS: Record<string, Record<string, Allowance>>
   space_team: { free: 1, business: 1, collective: 3 },
   space_multi_pipeline: { free: 1, collective: null },
   space_vera: { free: 10, business: 200 },
-  space_crm_playbooks: { free: 0, business: 5_000 },
+  space_crm_playbooks: { free: 100, business: 5_000 },
   space_crm_resonance_ai: { free: 10, business: 2_000 },
-  // Collaboration is a LADDER, not a wall: a free Space previews it, Business hosts a few collaborators
-  // (basic collaboration), Collective hosts unlimited (the collaboration engine, plus revenue splits
-  // which are a separate on/off gate). Mirrors the gate floor moving to 'business' in gates.ts.
-  space_collaborators: { free: 0, business: 3, collective: null },
+  // Collaboration is a LADDER, not a wall: a free Space hosts ONE collaborator, Business hosts a few,
+  // Collective hosts unlimited (the collaboration engine). Mirrors the gate floor at 'business' in
+  // gates.ts.
+  // 🔴 FREE WAS ZERO UNTIL LIVE-225, and a zero cap is a wall wearing a meter's clothes: it renders as
+  // a ladder, counts like a ladder, and refuses like a door. "Preview only" also converts exactly as
+  // badly as a locked preview, which is the thing ADR-914 spent its budget removing. One hosted
+  // collaborator is the FIRST ONE FREE shape the personal axis already uses: enough to do the thing
+  // once and find out it works, and the second one is what a plan buys.
+  space_collaborators: { free: 1, business: 3, collective: null },
   // Membership tiers a Space may define. Free runs one tier (the §2 "10 active, 1 tier" row), Business
   // runs a small ladder, Collective is unlimited (multi-tier pricing is the Collective offer).
   // 🔴 FREE IS ZERO, NOT ONE (ADR-914). Selling memberships is a WALL at Business, and this meter
@@ -134,10 +139,12 @@ export const PLACEHOLDER_METER_LIMITS: Record<string, Record<string, Allowance>>
   journey_publish: { free: 1, crew: null },
   journey_enrollees: { free: 10, crew: null },
   circle_host: { free: 1, crew: null },
-  // MIRRORS the LIVE gate: `practice.create` requires a paid tier or a crew+ steward
-  // (lib/core/capabilities.ts), so a free Member publishes none. The earlier free-3 in ADR-908
-  // invented a conflict with behavior that already ships; the map must never do that.
-  practice_publish: { free: 0, crew: null },
+  // FREE 3 (LIVE-225 / ADR-908's original number, restored). Authoring is no longer a door:
+  // `practice.create` is open to any signed-in member (lib/core/capabilities.ts), so the free rung is
+  // a real quantity again rather than a mirror of a gate. This row read `free: 0` while the capability
+  // gate stood, on the rule that the map must never contradict shipped behavior. That rule still holds
+  // and is why the two moved together: the gate opened in the same change this number did.
+  practice_publish: { free: 3, crew: null },
   event_create: { free: 2, crew: null },
 }
 
@@ -244,8 +251,12 @@ const RAW_METERS: Record<string, RawMeter> = {
     dimension: 'Automation runs',
     unit: 'runs',
     period: 'month',
-    // Free: none (§2: "1 pipeline, no automations"). Collective floor (ADR-811, mirrors
-    // FEATURE_GATES.space_automation): the on/off turns ON with 1,000 included runs / mo (placeholder).
+    // Free: 50 runs / mo (LIVE-225), enough to automate one real habit and watch it work. Collective:
+    // 1,000 included runs / mo (placeholder, ADR-811).
+    // ⚠️ KNOWN CONTRADICTION, deliberately left: FEATURE_GATES.space_automation still floors this at
+    // 'collective', so the gate says "not on your plan" while this meter grants 50 a month. It is an
+    // exempted entry in KNOWN_GATE_METER_COLLISIONS (gate-meter-drift.test.ts) and Phase 4's plan merge
+    // owns resolving it. Do not fix it by lowering this number back to zero.
     allowances: PLACEHOLDER_METER_LIMITS.space_automation!,
   },
   space_team: {
@@ -287,14 +298,14 @@ const RAW_METERS: Record<string, RawMeter> = {
     dimension: 'Hosted collaborators',
     unit: 'collaborators',
     period: null,
-    // Free: preview only. Business: basic collaboration, a few hosted collaborators. Collective:
-    // unlimited, the collaboration engine (revenue splits ride the separate space_revenue_splits gate).
-    // Being a collaborator stays free for any active Business / Non Profit Space; only HOSTING meters.
+    // Free: host 1 collaborator (LIVE-225). Business: a few. Collective: unlimited, the collaboration
+    // engine. Being a collaborator stays free for any active Business / Non Profit Space; only HOSTING
+    // meters.
     allowances: PLACEHOLDER_METER_LIMITS.space_collaborators!,
     allowanceTextByTier: {
-      free: 'Preview only, and be a Collaborator on other Spaces for free',
+      free: 'Host 1 collaborator, and be a Collaborator on other Spaces for free',
       business: 'Host up to 3 collaborators',
-      collective: 'Host unlimited collaborators, with revenue splits',
+      collective: 'Host unlimited collaborators',
     },
   },
   space_membership_tiers: {
@@ -323,7 +334,9 @@ const RAW_METERS: Record<string, RawMeter> = {
     dimension: 'Playbook runs',
     unit: 'runs',
     period: 'month',
-    // Free: no playbooks (§2: free AI is suggest-only, no autonomous playbooks). Business: a high step.
+    // Free: 100 playbook runs / mo (LIVE-225). Business: a high step, because AI is a real cost dial.
+    // The free rung is a working allowance rather than a preview: a Space that has never watched a
+    // playbook run has no way to want one.
     allowances: PLACEHOLDER_METER_LIMITS.space_crm_playbooks!,
   },
   space_crm_resonance_ai: {
@@ -386,10 +399,10 @@ const RAW_METERS: Record<string, RawMeter> = {
     dimension: 'Published Practices',
     unit: 'practices',
     period: null,
-    // Free: none (authoring reusable library content is the Crew job, and `practice.create`
-    // already enforces it live). Crew: unlimited.
+    // Free: publish 3 Practices (LIVE-225). Crew: unlimited. Authoring is open to any signed-in member
+    // now, so this meters how much a free Member publishes rather than whether they may write at all.
     allowances: PLACEHOLDER_METER_LIMITS.practice_publish!,
-    allowanceTextByTier: { free: 'Adopt any Practice in the library' },
+    allowanceTextByTier: { free: 'Publish up to 3 Practices, and adopt any Practice in the library' },
   },
   event_create: {
     axis: 'tier',
@@ -414,12 +427,11 @@ const RAW_METERS: Record<string, RawMeter> = {
  *  elsewhere). Stated explicitly so the coverage test can assert every gated feature is either metered
  *  or consciously non-metered. */
 export const NON_METERED_FEATURES: Record<string, string> = {
-  // Branding / custom domain is an on/off capability (you have your own domain or you do not), not a
-  // quantity you consume more of. Which tier turns it on stays a feature-tiers ladder concern.
-  space_whitelabel: 'On/off capability (your own brand and domain), no natural quantity to meter.',
-  // The read-only resonance VIEW is a depth toggle; its AI USAGE is metered on space_crm_resonance_ai
-  // (Resonance matches per month), so the view itself carries no separate meter.
-  space_crm_resonance: 'Read-only depth view; the AI usage is metered on space_crm_resonance_ai.',
+  // 🔴 `space_whitelabel` and `space_crm_resonance` were listed here until HYG-079 and are gone with
+  // their gates. This map exists so every GATE states whether it has a quantity; a key that is no
+  // longer gated has nothing to account for, and leaving it here would describe a tier ladder that no
+  // surface reads. Branding is still enforced by the pure `whitelabel` entitlement key, and the
+  // read-only resonance view still rides the space_crm_resonance_ai meter below.
   // Spending Gems / claiming rewards is an on/off unlock on the Crew tier, not a metered quantity (the
   // Gem balance itself is the natural limit, not a per-tier allowance).
   vault_cash_in: 'On/off unlock (spend Gems / claim rewards); the Gem balance is the natural limit.',
@@ -441,19 +453,17 @@ export const NON_METERED_FEATURES: Record<string, string> = {
   // converts badly and teaches nothing; the honest line is between messaging your own people (metered
   // by space_email sends, available free) and running an acquisition machine (paid).
   space_campaigns: 'On/off capability (campaigns and funnels); the SEND volume that pairs with it is metered on space_email.',
-  // Splitting revenue with collaborators is an on/off capability of the collaboration engine: you can
-  // share money automatically or you cannot. The NUMBER of collaborators is metered separately on
-  // space_collaborators, so this carries no second quantity.
-  space_revenue_splits: 'On/off capability (automatic revenue splits with collaborators); the collaborator count is metered on space_collaborators.',
-  // Group SMS volume is governed by the carrier A2P 10DLC registration and its throughput, not by the
-  // plan (docs/A2P-REGISTRATION.md), so a per-tier send allowance here would invent a second, wrong cap.
-  space_sms: 'On/off capability (group SMS); send volume is governed by the A2P 10DLC registration, not the plan.',
-  // ── Personal leadership on/off unlocks (tier axis). The QUANTITIES that pair with these are metered
-  // above (circle_host, practice_publish, event_create, journey_publish); these two are the genuine
-  // switches a number cannot express. (`event_paid_tickets` and `personal_payouts` were listed here
-  // until ADR-914 retired both gates: selling is free on every tier, so there is no switch left.)
-  journey_library_list: 'On/off capability (list a Journey in the public library); the publish count is metered on journey_publish.',
-  entry_points: 'On/off capability (entry points: QR codes, short links, flyers); per-Space QR volume is metered on space_qr.',
+  // 🔴 `space_revenue_splits` and `space_sms` were listed here until HYG-079 and are gone with their
+  // gates. Neither feature is built or live (revenue splitting is unwritten; group SMS waits on the
+  // A2P 10DLC registration), so both entries described the metering story of something that cannot yet
+  // be used. Whichever ships first states its own answer here in the same change as its gate.
+  //
+  // ── Personal leadership on/off unlocks (tier axis) — THIS SECTION IS NOW EMPTY, and that is the
+  // finished state. Everything a member leads is a QUANTITY, metered above (circle_host,
+  // practice_publish, event_create, journey_publish, journey_enrollees). `event_paid_tickets` and
+  // `personal_payouts` were listed here until ADR-914 retired both gates (selling is free on every
+  // tier); `journey_library_list` and `entry_points` followed in HYG-079, each enforced by a parallel
+  // ladder rather than by the gate this map was accounting for.
 }
 
 // ── Allowance label + readout formatting (pure) ──────────────────────────────────────────────────────

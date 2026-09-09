@@ -15,13 +15,26 @@ import type { PricingDefaults, TierPrice } from './settings'
 import { SPACE_PLAN_LABEL, type SpacePlan } from './plans'
 import { yearlyFromMonthly } from '@/lib/billing/pricing-keys'
 
-/** The PAID space plans, in ladder order (ADR-811). `free` is the baseline, not a paid row. Keyed to
- *  the `pricing_settings.plan.*` VALUE shape, so every sellable Space tier has a display row. */
-export const PAID_SPACE_PLANS: readonly Exclude<SpacePlan, 'free'>[] = [
+/** The paid Space plans we ADVERTISE, in ladder order (ADR-811). `free` is the baseline, not a paid
+ *  row. Keyed to the `pricing_settings.plan.*` VALUE shape, so every advertised Space tier has a
+ *  display row.
+ *
+ *  🔴 THIS IS THE ONE LIST EVERY PUBLIC PRICING SURFACE DERIVES FROM. spacePlanRows maps it, and
+ *  pricing-grid's spaceOfferings maps that, which is in turn what /pricing (cards, comparison grid,
+ *  FAQ, meta description, JSON-LD Offers), /llms.txt and /llms-full.txt all read. Add a plan here and
+ *  it appears on every one of them; take it off and it disappears from every one of them. No public
+ *  surface may keep its own copy of the ladder.
+ *
+ *  ADVERTISED, not "paid": it is deliberately narrower than SPACE_PLANS minus `free`. INDEPENDENT is
+ *  a real, sellable, paid tier that is NOT on this list (owner ruling, 2026-09-08, LIVE-227): the
+ *  standalone white-label site it is sold on is not finished, so the tier is sold by hand instead of
+ *  advertised. Its catalog item, its Stripe prices, and its entitlement depth are all untouched, so a
+ *  hand-sold Space still gets exactly what it pays for. The list was named PAID_SPACE_PLANS until
+ *  that ruling, which is a name that invites putting a paid-but-unadvertised plan back on it. */
+export const ADVERTISED_SPACE_PLANS: readonly Exclude<SpacePlan, 'free'>[] = [
   'business',
   'collective',
   'nonprofit',
-  'independent',
 ]
 
 /** Cents to a plain price label, e.g. 900 -> "$9", 950 -> "$9.50". Whole dollars drop the cents.
@@ -94,8 +107,7 @@ export function memberTierRows(values: PricingDefaults): PriceRow[] {
  *  resolveLoadoutPriceId reads `!isBetaPricingActive()`), so the list BECOMES the price: it moves into
  *  `monthly_cents`, the anchor is dropped (nothing to cross out; we do not strike a number we now
  *  charge), and the annual re-derives from it through yearlyFromMonthly, the single source of the
- *  two-months-free math the catalog itself uses. A plan with no anchor (Non Profit, Independent) never
- *  moves. */
+ *  two-months-free math the catalog itself uses. A plan with no anchor (Non Profit) never moves. */
 export function effectiveTierPrice(price: TierPrice, betaActive: boolean): TierPrice {
   if (betaActive) return price
   const list = price.list_cents
@@ -108,20 +120,21 @@ export function effectiveTierPrice(price: TierPrice, betaActive: boolean): TierP
   }
 }
 
-/** The PAID space plans as display rows, in ladder order: Business, Collective, Non Profit, Independent
- *  (ADR-811). PURE. 'free' is the baseline and is rendered by the caller, not part of the paid ladder
- *  here. Labels come from the naming canon (SPACE_PLAN_LABEL), so a rename lands in one place.
+/** The ADVERTISED space plans as display rows, in ladder order: Business, Collective, Non Profit
+ *  (ADR-811, narrowed by the 2026-09-08 ruling in ADVERTISED_SPACE_PLANS). PURE. 'free' is the
+ *  baseline and is rendered by the caller, not part of the paid ladder here. Labels come from the
+ *  naming canon (SPACE_PLAN_LABEL), so a rename lands in one place.
  *
  *  Whether a row shows a crossed-out anchor is DERIVED from its own values (priceRow: an anchor reads
  *  only when `list_cents` is strictly above `monthly_cents`), so Business and Collective render their
- *  beta rate under a list while Non Profit and Independent render a single price. No tier can claim a
- *  discount the config does not carry.
+ *  beta rate under a list while Non Profit renders a single price. No tier can claim a discount the
+ *  config does not carry.
  *
  *  `betaActive` is REQUIRED by the caller (ADR-880), because this ladder had no clock: the anchor rule
  *  is only "list is above monthly", which stays permanently true after the cutover while the checkout
  *  has already moved to list. Pass the SAME answer the checkout asks (isBetaPricingActive()). */
 export function spacePlanRows(values: PricingDefaults, betaActive: boolean): PriceRow[] {
-  return PAID_SPACE_PLANS.map((plan) =>
+  return ADVERTISED_SPACE_PLANS.map((plan) =>
     priceRow(plan, SPACE_PLAN_LABEL[plan], effectiveTierPrice(values.plan[plan], betaActive)),
   )
 }
