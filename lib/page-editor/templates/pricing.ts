@@ -36,7 +36,7 @@ const CAT = pricingCatalog()
 // 🔴 THE OPENING BETA PRICE IS CLOSED (owner, 2026-08-17, ADR-1060): every plan is sold at its LIST
 // price, so the yearly figures below read the LIST year, not the founding one. Quoting the founding
 // year here would print $190 beside a $29 monthly, a yearly nobody can buy. The list and founding
-// amounts are equal on the plans that never carried a beta anchor (Non Profit, Independent).
+// amounts are equal on a plan that never carried a beta anchor (Non Profit).
 const BUSINESS_YEAR = formatLoadoutCents(CAT.business_base.year.listCents)
 const COLLECTIVE_YEAR = formatLoadoutCents(CAT.collective_base.year.listCents)
 const NONPROFIT_YEAR = formatLoadoutCents(CAT.nonprofit_seat.year.listCents)
@@ -59,8 +59,10 @@ const NONPROFIT_YEAR = formatLoadoutCents(CAT.nonprofit_seat.year.listCents)
 //    (priceStrings / pricingCatalog above), so this template can never drift from /pricing.
 //    Nothing here charges (PLACEHOLDER_PRICING is on; CTAs are plain links). The ladder is
 //    the founder's ladder (ADR-878): Member free and Crew on the personal side, then Free
-//    Space, Business, Collective, Non Profit. Independent and Partner are not listed (not sold
-//    from this page). No countdowns, no fake scarcity.
+//    Space, Business, Collective, Non Profit. That is the whole advertised ladder (LIVE-227,
+//    owner ruling 2026-09-08): Independent is still sellable but by hand only, and Partner is a
+//    retired legacy label, so neither is named on any public surface. No countdowns, no fake
+//    scarcity.
 //  • Tone beat alternates (surface → canvas → surface …) with a `Statement`
 //    interstitial and exactly ONE dark (`ink`) beat at the close.
 //  • Compose ONLY from registered blocks (lib/page-editor/config.tsx). Canon terms
@@ -142,7 +144,7 @@ export const data: Data = {
 
     // ── Section 2: For Spaces (practitioners, businesses, orgs) ──────────────────
     // Four plans (Free Space, Business, Collective, Non Profit), so two Tiers blocks
-    // (three + one) keep the cards readable. Independent and Partner are not sold here.
+    // (three + one) keep the cards readable. That is the whole advertised ladder (LIVE-227).
     {
       type: 'Tiers',
       props: {

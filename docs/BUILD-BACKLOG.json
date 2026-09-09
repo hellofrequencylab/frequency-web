@@ -70,11 +70,6 @@
           "name": "WR · the core-model rework (ADR-1294), phases 0-11 in order. Three lines, four nouns. Phases 1-3 are one pass over the same files: the feature gates are inert until the grace window ends on 2026-12-01, which makes this the safe window to move paywalls. Phase 5 is the commercial unlock and phase 11 is the only phase that can say whether any of it worked.",
           "ids": [
             "PROG-R0",
-            "HYG-083",
-            "HYG-084",
-            "HYG-085",
-            "LIVE-226",
-            "LIVE-227",
             "LIVE-251",
             "LIVE-256",
             "LIVE-262",
@@ -10357,7 +10352,7 @@
     {
       "id": "HYG-085",
       "title": "Delete the two /dev showcase routes",
-      "status": "open",
+      "status": "done",
       "priority": "P3",
       "lane": "hygiene",
       "size": "XS",
@@ -10464,7 +10459,7 @@
     {
       "id": "HYG-083",
       "title": "Collapse three byte-identical broadcast-channel literals into one",
-      "status": "open",
+      "status": "done",
       "priority": "P3",
       "lane": "hygiene",
       "size": "XS",
@@ -10592,7 +10587,7 @@
     {
       "id": "LIVE-226",
       "title": "Retire tickets; fold enroll into journeys+memberships and checkin into events",
-      "status": "open",
+      "status": "done",
       "priority": "P2",
       "lane": "live",
       "size": "M",
@@ -10609,7 +10604,7 @@
     {
       "id": "HYG-084",
       "title": "Fix three code comments that now state the opposite of what the code does",
-      "status": "open",
+      "status": "done",
       "priority": "P2",
       "lane": "hygiene",
       "size": "XS",
@@ -10630,7 +10625,7 @@
     {
       "id": "LIVE-227",
       "title": "Resolve /sites/[slug]: hide Independent from public pricing, keep the tier",
-      "status": "open",
+      "status": "done",
       "priority": "P1",
       "lane": "live",
       "size": "S",

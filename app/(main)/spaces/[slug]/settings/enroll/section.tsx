@@ -8,13 +8,14 @@ import { FeatureLockedNotice } from '@/components/spaces/feature-locked-notice'
 import { SectionHeader } from '@/components/ui/section-header'
 import type { Space } from '@/lib/spaces/types'
 
-// ENROLLMENT section BODY (extracted from enroll/page.tsx so the unified Offerings surface can compose
-// it as one stacked section). The route + auth gate stays on the caller (the Offerings page). The WRITE
-// action (setSpaceProgram, behind ProgramForm) is unchanged and stays the source of truth
-// (canEditProfile server-side). This component re-checks the enroll function gate and loads the same
-// program the page always loaded.
+// ENROLLMENT section BODY. Its ONE caller is ./enroll-body.tsx, the `?panel=enroll` workspace. Offerings
+// does not compose it: "define the program and see who enrolled" is a Journey plus the Memberships roster,
+// so the section came off that page and the `enroll` function key is retired to `journeys` (LIVE-226,
+// lib/spaces/functions.ts RETIRED_SPACE_FUNCTIONS).
 //
-// HONESTY (CONTENT-VOICE skeptic test): v1 takes no payment. No em/en dashes.
+// The route + auth gate stays on the caller. The WRITE action (setSpaceProgram, behind ProgramForm) is
+// unchanged and stays the source of truth (canEditProfile server-side). The gate below resolves through
+// the retired key to the `journeys` switch + min-role. This surface takes no payment. No em/en dashes.
 
 export async function EnrollSection({
   space,

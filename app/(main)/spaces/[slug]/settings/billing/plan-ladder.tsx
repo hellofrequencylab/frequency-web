@@ -10,8 +10,8 @@ import { ChoosePlanButton } from './choose-plan'
 // matters most: you keep 100% of what you bring in; we earn only on the business the network sends you, at
 // a rate that drops as the tier rises (buying down your rate, never a wall).
 //
-// GO-LIVE (ADR-811): the higher flat rungs the checkout can sell (Collective / Independent, gated on
-// billingLive + their per-plan switch) carry an inline Choose action for a FREE Space; Business keeps its
+// GO-LIVE (ADR-811): Collective, the one higher flat rung the checkout sells self-serve (gated on
+// billingLive + its per-plan switch), carries an inline Choose action for a FREE Space; Business keeps its
 // richer CTA below (GoBusinessCta, with the seat picker). A rung whose switch is still OFF reads "Coming
 // soon", truthful, not a dark pattern. Prices come from the ONE placeholder map (feature-tiers), never
 // hardcoded here. Non Profit points at the existing verify flow. No em dashes (CONTENT-VOICE §10); plain,
@@ -48,12 +48,20 @@ const RUNGS: Rung[] = [
   },
 ]
 
-// Independent is NOT offered (owner pricing overhaul, 2026-07): its rung renders ONLY for a Space
-// already on the plan (grandfathered), never as an upgrade path.
-const INDEPENDENT_RUNG: Rung = {
+// 🔴 THE INDEPENDENT RUNG IS NOT AN OFFER, IT IS A LABEL FOR A SPACE ALREADY ON IT.
+//
+// The tier is sold by hand and advertised nowhere (owner ruling 2026-09-08, LIVE-227): the standalone
+// white-label site it is sold on is not finished, so no public or in-app surface may present it as a
+// plan to move to. It stays here for ONE reason: a Space that already holds the plan has to see its own
+// rung marked "Your plan". Deleting it would leave that Space looking at a ladder whose lowest rung
+// reads as available, which is a downgrade dressed as an upgrade.
+//
+// So it renders only when it IS the Space's current plan, it never carries a Choose action, and its
+// blurb states what the Space has rather than selling it. Do not add it to RUNGS.
+const CURRENT_PLAN_ONLY_RUNG: Rung = {
   plan: 'independent',
   icon: Globe,
-  blurb: 'Your own brand and domain, standalone. Outside the collective, standard pricing.',
+  blurb: 'Your own brand and domain, standalone. Outside the collective, on your existing agreement.',
 }
 
 const STATE_CHIP: Record<RungState, { label: string; className: string }> = {
@@ -64,13 +72,14 @@ const STATE_CHIP: Record<RungState, { label: string; className: string }> = {
 }
 
 /** Resolve the state chip for a rung given the Space's current plan and which rungs are sellable now.
- *  Business's live CTA lives below (always "available"); Collective / Independent are "available" once
- *  their per-plan switch is on (else "Coming soon"); Non Profit is by verification. */
+ *  Business's live CTA lives below (always "available"); Collective is "available" once its per-plan
+ *  switch is on (else "Coming soon"); Non Profit is by verification. Independent is never "available":
+ *  it is sold by hand (LIVE-227), and it only ever reaches this function as the Space's current plan. */
 function rungState(plan: SpacePlan, currentPlan: SpacePlan, sellable: Partial<Record<SpacePlan, boolean>>): RungState {
   if (plan === currentPlan) return 'current'
   if (plan === 'business') return 'available'
   if (plan === 'nonprofit') return 'verify'
-  if ((plan === 'collective' || plan === 'independent') && sellable[plan]) return 'available'
+  if (plan === 'collective' && sellable[plan]) return 'available'
   return 'soon'
 }
 
@@ -97,9 +106,9 @@ function betaNote(plan: SpacePlan): string | null {
 
 /**
  * The Community Collective ladder for a Space's billing surface. Reads the Space's current plan to mark
- * its rung; a FREE Space gets an inline Choose action on each sellable higher rung (Collective /
- * Independent), gated server-side. `sellable` is the resolved per-plan switch map (billingLive AND the
- * per-plan flag); `slug` + `isFree` decide whether to render the action. No charge happens here.
+ * its rung; a FREE Space gets an inline Choose action on the sellable higher rung (Collective), gated
+ * server-side. `sellable` is the resolved per-plan switch map (billingLive AND the per-plan flag);
+ * `slug` + `isFree` decide whether to render the action. No charge happens here.
  */
 export function PlanLadder({
   currentPlan,
@@ -115,8 +124,9 @@ export function PlanLadder({
   // The beta anchor note ("Beta $49/mo") only shows while the beta window is open; it auto-clears when
   // beta ends (2026-09-01, lib/pricing/beta.ts), the same instant the checkout starts charging list.
   const betaActive = isBetaPricingActive()
-  // The Independent rung only appears for a Space already on it (grandfathered); it is not sold.
-  const rungs = currentPlan === 'independent' ? [...RUNGS, INDEPENDENT_RUNG] : RUNGS
+  // The Independent rung only appears for a Space already ON it, so the ladder can mark its current
+  // plan. It is not an upgrade path and carries no Choose action (LIVE-227).
+  const rungs = currentPlan === 'independent' ? [...RUNGS, CURRENT_PLAN_ONLY_RUNG] : RUNGS
   return (
     <section aria-labelledby="collective-ladder-heading" className="rounded-card border border-border bg-surface px-5 py-5 lift-1">
       <h2 id="collective-ladder-heading" className="text-body font-bold text-text">
@@ -134,13 +144,10 @@ export function PlanLadder({
           const state = rungState(rung.plan, currentPlan, sellable)
           const chip = STATE_CHIP[state]
           const Icon = rung.icon
-          // A FREE Space gets a one-click Choose on a sellable higher flat rung (Collective / Independent).
-          // Business keeps its richer CTA below; Non Profit routes through verification, not a direct buy.
-          const canChoose =
-            isFree &&
-            !!slug &&
-            state === 'available' &&
-            (rung.plan === 'collective' || rung.plan === 'independent')
+          // A FREE Space gets a one-click Choose on the one sellable higher flat rung (Collective).
+          // Business keeps its richer CTA below; Non Profit routes through verification, not a direct
+          // buy; Independent is sold by hand and is never offered here (LIVE-227).
+          const canChoose = isFree && !!slug && state === 'available' && rung.plan === 'collective'
           return (
             <li
               key={rung.plan}
@@ -162,7 +169,7 @@ export function PlanLadder({
               {canChoose ? (
                 <ChoosePlanButton
                   slug={slug}
-                  plan={rung.plan as 'collective' | 'independent'}
+                  plan="collective"
                   label={`Choose ${SPACE_PLAN_LABEL[rung.plan]}`}
                 />
               ) : (

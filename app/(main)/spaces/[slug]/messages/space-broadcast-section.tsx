@@ -1,5 +1,6 @@
 import { BroadcastComposer } from '@/components/comms/broadcast-composer'
 import type { BroadcastChannelOption } from '@/components/comms/broadcast-types'
+import { SMS_CHANNEL } from '@/lib/comms/broadcast-channels'
 import { loadSpaceBroadcastSegments } from '@/lib/spaces/broadcast-audience'
 import { isSpaceEmailEnabled } from '@/lib/spaces/email'
 import { sendSpaceBroadcast } from './broadcast-actions'
@@ -37,9 +38,9 @@ export async function SpaceBroadcastSection({
       enabled: true,
       note: 'Sends a Dispatch to ALL space members (rail, digest, and push), whatever segments you pick.',
     },
-    // Refuse-first SMS (ADR-256): infrastructure exists but A2P is not filed, so Text is a
-    // disabled chip with an honest note, never a toggle that silently does nothing.
-    { key: 'sms', enabled: false, note: 'Coming soon' },
+    // Refuse-first SMS: the one channel whose answer is the same on every surface, so it is the
+    // shared chip (lib/comms/broadcast-channels.ts) rather than a third copy of the same literal.
+    SMS_CHANNEL,
   ]
 
   return (

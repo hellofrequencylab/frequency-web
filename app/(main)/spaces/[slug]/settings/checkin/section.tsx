@@ -13,12 +13,17 @@ import { CheckinRoster } from '@/components/spaces/checkin-roster'
 import { Users } from 'lucide-react'
 import type { Space } from '@/lib/spaces/types'
 
-// CHECK-IN section BODY (extracted from checkin/page.tsx so the unified Offerings surface can compose it
-// as one stacked section). Check-in is an event_space feature; the Offerings page composes it ONLY for
-// an event_space (OFFERING_SECTIONS types). The route + auth gate stays on the caller. It reuses the
-// EXISTING scan -> capture pipeline (the check-in code is an ordinary `qr` node); this section adds the
-// door-side roster + the QR to print. The node is ensured server-side here when an EDITOR opens the
-// surface (ensureCheckinNode is canEditProfile-gated; a previewer never mints a node).
+// CHECK-IN section BODY. Its ONE caller is ./checkin-body.tsx, the `?panel=checkin` workspace. Offerings
+// does not compose it: check in is an event mechanic, not a Space offering, so the section came off that
+// page and the `checkin` function key is retired to `events` (LIVE-226, lib/spaces/functions.ts
+// RETIRED_SPACE_FUNCTIONS). It was never event_space-only either, whatever this comment used to say:
+// every Space type has had every function since ADR-517 Phase F.
+//
+// The route + auth gate stays on the caller. It reuses the EXISTING scan -> capture pipeline (the check-in
+// code is an ordinary `qr` node); this section adds the door-side roster + the QR to print. The node is
+// ensured server-side here when an EDITOR opens the surface (ensureCheckinNode is canEditProfile-gated;
+// a previewer never mints a node). The `checkin` gate below resolves to the `events` switch + its
+// editor min-role, so a manager who can run events can work the door.
 //
 // Copy obeys CONTENT-VOICE: plain labels, no narrated feelings, no em/en dashes.
 

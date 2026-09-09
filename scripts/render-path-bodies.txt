@@ -127,7 +127,12 @@ the-quest       0   # ✅ RETIRED 2026-08-19 (Lift 5c, ADR-1068). LegacyTheQuest
                     #    the template did not draw (the "Generosity over grinding" guardrail, the
                     #    /discover link, the /pricing link) were recovered into existing template
                     #    blocks in the same change. Template-only from here.
-pricing         7   # PlanCard + RateLine + PlanPrice + PlanCta + IndependentStrip + ExtraCard + ComparisonBlock (860 lines)
+pricing         6   # PlanCard + RateLine + PlanPrice + PlanCta + ExtraCard + ComparisonBlock (826 lines)
+                    #    7 -> 6 on 2026-09-09: IndependentStrip RETIRED, not moved (LIVE-227). The
+                    #    owner ruled that the Independent tier stops being advertised and is sold by
+                    #    hand, so the offering leaves the ladder and the strip that rendered it has no
+                    #    offering left to draw. Nothing was recovered into a template block, because
+                    #    the point of the change is that the tier appears on no public surface.
                     #    🔴 NOT A PENDING RETIREMENT — OUT OF THE SERIES BY DECISION (ADR-1116).
                     #    This body is the page that reads live prices, the live take-rate vector,
                     #    the beta-window resolution the checkout asks, and the operator's live gate

@@ -68,7 +68,11 @@ describe('type scoping (UNIVERSAL — ADR-517 Phase F)', () => {
     expect(business).toContain('qr')
     // A business now also offers what were once type-specific tools (universal).
     expect(business).toContain('availability')
-    expect(business).toContain('tickets')
+    expect(business).toContain('events')
+    // Retired keys are not seeded: they are aliases, not tools with a switch of their own (LIVE-226).
+    expect(business).not.toContain('tickets')
+    expect(business).not.toContain('enroll')
+    expect(business).not.toContain('checkin')
     // crm/email carry a tier key, so the seeder never writes them here.
     expect(business).not.toContain('crm')
     expect(business).not.toContain('email')
@@ -104,7 +108,10 @@ describe('min-role override (spaces.feature_roles)', () => {
   it('falls back to the code default when there is no override', () => {
     expect(spaceFunctionMinRole({ featureRoles: {} }, 'crm')).toBe('admin')
     expect(spaceFunctionMinRole({ featureRoles: {} }, 'members')).toBe('editor')
-    expect(spaceFunctionMinRole(null, 'checkin')).toBe('moderator')
+    // A RETIRED key resolves to the SUCCESSOR it folded into (LIVE-226), so it answers with that
+    // function's default rather than failing closed: `checkin` -> `events`, whose default is editor.
+    expect(spaceFunctionMinRole(null, 'checkin')).toBe(spaceFunctionMinRole(null, 'events'))
+    expect(spaceFunctionMinRole(null, 'checkin')).toBe('editor')
   })
 
   it('reads a valid override', () => {

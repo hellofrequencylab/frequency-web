@@ -50,13 +50,13 @@ describe('panelHrefForSurface (rail-only inline-panel translation)', () => {
 describe('panelHrefForModule (module-first inline panel)', () => {
   const slug = 'demo'
 
+  // Only the modules that still EXIST in the catalog: space.enroll / space.tickets / space.checkin were
+  // removed with their retired functions (LIVE-226). The surface-id map above still carries their panel
+  // entries, which is why this list and that one differ.
   const commerceModules: [string, string][] = [
     ['space.booking', 'booking'],
     ['space.memberships', 'memberships'],
     ['space.donations', 'donations'],
-    ['space.enroll', 'enroll'],
-    ['space.tickets', 'tickets'],
-    ['space.checkin', 'checkin'],
   ]
 
   it.each(commerceModules)('%s → ?panel=%s (not its /settings/* deepLink)', (moduleId, panel) => {
