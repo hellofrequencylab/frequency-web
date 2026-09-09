@@ -15,6 +15,7 @@ import { SERIES_COLUMNS } from '@/lib/events/series'
 import { getSeriesDisplayConfig } from '@/lib/events/series-config'
 import { seriesRobots, seriesSeoFacts, suppressPastNoindex } from '@/lib/events/series-seo'
 import { SeriesDatesRail } from '@/components/events/series-dates-rail'
+import { PayoutSetupPrompt } from '@/components/billing/payout-setup-prompt'
 import { createClient } from '@/lib/supabase/server'
 import { SITE_NAME, SITE_URL } from '@/lib/site'
 import { JsonLd } from '@/components/json-ld'
@@ -1505,25 +1506,37 @@ export default async function EventDetailPage({
                   /* The buy path is gated on the HOST's Stripe Connect account being
                      charges + payouts ready (getConnectStatus.ready). When it isn't, the
                      old copy read "Tickets aren't available for this event yet" to
-                     everyone with no way forward. Tell the host the real prerequisite and
-                     link them straight to payout setup. */
-                  <div className="space-y-2">
-                    <p className="text-body-sm text-muted">
-                      Connect payouts to start selling tickets for this event.
-                    </p>
-                    <Link
-                      href="/settings/billing"
-                      className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
-                    >
-                      <Ticket className="h-4 w-4" />
-                      Set up payouts
-                    </Link>
-                  </div>
+                     everyone with no way forward.
+
+                     LIVE-233: this was one of four hand-written payout prompts, and like the other
+                     three its only action was a LINK to /settings/billing. It is now THE shared
+                     prompt (components/billing/payout-setup-prompt), which starts Stripe's hosted
+                     onboarding inline on the page the host is already standing on. Same component,
+                     same sentence, as memberships, bookings, orders and donations. */
+                  <Suspense fallback={null}>
+                    <PayoutSetupPrompt
+                      payeeProfileId={myProfileId}
+                      viewerProfileId={myProfileId}
+                      channels={['tickets']}
+                    />
+                  </Suspense>
                 )
               ) : myProfileId && myProfileId === hostSpaceOwnerId ? (
                 /* The hosting space's OWNER is the payee — the server's self-purchase guard would
-                   refuse their checkout, so say so instead of showing a button that errors. */
-                <p className="text-body-sm text-muted">Your space is hosting. No ticket needed.</p>
+                   refuse their checkout, so say so instead of showing a button that errors.
+                   LIVE-233: unless the payout account is the thing missing, in which case saying
+                   "no ticket needed" hides the ONE reason nobody else can buy one either. */
+                hostPayoutReady ? (
+                  <p className="text-body-sm text-muted">Your space is hosting. No ticket needed.</p>
+                ) : (
+                  <Suspense fallback={null}>
+                    <PayoutSetupPrompt
+                      payeeProfileId={hostSpaceOwnerId}
+                      viewerProfileId={myProfileId}
+                      channels={['tickets']}
+                    />
+                  </Suspense>
+                )
               ) : hostPayoutReady ? (
                 <TicketButton
                   eventId={event.id}

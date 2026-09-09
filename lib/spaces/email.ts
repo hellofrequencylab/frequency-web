@@ -731,17 +731,18 @@ export const runSpaceCampaignEmail: JobHandler = async (p) => {
 // ── Webhook seam: update a Space send on a provider bounce / complaint ────────────────────────────
 
 /**
- * Resolve a Space send from a Resend email id and apply a bounce / complaint outcome. Called by the
+ * Resolve a Space send from a Resend email id and apply a delivery outcome. Called by the
  * Resend webhook (app/api/webhooks/resend/route.ts) IN ADDITION to the existing global handling, so
  * the global flow is unchanged. If an outreach_sends row matches the resend id, its status is set to
- * the event ('bounced' | 'complained') and a SPACE-SCOPED suppression is recorded for that address +
+ * the event ('delivered' | 'bounced' | 'complained') and, for the two FAILURE outcomes only, a
+ * SPACE-SCOPED suppression is recorded for that address +
  * Space (so that Space stops re-mailing the person). Returns true when a Space send was matched +
  * handled, false when no Space send owns this id (the caller then relies on the global path only).
  * Best-effort + fail-safe: any error returns false and is logged, never thrown.
  */
 export async function handleSpaceSendWebhook(
   resendId: string | null | undefined,
-  eventType: 'bounced' | 'complained',
+  eventType: 'delivered' | 'bounced' | 'complained',
 ): Promise<boolean> {
   if (!resendId) return false
   try {
@@ -769,6 +770,12 @@ export async function handleSpaceSendWebhook(
       .from('outreach_sends')
       .update({ status: eventType, updated_at: new Date().toISOString() })
       .eq('id', row.id)
+
+    // 🔴 A DELIVERY IS NOT A SUPPRESSION (LIVE-236). `delivered` joined this handler so a Space send
+    // can finally reach the `delivered` status the deliverability panel counts, and it must stop
+    // here: suppressing an address that just RECEIVED an email would silence the Space's best
+    // contacts. Only the two failure outcomes suppress.
+    if (eventType === 'delivered') return true
 
     // Record a SPACE-SCOPED suppression so this Space stops re-mailing the address. A complaint is
     // also globally significant, but the global webhook path already adds the GLOBAL suppression; we
