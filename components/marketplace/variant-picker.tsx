@@ -20,11 +20,15 @@ export function VariantPicker({
   priceCents,
   currency,
   variants,
+  entryPoint,
 }: {
   productId: string
   priceCents: number
   currency: string
   variants: CommerceVariant[]
+  /** Forwarded verbatim to BuyButton (LIVE-219). This component is a pass-through for it and must
+   *  stay one: the entry point belongs to the SURFACE that rendered the picker, not to the picker. */
+  entryPoint?: 'marketplace' | null
 }) {
   // Default to the first in-stock variant so the buyer lands on something purchasable.
   const firstAvailable = useMemo(() => {
@@ -70,7 +74,7 @@ export function VariantPicker({
       {selectedSoldOut ? (
         <p className="text-body-sm font-medium text-subtle">This option is sold out.</p>
       ) : (
-        <BuyButton productId={productId} variantId={selectedId} disabled={!selectedId} />
+        <BuyButton productId={productId} variantId={selectedId} entryPoint={entryPoint} disabled={!selectedId} />
       )}
     </div>
   )
