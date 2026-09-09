@@ -753,6 +753,14 @@ about the tier system, and the two disagree in ten places.
 | 🔴 **decorative, zero call sites** | `personal_payouts` · `event_paid_tickets` · `space_automation` · `space_crm_playbooks` · `space_crm_resonance` · `space_crm_resonance_ai` · `space_team` · `space_multi_pipeline` · `space_whitelabel` · `space_revenue_splits` · `space_sms` · `journey_library_list` · `entry_points` |
 | ✅ **intentionally decorative** | `space_full_website` (enforced by a pure default-deny entitlement key so it survives the short-circuit) |
 
+> 🔴 **`vault_cash_in` and `gamification_full` left the catalogue on 2026-09-09**
+> ([ADR-1295](DECISIONS.md), owner ruling, `OWN-071`), and they are the first two ENFORCED gates to be
+> deleted rather than wired. The Quest is a side thing we all do together, so a member who earns Gems
+> but can never spend them is not playing the same game as one who can. The `redeemItem` guard, the
+> `canCashIn` predicate, the leaderboard compete gate, the earn-only tease surfaces and both
+> pricing-grid rows went in the same change. `vera_unlimited` is the only personal gate left, and it
+> survives on marginal cost (inference spend per user, no natural ceiling), not as a game rung.
+
 ### B2. Meter catalogue: the declared enforcement seam is dead
 
 🔴 **`withinAllowance()` has zero call sites in the entire repo.** It is documented as "THE one place
@@ -781,7 +789,7 @@ tier-axis meters other than `journey_publish` / `journey_enrollees`.
 | 2 🔴 | `space_storefront` coded `free`, stored `business` | Neither. The gate is never called, so the storefront is ungated for everyone. Flipping gates live would not close it |
 | 3 🔴 | Three DB rows lower `collective` gates to `business` | The DB. Collective's three headline differentiators open at Business |
 | 4 🔴 | Journey caps bite today and ignore both `gatesLive` and `BETA_OPEN_ACCESS` | The cap. Free Members are blocked while the UI says they are Crew |
-| 5 🔴 | `gamification_full` gate vs `platform_flags.gamification_full_member = true` | The flag, permanently, even after gates go live |
+| 5 ✅ | `gamification_full` gate vs `platform_flags.gamification_full_member = true` | **Resolved 2026-09-09 (ADR-1295) by deleting the gate.** The flag is an operator override and stays; there is no longer a second opinion for it to disagree with |
 | 6 🔴 | `event_paid_tickets` gate vs `ticketSellerVerdict` | The predicate. Two ladders for one rule. **Phase 1 deletes both** |
 | 7 ⚠️ | `space_qr` meter vs `PLAN_CODE_CAPS` (which still carries retired `starter`/`pro` labels) | The hardcoded map |
 | 8 ⚠️ | `space_email` published monthly cap vs the only live cap (500/day, all plans) | The daily cap. A free Space's real ceiling is ~15,000/mo, **50× the published free allowance** |

@@ -109,7 +109,6 @@
             "LIVE-257",
             "PROG-R9",
             "LIVE-260",
-            "LIVE-261",
             "PROG-R10",
             "LIVE-263",
             "PROG-R11"
@@ -11225,7 +11224,7 @@
     {
       "id": "LIVE-261",
       "title": "Operator first run lands on hosting, not the CRM",
-      "status": "open",
+      "status": "done",
       "priority": "P2",
       "lane": "live",
       "size": "S",

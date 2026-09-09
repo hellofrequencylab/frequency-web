@@ -92,7 +92,7 @@ export default async function SpacesDirectoryPage({
         {...hero}
         eyebrow="Directory"
         title="Business Spaces"
-        subtitle="Find a business or nonprofit near you. See what they offer, from classes to services to events, then follow or reach out."
+        subtitle="A Space is the home a studio, a shop or a nonprofit keeps here, and the Circles and Events they host hang off it. Find one near you, follow it, and turn up."
         search={<DirectorySearch placeholder="Search Spaces by name" />}
         action={
           viewerProfileId ? (

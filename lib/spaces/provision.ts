@@ -11,9 +11,10 @@
 //   4. Insert the `spaces` row (status 'active', plan 'free', entitlements {}, the default DAWN
 //      skin, owner = caller, network_connected true), then seat the caller as an 'admin' member
 //      (addSpaceMember).
-// On slug collision it returns a friendly fail; on success it redirects the new owner straight to their
-// `/manage` console (ADR-552 Phase 4, no double-hop through /settings). Returns ActionResult on any path
-// that DOESN'T redirect.
+// On slug collision it returns a friendly fail; on success it redirects the new owner straight to the
+// Space's Circles manager, so the first screen is hosting rather than the console's command center
+// (LIVE-261; ADR-552 Phase 4 still holds for the console itself, no double-hop through /settings).
+// Returns ActionResult on any path that DOESN'T redirect.
 //
 // `spaces` is not in the generated DB types yet, so the insert/uniqueness read reach the table
 // through the untyped admin client (ADR-246), exactly like lib/spaces/membership.ts.
@@ -245,10 +246,15 @@ export async function createSpace(input: CreateSpaceInput): Promise<ActionResult
     await ensureSpaceStages(spaceId, type, modeVariant)
   }
 
-  // Success: hand the owner straight to their /manage console (ADR-552 Phase 4 — no double-hop through
-  // /settings, which now just redirects here anyway). redirect() throws, so it must sit OUTSIDE any
-  // try/catch (Next docs: redirecting.md).
-  redirect(`/spaces/${slug}/manage`)
+  // Success: hand the owner straight to HOSTING (LIVE-261). This landed on `/manage` until
+  // 2026-09-09, which is the console's command center: revenue, pipeline, contacts. A person who
+  // has owned a Space for four seconds has no revenue and no contacts, so the first thing the
+  // product said to them was "here is your CRM" — a tool for a business they have not started
+  // running here yet. The Space is worth having because it hosts things, so the first screen is
+  // the Circles this Space runs, with its own "start one" affordance and a link back to the rest
+  // of the console. Hosting is free; the money surfaces are one click away when there is money.
+  // redirect() throws, so it must sit OUTSIDE any try/catch (Next docs: redirecting.md).
+  redirect(`/spaces/${slug}/manage/circles`)
 }
 
 /** Find a free slug from a name: slugify it, then append -2, -3 ... until one is untaken (bounded). */

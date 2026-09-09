@@ -1263,7 +1263,7 @@ function MobileLeftDrawer({
   }
 
   // 🔴 LOCK THE PAGE BEHIND IT. This was the ONE overlay in the repo that did not — Dialog,
-  // SearchOverlay, CaptureLauncher, Mindless, ChoresOverlay and ReportDialog all lock. Without
+  // SearchOverlay, CaptureLauncher, Mindless, the walkthrough lightbox and ReportDialog all lock. Without
   // it, dragging anywhere on the backdrop scrolls the feed underneath, and because neither the
   // drawer's <nav> nor its stats box declares `overscroll-contain`, a flick that reaches the end
   // of the nav chains straight through to the page. Three nested scrollers, no containment.

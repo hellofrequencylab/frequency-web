@@ -51,7 +51,7 @@ Legend — Driver: 🟢 `BETA_OPEN_ACCESS` (auto-swaps via `beta-notices.ts`) ·
 | File | Copy | Driver | Launch action |
 |---|---|---|---|
 | `components/crew/upgrade-lightbox.tsx:75,81` | "Crew is free during the beta…", CTA "Upgrade to Crew, free" | 🔴 | Route line 75 through `crewUpgradeSuffix()`; drop "free" in the CTA. |
-| `components/crew/crew-preview-banner.tsx` · `components/layout/upgrade-crew.tsx` | Generic upgrade blurbs | 🔴 (no beta claim) | Safe as-is. |
+| ~~`components/crew/crew-preview-banner.tsx`~~ · `components/layout/upgrade-crew.tsx` | Generic upgrade blurbs | 🔴 (no beta claim) | Safe as-is. The preview banner was DELETED on 2026-09-09 ([ADR-1295](DECISIONS.md)): it told a free member to upgrade to "earn, spend, and climb", all three of which every member now does. |
 | `components/pricing/feature-tier-upsell.tsx` · `feature-meter-upsell.tsx` | Tier/meter notes | 🟡 `billingLive()` | Auto when billing live. |
 
 ### Marketing / onboarding (all 🔴 unless noted)

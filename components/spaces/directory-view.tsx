@@ -185,10 +185,10 @@ export function StartBusinessCTA() {
     <section className="mt-12 overflow-hidden rounded-card border border-border bg-surface p-8 sm:p-10">
       <div className="max-w-2xl">
         <p className="mb-2 eyebrow text-primary-strong">Go Business</p>
-        <h2 className="text-balance text-page-title font-bold text-text sm:text-3xl">Run your whole business here</h2>
+        <h2 className="text-balance text-page-title font-bold text-text sm:text-3xl">Host what you run, right here</h2>
         <p className="mt-3 text-body leading-relaxed text-muted">
-          One page for everything you sell, everyone you serve, and every event you run. Your people find
-          it in the same network they already browse, so getting listed is getting discovered.
+          A Space is one home for the Circles you gather, the Events you put on, and everything you offer.
+          Your people find it in the same network they already browse, so getting listed is getting found.
         </p>
       </div>
 
@@ -206,9 +206,9 @@ export function StartBusinessCTA() {
       <div className="mt-8 flex flex-wrap items-center gap-4">
         <Link href="/spaces/new" className={buttonClasses('primary', 'md')}>
           <Plus className="h-4 w-4" aria-hidden />
-          Start a Business page
+          Open a Space
         </Link>
-        <p className="text-body-sm text-subtle">One connected network, shared discovery. Free to start.</p>
+        <p className="text-body-sm text-subtle">One connected network, shared discovery. Hosting is free. You pay when you start charging.</p>
       </div>
     </section>
   )
@@ -269,16 +269,16 @@ export function SpacesResults({
               ? 'You are not following any Spaces yet.'
               : filtering
                 ? 'No Spaces match your search.'
-                : 'No Spaces yet.'
+                : 'No Spaces here yet.'
           }
           description={
             following
-              ? 'Follow a Space from its profile and it shows up here.'
+              ? 'Follow a Space from its profile and its Circles and Events show up here.'
               : filtering
                 ? facetLabel
                   ? `No ${facetLabel} Spaces matched. Try a different filter or a wider search.`
                   : 'Try a different filter or a wider search.'
-                : 'This is where practitioners, businesses, and organizations in the network will live. Check back soon.'
+                : 'A Space is the home a studio, a shop or a nonprofit keeps here, and the Circles and Events they host hang off it. Hosting is free, so if you run something in town, this is where it goes.'
           }
         />
         <StartBusinessCTA />
