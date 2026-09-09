@@ -20,7 +20,7 @@ export interface VeraWelcomeContext {
 
 /** Which vector spot-illustration a slide shows (see components/onboarding/
  *  welcome-art.tsx). */
-export type DeckArt = 'welcome' | 'feed' | 'circles' | 'practices' | 'events' | 'zaps' | 'vera'
+export type DeckArt = 'welcome' | 'feed' | 'circles' | 'practices' | 'events' | 'spaces' | 'vera'
 
 export interface DeckSlide {
   eyebrow: string
@@ -73,43 +73,49 @@ export function buildWelcomeSlides(ctx: VeraWelcomeContext): DeckSlide[] {
         : "Founder isn't just a label. You signed on to help build this place while it's still rough, which puts you in early, before most. Let me give you the quick tour, then we'll find your people.",
   }
 
-  // Slides 2-7 — the tour: one surface at a time, what it is and what it's for.
+  // Slides 2-7 — the tour, told in the four nouns (LIVE-258). Space, Circle, Event and
+  // Practice are what this place is made of, and Circles are the heart, so the deck opens on
+  // home, spends its weight on Circles, then Events, then the Practice you keep between them,
+  // and closes the tour on the Space that hosts it all (hosting is free, which is the whole
+  // shape of the model). The Quest — Zaps, Journeys, season ranks — had a slide of its own here
+  // until 2026-09-09, teaching a member to collect points before they had met a single person.
+  // It is now one line inside the Practice slide: a side thing we all do together, not the centre.
   const tour: DeckSlide[] = [
     {
       art: 'feed',
       eyebrow: 'Start here',
       title: 'This is home.',
-      body: "Your feed is the first thing you land on. It's quiet right now, on purpose. The moment you join a circle it comes alive with what your people are posting, planning, and showing up for.",
+      body: "Your feed is the first thing you land on. It's quiet right now, on purpose. The moment you join a Circle it comes alive with what your people are posting, planning, and showing up for.",
     },
     {
       art: 'circles',
       eyebrow: 'The heart of it',
       title: 'Circles are your people.',
-      body: 'A circle is a small group around one shared thing: a trail, a table, a quiet morning practice. Find one that feels like you, show up, and everything else here grows out of that.',
-    },
-    {
-      art: 'practices',
-      eyebrow: 'Something to keep',
-      title: 'Practices keep you steady.',
-      body: 'A practice is a small ritual you come back to: a walk, a sit, a single page. Claim one, log it day by day, and watch your streak build. Healthy living, made into a game you actually want to play.',
+      body: 'A Circle is a small group around one shared thing: a trail, a table, a quiet morning practice. Find one that feels like you, show up, and everything else here grows out of that.',
     },
     {
       art: 'events',
       eyebrow: 'Where it gets real',
       title: 'Events bring you together.',
-      body: 'All of it leads somewhere with a door: a room, a beach, a kitchen table. RSVP to a gathering near you, turn up, and the faces on your screen become the people in your week.',
+      body: 'An Event is a Circle with a door on it: a room, a beach, a kitchen table. Say you are coming to one near you, turn up, and the faces on your screen become the people in your week.',
     },
     {
-      art: 'zaps',
-      eyebrow: 'The fun part',
-      title: 'Showing up earns its keep.',
-      body: 'You collect Zaps for the real things: turning up, keeping a practice, bringing a friend. Finish Journeys to climb the season ranks and fill the Vault. Gems are the lighter, everyday kind. Both reward the same thing, being here.',
+      art: 'practices',
+      eyebrow: 'Between the gatherings',
+      title: 'Practices are what you keep.',
+      body: 'A Practice is one small thing you come back to: a walk, a sit, a single page. Keep one and you will find there is a Quest running alongside it, points and seasons and all. Play it or ignore it. The walk is the point.',
+    },
+    {
+      art: 'spaces',
+      eyebrow: 'Who hosts',
+      title: 'Spaces are the hosts.',
+      body: 'A Space is the home a studio, a shop or a nonprofit keeps here. Hosting is free, so the people who run things in your town put their Circles and Events where you will actually find them. Open one yourself whenever you want.',
     },
     {
       art: 'vera',
       eyebrow: 'And me?',
       title: "I'm Vera.",
-      body: "I keep this place running, and right now I've got one job: getting you to people you'd actually want to know. Ask me anything, anytime. When you're ready, let's find your first circle.",
+      body: "I keep this place running, and right now I've got one job: getting you to people you'd actually want to know. Ask me anything, anytime. When you're ready, let's find your first Circle.",
     },
   ]
 

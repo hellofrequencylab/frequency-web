@@ -6,13 +6,13 @@ import {
   type OnboardingStepKey,
 } from './steps'
 
-const ALL_FALSE: Record<OnboardingStepKey, boolean> = { avatar: false, circle: false, practice: false, log: false }
+const ALL_FALSE: Record<OnboardingStepKey, boolean> = { avatar: false, circle: false, event: false, host: false }
 const done = (over: Partial<Record<OnboardingStepKey, boolean>> = {}) => ({ ...ALL_FALSE, ...over })
 
 describe('buildOnboardingSteps — no authored slides → default funnel', () => {
   it('returns all four defaults in default order', () => {
     const steps = buildOnboardingSteps(null, ALL_FALSE)
-    expect(steps.map((s) => s.key)).toEqual(['avatar', 'circle', 'practice', 'log'])
+    expect(steps.map((s) => s.key)).toEqual(['avatar', 'circle', 'event', 'host'])
     expect(steps[0].headline).toBe(DEFAULT_ONBOARDING_STEPS.avatar.headline)
   })
   it('treats an empty / untagged list as no authoring', () => {
@@ -20,10 +20,10 @@ describe('buildOnboardingSteps — no authored slides → default funnel', () =>
     expect(buildOnboardingSteps([{ title: 'Hi' }, { title: 'Yo' }], ALL_FALSE)).toHaveLength(4)
   })
   it('fills done from the map, never from input', () => {
-    const steps = buildOnboardingSteps(null, done({ avatar: true, log: true }))
+    const steps = buildOnboardingSteps(null, done({ avatar: true, host: true }))
     expect(steps.find((s) => s.key === 'avatar')!.done).toBe(true)
     expect(steps.find((s) => s.key === 'circle')!.done).toBe(false)
-    expect(steps.find((s) => s.key === 'log')!.done).toBe(true)
+    expect(steps.find((s) => s.key === 'host')!.done).toBe(true)
   })
 })
 
@@ -54,8 +54,8 @@ describe('buildOnboardingSteps — authored slides override copy + order', () =>
   })
   it('dedupes a repeated criterion (first wins)', () => {
     const dupe: AuthoredOnboardingStep[] = [
-      { criterion: 'log', title: 'First' },
-      { criterion: 'log', title: 'Second' },
+      { criterion: 'host', title: 'First' },
+      { criterion: 'host', title: 'Second' },
     ]
     const steps = buildOnboardingSteps(dupe, ALL_FALSE)
     expect(steps).toHaveLength(1)
@@ -64,11 +64,11 @@ describe('buildOnboardingSteps — authored slides override copy + order', () =>
   it('ignores untagged / unknown-criterion slides but keeps tagged ones', () => {
     const mixed = [
       { title: 'no criterion' },
-      { criterion: 'practice' as OnboardingStepKey, title: 'Pick one' },
+      { criterion: 'event' as OnboardingStepKey, title: 'Come along' },
       { criterion: 'bogus' as unknown as OnboardingStepKey, title: 'junk' },
     ]
-    const steps = buildOnboardingSteps(mixed, done({ practice: true }))
-    expect(steps.map((s) => s.key)).toEqual(['practice'])
+    const steps = buildOnboardingSteps(mixed, done({ event: true }))
+    expect(steps.map((s) => s.key)).toEqual(['event'])
     expect(steps[0].done).toBe(true)
   })
   it('treats whitespace-only fields as blank (falls back)', () => {

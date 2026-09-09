@@ -1,10 +1,18 @@
 // The scripted spotlight tour (ADR-047 onboarding). A short, guided walk that dims
-// the page and highlights one real surface at a time, narrated in Vera's voice
-// (cool register, same as lib/onboarding/tips.ts). Pure data so the stops stay easy
-// to tune. The SpotlightTour component renders these; the FeedOnboardingGuide
-// launches and resumes it. Each stop points at a `data-tour-anchor` element — when
-// that element isn't on screen (e.g. the sidebar nav on a small viewport, where it
-// lives in a drawer), the card simply centers and still narrates the step.
+// the page and highlights one real surface at a time, narrated in Vera's voice.
+// Pure data so the stops stay easy to tune. The SpotlightTour component renders
+// these; the FeedOnboardingGuide launches and resumes it. Each stop points at a
+// `data-tour-anchor` element — when that element isn't on screen (e.g. the sidebar
+// nav on a small viewport, where it lives in a drawer), the card simply centers and
+// still narrates the step.
+//
+// IT IS ASKED FOR, WHICH IS WHY IT SURVIVED LIVE-240. A member taps "Take the tour"
+// on the first-run checklist and it runs; nothing launches it at them. The ambient
+// coachmark engine that DID launch itself (TourProvider + lib/onboarding/tips.ts)
+// was one of the two dark onboarding engines deleted on 2026-09-09.
+//
+// The stops walk the four nouns in the order the checklist meets them: home, the
+// Circle, the Event, the Practice you keep between them, then your own face.
 
 export interface SpotlightStop {
   /** `data-tour-anchor` value to spotlight. Absent → a centered, un-anchored card. */
@@ -32,14 +40,14 @@ export const SPOTLIGHT_STOPS: SpotlightStop[] = [
     body: "Circles are small groups around one shared thing. Joining one is the move that makes this place come alive.",
   },
   {
-    anchor: 'nav-practices',
-    title: 'Pick a small thing.',
-    body: 'A practice is a recurring ritual you do with your circle (a walk, a sit, a check-in). It becomes your reason to keep coming back.',
-  },
-  {
     anchor: 'nav-events',
     title: 'Show up in person.',
-    body: "Gatherings near you live here. Turning up once is worth a hundred scrolls. It's where the real thing happens.",
+    body: "Events near you live here. Turning up once is worth a hundred scrolls. It's where the real thing happens.",
+  },
+  {
+    anchor: 'nav-practices',
+    title: 'Keep one small thing.',
+    body: 'A Practice is a ritual you come back to between gatherings: a walk, a sit, a check-in. It becomes your reason to keep showing up.',
   },
   {
     anchor: 'avatar',

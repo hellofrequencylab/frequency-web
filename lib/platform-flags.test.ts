@@ -227,7 +227,10 @@ describe('the horizon setting reaches the listing it claims to tune', () => {
 import { readdirSync } from 'node:fs'
 import { join } from 'node:path'
 
-const FLAG_READERS = ['lib/platform-flags.ts', 'lib/onboarding/flags.ts', 'lib/onboarding/status.ts']
+// lib/onboarding/flags.ts and the nextStepsEnabled reader in lib/onboarding/status.ts were
+// deleted on 2026-09-09 with the two dark onboarding engines they gated (LIVE-240), so
+// `auto_popups_enabled` and `next_steps_enabled` are no longer read anywhere.
+const FLAG_READERS = ['lib/platform-flags.ts']
 
 function readFlagKeys(): string[] {
   const keys = new Set<string>()
@@ -253,10 +256,11 @@ function seededFlagKeys(): Set<string> {
 describe('every platform_flags key the code reads is seeded by a migration', () => {
   it('guards non-trivially (the walk finds the readers it claims to)', () => {
     const keys = readFlagKeys()
-    expect(keys.length).toBeGreaterThanOrEqual(12)
+    // Was 12 until 2026-09-09, when LIVE-240 deleted lib/onboarding/flags.ts and the
+    // nextStepsEnabled reader in lib/onboarding/status.ts along with the two dark onboarding
+    // engines they gated. The floor tracks the readers that exist, not the ones that did.
+    expect(keys.length).toBeGreaterThanOrEqual(10)
     for (const k of [
-      'auto_popups_enabled',
-      'next_steps_enabled',
       'referrals_enabled',
       'sms_enabled',
       'vera_autonomy_enabled',

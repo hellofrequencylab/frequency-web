@@ -66,7 +66,7 @@ describe('during the beta grace window: a NOTICE, never a lock tease', () => {
   it('a Crew feature tells a free member they are using Crew tools', async () => {
     duringBeta()
     const { resolvePersonalTeaseGate } = await loadResolvers({})
-    const gate = await resolvePersonalTeaseGate('vault_cash_in')
+    const gate = await resolvePersonalTeaseGate('vera_unlimited')
     expect(gate.live).toBe(false)
     expect(gate.locked).toBe(false) // NOTHING is blocked
     expect(gate.notice?.title).toBe('You are using Crew tools')
@@ -106,7 +106,7 @@ describe('during the beta grace window: who hears nothing', () => {
     duringBeta()
     const { resolveTierTeaseGate, resolvePersonalTeaseGate } = await loadResolvers({ tier: 'crew' })
     expect((await resolveTierTeaseGate('crew')).notice).toBeNull()
-    expect((await resolvePersonalTeaseGate('vault_cash_in')).notice).toBeNull()
+    expect((await resolvePersonalTeaseGate('vera_unlimited')).notice).toBeNull()
   })
 
   it('a Space that already HAS the entitlement hears nothing', async () => {

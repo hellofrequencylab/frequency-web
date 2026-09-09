@@ -53,23 +53,14 @@ import { hasConsent } from '@/lib/consent/consent'
 import { demoModeEnabled, demoContentExists } from '@/lib/platform-flags'
 import { viewerHidesDemo } from '@/lib/demo-preference'
 import { getSearchIndex } from '@/lib/help/content'
-import { TourProvider } from '@/components/onboarding/tour-provider'
-import type { TourState } from '@/lib/onboarding/select'
-import { getOnboardingStatus, nextStepsEnabled } from '@/lib/onboarding/status'
-import { autoPopupsEnabled } from '@/lib/onboarding/flags'
 import { FUNNEL_INDUCTION_ACTIVE } from '@/lib/onboarding/funnel-script'
 import { hasEffectivelyOnboarded } from '@/lib/onboarding/onboarded'
-import { ChoresOverlay } from '@/components/onboarding/chores-overlay'
 import { CaptureLauncher } from '@/components/feed/capture-launcher'
 import { TimezoneSync } from '@/components/layout/timezone-sync'
 import { SupportLauncher } from '@/components/support/support-launcher'
 import { UpgradeLauncher } from '@/components/crew/upgrade-launcher'
 import { InviteLauncher } from '@/components/invite/invite-launcher'
 import { DailyCheckIn } from '@/components/daily-check-in'
-import { getProfileChores } from '@/lib/onboarding/profile-chores'
-import { getFounderTasks } from '@/lib/onboarding/founder-tasks'
-import { FOUNDER_COACH } from '@/lib/onboarding/founder-config'
-import { getActiveTraining } from '@/lib/onboarding/training'
 import { atLeastRole, asWebRole, isStaff, isJanitor } from '@/lib/core/roles'
 import { openTicketCount } from '@/lib/support/store'
 import { staffCan } from '@/lib/core/staff-roles'
@@ -513,20 +504,19 @@ export default async function MainLayout({
     NAV_AREAS.map((a) => [a.key, a.surface ? accessTo(a.surface as Surface, navHats) : 'full']),
   )
 
-  // The Vera launcher inputs (help index + upsell tease gate), the onboarding coach, and the
-  // daily-check-in/tour are all OVERLAY chrome — none feed a redirect or the theme. Their reads
-  // are pushed into their own Suspense slots below (VeraLauncherSlot / CoachOverlaySlot /
-  // AutoPopupsSlot) so they stream in and never block the shell's first byte (PAGE-FRAMEWORK §5).
-
-  // Deterministic onboarding tour state from profiles.meta.tour (ADR-047 P1). Cheap + sync (no
-  // await), so it stays here and is handed to AutoPopupsSlot; the async tour reads (the flag +
-  // getOnboardingStatus for `tourSatisfied`) live in that slot so they never block the shell.
-  const tourMeta = (profile.meta as { tour?: Partial<TourState> } | null)?.tour
-  const tourState: TourState = {
-    seen: tourMeta?.seen ?? [],
-    dismissed: tourMeta?.dismissed ?? [],
-    lastShownAt: tourMeta?.lastShownAt ?? null,
-  }
+  // The Vera launcher inputs (help index + upsell tease gate) are OVERLAY chrome — they feed
+  // neither a redirect nor the theme — so their reads are pushed into VeraLauncherSlot below and
+  // stream in without blocking the shell's first byte (PAGE-FRAMEWORK §5).
+  //
+  // ONE ONBOARDING ENGINE (LIVE-240). The shell used to mount two more: the chores / Founder's
+  // First Week coach (CoachOverlaySlot, gated `next_steps_enabled`) and the deterministic
+  // coachmark tour (TourProvider, gated `auto_popups_enabled`). Both were dark, and both named
+  // the operator-authored Walkthroughs suite as their successor in their own comments. They are
+  // deleted rather than left flagged off: a dark engine is indistinguishable from a deleted one
+  // except that it still has to be read, maintained and reasoned about. Walkthroughs is the
+  // surviving engine — it renders where it was designed to, as a gentle card in the feed
+  // (components/walkthroughs/feed-walkthrough.tsx), never as an overlay the shell throws at a
+  // member. What is left here is the daily check-in, which is a rewards heartbeat, not onboarding.
 
   // Right sidebar streams in independently. Doesn't block page render
   const sidebar = (
@@ -561,10 +551,6 @@ export default async function MainLayout({
       <VaultDockSlot profileId={profile.id} />
     </Suspense>
   )
-
-  // The onboarding coach (ChoresOverlay) and its next-step chain (chores + getOnboardingStatus /
-  // getFounderTasks / getActiveTraining) moved into CoachOverlaySlot below — flag-guarded
-  // (nextStepsEnabled ships OFF) and streamed behind its own Suspense, so it never blocks the shell.
 
   // Community news ticker — streams in independently, never blocks the shell.
   const ticker = (
@@ -815,18 +801,11 @@ export default async function MainLayout({
       {/* Invite — the app-wide "invite friends, earn zaps" modal; opened from the
           account menu / anywhere via the 'open-invite' event. */}
       <InviteLauncher />
-      {/* Onboarding coach (ChoresOverlay) — flag-guarded (ships OFF) + streamed: the chores +
-          next-step reads resolve inside this slot's Suspense so they never block the shell. */}
-      <Suspense fallback={null}>
-        <CoachOverlaySlot profileId={profile.id} realRole={realRole} />
-      </Suspense>
       <PageViewTracker />
       <ObserveProvider />
-      {/* Daily check-in + onboarding tour — flag-guarded (ships OFF) + streamed: the auto-popups
-          flag + getOnboardingStatus resolve inside this slot's Suspense, off the shell's path. */}
-      <Suspense fallback={null}>
-        <AutoPopupsSlot profileId={profile.id} tourState={tourState} />
-      </Suspense>
+      {/* Daily check-in — the once-a-day server action that pays the visit gems and ticks the
+          streak, plus its celebration toast. Rewards feedback, not an onboarding engine. */}
+      <DailyCheckIn />
     </AppShell>
     </>
   )
@@ -857,67 +836,3 @@ async function VeraLauncherSlot() {
   return <VeraLauncher index={index} veraTease={veraTease} />
 }
 
-// The onboarding coach overlay. Gated on nextStepsEnabled() (ships OFF) → returns null after one
-// flag read in the shipped state. When ON, the chores + next-step chain (getOnboardingStatus /
-// getFounderTasks / getActiveTraining) streams in behind this slot. Mirrors the prior inline logic.
-async function CoachOverlaySlot({ profileId, realRole }: { profileId: string; realRole: CommunityRole }) {
-  const nextSteps = await nextStepsEnabled()
-  if (!nextSteps) return null
-  const chores = FUNNEL_INDUCTION_ACTIVE ? await getProfileChores(profileId) : null
-  if (!chores) return null
-
-  // Once chores are done, Vera keeps coaching (build item 1.3): surface the single next step.
-  let coachNext = chores.complete ? (await getOnboardingStatus(profileId)).current : null
-  // Activation done? Hand off to Founder's First Week (build item 1.4) while it's unfinished.
-  if (chores.complete && !coachNext && !(await getFounderTasks(profileId)).complete) {
-    coachNext = {
-      key: 'log', // synthetic step — the overlay renders by copy/href, not key
-      label: FOUNDER_COACH.headline,
-      headline: FOUNDER_COACH.headline,
-      blurb: FOUNDER_COACH.blurb,
-      href: FOUNDER_COACH.href,
-      cta: FOUNDER_COACH.cta,
-      done: false,
-    }
-  }
-  // Role-advancement training (ADR-157 §7) takes precedence, host+ only.
-  if (chores.complete && atLeastRole(realRole, 'host')) {
-    const training = await getActiveTraining(profileId)
-    if (training) {
-      coachNext = {
-        key: 'log',
-        label: training.title,
-        headline: training.title,
-        blurb: training.blurb,
-        href: '/training',
-        cta: 'Start training',
-        done: false,
-      }
-    }
-  }
-
-  if (!(!chores.complete || !chores.rewarded || coachNext)) return null
-  return <ChoresOverlay chores={chores} nextAction={coachNext} />
-}
-
-// Cues whose activation task is already done are suppressed (don't tell someone to add a photo
-// they have). Only pay for the status lookup when a task-cue is still unseen.
-const TASK_CUES = ['profile_face', 'circles_find', 'practice_adopt']
-
-// Daily check-in + onboarding tour. The TOUR is gated on autoPopupsEnabled() (ships OFF). The
-// daily CHECK-IN always mounts — its server action pays the daily gems and ticks the visit
-// streak, so gating it behind the popups flag silently froze both (the header streak stuck at
-// its last value for weeks); the flag now only decides whether the celebration TOAST shows.
-async function AutoPopupsSlot({ profileId, tourState }: { profileId: string; tourState: TourState }) {
-  const autoPopups = await autoPopupsEnabled()
-  if (!autoPopups) return <DailyCheckIn celebrate={false} />
-  const tourSatisfied: string[] = TASK_CUES.some((id) => !tourState.seen.includes(id))
-    ? (await getOnboardingStatus(profileId)).steps.filter((s) => s.done).map((s) => s.key)
-    : []
-  return (
-    <>
-      <DailyCheckIn celebrate />
-      <TourProvider initialState={tourState} satisfied={tourSatisfied} />
-    </>
-  )
-}

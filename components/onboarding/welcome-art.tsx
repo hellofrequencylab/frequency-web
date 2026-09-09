@@ -93,16 +93,15 @@ const ART: Record<DeckArt, React.ReactNode> = {
     </Svg>
   ),
 
-  // Zaps — a lightning bolt rising over a climbing bar chart, with a gem.
-  zaps: (
+  // Spaces — a storefront with an open door and an awning: the home a business keeps here.
+  spaces: (
     <Svg>
-      <g>
-        <rect x="58" y="96" width="22" height="34" rx="4" className="fill-primary-bg" />
-        <rect x="88" y="78" width="22" height="52" rx="4" className="fill-primary-bg" />
-        <rect x="118" y="58" width="22" height="72" rx="4" className="fill-primary/40" />
-      </g>
-      <path d="M150 22l-26 44h18l-8 40 34-50h-20z" className="fill-primary" />
-      <g className="fill-signal"><path d="M176 96l10 12-10 16-10-16z" /><path d="M166 108h20l-10 16z" className="fill-signal-strong/70" /></g>
+      <rect x="60" y="62" width="120" height="68" rx="6" className="fill-primary-bg" />
+      <path d="M54 62l12-22h108l12 22z" className="fill-primary/40" />
+      <rect x="104" y="88" width="32" height="42" rx="3" className="fill-primary" />
+      <rect x="74" y="80" width="22" height="20" rx="3" className="fill-surface" />
+      <rect x="144" y="80" width="22" height="20" rx="3" className="fill-surface" />
+      <circle cx="129" cy="110" r="2.5" className="fill-surface" />
     </Svg>
   ),
 

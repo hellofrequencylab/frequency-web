@@ -15,10 +15,8 @@ import { FeedOnboardingGuide } from '@/components/feed/feed-onboarding-guide'
 import { AvatarNudge } from '@/components/feed/avatar-nudge'
 import { FeedWalkthrough } from '@/components/walkthroughs/feed-walkthrough'
 import { FeedRolePromotion } from '@/components/walkthroughs/feed-role-promotion'
-import { nextStepsEnabled } from '@/lib/onboarding/status'
 import { JourneyBoard } from '@/components/feed/journey-board'
 import { VeraLightbox } from '@/components/onboarding/vera-lightbox'
-import { autoPopupsEnabled } from '@/lib/onboarding/flags'
 import { buildVeraOpening, buildWelcomeSlides } from '@/lib/onboarding/vera-welcome'
 import { track } from '@/lib/analytics/track'
 import { getPracticesToLogToday, getPartialPracticesToday } from '@/lib/practices'
@@ -153,13 +151,11 @@ export default async function FeedPage({
   // (site-audit PERF-7: it was awaited serially after this Promise.all, but it only needs the
   // profile id, so it's independent). Drives the founder-vs-location-nudge card AND widens the
   // 'nearby' radius when the area is sparse. Cached, fail-safe.
-  const [practicesToLog, partialPractices, progress, amplitudeMoment, nextSteps, autoPopups, localActivity] = await Promise.all([
+  const [practicesToLog, partialPractices, progress, amplitudeMoment, localActivity] = await Promise.all([
     myProfileId ? getPracticesToLogToday(myProfileId) : Promise.resolve([]),
     myProfileId ? getPartialPracticesToday(myProfileId) : Promise.resolve([]),
     myProfileId ? getMemberProgress(myProfileId) : Promise.resolve(null),
     myProfileId ? getAmplitudeCelebration(myProfileId) : Promise.resolve(null),
-    nextStepsEnabled(),
-    autoPopupsEnabled(),
     myProfileId ? getLocalActivity(myProfileId) : Promise.resolve(null),
   ])
   const effectiveRadiusM = localActivity?.effectiveRadiusM ?? feedRadiusM
@@ -202,7 +198,7 @@ export default async function FeedPage({
 
   return (
     <div className="max-w-2xl mx-auto w-full">
-      {autoPopups && veraWelcome && <VeraLightbox slides={veraWelcome.slides} opening={veraWelcome.opening} startInChat={veraStartInChat} />}
+      {veraWelcome && <VeraLightbox slides={veraWelcome.slides} opening={veraWelcome.opening} startInChat={veraStartInChat} />}
       <StreamTemplate
         eyebrow={today}
         title={greeting}
@@ -216,7 +212,7 @@ export default async function FeedPage({
           the streak box (if any) rides below it. Complete → the guide is gone and the
           streak box graduates into the JourneyBoard, which takes the top spot, fronted
           by the stage strip (and a one-time celebration when the stage advances). */}
-      {nextSteps && onboarding && !onboarding.complete && <FeedOnboardingGuide status={onboarding} />}
+      {onboarding && !onboarding.complete && <FeedOnboardingGuide status={onboarding} />}
 
       {/* Walkthroughs (Phase B): a gentle, dismissible in-feed card — pull-based, so the
           right member sees the right card next load. Never blocks the shell. */}

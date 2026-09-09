@@ -74,7 +74,9 @@
 > ## ✅ Crew is CONTRIBUTE-WHAT-YOU-WANT and the Member/Crew line is "first one free" (ADR-908, 2026-07-29; renamed from "pay what you want" by ADR-1084).
 >
 > **Crew is the leadership tier.** Before this, Crew gated three switches (`vault_cash_in`,
-> `gamification_full`, `vera_unlimited`) and two meters, none of which were about leading. It now
+> `gamification_full`, `vera_unlimited`) and two meters, none of which were about leading. Two of the
+> three are now deleted outright ([ADR-1295](DECISIONS.md), 2026-09-09): the Quest is a side thing we
+> all do together, so spending Gems and playing the full loop are open to every signed-in member. It
 > carries the acts of running community, split from the free tier by **first one free**: a Member does
 > anything once, Crew does it repeatedly, publicly, and for money.
 >
@@ -86,7 +88,7 @@
 > | Active events | 2, free or RSVP only | unlimited, incl. recurring series |
 > | Charge for an event | no | **yes** (`event_paid_tickets` + `personal_payouts`) |
 > | Entry points (QR, links, flyers) | no | **yes** |
-> | Vault, rewards loop, Vera | earn only · earn only · 10/day | spend · full loop · unlimited |
+> | Vault, rewards loop, Vera | ~~earn only · earn only~~ **spend · full loop** (ADR-1295) · 10/day | spend · full loop · unlimited |
 > | Network-sourced sale rate | **cannot sell** (RSVPs only, ADR-913) | **8%** |
 >
 > **Crew's price is chosen by the member.** Floor **$4.99**, suggested **$24.99** (pre-selected), five
@@ -245,8 +247,8 @@ billing OFF leaves the product behaving exactly as it does today.
 | **community_role** | EARNED standing | `community_role` ladder | earned, **never** billing (ADR-207) |
 | **gamification_access** | Full game vs earn only | derived from `billing_tier`, overridable via `profiles.gamification_access_override` | derive **or** operator |
 
-We **reuse** the existing entitlement seams — `lib/core/entitlement.ts` (`isPaid`, `canCashIn`,
-`deriveTier`) for the personal tier, and `spaces.plan` + `spaces.entitlements` +
+We **reuse** the existing entitlement seams — `lib/core/entitlement.ts` (`isPaid`, `deriveTier`;
+`canCashIn` was deleted by [ADR-1295](DECISIONS.md), 2026-09-09) for the personal tier, and `spaces.plan` + `spaces.entitlements` +
 `spaceHasEntitlement` (default-deny) for the space plan. P1 adds **no new tier column**; it adds the
 founder/override bits, the operator-config tables, and the admin console.
 
@@ -271,7 +273,7 @@ Host gets their tools from the role via the access matrix, not from membership.
 ### 3. gamification_access (derived, but overridable)
 
 The **third flag**, the one most often confused with billing. By default it is derived from the
-billing tier (member = `earn_only`, crew+ = `full`, the same line `canCashIn` draws). But it is an
+billing tier (member = `earn_only`, crew+ = `full`). But it is an
 **independent, overridable switch**: `profiles.gamification_access_override` (nullable; `null` =
 derive) PINS it regardless of billing — so an operator can comp a free member the full game, or hold
 a paying member to earn-only. Resolved by `resolveGamificationAccess(profile)` =
@@ -344,10 +346,13 @@ operator chrome overrides over code defaults (`mergeGate` mirrors `mergeChrome`)
 `featureGatesLive()`, NOT `billingLive()`** (ADR-874): "may we charge" and "do the gates bite" are
 different decisions on different dates, and the gates ride the second one. Seeded features:
 
+> 🔴 **`vault_cash_in` and `gamification_full` are gone** ([ADR-1295](DECISIONS.md), owner ruling
+> 2026-09-09, `OWN-071`). The Quest is a side thing we all do together, so earning, spending and
+> competing are open to every signed-in member. `vera_unlimited` is the only personal gate left, and
+> it survives on cost grounds rather than as a game rung.
+
 | Feature | Axis | Needs |
 |---|---|---|
-| `vault_cash_in` | tier | crew |
-| `gamification_full` | tier | crew |
 | `vera_unlimited` | tier | crew |
 | `space_crm` | plan | practitioner |
 | `space_email` / `space_automation` / `space_team` / `space_multi_pipeline` | plan | business (also cleared by Nonprofit + Partner via capability order) |
@@ -611,18 +616,19 @@ row is sellable; otherwise a disabled preview.
 The space billing page is linked from the Manage-space hub (`settings/page.tsx`, "Plan and billing"
 card) and is the `success_url`/`cancel_url` target `createSpacePlanCheckout` already pointed at.
 
-**Gate consumption wired (additive, OFF-preserving).** The Vault **cash-in** server action
-(`app/(main)/crew/store/actions.ts` `redeemItem`) now routes through `featureAllowed('vault_cash_in',
-…, { billingLive })` IN ADDITION TO the existing `canCashIn(tier)` line. While `billing_live` is OFF,
-`featureAllowed` short-circuits to `true`, so the action behaves EXACTLY as today; once billing is on,
-the operator can retune the cash-in minimum from `/admin/pricing`. Tested in `pricing.test.ts`.
+~~**Gate consumption wired (additive, OFF-preserving).** The Vault **cash-in** server action routes
+through `featureAllowed('vault_cash_in', …)` in addition to `canCashIn(tier)`.~~ 🔴 **REVERSED
+2026-09-09** ([ADR-1295](DECISIONS.md), owner ruling, `OWN-071`). Both checks and the `canCashIn`
+predicate are deleted: any signed-in member may redeem from the Vault. What bounds a redemption is
+the Gem balance, the season, `expires_at`, the rank requirement and the remaining stock, none of
+which is a tier.
 
 ## Status & deferred
 
 ✅ **Done in P3:** member upgrade surface (operator prices, founder lock display, gated CTA) · space
 plan picker → `createSpacePlanCheckout` · space membership join → `createSpaceMembershipCheckout`
-(OFF preserves display-only join) · white-label lead flow (ADR-364) · `vault_cash_in` gate routed
-through `featureAllowed` · pure display helpers + tests. All ships OFF.
+(OFF preserves display-only join) · white-label lead flow (ADR-364) · ~~`vault_cash_in` gate routed
+through `featureAllowed`~~ (deleted, ADR-1295) · pure display helpers + tests. All ships OFF.
 
 ✅ **Done in the deferred-gates batch (ADR-370, migration `20260727000000_pricing_deferred_gates.sql`).**
 All wired through the OFF-preserving seam (`featureAllowed` grant-all while OFF, or gated on
@@ -630,14 +636,14 @@ All wired through the OFF-preserving seam (`featureAllowed` grant-all while OFF,
 
 | Item | What shipped | Inert-while-OFF mechanism |
 |---|---|---|
-| **Leaderboard "join to compete" gate** | The individual board gates on `gamificationFullAllowed(tier)`; an earn-only member (billing ON) sees a calm `CompeteLocked` preview, still counted toward the shared goal. | `gamificationFullAllowed` → `featureAllowed('gamification_full')` grants while OFF, so the board renders exactly as today. |
-| **`resolveGamificationAccess` live consumer** | `lib/pricing/gamification-access.ts` (`resolveViewerGamificationAccess` / `…WithFlags`) folds override → per-role flags → derive; consumed in `getCrewContext`. | With the seeded flags it returns exactly `deriveGamificationAccess(tier)` (today's line). |
+| ~~**Leaderboard "join to compete" gate**~~ | 🔴 **DELETED 2026-09-09** (ADR-1295). The gate, `gamificationFullAllowed` and the `CompeteLocked` card are all gone: every signed-in member sees the board. | n/a |
+| **`resolveGamificationAccess` live consumer** | `lib/pricing/gamification-access.ts` (`resolveViewerGamificationAccess` / `…WithFlags`) folds override → per-role flags → derive; consumed in `getCrewContext`. It is an OPERATOR override (a per-profile / per-tier pin), not a billing door: the gate beside it was deleted by ADR-1295. | With the seeded flags it returns exactly `deriveGamificationAccess(tier)` (today's line). |
 | **`vera_unlimited` gate** | `lib/ai/vera/usage-gate.ts` enforces `vera_free_daily_cap` per member/day, routed through `featureAllowed('vera_unlimited')`; over the cap a free member degrades to the deterministic concierge. | OFF grants, so the cap never bites; no extra read changes the answer. |
 | **`space_*` plan-feature gates** | `lib/spaces/function-access.ts` `spaceFunctionAccessLive` composes the pure resolver with `featureAllowed('space_crm'/'space_email'/…)`, wired into the CRM + email surfaces. | OFF grants, so it equals the pure `spaceFunctionAccess` result (today's behavior). |
-| **`gamification_full` standalone gate** | `gamificationFullAllowed(tier)` — the single tier gate, reused by the leaderboard + season-reset nudge. | Routes through `featureAllowed('gamification_full')`; grants while OFF. |
+| ~~**`gamification_full` standalone gate**~~ | 🔴 **DELETED 2026-09-09** (ADR-1295). The gate and `gamificationFullAllowed` are gone; the Quest loop is open to every signed-in member. | n/a |
 | **Household / Circle bundle (P2)** | `lib/pricing/bundle.ts` + `bundleSellable()` + `lib/billing/bundle-checkout.ts`; config + `profiles.household_bundle_id` link in the migration. **All three pieces shipped 2026-08-12.** Checkout stamps the owner, the seat roster and the purchased terms. The webhook branch `lib/billing/bundle-seats.ts` seats them through `apply_bundle_seating_atomic` (migration `20270225000000_household_bundle_seating.sql`, **applied to production**). Post-purchase seats are **invites**, not assignments (a seat takes over someone else's `membership_tier`, so it is offered and accepted — the `circle_transfer_offers` reasoning, ADR-845): `lib/billing/bundle-invites.ts` + `household_bundle_invites` + `create_bundle_invite_atomic` / `accept_bundle_invite_atomic` (migration `20270226000100_household_bundle_invites.sql`, **applied to production**), surfaced in the Plan and billing section of `/settings`. A PENDING invite counts against the purchased seat count, so a bundle cannot be oversold. 🔴 Acceptance deliberately does **not** write `profiles.household_bundle_event_at` — that column orders Stripe events, and advancing it would make a real cancellation look stale and leave a canceled bundle seated. | `bundleSellable` = `billingLive()` AND `bundle_household_enabled` (OFF); checkout returns null and every seat surface renders nothing while OFF, so no bundle subscription exists for the webhook branch to seat and no invite can be written. |
 | **Dunning / proration / past-due UX** | `lib/pricing/dunning.ts` + `PastDueBanner` on `/settings/billing`; `profiles.membership_payment_status` in the migration. | `resolveMemberPaymentState` gated on `billingLive()` → returns `active` while OFF (banner dark); NULL column reads as active. |
-| **Conversion-mechanics polish** | `lib/pricing/conversion.ts` (season-reset timing) + `SeasonResetPrompt`, shown only when `!gamificationFull` AND inside the reset window. | `gamificationFull` is true while OFF, so the nudge never renders. |
+| ~~**Conversion-mechanics polish**~~ | 🔴 **DELETED 2026-09-09** (ADR-1295). `lib/pricing/conversion.ts` and `SeasonResetPrompt` are gone: the nudge only ever fired for an earn-only member, and nobody is earn-only any more. | n/a |
 
 ⏳ **Still deferred:**
 
@@ -651,7 +657,7 @@ All wired through the OFF-preserving seam (`featureAllowed` grant-all while OFF,
 |---|---|
 | ✅ **P1** | entitlements layer + operator config + `/admin/pricing` console; everything OFF |
 | ✅ **P2** | Stripe wiring: product/price sync, subscription checkout for tiers/plans/space-memberships, the webhook calls `setSpacePlan`, founder lock honored at checkout; still ships OFF |
-| ✅ **P3** | member-facing upgrade/plan/join surfaces on the operator values, white-label as a lead, the `vault_cash_in` gate routed through `featureAllowed`; still ships OFF (see Status & deferred) |
+| ✅ **P3** | member-facing upgrade/plan/join surfaces on the operator values, white-label as a lead, ~~the `vault_cash_in` gate routed through `featureAllowed`~~ (gate deleted, ADR-1295); still ships OFF (see Status & deferred) |
 | ✅ **Deferred gates (ADR-370)** | leaderboard compete · gamification access consumer + standalone gate · `vera_unlimited` · `space_*` via `featureAllowed` · Household bundle · dunning/proration UX · season-reset conversion nudge; all NO-OP while OFF |
 | ✅ **Nonprofit + Partner plans (ADR-373)** | new Nonprofit (501c3) self-serve plan + comped Partner plan, capability-ordered `SPACE_PLANS` ladder, Practitioner/Business/white-label price changes, Organization repositioned custom; per-seat billing deferred; ships inert (billing OFF) |
 | ✅ **Ladder Phase A (ADR-458)** | entitlement partition (billing namespace) + `setSpaceAddons` set-to-target + plan/member-tier collapse; ships OFF |

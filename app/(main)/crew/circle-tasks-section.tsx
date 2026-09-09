@@ -30,12 +30,10 @@ export async function CircleTasksSection({
   circleId,
   circleName,
   viewerProfileId,
-  isCrew,
 }: {
   circleId: string
   circleName: string | null
   viewerProfileId: string
-  isCrew: boolean
 }) {
   const [tasks, caps] = await Promise.all([
     listCircleTasks(circleId),

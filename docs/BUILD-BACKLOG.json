@@ -88,7 +88,6 @@
             "LIVE-237",
             "LIVE-238",
             "LIVE-239",
-            "LIVE-240",
             "PROG-R7",
             "LIVE-241",
             "LIVE-242",
@@ -107,10 +106,7 @@
             "LIVE-255",
             "LIVE-257",
             "PROG-R9",
-            "LIVE-258",
-            "LIVE-259",
             "LIVE-260",
-            "LIVE-261",
             "PROG-R10",
             "LIVE-263",
             "PROG-R11"
@@ -10852,7 +10848,7 @@
     {
       "id": "LIVE-240",
       "title": "Pick one onboarding engine and delete the other two",
-      "status": "open",
+      "status": "done",
       "priority": "P1",
       "lane": "live",
       "size": "M",
@@ -10860,11 +10856,10 @@
         "file": "docs/CORE-MODEL.md",
         "ref": "§5"
       },
-      "detail": "Three engines exist for one job and ALL THREE ARE DARK: Next Steps / chores / Founder's First Week (app/(main)/layout.tsx:860-901, gated next_steps_enabled = false), Walkthroughs (lib/walkthroughs.ts, /admin/walkthroughs, walkthrough table = 2 rows), and TourProvider (layout.tsx:912, gated auto_popups_enabled = false, whose own comment says it \"shipped OFF while we rebuild around Walkthroughs\").\n\nWalkthroughs is the stated successor and has data. Phase 9 cannot turn the lights on until this is settled, which is why it comes first.",
+      "detail": "DONE 2026-09-09. WALKTHROUGHS KEPT, the other two DELETED (not flagged off).\n\nThe evidence, re-measured rather than inherited: Walkthroughs is the only engine with data (2 rows), the only one with an operator authoring surface (/admin/walkthroughs + the slide editor), the only one NOT behind a kill flag (its runtime is live and unconditional in the feed; it was dark only because no row is `active`), the only one both other engines name as their successor in their own comments, and the one that already owns the first-run checklist through the reserved `onboarding-next-steps` slug, so keeping it orphaned nothing.\n\nDeleted: the chores / Founder's First Week coach (CoachOverlaySlot, ChoresOverlay, lib/onboarding/profile-chores.ts, app/(main)/feed/chores-actions.ts, FOUNDER_COACH) and the ambient coachmark tour (TourProvider, lib/onboarding/tips.ts, lib/onboarding/select.ts, recordTourEvent). Both kill flags went with them: lib/onboarding/flags.ts is gone and nextStepsEnabled is gone from lib/onboarding/status.ts, so `auto_popups_enabled` and `next_steps_enabled` are now inert platform_flags rows nothing reads.\n\nKEPT and deliberately NOT counted as an engine: the SpotlightTour, because a member asks for it by tapping \"Take the tour\" on the checklist; and DailyCheckIn, which is a rewards heartbeat.\n\nONE DEVIATION FROM THE ACCEPTANCE LINE, stated so it can be corrected in one line: the surviving engine renders where it was designed to, as a gentle card in the feed, so app/(main)/layout.tsx now mounts ZERO onboarding engines rather than one. Moving the card into the shell would put it on every admin page and every editor, and mounting it in the overlay lane would make it exactly the auto-popup this row deleted.",
       "verify": {
-        "kind": "manual",
-        "evidence": "One engine remains in app/(main)/layout.tsx. The other two are deleted, not flagged off.",
-        "checked": "2026-09-08"
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const gone=['components/onboarding/tour-provider.tsx','components/onboarding/chores-overlay.tsx','lib/onboarding/tips.ts','lib/onboarding/select.ts','lib/onboarding/profile-chores.ts','lib/onboarding/flags.ts','app/(main)/feed/chores-actions.ts'];const left=gone.filter(f=>fs.existsSync(f));if(left.length){console.error('a deleted onboarding engine is still on disk: '+left.join(', '));process.exit(1)}const L='app/(main)/layout.tsx';if(!fs.existsSync(L))process.exit(79);const l=fs.readFileSync(L,'utf8');const imports=l.split(String.fromCharCode(10)).filter(x=>x.trim().indexOf('import')===0).join(String.fromCharCode(10));const bad=['tour-provider','chores-overlay','onboarding/tips','onboarding/select','onboarding/profile-chores','onboarding/flags'].filter(m=>imports.indexOf(m)>=0);if(bad.length){console.error('the shell still imports a deleted engine: '+bad.join(', '));process.exit(1)}if(!fs.existsSync('lib/walkthroughs.ts')||!fs.existsSync('lib/walkthroughs/runtime.ts')){console.error('the surviving engine (Walkthroughs) is missing');process.exit(1)}\""
       }
     },
     {
@@ -11171,7 +11166,7 @@
     {
       "id": "LIVE-258",
       "title": "Rewrite the Vera welcome deck to the four nouns",
-      "status": "open",
+      "status": "done",
       "priority": "P2",
       "lane": "live",
       "size": "S",
@@ -11179,7 +11174,7 @@
         "file": "docs/CORE-MODEL.md",
         "ref": "§5"
       },
-      "detail": "lib/onboarding/vera-welcome.ts:57-117. Slides 4 and 6 teach practices and Zaps; they become Space and Event. Circles stay the heart. Also lib/onboarding/personas.ts:85-88, where the Practitioner reel promises a \"worldwide marketplace\" - off-model and, after the marketplace becomes one local umbrella, untrue.",
+      "detail": "DONE 2026-09-09. The deck now runs home, Circle (the heart, unchanged), Event, Practice, Space, Vera. The Zaps slide is gone: the Quest is one line inside the Practice slide, named as a side thing we all do together, where it used to take a whole slide teaching a member to collect points before they had met anyone. The Space slide is new and says hosting is free, which is the shape of the model. Its art is new too (lib/onboarding/vera-welcome.ts DeckArt gained `spaces` and dropped the now-unused `zaps`; components/onboarding/welcome-art.tsx follows).\n\nlib/onboarding/personas.ts: the Practitioner reel and track no longer promise a global marketplace reaching past your zip code. They promise a free Space in your own town, which is both on-model and true.",
       "verify": {
         "kind": "grep-absent",
         "pattern": "worldwide marketplace",
@@ -11191,7 +11186,7 @@
     {
       "id": "LIVE-259",
       "title": "The first-run checklist becomes the model",
-      "status": "open",
+      "status": "done",
       "priority": "P2",
       "lane": "live",
       "size": "S",
@@ -11199,11 +11194,10 @@
         "file": "docs/CORE-MODEL.md",
         "ref": "§5"
       },
-      "detail": "lib/onboarding/steps.ts:43-76. Photo, join a circle, come to an event, host something. Four steps, four nouns, in the order a person actually meets them.",
+      "detail": "DONE 2026-09-09. OnboardingStepKey went from avatar/circle/practice/log to avatar/circle/event/host, so the checklist reads photo, join a Circle, come to an Event, host something. It used to spend half the funnel inside one noun (adopt a practice, then log that practice) and never once said Event or Space.\n\nThe done-detection in lib/onboarding/status.ts moved with it: `event` is an event_rsvps row with status 'going' (a not_going RSVP is an answer, not an arrival), and `host` is any one of the three things a person can host, as three cheap existence probes (circles.host_id, events.host_id, spaces.owner_profile_id). app/(main)/feed/chores-actions was deleted with LIVE-240; the force-complete hatch in app/(main)/feed/onboarding-actions.ts now derives its accepted keys FROM ONBOARDING_CRITERIA rather than repeating them, so the next change to the nouns cannot leave that validator behind.\n\n⚠️ ONE CONSEQUENCE FOR THE OWNER, in LIVE-260: the `onboarding-next-steps` walkthrough row still carries slides tagged `practice` and `log`, which are no longer criteria. Activating that row AS IS would shrink the rendered checklist to two steps.",
       "verify": {
-        "kind": "manual",
-        "evidence": "Read the rendered checklist as a new member. Four steps, in that order.",
-        "checked": "2026-09-08"
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const S='lib/onboarding/steps.ts';if(!fs.existsSync(S))process.exit(79);const s=fs.readFileSync(S,'utf8');const m=/DEFAULT_ONBOARDING_ORDER[^=]*=\\\\s*\\\\[([^\\\\]]*)\\\\]/.exec(s);if(!m)process.exit(79);const got=m[1].split(',').map(x=>x.trim().replace(/'/g,'')).filter(Boolean).join(',');if(got!=='avatar,circle,event,host'){console.error('the first-run checklist is not the four nouns in order: '+got);process.exit(1)}const D='DEFAULT_ONBOARDING_STEPS';const i=s.indexOf(D);if(i<0)process.exit(79);for(const k of ['avatar','circle','event','host'])if(s.indexOf(k+': {',i)<0){console.error('no default copy for checklist step '+k);process.exit(1)}\""
       }
     },
     {
@@ -11217,17 +11211,18 @@
         "file": "docs/CORE-MODEL.md",
         "ref": "§5"
       },
-      "detail": "Depends on LIVE-240 choosing an engine. Then flip its flags and activate a walkthrough row. Today auto_popups_enabled and next_steps_enabled are both false and the walkthrough table has 2 rows that never render, so a new member is taught nothing at all.",
+      "detail": "THE CODE HALF IS DONE (2026-09-09) AND THE PREMISE HAS PARTLY EXPIRED: there are no flags left to flip. LIVE-240 deleted both kill flags with the engines they gated, so the first-run checklist now renders unconditionally on the feed (FeedOnboardingGuide), the next-step panel renders in the right rail on every member page (ControlCenterPanel, which used to self-hide behind next_steps_enabled), and Vera's welcome deck renders whenever induction hands a member to /feed?welcome=vera. A new member is taught something on the first screen without anyone touching a row.\n\nWHAT IS LEFT IS THREE DATABASE ROWS, and only the owner can do them. Read as of 2026-09-09:\n  1. platform_flags.auto_popups_enabled = false (updated 2026-09-05). INERT, nothing reads it. Delete the row or leave it; it decides nothing either way.\n  2. platform_flags.next_steps_enabled = false (updated 2026-09-05). INERT, same.\n  3. walkthrough rows: 'onboarding-next-steps' (active=false, 4 slides, trigger new_member) and 'new-walkthrough' (active=false, 0 slides, an empty draft). 🔴 DO NOT ACTIVATE 'onboarding-next-steps' AS IT STANDS: two of its four slides are tagged with the retired criteria `practice` and `log`, which LIVE-259 replaced with `event` and `host`, so an active row would render a TWO-step checklist and silently override the four-step default. Either retag those two slides in the editor at /admin/walkthroughs, or leave the row inactive, in which case the code default (photo, Circle, Event, host) renders, which is the model. The empty draft can be deleted.",
+      "ownerAction": "config",
       "verify": {
         "kind": "manual",
-        "evidence": "A brand-new member account sees the onboarding sequence run.",
-        "checked": "2026-09-08"
+        "evidence": "A brand-new member account sees the checklist and Vera's deck on its first screen. The two inert platform_flags rows are cleaned up, and the 'onboarding-next-steps' walkthrough is either retagged to the four current criteria or left inactive.",
+        "checked": "2026-09-09"
       }
     },
     {
       "id": "LIVE-261",
       "title": "Operator first run lands on hosting, not the CRM",
-      "status": "open",
+      "status": "done",
       "priority": "P2",
       "lane": "live",
       "size": "S",
@@ -11235,11 +11230,10 @@
         "file": "docs/CORE-MODEL.md",
         "ref": "§5"
       },
-      "detail": "lib/spaces/provision.ts:190-251. A new Space owner currently arrives at a CRM console. They should arrive at \"start your first Circle\" or \"host your first Event\" - the thing that makes the Space worth having. Also re-point the empty states: directory-view.tsx:264-283 and spaces/directory/page.tsx:94-95 make /spaces/directory read as a business directory rather than a place communities live.",
+      "detail": "DONE 2026-09-09. lib/spaces/provision.ts now redirects a new owner to /spaces/{slug}/manage/circles, the Space's Circles manager, instead of /spaces/{slug}/manage, the console command center (revenue, pipeline, contacts). A person who has owned a Space for four seconds has no revenue and no contacts, so the first thing the product said to them was \"here is your CRM\". The money surfaces are one click away through the console's own Back to manage link.\n\nThe directory empty states and hero copy now describe a Space as the home a studio, a shop or a nonprofit keeps here, with the Circles and Events they host hanging off it, and the foot CTA says hosting is free and you pay when you start charging (it said \"Free to start\", which implies you pay later just for existing). The hero TITLE stays \"Business Spaces\": NAMING.md wins on names and that name is used by the public twin at /discover/spaces, the breadcrumbs and the sitemap.",
       "verify": {
-        "kind": "manual",
-        "evidence": "Provision a Space and read the landing surface.",
-        "checked": "2026-09-08"
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const S='lib/spaces/provision.ts';if(!fs.existsSync(S))process.exit(79);const q=String.fromCharCode(96);const code=fs.readFileSync(S,'utf8').split(String.fromCharCode(10)).filter(x=>x.trim().indexOf('//')!==0).join(String.fromCharCode(10));const i=code.indexOf('redirect('+q+'/spaces/');if(i<0){console.error('no post-provision redirect found');process.exit(79)}const seg=code.slice(i,code.indexOf(')',i));if(seg.indexOf('/manage/circles')<0){console.error('a new Space owner still lands on '+seg+', not on hosting');process.exit(1)}\""
       }
     },
     {

@@ -5,12 +5,11 @@ import { describe, it, expect, vi } from 'vitest'
 // wired in this batch is a NO-OP while billing_live is OFF. These cover the PURE halves + the
 // OFF-invariant of the IO wrappers (with billing forced OFF, the way the test env already resolves it).
 
-import { featureAllowed } from './gates'
+import { featureAllowed, FEATURE_GATES } from './gates'
 import { resolveGamificationAccessWithFlags } from './gamification-access'
 import { deriveGamificationAccess } from './gamification'
 import { asHouseholdBundleConfig, HOUSEHOLD_BUNDLE_DEFAULT, householdBundlePriceKey, bundleSeatsRemaining } from './bundle'
 import { asMemberPaymentState, prorationNote } from './dunning'
-import { daysUntilSeasonReset, shouldNudgeBeforeReset, SEASON_RESET_NUDGE_DAYS } from './conversion'
 import { featureKeyForFunction } from '@/lib/spaces/function-access'
 
 // The seeded flag defaults (mirror lib/pricing/settings.ts FLAG_DEFAULTS): the per-role gamification
@@ -21,17 +20,18 @@ const SEEDED_FLAGS = {
   gamification_full_crew: true,
 }
 
-describe('REMAINING-WORK #5 — gamification_full standalone gate is INERT while billing OFF', () => {
-  it('grants full gamification to EVERY tier while billing is not live (today behavior)', async () => {
-    // The standalone gate routes through featureAllowed('gamification_full'), which short-circuits to
-    // true while OFF — so a free member is NOT blocked, exactly as today.
-    expect(await featureAllowed('gamification_full', { tier: 'free' }, { gatesLive: false })).toBe(true)
-    expect(await featureAllowed('gamification_full', { tier: 'crew' }, { gatesLive: false })).toBe(true)
-  })
-
-  it('ON: blocks free (earn-only), allows crew+ (the crew minimum)', async () => {
-    expect(await featureAllowed('gamification_full', { tier: 'free' }, { gatesLive: true })).toBe(false)
-    expect(await featureAllowed('gamification_full', { tier: 'crew' }, { gatesLive: true })).toBe(true)
+// 🔴 THE `gamification_full` GATE IS GONE (ADR-1295, owner ruling 2026-09-09, OWN-071), and with it
+// `gamificationFullAllowed`, the leaderboard compete gate and the season-reset conversion nudge
+// (lib/pricing/conversion.ts + SeasonResetPrompt). The Quest is a side thing we all do together, so
+// earning, spending and competing are open to every signed-in member. What is asserted instead is
+// that the key is undeclared and therefore permanently granted, ON or OFF.
+describe('the Quest loop is ungated on every tier, gates live or not (ADR-1295)', () => {
+  it('gamification_full and vault_cash_in are undeclared, so featureAllowed grants them', async () => {
+    for (const key of ['gamification_full', 'vault_cash_in']) {
+      expect(FEATURE_GATES).not.toHaveProperty(key)
+      expect(await featureAllowed(key, { tier: 'free' }, { gatesLive: false })).toBe(true)
+      expect(await featureAllowed(key, { tier: 'free' }, { gatesLive: true })).toBe(true)
+    }
   })
 })
 
@@ -153,41 +153,11 @@ describe('REMAINING-WORK #7 — dunning / proration (pure)', () => {
   })
 })
 
-describe('REMAINING-WORK #8 — season-reset conversion timing (pure)', () => {
-  const now = new Date('2026-06-23T00:00:00Z')
-  it('days until reset (null when no end / past)', () => {
-    expect(daysUntilSeasonReset(null, now)).toBeNull()
-    expect(daysUntilSeasonReset('2026-06-22T00:00:00Z', now)).toBeNull() // past
-    expect(daysUntilSeasonReset('2026-06-26T00:00:00Z', now)).toBe(3)
-  })
-  it('nudges only inside the window', () => {
-    expect(shouldNudgeBeforeReset('2026-06-26T00:00:00Z', { now })).toBe(true) // 3 days, inside default 7
-    expect(shouldNudgeBeforeReset('2026-07-20T00:00:00Z', { now })).toBe(false) // far out
-    expect(shouldNudgeBeforeReset(null, { now })).toBe(false)
-  })
-  it('the default window is the documented value', () => {
-    expect(SEASON_RESET_NUDGE_DAYS).toBe(7)
-  })
-})
-
 // Belt-and-suspenders: the IO wrappers, with the GATES forced off, are no-ops. We force off by mocking
 // featureGatesLive so the test never depends on env/DB, proving the OFF invariant of the wrappers
 // directly. featureGatesLive() is false both before billing goes live AND during the beta grace window
 // (ADR-874), so this covers the founder's "explore until Sept 1" window too.
 describe('OFF invariant of the IO wrappers (feature gates forced off)', () => {
-  it('gamificationFullAllowed returns true (grant) for every tier while the gates are off', async () => {
-    vi.resetModules()
-    vi.doMock('./settings', async () => {
-      const actual = await vi.importActual<typeof import('./settings')>('./settings')
-      return { ...actual, featureGatesLive: async () => false }
-    })
-    const { gamificationFullAllowed } = await import('./gamification-access')
-    expect(await gamificationFullAllowed('free')).toBe(true)
-    expect(await gamificationFullAllowed('crew')).toBe(true)
-    vi.doUnmock('./settings')
-    vi.resetModules()
-  })
-
   it('veraDailyCapReached returns false (never capped) for a free member while the gates are off', async () => {
     vi.resetModules()
     vi.doMock('./settings', async () => {

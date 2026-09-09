@@ -1,10 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-// Tour writers (scan2 L6-09, then LIVE-171 / ADR-1235): both merge ONLY the fields they own INSIDE the
-// `tour` key through the member's SESSION client (merge_profile_meta_path checks auth.uid() owns the
-// row). recordTourEvent never sends `tour.spotlight`; setSpotlightTourState never sends the tip lists;
-// so the two cannot revert each other. A failed merge is logged and the analytics event is not
-// emitted for a tip that was not actually marked.
+// The tour writer (scan2 L6-09, then LIVE-171 / ADR-1235): setSpotlightTourState merges ONLY the
+// field it owns INSIDE the `tour` key, through the member's SESSION client
+// (merge_profile_meta_path checks auth.uid() owns the row), so it never reads the sibling tip
+// lists and sends them back stale. A failed merge is logged and the analytics event is not
+// emitted for a state that was not actually written.
+//
+// It had a sibling writer, recordTourEvent, until 2026-09-09: the coachmark tour (TourProvider)
+// was its only caller and LIVE-240 deleted that engine, so the writer and its half of this file
+// went with it. The stale-sibling assertion below is what is left of the pair.
 
 const mocks = vi.hoisted(() => ({
   rpc: vi.fn(),
@@ -28,7 +32,7 @@ vi.mock('@/lib/supabase/server', () => ({
 }))
 vi.mock('@/lib/engagement/events', () => ({ recordEngagementEvent: mocks.recordEngagementEvent }))
 
-import { recordTourEvent, setSpotlightTourState } from './tour-actions'
+import { setSpotlightTourState } from './tour-actions'
 
 type PathCall = [string, { p_profile_id: string; p_path: string[]; p_patch: Record<string, unknown> }]
 function call() {
@@ -45,26 +49,6 @@ beforeEach(() => {
   mocks.recordEngagementEvent.mockResolvedValue(undefined)
   mocks.meta = { practiceStreak: { current: 2 }, tour: { seen: ['a'], dismissed: [], spotlight: { status: 'paused', atStop: 1 } } }
   vi.spyOn(console, 'error').mockImplementation(() => {})
-})
-
-describe('recordTourEvent', () => {
-  it('merges the tip fields INSIDE the tour key through the session client, then emits the event', async () => {
-    await recordTourEvent('b', 'seen')
-    expect(mocks.updates).toEqual([])
-    expect(call()[0]).toBe('merge_profile_meta_path')
-    expect(patch().p_profile_id).toBe('p1')
-    expect(patch().p_path).toEqual(['tour'])
-    expect(patch().p_patch).toMatchObject({ version: 1, seen: ['a', 'b'], dismissed: [] })
-    // The guided-tour state another writer owns is not read here and sent back stale.
-    expect('spotlight' in patch().p_patch).toBe(false)
-    expect(mocks.recordEngagementEvent).toHaveBeenCalledTimes(1)
-  })
-
-  it('emits no event when the merge did not land', async () => {
-    mocks.rpc.mockResolvedValue({ data: null, error: { message: 'boom' } })
-    await recordTourEvent('b', 'dismissed')
-    expect(mocks.recordEngagementEvent).not.toHaveBeenCalled()
-  })
 })
 
 describe('setSpotlightTourState', () => {

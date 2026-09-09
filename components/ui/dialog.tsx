@@ -44,7 +44,7 @@ export function Dialog({
   ariaLabel?: string
   /** `id` of the panel's own visible heading. Prefer this over `ariaLabel` when the panel HAS a
    *  heading: the name then follows the heading text instead of being restated (and re-translated)
-   *  beside it. Added for LIVE-089 — `vera-lightbox` and `chores-overlay` both already named
+   *  beside it. Added for LIVE-089 — `vera-lightbox` and the walkthrough lightbox both already named
    *  themselves this way by hand, and without it converting them would have SILENTLY RENAMED two
    *  dialogs, which is exactly the kind of undeclared change that row exists to prevent. If both
    *  are passed, `aria-label` wins per ARIA, so pass one. */

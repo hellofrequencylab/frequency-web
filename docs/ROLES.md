@@ -60,8 +60,14 @@ tier, that's the membership point."*
 
 | Tier | Cost | Access |
 |---|---|---|
-| 🌱 **Member** *(free, default)* | $0 | The community to **participate**, but with **limited ✋ access**: some areas are greyed out (the Quest cash-in / Vault, and the paid-only surfaces). |
-| 🚀 **Crew** *(paid membership)* | paid | **The full member site: no core feature is limited.** Gamification cash-in on (claim/spend/compete; rewards already accrue for all in the Vault). This is the membership. |
+| 🌱 **Member** *(free, default)* | $0 | The community and **the whole Quest**, including the Vault: earn Gems, spend them, compete. A few paid-only surfaces stay ✋ (Studio Overview, Connections, QR Studio). |
+| 🚀 **Crew** *(paid membership)* | paid | **The full member site: no core feature is limited.** A lower fee on network-sourced sales, Vera without the daily cap, the badge, and the paid-only surfaces above. This is the membership. |
+
+> 🔴 **The Vault left the ✋ column on 2026-09-09** ([ADR-1295](DECISIONS.md), `OWN-071`). The Quest is
+> a side thing we all do together, and a member who earns Gems but can never spend them is not
+> playing the same game as one who can. The `vault_cash_in` and `gamification_full` gates, the
+> `canCashIn` predicate and the Vault's PAID_FULL matrix row all opened in one change. Crew is not
+> the price of playing.
 
 **Supporter is not a rung.** It was one, briefly. ADR-458 turned it into a pay-what-you-want
 BADGE on Crew (`profiles.is_supporter`), ADR-878 took it off the sellable ladder, and on 2026-08-24
@@ -160,7 +166,7 @@ cell across every hat a person holds. *(The **Crew** column = the **paid members
 | Message Boards · People | 🚫 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | **The Quest** |||||||||||||||
 | Dashboard · Journeys · Practices · Library | ✋ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| The Vault | ✋ | ✋ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| The Vault | ✋ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | **Studio** |||||||||||||||
 | Overview | ✋ | ✋ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Support (submit a request → full console) | ✋ | ✋ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
@@ -181,8 +187,10 @@ cell across every hat a person holds. *(The **Crew** column = the **paid members
 **How to read it, the structure that drives the build:**
 - **One site for everyone.** All Community + Quest surfaces are ✅ for every member; Visitors get a
   ✋ preview (Message Boards 🚫). Nobody gets a *different* site; see the principle below.
-- **✋ = the paid-membership gate.** The Vault, Studio Overview, Connections (Personal CRM) and QR
-  Studio are ✋ for free Members and ✅ once paid → this is the **Entitlement** axis (Free → Member).
+- **✋ = the paid-membership gate.** Studio Overview, Connections (Personal CRM) and QR Studio are ✋
+  for free Members and ✅ once paid → this is the **Entitlement** axis (Free → Crew). ⚠️ **The Vault
+  is no longer one of them** (ADR-1295, 2026-09-09): every Quest surface, the Vault included, is ✅
+  for any signed-in member.
 - **Studio business block** (CRM Pipeline · Website · Growth · Finances) is the **Partners**
   surface: Business/Organization ✅, Practitioner ✋, Collaborator gets the Earnings view.
   ⚠️ **The Hook Network row is gone** (ADR-1168, owner ruling 2026-08-26). It was never built, and its
@@ -256,7 +264,7 @@ so a visitor/member never sees an "Admin" header.
 
 ### Per-role nav (today)
 - **Visitor (logged out):** Community previews (Feed/Circles/Channels/Events/Market = limited); Message Boards/Community(Network) = disabled; the Quest (Dashboard/Journeys/Practices/Library) = **ghost preview**; Vault = ghost. **No Admin section.** Settings via the profile card only when signed in.
-- **Member / Crew (paid):** Community + Quest full (Vault unlocks on the paid tier). **No Admin section.** Personal Settings from the profile card.
+- **Member / Crew (paid):** Community + Quest full, the Vault included (ADR-1295). **No Admin section.** Personal Settings from the profile card.
 - **Host / Guide / Mentor (volunteer leaders):** as Member today. Their network-scoped admin is NOT wired yet (see below); they do **not** see the platform Admin section for now.
 - **Admin (web_role):** the Admin section: Home, Programs, Operations, Growth, QR. Not Financials.
 - **Janitor (web_role):** all of Admin + Financials.
