@@ -11322,7 +11322,9 @@
       "verify": {
         "kind": "cmd",
         "cmd": "node -e 'const s=require(\"fs\").readFileSync(\"lib/pricing/gates.ts\",\"utf8\").replace(/\\/\\/.*$/gm,\"\").replace(/\\/\\*[\\s\\S]*?\\*\\//g,\"\");const back=[\"vault_cash_in\",\"gamification_full\"].filter(k=>s.includes(k));if(back.length){console.error(\"back on the gate map: \"+back.join(\", \"));process.exit(1)}if(!/vera_unlimited:\\s*\\{[^}]*minEntitlement:\\s*.crew./.test(s)){console.error(\"vera_unlimited is no longer a crew gate; the ruling kept it\");process.exit(1)}process.exit(0)'"
-      }
+      },
+      "priority": "P1",
+      "ownerAction": "ruling"
     }
   ]
 }
