@@ -37932,3 +37932,125 @@ consumers must each be added to **every** select branch, per the regression docu
 2026-12-01 is proposed); and whether the earned measure gets a name, which is a `NAMING.md` decision
 rather than a drive-by. "Standing" is used in OFFER-MODEL as a plain descriptive word, not a proposed
 proper noun.
+
+## ADR-1294: ACCEPTED — the core model is three lines and four nouns, and the six open questions are ruled (2026-09-08)
+
+**Status:** ✅ **ACCEPTED.** Supersedes the open questions left by [ADR-1292](DECISIONS.md) and
+[ADR-1293](DECISIONS.md), both of which stay PROPOSED as the argument that produced this. The plan
+lives in [`CORE-MODEL.md`](CORE-MODEL.md); status lives in [`BUILD-BACKLOG.json`](BUILD-BACKLOG.json)
+(`PROG-R0`…`PROG-R11`).
+
+**The model, and it is the whole thing.**
+
+> **People join free.**
+> **Businesses host free.**
+> **You pay when you start charging.**
+
+Four nouns, and no fifth: **Space** · **Circle** · **Event** · **Practice**.
+
+**Why this shape.** ADR-811 already ruled the reframe in July — Frequency is a Community Collective,
+not a community — and the marketing site leads with it. What four parallel surveys of 432 routes
+found on 2026-09-08 was an interior that had never been told, and a great deal of machinery built for
+a business that has not happened yet. Production holds 22 Spaces, 58 members, 7 Circles, 67 Events,
+21 Practices, and **zero orders, zero tickets, zero subscription items, ever**. The six Collective
+Spaces were granted by hand. There are no paying customers to migrate and no revenue to protect,
+which makes this the cheapest the change will ever be — and is the reason to make it now rather than
+to make it carefully later.
+
+### The P0, which was a date
+
+`pricing_settings.beta_grace` read `{"until":"2026-10-01"}`. `featureGatesLive()` short-circuits every
+gate to **grant** while `betaGraceActive()` is true, so **all 18 feature gates were inert** — and all
+18 would have begun enforcing simultaneously on 1 October, with no deploy and no announcement. Seven
+of them have **zero enforcement call sites**, so they would have started refusing features nothing
+knows how to refuse. One of them, `space_whitelabel`, is the product sold on the $249 Independent
+tier, whose only public surface renders *"Coming soon."*
+
+Moved to **2026-12-01** in production on 2026-09-08 at 23:27:46Z. The code default
+(`BETA_GRACE_DEFAULT`, `lib/pricing/beta.ts`) is deliberately **not** updated to match: that module
+documents at length why following the live value would reverse its fail-safe direction, so a failed
+read would enforce every gate. Read the row, never the constant.
+
+### The six rulings
+
+| # | Question | Ruling |
+|---|---|---|
+| 1 | The grace window | **1 December 2026.** Done in production. |
+| 2 | The marketplace | **One umbrella with real sub-tabs**, not four nav areas — Classifieds · Housing · Market · Events. The Store is a fifth tab **only when there is real merch**. |
+| 3 | The six Collective Spaces | **Grandfather at $49.** Collective merges into Business; Business rises $29 → $49 with 2 seats. |
+| 4 | The Independent tier | **Keep it, hide it from public pricing.** Hand-sold only; its four Stripe prices stay live. |
+| 5 | Hubs and Nexuses | **Fold both into Space.** A Hub and a Nexus each read as "a Space that contains other Spaces". |
+| 6 | Channels | **Fold into Circles.** A Channel reads as a topic Circle. |
+
+**Ruling 2 corrects the record, and the correction matters.** The first analysis put to the owner
+called the marketplace four nav areas and proposed dropping it. It is one experience with sub-tabs —
+which is what ADR-868 intended, since the `market` vertical contributes a single umbrella row at
+`/marketplace`. **The tab bar was never built.** What exists instead is `MarketplaceGuide`, a
+*bottom-of-page* "What's where" card, and `lib/marketplace/last-visited.ts` remembers only two
+surfaces (`classifieds | market`) rather than the set. The umbrella is half-built, not wrong.
+
+**Ruling 2 also carries a cost worth naming rather than discovering later.** Events becomes a
+marketplace tab while remaining one of the four nouns with its own rail row, so it appears twice. The
+tab should read as the *commerce face* of Events — paid and ticketed — not as a second Events index.
+
+**The Store ruling was taken on a corrected measurement, and the first one was wrong.** "49 items
+behind an off switch" reached the owner as an argument for publishing. Those 49 are `store_items`,
+which is **the Vault** — the Gems store at `/crew/store`, a different surface (the table carries
+`gem_cost` and `season_id`). The Frequency Store is backed by `commerce_products` where
+`owner_kind = 'platform'`, and its entire catalog is **four products, all `is_demo = true`**:
+Logo Tee $32, Enamel Pin Set $14, Field Tote Bag $28, Sticker Pack $8. Publishing it would have put a
+storefront of placeholders live. `marketplace_shop_published` stays false.
+
+### What the surveys changed about the plan
+
+Three phases exist that the nine-phase draft did not have, and each came from a count rather than an
+opinion.
+
+- **Deleting what is not the model** is now its own phase, because the dead-surface sweep found
+  enough verified-unreferenced code that doing it first makes every later phase cheaper: a
+  restaurant-menu CRUD with 23 write paths, five tables, **no reader and no rows**; the household
+  bundle and the Supporter tier, both built and never sold; two `/dev` routes with zero references
+  across 6,011 files.
+- **One editor per entity** is the largest single simplification available and nobody had counted it.
+  Circles and Events each ship `edit` **and** `manage` **and** `settings`; Practices ship `edit` and
+  `manage`. Beside them sit nine duplicate console pairs — four Circle consoles, three Event
+  consoles, four CRMs at four scopes, three funnel builders, two contact rosters.
+- **Prove it** was always the last phase, but its number moved: circles per Space is **0.32**, not the
+  0.05 first reported.
+
+### Two facts that change how the work is done
+
+**The home page is a database edit, not a pull request.** `app/page.tsx:145-147` resolves
+`getPublishedData('home')` first, and a 13-block document has been published since 2026-07-13.
+`lib/page-editor/templates/home.ts` is **unreachable**, so a PR to it moves nothing. This was a
+deliberate decision, recorded at `app/page.tsx:57-65`.
+
+**The pricing page is already one third correct.** `app/(marketing)/pricing/page.tsx:198` says
+*"Selling memberships needs Business, because a membership is a recurring promise to another
+person."* That is this model's own sentence, already live. Keep that argument and build the page on
+it; what gets re-argued is the other two thirds — rate buydown and cap lifting — which are the
+literal inverse of the model.
+
+### Consequences
+
+`scripts/check-collective.mjs` pins the six tier names and must be rewritten in the same change that
+merges the tier. `VALUE-LADDER`, `PRICING` and `COMMUNITY-COLLECTIVE-STRATEGY` need reconciling.
+`OWN-048` closes on the bundle spec. Three **live** walls come down (`entry-points`, `codes`,
+`messages/rooms`) — unlike the feature gates, which currently short-circuit to granted, these bite
+today. The four `featured_at` consumers must each be added to **every** select branch, per the
+regression documented in `scripts/check-row-type-select-parity.test.ts:23-27`.
+
+**The invariant that must survive the whole rework:** nothing on this platform can be bought into
+rank. An audit of every ranking surface found no plan, tier, entitlement or Stripe field in any
+`ORDER BY`, score or inclusion filter. Earned exposure means earned, and the ranking work in phase 10
+must not be the thing that quietly ends it.
+
+**One measurement gap blocks part of phase 10 and all of phase 11.** Event attendance has **no
+independent record** — there is no `checked_in` column; attendance exists only as an
+engagement-ledger row written by the path that pays Zaps. Demoting the game would silently destroy
+the metric the field test depends on. Fix that before phase 11 starts, not during.
+
+**Still open, and deliberately not ruled here:** the four contested operator-console placements
+(`space.content`, `space.airwaves`, `space.enroll`/`space.checkin`, `space.billing`), and whether the
+earned measure gets a proper noun — that is a `NAMING.md` decision rather than a drive-by, and
+"standing" is used in the plan as a plain descriptive word.
