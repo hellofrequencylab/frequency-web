@@ -203,6 +203,7 @@ redeem_store_item_atomic             internal
 refresh_member_engagement_scores     internal
 refresh_resonance_density_cells      internal
 refund_ticket_atomic                 internal
+refuse_self_granted_entitlement      internal
 relationship_timeline                authenticated
 remove_profile_meta_keys             authenticated
 reserve_ticket_atomic                internal
