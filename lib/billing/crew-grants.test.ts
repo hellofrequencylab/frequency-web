@@ -490,8 +490,22 @@ describe('every lifecycle site is wired (source shape)', () => {
     expect(sql).toContain('price_cents > 0')
   })
 
-  it('membership_tier joined prevent_economy_self_edit', () => {
+  // 🔴 The inverse of what this test first asserted, and the reason is worth keeping.
+  // The migration originally added `membership_tier` to prevent_economy_self_edit on the
+  // reasoning that every legitimate writer uses the service role. db-tests disproved it on
+  // the first real run: the guard fires on `auth.role() is distinct from 'service_role'`,
+  // and the atomic SECURITY DEFINER writers run with the CALLER's role. It blocked
+  // apply_membership_event_atomic (the Stripe membership webhook) and
+  // apply_bundle_seating_atomic, failing 43 subtests across three suites. Shipping it would
+  // have put a trigger in front of the write that applies paid memberships.
+  //
+  // Nothing is lost by leaving it out: refuse_self_granted_entitlement already refuses an
+  // owner, an admin and a zero-price tier, and the price floor backs it. This test now
+  // stops the clause coming back on the same plausible-sounding reasoning.
+  it('membership_tier deliberately does NOT join prevent_economy_self_edit', () => {
     const sql = read('supabase/migrations/20270345002800_entitlement_grants.sql')
-    expect(sql).toContain('new.membership_tier      IS DISTINCT FROM old.membership_tier')
+    expect(sql).not.toContain('new.membership_tier')
+    // and the reason is recorded where the next person will look
+    expect(sql).toContain('apply_membership_event_atomic')
   })
 })
