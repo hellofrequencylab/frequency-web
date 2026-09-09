@@ -4,7 +4,6 @@ import { revalidatePath } from 'next/cache'
 import { getMyProfileId, getCallerProfile } from '@/lib/auth'
 import { atLeastRole } from '@/lib/core/roles'
 import { getCircleCapabilities, canCreate } from '@/lib/core/load-capabilities'
-import { crewCreateUpsell } from '@/lib/core/beta-notices'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import { proposeAndConfirmCreate } from '@/lib/ai/vera/create-entity'
 import { redirect } from 'next/navigation'
@@ -253,11 +252,14 @@ async function authorizeCreatePractice(): Promise<
 > {
   const caller = await getCallerProfile()
   if (!caller) return { error: 'Not signed in' }
-  // Real-Crew create gate (ADR-414) — reads the true tier (pre beta-override) so a free
-  // member is sold the one-tap free-beta upgrade rather than silently allowed. Nothing
-  // unvetted goes public regardless: a non-host author still creates PENDING (below).
+  // The capability check stays as this module's own gate (the server owns its authorization,
+  // never the hidden button), but it is no longer a TIER check: `practice.create` opened to any
+  // signed-in member in LIVE-222, so the only way to fail it is to have no session. The Crew
+  // upsell copy that used to live here is deleted rather than reworded, for the same reason as
+  // its twin in create-actions.ts: it told a signed-in member to buy a rung that would not change
+  // this answer. Nothing unvetted goes public regardless: a non-host author still creates PENDING.
   if (!(await canCreate('practice.create'))) {
-    return { error: crewCreateUpsell('a practice') }
+    return { error: 'Not signed in' }
   }
   // Host+ (or platform staff, who curate the library) author live; everyone else pending review.
   const autoApprove = atLeastRole(caller.community_role, 'host') || caller.webRole !== 'none'

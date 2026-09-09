@@ -29,9 +29,11 @@ async function pricingInput(): Promise<PricingGridInput> {
   return { values, catalog: catalogConfigByKey(catalog), betaActive: isBetaPricingActive() }
 }
 
-/** The network-only take-rate, one line per rung, straight off the offerings. Every rung is listed, so
- *  the ladder cannot silently omit one the way a hand-written list did (it named Member, Business,
- *  Collective, and Non Profit, and left out Crew, the free Space, and Independent). */
+/** The network-only take-rate, one line per rung, straight off the offerings. Every ADVERTISED rung is
+ *  listed, so the ladder cannot silently omit one the way a hand-written list did (it named Member,
+ *  Business, Collective, and Non Profit, and left out Crew and the free Space). What is advertised is
+ *  decided in one place, lib/pricing/display.ts, so a tier sold by hand rather than published (LIVE-227)
+ *  drops out of this corpus without an edit here. Nothing in this file names a tier. */
 function takeRateLines(offerings: Offering[]): string[] {
   return offerings.map((o) => `- ${offeringLadderLabel(o)}: ${o.takeRate}.`)
 }

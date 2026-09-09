@@ -1,15 +1,18 @@
-// "My Entry Points" — the crew portal (ADR-126, docs/ENTRY-POINTS.md). The simple,
-// no-blank-canvas builder: pick a template, fill a few slots, and out comes a short
-// link + branded QR + a print-ready flyer (vector SVG). Crew-gated; reuses the QR
-// engine + the owner-credit-on-signup pipeline. Dashboard (no-rail) Focus surface.
+// "My Entry Points" — every member's outreach portal (ADR-126, docs/ENTRY-POINTS.md).
+// The simple, no-blank-canvas builder: pick a template, fill a few slots, and out comes
+// a short link + branded QR + a print-ready flyer (vector SVG). Reuses the QR engine +
+// the owner-credit-on-signup pipeline. Dashboard (no-rail) Focus surface.
+//
+// 🔴 FREE FOR ANY SIGNED-IN MEMBER (LIVE-221). This page used to answer a free member
+// with a "Entry points are a Crew feature" upsell instead of the builder. Bringing
+// people in is the act the whole growth model runs on, so it is never behind the paid
+// tier. Sign-in is the only gate; the server action agrees (./actions.ts).
 
 import { redirect } from 'next/navigation'
-import Link from 'next/link'
 import { Megaphone, QrCode, Users } from 'lucide-react'
 import { DashboardTemplate } from '@/components/templates/dashboard-template'
 import { StatCard } from '@/components/ui/stat-card'
 import { getCallerProfile } from '@/lib/auth'
-import { atLeastRole } from '@/lib/core/roles'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { listMarketingTargets } from '@/lib/qr/marketing'
 import { shortLinkUrl } from '@/lib/qr/links'
@@ -17,7 +20,6 @@ import { renderStyledQrSvg } from '@/lib/qr/render-styled'
 import { listMyEntryPoints } from '@/lib/entry-points/store'
 import { entryDestinationGroups } from '@/lib/entry-points/destinations'
 import { crewEntryTemplates } from '@/lib/entry-points/template-settings'
-import { isPaid } from '@/lib/core/entitlement'
 import { EntryPointsManager, type EntryCard } from './entry-points-client'
 
 export const dynamic = 'force-dynamic'
@@ -25,29 +27,6 @@ export const dynamic = 'force-dynamic'
 export default async function EntryPointsPage() {
   const me = await getCallerProfile()
   if (!me) redirect('/sign-in?next=/entry-points')
-
-  // Not paid yet — a friendly upsell, not a wall. Crew = the paid TIER (PB.1 /
-  // ADR-207); stewards (host+) pass on role.
-  if (!isPaid(me.membershipTier) && !atLeastRole(me.community_role, 'host')) {
-    return (
-      <DashboardTemplate eyebrow="Entry points" title="Bring people in" width="default">
-        <div className="rounded-card border border-border bg-surface p-8 text-center lift-1">
-          <Megaphone className="mx-auto h-8 w-8 text-primary-strong" aria-hidden />
-          <p className="mt-3 text-body-lg font-bold text-text">Entry points are a Crew feature</p>
-          <p className="mx-auto mt-1.5 max-w-md text-body-sm text-muted">
-            Crew can spin up a branded flyer with a QR code in under a minute, and earn for every
-            person it brings in. Join Crew to start your own.
-          </p>
-          <Link
-            href="/upgrade"
-            className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-primary px-6 py-3 text-body-sm font-bold text-on-primary shadow-pop transition-colors hover:bg-primary-hover"
-          >
-            Become Crew
-          </Link>
-        </div>
-      </DashboardTemplate>
-    )
-  }
 
   const [entries, targets, templates] = await Promise.all([
     listMyEntryPoints(me.id),

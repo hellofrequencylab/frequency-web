@@ -461,7 +461,10 @@ const PROFILE_LINK_SEEDS: readonly {
   // Community (Invite friends is fixed chrome woven in by the renderer)
   { id: 'friends', label: 'Friends', href: '/network/friends', icon: 'UserPlus', section: 'Community' },
   { id: 'codes', label: 'My code', href: '/codes', icon: 'QrCode', section: 'Community' },
-  { id: 'entry-points', label: 'Entry points', href: '/entry-points', icon: 'Megaphone', section: 'Community', minAccess: 'crew' },
+  // No minAccess: entry points are open to any signed-in member (ADR-1294, LIVE-221). This row WAS
+  // the real enforcement point once the declarative gate was retired, so the rung had to come off here
+  // too or the page would be reachable only by typing the URL.
+  { id: 'entry-points', label: 'Entry points', href: '/entry-points', icon: 'Megaphone', section: 'Community' },
   // Support (Report a bug is fixed chrome woven in by the renderer)
   { id: 'help', label: 'Help', href: '/help', icon: 'HelpCircle', section: 'Support' },
   { id: 'support', label: 'Support tickets', href: '/support', icon: 'LifeBuoy', section: 'Support' },

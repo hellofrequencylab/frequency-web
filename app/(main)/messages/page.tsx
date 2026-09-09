@@ -47,11 +47,11 @@ type ThreadItem =
   | { kind: 'room'; id: string; lastActivity: string | null; sortName: string; unread: number; room: RoomRow }
   | { kind: 'dm'; id: string; lastActivity: string | null; sortName: string; unread: number; conv: ConversationRow }
 
-// Room creation = the paid Crew TIER or a steward (host+). Crew is the paid tier, not a
-// role (PB.1/ADR-207), and it is the ONLY paid rung: the Supporter rung was retired from
-// EntitlementTier on 2026-08-24 and profiles.membership_tier CHECKs to exactly free/crew.
-const STEWARD_ROLES = ['host', 'guide', 'mentor', 'admin', 'janitor']
-const PAID_TIERS = ['crew']
+// 🔴 ROOM CREATION IS OPEN TO ANY SIGNED-IN MEMBER (ADR-1294, LIVE-221). It used to require the
+// paid tier or a steward role, and the server action in ./rooms/actions.ts carried the same wall.
+// Both halves came down together: a wall in the page alone would hide the button while the action
+// happily accepted the request, which is the worse of the two failures. Under the core model a
+// member never pays for a forward-facing feature, so do not re-add a tier check here.
 
 type Filter = 'all' | 'rooms' | 'dms'
 const FILTERS: { value: Filter; label: string }[] = [
@@ -175,9 +175,7 @@ export default async function MessagesPage({
   noteFailedRead('my profile', myProfileErr)
   if (!myProfile) redirect('/onboarding')
   const myProfileId = myProfile.id as string
-  const canCreateRoom =
-    PAID_TIERS.includes((myProfile as { membership_tier?: string | null }).membership_tier ?? '') ||
-    STEWARD_ROLES.includes(myProfile.community_role ?? '')
+  const canCreateRoom = true
 
   // First wave: five mutually-independent reads (each depends only on myProfileId or nothing) run
   // concurrently instead of serially. Their dependent follow-ups (presence, my rooms, channel rooms,

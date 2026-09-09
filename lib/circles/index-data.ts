@@ -9,7 +9,6 @@ import { resolvePageContent } from '@/lib/page-content'
 import { demoModeEnabled } from '@/lib/platform-flags'
 import { viewerHidesDemo } from '@/lib/demo-preference'
 import { getActiveTemplates, templatesEnabled } from '@/lib/circles/templates-data'
-import { canCreate as canCreateEntity } from '@/lib/core/load-capabilities'
 import type { StarterSeed } from '@/lib/circles/starter-projection'
 import type { CircleCardData } from '@/components/circles/circle-card'
 import type { CircleBase } from '@/lib/types/circle'
@@ -374,9 +373,12 @@ export async function getCirclesIndexData(params: CirclesIndexParams): Promise<C
     })),
   ]
 
-  // Real Crew (or steward/staff) may start a circle; a free member sees the upgrade
-  // popup. Cheap — shares the request-cached viewer (ADR-414).
-  const canStartCircle = user ? await canCreateEntity('circle.create') : false
+  // Starting a Circle is FREE for any signed-in member (LIVE-220). This used to ask
+  // the capability layer and hand a free member the upgrade popup; `circle.create` is
+  // now granted to every signed-in profile (lib/core/capabilities.ts, FIRST ONE FREE /
+  // ADR-908) and the quantity cap lives at publish (the `circle_host` meter), so the
+  // only question left on the door is "are you signed in".
+  const canStartCircle = !!user
 
   return {
     content: {

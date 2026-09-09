@@ -150,7 +150,10 @@ describe('spaceEnabledFunctions', () => {
     const set = await spaceEnabledFunctions('space-1')
     expect(set.has('members')).toBe(true)
     expect(set.has('memberships')).toBe(true)
-    expect(set.has('tickets')).toBe(true)
+    expect(set.has('events')).toBe(true)
+    // 'tickets' was asserted here until LIVE-226 retired it into 'events'; it is an alias now, not a
+    // registry row, so it is deliberately absent from the enabled SET.
+    expect(set.has('tickets')).toBe(false)
   })
 
   it('a function explicitly turned OFF drops out of the set', async () => {
@@ -165,7 +168,7 @@ describe('spaceEnabledFunctions', () => {
     resolvedSpace = null
     const set = await spaceEnabledFunctions('space-1')
     expect(set.has('members')).toBe(true)
-    expect(set.has('tickets')).toBe(true)
+    expect(set.has('events')).toBe(true)
   })
 
   it('a store throw stays permissive (fail-safe)', async () => {
