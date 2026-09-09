@@ -20,7 +20,7 @@ export default async function OnboardingControlsPage() {
       title="Onboarding & referral controls"
       icon={ToggleRight}
       eyebrow="Acquisition"
-      description="Turn the activation chrome and the referral program on or off. Every switch is reversible and logged. The referral reward amount lives in Rewards."
+      description="Where onboarding lives, and the referral program switch. Every switch is reversible and logged. The referral reward amount lives in Rewards."
     >
       <OnboardingControlsView data={data} />
     </AdminTemplate>

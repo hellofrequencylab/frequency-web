@@ -10,7 +10,6 @@
 //     proves it done (the source-of-truth query); copy comes from FOUNDER_TASKS.
 //   • app/(main)/founder/founder-actions.ts — pays the reward defined in
 //     FOUNDER_REWARD and grants FOUNDER_REWARD.badgeSlug.
-//   • app/(main)/layout.tsx — shows FOUNDER_COACH as Vera's "next move" card.
 //   • app/(main)/founder/page.tsx — renders FOUNDER_PAGE + the tasks.
 //
 // The badge row itself is seeded by supabase/migrations/*_founders_first_week_badge
@@ -40,18 +39,6 @@ export const FOUNDER_REWARD = {
   badgeSlug: 'founders-first-week',
   /** Human label for the badge (used in copy / explanations). */
   badgeName: "Founder's First Week",
-} as const
-
-// ── Vera's coach card ─────────────────────────────────────────────────────────
-// Shown in the Next Steps overlay once a member is fully activated but hasn't
-// finished the set. This is the "Your Founder's First Week" popup.
-export const FOUNDER_COACH = {
-  eyebrow: 'Vera',
-  headline: "Your Founder's First Week",
-  blurb:
-    "You're activated. Now the fun part: six moves to become a Founder, and a badge when you finish.",
-  cta: 'See your tasks',
-  href: '/founder',
 } as const
 
 // ── The persistent /founder page ──────────────────────────────────────────────

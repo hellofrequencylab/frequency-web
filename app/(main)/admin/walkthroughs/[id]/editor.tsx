@@ -27,7 +27,7 @@ import { updateWalkthrough, setWalkthroughActive } from '../actions'
 
 // The clever editor (Phase A centerpiece). A SPLIT layout: LEFT = controls (sequence
 // meta + a reorderable slide list + the per-slide editor), RIGHT = a LIVE PREVIEW that
-// renders the current slide the way it'll look in-app, emulating the chores-overlay /
+// renders the current slide the way it'll look in-app, emulating the
 // vera-lightbox card with the chosen accent token + layout. Every field updates the
 // preview as you type. Styling stays token-only — the accent picker offers SEMANTIC token
 // swatches, never a raw hex. Mirrors the sequence-wizard's ergonomics (dirty/save state,

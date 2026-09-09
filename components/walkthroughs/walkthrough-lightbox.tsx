@@ -14,7 +14,7 @@ import { IconButton } from '@/components/ui/icon-button'
 // row, a close (X), and on the last slide a "Finish" that records completion (and pays
 // any step zaps, server-side) then closes. Closing early does nothing special — the card
 // already marked the walkthrough seen when it showed. Reuses the vera-lightbox /
-// chores-overlay visual language (centered modal over a bg-black/70 backdrop), focus +
+// vera-lightbox visual language (centered modal over a bg-black/70 backdrop), focus +
 // ESC + scroll-lock, and respects prefers-reduced-motion.
 
 export function WalkthroughLightbox({

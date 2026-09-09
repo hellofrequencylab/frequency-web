@@ -1,26 +1,32 @@
-// Next Steps — the activation funnel's content + shape, kept pure (no DB, no server-only)
-// so it can be unit-tested and shared between the status reader (lib/onboarding/status.ts)
-// and the walkthroughs editor. The four CRITERIA are the real activation checks the
-// status reader computes against member state; this module owns the default operator copy
-// and the merge that lets an operator-authored walkthrough override that copy/order while
-// the done-detection stays in code.
+// The first-run checklist — the activation funnel's content + shape, kept pure (no DB, no
+// server-only) so it can be unit-tested and shared between the status reader
+// (lib/onboarding/status.ts) and the walkthroughs editor. The four CRITERIA are the real
+// activation checks the status reader computes against member state; this module owns the
+// default operator copy and the merge that lets an operator-authored walkthrough override
+// that copy/order while the done-detection stays in code.
+//
+// THE CHECKLIST IS THE MODEL (LIVE-259). Four steps, in the order a person actually meets
+// them: a photo, then a Circle, then an Event, then hosting something of their own. It used
+// to run photo → circle → adopt a practice → log a practice, which spent half the funnel
+// inside one noun and never once mentioned an Event or a Space. People join free and
+// businesses host free, so the last step is an invitation, not an upsell.
 
 /** The four activation milestones — these double as the step `key` AND the per-slide
- *  `criterion` an operator tags a Next Steps slide with. The force-complete escape hatch
+ *  `criterion` an operator tags a checklist slide with. The force-complete escape hatch
  *  (forceOnboardingStep) and the feed/sidebar surfaces all key off these exact values. */
-export type OnboardingStepKey = 'avatar' | 'circle' | 'practice' | 'log'
+export type OnboardingStepKey = 'avatar' | 'circle' | 'event' | 'host'
 
-export const ONBOARDING_CRITERIA: readonly OnboardingStepKey[] = ['avatar', 'circle', 'practice', 'log']
+export const ONBOARDING_CRITERIA: readonly OnboardingStepKey[] = ['avatar', 'circle', 'event', 'host']
 
 /** Editor-facing labels for the per-slide "Activation step" picker. */
 export const CRITERION_LABELS: Record<OnboardingStepKey, string> = {
   avatar: 'Add a profile photo',
-  circle: 'Join or start a circle',
-  practice: 'Adopt a practice',
-  log: 'Log a practice',
+  circle: 'Join a Circle',
+  event: 'Come to an Event',
+  host: 'Host something',
 }
 
-/** The reserved walkthrough slug that authors the Next Steps funnel. The feed-card runtime
+/** The reserved walkthrough slug that authors the first-run checklist. The feed-card runtime
  *  skips this slug (it renders as the persistent activation guide, never a dismissible
  *  card), and the status reader pulls its slides for operator-authored copy/order. */
 export const ONBOARDING_WALKTHROUGH_SLUG = 'onboarding-next-steps'
@@ -51,34 +57,34 @@ export const DEFAULT_ONBOARDING_STEPS: Record<OnboardingStepKey, Omit<Onboarding
   },
   circle: {
     key: 'circle',
-    label: 'Join or start a circle',
-    headline: 'Find your first circle',
-    blurb: 'Circles are where Frequency actually happens. Join one and your feed comes alive.',
+    label: 'Join a Circle',
+    headline: 'Join your first Circle',
+    blurb: 'A Circle is a small group around one shared thing. Join one and the rest of this place starts to make sense.',
     href: '/circles',
-    cta: 'Browse circles',
+    cta: 'Browse Circles',
   },
-  practice: {
-    key: 'practice',
-    label: 'Adopt a practice',
-    headline: 'Adopt a practice',
-    blurb: 'Pick one small thing to do for yourself. It’s the heartbeat of this place.',
-    href: '/practices',
-    cta: 'Explore practices',
+  event: {
+    key: 'event',
+    label: 'Come to an Event',
+    headline: 'Come to an Event',
+    blurb: 'An Event is where the names on your screen turn into people in your week. Find one near you and say you are coming.',
+    href: '/events',
+    cta: 'Find an Event',
   },
-  log: {
-    key: 'log',
-    label: 'Log your first practice',
-    headline: 'Log your first practice',
-    blurb: 'Show up once. That single check-in starts your streak and your story here.',
-    href: '/practices',
-    cta: 'Log it',
+  host: {
+    key: 'host',
+    label: 'Host something',
+    headline: 'Host something of your own',
+    blurb: 'Start a Circle, put an Event on the calendar, or open a Space for your business. Hosting is free, and it is how this place grows.',
+    href: '/circles/new',
+    cta: 'Start hosting',
   },
 }
 
-/** The shipped default order (used when no walkthrough authors the funnel). */
-export const DEFAULT_ONBOARDING_ORDER: readonly OnboardingStepKey[] = ['avatar', 'circle', 'practice', 'log']
+/** The shipped default order (used when no walkthrough authors the checklist). */
+export const DEFAULT_ONBOARDING_ORDER: readonly OnboardingStepKey[] = ['avatar', 'circle', 'event', 'host']
 
-/** A single authored slide, reduced to just what the funnel needs. Mirrors WalkthroughStep
+/** A single authored slide, reduced to just what the checklist needs. Mirrors WalkthroughStep
  *  but stays dependency-free so this module imports nothing. */
 export interface AuthoredOnboardingStep {
   criterion?: OnboardingStepKey

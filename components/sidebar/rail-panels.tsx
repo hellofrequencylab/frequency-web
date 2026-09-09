@@ -20,7 +20,7 @@ import { Avatar } from '@/components/ui/avatar'
 import { RankBadge } from '@/components/ui/rank-badge'
 import { isOnline, ONLINE_MS, RECENT_MS } from '@/lib/presence'
 import { getRecentDispatchesForProfile } from '@/lib/dispatches'
-import { getOnboardingStatus, nextStepsEnabled } from '@/lib/onboarding/status'
+import { getOnboardingStatus } from '@/lib/onboarding/status'
 import { WidgetCard } from '@/components/modules/module-card'
 import { Counter } from '@/components/ui/counter'
 import { DIRECTORY_VISIBILITY_COLUMNS, isListableInDirectory } from '@/lib/connections/directory-visibility'
@@ -328,14 +328,12 @@ export async function LeaderboardPanel() {
 // steps. It renders nothing when there is no step, so the rail never shows an
 // empty shell.
 export async function ControlCenterPanel({ profileId }: { profileId: string }) {
-  const [status, showNextSteps] = await Promise.all([
-    getOnboardingStatus(profileId).catch(() => null),
-    nextStepsEnabled(),
-  ])
-  // Next Steps prompts are shipped off (see lib/onboarding/status.ts) while the
-  // Walkthroughs suite takes over; with them off this panel self-hides entirely
-  // (the standing numbers live in the Vault dock now).
-  const nextStep = showNextSteps ? (status?.current ?? null) : null
+  const status = await getOnboardingStatus(profileId).catch(() => null)
+  // The first-run checklist is the ONE onboarding engine now (LIVE-240): this panel used to
+  // sit behind the `next_steps_enabled` flag, which read false, so the rail taught a new
+  // member nothing on every page that was not the feed. It self-hides once the checklist is
+  // complete (the standing numbers live in the Vault dock).
+  const nextStep = status?.current ?? null
   if (!nextStep) return null
 
   return (

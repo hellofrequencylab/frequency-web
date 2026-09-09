@@ -1,11 +1,11 @@
 'use client'
 
 import Link from 'next/link'
-import { History, Zap } from 'lucide-react'
+import { History, Zap, Route } from 'lucide-react'
 import { FormSection } from '@/components/admin/form-section'
 import { StatusChip } from '@/components/admin/status'
 import { FlagToggle } from './flag-toggle'
-import { setNextStepsEnabled, setAutoPopupsEnabled, setReferralsEnabled, setReferralLanding } from './actions'
+import { setReferralsEnabled, setReferralLanding } from './actions'
 import { SITE_URL } from '@/lib/site'
 import type { getOnboardingControlsData, OnboardingSwitchEvent } from './load'
 import { Input } from '@/components/ui/field'
@@ -50,30 +50,25 @@ function AuditLog({ events }: { events: OnboardingSwitchEvent[] }) {
 }
 
 export function OnboardingControlsView({ data }: { data: Data }) {
-  const { nextSteps, autoPopups, referrals, nextStepsAudit, autoPopupsAudit, referralsAudit, referralReward, landing } = data
+  const { referrals, referralsAudit, referralReward, landing } = data
 
   return (
     <div>
-      {/* Next Steps prompts */}
+      {/* Onboarding — one engine, authored elsewhere */}
       <FormSection
-        title="Next Steps prompts"
-        description="The hardcoded activation nudges: the feed onboarding card, the left Next Steps pill and its popup, and the Your Quest next-step block in the rail. Off while the Walkthroughs suite takes over this surface."
+        title="Onboarding"
+        description="There is one onboarding engine: Walkthroughs. A walkthrough is an ordered set of slides shown to a member at a moment that matters, targeted by trigger and audience, and switched on or off per walkthrough. The first-run checklist (photo, Circle, Event, host) is authored by the reserved 'onboarding-next-steps' walkthrough and always shows to a member who has not finished it."
       >
-        <div className="space-y-1">
-          <FlagToggle enabled={nextSteps} ariaLabel="Next Steps prompts" action={setNextStepsEnabled} />
-          <AuditLog events={nextStepsAudit} />
-        </div>
-      </FormSection>
-
-      {/* Auto-launching popups */}
-      <FormSection
-        title="Auto-launching popups"
-        description="The popups that open themselves at a member: the daily check-in, the spotlight tour coachmarks, and the Vera welcome lightbox. Off while we rebuild this around Walkthroughs. On-demand Vera and the app-wide launchers are not affected."
-      >
-        <div className="space-y-1">
-          <FlagToggle enabled={autoPopups} ariaLabel="Auto-launching popups" action={setAutoPopupsEnabled} />
-          <AuditLog events={autoPopupsAudit} />
-        </div>
+        <Link
+          href="/admin/walkthroughs"
+          className="inline-flex items-center gap-1.5 rounded-control border border-border bg-surface px-3 py-1.5 text-body-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
+        >
+          <Route className="h-3.5 w-3.5" aria-hidden /> Open Walkthroughs
+        </Link>
+        <p className="mt-2 text-meta text-muted">
+          This page carried two master switches until they were retired: Next Steps prompts and
+          auto-launching popups. Both engines are gone, so both switches are too.
+        </p>
       </FormSection>
 
       {/* Referral program */}
