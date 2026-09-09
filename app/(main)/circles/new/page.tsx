@@ -12,8 +12,10 @@ export const dynamic = 'force-dynamic'
 export default async function NewCirclePage() {
   const caller = await getCallerProfile()
   if (!caller) redirect('/circles')
-  // Real Crew (or steward/staff) may start a circle; a free member is bounced back to
-  // the index, where the "Start a circle" affordance shows the free-beta upgrade popup.
+  // Any signed-in member may start a circle (LIVE-266): the wall this comment used to
+  // describe is what this change took down. The redirect is now only the signed-out and
+  // suspended case. What a free member may PUBLISH is still a quantity, metered as
+  // `circle_host` in feature-meters.ts and enforced where the circle goes live, never here.
   if (!(await canCreate('circle.create'))) redirect('/circles')
 
   return <CircleWizard />
