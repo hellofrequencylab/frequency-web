@@ -1,12 +1,17 @@
-// THE PRICING GRID — the pure model behind the public /pricing page: every sellable offering (the two
-// MEMBER tiers and the five SPACE tiers) and the detailed feature comparison beneath them.
+// THE PRICING GRID — the pure model behind the public /pricing page: every ADVERTISED offering (the two
+// MEMBER tiers and the four SPACE tiers) and the detailed feature comparison beneath them.
+//
+// ADVERTISED, not "every tier that exists": the Space columns come from spacePlanRows, which maps
+// lib/pricing/display.ts ADVERTISED_SPACE_PLANS. Independent is a real, sellable tier that is NOT on
+// that list (owner ruling 2026-09-08, LIVE-227) and so appears in no column here, no comparison cell,
+// and no answer-engine line. Read the constant's doc before adding a tier back.
 //
 // THE ONE RULE THIS MODULE EXISTS TO ENFORCE: no cell in the comparison is typed by hand. Every cell is
 // DERIVED from the same code the product actually gates on, so the page cannot drift from what a plan
 // really grants:
 //
-//   * an ENTITLEMENT row reads planEntitlementKeys(plan) — the BUSINESS / COLLECTIVE / INDEPENDENT depth
-//     key sets in lib/pricing/plans.ts. Move a key between those sets and this grid moves with it.
+//   * an ENTITLEMENT row reads planEntitlementKeys(plan) — the tier depth key sets in
+//     lib/pricing/plans.ts. Move a key between those sets and this grid moves with it.
 //   * a GATE row reads meetsGate(FEATURE_GATES[feature]) — lib/pricing/gates.ts, the real minimum
 //     entitlement each feature is gated on.
 //   * a METER row reads the tier's rung on the feature's usage ladder — lib/pricing/feature-meters.ts,
@@ -28,13 +33,14 @@
 //
 // VOICE (docs/CONTENT-VOICE.md): plain sentences, no em dashes, nothing that narrates the reader's
 // feelings, and no claim the config does not back. Labels come from the naming canon (docs/NAMING.md):
-// Member, Crew, Space, Business, Collective, Non Profit, Independent.
+// Member, Crew, Space, Business, Collective, Non Profit.
 
 import { BETA_CTA_HREF } from '@/lib/site'
 import { catalogItem, type CatalogItemKey } from '@/lib/billing/pricing-keys'
 import { ENTITLEMENT_LABEL, deriveTier, isPaid, type EntitlementTier } from '@/lib/core/entitlement'
 import type { ResolvedCatalogItem } from './catalog-config'
 import {
+  ADVERTISED_SPACE_PLANS,
   annualDiscountNote,
   formatBps,
   formatCents,
@@ -48,7 +54,6 @@ import { isBetaPricingActive } from './beta'
 import { meetsGate, mergeGate, type FeatureGateOverrides, type GateAxis } from './gates'
 import {
   ADDON_ENTITLEMENT_KEYS,
-  SPACE_PLANS,
   SPACE_PLAN_LABEL,
   planEntitlementKeys,
   type AddonKey,
@@ -84,7 +89,7 @@ function betaActiveFor(input: PricingGridInput): boolean {
   return input.betaActive ?? isBetaPricingActive()
 }
 
-// ── Offerings: the seven sellable columns, each fully priced ─────────────────────────────────────────
+// ── Offerings: the six advertised columns, each fully priced ─────────────────────────────────────────
 
 /** One sellable offering: a member tier or a Space tier, with everything a buyer needs to decide.
  *  `axis` + `tier` are what the comparison grid resolves its cells against, so a column and its grid
@@ -96,7 +101,7 @@ export interface Offering {
   axis: GateAxis
   /** The tier label on that ladder ('free' | 'crew', or a SpacePlan). */
   tier: string
-  /** The naming-canon label (Member, Crew, Free, Business, Collective, Non Profit, Independent). */
+  /** The naming-canon label (Member, Crew, Free, Business, Collective, Non Profit). */
   label: string
   /** What this offering is, in a few words. */
   tagline: string
@@ -163,10 +168,6 @@ const OFFERING_COPY: Record<string, { tagline: string; forWho: string }> = {
   nonprofit: {
     tagline: 'The full toolkit, verified.',
     forWho: 'Verified 501(c)(3) organizations, with donations built in and no take-rate.',
-  },
-  independent: {
-    tagline: 'Your own brand, standalone.',
-    forWho: 'Organizations that want the whole platform under their own name and domain, off the network.',
   },
 }
 
@@ -261,11 +262,12 @@ export function memberOfferings(input: PricingGridInput): Offering[] {
   ]
 }
 
-/** The five SPACE offerings, in ladder order: Free, Business, Collective, Non Profit, Independent. PURE.
+/** The four ADVERTISED Space offerings, in ladder order: Free, Business, Collective, Non Profit. PURE.
  *
  *  A free Space is a real Space, available to anyone; the paid tiers are the depth above it. The paid
- *  rows come from spacePlanRows (the shared display shaping over the operator-set plan prices), so the
- *  crossed-out anchor appears exactly where the config carries one. */
+ *  rows come from spacePlanRows (the shared display shaping over the operator-set plan prices), which
+ *  maps ADVERTISED_SPACE_PLANS, so the crossed-out anchor appears exactly where the config carries one
+ *  and a tier the owner has taken off the public ladder cannot reappear here. */
 export function spaceOfferings(input: PricingGridInput): Offering[] {
   const { values } = input
   // BETA AUTO-REVERT (ADR-880): the ladder is shaped through the beta window, so on the cutover the
@@ -664,7 +666,7 @@ const SPACE_GROUPS: GroupDef[] = [
   },
   {
     key: 'site',
-    label: 'Site and branding',
+    label: 'Your site',
     rows: [
       {
         key: 'space_full_website',
@@ -672,12 +674,12 @@ const SPACE_GROUPS: GroupDef[] = [
         detail: 'More than one page: your own site, run from your Space.',
         source: { from: 'entitlement', key: 'space_full_website' },
       },
-      {
-        key: 'whitelabel',
-        label: 'White-label brand and domain',
-        detail: 'Your own name and your own domain, with Frequency out of the frame.',
-        source: { from: 'entitlement', key: 'whitelabel' },
-      },
+      // A `whitelabel` row sat here, and it went with the tier (owner ruling 2026-09-08, LIVE-227).
+      // `whitelabel` is granted by the Independent depth set alone, so with Independent off the
+      // advertised ladder the row resolved to "Not included" in every single column: not a comparison,
+      // just a description of the one product this page must not be selling, since the standalone site
+      // it promises still renders "Coming soon". The row comes back when the ladder does. The group
+      // label lost "and branding" with it rather than heading a section that no longer covers any.
     ],
   },
   {
@@ -898,8 +900,9 @@ function buildGrid(groups: GroupDef[], columns: GridColumn[], input: PricingGrid
   }
 }
 
-/** The SPACE comparison grid: five columns (Free, Business, Collective, Non Profit, Independent) and
- *  every row derived from the tier depth key sets, the gates, the meters, and the pricing config. PURE. */
+/** The SPACE comparison grid: four columns (Free, Business, Collective, Non Profit) and every row
+ *  derived from the tier depth key sets, the gates, the meters, and the pricing config. PURE. The
+ *  columns ARE the offerings, so the grid gains and loses a column with the advertised ladder. */
 export function spaceFeatureGrid(input: PricingGridInput): FeatureGrid {
   return buildGrid(SPACE_GROUPS, spaceOfferings(input).map(offeringColumn), input)
 }
@@ -933,10 +936,16 @@ export function planExtras(input: PricingGridInput): PlanExtra[] {
   const ai = input.catalog.addon_ai
   const seat = input.catalog.operator_seat
   const seatPlaceholder = catalogItem('operator_seat').placeholder === true
-  const teamTiers = SPACE_PLANS.filter((p) => planEntitlementKeys(p).includes('team')).map(
+  // 🔴 NAMED OVER THE ADVERTISED LADDER, NOT SPACE_PLANS. These two sentences print plan names to a
+  // visitor, so they are a public mention of every tier they list. Reading SPACE_PLANS here is how the
+  // add-on card went on saying "Optional on every paid Space plan: Business, Collective, Non Profit,
+  // and Independent" while the ladder above it had stopped showing Independent at all.
+  const teamTiers = ADVERTISED_SPACE_PLANS.filter((p) => planEntitlementKeys(p).includes('team')).map(
     (p) => SPACE_PLAN_LABEL[p],
   )
-  const paidTiers = SPACE_PLANS.filter((p) => planEntitlementKeys(p).length > 0).map((p) => SPACE_PLAN_LABEL[p])
+  const paidTiers = ADVERTISED_SPACE_PLANS.filter((p) => planEntitlementKeys(p).length > 0).map(
+    (p) => SPACE_PLAN_LABEL[p],
+  )
 
   return [
     {
@@ -961,7 +970,7 @@ export function planExtras(input: PricingGridInput): PlanExtra[] {
   ]
 }
 
-/** Join labels into a plain English list ("Business, Collective, Non Profit, and Independent"). PURE. */
+/** Join labels into a plain English list ("Business, Collective, and Non Profit"). PURE. */
 function listPhrase(items: readonly string[]): string {
   if (items.length === 0) return 'none yet'
   if (items.length === 1) return items[0]!

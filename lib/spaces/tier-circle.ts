@@ -11,6 +11,14 @@
 // grant time WINS (left untagged), so a later billing event can never evict a membership the
 // member chose on their own.
 //
+// CREW ENTITLEMENT (LIVE-223): this same engine is where a paid membership grants the member the
+// Crew TIER, because syncTierCircleAccess is the ONE seam every membership lifecycle site already
+// calls — created, renewed, cancelled, expired, refunded. (The sixth site, TIER DELETED, is wired
+// in the schema: entitlement_grants.granted_by_tier_id is ON DELETE CASCADE.) The grant itself,
+// its paid-only and no-self-grant guards, and its provenance row live in lib/billing/crew-grants.ts;
+// it runs FIRST here and outside the circle early-returns, since the circle link is optional and
+// most tiers have none.
+//
 // FAIL-SOFT POSTURE: syncTierCircleAccess never throws. A paid membership must never fail (nor a
 // webhook enter a retry loop) because the circle write hiccuped or the circle is full — the miss
 // is visible in the returned reason + the log, and self-heals on the next lifecycle event or on a
@@ -18,6 +26,7 @@
 // failures as ActionResult, since the operator can act on them.
 
 import { createAdminClient } from '@/lib/supabase/admin'
+import { syncCrewEntitlement, type CrewGrantReason } from '@/lib/billing/crew-grants'
 import { getSpaceById } from '@/lib/spaces/store'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
@@ -210,6 +219,10 @@ export interface TierCircleSyncInput {
 export interface TierCircleSyncResult {
   granted: boolean
   reason?: 'revoked' | 'no_circle' | 'already_member' | 'circle_full' | 'error' | 'circle_moved'
+  /** Did this lifecycle event create a Crew grant? (LIVE-223 — additive, never read for pricing.) */
+  crewGranted?: boolean
+  /** Why the Crew grant did or did not happen. See lib/billing/crew-grants.ts. */
+  crewReason?: CrewGrantReason
 }
 
 /**
@@ -226,10 +239,19 @@ export interface TierCircleSyncResult {
 export async function syncTierCircleAccess(
   input: TierCircleSyncInput,
 ): Promise<TierCircleSyncResult> {
+  // ── CREW ENTITLEMENT (LIVE-223), FIRST AND UNCONDITIONALLY ────────────────────────────────────
+  // This engine is the ONE seam every membership lifecycle site already calls, which is exactly
+  // why the Crew grant rides here rather than being copied into six call sites that would then
+  // drift. It runs BEFORE the circle work and outside its early returns on purpose: the circle
+  // link is optional (every live tier today has `circle_id` null), so anything gated behind
+  // "does this tier feed a circle?" would grant Crew to nobody. Non-throwing by contract, and its
+  // outcome is reported beside the circle outcome rather than replacing it.
+  const crew = await syncCrewEntitlement(input)
+
   try {
     if (input.action === 'revoke') {
       await revokeCircleRows(input.profileId, input.tierId)
-      return { granted: false, reason: 'revoked' }
+      return { granted: false, reason: 'revoked', crewGranted: false, crewReason: crew.reason }
     }
 
     // Tier switch: undo the previous tier's grant before granting the new tier's circle.
@@ -245,7 +267,12 @@ export async function syncTierCircleAccess(
     // and an unlinked tier is the normal no-op.
     const circleId = (tier?.circle_id as string | null) ?? null
     if (!tier || tier.space_id !== input.spaceId || !circleId) {
-      return { granted: false, reason: 'no_circle' }
+      return {
+        granted: false,
+        reason: 'no_circle',
+        crewGranted: crew.granted,
+        crewReason: crew.reason,
+      }
     }
 
     // TENANCY RE-CHECK, the second half of the cross-tenant guard. The check above proves the TIER
@@ -272,12 +299,18 @@ export async function syncTierCircleAccess(
         tierId: input.tierId,
         circleId,
       })
-      return { granted: false, reason: 'circle_moved' }
+      return {
+        granted: false,
+        reason: 'circle_moved',
+        crewGranted: crew.granted,
+        crewReason: crew.reason,
+      }
     }
-    return await grantCircleRow(circleId, input.profileId, input.tierId)
+    const circleOutcome = await grantCircleRow(circleId, input.profileId, input.tierId)
+    return { ...circleOutcome, crewGranted: crew.granted, crewReason: crew.reason }
   } catch (err) {
     console.error('[tier-circle] syncTierCircleAccess failed', input.action, err)
-    return { granted: false, reason: 'error' }
+    return { granted: false, reason: 'error', crewGranted: crew.granted, crewReason: crew.reason }
   }
 }
 

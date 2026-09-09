@@ -212,7 +212,14 @@ export const FINGERPRINTS = [
   // NOT an admin module: the pricing catalog, reached only through `surface-summary-card.tsx`'s
   // allowance nudge. It was 8 modules and ~160 KB of plans/tiers/keys on every member page, to
   // render a meter only an operator sees. This row is what notices if that door reopens.
-  { text: 'Preview only, and be a Collaborator on other Spaces for free', source: 'lib/pricing/feature-meters.ts' },
+  // Re-pointed 2026-09-09 (ADR-1294). TWO needles died here in one day, and the second death is the
+  // instructive one. The original was the free collaborator allowance text, and raising that cap from
+  // 0 to 1 rewrote the sentence. The replacement was a COMMENT, which reads fine in source and does
+  // not exist in a built chunk at all - so the gate would have answered "not in the shell" no matter
+  // what the shell contained, which is the silent-pass failure this whole file exists to prevent.
+  // A needle must be a runtime string that SURVIVES minification. ALLOWANCE_NUDGE is an exported
+  // const rendered as meter copy, and two tests already pin its text, so a reword cannot land quietly.
+  { text: 'Nearly full. Move up a plan for a higher allowance.', source: 'lib/pricing/feature-meters.ts' },
 ]
 
 /** The POSITIVE CONTROL. Shell chrome copy that is unconditionally in the shell's eager JS. If this

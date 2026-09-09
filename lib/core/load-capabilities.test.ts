@@ -132,13 +132,15 @@ describe('anonymous', () => {
 describe('a signed-in member', () => {
   beforeEach(() => viewer(MEMBER))
 
-  it('manages their own account and may draft the free-first entities, but not a practice', async () => {
+  it('manages their own account and may draft every entity, practices included', async () => {
+    // practice.create was the last tier-read in the creation block and it opened in LIVE-222:
+    // a free member drafts all four, and how many they PUBLISH is the `practice_publish` meter.
     const caps = await getGlobalCapabilities()
     expect(caps.has('account.manage')).toBe(true)
     expect(caps.has('event.create')).toBe(true)
     expect(caps.has('circle.create')).toBe(true)
     expect(caps.has('journey.create')).toBe(true)
-    expect(caps.has('practice.create')).toBe(false)
+    expect(caps.has('practice.create')).toBe(true)
     expect(caps.has('admin.access')).toBe(false)
   })
 
@@ -229,7 +231,7 @@ describe('a host', () => {
     expect(caps.has('circle.post')).toBe(true)
   })
 
-  it('edits the event, practice and journey they own, and may create a practice on the Crew tier', async () => {
+  it('edits the event, practice and journey they own, and creates a practice like anyone signed in', async () => {
     reply('events', { data: { host_id: 'p-host', scope_type: 'public', scope_id: null, space_id: null, posted_by_profile_id: null, status: 'published' } })
     expect((await getEventCapabilities('e1')).has('event.editSettings')).toBe(true)
     reply('practices', { data: { created_by: 'p-host' } })

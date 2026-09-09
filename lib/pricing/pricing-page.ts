@@ -130,8 +130,9 @@ export interface TierAddonCell {
 
 /** One commercial tier column of the pricing table. Pure data the page renders. */
 export interface PricingTier {
-  /** A stable id for keys + JSON-LD (`free` / `business` / `collective` / `nonprofit` / `independent`). */
-  id: 'free' | 'business' | 'nonprofit' | 'collective' | 'independent'
+  /** A stable id for keys + JSON-LD (`free` / `business` / `collective` / `nonprofit`). Narrower than
+   *  SpacePlan on purpose: this is the ADVERTISED ladder, and Independent is not on it (LIVE-227). */
+  id: 'free' | 'business' | 'nonprofit' | 'collective'
   /** The display name. */
   name: string
   /** The rung identity in a few words (the card's one-liner, e.g. "Own your audience."). */
@@ -199,7 +200,6 @@ const TIER_ITEM: Record<Exclude<PricingTier['id'], 'free'>, CatalogItemKey> = {
   business: 'business_base',
   collective: 'collective_base',
   nonprofit: 'nonprofit_seat',
-  independent: 'independent_base',
 }
 
 /** The core-included summary per tier. COPY ONLY, and deliberately free of any number: every figure a
@@ -214,8 +214,6 @@ const TIER_CORE_INCLUDED: Record<PricingTier['id'], string> = {
     'Everything in Business, plus team seats, automations, membership-included tickets, multiple pipelines, and hosting events with Collaborator Spaces.',
   nonprofit:
     'The full Collective toolkit for verified nonprofits, with donations built in. Flat, never per seat.',
-  independent:
-    'Everything in Collective, plus your own brand and custom domain. Standalone, off the network, so there is no network take-rate at all.',
 }
 
 /** The CTA per tier. Copy + route only. */
@@ -224,11 +222,10 @@ const TIER_CTA: Record<PricingTier['id'], { label: string; href: string }> = {
   business: { label: 'Start a Space', href: '/spaces' },
   collective: { label: 'Start a Space', href: '/spaces' },
   nonprofit: { label: 'Get verified', href: '/spaces' },
-  independent: { label: 'Start a Space', href: '/spaces' },
 }
 
-/** Build the FIVE public Space tier columns: Free Space FIRST (the first level of Space, where the core
- *  value lives), then Business, Collective, Non Profit, and Independent.
+/** Build the FOUR public Space tier columns: Free Space FIRST (the first level of Space, where the core
+ *  value lives), then Business, Collective, and Non Profit.
  *
  *  DERIVED FROM THE GRID (Phase 5, ADR-916). The column order, the labels, the taglines, the who-it-is-for
  *  lines, and every take-rate now come from lib/pricing/pricing-grid.ts spaceOfferings, the one derived
@@ -237,10 +234,12 @@ const TIER_CTA: Record<PricingTier['id'], { label: string; href: string }> = {
  *  still come through the catalog here (the ladder lines need cents at both intervals, which an Offering
  *  does not carry), from the SAME catalog the offerings are priced from.
  *
- *  INDEPENDENT IS DISPLAYED. The old comment here said it was not, and then returned it anyway, so the
- *  answer-engine corpus published a tier the comment claimed was hidden. The ruling (Phase 5): Independent
- *  is a real, published tier on every PUBLIC surface, exactly as /pricing already shows it; what it is not
- *  is an upgrade path offered inside the app, which is the in-app plan ladder's own, separate decision.
+ *  INDEPENDENT IS NOT DISPLAYED (owner ruling 2026-09-08, LIVE-227). It is still a real, sellable tier
+ *  with its catalog item and its Stripe prices intact; it is sold by hand, because the standalone
+ *  white-label site it is sold on is not finished. There is nothing to do here to keep it off: this
+ *  function maps spaceOfferings, which maps the advertised ladder, so the columns follow the one list in
+ *  lib/pricing/display.ts. The records above are keyed to that same narrower id union, so re-adding the
+ *  tier to the ladder without a decision fails to typecheck rather than quietly publishing it.
  *
  *  PURE. `values` defaults to the code take-rates; a caller with the operator's resolved config (the
  *  llms.txt routes) passes them in, so an edit at /admin/pricing moves the published ladder too. */

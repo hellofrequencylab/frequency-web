@@ -196,13 +196,13 @@ describe('label + readout formatting', () => {
     // A tier whose allowance is unlimited → the unlimited form.
     expect(allowanceReadout('space_crm', 'business', 12)).toBe('12 contacts used (unlimited)')
     // A non-metered feature has no readout.
-    expect(allowanceReadout('space_whitelabel', 'free', 3)).toBeNull()
+    expect(allowanceReadout('space_memberships', 'free', 3)).toBeNull()
   })
 })
 
 describe('read helpers', () => {
   it('featureMeter returns null for a non-metered / unknown feature', () => {
-    expect(featureMeter('space_whitelabel')).toBeNull()
+    expect(featureMeter('space_memberships')).toBeNull()
     expect(featureMeter('made-up')).toBeNull()
   })
 
@@ -221,7 +221,7 @@ describe('read helpers', () => {
     expect(allowanceAt('space_crm', 'free')).toBe(FREE_CRM) // the free CRM allowance (ADR-552 Phase 3)
     expect(allowanceAt('space_crm', 'business')).toBeNull() // unlimited
     expect(allowanceAt('space_crm', 'nonprofit')).toBeNull() // maps to business rung (unlimited)
-    expect(allowanceAt('space_whitelabel', 'free')).toBeNull() // not metered
+    expect(allowanceAt('space_memberships', 'free')).toBeNull() // not metered
   })
 })
 
@@ -239,8 +239,8 @@ describe('the gauge as upsell — nearAllowanceLimit + the one shared nudge line
 
   it('never trips on an unlimited tier, a zero allowance, or a non-metered feature', () => {
     expect(nearAllowanceLimit('space_crm', 'business', 1_000_000)).toBe(false) // unlimited
-    expect(nearAllowanceLimit('space_automation', 'free', 5)).toBe(false) // zero allowance, nothing to fill
-    expect(nearAllowanceLimit('space_whitelabel', 'free', 999)).toBe(false) // not metered
+    expect(nearAllowanceLimit('space_membership_tiers', 'free', 5)).toBe(false) // zero allowance, nothing to fill
+    expect(nearAllowanceLimit('space_memberships', 'free', 999)).toBe(false) // not metered
     expect(nearAllowanceLimit('made-up', 'free', 999)).toBe(false)
   })
 
@@ -267,7 +267,7 @@ describe('allowanceVerdict — the metered WRITE question, and the grandfather r
 
   it('an unlimited tier and a non-metered key are never enforced', () => {
     expect(allowanceVerdict('space_crm', 'business', 10_000_000, { gatesLive: true }).allowed).toBe(true)
-    expect(allowanceVerdict('space_whitelabel', 'free', 999, { gatesLive: true }).allowed).toBe(true)
+    expect(allowanceVerdict('space_memberships', 'free', 999, { gatesLive: true }).allowed).toBe(true)
     expect(allowanceVerdict('made-up', 'free', 999, { gatesLive: true }).allowed).toBe(true)
   })
 
@@ -327,7 +327,7 @@ describe('the enforcement seam — nothing charges / nothing hard-blocks while b
   })
 
   it('a non-metered or unknown feature is never blocked, even once billing is live', () => {
-    expect(withinAllowance('space_whitelabel', 'free', 999, { gatesLive: true })).toBe(true)
+    expect(withinAllowance('space_memberships', 'free', 999, { gatesLive: true })).toBe(true)
     expect(withinAllowance('made-up', 'free', 999, { gatesLive: true })).toBe(true)
   })
 

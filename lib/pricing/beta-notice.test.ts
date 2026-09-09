@@ -46,11 +46,10 @@ describe('targetForGate (a feature names the tier its REAL gate sits on)', () =>
   })
 
   it('a Collective feature resolves to the Collective tier', () => {
+    // `space_sms` and `space_revenue_splits` were the other two examples here until HYG-079 deleted
+    // both gates (neither feature is built, and neither gate had a call site), leaving automation as
+    // the only Collective floor on the map.
     expect(targetForGate(FEATURE_GATES.space_automation)).toEqual({ axis: 'plan', tier: 'collective' })
-    expect(targetForGate(FEATURE_GATES.space_sms)).toEqual({ axis: 'plan', tier: 'collective' })
-    // Revenue splits are the true Collective line of the collaboration ladder: hosting a few
-    // collaborators is Business, sharing money with them automatically is the engine.
-    expect(targetForGate(FEATURE_GATES.space_revenue_splits)).toEqual({ axis: 'plan', tier: 'collective' })
   })
 
   it('collaborator HOSTING resolves to Business, its new opening rung', () => {
@@ -65,7 +64,13 @@ describe('targetForGate (a feature names the tier its REAL gate sits on)', () =>
   })
 
   it('a DISABLED gate names nothing (it never binds, so nobody is using a paid tier through it)', () => {
-    expect(targetForGate(FEATURE_GATES.space_full_website)).toBeNull() // enabled: false
+    // `space_full_website` was the standing example until HYG-079 deleted it (a permanently disabled
+    // gate beside the pure entitlement key that does the real work). No gate on the code map carries
+    // `enabled: false` any more, so the disabled case is built the way an operator reaches it: a
+    // pricing_feature_gates override that switches a live gate off.
+    const disabled = mergeGate('space_memberships', { space_memberships: { enabled: false } })
+    expect(disabled?.enabled).toBe(false)
+    expect(targetForGate(disabled)).toBeNull()
   })
 
   it('a FREE floor names nothing, and neither does an absent gate', () => {

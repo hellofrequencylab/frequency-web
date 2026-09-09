@@ -125,6 +125,17 @@ vi.mock('./store', () => ({
 vi.mock('./entitlements', () => ({
   getSpaceCapabilities: async () => ({ canEditProfile: true, isAdmin: true }),
 }))
+// CREW ENTITLEMENT (LIVE-223) rides this same engine, but it is a SEPARATE concern with its own
+// tables and its own test (lib/billing/crew-grants.test.ts). Stubbed here so this file keeps
+// measuring the circle rule, and so the fake PostgREST above does not have to model four more
+// tables to answer questions it is not asking. The wiring itself is asserted in (h) below.
+const crewCalls: unknown[] = []
+vi.mock('@/lib/billing/crew-grants', () => ({
+  syncCrewEntitlement: (input: unknown) => {
+    crewCalls.push(input)
+    return Promise.resolve({ granted: false, reason: 'free_tier' })
+  },
+}))
 
 import {
   syncTierCircleAccess,
@@ -182,7 +193,7 @@ describe('syncTierCircleAccess: grant (the provenance stamp)', () => {
       tierId: TIER_A,
       action: 'grant',
     })
-    expect(res).toEqual({ granted: false, reason: 'already_member' })
+    expect(res).toMatchObject({ granted: false, reason: 'already_member' })
     // Nothing written: no insert, no provenance retag of the member's own row.
     expect(state.inserts).toHaveLength(0)
     expect(state.updates).toHaveLength(0)
@@ -203,7 +214,7 @@ describe('syncTierCircleAccess: grant (the provenance stamp)', () => {
       tierId: TIER_A,
       action: 'grant',
     })
-    expect(res).toEqual({ granted: false, reason: 'circle_full' })
+    expect(res).toMatchObject({ granted: false, reason: 'circle_full' })
     // The dormant row stays dormant; no reactivation UPDATE slipped past the cap.
     expect(state.updates.filter((u) => u.table === 'memberships')).toHaveLength(0)
     expect(state.circleMemberships.find((r) => r.id === 'dormant-mine')!.status).toBe('inactive')
@@ -232,7 +243,7 @@ describe('syncTierCircleAccess: grant (the provenance stamp)', () => {
       tierId: TIER_A,
       action: 'grant',
     })
-    expect(res).toEqual({ granted: false, reason: 'no_circle' })
+    expect(res).toMatchObject({ granted: false, reason: 'no_circle' })
     expect(state.inserts).toHaveLength(0)
   })
 
@@ -240,7 +251,7 @@ describe('syncTierCircleAccess: grant (the provenance stamp)', () => {
     state.insertError = { code: 'P0001', message: 'circle_full' }
     await expect(
       syncTierCircleAccess({ spaceId: SPACE, profileId: MEMBER, tierId: TIER_A, action: 'grant' }),
-    ).resolves.toEqual({ granted: false, reason: 'circle_full' })
+    ).resolves.toMatchObject({ granted: false, reason: 'circle_full' })
   })
 })
 
@@ -257,7 +268,7 @@ describe('syncTierCircleAccess: grant refuses a circle the space no longer owns'
       tierId: TIER_A,
       action: 'grant',
     })
-    expect(res).toEqual({ granted: false, reason: 'circle_moved' })
+    expect(res).toMatchObject({ granted: false, reason: 'circle_moved' })
     expect(state.inserts).toHaveLength(0)
     expect(state.circleMemberships).toHaveLength(0)
   })
@@ -270,7 +281,7 @@ describe('syncTierCircleAccess: grant refuses a circle the space no longer owns'
       tierId: TIER_A,
       action: 'grant',
     })
-    expect(res).toEqual({ granted: false, reason: 'circle_moved' })
+    expect(res).toMatchObject({ granted: false, reason: 'circle_moved' })
     expect(state.inserts).toHaveLength(0)
   })
 })
@@ -438,5 +449,29 @@ describe('(g) every membership lifecycle site is wired (source shape)', () => {
   it('cancelMembership stops the Stripe subscription (or the next webhook re-grants access)', () => {
     const src = read('lib/spaces/memberships.ts')
     expect(src).toContain('subscriptions.cancel')
+  })
+})
+
+describe('(h) the Crew entitlement rides the same engine (LIVE-223)', () => {
+  it('every sync call forwards the lifecycle input to syncCrewEntitlement', async () => {
+    crewCalls.length = 0
+    await syncTierCircleAccess({ spaceId: SPACE, profileId: MEMBER, tierId: TIER_A, action: 'grant' })
+    await syncTierCircleAccess({ spaceId: SPACE, profileId: MEMBER, tierId: TIER_A, action: 'revoke' })
+    expect(crewCalls).toEqual([
+      { spaceId: SPACE, profileId: MEMBER, tierId: TIER_A, action: 'grant' },
+      { spaceId: SPACE, profileId: MEMBER, tierId: TIER_A, action: 'revoke' },
+    ])
+  })
+
+  it('a tier with NO circle link still reports the crew outcome (the grant is not gated on it)', async () => {
+    state.tiers[0].circle_id = null
+    const res = await syncTierCircleAccess({
+      spaceId: SPACE,
+      profileId: MEMBER,
+      tierId: TIER_A,
+      action: 'grant',
+    })
+    expect(res.reason).toBe('no_circle')
+    expect(res.crewReason).toBe('free_tier')
   })
 })

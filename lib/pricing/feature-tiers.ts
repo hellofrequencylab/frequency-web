@@ -206,9 +206,10 @@ interface RawFeatureLadder {
 }
 
 /** Build the two Space rungs (free → the tier that UNLOCKS the feature) with per-feature copy. The unlock
- *  rung defaults to Business, but a deeper feature names its real floor (Collective for collaboration /
- *  automation / team / multi-pipeline, Independent for white-label) so the display ladder shows the rung
- *  where it actually turns on, never marking an intermediate paid rung as the unlock (ADR-552 / ADR-811). */
+ *  rung defaults to Business, but a deeper feature names its real floor (Collective for automation) so
+ *  the display ladder shows the rung where it actually turns on, never marking an intermediate paid rung
+ *  as the unlock (ADR-552 / ADR-811). The parameter still accepts any SpacePlan, including 'independent',
+ *  which no ladder names today: white-label is an entitlement key rather than a gate (HYG-079). */
 function spaceRungs(free: string, unlock: string, unlockTier: SpacePlan = 'business') {
   return [
     { tier: 'free', unlocks: free },
@@ -247,26 +248,6 @@ const RAW_FEATURE_LADDERS: Record<string, RawFeatureLadder> = {
       'Host up to 3 other businesses inside your space, and co-host events with Collaborator Spaces. They keep their own page and pay for their own space. Collective hosts unlimited and adds revenue splits.',
     ),
   },
-  space_revenue_splits: {
-    axis: 'plan',
-    minTier: 'collective',
-    title: 'Revenue splits with collaborators',
-    rungs: spaceRungs(
-      'Host collaborators and settle up between yourselves.',
-      'Split the money automatically on shared events and bookings, so a collective can actually run its shared business.',
-      'collective',
-    ),
-  },
-  space_sms: {
-    axis: 'plan',
-    minTier: 'collective',
-    title: 'Group SMS',
-    rungs: spaceRungs(
-      'Email and in-app notifications.',
-      'Text your members about the things that cannot wait for an inbox. Sending needs your carrier registration.',
-      'collective',
-    ),
-  },
   space_memberships: {
     axis: 'plan',
     minTier: 'business',
@@ -294,35 +275,7 @@ const RAW_FEATURE_LADDERS: Record<string, RawFeatureLadder> = {
       'Reserve event tickets for your own members, or for one membership tier, so your membership includes your events.',
     ),
   },
-  space_whitelabel: {
-    axis: 'plan',
-    minTier: 'independent',
-    title: 'Your own brand and domain',
-    rungs: spaceRungs(
-      'Your accent and logo on a Frequency address.',
-      'Your own custom domain and full branding, badge off.',
-      'independent',
-    ),
-  },
   // ── Space AI depth (plan axis; the Resonance Engine paid depth · ADR-387) ────────────────────────
-  space_crm_playbooks: {
-    axis: 'plan',
-    minTier: 'business',
-    title: 'Governed playbooks',
-    rungs: spaceRungs(
-      'Vera suggests moves; you approve each one by hand.',
-      'Governed auto-execution of the safe, reversible moves, plus advanced segments.',
-    ),
-  },
-  space_crm_resonance: {
-    axis: 'plan',
-    minTier: 'business',
-    title: 'Resonance view',
-    rungs: spaceRungs(
-      'Read-only scoring in the free wedge.',
-      'The resonance view: who is close by with your vibe, and who is going quiet.',
-    ),
-  },
   space_crm_resonance_ai: {
     axis: 'plan',
     minTier: 'business',
@@ -360,30 +313,18 @@ const RAW_FEATURE_LADDERS: Record<string, RawFeatureLadder> = {
       { tier: 'crew', unlocks: 'Vera without the daily cap.' },
     ],
   },
-  // ── Personal leadership (tier axis). Crew is the people who run the place, so these read as what Crew
-  // DOES, never as what a Member is missing. The free rung always names something real a Member can do.
-  // The `event_paid_tickets` and `personal_payouts` ladders are gone with their gates (ADR-914). A
-  // ladder here exists to DISPLAY a gate, and there is no longer a gate: selling and getting paid are
-  // free on every tier. What differs is the rate, which the pricing grid renders from the take-rate
-  // vector rather than from a per-feature ladder.
-  journey_library_list: {
-    axis: 'tier',
-    minTier: 'crew',
-    title: 'List a Journey in the library',
-    rungs: [
-      { tier: 'free', unlocks: 'Publish a Journey and share it by link.' },
-      { tier: 'crew', unlocks: 'List your Journeys in the public library, where the whole community finds them.' },
-    ],
-  },
-  entry_points: {
-    axis: 'tier',
-    minTier: 'crew',
-    title: 'Entry points',
-    rungs: [
-      { tier: 'free', unlocks: 'Share any page with a plain link.' },
-      { tier: 'crew', unlocks: 'Branded QR codes, short links, and print-ready flyers for the thing you run.' },
-    ],
-  },
+  // ── Personal leadership (tier axis) — THIS SECTION IS NOW EMPTY, and that is the finished state.
+  // A ladder here exists to DISPLAY a gate, and there is no longer a personal leadership gate to
+  // display. The `event_paid_tickets` and `personal_payouts` ladders went with their gates (ADR-914):
+  // selling and getting paid are free on every tier, and what differs is the rate, which the pricing
+  // grid renders from the take-rate vector rather than from a per-feature ladder.
+  //
+  // 🔴 `journey_library_list` and `entry_points` went the same way (HYG-079). Both gates were
+  // decorative, both were really enforced by a parallel ladder (canListJourneyInLibrary and the nav
+  // registry's `minAccess: 'crew'`), and a ladder that displays a gate nothing consults is a price
+  // list for a door that does not exist. What a free Member may LEAD is a quantity now, shown by the
+  // allowance ladders in feature-meters.ts (circle_host, journey_publish, practice_publish,
+  // event_create), which is the display this section used to duplicate in prose.
 }
 
 // ── The built ladder (labels + placeholder prices filled in) ────────────────────────────────────────

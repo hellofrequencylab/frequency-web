@@ -63,17 +63,20 @@ describe('loadout-strip math (computed from the catalog, never hardcoded)', () =
 })
 
 describe('pricing table model', () => {
-  it('leads with Free Space and carries every tier through Independent (owner, 2026-07)', () => {
+  it('leads with Free Space and carries the whole ADVERTISED ladder (owner, 2026-07 / LIVE-227)', () => {
     const tiers = pricingTiers(true)
-    expect(tiers.map((t) => t.id)).toEqual(['free', 'business', 'collective', 'nonprofit', 'independent'])
+    expect(tiers.map((t) => t.id)).toEqual(['free', 'business', 'collective', 'nonprofit'])
     // COLLECTIVE is the highlighted Space column: the DAWN 2 pricing reference the owner adopted
     // (design_handoff/dawn/ui_kits/marketing/pricing.html) crowns Crew + Collective "Best choice",
     // and no ADR names a different featured plan. Was `business` before the reference landed.
     expect(tiers.map((t) => [t.id, t.featured])).toContainEqual(['collective', true])
     expect(tiers.filter((t) => t.featured).map((t) => t.id)).toEqual(['collective'])
     // Phase 5 (ADR-916): the columns are DERIVED from pricing-grid spaceOfferings, so the table cannot
-    // hold a tier the grid does not, or omit one it does. Independent is displayed on every public
-    // surface; whether it is offered as an in-app UPGRADE is the plan ladder's own, separate call.
+    // hold a tier the grid does not, or omit one it does. Independent is on NO public surface (owner
+    // ruling 2026-09-08, LIVE-227): it is still sellable, by hand, and its catalog item and Stripe
+    // prices are untouched, but the standalone white-label site it is sold on is not finished, so it
+    // is not advertised anywhere.
+    expect(tiers.some((t) => (t.id as string) === 'independent')).toBe(false)
     for (const t of tiers) expect(t).not.toHaveProperty('preview')
   })
 
@@ -132,7 +135,6 @@ describe('pricing table model', () => {
     expect(lines.some((l) => l.includes('Free Space:'))).toBe(true)
     expect(lines.some((l) => l.includes('Business:'))).toBe(true)
     expect(lines.some((l) => l.includes('Non Profit:'))).toBe(true)
-    expect(lines.some((l) => l.includes('Independent:'))).toBe(true)
     // The member ladder is exactly Member (free) and Crew (ADR-878), and the citable summary says so.
     expect(lines.some((l) => l.includes('- Member: Free.'))).toBe(true)
     expect(lines.some((l) => l.includes('Crew:'))).toBe(true)
@@ -152,7 +154,6 @@ describe('the /pricing meta description fits in a search result', () => {
   it('stays under the SERP cut while still carrying the ladder', () => {
     const ladder = spaceOfferings({ values: PRICING_DEFAULTS, catalog: pricingCatalog(), betaActive: true })
       .filter((o) => o.monthlyCents > 0)
-      .filter((o) => o.tier !== 'independent')
       .map((o) => `${o.label} ${o.monthly}`)
       .join(', ')
     const description = `We take nothing on your own people, ever. Selling is free on every plan. ${ladder}.`

@@ -219,16 +219,6 @@ describe('feature gate ladder math (meetsGate)', () => {
     expect(meetsGate(gate, { plan: 'independent' })).toBe(true)
   })
 
-  it('revenue splits are the Collective line: free + business are below it', () => {
-    const gate = FEATURE_GATES.space_revenue_splits
-    expect(gate).toEqual({ axis: 'plan', minEntitlement: 'collective', enabled: true })
-    expect(meetsGate(gate, { plan: 'free' })).toBe(false)
-    expect(meetsGate(gate, { plan: 'business' })).toBe(false)
-    expect(meetsGate(gate, { plan: 'collective' })).toBe(true)
-    expect(meetsGate(gate, { plan: 'nonprofit' })).toBe(true)
-    expect(meetsGate(gate, { plan: 'independent' })).toBe(true)
-  })
-
   it('unknown / missing entitlement ranks lowest (default-deny)', () => {
     expect(meetsGate(tierGate, {})).toBe(false)
     expect(meetsGate(planGate, { plan: null })).toBe(false)
@@ -423,17 +413,25 @@ describe('pricing display (P3 — what the upgrade/plan surfaces render)', () =>
     expect(row.list).toBe('$15')
   })
 
-  it('spacePlanRows lists the WHOLE paid ladder, in order (ADR-811)', () => {
+  it('spacePlanRows lists the WHOLE ADVERTISED ladder, in order (ADR-811, LIVE-227)', () => {
     // betaActive is explicit now (ADR-880): the ladder resolves the way the checkout charges.
     const rows = spacePlanRows(PRICING_DEFAULTS, true)
-    expect(rows.map((r) => r.key)).toEqual(['business', 'collective', 'nonprofit', 'independent'])
-    expect(rows.map((r) => r.label)).toEqual(['Business', 'Collective', 'Non Profit', 'Independent'])
-    // every paid plan carries an annual line (two months free)
+    // 🔴 THE ADVERTISED LADDER, NOT EVERY PAID PLAN. Independent is still a real, sellable, paid tier
+    // with its catalog item and Stripe prices intact; the owner ruled on 2026-09-08 that it is sold by
+    // hand rather than published, because the standalone white-label site it is sold on is not
+    // finished. It has no display row for exactly that reason, and lib/pricing/display.ts
+    // ADVERTISED_SPACE_PLANS is the one list this and every other public surface derives from.
+    expect(rows.map((r) => r.key)).toEqual(['business', 'collective', 'nonprofit'])
+    expect(rows.map((r) => r.label)).toEqual(['Business', 'Collective', 'Non Profit'])
+    expect(rows.some((r) => r.key === 'independent')).toBe(false)
+    // every advertised plan carries an annual line (two months free)
     expect(rows.find((r) => r.key === 'business')?.annual).toBe('$290')
     expect(rows.find((r) => r.key === 'nonprofit')?.annual).toBe('$390')
-    expect(rows.find((r) => r.key === 'independent')?.annual).toBe('$2,490')
     // an anchor reads only where the config carries one
     expect(rows.find((r) => r.key === 'collective')?.list).toBe('$79')
     expect(rows.find((r) => r.key === 'nonprofit')?.list).toBeNull()
+    // NON-VACUITY: the tier the row set omits is still fully priced in the config it derives from, so
+    // this is a display decision and not a quietly deleted plan.
+    expect(PRICING_DEFAULTS.plan.independent.monthly_cents).toBe(24900)
   })
 })

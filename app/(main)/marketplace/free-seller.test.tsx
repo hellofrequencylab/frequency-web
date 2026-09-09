@@ -186,9 +186,13 @@ describe('the rate is the ladder: a free seller settles at the memberFree rung',
   })
 })
 
-describe('the five Crew feature gates are untouched (the repeat stays gated)', () => {
+describe('the Crew feature gates that remain are untouched (the repeat stays gated)', () => {
   it('keeps every one of them on the crew floor and enabled', () => {
-    for (const key of ['journey_library_list', 'entry_points', 'gamification_full', 'vault_cash_in', 'vera_unlimited']) {
+    // This named five until HYG-079 deleted `journey_library_list` and `entry_points`. Both were
+    // decorative: each was really enforced by a parallel ladder (canListJourneyInLibrary, and the nav
+    // registry's `minAccess: 'crew'` on /entry-points), so neither gate ever refused anyone. The three
+    // below DO enforce, through featureAllowed at a real call site, which is why they stay.
+    for (const key of ['gamification_full', 'vault_cash_in', 'vera_unlimited']) {
       expect(FEATURE_GATES[key], key).toEqual({ axis: 'tier', minEntitlement: 'crew', enabled: true })
     }
   })

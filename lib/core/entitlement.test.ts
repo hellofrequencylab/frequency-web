@@ -1,5 +1,14 @@
 import { describe, it, expect } from 'vitest'
-import { deriveTier, isPaid, canCashIn, ENTITLEMENT_TIERS, ENTITLEMENT_LABEL } from '@/lib/core/entitlement'
+import {
+  deriveTier,
+  isPaid,
+  canCashIn,
+  ENTITLEMENT_TIERS,
+  ENTITLEMENT_LABEL,
+  resolveEffectiveTier,
+  billedTier,
+  isEffectiveTier,
+} from '@/lib/core/entitlement'
 import { accessTo } from '@/lib/core/access-matrix'
 
 // THE ENTITLEMENT LADDER HAS EXACTLY TWO RUNGS: Member (free) and Crew (paid).
@@ -84,5 +93,77 @@ describe('entitlement feeds the access matrix (the ✋ gate tracks the tier)', (
   it('free member is gated on the Vault; Crew unlocks it', () => {
     expect(accessTo('vault', { loggedIn: true, role: 'member', tier: 'free' })).toBe('limited')
     expect(accessTo('vault', { loggedIn: true, role: 'member', tier: 'crew' })).toBe('full')
+  })
+})
+
+// ── GRANTED CREW: the union, and the wall between access and money (LIVE-223 / LIVE-224) ────────
+//
+// Crew is now also GRANTED by an active paid community membership. The grant lives in its own
+// provenance-stamped row (public.entitlement_grants), so the effective tier is a union of two
+// independently revocable facts. The pure half of that resolution lives here; the DB half is
+// lib/billing/crew-grants.test.ts, and the take-rate wall is lib/billing/granted-crew-take-rate.test.ts.
+
+describe('resolveEffectiveTier: stripe_active OR EXISTS(active grant)', () => {
+  it('a free member with no grant is free', () => {
+    expect(resolveEffectiveTier('free', false)).toEqual({
+      stripeTier: 'free',
+      granted: false,
+      tier: 'free',
+    })
+  })
+
+  it('a free member WITH an active grant reads as crew', () => {
+    expect(resolveEffectiveTier('free', true)).toEqual({
+      stripeTier: 'free',
+      granted: true,
+      tier: 'crew',
+    })
+  })
+
+  it('a Stripe crew is crew with or without a grant - the grant only ever RAISES', () => {
+    expect(resolveEffectiveTier('crew', false).tier).toBe('crew')
+    expect(resolveEffectiveTier('crew', true).tier).toBe('crew')
+    // ...and revoking the grant cannot take away what they bought.
+    expect(resolveEffectiveTier('crew', false).stripeTier).toBe('crew')
+  })
+
+  it('null / undefined / unknown labels default to free, and a grant still lifts them', () => {
+    expect(resolveEffectiveTier(null, false).tier).toBe('free')
+    expect(resolveEffectiveTier(undefined, false).tier).toBe('free')
+    expect(resolveEffectiveTier('platinum', false).tier).toBe('platinum')
+    expect(resolveEffectiveTier('platinum', false).tier).not.toBe('crew')
+    expect(resolveEffectiveTier(null, true).tier).toBe('crew')
+  })
+
+  it('only a real boolean true is a grant (a truthy accident is not)', () => {
+    expect(resolveEffectiveTier('free', 1 as unknown as boolean).tier).toBe('free')
+    expect(resolveEffectiveTier('free', 'yes' as unknown as boolean).tier).toBe('free')
+  })
+})
+
+describe('billedTier: the rung money reads', () => {
+  it('collapses an EffectiveTier to its STRIPE rung, never its resolved tier', () => {
+    const granted = resolveEffectiveTier('free', true)
+    expect(granted.tier).toBe('crew')
+    expect(billedTier(granted)).toBe('free')
+    expect(isPaid(billedTier(granted))).toBe(false)
+  })
+
+  it('passes a bare tier string through exactly like deriveTier', () => {
+    for (const raw of ['free', 'crew', 'platinum', null, undefined]) {
+      expect(billedTier(raw)).toBe(deriveTier(raw as never))
+    }
+  })
+
+  it('a Stripe crew bills as crew', () => {
+    expect(billedTier(resolveEffectiveTier('crew', true))).toBe('crew')
+    expect(isPaid(billedTier(resolveEffectiveTier('crew', true)))).toBe(true)
+  })
+
+  it('isEffectiveTier tells a record from a string', () => {
+    expect(isEffectiveTier(resolveEffectiveTier('free', true))).toBe(true)
+    expect(isEffectiveTier('crew')).toBe(false)
+    expect(isEffectiveTier(null)).toBe(false)
+    expect(isEffectiveTier({ tier: 'crew' })).toBe(false) // no stripeTier: not the record
   })
 })
