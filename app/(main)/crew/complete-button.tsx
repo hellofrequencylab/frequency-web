@@ -3,7 +3,6 @@
 import { useTransition } from 'react'
 import { CheckCircle, Loader2, RotateCcw } from 'lucide-react'
 import { logCompletion } from './actions'
-import { CrewGateButton } from '@/components/crew/upgrade-lightbox'
 import { useAchievementCheck } from '@/lib/use-achievement-check'
 
 interface CompleteButtonProps {
@@ -11,10 +10,13 @@ interface CompleteButtonProps {
   isDone: boolean
   isRepeatable: boolean
   requiresVerification: boolean
-  isCrew: boolean
 }
 
-export function CompleteButton({ taskId, isDone, isRepeatable, requiresVerification, isCrew }: CompleteButtonProps) {
+// 🔴 MARKING A TASK COMPLETE IS OPEN TO EVERY SIGNED-IN MEMBER (owner ruling 2026-09-09, ADR-1295).
+// It used to be Crew-gated, which left the earning side of the Quest shut while OWN-071 opened the
+// spending side: a member could be shown a Vault they could spend in, and no way to earn for it.
+// The Quest is the thing we all do together, so both halves are open. Do not re-add a tier check.
+export function CompleteButton({ taskId, isDone, isRepeatable, requiresVerification }: CompleteButtonProps) {
   const [isPending, startTransition] = useTransition()
   const { checkForUnlocks } = useAchievementCheck()
 
@@ -26,16 +28,6 @@ export function CompleteButton({ taskId, isDone, isRepeatable, requiresVerificat
   const label = requiresVerification
     ? isDone ? 'Submit again' : 'Submit for review'
     : isDone ? 'Log again' : 'Mark complete'
-
-  if (!isCrew) {
-    return (
-      <CrewGateButton
-        isCrew={false}
-        label={label}
-        buttonClassName="shrink-0 flex min-h-11 items-center gap-1 rounded-lg px-3 py-1 text-meta font-semibold bg-surface-elevated text-subtle hover:bg-primary-bg hover:text-primary-strong transition-colors motion-reduce:transition-none"
-      />
-    )
-  }
 
   function handleClick() {
     startTransition(async () => {

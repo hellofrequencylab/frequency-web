@@ -146,7 +146,6 @@ export async function CircleTasksSection({
                       isDone={isDone}
                       isRepeatable={task.isRepeatable}
                       requiresVerification={task.requiresVerification}
-                      isCrew={isCrew}
                     />
                     {!isDone && <ReleaseTaskButton taskId={task.id} />}
                   </>

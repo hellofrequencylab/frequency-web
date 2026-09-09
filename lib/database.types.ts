@@ -3668,6 +3668,58 @@ export type Database = {
         }
         Relationships: []
       }
+      entitlement_grants: {
+        Row: {
+          granted_at: string
+          granted_by_tier_id: string
+          id: string
+          profile_id: string
+          source: string
+          space_id: string
+          tier: string
+        }
+        Insert: {
+          granted_at?: string
+          granted_by_tier_id: string
+          id?: string
+          profile_id: string
+          source?: string
+          space_id: string
+          tier?: string
+        }
+        Update: {
+          granted_at?: string
+          granted_by_tier_id?: string
+          id?: string
+          profile_id?: string
+          source?: string
+          space_id?: string
+          tier?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "entitlement_grants_granted_by_tier_id_fkey"
+            columns: ["granted_by_tier_id"]
+            isOneToOne: false
+            referencedRelation: "space_membership_tiers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entitlement_grants_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entitlement_grants_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       entry_campaigns: {
         Row: {
           created_at: string
@@ -8577,31 +8629,31 @@ export type Database = {
           email_dispatches: boolean
           email_events: boolean
           email_lifecycle: boolean
+          email_matches: boolean
           email_mentions: boolean
           email_practice: boolean
-          email_matches: boolean
           freq_comments: string
           freq_dispatches: string
           freq_events: string
           freq_lifecycle: string
+          freq_matches: string
           freq_mentions: string
           freq_practice: string
-          freq_matches: string
           inapp_comments: boolean
           inapp_dispatches: boolean
           inapp_events: boolean
           inapp_lifecycle: boolean
+          inapp_matches: boolean
           inapp_mentions: boolean
           inapp_practice: boolean
-          inapp_matches: boolean
           profile_id: string
           push_comments: boolean
           push_dispatches: boolean
           push_events: boolean
           push_lifecycle: boolean
+          push_matches: boolean
           push_mentions: boolean
           push_practice: boolean
-          push_matches: boolean
           sms_dispatches: boolean
           sms_enabled: boolean
           sms_events: boolean
@@ -8616,31 +8668,31 @@ export type Database = {
           email_dispatches?: boolean
           email_events?: boolean
           email_lifecycle?: boolean
+          email_matches?: boolean
           email_mentions?: boolean
           email_practice?: boolean
-          email_matches?: boolean
           freq_comments?: string
           freq_dispatches?: string
           freq_events?: string
           freq_lifecycle?: string
+          freq_matches?: string
           freq_mentions?: string
           freq_practice?: string
-          freq_matches?: string
           inapp_comments?: boolean
           inapp_dispatches?: boolean
           inapp_events?: boolean
           inapp_lifecycle?: boolean
+          inapp_matches?: boolean
           inapp_mentions?: boolean
           inapp_practice?: boolean
-          inapp_matches?: boolean
           profile_id: string
           push_comments?: boolean
           push_dispatches?: boolean
           push_events?: boolean
           push_lifecycle?: boolean
+          push_matches?: boolean
           push_mentions?: boolean
           push_practice?: boolean
-          push_matches?: boolean
           sms_dispatches?: boolean
           sms_enabled?: boolean
           sms_events?: boolean
@@ -8655,31 +8707,31 @@ export type Database = {
           email_dispatches?: boolean
           email_events?: boolean
           email_lifecycle?: boolean
+          email_matches?: boolean
           email_mentions?: boolean
           email_practice?: boolean
-          email_matches?: boolean
           freq_comments?: string
           freq_dispatches?: string
           freq_events?: string
           freq_lifecycle?: string
+          freq_matches?: string
           freq_mentions?: string
           freq_practice?: string
-          freq_matches?: string
           inapp_comments?: boolean
           inapp_dispatches?: boolean
           inapp_events?: boolean
           inapp_lifecycle?: boolean
+          inapp_matches?: boolean
           inapp_mentions?: boolean
           inapp_practice?: boolean
-          inapp_matches?: boolean
           profile_id?: string
           push_comments?: boolean
           push_dispatches?: boolean
           push_events?: boolean
           push_lifecycle?: boolean
+          push_matches?: boolean
           push_mentions?: boolean
           push_practice?: boolean
-          push_matches?: boolean
           sms_dispatches?: boolean
           sms_enabled?: boolean
           sms_events?: boolean
@@ -12613,6 +12665,85 @@ export type Database = {
           },
         ]
       }
+      space_donations: {
+        Row: {
+          amount_cents: number
+          ask_id: string | null
+          created_at: string
+          currency: string
+          donor_profile_id: string | null
+          id: string
+          message: string | null
+          platform_fee_cents: number
+          refunded_at: string | null
+          source: string
+          space_id: string
+          status: string
+          stripe_checkout_session_id: string | null
+          stripe_payment_intent_id: string | null
+          succeeded_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          amount_cents: number
+          ask_id?: string | null
+          created_at?: string
+          currency?: string
+          donor_profile_id?: string | null
+          id?: string
+          message?: string | null
+          platform_fee_cents?: number
+          refunded_at?: string | null
+          source?: string
+          space_id: string
+          status?: string
+          stripe_checkout_session_id?: string | null
+          stripe_payment_intent_id?: string | null
+          succeeded_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          amount_cents?: number
+          ask_id?: string | null
+          created_at?: string
+          currency?: string
+          donor_profile_id?: string | null
+          id?: string
+          message?: string | null
+          platform_fee_cents?: number
+          refunded_at?: string | null
+          source?: string
+          space_id?: string
+          status?: string
+          stripe_checkout_session_id?: string | null
+          stripe_payment_intent_id?: string | null
+          succeeded_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "space_donations_ask_id_fkey"
+            columns: ["ask_id"]
+            isOneToOne: false
+            referencedRelation: "space_donation_asks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "space_donations_donor_profile_id_fkey"
+            columns: ["donor_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "space_donations_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       space_drip_enrollments: {
         Row: {
           contact_id: string
@@ -13563,6 +13694,50 @@ export type Database = {
             foreignKeyName: "space_service_types_space_id_fkey"
             columns: ["space_id"]
             isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      space_standing: {
+        Row: {
+          audience: number
+          care: number
+          commons: number
+          computed_at: string
+          gatherings_held: number
+          rooms: number
+          space_id: string
+          standing_score: number
+          upcoming_gatherings: number
+        }
+        Insert: {
+          audience?: number
+          care?: number
+          commons?: number
+          computed_at?: string
+          gatherings_held?: number
+          rooms?: number
+          space_id: string
+          standing_score?: number
+          upcoming_gatherings?: number
+        }
+        Update: {
+          audience?: number
+          care?: number
+          commons?: number
+          computed_at?: string
+          gatherings_held?: number
+          rooms?: number
+          space_id?: string
+          standing_score?: number
+          upcoming_gatherings?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "space_standing_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: true
             referencedRelation: "spaces"
             referencedColumns: ["id"]
           },
@@ -15847,7 +16022,12 @@ export type Database = {
         Returns: boolean
       }
       claim_space_plan_event: {
-        Args: { _event_created: string; _event_id?: string; _event_rank?: number; _space_id: string }
+        Args: {
+          _event_created: string
+          _event_id?: string
+          _event_rank?: number
+          _space_id: string
+        }
         Returns: boolean
       }
       community_library: {
@@ -16348,6 +16528,10 @@ export type Database = {
       }
       merge_profile_meta: {
         Args: { p_columns?: Json; p_patch: Json; p_profile_id: string }
+        Returns: Json
+      }
+      merge_profile_meta_path: {
+        Args: { p_patch: Json; p_path: string[]; p_profile_id: string }
         Returns: Json
       }
       merge_tags: { Args: { from_id: string; into_id: string }; Returns: Json }

@@ -93,3 +93,9 @@ create index if not exists space_donations_donor_idx
 -- Exactly like tips and space_donation_asks. Enabling RLS with no SELECT/INSERT/UPDATE/DELETE policy
 -- denies every direct client path, so the only way to a donation row is the gated server code.
 alter table public.space_donations enable row level security;
+
+-- Supabase ships ALTER DEFAULT PRIVILEGES IN SCHEMA public, so anon and authenticated already hold
+-- table grants the moment this table exists, and `revoke ... from public` does NOT remove them
+-- (ADR-959). This table is service-role only: the checkout writes it, the webhook settles it, and
+-- nothing client-side ever reads it. Registered `internal` in scripts/table-grants.txt.
+revoke all on table public.space_donations from anon, authenticated;

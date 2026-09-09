@@ -152,7 +152,6 @@ export async function QuestTasks() {
                       isDone={isDone}
                       isRepeatable={task.is_repeatable ?? false}
                       requiresVerification={task.requires_verification ?? false}
-                      isCrew={isCrew}
                     />
                   </div>
                 </div>

@@ -67,18 +67,7 @@ export const MIN_RPC_CALLS = 60
  *      added: '2026-09-05', reason: 'why it cannot be fixed in this change', owner: 'SCAN-xxx' }
  *  `kind` is optional (matches any). An entry that matches nothing fails the guard. */
 /** @type {{ file: string, table: string, column?: string | null, kind?: string | null, added: string, reason: string, owner: string }[]} */
-export const ALLOWLIST = [
-  {
-    file: 'lib/billing/crew-grants.ts',
-    table: 'entitlement_grants',
-    added: '2026-09-09',
-    reason:
-      'LIVE-223: the table is created by supabase/migrations/20270345002800_entitlement_grants.sql, ' +
-      'which has not been applied yet, so lib/database.types.ts cannot know it. The types are ' +
-      'regenerated on apply; delete this entry in the same pass (a stale entry fails this guard).',
-    owner: 'LIVE-223',
-  },
-]
+export const ALLOWLIST = []
 
 /** Walk `root` against `typesFile` and return the raw report. Pure: no exit, no console. */
 export function scanSchemaContract({ root = REPO_ROOT, typesFile } = {}) {
