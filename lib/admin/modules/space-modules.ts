@@ -12,6 +12,9 @@ import {
   CalendarDays,
   BadgeCheck,
   HeartHandshake,
+  GraduationCap,
+  Ticket,
+  DoorOpen,
   Store,
   QrCode,
   Radio,
@@ -196,18 +199,18 @@ export const SPACE_MODULES: readonly SpaceModule[] = [
   { id: 'space.calendar', label: 'Calendar', desc: 'Your events on a calendar, create a new one, and share a subscribe link.', Icon: CalendarDays, family: 'offerings', slot: 'engage', gate: { kind: 'feature', fn: 'events' }, featureKey: 'events', render: 'link', deepLink: (s) => `${base(s)}/settings/calendar`, order: 39.8, tier: 'primary', priority: 29, access: 'included' },
   // BOX 6 "Offerings and money" (ADR-846, reversing the ADR-544b split). ONE box for everything the space
   // charges for, opening the adaptive /settings/offerings surface that already stacks whichever services
-  // apply. The commerce services stay first-class rows nested inside it, each still opening its own
-  // anchored section or `?panel=` workspace. A shell box (gate `always`): the box is the AREA, and the
-  // per-service function gates live on the tools inside it.
-  { id: 'space.offerings', label: 'Offerings and money', desc: 'Everything your space charges for: booking, memberships, and donations.', Icon: HandCoins, family: 'offerings', slot: 'engage', gate: { kind: 'always' }, featureKey: null, render: 'panel', deepLink: (s) => `${base(s)}/settings/offerings`, order: 39.9, tier: 'primary', priority: 29.5, access: 'included' },
+  // apply. The six commerce services stay first-class rows nested inside it, each still opening its own
+  // anchored section or `?panel=` workspace, so nothing moved and nothing was lost. A shell box (gate
+  // `always`): the box is the AREA, and the per-service function gates live on the tools inside it.
+  { id: 'space.offerings', label: 'Offerings and money', desc: 'Everything your space charges for: booking, memberships, donations, enrollment, tickets, and check in.', Icon: HandCoins, family: 'offerings', slot: 'engage', gate: { kind: 'always' }, featureKey: null, render: 'panel', deepLink: (s) => `${base(s)}/settings/offerings`, order: 39.9, tier: 'primary', priority: 29.5, access: 'included' },
   { id: 'space.booking', label: 'Booking', desc: 'Set the weekly times members can book, and see the calendar.', Icon: CalendarClock, family: 'offerings', slot: 'engage', gate: { kind: 'feature', fn: 'availability' }, featureKey: 'availability', render: 'panel', deepLink: (s) => `${base(s)}/settings/offerings#availability`, order: 40, tier: 'primary', priority: 30, access: 'freemium', freeNote: '15 bookings/mo free, then unlimited', parent: 'space.offerings' },
   { id: 'space.memberships', label: 'Memberships', desc: 'The tiers members can join, and who has joined.', Icon: BadgeCheck, family: 'offerings', slot: 'engage', gate: { kind: 'feature', fn: 'memberships' }, featureKey: 'memberships', render: 'panel', deepLink: (s) => `${base(s)}/settings/offerings#memberships`, order: 45, tier: 'primary', priority: 31, access: 'freemium', freeNote: 'Selling memberships comes with Business · 0% on your own people, always', parent: 'space.offerings' },
   { id: 'space.donations', label: 'Donations', desc: 'The fund, a short description, and the amounts members can pick.', Icon: HeartHandshake, family: 'offerings', slot: 'engage', gate: { kind: 'feature', fn: 'donations' }, featureKey: 'donations', render: 'panel', deepLink: (s) => `${base(s)}/settings/offerings#donations`, order: 50, tier: 'primary', priority: 32, access: 'included', freeNote: '0% on your own people, always', parent: 'space.offerings' },
-  // Enrollment, Tickets and Check in used to be three more rows in this box. All three were retired
-  // (LIVE-226): each named a second door onto a tool the space already had, so the box listed six products
-  // where there were three. Enrollment is a Journey plus the Memberships roster; tickets are the EVENT
-  // ticket flow; checking someone in at the door is an event mechanic. Their function keys are retired in
-  // lib/spaces/functions.ts, and the tools that absorbed them (Journeys, Calendar) keep their own rows.
+  // Enrollment deep-links to the ANCHORED section on the unified Offerings surface, exactly like its five
+  // commerce siblings. The standalone /settings/enroll route is now a bare `redirect()` into that anchor
+  // (its real body lives in settings/enroll/section.tsx, composed by Offerings), so pointing at it cost a
+  // server redirect hop for the same destination.
+  { id: 'space.enroll', label: 'Enrollment', desc: 'The program details, and who has enrolled.', Icon: GraduationCap, family: 'offerings', slot: 'engage', gate: { kind: 'feature', fn: 'enroll' }, featureKey: 'enroll', render: 'panel', deepLink: (s) => `${base(s)}/settings/offerings#enroll`, order: 55, tier: 'primary', priority: 33, access: 'included', parent: 'space.offerings' },
   // BOX 8 "Content" (ADR-846): ONE box for everything the space teaches, hosts, and stores. It opens the
   // Manage hub's Content & Programs area, where all five libraries already render as cards. Practices,
   // Journeys, Circles, Airwaves, and Loom Studio are its tools, each still opening its own manager.
@@ -231,6 +234,8 @@ export const SPACE_MODULES: readonly SpaceModule[] = [
   // Plan and billing — it is the growth play, not another content library. Collective-plan feature: the
   // premium badge + freeNote mark the plan story (presentation only; the surface gates server-side).
   { id: 'space.program', label: 'Program', desc: 'Run your model as a Program: your flagship circle becomes the blueprint, and members start Chapters anywhere.', Icon: Network, family: 'growth', slot: 'engage', gate: { kind: 'feature', fn: 'program' }, featureKey: 'program', render: 'link', deepLink: (s) => `${base(s)}/settings/program`, order: 57.7, tier: 'primary', priority: 33.8, access: 'premium', freeNote: 'Included with Collective', parent: 'space.content' },
+  { id: 'space.tickets', label: 'Tickets', desc: 'Free or RSVP ticket tiers, and who has reserved a spot.', Icon: Ticket, family: 'offerings', slot: 'engage', gate: { kind: 'feature', fn: 'tickets' }, featureKey: 'tickets', render: 'panel', deepLink: (s) => `${base(s)}/settings/offerings#tickets`, order: 60, tier: 'primary', priority: 34, access: 'freemium', freeNote: '50 tickets, 1 event free, then unlimited', parent: 'space.offerings' },
+  { id: 'space.checkin', label: 'Check in', desc: 'Show the door code, and see who checked in.', Icon: DoorOpen, family: 'offerings', slot: 'engage', gate: { kind: 'feature', fn: 'checkin' }, featureKey: 'checkin', render: 'panel', deepLink: (s) => `${base(s)}/settings/offerings#checkin`, order: 65, tier: 'primary', priority: 35, access: 'included', parent: 'space.offerings' },
   // Shop is now a first-class GATEABLE feature keyed on the `shop` function (SpaceFunctionKey), so it can
   // be turned off, role-gated, and entitlement-gated (the `storefront` tier key) like every sibling
   // offering — it is no longer the always-on outlier. Free Spaces can sell; a paid plan lowers fees.
