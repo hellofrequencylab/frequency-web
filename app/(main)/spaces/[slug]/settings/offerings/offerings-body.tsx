@@ -9,6 +9,8 @@ import { resolveSpaceManageAccess } from '@/lib/spaces/entitlements'
 import { offeringSectionsForType } from '@/lib/spaces/offerings'
 import { isRetiredSpaceFunctionKey } from '@/lib/spaces/functions'
 import type { Space } from '@/lib/spaces/types'
+import { SpacePayoutSetupPrompt } from '@/components/billing/payout-setup-prompt'
+import type { PayoutChannel } from '@/lib/billing/payout-prompt'
 import { AvailabilitySection } from '../availability/section'
 import { MembershipsSection } from '../memberships/section'
 import { DonationsSection } from '../donations/section'
@@ -45,8 +47,19 @@ const SECTION_META: Record<string, { title: string; blurb: string }> = {
   },
   donations: {
     title: 'Donations',
-    blurb: 'Set up your fund and the amounts supporters can pick. Paid giving comes later.',
+    blurb: 'Set up your fund and the amounts supporters can pick.',
   },
+}
+
+/** Which MONEY PATH each offering section is (LIVE-233). Offerings is where an operator sets the
+ *  prices for three of the five paths, so it is where the one Connect prompt belongs: an operator who
+ *  prices a tier here and has no payout account used to get NO signal at all, and the join card
+ *  silently fell back to the free join path when a member tried to pay. A section with no money path
+ *  contributes nothing to the prompt. */
+const SECTION_CHANNEL: Record<string, PayoutChannel> = {
+  availability: 'bookings',
+  memberships: 'memberships',
+  donations: 'donations',
 }
 
 /** Bind an offering anchor to its section body. Each takes the resolved space + the preview flag. */
@@ -92,10 +105,26 @@ export async function OfferingsBody({ slug }: { slug: string }) {
   const sections = offeringSectionsForType(space.type).filter(
     (s) => !isRetiredSpaceFunctionKey(s.requiredFunction),
   )
+  // The money paths this surface covers, in the order the prompt declares them.
+  const channels = sections
+    .map((s) => SECTION_CHANNEL[s.anchor])
+    .filter((c): c is PayoutChannel => Boolean(c))
 
   return (
     <>
       {staffViewing && <StaffPreviewBanner spaceName={brandName} />}
+
+      {/* THE ONE CONNECT PROMPT (LIVE-233), for whichever money paths this space actually configures
+          here. Renders nothing when the owner's account is ready, and starts Stripe onboarding inline
+          rather than linking to a settings page the operator did not want to be on. An admin who is
+          not the OWNER is told who has to act, because the owner is who Stripe pays (ADR-819). */}
+      {channels.length > 0 && (
+        <div className="mb-8">
+          <Suspense fallback={null}>
+            <SpacePayoutSetupPrompt space={space} viewerProfileId={viewerProfileId} channels={channels} />
+          </Suspense>
+        </div>
+      )}
 
       {sections.length === 0 ? (
         <EmptyState

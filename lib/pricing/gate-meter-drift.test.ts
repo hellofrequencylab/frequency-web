@@ -197,4 +197,21 @@ describe('the walls are the three the strategy names, and nothing has crept in',
     expect(FEATURE_GATES).not.toHaveProperty('event_paid_tickets')
     expect(FEATURE_GATES).not.toHaveProperty('personal_payouts')
   })
+
+  it('🔴 the Quest loop is not gated anywhere on the map (ADR-1295)', () => {
+    // The owner ruling of 2026-09-09 (OWN-071), locked. The Quest is a side thing we all do
+    // together, so earning, spending and competing are open to every signed-in member. These two
+    // keys held the earn-only wall: `vault_cash_in` refused a free member the Gems they had already
+    // earned, and `gamification_full` refused them the board.
+    expect(FEATURE_GATES).not.toHaveProperty('vault_cash_in')
+    expect(FEATURE_GATES).not.toHaveProperty('gamification_full')
+  })
+
+  it('the one personal gate left is a COST control, not a game rung (ADR-1295)', () => {
+    // `vera_unlimited` survives the ruling on its own reasoning: every request is inference spend,
+    // per user, with no natural ceiling. If a second tier-axis gate ever appears here, it needs the
+    // same argument, not the Quest's.
+    const tierGates = Object.entries(FEATURE_GATES).filter(([, g]) => g.axis === 'tier')
+    expect(tierGates.map(([k]) => k)).toEqual(['vera_unlimited'])
+  })
 })

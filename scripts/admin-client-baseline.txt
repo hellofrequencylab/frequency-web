@@ -467,9 +467,9 @@ lib/billing/crew-grants.ts
 lib/billing/manual-agreements.ts
 lib/billing/operator-seats.ts
 lib/billing/payout-prompt-resolve.ts
-lib/billing/space-donation-checkout.ts
 lib/billing/pricing-prices.ts
 lib/billing/space-beta-grant.ts
+lib/billing/space-donation-checkout.ts
 lib/billing/space-membership-checkout.ts
 lib/billing/space-plan-checkout.ts
 lib/billing/space-subscription-items.ts

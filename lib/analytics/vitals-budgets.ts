@@ -92,7 +92,6 @@ const OPERATOR_SEGMENTS = ['/manage', '/edit'] as const
  */
 const MARKETING_PREFIXES = [
   '/about',
-  '/beta',
   '/build',
   '/calm-down-fast',
   '/demo',
