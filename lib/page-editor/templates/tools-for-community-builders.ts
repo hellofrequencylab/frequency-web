@@ -160,7 +160,7 @@ export const spec: ArticleSpec = {
 
   close: {
     heading: 'Stop being the glue between five apps.',
-    body: 'Frequency Labs puts the front door, the gatherings, the feed, and the recognition in one Space. Join the Beta and get the toolkit.',
+    body: 'Frequency Labs puts the front door, the gatherings, the feed, and the recognition in one Space. Start a Space free and get the toolkit.',
   },
 }
 

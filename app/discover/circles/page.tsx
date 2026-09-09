@@ -207,7 +207,7 @@ export default async function DiscoverCirclesPage() {
 
       <BetaCTA
         heading="Your people are already gathering"
-        body="Join the North County San Diego beta to step inside a Circle, or start one of your own."
+        body="Joining is free, and it stays free. Step inside a Circle near you, or start one of your own."
       />
     </>
   )

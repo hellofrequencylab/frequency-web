@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { ArrowRight } from 'lucide-react'
 import { PageHero, Section, Card, Button } from '@/components/marketing/marketing-ui'
 import { Illustration, type IllustrationName } from '@/components/marketing/illustrations'
@@ -107,6 +108,40 @@ export default function StartPage() {
         <p className="mt-10 text-center text-body-sm text-subtle">
           Not sure yet? Any door works. You can change your mind, and most people end up doing a little of all three.
         </p>
+      </Section>
+
+      {/* 🔴 THE ORPHAN FIX (LIVE-256). These three pillar pages are in the sitemap and in llms.txt
+          and NOTHING on the site linked to them, so they carried their own SEO weight and earned no
+          internal link equity from anywhere. /start is the honest seat: a reader who is not ready to
+          pick a door has one of these questions, and this is a real answer rather than a nav dump.
+          Keep the labels as the reader's own words (CONTENT-VOICE §2a), not as page titles. */}
+      <Section tone="surface">
+        <h2 className="text-center font-display uppercase text-text text-page-title">
+          Not ready to pick a door?
+        </h2>
+        <p className="mx-auto mt-3 max-w-xl text-center text-body text-muted leading-relaxed">
+          Start with whichever one sounds like your week. Each is a plain answer, no signup.
+        </p>
+        <ul className="mx-auto mt-8 grid max-w-3xl gap-4 sm:grid-cols-3">
+          {[
+            { href: '/friendship-as-an-adult', label: 'It is hard to make friends as an adult', note: 'Why it gets harder after 30, and what actually works.' },
+            { href: '/how-to-be-more-social', label: 'I want to be more social', note: 'Without a new personality, and without drinking.' },
+            { href: '/calm-down-fast', label: 'I cannot switch off', note: 'What to do in the next five minutes when you are wired.' },
+          ].map((g) => (
+            <li key={g.href}>
+              <Link
+                href={g.href}
+                className="flex h-full flex-col rounded-card border border-border bg-surface p-5 transition-colors hover:border-border-strong"
+              >
+                <span className="text-body font-bold text-text">{g.label}</span>
+                <span className="mt-1 text-body-sm text-muted leading-relaxed">{g.note}</span>
+                <span className="mt-3 inline-flex items-center gap-1 text-body-sm font-semibold text-primary-strong">
+                  Read it <ArrowRight className="h-3.5 w-3.5" aria-hidden />
+                </span>
+              </Link>
+            </li>
+          ))}
+        </ul>
       </Section>
     </>
   )

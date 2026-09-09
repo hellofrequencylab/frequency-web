@@ -176,7 +176,7 @@ export const spec: ArticleSpec = {
 
   close: {
     heading: 'Calm is a habit, not a lucky night.',
-    body: 'Frequency hands you short practices and a room that meets on a rhythm, so coming down stops being a rescue. Join the Beta and find your calm.',
+    body: 'Frequency hands you short practices and a room that meets on a rhythm, so coming down stops being a rescue. Join free and find your calm.',
   },
 }
 

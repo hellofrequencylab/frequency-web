@@ -90,7 +90,7 @@ export const data: Data = {
         id: 'pr-hero', variant: 'image',
         eyebrow: 'Pricing',
         title: 'Your own people are always free.', titleAccent: 'always free',
-        subtitle: "Being a Member is free, forever, and so is selling. Browse Circles and Events, show up, earn Zaps, meet Vera, and run a ticketed event and get paid on day one. A business never pays for access to people either. What a paid plan buys is a lower rate on the sales the network introduces, and your own people are always free.",
+        subtitle: "People join free. Businesses host free. You pay when you start charging. Being a Member is free, forever: browse Circles and Events, show up, earn Zaps, meet Vera, and run a ticketed event and get paid on day one. A business never pays for access to people either. Once money is moving, a plan buys a lower rate on the sales the network introduces, and your own people are always free.",
         image: '/images/site/lab-lounge.jpg', focal: 'center',
         minHeight: 'screen',
         ctaPrimaryLabel: OPERATOR_CTA_LABEL, ctaPrimaryHref: OPERATOR_CTA_HREF,
@@ -362,7 +362,7 @@ export const data: Data = {
         items: [
           { icon: 'Shield', image: '', title: 'No card today', body: 'Being a Member is free. We do not ask for a card to join.', href: '' },
           { icon: 'Handshake', image: '', title: 'Leave anytime', body: 'No contracts, no lock-in. Switch plans or step away whenever you like.', href: '' },
-          { icon: 'Heart', image: '', title: 'Free stays free', body: 'The free Member tier is here to stay, and it sells. Paid plans only buy the rate down and lift the caps.', href: '' },
+          { icon: 'Heart', image: '', title: 'Free stays free', body: 'The free Member tier is here to stay, and it sells. You pay when you start charging, never to be here.', href: '' },
         ],
         tone: 'surface', width: 'default', align: 'left', layout: L,
       },

@@ -121,7 +121,7 @@ export default async function DiscoverPlacesPage() {
 
       <BetaCTA
         heading="Don't see your town yet?"
-        body="Frequency is growing one neighborhood at a time. Join the beta and help start the first Circle where you live."
+        body="Frequency is growing one neighborhood at a time. Join free and help start the first Circle where you live."
       />
     </>
   )

@@ -1,3 +1,4 @@
+import { BETA_CTA_HREF } from '@/lib/site'
 import Link from 'next/link'
 import Image from 'next/image'
 import { ArrowRight } from 'lucide-react'
@@ -161,7 +162,7 @@ export function LiveEventsBlock({ live, pad, vis = '' }: { live?: LiveData; pad?
                   {event.city && <> &middot; {event.city}</>}
                 </p>
               </div>
-              <Link href="/beta" className="flex items-center gap-1 text-body-sm font-semibold text-primary-strong hover:underline shrink-0">
+              <Link href={BETA_CTA_HREF} className="flex items-center gap-1 text-body-sm font-semibold text-primary-strong hover:underline shrink-0">
                 Join <ArrowRight className="w-3 h-3" />
               </Link>
             </div>

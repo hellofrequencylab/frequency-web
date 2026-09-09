@@ -269,7 +269,7 @@ export const spec: ArticleSpec = {
 
   close: {
     heading: 'A fuller social life is mostly one thing on the calendar, kept.',
-    body: 'Frequency gives you small local rooms that meet on a rhythm, so showing up stops being a nightly decision and new stops being scary. Join the Beta and pick your standing thing.',
+    body: 'Frequency gives you small local rooms that meet on a rhythm, so showing up stops being a nightly decision and new stops being scary. Join free and pick your standing thing.',
   },
 }
 

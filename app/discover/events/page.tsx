@@ -80,7 +80,7 @@ export default async function DiscoverEventsPage() {
             <p className="mt-6 text-body-lg text-muted leading-relaxed">
               We&rsquo;re just getting started in North County San Diego. The calendar is quiet
               for now, but quiet is how every standing time starts: one sunrise, one cold plunge,
-              one supper that someone put on the calendar. Join the beta and you&rsquo;ll be among
+              one supper that someone put on the calendar. Join free and you&rsquo;ll be among
               the first to know when the first one lands, and one of the faces the next person walks
               in and recognizes.
             </p>
@@ -173,7 +173,7 @@ export default async function DiscoverEventsPage() {
 
       <BetaCTA
         heading="See you there"
-        body="Join the North County San Diego beta: RSVP to gatherings, meet your neighbors, and help shape what we build next."
+        body="Joining is free. RSVP to gatherings, meet your neighbors, and help shape what we build next."
       />
     </>
   )

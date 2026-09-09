@@ -330,10 +330,11 @@ const nextConfig: NextConfig = {
       // load-bearing here: /onboarding/beta?seq=<slug>&persona=… must land on /join with the
       // same params or the audience funnel and persona pick are silently dropped.
       //
-      // /beta itself (the "Join the Beta" marketing page) is NOT redirected — the beta program
-      // is still real and that page still serves it. Only the per-audience splash slugs moved,
-      // and the route they lived on (app/(marketing)/beta/[slug]) is deleted, so this rule
-      // shadows nothing (the funnel-redirects guard would catch it if it did).
+      // /beta ITSELF is now redirected too (ADR-1294, LIVE-251). The page sold "free during the
+      // beta" for a window the owner closed on 2026-08-17, and under the core model free is
+      // PERMANENT, so its premise was gone rather than just its dates. It was also the
+      // second-highest priority URL in the sitemap, so an inbound link would 404 without this.
+      { source: '/beta', destination: '/start', permanent: true },
       { source: '/beta/:slug', destination: '/join/:slug', permanent: true },
       { source: '/onboarding/beta', destination: '/join', permanent: true },
       { source: '/onboarding/beta/:path*', destination: '/join/:path*', permanent: true },

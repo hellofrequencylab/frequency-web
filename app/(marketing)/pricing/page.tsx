@@ -130,7 +130,7 @@ export async function generateMetadata(): Promise<Metadata> {
   // here, and it is right to: a typed figure in this file is exactly the drift the derivation work
   // removed, and "0%" typed by hand is indistinguishable to the guard from "8%" typed by hand. Saying
   // it in words costs nothing and keeps the rule absolute rather than carved with an exception.
-  const description = `We take nothing on your own people, ever. Selling is free on every plan. ${ladder}.`
+  const description = `People join free. Businesses host free. You pay when you start charging, and never on your own people. ${ladder}.`
   return {
     title: 'Pricing: your own people are always free',
     description,
@@ -182,7 +182,7 @@ function pricingFaq(input: PricingGridInput): { q: string; a: string }[] {
   return [
     {
       q: 'How does Frequency pricing work?',
-      a: `Selling is free on every plan, and your own people are always free. What a paid plan buys is a lower rate on the sales the network introduces, plus the tools that build the list which takes that rate to zero. There are two ladders. Membership: ${member!.label} is free forever and already hosts events, takes RSVPs, sells tickets, and takes donations at ${networkRate(member!)}; ${crew!.label} is ${crew!.monthly} and takes that to ${networkRate(crew!)} with the caps off. Spaces: ${ladder} ${annualDiscountNote(input.values)}`,
+      a: `People join free. Businesses host free. You pay when you start charging. Nothing about being here costs anything: joining, Circles, events, a Space, a page, a roster. A plan is what you take once money is moving, and it buys a lower rate on the sales the network introduces plus the tools that build the list which takes that rate to zero. There are two ladders. Membership: ${member!.label} is free forever and already hosts events, takes RSVPs, sells tickets, and takes donations at ${networkRate(member!)}; ${crew!.label} is ${crew!.monthly} and takes that to ${networkRate(crew!)} with the caps off. Spaces: ${ladder} ${annualDiscountNote(input.values)}`,
     },
     {
       q: 'Can I run a Space for free?',
@@ -336,7 +336,7 @@ export default async function PricingPage() {
             <br className="hidden sm:block" /> <span className="text-primary">always free.</span>
           </>
         }
-        subtitle={`Selling is free on every plan. We take nothing on a follower, a member, a contact, or anyone who bought from you before. On a sale the network introduces we take a share, and every rung down the ladder makes it smaller. ${ladder}. The grid below is the proof.`}
+        subtitle={`People join free. Businesses host free. You pay when you start charging, and never on your own people: not a follower, not a member, not a contact, not anyone who bought from you before. On a sale the network introduces we take a share, and every rung down the ladder makes it smaller. ${ladder}. The grid below is the proof.`}
       >
         <Button href="/spaces">
           Start a Space <ArrowRight className="h-5 w-5" />
@@ -386,18 +386,33 @@ export default async function PricingPage() {
 
         <Section tone="ink" width="wide" className="spot relative overflow-hidden">
           <div className="relative z-10">
+            {/* 🔴 THE PAID ARGUMENT IS MONEY, NOT LIMITS (LIVE-253). This kicker read "The paid
+                plans buy the rate down and lift the caps", which argues that free is the small
+                version of paid. It is not: a free Space is the whole thing, and a plan is what
+                you take when money starts moving through it. The FAQ below has argued it
+                correctly since ADR-916 ("Selling memberships needs Business, because a membership
+                is a recurring promise to another person"); the band a reader meets FIRST now says
+                the same thing, instead of the opposite. */}
             <SectionHeading
               tone="ink"
               align="center"
               title="For your Space"
-              kicker="A Space is free for anyone to start, and a free Space sells. The paid plans buy the rate down and lift the caps."
+              kicker="A Space is free for anyone to start, and a free Space is a real Space. You pay when you start charging: memberships, campaigns, and revenue splits are what a plan turns on, and every rung down the ladder shrinks what we take on a sale the network introduced."
             />
             <div className="stagger grid items-center gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)_minmax(0,1fr)]">
               <PlanCard offering={business} tone="ink" />
               <PlanCard offering={collective} tone="ink" />
               <PlanCard offering={nonprofit} tone="ink" />
             </div>
+            {/* ⚠️ `PLAN_STORY.meters` still reads "Everything is included. Paid plans raise the
+                limits." (lib/pricing/pricing-page.ts:107), which is the limits argument this page
+                is being moved off. It is deliberately still INTERPOLATED rather than retyped here:
+                that module is the one spine every pricing surface reads, and a page that keeps its
+                own copy of a shared sentence is exactly the drift ADR-916 removed. The sentence
+                that leads the paragraph is the model; the meter line follows as the footnote it
+                actually is. When the spine is corrected upstream, this band moves with it. */}
             <p className="mx-auto mt-10 max-w-2xl text-center text-body leading-relaxed text-on-ink-muted">
+              You pay when you start charging, never to be here.{' '}
               {annualDiscountNote(input.values)} Never a wall in front of the transaction.{' '}
               {PLAN_STORY.meters} You keep 100% of your own bookings on every rung: the take-rate
               applies only to a sale the network introduced, and it drops as your plan rises. Once
@@ -463,6 +478,18 @@ export default async function PricingPage() {
           kicker="Every tool a growing business stitches together, and what each one costs on its own. On Frequency it is one login, one bill, one flat price."
         />
         <PricingComparison />
+        {/* 🔴 THE ORPHAN FIX (LIVE-256). /vs and its five comparison pages are in the sitemap and in
+            llms.txt, and nothing on the site linked to them, so they earned no internal link equity
+            from the one page whose readers are already comparing tools. This is the sensible seat:
+            the reader has just been shown what one plan replaces, and the next honest question is
+            how we differ from the thing they use today. */}
+        <p className="mt-10 text-center text-body text-muted">
+          Already using one of them?{' '}
+          <Link href="/vs" className="font-semibold text-primary-strong hover:underline">
+            See how Frequency compares, tool by tool
+          </Link>
+          .
+        </p>
       </Section>
 
       {/* The four brand promises that make it a collective, not a SaaS (ADR-811 §1a). Surface, not
@@ -504,9 +531,13 @@ export default async function PricingPage() {
         </div>
       </Section>
 
+      {/* The page's one-line thesis, and now the model's own sentence (LIVE-253). It used to read
+          "You pay for the parts of the business you actually run", which is a usage argument: it
+          invites the reader to work out which parts they use and how much that costs. The line
+          that is actually true is simpler and answers the question in four words. */}
       <Statement tone="canvas">
-        You pay for the parts of the business{' '}
-        <span className="text-primary-strong">you actually run.</span>
+        You pay when you{' '}
+        <span className="text-primary-strong">start charging.</span>
       </Statement>
 
       {/* Earned, not bought: roles never come from a checkout. */}
