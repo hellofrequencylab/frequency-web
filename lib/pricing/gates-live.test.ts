@@ -244,7 +244,6 @@ describe('featureGatesLive()', () => {
 
 describe('featureAllowed({ gatesLive })', () => {
   it('grants EVERYTHING while the gates are not live (billing off, or mid grace window)', async () => {
-    expect(await featureAllowed('vault_cash_in', { tier: 'free' }, { gatesLive: false })).toBe(true)
     expect(await featureAllowed('vera_unlimited', { tier: 'free' }, { gatesLive: false })).toBe(true)
     expect(await featureAllowed('space_memberships', { plan: 'free' }, { gatesLive: false })).toBe(true)
     expect(await featureAllowed('space_collaborators', { plan: 'free' }, { gatesLive: false })).toBe(true)
@@ -252,9 +251,10 @@ describe('featureAllowed({ gatesLive })', () => {
   })
 
   it('enforces the ladder once the gates ARE live', async () => {
-    // personal axis: free < crew (the whole ladder)
-    expect(await featureAllowed('vault_cash_in', { tier: 'free' }, { gatesLive: true })).toBe(false)
-    expect(await featureAllowed('vault_cash_in', { tier: 'crew' }, { gatesLive: true })).toBe(true)
+    // personal axis: free < crew (the whole ladder). `vera_unlimited` is the ONE personal gate left
+    // after ADR-1295 retired the two Quest gates, and it is a cost control rather than a game rung.
+    expect(await featureAllowed('vera_unlimited', { tier: 'free' }, { gatesLive: true })).toBe(false)
+    expect(await featureAllowed('vera_unlimited', { tier: 'crew' }, { gatesLive: true })).toBe(true)
     // plan axis: free < business < collective ~ nonprofit ~ independent
     expect(await featureAllowed('space_memberships', { plan: 'free' }, { gatesLive: true })).toBe(false)
     expect(await featureAllowed('space_memberships', { plan: 'business' }, { gatesLive: true })).toBe(true)
@@ -295,7 +295,13 @@ describe('SOURCE SHAPE: gating seams read featureGatesLive, charging seams read 
     '../events/ticket-tiers.ts',
     '../events/space-event-access.ts',
     '../events/ticket-space-access.ts',
-    './gamification-access.ts',
+    // 🔴 './gamification-access.ts' WAS HERE and left the list because it stopped being a gating
+    // seam, not because the guard was inconvenient (ADR-1295, owner ruling 2026-09-09, OWN-071).
+    // Its one gate call was `gamificationFullAllowed`, which wrapped featureAllowed('gamification_full');
+    // that gate is deleted and the Quest loop is open to every signed-in member. What is left in the
+    // module is the operator OVERRIDE (a per-profile / per-tier pin), which decides nothing about
+    // billing and reads no switch. A module with no gate call cannot be asserted to read the gate
+    // switch, and listing it would make this guard vacuous for that file.
     './tease-gate.ts',
   ]
 

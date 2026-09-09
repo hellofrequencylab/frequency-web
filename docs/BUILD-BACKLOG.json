@@ -114,7 +114,6 @@
             "LIVE-258",
             "LIVE-259",
             "LIVE-261",
-            "OWN-071",
             "PROG-R10",
             "LIVE-263",
             "PROG-R11"
@@ -11319,7 +11318,7 @@
     {
       "id": "OWN-071",
       "title": "Ruling: free members get the full Quest loop; uncapped Vera stays a Crew perk",
-      "status": "open",
+      "status": "done",
       "lane": "owner",
       "size": "S",
       "source": {

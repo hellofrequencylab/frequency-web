@@ -286,24 +286,11 @@ const RAW_FEATURE_LADDERS: Record<string, RawFeatureLadder> = {
     ),
   },
   // ── Personal membership (tier axis; free < crew) ─────────────────────────────────────────────────
-  vault_cash_in: {
-    axis: 'tier',
-    minTier: 'crew',
-    title: 'Spend your Gems',
-    rungs: [
-      { tier: 'free', unlocks: 'Earn Gems and watch them add up.' },
-      { tier: 'crew', unlocks: 'Spend your Gems and claim rewards from the Vault.' },
-    ],
-  },
-  gamification_full: {
-    axis: 'tier',
-    minTier: 'crew',
-    title: 'The full rewards loop',
-    rungs: [
-      { tier: 'free', unlocks: 'Earn Zaps and Gems as you go.' },
-      { tier: 'crew', unlocks: 'The full loop: streaks, seasons, and the whole rewards ladder.' },
-    ],
-  },
+  // 🔴 `vault_cash_in` and `gamification_full` LADDERS USED TO SIT HERE and are deliberately gone
+  // (ADR-1295, owner ruling 2026-09-09, OWN-071), with the gates they displayed. A ladder here exists
+  // to DISPLAY a gate, and there is no Quest gate left to display: earning, spending and competing
+  // are open to every signed-in member. The pricing-grid rows sourced from those two gates went in
+  // the same change rather than being left to render "Included" in every column.
   vera_unlimited: {
     axis: 'tier',
     minTier: 'crew',

@@ -181,8 +181,8 @@ describe('feature gate ladder math (meetsGate)', () => {
     // The hazard the /admin/pricing tier options dropped for: meetsGate ranks an unknown minimum at
     // 0, so `have >= 0` allows everyone. mergeGate validates against TIER_RANK first, so the retired
     // label loses its rank and the CODE default stands instead of the gate silently opening.
-    const merged = mergeGate('vault_cash_in', { vault_cash_in: { minEntitlement: 'supporter' } })
-    expect(merged).toEqual(FEATURE_GATES.vault_cash_in)
+    const merged = mergeGate('vera_unlimited', { vera_unlimited: { minEntitlement: 'supporter' } })
+    expect(merged).toEqual(FEATURE_GATES.vera_unlimited)
     expect(merged!.minEntitlement).toBe('crew')
     expect(meetsGate(merged!, { tier: 'free' })).toBe(false)
   })
@@ -254,7 +254,6 @@ describe('featureAllowed — OFF preserves current behavior', () => {
   it('grants EVERYTHING when billing is not live (the OFF invariant)', async () => {
     // Even a free account on a gated feature is allowed while billing is OFF.
     expect(await featureAllowed('space_memberships', { tier: 'free', plan: 'free' }, { gatesLive: false })).toBe(true)
-    expect(await featureAllowed('vault_cash_in', { tier: 'free' }, { gatesLive: false })).toBe(true)
     expect(await featureAllowed('vera_unlimited', { tier: 'free' }, { gatesLive: false })).toBe(true)
   })
 
@@ -262,13 +261,14 @@ describe('featureAllowed — OFF preserves current behavior', () => {
     expect(await featureAllowed('never_declared', { tier: 'free' }, { gatesLive: true })).toBe(true)
   })
 
-  // The exact gate wired into the Vault cash-in server action (app/(main)/crew/store/actions.ts, P3):
-  // OFF must preserve today's behavior (free can still be checked by canCashIn above, the gate is a
-  // no-op); when billing is live the gate applies the crew minimum (free blocked, paid allowed).
-  it('vault_cash_in: OFF is a no-op (free allowed); ON blocks free, allows crew+', async () => {
-    expect(await featureAllowed('vault_cash_in', { tier: 'free' }, { gatesLive: false })).toBe(true)
-    expect(await featureAllowed('vault_cash_in', { tier: 'free' }, { gatesLive: true })).toBe(false)
-    expect(await featureAllowed('vault_cash_in', { tier: 'crew' }, { gatesLive: true })).toBe(true)
+  // 🔴 `vault_cash_in` USED TO BE DEMONSTRATED HERE and is deliberately gone (ADR-1295, owner ruling
+  // 2026-09-09, OWN-071), along with the `redeemItem` guard it fed. `vera_unlimited` is the surviving
+  // personal gate and carries the same demonstration: it is a COST control (real inference spend per
+  // user, no natural ceiling), not a rung of the Quest.
+  it('vera_unlimited: OFF is a no-op (free allowed); ON blocks free, allows crew+', async () => {
+    expect(await featureAllowed('vera_unlimited', { tier: 'free' }, { gatesLive: false })).toBe(true)
+    expect(await featureAllowed('vera_unlimited', { tier: 'free' }, { gatesLive: true })).toBe(false)
+    expect(await featureAllowed('vera_unlimited', { tier: 'crew' }, { gatesLive: true })).toBe(true)
   })
 })
 

@@ -188,12 +188,18 @@ describe('the rate is the ladder: a free seller settles at the memberFree rung',
 
 describe('the Crew feature gates that remain are untouched (the repeat stays gated)', () => {
   it('keeps every one of them on the crew floor and enabled', () => {
-    // This named five until HYG-079 deleted `journey_library_list` and `entry_points`. Both were
-    // decorative: each was really enforced by a parallel ladder (canListJourneyInLibrary, and the nav
-    // registry's `minAccess: 'crew'` on /entry-points), so neither gate ever refused anyone. The three
-    // below DO enforce, through featureAllowed at a real call site, which is why they stay.
-    for (const key of ['gamification_full', 'vault_cash_in', 'vera_unlimited']) {
+    // This named five until HYG-079 deleted `journey_library_list` and `entry_points`, then three
+    // until ADR-1295 (owner ruling 2026-09-09, OWN-071) deleted `gamification_full` and
+    // `vault_cash_in` with their call sites: the Quest is a side thing we all do together, so
+    // earning, spending and competing are open to every signed-in member.
+    //
+    // ONE personal gate is left, and it is the one with a real marginal cost per user rather than a
+    // game rung: every Vera request is inference spend with no natural ceiling.
+    for (const key of ['vera_unlimited']) {
       expect(FEATURE_GATES[key], key).toEqual({ axis: 'tier', minEntitlement: 'crew', enabled: true })
+    }
+    for (const key of ['gamification_full', 'vault_cash_in']) {
+      expect(FEATURE_GATES, key).not.toHaveProperty(key)
     }
   })
 

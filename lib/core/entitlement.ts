@@ -41,17 +41,13 @@ export function deriveTier(membershipTier: EntitlementTier | null | undefined): 
   return membershipTier ?? 'free'
 }
 
-/**
- * Can this tier CASH IN the Vault — spend Gems / claim store rewards (ROLES.md
- * §Entitlement: "Gamification cash-in on the Crew tier")? Accrual (Zaps/Gems/rank) runs
- * for everyone on the free tier; the *cash-in* (claim/spend/compete) is the paid unlock.
- * The pure predicate behind both the Vault matrix gate and the server-side `redeemItem`
- * enforcement, so the UI nudge and the action guard never drift. Paid = the TIER only
- * (`isPaid`), fully decoupled from the community role (ADR-207/225).
- */
-export function canCashIn(tier: EntitlementTier | null | undefined): boolean {
-  return isPaid(tier)
-}
+// 🔴 `canCashIn` USED TO SIT HERE and is deliberately gone (ADR-1295, owner ruling 2026-09-09,
+// OWN-071). It answered "may this tier spend Gems / claim Vault rewards", and the answer is now yes
+// for every signed-in member: the Quest is a side thing we all do together, and a member who earns
+// but can never spend is not playing the same game as one who can. Its ONE call site was the
+// `redeemItem` guard in app/(main)/crew/store/actions.ts, which went in the same change along with
+// the `vault_cash_in` and `gamification_full` gates. Do not re-add it: what bounds a redemption is
+// the Gem balance, the season, the rank requirement and the remaining stock, none of which is a tier.
 
 // ── GRANTED CREW (LIVE-223) ─────────────────────────────────────────────────────────────────────
 //
