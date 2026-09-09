@@ -46,10 +46,21 @@ describe('one site for everyone — Community + Quest', () => {
 
 describe('the ✋ paid-membership gate (the Entitlement axis)', () => {
   it('free members are limited; paying unlocks full', () => {
-    for (const s of ['vault', 'studioOverview', 'personalCrm', 'qrStudio'] as const) {
+    // 🔴 'vault' LEFT THIS LIST (ADR-1295, owner ruling 2026-09-09, OWN-071). It was the Quest's one
+    // ✋→✅ row, which is what muted the Vault Store grid for a free member; the Quest is a side
+    // thing we all do together, so the row joined its four siblings at member: 'full'. See the
+    // assertion below.
+    for (const s of ['studioOverview', 'personalCrm', 'qrStudio'] as const) {
       expect(accessTo(s, freeMember)).toBe('limited')
       expect(isGated(s, freeMember)).toBe(true)
       expect(accessTo(s, paidMember)).toBe('full')
+    }
+  })
+
+  it('the Vault is NOT one of them: every Quest surface is open to a free member (ADR-1295)', () => {
+    for (const s of ['quest', 'journeys', 'practices', 'library', 'vault'] as const) {
+      expect(accessTo(s, freeMember)).toBe('full')
+      expect(isGated(s, freeMember)).toBe(false)
     }
   })
 
@@ -119,7 +130,7 @@ describe('most-open union across hats', () => {
     const both: Hats = { loggedIn: true, role: 'member', tier: 'free', personas: ['business'] }
     expect(accessTo('feed', both)).toBe('full') // member column
     expect(accessTo('businessCrm', both)).toBe('full') // business column
-    expect(accessTo('vault', both)).toBe('full') // partner personas get the Vault (owner sheet)
+    expect(accessTo('vault', both)).toBe('full') // the Vault is open to every member (ADR-1295)
   })
 
   it('janitor sees everything at full', () => {
@@ -154,6 +165,6 @@ describe('columnsForHats', () => {
     expect(columnsForHats({ loggedIn: true, role: 'member', tier: 'crew' }).has('crew')).toBe(true)
     // …yet the steward still gets FULL on the steward surfaces, via the role not the tier:
     expect(accessTo('qrStudio', { loggedIn: true, role: 'host', tier: 'free' })).toBe('full')
-    expect(accessTo('vault', { loggedIn: true, role: 'host', tier: 'free' })).toBe('full')
+    expect(accessTo('vault', { loggedIn: true, role: 'host', tier: 'free' })).toBe('full') // open to every member now
   })
 })

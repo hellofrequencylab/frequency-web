@@ -1,10 +1,7 @@
 import { notFound } from 'next/navigation'
 import { DashboardTemplate } from '@/components/templates'
-import { CrewPreviewBanner } from '@/components/crew/crew-preview-banner'
-import { SeasonResetPrompt } from '@/components/quest/season-reset-prompt'
 import { PageModules } from '@/components/widgets/page-modules'
 import { getCrewContext } from '@/lib/quest/crew-context'
-import { shouldNudgeBeforeReset, daysUntilSeasonReset } from '@/lib/pricing/conversion'
 import { getPageHeaderImage } from '@/lib/page-settings/store'
 
 // My Quest (/crew) — the member's season home. Module-driven (ADR-270/294): the page composes the
@@ -23,60 +20,52 @@ export default async function CrewPage() {
   // Operator-set wide header image — set from Settings → SEO & meta → Header image.
   const headerImage = await getPageHeaderImage('/crew')
 
-  // Season-reset conversion nudge (ADR-370, REMAINING-WORK #8). Shows ONLY when the viewer is gated to
-  // earn-only (gamificationFull is false) AND the season is within the reset window. gamificationFull is
-  // routed through featureAllowed('gamification_full'), so it is TRUE while billing is OFF, making this
-  // nudge inert (it never renders today). The deadline it names is the real season reset, never manufactured.
-  const showSeasonReset = !ctx.gamificationFull && shouldNudgeBeforeReset(ctx.season?.ends_at)
-  const resetDays = showSeasonReset ? daysUntilSeasonReset(ctx.season?.ends_at) : null
+  // 🔴 NO UPGRADE NUDGE ON THIS PAGE. A season-reset "convert before your standing resets" prompt
+  // and a Crew preview banner both stood here, and both are gone with the `gamification_full` gate
+  // (ADR-1295, owner ruling 2026-09-09, OWN-071). Every signed-in member plays the whole Quest, so
+  // an upsell that says otherwise is not a nudge, it is a false statement about what they may do.
 
   return (
-    <>
-      {!ctx.isCrew && <CrewPreviewBanner />}
-      {showSeasonReset && resetDays !== null && (
-        <SeasonResetPrompt days={resetDays} seasonName={ctx.season?.name} />
-      )}
-      <DashboardTemplate
-        banner={
-          headerImage && (
-            // Intrinsic sizing (w-full h-auto, no fixed height / object-cover): the WHOLE
-            // banner scales to the screen width and is never cropped, so a wide header reads
-            // fully on a phone as well as desktop. Recommended upload ~1600×500 (16:5).
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={headerImage}
-              alt=""
-              className="mb-6 h-auto w-full rounded-2xl border border-border"
-            />
-          )
-        }
-        title={
-          <span className="inline-flex flex-wrap items-center gap-2">
-            My Quest
-            {ctx.isCrewLead && (
-              <span className="rounded-md bg-warning-bg px-2 py-0.5 text-meta font-semibold text-warning">
-                Crew Lead
-              </span>
-            )}
-          </span>
-        }
-        description={
-          <>
-            Three Journeys this season, each touching all four Pillars: Mind, Body, Spirit, and
-            Expression. Finish each to climb from Ghost to Master.
-            {ctx.membership?.circleName && (
-              <>
-                {' '}
-                You&apos;re in <span className="font-medium text-text">{ctx.membership.circleName}</span>.
-              </>
-            )}
-          </>
-        }
-      >
-        {/* The season intention is now an arrangeable layout module ('quest-intention'),
-            composed by PageModules and editable from Settings → Layout like the other blocks. */}
-        <PageModules route="/crew" />
-      </DashboardTemplate>
-    </>
+    <DashboardTemplate
+      banner={
+        headerImage && (
+          // Intrinsic sizing (w-full h-auto, no fixed height / object-cover): the WHOLE
+          // banner scales to the screen width and is never cropped, so a wide header reads
+          // fully on a phone as well as desktop. Recommended upload ~1600×500 (16:5).
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={headerImage}
+            alt=""
+            className="mb-6 h-auto w-full rounded-2xl border border-border"
+          />
+        )
+      }
+      title={
+        <span className="inline-flex flex-wrap items-center gap-2">
+          My Quest
+          {ctx.isCrewLead && (
+            <span className="rounded-md bg-warning-bg px-2 py-0.5 text-meta font-semibold text-warning">
+              Crew Lead
+            </span>
+          )}
+        </span>
+      }
+      description={
+        <>
+          Three Journeys this season, each touching all four Pillars: Mind, Body, Spirit, and
+          Expression. Finish each to climb from Ghost to Master.
+          {ctx.membership?.circleName && (
+            <>
+              {' '}
+              You&apos;re in <span className="font-medium text-text">{ctx.membership.circleName}</span>.
+            </>
+          )}
+        </>
+      }
+    >
+      {/* The season intention is now an arrangeable layout module ('quest-intention'),
+          composed by PageModules and editable from Settings → Layout like the other blocks. */}
+      <PageModules route="/crew" />
+    </DashboardTemplate>
   )
 }

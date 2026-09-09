@@ -51,9 +51,24 @@ export interface FeatureGate {
 // sync with the migration's seed (the table only OVERRIDES these defaults). §4 personal, §5 space.
 export const FEATURE_GATES: Record<string, FeatureGate> = {
   // §4 personal (membership tier; reuse profiles.membership_tier)
-  vault_cash_in: { axis: 'tier', minEntitlement: 'crew', enabled: true }, // spend Gems / claim (canCashIn)
-  gamification_full: { axis: 'tier', minEntitlement: 'crew', enabled: true }, // full loop; free = earn-only
   vera_unlimited: { axis: 'tier', minEntitlement: 'crew', enabled: true }, // Vera beyond the free daily cap
+  //
+  // 🔴 `vault_cash_in` and `gamification_full` USED TO SIT HERE and are deliberately gone (ADR-1295,
+  // owner ruling 2026-09-09, OWN-071). The Quest is a side thing we all do together, so the whole
+  // loop (earn, spend, compete) is open to every signed-in member. `vault_cash_in` never meant
+  // "turn Gems into money": redeemItem spends Gems against `store_items` in the Vault, a rewards
+  // catalog, so opening it costs stock and fulfilment, both of which the Vault already bounds. A
+  // member who earns and can never spend is not playing the same game as one who can.
+  //
+  // Unlike the decorative deletions above, these two WERE enforced, at
+  // app/(main)/crew/store/actions.ts and lib/pricing/gamification-access.ts. Both call sites went in
+  // the same change, along with the `canCashIn` predicate, the earn-only tease surfaces and the two
+  // pricing-grid rows, so nothing is left reading as a live rule. Do not re-add them: the Quest loop
+  // is not a rung.
+  //
+  // `vera_unlimited` above is the one personal gate that survives, and it is NOT a game rung: every
+  // Vera request costs real inference money per user with no natural ceiling, so it is a cost control.
+  // It keeps its ladder, its tease surface and its pricing-grid row.
 
   // §4b personal LEADERSHIP gates — THIS SECTION IS NOW EMPTY, and that is the finished state.
   //

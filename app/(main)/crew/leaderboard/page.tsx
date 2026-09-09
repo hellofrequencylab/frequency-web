@@ -20,10 +20,7 @@ import { StandingHero } from '@/components/gamification/standing-hero'
 import { CollectiveGoal } from '@/components/quest/collective-goal'
 import { LeaderboardList, type LeaderboardListEntry, type LeaderboardTrack } from '@/components/quest/leaderboard-list'
 import { BoardControls } from '@/components/quest/board-controls'
-import { CompeteLocked } from '@/components/quest/compete-locked'
 import { PageModules } from '@/components/widgets/page-modules'
-import { gamificationFullAllowed } from '@/lib/pricing/gamification-access'
-import type { EntitlementTier } from '@/lib/core/entitlement'
 import { isOptedOut } from './opt-out'
 
 // The Quest leaderboard — cooperative-first (ADR: cooperative leaderboard).
@@ -173,35 +170,19 @@ async function BoardSection({
   track,
   profileId,
   optedOut,
-  canCompete,
 }: {
   scope: Scope
   track: Track
   profileId: string
   optedOut: boolean
-  /** May this viewer compete on the individual board? Gated through featureAllowed('gamification_full')
-   *  (REMAINING-WORK #1): TRUE while billing is OFF (today's behavior, the board renders), FALSE only
-   *  once billing is live AND the viewer is earn-only — then a "join to compete" preview shows. */
-  canCompete: boolean
 }) {
   const admin = createAdminClient()
   const limit = scope === 'global' ? 50 : scope === 'hub' ? 30 : 20
 
-  // The compete gate sits ABOVE the board read: while OFF (canCompete=true) nothing changes; while
-  // ON for an earn-only viewer (canCompete=false) we skip the board read entirely and show the locked
-  // preview, so a non-competing member never even loads the ranked rows.
-  if (!canCompete) {
-    return (
-      <section aria-labelledby="board-heading">
-        <SectionHeader title="Where people stand" />
-        <p className="-mt-2 mb-3 text-body-sm text-muted" id="board-heading">
-          The individual board is part of competing. You still count toward the shared goal above.
-        </p>
-        <CompeteLocked />
-      </section>
-    )
-  }
-
+  // 🔴 NO COMPETE GATE. A `canCompete` check sat above this read and swapped the ranked rows for a
+  // "join to compete" upgrade card; it went with the `gamification_full` gate (ADR-1295, owner
+  // ruling 2026-09-09, OWN-071). Competing is part of the Quest and the Quest is a side thing we
+  // all do together, so every signed-in member sees the board. Opting out (below) is still theirs.
   const entries = await getBoard(admin, scope, track, profileId, limit)
 
   const trackNote =
@@ -272,7 +253,7 @@ export default async function LeaderboardPage({
   const admin = createAdminClient()
   const { data: profile } = await admin
     .from('profiles')
-    .select('id, current_season_zaps, current_streak, lifetime_gems, meta, membership_tier')
+    .select('id, current_season_zaps, current_streak, lifetime_gems, meta')
     .eq('auth_user_id', user.id)
     .maybeSingle()
   if (!profile) notFound()
@@ -289,13 +270,6 @@ export default async function LeaderboardPage({
   const scope = parseScope(params.scope)
   const track = parseTrack(params.track)
   const optedOut = isOptedOut(profile.meta as Record<string, unknown> | null)
-
-  // The "join to compete" gate (REMAINING-WORK #1), routed through featureAllowed('gamification_full')
-  // via gamificationFullAllowed: TRUE (the board renders) while billing is OFF, so today's fully-open
-  // leaderboard is byte-for-byte unchanged. Only once an operator turns billing on does an earn-only
-  // member see the locked compete preview instead of the ranked rows.
-  const tier = ((profile as { membership_tier: EntitlementTier | null }).membership_tier ?? 'free') as EntitlementTier
-  const canCompete = await gamificationFullAllowed(tier)
 
   // Fast reads for the always-visible band: the viewer's standing + the season +
   // the collective total. None block the streamed board below.
@@ -343,7 +317,7 @@ export default async function LeaderboardPage({
         <div className="space-y-4">
           <BoardControls scope={scope} track={track} hidden={optedOut} />
           <Suspense key={`${scope}-${track}`} fallback={<BoardSkeleton />}>
-            <BoardSection scope={scope} track={track} profileId={profile.id} optedOut={optedOut} canCompete={canCompete} />
+            <BoardSection scope={scope} track={track} profileId={profile.id} optedOut={optedOut} />
           </Suspense>
         </div>
 

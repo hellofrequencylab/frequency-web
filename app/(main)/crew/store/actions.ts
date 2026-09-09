@@ -6,10 +6,6 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getMyProfileId } from '@/lib/auth'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
-import { canCashIn, deriveTier } from '@/lib/core/entitlement'
-import type { EntitlementTier } from '@/lib/core/entitlement'
-import { featureAllowed } from '@/lib/pricing/gates'
-import { featureGatesLive } from '@/lib/pricing/settings'
 import { classifyRedemption, fulfillStreakFreeze, UNDELIVERABLE_MESSAGE } from '@/lib/store/fulfillment'
 import { isUndeliverable } from '@/lib/store/cosmetics'
 import { computeSpendableBalance, fetchGiftsSent } from '@/lib/store/balance'
@@ -31,7 +27,7 @@ export async function redeemItem(itemId: string): Promise<ActionResult<{ pending
       .eq('id', itemId)
       .maybeSingle(),
     admin.from('profiles')
-      .select('id, lifetime_gems, current_season_rank, membership_tier')
+      .select('id, lifetime_gems, current_season_rank')
       .eq('id', profileId)
       .maybeSingle(),
     admin.from('store_redemptions')
@@ -55,24 +51,15 @@ export async function redeemItem(itemId: string): Promise<ActionResult<{ pending
   if (!item) return fail('Item not found')
   if (!item.is_active) return fail('Item is no longer available')
 
-  // Cash-in is the PAID unlock (ROLES.md §Entitlement; the Vault ✋→✅ gate). Accrual
-  // runs for everyone; spending Gems / claiming rewards is gated on the real entitlement
-  // column — never the (retired) community role (ADR-207/225). The store UI already mutes
-  // the grid for free members (CrewGate), but the server action is the authority, so we
-  // enforce it here too and hand back a clean upsell pointing at /upgrade.
-  const tier = ((profile as { membership_tier?: EntitlementTier | null } | null)?.membership_tier) ?? 'free'
-  if (!canCashIn(tier)) {
-    return fail('Cashing in the Vault is a Crew perk. Upgrade at /upgrade to spend your Gems. You keep everything you’ve earned.')
-  }
-  // Pricing P3: the SAME gate, now also routed through the operator-tunable entitlements layer
-  // (featureAllowed) so an operator can adjust the cash-in minimum from /admin/pricing once billing
-  // is live. FAIL-SAFE + OFF-PRESERVING: while the feature gates are not live (billing off, or the beta
-  // grace window still open, ADR-874), featureAllowed short-circuits to true, so this is a no-op and
-  // today's behavior (the canCashIn line above) is exactly preserved.
-  const cashInAllowed = await featureAllowed('vault_cash_in', { tier: deriveTier(tier) }, { gatesLive: await featureGatesLive() })
-  if (!cashInAllowed) {
-    return fail('Cashing in the Vault is a Crew perk. Upgrade at /upgrade to spend your Gems. You keep everything you’ve earned.')
-  }
+  // 🔴 SPENDING GEMS IS NOT GATED. Two entitlement checks used to stand here — the pure
+  // `canCashIn(tier)` predicate and a `featureAllowed('vault_cash_in', …)` re-check — and both are
+  // deliberately gone (ADR-1295, owner ruling 2026-09-09, OWN-071). The Quest is a side thing we all
+  // do together, and a member who earns Gems but can never spend them is not playing the same game
+  // as one who can. Any signed-in member may redeem.
+  //
+  // Nothing else about the redemption relaxed: the balance, the season, `expires_at`, the rank
+  // requirement, the remaining `stock` and the atomic `redeem_store_item_atomic` charge below are
+  // all unchanged, and they are what actually bounds this. Do not re-add a tier check here.
 
   // Season-exclusive + retiring SKUs (Rewards Economy v2): an S1 item stops
   // selling at season close; expires_at is a hard cutoff.

@@ -7,8 +7,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 // silently DOWNGRADED to 'earn_only' — the entitlement they bought disappearing with no error shown.
 //
 // DIRECTION: FAIL OPEN, which is what this module's header has always promised ("any DB/flag error
-// degrades to today's behavior, never to a lockout") and what its sibling gamificationFullAllowed
-// already does. On an unreadable profile there is no tier to derive from, so the choice is between
+// degrades to today's behavior, never to a lockout"), and what its sibling gamificationFullAllowed
+// did before ADR-1295 deleted it with the `gamification_full` gate. On an unreadable profile there is no tier to derive from, so the choice is between
 // revoking a paid entitlement for the length of an outage and letting a free member see the full loop
 // for one request. The second is the smaller wrong answer. A genuinely absent profile row (data null,
 // no error) is NOT an outage and still reads 'earn_only'.

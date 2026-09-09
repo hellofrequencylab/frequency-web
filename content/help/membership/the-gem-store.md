@@ -4,7 +4,7 @@ description: What Gems buy, how redeeming works, and the "how you earned" ledger
 category: membership
 order: 2
 published: 2026-06-09
-updated: 2026-08-19
+updated: 2026-09-09
 audience: member
 featureKeys: [vault, gems]
 status: published
@@ -18,7 +18,7 @@ Open **The Vault** from the menu. Your Vault and the Vault Store live on one pag
 The top of the page is your Vault at a glance: your spendable **Gem balance**, your
 season **Zaps** and **streak**, your **Amplitude** (your lifetime total; it never
 resets), anything you've got **equipped**, and a link to the full earning log (more
-on that below). What's free vs. member is covered in
+on that below). How the Vault fits with membership is covered in
 [Membership & the Vault](/help/membership/the-vault).
 
 ## What's for sale
@@ -43,8 +43,8 @@ on that below). What's free vs. member is covered in
 - Can't afford something yet? The button tells you exactly how many Gems you're
   short. No surprises.
 
-Anyone can **browse** the whole store; **spending** is the membership benefit, and
-that membership is Crew.
+Any signed-in member can browse the whole store and spend what they have earned.
+Spending is not a membership benefit: the Quest is a side thing we all do together.
 
 ## Gifting Gems to another member
 

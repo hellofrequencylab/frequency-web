@@ -59,7 +59,7 @@ describe('targetForGate (a feature names the tier its REAL gate sits on)', () =>
   })
 
   it('a personal feature resolves to its membership tier', () => {
-    expect(targetForGate(FEATURE_GATES.vault_cash_in)).toEqual({ axis: 'tier', tier: 'crew' })
+    // `vera_unlimited` is the ONE personal gate left after ADR-1295 retired the two Quest gates.
     expect(targetForGate(FEATURE_GATES.vera_unlimited)).toEqual({ axis: 'tier', tier: 'crew' })
   })
 
@@ -124,7 +124,6 @@ describe('targetForEntitlementKey (the LOWEST plan whose depth set grants it)', 
 
 describe('betaNoticeKey (dismissal is per TIER, never per feature)', () => {
   it('every Crew capability shares one key', () => {
-    expect(betaNoticeKey(targetForGate(FEATURE_GATES.vault_cash_in)!)).toBe('tier:crew')
     expect(betaNoticeKey(targetForGate(FEATURE_GATES.vera_unlimited)!)).toBe('tier:crew')
     expect(betaNoticeKey(targetForTier('crew')!)).toBe('tier:crew')
   })

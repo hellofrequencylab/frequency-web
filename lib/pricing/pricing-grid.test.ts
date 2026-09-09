@@ -460,13 +460,20 @@ describe('seats and the AI add-on', () => {
 describe('member grid: Member and Crew on the personal ladder', () => {
   const grid = memberFeatureGrid(input)
 
-  it('has the two member columns and derives its cells from the tier gates', () => {
+  it('has the two member columns', () => {
     expect(grid.columns.map((c) => c.id)).toEqual(['member', 'crew'])
-    for (const feature of ['gamification_full', 'vault_cash_in']) {
-      const cells = cellsByColumn(grid, feature)
-      expect(cells.member).toBe(meetsGate(FEATURE_GATES[feature]!, { tier: 'free' }) ? 'Included' : 'Not included')
-      expect(cells.crew).toBe(meetsGate(FEATURE_GATES[feature]!, { tier: 'crew' }) ? 'Included' : 'Not included')
+  })
+
+  // 🔴 THE 'rewards' GROUP IS GONE (ADR-1295, owner ruling 2026-09-09, OWN-071). Its two rows were
+  // sourced from the `gamification_full` and `vault_cash_in` gates, and both gates were deleted: the
+  // Quest is a side thing we all do together. A row whose gate no longer exists reads "Included" in
+  // every column, which is a comparison table describing a distinction that no longer exists.
+  it('does not sell the Quest back to a member', () => {
+    for (const key of ['gamification_full', 'vault_cash_in']) {
+      expect(FEATURE_GATES).not.toHaveProperty(key)
+      expect(grid.groups.some((g) => g.rows.some((r) => r.key === key))).toBe(false)
     }
+    expect(grid.groups.map((g) => g.key)).not.toContain('rewards')
   })
 
   it('says a free Space is open to anyone (Crew is not required to run one)', () => {
@@ -591,15 +598,14 @@ describe('operator gate overrides move the comparison cell', () => {
     expect(cellsByColumn(spaceFeatureGrid(input), 'space_collaborators').free).toBe('Not included')
   })
 
-  it('a member-ladder gate follows its override too', () => {
-    const raised = memberFeatureGrid({
-      ...input,
-      gateOverrides: { gamification_full: { enabled: false } },
-    })
-    const cells = Object.fromEntries(
-      raised.columns.map((c, i) => [c.id, row(raised, 'gamification_full').cells[i]!.text]),
-    )
-    expect(cells.member).toBe('Included')
+  // 🔴 THE MEMBER-LADDER OVERRIDE CASE MOVED OFF A DELETED GATE (ADR-1295). It used to disable
+  // `gamification_full`; that gate is gone, and the member grid now carries no gate-sourced row at
+  // all, so the same mechanism is demonstrated on the space ladder above. Kept as an assertion that
+  // the member grid is genuinely gate-free rather than accidentally so.
+  it('the member grid has no gate-sourced row left to override', () => {
+    const rows = memberFeatureGrid(input).groups.flatMap((g) => g.rows)
+    expect(rows.length).toBeGreaterThan(0)
+    expect(rows.some((r) => r.key === 'gamification_full' || r.key === 'vault_cash_in')).toBe(false)
   })
 
   it('an INVALID override never widens a gate (mergeGate validates the ladder)', () => {
