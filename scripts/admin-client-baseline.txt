@@ -226,7 +226,6 @@ app/(main)/events/placement-actions.ts
 app/(main)/events/scan/actions.ts
 app/(main)/events/share-actions.ts
 app/(main)/feed/actions.ts
-app/(main)/feed/chores-actions.ts
 app/(main)/feed/host-prompt-actions.ts
 app/(main)/feed/onboarding-actions.ts
 app/(main)/feed/page.tsx
@@ -685,9 +684,7 @@ lib/nurture/enroll.ts
 lib/nurture/runner.ts
 lib/nurture/store.ts
 lib/on-air/session-data.ts
-lib/onboarding/flags.ts
 lib/onboarding/founder-tasks.ts
-lib/onboarding/profile-chores.ts
 lib/onboarding/resolve-onboarding-sequence.ts
 lib/onboarding/status.ts
 lib/onboarding/training.ts
