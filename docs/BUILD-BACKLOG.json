@@ -182,7 +182,6 @@
             "DEF-A2P",
             "OWN-063",
             "HYG-068",
-            "LIVE-218",
             "OWN-068",
             "OWN-066",
             "OWN-067"
@@ -9878,21 +9877,20 @@
     },
     {
       "id": "LIVE-218",
-      "title": "An unused live restricted Stripe key has sat untouched since 2026-06-22",
-      "status": "open",
+      "title": "The unused live restricted Stripe key is deleted",
+      "status": "done",
       "priority": "P3",
       "lane": "owner",
       "size": "XS",
-      "ownerAction": "account",
       "source": {
         "file": "docs/BUILD-BACKLOG.json",
         "ref": "found while closing OWN-064"
       },
-      "detail": "FOUND 2026-09-08 in the Stripe live API keys list while closing `OWN-064` — which was written about the two STANDARD keys and did not know this one existed.\n\nA **Restricted key**, created **2026-06-22**, access-policy column empty, **last used —** (never). Eleven weeks, zero requests.\n\nSame class as OWN-064 and deliberately filed lower: a restricted key is SCOPED, so the blast radius is smaller than the full-access standard key already removed. The argument for removing it is identical though — **a credential nothing calls is the one whose misuse has no legitimate traffic to stand out against.** Nothing has used it in eleven weeks, so nothing is going to.\n\n⚠️ **THE ACCESS-POLICY COLUMN READING EMPTY IS NOT PROOF THE KEY GRANTS NOTHING.** That column reports whether an access POLICY is attached; what a restricted key can actually do is set by the permissions chosen at creation, which the list view does not show. Read the key's own permissions before concluding it is harmless — closing this row on the column alone would be the shape-not-truth failure this repo names in four ADRs.\n\n**OWNER ACTION:** open the key's `···` menu, confirm via **View request logs** that it is empty, then delete it. ⚠️ Do not reveal or paste the key value — the last-used column and the request log answer the question without it.",
+      "detail": "FOUND 2026-09-08 in the Stripe live API keys list while closing `OWN-064` — which was written about the two STANDARD keys and did not know this one existed.\n\nA **Restricted key**, created **2026-06-22**, access-policy column empty, **last used —** (never). Eleven weeks, zero requests.\n\nSame class as OWN-064 and deliberately filed lower: a restricted key is SCOPED, so the blast radius is smaller than the full-access standard key already removed. The argument for removing it is identical though — **a credential nothing calls is the one whose misuse has no legitimate traffic to stand out against.** Nothing has used it in eleven weeks, so nothing is going to.\n\n⚠️ **THE ACCESS-POLICY COLUMN READING EMPTY IS NOT PROOF THE KEY GRANTS NOTHING.** That column reports whether an access POLICY is attached; what a restricted key can actually do is set by the permissions chosen at creation, which the list view does not show. Read the key's own permissions before concluding it is harmless — closing this row on the column alone would be the shape-not-truth failure this repo names in four ADRs.\n\n**OWNER ACTION:** open the key's `···` menu, confirm via **View request logs** that it is empty, then delete it. ⚠️ Do not reveal or paste the key value — the last-used column and the request log answer the question without it.\n\n── ✅ DONE 2026-09-09. Owner: *\"I deleted the stripe key.\"*\n\nBoth credentials this pair of rows was about are now gone: `OWN-064` removed the dormant full-access STANDARD key on 2026-09-08 (and production kept authenticating, proven by `profiles.updated_at` moving after), and this row's never-used RESTRICTED key follows it.\n\n📌 What made this the cheap one and the standard key the expensive one: a restricted key is scoped, so its blast radius was always smaller. The argument for deleting it was never blast radius — it was that **a credential nothing calls has no legitimate traffic for its misuse to stand out against.** Eleven weeks, zero requests, and now zero keys that nothing uses.",
       "verify": {
         "kind": "manual",
-        "evidence": "2026-09-08: observed in the Stripe live-mode API keys list — one Restricted key, created 2026-06-22, access-policy column empty, Last used \"—\". Not readable from here by design: Stripe key inventory requires a key, and reading it would defeat the purpose. Settled by the dashboard showing no restricted keys, or one that is demonstrably in use. Closes when the unused restricted key is deleted, or its use is identified and recorded here.",
-        "checked": "2026-09-08"
+        "evidence": "2026-09-09: deleted by the owner. Not readable from here by design — Stripe key inventory requires a key, and reading it would defeat the purpose of the row. Settled on the owner's statement, which is the intended close condition for this row (\"closes when the unused restricted key is deleted\"). Reopen if a restricted key with no request history appears in the live-mode key list again.",
+        "checked": "2026-09-09"
       }
     },
     {
