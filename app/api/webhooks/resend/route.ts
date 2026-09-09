@@ -18,6 +18,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { recordEmailEvent, suppress } from '@/lib/suppression'
 import { verifyResendSignature, isFreshTimestamp } from '@/lib/webhook-verify'
 import { handleSpaceSendWebhook, handleSpaceSendEngagement } from '@/lib/spaces/email'
+import { recordSpaceSendEventFromResend, spaceEventKindForResend } from '@/lib/spaces/email-tracking'
 import { mapResendEventToInteraction, type ResendTimelineEventType } from '@/lib/spaces/email-timeline'
 
 export const dynamic = 'force-dynamic'
@@ -113,14 +114,36 @@ export async function POST(req: Request) {
     } catch (err) {
       errors.push(`suppress: ${err instanceof Error ? err.message : String(err)}`)
     }
-    // ALSO update a per-Space send (ENTITY-SPACES-BUILD Phase 3): if this Resend id belongs to a
-    // Space's outreach_sends row, set that row's status and add a SPACE-SCOPED suppression. Best-
-    // effort + additive: the global suppression above is unchanged, and a failure here is logged
-    // (not fatal) so the global integrity signal still drives the response.
+  }
+
+  // ALSO update a per-Space send (ENTITY-SPACES-BUILD Phase 3): if this Resend id belongs to a
+  // Space's outreach_sends row, set that row's status and, for a bounce / complaint, add a
+  // SPACE-SCOPED suppression. Best-effort + additive: the global suppression above is unchanged, and
+  // a failure here is logged (not fatal) so the global integrity signal still drives the response.
+  //
+  // 🔴 `delivered` JOINED THIS CALL (LIVE-236), AND IT IS THE WHOLE ROW. This branch used to sit
+  // INSIDE the bounce/complaint guard above, so a Space send's status went queued -> sent and stopped
+  // there: nothing anywhere ever wrote `delivered`. getSpaceEmailStats counts outreach_sends by
+  // status, so every operator's Marketing panel read "Delivered 0" no matter how much mail landed.
+  // Sending without delivery feedback is worse than not sending.
+  if (type === 'delivered' || type === 'bounced' || type === 'complained') {
     try {
       await handleSpaceSendWebhook(event.data?.email_id ?? null, type)
     } catch (err) {
       errors.push(`spaceSend: ${err instanceof Error ? err.message : String(err)}`)
+    }
+  }
+
+  // PER-SPACE EVENT LOG (LIVE-236): one space_email_events row per provider event on a Space send, so
+  // an operator has a per-send record of what actually happened and not just a rolled-up status. A
+  // pure platform email writes nothing (no outreach_sends row owns its id). Deliberately NOT pushed
+  // to `errors`: the writer is fail-safe and a logging blip must never force a redelivery, which
+  // would needlessly re-fire suppression.
+  if (spaceEventKindForResend(type)) {
+    try {
+      await recordSpaceSendEventFromResend(event.data?.email_id ?? null, type)
+    } catch (err) {
+      console.warn('[resend-webhook] space email event write failed', err)
     }
   }
 

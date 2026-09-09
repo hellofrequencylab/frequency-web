@@ -84,6 +84,17 @@ export function MembershipJoinCard({
           window.location.href = checkout.data.url
           return
         }
+        // 🔴 NOT EVERY NO-OP IS A FALLBACK (LIVE-233). `no_owner_payouts` means the space owner has
+        // no onboarded Stripe account, and falling through to joinTier handed the member a PAID tier
+        // FOR FREE, silently, with the operator never learning their tier was being given away. That
+        // is the membership path's version of the dead end this row exists to close: the operator now
+        // gets the shared Connect prompt on their Offerings surface, and the member is told the truth
+        // instead of being quietly let in. Every other reason ('billing_off', 'free_tier', a
+        // resolution miss) still falls back to the free join path, which is the v1 behavior.
+        if (checkout.error === 'no_owner_payouts') {
+          setError('This space cannot take payment yet. Follow it to hear when joining opens.')
+          return
+        }
       }
       const result = await joinTier(spaceId, tierId)
       if (isError(result)) {

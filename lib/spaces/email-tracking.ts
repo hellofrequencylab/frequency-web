@@ -130,8 +130,40 @@ export function injectTracking(html: string, token: string, baseUrl: string): st
 
 // ── Record (service-role, best-effort void) ──────────────────────────────────────────────────────
 
-type EventKind = 'open' | 'click' | 'reply'
-const EVENT_KINDS: readonly EventKind[] = ['open', 'click', 'reply']
+/**
+ * What a per-Space email event can be.
+ *
+ * ENGAGEMENT (the original three): open / click / reply, written by the self-hosted pixel, the click
+ * redirect and the inbound-reply seam.
+ *
+ * DELIVERY (LIVE-236): delivered / bounced / complained, written from the Resend webhook. These were
+ * missing, and the gap was not cosmetic: the Resend webhook called into the Space seam ONLY for
+ * bounces and complaints, so a Space send's status went queued -> sent and stopped there. Nothing
+ * ever set `delivered`, and getSpaceEmailStats counts outreach_sends by status, so the Marketing
+ * panel read "Delivered 0" for every operator forever. An operator who sends email could not see
+ * whether it landed, which is worse than not sending.
+ */
+export type EventKind = 'open' | 'click' | 'reply' | 'delivered' | 'bounced' | 'complained'
+const EVENT_KINDS: readonly EventKind[] = ['open', 'click', 'reply', 'delivered', 'bounced', 'complained']
+
+/** Map a Resend webhook event type (already stripped of its `email.` prefix) to a per-Space event
+ *  kind, or null for a type this log does not carry. PURE, so the route can ask before it reads. */
+export function spaceEventKindForResend(type: string | null | undefined): EventKind | null {
+  switch ((type ?? '').trim()) {
+    case 'delivered':
+      return 'delivered'
+    case 'opened':
+      return 'open'
+    case 'clicked':
+      return 'click'
+    case 'bounced':
+      return 'bounced'
+    case 'complained':
+      return 'complained'
+    default:
+      return null
+  }
+}
 
 /**
  * Write one space_email_events row. Service-role, FAIL-SAFE void: any error is logged and swallowed so a
@@ -219,4 +251,62 @@ export async function recordInboundReplyEvent(email: string, spaceId?: string | 
       err instanceof Error ? err.message : String(err),
     )
   }
+}
+
+// ── The Resend seam: write a per-Space DELIVERY event (LIVE-236) ────────────────────────────────
+
+/**
+ * Resolve the Space send behind a Resend email id, so a provider event can be attributed to a Space
+ * without trusting anything in the webhook body beyond the id Resend echoes back. FAIL-SAFE to null.
+ *
+ * Separate from resolveSendForTracking above because the key differs: the tracking endpoints hold our
+ * own send uuid (decoded from a signed token), while the provider webhook holds ITS id.
+ */
+export async function resolveSendByResendId(
+  resendId: string,
+): Promise<{ sendId: string; spaceId: string; email: string | null } | null> {
+  if (!resendId) return null
+  try {
+    const db = createAdminClient() as unknown as {
+      from: (t: string) => {
+        select: (c: string) => {
+          eq: (col: string, val: string) => {
+            maybeSingle: () => Promise<{ data: { id?: string; space_id?: string; email?: string | null } | null }>
+          }
+        }
+      }
+    }
+    const { data } = await db
+      .from('outreach_sends')
+      .select('id, space_id, email')
+      .eq('resend_id', resendId)
+      .maybeSingle()
+    if (!data?.id || !data.space_id) return null
+    return { sendId: data.id, spaceId: data.space_id, email: data.email ?? null }
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Log ONE per-Space event for a provider webhook (delivered / opened / clicked / bounced /
+ * complained). Returns true when a Space send owned the id and an event was written.
+ *
+ * A PURE PLATFORM EMAIL WRITES NOTHING: no outreach_sends row owns its id, so there is no Space to
+ * attribute it to and no sentinel to invent. That is the same rule handleSpaceSendEngagement follows
+ * one module over.
+ *
+ * Best-effort + fail-safe by construction (recordEmailEvent swallows and logs its own errors), so a
+ * logging blip can never turn into a webhook retry that re-fires suppression.
+ */
+export async function recordSpaceSendEventFromResend(
+  resendId: string | null | undefined,
+  type: string,
+): Promise<boolean> {
+  const kind = spaceEventKindForResend(type)
+  if (!kind || !resendId) return false
+  const send = await resolveSendByResendId(resendId)
+  if (!send) return false
+  await recordEmailEvent({ spaceId: send.spaceId, sendId: send.sendId, email: send.email, kind })
+  return true
 }

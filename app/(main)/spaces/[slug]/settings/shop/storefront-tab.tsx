@@ -1,5 +1,6 @@
-import Link from 'next/link'
+import { Suspense } from 'react'
 import { buttonClasses } from '@/components/ui/button'
+import { SpacePayoutSetupPromptById } from '@/components/billing/payout-setup-prompt'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/field'
 import { readStorefrontConfig } from '@/lib/spaces/storefront'
@@ -74,16 +75,14 @@ export function StorefrontTab({
         )}
       </form>
 
-      <div className="rounded-card border border-border bg-surface p-5">
-        <h2 className="text-body font-bold text-text">Getting paid</h2>
-        <p className="mb-4 mt-1 text-body-sm text-muted">
-          Payouts run on Stripe Connect, straight to your account. Set up a payout account so you can take
-          orders when payments turn on.
-        </p>
-        <Link href="/settings/billing" className={buttonClasses('secondary', 'md')}>
-          Set up payouts
-        </Link>
-      </div>
+      {/* THE ONE CONNECT PROMPT (LIVE-233). This card used to be a hand-written "Getting paid" panel
+          whose only action was a LINK to /settings/billing, one of four such panels in the repo, each
+          with its own sentence. It now renders the shared prompt: nothing at all once the space owner
+          is ready, Stripe's hosted onboarding started inline when they are not, and a line naming the
+          owner when the reader is an admin who cannot onboard for them. */}
+      <Suspense fallback={null}>
+        <SpacePayoutSetupPromptById spaceId={spaceId} channels={['orders']} />
+      </Suspense>
     </div>
   )
 }
