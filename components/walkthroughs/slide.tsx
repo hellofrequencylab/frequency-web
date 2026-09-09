@@ -10,7 +10,7 @@ import type { WalkthroughStep, StepAccent } from '@/lib/walkthroughs'
 // Shared, presentational slide renderer for Walkthroughs. Used by BOTH the admin
 // editor's live preview (Phase A) and the member-facing lightbox (Phase B), so the
 // in-app render and the operator's preview never drift. 'use client'-safe and pure:
-// it takes a WalkthroughStep and composes the in-app card language (chores-overlay /
+// it takes a WalkthroughStep and composes the in-app card language (vera-lightbox /
 // vera-lightbox) with the chosen accent token + layout. Token-only classes — no raw hex.
 
 // The icon picker's small, on-voice set (lucide names stored on the slide as `icon`).
@@ -78,7 +78,7 @@ function PreviewCard({ children }: { children: ReactNode }) {
   return <div className="overflow-hidden rounded-3xl border border-border bg-surface lift-3">{children}</div>
 }
 
-// A faithful render of a slide in the in-app card language (chores-overlay / vera-lightbox),
+// A faithful render of a slide in the in-app card language (the vera-lightbox deck),
 // driven by the chosen accent token + layout. Token-only classes — no raw hex.
 export function WalkthroughSlide({ step }: { step: WalkthroughStep }) {
   const a = ACCENT_CLASSES[step.accent]

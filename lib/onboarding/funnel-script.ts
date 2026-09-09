@@ -12,10 +12,11 @@ export const FUNNEL_INDUCTION_ACTIVE = true
 
 /** BETA PROGRAM flag, not a Funnels one (the name keeps its beta_ because the
  *  program it describes is still called the Beta): during the Beta, every member
- *  gets Crew (full gamification) for free — they
- *  rack up points in the game and can downgrade to Member anytime (/upgrade).
+ *  gets Crew for free — they can downgrade to Member anytime (/upgrade).
  *  Flip OFF at Launch: new members default to Member, and unpaid members lose
- *  the Crew surfaces + the ability to spend gems (see ADR-084). */
+ *  the Crew surfaces (see ADR-084). 🔴 They do NOT lose the game: spending Gems
+ *  and the full rewards loop were opened to every signed-in member by ADR-1295
+ *  (owner ruling 2026-09-09), so flipping this off no longer touches the Quest. */
 export const BETA_MEMBERS_GET_CREW = true
 
 /** Bumped if the flow materially changes, so we can tell cohorts apart. Written to

@@ -4,13 +4,17 @@ import { revalidatePath } from 'next/cache'
 import { getMyProfileId } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { mergeProfileMeta } from '@/lib/profiles/meta'
+import { ONBOARDING_CRITERIA } from '@/lib/onboarding/steps'
 
 // The onboarding guide can't be dismissed — but a member can force a step complete
 // via an obscured escape hatch (a deliberately low-prominence control). That writes
 // the step key to profiles.meta.onboarding.forced[]; getOnboardingStatus treats
 // forced steps as done, so the guide advances / graduates.
 
-const STEP_KEYS = ['avatar', 'circle', 'practice', 'log']
+// The accepted keys come FROM the checklist itself, so a change to the four nouns
+// (LIVE-259 moved them from avatar/circle/practice/log to avatar/circle/event/host)
+// cannot leave this validator behind, silently refusing to force a live step.
+const STEP_KEYS: readonly string[] = ONBOARDING_CRITERIA
 
 export async function forceOnboardingStep(formData: FormData) {
   const stepKey = String(formData.get('step') ?? '')

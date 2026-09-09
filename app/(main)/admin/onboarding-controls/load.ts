@@ -1,13 +1,16 @@
 import { listFlagEvents, getPlatformSetting, type FlagEvent } from '@/lib/platform-flags'
-import { nextStepsEnabled } from '@/lib/onboarding/status'
-import { autoPopupsEnabled } from '@/lib/onboarding/flags'
 import { referralsEnabled } from '@/lib/platform-flags'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 // "Onboarding & referral controls" data for /admin/onboarding-controls. Returns plain,
-// serializable shapes (no Maps) for the client view: the three master-switch states, the
+// serializable shapes (no Maps) for the client view: the referral master switch, the
 // read-only referral reward amount (from zap_config.invite_accepted, edited at
-// /admin/gamification), and the resolved toggle audit log for each switch (who/when).
+// /admin/gamification), and the resolved toggle audit log (who/when).
+//
+// It carried two more switches until 2026-09-09: `next_steps_enabled` and
+// `auto_popups_enabled`, the kill flags on two onboarding engines that both read false. Both
+// engines are deleted (LIVE-240) and onboarding is authored at /admin/walkthroughs now, so the
+// switches went with them. The platform_flags rows are inert; nothing reads them.
 
 export type OnboardingSwitchEvent = {
   id: string
@@ -38,32 +41,19 @@ async function resolveNames(events: FlagEvent[]): Promise<OnboardingSwitchEvent[
 
 export async function getOnboardingControlsData() {
   const admin = createAdminClient()
-  const [nextSteps, autoPopups, referrals, nextStepsEvents, autoPopupsEvents, referralsEvents, reward, landing] =
-    await Promise.all([
-      nextStepsEnabled(),
-      autoPopupsEnabled(),
-      referralsEnabled(),
-      listFlagEvents('next_steps_enabled', 10),
-      listFlagEvents('auto_popups_enabled', 10),
-      listFlagEvents('referrals_enabled', 10),
-      admin.from('zap_config').select('zaps_amount, is_active').eq('action_type', 'invite_accepted').maybeSingle(),
-      getPlatformSetting('personal_code_landing', '/'),
-    ])
-
-  const [nextStepsAudit, autoPopupsAudit, referralsAudit] = await Promise.all([
-    resolveNames(nextStepsEvents),
-    resolveNames(autoPopupsEvents),
-    resolveNames(referralsEvents),
+  const [referrals, referralsEvents, reward, landing] = await Promise.all([
+    referralsEnabled(),
+    listFlagEvents('referrals_enabled', 10),
+    admin.from('zap_config').select('zaps_amount, is_active').eq('action_type', 'invite_accepted').maybeSingle(),
+    getPlatformSetting('personal_code_landing', '/'),
   ])
+
+  const referralsAudit = await resolveNames(referralsEvents)
 
   const rewardRow = reward.data as { zaps_amount: number | null; is_active: boolean | null } | null
 
   return {
-    nextSteps,
-    autoPopups,
     referrals,
-    nextStepsAudit,
-    autoPopupsAudit,
     referralsAudit,
     referralReward: {
       amount: rewardRow?.zaps_amount ?? null,

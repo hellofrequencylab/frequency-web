@@ -109,9 +109,6 @@
             "LIVE-257",
             "PROG-R9",
             "LIVE-260",
-            "LIVE-240",
-            "LIVE-258",
-            "LIVE-259",
             "LIVE-261",
             "PROG-R10",
             "LIVE-263",
@@ -10854,7 +10851,7 @@
     {
       "id": "LIVE-240",
       "title": "Pick one onboarding engine and delete the other two",
-      "status": "open",
+      "status": "done",
       "priority": "P1",
       "lane": "live",
       "size": "M",
@@ -11172,7 +11169,7 @@
     {
       "id": "LIVE-258",
       "title": "Rewrite the Vera welcome deck to the four nouns",
-      "status": "open",
+      "status": "done",
       "priority": "P2",
       "lane": "live",
       "size": "S",
@@ -11192,7 +11189,7 @@
     {
       "id": "LIVE-259",
       "title": "The first-run checklist becomes the model",
-      "status": "open",
+      "status": "done",
       "priority": "P2",
       "lane": "live",
       "size": "S",
