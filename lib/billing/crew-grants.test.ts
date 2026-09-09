@@ -490,8 +490,24 @@ describe('every lifecycle site is wired (source shape)', () => {
     expect(sql).toContain('price_cents > 0')
   })
 
-  it('membership_tier joined prevent_economy_self_edit', () => {
+  // A re-add guard, not a feature test. An earlier draft of this migration added
+  // membership_tier to prevent_economy_self_edit on the reasoning that every
+  // legitimate writer already uses the service role. That was false: the guard fires
+  // on `auth.role() is distinct from 'service_role'`, and the atomic SECURITY DEFINER
+  // writers run with the CALLER's role, so it blocked apply_membership_event_atomic
+  // (the Stripe membership webhook) and apply_bundle_seating_atomic, taking out 43
+  // db-tests subtests. The self-grant hole it targeted is closed twice over by
+  // refuse_self_granted_entitlement() and the price floor, so it is not coming back
+  // without exempting those writers first.
+  it('membership_tier does NOT join prevent_economy_self_edit', () => {
     const sql = read('supabase/migrations/20270345002800_entitlement_grants.sql')
-    expect(sql).toContain('new.membership_tier      IS DISTINCT FROM old.membership_tier')
+    const fn = sql.slice(sql.indexOf('create or replace function public.prevent_economy_self_edit()'))
+    const guard = fn.slice(0, fn.indexOf('$function$;'))
+    // Positive control: this asserts absence, so prove we are reading the real guard
+    // body. If the function is renamed or dropped the slice goes empty and the
+    // absence assertion below would pass vacuously.
+    expect(guard).toContain("auth.role() is distinct from 'service_role'")
+    expect(guard).toContain('new.current_season_zaps IS DISTINCT FROM old.current_season_zaps')
+    expect(guard).not.toContain('membership_tier')
   })
 })
