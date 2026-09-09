@@ -148,15 +148,19 @@ export const MARKETING_NAV: NavLink[] = marketingFooterLinks().map((node) => ({
 }));
 
 // THE SEEKER call to action, and the site-wide default because most public surfaces are
-// seeker surfaces (the guides, /discover, the-community). The operator half is below. The beta is OPEN — clicking the primary opens the default Funnel
-// induction directly (/join, the Funnels front door, ADR-1090; formerly
-// /onboarding/beta, which now 308s here). Signed-out visitors get the cinematic
+// seeker surfaces (the guides, /discover, the-community). The operator half is below. Clicking the
+// primary opens the default Funnel induction directly (/join, the Funnels front door, ADR-1090;
+// formerly /onboarding/beta, which now 308s here). Signed-out visitors get the cinematic
 // welcome with sign-in embedded (app/join/(induction)/induction.tsx), not a cold
-// sign-in form; after auth the route renders the full induction. The /beta
-// marketing page is kept as the campaign landing page for the Beta PROGRAM (the
-// constants keep their BETA_ names for the same reason); it used to carry a
-// waitlist form (BetaForm → requestBetaAccess) and now sends people to the same
-// induction as everything else.
+// sign-in form; after auth the route renders the full induction.
+//
+// 🔴 THE /beta MARKETING PAGE IS GONE (LIVE-251, 2026-09-09). It was kept as the campaign landing
+// page for the Beta PROGRAM, and the program's window closed on 2026-08-17: it sold "Free during
+// the beta" and a membership price "when paid membership launches", and under the current model
+// free is permanent, so its premise died with the window rather than just its dates. These two
+// constants KEEP their BETA_ names, on the beta_audit_log convention (NAMING.md §Funnels): a
+// persisted identifier is not the feature's name, and renaming them would relabel every shared CTA
+// on the site for nothing a reader can see.
 // NOTE: changing BETA_CTA_LABEL re-labels every shared CTA site-wide (nav,
 // hero, mid-page, close); page templates that bake the literal into a published DB
 // doc need a re-publish to pick it up (see docs/DOCS-PROTOCOL.md + page-editor).

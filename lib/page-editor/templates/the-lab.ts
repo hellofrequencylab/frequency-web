@@ -248,7 +248,7 @@ export const data: Data = {
         eyebrow: '',
         heading: 'Be part of building the first one.',
         headingAccent: '',
-        body: 'The community is how the Lab begins. Join the Beta and help shape the room before the doors open.',
+        body: 'The community is how the Lab begins. Join free and help shape the room before the doors open.',
         ctaPrimaryLabel: BETA_CTA_LABEL,
         ctaPrimaryHref: BETA_CTA_HREF,
         ctaSecondaryLabel: '',

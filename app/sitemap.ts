@@ -143,12 +143,21 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${SITE_URL}/start`, changeFrequency: "monthly", priority: 0.9 },
     { url: `${SITE_URL}/the-lab`, changeFrequency: "monthly", priority: 0.8 },
     { url: `${SITE_URL}/the-community`, changeFrequency: "monthly", priority: 0.8 },
-    { url: `${SITE_URL}/the-quest`, changeFrequency: "monthly", priority: 0.8 },
+    // The Quest is a side thing we all do together, not the centre of the offer (LIVE-254).
+    // It read 0.8 here, level with The Community and The Lab, which told a crawler the game
+    // ranks with the two pillars people actually come for. It keeps a real page and a real
+    // entry; it stops being advertised as a peer.
+    { url: `${SITE_URL}/the-quest`, changeFrequency: "monthly", priority: 0.6 },
     { url: `${SITE_URL}/about`, changeFrequency: "monthly", priority: 0.7 },
     // The core story page — the answer-first "What is Frequency?" explainer of the
     // movement/vision (Article + FAQ schema). Complements /about (the founding narrative).
     { url: `${SITE_URL}/what-is-frequency`, changeFrequency: "monthly", priority: 0.7 },
-    { url: `${SITE_URL}/beta`, changeFrequency: "monthly", priority: 0.9 },
+    // /beta is GONE (LIVE-251). It sold "Free during the beta" and a membership price
+    // "when paid membership launches" for a window that closed on 2026-08-17, and under
+    // the current model free is permanent, so the page's premise died with the window,
+    // not just its dates. It also sat at priority 0.9, the second-highest URL on the
+    // site, while nothing on the site linked to it. Removed here in the same change that
+    // deleted app/(marketing)/beta/page.tsx, so this file never advertises a 404.
     { url: `${SITE_URL}/discover`, changeFrequency: "daily", priority: 0.9 },
     { url: `${SITE_URL}/discover/circles`, changeFrequency: "daily", priority: 0.8 },
     { url: `${SITE_URL}/discover/events`, changeFrequency: "daily", priority: 0.8 },
@@ -185,7 +194,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // robots grammar and a strict parser can discard the rest of the block after it.
     { url: `${SITE_URL}/llms.txt`, changeFrequency: "weekly", priority: 0.5 },
     { url: `${SITE_URL}/llms-full.txt`, changeFrequency: "weekly", priority: 0.5 },
-    { url: `${SITE_URL}/pricing`, changeFrequency: "monthly", priority: 0.6 },
+    // 🔴 /pricing outranks every guide (LIVE-256). It sat at 0.6, BELOW the 0.7 SEO pillar
+    // pages, while being the page that answers the one question a prospect asks out loud and
+    // the page every answer engine quotes our money model from. It is now the highest-priority
+    // URL after the home page.
+    { url: `${SITE_URL}/pricing`, changeFrequency: "monthly", priority: 0.9 },
     // Operator funnel doors, /for/<niche> (ADR-591). A static registry (lib/marketing/funnel-config), so
     // the per-page URLs are safe to advertise here directly.
     ...funnelSlugs().map((slug) => ({

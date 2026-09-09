@@ -86,7 +86,7 @@ export default async function PublicPartnersPage() {
 
       <BetaCTA
         heading="Show up in person."
-        body="These are real local shops, studios, and makers in the community. Join the Beta to find one near you and walk in."
+        body="These are real local shops, studios, and makers in the community. Join free to find one near you and walk in."
       />
     </>
   )

@@ -314,7 +314,7 @@ export const spec: ArticleSpec = {
 
   close: {
     heading: 'Friendship is just a standing plan you keep.',
-    body: 'Frequency hands you a room that meets on a rhythm, so the same people keep showing up. Join the Beta and find yours.',
+    body: 'Frequency hands you a room that meets on a rhythm, so the same people keep showing up. Join free and find yours.',
   },
 }
 

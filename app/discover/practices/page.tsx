@@ -67,7 +67,7 @@ export default async function PublicPracticesPage() {
 
       <BetaCTA
         heading="Practices are better with people."
-        body="A Practice is one small real-world act, and it sticks when a few neighbors are doing it with you. Join the Beta and find your Circle."
+        body="A Practice is one small real-world act, and it sticks when a few neighbors are doing it with you. Join free and find your Circle."
       />
     </>
   )
