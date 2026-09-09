@@ -52,12 +52,11 @@
 -- the STRIPE rung (billedTier), never the resolved tier -- LIVE-224, locked by
 -- lib/billing/granted-crew-take-rate.test.ts.
 --
--- ALSO IN THIS MIGRATION: prevent_economy_self_edit did not cover
--- membership_tier, so the one column that decides what a member has PAID FOR was
--- the only unguarded value on a row the member can update. Every legitimate
--- writer of it already uses the service-role client (the /upgrade beta toggle,
--- the induction comp, the funnel grants), so adding it is a no-op for the app and
--- closes a self-serve upgrade path.
+-- NOT IN THIS MIGRATION, and deliberately so: membership_tier does NOT join
+-- prevent_economy_self_edit. An earlier draft added it; db-tests showed it blocks
+-- the atomic membership and bundle writers, which run with the caller's role. See
+-- section 4 for the full reasoning. The self-grant path it targeted is closed by
+-- the entitlement_grants trigger instead.
 --
 -- House style: additive + idempotent, SAFE to re-run. No em or en dashes.
 --
@@ -65,7 +64,6 @@
 --   drop trigger if exists entitlement_grants_no_self_grant on public.entitlement_grants;
 --   drop function if exists public.refuse_self_granted_entitlement();
 --   drop table if exists public.entitlement_grants;
---   (and re-create prevent_economy_self_edit without the membership_tier clause)
 -- =============================================================================
 
 -- ── 1) The grants table ──────────────────────────────────────────────────────
@@ -179,12 +177,27 @@ create policy "entitlement_grants read own"
 -- self-grant by definition.
 revoke insert, update, delete on public.entitlement_grants from anon, authenticated;
 
--- ── 4) membership_tier joins the economy lock ────────────────────────────────
--- Unchanged from 20260702000001 apart from the membership_tier clause. Every
--- legitimate writer already uses the service role, so this is a no-op for the app
--- and closes a self-serve upgrade path on the column that decides what a member
--- has paid for. CREATE OR REPLACE preserves the ACL the lockdown migration
--- (20260926000000) set; the revoke is repeated for idempotence.
+-- ── 4) membership_tier deliberately does NOT join the economy lock ───────────
+-- 🔴 An earlier draft of this migration added `membership_tier` to the guard on the
+-- reasoning that "every legitimate writer already uses the service role, so it is a
+-- no-op for the app". THAT WAS FALSE, and db-tests proved it on the first real run:
+-- the guard fires on `auth.role() is distinct from 'service_role'`, and the atomic
+-- SECURITY DEFINER writers run with the CALLER's role, not the definer's. It blocked
+--   * apply_membership_event_atomic   -- the Stripe membership webhook writer
+--   * apply_bundle_seating_atomic     -- household bundle seating
+-- taking out 43 subtests across three suites. Shipping it would have put a trigger in
+-- front of the path that applies paid memberships, which is the highest-consequence
+-- write in the product.
+--
+-- It is not re-added here, and it should not be re-added without exempting those
+-- writers first. Nothing is lost: the self-grant hole it was meant to cover is already
+-- closed twice over, by refuse_self_granted_entitlement() below (owner/admin and
+-- zero-price refusal) and by the price floor in lib/billing/membership-tier-price.ts.
+-- It was defence in depth, and defence in depth is not worth a money-path regression.
+--
+-- This block is now a no-op re-declaration kept only for the ACL note: CREATE OR
+-- REPLACE preserves the ACL the lockdown migration (20260926000000) set, and the
+-- revoke is repeated for idempotence.
 create or replace function public.prevent_economy_self_edit()
 returns trigger
 language plpgsql
@@ -203,7 +216,6 @@ begin
      or new.profile_flair        IS DISTINCT FROM old.profile_flair
      or new.custom_title         IS DISTINCT FROM old.custom_title
      or new.profile_theme        IS DISTINCT FROM old.profile_theme
-     or new.membership_tier      IS DISTINCT FROM old.membership_tier
   ) then
     raise exception
       'economy, rank, status, and cosmetic columns cannot be modified by users - use server actions'
