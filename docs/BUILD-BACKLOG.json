@@ -70,7 +70,6 @@
             "HYG-078",
             "HYG-080",
             "HYG-082",
-            "OWN-071",
             "PROG-R4",
             "LIVE-228",
             "LIVE-229",
@@ -99,12 +98,10 @@
             "LIVE-249",
             "LIVE-250",
             "PROG-R8",
-            "LIVE-251",
             "LIVE-252",
             "LIVE-253",
             "LIVE-254",
             "LIVE-255",
-            "LIVE-256",
             "LIVE-257",
             "PROG-R9",
             "LIVE-258",
@@ -112,10 +109,7 @@
             "LIVE-260",
             "LIVE-261",
             "PROG-R10",
-            "LIVE-262",
             "LIVE-263",
-            "LIVE-264",
-            "LIVE-265",
             "PROG-R11"
           ]
         },
@@ -10468,7 +10462,7 @@
         "file": "docs/CORE-MODEL.md",
         "ref": "§5"
       },
-      "detail": "NARROWED 2026-09-09. The row originally said \"delete the five tier-axis gates\". Two of the five (journey_library_list, entry_points) have no enforcement and are handled by HYG-079. The other three are NOT decorative and must not be deleted as hygiene:\n  - vault_cash_in    enforced at app/(main)/crew/store/actions.ts:72\n  - gamification_full enforced at lib/pricing/gamification-access.ts:119\n  - vera_unlimited    enforced at lib/ai/vera/usage-gate.ts:70\nplus two personal tease surfaces (vault-store.tsx:26, layout.tsx:855) and two pricing-grid rows.\n\nfeatureAllowed default-ALLOWS an undeclared key, so deleting them would not error. It would silently and permanently grant Gem cash-in, the full rewards loop, and uncapped Vera to every free member. gate-meter-drift.test.ts already records vera_unlimited as a known collision deferred to a later phase.\n\nWHAT REMAINS IN THIS ROW: un-gate practice.create in lib/core/capabilities.ts:228, which is Crew-gated while event.create, circle.create and journey.create are open to any signed-in member. That inconsistency has no argument behind it. Requires updating load-capabilities.test.ts:141,239 and removing the now-unreachable crewCreateUpsell copy at practices/create-actions.ts:199.\n\nThe tier AXIS itself cannot be removed: six METERS still use axis tier (vera_unlimited, journey_publish, journey_enrollees, circle_host, practice_publish, event_create), and GateAxis is imported by six modules.",
+      "detail": "NARROWED 2026-09-09. The row originally said \"delete the five tier-axis gates\". Two of the five (journey_library_list, entry_points) have no enforcement and are handled by HYG-079. The other three are NOT decorative and must not be deleted as hygiene:\n  - vault_cash_in    enforced at app/(main)/crew/store/actions.ts:72  [DELETED 2026-09-09, ADR-1295]\n  - gamification_full enforced at lib/pricing/gamification-access.ts:119  [DELETED 2026-09-09, ADR-1295]\n  - vera_unlimited    enforced at lib/ai/vera/usage-gate.ts:70\nplus two personal tease surfaces (vault-store.tsx:26, layout.tsx:855) and two pricing-grid rows.\n\nfeatureAllowed default-ALLOWS an undeclared key, so deleting them would not error. It would silently and permanently grant Gem cash-in, the full rewards loop, and uncapped Vera to every free member. gate-meter-drift.test.ts already records vera_unlimited as a known collision deferred to a later phase.\n\nWHAT REMAINS IN THIS ROW: un-gate practice.create in lib/core/capabilities.ts:228, which is Crew-gated while event.create, circle.create and journey.create are open to any signed-in member. That inconsistency has no argument behind it. Requires updating load-capabilities.test.ts:141,239 and removing the now-unreachable crewCreateUpsell copy at practices/create-actions.ts:199.\n\nThe tier AXIS itself cannot be removed: six METERS still use axis tier (vera_unlimited, journey_publish, journey_enrollees, circle_host, practice_publish, event_create), and GateAxis is imported by six modules.\n\nUPDATE 2026-09-09 (ADR-1295, OWN-071): the owner ruled on the two Quest gates this row had protected. They were opened, not wired: the Quest is a side thing we all do together, so vault_cash_in and gamification_full are deleted along with every enforcement site, the two tease surfaces and the two pricing-grid rows. vera_unlimited stays, on marginal cost. What this row itself closed (practice.create) is untouched.",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e 'const s=require(\"fs\").readFileSync(\"lib/core/capabilities.ts\",\"utf8\");const m=s.match(/caps\\.add\\(.event\\.create.\\)[\\s\\S]{0,260}?\\n\\s*\\}/);if(!m){console.error(\"the member create block was not found\");process.exit(1)}if(!/practice\\.create/.test(m[0])){console.error(\"practice.create is still gated separately from its three siblings\");process.exit(1)}process.exit(0)'"
@@ -10994,7 +10988,7 @@
     {
       "id": "LIVE-251",
       "title": "Retire /beta - it sells a window that closed on 17 August",
-      "status": "open",
+      "status": "done",
       "priority": "P1",
       "lane": "live",
       "size": "XS",
@@ -11083,7 +11077,7 @@
     {
       "id": "LIVE-256",
       "title": "Free AIO and SEO wins available in the same pass",
-      "status": "open",
+      "status": "done",
       "priority": "P2",
       "lane": "live",
       "size": "S",
@@ -11091,7 +11085,7 @@
         "file": "docs/CORE-MODEL.md",
         "ref": "§5"
       },
-      "detail": "Three cheap ones found by the 2026-09-08 public survey. (1) lib/jsonld.ts:29-59 accepts sameAs social edges for the Organization schema and NO caller passes any. (2) /pricing sits at sitemap priority 0.6, below the 0.7 SEO guides. (3) Five real SEO pillar pages are ORPHANED - /vs, /vs/[slug], /calm-down-fast, /how-to-be-more-social, /friendship-as-an-adult are in the sitemap and llms.txt but nothing on the site links to them, so they earn no internal link equity.",
+      "detail": "Three cheap ones found by the 2026-09-08 public survey. (1) lib/jsonld.ts:29-59 accepts sameAs social edges for the Organization schema and NO caller passes any. (2) /pricing sits at sitemap priority 0.6, below the 0.7 SEO guides. (3) Five real SEO pillar pages are ORPHANED - /vs, /vs/[slug], /calm-down-fast, /how-to-be-more-social, /friendship-as-an-adult are in the sitemap and llms.txt but nothing on the site links to them, so they earn no internal link equity.\n\n── ONE THIRD OF THIS ROW HAD ALREADY EXPIRED. It claimed lib/jsonld.ts accepts sameAs and \"no caller passes any\". lib/site.ts:249 defines SOCIAL_PROFILES and app/layout.tsx:190 passes it; that landed under SCAN-205 and nobody closed the row. The sitemap re-weighting and the orphaned-pillar links were real and are done.",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e 'const s=require(\"fs\").readFileSync(\"app/sitemap.ts\",\"utf8\");const m=s.match(/.pricing[^}]*priority:\\s*([0-9.]+)/);if(!m){console.error(\"no /pricing sitemap entry\");process.exit(1)}const p=parseFloat(m[1]);console.error(\"/pricing priority \"+p);process.exit(p>=0.8?0:1)'"
@@ -11191,7 +11185,7 @@
     {
       "id": "LIVE-262",
       "title": "Space directory sort: alphabetical to a v0 standing score",
-      "status": "open",
+      "status": "done",
       "priority": "P1",
       "lane": "live",
       "size": "M",
@@ -11199,7 +11193,7 @@
         "file": "docs/CORE-MODEL.md",
         "ref": "§5"
       },
-      "detail": "lib/spaces/discovery.ts:135 defaults normalizeSpaceSort to 'name' and :378-380 applies .order('name'). The most valuable exposure surface a business has rewards nothing except starting with the letter A.\n\nv0 computes from counts ALREADY FETCHED - no migration, no query change. The pattern is native to this repo: practices_ranked, the community_library RPC and lib/feed/blend-rank.ts all already saturate signals and renormalise over the ones present.\n\nTHE INVARIANT THAT MUST SURVIVE: nothing on the platform can be bought into rank. An audit of every ranking surface found no plan, tier, entitlement or Stripe field in any ORDER BY, score or inclusion filter. Earned exposure means earned.",
+      "detail": "CLOSED 2026-09-09. lib/spaces/discovery.ts no longer defaults to the alphabetical sort: normalizeSpaceSort returns DEFAULT_SPACE_SORT ('standing'), and the app-code sort branch orders by the earned score with name as the stable tie-break. The score itself is lib/spaces/standing.ts, PURE and shared with the nightly rollup so the two can never disagree: six signals (gatherings held, upcoming, rooms, audience, commons, care), each saturated on its own scale, weights renormalised over the signals THE READER MEASURED (never over 'this Space has zero'), and the doing half joined to the belonging half by a harmonic mean so a one-sided Space cannot top the directory. v0 measures four of the six from counts the query already fetched, so no migration and no query change; the other two arrive from LIVE-263's rollup and renormalise away until it runs.\n\nTHE INVARIANT HELD: no plan, tier, entitlement or Stripe field enters the score. lib/spaces/standing.test.ts carries a source-shape guard that fails on any commercial token in the module, and the module imports nothing at all so there is no seam for one to arrive through. Founding status is resolved in the same batch and is deliberately NOT passed in: it badges a card, it does not rank one.",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e 'const s=require(\"fs\").readFileSync(\"lib/spaces/discovery.ts\",\"utf8\");const m=s.match(/export function normalizeSpaceSort[\\s\\S]*?\\n\\}/);if(!m){console.error(\"normalizeSpaceSort not found\");process.exit(1)}if(/return[^\\n]*.name./.test(m[0])){console.error(\"directory still defaults to the alphabetical sort\");process.exit(1)}process.exit(0)'"
@@ -11216,17 +11210,18 @@
         "file": "docs/CORE-MODEL.md",
         "ref": "§5"
       },
-      "detail": "v1 of the score, on the existing refresh-traits cron, copying the resonance_density_cells pattern: six saturated signals via saturate(n) = 1 - e^-n, harmonic mean, renormalised over whichever signals are present so a Space is never punished for a signal nobody has.\n\nBLOCKED IN PART: event attendance has no independent record (no checked_in column; it exists only as an engagement-ledger row written by the path that pays Zaps). Either add the column or leave attendance out of v1 and say so in the score's own documentation - do not quietly weight a signal that does not exist.",
+      "detail": "CODE IS IN THE TREE (2026-09-09); the remaining step is applying the migration. lib/spaces/standing-rollup.ts computes all six signals for every active non-root Space in six grouped reads and upserts them plus the resolved score; it runs on the nightly refresh-traits cron beside the density rollup, and reports failures the way lib/resonance/density.ts had to be taught to (an error message, logged at error level, never a silent 'wrote nothing'). The table is supabase/migrations/20270345002900_space_standing.sql: additive, idempotent, service-role only, six earned counts and a score, no commercial column.\n\nTHE ATTENDANCE GAP, handled in the open rather than quietly: event attendance has no independent record (no checked_in column; it exists only as an engagement-ledger row written by the path that pays Zaps, so 'attended' and 'was paid for attending' are the same fact). It is therefore NOT a signal and NOT a zero-weighted one. gatherings_held counts gatherings that happened, which the data can stand behind. The score renormalises over the signals present, so adding attendance later re-scores everyone at once and changes no existing weight. Said in the module header, the migration comment, the operator receipt page, and pinned by a test.\n\nOWNER ACTION (config): apply supabase/migrations/20270345002900_space_standing.sql and repair the ledger (supabase/migrations/README.md, the two-step protocol), then confirm the next nightly refresh-traits run logs cron.refresh_space_standing with a non-zero spaces count. Until then the directory runs on the v0 subset BY DESIGN: an unreadable or empty space_standing means two signals were not measured, and the score renormalises over the four that were.",
       "verify": {
         "kind": "manual",
-        "evidence": "space_standing is non-empty and refreshes nightly. The signal list names what it does NOT include.",
-        "checked": "2026-09-08"
-      }
+        "evidence": "space_standing is non-empty and refreshes nightly (cron.refresh_space_standing, spaces > 0). The signal list names what it does NOT include: attendance, and why.",
+        "checked": "2026-09-09"
+      },
+      "ownerAction": "config"
     },
     {
       "id": "LIVE-264",
       "title": "Wire the four dormant featured_at columns",
-      "status": "open",
+      "status": "done",
       "priority": "P2",
       "lane": "live",
       "size": "S",
@@ -11234,17 +11229,17 @@
         "file": "docs/CORE-MODEL.md",
         "ref": "§5"
       },
-      "detail": "featured_at exists on circles, posts, practices and events with four write paths (lib/ai/vera/feature-posts.ts:140,153,167 and lib/admin/content-signals.ts:192,201). Live: posts 4 of 110, circles 0 of 7, practices 0 of 21, events 0 of 67. Three of the four mechanisms render NOTHING - no sort branch reads the column.\n\nThese are the four featured slots the owner ruled are part of earned exposure. No migration needed.\n\nCAUTION: add the column to EVERY select branch. scripts/check-row-type-select-parity.test.ts:23-27 exists because a partial select here has bitten before.",
+      "detail": "CLOSED 2026-09-09. All four featured_at columns now reach a sort. posts already did (the public_featured_posts RPC orders by featured_at desc). The three dark ones were wired: circles in lib/circles/index-data.ts (featured lead the DEFAULT browse order, most-recently featured first), events in app/(main)/events/index-data.ts (same, leading the soonest-first default), and practices + journeys in lib/library.ts (getLibrary enriches featured_at in two batched reads, the way lib/practices.ts already does for the admin library, because the community_library RPC's columns are frozen and predate the column, then leads the ranked order with a stable sort).\n\nEach is confined to the DEFAULT sort branch on purpose: an explicit sort (distance, popularity, relevance, most active, newest, openings) is the member saying how they want the list ordered, and a curated pick must not quietly outrank a stated intent. No select branch was widened, so scripts/check-row-type-select-parity.test.ts stays green; the events index already shares one EVENT_SELECT across all three branches.",
       "verify": {
         "kind": "manual",
-        "evidence": "Each of the four surfaces reads featured_at in its sort, and select parity passes.",
-        "checked": "2026-09-08"
+        "evidence": "Each of the four surfaces reads featured_at in its sort (posts via the RPC; circles, events, practices/journeys in their default sort branch), and check-row-type-select-parity passes.",
+        "checked": "2026-09-09"
       }
     },
     {
       "id": "LIVE-265",
       "title": "The operator receipt: what did the network send me",
-      "status": "open",
+      "status": "done",
       "priority": "P2",
       "lane": "live",
       "size": "M",
@@ -11252,30 +11247,27 @@
         "file": "docs/CORE-MODEL.md",
         "ref": "§5"
       },
-      "detail": "A page at space.reach answering two questions: what did the network send me, and what would send more. This is the reason an operator opens the app on a Tuesday, and it is what makes earned exposure legible rather than mysterious - a ranking nobody can see reads as favouritism.",
+      "detail": "CLOSED 2026-09-09. app/(main)/spaces/[slug]/settings/reach, a read-only Focus surface under the Reach box (space.reachreceipt in SPACE_MODULES, parented to space.reach). It answers the two questions in order: WHAT THE NETWORK SENT YOU (page views and button taps from the engagement ledger over 30 days, followers, members, and the Space's actual position in the directory, read from the same request-cached list the directory itself renders, so the two cannot disagree) and WHAT WOULD SEND MORE (every standing signal, weakest first, each with what it measures and the one next move, from standingLevers).\n\nIt also prints the promise in writing: placement is earned and cannot be bought; a Space is judged on the signals it has, not marked down for ones nobody can measure yet; doing and belonging both count; and attendance is not counted, because there is no reliable record of it. Ungated on purpose - every Space is ranked whether or not it pays for anything, so every Space can see why. A ranking nobody can see reads as favouritism.",
       "verify": {
         "kind": "manual",
-        "evidence": "The Reach box carries a receipt page showing network-sourced reach and the levers that move it.",
-        "checked": "2026-09-08"
+        "evidence": "The Reach box carries a receipt page (/spaces/<slug>/settings/reach) showing network-sourced reach, the Space's directory position, and the levers that move it.",
+        "checked": "2026-09-09"
       }
     },
     {
       "id": "OWN-071",
-      "title": "Ruling: do free members get the full Quest loop, and is uncapped Vera still a Crew perk?",
-      "status": "open",
-      "priority": "P1",
+      "title": "Ruling: free members get the full Quest loop; uncapped Vera stays a Crew perk",
+      "status": "done",
       "lane": "owner",
       "size": "S",
       "source": {
         "file": "docs/CORE-MODEL.md",
         "ref": "§4b"
       },
-      "ownerAction": "ruling",
-      "detail": "SURFACED 2026-09-09 while working LIVE-222, and CORRECTED the same day by the owner.\n\n🔴 THE CORRECTION FIRST, because the original framing was wrong and it changed the answer. This row said vault_cash_in \"lets a member turn Gems into money\". It does not. OWNER, 2026-09-09: \"Gem cash trade in is ONLY for store merch.\" The code agrees - app/(main)/crew/store/actions.ts redeemItem spends Gems against store_items (gem_cost, stock, season_id, expires_at), which is the VAULT at /crew/store, a rewards catalog. It is not a payout, and it is a different surface from the Frequency Store (commerce_products, owner_kind=platform). So the cost of opening it is merch fulfilment and stock, not cash out of the business.\n\nTHE THREE GATES, correctly described:\n  - vault_cash_in     spend earned Gems on Vault items. Cost: fulfilment + stock.\n  - gamification_full the full earn-and-spend loop rather than earn-only. Cost: none directly.\n  - vera_unlimited    removes the free daily AI cap. Cost: inference spend, per user, unbounded.\n\nWHY IT STILL NEEDS A RULING: the owner ruled the Quest is demoted from the centre of the product to \"a side thing we all do together\". Two of these three are what makes it a thing we all do - a member who can earn but never spend is not playing the same game as a member who can. The third is not about the game at all; it is an AI budget that happens to sit on the same axis.\n\nRECOMMENDATION, revised on the correction: open vault_cash_in AND gamification_full, keep vera_unlimited gated. Everyone plays the whole loop including spending what they earned, which is what \"together\" means; the one gate that survives is the one with a real marginal cost per user, and it is an AI cap rather than a game rung. Fulfilment cost is real but it is bounded by stock and by what a member can plausibly earn, and the Vault already enforces both.",
+      "detail": "✅ RULED AND SHIPPED 2026-09-09 (ADR-1295). The owner ruled the Quest is demoted from the centre of the product to \"a side thing we all do together\", and that two of the three personal gates are what make that literally true.\n\nOPENED, gate + every enforcement site deleted in one change:\n  - vault_cash_in     spend earned Gems on Vault items. The framing was corrected first: it is NOT a cash-out. OWNER, 2026-09-09: \"Gem cash trade in is ONLY for store merch.\" redeemItem spends Gems against store_items (gem_cost, stock, season_id, expires_at) at /crew/store, a rewards catalog, so the cost is fulfilment and stock, both already bounded by the Vault.\n  - gamification_full the full earn-and-spend loop rather than earn-only.\nKEPT: vera_unlimited, untouched including its ladder, tease surface and pricing-grid row. It is the one gate with a real marginal cost per user (inference spend, no natural ceiling), so it is a cost control rather than a game rung.\n\nfeatureAllowed default-ALLOWS an undeclared key, so deleting the rows alone would have granted them silently; every call site went with them so no dead check reads as a live rule. Removed: both redeemItem guards and the canCashIn predicate (its only call site); gamificationFullAllowed and its three consumers (the leaderboard compete gate, CrewContext.gamificationFull, the /crew season-reset nudge); the access-matrix `vault` row, which was the gate that actually bit in the UI (canSpend = surfaceAccess('vault') === 'full' muted the whole Vault Store grid behind a CrewGate) and is now QUEST_OPEN like its four siblings; the dead upsells CompeteLocked, SeasonResetPrompt, CrewPreviewBanner, lib/pricing/conversion.ts, the Vault UpsellTease, both FEATURE_TIER_LADDERS entries, both pricing-grid rewards rows and both NON_METERED_FEATURES entries; the upgrade lightbox DEFAULT copy; the two /upgrade Quest bullets; and the two help pages that taught the old rule.\n\nUNCHANGED by design: the earning side, the Gem ledger, seasons, stock, expires_at, the rank requirements and the atomic redeem_store_item_atomic charge. This opened WHO may spend, nothing else. The gamification_access third flag (the override column + the gamification_full_* operator flags) also stays: it is an operator pin, not a billing door.\n\nLocked by gate-meter-drift.test.ts: neither key may return, and the tier-axis gate set is asserted to be exactly ['vera_unlimited'], so a second personal gate has to make its own cost argument.",
       "verify": {
-        "kind": "manual",
-        "evidence": "Owner ruling recorded in DECISIONS.md and reflected in FEATURE_GATES.",
-        "checked": "2026-09-09"
+        "kind": "cmd",
+        "cmd": "node -e 'const s=require(\"fs\").readFileSync(\"lib/pricing/gates.ts\",\"utf8\").replace(/\\/\\/.*$/gm,\"\").replace(/\\/\\*[\\s\\S]*?\\*\\//g,\"\");const back=[\"vault_cash_in\",\"gamification_full\"].filter(k=>s.includes(k));if(back.length){console.error(\"back on the gate map: \"+back.join(\", \"));process.exit(1)}if(!/vera_unlimited:\\s*\\{[^}]*minEntitlement:\\s*.crew./.test(s)){console.error(\"vera_unlimited is no longer a crew gate; the ruling kept it\");process.exit(1)}process.exit(0)'"
       }
     }
   ]

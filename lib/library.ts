@@ -39,6 +39,10 @@ export type LibraryItem = {
   unitCount: number | null
   /** Pluralized descriptor for unitCount, e.g. 'weeks · 24 lessons' or 'lessons'. */
   unitLabel: string | null
+  /** The staff FEATURE mark (practices.featured_at / journey_plans.featured_at), or null. Enriched
+   *  after the RPC because the `community_library` view predates the column, exactly the way
+   *  lib/practices.ts enriches the admin library. Leads the catalog order (LIVE-264). */
+  featuredAt: string | null
 }
 
 export type PendingItem = {
@@ -69,7 +73,52 @@ async function resolvePeople(ids: (string | null)[]): Promise<Map<string, Person
   return map
 }
 
-/** The ranked best-of catalog (community_library RPC), with authors resolved. */
+/**
+ * The staff FEATURE marks for one page of library items, batched by type (LIVE-264).
+ *
+ * `practices.featured_at` and `journey_plans.featured_at` have existed since migration
+ * 20260610180000, with a write path in `lib/admin/content-signals.ts`
+ * (`setPracticeFeatured` / `setJourneyFeatured`) and a toggle in the admin library, and until now
+ * NOTHING read them on a member-facing surface: a curator could feature a practice and the library
+ * looked identical. The `community_library` RPC's columns are frozen and predate the column, so the
+ * mark is enriched here rather than added to the view, which is the same shape `lib/practices.ts`
+ * already uses for the admin library. TWO reads for the whole page, never one per row.
+ *
+ * FAIL-SAFE: any error yields an empty map, so the catalog renders in its ranked order with no
+ * featured band rather than failing.
+ */
+async function featuredMarks(rows: readonly Record<string, unknown>[]): Promise<Map<string, string>> {
+  const marks = new Map<string, string>()
+  const byType = (t: ContentType) =>
+    rows.filter((r) => r.content_type === t).map((r) => r.id as string).filter(Boolean)
+  const practiceIds = byType('practice')
+  const journeyIds = byType('journey')
+  if (practiceIds.length === 0 && journeyIds.length === 0) return marks
+  try {
+    const d = db()
+    const [pr, jp] = await Promise.all([
+      practiceIds.length
+        ? d.from('practices').select('id, featured_at').in('id', practiceIds)
+        : Promise.resolve({ data: [] as Record<string, unknown>[] }),
+      journeyIds.length
+        ? d.from('journey_plans').select('id, featured_at').in('id', journeyIds)
+        : Promise.resolve({ data: [] as Record<string, unknown>[] }),
+    ])
+    for (const set of [pr.data, jp.data]) {
+      for (const row of (set as { id: string; featured_at: string | null }[] | null) ?? []) {
+        if (row.featured_at) marks.set(row.id, row.featured_at)
+      }
+    }
+    return marks
+  } catch {
+    return marks
+  }
+}
+
+/** The ranked best-of catalog (community_library RPC), with authors resolved and the staff FEATURE
+ *  marks enriched. Featured items LEAD the catalog, most-recently featured first; everything else
+ *  keeps the RPC's ranked order underneath (a stable sort, so the ranking is preserved exactly).
+ *  Featuring is the one curated lever on this surface, and it is editorial, never purchased. */
 export async function getLibrary(opts: { type?: ContentType | null; pillar?: string | null; limit?: number } = {}): Promise<LibraryItem[]> {
   const { data } = await db().rpc('community_library', {
     _type: opts.type ?? null,
@@ -77,8 +126,11 @@ export async function getLibrary(opts: { type?: ContentType | null; pillar?: str
     _limit: opts.limit ?? 80,
   })
   const rows = (data as Record<string, unknown>[] | null) ?? []
-  const people = await resolvePeople(rows.map((r) => r.author_id as string | null))
-  return rows.map((r) => ({
+  const [people, featured] = await Promise.all([
+    resolvePeople(rows.map((r) => r.author_id as string | null)),
+    featuredMarks(rows),
+  ])
+  const items = rows.map((r) => ({
     contentType: r.content_type as ContentType,
     id: r.id as string,
     slug: r.slug as string,
@@ -98,7 +150,17 @@ export async function getLibrary(opts: { type?: ContentType | null; pillar?: str
     cadence: (r.cadence as string) ?? null,
     unitCount: r.unit_count == null ? null : Number(r.unit_count) || null,
     unitLabel: (r.unit_label as string) ?? null,
+    featuredAt: featured.get(r.id as string) ?? null,
   }))
+
+  // Featured first, most-recently featured leading; everything else keeps the RPC's ranked order.
+  // `Array.prototype.sort` is stable, so the un-featured tail is untouched.
+  return items.sort((a, b) => {
+    if (a.featuredAt && b.featuredAt) return b.featuredAt.localeCompare(a.featuredAt)
+    if (a.featuredAt) return -1
+    if (b.featuredAt) return 1
+    return 0
+  })
 }
 
 /** Everything awaiting leadership review, across both types. */

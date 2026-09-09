@@ -30,6 +30,7 @@ import {
   HandCoins,
   Library,
   Network,
+  TrendingUp,
 } from 'lucide-react'
 import type { SpaceFunctionKey } from '@/lib/spaces/functions'
 import type { AdminSlot } from './registry'
@@ -259,6 +260,13 @@ export const SPACE_MODULES: readonly SpaceModule[] = [
   // groups by raw slot, so a `comms` row drew an eighth, engineering-named "Comms" header there. Same slot as
   // QR codes ⇒ one Reach group on both surfaces. (`comms` stays live for the core-entity CRM modules in
   // ADMIN_MODULES; only the Space rows move.)
+  // The operator RECEIPT (LIVE-265, docs/CORE-MODEL.md Phase 10 §8.4): what the network sent you, and what
+  // would send more. A tool UNDER the Reach box rather than a thirteenth top-level one (ADR-846: twelve
+  // boxes, everything else nests one level). No gate and no feature key: every Space is ranked in the
+  // directory whether or not it pays for anything, so every Space can see why. That is the point of the
+  // page, and gating it would contradict it.
+  { id: 'space.reachreceipt', label: 'Your reach', desc: 'See what the network sent you, and the next thing that would send more.', Icon: TrendingUp, family: 'reach', slot: 'reach', gate: { kind: 'always' }, featureKey: null, render: 'link', deepLink: (s) => `${base(s)}/settings/reach`, order: 76, tier: 'primary', priority: 51, access: 'included', parent: 'space.reach' },
+
   { id: 'space.comms', label: 'Email', desc: 'Write a campaign, pick who gets it, and send or schedule it.', Icon: Mail, family: 'reach', slot: 'reach', gate: { kind: 'feature', fn: 'email' }, featureKey: 'email', render: 'panel', deepLink: (s) => `${base(s)}/settings/email`, order: 80, tier: 'primary', priority: 55, placement: 'bank', access: 'freemium', freeNote: '300 sends/mo free, then 5,000/mo on Business, 25,000/mo on Collective' },
   // Email design (Email in the Business CRM, P1): the FULL on-canvas email editor. Reuses the one Email Studio
   // engine (EmailCanvasEditor) pointed at this Space's own drafts, seeded from the Space brand. Gated on the

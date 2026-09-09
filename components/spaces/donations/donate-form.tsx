@@ -121,7 +121,7 @@ export function DonateForm({
         type="button"
         onClick={give}
         disabled={pending}
-        className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2.5 text-body-sm font-bold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
+        className="inline-flex items-center gap-1.5 rounded-control bg-primary px-4 py-2.5 text-body-sm font-bold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
       >
         {pending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null}
         {cents && cents >= MIN_CENTS ? `Give ${formatPriceCents(cents)}` : 'Give'}

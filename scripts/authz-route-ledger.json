@@ -157,14 +157,14 @@
     "app/llms-full.txt/route.ts": {
       "verdict": "public",
       "reason": "AIO corpus for answer engines (docs/CONTENT-VOICE §8). Published help articles plus the pricing ladder read from lib/pricing/pricing-grid.ts — the same model /pricing renders. Everything it emits is already on a public page.",
-      "checked": "2026-08-17",
-      "digest": "a51d6261becdee20"
+      "checked": "2026-09-09",
+      "digest": "a327e59320720534"
     },
     "app/llms.txt/route.ts": {
       "verdict": "public",
       "reason": "Curated AIO brand summary (ADR-916). Reads through the admin client for live public counts and the operator's pricing config, all of which /pricing and the public pages already show. No caller identity anywhere. 2026-08-25 re-read: added a Live-directories section and derived the COMPARE list from the COMPARISONS registry — still static public copy plus the same public reads.",
-      "checked": "2026-08-25",
-      "digest": "66bf0e54141fd817"
+      "checked": "2026-09-09",
+      "digest": "ad5e59330f02731f"
     },
     "app/podcasts/[spaceSlug]/[showSlug]/rss.xml/route.ts": {
       "verdict": "model-gated",

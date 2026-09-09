@@ -271,12 +271,26 @@ export async function getCirclesIndexData(params: CirclesIndexParams): Promise<C
     return true
   })
 
+  // Operator-FEATURED circles lead the DEFAULT order (LIVE-264). `circles.featured_at` has existed
+  // since migration 20260616181000 with a write path in /admin/circles and a `FeaturedBadge` on the
+  // card, and until now NO sort branch read it: an operator could feature a circle and nothing
+  // moved. It is deliberately confined to the default branch. An explicit sort is the member
+  // saying what they want ordered by, and a curated pick must not quietly outrank "most active" or
+  // "newest"; featuring is a nudge on the browse order, not an override of a stated one.
+  // `featured_at` doubles as the ordering key inside the band, so the most recent pick leads.
+  const byFeatured = (a: CircleRow, b: CircleRow) => {
+    if (!a.featured_at && !b.featured_at) return 0
+    if (!a.featured_at) return 1
+    if (!b.featured_at) return -1
+    return b.featured_at.localeCompare(a.featured_at)
+  }
   const byMember = (a: CircleRow, b: CircleRow) => b.member_count - a.member_count
   if (sort === 'active') filtered = [...filtered].sort(byMember)
   else if (sort === 'new') filtered = [...filtered].sort((a, b) => +new Date(b.created_at) - +new Date(a.created_at))
   else if (sort === 'open')
     filtered = [...filtered].sort((a, b) => b.member_cap - b.member_count - (a.member_cap - a.member_count))
-  else filtered = [...filtered].sort((a, b) => a.name.localeCompare(b.name)) // "nearest" -> name; the map does real proximity
+  // "nearest" -> featured first, then name; the map does real proximity.
+  else filtered = [...filtered].sort((a, b) => byFeatured(a, b) || a.name.localeCompare(b.name))
 
   const myCircles = filtered.filter((c) => myCircleIds.includes(c.id))
   const discover = filtered.filter((c) => !myCircleIds.includes(c.id))

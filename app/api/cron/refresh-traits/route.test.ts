@@ -12,6 +12,9 @@ import type { NextRequest } from 'next/server'
 const density = vi.hoisted(() => ({
   result: { cells: 0 } as { cells: number; error?: string },
 }))
+const standing = vi.hoisted(() => ({
+  result: { spaces: 0 } as { spaces: number; error?: string },
+}))
 const logged = vi.hoisted(() => ({
   error: [] as { event: string; fields?: Record<string, unknown> }[],
   info: [] as { event: string; fields?: Record<string, unknown> }[],
@@ -28,6 +31,9 @@ vi.mock('@/lib/resonance/embeddings', () => ({
 }))
 vi.mock('@/lib/resonance/density', () => ({
   refreshResonanceDensityCells: () => Promise.resolve(density.result),
+}))
+vi.mock('@/lib/spaces/standing-rollup', () => ({
+  refreshSpaceStanding: () => Promise.resolve(standing.result),
 }))
 vi.mock('@/lib/cron-auth', () => ({
   rejectUnauthorizedCron: () => null,
@@ -51,6 +57,8 @@ const req = new Request('http://localhost/api/cron/refresh-traits') as unknown a
 beforeEach(() => {
   logged.error.length = 0
   logged.info.length = 0
+  density.result = { cells: 0 }
+  standing.result = { spaces: 0 }
 })
 
 describe('GET /api/cron/refresh-traits, the density-rollup step', () => {
@@ -86,5 +94,38 @@ describe('GET /api/cron/refresh-traits, the density-rollup step', () => {
     expect(logged.error).toHaveLength(0)
     const line = logged.info.find((l) => l.event === 'cron.refresh_resonance_density')
     expect(line?.fields).toEqual({ ok: true, cells: 17 })
+  })
+})
+
+// The space-standing rollup (LIVE-263) rides the same cron and takes the SAME observability
+// contract, for the same reason: a nightly rollup whose failure is indistinguishable from an empty
+// success is a rollup nobody notices has stopped. The directory degrades on its own when the table
+// is unreadable, which is exactly why the cron has to be loud about it: the surface stays fine and
+// the signal quietly disappears.
+describe('GET /api/cron/refresh-traits, the space-standing step', () => {
+  it('logs a failed rollup at ERROR under .failed and marks the step ok: false, without failing the cron', async () => {
+    standing.result = { spaces: 0, error: '42P01: relation "space_standing" does not exist' }
+    const res = await GET(req)
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body.ok).toBe(true)
+    expect(body.spaceStanding).toEqual({
+      ok: false,
+      spaces: 0,
+      error: '42P01: relation "space_standing" does not exist',
+    })
+    const failure = logged.error.find((l) => l.event === 'cron.refresh_space_standing.failed')
+    expect(failure?.fields).toMatchObject({ ok: false, spaces: 0 })
+    expect(logged.info.map((l) => l.event)).not.toContain('cron.refresh_space_standing')
+  })
+
+  it('logs a successful rollup at info with ok: true and the row count, and never at error', async () => {
+    standing.result = { spaces: 22 }
+    const res = await GET(req)
+    const body = await res.json()
+    expect(body.spaceStanding).toEqual({ ok: true, spaces: 22 })
+    expect(logged.error.map((l) => l.event)).not.toContain('cron.refresh_space_standing.failed')
+    const line = logged.info.find((l) => l.event === 'cron.refresh_space_standing')
+    expect(line?.fields).toEqual({ ok: true, spaces: 22 })
   })
 })
