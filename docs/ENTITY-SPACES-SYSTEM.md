@@ -100,7 +100,7 @@ spectrum of *isolation from the network* and *visibility of Frequency's brand*.
 | Remove Frequency branding | 🔴 | ⏳ partial (footer stays) | ✅ | `entitlements.white_label` |
 | Cross-network discovery | ✅ | 🔴 | 🔴 | `spaces.visibility` |
 | Shared Quest accrual | ✅ | ◦ | ◦ | `network_connected` + `entitlements.gamification` |
-| Cash-in the Vault (spend Gems) | ✅ (member's own paid tier) | ◦ | ◦ | member `membership_tier` (`canCashIn`) + space `gamification` |
+| Cash-in the Vault (spend Gems) | ✅ (any signed-in member, ADR-1295) | ◦ | ◦ | space `gamification` (the member tier no longer gates it) |
 | Library contribution / hosting | ✅ | 🔴 | 🔴 (◦ if federated) | `network_connected` |
 | Own marketing sender domain | ◦ | ✅ | ✅ | `entitlements.email` + `sender_domains` |
 | Own transactional sender domain | 🔴 | ◦ | ✅ | `entitlements.white_label_email` |
@@ -529,8 +529,10 @@ Per-space dashboards over the space's own rows (events, CRM, money, engagement) 
 A space opts in with `network_connected: true` + `entitlements.gamification`. Then: practices
 logged in the space accrue Zaps to the member's one ledger; finishing a Journey mints a Pillar
 Trophy (+75 Zaps); the space's content can enter the shared library and compete; members earn
-shared points and trust. Accrual runs for everyone on the free tier; **cash-in** (spend Gems)
-is the member's paid unlock (`canCashIn` in `lib/core/entitlement.ts`). A Private/White-Label
+shared points and trust. Accrual runs for everyone on the free tier, and so does **cash-in**
+(spending Gems): the `canCashIn` predicate and the `vault_cash_in` gate were deleted by
+[ADR-1295](DECISIONS.md) (owner ruling 2026-09-09), because the Quest is a side thing we all do
+together. A Private/White-Label
 space can leave gamification off entirely. **Build** (the economy exists; wire the per-space
 opt-in seam).
 
