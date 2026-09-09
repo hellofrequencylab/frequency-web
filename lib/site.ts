@@ -238,3 +238,17 @@ export const CONTACT_EMAIL = "hello@frequencylocal.com";
 export const SOCIAL_PROOF_FLOOR = 25;
 // Where the first community is taking root — used in founding-stage copy.
 export const FOUNDING_PLACE = "North County San Diego";
+
+// Canonical social profiles, emitted as the Organization node's `sameAs` (SCAN-205).
+// This is an entity-disambiguation signal: it is how a search or answer engine confirms
+// that this site and these accounts are ONE entity, which is a primary AIO lever
+// (CONTENT-VOICE §8).
+//
+// ⚠️ ONLY add a profile the brand CONTROLS and that loads SIGNED-OUT. A `sameAs` URL that
+// 404s, is private, or bounces to a login wall is a NEGATIVE identity signal, not a neutral
+// one — four solid URLs beat six with a dead one. `organizationSchema` filters falsy entries
+// and omits the key entirely when the list is empty, so removing one is safe.
+export const SOCIAL_PROFILES = [
+  "https://www.instagram.com/frequencylocal",
+  "https://www.tiktok.com/@frequencylocal",
+];
