@@ -19,7 +19,10 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { listFollowedSpaceIds } from './follows'
 import { normalizeSpaceType } from './types'
 import type { SpaceType } from './types'
-import { spaceKind, spaceKindPillLabel } from './profile-data'
+import { spaceKind, spaceKindPillLabel, readProfileData } from './profile-data'
+// The earned-exposure score the default sort orders by (LIVE-262). PURE and shared with the nightly
+// rollup, so the directory and `space_standing` can never disagree about what standing means.
+import { careScore, standingScore, type StandingResult } from './standing'
 import { isSpaceKind, type SpaceKind } from './categories'
 import { isSubjectKey } from '@/lib/taxonomy/subjects'
 import { readHeaderCtaPreference, resolveHeaderCta } from './header-cta'
@@ -87,13 +90,33 @@ export interface NetworkedSpace {
   upcomingEventCount: number | null
   /** Whether this Space is an ACTIVE Founding Business (a founding_members row, status='active'), so the
    *  card can paint the founding mark. Resolved for the WHOLE page in one batched read (never per card).
-   *  A boolean only: the founder's locked rate is a private commercial term and never leaves the reader. */
+   *  A boolean only: the founder's locked rate is a private commercial term and never leaves the reader.
+   *
+   *  🔴 IT IS A BADGE, NOT A RANKING SIGNAL. Founding status is the one commercial term that reaches
+   *  this row, and it is deliberately read AFTER the standing score is computed and never passed into
+   *  it (see `standingFor` below). Exposure is earned; a founder's rate buys a mark on a card and
+   *  nothing else. */
   isFoundingBusiness: boolean
+  /** This Space's STANDING in [0, 1] (LIVE-262, lib/spaces/standing.ts): the earned-exposure score
+   *  the default sort orders by. Computed from counts this read already fetches, plus the nightly
+   *  rollup's two extra signals when `space_standing` has a row. Never reads a plan or a payment. */
+  standing: number
+  /** The resolved standing detail (which signals were measured, and each one's saturated value), so
+   *  the operator receipt page can explain the number instead of asserting it. */
+  standingDetail: StandingResult
 }
 
-/** How the catalog is ordered. `name` (A–Z) is the default; `newest` is most-recently created
- *  first; `members` is most members first. An unknown/absent value falls back to `name`. */
-export type SpaceSort = 'name' | 'newest' | 'members'
+/** How the catalog is ordered. `standing` (earned placement, LIVE-262) is the default; `name` is
+ *  A–Z; `newest` is most-recently created first; `members` is most members first. An unknown or
+ *  absent value falls back to `standing`. */
+export type SpaceSort = 'standing' | 'name' | 'newest' | 'members'
+
+/** The valid `?sort=` values, in the order the control offers them. */
+export const SPACE_SORTS: readonly SpaceSort[] = ['standing', 'name', 'newest', 'members'] as const
+
+/** The catalog's DEFAULT ordering. Was the alphabetical sort until 2026-09-09; see
+ *  lib/spaces/standing.ts for why that was the single worst thing about this surface. */
+export const DEFAULT_SPACE_SORT: SpaceSort = 'standing'
 
 /** The filters the directory passes in. All optional; absent = unfiltered. */
 export interface DiscoveryFilters {
@@ -117,7 +140,8 @@ export interface DiscoveryFilters {
    *  also matches Spaces that never picked one and pre-migration rows filter exactly like migrated
    *  ones. */
   kind?: SpaceKind | 'all' | string
-  /** Catalog ordering: name (A–Z, default) / newest (created_at desc) / members (member count desc). */
+  /** Catalog ordering: standing (earned, default) / name (A–Z) / newest (created_at desc) /
+   *  members (member count desc). */
   sort?: SpaceSort
 }
 
@@ -129,10 +153,16 @@ export interface DiscoveryPage {
   offset?: number
 }
 
-/** Coerce an arbitrary `?sort=` value to a known SpaceSort, defaulting to 'name'. Kept here so the
- *  page + the query share one definition of the valid set (no drift). PURE. */
+/** True when `value` is one of the four known sorts. PURE. */
+export function isSpaceSort(value: unknown): value is SpaceSort {
+  return typeof value === 'string' && (SPACE_SORTS as readonly string[]).includes(value)
+}
+
+/** Coerce an arbitrary `?sort=` value to a known SpaceSort, defaulting to DEFAULT_SPACE_SORT (the
+ *  earned standing order, LIVE-262). Kept here so the page + the query share one definition of the
+ *  valid set (no drift). PURE. */
 export function normalizeSpaceSort(value: string | null | undefined): SpaceSort {
-  return value === 'newest' || value === 'members' ? value : 'name'
+  return isSpaceSort(value) ? value : DEFAULT_SPACE_SORT
 }
 
 // The columns the directory projects. `visibility` is selected too (it's the discovery filter) but
@@ -255,42 +285,55 @@ function sanitizeQuery(q: string): string {
   return q.trim().replace(/[,()*%]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 80)
 }
 
-/** Count ACTIVE members per Space across a set of ids — one grouped read, fail-safe to an empty
- *  map (so a missing space_members table or any error just omits counts). Cheap: a single query
+/**
+ * A grouped-count read's outcome. `null` means THE READ DID NOT HAPPEN (a missing table, an error,
+ * an empty id set): the signal was not measured. A Map means it did, and an id absent from the Map
+ * genuinely has a count of zero.
+ *
+ * 🔴 That distinction is load-bearing for the standing score (lib/spaces/standing.ts): renormalising
+ * over PRESENT signals is only safe if "not measured" and "measured as zero" are different values.
+ * Read the other way, a Space with no followers would be scored as though followers were unreadable
+ * and would have its remaining signals re-weighted upward, which rewards emptiness. The CARD keeps
+ * its old behaviour and shows nothing for either case; only the score reads the difference.
+ */
+type CountsRead = Map<string, number> | null
+
+/** Count ACTIVE members per Space across a set of ids — one grouped read, fail-safe to `null`
+ *  (so a missing space_members table or any error just omits the signal). Cheap: a single query
  *  over the leading-column space_id index, counted in app code over the matched ids only. */
-async function memberCountsFor(spaceIds: string[]): Promise<Map<string, number>> {
-  const counts = new Map<string, number>()
-  if (spaceIds.length === 0) return counts
+async function memberCountsFor(spaceIds: string[]): Promise<CountsRead> {
+  if (spaceIds.length === 0) return null
   try {
+    const counts = new Map<string, number>()
     const result = (await membersTable()
       .select('space_id')
       .eq('status', 'active')
       .in('space_id', spaceIds)) as { data: CountRow[] | null; error: unknown }
-    if (result.error || !result.data) return counts
+    if (result.error || !result.data) return null
     for (const row of result.data) {
       counts.set(row.space_id, (counts.get(row.space_id) ?? 0) + 1)
     }
     return counts
   } catch {
-    return counts
+    return null
   }
 }
 
-/** Count FOLLOWERS per Space across a set of ids — one grouped read over space_follows, fail-safe to an
- *  empty map (a missing table or any error just omits counts). Batched over the matched ids only, the
- *  SAME shape as memberCountsFor (no N+1). */
-async function followerCountsFor(spaceIds: string[]): Promise<Map<string, number>> {
-  const counts = new Map<string, number>()
-  if (spaceIds.length === 0) return counts
+/** Count FOLLOWERS per Space across a set of ids — one grouped read over space_follows, fail-safe to
+ *  `null` (a missing table or any error just omits the signal). Batched over the matched ids only,
+ *  the SAME shape as memberCountsFor (no N+1). */
+async function followerCountsFor(spaceIds: string[]): Promise<CountsRead> {
+  if (spaceIds.length === 0) return null
   try {
+    const counts = new Map<string, number>()
     const result = (await followsCountTable()
       .select('space_id')
       .in('space_id', spaceIds)) as { data: CountRow[] | null; error: unknown }
-    if (result.error || !result.data) return counts
+    if (result.error || !result.data) return null
     for (const row of result.data) counts.set(row.space_id, (counts.get(row.space_id) ?? 0) + 1)
     return counts
   } catch {
-    return counts
+    return null
   }
 }
 
@@ -309,9 +352,8 @@ async function followerCountsFor(spaceIds: string[]): Promise<Map<string, number
  * The read therefore selects SERIES_COLUMNS + id + starts_at rather than `space_id` alone; it was
  * already a row read (never `head: true`), so this costs four columns, not a second query.
  */
-async function upcomingEventCountsFor(spaceIds: string[]): Promise<Map<string, number>> {
-  const counts = new Map<string, number>()
-  if (spaceIds.length === 0) return counts
+async function upcomingEventCountsFor(spaceIds: string[]): Promise<CountsRead> {
+  if (spaceIds.length === 0) return null
   try {
     const result = (await eventsTable()
       .select(`space_id, id, starts_at, ${SERIES_COLUMNS}`)
@@ -319,12 +361,69 @@ async function upcomingEventCountsFor(spaceIds: string[]): Promise<Map<string, n
       .eq('status', 'published')
       .gt('starts_at', new Date().toISOString())
       .in('space_id', spaceIds)) as { data: UpcomingEventRow[] | null; error: unknown }
-    if (result.error || !result.data) return counts
+    if (result.error || !result.data) return null
     // No `upcomingFrom` here: the query already applied the floor, and the fold must not re-apply a
     // DIFFERENT one. dropCancelled (default) is defence in depth over the `is_cancelled` predicate.
     return countSeriesBy(result.data, (row) => row.space_id)
   } catch {
-    return counts
+    return null
+  }
+}
+
+// ── The nightly rollup's two extra signals (LIVE-263) ────────────────────────────────────────────
+//
+// `gatherings` (held) and `rooms` (open Circles) are the two signals the directory cannot get from
+// the counts it already fetches: one needs the PAST event window, the other a whole extra table.
+// The nightly rollup (lib/spaces/standing-rollup.ts) computes both for every networked Space and
+// stores them in `space_standing`; this read pulls them back in ONE batched query, the same shape
+// as every count above.
+//
+// FAIL-SAFE, AND THE FAIL-SAFE IS THE FEATURE: before the migration applies, or on any error, this
+// returns null, both signals are simply not measured, and the score renormalises over the three the
+// live read has. The directory degrades from v1 to v0 rather than to nothing.
+
+/** One `space_standing` row as the directory consumes it (the two rollup-only signals). */
+type StandingRollupRow = { space_id: string; gatherings_held: number | null; rooms: number | null }
+
+type StandingQuery = {
+  select: (cols: string) => StandingQuery
+  in: (col: string, vals: string[]) => StandingQuery
+  then: (
+    resolve: (r: { data: StandingRollupRow[] | null; error: unknown }) => unknown,
+  ) => Promise<unknown>
+}
+
+/** The untyped `space_standing` builder (the table is newer than the generated types, ADR-246). */
+function standingTable(): StandingQuery {
+  const db = createAdminClient() as unknown as { from: (table: string) => StandingQuery }
+  return db.from('space_standing')
+}
+
+/** The rollup's gatherings-held + rooms counts per Space. `null` = the rollup is not readable, so
+ *  neither signal is measured for anyone in this pass (see CountsRead). */
+async function rollupSignalsFor(
+  spaceIds: string[],
+): Promise<{ gatherings: Map<string, number>; rooms: Map<string, number> } | null> {
+  if (spaceIds.length === 0) return null
+  try {
+    const result = (await standingTable()
+      .select('space_id, gatherings_held, rooms')
+      .in('space_id', spaceIds)) as { data: StandingRollupRow[] | null; error: unknown }
+    if (result.error || !result.data) return null
+    // ZERO rows for the WHOLE page is "the rollup has not run", not "every Space has none". The
+    // table can exist for days before the first nightly pass fills it, and reading that window as
+    // six measured zeros would flatten the directory instead of degrading it to the live counts.
+    // Once ANY row comes back the rollup has run, and a Space missing from it genuinely has none.
+    if (result.data.length === 0) return null
+    const gatherings = new Map<string, number>()
+    const rooms = new Map<string, number>()
+    for (const row of result.data) {
+      gatherings.set(row.space_id, Number(row.gatherings_held) || 0)
+      rooms.set(row.space_id, Number(row.rooms) || 0)
+    }
+    return { gatherings, rooms }
+  } catch {
+    return null
   }
 }
 
@@ -333,9 +432,11 @@ async function upcomingEventCountsFor(spaceIds: string[]): Promise<Map<string, n
  * `visibility = 'network'` AND `network_connected = true` (ADR-811 §3) and `status = 'active'`, excluding
  * the root space, optionally narrowed by
  * `type` and a free-text `q` over name/brand/slug. Each row carries its brand anchor, type, tagline,
- * and a cheap active-member count. Ordered by `sort`: name (A–Z, default) / newest (created_at desc)
- * in the DB; members (member count desc) after the grouped count read (counts arrive separately, so
- * that ordering is applied in app code). FAIL-SAFE: `[]` on any error. REQUEST-CACHED.
+ * a cheap active-member count, and its STANDING (the earned-exposure score, LIVE-262).
+ *
+ * Ordered by `sort`: newest (created_at desc) and name (A–Z) in the DB; standing (the DEFAULT) and
+ * members after the grouped count read, in app code, because both need counts that arrive
+ * separately. FAIL-SAFE: `[]` on any error. REQUEST-CACHED.
  */
 export const listNetworkedSpaces = cache(
   async ({ type, q, followerProfileId, onlyFollowed, subject, kind, sort }: DiscoveryFilters = {}): Promise<NetworkedSpace[]> => {
@@ -371,8 +472,11 @@ export const listNetworkedSpaces = cache(
         query = query.or(`name.ilike.${like},brand_name.ilike.${like},slug.ilike.${like}`)
       }
 
-      // DB ordering: name (A–Z) is the default; newest sorts by created_at desc. "Most members"
-      // rides the DB in name order here and is re-sorted by count below (counts arrive separately).
+      // DB ordering: newest sorts by created_at desc; everything else rides the DB in NAME order.
+      // "Standing" (the default) and "Most members" both need counts that arrive separately, so they
+      // are re-sorted in app code below — and name is what their ties fall back to, which is why the
+      // DB order underneath them is name rather than arbitrary. A stable base order matters here:
+      // the pager slices the sorted set, so an unstable tie-break would reshuffle rows across pages.
       const wantSort = normalizeSpaceSort(sort)
       const ordered =
         wantSort === 'newest'
@@ -403,11 +507,12 @@ export const listNetworkedSpaces = cache(
       // space id, so adding the badge to the card costs no per-card read (no N+1). Fail-safe to an empty
       // Map, in which case no card is badged.
       const ids = rows.map((r) => r.id)
-      const [memberCounts, followerCounts, upcomingCounts, foundingBadges] = await Promise.all([
+      const [memberCounts, followerCounts, upcomingCounts, foundingBadges, rollup] = await Promise.all([
         memberCountsFor(ids),
         followerCountsFor(ids),
         upcomingEventCountsFor(ids),
         foundingBadgesForSpaces(ids),
+        rollupSignalsFor(ids),
       ])
 
       const spaces = rows.map((r) => {
@@ -420,6 +525,32 @@ export const listNetworkedSpaces = cache(
           base,
           defaultPrimaryCtaLabel(type),
         )
+        // ── STANDING (LIVE-262) ──────────────────────────────────────────────────────────────
+        // Every input is a count this read already fetched, or a field already on the row. A signal
+        // the read could not measure is passed as `null` and renormalises away (lib/spaces/standing.ts);
+        // a signal it DID measure as zero is passed as 0 and counts.
+        //
+        // 🔴 Note what is NOT here: `foundingBadges` is resolved in the same batch and is not passed
+        // in, and no plan, tier, entitlement or seat count is read anywhere in this function. That
+        // is the invariant of this phase, and it is checked by a source-shape test.
+        const profile = readProfileData(r.preferences)
+        const standingDetail = standingScore({
+          gatherings: rollup ? rollup.gatherings.get(r.id) ?? 0 : null,
+          rooms: rollup ? rollup.rooms.get(r.id) ?? 0 : null,
+          upcoming: upcomingCounts ? upcomingCounts.get(r.id) ?? 0 : null,
+          audience: followerCounts ? followerCounts.get(r.id) ?? 0 : null,
+          commons: memberCounts ? memberCounts.get(r.id) ?? 0 : null,
+          care: careScore({
+            tagline: r.tagline,
+            logoUrl: r.brand_logo_url,
+            coverUrl: r.cover_image_url,
+            subject: profile.subject ?? null,
+            about: profile.about ?? null,
+            offerings: profile.offerings?.length ?? 0,
+            socials: profile.socials?.length ?? 0,
+          }),
+        })
+
         return {
           id: r.id,
           slug: r.slug,
@@ -432,17 +563,23 @@ export const listNetworkedSpaces = cache(
           coverUrl: r.cover_image_url,
           updatedAt: r.updated_at ?? null,
           action: { label: resolved.label, href: resolved.href },
-          memberCount: memberCounts.get(r.id) ?? null,
-          followerCount: followerCounts.get(r.id) ?? null,
-          upcomingEventCount: upcomingCounts.get(r.id) ?? null,
+          memberCount: memberCounts?.get(r.id) ?? null,
+          followerCount: followerCounts?.get(r.id) ?? null,
+          upcomingEventCount: upcomingCounts?.get(r.id) ?? null,
           isFoundingBusiness: foundingBadges.get(r.id)?.isFounding === true,
+          standing: standingDetail.score,
+          standingDetail,
         }
       })
 
+      // "Standing" (the DEFAULT) orders by the earned score, desc. Ties fall back to name, which is
+      // also the DB order underneath, so the result is stable and a page boundary never reshuffles.
       // "Most members" orders by the resolved active-member count (desc); a Space with no count
       // sinks to the bottom, ties fall back to name so the order stays stable. Name/Newest keep the
       // DB order above.
-      if (wantSort === 'members') {
+      if (wantSort === 'standing') {
+        spaces.sort((a, b) => b.standing - a.standing || a.name.localeCompare(b.name))
+      } else if (wantSort === 'members') {
         spaces.sort((a, b) => (b.memberCount ?? -1) - (a.memberCount ?? -1) || a.name.localeCompare(b.name))
       }
 

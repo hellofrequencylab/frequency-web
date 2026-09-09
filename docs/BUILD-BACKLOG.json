@@ -72,7 +72,6 @@
             "PROG-R0",
             "LIVE-251",
             "LIVE-256",
-            "LIVE-262",
             "HYG-078",
             "HYG-080",
             "HYG-082",
@@ -11246,7 +11245,7 @@
     {
       "id": "LIVE-262",
       "title": "Space directory sort: alphabetical to a v0 standing score",
-      "status": "open",
+      "status": "done",
       "priority": "P1",
       "lane": "live",
       "size": "M",
