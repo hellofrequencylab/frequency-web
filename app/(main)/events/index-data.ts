@@ -726,6 +726,19 @@ export async function getEventsIndexData(params: EventsIndexParams): Promise<Eve
       const diff = score(a) - score(b)
       return diff !== 0 ? diff : a.starts_at.localeCompare(b.starts_at)
     }
+    // The DEFAULT order (soonest first), with operator-FEATURED gatherings leading it (LIVE-264).
+    // `events.featured_at` has existed since migration 20260616181100 with a write path in
+    // /admin/events and a `FeaturedBadge` on the card, and until now no sort branch read it: an
+    // operator could feature a gathering and nothing moved. Confined to the default branch on
+    // purpose. Distance, popularity and relevance are the member stating how they want the list
+    // ordered, and a curated pick must not quietly outrank a stated intent.
+    const featured = (e: EventRow) => (e.featured_at ? 0 : 1)
+    const byFeatured = featured(a) - featured(b)
+    if (byFeatured !== 0) return byFeatured
+    // Inside the featured band, the most recent pick leads; outside it, soonest first as always.
+    if (a.featured_at && b.featured_at && a.featured_at !== b.featured_at) {
+      return b.featured_at.localeCompare(a.featured_at)
+    }
     return a.starts_at.localeCompare(b.starts_at)
   })
 

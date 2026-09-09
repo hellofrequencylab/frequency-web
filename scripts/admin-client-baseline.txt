@@ -807,6 +807,7 @@ lib/spaces/provision.ts
 lib/spaces/resonance-roster.ts
 lib/spaces/seats.ts
 lib/spaces/segments.ts
+lib/spaces/standing-rollup.ts
 lib/spaces/store.ts
 lib/spaces/tagline.ts
 lib/spaces/tickets.ts

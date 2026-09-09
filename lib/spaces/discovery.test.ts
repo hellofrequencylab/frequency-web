@@ -6,8 +6,13 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 //   2. The "Following" FILTER (onlyFollowed) intersects the networked set with the viewer's follows:
 //      only followed Spaces survive, a viewer who follows nothing gets [], and a signed-out viewer
 //      (no profile id) gets [] (follows nothing). Fail-safe throughout.
-//   3. The SORT param orders the catalog: name (A–Z, default) / newest (created_at desc) / members
-//      (active member count desc). normalizeSpaceSort coerces stray values back to 'name'.
+//   3. The SORT param orders the catalog: STANDING (the earned-exposure score, the DEFAULT since
+//      LIVE-262) / name (A–Z) / newest (created_at desc) / members (active member count desc).
+//      normalizeSpaceSort coerces stray values back to 'standing'.
+//   4. Standing itself: it reads the counts this module already fetches, it renormalises over the
+//      signals the READ measured (never over "this Space has zero"), it picks up the nightly
+//      rollup's two extra signals when space_standing has rows, and it degrades to the live-count
+//      subset when that table is unreadable. And no paid signal enters it.
 //   4. The two ADR-887 facets: SUBJECT filters in the DB on the jsonb path (shared vocabulary, no
 //      default), KIND filters in APP CODE through the total spaceKind reader (legacy `category`
 //      fallback + 'business' default), so pre-migration rows filter exactly like migrated ones.
@@ -54,6 +59,10 @@ const store: {
   /** REAL event rows for the upcoming-count read, when a test needs the SERIES shape rather than a
    *  bare per-Space number (LIVE-198). When empty, `upcoming` synthesises one-off rows instead. */
   upcomingRows: PresenceRow[]
+  /** The nightly `space_standing` rollup rows (LIVE-263), when a test wants the v1 signals. Empty
+   *  means the rollup has nothing for these ids; `standingUnreadable` means the table itself is
+   *  gone, which is the pre-migration case the score must degrade through rather than break on. */
+  standing: PresenceRow[]
   events: PresenceRow[]
   circles: PresenceRow[]
   reviews: PresenceRow[]
@@ -64,6 +73,7 @@ const store: {
   followers: {},
   upcoming: {},
   upcomingRows: [],
+  standing: [],
   events: [],
   circles: [],
   reviews: [],
@@ -238,11 +248,20 @@ function presenceBuilder(rows: PresenceRow[]) {
  *  duration of a tab test, which is honest here because no test exercises both at once. */
 let tabRead = false
 
+/** Flip on to make the `space_standing` read fail the way a pre-migration database does. */
+let standingUnreadable = false
+
 vi.mock('@/lib/supabase/admin', () => ({
   createAdminClient: () => ({
     from: (table: string) => {
       if (table === 'space_members') return countBuilder(store.counts)
       if (table === 'space_follows') return countBuilder(store.followers)
+      // The nightly rollup's two extra standing signals (LIVE-263). `standingUnreadable` throws the
+      // way a missing table does, so the fail-safe path is exercised rather than assumed.
+      if (table === 'space_standing') {
+        if (standingUnreadable) throw new Error('relation "space_standing" does not exist')
+        return presenceBuilder(store.standing)
+      }
       if (table === 'events') return tabRead ? presenceBuilder(store.events) : upcomingEventsBuilder()
       if (table === 'circles') return presenceBuilder(store.circles)
       if (table === 'space_reviews') return presenceBuilder(store.reviews)
@@ -258,13 +277,20 @@ import {
   listNetworkedSpaceProfileTabs,
   listNetworkedSpacesPage,
   normalizeSpaceSort,
+  DEFAULT_SPACE_SORT,
+  SPACE_SORTS,
 } from './discovery'
+// The sort CONTROL's option list, checked against the reader's own valid set so the menu and the
+// query can never offer different orders.
+import { SPACE_SORT_OPTIONS } from '@/components/spaces/spaces-sort'
 
 const VIEWER = 'viewer-0000-4000-a000-0000000viewr'
 
 beforeEach(() => {
   followed = new Set()
   tabRead = false
+  standingUnreadable = false
+  store.standing = []
   store.counts = {}
   store.followers = {}
   store.upcoming = {}
@@ -290,8 +316,8 @@ beforeEach(() => {
 })
 
 describe('listNetworkedSpaces (no Following filter)', () => {
-  it('lists networked, active, non-root spaces, ordered by name', async () => {
-    const spaces = await listNetworkedSpaces({})
+  it('lists networked, active, non-root spaces, ordered by name when asked for name', async () => {
+    const spaces = await listNetworkedSpaces({ sort: 'name' })
     expect(spaces.map((s) => s.id)).toEqual(['s3', 's1', 's2']) // Forest Org, River Yoga, Sound Co
   })
 
@@ -326,15 +352,84 @@ describe('the "Following" filter (onlyFollowed)', () => {
 })
 
 describe('the sort param', () => {
-  it('defaults to name (A–Z) when sort is absent or unknown', async () => {
+  it('🔴 defaults to STANDING, not the alphabet (LIVE-262)', async () => {
+    // The defect this closes: the directory ordered by `.order('name')`, so the most valuable
+    // exposure surface a business has rewarded nothing except starting with the letter A. Here
+    // Sound Co has run gatherings and been followed; Forest Org (which sorts FIRST alphabetically)
+    // has done nothing. Standing must put Sound Co on top.
+    store.upcoming = { s2: 3 }
+    store.followers = { s2: 12 }
+    store.counts = { s2: 9 }
     const byDefault = await listNetworkedSpaces({})
-    const byName = await listNetworkedSpaces({ sort: 'name' })
-    // @ts-expect-error — a stray value coerces back to 'name'
+    // @ts-expect-error — a stray value coerces back to the default sort
     const byStray = await listNetworkedSpaces({ sort: 'bogus' })
-    const names = ['s3', 's1', 's2'] // Forest Org, River Yoga, Sound Co
-    expect(byDefault.map((s) => s.id)).toEqual(names)
-    expect(byName.map((s) => s.id)).toEqual(names)
-    expect(byStray.map((s) => s.id)).toEqual(names)
+    expect(byDefault[0].id).toBe('s2')
+    expect(byStray.map((s) => s.id)).toEqual(byDefault.map((s) => s.id))
+    // And the alphabetical order is still ONE CLICK AWAY, not deleted.
+    expect((await listNetworkedSpaces({ sort: 'name' })).map((s) => s.id)).toEqual(['s3', 's1', 's2'])
+  })
+
+  it('standing ties fall back to name, so a page boundary never reshuffles', async () => {
+    // s1 and s2 both carry a subject (the only care field these fixtures fill) and nothing else, so
+    // they tie exactly; s3 has no subject at all and sinks below both.
+    const spaces = await listNetworkedSpaces({ sort: 'standing' })
+    expect(spaces.map((s) => s.id)).toEqual(['s1', 's2', 's3'])
+    expect(spaces[0].standing).toBeCloseTo(spaces[1].standing, 12)
+    expect(spaces[2].standing).toBeLessThan(spaces[0].standing)
+  })
+
+  it('every row carries its standing and the detail behind it', async () => {
+    store.followers = { s1: 20 }
+    const [top] = await listNetworkedSpaces({ sort: 'standing' })
+    expect(top.id).toBe('s1')
+    expect(top.standing).toBeGreaterThan(0)
+    // The three signals a v0 read measures for EVERY Space, plus care off the row. The rollup's two
+    // are absent here (no space_standing rows are readable through this mock's fall-through).
+    expect(top.standingDetail.present).toEqual(['upcoming', 'audience', 'commons', 'care'])
+    expect(top.standingDetail.signals.gatherings).toBeNull()
+    expect(top.standingDetail.signals.rooms).toBeNull()
+  })
+
+  it('🔴 no paid signal enters standing: a Founding Business is badged, never ranked', async () => {
+    // foundingBadgesForSpaces resolves in the same batch as the counts and is the ONE commercial
+    // term this reader touches. Two identical Spaces, one of them a founder, must score the same.
+    store.followers = { s1: 4, s2: 4 }
+    store.counts = { s1: 4, s2: 4 }
+    store.upcoming = { s1: 1, s2: 1 }
+    const spaces = await listNetworkedSpaces({ sort: 'standing' })
+    const s1 = spaces.find((s) => s.id === 's1')!
+    const s2 = spaces.find((s) => s.id === 's2')!
+    expect(s1.standing).toBeCloseTo(s2.standing, 12)
+  })
+
+  it('picks up the nightly rollup\'s two extra signals when space_standing has rows (LIVE-263)', async () => {
+    store.standing = [
+      { space_id: 's3', gatherings_held: 9, rooms: 3 },
+      { space_id: 's1', gatherings_held: 0, rooms: 0 },
+      { space_id: 's2', gatherings_held: 0, rooms: 0 },
+    ]
+    const spaces = await listNetworkedSpaces({ sort: 'standing' })
+    // s3 has no care at all and would otherwise be LAST; nine gatherings held and three open Circles
+    // put it first, which is the whole point of the v1 rollup.
+    expect(spaces[0].id).toBe('s3')
+    expect(spaces[0].standingDetail.present).toEqual([
+      'gatherings',
+      'upcoming',
+      'rooms',
+      'audience',
+      'commons',
+      'care',
+    ])
+  })
+
+  it('degrades to the live-count signals when space_standing is unreadable (pre-migration)', async () => {
+    standingUnreadable = true
+    const spaces = await listNetworkedSpaces({ sort: 'standing' })
+    expect(spaces).toHaveLength(3)
+    for (const s of spaces) {
+      expect(s.standingDetail.signals.gatherings).toBeNull()
+      expect(s.standingDetail.signals.rooms).toBeNull()
+    }
   })
 
   it('newest orders by created_at descending', async () => {
@@ -360,13 +455,21 @@ describe('the sort param', () => {
 })
 
 describe('normalizeSpaceSort', () => {
-  it('passes known sorts through and coerces everything else to name', () => {
+  it('passes known sorts through and coerces everything else to STANDING', () => {
+    expect(normalizeSpaceSort('standing')).toBe('standing')
     expect(normalizeSpaceSort('name')).toBe('name')
     expect(normalizeSpaceSort('newest')).toBe('newest')
     expect(normalizeSpaceSort('members')).toBe('members')
-    expect(normalizeSpaceSort('bogus')).toBe('name')
-    expect(normalizeSpaceSort(undefined)).toBe('name')
-    expect(normalizeSpaceSort(null)).toBe('name')
+    // The probe on LIVE-262 is exactly this line: the directory must no longer default to the
+    // alphabetical sort.
+    expect(normalizeSpaceSort('bogus')).toBe(DEFAULT_SPACE_SORT)
+    expect(normalizeSpaceSort(undefined)).toBe('standing')
+    expect(normalizeSpaceSort(null)).toBe('standing')
+  })
+
+  it('offers exactly the four sorts the control offers', () => {
+    expect([...SPACE_SORTS]).toEqual(['standing', 'name', 'newest', 'members'])
+    expect(SPACE_SORT_OPTIONS.map((o) => o.value)).toEqual([...SPACE_SORTS])
   })
 })
 
@@ -390,9 +493,9 @@ describe('the kind field + filter (ADR-887, app-code through the total reader)',
   })
 
   it("'all' / unknown / absent applies no kind filter", async () => {
-    const all = await listNetworkedSpaces({ kind: 'all' })
-    const bogus = await listNetworkedSpaces({ kind: 'nope' })
-    const absent = await listNetworkedSpaces({})
+    const all = await listNetworkedSpaces({ kind: 'all', sort: 'name' })
+    const bogus = await listNetworkedSpaces({ kind: 'nope', sort: 'name' })
+    const absent = await listNetworkedSpaces({ sort: 'name' })
     const ids = ['s3', 's1', 's2'] // Forest Org, River Yoga, Sound Co (name order)
     expect(all.map((s) => s.id)).toEqual(ids)
     expect(bogus.map((s) => s.id)).toEqual(ids)
@@ -413,9 +516,10 @@ describe('the subject filter (ADR-887, the shared vocabulary in the DB path)', (
 
   it("'all' / off-list / absent applies no subject filter (KIND keys are not subjects)", async () => {
     const ids = ['s3', 's1', 's2'] // name order
-    expect((await listNetworkedSpaces({ subject: 'all' })).map((s) => s.id)).toEqual(ids)
-    expect((await listNetworkedSpaces({ subject: 'studio' })).map((s) => s.id)).toEqual(ids) // a kind, not a subject
-    expect((await listNetworkedSpaces({ subject: 'nope' })).map((s) => s.id)).toEqual(ids)
+    const byName = { sort: 'name' } as const
+    expect((await listNetworkedSpaces({ subject: 'all', ...byName })).map((s) => s.id)).toEqual(ids)
+    expect((await listNetworkedSpaces({ subject: 'studio', ...byName })).map((s) => s.id)).toEqual(ids) // a kind, not a subject
+    expect((await listNetworkedSpaces({ subject: 'nope', ...byName })).map((s) => s.id)).toEqual(ids)
   })
 
   it('subject + kind stack (each axis narrows independently)', async () => {
@@ -495,17 +599,17 @@ describe('the extra per-space stats', () => {
 
 describe('listNetworkedSpacesPage (pagination)', () => {
   it('returns the total and a limit/offset window over the sorted set', async () => {
-    const page1 = await listNetworkedSpacesPage({}, { limit: 2, offset: 0 })
+    const page1 = await listNetworkedSpacesPage({ sort: 'name' }, { limit: 2, offset: 0 })
     expect(page1.total).toBe(3)
     expect(page1.spaces.map((s) => s.id)).toEqual(['s3', 's1']) // name order, first 2
 
-    const page2 = await listNetworkedSpacesPage({}, { limit: 2, offset: 2 })
+    const page2 = await listNetworkedSpacesPage({ sort: 'name' }, { limit: 2, offset: 2 })
     expect(page2.total).toBe(3)
     expect(page2.spaces.map((s) => s.id)).toEqual(['s2']) // the remainder
   })
 
   it('returns the whole set + total when no window is given', async () => {
-    const page = await listNetworkedSpacesPage({})
+    const page = await listNetworkedSpacesPage({ sort: 'name' })
     expect(page.total).toBe(3)
     expect(page.spaces.map((s) => s.id)).toEqual(['s3', 's1', 's2'])
   })

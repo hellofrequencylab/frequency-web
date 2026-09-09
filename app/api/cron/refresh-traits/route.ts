@@ -9,6 +9,7 @@ import { refreshMemberTraits } from '@/lib/traits/refresh'
 import { refreshResonanceEdges } from '@/lib/resonance/edges'
 import { refreshResonanceEmbeddings } from '@/lib/resonance/embeddings'
 import { refreshResonanceDensityCells } from '@/lib/resonance/density'
+import { refreshSpaceStanding } from '@/lib/spaces/standing-rollup'
 import { rejectUnauthorizedCron } from '@/lib/cron-auth'
 import { withCronHeartbeat } from '@/lib/observability/cron-heartbeat'
 import { cronBudget } from '@/lib/cron/budget'
@@ -62,6 +63,23 @@ async function handler(req: NextRequest) {
     log.info('cron.refresh_resonance_density', resonanceDensityStep)
   }
 
+  // Space-standing step (LIVE-263, docs/CORE-MODEL.md Phase 10 "Placement is earned"): rebuild
+  // `space_standing` so the Space directory's default order is the earned-exposure score rather
+  // than the alphabet. BEST-EFFORT + FAIL-SAFE, and NOT SILENT: any error comes back as a message,
+  // is logged at ERROR level under its own `.failed` event, and carries `ok: false` for the step.
+  // The response stays 200 because the steps above did complete, and the directory degrades on its
+  // own (an unreadable or empty rollup just means two of the six signals were not measured, and the
+  // score renormalises over the four the live read still has).
+  //
+  // 🔴 Nothing in this step reads a plan, a tier, or a payment. Exposure is earned, never sold.
+  const spaceStanding = await refreshSpaceStanding()
+  const spaceStandingStep = { ok: !spaceStanding.error, ...spaceStanding }
+  if (spaceStanding.error) {
+    log.error('cron.refresh_space_standing.failed', spaceStandingStep)
+  } else {
+    log.info('cron.refresh_space_standing', spaceStandingStep)
+  }
+
   const summary = budget.summary(resonance.anchors)
   log.info('cron.refresh_traits.budget', { ...summary })
   return NextResponse.json({
@@ -70,6 +88,7 @@ async function handler(req: NextRequest) {
     resonance,
     resonanceEmbeddings,
     resonanceDensity: resonanceDensityStep,
+    spaceStanding: spaceStandingStep,
     budget: summary,
   })
 }

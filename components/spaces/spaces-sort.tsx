@@ -6,14 +6,18 @@ import { ArrowUpDown, Check } from 'lucide-react'
 
 // The Spaces catalog sort control — the same URL-driven idiom as the Events sort (events-sort.tsx):
 // a single-select menu that writes the `sort` search param and preserves the rest, so the catalog
-// stays a Server Component and a sorted view is shareable. The trigger reads "Sort: Name" rather
-// than swapping to the chosen value. Options are fixed here (Name / Newest / Most members); the
-// lister (lib/spaces/discovery) owns the actual ordering.
+// stays a Server Component and a sorted view is shareable. The trigger reads "Sort: Standing" rather
+// than swapping to the chosen value. Options are fixed here; the lister (lib/spaces/discovery) owns
+// the actual ordering, and lib/spaces/standing.ts owns what "standing" means.
 
 export type SpaceSortOption = { value: string; label: string }
 
-// Name (A–Z) is the default and canonical order, so choosing it drops the param (a clean URL).
+// STANDING is the default and canonical order (LIVE-262), so choosing it drops the param (a clean
+// URL). It is labelled "Most active" rather than "Standing" because that is what it measures in
+// plain words: gatherings held, dates ahead, Circles open, followers, members, and a filled-in page.
+// The alphabetical order it replaced is still here as a choice, one click away.
 export const SPACE_SORT_OPTIONS: SpaceSortOption[] = [
+  { value: 'standing', label: 'Most active' },
   { value: 'name', label: 'Name (A–Z)' },
   { value: 'newest', label: 'Newest' },
   { value: 'members', label: 'Most members' },
@@ -21,7 +25,7 @@ export const SPACE_SORT_OPTIONS: SpaceSortOption[] = [
 
 export function SpacesSort({
   options = SPACE_SORT_OPTIONS,
-  defaultValue = 'name',
+  defaultValue = 'standing',
 }: {
   options?: SpaceSortOption[]
   defaultValue?: string
