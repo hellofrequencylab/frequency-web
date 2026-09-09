@@ -257,9 +257,15 @@ export default async function MarketProductPage({ params }: { params: Promise<{ 
                 priceCents={product.priceCents}
                 currency={product.currency}
                 variants={variants}
+                entryPoint="marketplace"
               />
             ) : (
-              <BuyButton productId={product.id} />
+              // entryPoint="marketplace" (LIVE-219): the Market is the browse surface, so a sale
+              // reached here is one Frequency introduced and classifies `network`. Both branches must
+              // carry it — a product WITHOUT variants sells through this plain button, and it is the
+              // easier of the two to forget. `/store/[id]` renders the same component with no entry
+              // point on purpose; see the note there.
+              <BuyButton productId={product.id} entryPoint="marketplace" />
             )}
           </div>
 

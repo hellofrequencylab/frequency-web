@@ -11,12 +11,19 @@ import { startCheckoutAction } from './commerce-actions'
 export function BuyButton({
   productId,
   variantId,
+  entryPoint,
   label = 'Buy now',
   disabled = false,
 }: {
   productId: string
   /** Optional selected variant (Etsy-Grade Phase 2). Passed through to checkout. */
   variantId?: string | null
+  /** Set to 'marketplace' by the Market browse surfaces ONLY (LIVE-219) — the places where Frequency
+   *  made the introduction, so the order classifies `network` and the tier's take rate applies.
+   *  Omitted on `/store/[id]`, a seller's own storefront link, which stays `self` at 0%.
+   *  This never overrides the promise: `classifyOrderSource` runs the self-scan and the ADR-913
+   *  relationship check ABOVE the entry point, so an existing follower/member/CRM contact is still 0%. */
+  entryPoint?: 'marketplace' | null
   label?: string
   disabled?: boolean
 }) {
@@ -32,7 +39,7 @@ export function BuyButton({
         onClick={() =>
           start(async () => {
             setError(null)
-            const res = await startCheckoutAction(productId, variantId)
+            const res = await startCheckoutAction(productId, variantId, entryPoint ?? null)
             if (res.url) window.location.href = res.url
             else setError(res.error ?? 'Could not start checkout.')
           })

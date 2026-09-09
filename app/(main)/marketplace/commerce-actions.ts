@@ -129,14 +129,32 @@ export async function draftMakerProductCopyAction(input: {
 }
 
 /** Start a one-item checkout for a product (optionally a specific variant). Returns the Stripe Checkout
- *  URL, or a friendly error (payments off / seller not payout-ready). The BuyButton navigates. */
+ *  URL, or a friendly error (payments off / seller not payout-ready). The BuyButton navigates.
+ *
+ *  `entryPoint` is the DISCOVERY signal (LIVE-219). Only the Market — the browse surface where
+ *  Frequency made the introduction — passes it; `/store/[id]` is the seller's own storefront link and
+ *  deliberately passes nothing, so it keeps the default `self` classification and its 0% fee. Without
+ *  this argument every cold Buy-button sale classified `self` and took a 0% platform fee (ADR-811 §A).
+ *
+ *  ⚠️ NARROWED HERE RATHER THAN PASSED THROUGH, because this is a SERVER ACTION and every argument is
+ *  client-supplied. Accepting the caller's string verbatim would let a crafted call name any entry
+ *  point; the literal check means a client can only choose between 'marketplace' (which RAISES the
+ *  platform's cut) and nothing. Nothing is exactly what every client can already send today, so this
+ *  cannot classify an order lower than the status quo — it can only fail to raise it. Deriving the
+ *  surface server-side is not available: a server action sees no calling path, and `referer` is
+ *  client-controlled too. A tamper-proof signal needs the entry point recorded at page render. */
 export async function startCheckoutAction(
   productId: string,
   variantId?: string | null,
+  entryPoint?: 'marketplace' | null,
 ): Promise<{ url?: string; error?: string }> {
   const buyerProfileId = await getMyProfileId()
   if (!buyerProfileId) return { error: 'Sign in to buy.' }
-  return createCommerceCheckout({ buyerProfileId, items: [{ productId, variantId: variantId ?? null, qty: 1 }] })
+  return createCommerceCheckout({
+    buyerProfileId,
+    items: [{ productId, variantId: variantId ?? null, qty: 1 }],
+    entryPoint: entryPoint === 'marketplace' ? 'marketplace' : null,
+  })
 }
 
 // ── Seller (maker) storefront management — owner-gated ────────────────────────────
