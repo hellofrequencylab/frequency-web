@@ -7,6 +7,7 @@ import {
   computeOccurrenceDates,
   expandOccurrenceInstants,
   occurrenceRow,
+  staleOccurrenceIds,
 } from './event-recurrence'
 
 // F1: monthly recurrence must NOT overflow for day-29/30/31 anchors. The old
@@ -352,5 +353,143 @@ describe('propagationPatch', () => {
   it('drops a non-string geog, exactly as occurrenceRow does', () => {
     const withObjectGeog = { ...anchor, geog: { type: 'Point', coordinates: [0, 0] } } as typeof anchor
     expect(propagationPatch(withObjectGeog)).not.toHaveProperty('geog')
+  })
+})
+
+// ── RETIRING THE DATES A CHANGED RULE NO LONGER PRODUCES (ADR-1304) ──────────────────────────────
+//
+// Owner, 2026-09-10: "I changed Meld from weekly to bi weekly but it still shows all the repeating
+// events that were configured originally."
+//
+// `staleOccurrenceIds` is the arithmetic that decides whether a real events row is DELETED, so it
+// is pinned here, away from the database, where every case is decidable: the rule change itself,
+// the two boundaries (past dates, and the exact instant of "now"), and the two shapes that must
+// retire everything (a series switched off, a shortened end date).
+describe('staleOccurrenceIds — the dates a changed rule leaves behind', () => {
+  const kid = (id: string, iso: string) => ({ id, starts_at: iso })
+  const NOW = new Date('2026-09-16T00:00:00.000Z')
+  const at = (d: string) => new Date(`${d}T18:30:00.000Z`)
+
+  it('🔴 weekly to fortnightly: the odd weeks go, the even ones stay', () => {
+    // What Meld looked like: four weekly children minted under FREQ=WEEKLY, then the host moved to
+    // INTERVAL=2, which produces only the 30th and the 14th.
+    const children = [
+      kid('w1', '2026-09-23T18:30:00.000Z'),
+      kid('w2', '2026-09-30T18:30:00.000Z'),
+      kid('w3', '2026-10-07T18:30:00.000Z'),
+      kid('w4', '2026-10-14T18:30:00.000Z'),
+    ]
+    const expected = [at('2026-09-30'), at('2026-10-14')]
+    expect(staleOccurrenceIds(children, expected, NOW)).toEqual(['w1', 'w3'])
+  })
+
+  it('never reaches into the past, however wrong the old rule was', () => {
+    // A past occurrence is the record of something that already happened. The same rule that makes
+    // propagateAnchorEditsToOccurrences stop at `now` stops this one.
+    const children = [
+      kid('old1', '2026-08-05T18:30:00.000Z'),
+      kid('old2', '2026-09-09T18:30:00.000Z'),
+      kid('next', '2026-09-23T18:30:00.000Z'),
+    ]
+    expect(staleOccurrenceIds(children, [], NOW)).toEqual(['next'])
+  })
+
+  it('counts an occurrence starting exactly NOW as future, not past', () => {
+    // The boundary is `>=`, matching the `.gte('starts_at', now)` the read uses. An occurrence
+    // starting this instant has not happened yet.
+    expect(staleOccurrenceIds([kid('now', NOW.toISOString())], [], NOW)).toEqual(['now'])
+  })
+
+  it('compares on the calendar DAY, because that is what the materialiser dedupes on', () => {
+    // The stored timestamp can differ from the expanded instant by a timezone round-trip or a
+    // millisecond; generateOccurrencesForAnchor already keys on YYYY-MM-DD for exactly that reason,
+    // and a retirement that compared getTime() would delete every date the mint had just made.
+    const children = [kid('same-day', '2026-09-23T18:30:00.123Z')]
+    expect(staleOccurrenceIds(children, [new Date('2026-09-23T18:30:00.000Z')], NOW)).toEqual([])
+  })
+
+  it('a series switched off retires every future date it minted', () => {
+    // The case the old code called "must not strand the occurrences it already made" and answered
+    // by keeping them, which is what stranding IS. An anchor that no longer repeats expands to
+    // nothing, so every future child is a date the rule does not produce.
+    const children = [kid('a', '2026-09-23T18:30:00.000Z'), kid('b', '2026-09-30T18:30:00.000Z')]
+    expect(staleOccurrenceIds(children, [], NOW)).toEqual(['a', 'b'])
+  })
+
+  it('a shortened end date retires what falls past the new end', () => {
+    const children = [
+      kid('in', '2026-09-23T18:30:00.000Z'),
+      kid('out1', '2026-09-30T18:30:00.000Z'),
+      kid('out2', '2026-10-07T18:30:00.000Z'),
+    ]
+    // The expansion already stops at recurrence_until, so a shortened series simply produces fewer
+    // dates and the tail falls out here. This is the shape expandOccurrenceInstants returns for
+    // `until = 2026-09-24`.
+    expect(staleOccurrenceIds(children, [at('2026-09-23')], NOW)).toEqual(['out1', 'out2'])
+  })
+
+  it('a child with no start is not a date, and is never retired on a guess', () => {
+    // `starts_at` is nullable (drafts, 20261191). A child should always have one; a null is a row
+    // this function cannot judge, and judging it would mean deleting on an unknown.
+    expect(staleOccurrenceIds([{ id: 'draft', starts_at: null }], [], NOW)).toEqual([])
+  })
+
+  it('a rule that still produces every existing date retires nothing (the idempotent case)', () => {
+    // The cron runs this on every anchor every day, so the overwhelmingly common answer must be
+    // "nothing to do" and must stay that way run after run.
+    const children = [kid('a', '2026-09-23T18:30:00.000Z'), kid('b', '2026-09-30T18:30:00.000Z')]
+    const expected = [at('2026-09-23'), at('2026-09-30'), at('2026-10-07')]
+    expect(staleOccurrenceIds(children, expected, NOW)).toEqual([])
+  })
+})
+
+describe('the retirement is wired where a rule is actually changed', () => {
+  const read = (p: string) => readFileSync(join(process.cwd(), p), 'utf8')
+
+  it('🔴 the SETTINGS RAIL reconciles, which is the path that did none of it', () => {
+    // updateEvent (the /edit form) has materialised and propagated since ADR-884. updateEventSettings
+    // — the Manage/Studio rail, where a host actually changes the repeat rule — wrote the rule onto
+    // the anchor and stopped. That asymmetry IS the owner's report, and a source-shape check is the
+    // honest guard for it: the alternative is a live Supabase write path, and the arithmetic that
+    // decides what gets deleted is already pinned above.
+    const admin = read('app/(main)/events/admin-actions.ts')
+    expect(admin).toContain('retireStaleOccurrences')
+    expect(admin).toContain('generateOccurrencesForAnchor')
+    expect(admin).toContain('propagateAnchorEditsToOccurrences')
+  })
+
+  it('the /edit form retires for ANY anchor, not only a still-recurring one', () => {
+    // Turning a series off is precisely when its future dates have to go, so a retirement gated on
+    // `recurrence_type !== 'none'` would leave the worst version of the bug in place.
+    const actions = read('app/(main)/events/actions.ts')
+    const call = actions.slice(actions.indexOf('  if (isAnchor) {\n    retireStaleOccurrences'))
+    expect(call.startsWith('  if (isAnchor) {\n    retireStaleOccurrences(eventId)')).toBe(true)
+  })
+
+  it('the daily cron reconciles too, because the drift it heals already exists', () => {
+    // Every series whose rule changed before this shipped is carrying its old rule's dates, and
+    // nobody is going to re-save all of them. The cron is what heals them without anyone touching
+    // the event, and its counts are logged so a fail-safe that fires is not silent.
+    const source = read('lib/event-recurrence.ts')
+    expect(source).toContain('const reconcile = opts.reconcile ?? true')
+    expect(source).toContain('occurrencesRetired')
+    const route = read('app/api/cron/event-occurrences/route.ts')
+    expect(route).toContain('occurrencesRetired: result.occurrencesRetired')
+    expect(route).toContain('occurrencesKept:    result.occurrencesKept')
+  })
+
+  it('🔴 the delete is fenced to the anchor’s own children and cannot reach the anchor', () => {
+    // The one mistake this function could make that matters. The id list is already built from a
+    // read of this anchor's children, so the `.eq('parent_event_id', anchorId)` on the DELETE is
+    // redundant by construction — which is the point: it is the clause that makes a bug in the
+    // construction unable to delete a standalone event or the series anchor itself.
+    const source = readFileSync(join(process.cwd(), 'lib/event-recurrence.ts'), 'utf8')
+    const fn = source.slice(source.indexOf('export async function retireStaleOccurrences'))
+    expect(fn).toContain(".in('id', removable)")
+    expect(fn).toContain(".eq('parent_event_id', anchorId)")
+    // And it never deletes a date somebody is attached to.
+    for (const table of ['event_rsvps', 'event_tickets', 'event_guests', 'event_posts']) {
+      expect(source).toContain(`'${table}'`)
+    }
   })
 })

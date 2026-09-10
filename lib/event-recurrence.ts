@@ -385,10 +385,14 @@ export async function generateOccurrencesForAnchor(anchorId: string): Promise<nu
 // column the row records as the missing piece. Until then `limit` is set well above the anchor
 // count and the clock is the bound that matters.
 export async function generateAllOccurrences(
-  opts: { limit?: number; exhausted?: () => boolean } = {},
+  opts: { limit?: number; exhausted?: () => boolean; reconcile?: boolean } = {},
 ): Promise<{
   anchorCount:         number
   occurrencesCreated:  number
+  /** Dates a changed rule no longer produces, retired by this run (ADR-1304). */
+  occurrencesRetired:  number
+  /** Such dates left live because a human is attached to them, or the fail-safe stood down. */
+  occurrencesKept:     number
   anchorsVisited:      number
   remaining:           number
   stoppedOnBudget:     boolean
@@ -397,6 +401,7 @@ export async function generateAllOccurrences(
   const now = new Date().toISOString()
   const limit = Math.max(1, opts.limit ?? 2000)
   const exhausted = opts.exhausted ?? (() => false)
+  const reconcile = opts.reconcile ?? true
 
   // A cancelled or moderator-removed anchor is skipped here as well as in the per-anchor path:
   // the cron rolls the horizon forward every day, so without this filter ending a weekly series
@@ -414,6 +419,8 @@ export async function generateAllOccurrences(
 
   const list = (anchors ?? []) as { id: string }[]
   let total = 0
+  let retired = 0
+  let kept = 0
   let visited = 0
   let stoppedOnBudget = false
   for (const a of list) {
@@ -422,13 +429,206 @@ export async function generateAllOccurrences(
       break
     }
     visited++
+    // RETIRE BEFORE MINTING. The two are the same window read the same way, so the order does not
+    // change the outcome — retirement only ever removes a date the rule does not produce, and
+    // generation only ever adds one it does — but doing it first means the mint sees the shape it
+    // is about to complete rather than the old one plus the new one.
+    //
+    // 🔴 THE CRON MATTERS AS MUCH AS THE EDIT PATHS HERE, because the drift this heals ALREADY
+    // EXISTS: every series whose rule was changed before ADR-1304 is carrying dates from the rule
+    // it used to have, and nobody is going to re-save all of them. This is what heals them, within
+    // a day, without anyone touching the event.
+    if (reconcile) {
+      const r = await retireStaleOccurrences(a.id)
+      retired += r.retired
+      kept += r.kept
+    }
     total += await generateOccurrencesForAnchor(a.id)
   }
   return {
     anchorCount: list.length,
     occurrencesCreated: total,
+    occurrencesRetired: retired,
+    occurrencesKept: kept,
     anchorsVisited: visited,
     remaining: list.length - visited,
     stoppedOnBudget,
   }
+}
+
+// ── RETIRING THE DATES A CHANGED RULE NO LONGER PRODUCES (ADR-1304) ──────────────────────────────
+//
+// Owner, 2026-09-10: *"We also need to edit any future events that have been created if an event in
+// the chain changes. For instance, I changed Meld from weekly to bi weekly but it still shows all
+// the repeating events that were configured originally."*
+//
+// 🔴 THE MATERIALISER IS ADDITIVE BY CONSTRUCTION, and nothing above this line ever took a date
+// back. `generateOccurrencesForAnchor` dedupes by calendar day and upserts with
+// `ignoreDuplicates: true`, so it can only ever ADD; `propagateAnchorEditsToOccurrences` copies
+// content and deliberately excludes `starts_at`, `ends_at`, `slug`, `recurrence_type` and
+// `recurrence_until`, which are exactly the columns a rule change moves. So:
+//
+//   · weekly -> fortnightly minted the new dates ALONGSIDE the old weekly ones,
+//   · shrinking `recurrence_until` stopped minting but never retired what was past the new end,
+//   · turning a series off left its future dates live forever.
+//
+// This is the missing direction. It retires a FUTURE child the current rule does not produce.
+//
+// WHAT IT WILL NOT TOUCH, and why the list is short. A materialised occurrence with nobody attached
+// to it is pure machine output: it was minted by a cron from a rule, and un-minting it when the
+// rule changes is the same act as minting it. The moment a HUMAN has attached something to that
+// date — an RSVP, a ticket, an invited guest, a posted update — it stops being machine output and
+// becomes a gathering people committed to. Retiring one of those is a CANCELLATION, with refunds
+// and notifications behind it (lib/events/cancellation.ts owns that, and it is a deliberate host
+// action), so this function leaves it alone and counts it instead. A host who wants that date gone
+// cancels it, which tells the people who signed up.
+//
+// PAST occurrences are never touched, for the same reason propagation does not touch them: a past
+// occurrence is the record of something that already happened.
+const OCCURRENCE_ATTACHMENT_TABLES = [
+  'event_rsvps',
+  'event_tickets',
+  'event_guests',
+  'event_posts',
+] as const
+
+/** The calendar day an instant falls on, in the wall-clock-as-UTC convention every date in this
+ *  module uses. The materialiser dedupes on this, so retirement has to compare on it too, or a
+ *  stored timestamp that differs by a millisecond or a timezone round-trip reads as a new date. */
+export function occurrenceDayKey(iso: string): string {
+  return new Date(iso).toISOString().slice(0, 10)
+}
+
+/**
+ * PURE. The FUTURE children whose day the rule no longer produces.
+ *
+ * Kept separate from the IO so the arithmetic — which is the part that decides whether a row is
+ * deleted — is testable without a database, and so a caller can see what it would retire before it
+ * retires anything.
+ */
+export function staleOccurrenceIds(
+  children: readonly { id: string; starts_at: string | null }[],
+  expected: readonly Date[],
+  now: Date,
+): string[] {
+  const keep = new Set(expected.map((d) => d.toISOString().slice(0, 10)))
+  const cutoff = now.getTime()
+  return children
+    .filter((c) => c.starts_at != null && new Date(c.starts_at).getTime() >= cutoff)
+    .filter((c) => !keep.has(occurrenceDayKey(c.starts_at as string)))
+    .map((c) => c.id)
+}
+
+export type RetireResult = {
+  /** Rows deleted: future dates the rule no longer produces, with nobody attached. */
+  retired: number
+  /** Future dates the rule no longer produces that a human HAS attached something to. Left live. */
+  kept: number
+  /** The fail-safe fired: see `retireStaleOccurrences`. Nothing was touched. */
+  stoodDown: boolean
+}
+
+const NOTHING: RetireResult = { retired: 0, kept: 0, stoodDown: false }
+
+/**
+ * Retire the future occurrences of `anchorId` that its CURRENT rule does not produce.
+ *
+ * Best-effort by contract, exactly like `propagateAnchorEditsToOccurrences`: the caller has already
+ * saved the anchor, and a failure here must never fail that save.
+ *
+ * 🔴 THE FAIL-SAFE, AND THE GATE THAT NOTICES IT FIRED. An anchor that still says it repeats but
+ * whose rule expands to NOTHING is not a series with no dates, it is a rule this code could not
+ * read — a malformed RRULE, an unparseable `starts_at`. Believing it would delete every future
+ * date of a live series. So that case stands down without touching a row and says so, in the log
+ * and in the returned flag, because a silent fail-safe is an invisible regression.
+ */
+export async function retireStaleOccurrences(anchorId: string): Promise<RetireResult> {
+  const admin = createAdminClient()
+
+  const { data: anchorRow, error: anchorErr } = await admin
+    .from('events')
+    .select(ANCHOR_SELECT)
+    .eq('id', anchorId)
+    .is('parent_event_id', null)
+    .maybeSingle()
+  if (anchorErr || !anchorRow) return NOTHING
+  const anchor = anchorRow as unknown as Anchor
+  // A cancelled or removed series is the cancellation engine's business: it flips `is_cancelled` on
+  // every occurrence and keeps the rows, which is the record of a gathering that was called off.
+  // Deleting them here would erase it.
+  if (anchorIsDormant(anchor)) return NOTHING
+
+  const { data: kids, error: kidsErr } = await admin
+    .from('events')
+    .select('id, starts_at')
+    .eq('parent_event_id', anchorId)
+    .gte('starts_at', new Date().toISOString())
+  if (kidsErr) {
+    console.error('[retireStaleOccurrences]', logToken(anchorId), sanitizeForLog(kidsErr.message))
+    return NOTHING
+  }
+  const children = (kids ?? []) as { id: string; starts_at: string | null }[]
+  if (!children.length) return NOTHING
+
+  // Expand PAST the materialisation horizon when a child sits beyond it, so a date the old rule
+  // minted far out is still judged against the new rule rather than falling off the end of the
+  // window and reading as "not produced" by accident.
+  const now = new Date()
+  const horizon = new Date(now.getTime() + HORIZON_DAYS * 24 * 60 * 60 * 1000)
+  const furthest = children.reduce(
+    (max, c) => (c.starts_at && new Date(c.starts_at) > max ? new Date(c.starts_at) : max),
+    horizon,
+  )
+  const expected = expandOccurrenceInstants(anchor, furthest)
+
+  if (anchor.recurrence_type !== 'none' && expected.length === 0) {
+    console.warn(
+      '[retireStaleOccurrences] STOOD DOWN: anchor still repeats but its rule expanded to nothing',
+      logToken(anchorId),
+      sanitizeForLog(anchor.recurrence_rule ?? anchor.recurrence_type),
+    )
+    return { ...NOTHING, stoodDown: true }
+  }
+
+  const stale = staleOccurrenceIds(children, expected, now)
+  if (!stale.length) return NOTHING
+
+  // Which of those a human has attached something to. One read per table, all ids at once.
+  const attached = new Set<string>()
+  for (const table of OCCURRENCE_ATTACHMENT_TABLES) {
+    const { data, error } = await admin.from(table).select('event_id').in('event_id', stale)
+    if (error) {
+      // A read that failed is not a read that found nothing. Standing down is the only safe
+      // reading: treat every candidate as attached rather than delete on an unknown.
+      console.error('[retireStaleOccurrences]', table, sanitizeForLog(error.message))
+      return { ...NOTHING, kept: stale.length, stoodDown: true }
+    }
+    for (const r of (data ?? []) as { event_id: string | null }[]) {
+      if (r.event_id) attached.add(r.event_id)
+    }
+  }
+
+  const removable = stale.filter((id) => !attached.has(id))
+  if (!removable.length) return { retired: 0, kept: stale.length, stoodDown: false }
+
+  const { data: deleted, error: delErr } = await admin
+    .from('events')
+    .delete()
+    .in('id', removable)
+    // Belt and braces against the one mistake this function could make that matters: it may only
+    // ever delete a CHILD of this anchor, never the anchor and never a standalone event.
+    .eq('parent_event_id', anchorId)
+    .select('id')
+  if (delErr) {
+    console.error('[retireStaleOccurrences]', logToken(anchorId), sanitizeForLog(delErr.message))
+    return { retired: 0, kept: stale.length, stoodDown: false }
+  }
+
+  const retired = (deleted ?? []).length
+  console.warn('[retireStaleOccurrences] retired dates the rule no longer produces', {
+    anchor: logToken(anchorId),
+    retired,
+    keptBecauseAttached: stale.length - retired,
+  })
+  return { retired, kept: stale.length - retired, stoodDown: false }
 }

@@ -38491,3 +38491,73 @@ can emit perfect RRULEs through a menu nobody can read, and nothing in the repo 
 `components/events/repeat-picker.render.test.tsx` mounts the picker and pins the five options, the
 shut default, the editor opening with no "Custom" step, and the exact retired preset sentences never
 reappearing anywhere in the control.
+
+---
+
+## ADR-1304: ACCEPTED — a changed repeat rule retires the dates it no longer produces (2026-09-10)
+
+**Context.** Owner: *"We also need to edit any future events that have been created if an event in
+the chain changes. For instance, I changed Meld from weekly to bi weekly but it still shows all the
+repeating events that were configured originally."*
+
+The materialiser has only ever been able to ADD. `generateOccurrencesForAnchor` dedupes candidate
+dates by calendar day and upserts with `ignoreDuplicates: true`; `propagateAnchorEditsToOccurrences`
+(ADR-884) copies content onto upcoming children and **deliberately excludes** `starts_at`,
+`ends_at`, `slug`, `recurrence_type` and `recurrence_until`, which are exactly the columns a rule
+change moves. So weekly to fortnightly minted the new dates *alongside* the old ones, shrinking
+`recurrence_until` stopped minting but retired nothing past the new end, and turning a series off
+left its future dates live forever. There was no code path anywhere that took a date back.
+
+There was also an asymmetry between the two write paths, and it is the sharper half of the report.
+`updateEvent` (the `/edit` form) has materialised and propagated since ADR-884. `updateEventSettings`
+— the Manage/Studio settings rail, which is *where a host actually changes the repeat rule* — wrote
+`recurrence_rule` onto the anchor and did neither.
+
+**The production reading, taken before writing any of this.** Meld's anchor
+(`meld-community-coworking-royal-temple`) reads `recurrence_type: 'weekly'`, `recurrence_rule: NULL`,
+with 8 future children exactly 7 days apart. Across the whole `events` table, **0 rows carry a
+`recurrence_rule` and both live anchors are legacy-cadence only** — the column shipped hours earlier
+with no backfill, as its migration says. So the bi-weekly change is **not in the database**: until
+ADR-1299 deployed there was no way to *say* "every 2 weeks" at all, the coarse enum having exactly
+four values. The report is therefore two defects stacked, and this ADR is the second one. The first
+is already fixed.
+
+**Decision.** `retireStaleOccurrences(anchorId)` in `lib/event-recurrence.ts`, the missing direction:
+it expands the anchor's CURRENT rule and deletes the future children whose calendar day the rule no
+longer produces. Wired into `updateEvent`, into `updateEventSettings` (which now also materialises
+and propagates, closing the asymmetry), and into the daily cron — the cron matters as much as the
+edit paths, because the drift it heals **already exists** and nobody is going to re-save every
+series that has one.
+
+Three rules bound what it can do:
+
+1. **Never the past.** Same rule as propagation: a past occurrence is the record of something that
+   already happened.
+2. **Never a date somebody is attached to.** A materialised occurrence with nothing attached is pure
+   machine output, and un-minting it when the rule changes is the same act as minting it. The moment
+   a human has attached an RSVP, a ticket, an invited guest or a posted update, it stops being
+   machine output and becomes a gathering people committed to; retiring one of those is a
+   CANCELLATION, with refunds and notifications behind it, which `lib/events/cancellation.ts` owns
+   and a host performs deliberately. Those dates are counted and left live.
+3. **Stand down on a rule that expands to nothing.** An anchor that still says it repeats but whose
+   rule produces no dates is not a series with no dates, it is a rule this code could not read.
+   Believing it would delete every future date of a live series. That case touches nothing and says
+   so, in the log and in the returned flag, because a fail-safe nobody notices is an invisible
+   regression. The same stand-down covers a failed attachment read: a read that errored is not a
+   read that found nothing.
+
+The DELETE also carries `.eq('parent_event_id', anchorId)`, which is redundant by construction —
+the id list came from a read of this anchor's children — and is there precisely so a bug in that
+construction still cannot reach the anchor itself or a standalone event.
+
+**Consequences.** This amends the comment in `updateEvent` that read *"turning a series off must not
+strand the occurrences it already made"*: keeping them **is** the stranding, and unattached ones are
+now retired. The arithmetic is a pure function, `staleOccurrenceIds`, pinned away from the database
+across the rule change, both time boundaries, the day-key comparison the materialiser dedupes on,
+and the idempotent case the cron hits every day on every anchor. The cron logs
+`occurrencesRetired` / `occurrencesKept` beside `occurrencesCreated`; retirement is the only DELETE
+in that job, so its count is the gate that notices the fail-safe firing.
+
+**Not done here.** A host is not told which dates were left live because people are attached to
+them. They stay on the page and in the series rail, which is the honest default, but the host has no
+prompt to go and cancel them. `LIVE-279` carries it.
