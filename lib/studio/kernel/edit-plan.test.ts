@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { validateManifest, type EntityManifest, type FieldDef } from './manifest'
-import { editPlan, railForm } from './edit-plan'
+import { repeatLabel, validateManifest, type EntityManifest, type FieldDef, type RepeatDef } from './manifest'
+import { editPlan, railForm, railRepeats } from './edit-plan'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // THE EDIT PLAN (ADR-1240): the rail's fields come from placement, never from a list of their own.
@@ -72,6 +72,10 @@ describe('railForm', () => {
 
   it('ignores columns the form does not write, however they are placed', () => {
     expect(railForm(TOY, ['phone']).fields.map((f) => f.path)).toEqual(['phone'])
+  })
+
+  it('carries no repeat group for a manifest that declares none', () => {
+    expect(railForm(TOY, ['nickname']).repeats).toEqual([])
   })
 
   // THE DRIFT TEST. The whole point of the seam: a placement changed on the manifest changes what the
@@ -146,5 +150,90 @@ describe('editPlane (ADR-1281)', () => {
   it('is refused with a value that is not one of the two edit planes', () => {
     const m = editedOn('name', 'spark' as unknown as FieldDef['editPlane'])
     expect(validateManifest(m)).toEqual([expect.stringContaining('"name" declares `editPlane: "spark"`')])
+  })
+})
+
+
+// ── The repeat groups a rail form renders (ADR-1306) ────────────────────────────────────────────
+//
+// A repeat is a TABLE OF ROWS, not a column, so `railForm` walked `manifest.fields` and nothing
+// else: every repeated collection an entity declared (an Event's ticket tiers, its set times, its
+// links) was reviewable on the board and editable NOWHERE. `railRepeats` is the same seam for a
+// collection — the save path names it, the manifest says what a row contains.
+
+const REPEATS: RepeatDef[] = [
+  {
+    arrayPath: 'slots',
+    section: 'a',
+    itemLabel: (item, index) => String(item.title ?? '') || `Slot ${index + 1}`,
+    fields: [
+      { path: 'time', label: 'time', kind: 'text' },
+      { path: 'title', label: 'what happens', kind: 'text' },
+    ],
+  },
+  {
+    arrayPath: 'notes',
+    section: 'b',
+    itemLabel: (_item, index) => `Note ${index + 1}`,
+    fields: [{ path: 'body', label: 'note', kind: 'text' }],
+  },
+  {
+    // A KEYED collection: one entry per id, no order to drag and no row to add.
+    arrayPath: 'byPillar',
+    over: 'map',
+    section: 'b',
+    itemLabel: (_item, _index, key) => key,
+    fields: [{ path: 'howTo', label: 'how to', kind: 'text' }],
+  },
+]
+
+const WITH_REPEATS: EntityManifest = { ...TOY, repeats: REPEATS }
+
+describe('railRepeats', () => {
+  it('returns the groups the save path persists, in manifest order, and nothing else', () => {
+    expect(railRepeats(WITH_REPEATS, ['notes', 'slots']).map((r) => r.arrayPath)).toEqual(['slots', 'notes'])
+    expect(railRepeats(WITH_REPEATS, ['nickname']).map((r) => r.arrayPath)).toEqual([])
+    expect(railRepeats(TOY, ['slots'])).toEqual([])
+  })
+
+  it('hands back the manifest object itself, so the group carries its own fields and itemLabel', () => {
+    const [slots] = railRepeats(WITH_REPEATS, ['slots'])
+    expect(slots).toBe(REPEATS[0])
+    expect(slots.fields.map((f) => f.path)).toEqual(['time', 'title'])
+  })
+
+  it('leaves a KEYED collection out: an ordered list editor is the wrong control, not a partial one', () => {
+    expect(railRepeats(WITH_REPEATS, ['byPillar'])).toEqual([])
+  })
+})
+
+describe('railForm with repeats', () => {
+  it('carries the written groups beside the fields, keeping each plane separate', () => {
+    const form = railForm(WITH_REPEATS, ['nickname', 'slots'])
+    expect(form.fields.map((f) => f.path)).toEqual(['nickname'])
+    expect(form.repeats.map((r) => r.arrayPath)).toEqual(['slots'])
+    expect(form.dropped).toEqual([])
+  })
+
+  it('says so rather than silently omitting a written KEYED collection', () => {
+    expect(railForm(WITH_REPEATS, ['byPillar']).dropped).toEqual([{ path: 'byPillar', reason: 'keyed-repeat' }])
+    expect(railForm(WITH_REPEATS, ['byPillar']).repeats).toEqual([])
+  })
+
+  it('still calls a path the manifest declares nowhere unknown, repeats or not', () => {
+    expect(railForm(WITH_REPEATS, ['colour']).dropped).toEqual([{ path: 'colour', reason: 'unknown' }])
+  })
+})
+
+describe('repeatLabel', () => {
+  it('prefers what the manifest calls the collection', () => {
+    expect(repeatLabel({ ...REPEATS[0], label: 'Schedule' })).toBe('Schedule')
+  })
+
+  it('reads the last path segment as words when the manifest names none', () => {
+    expect(repeatLabel(REPEATS[0])).toBe('Slots')
+    expect(repeatLabel({ ...REPEATS[0], arrayPath: 'details.focusDetails' })).toBe('Focus details')
+    expect(repeatLabel({ ...REPEATS[0], arrayPath: 'profileData.socials' })).toBe('Socials')
+    expect(repeatLabel({ ...REPEATS[0], arrayPath: 'focus_details' })).toBe('Focus details')
   })
 })

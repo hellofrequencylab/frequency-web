@@ -16,6 +16,7 @@ import type { PlaceResult } from '@/lib/geocode'
 // The category vocabulary comes from the ONE source (lib/events/options.ts) — this form used to
 // inline an identical copy, which is exactly the drift check:vocab now fails the build on.
 import { CATEGORY_OPTIONS } from '@/lib/events/options'
+import { SPECIAL_INSTRUCTIONS_HELP, SPECIAL_INSTRUCTIONS_LABEL } from '@/lib/events/special-instructions'
 import { RepeatPicker } from '@/components/events/repeat-picker'
 import { repeatUntilDate } from '@/lib/events/repeat-rule'
 import { ticketSellerVerdict, payoutScopeKey, NEEDS_PAYOUT_ACCOUNT } from '@/lib/events/ticket-eligibility'
@@ -1000,7 +1001,7 @@ export function EventForm({
           {/* Special instructions — practical notes for attendees. */}
           <div className="space-y-1.5">
             <Label className="text-body-sm text-text" htmlFor="event-special-instructions">
-              Special instructions <span className="text-2xs font-normal text-muted">(optional)</span>
+              {SPECIAL_INSTRUCTIONS_LABEL} <span className="text-2xs font-normal text-muted">(optional)</span>
             </Label>
             <Textarea id="event-special-instructions"
               value={specialInstructions}
@@ -1010,9 +1011,7 @@ export function EventForm({
               disabled={isPending}
               className="resize-none leading-relaxed"
             />
-            <p className="mt-1.5 text-2xs text-muted">
-              The practical details attendees need on the day.
-            </p>
+            <p className="mt-1.5 text-2xs text-muted">{SPECIAL_INSTRUCTIONS_HELP}</p>
           </div>
         </div>
       </FormSection>

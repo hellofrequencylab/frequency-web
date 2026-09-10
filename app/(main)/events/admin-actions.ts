@@ -38,6 +38,10 @@ import { normalizeCoverAspect, writeEventCoverAspect } from '@/lib/events/cover-
 import { writeEventMarketListed } from '@/lib/events/market-listing'
 import { writeEventCheckInEnabled } from '@/lib/events/checkin-enabled'
 import { pointFromGeog } from '@/lib/events/geo'
+// The poster harvest's allow-list. Used here on the EDITED keys only, never on the whole bag — see
+// the comment at its call site (ADR-1306).
+import { coerceEventDetails } from '@/lib/events/normalize'
+import { SPECIAL_INSTRUCTIONS_MAX } from '@/lib/events/special-instructions'
 import { approveRsvpById } from '@/lib/events/rsvp-depth'
 import { sendRsvpApprovedNotice } from '@/lib/events/guest-rsvp-email'
 import {
@@ -412,6 +416,79 @@ export async function updateEventSettings(id: string, slug: string, fd: FormData
   const nextDetails: Record<string, unknown> = { ...baseDetails }
   if (opensAt || closesAt) nextDetails.rsvpWindow = { opensAt, closesAt }
   else delete nextDetails.rsvpWindow
+
+  // ── THE `details` BAG THE SETTINGS RAIL NOW EDITS (ADR-1306) ─────────────────────────────────
+  //
+  // Everything Vera harvests off a flyer lives here: the Good to know list, the sponsors, the
+  // ticket tiers, the schedule, the links, the other details. Each renders as its own movable
+  // block on the event page and, until now, could be changed on no surface at all.
+  //
+  // 🔴 NEVER ROUND-TRIP THE WHOLE BAG THROUGH `coerceEventDetails`. That function is an ALLOW-LIST
+  // over the poster harvest: it keeps the eight keys it knows and DROPS everything else, which is
+  // right for untrusted model JSON and catastrophic here — `rsvpWindow` (read by two SQL RPCs, the
+  // guest-RSVP gate among them), `specialInstructions` and `media` (the poster crop paths) are all
+  // outside its list. So only the keys this form actually edited are coerced, and the result is
+  // MERGED onto what was already stored. A key the form did not carry is untouched; a key it
+  // carried and emptied is deleted, which is how a host clears a collection.
+  //
+  // Each key is read with a LITERAL `fd.get('...')` rather than through a loop over a key list,
+  // because the rail plan's test holds every key it sends against this function's source. A key
+  // assembled at runtime is a key that guard cannot see.
+  const editedDetails: Record<string, unknown> = {}
+  /** A comma-joined list (the tag control's own separator), or null when the form omitted the key. */
+  const detailsList = (raw: FormDataEntryValue | null) =>
+    typeof raw === 'string'
+      ? raw
+          .split(',')
+          .map((part) => part.trim())
+          .filter(Boolean)
+      : null
+  /** A JSON table of rows, or null when the form omitted the key OR sent something unparseable -
+   *  a malformed payload is a bug in the caller, not an instruction to wipe a host's collection. */
+  const detailsRows = (raw: FormDataEntryValue | null) => {
+    if (typeof raw !== 'string') return null
+    try {
+      const parsed: unknown = JSON.parse(raw)
+      return Array.isArray(parsed) ? parsed : null
+    } catch {
+      return null
+    }
+  }
+
+  const features = detailsList(fd.get('details_features'))
+  if (features) editedDetails.features = features
+  const sponsors = detailsList(fd.get('details_sponsors'))
+  if (sponsors) editedDetails.sponsors = sponsors
+  const tickets = detailsRows(fd.get('details_tickets'))
+  if (tickets) editedDetails.tickets = tickets
+  const schedule = detailsRows(fd.get('details_schedule'))
+  if (schedule) editedDetails.schedule = schedule
+  const links = detailsRows(fd.get('details_links'))
+  if (links) editedDetails.links = links
+  const otherDetails = detailsRows(fd.get('details_other'))
+  if (otherDetails) editedDetails.other = otherDetails
+
+  // ONE pass of the allow-list, over the edited keys only, then merged key by key. A key that
+  // coerced away entirely (an emptied list, rows the coercion rejected) is DELETED rather than
+  // written as an empty array, so the JSONB stays clean and the blocks self-hide the way they do
+  // for an event that never had one.
+  if (Object.keys(editedDetails).length > 0) {
+    const coerced = coerceEventDetails(editedDetails) as Record<string, unknown>
+    for (const key of Object.keys(editedDetails)) {
+      if (coerced[key] === undefined) delete nextDetails[key]
+      else nextDetails[key] = coerced[key]
+    }
+  }
+
+  // The door note. `coerceEventDetails` STRIPS this key, so it is handled on its own rather than
+  // laundered through it. Written only when the form carries it, cleared when it carries an empty
+  // one, capped so a paste cannot bloat the row.
+  const instructionsRaw = fd.get('special_instructions')
+  if (typeof instructionsRaw === 'string') {
+    const note = instructionsRaw.trim().slice(0, SPECIAL_INSTRUCTIONS_MAX)
+    if (note) nextDetails.specialInstructions = note
+    else delete nextDetails.specialInstructions
+  }
 
   // Public listing (ADR-844): read-merge-write into events.theme beside coverFocus/heroHeight, and
   // ONLY when the form carries the control ('on'/'off'), so a form without it can never silently

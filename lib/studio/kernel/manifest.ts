@@ -268,6 +268,15 @@ export interface RepeatDef {
    * for the array case it was born for; it addresses a keyed map just as well (see `over`).
    */
   arrayPath: string
+  /**
+   * What a HUMAN calls the whole collection ("Schedule", "Pricing"), for a surface that heads the
+   * group with a name rather than prefixing each row with `itemLabel`. Optional because the review
+   * board never needed one: it labels ROWS. An editor labels the GROUP, and deriving that from the
+   * path is only right by luck ('details.other' is not "Other" on the page, it is "Details"), so
+   * where the guest-facing heading differs the manifest says it. `repeatLabel()` derives the
+   * fallback, and nothing reads `arrayPath` for display.
+   */
+  label?: string
   /** Whether the collection is an ordered array (the default) or an object keyed by an id. */
   over?: RepeatOver
   section: string
@@ -281,6 +290,23 @@ export interface RepeatDef {
    * collection of bare scalars; `section` is inherited.
    */
   fields: Omit<FieldDef, 'section'>[]
+}
+
+/**
+ * What to head a repeat group with: its declared `label`, else the last segment of its path read as
+ * words ('details.focusDetails' -> "Focus details"). PURE and total, so a surface never has to reach
+ * for `arrayPath` — a persisted path is a key, not copy, and printing one at an operator is how
+ * "profileData.socials" ends up on a screen.
+ */
+export function repeatLabel(def: RepeatDef): string {
+  if (def.label) return def.label
+  const tail = def.arrayPath.split('.').filter(Boolean).pop() ?? def.arrayPath
+  const words = tail
+    .replace(/[_-]+/g, ' ')
+    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+    .trim()
+    .toLowerCase()
+  return words ? words.charAt(0).toUpperCase() + words.slice(1) : def.arrayPath
 }
 
 // ── Sections ─────────────────────────────────────────────────────────────────────────────

@@ -46,6 +46,7 @@ import { CHECK_IN_LABEL } from '@/lib/events/checkin-enabled'
 // review board without becoming impure itself (lib/events/repeat-rule.ts, ADR-1299).
 import { describeRepeat, parseRepeat } from '@/lib/events/repeat-rule'
 import { MARKET_LISTING_LABEL } from '@/lib/events/market-listing'
+import { SPECIAL_INSTRUCTIONS_LABEL } from '@/lib/events/special-instructions'
 
 /** How people get in (ADR-826): one join function per event. Mirrors the CHECK constraint on
  *  `events.join_mode` and the settings action's own allow-list (`['auto', 'rsvp', 'tickets']`). */
@@ -171,7 +172,10 @@ export const EVENT_MANIFEST: EntityManifest = {
 
     // ── What it is (prose: Vera's words until the host keeps or rewrites them) ──
     { path: 'description', label: 'Description', kind: 'longtext', section: 'story', placement: 'inline', prose: true, veraDrafts: true },
-    { path: 'details.features', label: 'What is included', kind: 'tags', section: 'story', veraDrafts: true, omitWhenEmpty: true, read: (d) => list((d.details as Record<string, unknown> | undefined)?.features) },
+    // "Good to know" is what the PAGE calls this list (PosterFeatures' own heading), so the editor
+    // calls it that too. It read "What is included" until 2026-09-10, which named the same list a
+    // second way in the one place a host edits it (ADR-1306).
+    { path: 'details.features', label: 'Good to know', kind: 'tags', section: 'story', veraDrafts: true, omitWhenEmpty: true, read: (d) => list((d.details as Record<string, unknown> | undefined)?.features) },
 
     // ── When. The start is the second thing Vera cannot invent, so the Spark asks it. ──
     // Wall-clock date AND time: `datetime`, not `date`. An event start without a time of day is
@@ -216,6 +220,12 @@ export const EVENT_MANIFEST: EntityManifest = {
     // Hidden address (ADR-825), `events.hide_address`: people browsing see the city only until
     // they RSVP or hold a ticket. The rail persisted it without declaring it until ADR-1281.
     { path: 'hideAddress', label: 'Hide the address until someone registers', kind: 'toggle', section: 'where', veraDrafts: false },
+    // THE DOOR NOTE, `events.details.specialInstructions`. The create form has asked for it since
+    // the first event form and NOTHING has ever read it back or offered a way to change it: it was
+    // write-only for the life of the column (ADR-1306). Declared here so the settings rail edits it,
+    // and the check-in block now prints it. Not prose: it is a list of practical facts (parking, a
+    // door code, what to bring, an accessibility note), not the page's narrative.
+    { path: 'details.specialInstructions', label: SPECIAL_INSTRUCTIONS_LABEL, kind: 'longtext', section: 'where', veraDrafts: true, omitWhenEmpty: true, read: (d) => str((d.details as Record<string, unknown> | undefined)?.specialInstructions) },
 
     // ── Tickets and price. Both asked in the Spark: a flyer without a price is a real gap,
     //    and nobody but the host can settle it. Not `commercial` (no ledger, host is the source). ──
@@ -265,9 +275,15 @@ export const EVENT_MANIFEST: EntityManifest = {
 
   // The flyer's repeated collections. Each item expands into its own rows, so a tier's price
   // or a link's URL is reviewed and corrected on its own, never as one lump.
+  //
+  // Each `label` is the heading the GUEST-facing block already prints (components/events/
+  // poster-details.tsx): a host editing "Schedule" in the rail is editing the box titled Schedule
+  // on the page. Deriving them from the path would be right by luck and wrong for `details.other`,
+  // which the page calls Details (ADR-1306).
   repeats: [
     {
       arrayPath: 'details.tickets',
+      label: 'Pricing',
       section: 'tickets',
       itemLabel: (item, index) => str(item.label) || `Tier ${index + 1}`,
       fields: [
@@ -278,6 +294,7 @@ export const EVENT_MANIFEST: EntityManifest = {
     },
     {
       arrayPath: 'details.lineup',
+      label: 'Lineup',
       section: 'lineup',
       itemLabel: (item, index) => str(item.name) || `Act ${index + 1}`,
       fields: [
@@ -288,6 +305,7 @@ export const EVENT_MANIFEST: EntityManifest = {
     },
     {
       arrayPath: 'details.schedule',
+      label: 'Schedule',
       section: 'lineup',
       itemLabel: (item, index) => str(item.title) || str(item.time) || `Slot ${index + 1}`,
       fields: [
@@ -298,6 +316,7 @@ export const EVENT_MANIFEST: EntityManifest = {
     },
     {
       arrayPath: 'details.links',
+      label: 'Links',
       section: 'host',
       itemLabel: (item, index) => str(item.label) || str(item.kind) || `Link ${index + 1}`,
       fields: [
@@ -308,6 +327,7 @@ export const EVENT_MANIFEST: EntityManifest = {
     },
     {
       arrayPath: 'details.other',
+      label: 'Details',
       section: 'other',
       itemLabel: (item, index) => str(item.label) || `Detail ${index + 1}`,
       fields: [
