@@ -7,6 +7,7 @@ import {
   computeOccurrenceDates,
   expandOccurrenceInstants,
   occurrenceRow,
+  occurrenceTierRows,
   staleOccurrenceIds,
 } from './event-recurrence'
 
@@ -495,5 +496,213 @@ describe('the retirement is wired where a rule is actually changed', () => {
     for (const table of ['event_rsvps', 'event_tickets', 'event_guests', 'event_posts']) {
       expect(source).toContain(`'${table}'`)
     }
+  })
+})
+
+// ── TICKET TIERS: THE HALF OF AN OCCURRENCE THAT IS NOT A COLUMN (ADR-1308) ────────────────────
+//
+// INHERITED_COLUMNS can only ever carry columns of the `events` row, and a ticket tier is a ROW in
+// event_ticket_types. Production, the Meld series: the anchor had price_cents 2200 and 2 tiers (one
+// members-only); its 2026-09-16 occurrence had price_cents 2200 and ZERO tiers. It looked priced,
+// the page's paid branch (isPaidEvent && hasTiers) never rendered, and no charge was ever
+// attempted. These pin the copy that fixes it — and, harder, what the copy must REFUSE to carry.
+describe('occurrenceTierRows — the anchor’s catalog travels, its identity and sales do not', () => {
+  const anchorTier = {
+    // Identity + sales state, none of which may travel.
+    id: 'tier-anchor-1',
+    event_id: 'anchor-1',
+    sold: 17,
+    created_at: '2026-06-01T00:00:00.000Z',
+    // The catalog: every column that describes what the ticket IS.
+    name: 'General',
+    description: 'Drop in for the day',
+    pricing_mode: 'fixed',
+    price_cents: 2200,
+    min_cents: null,
+    suggested_cents: null,
+    quantity: 24,
+    member_only: false,
+    space_members_only: false,
+    space_tier_id: null,
+    sort_order: 0,
+    active: true,
+  }
+
+  it('carries every configuration column verbatim onto the occurrence', () => {
+    const [row] = occurrenceTierRows([anchorTier], 'occurrence-9')
+    expect(row).toMatchObject({
+      name: 'General',
+      description: 'Drop in for the day',
+      pricing_mode: 'fixed',
+      price_cents: 2200,
+      min_cents: null,
+      suggested_cents: null,
+      quantity: 24,
+      member_only: false,
+      space_members_only: false,
+      space_tier_id: null,
+      sort_order: 0,
+      active: true,
+    })
+  })
+
+  it('🔴 resets id, sold and created_at by OMISSION, and points event_id at the occurrence', () => {
+    const [row] = occurrenceTierRows([anchorTier], 'occurrence-9')
+    expect(row.event_id).toBe('occurrence-9')
+    // Omitted, not nulled: the column defaults (gen_random_uuid(), 0, now()) own them. A copied
+    // `sold` against the copied `quantity` would mark a brand new date sold out the day it was
+    // minted, which is the one mistake here a member would see.
+    for (const forbidden of ['id', 'sold', 'created_at']) {
+      expect(Object.keys(row)).not.toContain(forbidden)
+    }
+  })
+
+  it('carries the ADR-823 membership gate, which is the whole of membership coverage', () => {
+    // Space-membership inclusion IS a members-only tier row. Drop these two columns and an
+    // occurrence can never be covered by a membership, however the Space is configured.
+    const [row] = occurrenceTierRows(
+      [
+        {
+          ...anchorTier,
+          name: 'Studio Member',
+          pricing_mode: 'free',
+          price_cents: null,
+          space_members_only: true,
+          space_tier_id: 'space-tier-7',
+        },
+      ],
+      'occurrence-9',
+    )
+    expect(row).toMatchObject({ space_members_only: true, space_tier_id: 'space-tier-7' })
+  })
+
+  it('carries a RETIRED tier retired, rather than re-opening a ticket the host withdrew', () => {
+    const [row] = occurrenceTierRows([{ ...anchorTier, active: false }], 'occurrence-9')
+    expect(row.active).toBe(false)
+  })
+
+  it('an empty input gives an empty output (no tiers ⇒ no write)', () => {
+    expect(occurrenceTierRows([], 'occurrence-9')).toEqual([])
+  })
+
+  it('is idempotent on the tier NAME, so a re-run cannot mint a second “Members”', () => {
+    const rows = occurrenceTierRows(
+      [anchorTier, { ...anchorTier, id: 'tier-anchor-2', name: '  general  ' }],
+      'occurrence-9',
+    )
+    expect(rows).toHaveLength(1)
+  })
+
+  it('drops a nameless row rather than minting an unnameable ticket', () => {
+    expect(occurrenceTierRows([{ ...anchorTier, name: '   ' }], 'occurrence-9')).toEqual([])
+  })
+
+  it('mints one payload per tier per occurrence', () => {
+    const tiers = [anchorTier, { ...anchorTier, id: 'tier-anchor-2', name: 'Members' }]
+    expect(occurrenceTierRows(tiers, 'occurrence-9')).toHaveLength(2)
+    expect(
+      occurrenceTierRows(tiers, 'occurrence-10').every((r) => r.event_id === 'occurrence-10'),
+    ).toBe(true)
+  })
+})
+
+// The classification test, and the one that will catch the NEXT version of this bug. The failure it
+// prevents: a migration adds a column to event_ticket_types, nobody adds it to TIER_CATALOG_COLUMNS,
+// and every occurrence minted afterwards carries the column default instead of the anchor's value —
+// silently, exactly as the tiers themselves did. Every column of the table must be classified as
+// either carried or deliberately reset; a new one is neither, so this fails until someone decides.
+describe('every event_ticket_types column is classified as carried or reset', () => {
+  const root = join(__dirname, '..')
+  const source = readFileSync(join(root, 'lib/event-recurrence.ts'), 'utf8')
+  const types = readFileSync(join(root, 'lib/database.types.ts'), 'utf8')
+
+  const carried = [
+    ...(source.match(/const TIER_CATALOG_COLUMNS = \[([\s\S]*?)\] as const/)?.[1] ?? '').matchAll(
+      /^\s*'([a-z_]+)',/gm,
+    ),
+  ].map((m) => m[1])
+
+  /** The table's real columns, read from the generated types rather than retyped here. */
+  const actual = [
+    ...(
+      types.match(/ {6}event_ticket_types: \{\n {8}Row: \{\n([\s\S]*?)\n {8}\}/)?.[1] ?? ''
+    ).matchAll(/^\s*([a-z_]+):/gm),
+  ].map((m) => m[1])
+
+  /** Reset by omission, each for the reason named beside it in lib/event-recurrence.ts. */
+  const reset = ['id', 'event_id', 'sold', 'created_at']
+
+  it('parses a non-trivial list from both sides (a regex matching nothing must fail)', () => {
+    expect(carried.length).toBeGreaterThan(8)
+    expect(actual.length).toBeGreaterThan(12)
+  })
+
+  it('carries every column that is not identity or sales state', () => {
+    expect([...carried].sort()).toEqual(actual.filter((c) => !reset.includes(c)).sort())
+  })
+
+  it('🔴 never carries a sales counter or an identity column', () => {
+    for (const forbidden of reset) expect(carried).not.toContain(forbidden)
+  })
+})
+
+// Same contract as the ADR-884 SQL repair above, for the same reason: the backfill cannot IMPORT
+// the helper (lib/event-recurrence.ts resolves `@/lib/...` aliases that plain node does not), so it
+// repeats the column list, and this is what stops the two from drifting. A column added to the mint
+// and not the backfill would leave every already-materialised date holding a defaulted value
+// forever, because the mint only ever touches rows it creates.
+describe('the tier backfill and the generator agree on what a tier carries', () => {
+  const root = join(__dirname, '..')
+  const source = readFileSync(join(root, 'lib/event-recurrence.ts'), 'utf8')
+  const script = readFileSync(join(root, 'scripts/backfill-occurrence-ticket-tiers.mts'), 'utf8')
+
+  const list = (text: string) =>
+    [
+      ...(text.match(/const TIER_CATALOG_COLUMNS = \[([\s\S]*?)\] as const/)?.[1] ?? '').matchAll(
+        /^\s*'([a-z_]+)',/gm,
+      ),
+    ].map((m) => m[1])
+
+  it('copies exactly the columns a newly minted tier carries, no more and no fewer', () => {
+    expect(list(script).length).toBeGreaterThan(8)
+    expect([...list(script)].sort()).toEqual([...list(source)].sort())
+  })
+
+  it('is a dry run until an operator says otherwise, and never runs itself', () => {
+    expect(script).toContain("const APPLY = process.argv.includes('--apply')")
+    expect(script).toContain('if (!APPLY)')
+    // Only FUTURE dates, the same rule propagation and retirement follow.
+    expect(script).toContain('starts_at=gte.')
+    // And never a sales counter: the payload is built from the catalog list alone.
+    expect(script).not.toMatch(/\bsold\b\s*:/)
+  })
+})
+
+describe('the tiers are minted where the occurrences are, and only for new ones', () => {
+  const read = (p: string) => readFileSync(join(process.cwd(), p), 'utf8')
+
+  it('🔴 the mint copies tiers only for the rows THIS RUN created', () => {
+    // The distinction is the whole safety property: an occurrence whose tiers a host has since
+    // edited must never be overwritten or doubled. `ignoreDuplicates` makes the upsert ON CONFLICT
+    // DO NOTHING, so the returned representation is exactly the rows that were inserted.
+    const source = read('lib/event-recurrence.ts')
+    const fn = source.slice(source.indexOf('export async function generateOccurrencesForAnchor'))
+    expect(fn).toContain('ignoreDuplicates: true')
+    expect(fn).toContain(".select('id')")
+    expect(fn).toContain('mintTiersForOccurrences(anchor.id, created)')
+    // And the copy itself skips any target that already has tiers.
+    const mint = source.slice(source.indexOf('async function mintTiersForOccurrences'))
+    expect(mint).toContain('alreadyTiered')
+  })
+
+  it('🔴 membership access on a SERIES ANCHOR reaches its future occurrences', () => {
+    // Without this a host turns on member inclusion and only the anchor gets it, which on a weekly
+    // series is one date. The fan-out is future-only, and a CHILD never reaches upward.
+    const access = read('lib/events/space-event-access.ts')
+    expect(access).toContain('futureOccurrenceIds')
+    expect(access).toContain('evRow.parent_event_id == null')
+    const fn = access.slice(access.indexOf('async function futureOccurrenceIds'))
+    expect(fn).toContain(".eq('parent_event_id', anchorId)")
+    expect(fn).toContain(".gte('starts_at', new Date().toISOString())")
   })
 })
