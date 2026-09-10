@@ -38612,3 +38612,113 @@ retired preset LABELS are sentences `describeRepeat` still legitimately produces
 Wednesday" is exactly what the read-back line says for that rule, and it should. So the
 preset-absence assertion is made against the `<option>` list, not against the control's text; a
 text-level version fails on the sentence the control exists to print.
+
+## ADR-1306: ACCEPTED — a repeat rule set from one date of a series is written to the series (2026-09-10)
+
+**Context.** Vercel runtime errors, 2026-09-10, three occurrences from one host on `/events/[slug]`:
+
+```
+Error: new row for relation "events" violates check constraint "events_occurrence_not_recurring"
+```
+
+That CHECK, read from `pg_constraint` on the live database, is
+`CHECK (parent_event_id IS NULL OR recurrence_type = 'none')` — a materialised occurrence may not
+itself recur (20240208000000). `updateEventSettings` wrote `recurrence_type`, `recurrence_rule` and
+`recurrence_until` by id with **no idea whether the id was a series anchor or one materialised date
+of a series**. So a host who opened one date of a series and set a repeat on it got a 500 instead of
+a series.
+
+This is the third distinct reason the same reported change never landed, and the three together are
+worth stating in one place because each was invisible from the others:
+
+| # | Why it failed | Fixed by |
+|---|---|---|
+| 1 | There was no way to *say* "every 2 weeks": the cadence enum had four values | ADR-1299 |
+| 2 | Nothing ever retired the dates a changed rule no longer produces | ADR-1304 |
+| 3 | Setting the rule from one date of the series 500'd on a DB CHECK | this ADR |
+
+**Decision.** The repeat rule is a property of the SERIES, not of the date. Every occurrence page
+says "Part of a recurring series", and a host changing "how often" from one of them means the
+series, the way every calendar application treats it. So:
+
+- the recurrence columns are written to the **anchor** (`parent_event_id ?? id`), fenced with
+  `.is('parent_event_id', null)` so the write can only ever land on an anchor;
+- they are **omitted from the row's own payload** when that row is a date of a series, which is the
+  500;
+- everything else on the form still writes to the row the host opened, because a per-date title,
+  venue or price is exactly what a per-date edit is for;
+- the "ends on" date is validated against the **series' start**, not the start of whichever date the
+  host happened to be looking at, which would otherwise reject an end that is valid for the series.
+
+**Consequences, and the one that is easy to miss.** `propagateAnchorEditsToOccurrences` copies the
+ANCHOR's content onto every upcoming date. Running it after a **per-date** edit would overwrite the
+title, venue or price the host had just saved on that one date, one line after saving it. So
+propagation runs only when the anchor itself was edited; the other two reconcilers (ADR-1304) are
+driven by the RULE, which is the anchor's either way, so they run for both.
+
+The guard is a source-shape test (`app/(main)/events/admin-actions.test.ts`) and the ADR says why:
+the oracle for this bug is a database constraint reached through a dozen reads, a geocode and a
+details merge, so faking that chain deeply enough to make the constraint the thing under test would
+be faking the constraint. What the guard pins is the five shapes that keep the write off a child
+row, each of them a line someone could delete while everything still compiles. The behaviour itself
+was verified against production: the constraint is quoted from `pg_constraint` and the error from
+the runtime log.
+
+---
+
+## ADR-1307: ACCEPTED — editing one date of a series asks whether you mean the date or the series (2026-09-10)
+
+**Context.** Owner, minutes after watching a rule change do nothing:
+
+> If a user edits an event in the series, it should ask them if they want to change the future
+> schedule or just that event.
+
+A recurring event is ONE thing to a host and MANY rows to the database (ADR-007: occurrences are
+materialised, not virtual). Every calendar application resolves that mismatch the same way, by
+asking. This repo never asked, and the two silent answers it gave were each wrong in one direction:
+
+- editing the **anchor** pushed its content onto every upcoming date whether the host meant it or
+  not (ADR-884), so fixing one date's title rewrote them all;
+- editing a **date** could not change the series at all, and setting a repeat on one violated the
+  `events_occurrence_not_recurring` CHECK and 500'd (ADR-1306) — four times in production on the day
+  this was written, including once while the owner was watching.
+
+**Decision.** When the row being edited belongs to a series, the settings rail asks:
+
+> **This is one date in a repeating series.** Apply what you change here to:
+> ( ) This event only    ( ) This event and all future dates
+
+The answer is decided in ONE pure function, `seriesWritePlan` (`lib/events/series-scope.ts`), which
+both the control and the server action read. That is the point: the control that hides the repeat
+editor and the action that refuses to write it cannot disagree, because they are the same answer.
+
+| | This event only | This and all future dates |
+|---|---|---|
+| Repeat pattern | not editable | written to the **anchor** |
+| Content (title, venue, price…) | this row only | this row, then **forward** to later dates |
+| Schedule reconciliation (ADR-1304) | none | on the anchor |
+
+Three things follow, and each is a decision rather than a detail:
+
+1. **The default is the NARROW scope.** A missing or malformed field parses to "this event". The
+   wide answer rewrites dates the host cannot see, so it is the one they choose, never the one they
+   get by omission. `parseSeriesScope` is total and one-directional for exactly that reason.
+2. **The repeat pattern is only editable under the wide scope, on every row in a series** —
+   including the anchor. On a date the database forbids writing it; on the anchor, writing it would
+   change every date while the host had just said "this event". One rule, no special case. The rail
+   REMOVES the control rather than disabling it, and says where it went: a control that renders,
+   accepts a change and is then silently refused by the server is the failure this whole ADR is
+   about.
+3. **Propagation is FORWARD from the edited row**, not down from the anchor. `propagateEditsForward`
+   is the new sibling of `propagateAnchorEditsToOccurrences`: a host who fixes the venue on the 30th
+   and asks for it going forward means *from the 30th*. When the anchor is the origin it is also the
+   earliest, so "after it" is every occurrence — which is ADR-884's behaviour, now chosen rather
+   than assumed.
+
+**Consequences.** `isAnchor` is read from the row AS IT STANDS, never from the rule being submitted,
+so a standalone event turning its first repeat on is not asked a question about a series it is not
+in yet, and may still write the rule to itself. `series_scope` rides in the FormData beside the map
+pin and for the same reason: neither is a manifest field or a column — the pin says *where*, the
+scope says what the save may *reach*. The decision function is pinned in
+`lib/events/series-scope.test.ts` away from any database, across both row kinds, both scopes, and the
+standalone case; the wiring is pinned at the source in `app/(main)/events/admin-actions.test.ts`.

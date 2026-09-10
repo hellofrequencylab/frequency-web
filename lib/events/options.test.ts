@@ -65,7 +65,12 @@ describe('every event visibility write routes through coerceVisibilityForScope',
   })
 
   it('the /manage settings write coerces against the row scope_type', () => {
-    expect(adminActions).toContain("select('details, theme, scope_type')")
+    // Per COLUMN, not per string, for the reason this file already gives twenty lines up: pinning
+    // the exact select made an ADDITIVE change look like a break. This read has since gained
+    // `parent_event_id` and `recurrence_type` (ADR-1306/1307) and would have failed on both.
+    for (const col of ['details', 'theme', 'scope_type']) {
+      expect(adminActions).toMatch(new RegExp(`select\\('[^']*\\b${col}\\b[^']*'\\)`))
+    }
     expect(adminActions).toContain('coerceVisibilityForScope(')
   })
 })
