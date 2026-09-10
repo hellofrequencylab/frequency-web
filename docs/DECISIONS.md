@@ -39134,9 +39134,10 @@ the operator**. Two scopes, one tab apart, under near-identical names.
   ruling in this ADR with an unresolved cost, found after it was accepted: `SPACE_MODULE_BOX_IDS` is
   DERIVED as `SPACE_MODULES.filter((m) => !m.parent)` (`space-modules.ts:363`), so un-parenting makes
   Your reach a **thirteenth top-level box** and fails `space-modules.test.ts:248-264`, which pins
-  ADR-846's twelve. Either this ADR amends ADR-846 to thirteen, or the row keeps its parent and takes
-  a stated divergence reason instead. `LIVE-292` carries the ruling; do not settle it by editing the
-  test. Moving the child
+  ADR-846's twelve. **Ruled 2026-09-10: this ADR amends ADR-846 to THIRTEEN boxes.** The lock was a count, not a
+  principle, and the un-parenting has a reason the count does not. `space-modules.test.ts:248-264`
+  moves to thirteen *citing this ADR*, and the two comments that still say twelve are corrected in
+  the same change. `LIVE-292` carries it. Moving the child
   while `space.reach` stays in Marketing would recreate the very orphan class this ADR removes, so
   it becomes a top-level card with no parent. Calendar moves to Content & Programs; Collaborators
   moves to Profile & Settings, matching `parent: space.people`; Automation returns to Resonance.
@@ -39154,8 +39155,10 @@ the operator**. Two scopes, one tab apart, under near-identical names.
   status must be cached and refreshed from `account.updated`, never inferred from a return URL.
 - **Money in stays separate from money out.** "Your plan" remains on Profile & Settings with a
   labelled cross-link from the money tab, matching how Shopify separates `Finance → Payouts` from
-  the Billing page. The names do the disambiguating: *Your plan* for what you pay us, *Payments and
-  payouts* for what we pay you. Both renames are gated on `docs/NAMING.md`.
+  the Billing page. The names do the disambiguating: *Your plan* for what you pay us, and — ruled 2026-09-10 — **Get
+  paid** for what we pay you, because *Payments* already names the operator console at `/admin/payments`.
+  The route stays `/settings/payments`: renaming a persisted identifier buys churn and nothing a member
+  sees (ADR-590). Both terms still need a `docs/NAMING.md` entry, which today carries no payout term at all.
 - **Group headers, not sub-menus.** `FeatureGrid` renders one flat grid of undifferentiated cards
   under an owner directive that *"every feature is a top-level card WITHIN the category, no nested
   sub-menus."* That directive is **kept** — every feature stays a top-level card — and they render
@@ -39164,6 +39167,16 @@ the operator**. Two scopes, one tab apart, under near-identical names.
   one reference in the tree, but the route behind it does three things Email does not: a DM lane, a
   Dispatch lane, and targeting by member / tier / circle / event guests. The lanes are dropped
   deliberately; the targeting is ported, because it is the part Email cannot do.
+  🔴 **Dispatch is NOT part of that loss, on a later ruling (2026-09-10).** Retiring the surface would
+  have taken `composeSpaceDispatch`'s only production caller with it, while the rail and the digest kept
+  reading for space-scoped rows nothing could write. The owner ruled the opposite: *"Make it possible for
+  the space owner to dispatch from the post box."* The affordance already half-exists — `capture-box.tsx`
+  declares Dispatch as a `hostOnly` capture mode gated on `canAnnounce`, computed today in one place from a
+  **community** role — so the work is giving that box a space scope, not building a composer. `LIVE-295`
+  carries it and lands **before** `LIVE-293`.
+  ✅ **The consent bar holds.** The Message center hard-coded the strictest topic; the Email composer lets
+  an operator pick one. A member-segment audience is forced to the marketing topic **at the resolver**, so
+  choosing a topic in the composer cannot route around it.
 
 **Consequences.** The money tab goes from nine cards (three strays, one circular) to six coherent
 ones in three labelled groups, and the half of the platform with a working Stripe account gets a
@@ -39187,4 +39200,74 @@ rather than settled here. `LIVE-233` is still marked `open` at P0 although its c
 #2507; this ADR is the re-measurement its premise was owed, and LIVE-290 is the half of it that was
 never built.
 
-**Rows.** LIVE-290 (P0) · LIVE-291 · LIVE-292 · LIVE-293 · LIVE-294.
+**Rows.** LIVE-290 (P0) · LIVE-291 · LIVE-292 · LIVE-295 · LIVE-293 · LIVE-294, in that order: LIVE-295
+gives space Dispatch a new home before LIVE-293 removes its old one.
+
+---
+
+## ADR-1314: ACCEPTED — an operator surface the e2e account cannot open is not coverage (2026-09-10)
+
+📌 **Numbered 1314, not 1313.** `claude/focused-heisenberg-57qcbv` (#2533) renumbered *onto* 1313
+independently, from a `main` that did not yet carry this branch — both reads were correct in
+isolation, which is the same trap three branches hit on 1306 earlier the same day. Renumbering this
+side rather than theirs resolves it whichever order the two land in, and needs no edit to a branch
+another session is driving. "The next free number" remains a property of `main` PLUS every open
+branch, and nothing checks that at authoring time.
+
+**Context.** `OPERATOR_PATHS` (`test/e2e/surfaces.ts`) names the seven `/admin` routes the visual
+and a11y suites watch. They were chosen by counting raw buttons
+(`scripts/visual-surface-census.mjs`) and **nobody checked whether the credential that drives the
+suite could reach what the list named.**
+
+Confirmed by the live gate on two unrelated pull requests, in the same words on both:
+
+```
+5 /admin surface(s) bounced off the role floor:
+  /admin/library, /admin/crew-tasks, /admin/crm, /admin/content/practices, /admin/qr
+```
+
+Those are exactly the five that `requireAdmin(min, { staff })` denies a read-scoped staff role,
+because that guard's `staffLevel` **defaults to `'write'`**, and the per-role grid is recorded with
+the capture-attribution work in flight alongside this. Four
+of them are opened by raising the account to `team_members: 'admin'`. **`/admin/crm` is not opened
+by anything on that axis**: it is `requireAdmin('janitor')` with no staff escape, so only `web_role`
+janitor or admin reaches it — the meta-admin tier `HYG-027` spent a day establishing a Playwright
+credential must never hold. `/admin/elements` and `/admin/crm/members`, the next two candidates the
+census ranks, are the same shape.
+
+**Decision, two parts.**
+
+**1. The account is raised to `team_members: 'admin'`** — the least role that opens the other six,
+verified against all seven staff roles rather than assumed. It touches neither `web_role` nor the
+community ladder, so the owner remains the only account on the staff axis and the only Janitor.
+
+**2. `/admin/crm` is replaced by `/admin/circles`** rather than the console being loosened. The
+alternative was giving `/admin/crm` a staff domain, which would widen who can see a live CRM to fix
+a test — changing production authorization to suit the observer. `/admin/circles` is the nearest
+comparable the census offers that a staff role can actually open: 4 raw-button-bg / 26 raw
+`<button>` against crm's 6 / 21. The set stays seven and the audit keeps roughly the same surface.
+
+**The guard, which is the durable half.** `test/e2e/operator-reachability.test.ts` walks each
+watched route's guard chain and fails when the governing guard admits only a `web_role`. It is
+source-shape on purpose: the alternative needs a session, a deployment and a database — exactly the
+machinery whose absence made this invisible for two weeks.
+
+⚠️ **It took three versions, and the two failures are the interesting part.**
+
+- **Reading only `page.tsx`** called `/admin/marketing/nurture` unreachable. That route declares no
+  guard of its own and inherits the floor from `app/(main)/admin/layout.tsx` — and the capture had
+  already photographed it for real. A gate that contradicts an observed artifact is the broken one.
+- **Reading the whole chain and admitting if ANY level passed** called every `/admin` route
+  reachable, `/admin/crm` included, because the admin layout always calls `requireAdminFloor()`.
+  Clearing the floor is NECESSARY and NOT SUFFICIENT — the page's own stricter guard still denies
+  underneath it. **The assertion was passing for the wrong reason, and only the mutation test found
+  it**: putting `/admin/crm` back failed the name check and left the reachability check green.
+
+The rule that survives: walk most-specific outward and stop at the first level that actually calls
+a guard, exactly as the runtime does.
+
+📌 And a small technique worth stealing: every pattern requires `await`. Both files that misled the
+earlier versions describe a guard in prose without calling it — `// STAFF-GATED:
+requireAdmin('janitor')` in the crm page, `// requireAdminFloor() floor` in the marketing layout. A
+call site has `await`; a sentence about one does not. That beats stripping comments, which on this
+codebase eats real code.
