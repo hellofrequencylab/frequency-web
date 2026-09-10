@@ -193,7 +193,7 @@ export const EVENT_MANIFEST: EntityManifest = {
     // contradict each other once edited apart. The value is an RFC 5545 RRULE
     // (lib/events/repeat-rule.ts); the server splits the end back into `recurrence_until` and
     // derives the coarse `recurrence_type` mirror, so the manifest declares neither.
-    { path: 'recurrenceRule', label: 'Repeats', kind: 'repeat', section: 'when', omitWhenEmpty: true, veraDrafts: false, read: (d) => describeRepeat(parseRepeat(str(d.recurrenceRule)), str(d.startsAt)) },
+    { path: 'recurrenceRule', label: 'Repeat event', kind: 'repeat', section: 'when', omitWhenEmpty: true, veraDrafts: false, read: (d) => describeRepeat(parseRepeat(str(d.recurrenceRule)), str(d.startsAt)) },
     // The venue's IANA zone. Seeded from the creator, then refined from the geocoded point. A
     // `select` over the curated list (ADR-1281): every surface that ever edited it offered the
     // list, never a bare zone string, and the kit keeps a stored off-list zone selectable.
