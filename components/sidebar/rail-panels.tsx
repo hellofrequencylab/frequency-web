@@ -338,22 +338,30 @@ export async function ControlCenterPanel({ profileId }: { profileId: string }) {
 
   return (
     <WidgetCard title="Your Quest">
-      {/* Next step — the actionable nudge (the one thing the Vault dock does not carry). */}
+      {/* Next step — the actionable nudge (the one thing the Vault dock does not carry).
+          🔴 TEXT USES text-muted / text-text; the accent is for the ICONS. This card sits on
+          bg-broadcast-bg/30, where broadcast-strong measures 4.27:1 and signal 3.71:1 against
+          the 4.5 bar — both are carried as declared palette waivers in check-contrast.mjs, so
+          that guard stays green while axe fails the rendered page. It only became a barrier
+          when this panel started rendering in the rail on EVERY member and operator surface
+          (LIVE-240); it failed the a11y gate on nine of them. Same fix, and same reason, as
+          components/feed/feed-onboarding-guide.tsx — the two are the same content in two
+          places, so a change to one wants a look at the other. */}
       <Link
         href={nextStep.href}
         className="group block rounded-xl border border-broadcast/30 bg-broadcast-bg/30 p-3 transition-colors hover:bg-broadcast-bg/50"
       >
-        <p className="flex items-center justify-between text-2xs font-semibold uppercase tracking-wide text-broadcast-strong">
-          <span className="inline-flex items-center gap-1"><Compass className="h-3 w-3" /> Next step</span>
+        <p className="flex items-center justify-between text-2xs font-semibold uppercase tracking-wide text-muted">
+          <span className="inline-flex items-center gap-1"><Compass className="h-3 w-3 text-broadcast-strong" /> Next step</span>
           {status && <span className="tabular-nums">{status.pct}%</span>}
         </p>
         <p className="mt-1 text-body-sm font-bold leading-snug text-text">{nextStep.headline}</p>
         <p className="mt-0.5 line-clamp-2 text-meta text-muted">{nextStep.blurb}</p>
         <p className="mt-2 flex items-center justify-between">
-          <span className="inline-flex items-center gap-1 text-2xs font-semibold text-signal">
-            <Gem className="h-3 w-3" /> Earn Gems for finishing
+          <span className="inline-flex items-center gap-1 text-2xs font-semibold text-muted">
+            <Gem className="h-3 w-3 text-signal-strong" /> Earn Gems for finishing
           </span>
-          <span className="inline-flex items-center gap-0.5 text-2xs font-semibold text-broadcast-strong">
+          <span className="inline-flex items-center gap-0.5 text-2xs font-semibold text-text">
             {nextStep.cta} <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
           </span>
         </p>
