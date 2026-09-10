@@ -11821,6 +11821,24 @@
       }
     },
     {
+      "id": "LIVE-288",
+      "title": "Nine /events layout rows an operator never meant to create, from a Save that always meant \"this one page\"",
+      "status": "done",
+      "priority": "P2",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "scripts/adr-1316-events-page-settings-cleanup.sql",
+        "ref": "owner report 2026-09-10: \"I've saved the layout like this a few times and it keeps resetting.\""
+      },
+      "detail": "FILED AND CLOSED 2026-09-10 (ADR-1316). The DATA half of LIVE-286, which fixed the editor; this cleans up what the old behaviour left behind.\n\nIt was never resetting. page_settings is keyed (space_id, route), layoutScopeChain cascades route -> /seg/* -> * with the first level winning ENTIRELY, and the Layout editor defaults to 'This page' - so every save landed on one slug and the next date of the same series inherited nothing. 21 rows under /events/, seven of them different dates of one Meld series, and until that day zero at any scope key.\n\n🔴 THE BUCKET EVERYONE EXPECTS WAS EMPTY, and this is the finding worth keeping. The plan was 'delete the rows that resolve identically to the /events/* baseline, since they inherit it anyway'. NO ROW DID. Every one of the twenty per-page rows would change what renders, and the baseline is the only layout carrying roles:{event-cohosts:'host'}, so a page that loses its row also stops showing the cohosts block to non-hosts. Deleting here is EDITING, not housekeeping, which is why only two classes were taken.\n\nTAKEN: 5 DEAD (the slug resolves to no event - verified by a left join against events, never by reading the slug, so zero visible change by construction) and 4 REPEATED-SAVE (same block ids as the baseline, ordering-only delta; three are dates of the one Meld series and eclipse-... resolves BYTE-FOR-BYTE to the coded default in default-layouts.ts, a Save that recorded no choice at all).\n\nKEPT: 11, each moving a block the baseline puts elsewhere - location out of main into the side, good-to-know leading the side above event-join, the side stripped to three blocks. Real editorial choices.\n\n⚠️ THREE OF THE KEPT ARE FLAGGED RATHER THAN CLEARED and are the natural second batch: ecstatic-dance, femme-flow and transformational-breathwork were saved 2026-07-14/15 and resolve to a PIXEL-IDENTICAL layout across three unrelated events, which is the same global-intent repeated save this row exists to clean up. Kept because that arrangement is neither a subset of the current baseline nor a match for any older one (there has never been another scope-key row in this table), so 'superseded' cannot be told from 'still wanted' from the data alone. Keeping a row costs one row; deleting a wanted one costs an operator's work. One owner look at one page settles it.\n\n🔴 THE SNAPSHOT IS PART OF THE OPERATION. page_settings has no soft-delete column and ZERO triggers, so a delete is final and nothing captures the row on the way out.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Production (Frequency Community, azsqfeonabsbmemvddqd), 2026-09-10. Readback after the two delete statements: rows_left=12 under /events/ (11 per-page + 1 scope key), scope_rows=1, recoverable=21 in page_settings_events_backup_20260910. Every DEAD verdict was confirmed BEFORE deleting by a left join of the candidate routes against public.events (slug_resolves=false on all five, slug_resolves=true on all four repeated-save rows). MANUAL because the state being asserted is production DATA, and a probe that could read it from CI would need service-role credentials in the test runner - the row would then be measuring the runner's secrets rather than the cleanup. The SQL and the full keep/delete reasoning live in scripts/adr-1316-events-page-settings-cleanup.sql, which is reviewable in the tree.",
+        "checked": "2026-09-10"
+      }
+    },
+    {
       "id": "LIVE-287",
       "title": "Check-in was three surfaces that each knew a different amount, and the one that could act was below the fold",
       "status": "done",
