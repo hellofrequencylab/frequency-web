@@ -40,8 +40,7 @@ describe('the Event rail plan', () => {
       'description',
       'startsAt',
       'endsAt',
-      'recurrenceType',
-      'recurrenceUntil',
+      'recurrenceRule',
       'timeZone',
       'location',
       'attendanceMode',
@@ -149,8 +148,7 @@ describe('the Event rail plan', () => {
     expect(groups.find((g) => g.section.key === 'when')?.fields.map((f) => f.path)).toEqual([
       'startsAt',
       'endsAt',
-      'recurrenceType',
-      'recurrenceUntil',
+      'recurrenceRule',
       'timeZone',
     ])
     expect(groups.every((g) => g.section.title.length > 0 && g.section.desc.length > 0)).toBe(true)
@@ -176,7 +174,11 @@ describe('the Event rail reads its row and writes its FormData through the key m
     location: 'The Royal Temple',
     starts_at: '2026-10-01T18:30:00.000Z',
     ends_at: null,
-    recurrence_type: null,
+    // A LEGACY row: the coarse cadence with no rule beside it, which is what every event written
+    // before ADR-1299 carries. The reader resolves it against the start (a Thursday) into the rule
+    // it means, and joins the stored end on as the picker's `UNTIL=` part.
+    recurrence_type: 'weekly',
+    recurrence_rule: null,
     recurrence_until: '2026-12-01T00:00:00.000Z',
     time_zone: null,
     attendance_mode: null,
@@ -208,8 +210,7 @@ describe('the Event rail reads its row and writes its FormData through the key m
       description: '',
       startsAt: '2026-10-01T18:30',
       endsAt: '',
-      recurrenceType: 'none',
-      recurrenceUntil: '2026-12-01',
+      recurrenceRule: 'FREQ=WEEKLY;BYDAY=TH;UNTIL=20261201',
       timeZone: 'America/Los_Angeles',
       location: 'The Royal Temple',
       attendanceMode: 'in_person',

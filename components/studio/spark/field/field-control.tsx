@@ -22,6 +22,7 @@ import { ImageIcon, X } from 'lucide-react'
 import { Input, Textarea } from '@/components/ui/field'
 import { Select } from '@/components/ui/select'
 import { LoomPicker } from '@/components/loom/loom-picker'
+import { RepeatPicker } from '@/components/events/repeat-picker'
 import type { FieldDef, FieldKind } from '@/lib/studio/kernel/manifest'
 import { cn } from '@/lib/utils'
 
@@ -80,9 +81,24 @@ export interface FieldControlProps {
    * The native form name. A surface that reads the form's own FormData (the rail's autosave form,
    * ADR-1240) needs the control to answer to a column name; a staged wizard that owns its values
    * does not, so it is optional and the control stays controlled either way. Only the native arms
-   * carry it: a composite (tags, multiselect, daterange) is not one input.
+   * carry it, plus `repeat`, which renders a hidden input of its own: the rest of the composites
+   * (tags, multiselect, daterange) are not one input.
    */
   name?: string
+  /**
+   * OTHER field values on the same form, keyed by manifest path — for the one composite that cannot
+   * be rendered from its own value alone.
+   *
+   * 🔴 DELIBERATELY NARROW, AND ONLY `repeat` READS IT. A repeat rule is meaningless without the
+   * thing's START: "Monthly on the third Wednesday" is a sentence about a date the host already
+   * picked, and the presets, the weekday toggles and the monthly ordinal are all derived from it
+   * (lib/events/repeat-rule.ts `repeatPresets`). No manifest declaration can express "the value of
+   * another field", so the SURFACE — which holds every value already — passes what it has.
+   *
+   * This is not a general escape hatch. A control that wants to reach sideways for anything else
+   * wants a field kind, which is the rule the kernel's header states.
+   */
+  siblings?: Record<string, string | undefined>
 }
 
 /**
@@ -148,6 +164,7 @@ export function FieldControl({
   placeholder,
   id,
   name,
+  siblings,
 }: FieldControlProps) {
   // One anchor for both ids, so a field's hint and its error are addressable without the caller
   // minting anything. `def.path` is unique within a manifest, and `id` overrides it when a surface
@@ -167,6 +184,7 @@ export function FieldControl({
     placeholder,
     id,
     name,
+    siblings,
     describedBy,
     invalid: Boolean(error),
   })
@@ -240,6 +258,7 @@ function renderControl({
   placeholder,
   id,
   name,
+  siblings,
   describedBy,
   invalid,
 }: Omit<FieldControlProps, 'hint' | 'error'> & { describedBy?: string; invalid?: boolean }) {
@@ -389,6 +408,27 @@ function renderControl({
     // stores them as an ISO tuple, so an entity never has to declare "start" and "end" twice.
     case 'daterange':
       return <DateRangeControl {...common} value={asList(value)} onChange={onChange} />
+
+    // `repeat` is a whole RRULE, and the picker owns every part of it — cadence, interval,
+    // weekdays, the monthly ordinal, and the end (ADR-1299). It renders its OWN label, because the
+    // control is a group of controls and a single `<label>` naming a group names nothing (ADR-966);
+    // the surface therefore passes the field's label through rather than drawing a second one.
+    //
+    // 🔴 IT NEEDS THE THING'S START DATE, which is a value on the same form rather than anything
+    // the manifest can declare. `siblings` is how a composite reaches one: the surface supplies the
+    // values it holds, and the control names the path it wants. That is deliberately narrow —
+    // reaching sideways is otherwise exactly what a field kind exists to avoid.
+    case 'repeat':
+      return (
+        <RepeatPicker
+          value={asText(value)}
+          onChange={onChange}
+          startsAt={siblings?.startsAt ?? null}
+          name={name}
+          disabled={disabled}
+          label={def.label}
+        />
+      )
 
     default:
       return (

@@ -16,6 +16,8 @@ import type { PlaceResult } from '@/lib/geocode'
 // The category vocabulary comes from the ONE source (lib/events/options.ts) — this form used to
 // inline an identical copy, which is exactly the drift check:vocab now fails the build on.
 import { CATEGORY_OPTIONS } from '@/lib/events/options'
+import { RepeatPicker } from '@/components/events/repeat-picker'
+import { repeatUntilDate } from '@/lib/events/repeat-rule'
 import { ticketSellerVerdict, payoutScopeKey, NEEDS_PAYOUT_ACCOUNT } from '@/lib/events/ticket-eligibility'
 
 // The draggable-pin location picker runs MapLibre, which must never touch the server, so it
@@ -67,15 +69,7 @@ type Group = {
 // can edit, and the server re-checks that same authority on submit.
 type JourneyOption = { id: string; title: string }
 
-type RecurrenceType = 'none' | 'daily' | 'weekly' | 'monthly'
 type PriceMode = 'free' | 'paid'
-
-const RECURRENCE_OPTIONS: { value: RecurrenceType; label: string; helper: string }[] = [
-  { value: 'none',    label: 'One-time',  helper: 'Happens once'                          },
-  { value: 'daily',   label: 'Every day', helper: 'Same time each day'                    },
-  { value: 'weekly',  label: 'Weekly',    helper: 'Same day & time each week'             },
-  { value: 'monthly', label: 'Monthly',   helper: 'Same date each month'                  },
-]
 
 // Who can see the event once it is live.
 const VISIBILITY_OPTIONS: { value: string; label: string }[] = [
@@ -113,10 +107,11 @@ export interface EventFormInitial {
   /** datetime-local value (YYYY-MM-DDTHH:mm). */
   startsAt: string
   endsAt: string
-  /** Recurrence cadence (none/daily/weekly/monthly). */
-  recurrenceType: RecurrenceType
-  /** date value (YYYY-MM-DD) the series repeats until, or '' for indefinite. */
-  recurrenceUntil: string
+  /** The repeat rule, as the picker's transport string: an RFC 5545 RRULE value plus
+   *  `;UNTIL=YYYYMMDD` when the series ends on a date (lib/events/repeat-rule.ts). '' means the
+   *  event happens once. The page that seeds this composes it from the row's `recurrence_rule`,
+   *  `recurrence_type` and `recurrence_until`. */
+  recurrenceRule: string
   capacity: string
   visibility: string
   category: string
@@ -243,10 +238,7 @@ export function EventForm({
     initial?.startsAt ?? (isEdit ? '' : `${localToday()}T18:00`),
   )
   const [endsAt, setEndsAt] = useState(initial?.endsAt ?? '')
-  const [recurrenceType, setRecurrenceType] = useState<RecurrenceType>(
-    initial?.recurrenceType ?? 'none',
-  )
-  const [recurrenceUntil, setRecurrenceUntil] = useState(initial?.recurrenceUntil ?? '')
+  const [recurrenceRule, setRecurrenceRule] = useState(initial?.recurrenceRule ?? '')
   const [capacity, setCapacity] = useState(initial?.capacity ?? '')
   // Default visibility to Anyone, matching the default PUBLIC scope. The server re-coerces an
   // invalid combination (e.g. circle_only on a public event steps down to unlisted, ADR-883)
@@ -329,15 +321,16 @@ export function EventForm({
     setVenueLng(p.lng)
   }
 
-  // Client guard for the repeat-end date: when a cadence is set and an end is given,
-  // it must be after the start day (the server re-validates the same rule). The until
-  // is a date (YYYY-MM-DD); compare it to the start's date portion.
+  // Client guard for the repeat-end date: when a rule is set and an end date is given, it must be
+  // after the start day (the server re-validates the same rule, lib/events/recurrence.ts). The end
+  // rides inside the picker's transport string as `UNTIL=YYYYMMDD`; compare it to the start's date.
   const recurrenceError = useMemo(() => {
-    if (recurrenceType === 'none' || !recurrenceUntil) return null
+    const until = repeatUntilDate(recurrenceRule)
+    if (!until) return null
     const startDay = startsAt.slice(0, 10)
-    if (startDay && recurrenceUntil <= startDay) return 'The repeat end date must be after the start.'
+    if (startDay && until <= startDay) return 'The repeat end date must be after the start.'
     return null
-  }, [recurrenceType, recurrenceUntil, startsAt])
+  }, [recurrenceRule, startsAt])
 
   function submit(e: React.FormEvent) {
     e.preventDefault()
@@ -378,12 +371,11 @@ export function EventForm({
 
     fd.set('startsAt', startsAt)
     if (endsAt) fd.set('endsAt', endsAt)
-    // Recurrence is editable on both create and edit. The server re-validates + re-
-    // materialises the occurrence window when the cadence changes (the cron is the backstop).
-    fd.set('recurrenceType', recurrenceType)
-    if (recurrenceType !== 'none' && recurrenceUntil) {
-      fd.set('recurrenceUntil', recurrenceUntil)
-    }
+    // Recurrence is editable on both create and edit. ONE field carries the whole answer (ADR-1299):
+    // the server splits the `UNTIL` back out into `recurrence_until`, derives the coarse
+    // `recurrence_type` mirror, re-validates, and re-materialises the occurrence window when the
+    // rule changes (the cron is the backstop).
+    fd.set('recurrenceRule', recurrenceRule)
     fd.set('category', category)
     fd.set('visibility', visibility)
     if (capacity.trim()) fd.set('capacity', capacity.trim())
@@ -575,58 +567,24 @@ export function EventForm({
               />
             </div>
 
-            {/* Recurrence — set the cadence on create, change it on edit. */}
+            {/* Recurrence — set the rule on create, change it on edit. ONE control for the whole
+                question: the cadence, the interval, the weekdays, the monthly ordinal and the end
+                (ADR-1299). It replaced a four-button group that could not say "every other
+                Wednesday" and a separate end-date field that could contradict it. */}
             <div className="space-y-1.5">
-              {/* A button group is not a labelable control, so `htmlFor` has nothing to point at:
-                  the accessible name comes from role="group" + aria-labelledby instead. It is a <p>
-                  and not a <Label> for the same reason: a <label> naming nothing is still a <label>
-                  naming nothing (ADR-966). */}
-              <p className={`${labelClasses} text-body-sm text-text`} id="event-repeats-label">Repeats</p>
-              <div className="grid grid-cols-2 gap-2" role="group" aria-labelledby="event-repeats-label">
-                {RECURRENCE_OPTIONS.map(({ value, label, helper }) => {
-                  const active = recurrenceType === value
-                  return (
-                    <button
-                      type="button"
-                      key={value}
-                      onClick={() => setRecurrenceType(value)}
-                      disabled={isPending}
-                      className={`rounded-control border px-3 py-2 text-left transition-colors ${
-                        active
-                          ? 'border-primary bg-primary-bg ring-2 ring-primary/30'
-                          : 'border-border bg-surface hover:border-border-strong'
-                      } disabled:opacity-60`}
-                    >
-                      <p className={`text-body-sm font-medium ${active ? 'text-primary-strong' : 'text-text'}`}>
-                        {label}
-                      </p>
-                      <p className="mt-0.5 text-2xs text-muted">{helper}</p>
-                    </button>
-                  )
-                })}
-              </div>
-              {recurrenceType !== 'none' && (
-                <div className="mt-3 space-y-1.5">
-                  <Label className="text-text" htmlFor="event-recurrence-until">
-                    Ends on <span className="text-subtle">(optional, leave blank for indefinite)</span>
-                  </Label>
-                  <Input id="event-recurrence-until"
-                    type="date"
-                    value={recurrenceUntil}
-                    onChange={(e) => setRecurrenceUntil(e.target.value)}
-                    // Empty picker opens on the start day / today, never a past month.
-                    min={startsAt.slice(0, 10) || localToday()}
-                    disabled={isPending}
-                  />
-                  {recurrenceError ? (
-                    <p className="mt-1.5 text-2xs text-danger">{recurrenceError}</p>
-                  ) : (
-                    <p className="mt-1.5 text-2xs text-muted">
-                      The next 60 days of dates show right away. A daily job rolls the window forward.
-                    </p>
-                  )}
-                </div>
-              )}
+              <RepeatPicker
+                value={recurrenceRule}
+                onChange={setRecurrenceRule}
+                startsAt={startsAt}
+                disabled={isPending}
+              />
+              {recurrenceError ? (
+                <p className="mt-1.5 text-2xs text-danger">{recurrenceError}</p>
+              ) : recurrenceRule ? (
+                <p className="mt-1.5 text-2xs text-muted">
+                  The next 60 days of dates show right away. A daily job rolls the window forward.
+                </p>
+              ) : null}
             </div>
           </div>
         </div>

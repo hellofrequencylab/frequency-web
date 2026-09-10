@@ -24,7 +24,7 @@ import {
   coerceVisibilityForScope,
 } from '@/lib/events/options'
 import { wallClockToIso, dateToWallClockIso } from '@/lib/events/datetime'
-import { validateRecurrenceUntil, type RecurrenceType } from '@/lib/events/recurrence'
+import { resolveSubmittedRepeat, validateRecurrenceUntil, type RecurrenceType } from '@/lib/events/recurrence'
 import { isValidTimeZone } from '@/lib/time/zone'
 import { posterSignedUrl } from '@/lib/events/poster-media'
 import { writeEventHeroHeight, type EventHeroHeight } from '@/lib/events/hero-height'
@@ -58,7 +58,7 @@ type UntypedUpdate = {
   }
 }
 
-const RECURRENCE_VALUES: ReadonlySet<string> = new Set(['none', 'daily', 'weekly', 'monthly'])
+const RECURRENCE_VALUES: ReadonlySet<string> = new Set(['none', 'daily', 'weekly', 'monthly', 'yearly'])
 
 const MAX_GALLERY_IMAGES = 12
 
@@ -104,7 +104,7 @@ export async function getEventAdminData(slug: string) {
   const { data } = await admin
     .from('events')
     .select(
-      'id, slug, title, description, location, starts_at, ends_at, is_cancelled, cover_image_path, poster_path, gallery_image_paths, capacity, attendance_mode, online_url, venue_name, street, city, region, country, postal_code, category, visibility, energy_tag, theme, price_cents, currency, time_zone, recurrence_type, recurrence_until, details, geog, hide_address, join_mode, scope_type, rsvp_requires_approval',
+      'id, slug, title, description, location, starts_at, ends_at, is_cancelled, cover_image_path, poster_path, gallery_image_paths, capacity, attendance_mode, online_url, venue_name, street, city, region, country, postal_code, category, visibility, energy_tag, theme, price_cents, currency, time_zone, recurrence_type, recurrence_until, recurrence_rule, details, geog, hide_address, join_mode, scope_type, rsvp_requires_approval',
     )
     .eq('slug', slug)
     .maybeSingle()
@@ -192,6 +192,7 @@ type EventAdminRow = {
   time_zone: string | null
   recurrence_type: string | null
   recurrence_until: string | null
+  recurrence_rule: string | null
   details: Record<string, unknown> | null
   geog: unknown
   /** ADR-825: exact address renders only for registered viewers / managers. */
@@ -374,12 +375,19 @@ export async function updateEventSettings(id: string, slug: string, fd: FormData
   const zoneRaw = ((fd.get('time_zone') as string) ?? '').trim()
   const timeZone = isValidTimeZone(zoneRaw) ? zoneRaw : undefined
 
-  // Recurrence (folded in from Place & Time): only a recognised cadence is written (CHECK-constrained
-  // column); the repeat-until is validated against the start so a zero-occurrence series can't save.
-  const recurrenceRaw = ((fd.get('recurrence_type') as string) ?? '').trim()
-  const recurrence = RECURRENCE_VALUES.has(recurrenceRaw) ? (recurrenceRaw as RecurrenceType) : 'none'
+  // Recurrence (folded in from Place & Time). ONE field carries the whole answer (ADR-1299): the
+  // rail's repeat picker posts an RRULE value plus, when the host chose an end date,
+  // `UNTIL=YYYYMMDD`. The resolver validates and canonicalises it, splits the end back into
+  // `recurrence_until`, and derives the coarse `recurrence_type` mirror the CHECK-constrained
+  // column, the partial index and the occurrence cron's anchor filter all read. The repeat-until is
+  // still validated against the start so a zero-occurrence series cannot save.
+  const submittedRepeat = resolveSubmittedRepeat(fd.get('recurrence_rule') as string | null)
+  const recurrenceRule = submittedRepeat.rule
+  const recurrence = RECURRENCE_VALUES.has(submittedRepeat.type)
+    ? (submittedRepeat.type as RecurrenceType)
+    : 'none'
   const startIsoForRec = startsAt ? wallClockToIso(startsAt) : null
-  const untilIso = recurrence === 'none' ? null : dateToWallClockIso(fd.get('recurrence_until') as string)
+  const untilIso = submittedRepeat.untilDate ? dateToWallClockIso(submittedRepeat.untilDate) : null
   const recurrenceError = validateRecurrenceUntil(recurrence, startIsoForRec, untilIso)
   if (recurrenceError) throw new Error(recurrenceError)
 
@@ -438,6 +446,7 @@ export async function updateEventSettings(id: string, slug: string, fd: FormData
       energy_tag: energyTag,
       price_cents: priceCents,
       recurrence_type: recurrence,
+      recurrence_rule: recurrenceRule,
       recurrence_until: untilIso,
       details: nextDetails as Json,
       ...(timeZone ? { time_zone: timeZone } : {}),
