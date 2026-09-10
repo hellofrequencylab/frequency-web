@@ -495,7 +495,7 @@ describe('the retirement is wired where a rule is actually changed', () => {
   })
 })
 
-// ── TICKET TIERS: THE HALF OF AN OCCURRENCE THAT IS NOT A COLUMN (ADR-1306) ────────────────────
+// ── TICKET TIERS: THE HALF OF AN OCCURRENCE THAT IS NOT A COLUMN (ADR-1308) ────────────────────
 //
 // INHERITED_COLUMNS can only ever carry columns of the `events` row, and a ticket tier is a ROW in
 // event_ticket_types. Production, the Meld series: the anchor had price_cents 2200 and 2 tiers (one

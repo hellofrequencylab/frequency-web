@@ -165,7 +165,7 @@ async function writeEventAccess(
 }
 
 /**
- * The FUTURE materialised occurrences of a series anchor (ADR-1306).
+ * The FUTURE materialised occurrences of a series anchor (ADR-1308).
  *
  * A recurring event's occurrences are real `events` rows, and their members ticket is a row of
  * their own. Granting access on the anchor alone therefore covered exactly one date — the one
@@ -192,7 +192,7 @@ async function futureOccurrenceIds(
  *  the FREE members ticket when the event doesn't have one yet. Manager-gated; Collective-floor
  *  plan gate; the event must be hosted by this Space; a tier id must be this Space's tier.
  *
- *  ON A SERIES ANCHOR the same decision reaches its FUTURE occurrences (ADR-1306). */
+ *  ON A SERIES ANCHOR the same decision reaches its FUTURE occurrences (ADR-1308). */
 export async function setSpaceEventAccess(
   spaceId: string,
   eventId: string,

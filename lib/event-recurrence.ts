@@ -195,7 +195,7 @@ export function propagationPatch(anchor: Anchor): Record<string, unknown> {
   return patch
 }
 
-// ── WHAT AN OCCURRENCE INHERITS THAT IS NOT A COLUMN: THE TICKET TIERS (ADR-1306) ───────────────
+// ── WHAT AN OCCURRENCE INHERITS THAT IS NOT A COLUMN: THE TICKET TIERS (ADR-1308) ───────────────
 //
 // INHERITED_COLUMNS above is the whole of what an occurrence inherits, and it can only ever carry
 // COLUMNS OF THE `events` ROW. Ticket tiers are not columns. They are rows in `event_ticket_types`
@@ -551,7 +551,7 @@ export async function generateOccurrencesForAnchor(anchorId: string): Promise<nu
   }
 
   const created = ((inserted ?? []) as { id: string }[]).map((r) => r.id)
-  // ADR-1306: the tiers are rows in another table, so they need their own write. Best-effort — the
+  // ADR-1308: the tiers are rows in another table, so they need their own write. Best-effort — the
   // occurrences are already in the database and a tier failure must not report them as unwritten.
   await mintTiersForOccurrences(anchor.id, created)
 

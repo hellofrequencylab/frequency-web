@@ -38615,7 +38615,7 @@ text-level version fails on the sentence the control exists to print.
 
 ---
 
-## ADR-1306: ACCEPTED — a materialised occurrence inherits its anchor's ticket tiers, which are rows and not columns (2026-09-10)
+## ADR-1308: ACCEPTED — a materialised occurrence inherits its anchor's ticket tiers, which are rows and not columns (2026-09-10)
 
 **Context.** Owner, on the Meld series: the occurrences of a $22 weekly cowork take an RSVP and
 never a payment, and a Space membership that includes the event covers the anchor and nothing else.

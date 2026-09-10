@@ -1,4 +1,4 @@
-// GIVE THE OCCURRENCES THAT ALREADY EXIST THE TIERS THEIR ANCHOR SELLS (ADR-1306).
+// GIVE THE OCCURRENCES THAT ALREADY EXIST THE TIERS THEIR ANCHOR SELLS (ADR-1308).
 //
 //   SUPABASE_SERVICE_ROLE_KEY=... NEXT_PUBLIC_SUPABASE_URL=... \
 //     node --experimental-strip-types scripts/backfill-occurrence-ticket-tiers.mts [--apply]
@@ -9,12 +9,12 @@
 //
 // `generateOccurrencesForAnchor` copies INHERITED_COLUMNS onto each materialised occurrence, and a
 // column list can only ever carry COLUMNS. Ticket tiers are rows in `event_ticket_types` keyed by
-// `event_id`, so until ADR-1306 nothing copied them: every occurrence of a priced series inherited
+// `event_id`, so until ADR-1308 nothing copied them: every occurrence of a priced series inherited
 // `price_cents` (it LOOKED priced) and had zero tiers, which meant the event page never rendered
 // the paid branch (`isPaidEvent && hasTiers`) and no charge was ever attempted — and a Space
 // membership, which is modelled AS a members-only tier row (ADR-823), had nothing to include.
 //
-// ADR-1306 fixed the mint, and the mint is additive by construction: it only ever touches the rows
+// ADR-1308 fixed the mint, and the mint is additive by construction: it only ever touches the rows
 // a run CREATES. Every occurrence already in the database therefore stays tierless forever unless
 // something goes and looks. This is that something.
 //
