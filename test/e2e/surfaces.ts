@@ -360,6 +360,29 @@ export function appSurfaces(
     // covered, the band's own copy is not, and no mask selector can separate them because the text
     // and the tiles occupy the same rectangle by design.
     //
+    // 🔴 THE PAGE IS A READING, SO ITS LIVE BOXES DECLARE THEMSELVES (LIVE-301, 2026-09-10). Six
+    // pr-compare failures on #2537 — desktop / mobile / narrow x dawn-light / dawn-dark — each
+    // reporting the SAME 1347 differing pixels at identical dimensions. One number in six contexts
+    // is not a rendering regression and is not a size drift: it is text that renders identically at
+    // 1280, 390 and 320, moving between the capture (21:28Z) and the comparison (22:00Z).
+    //
+    // WHY IT IS MASKED AND NOT PHOTOGRAPHED FIRST-SCREEN-ONLY. Both remedies were on the table and
+    // the committed baselines decided it. Crop this surface's own PNG at the fold: above it sit the
+    // masked map canvas (one magenta rectangle, ~2/3 of the first screen), the map legend, the
+    // at-a-glance line (four DB tallies) and the head of Coming up (event titles and DATES). Every
+    // drifting box on this page is ABOVE the fold, so photographing the first screen alone keeps
+    // 100% of the drift and gives up 60% of the page — the opposite of the trade `/feed` makes,
+    // where the shell and the composer are stable and the unbounded post list is what is dropped.
+    // So the five live boxes carry `data-visual-mask` (ADR-1277, VISUAL_MASK_SITES below) and the
+    // page's chrome — hero band, two-column grammar, section headers, quick links, empty states —
+    // stays in the picture.
+    //
+    // ⚠️ WHAT THIS DOES NOT ANSWER, stated so the next failure is read correctly: a mask paints a
+    // box and moves nothing. If a Dispatch is published between two captures the list gets a row,
+    // the page gets taller, and Playwright fails on SIZE before it counts a pixel. That failure has
+    // not been seen here (this account reads "0 recent Dispatches"), and its remedy is the other
+    // one. Do not reach for it before the picture shows a dimension change.
+    //
     // What holds that gap instead, so nobody reads this as uncovered: the jsdom test above asserts
     // the h1, the subtitle and the single control by content, and the @a11y shell run audits the
     // rendered band in a real browser (it is what caught the `aria-hidden` focus trap the first
@@ -767,6 +790,41 @@ export const VISUAL_MASK_SITES: readonly {
     file: 'components/sidebar/rail-panels.tsx',
     kind: 'live',
     why: 'PanelSkeleton, so a capture that lands mid-stream paints the same box.',
+  },
+  // ── /nearby, the Dispatches page (LIVE-301) ─────────────────────────────────────────────
+  // Five boxes on ONE page, and the count is the finding rather than a smell: `/nearby` is the
+  // community dashboard, so almost everything on it below the header band is a reading. See the
+  // note on the `/nearby` row in appSurfaces() for why the page is masked rather than made
+  // `viewportOnly`.
+  {
+    value: 'nearby-glance',
+    file: 'app/(main)/nearby/page.tsx',
+    kind: 'live',
+    why: 'The at-a-glance line: upcoming events, circles, members and recent Dispatches, four DB tallies.',
+  },
+  {
+    value: 'nearby-latest-dispatch',
+    file: 'app/(main)/nearby/page.tsx',
+    kind: 'live',
+    why: 'The highlight card holds whichever Dispatch was published most recently.',
+  },
+  {
+    value: 'nearby-dispatch-list',
+    file: 'app/(main)/nearby/page.tsx',
+    kind: 'live',
+    why: 'The Dispatch stream itself, up to 20 rows with author and relative time.',
+  },
+  {
+    value: 'nearby-coming-up',
+    file: 'app/(main)/nearby/page.tsx',
+    kind: 'live',
+    why: 'The next four gatherings and their dates; masked with its header, whose count reads wider than the list.',
+  },
+  {
+    value: 'nearby-new-circles',
+    file: 'app/(main)/nearby/page.tsx',
+    kind: 'live',
+    why: 'The newest circles by created_at, with a live member count on each row.',
   },
 ]
 
