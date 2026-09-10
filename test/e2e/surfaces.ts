@@ -594,6 +594,44 @@ export function operatorDenialReason(page: Page, surface: Surface): string | nul
   ].join(' ')
 }
 
+/**
+ * THE SAME DENIAL, RE-READ AT THE MOMENT THE CAMERA FIRES.
+ *
+ * 🔴 WHY THIS EXISTS BESIDE `operatorDenialReason` RATHER THAN INSIDE IT. That one is read
+ * immediately after `goto` resolves. The bounce can land AFTER it: `requireAdmin()` denies at the
+ * PAGE, not at the floor, and `settle()` alone waits up to 25s before the screenshot. Everything
+ * in that gap is attributed to the route the test names.
+ *
+ * MEASURED, 2026-09-10 (e2e-manual run 34517618524, capture against production): EIGHT of the
+ * sixteen committed operator baselines were photographs of `/feed` carrying an operator route's
+ * name. `admin-qr--dawn-light-desktop.png` was the member feed. Nothing in the suite objected:
+ *   · `operatorDenialReason` had already read the path and seen `/admin/qr`;
+ *   · `assertMemberSession` CANNOT catch it, because /feed genuinely has the member shell it
+ *     looks for — that guard proves a session, not a destination;
+ *   · the height instability that made the run look flaky was /feed being an infinite stream,
+ *     which is why `/feed` itself is `viewportOnly` — a full-page shot of it never settles.
+ * Only `baseline-distinctness.test.ts` noticed, and only for the ONE pair that happened to settle
+ * at the same instant and collide byte-for-byte. The other six would have become main's baselines,
+ * and every later pull request would have been gated against a picture of the member feed.
+ *
+ * So the destination is re-read where it actually matters: last thing before the shutter. A
+ * surface that is no longer on its own path is SKIPPED with the cause named, never photographed —
+ * a missing baseline is a gap, a wrong one is a lie that gates everybody.
+ */
+export function operatorLandedElsewhere(page: Page, surface: Surface): string | null {
+  if (surface.audience !== 'operator') return null
+  const landed = currentPathname(page)
+  if (landed === surface.path || landed.startsWith(`${surface.path}/`)) return null
+  const floor = landed.startsWith('/feed') ? ` which is ${ROLE_FLOOR_MARKER},` : ''
+  return [
+    `${surface.path} was on its own path when the page loaded but is on ${landed} now,${floor}`,
+    'so the capture would carry this route\'s name over another page. The account behind',
+    'PW_MEMBER_EMAIL clears requireAdminFloor() but is denied by this PAGE: requireAdmin(min,',
+    "{ staff }) defaults to staffLevel 'write', and a read-scoped staff role writes nothing.",
+    'See backlog HYG-027 for the per-route grid.',
+  ].join(' ')
+}
+
 /** Path to a Playwright storage-state JSON for the beta member account, or undefined. */
 export const STORAGE_STATE: string | undefined =
   process.env.PW_STORAGE_STATE && existsSync(process.env.PW_STORAGE_STATE)
