@@ -40,22 +40,28 @@
       "note": "The development order for the whole open queue, waves in sequence, ids in order within a wave. Array order IS the sequence — W0 first through W10 last, with `owner-timed` kept at the end because it is scheduled by the owner rather than by this order. Owner-lane rows are decisions, not sequenced dev. Status lives only in each row's probe; this object is the sequence.",
       "waves": [
         {
-          "name": "W0 · P0 — costing something today: an incident, a wrong money/consent/permission answer, or a crawl-facing defect the submitted sitemap exposes. EMPTY IS THE GOAL, and it is empty of code work: the one P0 on the list, OWN-050, is a console action and sits in owner-timed.",
-          "ids": []
+          "name": "W0 · P0 — costing something today: an incident, a wrong money/consent/permission answer, or a crawl-facing defect the submitted sitemap exposes. EMPTY IS THE GOAL. It is not empty: LIVE-285 is a live money defect (half the spaces on the platform have a working Stripe account and no surface that says so). OWN-050 is the other P0 and is a console action, in owner-timed.",
+          "ids": [
+            "LIVE-285"
+          ]
         },
         {
           "name": "W0b · P1 — repairs ready to work now, and the instruments that keep the gates honest. This is the wave to pull from when you want the next thing to do.",
           "ids": [
             "LIVE-186",
-            "LIVE-213"
+            "LIVE-213",
+            "LIVE-286",
+            "LIVE-287"
           ]
         },
         {
-          "name": "W0c · P2 — small cleanups worth doing whenever a lane is clear.",
+          "name": "W0c · P2 — small cleanups worth doing whenever a lane is clear, plus the tail of a sequenced repair whose head is higher up the slate (LIVE-288 and LIVE-289 follow LIVE-285 to LIVE-287).",
           "ids": [
             "LIVE-215",
             "HYG-075",
-            "LIVE-279"
+            "LIVE-279",
+            "LIVE-288",
+            "LIVE-289"
           ]
         },
         {
@@ -11626,6 +11632,96 @@
         "kind": "cmd",
         "cmd": "node -e \"const fs=require('fs');const k=fs.readFileSync('lib/studio/kernel/edit-plan.ts','utf8');const ctl=fs.readFileSync('components/admin/rail/rail-manifest-repeat.tsx','utf8');const plan=fs.readFileSync('components/admin/modules/event-rail-plan.ts','utf8');const mod=fs.readFileSync('components/admin/modules/event-settings-module.tsx','utf8');const act=fs.readFileSync('app/(main)/events/admin-actions.ts','utf8');const ci=fs.readFileSync('components/widgets/events/event-checkin.tsx','utf8');const mods=fs.readFileSync('lib/widgets/modules.ts','utf8');const set=mods.slice(mods.indexOf('const EVENT_DETAIL_MODULE_IDS'),mods.indexOf('export const ROUTE_MODULE_IDS'));const keys=['details.features','details.sponsors','details.specialInstructions','details.tickets','details.schedule','details.links','details.other'];process.exit(/export function railRepeats/.test(k)&&/repeats: RepeatDef\\[\\]/.test(k)&&/keyed-repeat/.test(k)&&/<FieldControl/.test(ctl)&&/useRailSaveNow\\(\\)/.test(ctl)&&keys.every(x=>plan.includes(\\\"'\\\"+x+\\\"'\\\"))&&/<RailManifestRepeat/.test(mod)&&/coerceEventDetails\\(editedDetails\\)/.test(act)&&!/coerceEventDetails\\((?:base|next)Details\\)/.test(act)&&/nextDetails\\.rsvpWindow/.test(act)&&/readEventSpecialInstructions/.test(ci)&&!/'event-facts'/.test(set)&&!/'event-warm-proof'/.test(set)?0:1)\"",
         "note": "Measures the consequence at every link of the chain, because any one of them alone leaves the owner exactly where they started. The KERNEL half: railRepeats exists, RailForm carries the groups, and the keyed-collection drop reason is real rather than a silent omission. The CONTROL half: the list editor renders through the shared FieldControl (it may never hand-roll one) and commits itself, which is the part no unit test can reach. The WIRING half: all seven details paths are in the plan and the module actually mounts the control. The DATA half is the sharpest: coerceEventDetails is called on the EDITED KEYS and provably NOT on the whole bag, and the booking window is still written, so a regression that reintroduced the laundering fails here rather than in a guest's RSVP. Plus the two reads that make the work visible: the check-in block prints the door note, and the two null-returning blocks are gone from the event module set."
+      }
+    },
+    {
+      "id": "LIVE-285",
+      "title": "A space owner whose Stripe account WORKS has no payments surface at all, because the one prompt is built to vanish",
+      "status": "open",
+      "priority": "P0",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "lib/billing/payout-prompt.ts",
+        "ref": "owner report 2026-09-10: \"there is no way to manage the Stripe Connect link. There used to be a button, but it is gone.\""
+      },
+      "detail": "FILED 2026-09-10 from an owner report, and it is the other half of LIVE-233 rather than a regression against it.\n\nLIVE-233 collapsed four hand-written payout cards into one prompt (#2507). Three of the four carried a LINK; the storefront one was a panel literally titled \"Getting paid\" (the comment at storefront-tab.tsx:78 still says so). The consolidation kept the SETUP affordance and dropped the MANAGE affordance, and payoutPrompt() returns null on a ready account by explicit design (\"🔴 NULL WHEN READY, and that is a rule rather than an optimisation\", payout-prompt.ts:150). That rule is RIGHT for a nudge and wrong as the only state a surface has: the card is the whole payments UI on those surfaces, so a ready account renders nothing.\n\nManagePayoutButton has exactly ONE import site in the tree, app/(main)/settings/billing/section.tsx:14, on the PERSONAL /settings#payouts card. Nothing in any space reaches it.\n\nMEASURED IN PRODUCTION 2026-09-10. platform_flags: billing_live true, host_payouts_enabled true, so payoutsLive() is true and this is not a flag. Of 22 spaces: 11 owners ready (charges + payouts enabled) and see NOTHING, 10 owners with no account and see the prompt, 0 in review. The prompt covers the half that has not started and abandons the half that can actually sell, which is the half that needs to answer \"is my money landing, and where do I change my bank\".\n\nTHE FIX. PayoutPrompt gains a fourth state instead of returning null, so a surface always has something honest to render. The two controls move to components/billing/ so a space surface may import them without reaching into app/(main)/settings/. Offerings and the Shop storefront tab render the ready state with Manage payouts (the Express dashboard login link, connect.ts createDashboardLink) beside it.\n\nCARRIES THE ANCHOR FIX. connect.ts:245-246 returns from Stripe onboarding to /settings/billing?payouts=return, which is now a pure redirect to /settings?...#plan, while the payouts card is id=\"payouts\". A host who just finished onboarding lands on the plan card and has to hunt for the confirmation.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const read=(f)=>fs.existsSync(f)?fs.readFileSync(f,\"utf8\"):\"\";const shared=fs.existsSync(\"components/billing/payout-controls.tsx\");const notNulled=!/state: Exclude<PayoutPromptState, .ready.>/.test(read(\"lib/billing/payout-prompt.ts\"));const card=/ManagePayoutButton/.test(read(\"components/billing/payout-setup-prompt.tsx\"));const store=/ManagePayout|payoutStatus/.test(read(\"app/(main)/spaces/[slug]/settings/shop/storefront-tab.tsx\"));const anchor=/payouts=return#payouts/.test(read(\"lib/billing/connect.ts\"));process.exit(shared&&notNulled&&card&&store&&anchor?0:1)'",
+        "note": "Measures the consequence at each link, because any one alone leaves the owner where they started. The CONTROL half: a shared payout-controls module exists outside app/(main)/settings, which is what lets a space import it at all. The DECISION half: PayoutPrompt no longer excludes the ready state from its return type, so the kernel can say \"you are live\" rather than only \"you are not\". The RENDER half: the shared card offers Manage payouts, and the storefront tab actually shows a status. The RETURN half: the Stripe return_url carries the #payouts anchor, so a host who just onboarded lands on the confirmation instead of the plan card. Fails today on the first arm."
+      }
+    },
+    {
+      "id": "LIVE-286",
+      "title": "The Manage hub files a module by an id allowlist and dumps everything else into Offerings & Money, so the money tab is where unclassified modules go to live",
+      "status": "open",
+      "priority": "P1",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "lib/admin/modules/space-hub.ts",
+        "ref": "sectionForModule, the `return 'offerings'` fall-through at :86"
+      },
+      "detail": "FILED 2026-09-10 by the Offerings & Money audit (ADR-1310).\n\nsectionForModule() is four hard-coded id lists and then `return \"offerings\"` — commented, in the file, as \"Falls through by elimination\". Every module added to SPACE_MODULES since that function was written lands in the money tab unless somebody remembered to edit a list. Three have:\n\n  space.messages       family=audience  parent=space.crm     -> should be Resonance\n  space.collaborators  family=audience  parent=space.people  -> should be Settings\n  space.reachreceipt   family=reach     parent=space.reach   -> should be Marketing\n\nEach of those already DECLARES its true home in `parent`, and the resolver ignores the field. The same bug ran in reverse on space.automation, whose id IS in the marketing list while its parent space.crm sits in Resonance: a child orphaned from its box.\n\nTHE EXISTING TEST KNEW. space-hub.test.ts:32 says a module \"files under Resonance, never the Offerings catch-all\" — the authors named the hazard and then guarded only the ids they happened to think of. The \"no orphan\" test cannot fail, because the catch-all guarantees every module gets a section.\n\nTHE FIX IS TO DELETE THE INFERENCE. SpaceModule gains a REQUIRED `hub: SpaceHubSection | \"none\"`, so TypeScript refuses to compile a row that has not chosen a tab: the catch-all becomes a compile error rather than a default. sectionForModule collapses to reading the field. A test asserts every child matches its parent hub unless the row states a reason, which catches the Automation class by construction rather than by memory.\n\nCONTRACT-SAFE: a field added to SPACE_MODULES, which is a REGISTERED_CATALOG (scripts/check-menu.mjs), plus one pure function. No rail render is touched, so MENU-CONTRACT and check:menu are unaffected.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const read=(f)=>fs.existsSync(f)?fs.readFileSync(f,\"utf8\"):\"\";const m=read(\"lib/admin/modules/space-modules.ts\");const h=read(\"lib/admin/modules/space-hub.ts\");const t=read(\"lib/admin/modules/space-hub.test.ts\");const declared=/hub: SpaceHubSection/.test(m);const noFallThrough=!/Falls through by elimination/.test(h)&&!/^\\s*return .offerings.$/m.test(h);const guard=/parent/.test(t)&&/hub/.test(t);process.exit(declared&&noFallThrough&&guard?0:1)'",
+        "note": "Three arms, none of which a rename satisfies. DECLARED: the catalog row type carries the hub field, which is the half that makes a missing section a compile error. NO FALL-THROUGH: the resolver no longer carries the bare `return \"offerings\"` NOR the comment that describes it, so re-introducing the catch-all under a new name still fails. GUARDED: the hub test speaks about parents, which is the only arm that catches the Automation-orphan class. Deliberately does NOT grep for the words in this row title."
+      }
+    },
+    {
+      "id": "LIVE-287",
+      "title": "Apply the hub moves: three strays leave the money tab, Automation rejoins CRM, and the Offerings box stops linking to the tab it is on",
+      "status": "open",
+      "priority": "P1",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/admin/modules/space-modules.ts",
+        "ref": "owner directive 2026-09-10, decided in ADR-1310"
+      },
+      "detail": "FILED 2026-09-10. Owner directive, taken as four moves and returned as six once LIVE-286 exposed why three of them were needed.\n\nOWNER MOVES: Collaborators -> Profile & Settings (matches parent space.people). Your reach -> Content & Programs, AND UN-PARENTED (owner ruling: moving the child alone while parent space.reach stays in Marketing would recreate the very orphan class LIVE-286 fixes, so it becomes a top-level card with no parent). Calendar -> Content & Programs. Message center is removed entirely and is LIVE-288, not a move.\n\nCARRIED BY THE SAME PASS: space.automation returns to Resonance beside its parent space.crm. space.offerings is EXCLUDED from the hub, exactly as space.content already is and for the identical reason space-hub.ts:59 gives — \"the hub Content & Programs TAB is that box, so rendering a card that links back to the tab you are standing on would be a circular row\". The Offerings & Money tab has been showing an \"Offerings and money\" card, sitting as a peer beside Booking / Memberships / Donations, which are its own children.\n\nORDER. Within-tab order follows intent (setup, then sell, then administer) rather than the historical `order` floats. Note the live sort is orderWithinGroupByEmphasis, so Mode emphasis leads and catalog order breaks ties; danieltyack has preferences.moduleMenu NULL (verified in production 2026-09-10), so no stored override is competing with the catalog and a re-order will actually be seen.\n\nDEPENDS ON LIVE-286: with the hub declared per row this is one field per row, and without it this is four more entries in four id lists, which is the thing that broke.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const s=fs.readFileSync(\"lib/admin/modules/space-modules.ts\",\"utf8\");const q=String.fromCharCode(39);const row=(id)=>{const i=s.indexOf(\"id: \"+q+id+q);if(i<0)return \"\";const j=s.indexOf(\"},\",i);return j<0?s.slice(i):s.slice(i,j)};const hub=(id)=>{const m=/hub: .([a-z]+)./.exec(row(id));return m?m[1]:null};const parented=(id)=>/parent:/.test(row(id));const ok=hub(\"space.collaborators\")===\"settings\"&&hub(\"space.reachreceipt\")===\"programs\"&&!parented(\"space.reachreceipt\")&&hub(\"space.calendar\")===\"programs\"&&hub(\"space.automation\")===\"resonance\"&&hub(\"space.offerings\")===\"none\";process.exit(ok?0:1)'",
+        "note": "Reads the hub each named module DECLARES, per row, from the catalog itself. Includes the un-parenting arm for space.reachreceipt, which is the half of the owner ruling a hub value alone would not record, and the exclusion arm for space.offerings, which is the circular-card fix. Depends on LIVE-286 landing first: with no `hub` field every lookup returns null and this fails, which is the correct reading while that row is open."
+      }
+    },
+    {
+      "id": "LIVE-288",
+      "title": "Message center retires, and Email inherits the audience picker rather than losing it",
+      "status": "open",
+      "priority": "P2",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "lib/admin/modules/space-modules.ts",
+        "ref": "the space.messages row at :170, and the app/(main)/spaces/[slug]/messages route behind it. Owner directive 2026-09-10: \"Remove the Message center all together. That is an old idea.\" Deliberately NOT pointed at the route itself: this row deletes it, and a source that stops existing when the work lands fails the backlog-contract source check."
+      },
+      "detail": "FILED 2026-09-10. Owner directive, scoped after measuring what is actually behind the row.\n\nTHE MENU ROW IS FREE: `space.messages` has exactly ONE reference in the tree (its own catalog line at space-modules.ts:170). Nothing links to it by id.\n\nTHE ROUTE IS NOT. app/(main)/spaces/[slug]/messages carries page.tsx, space-broadcast-section.tsx and broadcast-actions.ts, over lib/crm/contact-audience.ts (whose only consumer is that route) with lib/spaces/message-center-privacy.test.ts and lib/crm/contact-audience.test.ts behind it. It does three things Email (space.comms, /settings/email) does not: a DM lane, a Dispatch lane, and an AUDIENCE PICKER that targets members, a membership tier, a circle, or an event’s guests.\n\nOWNER RULING 2026-09-10: delete the surface, PORT THE AUDIENCE PICKER INTO EMAIL. The DM and Dispatch broadcast lanes are dropped deliberately; the targeting is not, because it is the part Email cannot do and the part a tier or circle is worth having.\n\n⚠️ THE NAME SURVIVES ELSEWHERE, and this row does not touch it: \"Message center\" is also a SectionHeader on circles/[slug]/manage/page.tsx:127 and events/[slug]/manage/page.tsx:156, and is named in prose on the memberships section and membership-circle-access. Those are that circle’s and that event’s own broadcast, not this surface. Retiring the space one while two keep the name is a naming question for docs/NAMING.md, filed here so it is not discovered later as drift.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const read=(f)=>fs.existsSync(f)?fs.readFileSync(f,\"utf8\"):\"\";const rowGone=!read(\"lib/admin/modules/space-modules.ts\").includes(\"space.messages\");const routeGone=!fs.existsSync(\"app/(main)/spaces/[slug]/messages\");const ported=/contact-audience|ContactAudience|audienceFor/.test(read(\"app/(main)/spaces/[slug]/settings/email/email-body.tsx\")+read(\"app/(main)/spaces/[slug]/settings/email/page.tsx\"));process.exit(rowGone&&routeGone&&ported?0:1)'",
+        "note": "The two DELETION arms are the easy half and would pass on a plain delete. The third arm is the one that matters and is why this row is not just a delete: the audience picker must be READ by the Email surface, so a change that removes the Message center without porting the targeting fails here rather than being discovered when someone tries to email one tier."
+      }
+    },
+    {
+      "id": "LIVE-289",
+      "title": "Offerings & Money gets a Get paid group, a real payments surface, and three labelled groups instead of one anonymous grid",
+      "status": "open",
+      "priority": "P2",
+      "lane": "live",
+      "size": "L",
+      "source": {
+        "file": "app/(main)/spaces/[slug]/manage/console.tsx",
+        "ref": "FeatureGrid, the flat 3-column card grid; ADR-1310"
+      },
+      "detail": "FILED 2026-09-10 by the Offerings & Money audit (ADR-1310). The presentation half, after LIVE-285 restores the control and LIVE-287 clears the strays.\n\nTHE SURFACE THAT DOES NOT EXIST. There is no per-space answer to \"can I take money right now\". Setup lives in a prompt that hides when satisfied (LIVE-285), the take rate lives in lib/billing/fees.ts and is surfaced nowhere an operator looks, and the five money paths report their readiness only at the moment a buyer is already stuck. New /spaces/[slug]/settings/payments, owner-scoped, four bands: STATUS (ready / in review / needs setup, with Manage payouts or Set up payouts), WHAT IS LIVE (the five PayoutChannel paths, each ready or not), YOUR RATE (the take rate actually in effect), and one plain line separating what you RECEIVE from what you PAY.\n\nTHE GROUPING. FeatureGrid renders one flat `grid-cols-1 sm:2 xl:3` of undifferentiated cards. The owner directive it carries — \"every feature is a top-level card WITHIN the category, no nested sub-menus\" — is KEPT: every feature stays a top-level card. What changes is that they render under group headers: Get paid / What you sell / What you pay. A header is not a sub-menu.\n\nNO SECOND DOORS. Deliberately NO Orders card, NO Subscribers card, NO Tickets card: orders stay inside Shop, subscribers inside Memberships, tickets inside the event. LIVE-226 retired three modules for being exactly that, and the new Payments card NAMES all five paths so tickets are accounted for without a row.\n\nNAMING, gated on docs/NAMING.md: \"Plan and billing\" (space) and \"Receive payments\" (personal nav) currently sit one tab apart under near-identical names for opposite directions of money. Proposed: \"Your plan\" for what you pay us, \"Payments and payouts\" for what we pay you. Owner ruled 2026-09-10 that the plan STAYS on Profile & Settings with a labelled cross-link, matching how Shopify separates Finance from Billing.\n\n⚠️ ADDS A ROUTE, so it is gated on a real artifact reading of check:build-fanout and check:notfound-routes, wired and read in the same PR (docs/DEPLOY-SAFETY.md). ⚠️ Moves the /spaces/[slug]/manage page height again; LIVE-186 already carries a 158px-stale baseline for that exact route, so recapture in the same PR.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const read=(f)=>fs.existsSync(f)?fs.readFileSync(f,\"utf8\"):\"\";const page=fs.existsSync(\"app/(main)/spaces/[slug]/settings/payments/page.tsx\");const s=read(\"lib/admin/modules/space-modules.ts\");const rowed=s.includes(\"space.payments\");const grouped=/HUB_GROUPS|hubGroup|groupHeader/.test(read(\"app/(main)/spaces/[slug]/manage/console.tsx\"));const noSecondDoor=!s.includes(\"space.orders\")&&!s.includes(\"space.tickets\")&&!s.includes(\"space.subscribers\");process.exit(page&&rowed&&grouped&&noSecondDoor?0:1)'",
+        "note": "PAGE + ROWED: the surface exists and is reachable through the one catalog rather than as an orphan route. GROUPED: the console renders group headers, which is the presentation half the owner asked for and the half a new page alone does not deliver. NO SECOND DOOR is a NEGATIVE arm on purpose: it fails if this work reintroduces the per-transaction rows LIVE-226 retired, which is the most likely way a money tab regrows into nine cards."
       }
     }
   ]

@@ -38891,3 +38891,119 @@ directions now, tested without mounting React, and the Journey rail is fixed by 
 **Not done here.** The `map` repeat has no rail control, so a Practice's per-Pillar instructions
 still cannot be edited in a rail; `railForm` now says so out loud instead of omitting it. The event
 page has no inline canvas, so the rail still hosts the inline plane (`hostInline`), unchanged.
+
+---
+
+## ADR-1310: ACCEPTED — the Manage hub declares a module's tab instead of guessing it, and "money" stops meaning two opposite things (2026-09-10)
+
+**Context.** Owner, 2026-09-10: *"They got stupid confused and there's no way to manage the Stripe
+Connect link. There used to be a button, but it's gone."* Two separate faults met on one tab, and
+the second one made the first one invisible.
+
+**Fault one: the section resolver is an allowlist with a money-shaped catch-all.**
+`sectionForModule()` (`lib/admin/modules/space-hub.ts`) is four hard-coded id lists followed by
+`return 'offerings'`, commented in the file as *"Falls through by elimination"*. Every module added
+to `SPACE_MODULES` since that function was written lands in **Offerings & Money** unless someone
+remembered to edit a list. Three had:
+
+| Module | `family` | `parent` | Rendered under | Belongs under |
+|---|---|---|---|---|
+| `space.messages` (Message center) | audience | `space.crm` | Offerings & Money | Resonance |
+| `space.collaborators` (Collaborators) | audience | `space.people` | Offerings & Money | Settings |
+| `space.reachreceipt` (Your reach) | reach | `space.reach` | Offerings & Money | Marketing |
+
+Each already **declares its true home in `parent`**, and the resolver ignores the field. The same
+bug ran in reverse on `space.automation`, whose id *is* in the marketing list while its parent
+`space.crm` sits in Resonance: a child orphaned from its box. 🔴 `space-hub.test.ts:32` names the
+hazard out loud — *"it files under Resonance, never the Offerings catch-all"* — and then guards only
+the ids its authors happened to think of. Its "every module maps to a section or is explicitly
+excluded (no orphan)" test **cannot fail**, because the catch-all guarantees every module gets one.
+
+**Fault two: the one Connect prompt is built to vanish, and nothing replaced it when it does.**
+LIVE-233 (#2507) collapsed four hand-written payout cards into `payoutPrompt()`. Three carried a
+link; the storefront one was a panel titled **"Getting paid"**. The consolidation kept the *setup*
+affordance and dropped the *manage* affordance: `payoutPrompt()` returns `null` on a ready account
+by design (*"🔴 NULL WHEN READY, and that is a rule rather than an optimisation"*), and on those
+surfaces the card **is** the payments UI, so a ready account renders nothing. `ManagePayoutButton`
+has exactly one import site in the tree, on the personal `/settings#payouts` card.
+
+Measured in production, 2026-09-10 (`billing_live` and `host_payouts_enabled` both **on**, so this
+is not a flag):
+
+| Owner Connect state | Spaces | What the space admin shows |
+|---|---|---|
+| Ready (charges + payouts enabled) | **11** | ⚠️ nothing at all |
+| Started, not finished | 0 | "Stripe is checking your details" |
+| No account | 10 | ✅ the setup prompt |
+
+The prompt covers the half that has not started and abandons the half that can actually sell.
+
+**Fault three, which is why nobody could search their way out:** `/spaces/<slug>/settings/billing`
+means money the operator **pays Frequency**, and `/settings#payouts` means money Frequency **pays
+the operator**. Two scopes, one tab apart, under near-identical names.
+
+**Decision.**
+
+- **The hub tab is DECLARED on the catalog row, never inferred.** `SpaceModule` gains a required
+  `hub: SpaceHubSection | 'none'` and `sectionForModule()` collapses to reading it. The point is the
+  *required* half: TypeScript refuses to compile a row that has not chosen a tab, so **the catch-all
+  becomes a compile error** rather than a default. A test asserts every child matches its parent's
+  hub unless the row states a reason, which catches the Automation class by construction instead of
+  by memory. This is a field on `SPACE_MODULES`, a `REGISTERED_CATALOG`, plus one pure function — no
+  rail render is touched, so MENU-CONTRACT (ADR-553/ADR-927) and `check:menu` are unaffected.
+- **`space.offerings` is excluded from the hub**, exactly as `space.content` already is and for the
+  reason `space-hub.ts` already gives: the Offerings & Money *tab* **is** that box, so a card
+  linking back to the tab you are standing on is a circular row. It has been rendering as a peer
+  beside Booking, Memberships and Donations, which are its own children.
+- **"Your reach" moves to Content & Programs AND is un-parented** (owner ruling). Moving the child
+  while `space.reach` stays in Marketing would recreate the very orphan class this ADR removes, so
+  it becomes a top-level card with no parent. Calendar moves to Content & Programs; Collaborators
+  moves to Profile & Settings, matching `parent: space.people`; Automation returns to Resonance.
+- **`PayoutPrompt` gains a `ready` state instead of returning null**, and the two controls move to
+  `components/billing/` so a space surface may import them without reaching into
+  `app/(main)/settings/`. Null-when-ready stays right for a *nudge* and was never right as the only
+  state a surface has. The Stripe `return_url` regains its `#payouts` anchor: `connect.ts` returns
+  to `/settings/billing?payouts=return`, which is now a pure redirect to `/settings?…#plan`, so a
+  host who just finished onboarding lands on the plan card and has to hunt for the confirmation.
+- **A real payments surface**, `/spaces/[slug]/settings/payments`: status with **Manage payouts**
+  (the Express dashboard login link), which of the five `PayoutChannel` paths are live, the take
+  rate actually in effect, and one plain line separating what you receive from what you pay. Stripe
+  is explicit that a platform must give the connected account in-app access to the Express
+  Dashboard — that is where due requirements and risk interventions are handled — and that account
+  status must be cached and refreshed from `account.updated`, never inferred from a return URL.
+- **Money in stays separate from money out.** "Your plan" remains on Profile & Settings with a
+  labelled cross-link from the money tab, matching how Shopify separates `Finance → Payouts` from
+  the Billing page. The names do the disambiguating: *Your plan* for what you pay us, *Payments and
+  payouts* for what we pay you. Both renames are gated on `docs/NAMING.md`.
+- **Group headers, not sub-menus.** `FeatureGrid` renders one flat grid of undifferentiated cards
+  under an owner directive that *"every feature is a top-level card WITHIN the category, no nested
+  sub-menus."* That directive is **kept** — every feature stays a top-level card — and they render
+  under three headers: Get paid / What you sell / What you pay. A header is not a sub-menu.
+- **Message center retires, and Email inherits its audience picker.** The catalog row has exactly
+  one reference in the tree, but the route behind it does three things Email does not: a DM lane, a
+  Dispatch lane, and targeting by member / tier / circle / event guests. The lanes are dropped
+  deliberately; the targeting is ported, because it is the part Email cannot do.
+
+**Consequences.** The money tab goes from nine cards (three strays, one circular) to six coherent
+ones in three labelled groups, and the half of the platform with a working Stripe account gets a
+surface that says so. The deeper win is that the catch-all is gone: the next module added to the
+catalog cannot silently become a money feature, which is how three of these four strays arrived.
+
+⚠️ **Deliberately NO Orders, Subscribers or Tickets card.** Orders stay inside Shop, subscribers
+inside Memberships, tickets inside the event, and the Payments card *names* all five money paths so
+none is unaccounted for. LIVE-226 (ADR-1294) retired three modules for being exactly that kind of
+second door, and a money tab regrowing into nine cards is the most likely way this work decays.
+
+⚠️ The new route is gated on a **real artifact reading** of `check:build-fanout` and
+`check:notfound-routes`, wired and read in the same PR (`docs/DEPLOY-SAFETY.md`). The hub changes
+move the `/spaces/[slug]/manage` page height, whose visual baseline `LIVE-186` already carries as
+158px stale — recapture in the same PR rather than banking a second drift.
+
+**Not decided here.** "Message center" survives as a `SectionHeader` on `circles/[slug]/manage` and
+`events/[slug]/manage`; those are that circle's and that event's own broadcast, not this surface,
+and whether the *name* retires with the space one is a `docs/NAMING.md` question filed in LIVE-288
+rather than settled here. `LIVE-233` is still marked `open` at P0 although its code shipped in
+#2507; this ADR is the re-measurement its premise was owed, and LIVE-285 is the half of it that was
+never built.
+
+**Rows.** LIVE-285 (P0) · LIVE-286 · LIVE-287 · LIVE-288 · LIVE-289.
