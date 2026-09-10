@@ -820,3 +820,49 @@ export async function retireStaleOccurrences(anchorId: string): Promise<RetireRe
   })
   return { retired, kept: stale.length - retired, stoodDown: false }
 }
+
+/**
+ * Push ONE date's content onto the LATER dates of its series ("this and all future", ADR-1307).
+ *
+ * The forward-only sibling of `propagateAnchorEditsToOccurrences`, and the difference is the whole
+ * point. That one copies the ANCHOR onto every upcoming date, which is right when the anchor is
+ * what was edited and wrong when it is not: a host who fixes the venue on the 30th and asks for it
+ * to apply going forward means from the 30th, not from the series' beginning.
+ *
+ * So the origin is the row the host actually edited, and the target is every date of the same
+ * series that starts AFTER it. The anchor is not special here: when it is the origin it is also the
+ * earliest, so "after it" is every occurrence, which is exactly ADR-884's behaviour. When a later
+ * date is the origin, the anchor and the dates before it keep what they had, which is what "future"
+ * means.
+ *
+ * Best-effort by contract, like every other reconciler here: the caller has already saved, and a
+ * failure must not report that save as failed. Returns the number of dates brought in line, or 0.
+ */
+export async function propagateEditsForward(fromEventId: string): Promise<number> {
+  const admin = createAdminClient()
+
+  const { data: row, error: rowErr } = await admin
+    .from('events')
+    .select(`${ANCHOR_SELECT}, parent_event_id`)
+    .eq('id', fromEventId)
+    .maybeSingle()
+  if (rowErr || !row) return 0
+
+  const origin = row as unknown as Anchor & { parent_event_id: string | null }
+  if (!origin.starts_at) return 0
+  const anchorId = origin.parent_event_id ?? origin.id
+
+  const { data, error } = await admin
+    .from('events')
+    .update(propagationPatch(origin) as never)
+    // The series is the anchor plus its children. `.or` is the only way to say "this row or its
+    // children" in one statement, and the `.gt` below is what makes it FORWARD.
+    .or(`id.eq.${anchorId},parent_event_id.eq.${anchorId}`)
+    .gt('starts_at', origin.starts_at)
+    .select('id')
+  if (error) {
+    console.error('[propagateEditsForward]', logToken(fromEventId), sanitizeForLog(error.message))
+    return 0
+  }
+  return (data ?? []).length
+}
