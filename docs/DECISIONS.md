@@ -39320,3 +39320,77 @@ one arrangement across every date, which is what the owner was trying to set eac
 That is one owner look at one page, and it is the natural second batch.
 
 **Rows.** LIVE-288.
+---
+
+## ADR-1317: ACCEPTED — the operator baselines exist, and a waived contrast pairing is only quiet in the gate that waived it (2026-09-10)
+
+**Context.** ADR-1314 fixed *why* the operator console could not be photographed: the e2e account was
+raised on the `team_members` axis (`web_role` untouched, so the owner remains the only Janitor), and
+`/admin/crm` — which no staff role can ever open — was swapped for `/admin/circles`. What it did not
+do is take the pictures. `HYG-027` had been red on **every pull request in the repository** for
+weeks, and `LIVE-186` cannot make `pr-compare` a required check until it is green.
+
+**What the capture found.** `e2e-manual` run 34528305996, `capture_shell` + `update_baselines`
+against production, on an isolated branch:
+
+| | Before (2026-09-10, run 34517618524) | Now |
+|---|---|---|
+| Operator baselines committed | 16, **8 of them photographs of `/feed`** | **24, all real pages** |
+| Routes photographed | 2 of 7 genuinely | **6 of 7** |
+| Baseline heights | misattributed ones 8531–11277px | 1258–14521px, each route distinct |
+
+The heights are no longer the tell they were, and that is the point: `/admin/qr` at 8478px was
+checked by **looking at it** rather than by inferring from the number — it is the QR Studio, with the
+admin rail, the admin search band and the generator. `/admin/content/practices` proved itself a
+different way: the a11y audit read a real 21-row table on it and returned real findings, which a
+bounced session cannot do.
+
+**🔴 And the audit that could finally reach that page failed.** Twenty-one `bg-info-bg text-info`
+chips in one table, as **serious** axe contrast violations. The pairing measures **4.407:1** against
+a 4.5 bar.
+
+**That was not an unknown.** `scripts/check-contrast.mjs` declared the pair *and waived it*, at a
+frozen floor of 4.41, with the note *"Info chip text at 4.41:1 — a near miss."*
+
+**Decision.**
+
+- **The info tone goes one step darker: `#2F6FB0` → `#2C6AA8`**, measuring **4.746** on the info
+  fill and 5.62 on white. Both light declarations move together; the dark skin's own pairing
+  (`#6FA8DC` on `#15212E`, 6.448) is untouched. The waiver is **removed**, not re-floored — a waiver
+  standing over a fixed pairing is how it silently regresses.
+- **The lesson is the general one, and the remaining waivers still carry it.** A waived pairing is
+  invisible to `check:contrast` *by design* and fully visible to axe the moment a page carrying it
+  becomes reachable by the audit. A waiver does not make CI safe; it makes CI **quiet** while the
+  live gate holds the real opinion. The pairing had also never been measured on its own background:
+  it was chosen against white (5.13), where it passes, and `bg-info-bg text-info` is how the chip is
+  actually built everywhere it appears.
+- **`broadcast-strong` (3.99), `success` (3.87) and `warning` (3.32) are the same shape and worse**,
+  and each will fail an audit the same way the day a reachable page carries one. They are filed as
+  `LIVE-300` rather than swept in here: they are a palette decision, and this one was forced by a
+  failing audit.
+- **The capture is taken against the PR's own preview, last**, so the baselines carry the new token
+  rather than being made stale by the change that ships beside them.
+
+**⚠️ `/admin/library` is the one route still unphotographed, and the run's own headline is wrong
+about why.** The reporter said *"bounced off the /admin role floor"*, but that line comes from
+`shell-coverage.ts`'s **inference** branch (`onlyOperatorsMissing` — every unphotographed surface
+happens to be an operator route), not from the `ROLE_FLOOR_MARKER` annotation a real bounce carries.
+And the role floor cannot be the cause: the account holds `team_members` `admin`, whose
+`STAFF_ROLE_CAPABILITIES` entry is `marketing: 'write'`, which is exactly what
+`requireAdmin('janitor', { staff: 'marketing' })` asks for, and `capability_permissions` is empty so
+no override denies it. Filed as `LIVE-289` with the cause **open** and the cheap next step named,
+rather than swapped out on a guess. `/admin/crm` was replaced because its cause was *proven*; doing
+the same here on an inference would be the same mistake in the opposite direction.
+
+**Consequences.** `pr-compare` gets the 24 baselines it has never had and loses the a11y regression
+that appeared the moment the console became reachable. `PW_REQUIRE_OPERATOR` is still unset, so the
+remaining `/admin/library` gap is a loud warning rather than a failure — which is the correct state
+while its cause is unknown.
+
+**Rows.** LIVE-289 · LIVE-300. **HYG-027 closes with the baselines, not here.** This decision ships
+as two pull requests because the 40-file size gate is right to refuse them as one: the ~169
+regenerated PNGs are a single mechanical edit and carry the `[sweep]` tag truthfully, while the
+token correction, the removed waiver, the DAWN ledger row and this ADR are not. HYG-027's probe
+asks for a committed `admin*` baseline, so the row closes in the sweep, which is the change that
+actually satisfies it. Merge the correction first: new-token baselines against an old-token
+production would make `pr-compare` diff every info chip on the way past.

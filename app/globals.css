@@ -135,7 +135,14 @@
   --color-text-on-danger:   #FFFFFF;
   --color-text-on-warning:  #1A1206;
   --color-text-on-success:  #FFFFFF;
-  --color-info:             #2F6FB0;
+  /* 🔴 DARKENED 2026-09-10 (ADR-1317) — #2F6FB0 on the info fill measured **4.407:1**, and AA on
+     body text is 4.5. It had never been measured on its OWN background: the pairing that shipped
+     was chosen against white (5.13), where it passes comfortably, and `bg-info-bg text-info` is
+     how the chip is actually built everywhere it appears. The first audit that could reach
+     /admin/content/practices found twenty-one of them in one table.
+     #2C6AA8 measures **4.746** on the info fill and 5.62 on white, so both readings clear with
+     margin. The dark skin's own pairing (#6FA8DC on #15212E) is 6.448 and is untouched. */
+  --color-info:             #2C6AA8;
   --color-info-bg:          #E3EDF7;
 
   /* Focus */
@@ -651,7 +658,8 @@
   --color-text-on-broadcast: #1A1206;
   --color-warning:           #B07515;
   --color-warning-bg:        #F6ECD8;
-  --color-info:              #2F6FB0;
+  /* Tracks :root — same pairing, same 4.407 -> 4.746 correction (ADR-1317). */
+  --color-info:              #2C6AA8;
   --color-info-bg:           #E3EDF7;
   --color-focus-ring:        #B86A15;
   --brand-mark:              #6E4A2A;

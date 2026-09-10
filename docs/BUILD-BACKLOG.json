@@ -48,6 +48,7 @@
         {
           "name": "W0b · P1 — repairs ready to work now, and the instruments that keep the gates honest. This is the wave to pull from when you want the next thing to do.",
           "ids": [
+            "LIVE-289",
             "LIVE-186",
             "LIVE-213",
             "LIVE-291",
@@ -62,7 +63,8 @@
             "LIVE-279",
             "LIVE-293",
             "LIVE-294",
-            "LIVE-295"
+            "LIVE-295",
+            "LIVE-300"
           ]
         },
         {
@@ -11780,6 +11782,42 @@
         "kind": "cmd",
         "cmd": "node -e 'const fs=require(\"fs\");const read=(f)=>fs.existsSync(f)?fs.readFileSync(f,\"utf8\"):\"\";const box=read(\"components/feed/capture-box.tsx\");const scoped=/spaceId|spaceScope/.test(box);const writerKept=fs.existsSync(\"lib/spaces/dispatch.ts\");const callers=[\"app/(main)/feed/actions.ts\",\"components/feed/composer-actions.ts\",\"app/(main)/spaces/[slug]/dispatch-actions.ts\",\"components/feed/capture-actions.ts\"].map(read).join(\"\");const called=/composeSpaceDispatch/.test(callers);process.exit(scoped&&writerKept&&called?0:1)'",
         "note": "SCOPED: the post box takes a space scope, which is the half that lets it announce for anything but the community. WRITER KEPT: lib/spaces/dispatch.ts still exists, so the row cannot satisfy itself by deleting the writer it was filed to preserve. CALLED: composeSpaceDispatch has a production caller on a post-box send path, which is the consequence the ruling actually asked for. Deliberately does NOT grep capture-box for the word Dispatch: that string is already in the file today and the arm would pass by existing."
+      }
+    },
+    {
+      "id": "LIVE-289",
+      "title": "/admin/library is the one operator surface the capture cannot photograph, and the run headline names the wrong cause",
+      "status": "open",
+      "priority": "P1",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "test/e2e/shell-coverage.ts",
+        "ref": "onlyOperatorsMissing — the inference branch behind operatorsDenied"
+      },
+      "detail": "FILED 2026-09-10 (ADR-1317) out of the capture that closed HYG-027. Six of the seven watched operator routes photographed for real; /admin/library did not.\n\n🔴 THE RUN'S OWN HEADLINE IS WRONG ABOUT WHY, AND THAT IS HALF THIS ROW. It printed '1 /admin surface(s) bounced off the role floor: /admin/library'. That sentence comes from shell-coverage.ts's INFERENCE branch: operatorsDenied admits a path when it is unphotographed AND (flagged || onlyOperatorsMissing), and onlyOperatorsMissing is true whenever every missing surface happens to be an operator route - which is trivially true when exactly one is missing. It is NOT the ROLE_FLOOR_MARKER annotation a real bounce carries. So the headline restated the old story about a route that is missing for a new reason.\n\nTHE ROLE FLOOR CANNOT BE THE CAUSE, measured rather than assumed. The e2e account is @frequency (confirmed by the previous run's misattributed captures, which show 'Good afternoon, Frequency'). team_members holds exactly three rows and its role is 'admin'. STAFF_ROLE_CAPABILITIES.admin.marketing is 'write' (lib/core/staff-roles.ts). The guard is requireAdmin('janitor', { staff: 'marketing' }) at page.tsx:91, whose staffLevel defaults to 'write'. capability_permissions is EMPTY, so no override narrows it. Every input says admit. And the five sibling routes that DO photograph are gated by the same mechanism on community/qr.\n\nWHAT WAS RULED OUT: no layout.tsx under app/(main)/admin/library, so page.tsx:91 is the governing guard; no redirect() or notFound() in that page; resolveActiveScope() returns null safely rather than redirecting; the three router.push calls in the directory are all user-action handlers, not on-mount.\n\nWHAT IS LEFT, and it is one cheap read. operatorLandedElsewhere fires for ANY path change, not just a bounce to /feed, and it names the destination in the skip annotation. That annotation is in the Playwright HTML report the run uploaded (artifact playwright-report-smoke, run 34528305996). Reading it says in one line where /admin/library actually goes. It could not be fetched from this environment: the artifact is served from productionresultssa9.blob.core.windows.net and the egress proxy denied the CONNECT.\n\n🔴 DO NOT SWAP THE ROUTE OUT TO GO GREEN. /admin/crm was replaced by /admin/circles because its cause was PROVEN (requireAdmin('janitor') with no staff escape, which no team_members role can ever satisfy). Swapping /admin/library on an inference would be the same census mistake ADR-1314 exists to prevent, arriving from the opposite direction.\n\n⚠️ THIS IS THE ROW PW_REQUIRE_OPERATOR IS WAITING ON. That variable turns a denied operator surface into a hard failure on both the PR gate and the capture path. Setting it today would make every PR in the repository red over a route whose cause nobody has established - the #2107 deadlock through a third door. Set it once this closes.\n\n📌 PRIORITY P1 RATHER THAN P2, and the reason is ordering, not urgency: LIVE-186 (make pr-compare a REQUIRED check) cannot land until PW_REQUIRE_OPERATOR can be set, and that cannot be set while a watched route is denied for an unestablished reason. A P2 blocking a P1 is incoherent, so this sits ahead of the row it blocks.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const D='test/e2e/__screenshots__/visual.spec.ts';if(!fs.existsSync(D))process.exit(79);const want=['admin','admin-circles','admin-content-practices','admin-crew-tasks','admin-marketing-nurture','admin-qr','admin-library'];const missing=want.filter(s=>!fs.existsSync(D+'/'+s+'--dawn-light-desktop.png'));if(missing.length){console.error('operator surfaces with no committed dawn-light-desktop baseline: '+missing.join(', ')+'. While a watched route has no baseline the visual suite skips it, the run headline blames the role floor whether or not that is the cause, and PW_REQUIRE_OPERATOR cannot be set without turning every PR red.');process.exit(1)}\"",
+        "note": "Measures the CONSEQUENCE - a committed baseline for every watched operator route - rather than the diagnosis, because the diagnosis is exactly what this row does not yet have. It passes when /admin/library is photographed, and it would ALSO pass if the route were dropped from OPERATOR_PATHS and its baseline with it... which is why the detail says in capitals not to do that, and why operator-reachability.test.ts (ADR-1314) guards the list's honesty separately. Reads dawn-light-desktop as the representative context: a route that photographs in one state photographs in all four, and a route that bounces photographs in none."
+      }
+    },
+    {
+      "id": "LIVE-300",
+      "title": "Three status-chip contrast pairings are waived below AA, and a waiver is only quiet in the gate that granted it",
+      "status": "open",
+      "priority": "P2",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "scripts/check-contrast.mjs",
+        "ref": "WAIVERS — broadcast-strong, success and warning on their own -bg fills"
+      },
+      "detail": "FILED 2026-09-10 (ADR-1317) by the change that fixed the fourth member of this set.\n\nTHE INFO CHIP was waived here at a frozen floor of 4.41 with the note 'a near miss'. It stayed quiet for as long as no a11y audit could reach a page carrying it. The FIRST audit that reached /admin/content/practices failed on TWENTY-ONE of those chips in one table, as serious axe violations. It was fixed in that change (#2F6FB0 -> #2C6AA8, 4.407 -> 4.746) and its waiver removed.\n\n🔴 THE GENERAL LESSON, WHICH THESE THREE STILL CARRY. A waived pairing is invisible to check:contrast BY DESIGN and fully visible to axe the moment a page carrying it becomes reachable by the audit. A waiver does not make CI safe; it makes CI QUIET while the live gate holds the real opinion. Every one of these will fail an a11y run the same way the day a reachable page carries one, and the a11y ratchet is zero-tolerance (LIVE-023 holds the file at zero declared ceilings), so it fails as a REGRESSION rather than as debt.\n\n  --color-broadcast-strong on --color-broadcast-bg   3.99\n  --color-success          on --color-success-bg     3.87\n  --color-warning          on --color-warning-bg     3.32   (the weakest of the set)\n\nAll three are light-mode only; the dark skin's pairings clear comfortably. The waivers' own text already names the fix shape: 'the tinted chips want a -strong step in light mode instead of the base tone'. broadcast already HAS that step and still misses, so it needs a deeper one rather than a different token.\n\n⚠️ NOT SWEPT INTO ADR-1317 DELIBERATELY. That change moved one token because a failing audit forced it. These three are a palette decision across three semantic tones, each visible on member surfaces, and moving them will churn visual baselines - so they want their own change, their own recapture, and an owner look at the result.\n\n📌 THE INFO PAIRING HAD NEVER BEEN MEASURED ON ITS OWN BACKGROUND, and that is worth checking for these three too: it was chosen against white (5.13, passing) while 'bg-info-bg text-info' is how the chip is actually built everywhere it appears.\n\n📌 NUMBERED 300, NOT 295, AND THE GAP IS DELIBERATE. This row was filed as LIVE-295 and collided: a concurrently open branch (#2533, the Offerings & Money work) had already committed LIVE-290 through LIVE-295 for a different subject. Renumbering to 300 resolves it in EITHER merge order without touching a branch another session is driving, and leaves that session room to file more without a second collision. Same resolution shape as the ADR-1313 collision on 2026-09-10. Nothing enforces contiguity of LIVE ids; a gap costs nothing and a duplicate id costs a row.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const s=fs.readFileSync('scripts/check-contrast.mjs','utf8');const still=['--color-broadcast-strong','--color-success','--color-warning'].filter(t=>new RegExp('fg:\\\\\\\\s*.'+t+\\\".,\\\\\\\\s*\\\\\\\\n\\\\\\\\s*bg:\\\\\\\\s*.\\\"+t.replace('--color-','--color-').replace('-strong','')+\\\"-bg\\\").test(s));if(still.length){console.error('still waived below AA on their own chip fill: '+still.join(', ')+'. A waiver is invisible to check:contrast by design and fully visible to axe on any page the audit can reach.');process.exit(1)}\"",
+        "note": "Reads the WAIVERS table for the three chip pairings by (fg, bg) pair rather than by ratio, so re-flooring a waiver to a slightly better number does not close the row - only removing it does, which is what fixing the tone requires. Fails today on all three, which is the correct reading while this row is open."
       }
     },
     {
