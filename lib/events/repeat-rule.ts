@@ -719,100 +719,19 @@ export function repeatChipLabel(
   return every ? `Every ${rule.interval} months` : 'Monthly'
 }
 
-// ── The presets ──────────────────────────────────────────────────────────────────────────────────
+// ── The presets, and why there are none ─────────────────────────────────────────────────────────
 //
-// 🔴 PRESETS ARE DERIVED FROM THE START DATE, NEVER A STATIC LIST. This is the single strongest
-// finding from how Google Calendar, Apple Calendar and Outlook all build this control: the menu for
-// an event starting on Wednesday 16 September reads "Weekly on Wednesday", "Every 2 weeks on
-// Wednesday", "Monthly on the third Wednesday", "Annually on September 16". A static
+// `repeatPresets()` and `matchRepeatPreset()` lived here. They built a START-DERIVED menu — for an
+// event starting Wednesday 16 September: "Weekly on Wednesday", "Every 2 weeks on Wednesday",
+// "Monthly on the third Wednesday", "Annually on September 16" — which is what Google Calendar,
+// Apple Calendar and Outlook all do, and the reasoning behind it is still worth knowing: a static
 // Daily/Weekly/Monthly list makes the host do that arithmetic in their head, and the arithmetic is
-// exactly where "monthly" quietly means "the 16th" to the software and "the third Wednesday" to the
-// host. Naming the answer in the option is what removes the ambiguity, and it is why the four-value
-// enum this replaced could not be fixed by adding two more values.
+// exactly where "monthly" quietly means "the 16th" to the software and "the third Wednesday" to
+// the host.
 //
-// The list is short on purpose. Everything else lives behind "Custom", one tap away.
-
-export interface RepeatPreset {
-  /** Stable id for a radio/select value. 'none' and 'custom' are the two that carry no rule. */
-  id: string
-  /** What the host reads. Already carries the date's own weekday / day of month. */
-  label: string
-  /** The rule the preset means, or null for "Does not repeat". */
-  rule: RepeatRule | null
-}
-
-/**
- * The preset menu for an event starting at `startsAtIso`. Always at least "Does not repeat"; the
- * date-derived options appear once there is a start to derive them from, which is why a Spark that
- * has not asked for the date yet still renders a usable control.
- */
-export function repeatPresets(startsAtIso?: string | null): RepeatPreset[] {
-  // A repeat preset is a CHOICE IN A FORM CONTROL, not a destination: it renders as an <option> in
-  // the picker's menu and its `id` is a radio value, so the admin menu contract (ADR-553/927) does
-  // not govern it. The line annotation is what tells `pnpm check:menu` so.
-  const presets: RepeatPreset[] = [{ id: 'none', label: 'Does not repeat', rule: null }] // menu-ok: form-control options, not menu rows
-  const anchor = parseWallClock(startsAtIso)
-  if (!anchor) {
-    presets.push({ id: 'daily', label: 'Daily', rule: { freq: 'DAILY', interval: 1 } })
-    presets.push({ id: 'weekly', label: 'Weekly', rule: { freq: 'WEEKLY', interval: 1 } })
-    presets.push({ id: 'monthly', label: 'Monthly', rule: { freq: 'MONTHLY', interval: 1 } })
-    return presets
-  }
-
-  const weekday = REPEAT_WEEKDAYS[anchor.getUTCDay()]
-  const weekdayName = WEEKDAY_NAMES[weekday]
-  const dayOfMonth = anchor.getUTCDate()
-  const month = anchor.getUTCMonth()
-  // Which <weekday> of the month the anchor is, 1-based, and whether it is also the LAST one —
-  // "the fifth Thursday" is a date that does not exist in most months, so an anchor in the fifth
-  // week offers "the last <weekday>" instead of an ordinal nothing can honour.
-  const weekIndex = Math.floor((dayOfMonth - 1) / 7) + 1
-  const isLastOfMonth = dayOfMonth + 7 > daysInUTCMonth(anchor.getUTCFullYear(), month)
-  const setPos = weekIndex >= 5 || (isLastOfMonth && weekIndex === 4) ? -1 : weekIndex
-
-  presets.push({ id: 'daily', label: 'Every day', rule: { freq: 'DAILY', interval: 1 } })
-  presets.push({
-    id: 'weekly',
-    label: `Weekly on ${weekdayName}`,
-    rule: { freq: 'WEEKLY', interval: 1, byDay: [weekday] },
-  })
-  presets.push({
-    id: 'biweekly',
-    label: `Every 2 weeks on ${weekdayName}`,
-    rule: { freq: 'WEEKLY', interval: 2, byDay: [weekday] },
-  })
-  presets.push({
-    id: 'weekdays',
-    label: 'Every weekday, Monday to Friday',
-    rule: { freq: 'WEEKLY', interval: 1, byDay: [...WEEKDAY_SET] },
-  })
-  presets.push({
-    id: 'monthly-date',
-    label: `Monthly on the ${ordinalNumber(dayOfMonth)}`,
-    rule: { freq: 'MONTHLY', interval: 1, byMonthDay: dayOfMonth },
-  })
-  presets.push({
-    id: 'monthly-weekday',
-    label: `Monthly on the ${ORDINAL_WORDS[setPos]} ${weekdayName}`,
-    rule: { freq: 'MONTHLY', interval: 1, byDay: [weekday], bySetPos: setPos },
-  })
-  presets.push({
-    id: 'yearly',
-    label: `Annually on ${MONTH_NAMES[month]} ${dayOfMonth}`,
-    rule: { freq: 'YEARLY', interval: 1, byMonth: month + 1, byMonthDay: dayOfMonth },
-  })
-  return presets
-}
-
-/** The preset a stored rule IS, or null when it is something only the custom panel can express.
- *  Compared on the CANONICAL string, so option order and interval spelling cannot cause a miss. */
-export function matchRepeatPreset(
-  rule: RepeatRule | null | undefined,
-  startsAtIso?: string | null,
-): RepeatPreset | null {
-  if (!rule) return repeatPresets(startsAtIso)[0]
-  // A count is a range, not a pattern, and no preset carries one.
-  if (rule.count !== undefined) return null
-  const canonical = formatRepeat(rule)
-  return repeatPresets(startsAtIso).find((p) => p.rule && formatRepeat(p.rule) === canonical) ?? null
-}
+// They came out the day they shipped (owner: "I don't like the preset dropdowns. Those are
+// confusing"). Seven sentences in a dropdown is a paragraph, and it hid the editor behind a
+// "Custom…" option. components/events/repeat-picker.tsx now asks the frequency in five words and
+// shows the editor for everything else, so nothing derives a preset any more and the two functions
+// are deleted rather than kept warm — a start-derived label is two lines of `describeRepeat` away
+// if a menu ever wants one again.

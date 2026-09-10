@@ -38369,7 +38369,7 @@ decode saved on the surface least able to afford one.
 
 ---
 
-## ADR-1301: ACCEPTED — the event identity region is full width, in two lanes, outside the action column (2026-09-10)
+## ADR-1301: ACCEPTED, LANES SUPERSEDED BY ADR-1302 — the event identity region is full width, outside the action column (2026-09-10)
 
 **Context.** Owner, in the same report: *"Something is off with the details under the header. They
 are all aligned left."*
@@ -38399,3 +38399,95 @@ deliberately, per its own instructions, so the equality still compares a hand-ro
 template rather than the template against itself. The drift guard gained a clause that the identity
 region goes through `meta` and not `subtitle` — the regression is silent, because the page still
 renders, it just crams again.
+
+---
+
+## ADR-1302: ACCEPTED — one full-width column under the event header, the mode pill on the cover, and three one-word actions (2026-09-10)
+
+**Context.** Owner, on the page ADR-1300 and ADR-1301 shipped that morning, with a new capture:
+
+> 1. The info area under the header should not be two columns. The info should be full width in that area.
+> 2. Re organize that sub header content area to be clean and make sense.
+> 3. Place the In Person / Online pill on the top right of the header
+> 4. Change QR, edit and mange buttons to be more compact show the icon with one word each. Share | Manage | Edit
+
+Item 1 reverses half of ADR-1301, and the reversal is worth stating precisely because the record
+should not read as a regression. ADR-1301 did two things at once in response to *"they are all
+aligned left"*: it moved the region out of the narrow `subtitle` column into the full-width `meta`
+slot, AND it split the newly available width into two `md:grid-cols-2` lanes. Only the first was
+what the report asked for. Two lanes of four short lines read as a form rather than a paragraph, and
+they set "Hosted by" beside the date instead of under it, which is the wrong reading order for a
+page whose first question is *when and where*.
+
+**Decision.**
+
+1. **One column, four groups.** The identity region stays in `meta` and drops the grid. The nine
+   slots regroup by what a reader asks in order: the gathering (`when`, `where`), the series
+   (`cadence`, `nextDate`, `seriesRail`), who runs it (`hostedBy`, `belonging`, `credit`), and the
+   reward strip. Two moves come with the regrouping: `seriesRail` rises to sit with the two lines
+   that describe the same series, and `hostedBy` leads its group ahead of `belonging`, because the
+   person is the headline attribution and the Circle is the context. The grouping is carried
+   entirely by a 2:1 gap ratio (`space-y-3` between groups, `space-y-1.5` inside one) rather than by
+   rules or headings, so the stack reads as four things and not nine lines. An empty group renders
+   nothing, so a one-off event reads when · where · who with no hole where the series would be.
+2. **The mode pill rides the cover.** `badges` flies in the cover band's top-right corner rather
+   than inline beside the H1, where it competed with the title and the action row for one line.
+   "The header" here means the cover band, the same sense in which it was reported as needing to be
+   full bleed that morning (ADR-1300). A surface that fills no `cover` has no corner, so there the
+   chip falls back to `DetailTemplate`'s own slot and renders exactly as before. That fallback is
+   what keeps this an ABSENT-SLOT difference and not a per-surface branch, which the standard
+   forbids.
+3. **Three one-word actions: Share · Manage · Edit.** The one word is what let a fork go, and that
+   is the part worth recording. The row used to render FIVE controls to paint three: at "QR &
+   Share" / "Edit event" / "Manage event" the labelled trio measured roughly 127 + 125 + 143px plus
+   gaps against a 359px content column at 393px, so the two owner-only tools shipped twice, an
+   icon-only render below `sm` and a labelled one above, because `iconOnly` decides the accessible
+   name and cannot be a media query. One word each is roughly 72 + 85 + 62px, which fits, so every
+   viewer now gets the same three labelled buttons and the breakpoint duplication is deleted with
+   the words that forced it.
+
+**Consequences.** The byte-identity proof was amended a third time, per its own instructions. The
+drift guard now fails on `md:grid-cols-2` reappearing in the region, and pins both halves of the gap
+ratio, the cover-corner position, and the no-cover fallback. `EventIdentitySlots` declares its slots
+in the new render order and the guard pins the two together, so a reordering cannot be a silent
+edit. `check:a11y-names` is unaffected: a button labelled by its visible text is named by it.
+
+---
+
+## ADR-1303: ACCEPTED — the repeat control is an editor, not a preset menu (2026-09-10)
+
+**Context.** Owner, on the picker ADR-1299 shipped that morning: *"I like the custom settings editor
+you created but I don't like the preset dropdowns. Those are confusing. Make it so only the Settings
+editor is showing with it set to 1 time, does not repeat as a default setting."*
+
+ADR-1299 led with a menu of START-DERIVED presets — for an event starting Wednesday 16 September:
+"Weekly on Wednesday", "Every 2 weeks on Wednesday", "Monthly on the third Wednesday", "Annually on
+September 16" — with the editor behind a "Custom…" option. That is what Google Calendar, Apple
+Calendar and Outlook converge on, and the reasoning behind it still holds in the abstract: a static
+Daily/Weekly/Monthly list makes the host do the arithmetic in their head, and the arithmetic is
+where "monthly" quietly means "the 16th" to the software and "the third Wednesday" to the host.
+
+What it produced in practice was seven sentences in a dropdown, which is a paragraph you have to
+read, and it hid the editor exactly where a host would look for it. It also forced "Custom" to be a
+COMPUTED state ("this rule matches no preset") rather than a stored one, which needed an
+interval-bumping seed loop to stop the panel closing the instant it opened, plus a test suite to
+prove every preset escaped that loop.
+
+**Decision.** The menu asks the frequency and nothing else: **Does not repeat · Daily · Weekly ·
+Monthly · Yearly**. Anything but the first opens the editor in place, and the editor is the whole
+question — "Repeat every N ‹unit›" with the unit PRINTED rather than asked a second time, then the
+unit's own detail (weekday toggles for weekly, by-date vs by-weekday for monthly and yearly), then
+the end rule (never / on a date / after N times) which moves inside the panel now that there is no
+"plain" series living outside it. The default is "Does not repeat", the editor stays shut, and the
+sentence underneath reads "This happens once."
+
+`repeatPresets()` and `matchRepeatPreset()` are DELETED from `lib/events/repeat-rule.ts`, with their
+two test suites, rather than kept warm. Nothing derives a preset any more, and a start-derived label
+is two lines of `describeRepeat` away if a menu ever wants one again.
+
+**Consequences.** The engine, the transport string and every writer are untouched: this is a change
+of what the control OFFERS, not of what it EMITS. That is also why it needed a new probe — a control
+can emit perfect RRULEs through a menu nobody can read, and nothing in the repo looked at the menu.
+`components/events/repeat-picker.render.test.tsx` mounts the picker and pins the five options, the
+shut default, the editor opening with no "Custom" step, and the exact retired preset sentences never
+reappearing anywhere in the control.

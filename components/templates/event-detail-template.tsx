@@ -36,44 +36,50 @@ import { DetailTemplate } from './detail-template'
  *  Naming each line (rather than taking one opaque `subtitle` blob) is what makes the shape itself
  *  the standard: a surface can leave a line out, but it cannot put "Hosted by" above the date.
  *
- *  ── TWO LANES AND TWO FULL-WIDTH ROWS (owner, 2026-09-10) ──────────────────────────────────────
- *  *"Something is off with the details under the header. They are all aligned left."*
+ *  ── ONE FULL-WIDTH COLUMN, IN FOUR GROUPS (owner, 2026-09-10) ──────────────────────────────────
+ *  *"The info area under the header should not be two columns. The info should be full width in
+ *  that area. Re organize that sub header content area to be clean and make sense."*
  *
- *  Every line below used to render as ONE narrow column inside DetailTemplate's `subtitle`, which
- *  lives in the lockup's flex row beside the action buttons — so the whole stack was confined to
- *  `content width - actions width` for its entire height. On the live page that is under half the
- *  column (three buttons reserve ~265px of a ~520px row), and the result is what was photographed:
- *  the date, the venue, the "Hosted by" line and a rail of date chips all wrapping hard against a
- *  narrow left gutter with an empty half beside them.
+ *  🔴 THIS REVERSES THE TWO-LANE ARRANGEMENT SHIPPED EARLIER THE SAME DAY, deliberately. The
+ *  region's first form was one NARROW column inside DetailTemplate's `subtitle`, squeezed beside
+ *  the action buttons for its whole height ("Something is off with the details under the header.
+ *  They are all aligned left"). That fix did two things at once: it moved the region to the
+ *  full-width `meta` slot, and it split the region into two lanes. Only the first was what the
+ *  report wanted. Two lanes of four short lines read as a form, and they set "Hosted by" beside
+ *  the date instead of under it. The slot moved and stays moved; the lanes are gone.
  *
- *  The region now spans the full header band (DetailTemplate's `meta` slot) and splits by WHAT a
- *  line is, which is also the order the fields are declared in:
+ *  One column across the whole band, grouped in the order a reader asks:
  *
- *    lane A — THE FACTS OF THE GATHERING     when · where · cadence · nextDate
- *    lane B — WHERE IT BELONGS, AND TO WHOM  belonging · hostedBy · credit
- *    full width, under both                  seriesRail · reward
+ *    the gathering   when · where                      what a guest needs in order to decide
+ *    the series      cadence · nextDate · seriesRail    how often, and which dates
+ *    who runs it     hostedBy · belonging · credit      the person, the Circle, the poster
+ *    the reward      reward                             the check-in strip, a band by nature
  *
- *  The two lanes are side by side from `md` and stack in declaration order below it, so a phone
- *  reads exactly the sequence it always read. The last two rows stay full width because both are
- *  horizontal by nature: the rail is a row of date chips (the element that wrapped into three rows
- *  in the capture) and the reward strip is a band. */
+ *  The gap BETWEEN groups is wider than the gap inside one, so the stack reads as four things
+ *  rather than nine lines. An empty group renders nothing at all, so a one-off event reads
+ *  when · where · who with no hole where the series would have been.
+ *
+ *  The declaration order below IS the render order, and event-standard-layout.test.ts pins the
+ *  two together. */
 export interface EventIdentitySlots {
   /** The when-line. The key fact, rendered a step stronger than the rest of the region. */
   when?: ReactNode
   /** The where-line: venue, address, map deep link. */
   where?: ReactNode
-  /** "Repeats weekly" / "Part of a recurring series" (+ until). */
+  /** "Every other Wednesday" / "Part of a recurring series" (+ until). */
   cadence?: ReactNode
   /** "Next: …" for a recurring anchor whose own date has passed. */
   nextDate?: ReactNode
+  /** The series date rail (ADR-897): a ROW of date chips, so it sits under the two lines that
+   *  describe the same series rather than mid-column where it wrapped into three rows. */
+  seriesRail?: ReactNode
+  /** "Hosted by …" (+ collaborators, + organizer credit). The headline attribution, so it leads
+   *  its group. */
+  hostedBy?: ReactNode
   /** Where this event belongs: its Circle, Space, Journey. Page owns its own <Suspense>. */
   belonging?: ReactNode
-  /** "Hosted by …" (+ collaborators, + organizer credit). */
-  hostedBy?: ReactNode
   /** The posted-by credit line. */
   credit?: ReactNode
-  /** The series date rail (ADR-897). Full width under both lanes — it is a row of date chips. */
-  seriesRail?: ReactNode
   /** The check-in reward line. Header content, not a floating band. */
   reward?: ReactNode
 }
@@ -94,9 +100,15 @@ export interface EventDetailTemplateProps {
    *  (LIVE-132). Handed straight to DetailTemplate; see the prop's note there. */
   breadcrumb?: { href: string; label: string }[]
   title: ReactNode
-  /** Status / mode chips (In person · Online · This event has ended). */
+  /** Status / mode chips (In person · Online · This event has ended).
+   *
+   *  These ride the TOP RIGHT OF THE COVER (owner, 2026-09-10: "Place the In Person / Online pill
+   *  on the top right of the header" — "the header" is the cover band, the same sense in which it
+   *  was reported full-bleed the same morning). A surface that fills no `cover` has nowhere to
+   *  put them, so there they fall back to DetailTemplate's own slot beside the H1 and render
+   *  exactly as they always did. That is a slot test, not a per-surface branch. */
   badges?: ReactNode
-  /** The stacked top-right action column (QR & Share, Edit event, Manage event). */
+  /** The compact header action row (Share · Manage · Edit). */
   actions?: ReactNode
   /** An event page is a marquee destination, so the H1 leads at display scale by default. */
   titleScale?: 'default' | 'display'
@@ -153,15 +165,17 @@ export function EventDetailTemplate({
   interiorMain,
   interiorSide,
 }: EventDetailTemplateProps) {
-  const factLines = [identity.when, identity.where, identity.cadence, identity.nextDate]
-  const belongingLines = [identity.belonging, identity.hostedBy, identity.credit]
   const filled = (line: ReactNode) => line !== undefined && line !== null && line !== false
-  const hasFacts = factLines.some(filled)
-  const hasBelonging = belongingLines.some(filled)
+  const gathering = [identity.when, identity.where]
+  const series = [identity.cadence, identity.nextDate, identity.seriesRail]
+  const runBy = [identity.hostedBy, identity.belonging, identity.credit]
+  const hasGathering = gathering.some(filled)
+  const hasSeries = series.some(filled)
+  const hasRunBy = runBy.some(filled)
   // An event with nothing to say under its title gets no region container at all, rather than an
-  // empty div carrying the region's margin. Each LANE self-suppresses the same way, so a surface
-  // that fills only one of them gets a single column rather than a column and a gap.
-  const hasIdentity = hasFacts || hasBelonging || filled(identity.seriesRail) || filled(identity.reward)
+  // empty div carrying the region's margin. Each GROUP self-suppresses the same way, so a one-off
+  // event has no empty gap where its series lines would have been.
+  const hasIdentity = hasGathering || hasSeries || hasRunBy || filled(identity.reward)
 
   return (
     <div>
@@ -169,38 +183,63 @@ export function EventDetailTemplate({
       {notices}
 
       <DetailTemplate
-        hero={cover}
+        // THE MODE PILL RIDES THE COVER. `badges` used to sit inline beside the H1, where it read
+        // as a third thing competing with the title and the action row for one line. It now sits
+        // in the cover's top-right corner (owner, 2026-09-10), which is where a poster carries its
+        // own designation and where nothing else on the page wants to be. The chips are opaque
+        // token surfaces, so they stay legible over any artwork; `max-w` keeps the longest label
+        // ("In person + online") off the title's shoulder on a narrow phone.
+        //
+        // With no cover there is no corner, so the pill goes back to DetailTemplate's own slot and
+        // that surface renders exactly as before — an absent slot, not a per-surface branch.
+        hero={
+          cover !== undefined && badges ? (
+            <div className="relative">
+              {cover}
+              <div className="absolute right-3 top-3 flex max-w-[60%] flex-wrap justify-end gap-1.5 sm:right-4 sm:top-4">
+                {badges}
+              </div>
+            </div>
+          ) : (
+            cover
+          )
+        }
         back={back}
         breadcrumb={breadcrumb}
         titleScale={titleScale}
         title={title}
-        badges={badges}
+        badges={cover !== undefined && badges ? undefined : badges}
         actions={actions}
         // The identity region goes through `meta` (full width), NOT `subtitle` (the narrow column
         // beside the actions). See EventIdentitySlots for the report that moved it.
+        // The identity region goes through `meta` (full width), NOT `subtitle` (the narrow column
+        // beside the actions). See EventIdentitySlots for the two reports that settled its shape.
         meta={
           hasIdentity ? (
-            <div className="space-y-2 text-body-sm text-muted">
-              {(hasFacts || hasBelonging) && (
-                <div className="grid gap-x-10 gap-y-2 md:grid-cols-2">
-                  {hasFacts && (
-                    <div className="min-w-0 space-y-1.5">
-                      {identity.when}
-                      {identity.where}
-                      {identity.cadence}
-                      {identity.nextDate}
-                    </div>
-                  )}
-                  {hasBelonging && (
-                    <div className="min-w-0 space-y-1.5">
-                      {identity.belonging}
-                      {identity.hostedBy}
-                      {identity.credit}
-                    </div>
-                  )}
+            // `space-y-3` between groups against `space-y-1.5` inside one: the whole reorganisation
+            // is carried by that 2:1 ratio, which is what lets a reader see four things instead of
+            // nine lines without a single rule or heading.
+            <div className="space-y-3 text-body-sm text-muted">
+              {hasGathering && (
+                <div className="space-y-1.5">
+                  {identity.when}
+                  {identity.where}
                 </div>
               )}
-              {identity.seriesRail}
+              {hasSeries && (
+                <div className="space-y-1.5">
+                  {identity.cadence}
+                  {identity.nextDate}
+                  {identity.seriesRail}
+                </div>
+              )}
+              {hasRunBy && (
+                <div className="space-y-1.5">
+                  {identity.hostedBy}
+                  {identity.belonging}
+                  {identity.credit}
+                </div>
+              )}
               {identity.reward}
             </div>
           ) : undefined

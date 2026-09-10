@@ -56,19 +56,21 @@ describe('the standard exists and is a composition, not a fork', () => {
       template.indexOf('export interface EventDetailTemplateProps'),
     )
     const slots = [...iface.matchAll(/^\s{2}(\w+)\?:/gm)].map((m) => m[1])
-    // The arrangement, in reading order: lane A (the facts), lane B (where it belongs and to
-    // whom), then the two full-width rows. `seriesRail` moved down on 2026-09-10 when the region
-    // went from one narrow column to two lanes — it is a ROW of date chips, so it belongs under
-    // both lanes at full width rather than mid-column where it wrapped into three rows.
+    // The arrangement, in reading order, in ONE full-width column (owner, 2026-09-10: "The info
+    // should be full width in that area. Re organize that sub header content area to be clean and
+    // make sense"): the gathering, then the series, then who runs it, then the reward. The two
+    // moves that reorganisation made are both visible here — `seriesRail` sits with the two lines
+    // that describe the same series, and `hostedBy` leads its group instead of trailing
+    // `belonging`, because the person is the headline attribution and the Circle is the context.
     expect(slots).toEqual([
       'when',
       'where',
       'cadence',
       'nextDate',
-      'belonging',
-      'hostedBy',
-      'credit',
       'seriesRail',
+      'hostedBy',
+      'belonging',
+      'credit',
       'reward',
     ])
     // A slot added to the type but never rendered would silently swallow a page's content.
@@ -89,12 +91,32 @@ describe('the standard exists and is a composition, not a fork', () => {
     expect(detail).toContain('{meta && <div className="mt-3">{meta}</div>}')
   })
 
-  it('the two lanes are side by side from md, and each self-suppresses when empty', () => {
-    // A surface that fills only one lane (the loading skeleton fills the facts) must get one
-    // column, not a column and an empty gutter.
-    expect(templateCode).toContain('md:grid-cols-2')
-    expect(templateCode).toContain('hasFacts &&')
-    expect(templateCode).toContain('hasBelonging &&')
+  it('🔴 is ONE full-width column, not two lanes, and each group self-suppresses when empty', () => {
+    // The 2026-09-10 reversal. The region's first full-width form split into two `md:grid-cols-2`
+    // lanes; the owner asked for the full width and not the split ("The info area under the header
+    // should not be two columns"). A grid re-appearing in this region is that reversal being
+    // reversed, which is silent — the page still renders, it just goes back to reading as a form.
+    expect(templateCode, 'the identity region must not go back to two lanes').not.toContain('md:grid-cols-2')
+    // `lg:grid-cols-5` is the INTERIOR's grid and is pinned by its own suite below, so the
+    // assertion above names the region's own breakpoint rather than banning every grid in the file.
+    // A surface that fills only one group (the loading skeleton fills the gathering) must not pay
+    // for the groups it left empty.
+    expect(templateCode).toContain('hasGathering &&')
+    expect(templateCode).toContain('hasSeries &&')
+    expect(templateCode).toContain('hasRunBy &&')
+    // The grouping is carried entirely by the 2:1 gap ratio, so both halves of it are pinned.
+    expect(templateCode).toContain('space-y-3 text-body-sm text-muted')
+    expect(templateCode).toContain('<div className="space-y-1.5">')
+  })
+
+  it('🔴 flies the mode pill on the COVER, and falls back to the lockup when there is no cover', () => {
+    // Owner, 2026-09-10: "Place the In Person / Online pill on the top right of the header" — the
+    // header being the cover band. The fallback is what keeps this a SLOT test rather than a fork:
+    // the discover surface renders its "This event has ended" chip with no cover of its own, and
+    // must still show it beside the H1.
+    expect(templateCode).toContain('cover !== undefined && badges')
+    expect(templateCode).toContain('absolute right-3 top-3')
+    expect(templateCode).toContain('badges={cover !== undefined && badges ? undefined : badges}')
   })
 })
 
