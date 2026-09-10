@@ -5,7 +5,7 @@ import { FIELD_KINDS } from '@/lib/studio/kernel/manifest'
 import { isListKind, joinFieldValue, splitFieldValue, LIST_KINDS, LIST_SEPARATOR } from './rail-field-value'
 
 // ─────────────────────────────────────────────────────────────────────────────
-// THE RAIL'S LIST ROUND TRIP (ADR-1306).
+// THE RAIL'S LIST ROUND TRIP (ADR-1309).
 //
 // The defect this pins shut: the rail joined a list control's array on the way out and handed the
 // joined string straight back on the way in, where the kit reads a string as a ONE-ITEM list. Three

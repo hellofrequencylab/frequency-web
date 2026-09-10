@@ -55,7 +55,7 @@ export const PARKED = new Map([
   ['event-sales', 'host sales box; the sold count is folded onto the ticket card'],
   ['crm-members', "the cockpit's inline roster; superseded by the master-detail roster"],
   // Retired into event-join by ADR-826 — both components return null unconditionally. They stayed
-  // in the event set as draggable rows that drew nothing until ADR-1306 took them out.
+  // in the event set as draggable rows that drew nothing until ADR-1309 took them out.
   ['event-facts', 'the when/capacity/guest card; folded into the Join box (ADR-826)'],
   ['event-warm-proof', "the who's-coming pile; folded into the Join box (ADR-826)"],
 ])

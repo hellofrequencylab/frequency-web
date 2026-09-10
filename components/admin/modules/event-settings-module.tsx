@@ -66,7 +66,7 @@ import {
 // manifest's own section titles. What this file adds is the six COMPOSITES the plan names
 // (`EVENT_COMPOSITES`): the gallery, the venue search, the map pin, co-hosts, placement, and sharing.
 //
-// THE `details` BAG IS EDITABLE HERE NOW (ADR-1306). Everything Vera harvests off a flyer lands in
+// THE `details` BAG IS EDITABLE HERE NOW (ADR-1309). Everything Vera harvests off a flyer lands in
 // `events.details` and renders as its own movable block, and none of it had an editor anywhere: the
 // two lists (Good to know, Sponsors) are ordinary manifest fields the widened writes list now
 // carries, and the four collections (Pricing, Schedule, Links, Details) come through the plan's
@@ -368,7 +368,7 @@ function EventSettingsRail({ data, engage }: { data: EventData; engage: EventCor
               <p className="mt-0.5 text-2xs text-muted">{section.desc}</p>
             </div>
             <SettingsFields fields={fieldsFor(fields)} values={values} onChange={update} placeholders={PLACEHOLDERS} hints={hints} />
-            {/* The section's repeat groups (ADR-1306): one list editor per collection, its rows and
+            {/* The section's repeat groups (ADR-1309): one list editor per collection, its rows and
                 its per-row controls both from the manifest, capped where the server caps it. */}
             {repeats.map((def) => (
               <RailManifestRepeat

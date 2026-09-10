@@ -154,7 +154,7 @@ describe('editPlane (ADR-1281)', () => {
 })
 
 
-// ── The repeat groups a rail form renders (ADR-1306) ────────────────────────────────────────────
+// ── The repeat groups a rail form renders (ADR-1309) ────────────────────────────────────────────
 //
 // A repeat is a TABLE OF ROWS, not a column, so `railForm` walked `manifest.fields` and nothing
 // else: every repeated collection an entity declared (an Event's ticket tiers, its set times, its

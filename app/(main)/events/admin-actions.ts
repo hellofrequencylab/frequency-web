@@ -39,7 +39,7 @@ import { writeEventMarketListed } from '@/lib/events/market-listing'
 import { writeEventCheckInEnabled } from '@/lib/events/checkin-enabled'
 import { pointFromGeog } from '@/lib/events/geo'
 // The poster harvest's allow-list. Used here on the EDITED keys only, never on the whole bag — see
-// the comment at its call site (ADR-1306).
+// the comment at its call site (ADR-1309).
 import { coerceEventDetails } from '@/lib/events/normalize'
 import { SPECIAL_INSTRUCTIONS_MAX } from '@/lib/events/special-instructions'
 import { approveRsvpById } from '@/lib/events/rsvp-depth'
@@ -417,7 +417,7 @@ export async function updateEventSettings(id: string, slug: string, fd: FormData
   if (opensAt || closesAt) nextDetails.rsvpWindow = { opensAt, closesAt }
   else delete nextDetails.rsvpWindow
 
-  // ── THE `details` BAG THE SETTINGS RAIL NOW EDITS (ADR-1306) ─────────────────────────────────
+  // ── THE `details` BAG THE SETTINGS RAIL NOW EDITS (ADR-1309) ─────────────────────────────────
   //
   // Everything Vera harvests off a flyer lives here: the Good to know list, the sponsors, the
   // ticket tiers, the schedule, the links, the other details. Each renders as its own movable

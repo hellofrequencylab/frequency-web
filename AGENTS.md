@@ -275,7 +275,7 @@ same guard locally and prints what to fix.
   `validateManifest` refuses the declaration anywhere the plane is already derived. Keep declaring
   placement for all three planes (`FieldPlacement`), and when you add a rail, wire it through a
   `<entity>-rail-plan.ts` beside the module rather than writing a field list. A manifest's REPEAT
-  groups come through the same seam since [ADR-1306](docs/DECISIONS.md): `railRepeats()` beside
+  groups come through the same seam since [ADR-1309](docs/DECISIONS.md): `railRepeats()` beside
   `railForm()`, rendered by `RailManifestRepeat`. Ordered collections only; a keyed `map` repeat is
   reported as a `keyed-repeat` drop rather than silently omitted.
 

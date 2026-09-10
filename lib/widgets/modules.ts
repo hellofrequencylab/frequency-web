@@ -621,7 +621,7 @@ const CIRCLE_DETAIL_MODULE_IDS = [
 //     Ticketing lives in the Join box; the sold count is folded onto the RSVP ticket card.
 // Those four DEFINITIONS stay in LAYOUT_MODULES (and PARKED in modules.test.ts) so they compile.
 //
-// TWO MORE LEFT THE SET on 2026-09-10 (ADR-1306), and this pair is a different fault: they were not
+// TWO MORE LEFT THE SET on 2026-09-10 (ADR-1309), and this pair is a different fault: they were not
 // duplicates, they were RETIRED CODE. `event-facts` and `event-warm-proof` were folded into
 // `event-join` by ADR-826 and both components have returned `null` unconditionally ever since — yet
 // they stayed in this set, so the Layout editor offered an operator two rows to drag, order, and

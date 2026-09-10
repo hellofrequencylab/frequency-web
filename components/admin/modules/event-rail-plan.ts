@@ -73,7 +73,7 @@ export const EVENT_SETTINGS_WRITES = [
   'joinMode',
   'details.rsvpWindow.opensAt',
   'details.rsvpWindow.closesAt',
-  // ── THE `details` BAG (ADR-1306) ────────────────────────────────────────────────────────────
+  // ── THE `details` BAG (ADR-1309) ────────────────────────────────────────────────────────────
   // Everything Vera harvests off a flyer lands in `events.details`, renders as its own movable
   // block, and until now could be edited on NO surface: the manifest declared two lists and five
   // repeat groups, the writes list carried none of them, and `railForm()` filtered them all out.
@@ -214,7 +214,7 @@ export type EventComposite = (typeof EVENT_COMPOSITES)[number]['key']
 export interface EventSettingsGroup {
   section: SectionDef
   fields: FieldDef[]
-  /** The repeat groups that fall under this section, in manifest order (ADR-1306). */
+  /** The repeat groups that fall under this section, in manifest order (ADR-1309). */
   repeats: RepeatDef[]
 }
 

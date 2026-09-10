@@ -97,6 +97,6 @@ describe('the circle detail default layout (/circles/*)', () => {
 // NOT asserted for '/events/*' yet, and deliberately so: two ids in the event set
 // (event-attendees, event-checkin) are unplaced today, so they auto-append to MAIN even though the
 // layout's own comments describe them as SIDE blocks. It read "four" until 2026-09-10, when
-// ADR-1306 removed event-facts and event-warm-proof from the set entirely: both had returned null
+// ADR-1309 removed event-facts and event-warm-proof from the set entirely: both had returned null
 // since ADR-826, so they were unplaced AND undrawable. That is the same class of bug the circle header had. Fixing it changes what every event
 // page renders, which is an owner call on the event page, not a side effect of the circle trim.

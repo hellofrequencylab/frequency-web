@@ -80,7 +80,7 @@ In fixed order, each rendered only when it applies to the scope + viewer:
 > `railForm()` in `lib/studio/kernel/edit-plan.ts` (ADR-1240, 2026-09-07); all four Guided rails
 > derive from it (Practice ADR-1240, Journey ADR-1246, Circle and Event ADR-1281, which closed
 > `HYG-050`). A non-prose spark field declares its later plane with `editPlane` (ADR-1281). A
-> manifest's REPEAT GROUPS come through the same seam since ADR-1306: `railRepeats()` beside
+> manifest's REPEAT GROUPS come through the same seam since ADR-1309: `railRepeats()` beside
 > `railForm()`, rendered by `RailManifestRepeat` (a list of item cards, each row's controls the
 > group's own fields through the shared `FieldControl`). Ordered collections only; a keyed `map`
 > repeat is reported as a `keyed-repeat` drop rather than quietly omitted. No inline canvas consumes

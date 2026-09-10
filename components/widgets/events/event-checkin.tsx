@@ -7,7 +7,7 @@ import { readEventSpecialInstructions, SPECIAL_INSTRUCTIONS_LABEL } from '@/lib/
 // .ts). It self-gates to the check-in window — the event has started but not ended — so it never
 // leaves an empty slot before or after. DAWN tokens only; container-query friendly.
 //
-// THE HOST'S DOOR NOTE PRINTS HERE (ADR-1306). `events.details.specialInstructions` is the parking,
+// THE HOST'S DOOR NOTE PRINTS HERE (ADR-1309). `events.details.specialInstructions` is the parking,
 // the gate code, what to bring, the accessibility line. The create form has asked for it since the
 // first event form and NOTHING read it back: it was collected, stored, and shown to nobody. This is
 // the moment it is worth reading — the doors are open and someone is standing outside — so it rides

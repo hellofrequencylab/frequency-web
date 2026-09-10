@@ -38615,7 +38615,7 @@ text-level version fails on the sentence the control exists to print.
 
 ---
 
-## ADR-1306: ACCEPTED — a repeat group is an edit plane, and the event's `details` bag finally has one (2026-09-10)
+## ADR-1309: ACCEPTED — a repeat group is an edit plane, and the event's `details` bag finally has one (2026-09-10)
 
 **Context.** Owner, 2026-09-10: *"There are multiple blocks that the Vera event creator will create
 but I have no way to edit. For instance, there's a block for Schedule, but I have no way to edit the

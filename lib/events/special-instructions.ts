@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// THE EVENT'S CHECK-IN DETAILS — `events.details.specialInstructions` (ADR-1306).
+// THE EVENT'S CHECK-IN DETAILS — `events.details.specialInstructions` (ADR-1309).
 //
 // The host's door note: parking, the code on the gate, what to bring, an accessibility line. The
 // create form has asked for it since the first version of that form, and NOTHING in the repo ever

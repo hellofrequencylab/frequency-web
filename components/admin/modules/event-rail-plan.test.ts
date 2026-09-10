@@ -75,7 +75,7 @@ describe('the Event rail plan', () => {
     expect(EVENT_RAIL.permalink.fields.map((f) => f.path)).toEqual(['slug'])
   })
 
-  // ADR-1306. The collections were declared on the manifest from the day it was written and reached
+  // ADR-1309. The collections were declared on the manifest from the day it was written and reached
   // no edit surface at all, because `railForm` walked `fields` and stopped.
   it('carries the details COLLECTIONS as repeat groups, in manifest order, and only on the settings zone', () => {
     expect(EVENT_RAIL.settings.repeats.map((r) => r.arrayPath)).toEqual([...EVENT_REPEAT_PATHS])
@@ -188,7 +188,7 @@ describe('the Event rail plan', () => {
       'other',
     ])
     // Two sections have NO field and exist only for their collection. A filter that asked about
-    // fields alone would drop the Links editor and the Details editor and say nothing (ADR-1306).
+    // fields alone would drop the Links editor and the Details editor and say nothing (ADR-1309).
     expect(groups.find((g) => g.section.key === 'host')?.fields).toEqual([])
     expect(groups.find((g) => g.section.key === 'host')?.repeats.map((r) => r.arrayPath)).toEqual(['details.links'])
     expect(groups.find((g) => g.section.key === 'other')?.repeats.map((r) => r.arrayPath)).toEqual(['details.other'])
@@ -360,7 +360,7 @@ describe('the Event settings module renders the plan, not a field list', () => {
   })
 })
 
-// ── The details collections, read and written (ADR-1306) ────────────────────────────────────────
+// ── The details collections, read and written (ADR-1309) ────────────────────────────────────────
 
 describe('the Event rail edits the details collections', () => {
   const row = {
@@ -441,7 +441,7 @@ describe('the Event rail edits the details collections', () => {
   })
 })
 
-// ── The settings action merges the details bag rather than laundering it (ADR-1306) ─────────────
+// ── The settings action merges the details bag rather than laundering it (ADR-1309) ─────────────
 //
 // 🔴 THE TRAP THIS PINS SHUT. `coerceEventDetails` is an ALLOW-LIST over the poster harvest: it
 // keeps the eight keys it knows and DROPS the rest. `rsvpWindow` is not one of them, and two SQL

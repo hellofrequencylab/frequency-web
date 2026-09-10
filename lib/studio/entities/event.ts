@@ -174,7 +174,7 @@ export const EVENT_MANIFEST: EntityManifest = {
     { path: 'description', label: 'Description', kind: 'longtext', section: 'story', placement: 'inline', prose: true, veraDrafts: true },
     // "Good to know" is what the PAGE calls this list (PosterFeatures' own heading), so the editor
     // calls it that too. It read "What is included" until 2026-09-10, which named the same list a
-    // second way in the one place a host edits it (ADR-1306).
+    // second way in the one place a host edits it (ADR-1309).
     { path: 'details.features', label: 'Good to know', kind: 'tags', section: 'story', veraDrafts: true, omitWhenEmpty: true, read: (d) => list((d.details as Record<string, unknown> | undefined)?.features) },
 
     // ── When. The start is the second thing Vera cannot invent, so the Spark asks it. ──
@@ -222,7 +222,7 @@ export const EVENT_MANIFEST: EntityManifest = {
     { path: 'hideAddress', label: 'Hide the address until someone registers', kind: 'toggle', section: 'where', veraDrafts: false },
     // THE DOOR NOTE, `events.details.specialInstructions`. The create form has asked for it since
     // the first event form and NOTHING has ever read it back or offered a way to change it: it was
-    // write-only for the life of the column (ADR-1306). Declared here so the settings rail edits it,
+    // write-only for the life of the column (ADR-1309). Declared here so the settings rail edits it,
     // and the check-in block now prints it. Not prose: it is a list of practical facts (parking, a
     // door code, what to bring, an accessibility note), not the page's narrative.
     { path: 'details.specialInstructions', label: SPECIAL_INSTRUCTIONS_LABEL, kind: 'longtext', section: 'where', veraDrafts: true, omitWhenEmpty: true, read: (d) => str((d.details as Record<string, unknown> | undefined)?.specialInstructions) },
@@ -279,7 +279,7 @@ export const EVENT_MANIFEST: EntityManifest = {
   // Each `label` is the heading the GUEST-facing block already prints (components/events/
   // poster-details.tsx): a host editing "Schedule" in the rail is editing the box titled Schedule
   // on the page. Deriving them from the path would be right by luck and wrong for `details.other`,
-  // which the page calls Details (ADR-1306).
+  // which the page calls Details (ADR-1309).
   repeats: [
     {
       arrayPath: 'details.tickets',

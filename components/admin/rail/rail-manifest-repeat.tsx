@@ -1,7 +1,7 @@
 'use client'
 
 // ─────────────────────────────────────────────────────────────────────────────
-// A REPEAT GROUP IN THE RAIL (ADR-1306, docs/EDITING-SYSTEM.md §2).
+// A REPEAT GROUP IN THE RAIL (ADR-1309, docs/EDITING-SYSTEM.md §2).
 //
 // The sibling of `RailManifestFields`, for the other half of a manifest. A `RepeatDef` is a TABLE
 // OF ROWS — an Event's ticket tiers, its set times, its links — and until this existed there was

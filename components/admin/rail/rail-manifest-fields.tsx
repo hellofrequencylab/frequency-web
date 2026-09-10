@@ -84,7 +84,7 @@ export function RailManifestFields({
               // A LIST kind's control takes and returns an array; the values bag and the FormData
               // carry one string. `rail-field-value.ts` owns both halves of that conversion —
               // handing the joined string straight back is how three tags became one chip
-              // spelled "a, b, c" on the Journey rail (ADR-1306).
+              // spelled "a, b, c" on the Journey rail (ADR-1309).
               value={splitFieldValue(def.kind, values[def.path])}
               onChange={(next) => onChange(def.path, joinFieldValue(next))}
               placeholder={placeholders?.[def.path]}

@@ -64,7 +64,7 @@ keeps the translation beside the plan, restating each action's signature once wh
 it against the manifest: the Journey's JSON-patch key maps, the Circle's and Event's snake_case
 column maps and FormData builders.
 
-A manifest's **repeat groups** ride the same seam (ADR-1306). `railRepeats(manifest, writes)`
+A manifest's **repeat groups** ride the same seam (ADR-1309). `railRepeats(manifest, writes)`
 returns the collections a save path persists, `RailForm` carries them beside its fields, and
 `RailManifestRepeat` (`components/admin/rail/`) renders one as a list of item cards whose controls
 are the group's own fields through the shared `FieldControl` — it declares no field and knows no

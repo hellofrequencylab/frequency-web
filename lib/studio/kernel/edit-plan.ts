@@ -38,7 +38,7 @@ export function editPlan(manifest: EntityManifest): EditPlan {
  * the canvas and the rail is not hosting it; a `spark-only` path is asked at creation and is on
  * no edit plane at all, because it is not prose and declares no `editPlane` (ADR-1281); a
  * `keyed-repeat` path is a collection stored as a MAP, which the rail's ordered list editor
- * cannot represent (ADR-1306) — a drop rather than a silent half-render, because a swallowed
+ * cannot represent (ADR-1309) — a drop rather than a silent half-render, because a swallowed
  * fail-safe is an invisible regression.
  */
 export type RailDropReason = 'unknown' | 'inline' | 'spark-only' | 'keyed-repeat'
@@ -47,7 +47,7 @@ export interface RailForm {
   /** The fields the form renders, in MANIFEST order. */
   fields: FieldDef[]
   /**
-   * The repeat GROUPS the form renders, in manifest order (ADR-1306). A repeat is a table of rows,
+   * The repeat GROUPS the form renders, in manifest order (ADR-1309). A repeat is a table of rows,
    * not a column, so it renders through its own list control rather than beside the fields — but it
    * is the same seam: the manifest declares the group and its per-item fields, and the form says
    * only that its save path persists the collection.
@@ -68,7 +68,7 @@ export interface RailFormOptions {
 
 /**
  * The REPEAT GROUPS one rail form renders: the manifest's repeats whose collection the form's save
- * path persists (ADR-1306). PURE and entity-blind like the rest of the kernel.
+ * path persists (ADR-1309). PURE and entity-blind like the rest of the kernel.
  *
  * ORDERED COLLECTIONS ONLY. A `map` repeat is keyed by an id, one entry per key (a Practice's
  * `focus_details`, one per Pillar); it has no order to drag and no row to add, so an add/remove/
@@ -82,7 +82,7 @@ export function railRepeats(manifest: EntityManifest, writes: readonly string[])
 
 /**
  * The fields ONE rail form renders: the manifest's rail plane (plus its inline plane when the rail
- * is hosting it), restricted to the columns the form's save action writes. Plus, since ADR-1306,
+ * is hosting it), restricted to the columns the form's save action writes. Plus, since ADR-1309,
  * the repeat GROUPS the same save path persists (`railRepeats`) — a repeat is a table of rows, so
  * it arrives beside the fields rather than among them and renders through its own list control.
  */
