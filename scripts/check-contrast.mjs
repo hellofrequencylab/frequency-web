@@ -321,12 +321,20 @@ export const WAIVERS = [
     floors: { 'Light-lock on a dark device': 3.32, 'DAWN light': 3.32, 'Midnight light': 3.32 },
     why: 'Warning chip text at 3.32:1 — the weakest of the chip set.',
   },
-  {
-    fg: '--color-info',
-    bg: '--color-info-bg',
-    floors: { 'Light-lock on a dark device': 4.41, 'DAWN light': 4.41, 'Midnight light': 4.41 },
-    why: 'Info chip text at 4.41:1 — a near miss.',
-  },
+  // 🔴 THE INFO CHIP WAIVER IS GONE, FIXED RATHER THAN CARRIED (2026-09-10, ADR-1317). It sat here
+  // at 4.41 reading "a near miss", and a near miss is still a miss to the person who cannot read
+  // the chip. What ended it was not this file: the FIRST a11y audit that could actually reach
+  // /admin/content/practices failed on twenty-one of these chips in one table, as serious axe
+  // violations. A waiver is a decision to accept a barrier, and this one had quietly become a
+  // decision to accept twenty-one of them on one page.
+  //
+  // ⚠️ THE LESSON, WHICH THE THREE WAIVERS BELOW STILL CARRY. A waived pairing is invisible to
+  // check:contrast BY DESIGN and fully visible to axe the moment a page carrying it is reachable
+  // by the audit. So a waiver here does not make CI safe; it makes CI quiet while the live gate
+  // holds the real opinion. broadcast-strong (3.99), success (3.87) and warning (3.32) are the same
+  // shape and WORSE, and each will fail an audit the same way the day a reachable page carries one.
+  // Filed as LIVE-300 rather than swept into this change: they are a palette decision, and this one
+  // was forced by a failing audit.
   {
     fg: '--color-warning',
     bg: '--color-surface',
