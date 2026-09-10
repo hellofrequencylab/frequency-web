@@ -39339,4 +39339,10 @@ that appeared the moment the console became reachable. `PW_REQUIRE_OPERATOR` is 
 remaining `/admin/library` gap is a loud warning rather than a failure — which is the correct state
 while its cause is unknown.
 
-**Rows.** HYG-027 closed · LIVE-289 · LIVE-300.
+**Rows.** LIVE-289 · LIVE-300. **HYG-027 closes with the baselines, not here.** This decision ships
+as two pull requests because the 40-file size gate is right to refuse them as one: the ~169
+regenerated PNGs are a single mechanical edit and carry the `[sweep]` tag truthfully, while the
+token correction, the removed waiver, the DAWN ledger row and this ADR are not. HYG-027's probe
+asks for a committed `admin*` baseline, so the row closes in the sweep, which is the change that
+actually satisfies it. Merge the correction first: new-token baselines against an old-token
+production would make `pr-compare` diff every info chip on the way past.
