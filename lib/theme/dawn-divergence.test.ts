@@ -141,6 +141,29 @@ const DECLARED: Divergence[] = [
   // either stylesheet moves and the two disagree, `divergences()` returns a row this list does not
   // have and the test fails. Empty means "they agree today", re-proven on every run — never
   // "nobody looked".
+  //
+  // 🔴 AND ON 2026-09-10 IT CAUGHT ONE, WHICH IS THE LIST DOING ITS JOB RATHER THAN THE LIST BEING
+  // WRONG. It was empty for fifteen days and then a production change moved a colour; the run went
+  // red naming the token, the mode and both hexes, before the sheet could go stale about it.
+  {
+    token: '--color-info',
+    mode: 'light',
+    dawn: '#2F6FB0',
+    prod: '#2C6AA8',
+    // WHY PRODUCTION IS RIGHT HERE, and it is measured rather than preferred (ADR-1317).
+    // DAWN's value fails AA on DAWN's OWN chip: #2F6FB0 on --color-info-bg (#E3EDF7, which both
+    // projects agree on) is 4.407:1 against a 4.5 bar for body text. It was almost certainly
+    // chosen against white, where it reads 5.13 and passes comfortably — but `bg-info-bg
+    // text-info` is how the chip is built everywhere it appears.
+    //
+    // It was not caught earlier because `check-contrast.mjs` had the pair WAIVED at a frozen 4.41
+    // as "a near miss". The first a11y audit that could reach /admin/content/practices failed on
+    // twenty-one of these chips in one table, as serious axe violations. #2C6AA8 measures 4.746 on
+    // the chip fill and 5.62 on white, so both readings clear.
+    //
+    // The dark-mode pairing is untouched: #6FA8DC on #15212E is 6.448 and the two projects still
+    // agree on it, which is why only the light row is here.
+  },
 ]
 
 /** Tokens production has and DAWN does not. Sent as ADDITIONS, not as corrections. */

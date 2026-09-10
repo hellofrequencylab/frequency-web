@@ -17,17 +17,24 @@ green). The outbound round that copies this sheet is
 
 ---
 
-## 0. ✅ THE COLOUR DIVERGENCE IS CLOSED — §2, §3 and §5 are history, not a to-do
+## 0. ✅ THE 2026-08 COLOUR ROUND IS CLOSED — §2, §3 and §5 are history, not a to-do
 
 **Do not send §2, §3 or §5. There is nothing in them left to apply.**
 
+🔴 **ONE NEW COLOUR CORRECTION OPENED ON 2026-09-10 AND IS OUTSTANDING: `--color-info`, §8.** It is
+not part of the round below and does not reopen it. This heading read "THE COLOUR DIVERGENCE IS
+CLOSED" until that day; the round it describes is closed, the subject is not, and a sheet whose
+first line says "closed" over a live row is the exact staleness §7 exists to prevent.
+
 DAWN applied every correction on 2026-08-25 (`CHANGES.md` §2). The vendored copy lagged three
 weeks, so this sheet went on listing them; on **2026-08-26** `design_handoff/dawn/tokens/colors.css`
-was brought up to that round and the two now agree on **every colour token**.
+was brought up to that round and the two agreed on **every colour token** for the next fifteen days.
 
-`lib/theme/dawn-divergence.test.ts` derives the set on every `pnpm test` and its ledger is now
-**empty in both directions** — no value divergence, and no colour token production has that DAWN
-lacks. That is a re-proven fact, not a claim.
+`lib/theme/dawn-divergence.test.ts` derives the set on every `pnpm test`. Its ledger held **empty in
+both directions** from 2026-08-26 until **2026-09-10**, when a production change to `--color-info`
+turned the run red naming the token, the mode and both hexes (§8). That is the ledger working: an
+empty list is a re-proven fact, and the moment it stopped being true the build said so before this
+sheet could go quietly stale about it. The prod-only direction is still empty.
 
 ⚠️ **The values were TRANSCRIBED, not exported.** They were written from what `CHANGES.md` §2
 documents, with the twelve additions taking their hexes from §5 below (CHANGES.md names those twelve
@@ -36,21 +43,22 @@ confirmation — but it is **not** a DAWN export.
 
 | | |
 | :--- | :--- |
-| **What is actually outstanding** | Only §6a, the hero plate — and it is a correction going TO DAWN, not one coming from it. |
+| **What is actually outstanding** | §6a, the hero plate, and §8, the info chip — both corrections going TO DAWN, not ones coming from it. |
 | **What the rest of the bundle is** | Still the 2026-08-03 photocopy. Five markers pending: `tokens/effects.css`, `ui_kits/marketing/sections.jsx`, `ui_kits/app/index.html`, `ui_kits/marketing/beta.jsx`, `ui_kits/app/nav-rail.jsx`, plus `guidelines/on-media.card.html` which never arrived. |
 | **Why those were not transcribed too** | They are **design** work — four hero rungs, a rewritten nav rail, new banner copy, a whole guideline card. Writing those from a prose description would be inventing an artifact rather than copying one. DAWN made exactly that mistake this round: it drew a plate from a description production had deleted (§6a). |
 | **Who** | Owner — `LIVE-127`. `pnpm check:dawn-bundle` tracks which markers are pending and fails if any arrives undeclared. |
 
 **§2, §3 and §5 are kept below as the record of what was reconciled and why each value is what it
-is.** They are no longer an outbound ask. The next handoff carries **§6a**.
+is.** They are no longer an outbound ask. The next handoff carries **§6a and §8**.
 
 ---
 
 ## 1. The answer, first
 
 **Nothing in §2, §3 or §5 is outstanding — all of it is applied on both sides as of 2026-08-26.**
-See §0. The one live outbound item is **§6a: production has no hero plate in any rung**, and DAWN
-drew four. `--color-text-on-primary` remains the row that must never be sent (§4).
+See §0. Two live outbound items: **§6a, production has no hero plate in any rung** and DAWN drew
+four; and **§8, `--color-info` fails AA on DAWN's own chip fill** and production has corrected it.
+`--color-text-on-primary` remains the row that must never be sent (§4).
 
 ---
 
@@ -203,3 +211,39 @@ with the feed skeleton spec DAWN already offered, since it is the same law on a 
 2. Run `pnpm test lib/theme/dawn-divergence.test.ts`. It prints exactly which rows are wrong.
 3. Update the ledger in that test **and** this sheet in the same change. Neither is allowed to
    drift from the CSS, and neither is allowed to drift from the other.
+
+---
+
+## 8. Correction — `--color-info` fails AA on DAWN's own chip fill
+
+**Replace in `tokens/colors.css`, light mode only:**
+
+| Token | DAWN | Production | Why |
+| :--- | :--- | :--- | :--- |
+| `--color-info` | `#2F6FB0` | **`#2C6AA8`** | 4.407:1 on the info chip, against a 4.5 bar |
+
+**The measurement, on the pairing as it is actually built.** Both projects agree that
+`--color-info-bg` is `#E3EDF7`, and every info chip in the product is `bg-info-bg` + `text-info`.
+`#2F6FB0` on that fill is **4.407:1**. AA for body text is 4.5. `#2C6AA8` is **4.746** on the chip
+fill and **5.62** on white, so it clears in both places it is used.
+
+**The likely origin, because it explains the shape of the mistake.** `#2F6FB0` reads **5.13** on
+white and passes comfortably there. A tone checked against the page background rather than against
+its own chip fill is the failure mode; it is worth checking the other status tones the same way.
+
+**Why it took until now to see.** `scripts/check-contrast.mjs` declared the pair *and waived it*, at
+a frozen floor of 4.41, noted as "a near miss". A waived pairing is invisible to that gate by design
+and fully visible to axe the moment a page carrying it becomes reachable by the audit. The first
+accessibility run that could reach `/admin/content/practices` failed on **twenty-one** of these
+chips in a single table, as **serious** violations. The waiver is now removed rather than re-floored.
+
+⚠️ **Dark mode is untouched and must stay that way.** `#6FA8DC` on `#15212E` measures **6.448** and
+the two projects still agree on it. Only the light row moves.
+
+📌 Three sibling pairings are the same shape and worse, and are **not** part of this correction:
+`--color-broadcast-strong` on its fill (3.99), `--color-success` (3.87), `--color-warning` (3.32).
+They are tracked as `LIVE-300` and want a palette decision rather than a one-token nudge, but DAWN
+should expect them to arrive.
+
+Recorded in [`ADR-1317`](../docs/DECISIONS.md) and in the ledger of
+`lib/theme/dawn-divergence.test.ts`.
