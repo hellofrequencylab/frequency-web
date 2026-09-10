@@ -39274,6 +39274,70 @@ codebase eats real code.
 
 ---
 
+## ADR-1315: ACCEPTED — check-in is one surface in the event header: the countdown that becomes the door (2026-09-10)
+
+**Context.** Owner, 2026-09-10: *"I want to move and combine both the 'Check in at the door to earn
++25 Zaps' line, and the Check In Box from the box editor... I want the check in box to have a
+countdown function showing Event Start in 00:00:00. When check in opens, that box converts to the
+check in function for members... styled to fit perfectly in the header box... blend it into
+background canvas without borders."*
+
+Check-in was spread across three surfaces, each of which knew a different amount about it:
+
+| Surface | Where | What it knew | What it got wrong |
+|---|---|---|---|
+| `EventRewardStrip` | identity region, under the title | the Zap amount | 🔴 never read the host's check-in switch, so it promised **+25 Zaps on every event**, including ones whose door was deliberately shut |
+| `event-checkin` block | wherever an operator dragged it | the window, the host's door note | drew **only** inside the window, so for almost the whole life of an event it was an empty slot somebody had placed |
+| `EventCheckInButton` | inside the Join box | everything | the only thing that could actually check you in, and it sat below the fold |
+
+Three readings of one question, and the one that could act was the one hardest to find.
+
+**Decision.**
+
+- **One state function decides, and it is pure.** `checkInSurfaceState()` (`lib/events/checkin-surface.ts`)
+  takes the gates the event page already resolves server-side — cancelled, the host's switch, the
+  window, signed-in, going, the `event_checkin:<event>:<profile>` idempotency row — and returns one
+  of five states: `hidden` · `countdown` · `open` · `done` · `waiting`. The component renders a
+  state and owns no rules, so every state is enumerable in a unit test with no session, no
+  deployment and no clock. ⚠️ It is **not** an authorization boundary: `checkInEvent` re-checks all
+  six of its own gates against the database on every call, and that is the one that counts.
+- **Two orderings are load-bearing.** The host's switch outranks the reward line, which is the
+  defect above. And `alreadyCheckedIn` outranks `isGoing`, because attendance is a thing that
+  happened and an RSVP is an intention: a member who cancels after checking in must not be told the
+  door is open to them again.
+- **It lives in the header's action column, under Share | Manage | Edit**, capped at `16rem` and
+  wrapping inside itself. `DetailTemplate` lays the band out as `title (min-w-0) | actions
+  (sm:shrink-0)`, so the actions column takes its natural width and the H1 absorbs every pixel of
+  the squeeze. The owner's constraint was explicit — this must not push the left content onto
+  another line — so the box grows in **height**, not width, and the row above it already measured
+  ~235px. `bg-canvas` with no border is the "blend into the canvas" ask; the token is named, never
+  a hex, because all five skins redeclare it.
+- **The clock is `00:00:00` under a day and `Nd HH:MM` above it.** An hours-only clock stops being
+  a time at "172:04:11", and nobody watches seconds tick on a gathering three days out. Fixed width
+  plus `tabular-nums`, so a live clock does not make the header breathe once a second.
+- **`event-checkin` leaves `EVENT_DETAIL_MODULE_IDS` and is PARKED.** That is a **third** reason a
+  block leaves the set, distinct from the two already recorded there: not a duplicate (the #1675
+  cleanup) and not retired code (ADR-1309), but a feature that **moved somewhere it can be seen**.
+  Its definition and component stay bound, so nothing here resurrects a ghost row. The host's
+  `events.details.specialInstructions` door note moved with it rather than being un-read again.
+- **The Join box's own check-in button is removed.** Two live doors for one idempotent action is
+  the scatter this change exists to end. The quiet Cancel RSVP stays, because it has no counterpart
+  in the header and is now the reason that branch exists.
+
+**Consequences.** A member watches one box from the moment they open the page: it counts down, then
+it becomes the button, then it says they are in. An event with check-in switched off says nothing at
+all, which is what "off" meant everywhere else already. The identity `reward` slot stays in
+`EventIdentitySlots` (it is part of the documented order and the template's equivalence test stubs
+it) and is simply unfilled on this page.
+
+⚠️ **`startsAtMs` is resolved through `eventInstant(iso, zone)`, never `new Date(starts_at)`.** That
+column carries the host's wall clock in UTC parts, so the raw string counts down to the wrong moment
+by the zone's whole offset — the seven-hour bug ADR-1150 fixed on the guest door, which a countdown
+is the perfect shape to reintroduce.
+
+**Rows.** LIVE-287.
+---
+
 ## ADR-1316: ACCEPTED — nine `/events` layout rows an operator never meant to create, and the eleven that stay (2026-09-10)
 
 **Context.** Owner, 2026-09-10: *"I've saved the layout like this a few times and it keeps

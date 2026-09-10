@@ -635,6 +635,16 @@ const CIRCLE_DETAIL_MODULE_IDS = [
 // (the poster key-value details) is likewise out of the default set. Both module DEFINITIONS stay
 // in LAYOUT_MODULES so an operator can re-add either from the Layout editor; they're just absent
 // from the out-of-the-box layout.
+// ONE MORE LEFT THE SET on 2026-09-10 (ADR-1315), and it is the THIRD distinct reason a block
+// leaves: not a duplicate, not retired code, but a feature that MOVED somewhere it can be seen.
+// `event-checkin` drew "Check-in is open" plus the host's door note, and drew it only while the
+// window was open — so an operator could place it, order it, and see nothing for 99% of the
+// event's life, then find it in a slot they had chosen months earlier at the one moment they were
+// busy running a room. It now renders in the event header, beside Share | Manage | Edit, as the
+// box that counts down to the doors and then becomes them. The host's `specialInstructions` note
+// went with it rather than being dropped. Its DEFINITION stays in LAYOUT_MODULES and it is named
+// in the reachability guard's PARKED list, so nothing here resurrects a ghost row.
+//
 const EVENT_DETAIL_MODULE_IDS = [
   // Post area (defaults to MAIN) — every poster section is its own movable block (no lumping).
   'event-description',
@@ -652,11 +662,10 @@ const EVENT_DETAIL_MODULE_IDS = [
   // the default layout (self-hides for an online event or with no address/geo).
   'event-location',
   // Spine-paired blocks (LP-EVENT): Place & Time → the Event Details card (dates, times,
-  // recurrence, booking window, add-to-calendar — always renders); People → waitlist; Engage →
-  // check-in. The latter two self-hide when they have nothing.
+  // recurrence, booking window, add-to-calendar — always renders); People → waitlist. The latter
+  // self-hides when it has nothing.
   'event-when-where',
   'event-attendees',
-  'event-checkin',
 ] as const
 
 /** Scope key → the module ids that page offers. A key is the global default ('*'), a section

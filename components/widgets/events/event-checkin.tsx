@@ -2,6 +2,12 @@ import { QrCode } from 'lucide-react'
 import { getEventContext } from '@/lib/events/active-event'
 import { readEventSpecialInstructions, SPECIAL_INSTRUCTIONS_LABEL } from '@/lib/events/special-instructions'
 
+// 🔴 PARKED SINCE 2026-09-10 (ADR-1315) — this block is BOUND but no longer OFFERED. The check-in
+// feature moved into the event header, where it is the box that counts down to the doors and then
+// becomes them, and the host's door note went with it. `event-checkin` left EVENT_DETAIL_MODULE_IDS
+// and is named in the reachability guard's PARKED list; the definition and this component stay so a
+// future surface can adopt them. Nothing renders this today, and that is the intended state.
+//
 // The movable CHECK-IN block (the `event-checkin` layout module, paired with the Engage editor).
 // A zero-prop self-fetching RSC reading the request-scoped event context (lib/events/active-event
 // .ts). It self-gates to the check-in window — the event has started but not ended — so it never
