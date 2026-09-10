@@ -105,10 +105,94 @@ export async function listSpaceEventAccess(
   }
 }
 
+/** The managed members ticket on one event: any `space_members_only` row, the ACTIVE one winning
+ *  over a retired one. One read per event, shared by the writer below and its series fan-out. */
+async function findManagedTier(
+  admin: ReturnType<typeof createAdminClient>,
+  eventId: string,
+): Promise<{ id: string; active: boolean } | null> {
+  const { data: gates } = await admin
+    .from('event_ticket_types')
+    .select('id, active, sort_order')
+    .eq('event_id', eventId)
+    .eq('space_members_only', true)
+    .order('active', { ascending: false })
+    .limit(1)
+  return ((gates ?? []) as unknown as { id: string; active: boolean }[])[0] ?? null
+}
+
+/** Apply an already-authorized, already-validated access decision to ONE event. Returns false on a
+ *  write failure so the caller can report it. Every authorization, plan and tier-ownership check
+ *  stays in `setSpaceEventAccess`, which is what makes this safe to run over a series' dates: the
+ *  decision is made once, about the series, and only the WRITE is repeated. */
+async function writeEventAccess(
+  admin: ReturnType<typeof createAdminClient>,
+  eventId: string,
+  decision: { retire: true } | { retire: false; tierId: string | null; name: string },
+): Promise<boolean> {
+  const existing = await findManagedTier(admin, eventId)
+
+  if (decision.retire) {
+    // Retire (never delete — sold/claimed history stays attached).
+    if (!existing || !existing.active) return true
+    const { error } = await admin
+      .from('event_ticket_types')
+      .update({ active: false })
+      .eq('id', existing.id)
+      .eq('event_id', eventId)
+    return !error
+  }
+
+  if (existing) {
+    const { error } = await admin
+      .from('event_ticket_types')
+      .update({ active: true, space_tier_id: decision.tierId, space_members_only: true })
+      .eq('id', existing.id)
+      .eq('event_id', eventId)
+    return !error
+  }
+  const { error } = await admin.from('event_ticket_types').insert({
+    event_id: eventId,
+    name: decision.name,
+    description: null,
+    pricing_mode: 'free',
+    sort_order: 1,
+    active: true,
+    space_members_only: true,
+    space_tier_id: decision.tierId,
+  })
+  return !error
+}
+
+/**
+ * The FUTURE materialised occurrences of a series anchor (ADR-1306).
+ *
+ * A recurring event's occurrences are real `events` rows, and their members ticket is a row of
+ * their own. Granting access on the anchor alone therefore covered exactly one date — the one
+ * nobody attends after the first week — while every materialised date stayed uncovered. Same rule
+ * as `propagateAnchorEditsToOccurrences`: PAST occurrences are never touched, because a past
+ * occurrence is the record of a gathering that already happened.
+ *
+ * Returns [] for a standalone event, so the caller needs no branch.
+ */
+async function futureOccurrenceIds(
+  admin: ReturnType<typeof createAdminClient>,
+  anchorId: string,
+): Promise<string[]> {
+  const { data } = await admin
+    .from('events')
+    .select('id')
+    .eq('parent_event_id', anchorId)
+    .gte('starts_at', new Date().toISOString())
+  return ((data ?? []) as { id: string }[]).map((r) => r.id)
+}
+
 /** Set an event's members-ticket state from the membership settings: 'none' retires the members
  *  ticket; 'members' opens it to any active membership; a tier id narrows it to that tier. Creates
  *  the FREE members ticket when the event doesn't have one yet. Manager-gated; Collective-floor
- *  plan gate; the event must be hosted by this Space; a tier id must be this Space's tier. */
+ *  plan gate; the event must be hosted by this Space; a tier id must be this Space's tier.
+ *
+ *  ON A SERIES ANCHOR the same decision reaches its FUTURE occurrences (ADR-1306). */
 export async function setSpaceEventAccess(
   spaceId: string,
   eventId: string,
@@ -121,10 +205,18 @@ export async function setSpaceEventAccess(
   // The event must be HOSTED by this Space (the same resolution the checkout gates on).
   const { data: ev } = await admin
     .from('events')
-    .select('id, space_id, host_space_id')
+    // `parent_event_id` rides along so an ANCHOR can fan the decision out to its own future dates.
+    // A child row is left as a single event: the fan-out belongs to the series, and reaching
+    // upward from one date would silently re-open access the host retired on the anchor.
+    .select('id, space_id, host_space_id, parent_event_id')
     .eq('id', eventId)
     .maybeSingle()
-  const evRow = ev as { id: string; space_id: string | null; host_space_id: string | null } | null
+  const evRow = ev as {
+    id: string
+    space_id: string | null
+    host_space_id: string | null
+    parent_event_id: string | null
+  } | null
   // 🔴 Root EXCLUDED, and here it is an AUTHORIZATION boundary, not a label. The raw pair resolved
   // every root-stamped (i.e. ordinary personal) event to the root tenant, so an operator working
   // the ROOT Space's console passed this check on other members' events.
@@ -133,25 +225,16 @@ export async function setSpaceEventAccess(
     return fail('That event is not hosted by this space.')
   }
 
-  // Find the managed members ticket (any gated row; the active one wins).
-  const { data: gates } = await admin
-    .from('event_ticket_types')
-    .select('id, active, sort_order')
-    .eq('event_id', eventId)
-    .eq('space_members_only', true)
-    .order('active', { ascending: false })
-    .limit(1)
-  const existing = ((gates ?? []) as unknown as { id: string; active: boolean }[])[0] ?? null
+  // An ANCHOR carries its future dates with it; a standalone event resolves to [].
+  const alsoApplyTo =
+    evRow.parent_event_id == null ? await futureOccurrenceIds(admin, eventId) : []
 
   if (audience === 'none') {
-    // Retire (never delete — sold/claimed history stays attached).
-    if (existing && existing.active) {
-      const { error } = await admin
-        .from('event_ticket_types')
-        .update({ active: false })
-        .eq('id', existing.id)
-        .eq('event_id', eventId)
-      if (error) return fail('Could not update event access. Try again.')
+    if (!(await writeEventAccess(admin, eventId, { retire: true }))) {
+      return fail('Could not update event access. Try again.')
+    }
+    for (const occurrenceId of alsoApplyTo) {
+      await writeEventAccess(admin, occurrenceId, { retire: true })
     }
     return ok()
   }
@@ -193,26 +276,19 @@ export async function setSpaceEventAccess(
     if (!tier) return fail('That membership tier does not belong to this space.')
   }
 
-  if (existing) {
-    const { error } = await admin
-      .from('event_ticket_types')
-      .update({ active: true, space_tier_id: tierId, space_members_only: true })
-      .eq('id', existing.id)
-      .eq('event_id', eventId)
-    if (error) return fail('Could not update event access. Try again.')
-    return ok()
-  }
   const brand = spRow?.brand_name ?? spRow?.name
-  const { error } = await admin.from('event_ticket_types').insert({
-    event_id: eventId,
+  const decision = {
+    retire: false as const,
+    tierId,
     name: brand ? `${brand} Member` : 'Members',
-    description: null,
-    pricing_mode: 'free',
-    sort_order: 1,
-    active: true,
-    space_members_only: true,
-    space_tier_id: tierId,
-  })
-  if (error) return fail('Could not update event access. Try again.')
+  }
+  if (!(await writeEventAccess(admin, eventId, decision))) {
+    return fail('Could not update event access. Try again.')
+  }
+  // The occurrences are best-effort: the host's decision is recorded on the series, and one date
+  // whose write failed is healed the next time access is set rather than losing the whole action.
+  for (const occurrenceId of alsoApplyTo) {
+    await writeEventAccess(admin, occurrenceId, decision)
+  }
   return ok()
 }

@@ -38612,3 +38612,91 @@ retired preset LABELS are sentences `describeRepeat` still legitimately produces
 Wednesday" is exactly what the read-back line says for that rule, and it should. So the
 preset-absence assertion is made against the `<option>` list, not against the control's text; a
 text-level version fails on the sentence the control exists to print.
+
+---
+
+## ADR-1306: ACCEPTED — a materialised occurrence inherits its anchor's ticket tiers, which are rows and not columns (2026-09-10)
+
+**Context.** Owner, on the Meld series: the occurrences of a $22 weekly cowork take an RSVP and
+never a payment, and a Space membership that includes the event covers the anchor and nothing else.
+
+The production reading, taken before writing any of this:
+
+| row | slug | price_cents | join_mode | tiers | members-only tiers |
+|---|---|---|---|---|---|
+| anchor | `meld-community-coworking-royal-temple` | 2200 | rsvp | **2** | **1** |
+| occurrence | `meld-coworking-royal-temple-2026-09-16` | 2200 | rsvp | **0** | **0** |
+
+`generateOccurrencesForAnchor` mints occurrences as REAL `events` rows and copies
+`INHERITED_COLUMNS` onto each. That list is careful, it is shared with the propagation patch so the
+two halves cannot drift, and it is structurally incapable of carrying this: **it copies columns of
+the `events` row, and a ticket tier is a ROW in `event_ticket_types` keyed by `event_id`**. So
+`price_cents` travelled and the tiers did not, and the occurrence LOOKED priced while carrying no
+way to charge.
+
+Two consequences, both of them the owner's report:
+
+- **No charge is ever attempted.** `app/(main)/events/[slug]/page.tsx` renders the payment flow only
+  when `isPaidEvent && hasTiers`. With zero tiers `hasTiers` is false, the plain RSVP controls
+  render, and a member RSVPs free to a $22 gathering.
+- **Membership coverage cannot apply.** Space-membership inclusion is MODELLED as a members-only
+  tier row (`space_members_only` / `space_tier_id`, ADR-823), written by `setSpaceEventAccess`.
+  With no tier rows on the occurrence there is nothing for a membership to be included by.
+
+This is the ADR-883 shape again — the write never reaches what the readers consult — with one twist
+worth naming: the missing write is a second TABLE, not a second column, so no amount of care about
+the column list could have caught it, and the gate that would have is the one added below.
+
+**Decision.** Three writes and a repair, all sharing one list.
+
+1. **`occurrenceTierRows(anchorTiers, occurrenceEventId)`** in `lib/event-recurrence.ts` — pure,
+   the sibling of `occurrenceRow`, built from a single `TIER_CATALOG_COLUMNS` constant. It carries
+   the CATALOG (name, description, pricing mode and every amount it reads, the inventory cap, both
+   membership gates, sort order, and `active`) and resets identity + sales state **by omission**, so
+   the column defaults own them: `id` (a new row, and `event_tickets.ticket_type_id` points at
+   exactly one), `sold`, and `created_at`. `event_id` is the occurrence's.
+   🔴 **`sold` is the reset that matters.** It is the running count of succeeded purchases, owned by
+   the Stripe webhook and the refund handler, and it is the only sales counter on the table (a
+   pending reservation is counted from `event_tickets` inside `reserve_ticket_atomic`, never stored).
+   A copied `sold` against a copied `quantity` would mark a brand new date SOLD OUT on the day it
+   was minted and the first buyer would be refused.
+2. **The mint copies them, for the rows THAT RUN created and no others.** The occurrence upsert now
+   returns its ids; with `ignoreDuplicates` the statement is `ON CONFLICT DO NOTHING`, so what comes
+   back is exactly what was inserted. A date whose tiers a host has since edited is therefore never
+   overwritten or doubled, and any target that somehow already carries a tier is skipped as well —
+   the two together are what make a re-run idempotent. The copy is best-effort: the occurrences are
+   already written and a tier failure must not report them as unwritten.
+3. **`setSpaceEventAccess` fans out over the series.** Granting or retiring membership access on a
+   series ANCHOR now applies the same decision to the anchor's FUTURE occurrences. Every
+   authorization, plan and tier-ownership check stays where it was, made once about the series; only
+   the WRITE repeats. PAST occurrences are never touched — the same rule
+   `propagateAnchorEditsToOccurrences` and `retireStaleOccurrences` follow — and a CHILD never
+   reaches upward, because the fan-out belongs to the series and reaching up from one date would
+   silently re-open access a host retired on the anchor.
+4. **`scripts/backfill-occurrence-ticket-tiers.mts`** for the drift already in production. A
+   deliberate operator script, not a migration and not a cron: it writes money configuration onto
+   live gatherings people can already see, so it prints every row it would create and writes nothing
+   without `--apply`. Future, tierless occurrences of tier-carrying anchors only, re-reading each
+   date immediately before its write.
+
+**The gate that catches the next version of this.** `lib/event-recurrence.test.ts` reads the real
+column set of `event_ticket_types` out of `lib/database.types.ts` and asserts that **every column is
+classified** — carried by `TIER_CATALOG_COLUMNS`, or on the four-name reset list. A migration that
+adds a tier column is neither, so CI fails until someone decides which it is, rather than every
+occurrence minted afterwards quietly carrying a default. The backfill repeats the column list
+(it cannot import a module that resolves `@/lib/...` aliases) and a second test pins the two lists
+identical — the same contract the ADR-884 SQL repair has carried since it was written, for the same
+failure: a column added to the mint and not the repair leaves every already-materialised date
+holding a defaulted value forever.
+
+**Consequences.** `generateOccurrencesForAnchor` now returns what was ACTUALLY written rather than
+what was attempted; under a concurrent cron run the two differ, and the old count was quietly wrong.
+Occurrence generation costs two more reads and one more write per anchor that has tiers, and none at
+all for an anchor that has none.
+
+**Not done here.** A tier's inventory is now PER DATE, which is the right default for a cap that
+means "seats in the room" and the wrong one for a cap that means "passes for the season"; nothing in
+the model distinguishes them and no host has asked yet. And the fan-out in `setSpaceEventAccess`
+reaches the occurrences that exist WHEN it runs — a date minted later gets its tiers from the anchor
+in the same shape, which is correct, but a host who grants access and then extends the series relies
+on the mint rather than on the grant.
