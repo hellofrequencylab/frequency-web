@@ -1,0 +1,158 @@
+'use client'
+
+import { useEffect, useState, useTransition } from 'react'
+import { Check, Zap } from 'lucide-react'
+import { checkInEvent, type CheckInResult } from '@/app/(main)/events/actions'
+import { showZapToast } from '@/components/zap-toast'
+import { SPECIAL_INSTRUCTIONS_LABEL } from '@/lib/events/special-instructions'
+import { checkInSurfaceState, formatCountdown, type CheckInSurfaceInput } from '@/lib/events/checkin-surface'
+
+/**
+ * THE HEADER'S CHECK-IN SURFACE — the countdown that becomes the door.
+ *
+ * Owner, 2026-09-10: one box, under Share | Manage | Edit, that counts down to the start and then
+ * *"converts to the check in function for members"*, blended into the canvas with no border.
+ *
+ * ── WHY IT SITS WHERE IT SITS ──────────────────────────────────────────────────────────────────
+ * `DetailTemplate`'s header band is `title (min-w-0) | actions (sm:shrink-0)`, so the actions
+ * column takes its natural width and the H1 absorbs every pixel of the squeeze. The owner's
+ * constraint was explicit: this must not push the left content onto another line. So the surface
+ * is capped at `sm:max-w-[16rem]` and WRAPS INSIDE ITSELF, growing in height rather than width. The
+ * action row above it already measures ~235px (Share ~72 + Manage ~85 + Edit ~62 plus gaps, the
+ * width audit at the `actions` prop), so the column it shares is barely wider than it already was
+ * and the title keeps what it had.
+ *
+ * ── WHY IT IS A CLIENT COMPONENT AND WHAT IT STILL DOES NOT DECIDE ─────────────────────────────
+ * A clock ticks, so this half must be client. Every GATE is resolved on the server by the page and
+ * arrives as a resolved value: the host's switch, the window, the RSVP, the idempotency row. It
+ * calls `checkInSurfaceState` and renders the answer, and it owns no rules of its own.
+ *
+ * 🔴 `startsAtMs` IS AN INSTANT, NOT A STRING. The page resolves it through `eventInstant(iso,
+ * zone)`. Never rebuild it here from `starts_at`: that column holds the host's wall clock in UTC
+ * parts, so `new Date(starts_at)` is a seven-hour lie in the event's own city (ADR-1150).
+ *
+ * ⚠️ `remaining` STARTS NULL AND THAT IS DELIBERATE. `Date.now()` during render is impure (the
+ * repo's `react-hooks/purity` rule) and a server-rendered clock hydrates against a client clock
+ * that has already moved. Null on the first paint, filled by the effect, is the pattern
+ * `components/quest/season-countdown.tsx` established for exactly this.
+ */
+export function EventCheckInSurface({
+  eventId,
+  doorNote,
+  ...gates
+}: Omit<CheckInSurfaceInput, 'nowMs'> & {
+  readonly eventId: string
+  /** `events.details.specialInstructions` — parking, the gate code, what to bring. */
+  readonly doorNote?: string | null
+}) {
+  const { startsAtMs } = gates
+  const [remaining, setRemaining] = useState<number | null>(null)
+  const [result, setResult] = useState<CheckInResult | null>(null)
+  const [pending, start] = useTransition()
+
+  // One ticker for the whole surface. It also drives the HANDOVER: when the clock reaches zero the
+  // state below re-resolves, so the box turns into the control on its own rather than waiting for a
+  // reload. `windowOpen` is still the server's answer, so the very first tick past zero can lead it
+  // by up to a second; the action re-checks the window anyway, so the worst case is one refused
+  // press, never an early check-in.
+  useEffect(() => {
+    const tick = () => setRemaining(Date.now())
+    tick()
+    const id = setInterval(tick, 1000)
+    return () => clearInterval(id)
+  }, [])
+
+  // Before the first tick there is no honest clock, so hold the server's own reading of "now": the
+  // start instant, which renders the countdown at its full value rather than flashing 00:00:00.
+  const nowMs = remaining ?? (startsAtMs ?? 0)
+  const state = checkInSurfaceState({ ...gates, nowMs })
+
+  // A successful press wins over the server's `alreadyCheckedIn`, which was read before it.
+  const checkedIn = result?.ok === true || state.kind === 'done'
+
+  if (state.kind === 'hidden') return null
+
+  // Every surviving state carries the reward, so this reads it once for all four branches.
+  const zaps = state.zaps
+  const earned = result?.zapsAwarded ?? zaps
+
+  return (
+    /* NO BORDER, NO CARD FILL. `bg-canvas` is the page's own ground, so the box reads as part of
+       the header band rather than a widget dropped into it — the owner's "blend it into background
+       canvas without borders". Every skin redeclares --color-canvas, so naming the token is the
+       only correct move (never a hex). */
+    <div
+      className="mt-1 w-full rounded-card bg-canvas px-3 py-2.5 text-right sm:max-w-[16rem]"
+      // A live region, because the box changes what it says while a member is looking at it: the
+      // handover from countdown to control is the moment worth announcing, and the result of a
+      // press is the other one.
+      aria-live="polite"
+    >
+      {state.kind === 'countdown' && (
+        <>
+          <p className="text-meta uppercase tracking-wide text-subtle">Event starts in</p>
+          {/* `tabular-nums` is what keeps the box still: proportional digits change width as they
+              tick, and a header element that breathes once a second is worse than no clock. */}
+          <p className="text-lead font-bold tabular-nums text-text">
+            {remaining === null ? formatCountdown(state.startsAtMs - nowMs) : formatCountdown(state.startsAtMs - remaining)}
+          </p>
+        </>
+      )}
+
+      {state.kind === 'open' && !checkedIn && (
+        <button
+          disabled={pending}
+          onClick={() =>
+            start(async () => {
+              const res = await checkInEvent(eventId)
+              setResult(res)
+              if (res.ok && !res.alreadyCheckedIn && res.zapsAwarded) {
+                showZapToast({ amount: res.zapsAwarded, label: 'Checked in' })
+              }
+            })
+          }
+          className="inline-flex w-full items-center justify-center gap-2 rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
+        >
+          <Zap className="h-4 w-4 shrink-0" strokeWidth={2.5} />
+          {pending ? 'Checking in…' : 'Check in'}
+        </button>
+      )}
+
+      {checkedIn && (
+        <div className="inline-flex w-full items-center justify-center gap-2 rounded-control bg-success-bg px-4 py-2 text-body-sm font-semibold text-success">
+          <Check className="h-4 w-4 shrink-0" />
+          {earned > 0 ? `Checked in · +${earned} Zaps` : 'Checked in'}
+        </div>
+      )}
+
+      {state.kind === 'waiting' && (
+        /* The door is open and this viewer cannot walk through it: signed out, or holding no going
+           seat. Say so plainly and leave the sign-in and the RSVP where they already are, in the
+           Join box. A second sign-in door here would be the scatter this surface removes. */
+        <p className="text-body-sm font-semibold text-text">Check-in is open</p>
+      )}
+
+      {/* The reward, printed under whatever the box is currently doing, and only while it is worth
+          printing. This is the line that used to float in the identity region promising Zaps on
+          events whose host had check-in switched off. */}
+      {!checkedIn && zaps > 0 && (
+        <p className="mt-1 inline-flex items-center justify-end gap-1.5 text-meta text-muted">
+          <Zap className="h-3.5 w-3.5 shrink-0 text-primary" />
+          {state.kind === 'countdown' ? `Check in at the door to earn +${zaps} Zaps` : `Earn +${zaps} Zaps`}
+        </p>
+      )}
+
+      {/* THE HOST'S DOOR NOTE, carried over from the retired `event-checkin` block (ADR-1309). It
+          is shown only while there is a door to walk through, which is the same window the block
+          gated itself to. `whitespace-pre-line` because the host typed it as lines. Left-aligned
+          against the box's right-aligned chrome: a paragraph of parking directions is prose, and
+          right-ragged prose is hard to read. */}
+      {doorNote && state.kind !== 'countdown' && (
+        <div className="mt-2 border-t border-border pt-2 text-left">
+          <p className="text-meta font-semibold uppercase tracking-wide text-subtle">{SPECIAL_INSTRUCTIONS_LABEL}</p>
+          <p className="mt-0.5 whitespace-pre-line text-meta text-text">{doorNote}</p>
+        </div>
+      )}
+    </div>
+  )
+}
