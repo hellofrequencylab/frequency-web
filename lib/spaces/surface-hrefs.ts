@@ -49,6 +49,11 @@ export function hrefForSurface(id: string, slug: string): string | null {
       return `${base}/settings/offerings#tickets`
     case 'space.checkin':
       return `${base}/settings/offerings#checkin`
+    case 'space.payments':
+      // Get paid (LIVE-294): its OWN sub-page, not an #anchor on /settings/offerings. The five
+      // commerce ids above anchor into that adaptive surface; this one is a route of its own because
+      // it reads Connect, the five channel gates and the rate, none of which the offerings body owns.
+      return `${base}/settings/payments`
     case 'space.people':
       return `${base}/settings/members`
     case 'space.crm':

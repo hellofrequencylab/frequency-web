@@ -6,7 +6,7 @@ import { DangerDelete } from '@/components/admin/danger-delete'
 import { deleteSpace } from '@/lib/spaces/provision'
 import type { SpaceModule } from '@/lib/admin/modules/space-modules'
 import type { AdminSlot } from '@/lib/admin/modules/registry'
-import { SPACE_HUB_SECTIONS, sectionForModule, type SpaceHubSection } from '@/lib/admin/modules/space-hub'
+import { SPACE_HUB_SECTIONS, SPACE_HUB_GROUPS, groupForCard, sectionForModule, type SpaceHubSection } from '@/lib/admin/modules/space-hub'
 import type { SpaceFunctionKey } from '@/lib/spaces/functions'
 import { hrefForSurface, panelHrefForModule } from '@/lib/spaces/surface-hrefs'
 
@@ -306,9 +306,9 @@ function HubNav({
   )
 }
 
-/** A flat grid of feature cards for one category — every feature is a top-level card WITHIN the category
- *  space (no nested sub-menus, owner directive). Ordered by Mode emphasis, then catalog order. */
-function FeatureGrid({
+/** The flat <ul> of cards. Lifted out of FeatureGrid verbatim so a grouped tab and an ungrouped one
+ *  render the SAME row markup, rather than two grids that can drift apart. */
+function CardList({
   modules,
   slug,
   emphasis,
@@ -317,15 +317,61 @@ function FeatureGrid({
   slug: string
   emphasis: readonly SpaceFunctionKey[]
 }) {
-  const ordered = orderWithinGroupByEmphasis(modules, emphasis)
   return (
     <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
-      {ordered.map((module) => {
+      {modules.map((module) => {
         const href = panelHrefForModule(module, slug)
         if (!href) return null
         return <SectionRow key={module.id} module={module} href={href} suggested={isSuggestedByMode(module, emphasis)} />
       })}
     </ul>
+  )
+}
+
+/** A grid of feature cards for one category — every feature is a top-level card WITHIN the category
+ *  space (no nested sub-menus, owner directive). Ordered by Mode emphasis, then catalog order.
+ *
+ *  GROUP HEADERS (LIVE-294) when the tab declares any in SPACE_HUB_GROUPS. The directive still holds:
+ *  every feature stays a TOP-LEVEL card in a flat list, `nested` is never passed, and no card becomes a
+ *  child of another. A heading above a run of cards is not a sub-menu.
+ *
+ *  Three properties worth keeping if this is edited. (1) orderWithinGroupByEmphasis runs ONCE, before
+ *  the split, so Mode emphasis orders WITHIN a group and can never reorder across them. (2) A group with
+ *  no visible modules renders nothing, so a space with donations turned off never sees an empty heading.
+ *  (3) Anything in no group lands in the TAIL, so adding a catalog row can never make a card vanish —
+ *  the failure mode a hardcoded group list would otherwise have. */
+function FeatureGrid({
+  modules,
+  slug,
+  emphasis,
+  section,
+}: {
+  modules: SpaceModule[]
+  slug: string
+  emphasis: readonly SpaceFunctionKey[]
+  /** Omitted renders one ungrouped grid, which is what Resonance wants: it carries its own header
+   *  above this already, so a second heading would stutter. */
+  section?: SpaceHubSection
+}) {
+  const ordered = orderWithinGroupByEmphasis(modules, emphasis)
+  const groups = section ? SPACE_HUB_GROUPS.filter((g) => g.section === section) : []
+  if (groups.length === 0) return <CardList modules={ordered} slug={slug} emphasis={emphasis} />
+
+  const tail = ordered.filter((m) => groupForCard(m, section!) === null)
+  return (
+    <div className="space-y-6">
+      {groups.map((g) => {
+        const inGroup = ordered.filter((m) => groupForCard(m, section!) === g.key)
+        if (inGroup.length === 0) return null
+        return (
+          <div key={g.key}>
+            <SectionHeader title={g.label} />
+            <CardList modules={inGroup} slug={slug} emphasis={emphasis} />
+          </div>
+        )
+      })}
+      {tail.length > 0 && <CardList modules={tail} slug={slug} emphasis={emphasis} />}
+    </div>
   )
 }
 
@@ -414,7 +460,7 @@ export function SpaceManageConsole({
         ) : section === 'settings' ? (
           <SpaceSettingsSurface slug={slug} modules={modules} canDelete={canDelete} spaceId={spaceId} />
         ) : inSection.length > 0 ? (
-          <FeatureGrid modules={inSection} slug={slug} emphasis={emphasis} />
+          <FeatureGrid modules={inSection} slug={slug} emphasis={emphasis} section={section} />
         ) : (
           <p className="text-body-sm text-subtle">Nothing here yet for this space.</p>
         )}

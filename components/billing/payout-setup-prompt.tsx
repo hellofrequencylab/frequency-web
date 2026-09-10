@@ -1,4 +1,4 @@
-import { Wallet, Clock, Info } from 'lucide-react'
+import { Wallet, Clock, Info, Check } from 'lucide-react'
 import { getCallerProfile } from '@/lib/auth'
 import {
   resolveProfilePayoutPrompt,
@@ -6,7 +6,7 @@ import {
   resolveSpacePayoutPromptById,
 } from '@/lib/billing/payout-prompt-resolve'
 import type { PayoutChannel, PayoutPrompt } from '@/lib/billing/payout-prompt'
-import { StartPayoutButton } from '@/app/(main)/settings/billing/payout-controls'
+import { StartPayoutButton, ManagePayoutButton } from './payout-controls'
 
 // THE ONE CONNECT ONBOARDING PROMPT, rendered (LIVE-233). One component, five money paths:
 // memberships, bookings, orders, donations, tickets. There were four hand-written versions of this
@@ -20,7 +20,9 @@ import { StartPayoutButton } from '@/app/(main)/settings/billing/payout-controls
 // settings card uses (startPayoutOnboarding -> createOnboardingLink) and redirects straight into
 // Stripe's hosted form, so the operator finishes where they were already standing.
 //
-// IT RENDERS NOTHING WHEN THERE IS NOTHING TO SAY. payoutPrompt returns null for a ready account, so
+// IT RENDERS NOTHING WHEN THERE IS NOTHING TO SAY. payoutPrompt returns null for a ready account
+// UNLESS the surface passes whenReady="status" (LIVE-290: on Offerings and the Shop storefront this
+// card IS the payments UI, so a ready owner needs the dashboard link rather than silence), so
 // an operator who onboarded last week is never told to go and do it (ADR-1158's defect class).
 //
 // SERVER COMPONENT. Both entry props do their own reads, so a caller passes who gets paid and which
@@ -30,6 +32,9 @@ const TONE = {
   needs_setup: { icon: Wallet, ring: 'border-primary/40 bg-primary-bg/20' },
   in_review: { icon: Clock, ring: 'border-border bg-surface-elevated' },
   not_live: { icon: Info, ring: 'border-border bg-surface-elevated' },
+  // READY is the calmest of the four: nothing is wrong, so it reads as a receipt rather than a
+  // nudge. Only reachable when a surface passes whenReady="status" (LIVE-290).
+  ready: { icon: Check, ring: 'border-border bg-surface-elevated' },
 } as const
 
 /** Render a resolved prompt. Exported so a surface that already resolved one (or resolves several in
@@ -52,11 +57,18 @@ export function PayoutPromptCard({
         <div className="min-w-0 flex-1">
           <p className="text-body font-bold leading-tight text-text">{prompt.headline}</p>
           <p className="mt-1 text-body-sm leading-relaxed text-muted">{prompt.body}</p>
-          {prompt.action !== 'none' && prompt.actionLabel && (
+          {/* `manage` opens the Express dashboard for an account that already works; `onboard` and
+              `resume` both start the hosted form. Branching on the ACTION rather than on the label
+              is what stops a ready operator being offered onboarding a second time (ADR-1158). */}
+          {prompt.action === 'manage' ? (
+            <div className="mt-4">
+              <ManagePayoutButton />
+            </div>
+          ) : prompt.action !== 'none' && prompt.actionLabel ? (
             <div className="mt-4">
               <StartPayoutButton label={prompt.actionLabel} />
             </div>
-          )}
+          ) : null}
         </div>
       </div>
     </div>
@@ -70,13 +82,17 @@ export async function SpacePayoutSetupPrompt({
   viewerProfileId,
   channels,
   className,
+  whenReady,
 }: {
   space: { ownerProfileId?: string | null; owner_profile_id?: string | null; name?: string | null; brandName?: string | null }
   viewerProfileId: string | null
   channels: readonly PayoutChannel[]
   className?: string
+  /** `status` on a surface where this card IS the payments UI, so a ready owner sees the dashboard
+   *  link instead of nothing at all. Omitted keeps the nudge semantics. */
+  whenReady?: 'silent' | 'status'
 }) {
-  const prompt = await resolveSpacePayoutPrompt({ space, viewerProfileId, channels })
+  const prompt = await resolveSpacePayoutPrompt({ space, viewerProfileId, channels, whenReady })
   return <PayoutPromptCard prompt={prompt} className={className} />
 }
 
@@ -87,18 +103,22 @@ export async function PayoutSetupPrompt({
   channels,
   payeeName,
   className,
+  whenReady,
 }: {
   payeeProfileId: string | null
   viewerProfileId: string | null
   channels: readonly PayoutChannel[]
   payeeName?: string | null
   className?: string
+  /** See SpacePayoutSetupPrompt.whenReady. */
+  whenReady?: 'silent' | 'status'
 }) {
   const prompt = await resolveProfilePayoutPrompt({
     payeeProfileId,
     viewerProfileId,
     channels,
     payeeName,
+    whenReady,
   })
   return <PayoutPromptCard prompt={prompt} className={className} />
 }
@@ -109,16 +129,20 @@ export async function SpacePayoutSetupPromptById({
   spaceId,
   channels,
   className,
+  whenReady,
 }: {
   spaceId: string
   channels: readonly PayoutChannel[]
   className?: string
+  /** See SpacePayoutSetupPrompt.whenReady. */
+  whenReady?: 'silent' | 'status'
 }) {
   const caller = await getCallerProfile()
   const prompt = await resolveSpacePayoutPromptById({
     spaceId,
     viewerProfileId: caller?.id ?? null,
     channels,
+    whenReady,
   })
   return <PayoutPromptCard prompt={prompt} className={className} />
 }
