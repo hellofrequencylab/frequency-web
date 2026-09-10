@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useTransition } from 'react'
-import { Check, Zap } from 'lucide-react'
+import { Check, QrCode, Zap } from 'lucide-react'
 import { checkInEvent, type CheckInResult } from '@/app/(main)/events/actions'
 import { showZapToast } from '@/components/zap-toast'
 import { SPECIAL_INSTRUCTIONS_LABEL } from '@/lib/events/special-instructions'
@@ -132,14 +132,34 @@ export function EventCheckInSurface({
         <p className="text-body-sm font-semibold text-text">Check-in is open</p>
       )}
 
-      {/* The reward, printed under whatever the box is currently doing, and only while it is worth
-          printing. This is the line that used to float in the identity region promising Zaps on
-          events whose host had check-in switched off. */}
+      {/* TWO FACTS, TWO ROWS — never one wrapping sentence (owner, 2026-09-10).
+          🔴 WHAT WAS WRONG, because it is not obvious from reading the old line. It was a single
+          `inline-flex` <p> holding an icon and the sentence "Check in at the door to earn +25
+          Zaps". A flex row lays the icon and the text out as two ITEMS, so when the sentence ran
+          out of width it wrapped INSIDE its own item and the icon stayed vertically centred beside
+          a two-line block — stranded at the far left of the box with a gap across to the text.
+          That is the header "getting split up": not a layout that wrapped, a layout that orphaned.
+
+          So each fact is now its own row, `whitespace-nowrap` so a row can never wrap internally,
+          and the rows stack in a column that sizes to its widest child. The box still shrinks and
+          grows with the column it sits in; what it will not do is come apart. */}
       {!checkedIn && zaps > 0 && (
-        <p className="mt-1 inline-flex items-center justify-end gap-1.5 text-meta text-muted">
-          <Zap className="h-3.5 w-3.5 shrink-0 text-primary" />
-          {state.kind === 'countdown' ? `Check in at the door to earn +${zaps} Zaps` : `Earn +${zaps} Zaps`}
-        </p>
+        <div className="mt-1.5 flex flex-col items-end gap-1 text-meta text-muted">
+          {/* 🔴 BOTH ROWS, ALWAYS — including the `open` state (owner, 2026-09-10). An earlier pass
+              hid the door row there, reasoning that the button directly above already says Check
+              in. That reasoning treated the rows as two independent labels. They are not: this is
+              ONE two-part sentence broken across two lines, and "Earn 25 Zaps" on its own is a
+              fragment with nothing to attach to. Dropping either half is dropping half a sentence,
+              so the pair travels together in every state that prints it. */}
+          <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
+            <QrCode aria-hidden className="h-3.5 w-3.5 shrink-0 text-subtle" />
+            Check in at the door
+          </span>
+          <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
+            <Zap aria-hidden className="h-3.5 w-3.5 shrink-0 text-primary" />
+            Earn {zaps} Zaps
+          </span>
+        </div>
       )}
 
       {/* THE HOST'S DOOR NOTE, carried over from the retired `event-checkin` block (ADR-1309). It
