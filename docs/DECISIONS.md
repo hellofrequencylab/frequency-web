@@ -39066,3 +39066,70 @@ comment's opener with a later comment's closer and swallows the real code betwee
 reads raw source now. Comment-stripping is the right move for a probe whose asserted words also
 appear in the prose above the code, and the wrong one here; the difference is whether the strings
 you assert are prose or identifiers, and it is worth deciding deliberately each time.
+
+## ADR-1314: ACCEPTED — an operator surface the e2e account cannot open is not coverage (2026-09-10)
+
+📌 **Numbered 1314, not 1313.** `claude/focused-heisenberg-57qcbv` (#2533) renumbered *onto* 1313
+independently, from a `main` that did not yet carry this branch — both reads were correct in
+isolation, which is the same trap three branches hit on 1306 earlier the same day. Renumbering this
+side rather than theirs resolves it whichever order the two land in, and needs no edit to a branch
+another session is driving. "The next free number" remains a property of `main` PLUS every open
+branch, and nothing checks that at authoring time.
+
+**Context.** `OPERATOR_PATHS` (`test/e2e/surfaces.ts`) names the seven `/admin` routes the visual
+and a11y suites watch. They were chosen by counting raw buttons
+(`scripts/visual-surface-census.mjs`) and **nobody checked whether the credential that drives the
+suite could reach what the list named.**
+
+Confirmed by the live gate on two unrelated pull requests, in the same words on both:
+
+```
+5 /admin surface(s) bounced off the role floor:
+  /admin/library, /admin/crew-tasks, /admin/crm, /admin/content/practices, /admin/qr
+```
+
+Those are exactly the five that `requireAdmin(min, { staff })` denies a read-scoped staff role,
+because that guard's `staffLevel` **defaults to `'write'`**, and the per-role grid is recorded with
+the capture-attribution work in flight alongside this. Four
+of them are opened by raising the account to `team_members: 'admin'`. **`/admin/crm` is not opened
+by anything on that axis**: it is `requireAdmin('janitor')` with no staff escape, so only `web_role`
+janitor or admin reaches it — the meta-admin tier `HYG-027` spent a day establishing a Playwright
+credential must never hold. `/admin/elements` and `/admin/crm/members`, the next two candidates the
+census ranks, are the same shape.
+
+**Decision, two parts.**
+
+**1. The account is raised to `team_members: 'admin'`** — the least role that opens the other six,
+verified against all seven staff roles rather than assumed. It touches neither `web_role` nor the
+community ladder, so the owner remains the only account on the staff axis and the only Janitor.
+
+**2. `/admin/crm` is replaced by `/admin/circles`** rather than the console being loosened. The
+alternative was giving `/admin/crm` a staff domain, which would widen who can see a live CRM to fix
+a test — changing production authorization to suit the observer. `/admin/circles` is the nearest
+comparable the census offers that a staff role can actually open: 4 raw-button-bg / 26 raw
+`<button>` against crm's 6 / 21. The set stays seven and the audit keeps roughly the same surface.
+
+**The guard, which is the durable half.** `test/e2e/operator-reachability.test.ts` walks each
+watched route's guard chain and fails when the governing guard admits only a `web_role`. It is
+source-shape on purpose: the alternative needs a session, a deployment and a database — exactly the
+machinery whose absence made this invisible for two weeks.
+
+⚠️ **It took three versions, and the two failures are the interesting part.**
+
+- **Reading only `page.tsx`** called `/admin/marketing/nurture` unreachable. That route declares no
+  guard of its own and inherits the floor from `app/(main)/admin/layout.tsx` — and the capture had
+  already photographed it for real. A gate that contradicts an observed artifact is the broken one.
+- **Reading the whole chain and admitting if ANY level passed** called every `/admin` route
+  reachable, `/admin/crm` included, because the admin layout always calls `requireAdminFloor()`.
+  Clearing the floor is NECESSARY and NOT SUFFICIENT — the page's own stricter guard still denies
+  underneath it. **The assertion was passing for the wrong reason, and only the mutation test found
+  it**: putting `/admin/crm` back failed the name check and left the reachability check green.
+
+The rule that survives: walk most-specific outward and stop at the first level that actually calls
+a guard, exactly as the runtime does.
+
+📌 And a small technique worth stealing: every pattern requires `await`. Both files that misled the
+earlier versions describe a guard in prose without calling it — `// STAFF-GATED:
+requireAdmin('janitor')` in the crm page, `// requireAdminFloor() floor` in the marketing layout. A
+call site has `await`; a sentence about one does not. That beats stripping comments, which on this
+codebase eats real code.
