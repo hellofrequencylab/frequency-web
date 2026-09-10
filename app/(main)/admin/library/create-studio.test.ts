@@ -32,9 +32,13 @@ describe('the Create studio forgets a trained brand style', () => {
     expect(studio).toContain("setStyleId('')")
   })
 
-  it('the action stays janitor-gated and only removes our pointer', () => {
+  it("carries the PAGE's own gate and only removes our pointer", () => {
+    // LIVE-289: this assertion used to pin bare `requireAdmin('janitor')`, which is what the whole
+    // route carried — and that is exactly the defect. `page.tsx` admits a Marketer (ADR-851), so an
+    // action that demands web_role janitor is a control the page renders and then redirects away
+    // from. The gate moved with the ruling; the assertion moved with the gate.
     const body = actions.slice(actions.indexOf('export async function deleteBrandStyle'))
-    expect(body).toContain("requireAdmin('janitor')")
+    expect(body).toContain("requireAdmin('janitor', { staff: 'marketing' })")
     expect(body).toContain('deleteStyle(spaceId, styleId)')
   })
 })
