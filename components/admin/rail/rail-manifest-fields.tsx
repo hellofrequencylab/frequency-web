@@ -16,6 +16,7 @@
 import { labelClasses } from '@/components/ui/field'
 import { FieldControl, type FieldOptions } from '@/components/studio/spark/field/field-control'
 import type { FieldDef, FieldKind } from '@/lib/studio/kernel/manifest'
+import { joinFieldValue, splitFieldValue } from './rail-field-value'
 
 /** The kinds that read well at half width, so two of them share a row. */
 const SHORT: ReadonlySet<FieldKind> = new Set<FieldKind>([
@@ -80,8 +81,12 @@ export function RailManifestFields({
             <FieldControl
               def={def}
               name={def.path}
-              value={values[def.path] ?? ''}
-              onChange={(next) => onChange(def.path, Array.isArray(next) ? next.join(', ') : next)}
+              // A LIST kind's control takes and returns an array; the values bag and the FormData
+              // carry one string. `rail-field-value.ts` owns both halves of that conversion —
+              // handing the joined string straight back is how three tags became one chip
+              // spelled "a, b, c" on the Journey rail (ADR-1309).
+              value={splitFieldValue(def.kind, values[def.path])}
+              onChange={(next) => onChange(def.path, joinFieldValue(next))}
               placeholder={placeholders?.[def.path]}
               hint={hints?.[def.path]}
               loaded={loaded}

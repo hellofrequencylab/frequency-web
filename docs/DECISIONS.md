@@ -38812,3 +38812,82 @@ the model distinguishes them and no host has asked yet. And the fan-out in `setS
 reaches the occurrences that exist WHEN it runs — a date minted later gets its tiers from the anchor
 in the same shape, which is correct, but a host who grants access and then extends the series relies
 on the mint rather than on the grant.
+
+---
+
+## ADR-1309: ACCEPTED — a repeat group is an edit plane, and the event's `details` bag finally has one (2026-09-10)
+
+**Context.** Owner, 2026-09-10: *"There are multiple blocks that the Vera event creator will create
+but I have no way to edit. For instance, there's a block for Schedule, but I have no way to edit the
+schedule. I also need to be able to edit things like Good to Know, Event Facts, Check in Details."*
+
+Every one of those blocks reads `events.details`, the JSONB bag the poster scan and Vera's Spark
+fill. The Event manifest already declared all of it — `details.features` and `details.sponsors` as
+fields, and `details.tickets` / `details.lineup` / `details.schedule` / `details.links` /
+`details.other` as **repeat groups** — and the settings rail rendered none of it, for two separate
+reasons that had to be fixed in that order:
+
+1. `EVENT_SETTINGS_WRITES` listed 27 paths and not one `details.*` key except the RSVP window, and
+   `railForm()` filters the manifest to that list. So the two flat lists were declared and filtered
+   out.
+2. `railForm()` walked `manifest.fields` and **nothing else**. A `RepeatDef` had no rail
+   representation at all, on any entity, since ADR-1240. So the five collections were declared and
+   unreachable — reviewable on the board, rendered on the page, editable nowhere.
+
+Two of the owner's four names turned out to be different faults. **"Check in Details"** is
+`details.specialInstructions`: the create form has asked for it since the first version of that
+form and nothing in the repo ever read it back. It was **write-only for the life of the column** —
+collected, stored, shown to no one. **"Event Facts"** is `event-facts`, which ADR-826 folded into
+`event-join`; the component has returned `null` unconditionally ever since, and stayed in
+`EVENT_DETAIL_MODULE_IDS` as a row an operator could drag, order and place to no effect.
+`event-warm-proof` is its twin.
+
+**Decision.**
+
+- **`railRepeats(manifest, writes)`** joins `railForm()` in `lib/studio/kernel/edit-plan.ts`, and
+  `RailForm` gains a `repeats` array beside `fields`. Same seam, same rule: the manifest declares
+  the group and its per-item fields, the form says only that its save path persists the collection.
+  Ordered arrays only — a `map` repeat is keyed by an id, has no order to drag and no row to add, so
+  an add/remove/reorder list would be the *wrong* control rather than an incomplete one. A written
+  map collection is reported as `dropped` with the new reason `keyed-repeat`, because a fail-safe
+  nobody notices is an invisible regression.
+- **`RailManifestRepeat`** (`components/admin/rail/`) is the control: item cards, each rendering the
+  group's own fields through the existing `FieldControl`, with add, remove and reorder. It declares
+  no field and knows no entity. It commits through `useRailSaveNow()` on every structural change,
+  because a `<button type="button">` fires nothing the autosave form can hear — the same reason the
+  map pin does.
+- **A repeat may name itself.** `RepeatDef.label` is optional and `repeatLabel()` derives the
+  fallback from the path. The five event groups declare theirs as the heading the guest-facing block
+  already prints, because deriving is right by luck: `details.other` renders under "Details", not
+  "Other". `details.features` was relabelled from "What is included" to **"Good to know"** for the
+  same reason — the editor and the block now use the page's one name.
+- **`details.lineup` is deliberately NOT wired.** The `event-lineup` block id binds the *host
+  profile* box, so the poster lineup draws on no surface; an editor for it would be a control with
+  no consequence.
+- **`updateEventSettings` merges rather than launders.** 🔴 `coerceEventDetails` is an **allow-list**
+  over the poster harvest: it keeps the eight keys it knows and drops the rest, which is right for
+  untrusted model JSON and catastrophic for a stored bag. `rsvpWindow` is outside it, and **two SQL
+  RPCs read `details->'rsvpWindow'`** to decide whether a guest may still RSVP; `specialInstructions`
+  and `media` (the poster crop paths) are outside it too. So only the keys the form carried are
+  coerced, and the result is merged key by key onto what was stored. A key the form omitted is
+  untouched; a key it carried and emptied is deleted. Each FormData key is read with a literal
+  `fd.get('…')` so the plan's key-map test can hold every one of them against the action's source.
+- **The door note prints.** `event-checkin` renders `details.specialInstructions` under its own
+  heading. That block is already gated to exactly the window the note is worth reading in — the
+  doors are open and someone is outside — so it rides there rather than becoming a tenth block that
+  self-hides for 99% of an event's life. `lib/events/special-instructions.ts` holds the one name,
+  the guidance, and the pure reader, and the create form now uses the same words.
+- **`event-facts` and `event-warm-proof` leave the event set** and join the reachability guard's
+  `PARKED` list. Their definitions and bindings stay, so a future surface can adopt either; what
+  goes is the lie the Layout editor was telling.
+
+**Consequences.** Every rail on the platform can now edit a repeated collection, not just this one.
+The list round trip was broken while we were in there: `RailManifestFields` joined a list control's
+array on the way out and handed the joined **string** straight back on the way in, where the kit
+reads a string as a one-item list — so three tags on the Journey rail came back as a single chip
+spelled `a, b, c`, and the next save persisted that one tag. `rail-field-value.ts` owns both
+directions now, tested without mounting React, and the Journey rail is fixed by the same change.
+
+**Not done here.** The `map` repeat has no rail control, so a Practice's per-Pillar instructions
+still cannot be edited in a rail; `railForm` now says so out loud instead of omitting it. The event
+page has no inline canvas, so the rail still hosts the inline plane (`hostInline`), unchanged.

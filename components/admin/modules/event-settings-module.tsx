@@ -6,7 +6,8 @@ import dynamic from 'next/dynamic'
 import { ImagePlus } from 'lucide-react'
 import { Input, labelClasses } from '@/components/ui/field'
 import { RailAutosaveForm, useRailSaveNow } from '@/components/admin/rail/rail-autosave-form'
-import { RailManifestFields } from '@/components/admin/rail/rail-manifest-fields'
+import { RailManifestFields, type RailManifestFieldsProps } from '@/components/admin/rail/rail-manifest-fields'
+import { RailManifestRepeat } from '@/components/admin/rail/rail-manifest-repeat'
 import { Radio } from '@/components/ui/radio'
 import { seriesWritePlan, type SeriesScope } from '@/lib/events/series-scope'
 import { createClient } from '@/lib/supabase/client'
@@ -37,16 +38,21 @@ import { readEventCoverAspect } from '@/lib/events/cover-aspect'
 import { readEventCoverFocus } from '@/lib/events/cover-focus'
 import { CHECK_IN_HELP } from '@/lib/events/checkin-enabled'
 import { MARKET_LISTING_HELP } from '@/lib/events/market-listing'
+import { SPECIAL_INSTRUCTIONS_HELP } from '@/lib/events/special-instructions'
 import type { PlaceResult } from '@/lib/geocode'
 import type { FieldDef } from '@/lib/studio/kernel/manifest'
 import {
   EVENT_RAIL,
+  EVENT_REPEAT_CAPS,
   eventRailValues,
+  eventRepeatRows,
   eventSettingsFormData,
   eventSettingsGroups,
   eventVisibilityField,
   type EventPin,
   type EventRailValues,
+  type EventRepeatPath,
+  type EventRepeatRows,
 } from './event-rail-plan'
 
 // In-place "Event settings" (EMBEDDED-ADMIN.md / ADR-133) on /events/[slug]. This is the SINGLE host
@@ -61,6 +67,12 @@ import {
 // this file. The settings form is the plan's fields grouped by manifest section, headed by the
 // manifest's own section titles. What this file adds is the six COMPOSITES the plan names
 // (`EVENT_COMPOSITES`): the gallery, the venue search, the map pin, co-hosts, placement, and sharing.
+//
+// THE `details` BAG IS EDITABLE HERE NOW (ADR-1309). Everything Vera harvests off a flyer lands in
+// `events.details` and renders as its own movable block, and none of it had an editor anywhere: the
+// two lists (Good to know, Sponsors) are ordinary manifest fields the widened writes list now
+// carries, and the four collections (Pricing, Schedule, Links, Details) come through the plan's
+// `repeats` and render as `RailManifestRepeat` list editors under their manifest section.
 //
 // HOW THE SETTINGS SAVE READS ITS VALUES. The form's action ignores the FormData snapshot the rail hands
 // it and builds the action's FormData from `values` through the plan's key map (camelCase paths to the
@@ -94,6 +106,7 @@ const HINTS: Record<string, string> = {
     'Requests land in your approval queue instead of taking a spot straight away. A full event still sends approved people to the waitlist.',
   checkInEnabled: CHECK_IN_HELP,
   marketListed: MARKET_LISTING_HELP,
+  'details.specialInstructions': SPECIAL_INSTRUCTIONS_HELP,
 }
 
 const [COVER, MORE_PHOTOS] = EVENT_RAIL.gallery.fields
@@ -170,6 +183,17 @@ function EventSettingsRail({ data, engage }: { data: EventData; engage: EventCor
   }, [])
   const update = useCallback((path: string, next: string) => patch({ [path]: next }), [patch])
 
+  // The repeat groups keep their own state: a collection is a table of rows, not a string, so it
+  // cannot live in the values bag. Same ref-beside-state shape, for the same reason (a debounced
+  // save runs after the render that changed it).
+  const [repeatRows, setRepeatRows] = useState<EventRepeatRows>(() => eventRepeatRows(data))
+  const repeatsRef = useRef(repeatRows)
+  const setRepeat = useCallback((arrayPath: string, rows: EventRepeatRows[string]) => {
+    const merged = { ...repeatsRef.current, [arrayPath]: rows }
+    repeatsRef.current = merged
+    setRepeatRows(merged)
+  }, [])
+
   // The pin is not a field (EVENT_PIN_KEYS): it rides on the map control and is sent beside the values.
   const [pin, setPinState] = useState<EventPin>({ lat: data.lat ?? null, lng: data.lng ?? null })
   const pinRef = useRef(pin)
@@ -199,7 +223,11 @@ function EventSettingsRail({ data, engage }: { data: EventData; engage: EventCor
   )
 
   const saveSettings = async () =>
-    updateEventSettings(eventId, eventSlug, eventSettingsFormData(valuesRef.current, pinRef.current, scopeRef.current))
+    updateEventSettings(
+      eventId,
+      eventSlug,
+      eventSettingsFormData(valuesRef.current, pinRef.current, repeatsRef.current, scopeRef.current),
+    )
 
   const [imgErr, setImgErr] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
@@ -390,22 +418,35 @@ function EventSettingsRail({ data, engage }: { data: EventData; engage: EventCor
             </div>
           </div>
         )}
-        {GROUPS.map(({ section, fields }) => (
+        {GROUPS.map(({ section, fields, repeats }) => (
           <div key={section.key} className="space-y-3 rounded-card border border-border bg-canvas/40 p-3">
             <div>
               <p className={labelClasses}>{section.title}</p>
               <p className="mt-0.5 text-2xs text-muted">{section.desc}</p>
             </div>
-            <RailManifestFields fields={repeatGated(fieldsFor(fields))} values={values} onChange={update} placeholders={PLACEHOLDERS} hints={hints} />
+            <SettingsFields fields={repeatGated(fieldsFor(fields))} values={values} onChange={update} placeholders={PLACEHOLDERS} hints={hints} />
             {/* 🔴 THE REPEAT EDITOR IS REMOVED, NOT DISABLED, UNDER THE NARROW SCOPE — and it says
                 where it went. A control that renders, accepts a change and is then silently
-                refused by the server is the failure this whole ADR is about. */}
+                refused by the server is the failure ADR-1307 is about. This governs the repeat
+                PATTERN only; the repeat GROUPS below are ordinary per-row content, and a host
+                editing one date's schedule under "this event only" is doing exactly that. */}
             {section.key === 'when' && plan.inSeries && !plan.ruleEditable && (
               <p className="text-2xs text-muted">
                 How often this repeats belongs to the whole series. Choose <strong>This event and all
                 future dates</strong> above to change it.
               </p>
             )}
+            {/* The section's repeat groups (ADR-1309): one list editor per collection, its rows and
+                its per-row controls both from the manifest, capped where the server caps it. */}
+            {repeats.map((def) => (
+              <RailManifestRepeat
+                key={def.arrayPath}
+                def={def}
+                rows={repeatRows[def.arrayPath] ?? []}
+                onChange={(next) => setRepeat(def.arrayPath, next)}
+                max={EVENT_REPEAT_CAPS[def.arrayPath as EventRepeatPath]}
+              />
+            ))}
             {section.key === 'where' && (
               <WhereComposites
                 attendanceMode={values.attendanceMode}
@@ -473,6 +514,25 @@ function EventSettingsRail({ data, engage }: { data: EventData; engage: EventCor
           moving where it lives. Steward-approved on the other side. Its own actions. */}
       <EventShareField eventId={eventId} slug={eventSlug} />
     </div>
+  )
+}
+
+/**
+ * The plan's fields inside the autosave form. A COMPOSITE control fires no native change or blur the
+ * form could hear — a tag chip is added by a click, not by typing into the box that keeps the focus
+ * — so a tags change commits through the form's own `saveNow`, the way the Journey rail's does.
+ */
+function SettingsFields(props: RailManifestFieldsProps) {
+  const saveNow = useRailSaveNow()
+  const { onChange, fields } = props
+  return (
+    <RailManifestFields
+      {...props}
+      onChange={(path, next) => {
+        onChange(path, next)
+        if (fields.find((f) => f.path === path)?.kind === 'tags') saveNow()
+      }}
+    />
   )
 }
 

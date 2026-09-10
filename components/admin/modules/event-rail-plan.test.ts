@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { EVENT_MANIFEST } from '@/lib/studio/entities/event'
 import { railForm } from '@/lib/studio/kernel/edit-plan'
+import { coerceEventDetails } from '@/lib/events/normalize'
 import {
   EVENT_RAIL,
   EVENT_COLUMNS,
@@ -11,8 +12,12 @@ import {
   EVENT_PIN_KEYS,
   EVENT_PLACEMENT_WRITES,
   EVENT_PERMALINK_WRITES,
+  EVENT_REPEAT_CAPS,
+  EVENT_REPEAT_PATHS,
   EVENT_SETTINGS_WRITES,
   eventRailValues,
+  eventRepeatPayload,
+  eventRepeatRows,
   eventSettingsFormData,
   eventSettingsGroups,
   eventVisibilityField,
@@ -38,6 +43,7 @@ describe('the Event rail plan', () => {
       'title',
       'category',
       'description',
+      'details.features',
       'startsAt',
       'endsAt',
       'recurrenceRule',
@@ -52,10 +58,12 @@ describe('the Event rail plan', () => {
       'postalCode',
       'country',
       'hideAddress',
+      'details.specialInstructions',
       'priceCents',
       'joinMode',
       'details.rsvpWindow.opensAt',
       'details.rsvpWindow.closesAt',
+      'details.sponsors',
       'visibility',
       'capacity',
       'energyTag',
@@ -65,6 +73,30 @@ describe('the Event rail plan', () => {
     ])
     expect(EVENT_RAIL.placement.fields.map((f) => f.path)).toEqual(['scopeId'])
     expect(EVENT_RAIL.permalink.fields.map((f) => f.path)).toEqual(['slug'])
+  })
+
+  // ADR-1309. The collections were declared on the manifest from the day it was written and reached
+  // no edit surface at all, because `railForm` walked `fields` and stopped.
+  it('carries the details COLLECTIONS as repeat groups, in manifest order, and only on the settings zone', () => {
+    expect(EVENT_RAIL.settings.repeats.map((r) => r.arrayPath)).toEqual([...EVENT_REPEAT_PATHS])
+    expect(EVENT_RAIL.gallery.repeats).toEqual([])
+    expect(EVENT_RAIL.placement.repeats).toEqual([])
+    expect(EVENT_RAIL.permalink.repeats).toEqual([])
+  })
+
+  it('leaves the poster LINEUP out: the event-lineup block id binds the host profile box, so it draws nowhere', () => {
+    expect(EVENT_MANIFEST.repeats?.map((r) => r.arrayPath)).toContain('details.lineup')
+    expect(EVENT_SETTINGS_WRITES).not.toContain('details.lineup')
+    expect(EVENT_RAIL.settings.repeats.map((r) => r.arrayPath)).not.toContain('details.lineup')
+  })
+
+  it('heads each collection with the name its own block prints, never with the persisted path', () => {
+    const byPath = new Map((EVENT_MANIFEST.repeats ?? []).map((r) => [r.arrayPath, r.label]))
+    expect(byPath.get('details.tickets')).toBe('Pricing')
+    expect(byPath.get('details.schedule')).toBe('Schedule')
+    expect(byPath.get('details.links')).toBe('Links')
+    // The one the path gets WRONG: the page's own heading for `details.other` is "Details".
+    expect(byPath.get('details.other')).toBe('Details')
   })
 
   it('honours every written column: nothing a save path writes is missing from the rail', () => {
@@ -144,7 +176,22 @@ describe('the Event rail plan', () => {
 
   it('groups the settings zone by manifest section, in manifest order, dropping empty sections', () => {
     const groups = eventSettingsGroups()
-    expect(groups.map((g) => g.section.key)).toEqual(['identity', 'story', 'when', 'where', 'tickets', 'settings'])
+    expect(groups.map((g) => g.section.key)).toEqual([
+      'identity',
+      'story',
+      'when',
+      'where',
+      'tickets',
+      'lineup',
+      'host',
+      'settings',
+      'other',
+    ])
+    // Two sections have NO field and exist only for their collection. A filter that asked about
+    // fields alone would drop the Links editor and the Details editor and say nothing (ADR-1309).
+    expect(groups.find((g) => g.section.key === 'host')?.fields).toEqual([])
+    expect(groups.find((g) => g.section.key === 'host')?.repeats.map((r) => r.arrayPath)).toEqual(['details.links'])
+    expect(groups.find((g) => g.section.key === 'other')?.repeats.map((r) => r.arrayPath)).toEqual(['details.other'])
     expect(groups.find((g) => g.section.key === 'when')?.fields.map((f) => f.path)).toEqual([
       'startsAt',
       'endsAt',
@@ -194,6 +241,16 @@ describe('the Event rail reads its row and writes its FormData through the key m
     join_mode: null,
     rsvpOpensAt: '2026-09-20T09:00:00.000Z',
     rsvpClosesAt: null,
+    details: {
+      rsvpWindow: { opensAt: '2026-09-20T09:00:00.000Z', closesAt: null },
+      features: ['Tea after', 'Mats provided'],
+      sponsors: ['Torus Co.'],
+      specialInstructions: 'Park on Matilija. The gate code is 1234.',
+      tickets: [{ label: 'Early bird', priceCents: 1250, note: 'First 20' }, { label: 'Door' }],
+      schedule: [{ time: '18:30', title: 'Doors' }],
+      links: [{ label: 'Tickets', url: 'https://example.com/t', kind: 'tickets' }],
+      other: [{ label: 'Bring', value: 'A blanket' }],
+    },
     visibility: 'circle_only',
     scope_type: 'space',
     capacity: 40,
@@ -208,6 +265,7 @@ describe('the Event rail reads its row and writes its FormData through the key m
       title: 'Breath Is Life',
       category: 'gathering',
       description: '',
+      'details.features': 'Tea after, Mats provided',
       startsAt: '2026-10-01T18:30',
       endsAt: '',
       recurrenceRule: 'FREQ=WEEKLY;BYDAY=TH;UNTIL=20261201',
@@ -222,10 +280,12 @@ describe('the Event rail reads its row and writes its FormData through the key m
       postalCode: '',
       country: '',
       hideAddress: 'true',
+      'details.specialInstructions': 'Park on Matilija. The gate code is 1234.',
       priceCents: '12.5',
       joinMode: 'auto',
       'details.rsvpWindow.opensAt': '2026-09-20T09:00',
       'details.rsvpWindow.closesAt': '',
+      'details.sponsors': 'Torus Co.',
       // circle_only on a non-Circle scope reads as the unlisted the server steps it down to.
       visibility: 'unlisted',
       capacity: '40',
@@ -240,7 +300,7 @@ describe('the Event rail reads its row and writes its FormData through the key m
 
   it('sends every settings key the action reads, each switch as on/off so it can turn OFF, and the pin beside them', () => {
     const values = eventRailValues(row)
-    const fd = eventSettingsFormData(values, { lat: 34.45, lng: -119.24 })
+    const fd = eventSettingsFormData(values, { lat: 34.45, lng: -119.24 }, eventRepeatRows(row))
     const sent = Object.fromEntries(fd.entries())
     // `series_scope` rides beside the pin and for the same reason: neither is a manifest field or a
     // column. The pin says WHERE, the scope says what the save may REACH (ADR-1307). Both are the
@@ -251,7 +311,7 @@ describe('the Event rail reads its row and writes its FormData through the key m
     // Defaulted NARROW, and defaulted in the BUILDER, so a caller that forgets it cannot widen a
     // save by omission.
     expect(sent.series_scope).toBe('this')
-    expect(Object.fromEntries(eventSettingsFormData(values, { lat: null, lng: null }, 'future').entries()).series_scope).toBe('future')
+    expect(Object.fromEntries(eventSettingsFormData(values, { lat: null, lng: null }, {}, 'future').entries()).series_scope).toBe('future')
     expect(sent).toMatchObject({
       title: 'Breath Is Life',
       starts_at: '2026-10-01T18:30',
@@ -264,7 +324,7 @@ describe('the Event rail reads its row and writes its FormData through the key m
       lat: '34.45',
       lng: '-119.24',
     })
-    const noPin = eventSettingsFormData(values, { lat: null, lng: null })
+    const noPin = eventSettingsFormData(values, { lat: null, lng: null }, {})
     expect(noPin.get('lat')).toBe('')
     expect(noPin.get('lng')).toBe('')
   })
@@ -277,7 +337,15 @@ describe('the Event settings module renders the plan, not a field list', () => {
     expect(source).toMatch(/from '\.\/event-rail-plan'/)
     expect(source).toMatch(/eventSettingsGroups\(\)/)
     expect(source).toMatch(/\{section\.title\}/)
-    expect(source).toMatch(/eventSettingsFormData\(valuesRef\.current, pinRef\.current, scopeRef\.current\)/)
+    // 🔴 ASSERT THE ARGUMENTS, NEVER THE EXACT CALL TEXT. Both sides of this merge pinned the
+    // literal string and each one read as a break when the other added its argument — the same
+    // trap `lib/events/options.test.ts` records for a `select(...)` string, hit again here. The
+    // save must carry the values, the pin, the repeat rows AND the series scope; how the call is
+    // wrapped is the formatter's business.
+    const call = source.match(/eventSettingsFormData\(([^)]*)\)/)?.[1] ?? ''
+    for (const arg of ['valuesRef.current', 'pinRef.current', 'repeatsRef.current', 'scopeRef.current']) {
+      expect(call).toContain(arg)
+    }
   })
 
   it('declares no autosave field of its own (a named Input, Textarea, Select, Checkbox, or hidden input)', () => {
@@ -300,5 +368,117 @@ describe('the Event settings module renders the plan, not a field list', () => {
 
   it('takes even the zone labels from the manifest', () => {
     for (const zone of ['COVER', 'MORE_PHOTOS', 'PERMALINK']) expect(source).toMatch(new RegExp(`\\{${zone}\\.label`))
+  })
+
+  it('renders each section group\'s repeat groups through the shared list control, capped where the server caps them', () => {
+    expect(source).toMatch(/<RailManifestRepeat\b/)
+    expect(source).toMatch(/rows=\{repeatRows\[def\.arrayPath\] \?\? \[\]\}/)
+    expect(source).toMatch(/max=\{EVENT_REPEAT_CAPS\[def\.arrayPath as EventRepeatPath\]\}/)
+  })
+})
+
+// ── The details collections, read and written (ADR-1309) ────────────────────────────────────────
+
+describe('the Event rail edits the details collections', () => {
+  const row = {
+    details: {
+      rsvpWindow: { opensAt: '2026-09-20T09:00:00.000Z', closesAt: null },
+      specialInstructions: 'Gate code 1234',
+      tickets: [{ label: 'Early bird', priceCents: 1250, note: 'First 20' }, { label: 'Door' }],
+      schedule: [{ time: '18:30', title: 'Doors' }, { title: 'Set' }],
+      links: [{ label: 'Tickets', url: 'https://example.com/t', kind: 'tickets' }],
+      other: [{ label: 'Bring', value: 'A blanket' }],
+    },
+  }
+
+  it('reads every declared cell of every stored row, blank where the item has none', () => {
+    const rows = eventRepeatRows(row)
+    expect(rows['details.tickets']).toEqual([
+      // The stored CENTS read back as the whole units the control types in, exactly as the event's
+      // own price does. A tier with no price is blank, not "0".
+      { label: 'Early bird', priceCents: '12.5', note: 'First 20' },
+      { label: 'Door', priceCents: '', note: '' },
+    ])
+    expect(rows['details.schedule']).toEqual([
+      { time: '18:30', title: 'Doors', note: '' },
+      { time: '', title: 'Set', note: '' },
+    ])
+    expect(rows['details.links']).toEqual([{ label: 'Tickets', url: 'https://example.com/t', kind: 'tickets' }])
+    expect(rows['details.other']).toEqual([{ label: 'Bring', value: 'A blanket' }])
+  })
+
+  it('reads an absent, empty, or malformed collection as no rows rather than throwing', () => {
+    expect(eventRepeatRows({})['details.tickets']).toEqual([])
+    expect(eventRepeatRows({ details: 'nonsense' })['details.schedule']).toEqual([])
+    expect(eventRepeatRows({ details: { tickets: [null, 'x', 3] } })['details.tickets']).toEqual([])
+  })
+
+  it('writes the rows back in the shape the details coercion accepts, price in cents again', () => {
+    const rows = eventRepeatRows(row)
+    const payload = eventRepeatPayload('details.tickets', rows['details.tickets'])
+    expect(payload).toEqual([{ label: 'Early bird', priceCents: 1250, note: 'First 20' }, { label: 'Door' }])
+    // The round trip is the property that matters: what a host loads and does not touch must save
+    // back as what was stored, or every save quietly rewrites the collection.
+    expect(coerceEventDetails({ tickets: payload }).tickets).toEqual(row.details.tickets)
+    for (const path of EVENT_REPEAT_PATHS) {
+      const key = path.slice('details.'.length) as 'tickets' | 'schedule' | 'links' | 'other'
+      expect(coerceEventDetails({ [key]: eventRepeatPayload(path, rows[path]) })[key], path).toEqual(row.details[key])
+    }
+  })
+
+  it('leaves an unusable price OFF the item rather than writing a zero', () => {
+    expect(eventRepeatPayload('details.tickets', [{ label: 'Free', priceCents: '', note: '' }])).toEqual([{ label: 'Free' }])
+    expect(eventRepeatPayload('details.tickets', [{ label: 'Odd', priceCents: 'abc', note: '' }])).toEqual([{ label: 'Odd' }])
+  })
+
+  it('knows nothing about a collection the plan does not carry', () => {
+    expect(eventRepeatPayload('details.lineup', [{ name: 'Nobody' }])).toEqual([])
+  })
+
+  // 🔴 The cap is the SERVER's, and a row past it is dropped at save with nothing said. Held against
+  // the coercion itself rather than against a comment: a cap that drifts is silent data loss.
+  it('caps each collection where coerceEventDetails caps it', () => {
+    for (const path of EVENT_REPEAT_PATHS) {
+      const key = path.slice('details.'.length) as 'tickets' | 'schedule' | 'links' | 'other'
+      const cap = EVENT_REPEAT_CAPS[path]
+      const one = (i: number) => ({ label: `L${i}`, value: `V${i}`, title: `T${i}`, url: `https://example.com/${i}` })
+      const overflowing = Array.from({ length: cap + 3 }, (_, i) => one(i))
+      expect(coerceEventDetails({ [key]: overflowing })[key]?.length, path).toBe(cap)
+    }
+  })
+
+  it('sends each collection as JSON under its own key, always present so an emptied one can clear', () => {
+    const fd = eventSettingsFormData({}, { lat: null, lng: null }, eventRepeatRows(row))
+    expect(JSON.parse(String(fd.get('details_tickets')))).toEqual([
+      { label: 'Early bird', priceCents: 1250, note: 'First 20' },
+      { label: 'Door' },
+    ])
+    const cleared = eventSettingsFormData({}, { lat: null, lng: null }, {})
+    for (const path of EVENT_REPEAT_PATHS) expect(cleared.get(EVENT_COLUMNS[path]), path).toBe('[]')
+  })
+})
+
+// ── The settings action merges the details bag rather than laundering it (ADR-1309) ─────────────
+//
+// 🔴 THE TRAP THIS PINS SHUT. `coerceEventDetails` is an ALLOW-LIST over the poster harvest: it
+// keeps the eight keys it knows and DROPS the rest. `rsvpWindow` is not one of them, and two SQL
+// RPCs read `details->'rsvpWindow'` to decide whether a guest may still RSVP. An action that
+// round-tripped the whole bag through that function would delete a host's booking window, and the
+// only symptom would be RSVPs quietly reopening on an event the host had closed.
+
+describe('updateEventSettings merges the details bag', () => {
+  it('coerces only the keys the form carried, and merges them onto what was stored', () => {
+    expect(SETTINGS_ACTION).toMatch(/const editedDetails: Record<string, unknown> = \{\}/)
+    expect(SETTINGS_ACTION).toMatch(/coerceEventDetails\(editedDetails\)/)
+    expect(SETTINGS_ACTION).toMatch(/for \(const key of Object\.keys\(editedDetails\)\)/)
+    // The bag itself is never the argument. That single call is the whole defect.
+    expect(SETTINGS_ACTION).not.toMatch(/coerceEventDetails\((?:base|next)Details\)/)
+  })
+
+  it('keeps the booking window and the door note, which the allow-list would strip', () => {
+    expect(SETTINGS_ACTION).toMatch(/nextDetails\.rsvpWindow = \{ opensAt, closesAt \}/)
+    expect(SETTINGS_ACTION).toMatch(/nextDetails\.specialInstructions = note/)
+    // Both survive because the merge starts from what was already there.
+    expect(SETTINGS_ACTION).toMatch(/const nextDetails: Record<string, unknown> = \{ \.\.\.baseDetails \}/)
   })
 })

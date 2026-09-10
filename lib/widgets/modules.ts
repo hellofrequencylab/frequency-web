@@ -621,6 +621,14 @@ const CIRCLE_DETAIL_MODULE_IDS = [
 //     Ticketing lives in the Join box; the sold count is folded onto the RSVP ticket card.
 // Those four DEFINITIONS stay in LAYOUT_MODULES (and PARKED in modules.test.ts) so they compile.
 //
+// TWO MORE LEFT THE SET on 2026-09-10 (ADR-1309), and this pair is a different fault: they were not
+// duplicates, they were RETIRED CODE. `event-facts` and `event-warm-proof` were folded into
+// `event-join` by ADR-826 and both components have returned `null` unconditionally ever since — yet
+// they stayed in this set, so the Layout editor offered an operator two rows to drag, order, and
+// place, and placing either did nothing at all. A movable block that cannot draw is a lie the
+// organizer tells. Their definitions stay in LAYOUT_MODULES and both are named in the reachability
+// guard's PARKED list, so a future surface can adopt either without resurrecting the ghost row.
+//
 // The 'event-dispatch' composer is NO LONGER a default block: the host "Post an update" composer is
 // now folded INTO the activity module (event-activity renders it for hosts/cohosts, the say-hi
 // composer for everyone else), so there is one composer, not two boxes. The 'event-details' block
@@ -640,7 +648,6 @@ const EVENT_DETAIL_MODULE_IDS = [
   'event-recap',
   // Former Join aside (defaults to SIDE).
   'event-join',
-  'event-facts',
   // The ONE canonical venue block — the address line + its map — pinned at the bottom of MAIN by
   // the default layout (self-hides for an online event or with no address/geo).
   'event-location',
@@ -650,10 +657,6 @@ const EVENT_DETAIL_MODULE_IDS = [
   'event-when-where',
   'event-attendees',
   'event-checkin',
-  // Warm proof (social proof) fills the SIDE column. Its data is computed in active-event.ts and
-  // its metadata says it belongs here, but it was missing from this set + the default layout, so
-  // it could never render or be added from the Layout editor (site-audit BUG-1).
-  'event-warm-proof',
 ] as const
 
 /** Scope key → the module ids that page offers. A key is the global default ('*'), a section

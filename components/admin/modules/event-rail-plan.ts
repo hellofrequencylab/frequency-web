@@ -40,7 +40,8 @@
 
 import { EVENT_MANIFEST } from '@/lib/studio/entities/event'
 import { railForm, type RailForm } from '@/lib/studio/kernel/edit-plan'
-import type { FieldDef, SectionDef } from '@/lib/studio/kernel/manifest'
+import type { FieldDef, RepeatDef, SectionDef } from '@/lib/studio/kernel/manifest'
+import type { RepeatRow } from '@/components/admin/rail/rail-field-value'
 import { isoToWallClockInput } from '@/lib/events/datetime'
 import { formatRepeatDraft, repeatFor } from '@/lib/events/repeat-rule'
 import type { SeriesScope } from '@/lib/events/series-scope'
@@ -73,6 +74,20 @@ export const EVENT_SETTINGS_WRITES = [
   'joinMode',
   'details.rsvpWindow.opensAt',
   'details.rsvpWindow.closesAt',
+  // ── THE `details` BAG (ADR-1309) ────────────────────────────────────────────────────────────
+  // Everything Vera harvests off a flyer lands in `events.details`, renders as its own movable
+  // block, and until now could be edited on NO surface: the manifest declared two lists and five
+  // repeat groups, the writes list carried none of them, and `railForm()` filtered them all out.
+  // These are the six the page renders (`details.lineup` is deliberately absent: the
+  // `event-lineup` block id binds the HOST profile box, so the poster lineup draws nowhere), plus
+  // the door note, which was write-only for the life of the column.
+  'details.features',
+  'details.specialInstructions',
+  'details.sponsors',
+  'details.tickets',
+  'details.schedule',
+  'details.links',
+  'details.other',
   'visibility',
   'capacity',
   'energyTag',
@@ -88,6 +103,11 @@ export const EVENT_PLACEMENT_WRITES = ['scopeId'] as const
 export const EVENT_PERMALINK_WRITES = ['slug'] as const
 
 export type EventSettingsPath = (typeof EVENT_SETTINGS_WRITES)[number]
+
+/** The `details` collections the settings zone persists: the repeat groups, by `arrayPath`. Split
+ *  out so the readers and the FormData builder can iterate them without re-deriving the set. */
+export const EVENT_REPEAT_PATHS = ['details.tickets', 'details.schedule', 'details.links', 'details.other'] as const
+export type EventRepeatPath = (typeof EVENT_REPEAT_PATHS)[number]
 export type EventRailPath =
   | (typeof EVENT_GALLERY_WRITES)[number]
   | EventSettingsPath
@@ -126,6 +146,15 @@ export const EVENT_COLUMNS: Record<EventRailPath, string> = {
   joinMode: 'join_mode',
   'details.rsvpWindow.opensAt': 'rsvp_opens_at',
   'details.rsvpWindow.closesAt': 'rsvp_closes_at',
+  // The `details` keys. Two lists arrive comma-joined (the tag control's own separator); the four
+  // collections arrive as JSON, because a table of rows has no flat form a FormData can carry.
+  'details.features': 'details_features',
+  'details.specialInstructions': 'special_instructions',
+  'details.sponsors': 'details_sponsors',
+  'details.tickets': 'details_tickets',
+  'details.schedule': 'details_schedule',
+  'details.links': 'details_links',
+  'details.other': 'details_other',
   visibility: 'visibility',
   capacity: 'capacity',
   energyTag: 'energy_tag',
@@ -186,14 +215,36 @@ export type EventComposite = (typeof EVENT_COMPOSITES)[number]['key']
 export interface EventSettingsGroup {
   section: SectionDef
   fields: FieldDef[]
+  /** The repeat groups that fall under this section, in manifest order (ADR-1309). */
+  repeats: RepeatDef[]
 }
 
-/** The settings zone's fields grouped by manifest section, in manifest order, with each section's
- *  own title and line. The module heads each group with them, as the Journey's touchpoints are. */
+/** The settings zone's fields AND repeat groups by manifest section, in manifest order, with each
+ *  section's own title and line. The module heads each group with them, as the Journey's
+ *  touchpoints are. A section with only a collection under it (Host and links, Other) is a real
+ *  group, so the filter asks about both planes. */
 export function eventSettingsGroups(): EventSettingsGroup[] {
   return EVENT_MANIFEST.sections
-    .map((section) => ({ section, fields: EVENT_RAIL.settings.fields.filter((f) => f.section === section.key) }))
-    .filter((g) => g.fields.length > 0)
+    .map((section) => ({
+      section,
+      fields: EVENT_RAIL.settings.fields.filter((f) => f.section === section.key),
+      repeats: EVENT_RAIL.settings.repeats.filter((r) => r.section === section.key),
+    }))
+    .filter((g) => g.fields.length > 0 || g.repeats.length > 0)
+}
+
+/**
+ * THE SERVER'S OWN CAP on each collection, restated once where the control can read it
+ * (`coerceEventDetails`, lib/events/normalize.ts). Not decoration: a row typed past the cap is
+ * dropped at save with nothing said, so the control stops offering Add and says why instead.
+ * Wrong here would be a silent data loss, which is why the plan test holds each number against the
+ * coercion itself rather than against this comment.
+ */
+export const EVENT_REPEAT_CAPS: Record<EventRepeatPath, number> = {
+  'details.tickets': 8,
+  'details.schedule': 24,
+  'details.links': 10,
+  'details.other': 16,
 }
 
 /**
@@ -216,6 +267,8 @@ export type EventRailValues = Record<string, string>
  *  name, plus the RSVP window it lifts out of `details` and the theme bag. */
 export type EventRailRow = Record<string, unknown> & {
   theme?: unknown
+  /** The `events.details` JSONB, whole. Every `details.*` path reads through it. */
+  details?: unknown
   scope_type?: string | null
   rsvpOpensAt?: string | null
   rsvpClosesAt?: string | null
@@ -252,6 +305,18 @@ function repeatDraftFor(row: EventRailRow): string {
 const str = (v: unknown) => (typeof v === 'string' ? v : '')
 const bool = (v: unknown) => String(v === true)
 
+/** The row's `events.details` bag, as a plain object. Absent or malformed reads as empty. */
+function detailsOf(row: EventRailRow): Record<string, unknown> {
+  const d = row.details
+  return d && typeof d === 'object' && !Array.isArray(d) ? (d as Record<string, unknown>) : {}
+}
+
+/** A stored string list as the tag control's one string. Mirrors `joinFieldValue`, which is what
+ *  reads it back; the separator is the tag control's own, so a value can never contain one. */
+function listOf(v: unknown): string {
+  return Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string' && x.trim() !== '').join(', ') : ''
+}
+
 /**
  * The paths whose control string is not the column read plainly. Each is the settings action's own
  * shape read backwards: a wall-clock input from a stored instant, dollars from cents, a checkbox from
@@ -264,6 +329,11 @@ const READERS: Partial<Record<EventSettingsPath, (row: EventRailRow) => string>>
   recurrenceRule: (r) => repeatDraftFor(r),
   'details.rsvpWindow.opensAt': (r) => isoToWallClockInput(r.rsvpOpensAt),
   'details.rsvpWindow.closesAt': (r) => isoToWallClockInput(r.rsvpClosesAt),
+  // The `details` bag is one JSONB column, so every path under it reads through the bag rather
+  // than through a column of its own.
+  'details.features': (r) => listOf(detailsOf(r).features),
+  'details.sponsors': (r) => listOf(detailsOf(r).sponsors),
+  'details.specialInstructions': (r) => str(detailsOf(r).specialInstructions),
   priceCents: (r) => (typeof r.price_cents === 'number' && r.price_cents > 0 ? String(r.price_cents / 100) : ''),
   hideAddress: (r) => bool(r.hide_address),
   rsvpRequiresApproval: (r) => bool(r.rsvp_requires_approval),
@@ -302,6 +372,84 @@ export function eventRailValues(row: EventRailRow): EventRailValues {
   return out
 }
 
+// ── The repeat groups: a stored collection in, the action's JSON out ─────────────────────
+
+/** The rows of every repeat group the settings zone persists, keyed by `arrayPath`. */
+export type EventRepeatRows = Record<string, RepeatRow[]>
+
+/** The key inside `events.details` a repeat's `arrayPath` addresses ('details.tickets' -> 'tickets'). */
+function detailsKey(arrayPath: string): string {
+  return arrayPath.startsWith('details.') ? arrayPath.slice('details.'.length) : arrayPath
+}
+
+/**
+ * THE ONE TRANSLATED CELL. A ticket tier's `priceCents` is stored in CENTS and typed in whole
+ * currency units, exactly as the event's own `priceCents` field is (`price` in the key map). Every
+ * other cell of every other group is the stored scalar read plainly. Kept here beside the rest of
+ * this rail's dialect rather than inside the control, which stays entity-blind.
+ */
+const REPEAT_CELL_READERS: Record<string, Record<string, (v: unknown) => string>> = {
+  'details.tickets': {
+    priceCents: (v) => (typeof v === 'number' && Number.isFinite(v) && v > 0 ? String(v / 100) : ''),
+  },
+}
+
+const REPEAT_CELL_WRITERS: Record<string, Record<string, (s: string) => unknown>> = {
+  'details.tickets': {
+    priceCents: (s) => {
+      const n = Number(s.trim())
+      return Number.isFinite(n) && n > 0 ? Math.round(n * 100) : undefined
+    },
+  },
+}
+
+/**
+ * The stored collections as the rail's rows: one `RepeatRow` per stored item, every declared field
+ * present (blank when the item has no value for it) so each control is controlled from the start.
+ */
+export function eventRepeatRows(row: EventRailRow): EventRepeatRows {
+  const details = detailsOf(row)
+  const out: EventRepeatRows = {}
+  for (const def of EVENT_RAIL.settings.repeats) {
+    const stored = details[detailsKey(def.arrayPath)]
+    const items = Array.isArray(stored) ? stored : []
+    const readers = REPEAT_CELL_READERS[def.arrayPath] ?? {}
+    out[def.arrayPath] = items
+      .filter((item): item is Record<string, unknown> => !!item && typeof item === 'object' && !Array.isArray(item))
+      .map((item) => {
+        const cells: RepeatRow = {}
+        for (const f of def.fields) {
+          const reader = readers[f.path]
+          cells[f.path] = reader ? reader(item[f.path]) : display(item[f.path])
+        }
+        return cells
+      })
+  }
+  return out
+}
+
+/**
+ * One group's rows as the JSON the settings action parses. A cell that reads back as `undefined`
+ * (an unusable price) is left OFF the item rather than written as null, because that is what the
+ * details coercion treats as "not stated"; a wholly empty row is dropped there, not here, so the
+ * control can hold a half-typed one without this deciding it is rubbish.
+ */
+export function eventRepeatPayload(arrayPath: string, rows: readonly RepeatRow[]): Record<string, unknown>[] {
+  const def = EVENT_RAIL.settings.repeats.find((r) => r.arrayPath === arrayPath)
+  if (!def) return []
+  const writers = REPEAT_CELL_WRITERS[arrayPath] ?? {}
+  return rows.map((row) => {
+    const item: Record<string, unknown> = {}
+    for (const f of def.fields) {
+      const raw = (row[f.path] ?? '').trim()
+      const writer = writers[f.path]
+      const value = writer ? writer(raw) : raw
+      if (value !== undefined && value !== '') item[f.path] = value
+    }
+    return item
+  })
+}
+
 // ── The settings form's FormData, keyed the way the action reads it ──────────────────────
 
 export interface EventPin {
@@ -316,7 +464,17 @@ export interface EventPin {
  * key is present (`'on'` / `'off'`), so a snapshot could never switch one OFF. The old rail carried a
  * controlled hidden input per switch for the same reason; the plan encodes it once, here.
  */
-export function eventSettingsFormData(values: EventRailValues, pin: EventPin, scope: SeriesScope = 'this'): FormData {
+// 🔴 `repeats` is REQUIRED, with no default. A default of `{}` would make a forgotten argument
+// send every collection as `[]`, and the action would faithfully clear a host's whole schedule.
+// A missing argument should be a type error, not a silent deletion. That is also why it sits
+// BEFORE `scope`: a required parameter cannot follow a defaulted one, and of the two it is
+// `repeats` that must never be got by omission.
+export function eventSettingsFormData(
+  values: EventRailValues,
+  pin: EventPin,
+  repeats: EventRepeatRows,
+  scope: SeriesScope = 'this',
+): FormData {
   const fd = new FormData()
   // Not a field and not a column: it says what the save may REACH (ADR-1307). Sent on every save,
   // including a standalone event's, where the action's plan ignores it.
@@ -325,6 +483,15 @@ export function eventSettingsFormData(values: EventRailValues, pin: EventPin, sc
     const path = f.path as EventSettingsPath
     const v = values[path] ?? ''
     fd.set(EVENT_COLUMNS[path], f.kind === 'toggle' ? (v === 'true' ? 'on' : 'off') : v)
+  }
+  // A repeat is a TABLE, which a flat FormData cannot carry: each group goes as JSON under its own
+  // key, and the action parses and coerces it. Always present, so an emptied collection can clear
+  // itself — the same reason every switch is sent as on/off rather than omitted.
+  for (const def of EVENT_RAIL.settings.repeats) {
+    fd.set(
+      EVENT_COLUMNS[def.arrayPath as EventRailPath],
+      JSON.stringify(eventRepeatPayload(def.arrayPath, repeats[def.arrayPath] ?? [])),
+    )
   }
   fd.set('lat', pin.lat == null ? '' : String(pin.lat))
   fd.set('lng', pin.lng == null ? '' : String(pin.lng))

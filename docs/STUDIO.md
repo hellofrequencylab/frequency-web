@@ -64,6 +64,17 @@ keeps the translation beside the plan, restating each action's signature once wh
 it against the manifest: the Journey's JSON-patch key maps, the Circle's and Event's snake_case
 column maps and FormData builders.
 
+A manifest's **repeat groups** ride the same seam (ADR-1309). `railRepeats(manifest, writes)`
+returns the collections a save path persists, `RailForm` carries them beside its fields, and
+`RailManifestRepeat` (`components/admin/rail/`) renders one as a list of item cards whose controls
+are the group's own fields through the shared `FieldControl` — it declares no field and knows no
+entity, and its add / remove / reorder commit through `useRailSaveNow()` because a button fires
+nothing an autosave form can hear. **Ordered collections only:** a `map` repeat is keyed by an id,
+with no order to drag and no row to add, so `railForm` reports a written one as a `keyed-repeat`
+drop rather than leaving it out in silence. A group may name itself with `RepeatDef.label`;
+`repeatLabel()` derives the fallback from the path, which is right by luck often enough to be worth
+overriding (the Event's `details.other` renders under "Details", not "Other").
+
 A NON-prose `spark` field (a name, a start, a place, a price) has no plane to derive after
 creation, so it declares one: `editPlane: 'rail'` or `'inline'` (ADR-1281). Without it the field
 is asked once and never edited, and `railForm()` reports a rail that writes it as `spark-only`.
