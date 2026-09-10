@@ -39035,7 +39035,7 @@ remembered to edit a list. Three had:
 |---|---|---|---|---|
 | `space.messages` (Message center) | audience | `space.crm` | Offerings & Money | Resonance |
 | `space.collaborators` (Collaborators) | audience | `space.people` | Offerings & Money | Settings |
-| `space.reachreceipt` (Your reach) | reach | `space.reach` | Offerings & Money | Marketing |
+| `space.reachreceipt` (Your reach) | reach | `space.reach` | Offerings & Money | Marketing, by its parent, but see the ruling below |
 
 Each already **declares its true home in `parent`**, and the resolver ignores the field. The same
 bug ran in reverse on `space.automation`, whose id *is* in the marketing list while its parent
@@ -39080,7 +39080,13 @@ the operator**. Two scopes, one tab apart, under near-identical names.
   reason `space-hub.ts` already gives: the Offerings & Money *tab* **is** that box, so a card
   linking back to the tab you are standing on is a circular row. It has been rendering as a peer
   beside Booking, Memberships and Donations, which are its own children.
-- **"Your reach" moves to Content & Programs AND is un-parented** (owner ruling). Moving the child
+- **"Your reach" moves to Content & Programs AND is un-parented** (owner ruling). 🔴 This is the one
+  ruling in this ADR with an unresolved cost, found after it was accepted: `SPACE_MODULE_BOX_IDS` is
+  DERIVED as `SPACE_MODULES.filter((m) => !m.parent)` (`space-modules.ts:363`), so un-parenting makes
+  Your reach a **thirteenth top-level box** and fails `space-modules.test.ts:248-264`, which pins
+  ADR-846's twelve. Either this ADR amends ADR-846 to thirteen, or the row keeps its parent and takes
+  a stated divergence reason instead. `LIVE-292` carries the ruling; do not settle it by editing the
+  test. Moving the child
   while `space.reach` stays in Marketing would recreate the very orphan class this ADR removes, so
   it becomes a top-level card with no parent. Calendar moves to Content & Programs; Collaborators
   moves to Profile & Settings, matching `parent: space.people`; Automation returns to Resonance.
