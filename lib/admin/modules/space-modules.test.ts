@@ -242,10 +242,19 @@ describe('console consolidation metadata (ADR-782)', () => {
   })
 })
 
-// ADR-846: the TWELVE-BOX consolidation. A Space menu is twelve top-level boxes; every other catalog row is
-// a tool owned by exactly one of them. This is the lock on that shape.
-describe('the twelve boxes (ADR-846)', () => {
-  it('has exactly twelve top-level boxes, in the approved order', () => {
+// ADR-846: the TWELVE-BOX consolidation, AMENDED TO THIRTEEN by ADR-1313. A Space menu is thirteen
+// top-level boxes; every other catalog row is a tool owned by exactly one of them. This is the lock on that
+// shape.
+//
+// 🔴 WHY THE COUNT MOVED, in the test that records it. `SPACE_MODULE_BOX_IDS` is DERIVED (`filter((m) =>
+// !m.parent)`), so un-parenting a row changes it. The owner ruled that "Your reach" moves to the Content &
+// Programs tab; its box, QR codes and insights, stays on Marketing. Leaving the `parent` in place would have
+// made it a tool filed a tab away from the box that owns it — the exact orphan class ADR-1313 exists to
+// remove — so the parent came off and the count went to thirteen. The lock was a COUNT, not a principle, and
+// the un-parenting has a reason the count does not. This test is the record of that ruling: it is edited
+// WITH the ADR that authorises it, never to make a diff go green.
+describe('the thirteen boxes (ADR-846, amended by ADR-1313)', () => {
+  it('has exactly thirteen top-level boxes, in the approved order', () => {
     expect(SPACE_MODULE_BOX_IDS).toEqual([
       'space.basics', // 1 Profile and Settings
       'space.layout', // 2 Page
@@ -256,11 +265,12 @@ describe('the twelve boxes (ADR-846)', () => {
       'space.content', // 8 Content (catalog order puts it before Shop)
       'space.services', // 7 Shop
       'space.reach', // 10 QR codes and insights (catalog order puts it before Email)
+      'space.reachreceipt', // 13 Your reach (un-parented by ADR-1313 — the thirteenth)
       'space.comms', // 9 Email
       'space.billing', // 11 Plan and billing
       'space.danger', // 12 Danger zone
     ])
-    expect(SPACE_MODULE_BOX_IDS).toHaveLength(12)
+    expect(SPACE_MODULE_BOX_IDS).toHaveLength(13)
   })
 
   it('gives every non-box row a box that owns it, one level deep, with no orphan', () => {
@@ -284,6 +294,7 @@ describe('the twelve boxes (ADR-846)', () => {
       'space.booking': 'space.offerings',
       'space.memberships': 'space.offerings',
       'space.donations': 'space.offerings',
+      'space.payments': 'space.offerings',
       'space.practices': 'space.content',
       'space.journeys': 'space.content',
       'space.circles': 'space.content',
@@ -320,7 +331,10 @@ describe('the twelve boxes (ADR-846)', () => {
       'space.booking',
       'space.memberships',
       'space.donations',
+      'space.payments', // Get paid (ADR-1313): money OUT, beside the three surfaces that bring money in
     ])
+    // Your reach left this box in ADR-1313 and became the thirteenth top-level one.
+    expect(spaceModuleChildren('space.reach')).toEqual([])
     expect(spaceModuleChildren('space.content').map((m) => m.id)).toEqual([
       'space.practices',
       'space.journeys',

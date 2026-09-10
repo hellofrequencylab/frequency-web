@@ -174,9 +174,20 @@ describe('Community (resonance) section coverage', () => {
   it('groups the CRM box and every tool it owns under Community', () => {
     // space.conversations joined the set when the stale space.inbox id was corrected in
     // sectionForModule (the ticketed workspace files under Resonance, not the Offerings catch-all).
-    // Automation is the one CRM-owned tool that files under Marketing instead (outbound drip).
+    // ADR-1313 completed the box: Automation came BACK from Marketing (it is drip over your own contacts,
+    // and filing it a tab away from the CRM box that owns it was the orphan defect the declared `hub`
+    // field removes), and Message center arrived from the Offerings catch-all it had been falling into.
+    // The set is now exactly the CRM box plus every tool with `parent: 'space.crm'`.
     expect(resonance.map((m) => m.id).sort()).toEqual(
-      ['space.conversations', 'space.crm', 'space.doors', 'space.leads', 'space.shared'].sort(),
+      [
+        'space.automation',
+        'space.conversations',
+        'space.crm',
+        'space.doors',
+        'space.leads',
+        'space.messages',
+        'space.shared',
+      ].sort(),
     )
   })
 
