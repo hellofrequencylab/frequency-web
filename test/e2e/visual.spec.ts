@@ -55,6 +55,7 @@ import {
   headerBandSurfaces,
   masksFor,
   operatorDenialReason,
+  operatorLandedElsewhere,
   operatorSurfaces,
   publicSurfaces,
   settle,
@@ -96,6 +97,12 @@ async function capture(
   }
 
   await settle(page)
+  // 🔴 THE LAST THING BEFORE THE SHUTTER: is this still the page we came for? The check above ran
+  // before `settle()`, and a requireAdmin() bounce lands inside that window — which is how eight
+  // photographs of /feed were committed under operator route names on 2026-09-10. See
+  // operatorLandedElsewhere: a missing baseline is a gap, a misattributed one gates everybody.
+  const drifted = operatorLandedElsewhere(page, surface)
+  if (drifted) test.skip(true, drifted)
   // `viewportOnly` surfaces photograph the first screen. See the note on Surface.viewportOnly:
   // a full-page baseline of a live, shared stream measures WHEN it was taken, not how it looks.
   await expect(page).toHaveScreenshot(`${surface.slug}--${state.id}.png`, {

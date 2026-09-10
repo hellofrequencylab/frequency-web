@@ -3,6 +3,7 @@
 // photograph the shell must NOT be able to print the partial banner. Without that, the banner
 // is decoration that reads like evidence.
 import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import {
   renderShellCoverage,
@@ -10,6 +11,7 @@ import {
   summarizeShellCoverage,
   type ShellObservation,
 } from './shell-coverage'
+import { operatorLandedElsewhere, ROLE_FLOOR_MARKER } from './surfaces'
 
 /** The four member-shell surfaces, exactly as appSurfaces() yields them with a Space slug. */
 const SURFACES = ['/feed', '/channels', '/settings', '/spaces/demo/manage']
@@ -462,5 +464,49 @@ describe('both e2e workflows hand the ratchets to every step that runs a suite',
     expect(
       suiteSteps(blinded).every((step) => step.includes('PW_REQUIRE_OPERATOR:')),
     ).toBe(false)
+  })
+})
+
+// ── THE LATE BOUNCE: a capture must never carry one route's name over another page ───────────────
+//
+// MEASURED 2026-09-10 (e2e-manual run 34517618524): eight of sixteen committed operator baselines
+// were photographs of /feed. `operatorDenialReason` had already passed — it reads the path right
+// after `goto`, and requireAdmin() denies at the PAGE, inside the window `settle()` then waits in.
+// `assertMemberSession` cannot catch it either: /feed HAS the member shell, so that guard proves a
+// session and not a destination. Only baseline-distinctness noticed, and only for the one pair that
+// collided byte-for-byte.
+describe('operatorLandedElsewhere: the check that runs at the shutter', () => {
+  const surface = { path: '/admin/qr', slug: 'admin-qr', audience: 'operator' as const }
+  const at = (url: string) => ({ url: () => url }) as unknown as Parameters<typeof operatorLandedElsewhere>[0]
+
+  it('fires when an operator surface has drifted to the role floor target', () => {
+    const reason = operatorLandedElsewhere(at('https://x.test/feed'), surface)
+    expect(reason).toContain('/admin/qr')
+    expect(reason).toContain('/feed')
+    expect(reason).toContain(ROLE_FLOOR_MARKER)
+  })
+
+  it('fires for ANY other page, not just /feed — the misattribution is the defect, not the target', () => {
+    expect(operatorLandedElsewhere(at('https://x.test/admin'), surface)).toContain('/admin')
+    expect(operatorLandedElsewhere(at('https://x.test/'), surface)).not.toBeNull()
+  })
+
+  it('stays quiet on the route itself and on its children', () => {
+    expect(operatorLandedElsewhere(at('https://x.test/admin/qr'), surface)).toBeNull()
+    expect(operatorLandedElsewhere(at('https://x.test/admin/qr/new'), surface)).toBeNull()
+  })
+
+  it('never speaks for a non-operator surface — the member half has its own guard', () => {
+    const feed = { path: '/feed', slug: 'app-feed', audience: 'member' as const }
+    expect(operatorLandedElsewhere(at('https://x.test/sign-in'), feed)).toBeNull()
+  })
+
+  it('is wired into BOTH suites, after settle() rather than before it', () => {
+    for (const spec of ['test/e2e/visual.spec.ts', 'test/e2e/a11y.spec.ts']) {
+      const src = readFileSync(join(process.cwd(), spec), 'utf8')
+      expect(src).toContain('operatorLandedElsewhere(page, surface)')
+      // The whole point is the ORDER: before settle() it is the check that already failed.
+      expect(src.indexOf('await settle(page)')).toBeLessThan(src.indexOf('operatorLandedElsewhere(page, surface)'))
+    }
   })
 })
