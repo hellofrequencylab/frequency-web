@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo, useState, useTransition } from 'react'
+import { Radio } from '@/components/ui/radio'
 import { SlidersHorizontal, RotateCcw } from 'lucide-react'
 import { NAV_AREAS, ACCESS_LEVELS, type NavAccess } from '@/lib/nav-areas'
 import { ROLE_LABEL } from '@/lib/community-roles'
@@ -165,14 +166,18 @@ function GroupRows({
             </th>
             {ACCESS_LEVELS.map((lvl) => (
               <td key={lvl} className="px-2 py-2 text-center">
-                <input
-                  type="radio"
+                {/* The kit's Radio (components/ui/radio.tsx). It replaced a hand-rolled 14px
+                    `accent-*` input: the ring, the fill, the disabled fade and the `tap-target`
+                    floor all come from the primitive now, so this matrix tracks the kit instead of
+                    drifting from it. The cell grows to the 32px tap floor on a mouse, which a
+                    14px control never met. */}
+                <Radio
                   name={`area-${area.key}`}
                   aria-label={`${area.label}: ${LEVEL_LABEL[lvl]}`}
                   checked={current === lvl}
                   disabled={savingKey === area.key}
                   onChange={() => onChoose(area.key, lvl)}
-                  className="h-3.5 w-3.5 cursor-pointer accent-[var(--color-primary)] disabled:opacity-50"
+                  className="cursor-pointer"
                 />
               </td>
             ))}
