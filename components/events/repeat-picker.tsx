@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Input, Label, labelClasses } from '@/components/ui/field'
 import { Radio } from '@/components/ui/radio'
 import { Select } from '@/components/ui/select'
+import { Switch } from '@/components/ui/switch'
 import {
   REPEAT_WEEKDAYS,
   describeRepeat,
@@ -25,35 +26,43 @@ import {
 // Wednesday" and "the third Thursday of the month".
 //
 // ── THE SHAPE, AND WHY IT IS THIS SHAPE ─────────────────────────────────────────────────────────
-// ONE MENU AND ONE PANEL. The menu asks how often ("Does not repeat" / Daily / Weekly / Monthly /
-// Yearly) and nothing else; choosing anything but the first opens the panel, which is the whole
-// editor:
+// A SWITCH, AND THE EDITOR UNDER IT. "Repeat event" is off; an event is a date. Turn it on and the
+// editor opens in place, and the editor is the whole question:
 //
-//   1. "Repeat every N <unit>", the unit being the word the menu already chose. One number.
+//   1. "Repeat every N <unit>" — one number and one unit. This is where the cadence is CHOSEN;
+//      there is no second control upstream that also says "weekly".
 //   2. The unit's own detail: weekday toggles for weekly, by-date vs by-weekday for monthly and
-//      yearly. This is what "every third Thursday" is made of, and it is two taps from the menu.
+//      yearly. This is what "every third Thursday" is made of, and it is two taps from the switch.
 //   3. AN END RULE WITH THREE ARMS: never, on a date, after N times. "After N" is not a
 //      convenience — for a six-week course the host knows the count and not the date, and making
 //      them compute it is where a series ends up one week short.
 //
-// 🔴 THERE WERE PRESETS HERE, AND THEY CAME OUT (owner, 2026-09-10: "I like the custom settings
-// editor you created but I don't like the preset dropdowns. Those are confusing. Make it so only
-// the Settings editor is showing with it set to 1 time, does not repeat as a default setting").
-// The control shipped that morning led with a menu of START-DERIVED presets — "Weekly on
-// Wednesday", "Every 2 weeks on Wednesday", "Monthly on the third Wednesday" — with the editor
-// behind a "Custom…" option, which is what Google, Apple and Outlook all do. The reasoning was
-// sound and the result was not: seven sentences in a dropdown is a paragraph you have to read, the
-// editor was hidden exactly where a host would look for it, and "Custom" had to be a computed
-// state ("the rule matches no preset") rather than a stored one, which needed an interval-bumping
-// seed loop to stop the panel closing the instant it opened. All of that is gone. The menu now
-// carries five short words and the editor is always the thing you are looking at.
+// 🔴 THIS CONTROL HAS BEEN REPORTED TWICE AND THE SECOND REPORT IS WHY IT IS A SWITCH. Read both,
+// because the second one is easy to mistake for the first.
 //
-// DEFAULT: does not repeat. The menu opens on it, the panel stays shut, and the sentence below
-// reads "This happens once."
+//   Report 1 (ADR-1303): *"I like the custom settings editor you created but I don't like the
+//   preset dropdowns. Those are confusing."* The control led with a menu of START-DERIVED presets
+//   — "Weekly on Wednesday", "Every 2 weeks on Wednesday", "Monthly on the third Wednesday" —
+//   with the editor behind a "Custom…" option, which is what Google, Apple and Outlook all do. In
+//   practice it is seven sentences in a dropdown and it hides the editor where a host looks for
+//   it. The presets came out and their two builders were deleted.
+//
+//   Report 2 (ADR-1305), on what replaced them: *"I wanted you to use the custom picker you
+//   created as the custom settings for the selector. I don't want presets. I want a new event to
+//   be set to a date with a switch to turn on repeating. When they hit the Repeat Event switch, it
+//   opens the custom repeat selector."* What shipped after report 1 was still a DROPDOWN, just a
+//   shorter one — Does not repeat / Daily / Weekly / Monthly / Yearly — and a host looking at a
+//   new event saw a menu of cadences where the answer is almost always "it does not". A menu whose
+//   first option is the default and whose other options only open a panel is a switch wearing a
+//   dropdown's clothes. So it is a switch, and the cadence moved down into the editor where the
+//   rest of the pattern already lives.
+//
+// DEFAULT: off. A new event is a date. The editor is shut, and the sentence below reads
+// "This happens once."
 //
 // And one rule that survives from the first design, per docs/CONTENT-VOICE.md: the panel prints the
 // SENTENCE back. "Every 2 weeks on Wednesday, until December 30" is the only way a host can check
-// what they built, and it is also the menu's accessible description, so the same words reach a
+// what they built, and it is also the switch's accessible description, so the same words reach a
 // screen reader that reach the page.
 //
 // ── ONE VALUE, NOT TWO ──────────────────────────────────────────────────────────────────────────
@@ -97,16 +106,6 @@ const ORDINAL_LABELS: { value: string; label: string }[] = [
   { value: '-1', label: 'last' },
 ]
 
-/** How the MENU says each frequency. Plain words, no arithmetic for the host to do in their head:
- *  the detail ("on Wednesday", "the third Thursday") is the panel's job and the sentence's job. */
-const FREQ_LABEL: Record<RepeatFreq, string> = {
-  DAILY: 'Daily', WEEKLY: 'Weekly', MONTHLY: 'Monthly', YEARLY: 'Yearly',
-}
-
-/** The menu value for "does not repeat", which is the empty rule. A sentinel rather than '' so an
- *  <option> value is never the empty string, which some browsers treat as "no selection". */
-const NONE = '__none__'
-
 /** Which <weekday> of its month a date is, as a BYSETPOS: 1..4, or -1 when it is the last one. */
 function setPosOf(anchor: Date): number {
   const day = anchor.getUTCDate()
@@ -121,7 +120,7 @@ export function RepeatPicker({
   startsAt,
   name,
   disabled = false,
-  label = 'Repeats',
+  label = 'Repeat event',
   className = '',
 }: {
   /** The current transport string: an RRULE value, optionally with `;UNTIL=YYYYMMDD`. Empty means
@@ -150,20 +149,32 @@ export function RepeatPicker({
   const emit = (nextRule: RepeatRule | null, nextUntil: string | null = untilDate) =>
     onChange(formatRepeatDraft(nextRule, nextRule ? nextUntil : null))
 
-  /** The menu. "Does not repeat" clears the rule outright; a frequency either STARTS one from the
-   *  event's own start date, or re-bases the existing one.
+  /** THE SWITCH. Off clears the rule outright, including any end date the host had set: a leftover
+   *  UNTIL is how a rail ends up saying "Repeats until 30 December" beside a control that says the
+   *  event does not repeat.
    *
-   *  Re-basing rebuilds the parts that only make sense for the new frequency rather than carrying a
-   *  BYSETPOS into a weekly rule where it means nothing. What it KEEPS is the interval and the end
-   *  rule, because "every 2 weeks, 6 times" -> "every 2 months, 6 times" is one menu change to a
-   *  host and should not silently become "every 1 month, forever". */
-  function pickFreq(next: string) {
-    if (next === NONE) {
+   *  On starts a WEEKLY rule on the event's own weekday, which is the shape all but a handful of
+   *  series want, and every part of it is one control away in the editor that just opened. Turning
+   *  the switch back on after turning it off gives that same fresh weekly rule rather than trying
+   *  to remember what was there: the parent owns the value, and a control that resurrects a
+   *  discarded rule from memory is a control that disagrees with the sentence under it. */
+  function toggleRepeat(on: boolean) {
+    if (!on) {
       emit(null, null)
       return
     }
-    const freq = next as RepeatFreq
-    const base: RepeatRule = { freq, interval: rule?.interval ?? 1, count: rule?.count }
+    const base: RepeatRule = { freq: 'WEEKLY', interval: 1 }
+    if (anchor) base.byDay = [REPEAT_WEEKDAYS[anchor.getUTCDay()]]
+    emit(base, null)
+  }
+
+  /** The UNIT, inside the editor. Switching it rebuilds the parts that only make sense for the new
+   *  frequency rather than carrying a BYSETPOS into a weekly rule where it means nothing. What it
+   *  KEEPS is the interval and the end rule, because "every 2 weeks, 6 times" -> "every 2 months, 6
+   *  times" is one control change to a host and should not silently become "every 1 month, forever". */
+  function pickFreq(freq: RepeatFreq) {
+    if (!rule) return
+    const base: RepeatRule = { freq, interval: rule.interval, count: rule.count }
     if (freq === 'WEEKLY' && anchor) base.byDay = [REPEAT_WEEKDAYS[anchor.getUTCDay()]]
     if ((freq === 'MONTHLY' || freq === 'YEARLY') && anchor) base.byMonthDay = anchor.getUTCDate()
     if (freq === 'YEARLY' && anchor) base.byMonth = anchor.getUTCMonth() + 1
@@ -218,42 +229,34 @@ export function RepeatPicker({
 
   return (
     <div className={`space-y-2 ${className}`}>
-      <Label className={`${labelClasses} block`} htmlFor={`${groupId}-freq`}>
-        {label}
-      </Label>
+      {/* THE SWITCH. `label` names it, and the sentence at the bottom reads back the answer. It is
+          a <p> rather than a <label> because a role="switch" button is named by `aria-labelledby`,
+          not by wrapping. No second line of state text here: with the editor shut the sentence sits
+          directly underneath, and saying "This happens once" twice on one control is noise. */}
+      <div className="flex items-center justify-between gap-3">
+        <p className={`${labelClasses} min-w-0`} id={`${groupId}-label`}>
+          {label}
+        </p>
+        <Switch
+          id={`${groupId}-switch`}
+          checked={!!rule}
+          onCheckedChange={toggleRepeat}
+          disabled={disabled}
+          aria-labelledby={`${groupId}-label`}
+        />
+      </div>
 
-      {/* THE ONE MENU: how often, or not at all. Five short words, and every one of them is a
-          frequency rather than a sentence about this event's own date — the detail is the panel's
-          job, and the sentence at the bottom reads it all back. */}
-      <Select
-        id={`${groupId}-freq`}
-        value={rule?.freq ?? NONE}
-        onChange={(e) => pickFreq(e.target.value)}
-        disabled={disabled}
-        aria-describedby={`${groupId}-summary`}
-        options={[
-          // These are <option>s in a form control, not destinations, so the admin menu contract
-          // (ADR-553/927) does not govern them. The annotation is what tells `pnpm check:menu` so.
-          { value: NONE, label: 'Does not repeat' }, // menu-ok: form-control options, not menu rows
-          ...(['DAILY', 'WEEKLY', 'MONTHLY', 'YEARLY'] as RepeatFreq[]).map((f) => ({
-            value: f,
-            label: FREQ_LABEL[f],
-          })),
-        ]}
-      />
-
-      {/* THE EDITOR. Open whenever the event repeats at all, shut when it does not — so the default
-          state of this control is one menu reading "Does not repeat" and nothing else. */}
+      {/* THE EDITOR, opened by the switch and closed by it. A new event is a date, so the whole of
+          this is absent until a host says otherwise. */}
       {rule && (
         <div className="space-y-3 rounded-control border border-border bg-surface-elevated p-3">
-          {/* ── Row 1: how often. The UNIT is the word the menu already chose, printed rather than
-              re-asked: two controls that both say "weekly" is how a host ends up with a rule they
-              did not mean. ── */}
-          <div className="space-y-1">
-            <Label className={labelClasses} htmlFor={`${groupId}-interval`}>
-              Repeat every
-            </Label>
-            <div className="flex items-center gap-2">
+          {/* ── Row 1: how often. The cadence is CHOSEN here, not upstream: one number and one unit,
+              in the same box as the rest of the pattern. ── */}
+          <div className="flex flex-wrap items-end gap-2">
+            <div className="space-y-1">
+              <Label className={labelClasses} htmlFor={`${groupId}-interval`}>
+                Repeat every
+              </Label>
               <Input
                 id={`${groupId}-interval`}
                 type="number"
@@ -265,9 +268,24 @@ export function RepeatPicker({
                 disabled={disabled}
                 onChange={(e) => patch({ interval: Math.max(1, Math.min(99, Number(e.target.value) || 1)) })}
               />
-              <span className="text-body-sm text-text">
-                {rule.interval === 1 ? UNIT_LABEL[rule.freq].one : UNIT_LABEL[rule.freq].many}
-              </span>
+            </div>
+            <div className="min-w-32 flex-1 space-y-1">
+              <Label className={labelClasses} htmlFor={`${groupId}-freq`}>
+                Unit
+              </Label>
+              <Select
+                id={`${groupId}-freq`}
+                value={rule.freq}
+                disabled={disabled}
+                aria-describedby={`${groupId}-summary`}
+                onChange={(e) => pickFreq(e.target.value as RepeatFreq)}
+                // <option>s in a form control, not destinations, so the admin menu contract
+                // (ADR-553/927) does not govern them. The annotation is what tells `pnpm check:menu`.
+                options={(['DAILY', 'WEEKLY', 'MONTHLY', 'YEARLY'] as RepeatFreq[]).map((f) => ({
+                  value: f, // menu-ok: form-control options, not menu rows
+                  label: rule.interval === 1 ? UNIT_LABEL[f].one : UNIT_LABEL[f].many,
+                }))}
+              />
             </div>
           </div>
 
@@ -370,9 +388,8 @@ export function RepeatPicker({
             </div>
           )}
 
-          {/* ── Row 3: the end rule. Inside the panel now: with the presets gone there is no
-              "plain" series that lives outside the editor, so every row of the question is in one
-              box instead of two. ── */}
+          {/* ── Row 3: the end rule. Inside the panel: the switch decides whether this question is
+              asked at all, so every row of it belongs in the one box the switch opens. ── */}
           <div className="space-y-1.5">
             <p className={labelClasses} id={`${groupId}-end-label`}>
               Ends
@@ -429,8 +446,10 @@ export function RepeatPicker({
         </div>
       )}
 
-      {/* THE SENTENCE. Named by `aria-describedby` on the menu above, so the same words a host reads
-          are the words a screen reader announces when the control takes focus. */}
+      {/* THE SENTENCE. `aria-live` so a change to any control in the editor is announced, and it is
+          the unit select's `aria-describedby`, so the same words a host reads are the words a screen
+          reader gets. With the switch off this is the whole control below the switch: "This happens
+          once." */}
       <p id={`${groupId}-summary`} className="text-2xs text-muted" aria-live="polite">
         {summary}
       </p>

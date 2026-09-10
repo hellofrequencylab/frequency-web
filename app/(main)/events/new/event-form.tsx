@@ -567,9 +567,11 @@ export function EventForm({
               />
             </div>
 
-            {/* Recurrence — set the rule on create, change it on edit. ONE control for the whole
-                question: the cadence, the interval, the weekdays, the monthly ordinal and the end
-                (ADR-1299). It replaced a four-button group that could not say "every other
+            {/* Recurrence — set the rule on create, change it on edit. A SWITCH, and one editor
+                under it carrying the whole question: the cadence, the interval, the weekdays, the
+                monthly ordinal and the end (ADR-1299, reshaped by ADR-1305). A new event is a
+                date, so the switch is off and there is nothing under it until a host says
+                otherwise. It replaced a four-button group that could not say "every other
                 Wednesday" and a separate end-date field that could contradict it. */}
             <div className="space-y-1.5">
               <RepeatPicker

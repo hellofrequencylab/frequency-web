@@ -38454,7 +38454,7 @@ edit. `check:a11y-names` is unaffected: a button labelled by its visible text is
 
 ---
 
-## ADR-1303: ACCEPTED — the repeat control is an editor, not a preset menu (2026-09-10)
+## ADR-1303: ACCEPTED, SHAPE SUPERSEDED BY ADR-1305 — the repeat control is an editor, not a preset menu (2026-09-10)
 
 **Context.** Owner, on the picker ADR-1299 shipped that morning: *"I like the custom settings editor
 you created but I don't like the preset dropdowns. Those are confusing. Make it so only the Settings
@@ -38563,6 +38563,55 @@ them. They stay on the page and in the series rail, which is the honest default,
 prompt to go and cancel them. `LIVE-279` carries it.
 
 ---
+
+## ADR-1305: ACCEPTED — the repeat control is a switch, and the editor is what it opens (2026-09-10)
+
+**Context.** The third report on this control in one day, on what ADR-1303 shipped:
+
+> I wanted you to use the custom picker you created as the custom settings for the selector. I don't
+> want presets. I want a new event to be set to a date with a switch to turn on repeating. When they
+> hit the Repeat Event switch, it opens the custom repeat selector.
+
+ADR-1303 removed the start-derived preset menu and replaced it with a shorter menu: **Does not
+repeat · Daily · Weekly · Monthly · Yearly**. That answered the letter of the second report and not
+its substance. What a host saw on a new event was still a dropdown offering cadences, where the
+honest answer is almost always "it does not repeat" — and the editor was still behind an
+interaction, just a cheaper one.
+
+The structural point, which is the part worth keeping: **a menu whose first option is the default,
+and whose every other option only opens a panel, is a switch wearing a dropdown's clothes.** It
+costs a host two decisions (open the menu, then pick from it) to express one bit (does this repeat
+at all), and it puts the cadence in a control that sits ABOVE the editor rather than inside it, so
+"weekly" is asked in one place and "every 2 weeks" in another.
+
+**Decision.** A switch labelled **Repeat event**, off by default, with the editor rendered beneath
+it when on. The cadence moves down into the editor as its unit control, beside the interval it
+modifies — "Repeat every `2` `weeks`" is one row and one thought. Nothing else about the editor
+changes: the weekday toggles, the by-date vs by-weekday monthly arm and the three-armed end rule are
+as ADR-1299 built them and ADR-1303 left them, and the read-back sentence still prints underneath.
+
+Turning the switch OFF clears the rule and any `UNTIL` with it, because a leftover end date is how a
+rail ends up saying "Repeats until 30 December" beside a control that says the event does not
+repeat. Turning it back ON mints a fresh weekly rule on the event's own weekday rather than
+resurrecting the discarded one: the parent owns the value, and a control that remembers what it
+threw away is a control that disagrees with the sentence under it.
+
+The manifest label changed from "Repeats" to **"Repeat event"** (`lib/studio/entities/event.ts`), so
+the settings rail says what the switch does rather than naming a property.
+
+**Consequences.** The engine, the transport string and every writer are untouched for the second
+time running: ADR-1299's RRULE subset, `formatRepeatDraft`, `resolveSubmittedRepeat` and all three
+write paths are exactly as they were. Three owner reports on this control have all been about what
+it OFFERS, and none about what it EMITS, which is the case for the probe this pair of ADRs added:
+`components/events/repeat-picker.render.test.tsx` mounts the control and reads the interface. It now
+pins that a new event shows a switch and nothing else, that the switch opens the editor in place,
+and that no cadence menu sits upstream of it.
+
+⚠️ One thing that test learned the hard way, recorded because it will catch the next person: the
+retired preset LABELS are sentences `describeRepeat` still legitimately produces. "Weekly on
+Wednesday" is exactly what the read-back line says for that rule, and it should. So the
+preset-absence assertion is made against the `<option>` list, not against the control's text; a
+text-level version fails on the sentence the control exists to print.
 
 ## ADR-1306: ACCEPTED — a repeat rule set from one date of a series is written to the series (2026-09-10)
 
