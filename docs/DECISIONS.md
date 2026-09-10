@@ -38963,7 +38963,7 @@ favour of another dense console. Recorded in `HYG-027` with the grid.
 
 ---
 
-## ADR-1311: ACCEPTED — the Manage hub declares a module's tab instead of guessing it, and "money" stops meaning two opposite things (2026-09-10)
+## ADR-1313: ACCEPTED — the Manage hub declares a module's tab instead of guessing it, and "money" stops meaning two opposite things (2026-09-10)
 
 **Context.** Owner, 2026-09-10: *"They got stupid confused and there's no way to manage the Stripe
 Connect link. There used to be a button, but it's gone."* Two separate faults met on one tab, and
@@ -39070,9 +39070,9 @@ move the `/spaces/[slug]/manage` page height, whose visual baseline `LIVE-186` a
 
 **Not decided here.** "Message center" survives as a `SectionHeader` on `circles/[slug]/manage` and
 `events/[slug]/manage`; those are that circle's and that event's own broadcast, not this surface,
-and whether the *name* retires with the space one is a `docs/NAMING.md` question filed in LIVE-288
+and whether the *name* retires with the space one is a `docs/NAMING.md` question filed in LIVE-293
 rather than settled here. `LIVE-233` is still marked `open` at P0 although its code shipped in
-#2507; this ADR is the re-measurement its premise was owed, and LIVE-285 is the half of it that was
+#2507; this ADR is the re-measurement its premise was owed, and LIVE-290 is the half of it that was
 never built.
 
-**Rows.** LIVE-285 (P0) · LIVE-286 · LIVE-287 · LIVE-288 · LIVE-289.
+**Rows.** LIVE-290 (P0) · LIVE-291 · LIVE-292 · LIVE-293 · LIVE-294.
