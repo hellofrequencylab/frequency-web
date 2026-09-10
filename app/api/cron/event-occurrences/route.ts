@@ -24,9 +24,18 @@ async function handler(req: NextRequest) {
     generateAllOccurrences({ limit: budget.items, exhausted: budget.exhausted }),
   )
   const summary = budget.summary(result.anchorsVisited, result.remaining)
+  // The retire/keep pair is logged beside the create count on purpose (ADR-1304). Retirement is the
+  // only DELETE in this cron, and it is the half that heals a series whose rule changed before the
+  // reconciliation existed — a run that reports zero retired forever on a repo that has just gained
+  // the feature is the fail-safe firing silently, which is the thing the module's own header says
+  // never to ship. `occurrencesKept` counts dates the new rule does not produce that were left live
+  // because somebody is attached to them; a number that stays high is a host who should be
+  // CANCELLING those dates, not a bug.
   log.info('cron.event_occurrences.counts', {
     anchors:            result.anchorCount,
     occurrencesCreated: result.occurrencesCreated,
+    occurrencesRetired: result.occurrencesRetired,
+    occurrencesKept:    result.occurrencesKept,
     ...summary,
   })
   return NextResponse.json({ ok: true, ...result, budget: summary })

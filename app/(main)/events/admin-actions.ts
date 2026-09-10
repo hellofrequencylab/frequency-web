@@ -23,6 +23,11 @@ import {
   coerceAttendanceMode,
   coerceVisibilityForScope,
 } from '@/lib/events/options'
+import {
+  retireStaleOccurrences,
+  generateOccurrencesForAnchor,
+  propagateAnchorEditsToOccurrences,
+} from '@/lib/event-recurrence'
 import { wallClockToIso, dateToWallClockIso } from '@/lib/events/datetime'
 import { resolveSubmittedRepeat, validateRecurrenceUntil, type RecurrenceType } from '@/lib/events/recurrence'
 import { isValidTimeZone } from '@/lib/time/zone'
@@ -516,6 +521,23 @@ export async function updateEventSettings(id: string, slug: string, fd: FormData
   // A manual pin wins; otherwise geocode-on-save resolves the point from the address (the edit
   // path previously passed NO geocoder, so an address with no dragged pin never set events.geog).
   await saveEventLocation(id, { address, attendanceMode, onlineUrl, point, geocoder: nominatimGeocoder })
+
+  // ── THE SERIES, AFTER A SETTINGS SAVE (ADR-1304) ───────────────────────────────────────────────
+  //
+  // 🔴 THIS PATH DID NONE OF IT, AND IT IS THE PATH THE UI USES. `updateEvent` (the /edit form) has
+  // materialised and propagated since ADR-884; this action — the Manage/Studio settings rail, which
+  // is where a host actually changes the repeat rule — wrote `recurrence_rule` onto the anchor and
+  // stopped there. So changing a series' cadence from the rail did nothing at all to its dates
+  // until the next daily cron, which then minted the NEW rule's dates alongside the old rule's.
+  // That asymmetry is what the owner photographed: "I changed Meld from weekly to bi weekly but it
+  // still shows all the repeating events that were configured originally."
+  //
+  // All three run for ANY anchor (each one no-ops on a child, and turning a series off is precisely
+  // when its future dates must be retired). Best-effort: the save has already landed.
+  retireStaleOccurrences(id)
+    .then(() => generateOccurrencesForAnchor(id))
+    .then(() => propagateAnchorEditsToOccurrences(id))
+    .catch((e) => console.error('[updateEventSettings] occurrence reconciliation:', e))
 
   revalidatePath(`/events/${slug}`)
   // The Manage hub mounts this same settings module on its Settings tab (ADR-828) and renders the
