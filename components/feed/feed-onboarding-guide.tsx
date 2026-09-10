@@ -20,6 +20,18 @@ type TourLocal = { status: 'completed' | 'paused' | 'skipped'; atStop: number }
 // obscured per-step force-complete (a deliberately low-prominence escape hatch).
 // Azure `broadcast` shades (the cool "getting set up" accent). When every step is
 // done it returns null and the feed page graduates it into the JourneyBoard tracker.
+//
+// 🔴 THE ACCENT IS FOR ICONS, RINGS AND BORDERS. TEXT USES text-text / text-muted.
+// `broadcast-strong` on `broadcast-bg` is 3.99:1 and is carried as DECLARED DEBT in
+// scripts/check-contrast.mjs ("the -strong step needs to go one notch deeper in light
+// mode"). That was survivable while this panel lived only on /feed. It stopped being
+// survivable when the panel moved into the right rail on EVERY member and operator
+// surface: axe then read 3.07 to 4.24 against the 4.5 bar and failed the a11y gate on
+// eleven pages that each record a baseline of 0. The opacity modifiers were the worst
+// of it, since /80 and /90 take an already-marginal token further down by construction.
+// Do not put the accent back on a text node here. The token itself is a separate,
+// owner-level DAWN decision (it has three siblings in the same state: success 3.87,
+// warning 3.32, info 4.41); this component does not need to wait on it.
 
 const MIN_KEY = 'fq_onboarding_min'
 
@@ -97,8 +109,8 @@ export function FeedOnboardingGuide({ status }: { status: OnboardingStatus }) {
         >
           <Compass className="h-4 w-4 shrink-0 text-broadcast-strong" />
           <span className="shrink-0 text-body-sm font-semibold text-text">Getting set up</span>
-          <span className="shrink-0 text-meta font-medium tabular-nums text-broadcast-strong/80">{status.doneCount} of {status.total}</span>
-          <span className="hidden min-w-0 flex-1 truncate text-meta font-medium text-broadcast-strong/90 sm:block">
+          <span className="shrink-0 text-meta font-medium tabular-nums text-muted">{status.doneCount} of {status.total}</span>
+          <span className="hidden min-w-0 flex-1 truncate text-meta font-medium text-muted sm:block">
             Next: {current.label}
           </span>
           <ProgressTrack
@@ -133,12 +145,12 @@ export function FeedOnboardingGuide({ status }: { status: OnboardingStatus }) {
               className="transition-all duration-700"
             />
           </svg>
-          <span className="absolute inset-0 flex items-center justify-center text-2xs font-bold tabular-nums text-broadcast-strong">
+          <span className="absolute inset-0 flex items-center justify-center text-2xs font-bold tabular-nums text-text">
             {status.pct}%
           </span>
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-2xs font-semibold uppercase tracking-wide text-broadcast-strong/80">
+          <p className="text-2xs font-semibold uppercase tracking-wide text-muted">
             {lastStepLeft
               ? 'Almost there. One step left'
               : `Step ${status.doneCount + 1} of ${status.total}`}
@@ -150,7 +162,7 @@ export function FeedOnboardingGuide({ status }: { status: OnboardingStatus }) {
           type="button"
           onClick={toggle}
           aria-label="Minimize"
-          className="shrink-0 rounded-control p-1 text-broadcast-strong/70 transition-colors hover:bg-broadcast-bg/60 hover:text-broadcast-strong"
+          className="shrink-0 rounded-control p-1 text-broadcast-strong transition-colors hover:bg-broadcast-bg/60 hover:text-broadcast-strong"
         >
           <ChevronDown className="h-4 w-4" />
         </button>
@@ -160,7 +172,7 @@ export function FeedOnboardingGuide({ status }: { status: OnboardingStatus }) {
           board's encouragement. Skipped on the last step, where the header already
           says "Almost there" (so we don't double up). */}
       {!lastStepLeft && (
-        <p className="mt-2 text-body-sm leading-snug text-broadcast-strong/90">
+        <p className="mt-2 text-body-sm leading-snug text-muted">
           {activationNote(status.doneCount, status.total)}
         </p>
       )}
@@ -238,13 +250,13 @@ export function FeedOnboardingGuide({ status }: { status: OnboardingStatus }) {
         </button>
         <Link
           href={current.href}
-          className="inline-flex items-center gap-1.5 rounded-control border border-broadcast-bg px-4 py-2 text-body-sm font-medium text-broadcast-strong transition-colors hover:bg-broadcast-bg/50"
+          className="inline-flex items-center gap-1.5 rounded-control border border-broadcast-bg px-4 py-2 text-body-sm font-medium text-text transition-colors hover:bg-broadcast-bg/50"
         >
           {current.cta} <ArrowRight className="h-3.5 w-3.5" />
         </Link>
         <Link
           href="/feed?welcome=vera&v=chat"
-          className="inline-flex items-center gap-1.5 rounded-control px-3 py-2 text-body-sm font-medium text-broadcast-strong transition-colors hover:bg-broadcast-bg/50"
+          className="inline-flex items-center gap-1.5 rounded-control px-3 py-2 text-body-sm font-medium text-text transition-colors hover:bg-broadcast-bg/50"
         >
           <Sparkles className="h-3.5 w-3.5" /> Ask Vera
         </Link>
