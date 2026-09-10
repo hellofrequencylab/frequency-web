@@ -41,13 +41,14 @@
 // also what keeps this module importable from the client grid.
 //
 // ONE EXCEPTION, and it is deliberate: `recurrence_until` is an INSTANT, not a day, and is compared
-// as one (see `stepInstant`). ADR-807 rules that it "resolves through the zone to the same instant
+// as one (see `computeSeriesDayKeys`). ADR-807 rules that it "resolves through the zone to the same instant
 // the RRULE `UNTIL` carries", and both recurrence mirrors plus the published .ics feeds already
 // bound the series there. Comparing it at day granularity is what made the strip chip an occurrence
 // nothing materialises (found by the parity gate, ADR-1206; closed as LIVE-154). Everything this
 // module RETURNS is still a day key.
 
 import { isSeriesCadence, seriesKey, type SeriesRow } from './series'
+import { expandRepeat, repeatChipLabel, repeatFor } from './repeat-rule'
 
 /** A calendar feed row, as the master feed RPC returns it (the fields this module reads). */
 export interface RepeatFeedRow extends SeriesRow {
@@ -63,6 +64,9 @@ export interface RepeatAnchorRow {
   starts_at: string | null
   recurrence_type?: string | null
   recurrence_until?: string | null
+  /** The RRULE value (ADR-1299). Null on a row written before it, and on a read whose SELECT does
+   *  not carry the column, which is exactly what `repeatFor` falls back for. */
+  recurrence_rule?: string | null
   is_cancelled?: boolean | null
   status?: string | null
   visibility?: string | null
@@ -98,7 +102,8 @@ export interface CalendarRepeatsPlan {
 /** How far ahead the strip computes dates. A year, matching the operator listing horizon. */
 export const REPEAT_LOOKAHEAD_DAYS = 365
 
-/** Guard so a malformed anchor can never spin: 4000 steps mirrors lib/events/recurrence.ts. */
+/** Ceiling on how many dates one series may contribute to a window. Mirrors the engine's own
+ *  MAX_REPEAT_OCCURRENCES, so a malformed rule cannot spin here either. */
 const MAX_STEPS = 4000
 
 /** The date portion of a stored `starts_at` (the event-local day), or null when unusable. */
@@ -116,67 +121,19 @@ function utcToKey(d: Date): string {
   return d.toISOString().slice(0, 10)
 }
 
-/** Days in a UTC month (month is 0-indexed) — mirrors the materialiser's monthly maths. */
-function daysInUTCMonth(year: number, month: number): number {
-  return new Date(Date.UTC(year, month + 1, 0)).getUTCDate()
-}
-
-/** The day key `step` cadence-steps after `startKey`. Monthly clamps to the target month's length
- *  from the ORIGINAL day, so a 31st anchor lands Feb 28 and then Mar 31 again (never Mar 3). */
-function stepKey(startKey: string, cadence: string, step: number): string {
-  const start = keyToUTC(startKey)
-  if (cadence === 'daily' || cadence === 'weekly') {
-    const d = new Date(start)
-    d.setUTCDate(d.getUTCDate() + step * (cadence === 'weekly' ? 7 : 1))
-    return utcToKey(d)
-  }
-  // monthly
-  const originalDay = start.getUTCDate()
-  const totalMonths = start.getUTCMonth() + step
-  const year = start.getUTCFullYear() + Math.floor(totalMonths / 12)
-  const month = ((totalMonths % 12) + 12) % 12
-  const day = Math.min(originalDay, daysInUTCMonth(year, month))
-  return utcToKey(new Date(Date.UTC(year, month, day)))
-}
-
-/**
- * The occurrence INSTANT `step` cadence-steps after `start`, stepped with exactly the maths both
- * recurrence mirrors use (`occurrenceAt` in lib/event-recurrence.ts and lib/events/recurrence.ts):
- * UTC-parts arithmetic from the series start, monthly clamped to the target month's length from
- * the ORIGINAL day, wall-clock carried through untouched.
- *
- * It exists for ONE job: comparing an occurrence against `recurrence_until`, which is an INSTANT
- * and not a day. ADR-807 (the calendar feeds) rules that "`recurrence_until` resolves through the
- * zone to the same instant the RRULE `UNTIL` carries", and the published feeds ship that today.
- * The strip used to compare `until` at DAY granularity, so a 7 pm weekly series whose form-entered
- * end date stores as `YYYY-MM-DDT00:00:00Z` kept one chip past the last occurrence either mirror
- * materialises or announces (LIVE-154). Everything the strip OUTPUTS is still a day key; only the
- * bound is measured at the instant.
- */
-function stepInstant(start: Date, cadence: string, step: number): Date {
-  if (cadence === 'daily' || cadence === 'weekly') {
-    const d = new Date(start)
-    d.setUTCDate(d.getUTCDate() + step * (cadence === 'weekly' ? 7 : 1))
-    return d
-  }
-  // monthly
-  const originalDay = start.getUTCDate()
-  const totalMonths = start.getUTCMonth() + step
-  const year = start.getUTCFullYear() + Math.floor(totalMonths / 12)
-  const month = ((totalMonths % 12) + 12) % 12
-  const day = Math.min(originalDay, daysInUTCMonth(year, month))
-  return new Date(
-    Date.UTC(
-      year,
-      month,
-      day,
-      start.getUTCHours(),
-      start.getUTCMinutes(),
-      start.getUTCSeconds(),
-      start.getUTCMilliseconds(),
-    ),
-  )
-}
+// ── THE STEPPING IS THE ENGINE'S NOW (ADR-1299) ─────────────────────────────────────────────────
+//
+// This module used to carry `stepKey` + `stepInstant` + `daysInUTCMonth` — a third copy of the same
+// enum maths the materialiser and the read side each had, kept honest by
+// lib/events/recurrence-parity.test.ts. All three delegate to lib/events/repeat-rule.ts, so a
+// series that lands every other Wednesday chips the same dates the materialiser mints.
+//
+// What did NOT change is the bound: `recurrence_until` is an INSTANT, not a day, and is compared as
+// one. ADR-807 rules that it "resolves through the zone to the same instant the RRULE UNTIL
+// carries", and the published feeds ship that today. The strip used to compare `until` at DAY
+// granularity, so a 7 pm weekly series whose form-entered end date stores as `YYYY-MM-DDT00:00:00Z`
+// kept one chip past the last occurrence either side materialises (LIVE-154). The engine takes the
+// instant; everything this module RETURNS is still a day key.
 
 const WEEKDAY_PLURALS = ['Sundays', 'Mondays', 'Tuesdays', 'Wednesdays', 'Thursdays', 'Fridays', 'Saturdays']
 
@@ -186,9 +143,21 @@ const WEEKDAY_PLURALS = ['Sundays', 'Mondays', 'Tuesdays', 'Wednesdays', 'Thursd
  * "anchor" never appear (NAMING.md §Events). A series whose anchor could not be read still gets a
  * chip, labelled "Repeats", rather than being dropped from the strip.
  */
-export function cadenceChipLabel(cadence: string | null | undefined, referenceDayKey: string | null): string {
+export function cadenceChipLabel(
+  cadence: string | null | undefined,
+  referenceDayKey: string | null,
+  /** The anchor's RRULE, when the read carried it. With it the chip can say what the enum never
+   *  could: "Every 2 weeks", "Third Thursday", "Weekdays". Without it the enum wording below is
+   *  unchanged, which is what every row written before ADR-1299 gets. */
+  rule?: string | null,
+): string {
+  if (rule) {
+    const label = repeatChipLabel(repeatFor({ starts_at: referenceDayKey, recurrence_rule: rule }), referenceDayKey)
+    if (label) return label
+  }
   if (cadence === 'daily') return 'Every day'
   if (cadence === 'monthly') return 'Monthly'
+  if (cadence === 'yearly') return 'Annually'
   if (cadence === 'weekly' && referenceDayKey) {
     const d = keyToUTC(referenceDayKey)
     if (!Number.isNaN(d.getTime())) return WEEKDAY_PLURALS[d.getUTCDay()]
@@ -208,26 +177,40 @@ export function cadenceChipLabel(cadence: string | null | undefined, referenceDa
  * than losing its bound altogether.
  */
 export function computeSeriesDayKeys(
-  anchor: Pick<RepeatAnchorRow, 'starts_at' | 'recurrence_type' | 'recurrence_until'>,
+  anchor: Pick<RepeatAnchorRow, 'starts_at' | 'recurrence_type' | 'recurrence_until'> &
+    Partial<Pick<RepeatAnchorRow, 'recurrence_rule'>>,
   opts: { afterDayKey: string; throughDayKey: string },
 ): string[] {
-  const cadence = anchor.recurrence_type
-  if (!isSeriesCadence(cadence)) return []
+  if (!isSeriesCadence(anchor.recurrence_type)) return []
   const startKey = dayKeyOf(anchor.starts_at)
   if (!startKey) return []
+  const rule = repeatFor({
+    starts_at: anchor.starts_at,
+    recurrence_type: anchor.recurrence_type,
+    recurrence_rule: anchor.recurrence_rule ?? null,
+  })
+  if (!rule) return []
+
   const untilKey = dayKeyOf(anchor.recurrence_until ?? null)
-  const startInstant = new Date(anchor.starts_at ?? '')
   const untilMs = anchor.recurrence_until ? new Date(anchor.recurrence_until).getTime() : NaN
-  // Compare at the instant whenever both ends parse; otherwise fall back to the day bound, which
-  // is still better than no bound at all.
+  const startInstant = new Date(anchor.starts_at ?? '')
+  // Compare at the INSTANT whenever both ends parse; otherwise fall back to the day bound, which is
+  // still better than no bound at all (see the note above `computeSeriesDayKeys`).
   const boundAtInstant = !Number.isNaN(untilMs) && !Number.isNaN(startInstant.getTime())
+
+  // The window's upper edge as an instant: the END of `throughDayKey`, because a landing at 7 pm on
+  // the last day of the window is inside it. The engine bounds on instants; the grid asks in days.
+  const through = new Date(`${opts.throughDayKey}T23:59:59.999Z`)
+  const dates = expandRepeat(anchor.starts_at, rule, {
+    through,
+    until: boundAtInstant ? new Date(untilMs) : null,
+    max: MAX_STEPS,
+  })
+
   const out: string[] = []
-  for (let step = 0; step <= MAX_STEPS; step++) {
-    const key = stepKey(startKey, cadence as string, step)
-    if (key > opts.throughDayKey) break
-    if (boundAtInstant) {
-      if (stepInstant(startInstant, cadence as string, step).getTime() > untilMs) break
-    } else if (untilKey && key > untilKey) break
+  for (const d of dates) {
+    const key = d.toISOString().slice(0, 10)
+    if (!boundAtInstant && untilKey && key > untilKey) break
     if (key > opts.afterDayKey) out.push(key)
   }
   return out
@@ -343,7 +326,13 @@ export function planCalendarRepeats(
     series.push({
       key,
       name: next.title,
-      cadenceLabel: cadenceChipLabel(anchor?.recurrence_type ?? null, dayKeyOf(next.starts_at)),
+      // The anchor's RULE where the read carried one (ADR-1299), so the chip can say "Every 2
+      // weeks" or "Third Thursday" instead of flattening every series to its coarse cadence.
+      cadenceLabel: cadenceChipLabel(
+        anchor?.recurrence_type ?? null,
+        dayKeyOf(next.starts_at),
+        anchor?.recurrence_rule ?? null,
+      ),
       href: next.slug ? `/events/${next.slug}` : null,
       liveDayKeys,
       pendingDayKeys,

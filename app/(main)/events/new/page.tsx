@@ -6,6 +6,7 @@ import { EventSpark } from '../event-spark'
 import { getViewerHome } from '../admin-actions'
 import type { EventFormInitial } from './event-form'
 import { loadRootSpaceId } from '@/lib/spaces/store'
+import { formatRepeatDraft, repeatFor } from '@/lib/events/repeat-rule'
 import { listLinkableJourneys, resolveJourneyRef } from '@/lib/events/placement'
 import { canEditJourney } from '@/lib/journeys/authoring'
 import { getConnectReadyMap } from '@/lib/billing/connect'
@@ -40,7 +41,10 @@ async function buildDuplicateInitial(sourceId: string): Promise<DuplicatePrefill
         // resolve. That is precisely the failure the comment on defaultGroupId calls "the Royal
         // Temple bug", reproduced by a different entry point.
         'space_id, ' +
-        'recurrence_type, recurrence_until, price_cents',
+        // `starts_at` rides along ONLY to resolve the source's repeat: a legacy cadence means
+        // "the anchor's own weekday / day of the month", so the rule it stands for cannot be read
+        // without it. The copy still opens on the active day (the date is deliberately not carried).
+        'starts_at, recurrence_type, recurrence_until, recurrence_rule, price_cents',
     )
     .eq('id', sourceId)
     .maybeSingle()
@@ -51,13 +55,22 @@ async function buildDuplicateInitial(sourceId: string): Promise<DuplicatePrefill
   const attendanceMode = (['in_person', 'online', 'hybrid'] as const).find(
     (m) => m === src.attendance_mode,
   ) ?? 'in_person'
-  const recurrenceType = (['daily', 'weekly', 'monthly'] as const).find((r) => r === src.recurrence_type) ?? 'none'
+  // The repeat, as ONE value the picker speaks (ADR-1299): the source's rule (or the one its legacy
+  // cadence means, resolved against its own start) with its end joined on as `UNTIL=`.
   const untilIso = typeof src.recurrence_until === 'string' ? src.recurrence_until : ''
   const untilDate = untilIso ? new Date(untilIso) : null
   const recurrenceUntil =
     untilDate && !Number.isNaN(untilDate.getTime())
       ? `${untilDate.getUTCFullYear()}-${String(untilDate.getUTCMonth() + 1).padStart(2, '0')}-${String(untilDate.getUTCDate()).padStart(2, '0')}`
       : ''
+  const recurrenceRule = formatRepeatDraft(
+    repeatFor({
+      starts_at: str(src.starts_at) || null,
+      recurrence_type: str(src.recurrence_type) || null,
+      recurrence_rule: str(src.recurrence_rule) || null,
+    }),
+    recurrenceUntil || null,
+  )
 
   return {
     spaceId: str(src.space_id) || undefined,
@@ -79,8 +92,7 @@ async function buildDuplicateInitial(sourceId: string): Promise<DuplicatePrefill
     region: str(src.region),
     postalCode: str(src.postal_code),
     country: str(src.country),
-    recurrenceType,
-    recurrenceUntil,
+    recurrenceRule,
     // Carry the ticket price forward (0/absent = a free RSVP event).
     priceCents: typeof src.price_cents === 'number' ? src.price_cents : undefined,
     // Date is intentionally omitted so the copy defaults to the active day.

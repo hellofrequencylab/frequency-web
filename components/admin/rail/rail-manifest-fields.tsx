@@ -69,8 +69,10 @@ export function RailManifestFields({
       {rows(fields).map((row) => {
         const cells = row.map((def) => (
           <div key={def.path} className="block space-y-1.5">
-            {/* A toggle carries its own label inside the control. */}
-            {def.kind !== 'toggle' && (
+            {/* A toggle carries its own label inside the control, and a `repeat` is a GROUP of
+                controls that names itself — a `<label>` pointing at a group names nothing
+                (ADR-966), so neither gets one from here. */}
+            {def.kind !== 'toggle' && def.kind !== 'repeat' && (
               <label htmlFor={def.path} className={labelClasses}>
                 {def.label}
               </label>
@@ -84,6 +86,10 @@ export function RailManifestFields({
               hint={hints?.[def.path]}
               loaded={loaded}
               disabled={disabled}
+              // The whole value bag, for the one composite that cannot render from its own value
+              // alone: a repeat rule is a sentence about the thing's START, so the picker derives
+              // its presets and its weekday from `values.startsAt`. See FieldControlProps.siblings.
+              siblings={values}
             />
           </div>
         ))

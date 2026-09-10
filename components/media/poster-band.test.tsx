@@ -2,11 +2,18 @@ import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { PosterBand } from './poster-band'
-import { coverHeightClass, posterHeightClass, posterMaxHeightClass, type CoverHeight } from '@/lib/layout/cover-height'
+import {
+  coverHeightClass,
+  posterBandAspect,
+  posterHeightClass,
+  posterHeightPx,
+  posterMaxHeightClass,
+  type CoverHeight,
+} from '@/lib/layout/cover-height'
 
-// ── THE PHONE BAND: FULL BLEED, CROPPED, AIMED BY THE HOST ──────────────────────────────────────
+// ── THE BAND: FULL BLEED AT EVERY WIDTH, CROPPED TO THE SELECTED AREA ───────────────────────────
 //
-// 🔴 TWO OWNER REPORTS ON THE SAME BAND, IN OPPOSITE DIRECTIONS, AND BOTH ARE PINNED HERE.
+// 🔴 THREE OWNER REPORTS ON THE SAME BAND, IN OPPOSITE DIRECTIONS, AND ALL THREE ARE PINNED HERE.
 //
 // 2026-08-31: the band was a fixed-height box with `object-cover`. The Meld poster is 1400x600 and
 // the phone band was 380x306, so `object-cover` scaled by HEIGHT and cropped by WIDTH — 53% of the
@@ -15,13 +22,20 @@ import { coverHeightClass, posterHeightClass, posterMaxHeightClass, type CoverHe
 //
 // 2026-09-04: *"it should be full bleed and adjusted with the focus picker."* Contain had made the
 // phone band a 221x221 square of poster in the middle of a 412x221 band — whole, and small, between
-// two blurred bars — and the host's focal point had nothing left to aim.
+// two blurred bars — and the host's focal point had nothing left to aim. The PHONE half went back
+// to `object-cover`, at a band reshaped short and wide.
 //
-// THE PHONE BAND NOW COVERS AGAIN, AND THE FIRST REPORT DOES NOT COME BACK, because the band is a
-// different SHAPE than it was that day: short and wide (1.86:1 full bleed at the standard tier)
-// rather than 1.24:1. `object-cover` shows the full WIDTH of any source narrower than its band, and
-// 19 of the 24 production covers are square or portrait. That arithmetic is the load-bearing half
-// of the claim, so it is asserted here rather than asserted-to in a comment.
+// 2026-09-10: *"It should be full bleed and cropped to the selected area."* The DESKTOP half was
+// still containing, so the marquee surface still painted the poster boxed between blurred bars —
+// and the focal picker, whose preview is a CROP, was describing a frame the page never painted.
+//
+// THE BAND NOW COVERS AT EVERY WIDTH AND THE 2026-08-31 REPORT DOES NOT COME BACK, for a reason
+// that has to be measured rather than asserted: the band no longer GUESSES its shape. Since
+// ADR-1248 it sizes itself to the poster's own measured aspect with the tier as a ceiling, so a
+// clamped band is only ever SHORTER than the artwork at that width — never narrower — and
+// `object-cover` can cut nothing but the axis the picker aims. The 1400x600 flyer that produced the
+// first report is shown whole on every screen. That arithmetic is the load-bearing half of the
+// claim, so it is asserted here rather than asserted-to in a comment.
 //
 // This file is the sibling of components/vera/dock-tab-clearance.test.ts and works the same way: it
 // reads the source and renders the real component, so it fails on the SHAPE of the code rather than
@@ -62,14 +76,19 @@ describe('the arithmetic that made this a bug and not a preference', () => {
     expect(Math.min(1, 380 / (1400 * scale))).toBeLessThan(0.55)
   })
 
-  it('🔴 and desktop was the LOUDER number all along — which is why the crop is gone there', () => {
-    // The same 24 covers against the 1044x374 desktop band. A 1:1 poster — 13 of the 24 — survived
-    // at under 40% of its area on the surface the owner believed was working, against 75%+ on the
-    // phone that was reported as broken. This is what keeps `sm:` on `contain`.
+  it('🔴 a TIER-SHAPED desktop band is the loud number, and is why the shape must come from the art', () => {
+    // The same 24 covers against a GUESSED 1044x374 desktop band. A 1:1 poster — 13 of the 24 —
+    // survives at under 40% of its area, and a portrait one at under 30%. Those are the numbers
+    // that sent the desktop half to `contain` in the first place (LIVE-131), and they are still
+    // true of a band that does not know its poster.
     expect(shownArea(1024, 1024, 1044, 374)).toBeLessThan(0.4)
-    expect(shownArea(1024, 1024, 380, 306)).toBeGreaterThan(0.75)
-    // And a PORTRAIT poster, the worst case, kept a quarter of itself on desktop.
     expect(shownArea(681, 1024, 1044, 374)).toBeLessThan(0.3)
+    // The answer was never `contain` — it was the shape. With the poster's own aspect known
+    // (ADR-1248) the band is 1044x1044 for a square cover, clamped to the 374 tier, and the crop
+    // is the tier's, on the HEIGHT, aimed by the focal point the owner set. Nothing comes off the
+    // sides at any width, for any cover.
+    expect(shownWidth(1024, 1024, 1044, 374)).toBe(1)
+    expect(shownWidth(681, 1024, 1044, 374)).toBe(1)
   })
 })
 
@@ -126,41 +145,34 @@ describe('the phone band is short and wide, which is what makes the crop safe', 
   })
 })
 
-describe('the treatment: cropped and aimed on a phone, whole from sm up', () => {
+describe('the treatment: one fit, every width — full bleed, cropped, aimed', () => {
   const markup = renderToStaticMarkup(
     <PosterBand src="https://example.test/p.png" heightClass={posterHeightClass('standard')} focus="49% 48%" />,
   )
 
-  it('🔴 covers on a phone and contains from sm up — one fit per surface geometry', () => {
-    expect(markup).toContain('object-cover sm:object-contain')
-    // The class it must never regain. `sm:object-cover` is precisely what left 23 of 24 covers
-    // losing more than a quarter of their artwork on desktop (LIVE-131), and the 2026-09-04 report
-    // was about phones only.
-    expect(markup).not.toContain('sm:object-cover')
+  it('🔴 covers at EVERY width — no breakpoint owns a different fit', () => {
+    expect(markup).toContain('className="object-cover"'.replace('className', 'class'))
+    // The classes it must never regain. Either one is a letterbox, and a letterbox is what the
+    // 2026-09-04 and 2026-09-10 reports were both about.
+    expect(markup).not.toContain('object-contain')
+    expect(markup).not.toContain('sm:object-')
   })
 
   it("🔴 renders the host's focal point — the half of the report the crop exists to serve", () => {
-    // "adjusted with the focus picker". Under `contain` this attribute was inert; under the phone
-    // crop it decides which slice of the poster survives.
+    // "cropped to the selected area". Under `contain` this attribute was inert on the desktop
+    // band; under the crop it decides which slice of the poster survives.
     expect(markup).toContain('object-position:49% 48%')
   })
 
-  it('fills the letterbox with the poster itself, at the width that HAS a letterbox', () => {
-    // The blurred backdrop is what stops `contain` from reading as a rendering failure, so it
-    // belongs exactly where bars can appear: from `sm` up, where the band contains. A covered phone
-    // band is opaque edge to edge, so a blurred copy under it is a decode paid for nothing on the
-    // surface least able to afford one.
-    const backdrop = markup.slice(markup.indexOf('<div', markup.indexOf('<div') + 1))
-    expect(backdrop).toContain('blur-2xl')
-    expect(backdrop).toContain('hidden')
-    expect(backdrop).toContain('sm:block')
-    expect(backdrop).toContain('background-image:url(&quot;https://example.test/p.png&quot;)')
-  })
-
-  it('the backdrop is inert — it is the poster again, so it carries nothing and takes no tap', () => {
-    const backdrop = markup.slice(markup.indexOf('<div', markup.indexOf('<div') + 1))
-    expect(backdrop).toContain('aria-hidden')
-    expect(backdrop).toContain('pointer-events-none')
+  it('🔴 paints ONE image and no blurred backdrop — a covering band has no bars to fill', () => {
+    // The backdrop was a second decode of the same URL, dimmed and blurred, sitting under an
+    // opaque poster. It existed only to make `contain`'s letterbox read as framing. Its cost is
+    // real (a decode on the marquee page) and its benefit is now zero.
+    expect(markup).not.toContain('blur-2xl')
+    expect(markup).not.toContain('background-image')
+    expect(markup.match(/<img/g) ?? []).toHaveLength(1)
+    // And exactly one child element inside the frame: the poster.
+    expect(markup.match(/<div/g) ?? []).toHaveLength(1)
   })
 })
 
@@ -367,8 +379,8 @@ describe('with the cover aspect known, the band is the poster and the tier is it
     }
   })
 
-  it('keeps both fits and the focal point, which take over exactly as before once the ceiling clamps', () => {
-    expect(shaped).toContain('object-cover sm:object-contain')
+  it('keeps the fit and the focal point, which take over exactly as before once the ceiling clamps', () => {
+    expect(shaped).toContain('class="object-cover"')
     expect(shaped).toContain('object-position:49% 48%')
   })
 
@@ -457,5 +469,60 @@ describe('the class-token escape the assertion above depends on', () => {
     expect(new RegExp(`^${asTheOldEscapeLeftIt}$`).test('h-[2X5rem]')).toBe(true)
     expect(new RegExp(`^${escapeRe('h-[2.5rem]')}$`).test('h-[2X5rem]')).toBe(false)
     expect(new RegExp(`^${escapeRe('h-[2.5rem]')}$`).test('h-[2.5rem]')).toBe(true)
+  })
+})
+
+// ── THE FOCAL PICKER PREVIEWS THE BAND, NOT A STOCK 16/9 (owner, 2026-09-10) ────────────────────
+//
+// Half of the third report is that the control lied. The picker frames the cover as a CROP and
+// invites the host to aim it; the desktop band then contained the whole poster between blurred
+// bars, so the frame the host aimed inside was a frame the page never painted. The band crops at
+// every width now, and the preview adopts its exact shape at the chosen tier.
+//
+// The shape is derived, not typed: `posterBandAspect` reads the POSTER ladder's own class strings,
+// so re-tuning a tier moves the preview with it and there is no second table to drift.
+describe('the crop preview is the same shape as the band it previews', () => {
+  it('🔴 with NO measured poster, the preview is the tier-shaped band', () => {
+    // 1044px centre column over the standard tier's sm height (h-[22rem] = 374px at a 17px root).
+    expect(posterHeightPx('standard')).toBe(374)
+    expect(posterBandAspect('standard', 1044)).toBeCloseTo(1044 / 374, 6)
+    // And the stock 16/9 it replaced is a different frame entirely — this is not a no-op rename.
+    expect(Math.abs(posterBandAspect('standard', 1044) - 16 / 9)).toBeGreaterThan(1)
+  })
+
+  it('🔴 with a poster TALLER than the tier, the preview is still the tier — that is the crop', () => {
+    // A 1:1 cover at 1044px wants a 1044px-tall band; the ceiling clamps it to 374. So the frame
+    // the host drags inside is 1044x374, which is precisely what the page paints.
+    expect(posterBandAspect('standard', 1044, 1)).toBeCloseTo(1044 / 374, 6)
+    expect(posterBandAspect('standard', 1044, 0.665)).toBeCloseTo(1044 / 374, 6) // portrait
+  })
+
+  it('with a poster the band shows WHOLE, the preview shows it whole too — nothing to aim', () => {
+    // 1400x600 at 1044px is 447px tall, over the 374 ceiling... so it clamps. A wider flyer does
+    // not: 3:1 at 1044px is 348px, under the ceiling, and the band IS the poster.
+    expect(posterBandAspect('standard', 1044, 3)).toBe(3)
+    expect(posterBandAspect('tall', 1044, 1400 / 600)).toBeCloseTo(1400 / 600, 6)
+  })
+
+  it('every tier gives a different frame, so the height picker moves the preview', () => {
+    const [short, standard, tall] = TIERS.map((t) => posterBandAspect(t, 1044))
+    expect(short).toBeGreaterThan(standard)
+    expect(standard).toBeGreaterThan(tall)
+  })
+
+  it('an unusable measurement is treated as absent, exactly as the band treats it', () => {
+    for (const bad of [0, -1, NaN, Infinity]) {
+      expect(posterBandAspect('standard', 1044, bad), `aspect ${bad}`).toBeCloseTo(1044 / 374, 6)
+    }
+    expect(posterBandAspect('standard', 1044, null)).toBeCloseTo(1044 / 374, 6)
+  })
+
+  it('the event header control actually passes it — a preview that is not wired is not a preview', () => {
+    const controls = readFileSync('components/admin/modules/event-header-controls.tsx', 'utf8')
+    expect(controls).toContain("from '@/lib/layout/cover-height'")
+    expect(controls).toContain('aspect={posterBandAspect(height, 1044, aspect)}')
+    // The measured shape has to be STATE, or a swapped cover re-measures into a ref and the
+    // preview keeps the old frame until something else re-renders the panel.
+    expect(controls).toContain('setAspect(measured)')
   })
 })

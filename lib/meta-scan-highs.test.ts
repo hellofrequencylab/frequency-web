@@ -114,11 +114,24 @@ describe('Create Event form labels are associated', () => {
   })
 
   it('button groups are named as groups, since a button group is not labelable', () => {
-    for (const id of ['event-repeats-label', 'event-attendance-label', 'event-price-label']) {
+    // 'event-repeats-label' USED to be here. The repeats button group is gone: one control owns the
+    // whole question now (ADR-1299, components/events/repeat-picker.tsx), and it carries the same
+    // rule internally — its own weekday row is a `role="group"` named by an `aria-labelledby`, and
+    // its two end-mode rows are `role="radiogroup"` named the same way. The rule did not relax;
+    // the group moved, and the assertion moved with it rather than being deleted.
+    for (const id of ['event-attendance-label', 'event-price-label']) {
       expect(src).toContain(`id="${id}"`)
       expect(src).toContain(`aria-labelledby="${id}"`)
     }
     expect(src).toContain('role="group"')
+
+    const picker: string = stripComments(read('components/events/repeat-picker.tsx'))
+    expect(picker).toContain('role="group"')
+    expect(picker).toContain('role="radiogroup"')
+    // Every group in the picker names itself, and every id it points at exists.
+    const named = [...picker.matchAll(/aria-labelledby=\{`\$\{groupId\}-([\w-]+)`\}/g)].map((m) => m[1]!)
+    expect(named.length).toBeGreaterThanOrEqual(3)
+    for (const suffix of named) expect(picker).toContain(`id={\`\${groupId}-${suffix}\`}`)
   })
 
   it('each htmlFor has a control carrying the matching id', () => {

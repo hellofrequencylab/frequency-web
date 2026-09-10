@@ -317,7 +317,13 @@ describe('planCalendarFeed (collapse a materialized series to one RRULE VEVENT)'
     // C1/C2 are folded into A's RRULE; A, N, O remain, IN INPUT ORDER.
     expect(ids).toEqual(['A', 'N', 'O'])
     const a = plans.find((p) => p.row.id === 'A')!
-    expect(a.rrule).toBe('FREQ=WEEKLY')
+    // ⚠️ `FREQ=WEEKLY;BYDAY=WE`, not the bare `FREQ=WEEKLY` this read before ADR-1299, and the two
+    // are the SAME series: RFC 5545 defaults a weekly rule with no BYDAY to DTSTART's own weekday,
+    // and DTSTART here is the anchor's stored wall clock (Wednesday 1 July 2026). The plan now goes
+    // through `rruleForRepeat`, which resolves the legacy enum into an explicit rule, and being
+    // explicit is what lets a real rule ("every other Wednesday") export as one instead of
+    // flattening to a plain weekly series in every subscriber's calendar.
+    expect(a.rrule).toBe('FREQ=WEEKLY;BYDAY=WE')
   })
 
   it('EXDATEs the anchor plan for a cancelled occurrence between present children (07-15)', () => {
@@ -357,7 +363,10 @@ describe('rruleForRecurrence (enum recurrence -> RFC 5545 RRULE)', () => {
   it('returns null for a one-time / unknown / absent cadence', () => {
     expect(rruleForRecurrence('none')).toBeNull()
     expect(rruleForRecurrence(null)).toBeNull()
-    expect(rruleForRecurrence('yearly')).toBeNull()
+    expect(rruleForRecurrence('fortnightly')).toBeNull()
+    // 'yearly' USED to be here, as a cadence the model did not have. It joined the CHECK with the
+    // rule column (ADR-1299) and is now a real one.
+    expect(rruleForRecurrence('yearly')).toBe('FREQ=YEARLY')
   })
   it('appends UNTIL as a UTC stamp when a valid series-end instant is given', () => {
     expect(rruleForRecurrence('weekly', new Date('2026-09-01T02:00:00Z'))).toBe('FREQ=WEEKLY;UNTIL=20260901T020000Z')

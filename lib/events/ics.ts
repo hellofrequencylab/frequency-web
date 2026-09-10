@@ -20,12 +20,13 @@
 // SKIPS short months (Google/Apple both do) while our materializer CLAMPS to the month's last day
 // (Jan 31 -> Feb 28), so the clamped occurrence vanished from subscribed calendars. Local-time
 // DTSTART (the stored parts ARE the local time) + the BYMONTHDAY/BYSETPOS last-day idiom
-// (rruleForRecurrence) + wall-clock EXDATEs (computeFeedExdates) make the client's expansion match
+// (rruleForRepeat) + wall-clock EXDATEs (computeFeedExdates) make the client's expansion match
 // the DB's materialized rows exactly. Non-recurring and masked VEVENTs keep the true-instant UTC
 // form — a single instant has no expansion to drift.
 
 import { eventInstant, resolveZone, zoneOffsetMinutes } from '@/lib/time/zone'
 import { HORIZON_DAYS, expandOccurrenceInstants } from '@/lib/event-recurrence'
+import { formatRepeat, repeatFor, type RepeatRule } from '@/lib/events/repeat-rule'
 
 /** Format a Date's UTC parts as a LOCAL ICS timestamp: YYYYMMDDTHHMMSS (no Z). Used for the
  *  TZID-form DTSTART/DTEND/EXDATE of a recurring VEVENT, where the Date carries the stored
@@ -101,35 +102,91 @@ export function icsLocalWallTimes(
   return { start, end }
 }
 
-/** Map the simple enum recurrence (ADR-007: daily/weekly/monthly) to an RFC 5545 RRULE value, or null
- *  for a one-time event. PURE.
+/** Map an event's repeat to an RFC 5545 RRULE value, or null for a one-time event. PURE.
+ *
+ *  ── WHAT CHANGED WITH ADR-1299, AND WHAT DELIBERATELY DID NOT ─────────────────────────────────
+ *  The rule the product stores IS an RRULE value now (lib/events/repeat-rule.ts), so this function
+ *  is mostly a pass-through: `repeatFor` resolves the row's `recurrence_rule` (falling back to the
+ *  legacy enum, which is what every row written before ADR-1299 carries) and `formatRepeat` writes
+ *  the canonical spelling. A series that lands every other Wednesday now exports as
+ *  `FREQ=WEEKLY;INTERVAL=2;BYDAY=WE` instead of the `FREQ=WEEKLY` the enum could only manage —
+ *  which is the difference between a subscriber's calendar agreeing with this page and quietly
+ *  showing twice as many gatherings as exist.
  *
  *  `untilInstant` is the TRUE instant of the series end — resolve `recurrence_until` through the
  *  event's own zone (eventInstant) BEFORE passing it. RFC 5545 §3.8.5.3: whenever DTSTART is not
  *  floating (ours is either UTC or TZID-zoned), UNTIL MUST be a UTC date-time — so it stays a
- *  Z-stamp even on the local-time (TZID) recurring form.
+ *  Z-stamp even on the local-time (TZID) recurring form. It is appended HERE rather than carried in
+ *  the stored rule, because the range lives in its own column (see the engine's header).
  *
- *  `anchorDay` is the anchor's stored wall-clock day-of-month. A MONTHLY series anchored on day
- *  29/30/31 needs it: plain FREQ=MONTHLY from a day-31 DTSTART SKIPS short months per RFC 5545, but
- *  the materializer (lib/event-recurrence.ts occurrenceAt) CLAMPS to the month's last day (Jan 31 ->
- *  Feb 28). `BYMONTHDAY=<day-3>,<day-2>,<day-1>,<day>;BYSETPOS=-1` is the standard "last day <= N"
- *  idiom: the four candidate days always reach into February (>= 26), and BYSETPOS=-1 picks the
- *  latest one the month actually has — exactly the clamp. Day <= 28 exists in every month, so it
- *  needs no rider; daily/weekly ignore the day entirely. */
+ *  `anchorDay` is the anchor's stored wall-clock day-of-month, and IT IS STILL LOAD-BEARING. A
+ *  by-date monthly rule anchored on day 29/30/31 CLAMPS in this product (Jan 31 -> Feb 28) where
+ *  plain `FREQ=MONTHLY;BYMONTHDAY=31` SKIPS short months per RFC 5545, as Google and Apple both do.
+ *  `BYMONTHDAY=<day-3>,<day-2>,<day-1>,<day>;BYSETPOS=-1` is the standard "last day <= N" idiom:
+ *  the four candidate days always reach into February (>= 26) and BYSETPOS=-1 picks the latest one
+ *  the month actually has, which is exactly the clamp. Day <= 28 exists in every month and needs no
+ *  rider; a weekday-ordinal rule ("the third Thursday") has no clamp to translate and is emitted
+ *  verbatim; daily and weekly ignore the day entirely. */
+export function rruleForRepeat(
+  row: { starts_at?: string | null; recurrence_type?: string | null; recurrence_rule?: string | null },
+  untilInstant?: Date | null,
+  anchorDay?: number | null,
+): string | null {
+  const parsed: RepeatRule | null = repeatFor({
+    starts_at: row.starts_at,
+    recurrence_type: row.recurrence_type,
+    recurrence_rule: row.recurrence_rule,
+  })
+  if (!parsed) return null
+
+  let rule: string
+  const clampable =
+    (parsed.freq === 'MONTHLY' || parsed.freq === 'YEARLY') &&
+    parsed.byDay === undefined &&
+    anchorDay != null &&
+    anchorDay >= 29 &&
+    anchorDay <= 31 &&
+    // Only when the rule's own by-date IS the anchor's day. A rule that names a different day of
+    // the month is the host's explicit choice and is exported as written.
+    (parsed.byMonthDay ?? anchorDay) === anchorDay
+  if (clampable) {
+    // Re-spell the by-date form as the clamp idiom, keeping everything else the rule says.
+    const { byMonthDay: _dropped, ...rest } = parsed
+    rule = formatRepeat(rest as RepeatRule)
+    rule += `;BYMONTHDAY=${anchorDay! - 3},${anchorDay! - 2},${anchorDay! - 1},${anchorDay};BYSETPOS=-1`
+  } else {
+    rule = formatRepeat(parsed)
+  }
+  if (untilInstant && !Number.isNaN(untilInstant.getTime())) rule += `;UNTIL=${icsStamp(untilInstant)}`
+  return rule
+}
+
+/** The enum-only spelling, for a caller that holds a cadence string and a day-of-month but no row.
+ *
+ *  ⚠️ IT CANNOT SAY WHAT A RULE SAYS. An event whose host picked "every other Wednesday" exports
+ *  through here as a plain weekly series, which puts twice as many gatherings in a subscriber's
+ *  calendar as exist. Every caller that has the row should pass it to `rruleForRepeat` instead;
+ *  this stays for the ones that genuinely have only the enum, and for the tests that pin the
+ *  translation of the legacy shape. */
 export function rruleForRecurrence(
   type: string | null | undefined,
   untilInstant?: Date | null,
   anchorDay?: number | null,
 ): string | null {
-  const freq =
-    type === 'daily' ? 'DAILY' : type === 'weekly' ? 'WEEKLY' : type === 'monthly' ? 'MONTHLY' : null
-  if (!freq) return null
-  let rule = `FREQ=${freq}`
-  if (freq === 'MONTHLY' && anchorDay != null && anchorDay >= 29 && anchorDay <= 31) {
-    rule += `;BYMONTHDAY=${anchorDay - 3},${anchorDay - 2},${anchorDay - 1},${anchorDay};BYSETPOS=-1`
-  }
-  if (untilInstant && !Number.isNaN(untilInstant.getTime())) rule += `;UNTIL=${icsStamp(untilInstant)}`
-  return rule
+  // Built from the enum directly rather than through `repeatFor`, which resolves 'weekly' and
+  // 'monthly' against an anchor this signature does not carry.
+  const rule: RepeatRule | null =
+    type === 'daily'
+      ? { freq: 'DAILY', interval: 1 }
+      : type === 'weekly'
+        ? { freq: 'WEEKLY', interval: 1 }
+        : type === 'monthly'
+          ? { freq: 'MONTHLY', interval: 1 }
+          : type === 'yearly'
+            ? { freq: 'YEARLY', interval: 1 }
+            : null
+  if (!rule) return null
+  return rruleForRepeat({ recurrence_rule: formatRepeat(rule) }, untilInstant, anchorDay)
 }
 
 /** The fields one VEVENT block needs. Two forms, keyed by `tzid`:
@@ -358,6 +415,8 @@ export interface ExdateAnchor {
   starts_at: string
   recurrence_type: string | null | undefined
   recurrence_until: string | null | undefined
+  /** The RRULE value (ADR-1299), when the read carried it. */
+  recurrence_rule?: string | null
 }
 
 /** The wall-clock CALENDAR DAY (YYYY-MM-DD) of a stored-parts Date. Occurrences are deduped by day in
@@ -401,7 +460,7 @@ export function computeFeedExdates(
   opts: { now?: Date; horizonDays?: number } = {},
 ): Date[] {
   const type = anchor.recurrence_type
-  if (type !== 'daily' && type !== 'weekly' && type !== 'monthly') return []
+  if (type !== 'daily' && type !== 'weekly' && type !== 'monthly' && type !== 'yearly') return []
 
   const now = opts.now ?? new Date()
   const horizonDays = opts.horizonDays ?? HORIZON_DAYS
@@ -414,6 +473,7 @@ export function computeFeedExdates(
       starts_at: anchor.starts_at,
       recurrence_type: type,
       recurrence_until: anchor.recurrence_until ?? null,
+      recurrence_rule: anchor.recurrence_rule ?? null,
     },
     until,
   )
@@ -430,6 +490,9 @@ export interface FeedGroupRow {
   time_zone?: string | null
   recurrence_type?: string | null
   recurrence_until?: string | null
+  /** The RRULE value (ADR-1299). Absent on a legacy row and on a feed whose RPC does not project
+   *  the column, which falls the plan back to the coarse cadence. */
+  recurrence_rule?: string | null
   parent_event_id?: string | null
 }
 
@@ -445,12 +508,12 @@ export interface FeedRenderPlan<T> {
 /** True when a row is a recurring SERIES ANCHOR (a real cadence + no parent). */
 function isRecurringAnchor(r: FeedGroupRow): boolean {
   const t = r.recurrence_type ?? 'none'
-  return r.parent_event_id == null && (t === 'daily' || t === 'weekly' || t === 'monthly')
+  return r.parent_event_id == null && (t === 'daily' || t === 'weekly' || t === 'monthly' || t === 'yearly')
 }
 
 /**
  * PURE. Collapse a flat feed row list into VEVENT rendering instructions (Events EC4). For a recurring
- * ANCHOR present in the feed, emit ONE plan carrying its RRULE (rruleForRecurrence + zone-resolved
+ * ANCHOR present in the feed, emit ONE plan carrying its RRULE (rruleForRepeat + zone-resolved
  * UNTIL + the anchor's day-of-month for the monthly last-day idiom) and the EXDATEs for its
  * cancelled/missing occurrences (computeFeedExdates over the anchor + its in-feed children), and SKIP
  * those child rows (the RRULE covers them). Everything else — a non-recurring event, or an ORPHAN
@@ -483,9 +546,9 @@ export function planCalendarFeed<T extends FeedGroupRow>(
 
     if (isRecurringAnchor(r)) {
       // UNTIL must be the TRUE UTC instant (RFC 5545: UTC whenever DTSTART is zoned); the anchor's
-      // stored day-of-month drives the monthly short-month idiom in rruleForRecurrence.
+      // stored day-of-month drives the monthly short-month idiom in rruleForRepeat.
       const untilInstant = r.recurrence_until ? eventInstant(r.recurrence_until, r.time_zone) : null
-      const rrule = rruleForRecurrence(r.recurrence_type, untilInstant, new Date(r.starts_at).getUTCDate())
+      const rrule = rruleForRepeat(r, untilInstant, new Date(r.starts_at).getUTCDate())
       const present = [r.starts_at, ...(childStartsByAnchor.get(r.id) ?? [])]
       const exdates = computeFeedExdates(
         {

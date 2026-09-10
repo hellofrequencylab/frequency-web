@@ -37,6 +37,14 @@ const S = ({ id }: { id: string }) => <i data-slot={id} />
 // already renders). The reference tracks the shape the template is SUPPOSED to produce, so it moves
 // with a deliberate change; what it still guards is that the template and a hand-rolled page cannot
 // drift APART. The `actionBar` sentinel went with the slot.
+//
+// ⚠️ AMENDED AGAIN 2026-09-10 for the identity region. The stack used to go through DetailTemplate's
+// `subtitle`, which lives INSIDE the lockup's flex row beside `actions` — so it was capped at
+// `content width - actions width` for its whole height and wrapped hard against a narrow left
+// gutter (owner: "Something is off with the details under the header. They are all aligned left").
+// It now goes through the new full-width `meta` slot as two lanes plus two full-width rows. The
+// reference below is that shape, written out by hand, so the equality still compares a hand-rolled
+// page against the template rather than the template against itself.
 function Reference() {
   return (
     <div>
@@ -50,16 +58,22 @@ function Reference() {
         title={<S id="title" />}
         actions={<S id="actions" />}
         badges={<S id="badges" />}
-        subtitle={
-          <div className="space-y-1.5">
-            <S id="when" />
-            <S id="where" />
-            <S id="cadence" />
-            <S id="nextDate" />
+        meta={
+          <div className="space-y-2 text-body-sm text-muted">
+            <div className="grid gap-x-10 gap-y-2 md:grid-cols-2">
+              <div className="min-w-0 space-y-1.5">
+                <S id="when" />
+                <S id="where" />
+                <S id="cadence" />
+                <S id="nextDate" />
+              </div>
+              <div className="min-w-0 space-y-1.5">
+                <S id="belonging" />
+                <S id="hostedBy" />
+                <S id="credit" />
+              </div>
+            </div>
             <S id="seriesRail" />
-            <S id="belonging" />
-            <S id="hostedBy" />
-            <S id="credit" />
             <S id="reward" />
           </div>
         }
@@ -87,16 +101,19 @@ function Subject() {
       title={<S id="title" />}
       actions={<S id="actions" />}
       badges={<S id="badges" />}
+      // Deliberately written in a DIFFERENT order from the arrangement, which is what the
+      // ordering test below is for: a caller cannot re-sequence the region by re-sequencing
+      // its own object literal.
       identity={{
-        when: <S id="when" />,
-        where: <S id="where" />,
-        cadence: <S id="cadence" />,
-        nextDate: <S id="nextDate" />,
-        seriesRail: <S id="seriesRail" />,
-        belonging: <S id="belonging" />,
-        hostedBy: <S id="hostedBy" />,
-        credit: <S id="credit" />,
         reward: <S id="reward" />,
+        seriesRail: <S id="seriesRail" />,
+        when: <S id="when" />,
+        credit: <S id="credit" />,
+        where: <S id="where" />,
+        hostedBy: <S id="hostedBy" />,
+        cadence: <S id="cadence" />,
+        belonging: <S id="belonging" />,
+        nextDate: <S id="nextDate" />,
       }}
       bodyLead={<S id="bodyLead" />}
       gallery={<S id="gallery" />}
@@ -121,7 +138,8 @@ describe('EventDetailTemplate renders the photographed event page byte-identical
 
   it('keeps the identity lines in the standard order, whatever order the caller writes them in', () => {
     const html = renderToStaticMarkup(<Subject />)
-    const order = ['when', 'where', 'cadence', 'nextDate', 'seriesRail', 'belonging', 'hostedBy', 'credit', 'reward']
+    // Lane A, then lane B, then the two full-width rows (EventIdentitySlots).
+    const order = ['when', 'where', 'cadence', 'nextDate', 'belonging', 'hostedBy', 'credit', 'seriesRail', 'reward']
     const positions = order.map((id) => html.indexOf(`data-slot="${id}"`))
     expect(positions).toEqual([...positions].sort((a, b) => a - b))
     expect(positions.every((p) => p > -1)).toBe(true)

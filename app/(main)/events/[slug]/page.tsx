@@ -80,7 +80,7 @@ import { ZAP_AMOUNTS } from '@/lib/zaps'
 import { PageModules } from '@/components/widgets/page-modules'
 import { setEventContext, type SpaceHostLite } from '@/lib/events/active-event'
 import { OpenAdminBarButton } from '@/components/admin/open-admin-bar-button'
-import { nextOccurrence } from '@/lib/events/recurrence'
+import { nextOccurrence, recurrenceLineFor } from '@/lib/events/recurrence'
 import { TICKETING_ENABLED } from '@/lib/events/ticketing'
 import { mapsSearchUrl, eventMapsQuery } from '@/lib/events/maps-link'
 import { isAdmitted } from '@/lib/events/admission'
@@ -108,8 +108,10 @@ type EventDetail = {
   visibility: string | null
   scope_id: string
   scope_type: string
-  recurrence_type: 'none' | 'daily' | 'weekly' | 'monthly'
+  recurrence_type: 'none' | 'daily' | 'weekly' | 'monthly' | 'yearly'
   recurrence_until: string | null
+  /** The RRULE value (ADR-1299). Null on every row written before it. */
+  recurrence_rule: string | null
   parent_event_id: string | null
   host: {
     id: string
@@ -117,12 +119,6 @@ type EventDetail = {
     handle: string
     avatar_url: string | null
   } | null
-}
-
-const RECURRENCE_LABEL: Record<string, string> = {
-  daily:   'Repeats daily',
-  weekly:  'Repeats weekly',
-  monthly: 'Repeats monthly',
 }
 
 // Attendance-mode PILL (EVENTS-DESIGN §2.4) — one bordered rounded-pill chip in the
@@ -367,7 +363,7 @@ export default async function EventDetailPage({
   const { data: rawEvent } = await admin
     .from('events')
     .select(
-      'id, title, slug, description, location, starts_at, ends_at, time_zone, is_cancelled, price_cents, currency, visibility, scope_id, scope_type, recurrence_type, recurrence_until, parent_event_id, posted_by_profile_id, claimed_at, claim_token, organizer_name, details, poster_path, cover_image_path, gallery_image_paths, attendance_mode, online_url, status, venue_name, street, city, region, postal_code, space_id, host_space_id, theme, geog, hide_address, join_mode, rsvp_requires_approval, host:profiles!host_id ( id, display_name, handle, avatar_url )',
+      'id, title, slug, description, location, starts_at, ends_at, time_zone, is_cancelled, price_cents, currency, visibility, scope_id, scope_type, recurrence_type, recurrence_until, recurrence_rule, parent_event_id, posted_by_profile_id, claimed_at, claim_token, organizer_name, details, poster_path, cover_image_path, gallery_image_paths, attendance_mode, online_url, status, venue_name, street, city, region, postal_code, space_id, host_space_id, theme, geog, hide_address, join_mode, rsvp_requires_approval, host:profiles!host_id ( id, display_name, handle, avatar_url )',
     )
     .eq('slug', slug)
     .maybeSingle()
@@ -998,6 +994,7 @@ export default async function EventDetailPage({
             startsAt: event.starts_at,
             recurrenceType: event.recurrence_type,
             recurrenceUntil: event.recurrence_until,
+            recurrenceRule: event.recurrence_rule,
           },
           new Date(),
         )
@@ -1797,6 +1794,7 @@ export default async function EventDetailPage({
       tzAbbrev: zoneAbbrev(event.starts_at, eventTz),
       recurrenceType: event.recurrence_type,
       recurrenceUntil: event.recurrence_until,
+      recurrenceRule: event.recurrence_rule,
       partOfSeries: !!event.parent_event_id,
       nextOccurrenceIso: nextRecurrence ? nextRecurrence.toISOString() : null,
       icsHref,
@@ -1902,12 +1900,13 @@ export default async function EventDetailPage({
       // poster's cropped cover / full flyer (heroUrl); token placeholder when none.
       cover={
         heroUrl ? (
-          /* A full-bleed crop at the host's focal point on a phone, the whole poster from `sm` up.
-             The phone band is short and wide (1.86:1 at the standard tier against a 412px bleed),
-             so a square or portrait cover — 19 of the 24 in production — reaches both edges whole
-             and loses only height, which is the axis the focus picker aims.
-             components/media/poster-band.tsx carries the measurement across all 24 covers, the
-             tier-by-tier aspect table, and why the desktop half still contains.
+          /* A full-bleed crop at the host's focal point, at EVERY width (owner, 2026-09-10:
+             "It should be full bleed and cropped to the selected area"). The band takes the
+             poster's own shape when it knows it and the height tier is the ceiling, so a cover
+             that fits is shown whole and one that does not is cropped on the HEIGHT, which is the
+             axis the focus picker aims. components/media/poster-band.tsx carries the measurement
+             across all 24 production covers, the tier-by-tier aspect table, and the full arc of
+             the three owner reports that settled the fit.
              The uploaded cover is a PUBLIC URL the optimizer is configured for; a scanned
              poster's hero is a SIGNED URL from the private bucket (path `/object/sign/...`,
              outside next.config remotePatterns), so it must bypass the optimizer — matching
@@ -1916,7 +1915,9 @@ export default async function EventDetailPage({
             src={heroUrl}
             heightClass={posterHeightCls}
             // With the cover's own aspect known, the band is the poster's shape and the tier is
-            // its ceiling; without it, the tier height above applies unchanged (ADR-1248).
+            // its ceiling; without it, the tier height above applies unchanged (ADR-1248). This is
+            // also what keeps the crop honest: a clamped band is only ever SHORTER than the
+            // artwork, never narrower, so `object-cover` can cut nothing but the aimed axis.
             maxHeightClass={posterMaxHeightCls}
             aspect={coverAspect}
             focus={coverFocus}
@@ -2094,13 +2095,14 @@ export default async function EventDetailPage({
           </div>
         ),
 
+        // The cadence line reads the RULE, not the coarse column (ADR-1299), so a series that lands
+        // every other Wednesday says so instead of "Repeats weekly". A row with no rule falls back
+        // to what its legacy cadence means, resolved against its own start.
         cadence: (event.recurrence_type !== 'none' || event.parent_event_id) && (
           <div className="flex items-center gap-2">
             <span aria-hidden className="text-body leading-none">🔁</span>
             <span>
-              {event.recurrence_type !== 'none'
-                ? RECURRENCE_LABEL[event.recurrence_type]
-                : 'Part of a recurring series'}
+              {recurrenceLineFor(event) ?? 'Part of a recurring series'}
               {event.recurrence_until && (
                 <span className="text-subtle ml-1">
                   · until {new Date(event.recurrence_until).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
@@ -2123,10 +2125,6 @@ export default async function EventDetailPage({
             </span>
           </div>
         ),
-
-        // The series date rail: the next real dates, each linking to that date's own live
-        // page (ADR-897). Renders nothing for a one-off or a single-date series.
-        seriesRail: <SeriesDatesRail dates={seriesRailDates} timeZone={eventTz} className="pt-1" />,
 
         // WHERE THIS EVENT BELONGS: its Circle, its Space, and its Journey, each a link.
         // This replaces the bare unlabeled Circle name that used to sit here, which said
@@ -2205,6 +2203,12 @@ export default async function EventDetailPage({
               </Link>
             </p>
           )),
+
+        // The series date rail: the next real dates, each linking to that date's own live
+        // page (ADR-897). Renders nothing for a one-off or a single-date series. It sits FULL
+        // WIDTH under both identity lanes (EventIdentitySlots) — it is a row of date chips, and
+        // in the narrow column it used to live in they wrapped into three rows.
+        seriesRail: <SeriesDatesRail dates={seriesRailDates} timeZone={eventTz} />,
 
         // [A3] The calm reward line reads as HEADER content — it sits with the
         // date/location/host lines, not floating above the grid with a divider. The

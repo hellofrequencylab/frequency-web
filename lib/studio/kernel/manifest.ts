@@ -72,6 +72,14 @@ export const FIELD_KINDS = [
   'datetime',
   'daterange',
   'cadence',
+  // A REPEAT RULE — how often a thing happens, as an RFC 5545 RRULE value (ADR-1299,
+  // lib/events/repeat-rule.ts). Distinct from `cadence`, which is free text a member writes
+  // ("Wednesdays, coffee after"), and from `select`, which was what the Event manifest used while
+  // the model was a four-value enum. It is one field and not three because "every other Wednesday
+  // until the end of term" is ONE answer: a pattern, an interval and an end that can contradict
+  // each other the moment they are edited apart. Added when the enum could no longer say what
+  // hosts were asking for.
+  'repeat',
   'place',
   // media
   'image',
@@ -91,7 +99,8 @@ export function isFieldKind(v: string): v is FieldKind {
  * Kinds that MUST say what they are choosing between. Deliberately just these three: `cadence` also
  * has closed sets in some entities ("none / daily / weekly / monthly") but is genuinely free text
  * in others ("Wednesdays, coffee after"), so forcing options on it would make the honest case
- * unrepresentable. A closed recurrence is a `select`.
+ * unrepresentable. A closed recurrence used to be a `select`; a real one is now a `repeat`, whose
+ * "options" are derived from the thing's own start date and so cannot be declared here at all.
  */
 const CHOICE_KINDS: readonly FieldKind[] = ['select', 'reference', 'multiselect']
 

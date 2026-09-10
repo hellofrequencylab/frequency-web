@@ -4925,6 +4925,7 @@ export type Database = {
           poster_path: string | null
           price_cents: number | null
           published_at: string | null
+          recurrence_rule: string | null
           recurrence_type: string
           recurrence_until: string | null
           region: string | null
@@ -4990,6 +4991,7 @@ export type Database = {
           poster_path?: string | null
           price_cents?: number | null
           published_at?: string | null
+          recurrence_rule?: string | null
           recurrence_type?: string
           recurrence_until?: string | null
           region?: string | null
@@ -5055,6 +5057,7 @@ export type Database = {
           poster_path?: string | null
           price_cents?: number | null
           published_at?: string | null
+          recurrence_rule?: string | null
           recurrence_type?: string
           recurrence_until?: string | null
           region?: string | null
@@ -16757,6 +16760,7 @@ export type Database = {
           is_cancelled: boolean
           location: string
           parent_event_id: string
+          recurrence_rule: string
           recurrence_type: string
           recurrence_until: string
           slug: string
@@ -17051,6 +17055,7 @@ export type Database = {
           is_cancelled: boolean
           location: string
           parent_event_id: string
+          recurrence_rule: string
           recurrence_type: string
           recurrence_until: string
           slug: string

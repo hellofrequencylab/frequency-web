@@ -1,7 +1,7 @@
 import { CalendarClock } from 'lucide-react'
 import { getEventContext } from '@/lib/events/active-event'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { recurrenceLabel } from '@/lib/events/recurrence'
+import { recurrenceLineFor } from '@/lib/events/recurrence'
 import { AddToCalendar } from '@/components/events/add-to-calendar'
 
 // The EVENT DETAILS card (the `event-when-where` layout module, paired with the Place & Time
@@ -93,9 +93,15 @@ export const EventWhenWhere = async () => {
   const opensLine = formatWall(opensAt, FULL_OPTS)
   const closesLine = formatWall(closesAt, FULL_OPTS)
 
+  // The RULE, not the coarse column (ADR-1299): "Every 2 weeks on Wednesday" rather than
+  // "Repeats weekly". A row with no rule falls back to what its legacy cadence means.
   const repeats =
     schedule.recurrenceType !== 'none'
-      ? recurrenceLabel(schedule.recurrenceType)
+      ? recurrenceLineFor({
+          starts_at: schedule.startsAt,
+          recurrence_type: schedule.recurrenceType,
+          recurrence_rule: schedule.recurrenceRule,
+        })
       : schedule.partOfSeries
         ? 'Part of a recurring series'
         : null

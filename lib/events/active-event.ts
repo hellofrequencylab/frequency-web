@@ -103,8 +103,10 @@ export interface EventScheduleData {
   endsAt: string | null
   /** The event zone's abbreviation for the time line (e.g. "PDT"), resolved by the page. */
   tzAbbrev: string
-  recurrenceType: 'none' | 'daily' | 'weekly' | 'monthly'
+  recurrenceType: 'none' | 'daily' | 'weekly' | 'monthly' | 'yearly'
   recurrenceUntil: string | null
+  /** The RRULE value on `events.recurrence_rule` (ADR-1299), or null on a pre-rule row. */
+  recurrenceRule: string | null
   /** This instance belongs to a recurring series (parent_event_id set). */
   partOfSeries: boolean
   /** For a recurring anchor whose start has passed: the next upcoming occurrence, ISO. */

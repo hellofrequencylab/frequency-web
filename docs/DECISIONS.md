@@ -38213,3 +38213,173 @@ from an empty success is a rollup nobody notices has stopped (the lesson of
 [ADR-1207](DECISIONS.md) and the density rollup's silent fortnight). `space_standing` is additive,
 idempotent and service-role only; until it is applied the score simply runs on four signals instead
 of six.
+
+---
+
+## ADR-1299: ACCEPTED — the event repeat becomes a bounded RFC 5545 RRULE, and the three copies of the maths become one engine (2026-09-10)
+
+**Context.** Events shipped in 2024 with a four-value cadence enum — `none / daily / weekly /
+monthly` ([ADR-007](DECISIONS.md)) — and its own migration wrote the exit down in advance:
+
+> "Enum, not RRULE. […] Can be promoted to RRULE later without losing data — just add a
+> `recurrence_rule` text column and keep `recurrence_type` as the simple path."
+> — `supabase/migrations/20240208000000_event_recurrence.sql`
+
+The owner asked for the promotion in the terms hosts had been asking for it: *"Repeating events need
+a smarter chooser so people can make advanced repeat options like bi weekly or every third
+thursday."* Neither is expressible in four values, and neither can be added as a fifth and sixth —
+"every other Wednesday" is an INTERVAL and "the third Thursday" is an ORDINAL, so the enum is the
+wrong shape rather than the wrong length.
+
+There was a second, quieter reason to do this now. The enum's stepping had been written out **three
+times** — the materialiser (`lib/event-recurrence.ts`), the read side (`lib/events/recurrence.ts`)
+and the calendar strip (`lib/events/calendar-repeats.ts`) — with `recurrence-parity.test.ts`
+standing between the copies to notice when they disagreed. That gate's own header named this
+decision's gap: *"The model has no weekday-ordinal rule ('second Tuesday'), so there is nothing of
+that shape to pin; if one is ever added it belongs in this table on the day it lands."*
+
+**Decision.**
+
+1. **One pure engine, `lib/events/repeat-rule.ts`**, over a bounded RFC 5545 subset: `FREQ`,
+   `INTERVAL`, `BYDAY`, `BYSETPOS`, `BYMONTHDAY`, `BYMONTH`, `COUNT`, and nothing else. Zero imports,
+   no clock: the client picker, the server actions, the cron materialiser and three read paths all
+   import it. **All three copies of the stepping were deleted** and now delegate here.
+
+   RFC 5545 rather than a shape of our own because the rule has to survive the round trip a calendar
+   entry makes: the `.ics` feeds already emit RRULE, and Google, Apple and Outlook read and write the
+   same grammar. The subset is bounded because every construct admitted has to be expandable by the
+   materialiser, describable in plain voice, and representable in the picker. **A rule outside the
+   subset is treated as ABSENT, never half-honoured** — expanding `FREQ=WEEKLY` when the host wrote
+   `FREQ=WEEKLY;INTERVAL=2` would put a gathering on the calendar on a day nothing happens.
+
+2. **`events.recurrence_rule` stores the pattern; `recurrence_type` stays the coarse mirror.** The
+   enum column is what the occurrence cron's anchor filter, `idx_events_recurring_anchors`, every
+   folding read and the child-row CHECK key on. It is DERIVED from the rule's `FREQ` by the writers
+   and is never posted independently, so the two cannot drift. It gained `'yearly'`.
+
+3. **🔴 `UNTIL` is NOT in the rule.** The series end stays `events.recurrence_until`, an indexed
+   `timestamptz`. [ADR-807](DECISIONS.md) pins it to the instant the RRULE `UNTIL` carries and the
+   published feeds ship that; the cron's live-anchor filter is a column comparison that cannot be a
+   substring match on text. `COUNT` has no column and therefore does live in the rule. The picker
+   carries the host's "ends on" date across one form post as a transport-only `;UNTIL=YYYYMMDD`,
+   which the server splits back out — one control owns the whole Repeats question, two columns own
+   the two facts.
+
+4. **The chooser follows where Google Calendar, Apple Calendar and Outlook converge**, and the
+   convergence is the finding:
+   - **One menu of DATE-DERIVED presets**, then "Custom" one tap away. "Weekly on Wednesday", "Every
+     2 weeks on Wednesday", "Monthly on the third Wednesday", "Annually on September 16" — computed
+     from the start the host already chose. This is the half that cannot be retrofitted onto a static
+     list: *Monthly* alone means "the 16th" to the software and "the third Wednesday" to the host,
+     and the only fix is to say which **in the option**.
+   - **A custom panel of three rows**: repeat every N units; the unit's own detail (weekday toggles
+     for weekly, by-date versus by-weekday for monthly and yearly); and the end rule.
+   - **An end rule with three arms**: never, on a date, after N times. "After N" is not a
+     convenience — for a six-week course the host knows the count and not the date.
+   - And one rule that is ours: **it prints the sentence back**. "Every 2 weeks on Wednesday, until
+     December 30" is how a host verifies what they built, and it doubles as the control group's
+     accessible description.
+
+5. **A `repeat` FIELD_KIND in the Studio kernel**, so the Spark, the review board and the settings
+   rail all derive the same control from one manifest line (`docs/STUDIO.md`). It replaced a `select`
+   over four values PLUS a separate "Repeats until" date, which could contradict each other once
+   edited apart.
+
+**The one departure from RFC 5545, and it is deliberate.** `BYMONTHDAY` **clamps** a short month
+where the spec **skips** it: a series on the 31st lands Jan 31 → Feb 28 → Mar 31 here, and Jan 31 →
+Mar 31 by the letter. The clamp is what this product has always done, production series depend on it,
+and skipping February is not what a host who picked "monthly on the 31st" meant. The `.ics` export
+translates it faithfully with the standard `BYMONTHDAY=28,29,30,31;BYSETPOS=-1` idiom, so a
+subscriber's calendar agrees with the page. The `BYSETPOS` weekday form has no such departure: "the
+fifth Monday" simply does not occur in a month that has four, and that IS what a host means — which
+is why the parser refuses `BYSETPOS=5` and the picker offers "last" instead.
+
+**No backfill, on purpose.** A NULL rule means "read the coarse cadence", which `repeatFor` does by
+resolving `'weekly'` to the anchor's own weekday and `'monthly'` to its own day-of-month **with the
+clamp**. Every existing series therefore keeps landing on exactly the dates it lands on today, and a
+backfill would be a write with no consequence and one chance to get the clamp wrong.
+
+**Consequences.** `recurrence-parity.test.ts` keeps running and its job changed rather than ended: it
+no longer guards three arithmetics against each other (there is one), it guards the three PUBLIC
+seams against each other — a bound applied on one side and not another, an anchor included here and
+excluded there, a day key taken from the wrong end of an instant. `LIVE-154` was exactly that class
+of bug and involved no arithmetic at all. Seven rule-shaped fixtures joined the table, as its header
+asked. The `.ics` routes now build their RRULE from the whole row, so a bi-weekly series stops
+exporting as weekly. **The migration must be applied before this merges**: until it is,
+`pnpm check:schema-contract` reports `events.recurrence_rule` as a phantom column, which is the gate
+doing its job.
+
+---
+
+## ADR-1300: ACCEPTED — the event header crops at every width, and the focal picker previews the frame it aims (2026-09-10)
+
+**Context.** The third owner report on one band, and the arc matters more than any of them alone:
+
+| date | report | what shipped |
+| --- | --- | --- |
+| 2026-08-31 | a phone crop sliced both ends of the event's name off a 1400x600 flyer | `object-contain`, first below `sm`, then at every width (`LIVE-130`, `LIVE-131`) |
+| 2026-09-04 | *"it should be full bleed and adjusted with the focus picker"* — contain had made the phone band a 221x221 square between two blurred bars | the PHONE half went back to `object-cover`, at a band reshaped short and wide (`LIVE-146`) |
+| 2026-09-10 | *"The header is not displaying correctly. It should be full bleed and cropped to the selected area."* | this |
+
+The desktop half was still containing, so the marquee surface painted the poster boxed between
+blurred bars. And the control an operator would reach for was lying: the header controls' focal
+picker frames the cover at a stock 16/9 and invites a drag, but under `contain` nothing is cropped,
+so the frame it drew existed nowhere on the page.
+
+**Decision.** `PosterBand` **covers at every width**, aimed by the host's focal point. The
+`sm:object-contain` and the blurred backdrop it existed to fill are both gone. And the picker
+**previews the real band**: `posterBandAspect(tier, width, coverAspect)` = `max(posterAspect,
+width / tierHeight)`, read off the poster ladder's own class strings so a re-tuned tier moves the
+preview with it.
+
+**🔴 Why this does not reopen the 2026-08-31 report, and the reason is [ADR-1248](DECISIONS.md)
+rather than the fit keyword.** The band no longer GUESSES its shape. It sizes itself to the poster's
+measured aspect with the height tier as a CEILING, so a clamped band is only ever **shorter** than
+the artwork at that width, never **narrower** — and `object-cover` can therefore cut nothing but the
+height, which is the axis the picker aims and whose hint already reads "Vertical matters most". The
+1400x600 flyer that produced the first report renders whole on every screen. The August failure
+needed BOTH halves: a band shaped wrong for the artwork AND a crop.
+
+**What it costs, stated rather than buried.** A portrait poster shows about a quarter of itself at
+the standard tier on a desktop, and a square one about a third. `LIVE-131` is the row that measured
+that and chose the letterbox; the owner has now chosen the crop, twice. The lever is the height
+picker (Tall takes a portrait cover to roughly 39%), and the change that removes the trade entirely
+is a narrower, poster-shaped column rather than a different fit in a full-bleed band — a layout
+change to a marquee page, and not this.
+
+**Consequences.** `LIVE-131`'s probe now asserts the OPPOSITE of what it asserted before; that is
+the reversal, recorded in the row, not rot. The band paints one image instead of two, which is a
+decode saved on the surface least able to afford one.
+
+---
+
+## ADR-1301: ACCEPTED — the event identity region is full width, in two lanes, outside the action column (2026-09-10)
+
+**Context.** Owner, in the same report: *"Something is off with the details under the header. They
+are all aligned left."*
+
+The cause is structural. Every identity line — the date, the venue, the cadence, the series date
+rail, the Circle, "Hosted by", the posted-by credit, the check-in reward — went through
+`DetailTemplate`'s `subtitle`, which lives **inside** the header lockup's flex row beside `actions`.
+A flex row gives the identity column `content width - actions width` for its ENTIRE height, and the
+event page puts three buttons there: on the live page that is roughly 265px of a roughly 520px row.
+So the whole stack rendered in under half the width with an empty half beside it. The date chips
+wrapped into three rows; "Hosted by Royal Temple at Daniel Tyack organized by Frequency" wrapped
+into three lines.
+
+**Decision.** A new full-width `meta` slot on `DetailTemplate`, rendered under the lockup and across
+the whole band. `EventDetailTemplate` arranges the region to use that width: **lane A** carries the
+facts of the gathering (when, where, cadence, next date), **lane B** carries where it belongs and to
+whom (Circle/Space/Journey, host, credit), and the two horizontal things — the series date rail and
+the reward strip — span both lanes underneath. The lanes are side by side from `md` and stack in
+declaration order below it, so a phone reads exactly the sequence it always read.
+
+`subtitle` is untouched and stays correct for the one-liner every other Detail page passes; both may
+be used together. `seriesRail` moved down the declared order, because it is a ROW of date chips and
+belongs under both lanes rather than mid-column where it wrapped into three rows.
+
+**Consequences.** The byte-identity proof (`event-detail-template.equivalence.test.tsx`) was amended
+deliberately, per its own instructions, so the equality still compares a hand-rolled page against the
+template rather than the template against itself. The drift guard gained a clause that the identity
+region goes through `meta` and not `subtitle` — the regression is silent, because the page still
+renders, it just crams again.
