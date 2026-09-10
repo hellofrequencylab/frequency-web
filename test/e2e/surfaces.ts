@@ -438,7 +438,7 @@ const OPERATOR_PATHS: readonly { readonly path: string; readonly why: string }[]
   { path: '/admin/library', why: 'Highest measured operator route: 12 raw-button-bg / 73 raw <button>.' },
   { path: '/admin/marketing/nurture', why: 'Second: 9 raw-button-bg / 65 raw <button>, and the entry point to the email-studio cluster.' },
   { path: '/admin/crew-tasks', why: '7 raw-button-bg / 17 raw <button> in two files — the densest ratio in the admin tree.' },
-  // 🔴 WAS `/admin/crm` UNTIL 2026-09-10, AND THE SWAP IS THE WHOLE LESSON (ADR-1313). That route
+  // 🔴 WAS `/admin/crm` UNTIL 2026-09-10, AND THE SWAP IS THE WHOLE LESSON (ADR-1314). That route
   // is `requireAdmin('janitor')` with NO staff escape, so NO `team_members` role can open it — not
   // analyst, not admin, not owner. Only `web_role` janitor or admin does, which is the meta-admin
   // tier a Playwright credential must never hold. This list was chosen by counting buttons and

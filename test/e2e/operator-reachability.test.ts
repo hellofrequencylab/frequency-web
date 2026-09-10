@@ -10,7 +10,7 @@ import { operatorSurfaces } from './surfaces'
 // it picked — `/admin/crm`, and `/admin/elements` had it been next — are `requireAdmin('janitor')`
 // with no staff escape, which no `team_members` role can satisfy at any seniority. The suite named
 // them, bounced off them, photographed `/feed` under their names, and the whole thing read as a
-// flaky capture for two weeks (ADR-1313).
+// flaky capture for two weeks (ADR-1314).
 //
 // This is the guard that makes the list honest: a route is only worth watching if the credential
 // that drives the suite can open it.
@@ -102,7 +102,7 @@ describe('every watched operator surface is reachable by a team_members staff ro
           `escape — so NO team_members role opens it at any seniority, only web_role admin or ` +
           `janitor, which a Playwright credential must never hold. Either give that guard a staff ` +
           `domain or drop the route from OPERATOR_PATHS. This is the exact trap /admin/crm set ` +
-          `(ADR-1313).`,
+          `(ADR-1314).`,
       ).toBe(true)
     },
   )

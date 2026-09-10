@@ -39017,7 +39017,14 @@ explaining why there is no longer a credit there. Comments are stripped before m
 the shape-not-truth trap this repo names in four ADRs, arriving from the opposite direction: not a
 comment satisfying a probe, but a comment failing one.
 
-## ADR-1313: ACCEPTED — an operator surface the e2e account cannot open is not coverage (2026-09-10)
+## ADR-1314: ACCEPTED — an operator surface the e2e account cannot open is not coverage (2026-09-10)
+
+📌 **Numbered 1314, not 1313.** `claude/focused-heisenberg-57qcbv` (#2533) renumbered *onto* 1313
+independently, from a `main` that did not yet carry this branch — both reads were correct in
+isolation, which is the same trap three branches hit on 1306 earlier the same day. Renumbering this
+side rather than theirs resolves it whichever order the two land in, and needs no edit to a branch
+another session is driving. "The next free number" remains a property of `main` PLUS every open
+branch, and nothing checks that at authoring time.
 
 **Context.** `OPERATOR_PATHS` (`test/e2e/surfaces.ts`) names the seven `/admin` routes the visual
 and a11y suites watch. They were chosen by counting raw buttons
