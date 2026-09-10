@@ -73,9 +73,13 @@ function Reference() {
         actions={<S id="actions" />}
         meta={
           <div className="space-y-3 text-body-sm text-muted">
+            {/* who runs it sits WITH the venue since ADR-1311: when · where · who is the order a
+                guest decides in, and the series lines answer a different question. */}
             <div className="space-y-1.5">
               <S id="when" />
               <S id="where" />
+              <S id="hostedBy" />
+              <S id="belonging" />
             </div>
             <div className="space-y-1.5">
               <S id="cadence" />
@@ -83,8 +87,6 @@ function Reference() {
               <S id="seriesRail" />
             </div>
             <div className="space-y-1.5">
-              <S id="hostedBy" />
-              <S id="belonging" />
               <S id="credit" />
             </div>
             <S id="reward" />
@@ -152,7 +154,7 @@ describe('EventDetailTemplate renders the photographed event page byte-identical
   it('keeps the identity lines in the standard order, whatever order the caller writes them in', () => {
     const html = renderToStaticMarkup(<Subject />)
     // The gathering, the series, who runs it, the reward (EventIdentitySlots).
-    const order = ['when', 'where', 'cadence', 'nextDate', 'seriesRail', 'hostedBy', 'belonging', 'credit', 'reward']
+    const order = ['when', 'where', 'hostedBy', 'belonging', 'cadence', 'nextDate', 'seriesRail', 'credit', 'reward']
     const positions = order.map((id) => html.indexOf(`data-slot="${id}"`))
     expect(positions).toEqual([...positions].sort((a, b) => a - b))
     expect(positions.every((p) => p > -1)).toBe(true)

@@ -38961,6 +38961,62 @@ favour of another dense console. Recorded in `HYG-027` with the grid.
 `assertMemberSession` looked like it covered this and structurally could not, and the suite reported
 "App shell covered: 11/11 surfaces" over a run that photographed the feed eight times.
 
+---
+
+## ADR-1311: ACCEPTED — the house account is not a byline, and who runs it sits with the venue (2026-09-10)
+
+**Context.** Owner, on the live Meld page: *"Move 'Hosted By' line between address and part of a
+recurring series. Remove organized by Frequency and posted by Frequency from all events. Only
+include the posted by tag if it was posted by a user and handed off to a host."*
+
+Frequency posts and seeds a great many events, and `host_id` on every one of them is the house
+account. The page was printing that back to the reader twice — `· organized by Frequency` on the
+hosted-by line and again as `Organized by Frequency` on the Host rail card — with `Posted by
+Frequency` beneath. Three lines of the identity region were the site naming itself.
+
+**Decision, two parts.**
+
+**1. A credit is for a person, not for the platform.** `lib/events/platform-credit.ts` answers one
+question — is this attribution the house account talking about itself — and both readers consult
+it, so the identity line and the rail card cannot drift apart. The poster credit no longer resolves
+the `@frequency` brand row at all: the lookup and its `BRAND_CREDIT` fallback are deleted rather
+than left unused, because a resolved brand row sitting in scope is how "Posted by Frequency" comes
+back by accident.
+
+What survives is exactly the case the owner asked to keep: a real member who posted a gathering that
+a host then took over. That condition was already half-expressed — `posterRow` is only fetched when
+`postedById !== host.id`, which IS "handed off" — so the only thing removed is the operator/brand
+override on top of it. `isUnclaimedPosted` now decides only how PROMINENT the credit is (the Zap
+line against the quiet one), which keeps a member's posting reward visible before a host claims.
+
+🔴 **Display only.** `posted_by_profile_id` and `host_id` are untouched. The send-to-host, claim and
+Zap-reward flows all key off those columns and keep working for a seeded listing whose credit no
+longer renders. Suppressing a byline is not unsetting a relationship, and the two were deliberately
+kept separable when the override was written.
+
+Matched on HANDLE rather than display name: a display name is editable copy and drifts, and a member
+may legitimately call themselves "Frequency". The handle is the identity.
+
+**2. Who runs it sits with the venue, not with the series.** The identity region's groups were
+`when · where` / `cadence · nextDate · seriesRail` / `hostedBy · belonging · credit`. That put the
+host *after* the date rail, three groups down from the venue. A guest decides on three facts —
+when, where, who — and the series lines answer a different question entirely: how often, and which
+dates. The first group is now `when · where · hostedBy · belonging` and the series group follows it.
+
+`credit` becomes its own group rather than a fourth line of the first, because after part 1 it is
+RARE. A group that is usually absent must not leave a hole in the group that is always present.
+
+**What this cost, and it is the honest part.** Two guards failed on the reorder —
+`event-detail-template.equivalence.test.tsx` pins the rendered markup byte-for-byte and pins the
+slot order independently. Both were doing their job and both were updated to the new contract; that
+is the difference between a pinned order and a frozen one.
+
+⚠️ **And the new guard failed on its own documentation first.** The source-shape test that proves
+both surfaces gate on `showsOrganizerCredit` matched the words "Organized by" inside the COMMENTS
+explaining why there is no longer a credit there. Comments are stripped before matching now. It is
+the shape-not-truth trap this repo names in four ADRs, arriving from the opposite direction: not a
+comment satisfying a probe, but a comment failing one.
+
 ## ADR-1313: ACCEPTED — an operator surface the e2e account cannot open is not coverage (2026-09-10)
 
 **Context.** `OPERATOR_PATHS` (`test/e2e/surfaces.ts`) names the seven `/admin` routes the visual
