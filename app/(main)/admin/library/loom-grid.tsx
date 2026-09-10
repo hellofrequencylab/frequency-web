@@ -125,7 +125,7 @@ function Thumb({ asset, fit }: { asset: LibraryGalleryItem; fit: 'cover' | 'cont
 }
 
 // The Loom Studio grid + detail drawer. Click a card to open the drawer, edit its metadata,
-// copy its URL, open/download it, or archive/delete it. Mutations run through the janitor-gated
+// copy its URL, open/download it, or archive/delete it. Mutations run through the Studio-gated
 // server actions, then refresh the server component.
 export type LoomView = 'cards' | 'compact' | 'list'
 
@@ -278,7 +278,7 @@ export function LoomGrid({
 
 // The bulk-action toolbar above the grid: a select-all toggle + a live count, and (when
 // anything is selected) actions that run across the whole selection — add/remove from a
-// collection, set a category, add tags, archive, delete. Each runs the janitor-gated action,
+// collection, set a category, add tags, archive, delete. Each runs the Studio-gated action,
 // then refreshes and clears the selection.
 function BulkBar({
   ids,

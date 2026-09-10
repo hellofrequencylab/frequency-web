@@ -5,7 +5,11 @@ import { requireAdmin } from '@/lib/admin/guard'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getRootSpaceId } from '@/lib/library/store'
 
-// Loom Studio — collections (custom folders) + bulk asset edits. All janitor-gated and
+// Studio-gated: every action below carries the page's OWN gate —
+// `requireAdmin('janitor', { staff: 'marketing' })`, the same call `page.tsx` makes. See the door
+// note at the top of `./actions.ts` for the defect that came of not doing this (LIVE-289).
+
+// Loom Studio — collections (custom folders) + bulk asset edits. All Studio-gated and
 // service-role (library_* isn't in database.types yet — the repo's untyped-table pattern).
 // See docs/LIBRARY.md. Collections use library_collections + library_collection_items
 // (ADR-480); membership is many-to-many so an asset can live in several folders.
@@ -32,7 +36,7 @@ export async function createCollection(
   title: string,
   description?: string,
 ): Promise<{ ok: true; id: string } | { error: string }> {
-  const ctx = await requireAdmin('janitor')
+  const ctx = await requireAdmin('janitor', { staff: 'marketing' })
 
   const t = (title || '').trim().slice(0, 120)
   if (!t) return { error: 'Give the collection a name.' }
@@ -65,7 +69,7 @@ export async function createCollection(
 
 /** Rename a collection. */
 export async function renameCollection(id: string, title: string): Promise<{ ok: true } | { error: string }> {
-  await requireAdmin('janitor')
+  await requireAdmin('janitor', { staff: 'marketing' })
   if (!id) return { error: 'Missing collection id.' }
   const t = (title || '').trim().slice(0, 120)
   if (!t) return { error: 'Name cannot be empty.' }
@@ -78,7 +82,7 @@ export async function renameCollection(id: string, title: string): Promise<{ ok:
 
 /** Delete a collection (its membership rows cascade; the assets themselves stay). */
 export async function deleteCollection(id: string): Promise<{ ok: true } | { error: string }> {
-  await requireAdmin('janitor')
+  await requireAdmin('janitor', { staff: 'marketing' })
   if (!id) return { error: 'Missing collection id.' }
   const { error } = await dbh().from('library_collections').delete().eq('id', id)
   if (error) return { error: error.message }
@@ -91,7 +95,7 @@ export async function addAssetsToCollection(
   collectionId: string,
   assetIds: string[],
 ): Promise<{ ok: true; added: number } | { error: string }> {
-  await requireAdmin('janitor')
+  await requireAdmin('janitor', { staff: 'marketing' })
   if (!collectionId) return { error: 'Missing collection.' }
   const ids = cleanIds(assetIds)
   if (ids.length === 0) return { error: 'No assets selected.' }
@@ -110,7 +114,7 @@ export async function removeAssetsFromCollection(
   collectionId: string,
   assetIds: string[],
 ): Promise<{ ok: true } | { error: string }> {
-  await requireAdmin('janitor')
+  await requireAdmin('janitor', { staff: 'marketing' })
   if (!collectionId) return { error: 'Missing collection.' }
   const ids = cleanIds(assetIds)
   if (ids.length === 0) return { error: 'No assets selected.' }
@@ -130,7 +134,7 @@ export async function bulkSetCategory(
   assetIds: string[],
   category: string,
 ): Promise<{ ok: true } | { error: string }> {
-  await requireAdmin('janitor')
+  await requireAdmin('janitor', { staff: 'marketing' })
   const ids = cleanIds(assetIds)
   if (ids.length === 0) return { error: 'No assets selected.' }
   const cat = (category || '').trim().slice(0, 80)
@@ -146,7 +150,7 @@ export async function bulkSetCategory(
 
 /** Bulk add tags (union with each asset's existing tags). Tags arrive comma-separated. */
 export async function bulkAddTags(assetIds: string[], tags: string): Promise<{ ok: true } | { error: string }> {
-  await requireAdmin('janitor')
+  await requireAdmin('janitor', { staff: 'marketing' })
   const ids = cleanIds(assetIds)
   if (ids.length === 0) return { error: 'No assets selected.' }
   const add = (tags || '')
@@ -170,7 +174,7 @@ export async function bulkAddTags(assetIds: string[], tags: string): Promise<{ o
 
 /** Bulk archive (soft-remove) many assets. */
 export async function bulkArchive(assetIds: string[]): Promise<{ ok: true } | { error: string }> {
-  await requireAdmin('janitor')
+  await requireAdmin('janitor', { staff: 'marketing' })
   const ids = cleanIds(assetIds)
   if (ids.length === 0) return { error: 'No assets selected.' }
   const { error } = await dbh()
@@ -184,7 +188,7 @@ export async function bulkArchive(assetIds: string[]): Promise<{ ok: true } | { 
 
 /** Bulk permanent delete: remove stored files, then the rows (membership cascades). */
 export async function bulkDelete(assetIds: string[]): Promise<{ ok: true } | { error: string }> {
-  await requireAdmin('janitor')
+  await requireAdmin('janitor', { staff: 'marketing' })
   const ids = cleanIds(assetIds)
   if (ids.length === 0) return { error: 'No assets selected.' }
 

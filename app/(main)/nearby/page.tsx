@@ -319,8 +319,12 @@ export default async function NearbyPage({
       //
       // ORDER: Events, Circles, Members, Dispatches. The three things a member came to find lead;
       // the count of announcements, which is the page's own furniture, goes last.
+      // 🔴 FOUR LIVE TALLIES, so the camera paints over them (`data-visual-mask`, ADR-1277). Every
+      // number here is a database reading that moves without a deploy — this line is the most
+      // likely author of LIVE-301's six identical failures, because it renders the SAME glyphs at
+      // 1280, 390 and 320, which is what "1347 pixels in every context" looks like.
       headingLead={
-        <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-body-sm text-muted">
+        <p data-visual-mask="nearby-glance" className="flex flex-wrap items-center gap-x-2 gap-y-1 text-body-sm text-muted">
           <span><strong className="font-semibold text-text tabular-nums">{(upcomingEventTotal || upcomingEvents.length).toLocaleString()}</strong> upcoming events</span>
           <span aria-hidden className="text-subtle">·</span>
           <span><strong className="font-semibold text-text tabular-nums">{(circlesCountRes.count ?? 0).toLocaleString()}</strong> circles</span>
@@ -344,6 +348,8 @@ export default async function NearbyPage({
       {latest ? (
         <Link
           href={`/nearby/${latest.id}`}
+          // The newest Dispatch in the community, by definition the fastest-moving box on the page.
+          data-visual-mask="nearby-latest-dispatch"
           className="mb-6 flex items-center gap-4 rounded-2xl border border-primary-bg bg-primary-bg/40 p-5 transition-colors hover:bg-primary-bg/60 dark:bg-primary-bg/15 dark:hover:bg-primary-bg/25"
         >
           <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary text-on-primary">
@@ -373,7 +379,9 @@ export default async function NearbyPage({
               description="Your hosts and guides post announcements, events, and challenges here."
             />
           ) : (
-            <div className="grid grid-cols-1 gap-3">
+            /* The stream itself. The EmptyState above is NOT masked: an empty column is the same
+               picture on every capture, and it is design surface. The cards are the reading. */
+            <div data-visual-mask="nearby-dispatch-list" className="grid grid-cols-1 gap-3">
               {dispatches.map((d) => (
                 <DispatchCard key={d.id} dispatch={d} viewerRole={role} myProfileId={profile.id} />
               ))}
@@ -389,7 +397,12 @@ export default async function NearbyPage({
               block used to render the same four events off a second, unfolded read. There is still
               exactly ONE of these on the page and it is still fed by `upcomingEvents`. */}
           {upcomingEvents.length > 0 && (
-            <div>
+            /* Masked WITH ITS HEADER, unlike the Dispatches column above, and the difference is not
+               a style choice: this header's count comes from a WIDER read than the four cards under
+               it (SERIES_WIDE_READ, folded), so it can move while the four cards stay put — drift a
+               mask can answer. The Dispatches count cannot move without its list changing length,
+               and a length change is a HEIGHT, which no mask fixes (ADR-1277 §3). */
+            <div data-visual-mask="nearby-coming-up">
               <SectionHeader title="Coming up" count={upcomingEventTotal || undefined} href="/events" />
               <div className="grid gap-2">
                 {upcomingEvents.map((e) => (
@@ -429,7 +442,9 @@ export default async function NearbyPage({
               never applied the series fold, which is fixed at the read now.) */}
 
           {newCircles.length > 0 && (
-            <ModuleCard title="New circles">
+            /* The five newest circles, ordered by created_at: the list re-orders itself as the
+               community grows, so the module is a reading and declares itself one. */
+            <ModuleCard title="New circles" visualMask="nearby-new-circles">
               <div className="space-y-0.5">
                 {newCircles.map((c) => (
                   <Link key={c.id} href={`/circles/${c.slug}`} className="flex items-center gap-3 rounded-lg px-1 py-2 transition-colors hover:bg-surface-elevated">

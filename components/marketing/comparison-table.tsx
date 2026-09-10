@@ -288,8 +288,11 @@ function MobileByRow({
   return (
     <div className="space-y-6 lg:hidden">
       {groups.map((group) => (
-        // `bg-surface` for the same reason the desktop table carries it: a `yes` cell's
-        // `text-success` clears 4.5:1 on the surface tone and misses it on the canvas tone.
+        // `bg-surface` for the same reason the desktop table carries it. That reason USED to be
+        // contrast: a `yes` cell's `text-success` cleared 4.5:1 on the surface tone and missed it
+        // on the canvas tone (4.05). LIVE-300 darkened `--color-success` for the chip pairing and
+        // carried this one to 4.936, so the card is now a layout preference rather than a
+        // workaround — keep it, but do not cite AA for it.
         <div key={group.key} className="overflow-hidden rounded-2xl border border-border bg-surface">
           <p className="border-b border-border bg-surface-elevated px-4 py-3 font-display uppercase text-text">
             {group.label}

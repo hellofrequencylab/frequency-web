@@ -184,10 +184,13 @@ export const PAIRS = [
   { fg: '--color-text-subtle', bg: '--color-marketing-canvas', role: 'body', note: 'meta/labels on the marketing canvas' },
   { fg: '--color-primary-strong', bg: '--color-marketing-canvas', role: 'body', note: 'accent word / link on the marketing canvas — the light-band half of the accent rule' },
   { fg: '--color-focus-ring', bg: '--color-marketing-canvas', role: 'edge', note: 'focus ring on the marketing canvas' },
-  // The three that miss, each waived at its measured floor (see WAIVERS for the reasoning):
+  // The two that miss, each waived at its measured floor (see WAIVERS for the reasoning). It was
+  // THREE until 2026-09-10: success text on this ground was the family's headline failure at
+  // 4.05 / 3.80, and LIVE-300's darkening of --color-success carried it to 4.936 / 4.630, so it
+  // is measured here as an ordinary passing pair.
   { fg: '--color-border-strong', bg: '--color-marketing-canvas', role: 'edge', note: 'control edge on the marketing canvas — a tone step, same as on the app canvas' },
   { fg: '--color-primary', bg: '--color-marketing-canvas', role: 'edge', note: 'primary graphic/fill on the marketing canvas (the vector art)' },
-  { fg: '--color-success', bg: '--color-marketing-canvas', role: 'body', note: 'success text on the marketing canvas — the pairing to avoid' },
+  { fg: '--color-success', bg: '--color-marketing-canvas', role: 'body', note: 'success text on the marketing canvas — the cream ground is darker than a card, so this is the tighter of the two' },
 
   // ── The ink bands (marketing dark bands, in both modes) ──────────────────────────────────
   { fg: '--color-on-ink', bg: '--color-ink', role: 'body', note: 'copy on an ink band' },
@@ -201,6 +204,16 @@ export const PAIRS = [
   { fg: '--color-text-on-signal', bg: '--color-signal', role: 'body', note: 'signal button label' },
   { fg: '--color-text-on-broadcast', bg: '--color-broadcast', role: 'body', note: 'broadcast button label' },
   { fg: '--color-text-on-move', bg: '--color-move', role: 'body', note: 'Get Moving button label' },
+  // The three SEMANTIC fills were missing from this family until 2026-09-10 (LIVE-300), which is
+  // how a chip fix nearly broke a button. `--color-warning` does two jobs — chip TEXT on
+  // `--color-warning-bg`, and solid FILL under `--color-text-on-warning` (components/ui/button.tsx
+  // `warning`, components/ui/badge.tsx solid) — and only the first was declared here. Darkening it
+  // to clear the chip took ink-on-warning from 4.77 to 3.35, a sub-AA pair this table would not
+  // have printed. Both halves are declared now, so the two jobs of one token can never again move
+  // in opposite directions unseen. (The label flipped to white; see globals.css.)
+  { fg: '--color-text-on-danger', bg: '--color-danger', role: 'body', note: 'danger button / solid badge label' },
+  { fg: '--color-text-on-warning', bg: '--color-warning', role: 'body', note: 'warning button / solid badge label — the other job of --color-warning' },
+  { fg: '--color-text-on-success', bg: '--color-success', role: 'body', note: 'success button / solid badge label — the other job of --color-success' },
 
   // ── Tinted status/brand chips: the strong step reading on its own -bg wash ───────────────
   // Also THE avatar-initials fallback (components/ui/avatar.tsx): a warm disc with the member's
@@ -303,44 +316,46 @@ export const WAIVERS = [
     floors: { 'Light-lock on a dark device': 4.42, 'DAWN light': 4.42, 'Midnight light': 4.42 },
     why: 'Near miss: 4.42:1 against 4.5 — eight hundredths. One step darker on --color-move clears it.',
   },
-  {
-    fg: '--color-broadcast-strong',
-    bg: '--color-broadcast-bg',
-    floors: { 'Light-lock on a dark device': 3.99, 'DAWN light': 3.99, 'Midnight light': 3.99 },
-    why: 'Tinted chip text at 3.99:1. Chips are small type, so the 4.5 bar is the right one; the -strong step needs to go one notch deeper in light mode.',
-  },
-  {
-    fg: '--color-success',
-    bg: '--color-success-bg',
-    floors: { 'Light-lock on a dark device': 3.87, 'DAWN light': 3.87, 'Midnight light': 3.87 },
-    why: 'Success chip text at 3.87:1. Same fix shape as broadcast-strong: the tinted chips want a -strong step in light mode instead of the base tone.',
-  },
-  {
-    fg: '--color-warning',
-    bg: '--color-warning-bg',
-    floors: { 'Light-lock on a dark device': 3.32, 'DAWN light': 3.32, 'Midnight light': 3.32 },
-    why: 'Warning chip text at 3.32:1 — the weakest of the chip set.',
-  },
-  // 🔴 THE INFO CHIP WAIVER IS GONE, FIXED RATHER THAN CARRIED (2026-09-10, ADR-1317). It sat here
-  // at 4.41 reading "a near miss", and a near miss is still a miss to the person who cannot read
-  // the chip. What ended it was not this file: the FIRST a11y audit that could actually reach
-  // /admin/content/practices failed on twenty-one of these chips in one table, as serious axe
-  // violations. A waiver is a decision to accept a barrier, and this one had quietly become a
-  // decision to accept twenty-one of them on one page.
+  // 🔴 THE WHOLE TINTED-CHIP SET IS GONE FROM THIS TABLE, FIXED RATHER THAN CARRIED.
   //
-  // ⚠️ THE LESSON, WHICH THE THREE WAIVERS BELOW STILL CARRY. A waived pairing is invisible to
-  // check:contrast BY DESIGN and fully visible to axe the moment a page carrying it is reachable
-  // by the audit. So a waiver here does not make CI safe; it makes CI quiet while the live gate
-  // holds the real opinion. broadcast-strong (3.99), success (3.87) and warning (3.32) are the same
-  // shape and WORSE, and each will fail an audit the same way the day a reachable page carries one.
-  // Filed as LIVE-300 rather than swept into this change: they are a palette decision, and this one
-  // was forced by a failing audit.
-  {
-    fg: '--color-warning',
-    bg: '--color-surface',
-    floors: { 'Light-lock on a dark device': 3.89, 'DAWN light': 3.89, 'Midnight light': 3.89 },
-    why: 'Warning text on a plain card at 3.89:1. Warning is the only status tone that misses on the plain surfaces; danger/success/info clear it.',
-  },
+  // The info chip went first (2026-09-10, ADR-1317). It sat here at 4.41 reading "a near miss",
+  // and a near miss is still a miss to the person who cannot read the chip. What ended it was not
+  // this file: the FIRST a11y audit that could actually reach /admin/content/practices failed on
+  // twenty-one of these chips in one table, as serious axe violations. A waiver is a decision to
+  // accept a barrier, and that one had quietly become a decision to accept twenty-one of them on
+  // one page.
+  //
+  // The remaining three followed on the same day (LIVE-300), before an audit had to find them:
+  //   broadcast-strong on broadcast-bg  3.99 → 4.751   (#0E808D → #0D737F)
+  //   success          on success-bg    3.87 → 4.723   (#11827A → #0F736C)
+  //   warning          on warning-bg    3.32 → 4.719   (#B07515 → #8E5F11)
+  // Each is a deeper step of its own hue in light mode, which is what these waivers' own text had
+  // been asking for; the dark skin cleared throughout and is untouched.
+  //
+  // ⚠️ THE LESSON THIS SET LEAVES BEHIND, worth reading before adding the next waiver. A waived
+  // pairing is invisible to check:contrast BY DESIGN and fully visible to axe the moment a page
+  // carrying it is reachable by the audit. So a waiver here does not make CI safe; it makes CI
+  // quiet while the live gate holds the real opinion — and because the a11y ratchet is
+  // zero-tolerance, the pair does not surface as debt when it finally surfaces, it surfaces as a
+  // REGRESSION. Four of these ran that clock for five weeks. Add one only when the pair genuinely
+  // cannot be fixed, and say in `why` what would fix it.
+  //
+  // ⚠️ AND THE SECOND-ORDER ONE, which nearly turned this fix into the next defect: darkening a
+  // token changes every pairing it is IN, not only the one being fixed. `--color-warning` is both
+  // chip text and a solid FILL, and moving it took ink-on-warning from 4.77 to 3.35. That pair was
+  // undeclared, so nothing here would have printed it. Both halves are in PAIRS now and the label
+  // flipped to white (globals.css). Before darkening a token, grep for it as a `bg-` as well as a
+  // `text-`.
+  //
+  // TWO MORE WAIVERS WENT WITH THEM, because the same darkening carried them past their role
+  // minimum and a waiver standing over a fixed pairing is how it silently regresses:
+  //   warning on surface           3.89 → 5.533  (it was "the only status tone that misses on the
+  //                                               plain surfaces"; that is no longer true)
+  //   success on marketing-canvas  4.05 → 4.936 DAWN light, 3.80 → 4.630 Midnight light
+  // The second was "THE PAIRING TO AVOID" and the reason the marketing-canvas family exists. It is
+  // now the pairing that passes, so the entry is a plain PAIR above rather than a frozen floor.
+  // components/marketing/comparison-table.tsx still pins its ledger cards to `bg-surface`; that is
+  // now a preference rather than a workaround, and its comment says so.
   {
     fg: '--color-primary',
     bg: '--color-surface',
@@ -422,21 +437,12 @@ export const WAIVERS = [
     floors: { 'Light-lock on a dark device': 2.19, 'DAWN light': 2.19, 'Midnight light': 2.33 },
     why: 'The amber brand fill on the cream ground is 2.19:1 — the marketing twin of the already-waived 2.52:1 on white, and darker ground means a WORSE number, not a better one. Decorative fill only: this is the vector art (fill-primary / stroke-primary), never an indicator that identifies a control. Anything on this ground that has to be READ takes --color-primary-strong (4.75:1, in the table above and passing). Frozen so the amber cannot drift lighter.',
   },
-  {
-    fg: '--color-success',
-    bg: '--color-marketing-canvas',
-    floors: { 'Light-lock on a dark device': 4.05, 'DAWN light': 4.05, 'Midnight light': 3.8 },
-    why:
-      'THE PAIRING TO AVOID, and the reason this whole marketing-canvas family exists. Success text ' +
-      'clears 4.5:1 on a card (4.67:1) and misses it on the cream ground (4.05 / 3.80). That fact ' +
-      'was already known and already routed around by hand: components/marketing/comparison-table.tsx ' +
-      'pins its ledger cards to `bg-surface` and says so in a comment, "a `yes` cell’s `text-success` ' +
-      'clears 4.5:1 on the surface tone and misses it on the canvas tone". Nothing paints it today, so ' +
-      'this is not shipped debt — it is the rank-gold treatment: kept at its measured floor so the ' +
-      'fact is printed on every run instead of surviving only as a code comment one refactor away ' +
-      'from being deleted, and so the next component that reaches for a green check on a cream ' +
-      'section is told the number rather than discovering it in an axe report.',
-  },
+  // (`--color-success` on `--color-marketing-canvas` lived here until 2026-09-10 as "THE PAIRING TO
+  // AVOID", frozen at 4.05 / 3.80. LIVE-300 darkened the token for the chip pairing and carried
+  // this one to 4.936 / 4.630, so it is a plain PAIR above now. The marketing-canvas family it
+  // motivated stays: border-strong and primary on that ground are still waived, and the cream
+  // ground is still a DARKER ground than a card, which is the fact the family exists to keep
+  // measured.)
 ]
 
 // ═══════════════════════════════════════════════════════════════════════════════════════════

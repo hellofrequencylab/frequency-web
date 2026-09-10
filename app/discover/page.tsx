@@ -83,6 +83,29 @@ export const metadata: Metadata = {
 // rarely enough that we don't need per-request rendering for crawlers.
 export const revalidate = 3600
 
+// 🔴 SIX READS FEED THIS PAGE AND FIVE OF THEM MOVE — only `getTopicalChannels()` is fixed, and
+// even it feeds a tally counted off `getPublicCircles()`. So the boxes they feed declare themselves
+// with `data-visual-mask` (ADR-1277; every site is registered with its reason in
+// VISUAL_MASK_SITES, test/e2e/surfaces.ts). LIVE-301: `pr-compare` run 34539497155 failed all
+// EIGHT `/discover` baselines — desktop and mobile x dawn-light/dawn-dark/midnight-light/
+// midnight-dark — each reporting 991 differing pixels at IDENTICAL dimensions. A pixel count
+// proves the sizes matched, and a failure in dark as well as light rules out a colour-token
+// change; 991 pixels is content-sized, not layout-sized.
+//
+// The masked boxes are the hero tally line, the locator's city list, each Channel card's circle
+// count, the events list, the circles grid and the posts list. Everything else stays in the
+// picture: every SectionHeading and kicker, the body copy, the browse links, the dark Statement
+// beat, the ZigZag, the FAQ and the closing CTA, plus BOTH fallbacks (the sub-floor hero line and
+// the locator's "We're starting in ..." card) — an empty state is design surface, not a reading.
+//
+// ⚠️ WHERE THIS REMEDY STOPS. A mask paints a box and moves nothing, so it answers "different
+// pixels, same size" and cannot answer "different size" — `toHaveScreenshot` fails a size mismatch
+// before it counts a pixel. Every `.length > 0` guard below is exactly that failure waiting to
+// happen: the Channels, events, circles and posts sections DROP ENTIRELY when their query returns
+// empty, the hero swaps its whole block at SOCIAL_PROOF_FLOOR, the locator swaps map-plus-list for
+// a single card when no city clusters plot, and a list that returns three rows instead of four is
+// a shorter page. None of that is maskable. See the `/discover` note in test/e2e/surfaces.ts for
+// what to read such a failure as.
 export default async function DiscoverHubPage() {
   const [channels, circles, events, posts, counts, cityClusters] = await Promise.all([
     getTopicalChannels(),
@@ -121,8 +144,17 @@ export default async function DiscoverHubPage() {
         title="Real community, near you"
         subtitle="Somewhere close to you, your people are already meeting this week. A standing time, a handful of regulars, a seat that gets noticed when it's empty. Browse the Circles, events, and Channels for free; sign up to join one, RSVP, or post."
       >
+        {/* 🔴 THREE LIVE TALLIES, so the camera paints over them (`data-visual-mask`, ADR-1277,
+            LIVE-301). `counts.members` and `counts.circles` are the `public_member_count` /
+            `public_active_circle_count` RPCs, and `events.length` is the folded
+            `public_events` read whose window slides with the clock. The `<p>` on the other
+            branch is NOT masked: it is fixed copy, and which branch renders is a HEIGHT, not a
+            pixel (see the note in test/e2e/surfaces.ts). */}
         {counts.members >= SOCIAL_PROOF_FLOOR ? (
-          <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-body-sm text-on-ink/80">
+          <div
+            data-visual-mask="discover-hero-stats"
+            className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-body-sm text-on-ink/80"
+          >
             <span><strong className="text-on-ink">{counts.members}</strong> members</span>
             <span className="text-on-ink/30">|</span>
             <span><strong className="text-on-ink">{counts.circles}</strong> circles</span>
@@ -251,7 +283,11 @@ export default async function DiscoverHubPage() {
                 you&apos;re expected. The kind of plan that pulls you off the couch and into a room.
               </p>
             </div>
-            <div className="mt-9 space-y-3">
+            {/* The four upcoming gatherings, from `public_events WHERE starts_at >= now()`: the
+                window slides continuously, so a row falls off the top of this list without a
+                deploy and every row below it moves up. The SectionHeading above is NOT masked —
+                unlike `/nearby`'s "Coming up", it carries no count, so nothing in it can move. */}
+            <div data-visual-mask="discover-upcoming-events" className="mt-9 space-y-3">
               {events.map((e) => (
                 <EventRow key={e.id} event={e} />
               ))}
@@ -285,7 +321,14 @@ export default async function DiscoverHubPage() {
                 see you next week. Find one that sounds like your people, or a reason to start your own.
               </p>
             </div>
-            <div className="mt-9 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {/* The featured six, from `public_circles ORDER BY member_count DESC`: ONE join
+                reorders the top of this grid, and each card also prints its own live member
+                count and its `forming` badge. The heading, the kicker and the browse link
+                beneath are fixed copy and stay in the picture. */}
+            <div
+              data-visual-mask="discover-featured-circles"
+              className="mt-9 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5"
+            >
               {circles.map((c) => (
                 <CircleCard key={c.id} circle={c} />
               ))}
@@ -333,7 +376,12 @@ export default async function DiscoverHubPage() {
             <div className="text-center">
               <SectionHeading eyebrow="What people are saying" title="From the community" />
             </div>
-            <div className="space-y-3 mb-3">
+            {/* The newest three, from `public_posts ORDER BY created_at DESC`: one post replaces
+                the newest of three and pushes the other two down. Each card also carries an
+                author, an avatar and a `relativeTime()` stamp — plain text, not a `<time>`
+                element, so the global `time, [datetime]` selector never reached it. The
+                SignInCta below is NOT masked: it is fixed copy on a fixed card. */}
+            <div data-visual-mask="discover-community-posts" className="space-y-3 mb-3">
               {posts.map((p) => (
                 <PostPreview key={p.id} post={p} />
               ))}

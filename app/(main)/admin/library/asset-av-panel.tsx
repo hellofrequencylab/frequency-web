@@ -5,7 +5,13 @@
 //   1. Replace file — swap the underlying file while keeping the SAME asset id, so every Recording /
 //      attachment / block that references it follows the new file (replaceLibraryAssetFile versions the old).
 //   2. Where is this used — for an audio/video asset, the Recordings that reference it and where they play
-//      (getLoomAssetUsage via the janitor-gated usage route).
+//      (getLoomAssetUsage via the usage route, which is still bare-janitor on purpose — see below).
+// ⚠️ THE ONE DOOR ON THIS PAGE THAT IS NOT THE PAGE'S OWN (LIVE-289). Every server action beside
+// `page.tsx` now carries `requireAdmin('janitor', { staff: 'marketing' })`, but
+// `app/api/airwaves/assets/[id]/usage/route.ts` is `requireAdmin('janitor')` with no staff escape and
+// answers a Marketer with 403. It reads ACROSS the service-role Airwaves tables rather than the Loom,
+// which is why it was scoped that way, and it is fetched on drawer open rather than on mount, so it
+// costs this panel its usage list and never the route. Widening it is a separate ruling.
 // Image behavior is intact: replace works for images too; the usage section only shows for A/V.
 
 import { useEffect, useRef, useState, useTransition } from 'react'

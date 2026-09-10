@@ -11,8 +11,12 @@ import { aiAvailable, featureOverBudget, recordAiUsage } from '@/lib/ai/usage'
 import { getRootSpaceId } from '@/lib/library/store'
 import { sanitizeSvg, extractSvg } from '@/lib/library/svg-sanitize'
 
+// Studio-gated: every action below carries the page's OWN gate —
+// `requireAdmin('janitor', { staff: 'marketing' })`, the same call `page.tsx` makes. See the door
+// note at the top of `./actions.ts` for the defect that came of not doing this (LIVE-289).
+
 // Vera wizard: generate a new Loom "card" (illustration) as inline SVG in the house style,
-// then save it to the library. Janitor-gated, budget-gated, and the generated SVG is
+// then save it to the library. Studio-gated, budget-gated, and the generated SVG is
 // validated by the allowlist sanitizer both here and again at render (defense in depth).
 
 const FEATURE = 'loom-illustration'
@@ -82,7 +86,7 @@ export async function generateLoomCard(
   prompt: string,
   mode: LoomCardMode = 'graphic',
 ): Promise<{ svg: string } | { error: string }> {
-  const ctx = await requireAdmin('janitor')
+  const ctx = await requireAdmin('janitor', { staff: 'marketing' })
 
   const clean = (prompt || '').trim().slice(0, 400)
   if (clean.length < 3) return { error: 'Describe the card you want Vera to draw.' }
@@ -119,7 +123,7 @@ export async function saveLoomCard(input: {
   prompt?: string
   mode?: LoomCardMode
 }): Promise<{ ok: true } | { error: string }> {
-  await requireAdmin('janitor')
+  await requireAdmin('janitor', { staff: 'marketing' })
 
   const title = (input.title || '').trim().slice(0, 200)
   if (!title) return { error: 'Give the card a title.' }
@@ -202,7 +206,7 @@ export async function editLoomSvg(
   imageBase64?: string,
   mode: LoomEditMode = 'tweak',
 ): Promise<{ svg: string } | { error: string }> {
-  const ctx = await requireAdmin('janitor')
+  const ctx = await requireAdmin('janitor', { staff: 'marketing' })
 
   const inbound = sanitizeSvg(currentSvg || '')
   if (!inbound.ok) return { error: "That graphic can't be edited (it didn't pass the safety check)." }
@@ -300,9 +304,9 @@ export async function editLoomSvg(
 
 /** Persist an edited SVG onto an existing element asset (stored in config.svg). This makes a
  *  code-drawn registry element render its edited copy instead; clearing config.svg would
- *  restore the original. Janitor-gated. */
+ *  restore the original. Studio-gated. */
 export async function saveElementSvg(assetId: string, svg: string): Promise<{ ok: true } | { error: string }> {
-  await requireAdmin('janitor')
+  await requireAdmin('janitor', { staff: 'marketing' })
   if (!assetId) return { error: 'Missing asset id.' }
 
   const checked = sanitizeSvg(svg || '')
@@ -348,7 +352,7 @@ export async function reviewLoomSvg(input: {
   instruction: string
   imageBase64: string
 }): Promise<{ ok: true; note: string } | { svg: string; note: string } | { error: string }> {
-  const ctx = await requireAdmin('janitor')
+  const ctx = await requireAdmin('janitor', { staff: 'marketing' })
 
   const inbound = sanitizeSvg(input.svg || '')
   if (!inbound.ok) return { error: "That graphic can't be reviewed (it didn't pass the safety check)." }
