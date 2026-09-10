@@ -10,6 +10,7 @@ import { listSpacesThatCanAskToHost, type HostAskSpace } from '../host-transfer-
 import { CalendarDays, MapPin, Check, Ticket, Clock, Zap, Video, Globe, LayoutDashboard, Settings } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { loadSeriesDates } from '@/lib/events/series-dates'
+import { isPlatformAccount, showsOrganizerCredit } from '@/lib/events/platform-credit'
 import { SERIES_COLUMNS } from '@/lib/events/series'
 import { getSeriesDisplayConfig } from '@/lib/events/series-config'
 import { seriesRobots, seriesSeoFacts, suppressPastNoindex } from '@/lib/events/series-seo'
@@ -496,8 +497,7 @@ export default async function EventDetailPage({
   // only needed for a posted event, so it's skipped otherwise. @frequency is resolved by its handle
   // so the byline stays correct if the brand profile changes; a missing row falls back to the stable
   // Frequency name/handle.
-  const BRAND_CREDIT = { display_name: 'Frequency', handle: 'frequency' }
-  const [posterRow, brandRow, posterCropEntries] = await Promise.all([
+  const [posterRow, posterCropEntries] = await Promise.all([
     postedById && postedById !== (event.host?.id ?? null)
       ? admin
           .from('profiles')
@@ -508,14 +508,6 @@ export default async function EventDetailPage({
             ({ data }) =>
               data as { display_name: string; handle: string; web_role: string | null } | null,
           )
-      : Promise.resolve(null),
-    isPostedEvent
-      ? admin
-          .from('profiles')
-          .select('display_name, handle')
-          .eq('handle', 'frequency')
-          .maybeSingle()
-          .then(({ data }) => (data as { display_name: string; handle: string } | null) ?? BRAND_CREDIT)
       : Promise.resolve(null),
     posterSignedUrlMap(
       [...detailsMediaPaths(posterDetails), extra?.poster_path].filter((p): p is string => !!p),
@@ -529,13 +521,22 @@ export default async function EventDetailPage({
   // This overrides only the DISPLAY: the underlying posted_by_profile_id (postedById) is untouched, so
   // the send-to-host + claim + reward flows below still key off it. A regular member who posts a town
   // event keeps their own byline (and their Zaps credit).
+  // 🔴 THE PLATFORM IS NOT A BYLINE (owner, 2026-09-10). This used to resolve to the @frequency
+  // brand row in two cases — a seeded unclaimed listing, and any operator-posted event — and print
+  // "Posted by Frequency" under the host line. The site a reader is already on is not a credit, so
+  // both now render NOTHING and the only surviving byline is the one the owner asked to keep: a
+  // real member who posted a gathering that a host then took over. `posterRow` is only fetched when
+  // `postedById !== host.id`, so "handed off to a host" is already the condition it is fetched
+  // under; the operator test is what remains to strip.
+  //
+  // `isUnclaimedPosted` no longer decides WHETHER a credit renders, only how prominent it is (the
+  // Zap line vs the quiet one), which keeps a member's posting reward visible before a host claims.
+  // Display only: posted_by_profile_id is untouched, so claim, hand-off and reward still key off it.
   const posterIsOperator = isStaff(asWebRole(posterRow?.web_role))
   const postedBy: { display_name: string; handle: string } | null =
-    isUnclaimedPosted || posterIsOperator
-      ? brandRow
-      : posterRow
-        ? { display_name: posterRow.display_name, handle: posterRow.handle }
-        : null
+    posterRow && !posterIsOperator && !isPlatformAccount(posterRow.handle)
+      ? { display_name: posterRow.display_name, handle: posterRow.handle }
+      : null
   const posterCropUrls = Object.fromEntries(posterCropEntries)
 
   // Header image: the ORIGINAL poster leads for a scanned event. The order — uploaded
@@ -2130,8 +2131,8 @@ export default async function EventDetailPage({
             </Link>
             {collaboratorNames ? <span> with {collaboratorNames}</span> : null}
             <VenueCredit venue={venueSpace} />
-            {event.host ? (
-              <span className="text-subtle"> · organized by {event.host.display_name}</span>
+            {showsOrganizerCredit(event.host) ? (
+              <span className="text-subtle"> · organized by {event.host!.display_name}</span>
             ) : null}
           </p>
         ) : event.host ? (
