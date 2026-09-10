@@ -17,9 +17,13 @@ import {
 import { validateSequenceDef } from '@/lib/onboarding/validate-sequence'
 import { DEFAULT_ONBOARDING_SEQUENCE } from '@/lib/onboarding/default-sequence'
 
+// Studio-gated: every action below carries the page's OWN gate —
+// `requireAdmin('janitor', { staff: 'marketing' })`, the same call `page.tsx` makes. See the door
+// note at the top of `./actions.ts` for the defect that came of not doing this (LIVE-289).
+
 // The WRITE layer for managed onboarding flows (Loom kind='sequence'; docs/LOOM-PLATFORM.md §3). The
 // READ side (resolve-onboarding-sequence.ts, the runner, the staff preview) was already built and
-// dormant; this is the CREATE / EDIT / PUBLISH / VERSION surface that feeds it. Janitor-gated, and the
+// dormant; this is the CREATE / EDIT / PUBLISH / VERSION surface that feeds it. Studio-gated, and the
 // publish gate NEVER lets an invalid flow reach `approved`/`final` (the statuses the resolver serves
 // live), so nothing here can touch a live member until a future flagged cutover.
 //
@@ -67,7 +71,7 @@ export async function createSequence(input: {
   title: string
   target?: SequenceTarget
 }): Promise<ActionResult<{ id: string }>> {
-  await requireAdmin('janitor')
+  await requireAdmin('janitor', { staff: 'marketing' })
 
   const title = input.title.trim()
   if (!title) return fail('Give the flow a title.')
@@ -106,7 +110,7 @@ export async function updateSequenceConfig(
   def: SequenceDef,
   note = 'Edited flow',
 ): Promise<ActionResult<void>> {
-  const ctx = await requireAdmin('janitor')
+  const ctx = await requireAdmin('janitor', { staff: 'marketing' })
   if (!id) return fail('Missing flow id.')
 
   // Shape gate (untrusted jsonb → SequenceDef) then the semantic gate.
@@ -132,7 +136,7 @@ export async function updateSequenceConfig(
 /** Move a flow along the brand-build ladder. Publishing (approved/final) is BLOCKED unless the stored
  *  config passes validation, so the resolver never serves an invalid flow to a live member. */
 export async function setSequenceStatus(id: string, status: string): Promise<ActionResult<void>> {
-  await requireAdmin('janitor')
+  await requireAdmin('janitor', { staff: 'marketing' })
   if (!id) return fail('Missing flow id.')
   if (!(LIBRARY_STATUSES as readonly string[]).includes(status)) {
     return fail('Unknown status.')

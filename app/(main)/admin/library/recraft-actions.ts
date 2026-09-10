@@ -20,8 +20,12 @@ import {
   type RecraftLane,
 } from '@/lib/loom/recraft'
 
+// Studio-gated: every action below carries the page's OWN gate —
+// `requireAdmin('janitor', { staff: 'marketing' })`, the same call `page.tsx` makes. See the door
+// note at the top of `./actions.ts` for the defect that came of not doing this (LIVE-289).
+
 // The Loom's managed image studio — Recraft generation + non-destructive editing (ADR-488,
-// docs/RESEARCH-ASSET-GEN.md). Janitor-gated, budget-gated, and inert unless RECRAFT_API_KEY is set.
+// docs/RESEARCH-ASSET-GEN.md). Studio-gated, budget-gated, and inert unless RECRAFT_API_KEY is set.
 // Generated/edited files land in the library-media bucket as normal library_assets; edits snapshot a
 // version first (rollback via library_versions).
 
@@ -57,7 +61,7 @@ async function store(spaceId: string, bytes: Uint8Array, contentType: string, ba
 }
 
 async function gate(lane: RecraftLane) {
-  const ctx = await requireAdmin('janitor')
+  const ctx = await requireAdmin('janitor', { staff: 'marketing' })
   if (!recraftConfigured()) return { error: 'Recraft is not configured (set RECRAFT_API_KEY).', ctx: null }
   if (!(await aiAvailable())) return { error: 'AI is turned off right now.', ctx: null }
   if (await featureOverBudget(FEATURE)) return { error: "The image studio's daily budget is used up.", ctx: null }
@@ -201,14 +205,14 @@ export async function recraftEditAsset(input: {
 
 /** A gated list of an asset's versions (for the drawer's history panel). */
 export async function listAssetVersions(assetId: string): Promise<LibraryVersion[]> {
-  await requireAdmin('janitor')
+  await requireAdmin('janitor', { staff: 'marketing' })
   if (!assetId) return []
   return listVersions(assetId)
 }
 
 /** Roll an asset back to a previous version (snapshots current first, so it's reversible). */
 export async function rollbackAssetVersion(assetId: string, versionId: string): Promise<{ ok: true } | { error: string }> {
-  const ctx = await requireAdmin('janitor')
+  const ctx = await requireAdmin('janitor', { staff: 'marketing' })
   if (!assetId || !versionId) return { error: 'Missing asset or version.' }
   const res = await rollbackToVersion(assetId, versionId, ctx.profileId)
   if ('error' in res) return res
@@ -220,7 +224,7 @@ export async function rollbackAssetVersion(assetId: string, versionId: string): 
 
 /** List the space's trained brand styles (for the generate panel's picker). */
 export async function listBrandStyles(): Promise<BrandStyle[]> {
-  await requireAdmin('janitor')
+  await requireAdmin('janitor', { staff: 'marketing' })
   const spaceId = await getRootSpaceId()
   if (!spaceId) return []
   return listStyles(spaceId)
@@ -279,7 +283,7 @@ export async function createBrandStyle(input: {
 
 /** Forget a trained brand style (removes our pointer; does not delete it on Recraft). */
 export async function deleteBrandStyle(styleId: string): Promise<{ ok: true } | { error: string }> {
-  await requireAdmin('janitor')
+  await requireAdmin('janitor', { staff: 'marketing' })
   if (!styleId) return { error: 'Missing style.' }
   const spaceId = await getRootSpaceId()
   if (!spaceId) return { error: 'No root space found.' }

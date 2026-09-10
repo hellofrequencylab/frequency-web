@@ -29,7 +29,13 @@ gets its own Loom**. It grows for years without a code deploy per asset.
 
 ## Loom Studio (`/admin/library`)
 
-The janitor-facing studio ([ADR-483](DECISIONS.md)):
+The operator studio ([ADR-483](DECISIONS.md)). **Its door is `requireAdmin('janitor', { staff:
+'marketing' })`** — `web_role` janitor, or any staff role holding `marketing:'write'`, because a
+Marketer reaches Loom Studio ([ADR-851](DECISIONS.md)). The page has always said so; the **27 server
+actions beside it were bare `requireAdmin('janitor')` until 2026-09-10**, so the page admitted a
+Marketer and every control denied one (`LIVE-289`). They now all carry the page's own gate, and
+`test/e2e/operator-reachability.test.ts` fails a watched operator route whose actions drift from its
+page again.
 
 - **Layout** uses the shared **`RailGrid`** template (mobile-first): the folder rail is a **mini menu
   on the left** at every width — a slim rail on phones, never stacked above the grid — with the card
@@ -64,7 +70,7 @@ The janitor-facing studio ([ADR-483](DECISIONS.md)):
   **vector or raster** art (illustrations/trophies/cards/textures) and adds it straight to the library
   ([ADR-488](DECISIONS.md)). One-tap **smart prompts** fill an on-brand starter per type; a **Quick /
   Rich** toggle lets icons/spot art choose Vera vs the Studio. Studio types are hidden/disabled unless
-  `RECRAFT_API_KEY` is set; the Studio is janitor + budget-gated (`recraft` cap, $0.04 raster / $0.08
+  `RECRAFT_API_KEY` is set; the Studio carries the page's gate above + is budget-gated (`recraft` cap, $0.04 raster / $0.08
   vector) and called server-side only. Clients: `create-studio.tsx`, `lib/loom/recraft.ts`; actions:
   `vera-actions.ts` + `recraft-actions.ts`.
 - **Edit (drawer)**: a file-backed asset can be edited in place with **Vectorize**, **Remove BG**, or

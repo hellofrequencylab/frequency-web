@@ -67,7 +67,7 @@ Add a **CLIP** (`clip‑ViT‑B‑32`, 512‑d) Edge Function (or small GPU) →
 ### Phase 3 — Managed image studio (Recraft), vector + raster ✅ SHIPPED
 The owner chose the **managed API** path to ship a fully capable editor now, deferring self‑hosted GPU
 models. Implemented **Recraft** as the Loom's image/vector engine ([ADR‑488](DECISIONS.md)):
-`lib/loom/recraft.ts` (server‑only client), `admin/library/recraft-actions.ts` (janitor + budget‑gated
+`lib/loom/recraft.ts` (server‑only client), `admin/library/recraft-actions.ts` (Studio‑ + budget‑gated — `requireAdmin('janitor', { staff: 'marketing' })`, the Loom Studio page's own door since `LIVE-289`,
 generate + edit), and `lib/library/versions.ts` (the non‑destructive versioning backbone, below).
 Two lanes: **vector** (`vector_illustration` → clean icon sets/SVG) and **raster**
 (`digital_illustration` → trophies/rewards/cards). Edit ops on a file‑backed asset: **vectorize**,
