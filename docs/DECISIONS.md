@@ -39017,6 +39017,56 @@ explaining why there is no longer a credit there. Comments are stripped before m
 the shape-not-truth trap this repo names in four ADRs, arriving from the opposite direction: not a
 comment satisfying a probe, but a comment failing one.
 
+## ADR-1312: ACCEPTED — a per-page layout on an entity route reaches one instance, and the editor now says so (2026-09-10)
+
+**Context.** Owner: *"I've saved the layout like this a few times and it keeps resetting."*
+
+It was not resetting. Every save landed and every save is still there. **Measured on production
+2026-09-10:** 21 `page_settings` rows under `/events/`, **seven of them different dates of the same
+Meld series**, each with a different arrangement, saved between 2026-07-26 and 2026-09-10 — and
+**zero rows at any scope key**, `/events/*` or `*`.
+
+The Layout editor offers two scopes, "This page" and "This section", and defaults to the first.
+`savePageLayout` writes one row keyed `(space_id, route)`. The renderer resolves
+`route → /seg/* → *` (`layoutScopeChain`, ADR-271). So a per-page save on `/events/<slug>` reaches
+exactly that URL, and **every other date of the series — including every date the occurrence cron
+has not minted yet — resolves past it to the section, finds nothing, and renders the coded
+default.** Arrange one date, open the next, find it plain. Do that seven times and the editor looks
+like it is losing your work.
+
+Nothing was broken. The blast radius of the default scope was invisible on a route that is one of
+an open-ended set.
+
+**Decision.** The editor names the consequence where it applies. A route with more than one path
+segment is an INSTANCE — `/events/<slug>`, `/circles/<slug>`, `/practices/<id>` — as against a
+section index like `/events`, which is the only page at its own key. On an instance route the
+per-page hint reads "Applies to this ONE page only… a new one starts from the section default", the
+section hint says it covers pages that do not exist yet, and a one-click "Switch to This section"
+sits under the scope row.
+
+Derived from route DEPTH rather than a list of entity sections, because a list goes stale the day a
+new entity route is added and this warning is worth nothing if it is only sometimes right.
+
+🔴 **The default is deliberately NOT changed.** Flipping it to "This section" would fix this report
+and introduce a worse one: an operator tweaking a single page would silently restyle every page in
+the section. A save that quietly does more than you asked is a worse failure than a save that
+quietly does less, because the second is recoverable by looking.
+
+**The data was repaired separately, and the repair is not the fix.** The owner's latest arrangement
+was promoted to `/events/*` with `event-facts` and `event-warm-proof` dropped (both `return null`
+since ADR-826, so they occupied slots and painted nothing), and the one override shadowing a live
+Meld date was cleared so all four dates resolve identically. The other 20 per-page rows were left
+alone: several carry deliberate per-event arrangements, and clearing an operator's work to make a
+point about scope is not a repair.
+
+⚠️ **A note the next person will want.** The first version of this ADR's guard stripped comments
+before matching and silently ate **half the file** — 22,021 characters to 11,773. This component
+interleaves plain `/* */` blocks with JSX `{/* */}` ones, so a non-greedy block match pairs one
+comment's opener with a later comment's closer and swallows the real code between them. The guard
+reads raw source now. Comment-stripping is the right move for a probe whose asserted words also
+appear in the prose above the code, and the wrong one here; the difference is whether the strings
+you assert are prose or identifiers, and it is worth deciding deliberately each time.
+
 ---
 
 ## ADR-1313: ACCEPTED — the Manage hub declares a module's tab instead of guessing it, and "money" stops meaning two opposite things (2026-09-10)
