@@ -438,7 +438,15 @@ const OPERATOR_PATHS: readonly { readonly path: string; readonly why: string }[]
   { path: '/admin/library', why: 'Highest measured operator route: 12 raw-button-bg / 73 raw <button>.' },
   { path: '/admin/marketing/nurture', why: 'Second: 9 raw-button-bg / 65 raw <button>, and the entry point to the email-studio cluster.' },
   { path: '/admin/crew-tasks', why: '7 raw-button-bg / 17 raw <button> in two files — the densest ratio in the admin tree.' },
-  { path: '/admin/crm', why: 'The Resonance CRM console head: 5 / 18 here, in front of the components/crm + components/admin/crm cluster.' },
+  // 🔴 WAS `/admin/crm` UNTIL 2026-09-10, AND THE SWAP IS THE WHOLE LESSON (ADR-1313). That route
+  // is `requireAdmin('janitor')` with NO staff escape, so NO `team_members` role can open it — not
+  // analyst, not admin, not owner. Only `web_role` janitor or admin does, which is the meta-admin
+  // tier a Playwright credential must never hold. This list was chosen by counting buttons and
+  // nobody checked whether the e2e account could REACH what it named, so the census picked a route
+  // the suite could never photograph and the gap read as a capture bug for two weeks.
+  // `/admin/circles` is the nearest comparable that a staff role can actually open: 4 raw-button-bg
+  // / 26 raw <button> against crm's 6 / 21 — fewer tinted backgrounds, more buttons.
+  { path: '/admin/circles', why: 'The Circles operator console: 4 raw-button-bg / 26 raw <button>, and reachable by a staff role — see the note above for why it replaced /admin/crm.' },
   { path: '/admin/content/practices', why: '4 raw-button-bg / 43 raw <button> — the biggest single button population in the admin tree, a dense table plus its controls.' },
   { path: '/admin/qr', why: '4 raw-button-bg / 37 raw <button>; the QR studio is button-heavy and composes none of the kit.' },
 ]
