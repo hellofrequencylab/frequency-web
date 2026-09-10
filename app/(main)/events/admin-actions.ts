@@ -380,6 +380,39 @@ export async function updateEventSettings(id: string, slug: string, fd: FormData
   const zoneRaw = ((fd.get('time_zone') as string) ?? '').trim()
   const timeZone = isValidTimeZone(zoneRaw) ? zoneRaw : undefined
 
+  // The row as it stands. Read BEFORE the recurrence block, because whether this id is a series
+  // ANCHOR or one materialised DATE of a series decides where the repeat rule may be written at all
+  // (see below), and the answer is a column on this row.
+  const { data: currentBags } = await admin
+    .from('events')
+    .select('details, theme, scope_type, parent_event_id, starts_at')
+    .eq('id', id)
+    .maybeSingle()
+
+  // 🔴 A MATERIALISED OCCURRENCE MAY NOT ITSELF RECUR, AND THE DATABASE SAYS SO. The CHECK
+  // `events_occurrence_not_recurring` (20240208000000) is `parent_event_id IS NULL OR
+  // recurrence_type = 'none'`, and this action wrote `recurrence_type` by id with no idea which
+  // kind of row it had. So a host who opened ONE DATE of a series and set a repeat on it got a
+  // 500: "new row for relation events violates check constraint". Three of them reached production
+  // on 2026-09-10 from one host, on /events/[slug], and they are almost certainly the first reason
+  // a reported weekly-to-fortnightly change never landed.
+  //
+  // The rule belongs to the SERIES, not to the date. Every occurrence page says "Part of a
+  // recurring series", and a host changing "how often" from one of them means the series, the same
+  // way every calendar app treats it. So the recurrence columns are written to the ANCHOR, and
+  // everything else on this form still writes to the row the host opened.
+  const parentEventId =
+    (currentBags as { parent_event_id?: string | null } | null)?.parent_event_id ?? null
+  const seriesAnchorId = parentEventId ?? id
+  // The series' own start, which is what an "ends on" date is validated against. Validating a
+  // series-wide rule against ONE DATE's start would reject an end that is perfectly valid for the
+  // series (any date between the anchor and the occurrence the host happens to be looking at).
+  const anchorStartsAt = parentEventId
+    ? (
+        await admin.from('events').select('starts_at').eq('id', parentEventId).maybeSingle()
+      ).data?.starts_at ?? null
+    : null
+
   // Recurrence (folded in from Place & Time). ONE field carries the whole answer (ADR-1299): the
   // rail's repeat picker posts an RRULE value plus, when the host chose an end date,
   // `UNTIL=YYYYMMDD`. The resolver validates and canonicalises it, splits the end back into
@@ -391,7 +424,7 @@ export async function updateEventSettings(id: string, slug: string, fd: FormData
   const recurrence = RECURRENCE_VALUES.has(submittedRepeat.type)
     ? (submittedRepeat.type as RecurrenceType)
     : 'none'
-  const startIsoForRec = startsAt ? wallClockToIso(startsAt) : null
+  const startIsoForRec = parentEventId ? anchorStartsAt : startsAt ? wallClockToIso(startsAt) : null
   const untilIso = submittedRepeat.untilDate ? dateToWallClockIso(submittedRepeat.untilDate) : null
   const recurrenceError = validateRecurrenceUntil(recurrence, startIsoForRec, untilIso)
   if (recurrenceError) throw new Error(recurrenceError)
@@ -400,11 +433,6 @@ export async function updateEventSettings(id: string, slug: string, fd: FormData
   // events.details.rsvpWindow so the poster-harvest keys survive. Both blank clears the window.
   const opensAt = wallClockToIso(fd.get('rsvp_opens_at') as string)
   const closesAt = wallClockToIso(fd.get('rsvp_closes_at') as string)
-  const { data: currentBags } = await admin
-    .from('events')
-    .select('details, theme, scope_type')
-    .eq('id', id)
-    .maybeSingle()
   const baseDetails = ((currentBags as { details?: Record<string, unknown> | null } | null)?.details ?? {}) as Record<
     string,
     unknown
@@ -450,9 +478,15 @@ export async function updateEventSettings(id: string, slug: string, fd: FormData
       capacity,
       energy_tag: energyTag,
       price_cents: priceCents,
-      recurrence_type: recurrence,
-      recurrence_rule: recurrenceRule,
-      recurrence_until: untilIso,
+      // Anchor only. On a date OF a series these go to the anchor below, because the DB CHECK
+      // forbids them here and the rule is the series' property anyway.
+      ...(parentEventId
+        ? {}
+        : {
+            recurrence_type: recurrence,
+            recurrence_rule: recurrenceRule,
+            recurrence_until: untilIso,
+          }),
       details: nextDetails as Json,
       ...(timeZone ? { time_zone: timeZone } : {}),
       ...(category ? { category } : {}),
@@ -532,11 +566,31 @@ export async function updateEventSettings(id: string, slug: string, fd: FormData
   // That asymmetry is what the owner photographed: "I changed Meld from weekly to bi weekly but it
   // still shows all the repeating events that were configured originally."
   //
-  // All three run for ANY anchor (each one no-ops on a child, and turning a series off is precisely
-  // when its future dates must be retired). Best-effort: the save has already landed.
-  retireStaleOccurrences(id)
-    .then(() => generateOccurrencesForAnchor(id))
-    .then(() => propagateAnchorEditsToOccurrences(id))
+  // WHEN THE HOST OPENED ONE DATE OF A SERIES, the repeat rule they set goes to the anchor, which
+  // is the only row allowed to carry it. Everything else they changed stays on the date.
+  const rulePush = async (): Promise<void> => {
+    if (!parentEventId) return
+    const { error: e } = await admin
+      .from('events')
+      .update({
+        recurrence_type: recurrence,
+        recurrence_rule: recurrenceRule,
+        recurrence_until: untilIso,
+      } as never)
+      // Belt and braces: only ever an anchor, never another occurrence.
+      .is('parent_event_id', null)
+      .eq('id', parentEventId)
+    if (e) console.error('[updateEventSettings] series rule write:', e.message)
+  }
+
+  // 🔴 PROPAGATION RUNS ONLY WHEN THE ANCHOR ITSELF WAS EDITED. It copies the anchor's content
+  // onto every upcoming date, so running it after a per-DATE edit would overwrite the very title,
+  // venue or price the host just set on that one date, one line after saving it. The other two are
+  // driven by the RULE, which is now the anchor's either way, so they run for both.
+  rulePush()
+    .then(() => retireStaleOccurrences(seriesAnchorId))
+    .then(() => generateOccurrencesForAnchor(seriesAnchorId))
+    .then(() => (parentEventId ? 0 : propagateAnchorEditsToOccurrences(seriesAnchorId)))
     .catch((e) => console.error('[updateEventSettings] occurrence reconciliation:', e))
 
   revalidatePath(`/events/${slug}`)

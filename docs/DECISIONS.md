@@ -38561,3 +38561,56 @@ in that job, so its count is the gate that notices the fail-safe firing.
 **Not done here.** A host is not told which dates were left live because people are attached to
 them. They stay on the page and in the series rail, which is the honest default, but the host has no
 prompt to go and cancel them. `LIVE-279` carries it.
+
+---
+
+## ADR-1306: ACCEPTED — a repeat rule set from one date of a series is written to the series (2026-09-10)
+
+**Context.** Vercel runtime errors, 2026-09-10, three occurrences from one host on `/events/[slug]`:
+
+```
+Error: new row for relation "events" violates check constraint "events_occurrence_not_recurring"
+```
+
+That CHECK, read from `pg_constraint` on the live database, is
+`CHECK (parent_event_id IS NULL OR recurrence_type = 'none')` — a materialised occurrence may not
+itself recur (20240208000000). `updateEventSettings` wrote `recurrence_type`, `recurrence_rule` and
+`recurrence_until` by id with **no idea whether the id was a series anchor or one materialised date
+of a series**. So a host who opened one date of a series and set a repeat on it got a 500 instead of
+a series.
+
+This is the third distinct reason the same reported change never landed, and the three together are
+worth stating in one place because each was invisible from the others:
+
+| # | Why it failed | Fixed by |
+|---|---|---|
+| 1 | There was no way to *say* "every 2 weeks": the cadence enum had four values | ADR-1299 |
+| 2 | Nothing ever retired the dates a changed rule no longer produces | ADR-1304 |
+| 3 | Setting the rule from one date of the series 500'd on a DB CHECK | this ADR |
+
+**Decision.** The repeat rule is a property of the SERIES, not of the date. Every occurrence page
+says "Part of a recurring series", and a host changing "how often" from one of them means the
+series, the way every calendar application treats it. So:
+
+- the recurrence columns are written to the **anchor** (`parent_event_id ?? id`), fenced with
+  `.is('parent_event_id', null)` so the write can only ever land on an anchor;
+- they are **omitted from the row's own payload** when that row is a date of a series, which is the
+  500;
+- everything else on the form still writes to the row the host opened, because a per-date title,
+  venue or price is exactly what a per-date edit is for;
+- the "ends on" date is validated against the **series' start**, not the start of whichever date the
+  host happened to be looking at, which would otherwise reject an end that is valid for the series.
+
+**Consequences, and the one that is easy to miss.** `propagateAnchorEditsToOccurrences` copies the
+ANCHOR's content onto every upcoming date. Running it after a **per-date** edit would overwrite the
+title, venue or price the host had just saved on that one date, one line after saving it. So
+propagation runs only when the anchor itself was edited; the other two reconcilers (ADR-1304) are
+driven by the RULE, which is the anchor's either way, so they run for both.
+
+The guard is a source-shape test (`app/(main)/events/admin-actions.test.ts`) and the ADR says why:
+the oracle for this bug is a database constraint reached through a dozen reads, a geocode and a
+details merge, so faking that chain deeply enough to make the constraint the thing under test would
+be faking the constraint. What the guard pins is the five shapes that keep the write off a child
+row, each of them a line someone could delete while everything still compiles. The behaviour itself
+was verified against production: the constraint is quoted from `pg_constraint` and the error from
+the runtime log.

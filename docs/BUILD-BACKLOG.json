@@ -11541,6 +11541,23 @@
         "pattern": "occurrencesKept|keptBecauseAttached|still on the calendar",
         "note": "PRESENT when the rail actually says it, which is what closes this row; absent today, so the probe fails and the row honestly reads open. It measures the consequence — a host being told — not the words in the row's title. A row closed by wiring the count into a different surface should re-point this at that file rather than widen the pattern."
       }
+    },
+    {
+      "id": "LIVE-281",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "app/(main)/events/admin-actions.ts",
+        "ref": "production runtime errors, 2026-09-10"
+      },
+      "title": "Setting a repeat from one date of a series 500'd on a database CHECK",
+      "detail": "Vercel runtime errors, 2026-09-10, three occurrences from one host on /events/[slug]:\n\n  Error: new row for relation \"events\" violates check constraint \"events_occurrence_not_recurring\"\n\nThat CHECK, read from pg_constraint on the live database, is `parent_event_id IS NULL OR recurrence_type = 'none'` (20240208000000): a materialised occurrence may not itself recur. updateEventSettings wrote recurrence_type / recurrence_rule / recurrence_until BY ID with no idea whether the id was a series ANCHOR or one materialised DATE of a series. A host who opened one date of a series and set a repeat on it got a 500 instead of a series.\n\n🔴 THIS IS THE THIRD DISTINCT REASON THE SAME REPORTED CHANGE NEVER LANDED, and the three are worth stating together because each was invisible from the others: (1) there was no way to SAY \"every 2 weeks\", the cadence enum having four values (LIVE-270, ADR-1299); (2) nothing ever retired the dates a changed rule no longer produces (LIVE-278, ADR-1304); (3) setting the rule from one date 500'd on this CHECK. Only the third was visible in a log, and it took looking at the runtime errors to find it.\n\nFIXED: the rule is the SERIES' property, so it is written to the anchor (parent_event_id ?? id), fenced with .is('parent_event_id', null) so the write can only ever land on an anchor, and omitted from the row's own payload when that row is a date of a series. Everything else on the form still writes to the row the host opened, because a per-date title, venue or price is what a per-date edit is for. The \"ends on\" date is validated against the SERIES' start rather than whichever date the host was looking at.\n\nAND THE PART THAT IS EASY TO MISS: propagateAnchorEditsToOccurrences copies the ANCHOR's content onto every upcoming date, so running it after a PER-DATE edit would overwrite the title the host just saved on that date, one line after saving it. Propagation now runs only when the anchor itself was edited; the two rule-driven reconcilers run for both. ADR-1306.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const src=fs.readFileSync('app/(main)/events/admin-actions.ts','utf8');const fn=src.slice(src.indexOf('export async function updateEventSettings'));const code=fn.replace(/\\\\/\\\\*[\\\\s\\\\S]*?\\\\*\\\\//g,'').replace(/(^|\\\\s)\\\\/\\\\/.*$/gm,'');const t=fs.readFileSync('app/(main)/events/admin-actions.test.ts','utf8');process.exit(/parent_event_id, starts_at/.test(code)&&/const seriesAnchorId = parentEventId \\\\?\\\\? id/.test(code)&&/\\\\.\\\\.\\\\.\\\\(parentEventId/.test(code)&&code.includes(\\\"parentEventId ? 0 : propagateAnchorEditsToOccurrences(seriesAnchorId)\\\")&&/const startIsoForRec = parentEventId \\\\? anchorStartsAt/.test(t)?0:1)\"",
+        "note": "Measures the consequence in the action itself, comment-stripped so the long note explaining the CHECK cannot satisfy the check it is explaining. Four clauses on the code: it reads which kind of row it has, it names the anchor, the recurrence columns are CONDITIONAL rather than unconditional (that conditional IS the 500), and propagation is gated so a per-date edit is not undone a line after it lands. The fifth clause is on the TEST file, so a tree where the guard was deleted fails this row too — the bug reached production once and the oracle for it is a database constraint, so the row does not rely on the action alone."
+      }
     }
   ]
 }
