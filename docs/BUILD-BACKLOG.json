@@ -63,7 +63,9 @@
             "LIVE-149",
             "LIVE-216",
             "LIVE-220",
-            "LIVE-221"
+            "LIVE-221",
+            "LIVE-271",
+            "LIVE-272"
           ]
         },
         {
@@ -11375,6 +11377,42 @@
         "kind": "cmd",
         "cmd": "node -e \"const fs=require('fs');const e=fs.readFileSync('lib/events/repeat-rule.ts','utf8');const w=fs.readFileSync('lib/event-recurrence.ts','utf8');const r=fs.readFileSync('lib/events/recurrence.ts','utf8');const c=fs.readFileSync('lib/events/calendar-repeats.ts','utf8');const p=fs.readFileSync('components/events/repeat-picker.tsx','utf8');const strip=(s)=>s.replace(/\\\\/\\\\*[\\\\s\\\\S]*?\\\\*\\\\//g,'').replace(/^\\\\s*\\\\/\\\\/.*$/gm,'');const mirrors=[w,r,c].map(strip);process.exit(/export function expandRepeat/.test(e)&&/BYSETPOS/.test(e)&&mirrors.every(m=>/repeat-rule'/.test(m)&&!/function occurrenceAt/.test(m)&&!/function stepKey/.test(m))&&/bySetPos/.test(strip(p))&&/formatRepeatDraft/.test(strip(p))?0:1)\"",
         "note": "Measures the two consequences, not the row's title. THE ENGINE EXISTS AND THE MIRRORS ARE GONE: each of the three modules that used to carry its own copy of the stepping now imports the engine AND no longer declares `occurrenceAt` or `stepKey` of its own — the absence is the load-bearing half, because a fourth copy is how the ordinal rule would silently disagree with the rows the cron mints. THE PICKER CAN ACTUALLY SAY IT: the weekday-ordinal part (`bySetPos`, the parsed form of BYSETPOS) reaches the control, and the control emits the transport string the server splits. All read against comment-stripped source, since every one of these files discusses the copies it no longer has. ⚠️ This probe does NOT prove the column is applied; `pnpm check:schema-contract` is what says that, and it is currently red on purpose."
+      }
+    },
+    {
+      "id": "LIVE-271",
+      "status": "open",
+      "priority": "P3",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/event-recurrence.ts",
+        "ref": "generateAllOccurrences, the live-anchor filter"
+      },
+      "title": "A series that ends by COUNT is re-read by the occurrence cron every day, forever, after it has run out",
+      "detail": "Found auditing the repeat model (ADR-1299). `generateAllOccurrences` selects the anchors worth rolling forward with `recurrence_until.is.null,recurrence_until.gt.now`. That filter is exactly right for the two ends the enum model had — indefinite, or ended on a date — and it cannot see the third one the rule model added: `COUNT=6`.\n\nA COUNT-bounded series carries a NULL `recurrence_until` by construction (they are mutually exclusive: RFC 5545 §3.3.10 forbids both, `resolveSubmittedRepeat` writes a null end for a COUNT rule, and lib/events/ics.ts refuses to emit both). So the filter reads it as INDEFINITE and hands it to `generateOccurrencesForAnchor` on every run, for the life of the row. The per-anchor work is idempotent and correct — the expander stops at the count and returns zero dates — so nothing is minted and nothing is wrong on the page. What it costs is one anchor read plus one child-occurrence query per exhausted series per day, permanently, in a loop that LIVE-190 already put on a clock budget.\n\n⚠️ THE OBVIOUS FIX IS THE WRONG ONE. Stamping the computed last occurrence into `recurrence_until` when a COUNT series is saved would make the filter work and would break the .ics export: the column is what `rruleForRepeat` appends as `UNTIL=`, and a rule carrying both UNTIL and COUNT is invalid per RFC 5545, which a strict client may reject whole. It would also put a wall-clock-as-UTC-parts value in a column ADR-807 defines as a zone-resolved instant.\n\nTHE HONEST FIXES, either of which is small: (a) a `recurrence_exhausted_at` (or a nullable `recurrence_last_at`) written beside the rule and read by the filter, which is also the resume cursor LIVE-190 says the loop is missing; or (b) skip an exhausted anchor inside `generateOccurrencesForAnchor` before it queries children, which does not shrink the head but does halve the per-row cost. Neither is urgent until COUNT series exist in numbers: the picker only started offering \"after N times\" with ADR-1299, so today the live count is zero.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const s=require('fs').readFileSync('lib/event-recurrence.ts','utf8');const code=s.replace(/\\\\/\\\\*[\\\\s\\\\S]*?\\\\*\\\\//g,'').replace(/^\\\\s*\\\\/\\\\/.*$/gm,'');process.exit(/recurrence_exhausted_at|recurrence_last_at|anchorIsExhausted/.test(code)?0:1)\"",
+        "note": "Passes when the cron can SEE an exhausted count-bounded series — a stored end-marker column the anchor filter reads, or a named exhaustion predicate the per-anchor path consults before it queries children. Deliberately not a grep for the word COUNT: the rule string already contains it and a probe that matched the model rather than the filter would pass on the day the feature shipped, which is the shape-not-truth failure this list names in four ADRs."
+      }
+    },
+    {
+      "id": "LIVE-272",
+      "status": "open",
+      "priority": "P3",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "components/admin/modules/event-header-controls.tsx",
+        "ref": "the focal picker previews one width"
+      },
+      "title": "The cover focus picker previews the DESKTOP band only, and the phone band is a different shape",
+      "detail": "Half of the 2026-09-10 report was that the picker framed a stock 16/9 while the page painted something else; that is fixed (ADR-1300 — the preview is now `posterBandAspect(tier, 1044, coverAspect)`, the real band). What it previews is the DESKTOP band, and the phone band is not the same shape: the poster ladder is one rung shorter below `sm`, so at the standard tier a phone paints 412x221 (1.86:1) against the desktop's 1044x374 (2.79:1).\n\nThe consequence is bounded and is smaller than the one just fixed: both bands crop on the SAME axis (the tier clamps height, never width, once the poster's aspect is known), so a focal point aimed on the desktop preview is aimed correctly on a phone — it just survives a different amount of the artwork. A host who frames tightly against the desktop band can still lose a little more or less on a phone than the preview showed.\n\nThe fix is a preview that shows both, or a width toggle on the control, and it is a design question rather than a plumbing one: `posterBandAspect` already takes the width, so the second frame is one call. Worth doing when someone is next in this panel; not worth a round on its own.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "components/admin/modules/event-header-controls.tsx passes a single width (1044) to posterBandAspect, so the control renders one frame. Confirmed by reading the call site on 2026-09-10, the day the preview was wired to the real band at all.",
+        "checked": "2026-09-10"
       }
     }
   ]

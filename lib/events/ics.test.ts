@@ -12,6 +12,7 @@ import {
   rruleForRecurrence,
   computeFeedExdates,
   planCalendarFeed,
+  rruleForRepeat,
   type FeedGroupRow,
 } from './ics'
 
@@ -552,5 +553,28 @@ describe('recurring local-time contract (DST-crossing weekly series, end to end)
     const block = buildVevent({ uid: 'o1', start, end, summary: 'One night only' }, new Date('2026-10-01T00:00:00Z'))
     expect(block).toContain('DTSTART:20261029T020000Z') // 7pm PDT = 02:00Z next day
     expect(block.some((l) => l.startsWith('DTSTART;TZID='))).toBe(false)
+  })
+})
+
+// ── RFC 5545 §3.3.10: UNTIL AND COUNT MUST NOT BOTH APPEAR IN ONE RULE ───────────────────────────
+//
+// Every write path already makes them exclusive (the picker's end rule is one choice of three, and
+// `resolveSubmittedRepeat` writes a null `recurrence_until` for a COUNT rule), so this guards a row
+// that acquired both by some other route: a hand-edited column, a future importer, a restored
+// backup. Emitting both is an INVALID rule, and a strict parser is entitled to reject the whole
+// VEVENT rather than pick one — which would drop the series from a subscriber's calendar entirely.
+describe('a COUNT rule never also carries UNTIL', () => {
+  it('🔴 drops the column-derived UNTIL when the rule counts its own occurrences', () => {
+    const row = { starts_at: '2026-10-07T17:30:00.000Z', recurrence_rule: 'FREQ=WEEKLY;BYDAY=WE;COUNT=6' }
+    const withEnd = rruleForRepeat(row, new Date('2027-06-01T02:00:00.000Z'))
+    expect(withEnd).toBe('FREQ=WEEKLY;BYDAY=WE;COUNT=6')
+    expect(withEnd).not.toContain('UNTIL')
+  })
+
+  it('still appends UNTIL for a rule that does NOT count, which is the normal case', () => {
+    const row = { starts_at: '2026-10-07T17:30:00.000Z', recurrence_rule: 'FREQ=WEEKLY;BYDAY=WE' }
+    expect(rruleForRepeat(row, new Date('2027-06-01T02:00:00.000Z'))).toBe(
+      'FREQ=WEEKLY;BYDAY=WE;UNTIL=20270601T020000Z',
+    )
   })
 })

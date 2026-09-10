@@ -1,6 +1,7 @@
 'use client'
 
 import type { MenuMode } from '@/lib/menus/types'
+import { Radio } from '@/components/ui/radio'
 import { MODE_LABEL, MODE_ORDER, MODE_SHORT, ROLE_ORDER, ACCESS_LABEL } from './known-routes'
 
 // A compact per-role mode matrix: for each role (visitor … janitor) choose how the
@@ -64,28 +65,29 @@ export function RoleModeMatrix({
                     {ACCESS_LABEL[role]}
                   </th>
                   <td className="px-2 py-1.5 text-center">
-                    <input
-                      type="radio"
+                    {/* The kit's Radio (components/ui/radio.tsx), in place of a hand-rolled 14px
+                        `accent-primary` input. The ring, the fill, the disabled fade and the
+                        `tap-target` floor come from the primitive. */}
+                    <Radio
                       name={name}
                       aria-label={`${ACCESS_LABEL[role]}: default (follow on/off)`}
                       title="Default (follow on/off)"
                       checked={current == null}
                       disabled={disabled}
                       onChange={() => setRole(role, null)}
-                      className="h-3.5 w-3.5 cursor-pointer accent-primary disabled:opacity-50"
+                      className="cursor-pointer"
                     />
                   </td>
                   {MODE_ORDER.map((m) => (
                     <td key={m} className="px-2 py-1.5 text-center">
-                      <input
-                        type="radio"
+                      <Radio
                         name={name}
                         aria-label={`${ACCESS_LABEL[role]}: ${MODE_LABEL[m]}`}
                         title={`${MODE_SHORT[m]} (${MODE_LABEL[m]})`}
                         checked={current === m}
                         disabled={disabled}
                         onChange={() => setRole(role, m)}
-                        className="h-3.5 w-3.5 cursor-pointer accent-primary disabled:opacity-50"
+                        className="cursor-pointer"
                       />
                     </td>
                   ))}

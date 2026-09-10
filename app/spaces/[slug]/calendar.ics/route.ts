@@ -23,7 +23,7 @@ type SpaceRow = {
   status: string | null
 }
 
-// The feed RPC (space_public_calendar_feed) carries recurrence_type/recurrence_until/parent_event_id as
+// The feed RPC (space_public_calendar_feed) carries recurrence_type/recurrence_until/recurrence_rule/parent_event_id as
 // of 20261203000000, so the route collapses a recurring series to ONE RRULE VEVENT instead of one VEVENT
 // per materialized child (EC4).
 type FeedRow = {
@@ -38,6 +38,10 @@ type FeedRow = {
   time_zone:        string | null
   recurrence_type:  string | null
   recurrence_until: string | null
+  /** The RRULE value (ADR-1299). The feed RPC projects it, and planCalendarFeed builds the VEVENT's
+   *  RRULE from it — without this field a series that lands every other Wednesday would export as a
+   *  plain weekly one and put twice as many gatherings in a subscriber's calendar as exist. */
+  recurrence_rule:  string | null
   parent_event_id:  string | null
 }
 

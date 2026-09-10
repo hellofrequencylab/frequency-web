@@ -1,7 +1,9 @@
 'use client'
 
 import { useId, useMemo } from 'react'
+import { Button } from '@/components/ui/button'
 import { Input, Label, labelClasses } from '@/components/ui/field'
+import { Radio } from '@/components/ui/radio'
 import { Select } from '@/components/ui/select'
 import {
   REPEAT_WEEKDAYS,
@@ -145,9 +147,17 @@ export function RepeatPicker({
         : anchor
           ? { freq: 'WEEKLY', interval: 1, byDay: [REPEAT_WEEKDAYS[anchor.getUTCDay()]] }
           : { freq: 'WEEKLY', interval: 1 }
-      // A preset-shaped seed must become NOT-a-preset or the panel closes again the moment it
-      // opens. Bumping the interval is the smallest honest change and is what the host came for.
-      emit(matchRepeatPreset(seed, startsAt) ? { ...seed, interval: (seed.interval || 1) + 1 } : seed)
+      // 🔴 A PRESET-SHAPED SEED MUST BECOME NOT-A-PRESET, or the panel closes again the moment it
+      // opens: `isCustom` is "the rule matches no preset", not a stored flag. Bumping the interval
+      // is the smallest honest change and is what a host opening Custom came for — but it has to
+      // KEEP bumping, because +1 from the weekly preset lands exactly on the fortnightly one, and a
+      // single bump would have made "Custom…" a no-op on the most common starting point. Bounded so
+      // a menu that somehow presets every interval cannot spin.
+      let seeded = seed
+      for (let i = 0; i < 8 && matchRepeatPreset(seeded, startsAt); i++) {
+        seeded = { ...seeded, interval: (seeded.interval || 1) + 1 }
+      }
+      emit(seeded)
       return
     }
     emit(presets.find((p) => p.id === id)?.rule ?? null, untilDate)
@@ -275,23 +285,26 @@ export function RepeatPicker({
                 {REPEAT_WEEKDAYS.map((day) => {
                   const active = selectedDays.includes(day)
                   return (
-                    <button
+                    // The kit's own pair carries this exactly: `primarySoft` IS
+                    // `bg-primary-bg` + `text-primary-strong` stepping up to the full amber on
+                    // hover, and `secondary` is the bordered rest. Composing them keeps the tap
+                    // floor, the press state and the focus ring in one place — a hand-rolled copy
+                    // is how the Space hero's chip silently lost `tap-target` (see button.tsx).
+                    <Button
                       key={day}
                       type="button"
+                      size="sm"
+                      variant={active ? 'primarySoft' : 'secondary'}
                       disabled={disabled}
                       aria-pressed={active}
                       onClick={() => toggleWeekday(day)}
-                      className={`tap-target inline-flex h-9 w-9 items-center justify-center rounded-full border text-body-sm font-semibold transition-colors disabled:opacity-60 ${
-                        active
-                          ? 'border-primary-strong bg-primary-bg text-primary-strong'
-                          : 'border-border bg-surface text-muted hover:border-border-strong hover:text-text'
-                      }`}
+                      className="size-9 shrink-0 rounded-full p-0 text-body-sm"
                     >
                       <span aria-hidden>{WEEKDAY_INITIAL[day]}</span>
                       {/* The letter cannot tell Tuesday from Thursday out loud, so the name rides
                           along as the button's accessible name. */}
                       <span className="sr-only">{WEEKDAY_FULL[day]}</span>
-                    </button>
+                    </Button>
                   )
                 })}
               </div>
@@ -305,20 +318,17 @@ export function RepeatPicker({
                 Which day
               </p>
               <div className="space-y-1.5" role="radiogroup" aria-labelledby={`${groupId}-month-label`}>
-                <label className="flex items-center gap-2 text-body-sm text-text">
-                  <input
-                    type="radio"
+                <Radio
+                  name={`${groupId}-monthmode`}
+                  label={`On day ${anchor.getUTCDate()} of the month`}
+                  checked={rule.byDay === undefined}
+                  disabled={disabled}
+                  onChange={() => patch({ byDay: undefined, bySetPos: undefined, byMonthDay: anchor.getUTCDate() })}
+                />
+                <div className="flex flex-wrap items-center gap-2 text-body-sm text-text">
+                  <Radio
                     name={`${groupId}-monthmode`}
-                    checked={rule.byDay === undefined}
-                    disabled={disabled}
-                    onChange={() => patch({ byDay: undefined, bySetPos: undefined, byMonthDay: anchor.getUTCDate() })}
-                  />
-                  On day {anchor.getUTCDate()} of the month
-                </label>
-                <label className="flex flex-wrap items-center gap-2 text-body-sm text-text">
-                  <input
-                    type="radio"
-                    name={`${groupId}-monthmode`}
+                    label="On the"
                     checked={rule.byDay !== undefined}
                     disabled={disabled}
                     onChange={() =>
@@ -329,7 +339,6 @@ export function RepeatPicker({
                       })
                     }
                   />
-                  On the
                   <Select
                     aria-label="Which week of the month"
                     wrapperClassName="inline-block w-max max-w-full"
@@ -360,7 +369,7 @@ export function RepeatPicker({
                     }
                     options={REPEAT_WEEKDAYS.map((d) => ({ value: d, label: WEEKDAY_FULL[d] }))}
                   />
-                </label>
+                </div>
               </div>
             </div>
           )}
@@ -375,25 +384,21 @@ export function RepeatPicker({
             Ends
           </p>
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2" role="radiogroup" aria-labelledby={`${groupId}-end-label`}>
-            <label className="flex items-center gap-2 text-body-sm text-text">
-              <input
-                type="radio"
+            <Radio
+              name={`${groupId}-end`}
+              label="Never"
+              checked={endMode === 'never'}
+              disabled={disabled}
+              onChange={() => pickEnd('never')}
+            />
+            <div className="flex items-center gap-2 text-body-sm text-text">
+              <Radio
                 name={`${groupId}-end`}
-                checked={endMode === 'never'}
-                disabled={disabled}
-                onChange={() => pickEnd('never')}
-              />
-              Never
-            </label>
-            <label className="flex items-center gap-2 text-body-sm text-text">
-              <input
-                type="radio"
-                name={`${groupId}-end`}
+                label="On"
                 checked={endMode === 'on'}
                 disabled={disabled}
                 onChange={() => pickEnd('on')}
               />
-              On
               <Input
                 type="date"
                 aria-label="Repeat until"
@@ -403,16 +408,15 @@ export function RepeatPicker({
                 disabled={disabled || endMode !== 'on'}
                 onChange={(e) => emit(rule, e.target.value || null)}
               />
-            </label>
-            <label className="flex items-center gap-2 text-body-sm text-text">
-              <input
-                type="radio"
+            </div>
+            <div className="flex items-center gap-2 text-body-sm text-text">
+              <Radio
                 name={`${groupId}-end`}
+                label="After"
                 checked={endMode === 'count'}
                 disabled={disabled}
                 onChange={() => pickEnd('count')}
               />
-              After
               <Input
                 type="number"
                 min={1}
@@ -424,8 +428,8 @@ export function RepeatPicker({
                 disabled={disabled || endMode !== 'count'}
                 onChange={(e) => patch({ count: Math.max(1, Math.min(400, Number(e.target.value) || 1)) })}
               />
-              times
-            </label>
+              <span>times</span>
+            </div>
           </div>
         </div>
       )}

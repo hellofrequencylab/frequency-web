@@ -157,7 +157,15 @@ export function rruleForRepeat(
   } else {
     rule = formatRepeat(parsed)
   }
-  if (untilInstant && !Number.isNaN(untilInstant.getTime())) rule += `;UNTIL=${icsStamp(untilInstant)}`
+  // 🔴 UNTIL AND COUNT MUST NOT BOTH APPEAR (RFC 5545 §3.3.10: "the UNTIL and COUNT rule parts are
+  // both optional, but they MUST NOT occur in the same recur"). Every write path already makes the
+  // two exclusive — the picker's end rule is one choice of three and `resolveSubmittedRepeat` writes
+  // a null `recurrence_until` for a COUNT rule — so this is defence in depth for a row that got
+  // both by some other route (a hand-edited column, a future importer). Emitting both would be an
+  // invalid rule, and a strict parser is entitled to reject the whole VEVENT rather than pick one.
+  if (parsed.count === undefined && untilInstant && !Number.isNaN(untilInstant.getTime())) {
+    rule += `;UNTIL=${icsStamp(untilInstant)}`
+  }
   return rule
 }
 

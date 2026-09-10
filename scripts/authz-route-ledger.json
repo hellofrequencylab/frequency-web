@@ -144,9 +144,9 @@
     },
     "app/events/calendar.ics/route.ts": {
       "verdict": "model-gated",
-      "reason": "Master public calendar feed (EC3, ADR-800). Calendar apps poll with no cookie. public_calendar_feed() takes no arguments and self-gates entirely in-function (published + PUBLIC only, non-cancelled, upcoming, network-visible active spaces), so the route has no way to widen it.",
-      "checked": "2026-08-17",
-      "digest": "3e5b4ff80618b8ff"
+      "reason": "Master public calendar feed (EC3, ADR-800). Calendar apps poll with no cookie. public_calendar_feed() takes no arguments and self-gates entirely in-function (published + PUBLIC only, non-cancelled, upcoming, network-visible active spaces), so the route has no way to widen it. 🔁 RE-READ 2026-09-10 (ADR-1299, the repeat rule): the row type gained recurrence_rule, which public_calendar_feed now projects and planCalendarFeed builds the VEVENT's RRULE from. No gate moved — this route reads only what the RPC returns, and the migration that added the column recreates that function with its body verbatim (the hidden-address redaction included, re-asserted in the migration itself) and re-applies the service-role-only revoke that a drop/create resets. A cadence is the same class of shape metadata as the recurrence_type beside it. Verdict holds.",
+      "checked": "2026-09-10",
+      "digest": "7c73e85587ebcd3c"
     },
     "app/events/calendar/[token]/route.ts": {
       "verdict": "token-credential",
@@ -180,9 +180,9 @@
     },
     "app/spaces/[slug]/calendar.ics/route.ts": {
       "verdict": "model-gated",
-      "reason": "Public per-Space ICS feed (EC1, ADR-800). The handler refuses a private or suspended space BEFORE reading events, then hands the space_id to space_public_calendar_feed, which returns only published, public/unlisted, non-cancelled events.",
-      "checked": "2026-08-17",
-      "digest": "73c80bfdd12fd0b4"
+      "reason": "Public per-Space ICS feed (EC1, ADR-800). The handler refuses a private or suspended space BEFORE reading events, then hands the space_id to space_public_calendar_feed, which returns only published, public/unlisted, non-cancelled events. 🔁 RE-READ 2026-09-10 (ADR-1299, the repeat rule): the row type gained recurrence_rule, which the feed RPC now projects and planCalendarFeed builds the VEVENT's RRULE from. No gate moved — the private/suspended refusal still runs BEFORE any event read, and the RPC's own WHERE clauses are unchanged (the migration that added the column recreates both feed functions with their bodies verbatim and re-applies the service-role-only revoke, which a drop/create resets). A cadence is the same class of shape metadata as the recurrence_type beside it, and the public event page prints it in words. Verdict holds.",
+      "checked": "2026-09-10",
+      "digest": "d1150c10ae04fa75"
     }
   }
 }

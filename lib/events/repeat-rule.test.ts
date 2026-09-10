@@ -409,3 +409,36 @@ describe('the engine stays importable by everything that needs it', () => {
     expect(code).not.toMatch(/new Date\(\)/)
   })
 })
+
+// ── THE PICKER'S ONE PIECE OF DERIVED STATE, PINNED HERE BECAUSE IT IS ARITHMETIC ────────────────
+//
+// "Custom" is not a stored flag in the picker; it is "this rule matches no preset". That keeps the
+// panel showing a preset's own settings when a host opens it, so "every 2 weeks" -> "every 3 weeks"
+// is a one-field edit rather than a rebuild. It also means the SEED the panel opens with has to be
+// something `matchRepeatPreset` returns null for, or the panel closes the instant it opens.
+describe('opening Custom from a preset lands on a rule no preset can claim', () => {
+  const WEDNESDAY = '2026-09-16T10:00:00.000Z'
+
+  it('🔴 bumping the interval ONCE is not enough: weekly + 1 IS the fortnightly preset', () => {
+    const weekly = repeatPresets(WEDNESDAY).find((p) => p.id === 'weekly')!.rule!
+    const bumpedOnce = { ...weekly, interval: weekly.interval + 1 }
+    // This is the defect a single bump would have shipped, on the most common starting point.
+    expect(matchRepeatPreset(bumpedOnce, WEDNESDAY)?.id).toBe('biweekly')
+    // Twice clears it, which is why the picker loops rather than adds one.
+    expect(matchRepeatPreset({ ...weekly, interval: weekly.interval + 2 }, WEDNESDAY)).toBeNull()
+  })
+
+  it('every preset escapes within the picker’s bounded loop', () => {
+    for (const preset of repeatPresets(WEDNESDAY)) {
+      if (!preset.rule) continue
+      let seeded = preset.rule
+      let steps = 0
+      while (steps < 8 && matchRepeatPreset(seeded, WEDNESDAY)) {
+        seeded = { ...seeded, interval: (seeded.interval || 1) + 1 }
+        steps++
+      }
+      expect(matchRepeatPreset(seeded, WEDNESDAY), `${preset.id} never escaped`).toBeNull()
+      expect(steps, `${preset.id} took ${steps} bumps`).toBeLessThanOrEqual(2)
+    }
+  })
+})
