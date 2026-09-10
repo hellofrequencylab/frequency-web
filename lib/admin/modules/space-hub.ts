@@ -99,3 +99,41 @@ export function hubSearchItems(slug: string): { label: string; href: string; sec
   }
   return out
 }
+
+// ── GROUP HEADERS WITHIN A TAB (LIVE-294) ───────────────────────────────────────────────────────
+//
+// A THIRD axis, independent of the other two: `hub` says which TAB a module renders on, `parent` says
+// which BOX owns it, and this says which labelled RUN of cards it sits in on that tab.
+//
+// 🔴 IT IS NOT A SUB-MENU, and the distinction is the owner directive console.tsx carries: "every
+// feature is a top-level card WITHIN the category". Every module in a group stays a top-level card in
+// a flat <ul>; this only puts a heading above a run of them. Grouping by `parent` instead would nest
+// Booking/Memberships/Donations/Get paid UNDER an "Offerings and money" card, which is a sub-menu
+// wearing another name.
+//
+// Declared as an ID LIST rather than derived, because nothing in the catalog separates these: every
+// Offerings row shares `family: 'offerings'` and `slot: 'engage'`. An id list is also the shape this
+// file already uses twice (the settings ids, the excluded ids) — one house pattern, one place to read.
+export interface SpaceHubGroup {
+  key: string
+  section: SpaceHubSection
+  label: string
+  ids: readonly string[]
+}
+
+export const SPACE_HUB_GROUPS: readonly SpaceHubGroup[] = [
+  // Order is intent: set up getting paid, then what you sell, then what you pay us.
+  { key: 'offerings.getpaid', section: 'offerings', label: 'Get paid', ids: ['space.payments'] },
+  {
+    key: 'offerings.sell',
+    section: 'offerings',
+    label: 'What you sell',
+    ids: ['space.booking', 'space.memberships', 'space.donations', 'space.services'],
+  },
+]
+
+/** The group key a module renders under on its tab, or null when it has none. A module in no group
+ *  falls into the TAIL, which is why adding a catalog row can never make a card disappear. PURE. */
+export function groupForCard(module: SpaceModule, section: SpaceHubSection): string | null {
+  return SPACE_HUB_GROUPS.find((g) => g.section === section && g.ids.includes(module.id))?.key ?? null
+}
