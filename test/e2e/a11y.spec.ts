@@ -83,6 +83,7 @@ import {
   assertNotProtectionWall,
   currentPathname,
   operatorDenialReason,
+  operatorLandedElsewhere,
   operatorSurfaces,
   publicSurfaces,
   settle,
@@ -311,6 +312,16 @@ async function open(page: Page, surface: Surface, state: RenderState): Promise<b
   }
 
   await settle(page)
+  // The same question this function already asks of a member surface, asked again after settle()
+  // and for the operator half: requireAdmin() denies at the PAGE, so the bounce can land after the
+  // check above. Auditing /feed under /admin/qr's name would file the feed's contrast as the
+  // operator console's — the identical mistake this function's own comment describes, arriving
+  // through a later door (HYG-027, measured 2026-09-10).
+  const drifted = operatorLandedElsewhere(page, surface)
+  if (drifted) {
+    test.skip(true, drifted)
+    return false
+  }
   return true
 }
 
