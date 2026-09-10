@@ -2,7 +2,6 @@ import type { Metadata } from 'next'
 import { Suspense } from 'react'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { IconLink } from '@/components/ui/icon-button'
 import { ClaimButton } from '@/app/events/claim/[token]/claim-button'
 import { ClaimRequestCta } from './claim-request-cta'
 import { doorNoteFor } from './door-note'
@@ -1986,22 +1985,17 @@ export default async function EventDetailPage({
           event.title
         )
       }
-      // Every viewer gets "QR & Share" (the public send-this-event control); operators/hosts
-      // additionally get Edit (Settings drawer) then Manage (dashboard), stacked beneath it.
+      // THE COMPACT HEADER ROW (owner, 2026-09-10): "Change QR, edit and mange buttons to be more
+      // compact show the icon with one word each. Share | Manage | Edit". That order, those words.
+      //
+      // 🔴 THE ONE WORD IS WHAT LETS THE BREAKPOINT FORK GO. This row used to render FIVE controls
+      // to paint three: at "QR & Share" / "Edit event" / "Manage event" the labelled trio measured
+      // ~127 + ~125 + ~143px plus gaps against a 359px content column at 393px, so the two
+      // owner-only tools shipped twice — an icon-only render below `sm` and a labelled one above,
+      // because `iconOnly` decides the accessible name and cannot be a media query. One word each
+      // is ~72 + ~85 + ~62px, which fits that column with room, so every viewer now gets the same
+      // three labelled buttons and the duplication is gone with the words that forced it.
       actions={
-        // MICRO ACTION ROW on a phone (owner, 2026-08-31). This was `flex-col items-stretch`, so
-        // three full-width buttons stacked ~137px tall above the fold before any content — and
-        // `flex-col` was unconditional, so they stacked on desktop too and only right-aligned.
-        //
-        // Three LABELLED buttons cannot share a row here: at text-body-sm semibold they measure
-        // ~127 + ~125 + ~143px plus two gaps against a 359px content column at 393px. So the
-        // shape is the one the Space profile's mobile band already ships
-        // (app/(main)/spaces/[slug]/(profile)/layout.tsx): the control EVERY viewer gets keeps its
-        // words, and the two owner-only tools go icon-only with the label as their accessible name.
-        //
-        // Both use primitives that already exist — OpenAdminBarButton's own `iconOnly` prop and
-        // IconLink — rather than a hand-rolled `<button className="h-9 w-9">`, which would trip
-        // the `handrolled-icon-button` adoption ratchet and skip `tap-target` + the focus ring.
         <div className="flex flex-wrap items-center gap-2 sm:justify-end">
           <EventShareButton
             slug={event.slug}
@@ -2017,41 +2011,22 @@ export default async function EventDetailPage({
           />
           {canManage && (
             <>
-              {/* Icon-only below sm, labelled from sm up — two renders rather than one, because
-                  `iconOnly` decides the accessible name and cannot be a breakpoint. */}
-              <span className="sm:hidden">
-                <OpenAdminBarButton
-                  scope={{ kind: 'event', id: event.id }}
-                  caps={Array.from(eventCaps)}
-                  label="Edit event"
-                  icon={<Settings className="h-4 w-4" />}
-                  iconOnly
-                  className="inline-flex h-9 w-9 items-center justify-center rounded-control border border-border bg-surface text-text transition-colors hover:border-border-strong hover:bg-surface-elevated"
-                />
-              </span>
-              <span className="hidden sm:inline-flex">
-                <OpenAdminBarButton
-                  scope={{ kind: 'event', id: event.id }}
-                  caps={Array.from(eventCaps)}
-                  label="Edit event"
-                  icon={<Settings className="h-4 w-4" />}
-                />
-              </span>
-              <IconLink
-                href={`/events/${event.slug}/manage`}
-                label="Manage event"
-                variant="bordered"
-                className="sm:hidden"
-              >
-                <LayoutDashboard className="h-4 w-4" />
-              </IconLink>
               <Link
                 href={`/events/${event.slug}/manage`}
-                className="hidden sm:inline-flex items-center justify-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-2 text-body-sm font-semibold text-text transition-colors hover:border-border-strong hover:bg-surface-elevated"
+                className="inline-flex items-center justify-center gap-1.5 rounded-control border border-border bg-surface px-3 py-2 text-body-sm font-semibold text-text transition-colors hover:border-border-strong hover:bg-surface-elevated"
               >
                 <LayoutDashboard className="h-4 w-4 text-subtle" />
-                Manage event
+                Manage
               </Link>
+              {/* `label` is the VISIBLE text when `iconOnly` is off (it becomes the accessible name
+                  only in the icon-only render), so this one word is both, which is exactly what the
+                  three buttons are now: icon plus word, named by what you read. */}
+              <OpenAdminBarButton
+                scope={{ kind: 'event', id: event.id }}
+                caps={Array.from(eventCaps)}
+                label="Edit"
+                icon={<Settings className="h-4 w-4" />}
+              />
             </>
           )}
         </div>

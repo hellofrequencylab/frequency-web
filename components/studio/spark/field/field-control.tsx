@@ -91,9 +91,10 @@ export interface FieldControlProps {
    *
    * 🔴 DELIBERATELY NARROW, AND ONLY `repeat` READS IT. A repeat rule is meaningless without the
    * thing's START: "Monthly on the third Wednesday" is a sentence about a date the host already
-   * picked, and the presets, the weekday toggles and the monthly ordinal are all derived from it
-   * (lib/events/repeat-rule.ts `repeatPresets`). No manifest declaration can express "the value of
-   * another field", so the SURFACE — which holds every value already — passes what it has.
+   * picked, and the weekday toggles, the monthly ordinal and the sentence the picker reads back are
+   * all derived from it (lib/events/repeat-rule.ts `describeRepeat`). No manifest declaration can
+   * express "the value of another field", so the SURFACE — which holds every value already —
+   * passes what it has.
    *
    * This is not a general escape hatch. A control that wants to reach sideways for anything else
    * wants a field kind, which is the rule the kernel's header states.

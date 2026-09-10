@@ -100,8 +100,12 @@ export function EventShareButton({
           'inline-flex items-center justify-center gap-1.5 rounded-control border border-border bg-surface px-3 py-2 text-body-sm font-semibold text-text transition-colors hover:border-border-strong hover:bg-surface-elevated'
         }
       >
+        {/* ONE WORD (owner, 2026-09-10: "show the icon with one word each. Share | Manage | Edit").
+            The QR code icon keeps the QR half of this control visible without spending a second
+            word on it, and `title` still says what the popup holds. The accessible name is
+            unchanged: it was already "Share <title>", never the button's own text. */}
         <QrCode className="h-4 w-4 text-subtle" aria-hidden />
-        QR &amp; Share
+        Share
       </button>
 
       <Dialog open={open} onClose={() => setOpen(false)} ariaLabel={`QR and share for ${title}`} className="max-w-md">

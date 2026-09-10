@@ -10,9 +10,7 @@ import {
   describeRepeat,
   formatRepeat,
   formatRepeatDraft,
-  matchRepeatPreset,
   parseRepeat,
-  repeatPresets,
   repeatUntilDate,
   type RepeatFreq,
   type RepeatRule,
@@ -27,25 +25,36 @@ import {
 // Wednesday" and "the third Thursday of the month".
 //
 // ── THE SHAPE, AND WHY IT IS THIS SHAPE ─────────────────────────────────────────────────────────
-// Google Calendar, Apple Calendar, Outlook and the design-system components that follow them all
-// converge on the same three ideas, and the convergence is the finding:
+// ONE MENU AND ONE PANEL. The menu asks how often ("Does not repeat" / Daily / Weekly / Monthly /
+// Yearly) and nothing else; choosing anything but the first opens the panel, which is the whole
+// editor:
 //
-//   1. ONE MENU OF DATE-DERIVED PRESETS, then "Custom" one tap away. The presets are computed from
-//      the start the host already chose — "Weekly on Wednesday", "Every 2 weeks on Wednesday",
-//      "Monthly on the third Wednesday", "Annually on September 16" — so the common cases need no
-//      panel at all AND the ambiguity is gone from the label. This is the half that cannot be
-//      retrofitted onto a static list: "Monthly" alone means "the 16th" to the software and "the
-//      third Wednesday" to the host, and the only fix is to say which in the option.
-//   2. A CUSTOM PANEL OF THREE ROWS: "Repeat every N <unit>", then the unit's own detail (weekday
-//      toggles for weekly; by-date vs by-weekday for monthly and yearly), then the end rule.
+//   1. "Repeat every N <unit>", the unit being the word the menu already chose. One number.
+//   2. The unit's own detail: weekday toggles for weekly, by-date vs by-weekday for monthly and
+//      yearly. This is what "every third Thursday" is made of, and it is two taps from the menu.
 //   3. AN END RULE WITH THREE ARMS: never, on a date, after N times. "After N" is not a
 //      convenience — for a six-week course the host knows the count and not the date, and making
 //      them compute it is where a series ends up one week short.
 //
-// And one rule that is ours rather than theirs, from docs/CONTENT-VOICE.md: the panel prints the
+// 🔴 THERE WERE PRESETS HERE, AND THEY CAME OUT (owner, 2026-09-10: "I like the custom settings
+// editor you created but I don't like the preset dropdowns. Those are confusing. Make it so only
+// the Settings editor is showing with it set to 1 time, does not repeat as a default setting").
+// The control shipped that morning led with a menu of START-DERIVED presets — "Weekly on
+// Wednesday", "Every 2 weeks on Wednesday", "Monthly on the third Wednesday" — with the editor
+// behind a "Custom…" option, which is what Google, Apple and Outlook all do. The reasoning was
+// sound and the result was not: seven sentences in a dropdown is a paragraph you have to read, the
+// editor was hidden exactly where a host would look for it, and "Custom" had to be a computed
+// state ("the rule matches no preset") rather than a stored one, which needed an interval-bumping
+// seed loop to stop the panel closing the instant it opened. All of that is gone. The menu now
+// carries five short words and the editor is always the thing you are looking at.
+//
+// DEFAULT: does not repeat. The menu opens on it, the panel stays shut, and the sentence below
+// reads "This happens once."
+//
+// And one rule that survives from the first design, per docs/CONTENT-VOICE.md: the panel prints the
 // SENTENCE back. "Every 2 weeks on Wednesday, until December 30" is the only way a host can check
-// what they built, and it is also the control group's accessible description, so the same words
-// reach a screen reader that reach the page.
+// what they built, and it is also the menu's accessible description, so the same words reach a
+// screen reader that reach the page.
 //
 // ── ONE VALUE, NOT TWO ──────────────────────────────────────────────────────────────────────────
 // The control emits ONE string: the RRULE value, plus `;UNTIL=YYYYMMDD` when the host picked an end
@@ -88,7 +97,15 @@ const ORDINAL_LABELS: { value: string; label: string }[] = [
   { value: '-1', label: 'last' },
 ]
 
-const CUSTOM = '__custom__'
+/** How the MENU says each frequency. Plain words, no arithmetic for the host to do in their head:
+ *  the detail ("on Wednesday", "the third Thursday") is the panel's job and the sentence's job. */
+const FREQ_LABEL: Record<RepeatFreq, string> = {
+  DAILY: 'Daily', WEEKLY: 'Weekly', MONTHLY: 'Monthly', YEARLY: 'Yearly',
+}
+
+/** The menu value for "does not repeat", which is the empty rule. A sentinel rather than '' so an
+ *  <option> value is never the empty string, which some browsers treat as "no selection". */
+const NONE = '__none__'
 
 /** Which <weekday> of its month a date is, as a BYSETPOS: 1..4, or -1 when it is the last one. */
 function setPosOf(anchor: Date): number {
@@ -112,8 +129,9 @@ export function RepeatPicker({
   value: string
   onChange: (next: string) => void
   /** The event's start, as the ISO the row stores or the `YYYY-MM-DDTHH:mm` a datetime input holds.
-   *  EVERY preset and every implicit part of a rule is derived from it, so a picker with no start
-   *  yet falls back to bare Daily / Weekly / Monthly options rather than guessing a weekday. */
+   *  Every IMPLICIT part of a rule is derived from it — which weekday a weekly rule means, which day
+   *  of the month a monthly one does — so a picker with no start yet still renders and simply leaves
+   *  those parts to the server, which resolves them against the start once there is one. */
   startsAt?: string | null
   /** Render a hidden input under this name, for a form that reads its own FormData. */
   name?: string
@@ -124,59 +142,37 @@ export function RepeatPicker({
   const groupId = useId()
   const rule = useMemo(() => parseRepeat(value), [value])
   const untilDate = useMemo(() => repeatUntilDate(value) ?? '', [value])
-  const presets = useMemo(() => repeatPresets(startsAt), [startsAt])
-  const preset = useMemo(() => matchRepeatPreset(rule, startsAt), [rule, startsAt])
   const anchor = useMemo(() => {
     const d = startsAt ? new Date(startsAt) : null
     return d && !Number.isNaN(d.getTime()) ? d : null
   }, [startsAt])
 
-  // "Custom" is not a stored state — it is "the rule does not match any preset". A host who opens
-  // the panel on a preset therefore sees that preset's own settings loaded, which is what makes
-  // "every 2 weeks" -> "every 3 weeks" a one-field edit rather than a rebuild.
-  const isCustom = !!rule && !preset
-
   const emit = (nextRule: RepeatRule | null, nextUntil: string | null = untilDate) =>
     onChange(formatRepeatDraft(nextRule, nextRule ? nextUntil : null))
 
-  function pickPreset(id: string) {
-    if (id === CUSTOM) {
-      // Seed the panel from whatever is selected, so opening Custom never blanks a host's choice.
-      const seed: RepeatRule = rule
-        ? { ...rule }
-        : anchor
-          ? { freq: 'WEEKLY', interval: 1, byDay: [REPEAT_WEEKDAYS[anchor.getUTCDay()]] }
-          : { freq: 'WEEKLY', interval: 1 }
-      // 🔴 A PRESET-SHAPED SEED MUST BECOME NOT-A-PRESET, or the panel closes again the moment it
-      // opens: `isCustom` is "the rule matches no preset", not a stored flag. Bumping the interval
-      // is the smallest honest change and is what a host opening Custom came for — but it has to
-      // KEEP bumping, because +1 from the weekly preset lands exactly on the fortnightly one, and a
-      // single bump would have made "Custom…" a no-op on the most common starting point. Bounded so
-      // a menu that somehow presets every interval cannot spin.
-      let seeded = seed
-      for (let i = 0; i < 8 && matchRepeatPreset(seeded, startsAt); i++) {
-        seeded = { ...seeded, interval: (seeded.interval || 1) + 1 }
-      }
-      emit(seeded)
+  /** The menu. "Does not repeat" clears the rule outright; a frequency either STARTS one from the
+   *  event's own start date, or re-bases the existing one.
+   *
+   *  Re-basing rebuilds the parts that only make sense for the new frequency rather than carrying a
+   *  BYSETPOS into a weekly rule where it means nothing. What it KEEPS is the interval and the end
+   *  rule, because "every 2 weeks, 6 times" -> "every 2 months, 6 times" is one menu change to a
+   *  host and should not silently become "every 1 month, forever". */
+  function pickFreq(next: string) {
+    if (next === NONE) {
+      emit(null, null)
       return
     }
-    emit(presets.find((p) => p.id === id)?.rule ?? null, untilDate)
+    const freq = next as RepeatFreq
+    const base: RepeatRule = { freq, interval: rule?.interval ?? 1, count: rule?.count }
+    if (freq === 'WEEKLY' && anchor) base.byDay = [REPEAT_WEEKDAYS[anchor.getUTCDay()]]
+    if ((freq === 'MONTHLY' || freq === 'YEARLY') && anchor) base.byMonthDay = anchor.getUTCDate()
+    if (freq === 'YEARLY' && anchor) base.byMonth = anchor.getUTCMonth() + 1
+    emit(base)
   }
 
   function patch(next: Partial<RepeatRule>) {
     if (!rule) return
     emit({ ...rule, ...next })
-  }
-
-  /** Switching frequency rebuilds the parts that only make sense for the new one, rather than
-   *  carrying a BYSETPOS into a weekly rule where it means nothing. */
-  function pickFreq(freq: RepeatFreq) {
-    if (!rule) return
-    const base: RepeatRule = { freq, interval: rule.interval, count: rule.count }
-    if (freq === 'WEEKLY' && anchor) base.byDay = [REPEAT_WEEKDAYS[anchor.getUTCDay()]]
-    if ((freq === 'MONTHLY' || freq === 'YEARLY') && anchor) base.byMonthDay = anchor.getUTCDate()
-    if (freq === 'YEARLY' && anchor) base.byMonth = anchor.getUTCMonth() + 1
-    emit(base)
   }
 
   function toggleWeekday(day: RepeatWeekday) {
@@ -222,30 +218,42 @@ export function RepeatPicker({
 
   return (
     <div className={`space-y-2 ${className}`}>
-      <Label className={`${labelClasses} block`} htmlFor={`${groupId}-preset`}>
+      <Label className={`${labelClasses} block`} htmlFor={`${groupId}-freq`}>
         {label}
       </Label>
 
+      {/* THE ONE MENU: how often, or not at all. Five short words, and every one of them is a
+          frequency rather than a sentence about this event's own date — the detail is the panel's
+          job, and the sentence at the bottom reads it all back. */}
       <Select
-        id={`${groupId}-preset`}
-        value={isCustom ? CUSTOM : (preset?.id ?? 'none')}
-        onChange={(e) => pickPreset(e.target.value)}
+        id={`${groupId}-freq`}
+        value={rule?.freq ?? NONE}
+        onChange={(e) => pickFreq(e.target.value)}
         disabled={disabled}
         aria-describedby={`${groupId}-summary`}
         options={[
-          ...presets.map((p) => ({ value: p.id, label: p.label })),
-          { value: CUSTOM, label: 'Custom…' },
+          // These are <option>s in a form control, not destinations, so the admin menu contract
+          // (ADR-553/927) does not govern them. The annotation is what tells `pnpm check:menu` so.
+          { value: NONE, label: 'Does not repeat' }, // menu-ok: form-control options, not menu rows
+          ...(['DAILY', 'WEEKLY', 'MONTHLY', 'YEARLY'] as RepeatFreq[]).map((f) => ({
+            value: f,
+            label: FREQ_LABEL[f],
+          })),
         ]}
       />
 
-      {isCustom && rule && (
+      {/* THE EDITOR. Open whenever the event repeats at all, shut when it does not — so the default
+          state of this control is one menu reading "Does not repeat" and nothing else. */}
+      {rule && (
         <div className="space-y-3 rounded-control border border-border bg-surface-elevated p-3">
-          {/* ── Row 1: how often ── */}
-          <div className="flex flex-wrap items-end gap-2">
-            <div className="space-y-1">
-              <Label className={labelClasses} htmlFor={`${groupId}-interval`}>
-                Repeat every
-              </Label>
+          {/* ── Row 1: how often. The UNIT is the word the menu already chose, printed rather than
+              re-asked: two controls that both say "weekly" is how a host ends up with a rule they
+              did not mean. ── */}
+          <div className="space-y-1">
+            <Label className={labelClasses} htmlFor={`${groupId}-interval`}>
+              Repeat every
+            </Label>
+            <div className="flex items-center gap-2">
               <Input
                 id={`${groupId}-interval`}
                 type="number"
@@ -257,21 +265,9 @@ export function RepeatPicker({
                 disabled={disabled}
                 onChange={(e) => patch({ interval: Math.max(1, Math.min(99, Number(e.target.value) || 1)) })}
               />
-            </div>
-            <div className="min-w-32 flex-1 space-y-1">
-              <Label className={labelClasses} htmlFor={`${groupId}-freq`}>
-                Unit
-              </Label>
-              <Select
-                id={`${groupId}-freq`}
-                value={rule.freq}
-                disabled={disabled}
-                onChange={(e) => pickFreq(e.target.value as RepeatFreq)}
-                options={(['DAILY', 'WEEKLY', 'MONTHLY', 'YEARLY'] as RepeatFreq[]).map((f) => ({
-                  value: f,
-                  label: rule.interval === 1 ? UNIT_LABEL[f].one : UNIT_LABEL[f].many,
-                }))}
-              />
+              <span className="text-body-sm text-text">
+                {rule.interval === 1 ? UNIT_LABEL[rule.freq].one : UNIT_LABEL[rule.freq].many}
+              </span>
             </div>
           </div>
 
@@ -373,62 +369,61 @@ export function RepeatPicker({
               </div>
             </div>
           )}
-        </div>
-      )}
 
-      {/* ── Row 3: the end rule. Outside the custom panel, because "until the end of term" is a
-          question a host answers on a plain weekly series just as often as on a custom one. ── */}
-      {rule && (
-        <div className="space-y-1.5 pt-1">
-          <p className={labelClasses} id={`${groupId}-end-label`}>
-            Ends
-          </p>
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-2" role="radiogroup" aria-labelledby={`${groupId}-end-label`}>
-            <Radio
-              name={`${groupId}-end`}
-              label="Never"
-              checked={endMode === 'never'}
-              disabled={disabled}
-              onChange={() => pickEnd('never')}
-            />
-            <div className="flex items-center gap-2 text-body-sm text-text">
+          {/* ── Row 3: the end rule. Inside the panel now: with the presets gone there is no
+              "plain" series that lives outside the editor, so every row of the question is in one
+              box instead of two. ── */}
+          <div className="space-y-1.5">
+            <p className={labelClasses} id={`${groupId}-end-label`}>
+              Ends
+            </p>
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2" role="radiogroup" aria-labelledby={`${groupId}-end-label`}>
               <Radio
                 name={`${groupId}-end`}
-                label="On"
-                checked={endMode === 'on'}
+                label="Never"
+                checked={endMode === 'never'}
                 disabled={disabled}
-                onChange={() => pickEnd('on')}
+                onChange={() => pickEnd('never')}
               />
-              <Input
-                type="date"
-                aria-label="Repeat until"
-                className="w-40"
-                value={untilDate}
-                min={typeof startsAt === 'string' ? startsAt.slice(0, 10) : undefined}
-                disabled={disabled || endMode !== 'on'}
-                onChange={(e) => emit(rule, e.target.value || null)}
-              />
-            </div>
-            <div className="flex items-center gap-2 text-body-sm text-text">
-              <Radio
-                name={`${groupId}-end`}
-                label="After"
-                checked={endMode === 'count'}
-                disabled={disabled}
-                onChange={() => pickEnd('count')}
-              />
-              <Input
-                type="number"
-                min={1}
-                max={400}
-                inputMode="numeric"
-                aria-label="How many times"
-                className="w-20"
-                value={String(rule.count ?? 10)}
-                disabled={disabled || endMode !== 'count'}
-                onChange={(e) => patch({ count: Math.max(1, Math.min(400, Number(e.target.value) || 1)) })}
-              />
-              <span>times</span>
+              <div className="flex items-center gap-2 text-body-sm text-text">
+                <Radio
+                  name={`${groupId}-end`}
+                  label="On"
+                  checked={endMode === 'on'}
+                  disabled={disabled}
+                  onChange={() => pickEnd('on')}
+                />
+                <Input
+                  type="date"
+                  aria-label="Repeat until"
+                  className="w-40"
+                  value={untilDate}
+                  min={typeof startsAt === 'string' ? startsAt.slice(0, 10) : undefined}
+                  disabled={disabled || endMode !== 'on'}
+                  onChange={(e) => emit(rule, e.target.value || null)}
+                />
+              </div>
+              <div className="flex items-center gap-2 text-body-sm text-text">
+                <Radio
+                  name={`${groupId}-end`}
+                  label="After"
+                  checked={endMode === 'count'}
+                  disabled={disabled}
+                  onChange={() => pickEnd('count')}
+                />
+                <Input
+                  type="number"
+                  min={1}
+                  max={400}
+                  inputMode="numeric"
+                  aria-label="How many times"
+                  className="w-20"
+                  value={String(rule.count ?? 10)}
+                  disabled={disabled || endMode !== 'count'}
+                  onChange={(e) => patch({ count: Math.max(1, Math.min(400, Number(e.target.value) || 1)) })}
+                />
+                <span>times</span>
+              </div>
             </div>
           </div>
         </div>

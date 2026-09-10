@@ -42,9 +42,16 @@ const S = ({ id }: { id: string }) => <i data-slot={id} />
 // `subtitle`, which lives INSIDE the lockup's flex row beside `actions` — so it was capped at
 // `content width - actions width` for its whole height and wrapped hard against a narrow left
 // gutter (owner: "Something is off with the details under the header. They are all aligned left").
-// It now goes through the new full-width `meta` slot as two lanes plus two full-width rows. The
-// reference below is that shape, written out by hand, so the equality still compares a hand-rolled
-// page against the template rather than the template against itself.
+// It now goes through the full-width `meta` slot.
+//
+// ⚠️ AMENDED A THIRD TIME, the same day, for the shape INSIDE that slot and for the mode pill. The
+// first full-width version split the region into two `md:grid-cols-2` lanes; the owner asked for the
+// width and not the split ("The info area under the header should not be two columns"), so it is one
+// column in four groups now. And `badges` no longer reaches DetailTemplate at all when a cover is
+// filled: it flies in the cover's top-right corner instead ("Place the In Person / Online pill on
+// the top right of the header"). The reference below is that shape, written out by hand, so the
+// equality still compares a hand-rolled page against the template rather than the template against
+// itself.
 function Reference() {
   return (
     <div>
@@ -53,27 +60,33 @@ function Reference() {
       <S id="notice-claimed" />
 
       <DetailTemplate
-        hero={<S id="cover" />}
+        hero={
+          <div className="relative">
+            <S id="cover" />
+            <div className="absolute right-3 top-3 flex max-w-[60%] flex-wrap justify-end gap-1.5 sm:right-4 sm:top-4">
+              <S id="badges" />
+            </div>
+          </div>
+        }
         titleScale="display"
         title={<S id="title" />}
         actions={<S id="actions" />}
-        badges={<S id="badges" />}
         meta={
-          <div className="space-y-2 text-body-sm text-muted">
-            <div className="grid gap-x-10 gap-y-2 md:grid-cols-2">
-              <div className="min-w-0 space-y-1.5">
-                <S id="when" />
-                <S id="where" />
-                <S id="cadence" />
-                <S id="nextDate" />
-              </div>
-              <div className="min-w-0 space-y-1.5">
-                <S id="belonging" />
-                <S id="hostedBy" />
-                <S id="credit" />
-              </div>
+          <div className="space-y-3 text-body-sm text-muted">
+            <div className="space-y-1.5">
+              <S id="when" />
+              <S id="where" />
             </div>
-            <S id="seriesRail" />
+            <div className="space-y-1.5">
+              <S id="cadence" />
+              <S id="nextDate" />
+              <S id="seriesRail" />
+            </div>
+            <div className="space-y-1.5">
+              <S id="hostedBy" />
+              <S id="belonging" />
+              <S id="credit" />
+            </div>
             <S id="reward" />
           </div>
         }
@@ -138,8 +151,8 @@ describe('EventDetailTemplate renders the photographed event page byte-identical
 
   it('keeps the identity lines in the standard order, whatever order the caller writes them in', () => {
     const html = renderToStaticMarkup(<Subject />)
-    // Lane A, then lane B, then the two full-width rows (EventIdentitySlots).
-    const order = ['when', 'where', 'cadence', 'nextDate', 'belonging', 'hostedBy', 'credit', 'seriesRail', 'reward']
+    // The gathering, the series, who runs it, the reward (EventIdentitySlots).
+    const order = ['when', 'where', 'cadence', 'nextDate', 'seriesRail', 'hostedBy', 'belonging', 'credit', 'reward']
     const positions = order.map((id) => html.indexOf(`data-slot="${id}"`))
     expect(positions).toEqual([...positions].sort((a, b) => a - b))
     expect(positions.every((p) => p > -1)).toBe(true)
@@ -164,6 +177,27 @@ describe('a surface differs by an ABSENT SLOT, never a fork', () => {
     expect(html).not.toContain('data-slot="actions"')
     // No identity lines supplied -> no empty subtitle container carrying the subtitle margin.
     expect(html).not.toContain('space-y-1.5')
+  })
+
+  it('🔴 keeps the mode pill beside the H1 on a surface with no cover', () => {
+    // The discover page fills `badges` ("This event has ended") and often no `cover`. The corner it
+    // would fly in does not exist there, so the chip must fall back to the lockup rather than
+    // vanish — the fallback is the whole reason this is a slot test and not a variant.
+    const html = renderToStaticMarkup(
+      <EventDetailTemplate title={<S id="title" />} badges={<S id="badges" />} />,
+    )
+    expect(html).toContain('data-slot="badges"')
+    expect(html).not.toContain('absolute right-3 top-3')
+  })
+
+  it('flies the pill in the cover corner as soon as there is a cover to fly it on', () => {
+    const html = renderToStaticMarkup(
+      <EventDetailTemplate title={<S id="title" />} cover={<S id="cover" />} badges={<S id="badges" />} />,
+    )
+    expect(html).toContain('absolute right-3 top-3')
+    // ONE badge node, not one in the corner and a second beside the title.
+    expect(html.split('data-slot="badges"')).toHaveLength(2)
+    expect(html.indexOf('data-slot="badges"')).toBeLessThan(html.indexOf('data-slot="title"'))
   })
 
   it('gives a module-less surface the SAME interior geometry as the module engine', () => {

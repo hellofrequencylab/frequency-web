@@ -7,13 +7,11 @@ import {
   expandRepeat,
   formatRepeat,
   formatRepeatDraft,
-  matchRepeatPreset,
   nextRepeatOccurrence,
   parseRepeat,
   repeatChipLabel,
   repeatFor,
   repeatFromLegacy,
-  repeatPresets,
   repeatUntilDate,
   type RepeatRule,
 } from './repeat-rule'
@@ -336,10 +334,15 @@ describe('the sentence a host checks their rule against', () => {
   })
 
   it('carries no em dash, per docs/CONTENT-VOICE.md', () => {
+    // This used to sweep the preset labels too. With the presets gone (see the picker's header) the
+    // engine's own two sentence forms plus the chip are everything a host can read out of it.
     const everything = [
       describeRepeat(parseRepeat('FREQ=WEEKLY;INTERVAL=2;BYDAY=WE'), WED),
       describeRepeat(parseRepeat('FREQ=MONTHLY;BYDAY=TH;BYSETPOS=3'), WED),
-      ...repeatPresets(WED).map((p) => p.label),
+      describeRepeat(parseRepeat('FREQ=YEARLY;BYMONTH=9;BYMONTHDAY=16'), WED),
+      describeRepeat(parseRepeat('FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR'), WED),
+      repeatChipLabel(parseRepeat('FREQ=MONTHLY;BYDAY=TH;BYSETPOS=3'), WED),
+      formatRepeat(parseRepeat('FREQ=WEEKLY;INTERVAL=2;BYDAY=WE')!),
     ].join(' ')
     expect(everything).not.toMatch(/—/)
   })
@@ -359,43 +362,15 @@ describe('the sentence a host checks their rule against', () => {
   })
 })
 
-describe('the presets are derived from the start date, which is the whole point', () => {
-  it('🔴 names the weekday and the day of the month the host already chose', () => {
-    const labels = repeatPresets(WED).map((p) => p.label)
-    expect(labels).toEqual([
-      'Does not repeat',
-      'Every day',
-      'Weekly on Wednesday',
-      'Every 2 weeks on Wednesday',
-      'Every weekday, Monday to Friday',
-      'Monthly on the 16th',
-      'Monthly on the third Wednesday',
-      'Annually on September 16',
-    ])
-    // A different start gives a different menu. A static list is exactly what this replaced.
-    expect(repeatPresets('2026-09-04T10:00:00.000Z').map((p) => p.label)).toContain('Weekly on Friday')
-  })
-
-  it('offers "last" rather than an ordinal a month may not have', () => {
-    // 2026-09-29 is the FIFTH Tuesday of September. "Monthly on the fifth Tuesday" would land in
-    // four months of the year; "the last Tuesday" lands in twelve.
-    expect(repeatPresets('2026-09-29T10:00:00.000Z').map((p) => p.label)).toContain('Monthly on the last Tuesday')
-    // And a date in the last week of a 4-week-and-a-bit month gets "last" too, for the same reason.
-    expect(repeatPresets('2026-09-24T10:00:00.000Z').map((p) => p.label)).toContain('Monthly on the last Thursday')
-  })
-
-  it('degrades to bare cadences with no start, so a Spark that has not asked yet still renders', () => {
-    expect(repeatPresets(null).map((p) => p.id)).toEqual(['none', 'daily', 'weekly', 'monthly'])
-  })
-
-  it('matches a stored rule back to its preset on the CANONICAL string, and admits when there is none', () => {
-    expect(matchRepeatPreset(parseRepeat('BYDAY=WE;FREQ=WEEKLY;INTERVAL=2'), WED)?.id).toBe('biweekly')
-    expect(matchRepeatPreset(null, WED)?.id).toBe('none')
-    // Anything the presets cannot say is the custom panel's job, and a count is a range no preset has.
-    expect(matchRepeatPreset(parseRepeat('FREQ=WEEKLY;INTERVAL=3;BYDAY=WE'), WED)).toBeNull()
-    expect(matchRepeatPreset(parseRepeat('FREQ=WEEKLY;BYDAY=WE;COUNT=6'), WED)).toBeNull()
-  })
-})
+// ── THE PRESETS ARE GONE, AND THIS IS WHERE THEIR TESTS WERE ────────────────────────────────────
+//
+// Two suites lived here: one pinning that `repeatPresets()` named the host's own weekday and day of
+// month ("Weekly on Wednesday", "Monthly on the last Tuesday"), one pinning that opening "Custom…"
+// from a preset landed on a rule no preset could claim back. Both went with the functions, the day
+// they shipped (owner: "I don't like the preset dropdowns. Those are confusing"). The picker now
+// asks the frequency in five words and shows its editor for everything else, so there is no derived
+// menu to pin and no "Custom" state to escape. See lib/events/repeat-rule.ts §"The presets, and why
+// there are none" and the header of components/events/repeat-picker.tsx.
 
 describe('the engine stays importable by everything that needs it', () => {
   it('🔴 has ZERO imports — it runs in the client picker, a server action, and the cron alike', () => {
@@ -407,38 +382,5 @@ describe('the engine stays importable by everything that needs it', () => {
     // every fixture above deterministic.
     expect(code).not.toMatch(/Date\.now\(\)/)
     expect(code).not.toMatch(/new Date\(\)/)
-  })
-})
-
-// ── THE PICKER'S ONE PIECE OF DERIVED STATE, PINNED HERE BECAUSE IT IS ARITHMETIC ────────────────
-//
-// "Custom" is not a stored flag in the picker; it is "this rule matches no preset". That keeps the
-// panel showing a preset's own settings when a host opens it, so "every 2 weeks" -> "every 3 weeks"
-// is a one-field edit rather than a rebuild. It also means the SEED the panel opens with has to be
-// something `matchRepeatPreset` returns null for, or the panel closes the instant it opens.
-describe('opening Custom from a preset lands on a rule no preset can claim', () => {
-  const WEDNESDAY = '2026-09-16T10:00:00.000Z'
-
-  it('🔴 bumping the interval ONCE is not enough: weekly + 1 IS the fortnightly preset', () => {
-    const weekly = repeatPresets(WEDNESDAY).find((p) => p.id === 'weekly')!.rule!
-    const bumpedOnce = { ...weekly, interval: weekly.interval + 1 }
-    // This is the defect a single bump would have shipped, on the most common starting point.
-    expect(matchRepeatPreset(bumpedOnce, WEDNESDAY)?.id).toBe('biweekly')
-    // Twice clears it, which is why the picker loops rather than adds one.
-    expect(matchRepeatPreset({ ...weekly, interval: weekly.interval + 2 }, WEDNESDAY)).toBeNull()
-  })
-
-  it('every preset escapes within the picker’s bounded loop', () => {
-    for (const preset of repeatPresets(WEDNESDAY)) {
-      if (!preset.rule) continue
-      let seeded = preset.rule
-      let steps = 0
-      while (steps < 8 && matchRepeatPreset(seeded, WEDNESDAY)) {
-        seeded = { ...seeded, interval: (seeded.interval || 1) + 1 }
-        steps++
-      }
-      expect(matchRepeatPreset(seeded, WEDNESDAY), `${preset.id} never escaped`).toBeNull()
-      expect(steps, `${preset.id} took ${steps} bumps`).toBeLessThanOrEqual(2)
-    }
   })
 })
