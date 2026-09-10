@@ -39180,7 +39180,7 @@ frozen floor of 4.41, with the note *"Info chip text at 4.41:1 — a near miss."
   actually built everywhere it appears.
 - **`broadcast-strong` (3.99), `success` (3.87) and `warning` (3.32) are the same shape and worse**,
   and each will fail an audit the same way the day a reachable page carries one. They are filed as
-  `LIVE-295` rather than swept in here: they are a palette decision, and this one was forced by a
+  `LIVE-300` rather than swept in here: they are a palette decision, and this one was forced by a
   failing audit.
 - **The capture is taken against the PR's own preview, last**, so the baselines carry the new token
   rather than being made stale by the change that ships beside them.
@@ -39201,4 +39201,4 @@ that appeared the moment the console became reachable. `PW_REQUIRE_OPERATOR` is 
 remaining `/admin/library` gap is a loud warning rather than a failure — which is the correct state
 while its cause is unknown.
 
-**Rows.** HYG-027 closed · LIVE-289 · LIVE-295.
+**Rows.** HYG-027 closed · LIVE-289 · LIVE-300.

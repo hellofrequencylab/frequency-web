@@ -333,7 +333,7 @@ export const WAIVERS = [
   // by the audit. So a waiver here does not make CI safe; it makes CI quiet while the live gate
   // holds the real opinion. broadcast-strong (3.99), success (3.87) and warning (3.32) are the same
   // shape and WORSE, and each will fail an audit the same way the day a reachable page carries one.
-  // Filed as LIVE-289 rather than swept into this change: they are a palette decision, and this one
+  // Filed as LIVE-300 rather than swept into this change: they are a palette decision, and this one
   // was forced by a failing audit.
   {
     fg: '--color-warning',
