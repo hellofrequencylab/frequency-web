@@ -1,8 +1,9 @@
 'use client'
 
 import { useEffect, useState, useTransition } from 'react'
-import { Check, Zap } from 'lucide-react'
+import { Check, QrCode, Zap } from 'lucide-react'
 import { checkInEvent, type CheckInResult } from '@/app/(main)/events/actions'
+import { Button } from '@/components/ui/button'
 import { showZapToast } from '@/components/zap-toast'
 import { SPECIAL_INSTRUCTIONS_LABEL } from '@/lib/events/special-instructions'
 import { checkInSurfaceState, formatCountdown, type CheckInSurfaceInput } from '@/lib/events/checkin-surface'
@@ -13,14 +14,23 @@ import { checkInSurfaceState, formatCountdown, type CheckInSurfaceInput } from '
  * Owner, 2026-09-10: one box, under Share | Manage | Edit, that counts down to the start and then
  * *"converts to the check in function for members"*, blended into the canvas with no border.
  *
- * ── WHY IT SITS WHERE IT SITS ──────────────────────────────────────────────────────────────────
+ * ── WHY IT SITS WHERE IT SITS, AND WHY IT IS WIDE RATHER THAN TALL ────────────────────────────
  * `DetailTemplate`'s header band is `title (min-w-0) | actions (sm:shrink-0)`, so the actions
- * column takes its natural width and the H1 absorbs every pixel of the squeeze. The owner's
- * constraint was explicit: this must not push the left content onto another line. So the surface
- * is capped at `sm:max-w-[16rem]` and WRAPS INSIDE ITSELF, growing in height rather than width. The
- * action row above it already measures ~235px (Share ~72 + Manage ~85 + Edit ~62 plus gaps, the
- * width audit at the `actions` prop), so the column it shares is barely wider than it already was
- * and the title keeps what it had.
+ * column takes its natural width and the H1 absorbs every pixel of the squeeze.
+ *
+ * 🔴 THE FIRST VERSION READ THAT CONSTRAINT TOO NARROWLY AND MADE IT WORSE. It capped the box at
+ * `16rem` and let it grow DOWNWARD, on the reasoning that height is free and width is not. The
+ * result was a four-deep stack in the right column — buttons, then EVENT STARTS IN, then the
+ * clock, then two more rows — against a title that had one line and a lot of empty space beside
+ * it. Narrow and tall does not stop a two-column header from looking broken; it is what made it
+ * look broken (owner, 2026-09-10: *"the two columns are still fucked up. I want the info and
+ * countdown to be on the same row"*).
+ *
+ * So the clock and the two facts are now COLUMNS OF ONE ROW: the box is short and wide instead of
+ * narrow and tall, which is both a calmer header and less vertical distance between the title and
+ * the content under it. It is a `flex-wrap` row, so where the column really is too tight the two
+ * halves stack on their own rather than being forced to. Every piece inside is `whitespace-nowrap`
+ * and the box sizes to its content, so it cannot creep wider than the ~305px it needs.
  *
  * ── WHY IT IS A CLIENT COMPONENT AND WHAT IT STILL DOES NOT DECIDE ─────────────────────────────
  * A clock ticks, so this half must be client. Every GATE is resolved on the server by the page and
@@ -82,65 +92,109 @@ export function EventCheckInSurface({
        canvas without borders". Every skin redeclares --color-canvas, so naming the token is the
        only correct move (never a hex). */
     <div
-      className="mt-1 w-full rounded-card bg-canvas px-3 py-2.5 text-right sm:max-w-[16rem]"
+      className="mt-1 w-full rounded-card bg-canvas px-3 py-2.5 sm:w-auto sm:max-w-[24rem]"
       // A live region, because the box changes what it says while a member is looking at it: the
       // handover from countdown to control is the moment worth announcing, and the result of a
       // press is the other one.
       aria-live="polite"
     >
-      {state.kind === 'countdown' && (
-        <>
-          <p className="text-meta uppercase tracking-wide text-subtle">Event starts in</p>
-          {/* `tabular-nums` is what keeps the box still: proportional digits change width as they
-              tick, and a header element that breathes once a second is worse than no clock. */}
-          <p className="text-lead font-bold tabular-nums text-text">
-            {remaining === null ? formatCountdown(state.startsAtMs - nowMs) : formatCountdown(state.startsAtMs - remaining)}
-          </p>
-        </>
-      )}
+      {/* THE ROW. Two columns that size to their content and wrap to a stack only when they truly
+          cannot fit, which is what "dynamically sized columns that stack nicely" asks for. */}
+      <div className="flex flex-wrap items-center justify-end gap-x-4 gap-y-2">
+        <div className="shrink-0 text-right">
+          {state.kind === 'countdown' && (
+            <>
+              {/* `eyebrow`, the ROLE, not `text-meta uppercase tracking-wide` spelled out. Both of
+                  these labels were hand-rolled when this component was written, which pushed the
+                  `handrolled-eyebrow` ratchet from 481 to 482 and left `main` failing `checks` for
+                  every PR in the repo. The role carries size, tracking and weight together, so it
+                  is also the only way the two labels stay identical to each other. */}
+              <p className="eyebrow text-subtle">Event starts in</p>
+              {/* `tabular-nums` is what keeps the box still: proportional digits change width as they
+                  tick, and a header element that breathes once a second is worse than no clock. */}
+              <p className="text-lead font-bold tabular-nums text-text">
+                {remaining === null ? formatCountdown(state.startsAtMs - nowMs) : formatCountdown(state.startsAtMs - remaining)}
+              </p>
+            </>
+          )}
 
-      {state.kind === 'open' && !checkedIn && (
-        <button
-          disabled={pending}
-          onClick={() =>
-            start(async () => {
-              const res = await checkInEvent(eventId)
-              setResult(res)
-              if (res.ok && !res.alreadyCheckedIn && res.zapsAwarded) {
-                showZapToast({ amount: res.zapsAwarded, label: 'Checked in' })
+          {state.kind === 'open' && !checkedIn && (
+            /* THE KIT BUTTON, NOT A HAND-ROLLED COPY OF IT. The first version spelled the amber
+               out (`rounded-control bg-primary px-4 py-2 text-body-sm font-semibold …`), which is
+               `primary × md` written by hand — the exact bucket `LIVE-114` holds at zero, so it
+               failed `check:backlog` and would have re-opened a closed row. The primitive also
+               carries three things the copy had silently dropped: `tap-target` (the `--tap-min`
+               touch floor), `press` (the one sanctioned pressed look) and `lift-1`.
+
+               `loading` rather than a swapped label: the primitive marks the control `aria-busy`
+               and disables it while LEAVING THE LABEL ALONE, because a pending state must not
+               change a button's width (INTERACTION-STATES §4 rule 3). That is the same rule
+               `tabular-nums` enforces on the clock two lines up — this box sits in the header
+               band, and a control that resizes mid-press moves the row around it. */
+            <Button
+              loading={pending}
+              onClick={() =>
+                start(async () => {
+                  const res = await checkInEvent(eventId)
+                  setResult(res)
+                  if (res.ok && !res.alreadyCheckedIn && res.zapsAwarded) {
+                    showZapToast({ amount: res.zapsAwarded, label: 'Checked in' })
+                  }
+                })
               }
-            })
-          }
-          className="inline-flex w-full items-center justify-center gap-2 rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
-        >
-          <Zap className="h-4 w-4 shrink-0" strokeWidth={2.5} />
-          {pending ? 'Checking in…' : 'Check in'}
-        </button>
-      )}
+            >
+              <Zap className="h-4 w-4 shrink-0" strokeWidth={2.5} />
+              Check in
+            </Button>
+          )}
 
-      {checkedIn && (
-        <div className="inline-flex w-full items-center justify-center gap-2 rounded-control bg-success-bg px-4 py-2 text-body-sm font-semibold text-success">
-          <Check className="h-4 w-4 shrink-0" />
-          {earned > 0 ? `Checked in · +${earned} Zaps` : 'Checked in'}
+          {checkedIn && (
+            <div className="inline-flex items-center justify-center gap-2 rounded-control bg-success-bg px-4 py-2 text-body-sm font-semibold text-success">
+              <Check className="h-4 w-4 shrink-0" />
+              {earned > 0 ? `Checked in · +${earned} Zaps` : 'Checked in'}
+            </div>
+          )}
+
+          {state.kind === 'waiting' && (
+            /* The door is open and this viewer cannot walk through it: signed out, or holding no going
+               seat. Say so plainly and leave the sign-in and the RSVP where they already are, in the
+               Join box. A second sign-in door here would be the scatter this surface removes. */
+            <p className="text-body-sm font-semibold text-text">Check-in is open</p>
+          )}
         </div>
-      )}
 
-      {state.kind === 'waiting' && (
-        /* The door is open and this viewer cannot walk through it: signed out, or holding no going
-           seat. Say so plainly and leave the sign-in and the RSVP where they already are, in the
-           Join box. A second sign-in door here would be the scatter this surface removes. */
-        <p className="text-body-sm font-semibold text-text">Check-in is open</p>
-      )}
+        {/* TWO FACTS, TWO ROWS — never one wrapping sentence (owner, 2026-09-10).
+            🔴 WHAT WAS WRONG, because it is not obvious from reading the old line. It was a single
+            `inline-flex` <p> holding an icon and the sentence "Check in at the door to earn +25
+            Zaps". A flex row lays the icon and the text out as two ITEMS, so when the sentence ran
+            out of width it wrapped INSIDE its own item and the icon stayed vertically centred beside
+            a two-line block — stranded at the far left of the box with a gap across to the text.
+            That is the header "getting split up": not a layout that wrapped, a layout that orphaned.
 
-      {/* The reward, printed under whatever the box is currently doing, and only while it is worth
-          printing. This is the line that used to float in the identity region promising Zaps on
-          events whose host had check-in switched off. */}
-      {!checkedIn && zaps > 0 && (
-        <p className="mt-1 inline-flex items-center justify-end gap-1.5 text-meta text-muted">
-          <Zap className="h-3.5 w-3.5 shrink-0 text-primary" />
-          {state.kind === 'countdown' ? `Check in at the door to earn +${zaps} Zaps` : `Earn +${zaps} Zaps`}
-        </p>
-      )}
+            So each fact is now its own row, `whitespace-nowrap` so a row can never wrap internally,
+            and the rows stack in a column that sizes to its widest child. The box still shrinks and
+            grows with the column it sits in; what it will not do is come apart. */}
+        {!checkedIn && zaps > 0 && (
+          /* Left-aligned INSIDE its own column so the two icons stack under one another; the column
+             as a whole still sits at the right-hand end of the row. */
+          <div className="flex shrink-0 flex-col items-start gap-1 text-left text-meta text-muted">
+            {/* 🔴 BOTH ROWS, ALWAYS — including the `open` state (owner, 2026-09-10). An earlier pass
+                hid the door row there, reasoning that the button directly above already says Check
+                in. That reasoning treated the rows as two independent labels. They are not: this is
+                ONE two-part sentence broken across two lines, and "Earn 25 Zaps" on its own is a
+                fragment with nothing to attach to. Dropping either half is dropping half a sentence,
+                so the pair travels together in every state that prints it. */}
+            <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
+              <QrCode aria-hidden className="h-3.5 w-3.5 shrink-0 text-subtle" />
+              Check in at the door
+            </span>
+            <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
+              <Zap aria-hidden className="h-3.5 w-3.5 shrink-0 text-primary" />
+              Earn {zaps} Zaps
+            </span>
+          </div>
+        )}
+      </div>
 
       {/* THE HOST'S DOOR NOTE, carried over from the retired `event-checkin` block (ADR-1309). It
           is shown only while there is a door to walk through, which is the same window the block
@@ -149,7 +203,7 @@ export function EventCheckInSurface({
           right-ragged prose is hard to read. */}
       {doorNote && state.kind !== 'countdown' && (
         <div className="mt-2 border-t border-border pt-2 text-left">
-          <p className="text-meta font-semibold uppercase tracking-wide text-subtle">{SPECIAL_INSTRUCTIONS_LABEL}</p>
+          <p className="eyebrow text-subtle">{SPECIAL_INSTRUCTIONS_LABEL}</p>
           <p className="mt-0.5 whitespace-pre-line text-meta text-text">{doorNote}</p>
         </div>
       )}
