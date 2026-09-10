@@ -50,10 +50,16 @@ export const DEFAULT_MAX_DATES = 12
 /** Occurrences of a series that get their own indexed URL (the rest stay live but noindex). */
 export const DEFAULT_INDEXED_OCCURRENCES = 2
 
-/** The cadences that make a row a series anchor (ADR-007). ONE predicate for the whole repo.
- *  `recurrence_type` is `text NOT NULL DEFAULT 'none'`, so a one-off's value is the TRUTHY string
- *  'none', never null — anything testing `!row.recurrence_type` is wrong. */
-export const CADENCES: ReadonlySet<string> = new Set(['daily', 'weekly', 'monthly'])
+/** The cadences that make a row a series anchor (ADR-007, widened by ADR-1299). ONE predicate for
+ *  the whole repo. `recurrence_type` is `text NOT NULL DEFAULT 'none'`, so a one-off's value is the
+ *  TRUTHY string 'none', never null — anything testing `!row.recurrence_type` is wrong.
+ *
+ *  ⚠️ THIS IS THE COARSE COLUMN, NOT THE RULE. Since ADR-1299 the cadence is a mirror of the FREQ
+ *  of `events.recurrence_rule`, kept in step by the writers, and it is what every folding read,
+ *  the occurrence cron's anchor filter, the partial index and the child-row DB CHECK still key on.
+ *  It answers "is this a series, and roughly how often"; anything that needs to know WHICH dates
+ *  reads the rule through lib/events/repeat-rule.ts. */
+export const CADENCES: ReadonlySet<string> = new Set(['daily', 'weekly', 'monthly', 'yearly'])
 
 export function isSeriesCadence(value: string | null | undefined): boolean {
   return typeof value === 'string' && CADENCES.has(value)

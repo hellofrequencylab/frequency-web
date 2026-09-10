@@ -32,9 +32,20 @@ import { computeSeriesDayKeys } from '@/lib/events/calendar-repeats'
 // Fixtures are chosen to hit every seam the maths has: a 31st anchor across short months, Feb 29
 // in a leap and a non-leap year, a December anchor crossing the year, weekly runs across the
 // spring-forward and fall-back Sundays of America/Los_Angeles and Europe/London, a daily run across
-// a DST change, `until` bounds that land exactly ON an occurrence, and millisecond precision. The
-// model has no weekday-ordinal rule ("second Tuesday"), so there is nothing of that shape to pin;
-// if one is ever added it belongs in this table on the day it lands.
+// a DST change, `until` bounds that land exactly ON an occurrence, and millisecond precision.
+//
+// ── 2026-09-10: THE THREE COPIES ARE ONE ENGINE NOW, AND THE TABLE GREW THE SHAPE IT ASKED FOR ──
+// This header used to end: "The model has no weekday-ordinal rule ('second Tuesday'), so there is
+// nothing of that shape to pin; if one is ever added it belongs in this table on the day it lands."
+// One landed (ADR-1299), and it is in the table below.
+//
+// The three private copies also went: all three modules delegate to lib/events/repeat-rule.ts. That
+// makes agreement structural rather than coincidental, and it does NOT make this gate redundant —
+// it changes what it guards. It still proves the three PUBLIC seams answer identically, which is
+// the property every caller actually depends on and which a delegation can break on its own
+// (a bound applied on one side and not another, an anchor included here and excluded there, a day
+// key taken from the wrong end of an instant). LIVE-154 was exactly that class of bug and involved
+// no arithmetic at all. And if a fourth copy is ever pasted back in, this is still what notices.
 //
 // The whole table runs THREE times, under UTC, America/Los_Angeles and Europe/London, because the
 // storage convention (lib/time/zone.ts) keeps a series' wall-clock as UTC PARTS and the maths must
@@ -50,6 +61,11 @@ type Fixture = {
   name: string
   startsAt: string
   type: RecurrenceType
+  /** The RRULE value on `events.recurrence_rule`, for a fixture that pins a rule the coarse cadence
+   *  cannot express. Absent means the row carries only its legacy cadence, which is what every event
+   *  written before ADR-1299 has — so the fixtures without one are still testing the OLD model, on
+   *  purpose: that is what production holds. */
+  rule?: string
   until: string | null
   /** Inclusive upper bound handed to the write side (the materialiser's horizon). */
   bound: string
@@ -259,6 +275,115 @@ const FIXTURES: Fixture[] = [
     bound: '2027-04-30T04:00:00.000Z',
     expect: ['2027-02-28T04:00:00.000Z', '2027-03-31T04:00:00.000Z', '2027-04-30T04:00:00.000Z'],
   },
+
+  // ── THE RULE FIXTURES (ADR-1299) — the shapes the four-value enum could not say ────────────────
+  // Each carries the coarse mirror its writers would have stamped beside the rule, exactly as a row
+  // in the database does, so these also prove the mirror is consulted only when the rule is absent.
+  {
+    name: 'every other Wednesday (INTERVAL=2) skips the alternate weeks the enum would have minted',
+    startsAt: '2026-09-16T10:00:00.000Z', // a Wednesday
+    type: 'weekly',
+    rule: 'FREQ=WEEKLY;INTERVAL=2;BYDAY=WE',
+    until: null,
+    bound: '2026-11-25T10:00:00.000Z',
+    expect: [
+      '2026-09-30T10:00:00.000Z',
+      '2026-10-14T10:00:00.000Z',
+      '2026-10-28T10:00:00.000Z',
+      '2026-11-11T10:00:00.000Z',
+      '2026-11-25T10:00:00.000Z',
+    ],
+  },
+  {
+    name: 'the third Thursday of the month walks the ordinal, not a fixed date',
+    startsAt: '2026-09-17T19:00:00.000Z', // the third Thursday of September 2026
+    type: 'monthly',
+    rule: 'FREQ=MONTHLY;BYDAY=TH;BYSETPOS=3',
+    until: null,
+    bound: '2027-02-28T19:00:00.000Z',
+    expect: [
+      '2026-10-15T19:00:00.000Z',
+      '2026-11-19T19:00:00.000Z',
+      '2026-12-17T19:00:00.000Z',
+      '2027-01-21T19:00:00.000Z',
+      '2027-02-18T19:00:00.000Z',
+    ],
+  },
+  {
+    name: 'the LAST Friday of the month, which is a different date from the fourth in five of these months',
+    startsAt: '2026-09-25T18:00:00.000Z',
+    type: 'monthly',
+    rule: 'FREQ=MONTHLY;BYDAY=FR;BYSETPOS=-1',
+    until: null,
+    bound: '2027-01-29T18:00:00.000Z',
+    expect: [
+      '2026-10-30T18:00:00.000Z',
+      '2026-11-27T18:00:00.000Z',
+      '2026-12-25T18:00:00.000Z',
+      '2027-01-29T18:00:00.000Z',
+    ],
+  },
+  {
+    name: 'every weekday lands five times a week and never on a weekend, across a month boundary',
+    startsAt: '2026-09-28T08:00:00.000Z', // a Monday
+    type: 'weekly',
+    rule: 'FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR',
+    until: null,
+    bound: '2026-10-06T08:00:00.000Z',
+    expect: [
+      '2026-09-29T08:00:00.000Z',
+      '2026-09-30T08:00:00.000Z',
+      '2026-10-01T08:00:00.000Z',
+      '2026-10-02T08:00:00.000Z',
+      '2026-10-05T08:00:00.000Z',
+      '2026-10-06T08:00:00.000Z',
+    ],
+  },
+  {
+    name: 'COUNT bounds the series including the anchor, so a six-week course mints five more dates',
+    startsAt: '2026-10-07T17:30:00.000Z',
+    type: 'weekly',
+    rule: 'FREQ=WEEKLY;BYDAY=WE;COUNT=6',
+    until: null,
+    bound: '2027-06-01T17:30:00.000Z',
+    expect: [
+      '2026-10-14T17:30:00.000Z',
+      '2026-10-21T17:30:00.000Z',
+      '2026-10-28T17:30:00.000Z',
+      '2026-11-04T17:30:00.000Z',
+      '2026-11-11T17:30:00.000Z',
+    ],
+  },
+  {
+    name: 'a weekly rule across the US spring-forward Sunday keeps its wall clock, like the enum fixtures',
+    startsAt: '2027-03-07T02:30:00.000Z',
+    type: 'weekly',
+    rule: 'FREQ=WEEKLY;INTERVAL=2;BYDAY=SU',
+    until: null,
+    bound: '2027-05-02T02:30:00.000Z',
+    expect: [
+      '2027-03-21T02:30:00.000Z',
+      '2027-04-04T02:30:00.000Z',
+      '2027-04-18T02:30:00.000Z',
+      '2027-05-02T02:30:00.000Z',
+    ],
+  },
+  {
+    name: 'an UNREADABLE rule falls back to the coarse cadence rather than half-honouring itself',
+    startsAt: '2026-09-16T10:00:00.000Z',
+    type: 'weekly',
+    rule: 'FREQ=FORTNIGHTLY;EVERY=2',
+    until: null,
+    bound: '2026-10-14T10:00:00.000Z',
+    // Plain weekly on the anchor's own weekday: what `recurrence_type` says, which is the safe
+    // answer when the rule cannot be trusted. All three seams must agree on THAT, not each guess.
+    expect: [
+      '2026-09-23T10:00:00.000Z',
+      '2026-09-30T10:00:00.000Z',
+      '2026-10-07T10:00:00.000Z',
+      '2026-10-14T10:00:00.000Z',
+    ],
+  },
 ]
 
 const iso = (d: Date) => d.toISOString()
@@ -267,7 +392,7 @@ const dayKey = (s: string) => s.slice(0, 10)
 /** The write side: every occurrence after the anchor, up to and including `bound`. */
 function writeSide(f: Fixture): string[] {
   return expandOccurrenceInstants(
-    { starts_at: f.startsAt, recurrence_type: f.type, recurrence_until: f.until },
+    { starts_at: f.startsAt, recurrence_type: f.type, recurrence_until: f.until, recurrence_rule: f.rule ?? null },
     new Date(f.bound),
   ).map(iso)
 }
@@ -276,7 +401,12 @@ function writeSide(f: Fixture): string[] {
  *  series is reconstructed one `nextOccurrence` call at a time and the anchor (step 0) is excluded
  *  exactly as the write side excludes it. */
 function readSide(f: Fixture): string[] {
-  const anchor = { startsAt: f.startsAt, recurrenceType: f.type, recurrenceUntil: f.until }
+  const anchor = {
+    startsAt: f.startsAt,
+    recurrenceType: f.type,
+    recurrenceUntil: f.until,
+    recurrenceRule: f.rule ?? null,
+  }
   const limit = new Date(f.bound).getTime()
   const out: string[] = []
   let now = new Date(new Date(f.startsAt).getTime() + 1)
@@ -294,7 +424,7 @@ function readSide(f: Fixture): string[] {
  *  the bound's day. */
 function calendarSide(f: Fixture): string[] {
   return computeSeriesDayKeys(
-    { starts_at: f.startsAt, recurrence_type: f.type, recurrence_until: f.until },
+    { starts_at: f.startsAt, recurrence_type: f.type, recurrence_until: f.until, recurrence_rule: f.rule ?? null },
     { afterDayKey: dayKey(new Date(f.startsAt).toISOString()), throughDayKey: dayKey(new Date(f.bound).toISOString()) },
   )
 }

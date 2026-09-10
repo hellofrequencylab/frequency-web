@@ -318,10 +318,12 @@ describe('seriesDates + fetch sizing + predicates', () => {
     expect([3, 6, 24, 40, 0, 200].map(seriesFetchLimit)).toEqual([30, 60, 240, 240, 10, SERIES_FETCH_CEILING])
   })
 
-  it('35. isSeriesCadence accepts only the three real cadences', () => {
-    expect(['daily', 'weekly', 'monthly'].every(isSeriesCadence)).toBe(true)
+  it('35. isSeriesCadence accepts only the real cadences', () => {
+    // 'yearly' joined the three original cadences with the rule column (ADR-1299): it is the coarse
+    // mirror of FREQ=YEARLY, and the DB CHECK on `events.recurrence_type` admits it.
+    expect(['daily', 'weekly', 'monthly', 'yearly'].every(isSeriesCadence)).toBe(true)
     expect([null, undefined, '', 'none', 'fortnightly'].some(isSeriesCadence)).toBe(false)
-    expect(CADENCES.size).toBe(3)
+    expect(CADENCES.size).toBe(4)
   })
 
   it('isSeriesAnchor: a cadence with no parent; a child is never an anchor', () => {

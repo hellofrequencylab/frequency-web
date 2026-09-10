@@ -138,15 +138,15 @@
     },
     "app/events/[slug]/event.ics/route.ts": {
       "verdict": "model-gated",
-      "reason": "Unauthenticated .ics export by design (SEC-9): the link is the share. It cannot leak more than the public event page because a draft / private / circle_only / cancelled event is MASKED in-handler — generic title, no venue, no description, STATUS only. 🔴 RE-READ 2026-08-25 AND THE VERDICT NEEDED A FIX TO KEEP HOLDING: masking covered draft/private/cancelled and said nothing about hide_address, so a PUBLISHED PUBLIC event whose host had switched the address off was exporting its full street here — 18 such events on production, and an .ics carries the venue in its own LOCATION field where no page-level redaction reaches it (SCAN-209). The handler now routes the venue through publicVisibleLocation(), which returns the city line for a hidden address. The claim above is true again, and now says less than it used to promise: this route publishes no more than the public page, INCLUDING the address the host chose to hide.",
-      "checked": "2026-08-25",
-      "digest": "fb66616630309a91"
+      "reason": "Unauthenticated .ics export by design (SEC-9): the link is the share. It cannot leak more than the public event page because a draft / private / circle_only / cancelled event is MASKED in-handler — generic title, no venue, no description, STATUS only. 🔴 RE-READ 2026-08-25 AND THE VERDICT NEEDED A FIX TO KEEP HOLDING: masking covered draft/private/cancelled and said nothing about hide_address, so a PUBLISHED PUBLIC event whose host had switched the address off was exporting its full street here — 18 such events on production, and an .ics carries the venue in its own LOCATION field where no page-level redaction reaches it (SCAN-209). The handler now routes the venue through publicVisibleLocation(), which returns the city line for a hidden address. The claim above is true again, and now says less than it used to promise: this route publishes no more than the public page, INCLUDING the address the host chose to hide. 🔁 RE-READ 2026-09-10 (ADR-1299, the repeat rule): the handler now selects events.recurrence_rule and builds its RRULE from the whole row (rruleForRepeat) instead of the coarse cadence alone. No gate moved. The masking branch is byte-identical, the venue still goes through publicVisibleLocation(), and the cadence is still emitted ONLY when !masked — a rule is the same class of shape metadata as the recurrence_type it replaces in that expression, and the public event page prints it in words on the same row. Verdict holds.",
+      "checked": "2026-09-10",
+      "digest": "ec2c692f36a86e2a"
     },
     "app/events/calendar.ics/route.ts": {
       "verdict": "model-gated",
-      "reason": "Master public calendar feed (EC3, ADR-800). Calendar apps poll with no cookie. public_calendar_feed() takes no arguments and self-gates entirely in-function (published + PUBLIC only, non-cancelled, upcoming, network-visible active spaces), so the route has no way to widen it.",
-      "checked": "2026-08-17",
-      "digest": "3e5b4ff80618b8ff"
+      "reason": "Master public calendar feed (EC3, ADR-800). Calendar apps poll with no cookie. public_calendar_feed() takes no arguments and self-gates entirely in-function (published + PUBLIC only, non-cancelled, upcoming, network-visible active spaces), so the route has no way to widen it. 🔁 RE-READ 2026-09-10 (ADR-1299, the repeat rule): the row type gained recurrence_rule, which public_calendar_feed now projects and planCalendarFeed builds the VEVENT's RRULE from. No gate moved — this route reads only what the RPC returns, and the migration that added the column recreates that function with its body verbatim (the hidden-address redaction included, re-asserted in the migration itself) and re-applies the service-role-only revoke that a drop/create resets. A cadence is the same class of shape metadata as the recurrence_type beside it. Verdict holds.",
+      "checked": "2026-09-10",
+      "digest": "7c73e85587ebcd3c"
     },
     "app/events/calendar/[token]/route.ts": {
       "verdict": "token-credential",
@@ -180,9 +180,9 @@
     },
     "app/spaces/[slug]/calendar.ics/route.ts": {
       "verdict": "model-gated",
-      "reason": "Public per-Space ICS feed (EC1, ADR-800). The handler refuses a private or suspended space BEFORE reading events, then hands the space_id to space_public_calendar_feed, which returns only published, public/unlisted, non-cancelled events.",
-      "checked": "2026-08-17",
-      "digest": "73c80bfdd12fd0b4"
+      "reason": "Public per-Space ICS feed (EC1, ADR-800). The handler refuses a private or suspended space BEFORE reading events, then hands the space_id to space_public_calendar_feed, which returns only published, public/unlisted, non-cancelled events. 🔁 RE-READ 2026-09-10 (ADR-1299, the repeat rule): the row type gained recurrence_rule, which the feed RPC now projects and planCalendarFeed builds the VEVENT's RRULE from. No gate moved — the private/suspended refusal still runs BEFORE any event read, and the RPC's own WHERE clauses are unchanged (the migration that added the column recreates both feed functions with their bodies verbatim and re-applies the service-role-only revoke, which a drop/create resets). A cadence is the same class of shape metadata as the recurrence_type beside it, and the public event page prints it in words. Verdict holds.",
+      "checked": "2026-09-10",
+      "digest": "d1150c10ae04fa75"
     }
   }
 }

@@ -14,7 +14,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { publicVisibleLocation } from '@/lib/events/visible-location'
-import { buildVevent, computeFeedExdates, icsEventInstants, icsLocalWallTimes, renderCalendar, rruleForRecurrence } from '@/lib/events/ics'
+import { buildVevent, computeFeedExdates, icsEventInstants, icsLocalWallTimes, renderCalendar, rruleForRepeat } from '@/lib/events/ics'
 import { eventInstant, resolveZone } from '@/lib/time/zone'
 
 export const dynamic = 'force-dynamic'
@@ -40,6 +40,7 @@ type EventRow = {
   time_zone:         string | null
   recurrence_type:   string | null
   recurrence_until:  string | null
+  recurrence_rule:   string | null
   parent_event_id:   string | null
 }
 
@@ -52,7 +53,7 @@ export async function GET(
 
   const { data: rawEvent } = await admin
     .from('events')
-    .select('id, title, description, location, hide_address, venue_name, street, city, region, starts_at, ends_at, slug, is_cancelled, status, visibility, time_zone, recurrence_type, recurrence_until, parent_event_id')
+    .select('id, title, description, location, hide_address, venue_name, street, city, region, starts_at, ends_at, slug, is_cancelled, status, visibility, time_zone, recurrence_type, recurrence_until, recurrence_rule, parent_event_id')
     .eq('slug', slug)
     .maybeSingle()
 
@@ -76,10 +77,12 @@ export async function GET(
   // private/draft/cancelled event leaks nothing extra, matching the title/venue masking above). The
   // anchor's stored day-of-month drives the monthly short-month idiom (a day-31 series must not skip
   // February); UNTIL stays the TRUE UTC instant, as RFC 5545 requires whenever DTSTART is zoned.
+  // The whole ROW goes to `rruleForRepeat` (ADR-1299) so an advanced rule — every other Wednesday,
+  // the third Thursday — exports as itself rather than flattening to its coarse cadence.
   const isRecurringAnchor = ev.parent_event_id == null && (ev.recurrence_type ?? 'none') !== 'none'
   const untilInstant = ev.recurrence_until ? eventInstant(ev.recurrence_until, ev.time_zone) : null
   const rrule = !masked && isRecurringAnchor
-    ? rruleForRecurrence(ev.recurrence_type, untilInstant, new Date(ev.starts_at).getUTCDate())
+    ? rruleForRepeat(ev, untilInstant, new Date(ev.starts_at).getUTCDate())
     : null
 
   // starts_at/ends_at store the event's wall-clock as UTC PARTS. A recurring series (rrule set)

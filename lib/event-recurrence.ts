@@ -9,6 +9,7 @@
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createHash } from 'crypto'
+import { expandRepeat, repeatFor } from '@/lib/events/repeat-rule'
 
 function sanitizeForLog(value: unknown): string {
   return String(value).replace(/[\r\n]+/g, '')
@@ -18,7 +19,7 @@ function logToken(value: unknown): string {
   return createHash('sha256').update(String(value)).digest('hex').slice(0, 16)
 }
 
-export type RecurrenceType = 'none' | 'daily' | 'weekly' | 'monthly'
+export type RecurrenceType = 'none' | 'daily' | 'weekly' | 'monthly' | 'yearly'
 
 export const HORIZON_DAYS = 60
 
@@ -35,6 +36,10 @@ type Anchor = {
   slug:             string
   recurrence_type:  RecurrenceType
   recurrence_until: string | null
+  /** The RRULE value (ADR-1299). Optional and nullable: it is null on every row written before it,
+   *  which is what makes `repeatFor`'s fall back to the coarse cadence the normal path rather than
+   *  the exception, and absent on any caller assembling an anchor without it. */
+  recurrence_rule?: string | null
   is_cancelled:     boolean | null
   removed_at:       string | null
 } & Partial<Record<InheritedColumn, unknown>>
@@ -56,6 +61,8 @@ type Anchor = {
 //
 // DELIBERATELY NOT inherited, each for a reason:
 //   • parent_event_id / recurrence_* / slug / starts_at / ends_at — the occurrence's own identity.
+//     (`recurrence_rule` is in that set: a materialised occurrence never itself repeats, and the DB
+//     CHECK that says so is written against `recurrence_type`, which occurrenceRow pins to 'none'.)
 //   • claim_token / claimed_at        — a claim link is one-per-event by construction.
 //   • cancelled_* / removed_*         — per-occurrence lifecycle; a cancelled anchor is skipped.
 //   • mux_stream_id / mux_playback_id — a live stream belongs to one broadcast.
@@ -124,6 +131,7 @@ const ANCHOR_SELECT = [
   'slug',
   'recurrence_type',
   'recurrence_until',
+  'recurrence_rule',
   'is_cancelled',
   'removed_at',
   ...INHERITED_COLUMNS,
@@ -159,6 +167,7 @@ export function occurrenceRow(
   // A materialised occurrence never itself recurs (a DB CHECK enforces it).
   row.recurrence_type = 'none'
   row.recurrence_until = null
+  row.recurrence_rule = null
 
   return row
 }
@@ -248,81 +257,50 @@ export function anchorIsDormant(anchor: Pick<Anchor, 'is_cancelled' | 'removed_a
   return !!anchor.is_cancelled || anchor.removed_at != null
 }
 
-// Days in a given UTC month (month is 0-indexed; carry handled by the caller).
-function daysInUTCMonth(year: number, month: number): number {
-  // Day 0 of the next month is the last day of `month`.
-  return new Date(Date.UTC(year, month + 1, 0)).getUTCDate()
-}
-
-// The occurrence start for an anchor at recurrence step `step` (step 1 = the first
-// occurrence after the anchor). Daily/weekly are simple day arithmetic; monthly
-// counts whole months from the series start and CLAMPS the day to the target
-// month's length, so a day-29/30/31 anchor never overflows (Jan 31 lands on
-// Feb 28/29, then Mar 31, Apr 30…, not Mar 3). The clamp source is always the
-// ORIGINAL anchor day, computed from the series start each time, so a short month
-// never permanently shortens later occurrences.
-function occurrenceAt(start: Date, type: RecurrenceType, step: number): Date {
-  switch (type) {
-    case 'daily': {
-      const d = new Date(start)
-      d.setUTCDate(d.getUTCDate() + step)
-      return d
-    }
-    case 'weekly': {
-      const d = new Date(start)
-      d.setUTCDate(d.getUTCDate() + step * 7)
-      return d
-    }
-    case 'monthly': {
-      const originalDay = start.getUTCDate()
-      const totalMonths = start.getUTCMonth() + step
-      const year = start.getUTCFullYear() + Math.floor(totalMonths / 12)
-      const month = ((totalMonths % 12) + 12) % 12
-      const day = Math.min(originalDay, daysInUTCMonth(year, month))
-      return new Date(Date.UTC(
-        year, month, day,
-        start.getUTCHours(), start.getUTCMinutes(),
-        start.getUTCSeconds(), start.getUTCMilliseconds(),
-      ))
-    }
-    case 'none':
-    default:
-      return new Date(start)
-  }
-}
+// ── THE STEPPING LIVES IN ONE PLACE NOW (ADR-1299) ──────────────────────────────────────────────
+//
+// This module used to carry its own `occurrenceAt` + `daysInUTCMonth`, a deliberate copy of the
+// same maths in lib/events/recurrence.ts (the read side) and lib/events/calendar-repeats.ts (the
+// calendar strip), with lib/events/recurrence-parity.test.ts standing between the three to notice
+// when they disagreed. All three delegate to lib/events/repeat-rule.ts now.
+//
+// That is not tidying: it is what makes an advanced rule SAFE. The write side is the one that mints
+// real `events` rows, so a rule the expander understood and a card did not would put a gathering on
+// the calendar on a date the page announces differently — the exact class of disagreement the
+// parity gate was written for, except that with a rule the enum cannot express the read side would
+// have had no way to be right.
+//
+// The clamp (a monthly series anchored on the 31st landing on Feb 28 rather than skipping February)
+// moved with it, unchanged, and the parity fixtures still pin it across leap years.
 
 // Expand an anchor's occurrence start times (wall-clock-as-UTC-parts, EXCLUDING the anchor itself) up to
 // an EXPLICIT upper-bound instant (inclusive), stopping at recurrence_until if set. Pure and
 // Date.now()-independent — the seam computeOccurrenceDates (horizon = now + N days) and the .ics feed
 // EXDATE helper (bound = the materialization horizon) both delegate here so the series math lives once.
 export function expandOccurrenceInstants(
-  anchor: Pick<Anchor, 'starts_at' | 'recurrence_type' | 'recurrence_until'>,
+  anchor: Pick<Anchor, 'starts_at' | 'recurrence_type' | 'recurrence_until' | 'recurrence_rule'>,
   untilInstant: Date,
 ): Date[] {
-  if (anchor.recurrence_type === 'none') return []
-
-  const start = new Date(anchor.starts_at)
-  const limit = untilInstant.getTime()
+  const rule = repeatFor({
+    starts_at: anchor.starts_at,
+    recurrence_type: anchor.recurrence_type,
+    recurrence_rule: anchor.recurrence_rule ?? null,
+  })
+  if (!rule) return []
   const seriesEnd = anchor.recurrence_until ? new Date(anchor.recurrence_until) : null
-
-  const dates: Date[] = []
-  // Each occurrence is computed FROM the series start (not the previous cursor), so a
-  // clamped short-month day can never accumulate drift across the series.
-  for (let step = 1; step <= 365; step++) {
-    const cursor = occurrenceAt(start, anchor.recurrence_type, step)
-    if (cursor.getTime() > limit) break
-    if (seriesEnd && cursor > seriesEnd) break
-    dates.push(cursor)
-  }
-
-  return dates
+  return expandRepeat(anchor.starts_at, rule, {
+    through: untilInstant,
+    until: seriesEnd,
+    // The anchor is already a row in the database; this function mints the ones that are not.
+    includeAnchor: false,
+  })
 }
 
 // Compute occurrence start times for an anchor up to the window edge.
 // Excludes the anchor itself (it's already in the DB). Stops at
 // recurrence_until if set.
 export function computeOccurrenceDates(
-  anchor: Pick<Anchor, 'starts_at' | 'recurrence_type' | 'recurrence_until'>,
+  anchor: Pick<Anchor, 'starts_at' | 'recurrence_type' | 'recurrence_until' | 'recurrence_rule'>,
   horizonDays: number = HORIZON_DAYS,
 ): Date[] {
   if (anchor.recurrence_type === 'none') return []

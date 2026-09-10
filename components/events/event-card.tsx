@@ -4,7 +4,7 @@ import { EntityCard } from '@/components/cards/entity-card'
 import { DemoBadge } from '@/components/ui/demo-badge'
 import { FeaturedBadge } from '@/components/ui/featured-badge'
 import { formatWhen, type EventRow } from '@/app/(main)/events/index-data'
-import { recurrenceLabel, type RecurrenceType } from '@/lib/events/recurrence'
+import { recurrenceLineFor } from '@/lib/events/recurrence'
 import { eventCoverFocusStyle } from '@/lib/events/cover-focus'
 
 function eventDate(iso: string) {
@@ -84,11 +84,12 @@ export function EventCard({
   blurb?: string
 }) {
   const warm = <WarmBadge capacity={event.capacity} going={going} />
-  // Recurrence line: an anchor names its cadence ("Repeats weekly"); a materialised
+  // Recurrence line: an anchor names its cadence, from its RULE where the read carried one
+  // ("Every 2 weeks on Wednesday", ADR-1299) and from its legacy cadence otherwise; a materialised
   // occurrence (parent_event_id set, cadence 'none' on the child) reads as part of a series.
   const repeatLabel =
     event.recurrence_type && event.recurrence_type !== 'none'
-      ? recurrenceLabel(event.recurrence_type as RecurrenceType)
+      ? recurrenceLineFor(event)
       : event.parent_event_id
         ? 'Part of a series'
         : null

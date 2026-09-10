@@ -38213,3 +38213,114 @@ from an empty success is a rollup nobody notices has stopped (the lesson of
 [ADR-1207](DECISIONS.md) and the density rollup's silent fortnight). `space_standing` is additive,
 idempotent and service-role only; until it is applied the score simply runs on four signals instead
 of six.
+
+---
+
+## ADR-1299: ACCEPTED — the event repeat becomes a bounded RFC 5545 RRULE, and the three copies of the maths become one engine (2026-09-10)
+
+**Context.** Events shipped in 2024 with a four-value cadence enum — `none / daily / weekly /
+monthly` ([ADR-007](DECISIONS.md)) — and its own migration wrote the exit down in advance:
+
+> "Enum, not RRULE. […] Can be promoted to RRULE later without losing data — just add a
+> `recurrence_rule` text column and keep `recurrence_type` as the simple path."
+> — `supabase/migrations/20240208000000_event_recurrence.sql`
+
+The owner asked for the promotion in the terms hosts had been asking for it: *"Repeating events need
+a smarter chooser so people can make advanced repeat options like bi weekly or every third
+thursday."* Neither is expressible in four values, and neither can be added as a fifth and sixth —
+"every other Wednesday" is an INTERVAL and "the third Thursday" is an ORDINAL, so the enum is the
+wrong shape rather than the wrong length.
+
+There was a second, quieter reason to do this now. The enum's stepping had been written out **three
+times** — the materialiser (`lib/event-recurrence.ts`), the read side (`lib/events/recurrence.ts`)
+and the calendar strip (`lib/events/calendar-repeats.ts`) — with `recurrence-parity.test.ts`
+standing between the copies to notice when they disagreed. That gate's own header named this
+decision's gap: *"The model has no weekday-ordinal rule ('second Tuesday'), so there is nothing of
+that shape to pin; if one is ever added it belongs in this table on the day it lands."*
+
+**Decision.**
+
+1. **One pure engine, `lib/events/repeat-rule.ts`**, over a bounded RFC 5545 subset: `FREQ`,
+   `INTERVAL`, `BYDAY`, `BYSETPOS`, `BYMONTHDAY`, `BYMONTH`, `COUNT`, and nothing else. Zero imports,
+   no clock: the client picker, the server actions, the cron materialiser and three read paths all
+   import it. **All three copies of the stepping were deleted** and now delegate here.
+
+   RFC 5545 rather than a shape of our own because the rule has to survive the round trip a calendar
+   entry makes: the `.ics` feeds already emit RRULE, and Google, Apple and Outlook read and write the
+   same grammar. The subset is bounded because every construct admitted has to be expandable by the
+   materialiser, describable in plain voice, and representable in the picker. **A rule outside the
+   subset is treated as ABSENT, never half-honoured** — expanding `FREQ=WEEKLY` when the host wrote
+   `FREQ=WEEKLY;INTERVAL=2` would put a gathering on the calendar on a day nothing happens.
+
+2. **`events.recurrence_rule` stores the pattern; `recurrence_type` stays the coarse mirror.** The
+   enum column is what the occurrence cron's anchor filter, `idx_events_recurring_anchors`, every
+   folding read and the child-row CHECK key on. It is DERIVED from the rule's `FREQ` by the writers
+   and is never posted independently, so the two cannot drift. It gained `'yearly'`.
+
+3. **🔴 `UNTIL` is NOT in the rule.** The series end stays `events.recurrence_until`, an indexed
+   `timestamptz`. [ADR-807](DECISIONS.md) pins it to the instant the RRULE `UNTIL` carries and the
+   published feeds ship that; the cron's live-anchor filter is a column comparison that cannot be a
+   substring match on text. `COUNT` has no column and therefore does live in the rule. The picker
+   carries the host's "ends on" date across one form post as a transport-only `;UNTIL=YYYYMMDD`,
+   which the server splits back out — one control owns the whole Repeats question, two columns own
+   the two facts.
+
+4. **The chooser follows where Google Calendar, Apple Calendar and Outlook converge**, and the
+   convergence is the finding:
+   - **One menu of DATE-DERIVED presets**, then "Custom" one tap away. "Weekly on Wednesday", "Every
+     2 weeks on Wednesday", "Monthly on the third Wednesday", "Annually on September 16" — computed
+     from the start the host already chose. This is the half that cannot be retrofitted onto a static
+     list: *Monthly* alone means "the 16th" to the software and "the third Wednesday" to the host,
+     and the only fix is to say which **in the option**.
+   - **A custom panel of three rows**: repeat every N units; the unit's own detail (weekday toggles
+     for weekly, by-date versus by-weekday for monthly and yearly); and the end rule.
+   - **An end rule with three arms**: never, on a date, after N times. "After N" is not a
+     convenience — for a six-week course the host knows the count and not the date.
+   - And one rule that is ours: **it prints the sentence back**. "Every 2 weeks on Wednesday, until
+     December 30" is how a host verifies what they built, and it doubles as the control group's
+     accessible description.
+
+5. **A `repeat` FIELD_KIND in the Studio kernel**, so the Spark, the review board and the settings
+   rail all derive the same control from one manifest line (`docs/STUDIO.md`). It replaced a `select`
+   over four values PLUS a separate "Repeats until" date, which could contradict each other once
+   edited apart.
+
+**The one departure from RFC 5545, and it is deliberate.** `BYMONTHDAY` **clamps** a short month
+where the spec **skips** it: a series on the 31st lands Jan 31 → Feb 28 → Mar 31 here, and Jan 31 →
+Mar 31 by the letter. The clamp is what this product has always done, production series depend on it,
+and skipping February is not what a host who picked "monthly on the 31st" meant. The `.ics` export
+translates it faithfully with the standard `BYMONTHDAY=28,29,30,31;BYSETPOS=-1` idiom, so a
+subscriber's calendar agrees with the page. The `BYSETPOS` weekday form has no such departure: "the
+fifth Monday" simply does not occur in a month that has four, and that IS what a host means — which
+is why the parser refuses `BYSETPOS=5` and the picker offers "last" instead.
+
+**No backfill, on purpose.** A NULL rule means "read the coarse cadence", which `repeatFor` does by
+resolving `'weekly'` to the anchor's own weekday and `'monthly'` to its own day-of-month **with the
+clamp**. Every existing series therefore keeps landing on exactly the dates it lands on today, and a
+backfill would be a write with no consequence and one chance to get the clamp wrong.
+
+**Consequences.** `recurrence-parity.test.ts` keeps running and its job changed rather than ended: it
+no longer guards three arithmetics against each other (there is one), it guards the three PUBLIC
+seams against each other — a bound applied on one side and not another, an anchor included here and
+excluded there, a day key taken from the wrong end of an instant. `LIVE-154` was exactly that class
+of bug and involved no arithmetic at all. Seven rule-shaped fixtures joined the table, as its header
+asked. The `.ics` routes now build their RRULE from the whole row, so a bi-weekly series stops
+exporting as weekly.
+
+**Applied to production 2026-09-10**, ledger repaired to the repo version per
+`supabase/migrations/README.md` (687 files ⇄ 687 rows, identical version checksum, the ADR-963
+bijection intact). Three things were verified against the live database rather than assumed:
+
+1. **The no-backfill claim holds on real rows.** Both live recurring anchors carry a NULL rule, and
+   the engine's legacy fallback reproduces their materialised child dates EXACTLY — 13 of 13 and 16
+   of 16, to the day. Nothing moved.
+2. **The feeds' lock survived the drop/create.** A dropped function takes its grants with it and a
+   fresh one is executable by `PUBLIC`, so a migration that recreates a locked function and says
+   nothing about grants re-opens it silently. `check:function-grants` caught exactly that on the
+   first draft of this file; both feeds now re-apply 20270304000000's revoke, and
+   `has_function_privilege` confirms `anon` and `authenticated` hold nothing while `service_role`
+   holds execute.
+3. **`lib/database.types.ts` matches.** The committed types are byte-identical to a fresh
+   `supabase gen types` against the migrated schema — zero diff across 17,955 lines.
+
+---
