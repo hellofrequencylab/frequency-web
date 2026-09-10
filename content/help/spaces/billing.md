@@ -17,11 +17,13 @@ and billing**. This page covers what you find there and how each kind of payment
 ## Money out, not money in
 
 Everything below is what your Space **pays**. What your Space **receives** is a different page:
-**Manage, then Get paid**. That is where you connect the account your money lands in, see which of
-your money paths can take payment today, and open your Stripe dashboard to change your bank details.
+**Manage, then Get paid**. That is where the owner connects the account your money lands in, where you
+see which of your money paths can take payment today, and where you open your Stripe dashboard to
+change your bank details. See [Get paid](/help/spaces/get-paid).
 
-The two are easy to mix up because both involve Stripe, so it is worth holding the difference:
-billing is your plan, and Get paid is your earnings. Setting up one does nothing to the other.
+The two are easy to mix up because both involve Stripe, so it is worth holding the difference: billing
+is your plan, and Get paid is your earnings. Setting up one does nothing to the other, and connecting a
+payout account is the owner's to do rather than an admin's.
 
 ## Where billing lives
 
