@@ -16,7 +16,12 @@ import { awardZapsForAction } from '@/lib/zaps'
 import { recordEngagementEvent } from '@/lib/engagement/events'
 import { track } from '@/lib/analytics/track'
 import { markVerifiedByAttendance } from '@/lib/verification/attendance'
-import { propagateAnchorEditsToOccurrences, generateOccurrencesForAnchor, type RecurrenceType } from '@/lib/event-recurrence'
+import {
+  propagateAnchorEditsToOccurrences,
+  generateOccurrencesForAnchor,
+  retireStaleOccurrences,
+  type RecurrenceType,
+} from '@/lib/event-recurrence'
 import { resolveSubmittedRepeat, validateRecurrenceUntil } from '@/lib/events/recurrence'
 import { resolveRegionScopeId } from '@/lib/events/event-drafts'
 import { listSpaceEventCreatorIds, journeyLinkPatch } from '@/lib/events/placement'
@@ -703,13 +708,21 @@ export async function updateEvent(eventId: string, formData: FormData): Promise<
     return fail('Could not save your changes. Please try again.')
   }
 
-  // If this anchor is (still) recurring, materialise the occurrence window for the
-  // current cadence right away so the change shows immediately (the daily cron is the
-  // backstop, and generateOccurrencesForAnchor is idempotent + dedupes by day).
-  if (isAnchor && recurrenceTypeEdit !== 'none') {
-    generateOccurrencesForAnchor(eventId).catch((e) =>
-      console.error('[updateEvent] occurrence generation:', e),
-    )
+  // RETIRE the dates the rule no longer produces, THEN materialise the ones it now does
+  // (ADR-1304). Both are best-effort and the anchor is already saved, so a failure in either must
+  // not report the save as failed; they are chained rather than fired in parallel so the log reads
+  // in the order the work happened.
+  //
+  // 🔴 RETIREMENT RUNS FOR ANY ANCHOR, GENERATION ONLY FOR A RECURRING ONE. Turning a series off is
+  // exactly the case where the future dates it already minted have to go, so gating the retirement
+  // on "still recurring" would leave the worst version of this bug in place. `retireStaleOccurrences`
+  // never touches a date a human is attached to, and never touches the past.
+  if (isAnchor) {
+    retireStaleOccurrences(eventId)
+      .then(() =>
+        recurrenceTypeEdit !== 'none' ? generateOccurrencesForAnchor(eventId) : 0,
+      )
+      .catch((e) => console.error('[updateEvent] occurrence reconciliation:', e))
   }
 
   // PROPAGATE the edit onto occurrences that already exist (ADR-884). generateOccurrencesForAnchor

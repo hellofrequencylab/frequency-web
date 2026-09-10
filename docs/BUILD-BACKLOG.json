@@ -54,7 +54,8 @@
           "name": "W0c · P2 — small cleanups worth doing whenever a lane is clear.",
           "ids": [
             "LIVE-215",
-            "HYG-075"
+            "HYG-075",
+            "LIVE-279"
           ]
         },
         {
@@ -11501,6 +11502,44 @@
         "kind": "cmd",
         "cmd": "node -e \"const fs=require('fs');const eng=fs.readFileSync('lib/events/repeat-rule.ts','utf8');const pk=fs.readFileSync('components/events/repeat-picker.tsx','utf8');const code=pk.replace(/\\\\/\\\\*[\\\\s\\\\S]*?\\\\*\\\\//g,'').replace(/(^|\\\\s)\\\\/\\\\/.*$/gm,'');const t='components/events/repeat-picker.render.test.tsx';process.exit(!/export function repeatPresets/.test(eng)&&!/export function matchRepeatPreset/.test(eng)&&!/repeatPresets|matchRepeatPreset/.test(code)&&fs.existsSync(t)&&fs.readFileSync(t,'utf8').includes(\\\"'Does not repeat', 'Daily', 'Weekly', 'Monthly', 'Yearly'\\\")?0:1)\"",
         "note": "The first three clauses measure the consequence in the tree: the two preset builders are gone from the engine and unreachable from the picker, comment-stripped so the picker's own header (which explains at length why they went) cannot satisfy the check it is describing. The fourth is the part a source scan cannot do — the owner reported what the MENU shows, and a control can emit perfect RRULEs through a menu nobody can read — so it pins that the render test exists and still asserts the exact five options, which is the claim the row is making."
+      }
+    },
+    {
+      "id": "LIVE-278",
+      "status": "done",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "lib/event-recurrence.ts",
+        "ref": "owner report on a changed series, 2026-09-10"
+      },
+      "title": "A changed repeat rule never took a date back, so an edited series kept every date the old rule made",
+      "detail": "Owner, 2026-09-10: \"We also need to edit any future events that have been created if an event in the chain changes. For instance, I changed Meld from weekly to bi weekly but it still shows all the repeating events that were configured originally.\"\n\n🔴 THE MATERIALISER IS ADDITIVE BY CONSTRUCTION. generateOccurrencesForAnchor dedupes by calendar day and upserts with ignoreDuplicates, so it can only ADD; propagateAnchorEditsToOccurrences (ADR-884) copies content and DELIBERATELY EXCLUDES starts_at, ends_at, slug, recurrence_type and recurrence_until, which are exactly the columns a rule change moves. Weekly to fortnightly minted the new dates ALONGSIDE the old ones; a shortened recurrence_until retired nothing past the new end; a series switched off left its future dates live forever. No code path anywhere took a date back.\n\nAND THE TWO WRITE PATHS DISAGREED, which is the sharper half. updateEvent (the /edit form) has materialised and propagated since ADR-884. updateEventSettings — the Manage/Studio settings rail, which is WHERE A HOST ACTUALLY CHANGES THE RULE — wrote recurrence_rule onto the anchor and did neither.\n\nTHE PRODUCTION READING, taken before writing any of it: Meld's anchor reads recurrence_type weekly, recurrence_rule NULL, 8 future children exactly 7 days apart, and across the whole events table 0 rows carry a rule while both live anchors are legacy-cadence only. So the bi-weekly change is NOT in the database — until ADR-1299 deployed there was no way to SAY \"every 2 weeks\", the coarse enum having four values. The report is two defects stacked; ADR-1299 closed the first, this closes the second.\n\nFIXED: retireStaleOccurrences(anchorId) expands the CURRENT rule and deletes the future children whose day it no longer produces, wired into both write paths and into the daily cron (the cron matters as much, because the drift it heals already exists and nobody will re-save every series carrying it). Three bounds: never the past; never a date a human is attached to (an RSVP, a ticket, an invited guest, a posted update makes it a gathering people committed to, and retiring one of those is a CANCELLATION with refunds behind it — counted and left live instead); and stand down, loudly, on a rule that expands to nothing, which is a rule this code could not read rather than a series with no dates. ADR-1304.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const lib=fs.readFileSync('lib/event-recurrence.ts','utf8');const fn=lib.slice(lib.indexOf('export async function retireStaleOccurrences'));const admin=fs.readFileSync('app/(main)/events/admin-actions.ts','utf8');const act=fs.readFileSync('app/(main)/events/actions.ts','utf8');const route=fs.readFileSync('app/api/cron/event-occurrences/route.ts','utf8');process.exit(/export function staleOccurrenceIds/.test(lib)&&fn.includes(\\\".in('id', removable)\\\")&&fn.includes(\\\".eq('parent_event_id', anchorId)\\\")&&/event_rsvps/.test(lib)&&/event_tickets/.test(lib)&&/stoodDown: true/.test(fn)&&/retireStaleOccurrences/.test(admin)&&/generateOccurrencesForAnchor/.test(admin)&&/propagateAnchorEditsToOccurrences/.test(admin)&&/retireStaleOccurrences\\\\(eventId\\\\)/.test(act)&&/const reconcile = opts.reconcile \\\\?\\\\? true/.test(lib)&&/occurrencesRetired: result.occurrencesRetired/.test(route)?0:1)\"",
+        "note": "Measures the consequence in every place that can produce it, not the row's title. The engine half: the pure arithmetic is exported (so it can be pinned away from a database, which lib/event-recurrence.test.ts does across the rule change, both time boundaries and the idempotent case), the DELETE is fenced to this anchor's own children, the attachment tables are consulted, and the stand-down arm exists. The wiring half is the part a unit test cannot reach: the SETTINGS RAIL — the path that did none of this, and the one the owner used — now calls all three, the /edit form retires by event id, and the cron reconciles by default and reports the count. A row that only checked the engine would pass on a tree where the rail was never wired, which is precisely the state that was reported."
+      }
+    },
+    {
+      "id": "LIVE-279",
+      "status": "open",
+      "priority": "P2",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/event-recurrence.ts",
+        "ref": "retireStaleOccurrences, the `kept` count"
+      },
+      "title": "A host is never told which dates a rule change left behind because people are attached to them",
+      "detail": "LIVE-278 retires the future dates a changed rule no longer produces, and REFUSES to retire one that somebody has RSVP'd to, bought a ticket for, been invited to, or posted an update on. That refusal is right: removing such a date is a cancellation, with refunds and notifications behind it, and lib/events/cancellation.ts owns that as a deliberate host action.\n\nWhat is missing is the TELLING. The kept dates stay on the page and in the series rail, which is the honest default — the people who signed up still see the gathering they signed up for — but the host who just moved the series from weekly to fortnightly gets no signal that three Wednesdays survived the change and are still taking RSVPs. The count exists (`RetireResult.kept`, logged by the cron as `occurrencesKept`); nothing renders it.\n\nTHE FIX IS A SURFACE, NOT AN ENGINE CHANGE. The settings rail already has the save result in hand, and the Manage hub already lists the series dates. The right shape is probably a line on the rail after a rule change (\"3 dates people already signed up for are still on the calendar. Cancel them?\") linking into the existing series-cancel flow, which re-uses cancelEventSeries rather than inventing a second way to end a date.\n\nP2 rather than P1: the data is correct either way and nobody is stranded. What is at risk is a host's picture of their own calendar.",
+      "verify": {
+        "kind": "grep-present",
+        "paths": [
+          "components/admin/modules/event-settings-module.tsx"
+        ],
+        "pattern": "occurrencesKept|keptBecauseAttached|still on the calendar",
+        "note": "PRESENT when the rail actually says it, which is what closes this row; absent today, so the probe fails and the row honestly reads open. It measures the consequence — a host being told — not the words in the row's title. A row closed by wiring the count into a different surface should re-point this at that file rather than widen the pattern."
       }
     }
   ]
