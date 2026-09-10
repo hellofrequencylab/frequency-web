@@ -65,7 +65,8 @@
             "LIVE-220",
             "LIVE-221",
             "LIVE-271",
-            "LIVE-272"
+            "LIVE-272",
+            "LIVE-273"
           ]
         },
         {
@@ -11414,6 +11415,25 @@
         "evidence": "components/admin/modules/event-header-controls.tsx passes a single width (1044) to posterBandAspect, so the control renders one frame. Confirmed by reading the call site on 2026-09-10, the day the preview was wired to the real band at all.",
         "checked": "2026-09-10"
       }
+    },
+    {
+      "id": "LIVE-273",
+      "title": "The SUPABASE_ACCESS_TOKEN expires 2026-12-09, and its failure reads as a database problem rather than a credential one",
+      "status": "open",
+      "priority": "P2",
+      "lane": "owner",
+      "size": "XS",
+      "source": {
+        "file": "docs/BUILD-BACKLOG.json",
+        "ref": "the 2026-09-10 outage"
+      },
+      "detail": "FOUND 2026-09-10 the hard way. check:migrations went red on every PR for five hours with:\n\n    🔴 check:migrations — the ledger comparison could not RUN:\n       ledger query HTTP 401 from the Supabase Management API. {\"message\":\"Unauthorized\"}\n\nThe cause was the SUPABASE_ACCESS_TOKEN repo secret expiring mid-session. main compared 686 ⇄ 686 successfully at 01:40Z; the next push 401'd at 02:24Z, before anything had touched the database. It reproduced identically on six runs across three branches, so it was never a flake. The owner minted a fresh scoped token on 2026-09-10 and the gate went green the same minute: 687 repo file(s) ⇄ 687 applied row(s).\n\n🔴 IT WILL HAPPEN AGAIN ON OR ABOUT 2026-12-09. Supabase's scoped-token dialog caps expiry at 90 DAYS - there is no \"never\" option - and 90 days was chosen. So this is not a defect to fix, it is a RENEWAL with a date, and the reason it earns a row is that the failure does not look like what it is: the message says \"ledger query\", the guard is named check:migrations, and the natural reading on the day is \"something is wrong with the migrations or the database\". Nothing in the repo says \"the credential has an expiry\". The first hour of the 2026-09-10 outage went into proving the 401 was NOT the PR's, which is exactly the hour this row exists to save.\n\nTHE FIX, about two minutes: mint a token at https://supabase.com/dashboard/account/tokens (Project scope, org hkveprznovcteywuczcv, project azsqfeonabsbmemvddqd = Frequency Community; Database + Project read permissions), then replace the SUPABASE_ACCESS_TOKEN secret at Settings → Secrets and variables → Actions. Verify before relying on it:\n\n    curl -s -o /dev/null -w '%{http_code}\\n' -X POST \\\n      -H \"Authorization: Bearer sbp_...\" -H \"Content-Type: application/json\" \\\n      -d '{\"query\":\"select 1\"}' \\\n      https://api.supabase.com/v1/projects/azsqfeonabsbmemvddqd/database/query\n\nBLAST RADIUS, wider than the one gate that shouts: the same secret arms the Supabase security and performance advisor diffs in .github/workflows/maintenance.yml. Those do not fail when it is dead - they SKIP, quietly, which is the ADR-970 shape. So an expired token costs a red check plus an advisory sweep that silently stops advising, and only the first of those is visible.\n\nWHY THIS IS A ROW AND NOT A GUARD: a probe cannot read a repo secret, and it cannot read the token's expiry date from the Supabase side either. What it CAN do is what this row's evidence does - carry the date. Re-read the expiry when renewing and move the date; if Supabase ever offers a longer or non-expiring option, take it and say so here.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "2026-09-10: rotated after a five-hour outage; check:migrations green the same minute (687 ⇄ 687, versions sha256 2889e24c…). New token is Project-scoped with a 90-day cap, the longest the dialog offers, so it dies on or about 2026-12-09. Closes when Supabase offers a longer-lived option for this use, or when the renewal is automated; until then it goes stale on purpose and the staleness IS the reminder.",
+        "checked": "2026-09-10"
+      },
+      "ownerAction": "config"
     }
   ]
 }
