@@ -87,7 +87,6 @@ const PLACEHOLDERS: Record<string, string> = {
 
 /** Standing guidance under a control. Also the surface's. */
 const HINTS: Record<string, string> = {
-  recurrenceUntil: 'Leave blank to repeat indefinitely.',
   hideAddress: 'People browsing see the city only. The venue, street, map pin, and directions show after they RSVP or get a ticket.',
   rsvpRequiresApproval:
     'Requests land in your approval queue instead of taking a spot straight away. A full event still sends approved people to the waitlist.',

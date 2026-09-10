@@ -5,6 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getEventCapabilities } from '@/lib/core/load-capabilities'
 import { EventForm, type EventFormInitial } from '../../new/event-form'
 import { pointFromGeog } from '@/lib/events/geo'
+import { formatRepeatDraft, repeatFor } from '@/lib/events/repeat-rule'
 import { CancelEventButton } from './cancel-event-button'
 import { EventEditorWindow } from '@/components/studio/event/event-editor-window'
 import { loadRootSpaceId } from '@/lib/spaces/store'
@@ -55,6 +56,7 @@ interface EventEditRow {
   gallery_image_paths: string[] | null
   recurrence_type: string | null
   recurrence_until: string | null
+  recurrence_rule: string | null
   price_cents: number | null
   /** PostGIS geog (EWKB hex or GeoJSON) — decoded to a point for the map prefill. */
   geog: unknown
@@ -87,7 +89,7 @@ export default async function EditEventPage({ params }: { params: Promise<{ slug
     .from('events')
     .select(
       'id, title, description, location, scope_id, scope_type, space_id, host_id, host_space_id, journey_id, starts_at, ends_at, capacity, visibility, category, ' +
-        'energy_tag, attendance_mode, online_url, venue_name, street, city, region, postal_code, country, is_cancelled, cover_image_path, gallery_image_paths, recurrence_type, recurrence_until, price_cents, geog',
+        'energy_tag, attendance_mode, online_url, venue_name, street, city, region, postal_code, country, is_cancelled, cover_image_path, gallery_image_paths, recurrence_type, recurrence_until, recurrence_rule, price_cents, geog',
     )
     .eq('slug', slug)
     .maybeSingle()
@@ -153,8 +155,16 @@ export default async function EditEventPage({ params }: { params: Promise<{ slug
     scopeId: ev.scope_id ?? '',
     startsAt: toInput(ev.starts_at),
     endsAt: toInput(ev.ends_at),
-    recurrenceType: (['daily', 'weekly', 'monthly'] as const).find((r) => r === ev.recurrence_type) ?? 'none',
-    recurrenceUntil: toDateInput(ev.recurrence_until),
+    // ONE value for the whole Repeats question (ADR-1299): the stored rule (or the one the legacy
+    // cadence means, resolved against the start) with the stored end joined on as `UNTIL=`.
+    recurrenceRule: formatRepeatDraft(
+      repeatFor({
+        starts_at: ev.starts_at,
+        recurrence_type: ev.recurrence_type,
+        recurrence_rule: ev.recurrence_rule,
+      }),
+      toDateInput(ev.recurrence_until) || null,
+    ),
     capacity: ev.capacity != null ? String(ev.capacity) : '',
     visibility: ev.visibility ?? 'circle_only',
     category: ev.category ?? 'gathering',

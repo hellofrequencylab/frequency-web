@@ -42,6 +42,7 @@ import { EVENT_MANIFEST } from '@/lib/studio/entities/event'
 import { railForm, type RailForm } from '@/lib/studio/kernel/edit-plan'
 import type { FieldDef, SectionDef } from '@/lib/studio/kernel/manifest'
 import { isoToWallClockInput } from '@/lib/events/datetime'
+import { formatRepeatDraft, repeatFor } from '@/lib/events/repeat-rule'
 import { readEventCheckInEnabled } from '@/lib/events/checkin-enabled'
 import { readEventMarketListed } from '@/lib/events/market-listing'
 
@@ -55,8 +56,7 @@ export const EVENT_SETTINGS_WRITES = [
   'description',
   'startsAt',
   'endsAt',
-  'recurrenceType',
-  'recurrenceUntil',
+  'recurrenceRule',
   'timeZone',
   'location',
   'attendanceMode',
@@ -107,8 +107,9 @@ export const EVENT_COLUMNS: Record<EventRailPath, string> = {
   description: 'description',
   startsAt: 'starts_at',
   endsAt: 'ends_at',
-  recurrenceType: 'recurrence_type',
-  recurrenceUntil: 'recurrence_until',
+  // ONE key for the whole Repeats question (ADR-1299). The action derives `recurrence_type` and
+  // splits `recurrence_until` back out of the posted rule, so neither is a form key any more.
+  recurrenceRule: 'recurrence_rule',
   timeZone: 'time_zone',
   location: 'location',
   attendanceMode: 'attendance_mode',
@@ -228,6 +229,25 @@ export function isoToDateInput(iso: unknown): string {
   return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`
 }
 
+/**
+ * The repeat picker's transport string for a stored row: the rule it carries (or the one its legacy
+ * cadence means, resolved against its start) plus the stored `recurrence_until` as an `UNTIL=` part.
+ *
+ * 🔴 THE JOIN HAPPENS HERE, ON THE WAY IN, because the control is ONE control. The two values live
+ * in two columns for good reasons (ADR-807 pins the end to a real timestamptz the occurrence cron
+ * filters on), and the picker owns both halves of the question, so something has to speak both
+ * dialects. It is this reader and its mirror in `updateEventSettings`, and nothing else.
+ */
+function repeatDraftFor(row: EventRailRow): string {
+  const rule = repeatFor({
+    starts_at: str(row.starts_at) || null,
+    recurrence_type: str(row.recurrence_type) || null,
+    recurrence_rule: str(row.recurrence_rule) || null,
+  })
+  if (!rule) return ''
+  return formatRepeatDraft(rule, isoToDateInput(row.recurrence_until) || null)
+}
+
 const str = (v: unknown) => (typeof v === 'string' ? v : '')
 const bool = (v: unknown) => String(v === true)
 
@@ -239,7 +259,8 @@ const bool = (v: unknown) => String(v === true)
 const READERS: Partial<Record<EventSettingsPath, (row: EventRailRow) => string>> = {
   startsAt: (r) => isoToWallClockInput(str(r.starts_at)),
   endsAt: (r) => isoToWallClockInput(str(r.ends_at)),
-  recurrenceUntil: (r) => isoToDateInput(r.recurrence_until),
+  // The picker speaks ONE transport string: the stored rule plus the stored end as `UNTIL=`.
+  recurrenceRule: (r) => repeatDraftFor(r),
   'details.rsvpWindow.opensAt': (r) => isoToWallClockInput(r.rsvpOpensAt),
   'details.rsvpWindow.closesAt': (r) => isoToWallClockInput(r.rsvpClosesAt),
   priceCents: (r) => (typeof r.price_cents === 'number' && r.price_cents > 0 ? String(r.price_cents / 100) : ''),

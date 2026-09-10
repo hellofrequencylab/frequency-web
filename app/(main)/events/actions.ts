@@ -17,7 +17,7 @@ import { recordEngagementEvent } from '@/lib/engagement/events'
 import { track } from '@/lib/analytics/track'
 import { markVerifiedByAttendance } from '@/lib/verification/attendance'
 import { propagateAnchorEditsToOccurrences, generateOccurrencesForAnchor, type RecurrenceType } from '@/lib/event-recurrence'
-import { validateRecurrenceUntil } from '@/lib/events/recurrence'
+import { resolveSubmittedRepeat, validateRecurrenceUntil } from '@/lib/events/recurrence'
 import { resolveRegionScopeId } from '@/lib/events/event-drafts'
 import { listSpaceEventCreatorIds, journeyLinkPatch } from '@/lib/events/placement'
 import { canEditJourney } from '@/lib/journeys/authoring'
@@ -118,7 +118,10 @@ async function resolveJourneyLink(formData: FormData, profileId: string | null):
   return { ok: true, patch: journeyLinkPatch(journeyId) }
 }
 
-const VALID_RECURRENCE: RecurrenceType[] = ['none', 'daily', 'weekly', 'monthly']
+/** ⚠️ The cadence is DERIVED from the submitted rule now (ADR-1299), never posted on its own — see
+ *  `resolveSubmittedRepeat`. This list is what the derived value is checked against before it
+ *  reaches the column's DB CHECK. */
+const VALID_RECURRENCE: RecurrenceType[] = ['none', 'daily', 'weekly', 'monthly', 'yearly']
 const VALID_VISIBILITY = ['public', 'unlisted', 'circle_only', 'private']
 const VALID_ENERGY = ['high_activation', 'grounding', 'social', 'ceremonial']
 const VALID_ATTENDANCE: AttendanceMode[] = ['in_person', 'online', 'hybrid']
@@ -251,13 +254,17 @@ export async function createEvent(formData: FormData): Promise<ActionResult<{ sl
   const startsAt = formData.get('startsAt') as string | null
   const endsAt = (formData.get('endsAt') as string | null) || null
 
-  const recurrenceRaw = (formData.get('recurrenceType') as string | null) ?? 'none'
-  const recurrenceType: RecurrenceType = (VALID_RECURRENCE as string[]).includes(recurrenceRaw)
-    ? (recurrenceRaw as RecurrenceType)
+  // ONE field carries the whole repeat answer (ADR-1299): the RRULE pattern plus, when the host
+  // chose an end date, `UNTIL=YYYYMMDD`. The resolver validates it, canonicalises it, splits the
+  // end back out, and hands back the coarse `recurrence_type` mirror the cron filter and the DB
+  // CHECK read. An unreadable rule resolves to "does not repeat" rather than to a half-rule.
+  const submittedRepeat = resolveSubmittedRepeat(formData.get('recurrenceRule') as string | null)
+  const recurrenceRule = submittedRepeat.rule
+  const recurrenceType: RecurrenceType = (VALID_RECURRENCE as string[]).includes(submittedRepeat.type)
+    ? submittedRepeat.type
     : 'none'
-  const recurrenceUntilRaw = (formData.get('recurrenceUntil') as string | null) || null
-  const recurrenceUntil = recurrenceType !== 'none' && recurrenceUntilRaw
-    ? dateToWallClockIso(recurrenceUntilRaw)
+  const recurrenceUntil = submittedRepeat.untilDate
+    ? dateToWallClockIso(submittedRepeat.untilDate)
     : null
 
   // P0 fields (additive). Capacity is the only real scarcity signal; visibility
@@ -436,6 +443,7 @@ export async function createEvent(formData: FormData): Promise<ActionResult<{ sl
       startsAt: startsIso,
       endsAt: endsIso ?? '',
       recurrenceType,
+      recurrenceRule: recurrenceRule ?? '',
       recurrenceUntil: recurrenceUntil ?? '',
       timeZone,
       capacity,
@@ -462,6 +470,7 @@ export async function createEvent(formData: FormData): Promise<ActionResult<{ sl
           host_id: myProfileId,
           slug,
           recurrence_type: recurrenceType,
+          recurrence_rule: recurrenceRule,
           recurrence_until: recurrenceUntil,
           capacity,
           visibility,
@@ -577,13 +586,13 @@ export async function updateEvent(eventId: string, formData: FormData): Promise<
   // Recurrence (additive, validated). Only an ANCHOR row (parent_event_id IS NULL) may
   // carry a cadence — a DB CHECK forbids a materialised occurrence from itself recurring,
   // so for a child occurrence we leave recurrence untouched (read below before persisting).
-  const recurrenceRawEdit = (formData.get('recurrenceType') as string | null) ?? 'none'
-  const recurrenceTypeEdit: RecurrenceType = (VALID_RECURRENCE as string[]).includes(recurrenceRawEdit)
-    ? (recurrenceRawEdit as RecurrenceType)
+  const submittedRepeatEdit = resolveSubmittedRepeat(formData.get('recurrenceRule') as string | null)
+  const recurrenceRuleEdit = submittedRepeatEdit.rule
+  const recurrenceTypeEdit: RecurrenceType = (VALID_RECURRENCE as string[]).includes(submittedRepeatEdit.type)
+    ? submittedRepeatEdit.type
     : 'none'
-  const recurrenceUntilRawEdit = (formData.get('recurrenceUntil') as string | null) || null
-  const recurrenceUntilEdit = recurrenceTypeEdit !== 'none' && recurrenceUntilRawEdit
-    ? dateToWallClockIso(recurrenceUntilRawEdit)
+  const recurrenceUntilEdit = submittedRepeatEdit.untilDate
+    ? dateToWallClockIso(submittedRepeatEdit.untilDate)
     : null
   if (validateRecurrenceUntil(recurrenceTypeEdit, startsIso, recurrenceUntilEdit)) {
     return fail('The repeat end date must be after the start.')
@@ -678,7 +687,11 @@ export async function updateEvent(eventId: string, formData: FormData): Promise<
       ...(specialInstructions ? { details: mergedDetails } : {}),
       // Only stamp recurrence on an anchor row; a child occurrence keeps recurrence_type 'none'.
       ...(isAnchor
-        ? { recurrence_type: recurrenceTypeEdit, recurrence_until: recurrenceUntilEdit }
+        ? {
+            recurrence_type: recurrenceTypeEdit,
+            recurrence_rule: recurrenceRuleEdit,
+            recurrence_until: recurrenceUntilEdit,
+          }
         : {}),
       // The Journey association (journey_id), authorized above. Empty when the form sent no link,
       // so an editor that does not surface the field can never wipe one.

@@ -4,7 +4,7 @@ description: Pick one thing, set a standing time, recruit a co-host, and run a s
 category: leading
 order: 1
 published: 2026-06-23
-updated: 2026-08-21
+updated: 2026-09-10
 audience: host
 role: host
 featureKeys: [circles, events]
@@ -51,8 +51,11 @@ and you keep everything you have. Any member can **join** as many as they like.
 Pick one night and keep it. The single biggest reason groups survive is that
 nobody has to decide each week whether it is happening. "Every Thursday at 7" is a
 structure. "Let's find a time that works for everyone" is how a group dies before
-it starts. Lock the night, put it on a recurring schedule, and let people build
-their week around it.
+it starts. Lock the night, put it on a repeating schedule, and let people build
+their week around it. Every other Thursday counts as a standing time, and so does
+the third Thursday of the month: what kills a Circle is a night nobody can
+predict, not a night that comes round twice a month. Set the pattern once under
+**Repeats** when you create the gathering and every date is made for you.
 
 ## Recruit a co-host before the first night
 

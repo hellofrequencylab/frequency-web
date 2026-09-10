@@ -118,4 +118,13 @@ describe('Radio · the group is the name', () => {
       expect(src).not.toContain('type="radio"')
     }
   })
+
+  it('the repeat picker composes it rather than hand-rolling a radio', () => {
+    // The consumer the primitive was built for, and the reason it is native: five hand-rolled
+    // radios in one control (components/events/repeat-picker.tsx, ADR-1299) - two end-mode rows
+    // and a by-date-vs-nth-weekday pair, each a real group that wants arrow-key roving.
+    const picker = readFileSync('components/events/repeat-picker.tsx', 'utf8')
+    expect(picker).toContain("from '@/components/ui/radio'")
+    expect(picker).not.toContain('type="radio"')
+  })
 })

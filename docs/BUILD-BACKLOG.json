@@ -64,6 +64,7 @@
             "LIVE-216",
             "LIVE-220",
             "LIVE-221",
+            "LIVE-271",
             "LIVE-272"
           ]
         },
@@ -11359,6 +11360,41 @@
         "kind": "cmd",
         "cmd": "node -e \"const fs=require('fs');const t=fs.readFileSync('components/templates/event-detail-template.tsx','utf8');const code=t.replace(/\\\\/\\\\*[\\\\s\\\\S]*?\\\\*\\\\//g,'').replace(/(^|\\\\s)\\\\/\\\\/.*$/gm,'');const dt=fs.readFileSync('components/templates/detail-template.tsx','utf8');process.exit(/meta=\\\\{/.test(code)&&!/subtitle=\\\\{/.test(code)&&/md:grid-cols-2/.test(code)&&/meta\\\\?: React.ReactNode/.test(dt)&&dt.includes('{meta && <div className=\\\"mt-3\\\">{meta}</div>}')?0:1)\"",
         "note": "Measures the consequence the region is no longer confined to the lockup's flex column, not the words in the row's title. Four clauses: the event template hands its identity to `meta` and NOT to `subtitle` (the regression is silent — the page still renders, it just crams again); the region lays out in two lanes from `md`; and the kit side actually has the slot, rendered as a sibling of the lockup rather than inside it. Read against comment-stripped template source, because the template's own header quotes `subtitle` while explaining why it stopped using it."
+      }
+    },
+    {
+      "id": "LIVE-270",
+      "status": "done",
+      "lane": "live",
+      "size": "L",
+      "source": {
+        "file": "docs/DECISIONS.md",
+        "ref": "ADR-1299"
+      },
+      "title": "Repeating events could only say daily, weekly or monthly, so \"every other Wednesday\" and \"the third Thursday\" were unsayable",
+      "detail": "Owner: \"Repeating events need a smarter chooser so people can make advanced repeat options like bi weekly or every third thursday.\"\n\nWHAT WAS THERE. A four-value enum on `events.recurrence_type` (none/daily/weekly/monthly, ADR-007) plus a separate `recurrence_until` date. Its own migration wrote the exit down in 2024: \"Can be promoted to RRULE later without losing data — just add a recurrence_rule text column and keep recurrence_type as the simple path.\" The enum's stepping had also been copied THREE times (the materialiser, the read side, the calendar strip) with lib/events/recurrence-parity.test.ts standing between the copies, and that gate's own header named this gap: \"The model has no weekday-ordinal rule ('second Tuesday'), so there is nothing of that shape to pin; if one is ever added it belongs in this table on the day it lands.\"\n\nWHAT LANDED. lib/events/repeat-rule.ts: one pure, import-free engine over a bounded RFC 5545 subset (FREQ, INTERVAL, BYDAY, BYSETPOS, BYMONTHDAY, BYMONTH, COUNT). All THREE mirrors delegate to it, which is what makes an advanced rule safe rather than merely possible — a rule the materialiser understood and a card did not would put a gathering on the calendar on a date the page announces differently. `events.recurrence_rule` stores the pattern; `recurrence_type` stays the coarse mirror every existing query, index and DB CHECK reads; `recurrence_until` stays the range end ADR-807 pins to a real instant.\n\nTHE CHOOSER follows where Google Calendar, Apple Calendar and Outlook converge: ONE menu of presets DERIVED FROM THE START DATE (\"Weekly on Wednesday\", \"Every 2 weeks on Wednesday\", \"Monthly on the third Wednesday\", \"Annually on September 16\"), then Custom one tap away with three rows (repeat every N units; the unit's own detail — weekday toggles, or by-date versus by-weekday; and an end rule of never / on a date / after N times). It prints the sentence back, which is both how a host verifies what they built and the control group's accessible description.\n\n✅ THE MIGRATION IS APPLIED (2026-09-10), ledger repaired to the repo version: 687 files ⇄ 687 rows with an identical version checksum, so the ADR-963 bijection is intact. supabase/migrations/20270345003200_event_recurrence_rule.sql added the column, widened the cadence CHECK to admit 'yearly', and added the column to the two calendar-feed RPCs.\n\nThree things were checked against the live database rather than assumed. (1) THE NO-BACKFILL CLAIM HOLDS ON REAL ROWS: both live recurring anchors carry a NULL rule, and the engine's legacy fallback reproduces their materialised child dates exactly, 13 of 13 and 16 of 16 to the day. (2) THE FEEDS' LOCK SURVIVED THE DROP/CREATE, which is the half a migration like this loses silently: a dropped function takes its grants with it and a fresh one is executable by PUBLIC. `check:function-grants` caught that on the first draft; both feeds re-apply 20270304000000's revoke and `has_function_privilege` confirms anon and authenticated hold nothing while service_role holds execute. (3) lib/database.types.ts is byte-identical to a fresh `supabase gen types` against the migrated schema, zero diff across 17,955 lines.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const e=fs.readFileSync('lib/events/repeat-rule.ts','utf8');const w=fs.readFileSync('lib/event-recurrence.ts','utf8');const r=fs.readFileSync('lib/events/recurrence.ts','utf8');const c=fs.readFileSync('lib/events/calendar-repeats.ts','utf8');const p=fs.readFileSync('components/events/repeat-picker.tsx','utf8');const strip=(s)=>s.replace(/\\\\/\\\\*[\\\\s\\\\S]*?\\\\*\\\\//g,'').replace(/^\\\\s*\\\\/\\\\/.*$/gm,'');const mirrors=[w,r,c].map(strip);process.exit(/export function expandRepeat/.test(e)&&/BYSETPOS/.test(e)&&mirrors.every(m=>/repeat-rule'/.test(m)&&!/function occurrenceAt/.test(m)&&!/function stepKey/.test(m))&&/bySetPos/.test(strip(p))&&/formatRepeatDraft/.test(strip(p))?0:1)\"",
+        "note": "Measures the two consequences, not the row's title. THE ENGINE EXISTS AND THE MIRRORS ARE GONE: each of the three modules that used to carry its own copy of the stepping now imports the engine AND no longer declares `occurrenceAt` or `stepKey` of its own — the absence is the load-bearing half, because a fourth copy is how the ordinal rule would silently disagree with the rows the cron mints. THE PICKER CAN ACTUALLY SAY IT: the weekday-ordinal part (`bySetPos`, the parsed form of BYSETPOS) reaches the control, and the control emits the transport string the server splits. All read against comment-stripped source, since every one of these files discusses the copies it no longer has. ⚠️ This probe does NOT prove the column is applied; `pnpm check:schema-contract` is what says that, and it is currently red on purpose."
+      }
+    },
+    {
+      "id": "LIVE-271",
+      "status": "open",
+      "priority": "P3",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/event-recurrence.ts",
+        "ref": "generateAllOccurrences, the live-anchor filter"
+      },
+      "title": "A series that ends by COUNT is re-read by the occurrence cron every day, forever, after it has run out",
+      "detail": "Found auditing the repeat model (ADR-1299). `generateAllOccurrences` selects the anchors worth rolling forward with `recurrence_until.is.null,recurrence_until.gt.now`. That filter is exactly right for the two ends the enum model had — indefinite, or ended on a date — and it cannot see the third one the rule model added: `COUNT=6`.\n\nA COUNT-bounded series carries a NULL `recurrence_until` by construction (they are mutually exclusive: RFC 5545 §3.3.10 forbids both, `resolveSubmittedRepeat` writes a null end for a COUNT rule, and lib/events/ics.ts refuses to emit both). So the filter reads it as INDEFINITE and hands it to `generateOccurrencesForAnchor` on every run, for the life of the row. The per-anchor work is idempotent and correct — the expander stops at the count and returns zero dates — so nothing is minted and nothing is wrong on the page. What it costs is one anchor read plus one child-occurrence query per exhausted series per day, permanently, in a loop that LIVE-190 already put on a clock budget.\n\n⚠️ THE OBVIOUS FIX IS THE WRONG ONE. Stamping the computed last occurrence into `recurrence_until` when a COUNT series is saved would make the filter work and would break the .ics export: the column is what `rruleForRepeat` appends as `UNTIL=`, and a rule carrying both UNTIL and COUNT is invalid per RFC 5545, which a strict client may reject whole. It would also put a wall-clock-as-UTC-parts value in a column ADR-807 defines as a zone-resolved instant.\n\nTHE HONEST FIXES, either of which is small: (a) a `recurrence_exhausted_at` (or a nullable `recurrence_last_at`) written beside the rule and read by the filter, which is also the resume cursor LIVE-190 says the loop is missing; or (b) skip an exhausted anchor inside `generateOccurrencesForAnchor` before it queries children, which does not shrink the head but does halve the per-row cost. Neither is urgent until COUNT series exist in numbers: the picker only started offering \"after N times\" with ADR-1299, so today the live count is zero.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const s=require('fs').readFileSync('lib/event-recurrence.ts','utf8');const code=s.replace(/\\\\/\\\\*[\\\\s\\\\S]*?\\\\*\\\\//g,'').replace(/^\\\\s*\\\\/\\\\/.*$/gm,'');process.exit(/recurrence_exhausted_at|recurrence_last_at|anchorIsExhausted/.test(code)?0:1)\"",
+        "note": "Passes when the cron can SEE an exhausted count-bounded series — a stored end-marker column the anchor filter reads, or a named exhaustion predicate the per-anchor path consults before it queries children. Deliberately not a grep for the word COUNT: the rule string already contains it and a probe that matched the model rather than the filter would pass on the day the feature shipped, which is the shape-not-truth failure this list names in four ADRs."
       }
     },
     {

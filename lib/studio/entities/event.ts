@@ -42,18 +42,10 @@ import {
 // two theme-bag switches' member-facing words have one source, and the manifest is not a second.
 import { COMMON_TIME_ZONES, HOME_TIME_ZONE } from '@/lib/events/time-zones'
 import { CHECK_IN_LABEL } from '@/lib/events/checkin-enabled'
+// The repeat engine is pure and import-free, so the manifest may read a rule back as words for the
+// review board without becoming impure itself (lib/events/repeat-rule.ts, ADR-1299).
+import { describeRepeat, parseRepeat } from '@/lib/events/repeat-rule'
 import { MARKET_LISTING_LABEL } from '@/lib/events/market-listing'
-
-/** Recurrence is NOT one of the vocabularies lib/events/options.ts owns, so it is restated here.
- *  It mirrors RECURRENCE_OPTIONS in the create form and VALID_RECURRENCE in events/actions.ts.
- *  Worth promoting into lib/events/options.ts alongside the other four, so this becomes an import
- *  like its neighbours; left alone here because that module is shared and in use elsewhere. */
-const RECURRENCE_OPTIONS: readonly FieldOption[] = [
-  { value: 'none', label: 'One time' },
-  { value: 'daily', label: 'Every day' },
-  { value: 'weekly', label: 'Weekly' },
-  { value: 'monthly', label: 'Monthly' },
-]
 
 /** How people get in (ADR-826): one join function per event. Mirrors the CHECK constraint on
  *  `events.join_mode` and the settings action's own allow-list (`['auto', 'rsvp', 'tickets']`). */
@@ -195,8 +187,13 @@ export const EVENT_MANIFEST: EntityManifest = {
     // Repeats default to a one-time event; the cadence re-materialises the occurrence window on save.
     // A `select`, not a `cadence`: this is a closed set the server re-validates, and only a kind
     // in CHOICE_KINDS may declare its options. `cadence` stays for the genuinely free-text case.
-    { path: 'recurrenceType', label: 'Repeats', kind: 'select', section: 'when', options: RECURRENCE_OPTIONS, read: (d) => str(d.recurrenceType) || 'none' },
-    { path: 'recurrenceUntil', label: 'Repeats until', kind: 'date', section: 'when', omitWhenEmpty: true },
+    // ONE field for the whole Repeats question (ADR-1299): the cadence, the interval, the weekdays,
+    // the monthly ordinal and the end. It was a `select` over four values plus a separate
+    // "Repeats until" date, which between them could not say "every other Wednesday" and could
+    // contradict each other once edited apart. The value is an RFC 5545 RRULE
+    // (lib/events/repeat-rule.ts); the server splits the end back into `recurrence_until` and
+    // derives the coarse `recurrence_type` mirror, so the manifest declares neither.
+    { path: 'recurrenceRule', label: 'Repeats', kind: 'repeat', section: 'when', omitWhenEmpty: true, veraDrafts: false, read: (d) => describeRepeat(parseRepeat(str(d.recurrenceRule)), str(d.startsAt)) },
     // The venue's IANA zone. Seeded from the creator, then refined from the geocoded point. A
     // `select` over the curated list (ADR-1281): every surface that ever edited it offered the
     // list, never a bare zone string, and the kit keeps a stored off-list zone selectable.

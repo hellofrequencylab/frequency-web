@@ -4,7 +4,7 @@ description: Find gatherings, RSVP, and add them to your calendar.
 category: groups
 order: 3
 published: 2026-06-03
-updated: 2026-09-01
+updated: 2026-09-10
 audience: member
 role: host
 featureKeys: [events]
@@ -43,6 +43,7 @@ Events are the gatherings that make Frequency real: the in-person and online mee
 ## Recurring events & your calendar
 
 - Many Circles run **recurring** gatherings (a weekly sit, a monthly walk), and each date is its own event you can RSVP to.
+- **A series can follow more than a simple weekly rhythm.** Every other Thursday, the third Thursday of the month, weekdays only, the 15th of each month: whatever pattern the host set, each date still stands on its own with its own page and its own RSVP. The event page says the pattern in plain words, so "Every 2 weeks on Wednesday" tells you when the next one lands without you working it out.
 - **Browsing shows the next few dates, not all of them.** A weekly sit would otherwise fill the whole events library with itself. Open any date and look for **Upcoming dates**: the next five are listed there, each with its own page and its own RSVP.
 - Nothing is hidden. Your calendar, a Space's calendar, and the calendar file you subscribe to all still carry every date.
 - **Add to calendar in one tap.** Right where you RSVP, you can drop the event into Google Calendar or any app (it exports a standard calendar file). Putting it on your calendar is the single best way to actually make it.
@@ -132,6 +133,7 @@ Keep it real. The reward is for people who actually RSVP, show up, or join, neve
 - **Where your event shows up.** Two settings, doing two different jobs. **"Who can see this"** is who is allowed in: "Anyone" makes it public, "Anyone with the link" keeps it link-only, and the Circle and invite options keep it close. **"List this event publicly"** is separate: leave it on and your public event shows up when people browse events, turn it off and it stays public and fully shareable, it just is not in the listings. A public event hosted by a Circle now shows up in browse too, the same as any other public event.
 - **What people see when you share.** Paste your event's link into a message and the preview shows your cover image, the title, the date, and the location. A closed event does not do that. If "Who can see this" is set to a Circle or to invite only, or the event is still a draft, the preview is a plain Frequency card with no title, date, or venue, so a forwarded link does not announce a gathering someone is not allowed into. "Anyone with the link" gets the full preview, because that is what the setting is for. A cancelled event still shows its card, marked cancelled, so anyone holding the link learns it is off.
 - **Hide the address.** Turn on "Hide the address until someone registers" in the event's settings and people browsing see the city only. That includes the calendar file anyone can subscribe to, which carries the city too, and the preview image someone sees when your link is pasted into a message. The venue, street, map pin, and directions appear once they RSVP or get a ticket, and their own calendar entry carries the full address.
+- **Choose how often it repeats.** In the event's editor, **Repeats** offers the patterns built from your own start date: every week on that weekday, every 2 weeks, monthly on that date, monthly on that weekday of the month ("the third Wednesday"), every weekday, and every year. Need something else, pick **Custom** and set the interval and the days yourself. Then say when the run stops: never, on a date, or after a set number of times. A sentence under the menu reads back what you built, so you can check it before you save.
 - **Cancel a whole series.** Each date of a recurring event is its own event, so cancelling one date only takes that date off the calendar. When the whole run is off, open any upcoming date and use **Cancel the rest of this series** in its settings, under Danger zone. It cancels every date still to come in one go and refunds every paid ticket on them, and dates that already happened are left as they are.
 - **Your Space calendar is a manager.** In your Space's Calendar console, flip between the month grid and a list, and click any event to edit it. Drafts and past events show there too, and co-host requests from other hosts wait there for your approval.
 
