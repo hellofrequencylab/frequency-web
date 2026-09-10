@@ -76,6 +76,50 @@ describe('payoutPrompt', () => {
     expect(payoutPrompt({ ...base, status: READY })).toBeNull()
   })
 
+  // ── The READY state (LIVE-290) ────────────────────────────────────────────────────────────────
+  // The card VANISHING is right for a nudge and was the whole bug on a surface where the card IS
+  // the payments UI: 11 of 22 spaces had a working Stripe account and were shown nothing at all.
+
+  it('STAYS silent for a ready payee by default, so the nudge surfaces are unchanged', () => {
+    // The regression guard for /market/manage and the event page, both of which render this card
+    // with no readiness check of their own. If someone later "simplifies" the opt-in away, a
+    // standing "you are fine" banner appears on pages that deliberately dropped one.
+    expect(payoutPrompt({ ...base, status: READY, whenReady: 'silent' })).toBeNull()
+    expect(payoutPrompt({ ...base, status: READY })).toBeNull()
+  })
+
+  it('tells a ready OWNER where to change their bank, on a surface that IS the payments UI', () => {
+    const p = payoutPrompt({ ...base, status: READY, whenReady: 'status' })
+    expect(p?.state).toBe('ready')
+    expect(p?.action).toBe('manage')
+    expect(p?.actionLabel).toBe('Manage payouts')
+    expect(p?.body).toContain('lands in your bank')
+  })
+
+  it('hands a ready non-owner NO dashboard button, because it would open the wrong account', () => {
+    // openPayoutDashboard resolves the CALLER's profile, not the payee's, so a button here would
+    // open an admin's own Stripe account or fail outright. Same reason needs_setup gives them none.
+    const p = payoutPrompt({
+      ...base,
+      relation: 'other',
+      status: READY,
+      whenReady: 'status',
+      payeeName: 'Royal Temple',
+    })
+    expect(p?.state).toBe('ready')
+    expect(p?.action).toBe('none')
+    expect(p?.actionLabel).toBeNull()
+    expect(p?.body).toContain('Royal Temple')
+  })
+
+  it('still says not_live for a ready account while the switch is off, even in status mode', () => {
+    // Pins the BRANCH ORDER: the ready check sits above the payoutsLive check, so a dark platform
+    // is reported honestly rather than as "you are set up" over a switch that cannot pay anyone.
+    const p = payoutPrompt({ ...base, status: READY, payoutsLive: false, whenReady: 'status' })
+    expect(p?.state).toBe('not_live')
+    expect(p?.action).toBe('none')
+  })
+
   it('offers inline onboarding to a payee with no account', () => {
     const p = payoutPrompt({ ...base, status: NONE })
     expect(p?.state).toBe('needs_setup')
@@ -143,6 +187,10 @@ describe('payoutPrompt', () => {
       payoutPrompt({ ...base, status: NONE, payoutsLive: false }),
       payoutPrompt({ ...base, relation: 'other', status: NONE, payeeName: 'Rosewood Studio' }),
       payoutPrompt({ ...base, relation: 'other', status: IN_REVIEW, payeeName: 'Rosewood Studio' }),
+      // The two READY arms (LIVE-290). They are reachable copy on Offerings and the Shop storefront,
+      // so they carry the same canon obligation as every other arm.
+      payoutPrompt({ ...base, status: READY, whenReady: 'status' }),
+      payoutPrompt({ ...base, relation: 'other', status: READY, whenReady: 'status', payeeName: 'Rosewood Studio' }),
     ]
     for (const p of arms) {
       expect(p).not.toBeNull()

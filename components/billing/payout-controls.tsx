@@ -2,7 +2,13 @@
 
 import { useState, useTransition } from 'react'
 import { ArrowRight, Loader2, Settings } from 'lucide-react'
-import { startPayoutOnboarding, openPayoutDashboard } from './actions'
+// The two server actions stay in app/(main)/settings/billing/actions.ts on purpose. A component
+// importing a 'use server' module out of app/ is the established shape here (30+ sites), and
+// check-client-server-boundary stops graph traversal at a server action, so nothing server-side
+// enters the browser bundle. Moving them to lib/ would pull two publicly-reachable action
+// endpoints OUT of check-authz-guards, whose per-export scan covers app/** only - trading real
+// coverage for tidiness. What moved is the BUTTONS, so a space surface can reach them at all.
+import { startPayoutOnboarding, openPayoutDashboard } from '@/app/(main)/settings/billing/actions'
 import { isError } from '@/lib/action-result'
 
 /** Start (or resume) Stripe Express onboarding, then redirect to the hosted flow. */

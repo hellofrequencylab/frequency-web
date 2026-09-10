@@ -242,8 +242,13 @@ export async function createOnboardingLink(profileId: string): Promise<string | 
   const link = await stripe.accountLinks.create({
     account: accountId,
     // An expired/abandoned link bounces to refresh_url; a finished one to return_url.
-    refresh_url: `${appUrl()}/settings/billing?payouts=refresh`,
-    return_url: `${appUrl()}/settings/billing?payouts=return`,
+    // The #payouts fragment is HALF the fix (LIVE-290). /settings/billing is a pure redirect now, and
+    // per RFC 7231 a fragment on the original URL is only carried onto the redirect target when the
+    // Location header carries none of its own - so page.tsx must choose the fragment too, and this
+    // line alone would pass a probe while still landing the host on the plan card. Set here anyway
+    // because it is the correct value independent of that redirect ever existing.
+    refresh_url: `${appUrl()}/settings/billing?payouts=refresh#payouts`,
+    return_url: `${appUrl()}/settings/billing?payouts=return#payouts`,
     type: 'account_onboarding',
   })
   return link.url

@@ -30,6 +30,8 @@ export async function resolveProfilePayoutPrompt(opts: {
   viewerProfileId: string | null
   channels: readonly PayoutChannel[]
   payeeName?: string | null
+  /** See PayoutPromptInput.whenReady. Default `silent` keeps every existing caller unchanged. */
+  whenReady?: 'silent' | 'status'
 }): Promise<PayoutPrompt | null> {
   const live = await payoutsLive()
   const relation: PayoutPromptRelation =
@@ -46,6 +48,7 @@ export async function resolveProfilePayoutPrompt(opts: {
     payoutsLive: live,
     relation,
     payeeName: opts.payeeName ?? null,
+    whenReady: opts.whenReady,
   })
 }
 
@@ -55,12 +58,15 @@ export async function resolveSpacePayoutPrompt(opts: {
   space: { ownerProfileId?: string | null; owner_profile_id?: string | null; name?: string | null; brandName?: string | null }
   viewerProfileId: string | null
   channels: readonly PayoutChannel[]
+  /** See PayoutPromptInput.whenReady. */
+  whenReady?: 'silent' | 'status'
 }): Promise<PayoutPrompt | null> {
   const ownerId = opts.space.ownerProfileId ?? opts.space.owner_profile_id ?? null
   return resolveProfilePayoutPrompt({
     payeeProfileId: ownerId,
     viewerProfileId: opts.viewerProfileId,
     channels: opts.channels,
+    whenReady: opts.whenReady,
     // The space is what an admin recognises, not the owner's display name, and naming a person to
     // someone who may not know them reads as a privacy leak rather than a next step.
     payeeName: opts.space.brandName ?? opts.space.name ?? null,
@@ -77,6 +83,8 @@ export async function resolveSpacePayoutPromptById(opts: {
   spaceId: string
   viewerProfileId: string | null
   channels: readonly PayoutChannel[]
+  /** See PayoutPromptInput.whenReady. */
+  whenReady?: 'silent' | 'status'
 }): Promise<PayoutPrompt | null> {
   const { data } = await createAdminClient()
     .from('spaces')
@@ -88,5 +96,6 @@ export async function resolveSpacePayoutPromptById(opts: {
     space: { owner_profile_id: row?.owner_profile_id ?? null, name: row?.name ?? null, brandName: row?.brand_name ?? null },
     viewerProfileId: opts.viewerProfileId,
     channels: opts.channels,
+    whenReady: opts.whenReady,
   })
 }
