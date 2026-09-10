@@ -38891,3 +38891,72 @@ directions now, tested without mounting React, and the Journey rail is fixed by 
 **Not done here.** The `map` repeat has no rail control, so a Practice's per-Pillar instructions
 still cannot be edited in a rail; `railForm` now says so out loud instead of omitting it. The event
 page has no inline canvas, so the rail still hosts the inline plane (`hostInline`), unchanged.
+
+---
+
+## ADR-1310: ACCEPTED — a capture that lands somewhere else is a lie, so the destination is read at the shutter (2026-09-10)
+
+**Context.** `HYG-027` has been open since 2026-08-25 asking for the seven operator baselines, and
+it kept the repository's `pr-compare` red on every pull request. Two capture attempts had failed in
+ways that read as flakiness: heights that never settled ("Failed to take two consecutive stable
+screenshots", 11313 → 11419 → 11474 → 11622 px), ragged per-route coverage, and one pair of
+byte-identical PNGs. The row's own note guessed the routes were "landing somewhere they should not,
+most likely on mobile" and told the next person to find out where before capturing again.
+
+**Measured, run 34517618524, capture against production.** They were landing somewhere they should
+not, and it was not a mobile problem — 8 of the 10 earlier failures were desktop. Of the sixteen
+operator baselines that run committed, **eight were photographs of `/feed`**. The file named
+`admin-qr--dawn-light-desktop.png` was the member feed: "Good afternoon, Frequency", the composer,
+the onboarding checklist. Page height is the tell, and it is unambiguous — a real operator page
+measured 1136-1735 px, every misattributed one measured 8531-11277 px.
+
+Three guards were in the path and none of them objected:
+
+- `operatorDenialReason` reads the pathname immediately after `goto` resolves, and it saw the right
+  path. The bounce had not happened yet.
+- `assertMemberSession` **cannot** catch this by construction: it asserts the member shell is
+  present, and `/feed` genuinely has the member shell. It proves a session, not a destination.
+- `baseline-distinctness.test.ts` caught exactly one pair — the two that happened to settle at the
+  same instant and collide byte-for-byte. The other six differ from each other (the feed is live)
+  and would have been committed as main's baselines for `/admin/library`, `/admin/content/practices`
+  and `/admin/qr`.
+
+**The bounce itself is a role fact, and it corrects this row's own ruling.** `requireAdminFloor`
+admits a staff role that can READ any admin domain, which is why `analyst` was chosen on 2026-09-08
+as the least-privilege door. Every page beneath the floor calls `requireAdmin(min, { staff })`, whose
+`staffLevel` **defaults to `'write'`** — and `analyst` reads every domain and writes none. So the
+account clears the floor and is denied by each page, landing on `/feed`. The measured grid, for a
+viewer at `community_role: member, web_role: none`:
+
+| staff role | floor | `/admin` | nurture | library | crew-tasks | practices | qr | crm |
+|---|---|---|---|---|---|---|---|---|
+| `analyst` | yes | ✅ | ✅ | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 |
+| `support` | yes | ✅ | ✅ | 🔴 | ✅ | ✅ | 🔴 | 🔴 |
+| `operations` | yes | ✅ | ✅ | 🔴 | ✅ | ✅ | ✅ | 🔴 |
+| `marketer` | yes | ✅ | ✅ | ✅ | 🔴 | 🔴 | ✅ | 🔴 |
+| `admin` / `owner` | yes | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🔴 |
+
+It predicts the capture exactly: the only two routes that came out real are the two with no
+page-level `requireAdmin` at all. And `/admin/crm` is `requireAdmin('janitor')` with no staff
+escape, so **no `team_members` role opens it** — only `web_role` janitor or admin.
+
+**Decision.** The destination is re-read as the last thing before the shutter, in both suites
+(`operatorLandedElsewhere`). A surface no longer on its own path is SKIPPED with the cause named,
+never photographed and never audited. A missing baseline is a gap that `pr-compare` already reports;
+a misattributed one is a lie that gates every later pull request against the wrong page.
+
+Deliberately a separate function rather than a fix inside `operatorDenialReason`: the two answer
+different questions at different moments, and collapsing them would lose the early skip that keeps a
+denied run cheap. Deliberately a SKIP rather than a failure, matching the existing denial: the
+account's role is an owner-held fact and no pull request can fix it, so failing would turn every PR
+red for a reason its author cannot address.
+
+**Not decided here, and it is the owner's.** Which role the e2e account should hold. `admin` on the
+`team_members` axis buys six of seven routes without touching `web_role`, so Executive Admin stays
+where the owner put it — but it is write-everywhere for a CI credential. `/admin/crm` needs a
+seventh answer either way: a `web_role`, a guard change, or dropping it from `OPERATOR_PATHS` in
+favour of another dense console. Recorded in `HYG-027` with the grid.
+
+**The rule this pays for again.** A guard that cannot fail honestly reads as coverage (ADR-970).
+`assertMemberSession` looked like it covered this and structurally could not, and the suite reported
+"App shell covered: 11/11 surfaces" over a run that photographed the feed eight times.
