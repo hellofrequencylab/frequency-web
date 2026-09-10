@@ -1,10 +1,10 @@
 ---
 title: Billing
-description: Where your plan, payments, and invoices live, and how a cash agreement works.
+description: Where your plan, payments, and invoices live, how a cash agreement works, and where getting paid lives instead.
 category: spaces
 order: 3
 published: 2026-07-27
-updated: 2026-09-09
+updated: 2026-09-10
 audience: member
 featureKeys: [billing]
 status: published
@@ -13,6 +13,15 @@ status: published
 Your Space does not have to pay anything to exist. Hosting is free, and it stays free: you pay when
 you start charging. Everything about what your Space does pay lives in one place: **Manage, then Plan
 and billing**. This page covers what you find there and how each kind of payment works.
+
+## Money out, not money in
+
+Everything below is what your Space **pays**. What your Space **receives** is a different page:
+**Manage, then Get paid**. That is where you connect the account your money lands in, see which of
+your money paths can take payment today, and open your Stripe dashboard to change your bank details.
+
+The two are easy to mix up because both involve Stripe, so it is worth holding the difference:
+billing is your plan, and Get paid is your earnings. Setting up one does nothing to the other.
 
 ## Where billing lives
 
