@@ -1,4 +1,5 @@
 import Image from 'next/image'
+import { showsOrganizerCredit } from '@/lib/events/platform-credit'
 import Link from 'next/link'
 import { getInitials } from '@/lib/utils'
 import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
@@ -68,7 +69,13 @@ export function HostCohostSection({
       {spaceHost ? (
         <>
           <SpaceCreditRow space={spaceHost} role="Hosting this event" lead />
-          {host ? <p className="mt-3 text-meta text-subtle">Organized by {host.display_name}</p> : null}
+          {/* The house account is not a credit (owner, 2026-09-10): a Space-hosted event posted by
+              Frequency used to read "Organized by Frequency" here, which tells a guest nothing they
+              did not already know from the domain. Same answer as the identity line's, from the
+              same function, so the card and the line cannot disagree. */}
+          {showsOrganizerCredit(host) ? (
+            <p className="mt-3 text-meta text-subtle">Organized by {host!.display_name}</p>
+          ) : null}
         </>
       ) : host ? (
         <HostPersonCredit
