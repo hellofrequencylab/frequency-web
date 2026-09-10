@@ -56,22 +56,45 @@ describe('the standard exists and is a composition, not a fork', () => {
       template.indexOf('export interface EventDetailTemplateProps'),
     )
     const slots = [...iface.matchAll(/^\s{2}(\w+)\?:/gm)].map((m) => m[1])
-    // The photographed order, top to bottom under the H1.
+    // The arrangement, in reading order: lane A (the facts), lane B (where it belongs and to
+    // whom), then the two full-width rows. `seriesRail` moved down on 2026-09-10 when the region
+    // went from one narrow column to two lanes — it is a ROW of date chips, so it belongs under
+    // both lanes at full width rather than mid-column where it wrapped into three rows.
     expect(slots).toEqual([
       'when',
       'where',
       'cadence',
       'nextDate',
-      'seriesRail',
       'belonging',
       'hostedBy',
       'credit',
+      'seriesRail',
       'reward',
     ])
     // A slot added to the type but never rendered would silently swallow a page's content.
     for (const slot of slots) {
       expect(template).toContain(`{identity.${slot}}`)
     }
+  })
+
+  it('🔴 puts the identity region in the FULL-WIDTH slot, not the column beside the actions', () => {
+    // The 2026-09-10 report. `subtitle` sits inside DetailTemplate's lockup flex row, so anything
+    // passed there is capped at `content width - actions width` for its whole height; `meta` spans
+    // the band. A regression here is silent — the page still renders, it just crams again.
+    expect(templateCode).toContain('meta={')
+    expect(templateCode, 'the identity region must not go back into the narrow column').not.toContain('subtitle={')
+    // And the slot has to exist on the kit side, spanning the header rather than the lockup.
+    const detail = readFileSync('components/templates/detail-template.tsx', 'utf8')
+    expect(detail).toContain('meta?: React.ReactNode')
+    expect(detail).toContain('{meta && <div className="mt-3">{meta}</div>}')
+  })
+
+  it('the two lanes are side by side from md, and each self-suppresses when empty', () => {
+    // A surface that fills only one lane (the loading skeleton fills the facts) must get one
+    // column, not a column and an empty gutter.
+    expect(templateCode).toContain('md:grid-cols-2')
+    expect(templateCode).toContain('hasFacts &&')
+    expect(templateCode).toContain('hasBelonging &&')
   })
 })
 

@@ -37,6 +37,7 @@ export function DetailTemplate({
   coverOverlayStyle,
   title,
   subtitle,
+  meta,
   badges,
   actions,
   back,
@@ -66,6 +67,19 @@ export function DetailTemplate({
   coverOverlayStyle?: HeroOverlayStyle
   title: React.ReactNode
   subtitle?: React.ReactNode
+  /** FULL-WIDTH identity/meta region, rendered under the title lockup and across the whole header
+   *  band — outside the flex column that `subtitle` lives in.
+   *
+   *  🔴 WHY IT IS A SEPARATE SLOT AND NOT MORE `subtitle`. The lockup is a flex row: identity on
+   *  the left, `actions` on the right at their natural width. Anything in `subtitle` is therefore
+   *  confined to `content width - actions width` for its whole height, and on the event page that
+   *  is under half the column — three action buttons reserve ~265px of a ~520px row, so the date,
+   *  the venue, the "Hosted by" line and a rail of date chips all wrapped hard against a narrow
+   *  left gutter with dead space beside them (owner, 2026-09-10: "Something is off with the
+   *  details under the header. They are all aligned left."). A page with more than a line or two
+   *  of identity puts it here; `subtitle` stays correct for the one-liner every other Detail page
+   *  passes, and both may be used together. */
+  meta?: React.ReactNode
   /** Status / mode chips (e.g. the in-person designator). */
   badges?: React.ReactNode
   /** Capability-gated inline actions (the headerActions slot). Gate with <Can>. */
@@ -216,6 +230,10 @@ export function DetailTemplate({
             {actions && <div className="flex items-center gap-2 flex-wrap sm:shrink-0">{actions}</div>}
           </div>
         )}
+
+        {/* The full-width identity region. OUTSIDE the lockup's flex row, so it spans the whole
+            header band instead of sharing it with the action column (see the prop's note). */}
+        {meta && <div className="mt-3">{meta}</div>}
 
         {/* Context tabs (the non-sticky default; a page using `stickyNav` passes its menu there
             instead). A caller-supplied NODE renders in the same slot, untouched — that is the

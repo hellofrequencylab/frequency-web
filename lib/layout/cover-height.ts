@@ -89,6 +89,54 @@ export function posterMaxHeightClass(height: CoverHeight): string {
   return POSTER_MAX_HEIGHT_CLASS[height]
 }
 
+// ── THE POSTER BAND'S REAL SHAPE, for a focal-crop preview that cannot lie ───────────────────────
+//
+// The focal picker's job is to show the host WHICH SLICE of their poster survives the crop, so its
+// preview frame has to be the SAME SHAPE as the band the page paints. Before 2026-09-10 it used a
+// stock 16/9 while the event band contained the whole poster between blurred bars — the preview
+// promised a crop the page never performed, which is half of what the owner reported that day.
+//
+// The band is `min(width / posterAspect, tierHeight)` tall (poster-band.tsx: its own shape, capped
+// by the tier), so its aspect is `max(posterAspect, width / tierHeight)` — and with no measured
+// poster it is simply `width / tierHeight`. That is the whole derivation; the numbers come from the
+// POSTER ladder above rather than from a second table, so re-tuning a tier moves the preview with it.
+const ROOT_PX = 17
+
+/** The rem value of a Tailwind height utility. `h-N` is N/4 rem; `h-[Xrem]` is X rem — the ladder
+ *  above uses both spellings, and reading the bare number would call h-72 (18rem) taller than
+ *  h-[24rem]. Throws on anything else, so a new spelling is a red test rather than a wrong preview. */
+function heightTokenRem(token: string): number {
+  const arbitrary = token.match(/^(?:[a-z]+:)?h-\[([\d.]+)rem\]$/)
+  if (arbitrary) return parseFloat(arbitrary[1])
+  const scale = token.match(/^(?:[a-z]+:)?h-(\d+)$/)
+  if (scale) return parseFloat(scale[1]) / 4
+  throw new Error(`unparsed height utility: ${token}`)
+}
+
+/** The DESKTOP (`sm` and up) pixel height of a poster band at a tier, at this app's 17px root.
+ *  Read off the ladder's own class string, so there is no second copy of the numbers to drift. */
+export function posterHeightPx(height: CoverHeight): number {
+  const tokens = POSTER_HEIGHT_CLASS[height].split(/\s+/)
+  const sm = tokens.find((t) => t.startsWith('sm:')) ?? tokens[0]
+  return Math.round(heightTokenRem(sm) * ROOT_PX)
+}
+
+/** The width:height aspect of the poster band as it will actually render — the shape a focal-crop
+ *  preview must adopt. `widthPx` is the band's real render width in its surface (the event page's
+ *  1044px centre column); `sourceAspect` is the poster's own measured ratio
+ *  (events.theme.coverAspect) or null when it carries none. Pure + total: an unusable ratio is
+ *  treated as absent, exactly as the band treats it. */
+export function posterBandAspect(
+  height: CoverHeight,
+  widthPx: number,
+  sourceAspect?: number | null,
+): number {
+  const tierAspect = widthPx / posterHeightPx(height)
+  const usable =
+    typeof sourceAspect === 'number' && Number.isFinite(sourceAspect) && sourceAspect > 0
+  return usable ? Math.max(sourceAspect as number, tierAspect) : tierAspect
+}
+
 /** The width:height aspect ratio of the cover at a tier, for a shape-accurate focal-crop preview (the
  *  preview must be the same SHAPE as the live band). `maxWidthPx` is the band's REAL render width in its
  *  surface (e.g. the Space profile's 1044px center column). Pure + total. */
