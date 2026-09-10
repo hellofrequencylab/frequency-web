@@ -42,6 +42,11 @@
 -- order or limit changes. The new column is non-sensitive shape metadata — the public event page
 -- prints it in words on the same row — and the same rows still pass the same gates.
 --
+-- APPLIED 2026-09-10; ledger repaired to this file's version (687 files <=> 687 rows, matching
+-- checksum). Verified on the live database afterwards: both recurring anchors still resolve to the
+-- exact child dates already materialised (the no-backfill claim), and has_function_privilege
+-- confirms anon and authenticated hold no execute on either feed while service_role does.
+--
 -- ROLLBACK: drop the column, restore the CHECK to the original four values (no row can hold 'yearly'
 -- unless one was written after this applied), and re-apply the 20270331000000 function bodies.
 -- =====================================================================================================

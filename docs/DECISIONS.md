@@ -38305,9 +38305,23 @@ seams against each other — a bound applied on one side and not another, an anc
 excluded there, a day key taken from the wrong end of an instant. `LIVE-154` was exactly that class
 of bug and involved no arithmetic at all. Seven rule-shaped fixtures joined the table, as its header
 asked. The `.ics` routes now build their RRULE from the whole row, so a bi-weekly series stops
-exporting as weekly. **The migration must be applied before this merges**: until it is,
-`pnpm check:schema-contract` reports `events.recurrence_rule` as a phantom column, which is the gate
-doing its job.
+exporting as weekly.
+
+**Applied to production 2026-09-10**, ledger repaired to the repo version per
+`supabase/migrations/README.md` (687 files ⇄ 687 rows, identical version checksum, the ADR-963
+bijection intact). Three things were verified against the live database rather than assumed:
+
+1. **The no-backfill claim holds on real rows.** Both live recurring anchors carry a NULL rule, and
+   the engine's legacy fallback reproduces their materialised child dates EXACTLY — 13 of 13 and 16
+   of 16, to the day. Nothing moved.
+2. **The feeds' lock survived the drop/create.** A dropped function takes its grants with it and a
+   fresh one is executable by `PUBLIC`, so a migration that recreates a locked function and says
+   nothing about grants re-opens it silently. `check:function-grants` caught exactly that on the
+   first draft of this file; both feeds now re-apply 20270304000000's revoke, and
+   `has_function_privilege` confirms `anon` and `authenticated` hold nothing while `service_role`
+   holds execute.
+3. **`lib/database.types.ts` matches.** The committed types are byte-identical to a fresh
+   `supabase gen types` against the migrated schema — zero diff across 17,955 lines.
 
 ---
 
