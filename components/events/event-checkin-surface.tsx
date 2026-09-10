@@ -3,6 +3,7 @@
 import { useEffect, useState, useTransition } from 'react'
 import { Check, QrCode, Zap } from 'lucide-react'
 import { checkInEvent, type CheckInResult } from '@/app/(main)/events/actions'
+import { Button } from '@/components/ui/button'
 import { showZapToast } from '@/components/zap-toast'
 import { SPECIAL_INSTRUCTIONS_LABEL } from '@/lib/events/special-instructions'
 import { checkInSurfaceState, formatCountdown, type CheckInSurfaceInput } from '@/lib/events/checkin-surface'
@@ -118,8 +119,20 @@ export function EventCheckInSurface({
           )}
 
           {state.kind === 'open' && !checkedIn && (
-            <button
-              disabled={pending}
+            /* THE KIT BUTTON, NOT A HAND-ROLLED COPY OF IT. The first version spelled the amber
+               out (`rounded-control bg-primary px-4 py-2 text-body-sm font-semibold …`), which is
+               `primary × md` written by hand — the exact bucket `LIVE-114` holds at zero, so it
+               failed `check:backlog` and would have re-opened a closed row. The primitive also
+               carries three things the copy had silently dropped: `tap-target` (the `--tap-min`
+               touch floor), `press` (the one sanctioned pressed look) and `lift-1`.
+
+               `loading` rather than a swapped label: the primitive marks the control `aria-busy`
+               and disables it while LEAVING THE LABEL ALONE, because a pending state must not
+               change a button's width (INTERACTION-STATES §4 rule 3). That is the same rule
+               `tabular-nums` enforces on the clock two lines up — this box sits in the header
+               band, and a control that resizes mid-press moves the row around it. */
+            <Button
+              loading={pending}
               onClick={() =>
                 start(async () => {
                   const res = await checkInEvent(eventId)
@@ -129,11 +142,10 @@ export function EventCheckInSurface({
                   }
                 })
               }
-              className="inline-flex items-center justify-center gap-2 rounded-control bg-primary px-4 py-2 text-body-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
             >
               <Zap className="h-4 w-4 shrink-0" strokeWidth={2.5} />
-              {pending ? 'Checking in…' : 'Check in'}
-            </button>
+              Check in
+            </Button>
           )}
 
           {checkedIn && (
