@@ -44,6 +44,7 @@ import type { FieldDef, RepeatDef, SectionDef } from '@/lib/studio/kernel/manife
 import type { RepeatRow } from '@/components/admin/rail/rail-field-value'
 import { isoToWallClockInput } from '@/lib/events/datetime'
 import { formatRepeatDraft, repeatFor } from '@/lib/events/repeat-rule'
+import type { SeriesScope } from '@/lib/events/series-scope'
 import { readEventCheckInEnabled } from '@/lib/events/checkin-enabled'
 import { readEventMarketListed } from '@/lib/events/market-listing'
 
@@ -465,9 +466,19 @@ export interface EventPin {
  */
 // 🔴 `repeats` is REQUIRED, with no default. A default of `{}` would make a forgotten argument
 // send every collection as `[]`, and the action would faithfully clear a host's whole schedule.
-// A missing argument should be a type error, not a silent deletion.
-export function eventSettingsFormData(values: EventRailValues, pin: EventPin, repeats: EventRepeatRows): FormData {
+// A missing argument should be a type error, not a silent deletion. That is also why it sits
+// BEFORE `scope`: a required parameter cannot follow a defaulted one, and of the two it is
+// `repeats` that must never be got by omission.
+export function eventSettingsFormData(
+  values: EventRailValues,
+  pin: EventPin,
+  repeats: EventRepeatRows,
+  scope: SeriesScope = 'this',
+): FormData {
   const fd = new FormData()
+  // Not a field and not a column: it says what the save may REACH (ADR-1307). Sent on every save,
+  // including a standalone event's, where the action's plan ignores it.
+  fd.set('series_scope', scope)
   for (const f of EVENT_RAIL.settings.fields) {
     const path = f.path as EventSettingsPath
     const v = values[path] ?? ''

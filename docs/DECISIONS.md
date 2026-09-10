@@ -38615,6 +38615,206 @@ text-level version fails on the sentence the control exists to print.
 
 ---
 
+## ADR-1306: ACCEPTED — a repeat rule set from one date of a series is written to the series (2026-09-10)
+
+**Context.** Vercel runtime errors, 2026-09-10, three occurrences from one host on `/events/[slug]`:
+
+```
+Error: new row for relation "events" violates check constraint "events_occurrence_not_recurring"
+```
+
+That CHECK, read from `pg_constraint` on the live database, is
+`CHECK (parent_event_id IS NULL OR recurrence_type = 'none')` — a materialised occurrence may not
+itself recur (20240208000000). `updateEventSettings` wrote `recurrence_type`, `recurrence_rule` and
+`recurrence_until` by id with **no idea whether the id was a series anchor or one materialised date
+of a series**. So a host who opened one date of a series and set a repeat on it got a 500 instead of
+a series.
+
+This is the third distinct reason the same reported change never landed, and the three together are
+worth stating in one place because each was invisible from the others:
+
+| # | Why it failed | Fixed by |
+|---|---|---|
+| 1 | There was no way to *say* "every 2 weeks": the cadence enum had four values | ADR-1299 |
+| 2 | Nothing ever retired the dates a changed rule no longer produces | ADR-1304 |
+| 3 | Setting the rule from one date of the series 500'd on a DB CHECK | this ADR |
+
+**Decision.** The repeat rule is a property of the SERIES, not of the date. Every occurrence page
+says "Part of a recurring series", and a host changing "how often" from one of them means the
+series, the way every calendar application treats it. So:
+
+- the recurrence columns are written to the **anchor** (`parent_event_id ?? id`), fenced with
+  `.is('parent_event_id', null)` so the write can only ever land on an anchor;
+- they are **omitted from the row's own payload** when that row is a date of a series, which is the
+  500;
+- everything else on the form still writes to the row the host opened, because a per-date title,
+  venue or price is exactly what a per-date edit is for;
+- the "ends on" date is validated against the **series' start**, not the start of whichever date the
+  host happened to be looking at, which would otherwise reject an end that is valid for the series.
+
+**Consequences, and the one that is easy to miss.** `propagateAnchorEditsToOccurrences` copies the
+ANCHOR's content onto every upcoming date. Running it after a **per-date** edit would overwrite the
+title, venue or price the host had just saved on that one date, one line after saving it. So
+propagation runs only when the anchor itself was edited; the other two reconcilers (ADR-1304) are
+driven by the RULE, which is the anchor's either way, so they run for both.
+
+The guard is a source-shape test (`app/(main)/events/admin-actions.test.ts`) and the ADR says why:
+the oracle for this bug is a database constraint reached through a dozen reads, a geocode and a
+details merge, so faking that chain deeply enough to make the constraint the thing under test would
+be faking the constraint. What the guard pins is the five shapes that keep the write off a child
+row, each of them a line someone could delete while everything still compiles. The behaviour itself
+was verified against production: the constraint is quoted from `pg_constraint` and the error from
+the runtime log.
+
+---
+
+## ADR-1307: ACCEPTED — editing one date of a series asks whether you mean the date or the series (2026-09-10)
+
+**Context.** Owner, minutes after watching a rule change do nothing:
+
+> If a user edits an event in the series, it should ask them if they want to change the future
+> schedule or just that event.
+
+A recurring event is ONE thing to a host and MANY rows to the database (ADR-007: occurrences are
+materialised, not virtual). Every calendar application resolves that mismatch the same way, by
+asking. This repo never asked, and the two silent answers it gave were each wrong in one direction:
+
+- editing the **anchor** pushed its content onto every upcoming date whether the host meant it or
+  not (ADR-884), so fixing one date's title rewrote them all;
+- editing a **date** could not change the series at all, and setting a repeat on one violated the
+  `events_occurrence_not_recurring` CHECK and 500'd (ADR-1306) — four times in production on the day
+  this was written, including once while the owner was watching.
+
+**Decision.** When the row being edited belongs to a series, the settings rail asks:
+
+> **This is one date in a repeating series.** Apply what you change here to:
+> ( ) This event only    ( ) This event and all future dates
+
+The answer is decided in ONE pure function, `seriesWritePlan` (`lib/events/series-scope.ts`), which
+both the control and the server action read. That is the point: the control that hides the repeat
+editor and the action that refuses to write it cannot disagree, because they are the same answer.
+
+| | This event only | This and all future dates |
+|---|---|---|
+| Repeat pattern | not editable | written to the **anchor** |
+| Content (title, venue, price…) | this row only | this row, then **forward** to later dates |
+| Schedule reconciliation (ADR-1304) | none | on the anchor |
+
+Three things follow, and each is a decision rather than a detail:
+
+1. **The default is the NARROW scope.** A missing or malformed field parses to "this event". The
+   wide answer rewrites dates the host cannot see, so it is the one they choose, never the one they
+   get by omission. `parseSeriesScope` is total and one-directional for exactly that reason.
+2. **The repeat pattern is only editable under the wide scope, on every row in a series** —
+   including the anchor. On a date the database forbids writing it; on the anchor, writing it would
+   change every date while the host had just said "this event". One rule, no special case. The rail
+   REMOVES the control rather than disabling it, and says where it went: a control that renders,
+   accepts a change and is then silently refused by the server is the failure this whole ADR is
+   about.
+3. **Propagation is FORWARD from the edited row**, not down from the anchor. `propagateEditsForward`
+   is the new sibling of `propagateAnchorEditsToOccurrences`: a host who fixes the venue on the 30th
+   and asks for it going forward means *from the 30th*. When the anchor is the origin it is also the
+   earliest, so "after it" is every occurrence — which is ADR-884's behaviour, now chosen rather
+   than assumed.
+
+**Consequences.** `isAnchor` is read from the row AS IT STANDS, never from the rule being submitted,
+so a standalone event turning its first repeat on is not asked a question about a series it is not
+in yet, and may still write the rule to itself. `series_scope` rides in the FormData beside the map
+pin and for the same reason: neither is a manifest field or a column — the pin says *where*, the
+scope says what the save may *reach*. The decision function is pinned in
+`lib/events/series-scope.test.ts` away from any database, across both row kinds, both scopes, and the
+standalone case; the wiring is pinned at the source in `app/(main)/events/admin-actions.test.ts`.
+
+---
+
+## ADR-1308: ACCEPTED — a materialised occurrence inherits its anchor's ticket tiers, which are rows and not columns (2026-09-10)
+
+**Context.** Owner, on the Meld series: the occurrences of a $22 weekly cowork take an RSVP and
+never a payment, and a Space membership that includes the event covers the anchor and nothing else.
+
+The production reading, taken before writing any of this:
+
+| row | slug | price_cents | join_mode | tiers | members-only tiers |
+|---|---|---|---|---|---|
+| anchor | `meld-community-coworking-royal-temple` | 2200 | rsvp | **2** | **1** |
+| occurrence | `meld-coworking-royal-temple-2026-09-16` | 2200 | rsvp | **0** | **0** |
+
+`generateOccurrencesForAnchor` mints occurrences as REAL `events` rows and copies
+`INHERITED_COLUMNS` onto each. That list is careful, it is shared with the propagation patch so the
+two halves cannot drift, and it is structurally incapable of carrying this: **it copies columns of
+the `events` row, and a ticket tier is a ROW in `event_ticket_types` keyed by `event_id`**. So
+`price_cents` travelled and the tiers did not, and the occurrence LOOKED priced while carrying no
+way to charge.
+
+Two consequences, both of them the owner's report:
+
+- **No charge is ever attempted.** `app/(main)/events/[slug]/page.tsx` renders the payment flow only
+  when `isPaidEvent && hasTiers`. With zero tiers `hasTiers` is false, the plain RSVP controls
+  render, and a member RSVPs free to a $22 gathering.
+- **Membership coverage cannot apply.** Space-membership inclusion is MODELLED as a members-only
+  tier row (`space_members_only` / `space_tier_id`, ADR-823), written by `setSpaceEventAccess`.
+  With no tier rows on the occurrence there is nothing for a membership to be included by.
+
+This is the ADR-883 shape again — the write never reaches what the readers consult — with one twist
+worth naming: the missing write is a second TABLE, not a second column, so no amount of care about
+the column list could have caught it, and the gate that would have is the one added below.
+
+**Decision.** Three writes and a repair, all sharing one list.
+
+1. **`occurrenceTierRows(anchorTiers, occurrenceEventId)`** in `lib/event-recurrence.ts` — pure,
+   the sibling of `occurrenceRow`, built from a single `TIER_CATALOG_COLUMNS` constant. It carries
+   the CATALOG (name, description, pricing mode and every amount it reads, the inventory cap, both
+   membership gates, sort order, and `active`) and resets identity + sales state **by omission**, so
+   the column defaults own them: `id` (a new row, and `event_tickets.ticket_type_id` points at
+   exactly one), `sold`, and `created_at`. `event_id` is the occurrence's.
+   🔴 **`sold` is the reset that matters.** It is the running count of succeeded purchases, owned by
+   the Stripe webhook and the refund handler, and it is the only sales counter on the table (a
+   pending reservation is counted from `event_tickets` inside `reserve_ticket_atomic`, never stored).
+   A copied `sold` against a copied `quantity` would mark a brand new date SOLD OUT on the day it
+   was minted and the first buyer would be refused.
+2. **The mint copies them, for the rows THAT RUN created and no others.** The occurrence upsert now
+   returns its ids; with `ignoreDuplicates` the statement is `ON CONFLICT DO NOTHING`, so what comes
+   back is exactly what was inserted. A date whose tiers a host has since edited is therefore never
+   overwritten or doubled, and any target that somehow already carries a tier is skipped as well —
+   the two together are what make a re-run idempotent. The copy is best-effort: the occurrences are
+   already written and a tier failure must not report them as unwritten.
+3. **`setSpaceEventAccess` fans out over the series.** Granting or retiring membership access on a
+   series ANCHOR now applies the same decision to the anchor's FUTURE occurrences. Every
+   authorization, plan and tier-ownership check stays where it was, made once about the series; only
+   the WRITE repeats. PAST occurrences are never touched — the same rule
+   `propagateAnchorEditsToOccurrences` and `retireStaleOccurrences` follow — and a CHILD never
+   reaches upward, because the fan-out belongs to the series and reaching up from one date would
+   silently re-open access a host retired on the anchor.
+4. **`scripts/backfill-occurrence-ticket-tiers.mts`** for the drift already in production. A
+   deliberate operator script, not a migration and not a cron: it writes money configuration onto
+   live gatherings people can already see, so it prints every row it would create and writes nothing
+   without `--apply`. Future, tierless occurrences of tier-carrying anchors only, re-reading each
+   date immediately before its write.
+
+**The gate that catches the next version of this.** `lib/event-recurrence.test.ts` reads the real
+column set of `event_ticket_types` out of `lib/database.types.ts` and asserts that **every column is
+classified** — carried by `TIER_CATALOG_COLUMNS`, or on the four-name reset list. A migration that
+adds a tier column is neither, so CI fails until someone decides which it is, rather than every
+occurrence minted afterwards quietly carrying a default. The backfill repeats the column list
+(it cannot import a module that resolves `@/lib/...` aliases) and a second test pins the two lists
+identical — the same contract the ADR-884 SQL repair has carried since it was written, for the same
+failure: a column added to the mint and not the repair leaves every already-materialised date
+holding a defaulted value forever.
+
+**Consequences.** `generateOccurrencesForAnchor` now returns what was ACTUALLY written rather than
+what was attempted; under a concurrent cron run the two differ, and the old count was quietly wrong.
+Occurrence generation costs two more reads and one more write per anchor that has tiers, and none at
+all for an anchor that has none.
+
+**Not done here.** A tier's inventory is now PER DATE, which is the right default for a cap that
+means "seats in the room" and the wrong one for a cap that means "passes for the season"; nothing in
+the model distinguishes them and no host has asked yet. And the fan-out in `setSpaceEventAccess`
+reaches the occurrences that exist WHEN it runs — a date minted later gets its tiers from the anchor
+in the same shape, which is correct, but a host who grants access and then extends the series relies
+on the mint rather than on the grant.
+
+---
+
 ## ADR-1309: ACCEPTED — a repeat group is an edit plane, and the event's `details` bag finally has one (2026-09-10)
 
 **Context.** Owner, 2026-09-10: *"There are multiple blocks that the Vera event creator will create

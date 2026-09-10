@@ -302,7 +302,16 @@ describe('the Event rail reads its row and writes its FormData through the key m
     const values = eventRailValues(row)
     const fd = eventSettingsFormData(values, { lat: 34.45, lng: -119.24 }, eventRepeatRows(row))
     const sent = Object.fromEntries(fd.entries())
-    expect(Object.keys(sent).sort()).toEqual([...EVENT_SETTINGS_WRITES.map((p) => EVENT_COLUMNS[p]), ...EVENT_PIN_KEYS].sort())
+    // `series_scope` rides beside the pin and for the same reason: neither is a manifest field or a
+    // column. The pin says WHERE, the scope says what the save may REACH (ADR-1307). Both are the
+    // form's own, so both are named here rather than derived from the writes list.
+    expect(Object.keys(sent).sort()).toEqual(
+      [...EVENT_SETTINGS_WRITES.map((p) => EVENT_COLUMNS[p]), ...EVENT_PIN_KEYS, 'series_scope'].sort(),
+    )
+    // Defaulted NARROW, and defaulted in the BUILDER, so a caller that forgets it cannot widen a
+    // save by omission.
+    expect(sent.series_scope).toBe('this')
+    expect(Object.fromEntries(eventSettingsFormData(values, { lat: null, lng: null }, {}, 'future').entries()).series_scope).toBe('future')
     expect(sent).toMatchObject({
       title: 'Breath Is Life',
       starts_at: '2026-10-01T18:30',
@@ -328,7 +337,15 @@ describe('the Event settings module renders the plan, not a field list', () => {
     expect(source).toMatch(/from '\.\/event-rail-plan'/)
     expect(source).toMatch(/eventSettingsGroups\(\)/)
     expect(source).toMatch(/\{section\.title\}/)
-    expect(source).toMatch(/eventSettingsFormData\(valuesRef\.current, pinRef\.current, repeatsRef\.current\)/)
+    // 🔴 ASSERT THE ARGUMENTS, NEVER THE EXACT CALL TEXT. Both sides of this merge pinned the
+    // literal string and each one read as a break when the other added its argument — the same
+    // trap `lib/events/options.test.ts` records for a `select(...)` string, hit again here. The
+    // save must carry the values, the pin, the repeat rows AND the series scope; how the call is
+    // wrapped is the formatter's business.
+    const call = source.match(/eventSettingsFormData\(([^)]*)\)/)?.[1] ?? ''
+    for (const arg of ['valuesRef.current', 'pinRef.current', 'repeatsRef.current', 'scopeRef.current']) {
+      expect(call).toContain(arg)
+    }
   })
 
   it('declares no autosave field of its own (a named Input, Textarea, Select, Checkbox, or hidden input)', () => {

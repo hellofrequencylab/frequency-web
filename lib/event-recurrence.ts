@@ -195,6 +195,178 @@ export function propagationPatch(anchor: Anchor): Record<string, unknown> {
   return patch
 }
 
+// ── WHAT AN OCCURRENCE INHERITS THAT IS NOT A COLUMN: THE TICKET TIERS (ADR-1308) ───────────────
+//
+// INHERITED_COLUMNS above is the whole of what an occurrence inherits, and it can only ever carry
+// COLUMNS OF THE `events` ROW. Ticket tiers are not columns. They are rows in `event_ticket_types`
+// keyed by `event_id`, and until this existed nothing copied them.
+//
+// The production reading that named it, on the Meld series:
+//
+//   anchor      meld-community-coworking-royal-temple    price_cents 2200   tiers 2 (1 members-only)
+//   occurrence  meld-coworking-royal-temple-2026-09-16   price_cents 2200   tiers 0
+//
+// `price_cents` IS a column, so every occurrence inherited it and LOOKED priced. The tiers did not
+// travel, so the occurrence had none. Two consequences, both reported by the owner:
+//
+//   · NO CHARGE IS EVER ATTEMPTED. The event page renders the paid branch only when
+//     `isPaidEvent && hasTiers`; with zero tiers `hasTiers` is false and the plain RSVP controls
+//     render instead. A member RSVPs free to a $22 gathering.
+//   · MEMBERSHIP COVERAGE CANNOT APPLY. Space-membership inclusion is MODELLED as a members-only
+//     tier row (`space_members_only` / `space_tier_id`, ADR-823). With no tier rows there is
+//     nothing for a membership to be included by.
+//
+// This is the ADR-883 shape once more (the write never reaches what the readers consult), except
+// that the missing write is a second TABLE rather than a second column — which is exactly why the
+// column list could not have caught it.
+//
+// 🔴 WHAT IS COPIED AND WHAT IS RESET, AND THE RESET LIST IS THE DANGEROUS HALF.
+// Copied: the CATALOG — every column that describes what the ticket IS. Reset to its default:
+//   • `id`          — a new tier is a new row; reusing the anchor's primary key is not a copy, it
+//                     is a collision (and `event_tickets.ticket_type_id` points at exactly one).
+//   • `event_id`    — set to the occurrence. That is the whole point of the copy.
+//   • `sold`        — 🔴 THE ONE THAT WOULD BE VISIBLE AND WRONG. It is the running count of
+//                     succeeded purchases, owned by the Stripe webhook and the refund handler. A
+//                     copied `sold` against a copied `quantity` would mark a brand new date SOLD
+//                     OUT on the day it was minted, and the first buyer would be refused. It is
+//                     the only sales counter on this table: a pending reservation is counted from
+//                     `event_tickets` inside `reserve_ticket_atomic`, never stored here.
+//   • `created_at`  — when THIS row was made, which is now, not when the anchor's tier was made.
+// Each of the four is reset by OMISSION (bar `event_id`): the column defaults do the work
+// (`gen_random_uuid()`, `0`, `now()`), so a payload that forgets one cannot smuggle the anchor's
+// value through.
+//
+// A RETIRED anchor tier travels too, retired (`active` is a catalog column). A tier a host has
+// switched off is a statement about the series, and an occurrence that silently re-opened it would
+// be selling a ticket the host withdrew.
+const TIER_CATALOG_COLUMNS = [
+  'name',
+  'description',
+  // Pricing: the mode and every amount it can read.
+  'pricing_mode',
+  'price_cents',
+  'min_cents',
+  'suggested_cents',
+  // Inventory cap (NULL = unlimited). The COUNT against it, `sold`, is deliberately absent.
+  'quantity',
+  // Who may buy: the platform-membership gate and the ADR-823 Space-membership gate.
+  'member_only',
+  'space_members_only',
+  'space_tier_id',
+  // Presentation + lifecycle.
+  'sort_order',
+  'active',
+] as const
+
+type TierCatalogColumn = (typeof TIER_CATALOG_COLUMNS)[number]
+
+/** The tier SELECT: the row's own identity plus every catalog column. `sold` is NOT read, because
+ *  nothing downstream of this module may write it. */
+export const ANCHOR_TIER_SELECT = ['id', 'event_id', ...TIER_CATALOG_COLUMNS].join(', ')
+
+export type AnchorTicketTier = { id?: string; event_id?: string } & Partial<
+  Record<TierCatalogColumn, unknown>
+>
+
+/** The dedupe key for "the same tier". `event_ticket_types` carries no unique constraint, so the
+ *  stable thing a host would recognise is the tier's NAME on that event — trimmed and case-folded,
+ *  so "Members" and "members " are one tier rather than two. */
+function tierKey(tier: AnchorTicketTier): string {
+  return String(tier.name ?? '')
+    .trim()
+    .toLowerCase()
+}
+
+/**
+ * PURE. The `event_ticket_types` insert payloads that give `occurrenceEventId` the anchor's tiers.
+ *
+ * Sibling of `occurrenceRow`: ONE list drives it, every catalog column is carried verbatim, and the
+ * identity + sales columns are reset by omission (see the block comment above). Anchor tiers that
+ * share a name collapse to the first, so a re-run cannot mint a second "Members" beside the one it
+ * made last time, and a nameless row (which no writer produces — `name` is NOT NULL and
+ * `parseTicketTierInput` refuses a blank) is dropped rather than minted as an unnameable ticket.
+ */
+export function occurrenceTierRows(
+  anchorTiers: readonly AnchorTicketTier[],
+  occurrenceEventId: string,
+): Record<string, unknown>[] {
+  const seen = new Set<string>()
+  const rows: Record<string, unknown>[] = []
+  for (const tier of anchorTiers) {
+    const key = tierKey(tier)
+    if (!key || seen.has(key)) continue
+    seen.add(key)
+    const row: Record<string, unknown> = { event_id: occurrenceEventId }
+    for (const col of TIER_CATALOG_COLUMNS) {
+      const value = tier[col]
+      if (value === undefined) continue
+      row[col] = value
+    }
+    rows.push(row)
+  }
+  return rows
+}
+
+/**
+ * Give newly minted occurrences the anchor's ticket tiers. Best-effort by contract: the occurrence
+ * rows are already written and a failure here must not undo them, so every miss is logged and
+ * counted rather than thrown.
+ *
+ * ONLY the occurrences a run actually created are passed in, and any of those that somehow already
+ * carries a tier is skipped — so a date whose tiers a host has since edited is never overwritten or
+ * doubled. Both halves matter: the first keeps the copy away from every pre-existing date, the
+ * second is what makes a re-run idempotent.
+ */
+async function mintTiersForOccurrences(anchorId: string, occurrenceIds: string[]): Promise<number> {
+  if (!occurrenceIds.length) return 0
+  const admin = createAdminClient()
+
+  const { data: tierData, error: tierErr } = await admin
+    .from('event_ticket_types')
+    .select(ANCHOR_TIER_SELECT)
+    .eq('event_id', anchorId)
+    .order('sort_order', { ascending: true })
+    .order('created_at', { ascending: true })
+  if (tierErr) {
+    console.error('[mintTiersForOccurrences]', logToken(anchorId), sanitizeForLog(tierErr.message))
+    return 0
+  }
+  const tiers = (tierData ?? []) as unknown as AnchorTicketTier[]
+  if (!tiers.length) return 0
+
+  // A read that FAILED is not a read that found nothing: standing down leaves an occurrence without
+  // tiers (today's behaviour, healed by the next run), where believing it would double them.
+  const { data: existing, error: existingErr } = await admin
+    .from('event_ticket_types')
+    .select('event_id')
+    .in('event_id', occurrenceIds)
+  if (existingErr) {
+    console.error(
+      '[mintTiersForOccurrences]',
+      logToken(anchorId),
+      sanitizeForLog(existingErr.message),
+    )
+    return 0
+  }
+  const alreadyTiered = new Set(
+    ((existing ?? []) as { event_id: string | null }[]).flatMap((r) =>
+      r.event_id ? [r.event_id] : [],
+    ),
+  )
+
+  const rows = occurrenceIds
+    .filter((id) => !alreadyTiered.has(id))
+    .flatMap((id) => occurrenceTierRows(tiers, id))
+  if (!rows.length) return 0
+
+  const { error: insErr } = await admin.from('event_ticket_types').insert(rows as never)
+  if (insErr) {
+    console.error('[mintTiersForOccurrences]', logToken(anchorId), sanitizeForLog(insErr.message))
+    return 0
+  }
+  return rows.length
+}
+
 /**
  * Push an anchor's current details onto its UPCOMING occurrences.
  *
@@ -362,17 +534,33 @@ export async function generateOccurrencesForAnchor(anchorId: string): Promise<nu
   // e.g. a concurrent cron run that already materialised this day — never aborts the
   // whole batch. The slug is `${anchor.slug}-${YYYY-MM-DD}`, unique per day, so the
   // happy path (no collisions) inserts exactly the same rows as a plain insert.
-  const { error: insErr } = await admin
+  const { data: inserted, error: insErr } = await admin
     .from('events')
     // occurrenceRow builds the payload from INHERITED_COLUMNS, so its static type is a plain
     // record; cast past the generated Insert shape (ADR-246 repo convention). The COLUMN NAMES
     // are the thing under test — lib/event-recurrence.test.ts pins every inherited key.
     .upsert(rows as never, { onConflict: 'slug', ignoreDuplicates: true })
+    // The ids come back so the tier copy below can be scoped to the rows THIS RUN CREATED. With
+    // `ignoreDuplicates` the statement is ON CONFLICT DO NOTHING, so a row that already existed is
+    // not returned — which is precisely the distinction the tier copy needs: an occurrence a host
+    // has since edited must never be touched.
+    .select('id')
   if (insErr) {
     console.error('[generateOccurrencesForAnchor] insert error:', insErr.message)
     return 0
   }
-  return rows.length
+
+  const created = ((inserted ?? []) as { id: string }[]).map((r) => r.id)
+  // ADR-1308: the tiers are rows in another table, so they need their own write. Best-effort — the
+  // occurrences are already in the database and a tier failure must not report them as unwritten.
+  await mintTiersForOccurrences(anchor.id, created)
+
+  // The count is what was ACTUALLY written, not what was attempted: with `ignoreDuplicates` a
+  // concurrent run can take a day out from under this one, and reporting it as created would make
+  // the cron's tally quietly wrong. Falls back to the attempted count only if the representation
+  // came back empty without an error (a `Prefer: return=minimal` server), where the old count is
+  // still the better answer than 0.
+  return inserted ? created.length : rows.length
 }
 
 // Roll occurrences forward for active anchors. Called from the daily cron.
@@ -631,4 +819,50 @@ export async function retireStaleOccurrences(anchorId: string): Promise<RetireRe
     keptBecauseAttached: stale.length - retired,
   })
   return { retired, kept: stale.length - retired, stoodDown: false }
+}
+
+/**
+ * Push ONE date's content onto the LATER dates of its series ("this and all future", ADR-1307).
+ *
+ * The forward-only sibling of `propagateAnchorEditsToOccurrences`, and the difference is the whole
+ * point. That one copies the ANCHOR onto every upcoming date, which is right when the anchor is
+ * what was edited and wrong when it is not: a host who fixes the venue on the 30th and asks for it
+ * to apply going forward means from the 30th, not from the series' beginning.
+ *
+ * So the origin is the row the host actually edited, and the target is every date of the same
+ * series that starts AFTER it. The anchor is not special here: when it is the origin it is also the
+ * earliest, so "after it" is every occurrence, which is exactly ADR-884's behaviour. When a later
+ * date is the origin, the anchor and the dates before it keep what they had, which is what "future"
+ * means.
+ *
+ * Best-effort by contract, like every other reconciler here: the caller has already saved, and a
+ * failure must not report that save as failed. Returns the number of dates brought in line, or 0.
+ */
+export async function propagateEditsForward(fromEventId: string): Promise<number> {
+  const admin = createAdminClient()
+
+  const { data: row, error: rowErr } = await admin
+    .from('events')
+    .select(`${ANCHOR_SELECT}, parent_event_id`)
+    .eq('id', fromEventId)
+    .maybeSingle()
+  if (rowErr || !row) return 0
+
+  const origin = row as unknown as Anchor & { parent_event_id: string | null }
+  if (!origin.starts_at) return 0
+  const anchorId = origin.parent_event_id ?? origin.id
+
+  const { data, error } = await admin
+    .from('events')
+    .update(propagationPatch(origin) as never)
+    // The series is the anchor plus its children. `.or` is the only way to say "this row or its
+    // children" in one statement, and the `.gt` below is what makes it FORWARD.
+    .or(`id.eq.${anchorId},parent_event_id.eq.${anchorId}`)
+    .gt('starts_at', origin.starts_at)
+    .select('id')
+  if (error) {
+    console.error('[propagateEditsForward]', logToken(fromEventId), sanitizeForLog(error.message))
+    return 0
+  }
+  return (data ?? []).length
 }

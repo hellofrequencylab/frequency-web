@@ -8,6 +8,8 @@ import { Input, labelClasses } from '@/components/ui/field'
 import { RailAutosaveForm, useRailSaveNow } from '@/components/admin/rail/rail-autosave-form'
 import { RailManifestFields, type RailManifestFieldsProps } from '@/components/admin/rail/rail-manifest-fields'
 import { RailManifestRepeat } from '@/components/admin/rail/rail-manifest-repeat'
+import { Radio } from '@/components/ui/radio'
+import { seriesWritePlan, type SeriesScope } from '@/lib/events/series-scope'
 import { createClient } from '@/lib/supabase/client'
 import {
   getEventAdminData,
@@ -200,8 +202,32 @@ function EventSettingsRail({ data, engage }: { data: EventData; engage: EventCor
     setPinState(next)
   }, [])
 
+  // ── "THIS EVENT, OR THE WHOLE SERIES?" (ADR-1307) ──────────────────────────────────────────────
+  // Asked only when the row belongs to a series, and defaulted to the NARROW answer: the wide one
+  // rewrites dates the host cannot see, so it is the one they choose rather than the one they get.
+  // `isAnchor` is read from the row as it stands, so a standalone event turning its first repeat on
+  // is not asked a question about a series it is not in yet.
+  const [scope, setScope] = useState<SeriesScope>('this')
+  const scopeRef = useRef(scope)
+  const pickScope = useCallback((next: SeriesScope) => {
+    scopeRef.current = next
+    setScope(next)
+  }, [])
+  const plan = seriesWritePlan(
+    {
+      id: eventId,
+      parentEventId: data.parent_event_id ?? null,
+      isAnchor: (data.parent_event_id ?? null) === null && (data.recurrence_type ?? 'none') !== 'none',
+    },
+    scope,
+  )
+
   const saveSettings = async () =>
-    updateEventSettings(eventId, eventSlug, eventSettingsFormData(valuesRef.current, pinRef.current, repeatsRef.current))
+    updateEventSettings(
+      eventId,
+      eventSlug,
+      eventSettingsFormData(valuesRef.current, pinRef.current, repeatsRef.current, scopeRef.current),
+    )
 
   const [imgErr, setImgErr] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
@@ -277,6 +303,10 @@ function EventSettingsRail({ data, engage }: { data: EventData; engage: EventCor
   // The one derived field: "My circle" is offered only when the event's home IS a Circle (ADR-883).
   const fieldsFor = (fields: readonly FieldDef[]) =>
     fields.map((f) => (f.path === 'visibility' ? eventVisibilityField(f, data.scope_type) : f))
+  /** Drop the repeat control when the chosen scope has no authority over the pattern. The server
+   *  enforces the same answer from the same function, so the two cannot disagree. */
+  const repeatGated = (fields: readonly FieldDef[]) =>
+    plan.ruleEditable ? fields : fields.filter((f) => f.path !== 'recurrenceRule')
   const hints: Record<string, string> = {
     ...HINTS,
     priceCents: `Leave blank for a free RSVP event. Set a price in ${(data.currency ?? 'usd').toUpperCase()} to sell tickets.`,
@@ -361,13 +391,51 @@ function EventSettingsRail({ data, engage }: { data: EventData; engage: EventCor
       {/* THE SETTINGS ZONE: the plan's fields, one group per manifest section, headed by the manifest's
           own titles. The venue search and the map pin (two composites) sit under the `where` group. */}
       <RailAutosaveForm action={saveSettings} className="space-y-4">
+        {/* THE SCOPE QUESTION, above everything it governs. It is not a manifest field: it changes
+            nothing about the event, it changes what a save REACHES, so it belongs beside the save
+            rather than among the values. */}
+        {plan.inSeries && (
+          <div className="space-y-2 rounded-card border border-primary/30 bg-primary-bg/40 p-3">
+            <div>
+              <p className={labelClasses} id="series-scope-label">
+                This is one date in a repeating series
+              </p>
+              <p className="mt-0.5 text-2xs text-muted">Apply what you change here to:</p>
+            </div>
+            <div className="space-y-1.5" role="radiogroup" aria-labelledby="series-scope-label">
+              <Radio
+                name="series-scope"
+                label="This event only"
+                checked={scope === 'this'}
+                onChange={() => pickScope('this')}
+              />
+              <Radio
+                name="series-scope"
+                label="This event and all future dates"
+                checked={scope === 'future'}
+                onChange={() => pickScope('future')}
+              />
+            </div>
+          </div>
+        )}
         {GROUPS.map(({ section, fields, repeats }) => (
           <div key={section.key} className="space-y-3 rounded-card border border-border bg-canvas/40 p-3">
             <div>
               <p className={labelClasses}>{section.title}</p>
               <p className="mt-0.5 text-2xs text-muted">{section.desc}</p>
             </div>
-            <SettingsFields fields={fieldsFor(fields)} values={values} onChange={update} placeholders={PLACEHOLDERS} hints={hints} />
+            <SettingsFields fields={repeatGated(fieldsFor(fields))} values={values} onChange={update} placeholders={PLACEHOLDERS} hints={hints} />
+            {/* 🔴 THE REPEAT EDITOR IS REMOVED, NOT DISABLED, UNDER THE NARROW SCOPE — and it says
+                where it went. A control that renders, accepts a change and is then silently
+                refused by the server is the failure ADR-1307 is about. This governs the repeat
+                PATTERN only; the repeat GROUPS below are ordinary per-row content, and a host
+                editing one date's schedule under "this event only" is doing exactly that. */}
+            {section.key === 'when' && plan.inSeries && !plan.ruleEditable && (
+              <p className="text-2xs text-muted">
+                How often this repeats belongs to the whole series. Choose <strong>This event and all
+                future dates</strong> above to change it.
+              </p>
+            )}
             {/* The section's repeat groups (ADR-1309): one list editor per collection, its rows and
                 its per-row controls both from the manifest, capped where the server caps it. */}
             {repeats.map((def) => (
