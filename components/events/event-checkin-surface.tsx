@@ -103,7 +103,12 @@ export function EventCheckInSurface({
         <div className="shrink-0 text-right">
           {state.kind === 'countdown' && (
             <>
-              <p className="text-meta uppercase tracking-wide text-subtle">Event starts in</p>
+              {/* `eyebrow`, the ROLE, not `text-meta uppercase tracking-wide` spelled out. Both of
+                  these labels were hand-rolled when this component was written, which pushed the
+                  `handrolled-eyebrow` ratchet from 481 to 482 and left `main` failing `checks` for
+                  every PR in the repo. The role carries size, tracking and weight together, so it
+                  is also the only way the two labels stay identical to each other. */}
+              <p className="eyebrow text-subtle">Event starts in</p>
               {/* `tabular-nums` is what keeps the box still: proportional digits change width as they
                   tick, and a header element that breathes once a second is worse than no clock. */}
               <p className="text-lead font-bold tabular-nums text-text">
@@ -186,7 +191,7 @@ export function EventCheckInSurface({
           right-ragged prose is hard to read. */}
       {doorNote && state.kind !== 'countdown' && (
         <div className="mt-2 border-t border-border pt-2 text-left">
-          <p className="text-meta font-semibold uppercase tracking-wide text-subtle">{SPECIAL_INSTRUCTIONS_LABEL}</p>
+          <p className="eyebrow text-subtle">{SPECIAL_INSTRUCTIONS_LABEL}</p>
           <p className="mt-0.5 whitespace-pre-line text-meta text-text">{doorNote}</p>
         </div>
       )}
