@@ -50,10 +50,21 @@ import { DetailTemplate } from './detail-template'
  *
  *  One column across the whole band, grouped in the order a reader asks:
  *
- *    the gathering   when · where                      what a guest needs in order to decide
- *    the series      cadence · nextDate · seriesRail    how often, and which dates
- *    who runs it     hostedBy · belonging · credit      the person, the Circle, the poster
- *    the reward      reward                             the check-in strip, a band by nature
+ *    the gathering   when · where · hostedBy · belonging   what a guest needs in order to decide
+ *    the series      cadence · nextDate · seriesRail        how often, and which dates
+ *    the credit      credit                                 the member who posted it, when there is one
+ *    the reward      reward                                 the check-in strip, a band by nature
+ *
+ *  🔴 `hostedBy` SITS WITH THE VENUE, NOT WITH THE SERIES (owner, 2026-09-10: *"Move 'Hosted By'
+ *  line between address and part of a recurring series"*). Who is running it is one of the three
+ *  facts a guest decides on — when, where, who — and the series lines are a different question
+ *  entirely: how often, and which dates. Reading `when · where · hostedBy` and then the cadence is
+ *  the order the report asked for and the order the decision is actually made in.
+ *
+ *  `credit` is its own group rather than a fourth line of the first, because after ADR-1311 it is
+ *  RARE: it renders only for a member who posted a gathering a host then took over, and never for
+ *  the house account. A group that is usually absent must not leave a hole in the group that is
+ *  always present.
  *
  *  The gap BETWEEN groups is wider than the gap inside one, so the stack reads as four things
  *  rather than nine lines. An empty group renders nothing at all, so a one-off event reads
@@ -166,12 +177,11 @@ export function EventDetailTemplate({
   interiorSide,
 }: EventDetailTemplateProps) {
   const filled = (line: ReactNode) => line !== undefined && line !== null && line !== false
-  const gathering = [identity.when, identity.where]
+  const gathering = [identity.when, identity.where, identity.hostedBy, identity.belonging]
   const series = [identity.cadence, identity.nextDate, identity.seriesRail]
-  const runBy = [identity.hostedBy, identity.belonging, identity.credit]
   const hasGathering = gathering.some(filled)
   const hasSeries = series.some(filled)
-  const hasRunBy = runBy.some(filled)
+  const hasRunBy = filled(identity.credit)
   // An event with nothing to say under its title gets no region container at all, rather than an
   // empty div carrying the region's margin. Each GROUP self-suppresses the same way, so a one-off
   // event has no empty gap where its series lines would have been.
@@ -224,6 +234,8 @@ export function EventDetailTemplate({
                 <div className="space-y-1.5">
                   {identity.when}
                   {identity.where}
+                  {identity.hostedBy}
+                  {identity.belonging}
                 </div>
               )}
               {hasSeries && (
@@ -233,13 +245,7 @@ export function EventDetailTemplate({
                   {identity.seriesRail}
                 </div>
               )}
-              {hasRunBy && (
-                <div className="space-y-1.5">
-                  {identity.hostedBy}
-                  {identity.belonging}
-                  {identity.credit}
-                </div>
-              )}
+              {hasRunBy && <div className="space-y-1.5">{identity.credit}</div>}
               {identity.reward}
             </div>
           ) : undefined

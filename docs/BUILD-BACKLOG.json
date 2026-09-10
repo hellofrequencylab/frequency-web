@@ -11629,6 +11629,24 @@
       }
     },
     {
+      "id": "LIVE-285",
+      "status": "done",
+      "lane": "live",
+      "size": "S",
+      "priority": "P1",
+      "source": {
+        "file": "app/(main)/events/[slug]/page.tsx",
+        "ref": "owner report on the live Meld page, 2026-09-10"
+      },
+      "title": "The event identity region printed the platform's own name back to the reader three times, and put the host below the date rail",
+      "detail": "Owner, on the live Meld page: \"Move 'Hosted By' line between address and part of a recurring series. Remove organized by Frequency and posted by Frequency from all events. Only include the posted by tag if it was posted by a user and handed off to a host.\"\n\nMEASURED: host_id on every Meld row is the house account (78d47bae, handle 'frequency'), so the page read 'Hosted by Royal Temple with Daniel Tyack - organized by Frequency' / 'Posted by Frequency', and the Host rail card read 'Organized by Frequency' a third time. Three lines of the identity region were the site naming itself.\n\nFIXED (ADR-1311). lib/events/platform-credit.ts answers one question - is this attribution the house account talking about itself - and BOTH readers consult it, so the identity line and the rail card cannot drift. The poster credit no longer resolves the @frequency brand row at all: the lookup and its BRAND_CREDIT fallback are DELETED rather than left unused, because a resolved brand row in scope is how 'Posted by Frequency' returns by accident. Matched on HANDLE, never display name - a display name is editable copy and a member may legitimately call themselves 'Frequency'.\n\nWhat survives is the case the owner asked to keep: a real member who posted a gathering a host then took over. That condition was already half-expressed (posterRow is only fetched when postedById !== host.id, which IS 'handed off'), so the only thing removed is the operator/brand override on top of it. isUnclaimedPosted now decides only PROMINENCE (the Zap line vs the quiet one), keeping a member's posting reward visible before a host claims.\n\n🔴 DISPLAY ONLY: posted_by_profile_id and host_id are untouched, so send-to-host, claim and reward still key off them for a seeded listing whose credit no longer renders.\n\nAlso reordered: the identity groups were when/where, then the series, then hostedBy - which put the host three groups below the venue. A guest decides on when, where, WHO; the series lines answer how often and which dates. First group is now when/where/hostedBy/belonging, and credit is its own rare group so its usual absence leaves no hole.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const bad=[];const strip=t=>t.replace(/\\\\/\\\\*[\\\\s\\\\S]*?\\\\*\\\\//g,'').replace(/\\\\{\\\\/\\\\*[\\\\s\\\\S]*?\\\\*\\\\/\\\\}/g,'').replace(/(^|\\\\s)\\\\/\\\\/.*$/gm,'');if(!fs.existsSync('lib/events/platform-credit.ts'))bad.push('platform-credit.ts is gone');const page=strip(fs.readFileSync('app/(main)/events/[slug]/page.tsx','utf8'));const card=strip(fs.readFileSync('components/widgets/events/host-cohost-section.tsx','utf8'));const tpl=strip(fs.readFileSync('components/templates/event-detail-template.tsx','utf8'));if(page.indexOf('BRAND_CREDIT')>=0||page.indexOf('brandRow')>=0)bad.push('the @frequency brand row is resolved again, which is how Posted by Frequency returns');for(const [n,src] of [['page',page],['card',card]]){if(src.indexOf('showsOrganizerCredit')<0)bad.push(n+' no longer gates the organizer credit');for(const m of src.matchAll(/organized by/gi)){if(src.slice(Math.max(0,m.index-400),m.index).indexOf('showsOrganizerCredit')<0)bad.push(n+' renders an organized-by credit that is not behind the gate')}}const g=tpl.indexOf('const gathering = [identity.when, identity.where, identity.hostedBy, identity.belonging]');if(g<0)bad.push('hostedBy is no longer grouped with the venue');if(bad.length){console.error(bad.join('; '));process.exit(1)}\"",
+        "note": "Measures the CONSEQUENCE in all three places the defect lived, with comments stripped first because both files explain the rule in prose directly above the code that obeys it (the guard failed on its own documentation before that). The brand-row clause is the one that matters most: the credit returns the moment a resolved @frequency row sits in scope again, whether or not anything renders it today."
+      }
+    },
+    {
       "id": "LIVE-286",
       "status": "done",
       "lane": "live",
