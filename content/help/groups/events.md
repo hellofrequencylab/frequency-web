@@ -79,15 +79,15 @@ See a cool event poster around town, or one on Eventbrite or in a group chat? Ca
 
 When you **check in at the door** of an event you're going to, you earn your Zaps, keep your streak, and you also become a **verified member**: a small check appears by your name. Showing up in the real world is the truest sign you're a real person, so it's how verification works here. Nothing to upload, no form, just turn up.
 
-**How to check in.** Open the event page once the gathering has started and tap **Check in**. It appears there for anyone marked going, from the start time onward, so a late arrival can still check in. Once you have checked in the button reads **Checked In**, and tapping again changes nothing, so there is no way to count yourself twice.
+**How to check in.** It is one box near the top of the event page, under Share, and you can watch it the whole time. Before the doors open it counts down to the start. When the event begins it turns into a **Check in** button for anyone marked going, from the start time onward, so a late arrival can still check in. Once you have checked in it reads **Checked in** with the Zaps you earned, and tapping again changes nothing, so there is no way to count yourself twice.
 
 **If you scan a door code and nothing happens, the event page now says why.** Scanning a host's check-in code lands you on the event, and if it could not check you in you get one line explaining it: the window has not opened yet or has closed, you are not marked going, your spot is still waiting on the host, the host turned check-in off for this event, or you need to sign in first. Before, the scan simply took you to the page and left you guessing.
 
-**Check-in closes a few hours after the event.** You have until four hours past the end time, so remembering in the car still counts. After that the button is gone and the event is done. If the host set no end time, the four hours run from the start.
+**Check-in closes a few hours after the event.** You have until four hours past the end time, so remembering in the car still counts. After that the box is gone and the event is done. If the host set no end time, the four hours run from the start.
 
 **You need an account to check in.** A guest who RSVPs by email holds a real spot, but check-in is tied to an account. Sign in with the address you used and your RSVP comes with you.
 
-**Hosts choose whether there is a door at all.** Check-in fits a class or a weekly cowork, and does not fit a planning session or a long working block where the only question is who is coming. In event settings there is a **Let guests check in** switch. Leave it on and check-in opens once the event starts, the way it always has. Turn it off and there is no check-in on that event: no button, no prompt, and RSVPs are the whole answer.
+**Hosts choose whether there is a door at all.** Check-in fits a class or a weekly cowork, and does not fit a planning session or a long working block where the only question is who is coming. In event settings there is a **Let guests check in** switch. Leave it on and check-in opens once the event starts, the way it always has. Turn it off and there is no check-in on that event: no box, no countdown, and no mention of the Zaps it would have paid. RSVPs are the whole answer.
 
 ## Invite people with your own link
 

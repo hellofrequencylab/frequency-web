@@ -39274,6 +39274,118 @@ codebase eats real code.
 
 ---
 
+## ADR-1315: ACCEPTED — check-in is one surface in the event header: the countdown that becomes the door (2026-09-10)
+
+**Context.** Owner, 2026-09-10: *"I want to move and combine both the 'Check in at the door to earn
++25 Zaps' line, and the Check In Box from the box editor... I want the check in box to have a
+countdown function showing Event Start in 00:00:00. When check in opens, that box converts to the
+check in function for members... styled to fit perfectly in the header box... blend it into
+background canvas without borders."*
+
+Check-in was spread across three surfaces, each of which knew a different amount about it:
+
+| Surface | Where | What it knew | What it got wrong |
+|---|---|---|---|
+| `EventRewardStrip` | identity region, under the title | the Zap amount | 🔴 never read the host's check-in switch, so it promised **+25 Zaps on every event**, including ones whose door was deliberately shut |
+| `event-checkin` block | wherever an operator dragged it | the window, the host's door note | drew **only** inside the window, so for almost the whole life of an event it was an empty slot somebody had placed |
+| `EventCheckInButton` | inside the Join box | everything | the only thing that could actually check you in, and it sat below the fold |
+
+Three readings of one question, and the one that could act was the one hardest to find.
+
+**Decision.**
+
+- **One state function decides, and it is pure.** `checkInSurfaceState()` (`lib/events/checkin-surface.ts`)
+  takes the gates the event page already resolves server-side — cancelled, the host's switch, the
+  window, signed-in, going, the `event_checkin:<event>:<profile>` idempotency row — and returns one
+  of five states: `hidden` · `countdown` · `open` · `done` · `waiting`. The component renders a
+  state and owns no rules, so every state is enumerable in a unit test with no session, no
+  deployment and no clock. ⚠️ It is **not** an authorization boundary: `checkInEvent` re-checks all
+  six of its own gates against the database on every call, and that is the one that counts.
+- **Two orderings are load-bearing.** The host's switch outranks the reward line, which is the
+  defect above. And `alreadyCheckedIn` outranks `isGoing`, because attendance is a thing that
+  happened and an RSVP is an intention: a member who cancels after checking in must not be told the
+  door is open to them again.
+- **It lives in the header's action column, under Share | Manage | Edit**, capped at `16rem` and
+  wrapping inside itself. `DetailTemplate` lays the band out as `title (min-w-0) | actions
+  (sm:shrink-0)`, so the actions column takes its natural width and the H1 absorbs every pixel of
+  the squeeze. The owner's constraint was explicit — this must not push the left content onto
+  another line — so the box grows in **height**, not width, and the row above it already measured
+  ~235px. `bg-canvas` with no border is the "blend into the canvas" ask; the token is named, never
+  a hex, because all five skins redeclare it.
+- **The clock is `00:00:00` under a day and `Nd HH:MM` above it.** An hours-only clock stops being
+  a time at "172:04:11", and nobody watches seconds tick on a gathering three days out. Fixed width
+  plus `tabular-nums`, so a live clock does not make the header breathe once a second.
+- **`event-checkin` leaves `EVENT_DETAIL_MODULE_IDS` and is PARKED.** That is a **third** reason a
+  block leaves the set, distinct from the two already recorded there: not a duplicate (the #1675
+  cleanup) and not retired code (ADR-1309), but a feature that **moved somewhere it can be seen**.
+  Its definition and component stay bound, so nothing here resurrects a ghost row. The host's
+  `events.details.specialInstructions` door note moved with it rather than being un-read again.
+- **The Join box's own check-in button is removed.** Two live doors for one idempotent action is
+  the scatter this change exists to end. The quiet Cancel RSVP stays, because it has no counterpart
+  in the header and is now the reason that branch exists.
+
+**Consequences.** A member watches one box from the moment they open the page: it counts down, then
+it becomes the button, then it says they are in. An event with check-in switched off says nothing at
+all, which is what "off" meant everywhere else already. The identity `reward` slot stays in
+`EventIdentitySlots` (it is part of the documented order and the template's equivalence test stubs
+it) and is simply unfilled on this page.
+
+⚠️ **`startsAtMs` is resolved through `eventInstant(iso, zone)`, never `new Date(starts_at)`.** That
+column carries the host's wall clock in UTC parts, so the raw string counts down to the wrong moment
+by the zone's whole offset — the seven-hour bug ADR-1150 fixed on the guest door, which a countdown
+is the perfect shape to reintroduce.
+
+**Rows.** LIVE-287.
+---
+
+## ADR-1316: ACCEPTED — nine `/events` layout rows an operator never meant to create, and the eleven that stay (2026-09-10)
+
+**Context.** Owner, 2026-09-10: *"I've saved the layout like this a few times and it keeps
+resetting."* It was not resetting. `page_settings` is keyed `(space_id, route)`, `layoutScopeChain`
+cascades `route → /seg/* → *`, and the Layout editor defaults to **"This page"** — so every save
+landed on one slug and the next date of the same series inherited nothing. ADR-1312 (#2531) taught
+the editor to say so. This is the cleanup of the rows the old behaviour left behind.
+
+Measured before touching anything: **21 rows** under `/events/`, seven of them different dates of
+one Meld series, and — until that day — **zero** at any scope key.
+
+**🔴 The bucket everyone expects was empty.** The plan was "delete the rows that resolve identically
+to the `/events/*` baseline, since they inherit it anyway." **No row did.** Every one of the twenty
+per-page rows would change what renders. The baseline is also the only layout carrying
+`roles: {event-cohosts: 'host'}`, so a page that loses its row *stops showing the cohosts block to
+non-hosts*. Deleting here is a visible change, not housekeeping, and that reframed the whole
+operation from tidying to editing.
+
+**Decision.** Two classes go, eleven rows stay, and the reasoning is recorded in
+[`scripts/adr-1316-events-page-settings-cleanup.sql`](../scripts/adr-1316-events-page-settings-cleanup.sql)
+beside the statements themselves.
+
+| Class | Rows | Why |
+|---|---|---|
+| **Dead** | 5 | The slug resolves to no event. Verified by a left join against `events`, never by reading the slug. Zero visible change by construction. One of them (`swami-s-beach-...`) also had `layout IS NULL`, so it already inherited. |
+| **Repeated save** | 4 | Same block ids as the baseline, differing only in ordering. Three are dates of the one Meld series; `eclipse-...` resolves **byte-for-byte to the coded default** in `default-layouts.ts`, so it is a Save that recorded no choice at all. |
+| **Kept** | 11 | Each moves a block the baseline puts elsewhere: location out of main into the side, `good-to-know` leading the side above `event-join`, the side stripped to three blocks. Real editorial choices. |
+
+- **The snapshot is part of the operation, not a precaution around it.** `page_settings` has no
+  soft-delete column and **zero triggers**, so a delete is final and nothing captures the row on the
+  way out. `page_settings_events_backup_20260910` holds all 21 and is the only way back.
+- **⚠️ Three kept rows are FLAGGED rather than cleared.** `ecstatic-dance`, `femme-flow` and
+  `transformational-breathwork` were saved 2026-07-14/15 and resolve to a *pixel-identical* layout
+  across three unrelated events — the same global-intent repeated save this ADR exists to clean up.
+  They were kept because that arrangement is neither a subset of the current baseline nor a match
+  for any older one (there has never been another scope-key row in this table), so "superseded"
+  cannot be told from "still wanted" from the data. Keeping a row costs one row; deleting a wanted
+  one costs an operator's work.
+
+**Consequences.** 21 rows → 12 (11 per-page, 1 scope). The Meld series in particular now inherits
+one arrangement across every date, which is what the owner was trying to set each time they saved.
+
+**Not decided here.** Whether the July three and the `breathe-connect-expand` pair are abandoned.
+That is one owner look at one page, and it is the natural second batch.
+
+**Rows.** LIVE-288.
+---
+
 ## ADR-1317: ACCEPTED — the operator baselines exist, and a waived contrast pairing is only quiet in the gate that waived it (2026-09-10)
 
 **Context.** ADR-1314 fixed *why* the operator console could not be photographed: the e2e account was

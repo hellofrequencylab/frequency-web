@@ -22,7 +22,6 @@ import { JsonLd } from '@/components/json-ld'
 import { eventSchema, breadcrumbSchema } from '@/lib/jsonld'
 import { ticketFromPriceCents, ticketsSoldOut } from '@/lib/commerce/ticket-projection'
 import { toggleRSVP } from '../actions'
-import { EventCheckInButton } from './check-in-button'
 import { TicketButton, type TicketTierView } from './ticket-button'
 import { PosterBand } from '@/components/media/poster-band'
 import { getConnectStatus, payoutsLive } from '@/lib/billing/connect'
@@ -36,6 +35,7 @@ import { isPaidViewer } from '@/lib/core/viewer-hats'
 import { updateEventField } from '../admin-actions'
 import { RsvpControls } from '@/components/events/rsvp-controls'
 import { readEventCheckInEnabled } from '@/lib/events/checkin-enabled'
+import { readEventSpecialInstructions } from '@/lib/events/special-instructions'
 import { rsvpWindowStateFromDetails, rsvpWindowNote } from '@/lib/events/rsvp-window'
 import { checkInWindowOpen } from '@/lib/events/checkin-window'
 import { WarmProof } from '@/components/events/warm-proof'
@@ -45,9 +45,9 @@ import { safeHttpUrl } from '@/lib/safe-url'
 import { MembershipCheckoutFold } from '@/components/events/membership-checkout-fold'
 import { RsvpPaymentFlow, type FlowRate } from '@/components/events/rsvp-payment-flow'
 import { buildGoogleCalendarUrl } from '@/components/events/add-to-calendar'
-import { HOME_TZ, resolveZone, isEventPast, zoneAbbrev } from '@/lib/time/zone'
+import { HOME_TZ, resolveZone, isEventPast, zoneAbbrev, eventInstant } from '@/lib/time/zone'
 import { type ActivityPost } from '@/components/events/event-activity'
-import { EventRewardStrip } from '@/components/events/event-reward-strip'
+import { EventCheckInSurface } from '@/components/events/event-checkin-surface'
 import { type FactGuest } from '@/components/events/event-fact-panel'
 import { type RecapPhoto } from '@/components/events/recap-album'
 import { EventGallery } from '@/components/events/event-gallery'
@@ -1593,14 +1593,11 @@ export default async function EventDetailPage({
              never render. When the host has check-in OFF it falls through to the answer switch,
              which is the whole point of the toggle. */
           <div className="flex flex-wrap items-center gap-4">
-            {alreadyCheckedIn ? (
-              <div className="inline-flex items-center gap-2 rounded-lg bg-success-bg text-success px-4 py-2 text-body-sm font-semibold">
-                <Check className="w-4 h-4" />
-                Checked In
-              </div>
-            ) : (
-              <EventCheckInButton eventId={event.id} />
-            )}
+            {/* THE SECOND CHECK-IN CONTROL IS GONE (ADR-1315). A button and a "Checked In" chip
+                stood here, duplicating the header surface for one idempotent action. Two live
+                doors for one room is the scatter this change removes, and the header one is above
+                the fold on every viewport. What stays is the quiet Cancel RSVP, which has no
+                counterpart up there and is the reason this branch still exists. */}
             {!hasEnded && (
               <form action={toggleRSVP.bind(null, event.id)}>
                 <button
@@ -1996,7 +1993,17 @@ export default async function EventDetailPage({
       // because `iconOnly` decides the accessible name and cannot be a media query. One word each
       // is ~72 + ~85 + ~62px, which fits that column with room, so every viewer now gets the same
       // three labelled buttons and the duplication is gone with the words that forced it.
+      //
+      // ⚠️ THE ROW IS NO LONGER THE WHOLE SLOT (ADR-1315). The check-in surface sits UNDER these
+      // three, in the same column, because the owner asked for it there and because that column is
+      // the only part of the header band with room: `DetailTemplate` lays the band out as
+      // `title (min-w-0) | actions (sm:shrink-0)`, so the actions column takes its natural width and
+      // the H1 absorbs the squeeze. The surface is capped at 16rem and wraps INSIDE itself, so the
+      // column grows in height rather than width and the title keeps what the row above already
+      // left it. That was the owner's explicit constraint: it must not push the left content onto
+      // another line.
       actions={
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:items-end">
         <div className="flex flex-wrap items-center gap-2 sm:justify-end">
           <EventShareButton
             slug={event.slug}
@@ -2030,6 +2037,31 @@ export default async function EventDetailPage({
               />
             </>
           )}
+        </div>
+
+        {/* THE CHECK-IN SURFACE (ADR-1315) — one box that counts down to the doors and then
+            becomes them. It replaces three scattered surfaces: the reward line that used to float
+            in the identity region promising Zaps without ever reading the host's switch, the
+            movable `event-checkin` block that was an empty slot for 99% of an event's life, and
+            the Join box button that was the only thing that could actually check you in and lived
+            below the fold. Every gate below is resolved HERE, on the server; the client half
+            renders a state and owns no rules.
+
+            🔴 `startsAtMs` GOES THROUGH `eventInstant`. `starts_at` carries the host's wall clock
+            in UTC parts, so `new Date(starts_at)` counts down to the wrong moment by the zone's
+            whole offset (ADR-1150). */}
+        <EventCheckInSurface
+          eventId={event.id}
+          cancelled={!!event.is_cancelled}
+          checkInEnabled={checkInEnabled}
+          startsAtMs={eventInstant(event.starts_at, eventTz)?.getTime() ?? null}
+          windowOpen={checkInWindow}
+          signedIn={!!myProfileId}
+          isGoing={isGoing}
+          alreadyCheckedIn={alreadyCheckedIn}
+          zaps={ZAP_AMOUNTS.event_attend}
+          doorNote={readEventSpecialInstructions(extra?.details)}
+        />
         </div>
       }
       // [A2] attendance-mode pill.
@@ -2186,16 +2218,17 @@ export default async function EventDetailPage({
         // in the narrow column it used to live in they wrapped into three rows.
         seriesRail: <SeriesDatesRail dates={seriesRailDates} timeZone={eventTz} />,
 
-        // [A3] The calm reward line reads as HEADER content — it sits with the
-        // date/location/host lines, not floating above the grid with a divider. The
-        // check-in Zaps reward (+ streak / Current when real). Hidden for a cancelled
-        // event.
-        reward: !event.is_cancelled && (
-          <EventRewardStrip
-            checkInZaps={ZAP_AMOUNTS.event_attend}
-            isPast={isPast}
-          />
-        ),
+        // [A3] THE REWARD LINE MOVED, AND THE SLOT IS DELIBERATELY LEFT EMPTY (ADR-1315).
+        //
+        // It used to render `EventRewardStrip` here: "Check in at the door to earn +25 Zaps", on
+        // every event that was not cancelled. It never read the host's check-in switch, so an
+        // event with the door deliberately shut still advertised a reward the action would refuse
+        // — and it sat a column away from the only control that could collect it.
+        //
+        // Both facts are now one surface in the header's action column, gated on the same reads.
+        // The slot itself stays in `EventIdentitySlots` (it is part of the documented identity
+        // order, stubbed by the template's own equivalence test); it simply has no filler on this
+        // page, and a future one that wants a line here can have it.
       }}
       // Claim banner — shown only when an UNCLAIMED posted event is opened via its claim
       // link (?claim=<token>, matching the event's one-time token). The claim landing now

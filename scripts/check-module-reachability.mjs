@@ -58,6 +58,11 @@ export const PARKED = new Map([
   // in the event set as draggable rows that drew nothing until ADR-1309 took them out.
   ['event-facts', 'the when/capacity/guest card; folded into the Join box (ADR-826)'],
   ['event-warm-proof', "the who's-coming pile; folded into the Join box (ADR-826)"],
+  // A THIRD reason to be parked, distinct from both above: not a duplicate and not retired code,
+  // but a feature that MOVED to a surface where it can be seen. This block drew only inside the
+  // check-in window, so an operator placed it and then saw nothing for almost the whole life of an
+  // event. It now renders in the event header as the countdown that becomes the door.
+  ['event-checkin', 'the check-in notice + door note; moved into the event header surface (ADR-1315)'],
 ])
 
 // ── source readers ───────────────────────────────────────────────────────────────────────────────
