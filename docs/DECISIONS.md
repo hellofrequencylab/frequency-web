@@ -39133,3 +39133,52 @@ earlier versions describe a guard in prose without calling it — `// STAFF-GATE
 requireAdmin('janitor')` in the crm page, `// requireAdminFloor() floor` in the marketing layout. A
 call site has `await`; a sentence about one does not. That beats stripping comments, which on this
 codebase eats real code.
+
+---
+
+## ADR-1316: ACCEPTED — nine `/events` layout rows an operator never meant to create, and the eleven that stay (2026-09-10)
+
+**Context.** Owner, 2026-09-10: *"I've saved the layout like this a few times and it keeps
+resetting."* It was not resetting. `page_settings` is keyed `(space_id, route)`, `layoutScopeChain`
+cascades `route → /seg/* → *`, and the Layout editor defaults to **"This page"** — so every save
+landed on one slug and the next date of the same series inherited nothing. ADR-1312 (#2531) taught
+the editor to say so. This is the cleanup of the rows the old behaviour left behind.
+
+Measured before touching anything: **21 rows** under `/events/`, seven of them different dates of
+one Meld series, and — until that day — **zero** at any scope key.
+
+**🔴 The bucket everyone expects was empty.** The plan was "delete the rows that resolve identically
+to the `/events/*` baseline, since they inherit it anyway." **No row did.** Every one of the twenty
+per-page rows would change what renders. The baseline is also the only layout carrying
+`roles: {event-cohosts: 'host'}`, so a page that loses its row *stops showing the cohosts block to
+non-hosts*. Deleting here is a visible change, not housekeeping, and that reframed the whole
+operation from tidying to editing.
+
+**Decision.** Two classes go, eleven rows stay, and the reasoning is recorded in
+[`scripts/adr-1316-events-page-settings-cleanup.sql`](../scripts/adr-1316-events-page-settings-cleanup.sql)
+beside the statements themselves.
+
+| Class | Rows | Why |
+|---|---|---|
+| **Dead** | 5 | The slug resolves to no event. Verified by a left join against `events`, never by reading the slug. Zero visible change by construction. One of them (`swami-s-beach-...`) also had `layout IS NULL`, so it already inherited. |
+| **Repeated save** | 4 | Same block ids as the baseline, differing only in ordering. Three are dates of the one Meld series; `eclipse-...` resolves **byte-for-byte to the coded default** in `default-layouts.ts`, so it is a Save that recorded no choice at all. |
+| **Kept** | 11 | Each moves a block the baseline puts elsewhere: location out of main into the side, `good-to-know` leading the side above `event-join`, the side stripped to three blocks. Real editorial choices. |
+
+- **The snapshot is part of the operation, not a precaution around it.** `page_settings` has no
+  soft-delete column and **zero triggers**, so a delete is final and nothing captures the row on the
+  way out. `page_settings_events_backup_20260910` holds all 21 and is the only way back.
+- **⚠️ Three kept rows are FLAGGED rather than cleared.** `ecstatic-dance`, `femme-flow` and
+  `transformational-breathwork` were saved 2026-07-14/15 and resolve to a *pixel-identical* layout
+  across three unrelated events — the same global-intent repeated save this ADR exists to clean up.
+  They were kept because that arrangement is neither a subset of the current baseline nor a match
+  for any older one (there has never been another scope-key row in this table), so "superseded"
+  cannot be told from "still wanted" from the data. Keeping a row costs one row; deleting a wanted
+  one costs an operator's work.
+
+**Consequences.** 21 rows → 12 (11 per-page, 1 scope). The Meld series in particular now inherits
+one arrangement across every date, which is what the owner was trying to set each time they saved.
+
+**Not decided here.** Whether the July three and the `breathe-connect-expand` pair are abandoned.
+That is one owner look at one page, and it is the natural second batch.
+
+**Rows.** LIVE-288.
