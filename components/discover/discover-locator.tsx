@@ -141,7 +141,17 @@ export function DiscoverLocator({
             </div>
           )
         ) : (
-          <ul className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-surface lift-1">
+          /* The resting city list — the one branch a capture ever photographs, since nothing
+             types in the search box. It is a reading twice over (`data-visual-mask`, ADR-1277,
+             LIVE-301): every row's tally comes from `getPublicCityClusters()`, which aggregates
+             the `public_circles` and `public_events` reads, and the ORDER is `ranked` — circles
+             desc until the IP geolocation above resolves, then nearest-city-first, which differs
+             by the runner's own address. The search input, the privacy line and the map beside it
+             stay unmasked (the map canvas is already covered by the global `canvas` selector). */
+          <ul
+            data-visual-mask="discover-locator-cities"
+            className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-surface lift-1"
+          >
             {ranked.slice(0, 8).map((c) => (
               <li key={c.city}>
                 <Link
