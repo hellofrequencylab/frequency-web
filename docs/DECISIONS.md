@@ -38324,3 +38324,78 @@ bijection intact). Three things were verified against the live database rather t
    `supabase gen types` against the migrated schema — zero diff across 17,955 lines.
 
 ---
+
+---
+
+## ADR-1300: ACCEPTED — the event header crops at every width, and the focal picker previews the frame it aims (2026-09-10)
+
+**Context.** The third owner report on one band, and the arc matters more than any of them alone:
+
+| date | report | what shipped |
+| --- | --- | --- |
+| 2026-08-31 | a phone crop sliced both ends of the event's name off a 1400x600 flyer | `object-contain`, first below `sm`, then at every width (`LIVE-130`, `LIVE-131`) |
+| 2026-09-04 | *"it should be full bleed and adjusted with the focus picker"* — contain had made the phone band a 221x221 square between two blurred bars | the PHONE half went back to `object-cover`, at a band reshaped short and wide (`LIVE-146`) |
+| 2026-09-10 | *"The header is not displaying correctly. It should be full bleed and cropped to the selected area."* | this |
+
+The desktop half was still containing, so the marquee surface painted the poster boxed between
+blurred bars. And the control an operator would reach for was lying: the header controls' focal
+picker frames the cover at a stock 16/9 and invites a drag, but under `contain` nothing is cropped,
+so the frame it drew existed nowhere on the page.
+
+**Decision.** `PosterBand` **covers at every width**, aimed by the host's focal point. The
+`sm:object-contain` and the blurred backdrop it existed to fill are both gone. And the picker
+**previews the real band**: `posterBandAspect(tier, width, coverAspect)` = `max(posterAspect,
+width / tierHeight)`, read off the poster ladder's own class strings so a re-tuned tier moves the
+preview with it.
+
+**🔴 Why this does not reopen the 2026-08-31 report, and the reason is [ADR-1248](DECISIONS.md)
+rather than the fit keyword.** The band no longer GUESSES its shape. It sizes itself to the poster's
+measured aspect with the height tier as a CEILING, so a clamped band is only ever **shorter** than
+the artwork at that width, never **narrower** — and `object-cover` can therefore cut nothing but the
+height, which is the axis the picker aims and whose hint already reads "Vertical matters most". The
+1400x600 flyer that produced the first report renders whole on every screen. The August failure
+needed BOTH halves: a band shaped wrong for the artwork AND a crop.
+
+**What it costs, stated rather than buried.** A portrait poster shows about a quarter of itself at
+the standard tier on a desktop, and a square one about a third. `LIVE-131` is the row that measured
+that and chose the letterbox; the owner has now chosen the crop, twice. The lever is the height
+picker (Tall takes a portrait cover to roughly 39%), and the change that removes the trade entirely
+is a narrower, poster-shaped column rather than a different fit in a full-bleed band — a layout
+change to a marquee page, and not this.
+
+**Consequences.** `LIVE-131`'s probe now asserts the OPPOSITE of what it asserted before; that is
+the reversal, recorded in the row, not rot. The band paints one image instead of two, which is a
+decode saved on the surface least able to afford one.
+
+---
+
+## ADR-1301: ACCEPTED — the event identity region is full width, in two lanes, outside the action column (2026-09-10)
+
+**Context.** Owner, in the same report: *"Something is off with the details under the header. They
+are all aligned left."*
+
+The cause is structural. Every identity line — the date, the venue, the cadence, the series date
+rail, the Circle, "Hosted by", the posted-by credit, the check-in reward — went through
+`DetailTemplate`'s `subtitle`, which lives **inside** the header lockup's flex row beside `actions`.
+A flex row gives the identity column `content width - actions width` for its ENTIRE height, and the
+event page puts three buttons there: on the live page that is roughly 265px of a roughly 520px row.
+So the whole stack rendered in under half the width with an empty half beside it. The date chips
+wrapped into three rows; "Hosted by Royal Temple at Daniel Tyack organized by Frequency" wrapped
+into three lines.
+
+**Decision.** A new full-width `meta` slot on `DetailTemplate`, rendered under the lockup and across
+the whole band. `EventDetailTemplate` arranges the region to use that width: **lane A** carries the
+facts of the gathering (when, where, cadence, next date), **lane B** carries where it belongs and to
+whom (Circle/Space/Journey, host, credit), and the two horizontal things — the series date rail and
+the reward strip — span both lanes underneath. The lanes are side by side from `md` and stack in
+declaration order below it, so a phone reads exactly the sequence it always read.
+
+`subtitle` is untouched and stays correct for the one-liner every other Detail page passes; both may
+be used together. `seriesRail` moved down the declared order, because it is a ROW of date chips and
+belongs under both lanes rather than mid-column where it wrapped into three rows.
+
+**Consequences.** The byte-identity proof (`event-detail-template.equivalence.test.tsx`) was amended
+deliberately, per its own instructions, so the equality still compares a hand-rolled page against the
+template rather than the template against itself. The drift guard gained a clause that the identity
+region goes through `meta` and not `subtitle` — the regression is silent, because the page still
+renders, it just crams again.

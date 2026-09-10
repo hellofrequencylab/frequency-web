@@ -2126,10 +2126,6 @@ export default async function EventDetailPage({
           </div>
         ),
 
-        // The series date rail: the next real dates, each linking to that date's own live
-        // page (ADR-897). Renders nothing for a one-off or a single-date series.
-        seriesRail: <SeriesDatesRail dates={seriesRailDates} timeZone={eventTz} className="pt-1" />,
-
         // WHERE THIS EVENT BELONGS: its Circle, its Space, and its Journey, each a link.
         // This replaces the bare unlabeled Circle name that used to sit here, which said
         // nothing about what it was and left the Space and Journey ties invisible. The
@@ -2207,6 +2203,12 @@ export default async function EventDetailPage({
               </Link>
             </p>
           )),
+
+        // The series date rail: the next real dates, each linking to that date's own live
+        // page (ADR-897). Renders nothing for a one-off or a single-date series. It sits FULL
+        // WIDTH under both identity lanes (EventIdentitySlots) — it is a row of date chips, and
+        // in the narrow column it used to live in they wrapped into three rows.
+        seriesRail: <SeriesDatesRail dates={seriesRailDates} timeZone={eventTz} />,
 
         // [A3] The calm reward line reads as HEADER content — it sits with the
         // date/location/host lines, not floating above the grid with a divider. The

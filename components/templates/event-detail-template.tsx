@@ -32,11 +32,33 @@
 import type { ReactNode } from 'react'
 import { DetailTemplate } from './detail-template'
 
-/** The identity stack under the H1, in the ONE order every event surface renders it.
+/** The identity region under the H1, in the ONE arrangement every event surface renders it.
  *  Naming each line (rather than taking one opaque `subtitle` blob) is what makes the shape itself
- *  the standard: a surface can leave a line out, but it cannot put "Hosted by" above the date. */
+ *  the standard: a surface can leave a line out, but it cannot put "Hosted by" above the date.
+ *
+ *  ── TWO LANES AND TWO FULL-WIDTH ROWS (owner, 2026-09-10) ──────────────────────────────────────
+ *  *"Something is off with the details under the header. They are all aligned left."*
+ *
+ *  Every line below used to render as ONE narrow column inside DetailTemplate's `subtitle`, which
+ *  lives in the lockup's flex row beside the action buttons — so the whole stack was confined to
+ *  `content width - actions width` for its entire height. On the live page that is under half the
+ *  column (three buttons reserve ~265px of a ~520px row), and the result is what was photographed:
+ *  the date, the venue, the "Hosted by" line and a rail of date chips all wrapping hard against a
+ *  narrow left gutter with an empty half beside them.
+ *
+ *  The region now spans the full header band (DetailTemplate's `meta` slot) and splits by WHAT a
+ *  line is, which is also the order the fields are declared in:
+ *
+ *    lane A — THE FACTS OF THE GATHERING     when · where · cadence · nextDate
+ *    lane B — WHERE IT BELONGS, AND TO WHOM  belonging · hostedBy · credit
+ *    full width, under both                  seriesRail · reward
+ *
+ *  The two lanes are side by side from `md` and stack in declaration order below it, so a phone
+ *  reads exactly the sequence it always read. The last two rows stay full width because both are
+ *  horizontal by nature: the rail is a row of date chips (the element that wrapped into three rows
+ *  in the capture) and the reward strip is a band. */
 export interface EventIdentitySlots {
-  /** The when-line. The key fact, rendered a step stronger than the rest of the stack. */
+  /** The when-line. The key fact, rendered a step stronger than the rest of the region. */
   when?: ReactNode
   /** The where-line: venue, address, map deep link. */
   where?: ReactNode
@@ -44,14 +66,14 @@ export interface EventIdentitySlots {
   cadence?: ReactNode
   /** "Next: …" for a recurring anchor whose own date has passed. */
   nextDate?: ReactNode
-  /** The series date rail (ADR-897). */
-  seriesRail?: ReactNode
   /** Where this event belongs: its Circle, Space, Journey. Page owns its own <Suspense>. */
   belonging?: ReactNode
   /** "Hosted by …" (+ collaborators, + organizer credit). */
   hostedBy?: ReactNode
   /** The posted-by credit line. */
   credit?: ReactNode
+  /** The series date rail (ADR-897). Full width under both lanes — it is a row of date chips. */
+  seriesRail?: ReactNode
   /** The check-in reward line. Header content, not a floating band. */
   reward?: ReactNode
 }
@@ -131,20 +153,15 @@ export function EventDetailTemplate({
   interiorMain,
   interiorSide,
 }: EventDetailTemplateProps) {
-  const lines = [
-    identity.when,
-    identity.where,
-    identity.cadence,
-    identity.nextDate,
-    identity.seriesRail,
-    identity.belonging,
-    identity.hostedBy,
-    identity.credit,
-    identity.reward,
-  ]
-  // An event with nothing to say under its title gets no stack container at all, rather than an
-  // empty div carrying the subtitle margin.
-  const hasIdentity = lines.some((line) => line !== undefined && line !== null && line !== false)
+  const factLines = [identity.when, identity.where, identity.cadence, identity.nextDate]
+  const belongingLines = [identity.belonging, identity.hostedBy, identity.credit]
+  const filled = (line: ReactNode) => line !== undefined && line !== null && line !== false
+  const hasFacts = factLines.some(filled)
+  const hasBelonging = belongingLines.some(filled)
+  // An event with nothing to say under its title gets no region container at all, rather than an
+  // empty div carrying the region's margin. Each LANE self-suppresses the same way, so a surface
+  // that fills only one of them gets a single column rather than a column and a gap.
+  const hasIdentity = hasFacts || hasBelonging || filled(identity.seriesRail) || filled(identity.reward)
 
   return (
     <div>
@@ -159,17 +176,31 @@ export function EventDetailTemplate({
         title={title}
         badges={badges}
         actions={actions}
-        subtitle={
+        // The identity region goes through `meta` (full width), NOT `subtitle` (the narrow column
+        // beside the actions). See EventIdentitySlots for the report that moved it.
+        meta={
           hasIdentity ? (
-            <div className="space-y-1.5">
-              {identity.when}
-              {identity.where}
-              {identity.cadence}
-              {identity.nextDate}
+            <div className="space-y-2 text-body-sm text-muted">
+              {(hasFacts || hasBelonging) && (
+                <div className="grid gap-x-10 gap-y-2 md:grid-cols-2">
+                  {hasFacts && (
+                    <div className="min-w-0 space-y-1.5">
+                      {identity.when}
+                      {identity.where}
+                      {identity.cadence}
+                      {identity.nextDate}
+                    </div>
+                  )}
+                  {hasBelonging && (
+                    <div className="min-w-0 space-y-1.5">
+                      {identity.belonging}
+                      {identity.hostedBy}
+                      {identity.credit}
+                    </div>
+                  )}
+                </div>
+              )}
               {identity.seriesRail}
-              {identity.belonging}
-              {identity.hostedBy}
-              {identity.credit}
               {identity.reward}
             </div>
           ) : undefined

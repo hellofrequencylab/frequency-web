@@ -2,78 +2,60 @@ import Image from 'next/image'
 
 // POSTER BAND — the cover band for a surface whose cover is ARTWORK rather than scenery.
 //
-// ── WHAT THE PHONE BAND DOES, AND WHY IT IS A CROP AGAIN (owner, 2026-09-04) ─────────────────────
-// "It should be full bleed and adjusted with the focus picker."
+// ── ONE FIT, EVERY WIDTH: FULL BLEED, CROPPED AT THE HOST'S FOCAL POINT ─────────────────────────
+// Owner, 2026-09-10: *"It should be full bleed and cropped to the selected area."*
 //
-// The band below `sm` is FULL BLEED and `object-cover`, positioned at the host's focal point. It
-// used to `object-contain` at every width, and the capture that came back is what that costs: on a
-// 412px phone the Meld cover — a 1:1 poster — painted 221x221 in the middle of a 412x221 band, i.e.
-// 54% of the width, with a blurred wash either side. Whole, and small, inside two bars.
+// That is the THIRD report on this band, and the three of them are one argument, so read the whole
+// arc before changing the fit again:
 //
-// 🔴 READ THE SHAPE OF THE BAND BEFORE READING "CROP" AS A REGRESSION. The phone band is SHORT and
-// WIDE (h-52 = 221px at the standard tier, against a 412px full-bleed width — 1.86:1), and
-// `object-cover` scales to cover the SHORTER axis. So for any source narrower than 1.86:1 it scales
-// by WIDTH: the poster's full width reaches both edges and the crop falls entirely on the height.
-// Of the 24 distinct production covers, 13 are 1:1 and 6 are portrait — Luma and Partiful both tell
-// hosts to upload a square cover — so 19 of 24 show their FULL WIDTH here, which is the half that
-// carries the words. The height they lose is the half the focal picker aims, and its hint already
-// says so: "Vertical matters most."
+//   2026-08-31  the band was a fixed box with `object-cover` at a shape that cropped the WIDTH.
+//               The Meld flyer (1400x600) in a 380x306 phone band lost 47% of itself, and the
+//               missing half carried both ends of the event's name.  ->  went to `object-contain`.
+//   2026-09-04  contain on a phone painted a 221x221 square of poster in the middle of a 412x221
+//               band, between two blurred bars, and the focal picker had nothing left to aim.
+//               ->  the PHONE half went back to `object-cover`, at a band reshaped short and wide.
+//   2026-09-10  the DESKTOP half was still containing, so the marquee surface still showed the
+//               poster boxed between blurred bars — and the focal picker, whose preview is a CROP,
+//               was describing a frame the page did not paint.  ->  cover at every width.
 //
-// WHAT IT COSTS, stated plainly, because this is the direction that produced the original report
-// (LIVE-130, 2026-08-31): a source WIDER than the band still crops horizontally. A 2.33:1 flyer at
-// the standard tier keeps 80% of its width — 1400x600 scales to 515x221, cropped to 412 — against
-// the 53% that was photographed and reported that day. Better, but not whole, and aimed rather
-// than arbitrary.
+// 🔴 THE THING THAT MAKES THIS SETTLED RATHER THAN A FOURTH SWING is that the band no longer
+// guesses its own shape. Since ADR-1248 it knows the poster's intrinsic aspect (measured in the
+// browser by the focal picker, stored on `events.theme.coverAspect`) and sizes itself to it, with
+// the host's height tier as a CEILING. So:
 //
-// AND THE HEIGHT PICKER IS THE LEVER FOR IT, which is worth knowing before reaching for a fourth
-// fit. The tiers move the phone band's ASPECT, and the aspect is what decides which axis gets cut:
+//   a cover that fits under the tier at the band's width   the band IS the poster. `cover` and
+//                                                          `contain` paint the identical pixels,
+//                                                          because there is nothing to crop and no
+//                                                          bar to fill. The 2026-08-31 flyer is
+//                                                          this case: whole, on every screen.
+//   a cover TALLER than the tier (a square or portrait      the tier clamps the band and the crop
+//   poster — 19 of the 24 in production)                    falls on the HEIGHT, aimed by `focus`.
+//                                                          That is "the selected area", and the
+//                                                          picker previews exactly this frame.
 //
-//   Short    412x170   2.42:1   full width for every cover in the survey, the deepest height crop
+// The 2026-08-31 failure needed BOTH halves to happen: a band shaped wrong for the artwork AND a
+// crop. Take away the guessed shape and `object-cover` can only ever cut the axis the picker aims.
+// A band with NO stored aspect falls back to the tier height, and there `cover` is the honest fit
+// too: the alternative is bars, which is what was reported.
+//
+// ── WHAT WENT WITH THE LETTERBOX ────────────────────────────────────────────────────────────────
+// The blurred backdrop is GONE. It existed to fill `contain`'s bars with a scaled, dimmed copy of
+// the poster (the Apple TV / Spotify treatment) so a letterbox read as framing rather than as a
+// gap. A band that covers is opaque edge to edge at every width, so the backdrop was a second
+// decode of the same image painting nothing — a straight cost on the surface least able to afford
+// one. If a fit that letterboxes ever comes back, the backdrop comes back with it; nothing else in
+// this file references it.
+//
+// ── THE HEIGHT PICKER IS STILL THE LEVER FOR THE TRADE ──────────────────────────────────────────
+// The tier decides how much of a tall poster survives the clamp, and on a phone (where the band is
+// one rung shorter, lib/layout/cover-height.ts) it decides the band's aspect outright:
+//
+//   Short    412x170   2.42:1   the widest band, so the deepest height crop and no width crop at all
 //   Standard 412x221   1.86:1   full width for the 19 square/portrait covers of 24
 //   Tall     412x306   1.35:1   most height kept, so the widest flyers lose the most width
 //
-// So a host with a very wide flyer picks Short, and one with a portrait poster picks Tall. That is
-// the same control, pointed at the same trade, from the panel the focal picker already lives in.
-//
-// ── FROM `sm` UP NOTHING CHANGED: the desktop band still CONTAINS ────────────────────────────────
-// The desktop band is 1044px wide against the same tier heights (1044x374 at standard, 2.79:1),
-// which is a letterbox no crop is kind to: measured across those same 24 covers, `object-cover`
-// there showed a median 36% of the artwork and 23 of 24 lost more than a quarter. LIVE-131 took it to
-// `contain`, and the owner's report is about phones. One fit per surface, each measured on the
-// geometry that surface actually has:
-//
-//   phone   (412x221 full bleed, 1.86:1)  cover   — full width for 19 of 24, height aimed by focus
-//   desktop (1044x374, 2.79:1)            contain — the whole poster over its own blurred wash
-//
-// THE BACKDROP therefore lives from `sm` up only. It exists to fill the letterbox bars with the
-// poster itself — scaled, blurred, dimmed, the standard treatment (Apple TV, Spotify, YouTube) — so
-// `contain` reads as deliberate framing rather than a gap. A covered phone band has no bars to fill,
-// so painting a blurred copy under an opaque one there is a wasted decode on the surface least able
-// to afford it.
-//
-// ── WHEN THE BAND KNOWS THE POSTER'S OWN SHAPE, IT TAKES IT (ADR-1248, closes LIVE-200) ─────────
-// Everything above describes the band with NO stored dimensions, and it is still the fallback,
-// because `events` stored none and every server-side way of learning them was refused for this
-// seam: decoding means `sharp` (the largest single cost in check:build-budget, fanned out across the
-// event routes), and fetching the image header at render time is a blocking subrequest on a
-// marquee page. The browser, though, decodes the cover every time the header controls preview it,
-// so the event header controls read `naturalWidth / naturalHeight` off that preview and store
-// width / height on `events.theme.coverAspect` beside `coverFocus` (lib/events/cover-aspect.ts).
-//
-// With `aspect` passed, the band sizes itself to the poster (`aspect-ratio`) and the tier becomes a
-// CEILING (`maxHeightClass`, the same ladder as `max-h-*`) instead of a height. What that buys:
-//
-//   any source whose own height at the band's width fits under the tier   the band IS the poster:
-//                                                                          no bars, no crop, either width
-//   a taller source (a 1:1 poster at 1044px would be 1044px tall)          clamped to the tier, and the
-//                                                                          two fits above take over exactly
-//                                                                          as before
-//
-// So the 1400x600 flyer that produced the 2026-08-31 report renders whole on a phone (412x177), and a
-// square cover keeps today's aimed 412x221 crop. Nothing a band without the value did changes:
-// `aspect` absent or unusable renders the markup above byte for byte. Both props are needed for the
-// shaped path; an aspect with no ceiling falls back too, because an uncapped portrait band on a
-// desktop is worse than the guess.
+// A host with a very wide flyer picks Short; one with a portrait poster picks Tall. Same control,
+// same trade, in the panel the focal picker already lives in.
 
 export function PosterBand({
   src,
@@ -87,7 +69,7 @@ export function PosterBand({
   unoptimized = false,
   className = '',
 }: {
-  /** The cover's URL. Used twice: once as the poster, once as its own blurred backdrop. */
+  /** The cover's URL. */
   src: string
   /** The band's height. Pass `posterHeightClass(tier)` — the shared ladder with a shorter phone
    *  half, which is what keeps the phone crop horizontal-safe (lib/layout/cover-height.ts). */
@@ -126,13 +108,13 @@ export function PosterBand({
   widthClass?: string
   /** The operator's focal point ("x% y%"), from the header controls' focus picker.
    *
-   *  🔴 THIS IS WHAT AIMS THE PHONE BAND. Below `sm` the band covers, so `object-position` decides
-   *  which slice of the poster survives — and because the band is short and wide, that slice is
-   *  vertical for every source narrower than 1.86:1. The picker's own hint ("Vertical matters most")
-   *  is describing this crop.
+   *  🔴 THIS IS "THE SELECTED AREA". The band covers at every width, so `object-position` decides
+   *  which slice of the poster survives wherever the tier clamps it — and because a clamped band is
+   *  always SHORTER than the artwork at that width, never narrower, that slice is vertical. The
+   *  picker's own hint ("Vertical matters most") is describing this crop.
    *
-   *  ⚠️ From `sm` up it is nearly inert by design: the desktop band contains, so the whole poster
-   *  fits and `object-position` only decides where it sits between its own blurred bars. */
+   *  It is inert, correctly, for a cover the band takes the shape of: nothing is cropped, so there
+   *  is nothing to aim. The picker previews the same frame and shows the whole poster there too. */
   focus?: string | null
   /** Decorative by default — on an event page the title is the very next element, so announcing
    *  the cover twice is noise. Pass a real string only when the artwork carries information the
@@ -151,25 +133,14 @@ export function PosterBand({
       className={`relative ${sizeClass} ${widthClass} overflow-hidden ${radiusClass} bg-surface-elevated ${className}`}
       style={shaped ? { aspectRatio: String(aspect) } : undefined}
     >
-      {/* THE BACKDROP, from `sm` up only — the width where the band contains and therefore has bars.
-          The same image, scaled past the edges so the blur has pixels to work with all the way out
-          (a blur samples beyond its own box and would otherwise fade to transparent at the frame),
-          then dimmed so it stays clearly BEHIND the poster rather than competing with it.
-          Decorative and inert: it is the poster again, so it carries nothing a reader needs and must
-          never take a tap. */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 hidden scale-125 bg-cover bg-center opacity-45 blur-2xl sm:block"
-        style={{ backgroundImage: `url("${src}")` }}
-      />
-      {/* THE POSTER. Full-bleed and covering on a phone, aimed by the host's focal point; whole,
-          over its own wash, from `sm` up. */}
+      {/* THE POSTER, full bleed at every width, aimed by the host's focal point wherever the tier
+          clamps the band shorter than the artwork. No backdrop: a covering band has no bars. */}
       <Image
         src={src}
         alt={alt}
         fill
         sizes="(max-width: 1024px) 100vw, 1344px"
-        className="object-cover sm:object-contain"
+        className="object-cover"
         style={{ objectPosition: focus ?? undefined }}
         preload
         unoptimized={unoptimized}

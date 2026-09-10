@@ -6,6 +6,7 @@ import { ImageFocalPicker } from '@/components/ui/image-focal-picker'
 import { updateEventCoverFocus, updateEventHeroHeight } from '@/app/(main)/events/admin-actions'
 import { DEFAULT_OBJECT_POSITION } from '@/lib/images/focal-point'
 import { EVENT_HERO_HEIGHTS, type EventHeroHeight } from '@/lib/events/hero-height'
+import { posterBandAspect } from '@/lib/layout/cover-height'
 import { measureCoverAspect } from '@/lib/events/cover-aspect'
 
 // The event HEADER controls — one tidy section that pairs the cover FOCAL POINT (where the cover
@@ -52,6 +53,11 @@ export function EventHeaderControls({
   // What the database holds (or is about to hold) for coverAspect, so a re-render of the same
   // cover does not re-send the same number.
   const storedAspect = useRef<number | null>(initialAspect)
+  // The same number as STATE, because the preview's SHAPE depends on it: the band takes the
+  // poster's own ratio up to the tier, so the crop frame is `max(posterAspect, width/tier)`
+  // (posterBandAspect). A ref alone would not re-render the picker when a swapped cover measures
+  // a new shape, and the preview would keep describing the old one.
+  const [aspect, setAspect] = useState<number | null>(initialAspect)
 
   // Focus: move the marker live, debounce the write so a drag does not fire a save per pixel.
   function onFocusChange(next: string) {
@@ -75,6 +81,7 @@ export function EventHeaderControls({
     const measured = measureCoverAspect(width, h)
     if (measured === null || measured === storedAspect.current) return
     storedAspect.current = measured
+    setAspect(measured)
     startFocus(async () => {
       const res = await updateEventCoverFocus(eventId, slug, focus, measured)
       if ('error' in res) setError(res.error)
@@ -113,6 +120,17 @@ export function EventHeaderControls({
             label="Cover focus"
             hint="Drag to choose which part of the cover stays in frame. Vertical matters most."
             showSliders={false}
+            // 🔴 THE PREVIEW IS THE BAND, NOT A STOCK 16/9. Half of the 2026-09-10 report was that
+            // this control promised a crop the page did not perform: it framed the cover at 16/9
+            // while the desktop band contained the whole poster between blurred bars. The band now
+            // crops at every width, so the preview adopts its exact shape at the chosen tier —
+            // `max(posterAspect, 1044 / tierHeight)` — and a cover the band shows whole previews
+            // whole, with nothing to drag, which is the honest answer.
+            //
+            // 1044 is the event page's centre-column width (the same figure poster-band.tsx
+            // measures its 24-cover survey against). The phone band is one rung shorter and
+            // therefore wider; the picker previews the surface it is being dragged on.
+            aspect={posterBandAspect(height, 1044, aspect)}
           />
         ) : (
           <p className="text-2xs text-muted">
