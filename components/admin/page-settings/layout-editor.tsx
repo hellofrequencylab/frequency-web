@@ -110,22 +110,40 @@ export function LayoutEditor({ spaceId }: { spaceId?: string }) {
   const [error, setError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
 
+  // 🔴 IS THIS ROUTE ONE INSTANCE OF MANY? An entity detail page (`/events/<slug>`,
+  // `/circles/<slug>`, `/practices/<id>`) is one of an open-ended set that all render the same
+  // blocks, and "This page" reaches exactly one of them. That is invisible until you open a
+  // sibling and find it unarranged — which is how one operator arranged the same event layout
+  // SEVEN times across seven dates of one series, each save landing on its own URL, and read the
+  // result as the editor losing their work (ADR-1312). A section index like `/events` is not an
+  // instance: it is the only page at its own key.
+  const isInstanceRoute = pathname.split('/').filter(Boolean).length > 1
+
   // The scopes a staffer can edit from this page, and the key each writes to.
   const scopes = useMemo(() => {
     const seg = pathname.split('/').filter(Boolean)[0]
     const list: { choice: ScopeChoice; label: string; key: string; hint: string }[] = [
-      { choice: 'page', label: 'This page', key: pathname, hint: 'Applies to this exact page.' },
+      {
+        choice: 'page',
+        label: 'This page',
+        key: pathname,
+        hint: isInstanceRoute
+          ? `Applies to this ONE page only. Every other page under /${seg} keeps its own layout, and a new one starts from the section default.`
+          : 'Applies to this exact page.',
+      },
     ]
     if (seg) {
       list.push({
         choice: 'section',
         label: 'This section',
         key: `/${seg}/*`,
-        hint: `The default for every page under /${seg}. A page's own layout overrides it.`,
+        hint: isInstanceRoute
+          ? `Applies to every page under /${seg}, including ones that do not exist yet. Usually what you want here. A page's own layout still overrides it.`
+          : `The default for every page under /${seg}. A page's own layout overrides it.`,
       })
     }
     return list
-  }, [pathname])
+  }, [pathname, isInstanceRoute])
 
   const active = scopes.find((s) => s.choice === choice) ?? scopes[0]
   const scopeKey = active.key
@@ -253,6 +271,23 @@ export function LayoutEditor({ spaceId }: { spaceId?: string }) {
         ))}
       </div>
       <p className="text-2xs text-muted">{active.hint}</p>
+      {/* The one thing the scope row could not say for itself: that a per-page save here reaches a
+          single instance out of many. Shown only where it is true and only for the scope where it
+          bites, so it stays a fact rather than chrome. */}
+      {isInstanceRoute && choice === 'page' && scopes.length > 1 ? (
+        <p className="text-2xs text-muted">
+          Arranging every page of a series one at a time is the slow way round.{' '}
+          <button
+            type="button"
+            onClick={() => chooseScope('section')}
+            disabled={pending}
+            className="font-semibold text-primary-strong underline-offset-2 hover:underline disabled:opacity-40"
+          >
+            Switch to This section
+          </button>{' '}
+          to set them all at once.
+        </p>
+      ) : null}
 
       {loading ? (
         <div className="h-56 animate-pulse rounded-card border border-border bg-surface-elevated/50" />
