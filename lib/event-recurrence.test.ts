@@ -455,7 +455,11 @@ describe('the retirement is wired where a rule is actually changed', () => {
     const admin = read('app/(main)/events/admin-actions.ts')
     expect(admin).toContain('retireStaleOccurrences')
     expect(admin).toContain('generateOccurrencesForAnchor')
-    expect(admin).toContain('propagateAnchorEditsToOccurrences')
+    // The propagator here is the FORWARD one (ADR-1307). `propagateAnchorEditsToOccurrences` copies
+    // the ANCHOR onto every upcoming date, which is only right when the anchor is what was edited;
+    // this action now propagates from the row the host actually opened, and only when they asked
+    // for "this and all future dates".
+    expect(admin).toContain('propagateEditsForward')
   })
 
   it('the /edit form retires for ANY anchor, not only a still-recurring one', () => {

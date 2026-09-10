@@ -115,25 +115,31 @@ describe('the repeat rule belongs to the series, not to the date', () => {
   it('🔴 knows whether the row it was handed is an anchor or one date of a series', () => {
     // The read that makes the rest possible. Without `parent_event_id` in the select, every clause
     // below is unwritable and the action is back to guessing.
-    expect(code).toContain("'details, theme, scope_type, parent_event_id, starts_at'")
-    expect(code).toContain('const seriesAnchorId = parentEventId ?? id')
+    expect(code).toContain("'details, theme, scope_type, parent_event_id, starts_at, recurrence_type'")
+    // The plan is the one place the answer lives, so both the control and the action read it rather
+    // than agreeing by hand (ADR-1307).
+    expect(code).toContain('const plan = seriesWritePlan(')
+    expect(code).toContain("parseSeriesScope(fd.get('series_scope'))")
   })
 
   it('🔴 never writes the recurrence columns onto a date of a series', () => {
     // This is the 500. The columns must be conditional on the row being an anchor.
-    // The three columns appear exactly twice in the action: gated out of the row's own payload, and
-    // written to the anchor. Neither may become unconditional.
-    const gated = code.slice(code.indexOf('...(parentEventId'))
-    expect(code, 'the recurrence columns are back to writing unconditionally').toContain('...(parentEventId')
+    // The row writes the rule ONLY when the plan says this row is its home: a standalone event, or
+    // an anchor under the wide scope. Never on a date of a series, under either scope.
+    expect(code, 'the recurrence columns are back to writing unconditionally').toContain(
+      '...(plan.ruleTarget === id',
+    )
+    const gated = code.slice(code.indexOf('...(plan.ruleTarget === id'))
     expect(gated.slice(0, 400)).toContain('recurrence_type: recurrence')
     expect(gated.slice(0, 400)).toContain('recurrence_rule: recurrenceRule')
     expect(gated.slice(0, 400)).toContain('recurrence_until: untilIso')
   })
 
-  it('writes the rule to the anchor instead, fenced so it can only ever hit an anchor', () => {
+  it('writes the rule to its real home instead, fenced so it can only ever hit an anchor', () => {
     expect(code).toContain('const rulePush = async ()')
+    expect(code).toContain('plan.ruleTarget === null || plan.ruleTarget === id')
     expect(code).toContain(".is('parent_event_id', null)")
-    expect(code).toContain(".eq('id', parentEventId)")
+    expect(code).toContain(".eq('id', plan.ruleTarget)")
   })
 
   it('validates the end date against the SERIES start, not the date the host happened to open', () => {
@@ -142,13 +148,17 @@ describe('the repeat rule belongs to the series, not to the date', () => {
     expect(code).toContain('const startIsoForRec = parentEventId ? anchorStartsAt')
   })
 
-  it('🔴 does NOT propagate after a per-date edit, which would undo what the host just typed', () => {
-    // propagateAnchorEditsToOccurrences copies the ANCHOR's content onto every upcoming date. Run
-    // it after an edit to ONE date and the title, venue or price just saved on that date is
-    // overwritten a line later. The other two reconcilers are driven by the RULE, which is the
-    // anchor's either way, so they run for both.
-    expect(code).toContain('parentEventId ? 0 : propagateAnchorEditsToOccurrences(seriesAnchorId)')
-    expect(code).toContain('retireStaleOccurrences(seriesAnchorId)')
-    expect(code).toContain('generateOccurrencesForAnchor(seriesAnchorId)')
+  it('🔴 propagates FORWARD from the edited date, and only when the host asked for it', () => {
+    // Two failures in one clause. (a) `propagateAnchorEditsToOccurrences` copies the ANCHOR onto
+    // every upcoming date, so after an edit to ONE date it overwrites the title, venue or price
+    // just saved there, one line later; the forward propagator starts from the row the host
+    // actually opened. (b) It runs only under "this event and all future dates" — a host who chose
+    // "this event" gets a save that touches nothing off screen.
+    expect(code).toContain('if (plan.propagateForward) await propagateEditsForward(id)')
+    expect(code).not.toContain('propagateAnchorEditsToOccurrences')
+    // And the reconcilers are the plan's too, so "this event" reconciles nothing at all.
+    expect(code).toContain('await retireStaleOccurrences(plan.reconcile)')
+    expect(code).toContain('await generateOccurrencesForAnchor(plan.reconcile)')
+    expect(code).toContain('if (plan.reconcile) {')
   })
 })

@@ -26,8 +26,9 @@ import {
 import {
   retireStaleOccurrences,
   generateOccurrencesForAnchor,
-  propagateAnchorEditsToOccurrences,
+  propagateEditsForward,
 } from '@/lib/event-recurrence'
+import { parseSeriesScope, seriesWritePlan } from '@/lib/events/series-scope'
 import { wallClockToIso, dateToWallClockIso } from '@/lib/events/datetime'
 import { resolveSubmittedRepeat, validateRecurrenceUntil, type RecurrenceType } from '@/lib/events/recurrence'
 import { isValidTimeZone } from '@/lib/time/zone'
@@ -109,7 +110,7 @@ export async function getEventAdminData(slug: string) {
   const { data } = await admin
     .from('events')
     .select(
-      'id, slug, title, description, location, starts_at, ends_at, is_cancelled, cover_image_path, poster_path, gallery_image_paths, capacity, attendance_mode, online_url, venue_name, street, city, region, country, postal_code, category, visibility, energy_tag, theme, price_cents, currency, time_zone, recurrence_type, recurrence_until, recurrence_rule, details, geog, hide_address, join_mode, scope_type, rsvp_requires_approval',
+      'id, slug, title, description, location, starts_at, ends_at, is_cancelled, cover_image_path, poster_path, gallery_image_paths, capacity, attendance_mode, online_url, venue_name, street, city, region, country, postal_code, category, visibility, energy_tag, theme, price_cents, currency, time_zone, recurrence_type, recurrence_until, recurrence_rule, parent_event_id, details, geog, hide_address, join_mode, scope_type, rsvp_requires_approval',
     )
     .eq('slug', slug)
     .maybeSingle()
@@ -198,6 +199,9 @@ type EventAdminRow = {
   recurrence_type: string | null
   recurrence_until: string | null
   recurrence_rule: string | null
+  /** Set when this row is one materialised DATE of a series rather than the series itself. The rail
+   *  reads it to know whether it has a scope question to ask at all (ADR-1307). */
+  parent_event_id: string | null
   details: Record<string, unknown> | null
   geog: unknown
   /** ADR-825: exact address renders only for registered viewers / managers. */
@@ -385,7 +389,7 @@ export async function updateEventSettings(id: string, slug: string, fd: FormData
   // (see below), and the answer is a column on this row.
   const { data: currentBags } = await admin
     .from('events')
-    .select('details, theme, scope_type, parent_event_id, starts_at')
+    .select('details, theme, scope_type, parent_event_id, starts_at, recurrence_type')
     .eq('id', id)
     .maybeSingle()
 
@@ -403,7 +407,26 @@ export async function updateEventSettings(id: string, slug: string, fd: FormData
   // everything else on this form still writes to the row the host opened.
   const parentEventId =
     (currentBags as { parent_event_id?: string | null } | null)?.parent_event_id ?? null
-  const seriesAnchorId = parentEventId ?? id
+
+  // WHAT THE HOST CHOSE (ADR-1307). "This event" or "This and all future dates", asked by the rail
+  // whenever the row belongs to a series and defaulted NARROW: a missing or malformed field must
+  // never silently rewrite dates that are off screen. `seriesWritePlan` is the one place the answer
+  // is decided, so the control that disables the repeat editor and the action that refuses to write
+  // it read the same function rather than agreeing by hand.
+  //
+  // ⚠️ `isAnchor` is read from the row AS IT STANDS, never from the rule being submitted. A
+  // standalone event turning its first repeat ON is not yet in a series, so it must not be asked a
+  // question about one, and it must be allowed to write the rule to itself.
+  const plan = seriesWritePlan(
+    {
+      id,
+      parentEventId,
+      isAnchor:
+        parentEventId === null &&
+        ((currentBags as { recurrence_type?: string | null } | null)?.recurrence_type ?? 'none') !== 'none',
+    },
+    parseSeriesScope(fd.get('series_scope')),
+  )
   // The series' own start, which is what an "ends on" date is validated against. Validating a
   // series-wide rule against ONE DATE's start would reject an end that is perfectly valid for the
   // series (any date between the anchor and the occurrence the host happens to be looking at).
@@ -478,15 +501,17 @@ export async function updateEventSettings(id: string, slug: string, fd: FormData
       capacity,
       energy_tag: energyTag,
       price_cents: priceCents,
-      // Anchor only. On a date OF a series these go to the anchor below, because the DB CHECK
-      // forbids them here and the rule is the series' property anyway.
-      ...(parentEventId
-        ? {}
-        : {
+      // Written HERE only when the plan says this row is the rule's home: a standalone event, or a
+      // series anchor under the wide scope. On a date OF a series the DB CHECK forbids it outright
+      // (ADR-1306) and the rule is the series' property anyway; under the narrow scope the host
+      // said "this event", so the pattern is not theirs to move.
+      ...(plan.ruleTarget === id
+        ? {
             recurrence_type: recurrence,
             recurrence_rule: recurrenceRule,
             recurrence_until: untilIso,
-          }),
+          }
+        : {}),
       details: nextDetails as Json,
       ...(timeZone ? { time_zone: timeZone } : {}),
       ...(category ? { category } : {}),
@@ -566,10 +591,11 @@ export async function updateEventSettings(id: string, slug: string, fd: FormData
   // That asymmetry is what the owner photographed: "I changed Meld from weekly to bi weekly but it
   // still shows all the repeating events that were configured originally."
   //
-  // WHEN THE HOST OPENED ONE DATE OF A SERIES, the repeat rule they set goes to the anchor, which
-  // is the only row allowed to carry it. Everything else they changed stays on the date.
+  // WHEN THE RULE'S HOME IS A DIFFERENT ROW — the host opened one date of the series and chose
+  // "this and all future dates" — it is written there. Everything else they changed stays on the
+  // date they opened.
   const rulePush = async (): Promise<void> => {
-    if (!parentEventId) return
+    if (plan.ruleTarget === null || plan.ruleTarget === id) return
     const { error: e } = await admin
       .from('events')
       .update({
@@ -579,19 +605,27 @@ export async function updateEventSettings(id: string, slug: string, fd: FormData
       } as never)
       // Belt and braces: only ever an anchor, never another occurrence.
       .is('parent_event_id', null)
-      .eq('id', parentEventId)
+      .eq('id', plan.ruleTarget)
     if (e) console.error('[updateEventSettings] series rule write:', e.message)
   }
 
-  // 🔴 PROPAGATION RUNS ONLY WHEN THE ANCHOR ITSELF WAS EDITED. It copies the anchor's content
-  // onto every upcoming date, so running it after a per-DATE edit would overwrite the very title,
-  // venue or price the host just set on that one date, one line after saving it. The other two are
-  // driven by the RULE, which is now the anchor's either way, so they run for both.
-  rulePush()
-    .then(() => retireStaleOccurrences(seriesAnchorId))
-    .then(() => generateOccurrencesForAnchor(seriesAnchorId))
-    .then(() => (parentEventId ? 0 : propagateAnchorEditsToOccurrences(seriesAnchorId)))
-    .catch((e) => console.error('[updateEventSettings] occurrence reconciliation:', e))
+  // 🔴 EVERY ONE OF THESE IS THE HOST'S CHOICE NOW, not a default. Under "this event" the plan
+  // reconciles nothing and propagates nothing, so a save touches exactly the row on screen. Under
+  // "this and all future" the rule lands on the anchor, the schedule is reconciled against it
+  // (ADR-1304), and the content moves FORWARD from the date the host actually edited rather than
+  // from the series' beginning, which is what "future" means and what ADR-884 could not say.
+  void (async () => {
+    try {
+      await rulePush()
+      if (plan.reconcile) {
+        await retireStaleOccurrences(plan.reconcile)
+        await generateOccurrencesForAnchor(plan.reconcile)
+      }
+      if (plan.propagateForward) await propagateEditsForward(id)
+    } catch (e) {
+      console.error('[updateEventSettings] occurrence reconciliation:', e)
+    }
+  })()
 
   revalidatePath(`/events/${slug}`)
   // The Manage hub mounts this same settings module on its Settings tab (ADR-828) and renders the

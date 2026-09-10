@@ -43,6 +43,7 @@ import { railForm, type RailForm } from '@/lib/studio/kernel/edit-plan'
 import type { FieldDef, SectionDef } from '@/lib/studio/kernel/manifest'
 import { isoToWallClockInput } from '@/lib/events/datetime'
 import { formatRepeatDraft, repeatFor } from '@/lib/events/repeat-rule'
+import type { SeriesScope } from '@/lib/events/series-scope'
 import { readEventCheckInEnabled } from '@/lib/events/checkin-enabled'
 import { readEventMarketListed } from '@/lib/events/market-listing'
 
@@ -315,8 +316,11 @@ export interface EventPin {
  * key is present (`'on'` / `'off'`), so a snapshot could never switch one OFF. The old rail carried a
  * controlled hidden input per switch for the same reason; the plan encodes it once, here.
  */
-export function eventSettingsFormData(values: EventRailValues, pin: EventPin): FormData {
+export function eventSettingsFormData(values: EventRailValues, pin: EventPin, scope: SeriesScope = 'this'): FormData {
   const fd = new FormData()
+  // Not a field and not a column: it says what the save may REACH (ADR-1307). Sent on every save,
+  // including a standalone event's, where the action's plan ignores it.
+  fd.set('series_scope', scope)
   for (const f of EVENT_RAIL.settings.fields) {
     const path = f.path as EventSettingsPath
     const v = values[path] ?? ''
