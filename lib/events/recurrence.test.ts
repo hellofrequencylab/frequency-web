@@ -1,22 +1,11 @@
 import { describe, it, expect } from 'vitest'
-import { nextOccurrence, recurrenceLabel, validateRecurrenceUntil } from './recurrence'
+import { nextOccurrence, validateRecurrenceUntil } from './recurrence'
 
 // nextOccurrence is the read-side helper that keeps a recurring event in
 // "upcoming" once its anchor date has passed: it returns the next date the
 // series lands on, at or after `now`, respecting `recurrence_until`.
 
 const iso = (d: Date | null) => (d ? d.toISOString() : null)
-
-describe('recurrenceLabel', () => {
-  it('returns a plain-voice label per cadence, null for none', () => {
-    expect(recurrenceLabel('daily')).toBe('Repeats daily')
-    expect(recurrenceLabel('weekly')).toBe('Repeats weekly')
-    expect(recurrenceLabel('monthly')).toBe('Repeats monthly')
-    expect(recurrenceLabel('none')).toBeNull()
-    expect(recurrenceLabel(null)).toBeNull()
-    expect(recurrenceLabel(undefined)).toBeNull()
-  })
-})
 
 describe('nextOccurrence — non-recurring + edge cases', () => {
   it('returns null for a one-time event', () => {

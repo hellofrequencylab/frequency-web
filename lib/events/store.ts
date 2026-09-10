@@ -460,7 +460,9 @@ export async function listSeriesAnchors(ids: string[]): Promise<RepeatAnchorRow[
   try {
     const { data, error } = await createAdminClient()
       .from('events')
-      .select('id, starts_at, recurrence_type, recurrence_until, is_cancelled, status, visibility, removed_at, is_demo')
+      // `recurrence_rule` rides along (ADR-1299): the strip's chips and its computed future dates
+      // both come from the anchor, and without it a fortnightly series would chip every week.
+      .select('id, starts_at, recurrence_type, recurrence_until, recurrence_rule, is_cancelled, status, visibility, removed_at, is_demo')
       .in('id', want)
       .is('parent_event_id', null)
       .eq('is_cancelled', false)
@@ -473,6 +475,7 @@ export async function listSeriesAnchors(ids: string[]): Promise<RepeatAnchorRow[
       starts_at: r.starts_at,
       recurrence_type: r.recurrence_type,
       recurrence_until: r.recurrence_until,
+      recurrence_rule: (r as { recurrence_rule?: string | null }).recurrence_rule ?? null,
       is_cancelled: r.is_cancelled,
       status: r.status,
       visibility: r.visibility,

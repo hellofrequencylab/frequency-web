@@ -417,9 +417,21 @@ cleanly by audience and this section pins which is which.
   `Upcoming dates` (the rail heading on an event page), `Part of a series` (the card line for one
   date of a repeating event), and the "Browsing shows the next few dates, not all of them" wording in
   `content/help/groups/events.md`.
-- **The cadence line stays a sentence, not a noun.** `Repeats weekly` / `Repeats daily` /
-  `Repeats monthly` (`recurrenceLabel`, lib/events/recurrence.ts). Never "Weekly Series" as a label,
-  never "Recurrence" as a member-facing heading; recurrence is the internal word for the mechanism.
+- **The cadence line stays a sentence, not a noun.** ⚠️ **The three fixed sentences are gone**
+  ([ADR-1299](DECISIONS.md), 2026-09-10). `Repeats weekly` / `Repeats daily` / `Repeats monthly`, and
+  the `recurrenceLabel` that produced them, were deleted when the repeat model became a bounded RRULE
+  subset: a four-value enum cannot say "every 2 weeks" or "the third Thursday", and a line that
+  flattened both to `Repeats monthly` told a member something untrue. The sentence is now built from
+  the rule by `describeRepeat` (`lib/events/repeat-rule.ts`) and reaches every surface through
+  `recurrenceLineFor` (`lib/events/recurrence.ts`): `Weekly on Wednesday`, `Every 2 weeks on
+  Wednesday`, `Monthly on the third Wednesday`, `Every weekday`, `Annually on March 4`, plus
+  `, 6 times` when the host ended the run by count. The short form for a card, chip or strip is
+  `repeatChipLabel`: `Every 2 weeks`, `Thursdays`, `Third Thursday`. What did NOT change is the rule
+  itself: it is a sentence in member words, never a noun. Never "Weekly Series" as a label, never
+  "Recurrence" as a member-facing heading; recurrence is the internal word for the mechanism. The
+  range stays OUT of the sentence and beside it, because `recurrence_until` has its own column and its
+  own control (ADR-807), so a surface reads "Weekly on Wednesday, until 30 December" rather than
+  folding the end date into the cadence.
 - **`occurrence` and `anchor` are INTERNAL ONLY** — code, schema, ADRs, docs, operator surfaces.
   `occurrence` is a materialised child row (`parent_event_id` set); the `anchor` is the row carrying
   the cadence, which is also a real date and is NOT "the parent event" in member terms. Neither word

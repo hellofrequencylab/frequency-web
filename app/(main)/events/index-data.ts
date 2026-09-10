@@ -57,6 +57,9 @@ export type EventRow = {
   // recurring at a glance. Newer than the generated DB types -> untyped-client cast.
   recurrence_type?: string | null
   recurrence_until?: string | null
+  /** The RRULE value (ADR-1299). Null on a pre-rule row; the card's cadence line falls back to
+   *  what `recurrence_type` means, resolved against `starts_at`. */
+  recurrence_rule?: string | null
   parent_event_id?: string | null
   // The original scanned poster (events.poster_path) — the card's header-image fallback when
   // there's no uploaded cover. Lives in the PRIVATE network-contacts bucket, so it serves via a
@@ -392,7 +395,7 @@ export async function getEventsIndexData(params: EventsIndexParams): Promise<Eve
   // not-yet-regenerated columns; see lib/events/geocode.ts).
   const EVENT_SELECT = `id, title, slug, location, starts_at, ends_at, is_cancelled, is_demo,
        featured_at, scope_id, scope_type, category, energy_tag, capacity, attendance_mode, price_cents,
-       cover_image_path, theme, recurrence_type, recurrence_until, parent_event_id, poster_path, geog,
+       cover_image_path, theme, recurrence_type, recurrence_until, recurrence_rule, parent_event_id, poster_path, geog,
        host:profiles!host_id ( id, display_name, handle )`
 
   // ── The three event sources + proximity, fetched in ONE wave ────────────────
