@@ -4,24 +4,30 @@
 // parallel module list (MENU-CONTRACT/ADR-553 stays intact; `check:menu` only bans a `*_MODULES` catalog,
 // and this declares none). Framework-free (data only), so it is trivially unit-testable.
 //
-// The four categories, in order (Resonance leads — the hub opens on it):
-//   • Resonance — the space's people + communication: CRM (pipeline/contacts/cockpit), the space Inbox,
-//     lead capture, and connections. "Manage members, connections, and communication."
-//   • Marketing — reach + growth: Email (compose/design/style), QR codes + scans, automation/drip.
-//   • Offerings & Money — everything the space sells: booking, memberships, donations, enrollment,
-//     tickets, check-in, and the Shop.
-//   • Content & Programs — what the space teaches + hosts: Practices, Journeys, Airwaves.
+// The four categories, in order (Resonance leads — the hub opens on it). Each row DECLARES which one it is
+// on, in `SpaceModule.hub` (ADR-1313); this list describes the shape, it does not decide it:
+//   • Resonance — the space's people + communication: CRM (pipeline/contacts/cockpit), Conversations,
+//     lead capture, connections, and the automation/drip that runs over those contacts.
+//   • Marketing — outbound reach + growth: Email (compose/design/style), QR codes + scans.
+//   • Offerings & Money — everything the space sells: booking, memberships, donations, Get paid, and the
+//     Shop.
+//   • Content & Programs — what the space teaches + hosts: Practices, Journeys, Circles, the Program,
+//     Airwaves, Loom Studio, the Calendar, and Your reach.
 //
 // Profile & Settings is NOT a category tab — it is the header-level settings surface (identity/brand/
 // visibility + Team + Reviews + Plan & usage + Mode + Danger). The "Page" layout module is removed from the
 // hub entirely (page editing lives on the admin rail now).
 
-import { SPACE_MODULES, type SpaceModule } from './space-modules'
+import { SPACE_MODULES, type SpaceModule, type SpaceHubSection } from './space-modules'
 import { panelHrefForModule } from '@/lib/spaces/surface-hrefs'
 
 /** A hub tab id. `dashboard` is the command-center home (ADR-796); `settings` is the Profile & Settings tab
- *  (identity, team, reviews, plan & billing, danger). */
-export type SpaceHubSection = 'dashboard' | 'resonance' | 'marketing' | 'offerings' | 'programs' | 'settings'
+ *  (identity, team, reviews, plan & billing, danger).
+ *
+ *  The union itself now lives in `space-modules.ts` (ADR-1313), because a catalog row DECLARES its tab and
+ *  this module already imports that one, so the type has to sit on the side without the import back. It is
+ *  re-exported here so every importer keeps the path it had. */
+export type { SpaceHubSection }
 
 /** The hub tabs, in display order. Resonance leads (the default landing); Profile & Settings trails — it is
  *  a real tab now (ADR-788), NOT a header button, so Plan & Billing + Team + Reviews are one tap away. */
@@ -43,49 +49,24 @@ export function asHubSection(raw: string | null | undefined): SpaceHubSection {
   return SPACE_HUB_SECTIONS.some((s) => s.key === raw) ? (raw as SpaceHubSection) : DEFAULT_HUB_SECTION
 }
 
-/** The module ids that belong to the Profile & Settings tab. Team, Reviews, Plan & Billing, and Danger
- *  join the identity/brand/visibility shell here (owner directive). */
-const SETTINGS_MODULE_IDS = new Set<string>([
-  'space.basics', // Profile and Settings (identity, brand, page theme, visibility)
-  'space.people', // Team and members
-  'space.reviews', // Reviews
-  'space.billing', // Plan and usage
-  'space.danger', // Danger zone
-])
-
-/** The module ids REMOVED from the hub entirely: Page (page editing lives on the admin rail now, not the
- *  hub) and the Content box (ADR-846 — the hub's Content & Programs TAB *is* that box, so rendering a card
- *  that links back to the tab you are standing on would be a circular row). The Content box's five tools
- *  still render as cards on that tab, so nothing inside it is lost. */
-const HUB_EXCLUDED_IDS = new Set<string>(['space.layout', 'space.content'])
-
 /**
- * The hub category a module belongs to, or null when it is excluded from the hub (the Page layout module).
- * PURE. Drives which browse category a card renders under, and whether it is a header Profile & Settings row
- * instead of a browse card.
+ * The hub category a module belongs to, or null when it is excluded from the hub. PURE. Drives which browse
+ * category a card renders under, and whether it is a header Profile & Settings row instead of a browse card.
+ *
+ * 🔴 THE TAB IS READ, NEVER GUESSED (ADR-1313). This function was four hard-coded id lists followed by a
+ * bare `return 'offerings'`, so every catalog row added after it was written became a money feature unless
+ * somebody remembered to edit a list — and three had, while `space.automation` sat in the marketing list
+ * with its parent box in Resonance. The tab is a REQUIRED field on the catalog row now (`SpaceModule.hub`),
+ * which makes an undeclared row a compile error instead of a silent default. Adding a module means adding
+ * one field to its row; it never means editing this function.
+ *
+ * `'none'` is the declared EXCLUSION: Page (page editing lives on the admin rail, not the hub), the Content
+ * box, and the Offerings and money box. The two boxes are excluded for the same reason — the hub's Content &
+ * Programs and Offerings & Money TABS *are* those boxes, so a card linking back to the tab you are standing
+ * on is a circular row. Their tools still render as cards there, so nothing inside either is lost.
  */
 export function sectionForModule(module: SpaceModule): SpaceHubSection | null {
-  if (HUB_EXCLUDED_IDS.has(module.id)) return null
-  if (SETTINGS_MODULE_IDS.has(module.id)) return 'settings'
-
-  // Resonance — the CRM relationship + capture surfaces (people + communication). `space.conversations`
-  // is the ticketed inbox (it replaced the retired `space.inbox`).
-  if (['space.crm', 'space.conversations', 'space.leads', 'space.doors', 'space.shared'].includes(module.id)) return 'resonance'
-
-  // Marketing — outbound reach + growth (email trio, QR codes and insights, automation/drip).
-  if (['space.comms', 'space.marketing', 'space.emailstyle', 'space.reach', 'space.automation'].includes(module.id)) {
-    return 'marketing'
-  }
-
-  // Content & Programs — the Content box and everything inside it: the practitioner content (Practices,
-  // Journeys, Circles, the Program) plus the space's media libraries (Airwaves + Loom Studio).
-  if (['space.content', 'space.practices', 'space.journeys', 'space.circles', 'space.program', 'space.airwaves', 'space.loom'].includes(module.id)) {
-    return 'programs'
-  }
-
-  // Offerings & Money — everything else is a commerce/offering surface (the Offerings and money box plus
-  // booking, memberships, donations, enrollment, tickets, check-in, shop). Falls through by elimination.
-  return 'offerings'
+  return module.hub === 'none' ? null : module.hub
 }
 
 /** Whether a module renders on the header-level Profile & Settings surface (vs a browse category). PURE. */
