@@ -145,14 +145,16 @@ export function EventCheckInSurface({
           grows with the column it sits in; what it will not do is come apart. */}
       {!checkedIn && zaps > 0 && (
         <div className="mt-1.5 flex flex-col items-end gap-1 text-meta text-muted">
-          {/* Not shown in the `open` state: the button directly above it already says Check in, and
-              repeating the instruction under its own control is the scatter this surface removed. */}
-          {state.kind !== 'open' && (
-            <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
-              <QrCode aria-hidden className="h-3.5 w-3.5 shrink-0 text-subtle" />
-              Check in at the door
-            </span>
-          )}
+          {/* 🔴 BOTH ROWS, ALWAYS — including the `open` state (owner, 2026-09-10). An earlier pass
+              hid the door row there, reasoning that the button directly above already says Check
+              in. That reasoning treated the rows as two independent labels. They are not: this is
+              ONE two-part sentence broken across two lines, and "Earn 25 Zaps" on its own is a
+              fragment with nothing to attach to. Dropping either half is dropping half a sentence,
+              so the pair travels together in every state that prints it. */}
+          <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
+            <QrCode aria-hidden className="h-3.5 w-3.5 shrink-0 text-subtle" />
+            Check in at the door
+          </span>
           <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
             <Zap aria-hidden className="h-3.5 w-3.5 shrink-0 text-primary" />
             Earn {zaps} Zaps
