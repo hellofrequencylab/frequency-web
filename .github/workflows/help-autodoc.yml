@@ -1,7 +1,17 @@
-# AI doc-writer (advisory). On a PR that touches app routes, post ONE comment with
-# a staff checklist of help articles to review/update (docs/SUPPORT-SYSTEM.md §6).
-# Propose-only: it never commits or merges. The built-in GITHUB_TOKEN
-# (pull-requests: write) posts the comment.
+# AI doc-writer (advisory). On a PR that touches app routes, post ONE comment naming the help
+# articles this DIFF makes inaccurate (docs/SUPPORT-SYSTEM.md §6). Propose-only: it never commits
+# or merges. The built-in GITHUB_TOKEN (pull-requests: write) posts the comment.
+#
+# What the comment can and cannot say, because this bot has been wrong before (PR #2539: three
+# false positives out of three checked). A `- [ ]` checklist item is a GROUNDED claim — the model
+# had to quote the article line it believes is now false AND the diff line that falsifies it, and
+# lib/ai/autodoc.ts `groundVerdicts` verified both against the real text. An unverifiable claim is
+# demoted to a collapsed "covers a touched area" list with the reason, and an article the model
+# could not review at all appears in a separate ⚠️ coverage-gap section — NEVER as a checkbox.
+#
+# `fetch-depth: 0` below is load-bearing twice over: the drift signal needs the changed file list,
+# and the review needs the diff itself. A shallow clone silently reduces this to the filename-only
+# input that produced those false positives.
 #
 # CREDENTIAL: needs EITHER the ANTHROPIC_API_KEY repository secret OR the
 # AI_GATEWAY_URL + AI_GATEWAY_API_KEY pair (lib/ai/client.ts supports both). With

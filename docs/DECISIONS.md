@@ -39458,3 +39458,109 @@ token correction, the removed waiver, the DAWN ledger row and this ADR are not. 
 asks for a committed `admin*` baseline, so the row closes in the sweep, which is the change that
 actually satisfies it. Merge the correction first: new-token baselines against an old-token
 production would make `pr-compare` diff every info chip on the way past.
+
+## ADR-1319: ACCEPTED — `pnpm lint` caches what CI already stores for it, and refuses to run on a foreign ESLint (2026-09-10)
+
+**Context.** Two separate things were wrong, and one of them was invisible because the other one
+was loud.
+
+**The fail-safe that never fired.** `ci.yml` restores and saves an `.eslintcache`, keyed on
+`eslint.config.mjs` + `pnpm-lock.yaml`, with a comment explaining why the *content* strategy is
+needed on a fresh checkout whose mtimes are all reset. The lint script never passed `--cache`, so
+no cache file was ever written. That step has cached nothing since it was authored — and the
+comment proves which flags were intended. This repo's own rule is that every fail-safe needs a gate
+that notices it fired; this one had neither.
+
+**The crash that three sessions misread.** `pnpm run` prepends exactly ONE entry to `PATH`: the
+invoking directory's RELATIVE `./node_modules/.bin`. It does not add an ancestor package's bin dir.
+A `git worktree` never inherits `node_modules`, and `.claude/hooks/session-start.sh` installs only
+in the root it is invoked at. So in an agent worktree `eslint` resolves to the machine's global
+**10.1.0** against a repo pinning `^9`, loads the v9-resolved plugins found by walking up to the
+parent's `node_modules`, and dies inside `eslint-plugin-react` with `contextOrFilename.getFilename
+is not a function`. Nothing in that message names the cause: it reads as a broken React rule and is
+really "this directory was never installed."
+
+Two agents reported it as "the repo pins the wrong ESLint" and that reached a briefing; a third
+repeated the claim three times, including in a PR body, before anyone ran `eslint --version`. Both
+readings were true of *different directories* — in the main checkout `pnpm lint` exits 0 on 4,744
+files in 175 s, and the 175 s against a 120 s tool timeout was the whole "hang". The lesson is the
+one this repo keeps paying for: **a claim about an environment is a measurement, not an inference**,
+and the cheapest version of it was one command.
+
+**Decision.** `lint` gains `--cache --cache-strategy content` — the strategy `ci.yml`'s own comment
+specifies — making the existing cache step real. A new `prelint` (`scripts/preflight-lint.mjs`)
+refuses when the directory has no ESLint of its own or has the wrong major, and names the fix. It
+can only ever *refuse to run*; it has no way to make lint quieter.
+
+**Consequences.** A warm run goes 175 s → **3 s**, and the linted file set is byte-identical to the
+uncached baseline except the two files this change adds (`only baseline: []` — nothing dropped).
+The cache cannot hide a finding: proven in both directions on an already-cached file, where an
+unused variable took the next run to exit 1 and removing it returned exit 0. ESLint keys each cache
+entry on the config hash, which folds in the eslint and node versions, and replays full messages, so
+`--max-warnings=0` still counts cached warnings — read out of `lint-result-cache.js` rather than
+trusted from the flag name. `--concurrency=auto` was **rejected on evidence**: 144 s vs 165 s cold on
+four cores does not buy an experimental flag on a required status check.
+
+The environmental half is NOT fixed here and cannot be, because whether the harness can install
+per-worktree is a property of the harness. `LIVE-306` carries it as `manual`.
+
+**Rows.** LIVE-306 (opened, not closed).
+
+## ADR-1320: ACCEPTED — the help-autodoc bot must quote what it read, or its finding is demoted (2026-09-10)
+
+**Context.** The bot posts an advisory checklist of help articles a diff may have invalidated. Three
+of its claims were checked by hand and **all three were wrong**, in two distinct ways, and a fourth
+defect was structural.
+
+`docs/SUPPORT-SYSTEM.md` §6 already described the right loop — an AI author working *"grounded in the
+diff"* — and §8.3 demands AI output be *"grounded + cited + confidence-gated; never improvise."* The
+spec was right and the code did not implement it. Two divergences in §6 are corrected in the same
+pass: the bot does not draft articles or a changelog line, and "grounded in the diff" was aspirational.
+
+**Fault one: the model was never shown the change.** `buildAutodocMessages` sent *filenames only*.
+The prompt then asked for "a ONE-LINE note on what to check" — an invitation to speculate — with a
+bare `needsUpdate` boolean and no confidence threshold anywhere. Handed `app/globals.css` in a file
+list and an article already containing "which now changes text size and spacing across the whole
+site", it coupled them. It reasoned about the article correctly and about the change not at all,
+because it was given asymmetric information.
+
+**Fault two: it could not see the articles either.** `a.body.slice(0, 1200)` against files of 5,012
+and 5,749 bytes. Both flagged billing articles carry `featureKeys: [billing]`, which maps to route
+`/spaces`, so any file under `app/(main)/spaces/**` drags in both — drift hands over a candidate pair
+by design, and the model is what narrows it. It was narrowing on a quarter of the text. "Payout"
+appears **zero** times in either file.
+
+**Fault three, the structural one.** `withUnreviewed` minted `needsUpdate: true` rows noted "Not
+reviewed (the model reply was cut short)" and the formatter put them in the same `- [ ]` loop as real
+findings, so a coverage gap rendered as a finding. Truncation was *inferred* from
+`parsed.length < articles.length`, which cannot distinguish a clipped array from a skipped or
+mislabelled article, so it named the wrong cause either way. "The same two files every run" was the
+tell: one call scales its ask with the list while `max_tokens` does not, so it clipped the same tail
+deterministically.
+
+**Decision.** Fix the truncation at its cause, not in its reporting: `planAutodocBatches` bounds the
+ask, the residue is retried at a materially smaller ask, and whatever still fails leaves on a
+**separate channel** (`AutodocReview.unreviewed`) the formatter can only render as a ⚠️ coverage gap,
+never a checkbox. Truncation is now read from `res.stop_reason === 'max_tokens'`. Feed the model real
+diff hunks with elisions marked, so absence is never read as evidence. Add a three-way verdict so
+"covers a touched area" is sayable without asserting inaccuracy. And gate the strong verdict: an
+`inaccurate` finding must carry a verbatim article quote **and** a verbatim diff line, both checked by
+`groundVerdicts()`. A failed claim is **demoted with its reason printed, never deleted**.
+
+**Consequences.** All three real false positives replay against the real article corpus as demoted,
+with zero checkboxes, and a positive control proves a genuine contradiction still lands as a
+checkbox. The comment shows each finding's quote, so a reader can falsify the bot at a glance.
+
+**Failing the run was rejected.** An advisory that blocks a merge for something the author cannot fix
+gets switched off, and then it reads as coverage (ADR-970). It emits `::warning` instead.
+
+🔴 **What is NOT verified is the live model call** — whether the model complies with the two-quote
+contract often enough to keep true positives up. The gate is safe in the wrong direction by
+construction: non-compliance costs findings, it never adds false ones. The signal to read on the first
+real run is the log line `N grounded finding(s), M claim(s) demoted` — high M with low N means the
+prompt needs work, not the gate. Cache effectiveness is likewise unproven, so the job logs
+`cache_read_input_tokens` rather than assuming.
+
+**Known gap, deliberately not widened here.** The workflow triggers on `paths: ['app/**']`, so a PR
+touching only `lib/` or `components/` never runs this check. That is a real coverage question and a
+separate change.
