@@ -39458,3 +39458,41 @@ token correction, the removed waiver, the DAWN ledger row and this ADR are not. 
 asks for a committed `admin*` baseline, so the row closes in the sweep, which is the change that
 actually satisfies it. Merge the correction first: new-token baselines against an old-token
 production would make `pr-compare` diff every info chip on the way past.
+
+## ADR-1318: ACCEPTED — the Loom Studio's cause was 27 bare role checks, and ADR-1317's "unknown" expires (2026-09-10)
+
+**Context.** [ADR-1317](docs/DECISIONS.md) filed `/admin/library` with its cause **open** and the
+cheap next step named, rather than swapping the route out on a guess. That was the right call at the
+time — `/admin/crm` had been replaced because its cause was *proven*, and doing the same here on an
+inference would have been the same mistake in the opposite direction. This ADR closes the question
+it left open.
+
+**The cause.** The page gate and the actions disagreed. `/admin/library` admits a Marketer through
+the gate the page itself declares, and then **all 27** of its server actions called
+`requireAdmin('janitor')` **bare** — no `{ staff: 'marketing' }` — so every one of them denied the
+role the page had just let in. The surface was reachable and unusable, which is why it read as a
+role-floor bounce and was not one: `ADR-1317` records the absence of the `ROLE_FLOOR_MARKER`
+annotation a real bounce carries, and that observation was correct. The redirect came from the
+actions, not the floor.
+
+The account's permissions were never the problem, exactly as ADR-1317 measured: `team_members`
+`admin`, whose `STAFF_ROLE_CAPABILITIES` entry is `marketing: 'write'` — precisely what
+`requireAdmin('janitor', { staff: 'marketing' })` asks for — with `capability_permissions` empty so
+no override denies it.
+
+**Decision.** All 27 actions take the page's own gate. `test/e2e/operator-reachability.test.ts` gains
+`webRoleOnlyActionGuards()`, which fails when a route's actions are stricter than the route, plus a
+fixture control proving the new assertion can fire.
+
+**Consequences.** `LIVE-289` **stays open**, and deliberately. The cause is fixed; the row closes
+only when a baseline capture produces `admin-library--dawn-light-desktop.png`, and
+`PW_REQUIRE_OPERATOR` stays unset until then. It was specifically **not** closed by dropping the
+route from `OPERATOR_PATHS` — that is the census mistake [ADR-1314](docs/DECISIONS.md) exists to
+prevent, and it would have made the gap invisible rather than absent.
+
+**The lesson is ADR-1082's, again.** A blocker phrased as "the cause is unknown" is a claim with an
+expiry date. This one was three tool calls: grep the actions for `requireAdmin`, read the page's own
+gate, compare. ADR-1317 was right to refuse a guess and right to name the next step; what nearly cost
+something was how long the "unknown" sat unre-tested while reading as a finding.
+
+**Rows.** LIVE-289 (cause fixed, row stays open for the capture) · LIVE-300 · LIVE-301.
