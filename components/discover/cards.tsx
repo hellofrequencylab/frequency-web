@@ -49,8 +49,14 @@ export function ChannelCard({
             {channel.description}
           </p>
         )}
+        {/* The ONLY live box on this card, so it is the only one masked (`data-visual-mask`,
+            ADR-1277, LIVE-301). The name and the description come from `topical_channels`
+            ordered by `display_order` — operator-edited, and no clock moves them. This tally is
+            counted off the `public_circles` read, so it moves the moment a Circle is created,
+            archived, or switches Channel. Masking the whole card instead would blind the gate to
+            a real regression in the card's own design. */}
         {typeof circleCount === 'number' && (
-          <p className="text-meta text-subtle mt-4 font-medium">
+          <p data-visual-mask="discover-channel-circle-count" className="text-meta text-subtle mt-4 font-medium">
             {circleCount} {circleCount === 1 ? 'circle' : 'circles'}
           </p>
         )}
