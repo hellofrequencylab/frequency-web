@@ -8,6 +8,7 @@ import { countMonthSends } from '@/lib/spaces/email'
 import { MeterUpsell } from '@/components/pricing/meter-upsell'
 import { listAudienceTags } from '@/lib/spaces/audiences'
 import { listSpaceSegments } from '@/lib/spaces/segments'
+import { loadSpaceBroadcastSegments } from '@/lib/spaces/broadcast-audience'
 import { listSpaceEmailTemplates } from '@/lib/spaces/email-templates'
 import { SectionHeader } from '@/components/ui/section-header'
 import { StaffPreviewBanner } from '@/components/spaces/staff-preview-banner'
@@ -27,6 +28,14 @@ import { RecentSends } from '@/components/spaces/email/recent-sends'
 // this Space (the standalone page still 404s via its own gate, so a null here never renders a bare 200).
 // When email is locked for a non-staff viewer it returns the FeatureLockedNotice (the caller keeps the
 // plain framing); otherwise the enable gate, composer, deliverability, and campaign list.
+//
+// LIVE-293: the Space Message center is retired, and this surface inherited the one thing it did that
+// Email could not — an AUDIENCE PICKER that targets all members, one membership tier, one of the Space's
+// circles, or one event's RSVPs. `loadSpaceBroadcastSegments` is the same resolver that console used, so
+// the segment list is unchanged; only the surface moved. The composer sends the chosen key as the
+// `memberSegment` filter facet, and lib/spaces/audiences.ts pairs it to this Space's own contacts BY
+// EMAIL (never by profile_id, which is NULL by law on a tenant space, ADR-624) and pins the send to the
+// Marketing topic. The DM and Dispatch lanes of the old console were dropped on purpose.
 //
 // STAFF PREVIEW (a janitor viewing a Space they don't manage): a Staff preview banner shows and the
 // composer / enable card render read-only. Every WRITE action stays gated on canEditProfile server-side.
@@ -76,10 +85,13 @@ export async function EmailBody({ slug }: { slug: string }) {
   // RENDER is already gated on canManage || staffViewing above, so these per-Space reads (each
   // space_id-scoped + fail-safe) only run for an authorized viewer. Segments + templates (ADR-380) feed
   // the composer's audience + template pickers.
-  const [emailOn, tags, segments, templates] = await Promise.all([
+  const [emailOn, tags, segments, memberSegments, templates] = await Promise.all([
     isSpaceEmailEnabled(space.id),
     listAudienceTags(space.id),
     listSpaceSegments(space.id),
+    // The member segments the retired Message center offered (LIVE-293). Only the segments with someone
+    // in them are listed by the resolver, so an empty tier or circle never appears as a dead option.
+    loadSpaceBroadcastSegments(space.id),
     listSpaceEmailTemplates(space.id),
   ])
 
@@ -108,6 +120,7 @@ export async function EmailBody({ slug }: { slug: string }) {
             slug={space.slug}
             tags={tags}
             segments={segments.map((s) => ({ id: s.id, name: s.name }))}
+            memberSegments={memberSegments.map((m) => ({ key: m.key, label: m.label }))}
             templates={templates.map((t) => ({
               id: t.id,
               name: t.name,

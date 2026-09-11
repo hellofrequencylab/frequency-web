@@ -43,17 +43,25 @@ vi.mock('./entitlements', () => ({
   }),
 }))
 
-// The audience resolver is its own unit (audiences.test.ts); here we just control how many recipients
-// a send resolves to, so sendSpaceCampaign's gating + validation is what's under test.
+// The audience resolver is its own unit (audiences.test.ts + member-segment-audience.test.ts); here we
+// just control what a send resolves to, so sendSpaceCampaign's gating + validation is what's under test.
+// LIVE-293: the surface calls resolveAudiencePlan, which hands back the recipients AND the topic the
+// audience forces. `plannedTopic` stands in for that decision so the arm below can prove the surface
+// passes the RESOLVER's topic to the seam and never re-derives one from the campaign row.
 let audience: { contactId: string; email: string }[] = [{ contactId: 'c1', email: 'a@x.com' }]
+let plannedTopic = 'marketing'
 vi.mock('./audiences', () => ({
-  resolveAudience: async () => audience,
+  resolveAudiencePlan: async () => ({ recipients: audience, topic: plannedTopic }),
 }))
 
 // The send seam (@/lib/spaces/email) is its own unit (email.test.ts); mock it so this surface test is
 // isolated and never runs a real send. A success returns {sent} that the surface maps to recipientCount.
+const seamSends: { topic?: string }[] = []
 vi.mock('@/lib/spaces/email', () => ({
-  sendSpaceCampaign: async () => ({ data: { sent: 3, suppressed: 0, failed: 0 } }),
+  sendSpaceCampaign: async (_spaceId: string, input: { topic?: string }) => {
+    seamSends.push({ topic: input.topic })
+    return { data: { sent: 3, suppressed: 0, failed: 0 } }
+  },
   SPACE_UNSUBSCRIBE_PLACEHOLDER: '%%SPACE_UNSUBSCRIBE_URL%%',
   isSpaceEmailEnabled: async () => true,
   setSpaceEmailEnabled: async () => ({ data: undefined }),
@@ -70,6 +78,9 @@ type CampaignRow = {
   sent_at: string | null
   created_at: string | null
   space_id: string | null
+  /** The topic stored on the row. The SEND does not read it directly since LIVE-293 (the resolver
+   *  decides), so an arm below seeds a row whose topic the resolver must override. */
+  topic?: string | null
 }
 
 const db = {
@@ -361,5 +372,17 @@ describe('sendSpaceCampaign — placeholder + guards', () => {
     const r = await sendSpaceCampaign('space-A', c.id)
     expect('error' in r).toBe(false)
     if (!('error' in r)) expect(r.data.recipientCount).toBe(3)
+  })
+
+  it('sends under the RESOLVER’s topic, not the topic stored on the campaign row (LIVE-293)', async () => {
+    // The consent bar for a member audience is decided in lib/spaces/audiences.ts and cannot be
+    // overridden here: this surface must forward what the resolver said. A row carrying 'events' with a
+    // resolver that says 'marketing' has to send as marketing, or the tier blast rides the softer lane.
+    seamSends.length = 0
+    plannedTopic = 'marketing'
+    const c = seedCampaign({ subject: 'Hi', body: 'Real body.', space_id: 'space-A', topic: 'events' })
+    const r = await sendSpaceCampaign('space-A', c.id)
+    expect('error' in r).toBe(false)
+    expect(seamSends).toEqual([{ topic: 'marketing' }])
   })
 })

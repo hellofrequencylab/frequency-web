@@ -22,6 +22,8 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { log } from '@/lib/log'
 import type { Database } from '@/lib/database.types'
 import { parsePlaceSelector, resolvePlaceTreeProfileIds } from '@/lib/messaging/place-tree'
+import { normalizeEmailTopic } from '@/lib/spaces/email-topics'
+import type { NotificationTopic } from '@/lib/notification-preferences'
 
 /** PostgREST errors on the untyped embed seams below come back as `{}` to tsc, so narrow at the
  *  edge rather than casting each call site. */
@@ -103,8 +105,23 @@ export interface AudienceFilter {
   /** PLACE-TREE SELECTOR (CRM Phase 5): a `circle:<id>` / `hub:<id>` / `nexus:<id>` string. When set,
    *  narrows to the Space's contacts whose linked member profile belongs to that circle / hub / nexus
    *  (memberships -> profiles -> contacts). One audience type, both worlds. Null / omitted = no place
-   *  narrowing. Fail-safe: a malformed selector narrows to nobody, never everybody. */
+   *  narrowing. Fail-safe: a malformed selector narrows to nobody, never everybody.
+   *
+   *  🔴 THIS FACET NARROWS BY `contacts.profile_id`, WHICH IS NULL BY LAW ON A TENANT SPACE (ADR-624),
+   *  so on every Space but the root hub it resolves to nobody. `memberSegment` below is the facet that
+   *  targets a circle CORRECTLY; do not reach for this one to build a member audience (LIVE-293). */
   place?: string | null
+  /** MEMBER SEGMENT (LIVE-293): a broadcast-audience key — `members`, `tier:<id>`, `circle:<id>`, or
+   *  `event:<id>` — inherited from the retired Space Message center. When set, narrows to the Space's
+   *  contacts who are in that segment, paired BY EMAIL ADDRESS through lib/crm/contact-audience.ts
+   *  (never by `profile_id`, see `place` above). Null / omitted = no member narrowing.
+   *
+   *  🔴 IT ALSO FORCES THE TOPIC. A member-segment audience always sends under `marketing`, the
+   *  strictest consent bar, exactly as the retired Message center hard-coded it. That is enforced in
+   *  `topicForAudience` and applied by `resolveAudiencePlan`, which is the only resolver the campaign
+   *  send paths call, so an operator picking a softer transactional topic in the composer cannot route
+   *  around it. */
+  memberSegment?: string | null
 }
 
 /** The member_traits `trait_key` each advanced facet reads. The enum bands are stored in `value_text`
@@ -158,6 +175,25 @@ export function normalizeChurnRisk(raw: unknown): ChurnRiskBand | null {
   return normalizeEnum(raw, CHURN_RISK_VALUES)
 }
 
+/** The member-segment keys the audience grammar accepts (LIVE-293), matching the keys
+ *  lib/spaces/broadcast-audience.ts emits: the whole membership, one paid tier, one of the Space's own
+ *  circles, or one upcoming event's RSVPs. */
+const MEMBER_SEGMENT_RE = /^(?:members|(?:tier|circle|event):[A-Za-z0-9_-]{1,64})$/
+
+/** A valid member-segment key, or null. Pure. Fail-safe in the SAFE direction for a send surface: an
+ *  unrecognized key reads as "no member narrowing" here, and `resolveAudience` refuses to resolve one
+ *  it cannot recognize, so a malformed key can never quietly widen a tier blast to the whole book. */
+export function normalizeMemberSegment(raw: unknown): string | null {
+  if (typeof raw !== 'string') return null
+  const s = raw.trim()
+  return MEMBER_SEGMENT_RE.test(s) ? s : null
+}
+
+/** Whether this filter targets a member segment. Pure; the one predicate the consent rule reads. */
+export function isMemberSegmentFilter(filter: AudienceFilter): boolean {
+  return typeof filter.memberSegment === 'string' && filter.memberSegment.trim().length > 0
+}
+
 /** Coerce a stored segment `definition` jsonb into a safe AudienceFilter, reading ONLY the known
  *  facets and DROPPING any nested segmentId (a segment never references another segment, so a stored
  *  definition can never chain into an infinite resolve). Pure: an absent / malformed definition reads
@@ -182,6 +218,12 @@ export function definitionToFilter(raw: unknown): AudienceFilter {
   // Place-tree selector (Phase 5): kept only when it parses to a real circle/hub/nexus selector.
   const place = parsePlaceSelector(d.place)
   if (place) filter.place = `${place.type}:${place.id}`
+  // Member segment (LIVE-293): read from BOTH key shapes for the same reason the advanced facets are.
+  // It is READ here on purpose: the scheduled-send cron rebuilds a campaign's audience through this
+  // function, and dropping the key would resolve a scheduled TIER blast to the Space's whole contact
+  // book. Widening a send is the one failure mode worse than refusing it.
+  const memberSegment = normalizeMemberSegment(d.memberSegment ?? d.member_segment)
+  if (memberSegment) filter.memberSegment = memberSegment
   // Intentionally NO segmentId: a segment definition never nests another segment.
   return filter
 }
@@ -412,12 +454,27 @@ export async function resolveAudience(
 ): Promise<AudienceRecipient[]> {
   if (!spaceId) return []
 
-  // A saved segment resolves from its STORED definition (ADR-380): load it (fail-safe to "everyone"
-  // if the segment is missing / cross-space) and resolve through the EXISTING tag logic. When no
-  // segmentId is given this is a pure no-op, so existing call sites are unchanged.
-  const effective = filter.segmentId
-    ? await readSegmentFilter(spaceId, filter.segmentId)
-    : filter
+  return resolveFromEffective(spaceId, await effectiveFilter(spaceId, filter))
+}
+
+/**
+ * A saved segment resolves from its STORED definition (ADR-380): load it (fail-safe to "everyone" if
+ * the segment is missing / cross-space) and resolve through the existing facet logic. When no
+ * segmentId is given this is a pure no-op, so existing call sites are unchanged.
+ *
+ * Split out so the send path can read the EFFECTIVE filter once and use it for both the recipients and
+ * the consent rule (`resolveAudiencePlan`). Without that, a member segment stored inside a saved
+ * segment would be invisible to a rule that only looked at the filter the caller passed in.
+ */
+async function effectiveFilter(spaceId: string, filter: AudienceFilter): Promise<AudienceFilter> {
+  return filter.segmentId ? await readSegmentFilter(spaceId, filter.segmentId) : filter
+}
+
+/** Resolve recipients from an ALREADY-EXPANDED filter (no segmentId indirection left to follow). */
+async function resolveFromEffective(
+  spaceId: string,
+  effective: AudienceFilter,
+): Promise<AudienceRecipient[]> {
   const tag = normalizeTag(effective.tag)
 
   const contacts = await readSpaceContacts(spaceId)
@@ -444,6 +501,28 @@ export async function resolveAudience(
   if (place) {
     const placeProfileIds = new Set(await resolvePlaceTreeProfileIds(place))
     chosen = chosen.filter((c) => c.profileId != null && placeProfileIds.has(c.profileId))
+  }
+
+  // MEMBER SEGMENT (LIVE-293): narrow to the Space's contacts who are in the chosen segment (the whole
+  // membership, one paid tier, one of its circles, one event's RSVPs). The pairing is BY EMAIL, in
+  // lib/spaces/member-segment-audience.ts, and NOT by `profile_id` like the `place` facet above: a
+  // tenant Space's contacts carry no profile link at all (ADR-624), so a profile_id join here would
+  // silently reach nobody. An unrecognized key narrows to NOBODY rather than falling through to
+  // everyone, so a malformed segment can never widen a tier blast.
+  //
+  // The server-only resolver is reached through a DYNAMIC import, the repo's documented mitigation for
+  // keeping a server-only dependency out of a module's top level (cf. lib/layout/page-chrome.ts): this
+  // module is type-imported by the client composer + picker.
+  if (isMemberSegmentFilter(effective)) {
+    const segmentKey = normalizeMemberSegment(effective.memberSegment)
+    if (!segmentKey) return []
+    const { contactIdsInMemberSegment } = await import('@/lib/spaces/member-segment-audience')
+    const inSegment = await contactIdsInMemberSegment(
+      spaceId,
+      segmentKey,
+      chosen.map((c) => ({ id: c.id, email: c.email })),
+    )
+    chosen = chosen.filter((c) => inSegment.has(c.id))
   }
 
   // ADVANCED FACETS (activated Phase 5): engagement-depth / resonance-tier / churn-risk join to the
@@ -473,6 +552,52 @@ export async function resolveAudience(
     out.push({ contactId: c.id, email: c.email })
   }
   return out
+}
+
+// ── THE CONSENT BAR: a member audience always rides the strictest topic ──────────────────────────
+//
+// Owner ruling 2026-09-10 (LIVE-293). The retired Message center hard-coded `topic: 'marketing'` on
+// its email lane, and said why: a member blast is held to the STRICTEST consent bar (the double-opt-in
+// one), not a softer transactional lane. The Email composer, by contrast, lets an operator pick a
+// topic per campaign. Porting the targeting without porting that rule would let a tier blast ride a
+// transactional topic and skip the mute an operator's own contacts set.
+//
+// 🔴 SO THE RULE LIVES AT THE RESOLVER, NOT IN THE PICKER. `resolveAudiencePlan` is the only way a
+// campaign send path gets its recipients, and it hands back the topic in the same breath. There is no
+// order of UI operations that produces recipients without the topic decision attached, and the rule
+// reads the EFFECTIVE filter, so a member segment hidden inside a saved segment is caught too.
+
+/** The topic a member-segment audience is pinned to. The strictest of the three consent bars. */
+export const MEMBER_SEGMENT_TOPIC: NotificationTopic = 'marketing'
+
+/** The topic a send MUST ride, given the operator's pick and the audience it resolved. PURE.
+ *  A member-segment audience is pinned to `marketing`; anything else keeps the operator's choice
+ *  (normalized, so a legacy / malformed value behaves exactly as the pre-topic send did). */
+export function topicForAudience(picked: unknown, filter: AudienceFilter): NotificationTopic {
+  return isMemberSegmentFilter(filter) ? MEMBER_SEGMENT_TOPIC : normalizeEmailTopic(picked)
+}
+
+/**
+ * THE SEND-PATH RESOLVER: the recipients AND the topic the audience forces, from one pass.
+ *
+ * Both campaign send paths (the interactive composer in lib/spaces/campaigns.ts and the scheduled-send
+ * cron in lib/spaces/campaigns-send-due.ts) go through this instead of calling `resolveAudience` and
+ * normalizing the topic separately. That is the whole point: the two decisions cannot drift apart, and
+ * a future send path cannot resolve a tier audience and then pick its own topic.
+ *
+ * FAIL-SAFE exactly like `resolveAudience`: no recipients on any error, never a wider send.
+ */
+export async function resolveAudiencePlan(
+  spaceId: string,
+  filter: AudienceFilter = {},
+  pickedTopic?: unknown,
+): Promise<{ recipients: AudienceRecipient[]; topic: NotificationTopic }> {
+  if (!spaceId) return { recipients: [], topic: topicForAudience(pickedTopic, filter) }
+  const effective = await effectiveFilter(spaceId, filter)
+  return {
+    recipients: await resolveFromEffective(spaceId, effective),
+    topic: topicForAudience(pickedTopic, effective),
+  }
 }
 
 /** How many recipients an audience resolves to (the composer's live count). FAIL-SAFE to 0. A thin

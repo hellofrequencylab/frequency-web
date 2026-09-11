@@ -177,7 +177,9 @@ describe('Community (resonance) section coverage', () => {
     // ADR-1313 completed the box: Automation came BACK from Marketing (it is drip over your own contacts,
     // and filing it a tab away from the CRM box that owns it was the orphan defect the declared `hub`
     // field removes), and Message center arrived from the Offerings catch-all it had been falling into.
-    // The set is now exactly the CRM box plus every tool with `parent: 'space.crm'`.
+    // LIVE-293 then RETIRED Message center: its audience picker moved into Email (space.comms), its DM
+    // and Dispatch broadcast lanes were dropped, and space Dispatch publishing moved to the post box
+    // (LIVE-295). The set is now exactly the CRM box plus every tool with `parent: 'space.crm'`.
     expect(resonance.map((m) => m.id).sort()).toEqual(
       [
         'space.automation',
@@ -185,7 +187,6 @@ describe('Community (resonance) section coverage', () => {
         'space.crm',
         'space.doors',
         'space.leads',
-        'space.messages',
         'space.shared',
       ].sort(),
     )

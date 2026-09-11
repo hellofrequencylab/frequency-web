@@ -32,6 +32,12 @@ import type { NotificationTopic } from '@/lib/notification-preferences'
 // unsubscribe). Sending stays disabled until email is enabled for the Space (the enable gate lives on
 // the page; this composer is only rendered once email is on, or with sending disabled in preview).
 //
+// LIVE-293: the audience picker also carries MEMBER SEGMENTS (all members, a membership tier, one of the
+// Space's circles, one event's RSVPs), inherited from the retired Space Message center. When one is
+// picked the Topic row LOCKS to Marketing and says why. That lock is a report, not the rule: the rule is
+// in lib/spaces/audiences.ts (topicForAudience / resolveAudiencePlan), so a hand-rolled call cannot pick
+// a softer transactional topic for a tier blast.
+//
 // Copy passes CONTENT-VOICE: plain labels, concrete, no narrated feelings, no em/en dashes.
 
 export function ComposerShell({
@@ -39,6 +45,7 @@ export function ComposerShell({
   slug,
   tags,
   segments = [],
+  memberSegments = [],
   templates = [],
   canSend,
   readOnly = false,
@@ -49,6 +56,8 @@ export function ComposerShell({
   tags: string[]
   /** Saved audience segments for this Space (ADR-380). */
   segments?: { id: string; name: string }[]
+  /** Member segments for this Space (LIVE-293): members, paid tiers, circles, upcoming events' RSVPs. */
+  memberSegments?: { key: string; label: string }[]
   /** Saved email templates for this Space (ADR-380). */
   templates?: { id: string; name: string; subject: string; body: string }[]
   /** Whether sending is available (email enabled for the Space). When false, Send/Schedule are off. */
@@ -70,16 +79,21 @@ export function ComposerShell({
   const ready = subject.trim().length > 0 && body.trim().length > 0
   const disabled = readOnly || pending
 
+  // A member audience is pinned to Marketing at the resolver, so the control shows that instead of
+  // offering a choice the send would overrule. `effectiveTopic` is what the server will actually use.
+  const memberAudience = Boolean(filter.memberSegment)
+  const effectiveTopic: NotificationTopic = memberAudience ? 'marketing' : topic
+
   // Ensure the draft exists, returning its id (or null on failure, with the error surfaced).
   async function ensureDraft(): Promise<string | null> {
-    const res = await createSpaceCampaign(spaceId, slug, { subject, body, topic })
+    const res = await createSpaceCampaign(spaceId, slug, { subject, body, topic: effectiveTopic })
     if (isError(res)) {
       setError(res.error)
       return null
     }
     // Keep the body in sync (a create stores the current text); update is a no-op here but keeps the
     // edit path honest if the owner tweaks before sending.
-    await updateSpaceCampaign(spaceId, slug, res.data.id, { subject, body, topic })
+    await updateSpaceCampaign(spaceId, slug, res.data.id, { subject, body, topic: effectiveTopic })
     return res.data.id
   }
 
@@ -184,7 +198,8 @@ export function ComposerShell({
             </Label>
             <Select
               id="campaign-topic"
-              value={topic}
+              value={effectiveTopic}
+              disabled={memberAudience}
               onChange={(e) => setTopic(e.target.value as NotificationTopic)}
               wrapperClassName="mt-1"
             >
@@ -195,7 +210,9 @@ export function ComposerShell({
               ))}
             </Select>
             <p className="mt-1 text-meta text-subtle">
-              {EMAIL_TOPIC_OPTIONS.find((o) => o.key === topic)?.help}
+              {memberAudience
+                ? 'A send to your members, a tier, a Circle, or an event stays on Marketing, the strictest consent bar. Pick a tag or saved segment to choose a topic.'
+                : EMAIL_TOPIC_OPTIONS.find((o) => o.key === topic)?.help}
             </p>
           </div>
         </div>
@@ -205,6 +222,7 @@ export function ComposerShell({
           slug={slug}
           tags={tags}
           segments={segments}
+          memberSegments={memberSegments}
           filter={filter}
           onFilterChange={setFilter}
           onCountChange={setCount}

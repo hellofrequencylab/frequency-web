@@ -25,9 +25,8 @@
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { TablesUpdate } from '@/lib/database.types'
-import { resolveAudience, definitionToFilter } from '@/lib/spaces/audiences'
+import { resolveAudiencePlan, definitionToFilter } from '@/lib/spaces/audiences'
 import { sendSpaceCampaignSystem, SPACE_UNSUBSCRIBE_PLACEHOLDER } from '@/lib/spaces/email'
-import { normalizeEmailTopic } from '@/lib/spaces/email-topics'
 import { sendCampaignNow } from '@/lib/email-studio/send'
 import { loadRootSpaceId } from '@/lib/spaces/store'
 import { isError } from '@/lib/action-result'
@@ -194,7 +193,12 @@ export async function sendDueCampaigns(limit = 100): Promise<SendDueResult> {
     // Resolve the stored audience over THIS Space's own contacts, then deliver via the system seam.
     try {
       const filter = definitionToFilter(row.audience_filter)
-      let recipients = await resolveAudience(row.space_id, filter)
+      // ONE resolver for the recipients AND the topic (LIVE-293). A MEMBER-SEGMENT audience (a tier, a
+      // circle, an event's RSVPs) is pinned to `marketing`, the strictest consent bar, whatever topic the
+      // campaign row carries. Reading the topic off the row here and the audience there is exactly how
+      // the two would drift, so the scheduled path asks the same question the interactive one does.
+      const plan = await resolveAudiencePlan(row.space_id, filter, row.topic)
+      let recipients = plan.recipients
       if (recipients.length === 0) {
         // Nobody matched the saved audience: stamp 'failed' so it is not re-claimed and the operator
         // can see it did not go out (a scheduled send with an empty audience is a mistake, not a retry).
@@ -227,7 +231,7 @@ export async function sendDueCampaigns(limit = 100): Promise<SendDueResult> {
         campaignId: row.id,
         subject: row.subject,
         html: renderCampaignHtml(row.body ?? ''),
-        topic: normalizeEmailTopic(row.topic),
+        topic: plan.topic,
         recipients,
       })
       if (isError(res)) {
