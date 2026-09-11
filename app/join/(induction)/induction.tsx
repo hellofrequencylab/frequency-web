@@ -13,7 +13,7 @@ import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { downscaleImageFile } from '@/lib/images/downscale-image'
 import { prepareImageForUpload } from '@/lib/library/image-shrink'
 import { searchPlaces, type PlaceSuggestion } from '@/lib/geocode'
-import { VERA as DEFAULT_VERA, type VeraCopy } from '@/lib/onboarding/funnel-script'
+import { VERA as DEFAULT_VERA, INDUCTION_BEAT_COUNT, type VeraCopy } from '@/lib/onboarding/funnel-script'
 import { getPersona, listPersonas, isPersonaId, DEFAULT_PERSONA, type PersonaId } from '@/lib/onboarding/personas'
 import type { FunnelFeature, FunnelCoreFeature, FunnelDestination } from '@/lib/funnels/definitions'
 import { funnelIcon } from '@/lib/funnels/icons'
@@ -66,9 +66,21 @@ type Props = {
    *  Welcome-beat picker; defaults to Visitor. Carried in a cookie so completion can
    *  stamp meta.persona + the persona tag, and branches the tour reel. */
   persona?: PersonaId
-  /** Open the flow at a specific beat (0–3). Used by the /pages/splash editor to
-   *  preview the REAL component one beat at a time; the flow logic is untouched. */
+  /** Open the flow at a specific beat (0–3). Two callers: the /pages/splash editor, which
+   *  previews the REAL component one beat at a time, and the RESUME path, which reopens an
+   *  induction this browser left unfinished. The flow logic is untouched by either. */
   initialBeat?: number
+  /** RESUME: the answers this browser already gave, read back from the parked induction
+   *  (./actions.ts readPendingInduction). Seeded into state so a restored beat is not a beat
+   *  with empty fields behind it — a resume that dropped someone on "Step in" with no name
+   *  would submit a blank profile. */
+  initialDisplayName?: string
+  initialLocation?: string
+  initialLat?: number | null
+  initialLng?: number | null
+  /** RESUME: the handle they had already settled on. Distinct from `initialHandle`, which is a
+   *  signed-in member's CURRENT handle; this one also suppresses re-deriving it from the name. */
+  parkedHandle?: string
   /** Set when the visitor scanned a member's QR code (the fq_ref referrer). Shows an
    *  "Invited by {name}" chip atop the flow so the welcome reads personal. */
   inviter?: { displayName: string; handle: string; avatarUrl: string | null } | null
@@ -83,12 +95,22 @@ type Props = {
   destination?: FunnelDestination
 }
 
+/** Split a parked display name back into the two fields Beat 2 shows. One space is the only
+ *  split, matching splitName in ./lead-actions.ts so a resumed run and a captured lead agree. */
+function splitParkedName(full: string): { first: string; last: string } {
+  const name = (full ?? '').trim()
+  if (!name) return { first: '', last: '' }
+  const i = name.indexOf(' ')
+  if (i === -1) return { first: name, last: '' }
+  return { first: name.slice(0, i), last: name.slice(i + 1).trim() }
+}
+
 const HANDLE_RE = /^[a-z0-9_]+$/
 // Same shape the server validates with (lead-actions.ts / subscribe). Client-side it only decides
 // whether to bother calling; the action re-checks, because a client check is a courtesy not a gate.
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/
 const RENDERS = { feed: FeedRender, circles: CirclesRender, events: EventsRender, booking: BookingRender, checkin: CheckinRender, donate: DonateRender, tickets: TicketsRender, crm: CrmRender }
-const BEAT_COUNT = 4 // 0 intro · 1 reel · 2 identity+place · 3 enter
+const BEAT_COUNT = INDUCTION_BEAT_COUNT // 0 intro · 1 reel · 2 identity+place · 3 enter
 // Accessible name for each beat — drives the progress bar's label and the polite
 // live announcement so assistive tech tracks "where am I" through the sequence.
 const BEAT_LABELS = ['Who you are', 'A quick tour', 'Your profile', 'Step in']
@@ -122,7 +144,7 @@ function accent(text: string): React.ReactNode {
   )
 }
 
-export default function FunnelInduction({ userId = '', userEmail = '', initialHandle = '', preview = false, deferred = false, copy, sequence, persona: initialPersona, initialBeat = 0, inviter = null, slide2Features, slide3Core, destination }: Props) {
+export default function FunnelInduction({ userId = '', userEmail = '', initialHandle = '', preview = false, deferred = false, copy, sequence, persona: initialPersona, initialBeat = 0, initialDisplayName = '', initialLocation = '', initialLat = null, initialLng = null, parkedHandle = '', inviter = null, slide2Features, slide3Core, destination }: Props) {
   // NICHE-funnel forks (ADR-funnels). A non-empty set flips one beat over to the niche
   // layout; both absent keeps the whole flow identical to the General funnel.
   const hasNicheFeatures = (slide2Features?.length ?? 0) > 0 // Beat 0: cards vs persona fork
@@ -219,14 +241,20 @@ export default function FunnelInduction({ userId = '', userEmail = '', initialHa
   // handle suggestion). Keeping the derived value in its own state rather than computing it inline
   // is deliberate: it is what the induction has always submitted, and re-deriving it at each of the
   // eight read sites is how the card and the saved profile end up disagreeing.
-  const [firstName, setFirstName] = useState('')
-  const [lastName, setLastName] = useState('')
-  const [displayName, setDisplayName] = useState('')
+  // RESUME seeds these. The parked run stores only the assembled `displayName` (that is the one
+  // value everything downstream reads), so first/last are split back out of it on the same
+  // one-space rule the lead capture uses — "Ada Lovelace King" keeps "Lovelace King" as the
+  // surname rather than guessing. A fresh run seeds '' exactly as before.
+  const [firstName, setFirstName] = useState(() => splitParkedName(initialDisplayName).first)
+  const [lastName, setLastName] = useState(() => splitParkedName(initialDisplayName).last)
+  const [displayName, setDisplayName] = useState(initialDisplayName)
   // The real-name note. A disclosure rather than a `title` attribute, which never appears on touch
   // and is not reachable by keyboard - the two ways most people would meet it.
   const [nameHintOpen, setNameHintOpen] = useState(false)
-  const [handle, setHandle] = useState('')
-  const [handleTouched, setHandleTouched] = useState(false)
+  const [handle, setHandle] = useState(parkedHandle)
+  // A parked handle counts as "touched": they already accepted it, so editing the name on a
+  // resumed run must not silently re-derive it out from under them.
+  const [handleTouched, setHandleTouched] = useState(!!parkedHandle)
   const [check, setCheck] = useState<{ handle: string; result: 'available' | 'taken' | 'idle' } | null>(null)
   const [avatarFile, setAvatarFile] = useState<File | null>(null)
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
@@ -236,9 +264,17 @@ export default function FunnelInduction({ userId = '', userEmail = '', initialHa
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   // Place (free city search via Photon)
-  const [locQuery, setLocQuery] = useState('')
-  const [location, setLocation] = useState('')
-  const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null)
+  // Seeded from the parked run alongside `location` below. The VISIBLE field is this one;
+  // `location` is the confirmed pick. Restoring only the confirmed value would show an empty
+  // city box over a city that was already chosen — the autocomplete's own guard
+  // (`term === location`) then keeps the restored pair from re-running a place search on mount.
+  const [locQuery, setLocQuery] = useState(initialLocation)
+  const [location, setLocation] = useState(initialLocation)
+  const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(
+    typeof initialLat === 'number' && typeof initialLng === 'number'
+      ? { lat: initialLat, lng: initialLng }
+      : null,
+  )
   const [locResults, setLocResults] = useState<PlaceSuggestion[]>([])
   const [locOpen, setLocOpen] = useState(false)
 
@@ -258,6 +294,38 @@ export default function FunnelInduction({ userId = '', userEmail = '', initialHa
   const [capturing, setCapturing] = useState(false)
   const [signingIn, setSigningIn] = useState(false)
 
+  // PARK THE RUN on every beat change, so leaving and coming back resumes here instead of
+  // restarting at 0 — the promise the Beat-0 field already makes ("saves your spot so you can
+  // finish later"), which nothing kept until now.
+  //
+  // Keyed on the BEAT, not on the answers: this runs after the beat commits, so it reads the
+  // current name / handle / city, while a per-keystroke write would put a server action behind
+  // every letter of someone's name. The cost is that text typed and then abandoned WITHOUT
+  // advancing is not kept; the beat still is, which is the part people notice.
+  //
+  // Beat 0 is skipped: a visitor who has only just landed has nothing parked worth restoring,
+  // and writing a cookie for them would start a run they never began. Preview never writes
+  // (same rule as the persona / interest cookies above).
+  useEffect(() => {
+    if (preview || beat === 0) return
+    stashPendingInduction({
+      displayName: displayName.trim(),
+      handle,
+      bio: '',
+      location,
+      lat: coords?.lat ?? null,
+      lng: coords?.lng ?? null,
+      intent: '',
+      interests: '',
+      heardAbout: '',
+      beat,
+    }).catch(() => {
+      // Best-effort, exactly like the lead writes: losing a resume point must never
+      // interrupt the flow the member is actually in.
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally beat-keyed; see above.
+  }, [beat, preview])
+
   // Park every collected answer where it survives the auth round-trip: the text in
   // a server cookie, the avatar (too big for a cookie) in localStorage. /complete
   // reads both after sign-in and writes the profile.
@@ -272,6 +340,9 @@ export default function FunnelInduction({ userId = '', userEmail = '', initialHa
       intent: '',
       interests: '',
       heardAbout: '',
+      // The beat rides along or this write would park a 0 over the beat they actually reached,
+      // and a magic link opened in another browser would resume them at the start.
+      beat,
     })
     // The address they are signing in with is the one worth following up on, and it may be the
     // first we have seen (Beat 0's field is optional). capture, not update: it upserts on the

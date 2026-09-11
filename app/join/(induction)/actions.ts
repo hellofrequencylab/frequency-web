@@ -21,6 +21,13 @@ import { postWelcomeForMember } from '@/lib/onboarding/welcome'
 import { ensureMemberCodes } from '@/lib/qr/member-codes'
 import { track } from '@/lib/analytics/track'
 import { FUNNEL_INDUCTION_VERSION, BETA_MEMBERS_GET_CREW } from '@/lib/onboarding/funnel-script'
+import {
+  PENDING_INDUCTION_COOKIE,
+  PENDING_INDUCTION_MAX_AGE,
+  clampBeat,
+  clearPendingInduction,
+  type InductionData,
+} from './pending-induction'
 import { resolveFunnel } from '@/lib/funnels/resolve'
 import { funnelGrant } from '@/lib/funnels/definitions'
 import { adoptPractice } from '@/lib/practices'
@@ -282,24 +289,6 @@ async function applyFunnelGrants(seqSlug: string | null, authUserId: string, pro
 
 type Meta = Record<string, Json>
 
-// Where the deferred (signed-out) flow parks the answers across the auth
-// round-trip. The avatar (too big for a cookie) goes to localStorage on the
-// client under 'fq_pending_avatar' and is uploaded by /join/complete.
-const PENDING_INDUCTION_COOKIE = 'fq_pending_induction'
-
-export interface InductionData {
-  displayName: string
-  handle: string
-  bio: string
-  avatarUrl: string
-  location: string
-  lat: number | null
-  lng: number | null
-  intent: string
-  interests: string
-  heardAbout: string
-}
-
 async function readMeta(
   supabase: Awaited<ReturnType<typeof createClient>>,
   authUserId: string,
@@ -484,6 +473,10 @@ async function writeInduction(data: InductionData): Promise<void> {
  */
 export async function completeInduction(data: InductionData, destination?: FunnelDestination) {
   await writeInduction(data)
+  // The induction is finished, so the resume cookie has nothing left to resume. Cleared BEFORE the
+  // redirect below, which throws. See the PENDING_INDUCTION_COOKIE header: this is the signed-in
+  // completion path, and it is the one that used to leave the stash behind.
+  await clearPendingInduction()
   // Hand off to Vera (ADR-066 Phase D): drop them straight into the feed (the real
   // product) with her onboarding lightbox over it. She already has their
   // interests/intent in memory + meta.beta, so the lightbox continues the thread
@@ -496,13 +489,15 @@ export async function completeInduction(data: InductionData, destination?: Funne
   redirect(funnelLanding(destination, '/feed?welcome=vera'))
 }
 
-// authz-ok: intentionally PUBLIC + anonymous — the deferred-induction stash runs signed-out by
-// definition. The only write is the fq_pending_induction cookie on the caller's OWN browser,
-// length-clamped field by field; no database touch, no cross-user read.
+// authz-ok: intentionally PUBLIC + anonymous — the induction runs signed-out by definition. The
+// only write is the fq_pending_induction cookie on the caller's OWN browser, length-clamped field
+// by field; no database touch, no cross-user read.
 /**
- * Deferred path, step 1 (signed-out): park the induction answers in a short-lived
- * cookie so they survive the sign-in round-trip. No auth required. The avatar is
- * parked separately in localStorage by the client and uploaded at /complete.
+ * Park the induction in progress: the answers so far plus the beat they are on.
+ *
+ * Called at EVERY beat (so a return visit resumes) and again in front of sign-in (so the answers
+ * survive the auth round-trip, which is what this action was originally written for). The avatar
+ * is parked separately in localStorage by the client and uploaded at /complete.
  */
 export async function stashPendingInduction(data: Omit<InductionData, 'avatarUrl'>) {
   const payload: InductionData = {
@@ -516,12 +511,14 @@ export async function stashPendingInduction(data: Omit<InductionData, 'avatarUrl
     intent: (data.intent ?? '').slice(0, 500),
     interests: (data.interests ?? '').slice(0, 200),
     heardAbout: (data.heardAbout ?? '').slice(0, 120),
+    beat: clampBeat(data.beat),
   }
   ;(await cookies()).set(PENDING_INDUCTION_COOKIE, JSON.stringify(payload), {
     httpOnly: true,
     sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production',
     path: '/',
-    maxAge: 60 * 60, // an hour to click the magic link / finish OAuth
+    maxAge: PENDING_INDUCTION_MAX_AGE,
   })
 }
 
