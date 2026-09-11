@@ -32,7 +32,7 @@ import { rollbackAssetVersion } from './recraft-actions'
 // §3). It edits ONLY the SequenceDef config — Layer-2 data: order, copy, targeting, gating. This is
 // NOT a Puck editor (🔴 §10 module-surface boundary): it never offers Puck blocks or App tiles. Each
 // step's `type` is chosen from the code step-registry's known types; the copy field set is driven by
-// that type's contentSchema. Save runs the janitor-gated write action (which parses + validates and
+// that type's contentSchema. Save runs the Studio-gated write action (which parses + validates and
 // snapshots a version first); Publish moves the flow onto the resolver's live rungs, and can never
 // publish an invalid flow.
 

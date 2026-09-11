@@ -8,7 +8,7 @@ import { appendImageDescriptor, describeImage } from '@/lib/library/image-descri
 import { uploadLibraryImage } from './actions'
 
 // The upload control for the Library gallery. Picks a file, posts it to the
-// janitor-gated server action, and refreshes the grid on success.
+// Studio-gated server action, and refreshes the grid on success.
 export function LibraryUploader() {
   const [err, setErr] = useState<string | null>(null)
   const [note, setNote] = useState<string | null>(null)

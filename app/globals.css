@@ -103,7 +103,14 @@
      dispatches and the onboarding guide, so "comms + getting set up" reads cool +
      calm against the warm amber lead. Comms ONLY — never general chrome. */
   --color-broadcast:          #1EB6C5;
-  --color-broadcast-strong:   #0E808D;
+  /* 🔴 DARKENED 2026-09-10 (LIVE-300) — #0E808D on the broadcast fill measured **3.99:1** against
+     the 4.5 AA bar for body text, and `bg-broadcast-bg text-broadcast-strong` is how the chip is
+     built everywhere it appears. The -strong step already existed here and still missed, so this
+     is a DEEPER step of the same hue (HSL 186°, L 30.4% → 27.4%), not a new colour.
+     #0D737F measures **4.751** on the broadcast fill and 5.56 on white. Nothing paints a label ON
+     the -strong step (it is a foreground token only), so darkening it has no second pairing to
+     answer for. The dark skin's own pairing (#69D6E6 on #0F2A34) is 8.82 and is untouched. */
+  --color-broadcast-strong:   #0D737F;
   --color-broadcast-bg:       #D8F2F5;
   --color-text-on-broadcast:  #1A1206;
 
@@ -119,21 +126,41 @@
 
   /* Semantic states. Success is a teal (the orange's complement), not a true
      green, so "done/progress" reads cohesive with the brand signal teal. */
-  --color-success:          #11827A;
+  /* 🔴 BOTH DARKENED 2026-09-10 (LIVE-300), for the same reason as the info chip before them and
+     the broadcast -strong step above: each was measured against WHITE, where it passes, and never
+     against its OWN chip fill, which is how it is actually painted (`bg-success-bg text-success`,
+     `bg-warning-bg text-warning`).
+       success  #11827A → #0F736C   3.874 → **4.723** on --color-success-bg (5.69 on white)
+       warning  #B07515 → #8E5F11   3.316 → **4.719** on --color-warning-bg (5.53 on white)
+     Both are a deeper step of the SAME hue (success HSL 176°, L 28.8% → 25.6%; warning HSL 37°,
+     L 38.6% → 31.2%), not a new colour. The dark skin's pairings (7.82 and 8.25) are untouched.
+     ⚠️ warning is the one token in this family that is ALSO a solid fill (`bg-warning`, the button
+     and solid-badge variants), so darkening it moved the label it can carry — see the
+     --color-text-on-warning note below, which is the other half of this change. */
+  --color-success:          #0F736C;
   --color-success-bg:       #D7EFEA;
-  --color-warning:          #B07515;
+  --color-warning:          #8E5F11;
   --color-warning-bg:       #F6ECD8;
   --color-danger:           #BA3B30;
   --color-danger-bg:        #F7E4E1;
   /* Labels ON a solid semantic fill. Split out from --color-text-on-primary because the two
      fills need different labels: ink on the light danger red is 3.31 (sub-AA), so one shared
-     token cannot serve both. Measured light: white/danger 5.59, ink/warning 4.77,
-     white/success 4.67.
+     token cannot serve both. Measured light: white/danger 5.59, white/warning 5.53,
+     white/success 5.69 — all three now declared PAIRS in scripts/check-contrast.mjs, which they
+     were not before 2026-09-10 (the family declared primary/signal/broadcast/move and stopped).
      (This comment used to add "…--color-text-on-primary, which now resolves to ink". It resolves
-     to WHITE as of 2026-08-06 — see the amber block above. The split still stands: warning keeps
-     ink, because ink on the light warning yellow is what passes there.) */
+     to WHITE as of 2026-08-06 — see the amber block above.)
+
+     🔴 WARNING FLIPPED FROM INK TO WHITE, 2026-09-10 (LIVE-300), and it is the same measurement
+     that moved --color-warning itself. The old line read "warning keeps ink, because ink on the
+     light warning yellow is what passes there" — and it did, at 4.77 on #B07515. The chip pairing
+     forced #B07515 down to #8E5F11 to clear AA, and ink on THAT is 3.35: fixing the chip would
+     have broken the button in the same edit, trading one invisible barrier for another. White on
+     #8E5F11 is 5.533, so the label follows the fill. The rule the split encodes is unchanged —
+     each fill takes the label that passes ON IT — only the fill moved. Dark mode keeps ink
+     (#1A1206 on #F2B14E, 9.86); this is a light-mode flip only. */
   --color-text-on-danger:   #FFFFFF;
-  --color-text-on-warning:  #1A1206;
+  --color-text-on-warning:  #FFFFFF;
   --color-text-on-success:  #FFFFFF;
   /* 🔴 DARKENED 2026-09-10 (ADR-1317) — #2F6FB0 on the info fill measured **4.407:1**, and AA on
      body text is 4.5. It had never been measured on its OWN background: the pairing that shipped
@@ -617,12 +644,14 @@
   --color-primary-strong:    #965C12;
   --color-primary-bg:        #FBEFD9;
   --color-text-on-primary:   #FFFFFF;
-  --color-success:           #11827A;
+  /* Tracks :root — same pairing, same 3.874 -> 4.723 correction (LIVE-300). */
+  --color-success:           #0F736C;
   --color-success-bg:        #D7EFEA;
   --color-danger:            #BA3B30;
   --color-danger-bg:         #F7E4E1;
   --color-text-on-danger:    #FFFFFF;
-  --color-text-on-warning:   #1A1206;
+  /* Tracks :root — the warning fill darkened, so its label flips ink -> white (LIVE-300). */
+  --color-text-on-warning:   #FFFFFF;
   --color-text-on-success:   #FFFFFF;
   --color-move:              #1C7FB5;
   --color-move-hover:        #176A98;
@@ -653,10 +682,12 @@
   --color-signal-bg:         #D2EDE6;
   --color-text-on-signal:    #04231E;
   --color-broadcast:         #1EB6C5;
-  --color-broadcast-strong:  #0E808D;
+  /* Tracks :root — same pairing, same 3.995 -> 4.751 correction (LIVE-300). */
+  --color-broadcast-strong:  #0D737F;
   --color-broadcast-bg:      #D8F2F5;
   --color-text-on-broadcast: #1A1206;
-  --color-warning:           #B07515;
+  /* Tracks :root — same pairing, same 3.316 -> 4.719 correction (LIVE-300). */
+  --color-warning:           #8E5F11;
   --color-warning-bg:        #F6ECD8;
   /* Tracks :root — same pairing, same 4.407 -> 4.746 correction (ADR-1317). */
   --color-info:              #2C6AA8;

@@ -240,10 +240,62 @@ chips in a single table, as **serious** violations. The waiver is now removed ra
 ⚠️ **Dark mode is untouched and must stay that way.** `#6FA8DC` on `#15212E` measures **6.448** and
 the two projects still agree on it. Only the light row moves.
 
-📌 Three sibling pairings are the same shape and worse, and are **not** part of this correction:
+📌 Three sibling pairings are the same shape and worse, and were **not** part of this correction:
 `--color-broadcast-strong` on its fill (3.99), `--color-success` (3.87), `--color-warning` (3.32).
-They are tracked as `LIVE-300` and want a palette decision rather than a one-token nudge, but DAWN
-should expect them to arrive.
+They were tracked as `LIVE-300` — **and they arrived the same day. See §9.**
 
 Recorded in [`ADR-1317`](../docs/DECISIONS.md) and in the ledger of
 `lib/theme/dawn-divergence.test.ts`.
+
+---
+
+## 9. Correction — the other three tinted chips, and the label that had to follow
+
+§8 said DAWN should expect these. This is them. Same measurement, same shape, same reason: each
+tone was chosen against **white**, where it passes, and never against **its own chip fill**, which
+is how it is painted everywhere it appears (`bg-<tone>-bg` + `text-<tone>`).
+
+**Replace in `tokens/colors.css`, light mode only:**
+
+| Token | DAWN | Production | On its own `-bg` fill | On white |
+| :--- | :--- | :--- | :--- | :--- |
+| `--color-broadcast-strong` | `#0E808D` | **`#0D737F`** | 3.995 → **4.751** | 4.68 → 5.56 |
+| `--color-success` | `#11827A` | **`#0F736C`** | 3.874 → **4.723** | 4.67 → 5.69 |
+| `--color-warning` | `#B07515` | **`#8E5F11`** | 3.316 → **4.719** | 3.89 → 5.53 |
+| `--color-text-on-warning` | `#1A1206` | **`#FFFFFF`** | — | see below |
+
+**Each is a deeper step of the same hue, not a new colour.** Held in HSL: broadcast-strong 186°
+L 30.4% → 27.4%; success 176° L 28.8% → 25.6%; warning 37° L 38.6% → 31.2%. Saturation and hue are
+carried across unchanged, so the family still reads as one palette.
+
+🔴 **The fourth row is the one to read, because it is not a contrast fix — it is the consequence of
+one.** `--color-warning` does **two** jobs in both projects: chip TEXT on `--color-warning-bg`, and
+solid FILL under `--color-warning`'s label. Ink (`#1A1206`) on the old `#B07515` was 4.77 and
+passed. On the corrected `#8E5F11` it is **3.35**, which would have traded a fixed chip for a broken
+button in the same edit. White on `#8E5F11` is **5.533**, so the label follows the fill. The rule
+the `--color-text-on-*` split encodes is unchanged — *each fill takes the label that passes on it* —
+only the fill moved. **If DAWN applies the three tone rows without this one, it reintroduces a
+sub-AA button label.** They move together or not at all.
+
+**Two waivers in `scripts/check-contrast.mjs` were retired by the same darkening**, which is worth
+knowing because both were previously documented as facts about the palette:
+
+- `--color-warning` on `--color-surface`: 3.89 → **5.533**. It was "the only status tone that misses
+  on the plain surfaces". That is no longer true.
+- `--color-success` on `--color-marketing-canvas`: 4.05 → **4.936** (and 3.80 → **4.630** on the
+  Midnight skin's cream). This was labelled "THE PAIRING TO AVOID" and is the reason the
+  marketing-canvas pair family exists. Green text on a cream section now clears AA.
+
+⚠️ **Dark mode is untouched and must stay that way.** The dark pairings measure 8.82
+(broadcast-strong), 7.82 (success) and 8.25 (warning), and the two projects still agree on all
+three. `--color-text-on-warning` keeps ink in dark mode (`#1A1206` on `#F2B14E`, 9.86) — the flip to
+white is **light mode only**.
+
+📌 **The gate gained three pairs at the same time**, and the gap they close is the general lesson
+here: `check-contrast.mjs` declared the button-label pairing for primary, signal, broadcast and
+move, but for none of the three semantic fills — so the 4.77 → 3.35 move above would not have
+printed anywhere. `text-on-danger`/`danger`, `text-on-warning`/`warning` and
+`text-on-success`/`success` are declared now. **Before darkening a token, grep for it as a `bg-` as
+well as a `text-`.**
+
+Tracked as `LIVE-300`, and in the ledger of `lib/theme/dawn-divergence.test.ts`.

@@ -5,7 +5,7 @@
 // without breaking a single reference: recordings.loom_asset_id, every recording_attachment, and every
 // embedded block all point at this asset id, so they all follow the new file automatically. The prior file
 // is snapshotted into library_versions (reuse lib/library/versions.recordVersion) BEFORE the swap, so the
-// change is reversible (rollbackToVersion). Janitor-gated. Image behavior is intact: an image replaced with
+// change is reversible (rollbackToVersion). Studio-gated. Image behavior is intact: an image replaced with
 // an image lands in library-media exactly as an upload would; the classifier decides the bucket.
 
 import { revalidatePath } from 'next/cache'
@@ -15,6 +15,10 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { recordVersion } from '@/lib/library/versions'
 import { classifyLoomUpload, fallbackMimeFor } from '@/lib/library/upload-kinds'
 
+// Studio-gated: every action below carries the page's OWN gate —
+// `requireAdmin('janitor', { staff: 'marketing' })`, the same call `page.tsx` makes. See the door
+// note at the top of `./actions.ts` for the defect that came of not doing this (LIVE-289).
+
 /** Replace the file behind a Loom asset. The asset id (and every reference to it) is preserved; only the
  *  stored file + its metadata (url / path / bucket / mime / bytes) change. The previous file is versioned
  *  first. Returns the new public url on success. */
@@ -22,7 +26,7 @@ export async function replaceLibraryAssetFile(
   assetId: string,
   formData: FormData,
 ): Promise<{ ok: true; url: string } | { error: string }> {
-  await requireAdmin('janitor')
+  await requireAdmin('janitor', { staff: 'marketing' })
   const id = (assetId ?? '').trim()
   if (!id) return { error: 'Missing asset id.' }
 

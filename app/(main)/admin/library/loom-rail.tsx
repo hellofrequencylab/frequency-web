@@ -10,7 +10,7 @@ import { createCollection, renameCollection, deleteCollection } from './collecti
 // The Loom Studio folder rail: All / by Type / by Category (smart folders from the
 // `category` field) / Collections (custom folders, DAM library_collections). Navigation is
 // URL-driven (Links preserve the search + sort); collection create/rename/delete run the
-// janitor-gated server actions, then refresh.
+// Studio-gated server actions, then refresh.
 
 export type LoomFacet = { category: string; count: number }
 

@@ -296,6 +296,46 @@ export function publicSurfaces(): readonly Surface[] {
  * or two text lines, on MOBILE ONLY, with all four desktop captures green, is the database moving:
  * recapture it. A shift that moves both viewports, or moves all four states together, is a layout
  * change and must be read as one.
+ *
+ * ── 2026-09-10, LIVE-301: IT WENT RED, AND IT WAS THE OTHER FAILURE ───────────────────────────
+ * `pr-compare` run 34539497155 (PR #2539) failed ALL EIGHT `/discover` baselines — `[desktop]`
+ * and `[mobile]` x dawn-light, dawn-dark, midnight-light, midnight-dark — each reporting
+ * "991 pixels (ratio 0.01 of all image pixels) are different". Read against the prescription
+ * above, that is the OPPOSITE signature and must not be recaptured:
+ *   · a PIXEL DIFF, not a size mismatch. `toHaveScreenshot` fails a size mismatch BEFORE it
+ *     counts a pixel, so a pixel count is proof the dimensions matched. Height was not the fault.
+ *   · BOTH viewports and ALL FOUR states, which the prescription above reads as a layout change —
+ *     except the two theme pairs override their own tokens, and 991 pixels at ratio 0.01 is
+ *     content-sized, not layout-sized. (`/nearby`'s mask change on the same run reads 0.16-0.17,
+ *     139k-178k pixels. That is what a layout move looks like here.)
+ * Recapturing would have reset a clock that drifts again within the hour — the trade LIVE-301
+ * refused for `/nearby`. So the live boxes carry `data-visual-mask` instead (ADR-1277, six sites
+ * in VISUAL_MASK_SITES below, `discover-*`), and the page's design surface stays photographed:
+ * every SectionHeading and kicker, the body copy, the browse links, the dark Statement beat, the
+ * ZigZag, the FAQ, the closing CTA, and both empty-state fallbacks.
+ *
+ * ⚠️ AND ONE PREMISE ABOVE IS STALE, corrected here rather than left to mislead the next reader.
+ * The paragraph above says `app/discover/page.tsx` "calls `createClient()` (lib/supabase/server.ts
+ * → `cookies()`)", so the route is never static and every request runs the six queries live. The
+ * code says otherwise, and the code wins: `lib/discover.ts` imports `createPublicClient`
+ * (lib/supabase/public.ts), whose cookie adapter returns `[]` and sets nothing, and
+ * `app/discover/static-render.test.ts` FAILS the build if any page under `app/discover` reaches
+ * for `cookies()`, `headers()`, `auth.getUser()` or `@/lib/supabase/server` at all. `/discover` is
+ * prerendered with `export const revalidate = 3600`.
+ * That does not weaken the diagnosis, it sharpens it: the six readings are baked AT BUILD TIME, and
+ * `pr-compare` photographs the PR's OWN fresh Vercel preview deployment against baselines
+ * committed from an older build. So every reading on the page differs whenever the database moved
+ * between the two builds — which is why a recapture buys nothing beyond the next deploy, and why
+ * the drift is uniform across all eight states rather than sampled per capture.
+ *
+ * 🔴 WHAT THE MASKS STILL DO NOT ANSWER, stated so the NEXT `/discover` failure is read correctly.
+ * A mask paints a box and moves nothing. `app/discover/page.tsx` guards its Channels, events,
+ * circles and posts sections with `.length > 0`, so any one of them DROPS ENTIRELY when its query
+ * comes back empty; the hero swaps its whole block at SOCIAL_PROOF_FLOOR; the locator swaps
+ * map-plus-list for a single card when no city cluster plots; and a list that returns three rows
+ * instead of four is simply a shorter page. Every one of those is a HEIGHT, and no mask fixes a
+ * height (ADR-1277 §3) — the same limit `/nearby` records for a published Dispatch. When the
+ * picture shows a DIMENSION change on this surface, the masks are not the thing that failed.
  */
 const LIVE_DATA_PATHS: readonly string[] = []
 
@@ -359,6 +399,29 @@ export function appSurfaces(
     // baseline photographs the header as one magenta rectangle: everything below the band is still
     // covered, the band's own copy is not, and no mask selector can separate them because the text
     // and the tiles occupy the same rectangle by design.
+    //
+    // 🔴 THE PAGE IS A READING, SO ITS LIVE BOXES DECLARE THEMSELVES (LIVE-301, 2026-09-10). Six
+    // pr-compare failures on #2537 — desktop / mobile / narrow x dawn-light / dawn-dark — each
+    // reporting the SAME 1347 differing pixels at identical dimensions. One number in six contexts
+    // is not a rendering regression and is not a size drift: it is text that renders identically at
+    // 1280, 390 and 320, moving between the capture (21:28Z) and the comparison (22:00Z).
+    //
+    // WHY IT IS MASKED AND NOT PHOTOGRAPHED FIRST-SCREEN-ONLY. Both remedies were on the table and
+    // the committed baselines decided it. Crop this surface's own PNG at the fold: above it sit the
+    // masked map canvas (one magenta rectangle, ~2/3 of the first screen), the map legend, the
+    // at-a-glance line (four DB tallies) and the head of Coming up (event titles and DATES). Every
+    // drifting box on this page is ABOVE the fold, so photographing the first screen alone keeps
+    // 100% of the drift and gives up 60% of the page — the opposite of the trade `/feed` makes,
+    // where the shell and the composer are stable and the unbounded post list is what is dropped.
+    // So the five live boxes carry `data-visual-mask` (ADR-1277, VISUAL_MASK_SITES below) and the
+    // page's chrome — hero band, two-column grammar, section headers, quick links, empty states —
+    // stays in the picture.
+    //
+    // ⚠️ WHAT THIS DOES NOT ANSWER, stated so the next failure is read correctly: a mask paints a
+    // box and moves nothing. If a Dispatch is published between two captures the list gets a row,
+    // the page gets taller, and Playwright fails on SIZE before it counts a pixel. That failure has
+    // not been seen here (this account reads "0 recent Dispatches"), and its remedy is the other
+    // one. Do not reach for it before the picture shows a dimension change.
     //
     // What holds that gap instead, so nobody reads this as uncovered: the jsdom test above asserts
     // the h1, the subtitle and the single control by content, and the @a11y shell run audits the
@@ -767,6 +830,82 @@ export const VISUAL_MASK_SITES: readonly {
     file: 'components/sidebar/rail-panels.tsx',
     kind: 'live',
     why: 'PanelSkeleton, so a capture that lands mid-stream paints the same box.',
+  },
+  // ── /nearby, the Dispatches page (LIVE-301) ─────────────────────────────────────────────
+  // Five boxes on ONE page, and the count is the finding rather than a smell: `/nearby` is the
+  // community dashboard, so almost everything on it below the header band is a reading. See the
+  // note on the `/nearby` row in appSurfaces() for why the page is masked rather than made
+  // `viewportOnly`.
+  {
+    value: 'nearby-glance',
+    file: 'app/(main)/nearby/page.tsx',
+    kind: 'live',
+    why: 'The at-a-glance line: upcoming events, circles, members and recent Dispatches, four DB tallies.',
+  },
+  {
+    value: 'nearby-latest-dispatch',
+    file: 'app/(main)/nearby/page.tsx',
+    kind: 'live',
+    why: 'The highlight card holds whichever Dispatch was published most recently.',
+  },
+  {
+    value: 'nearby-dispatch-list',
+    file: 'app/(main)/nearby/page.tsx',
+    kind: 'live',
+    why: 'The Dispatch stream itself, up to 20 rows with author and relative time.',
+  },
+  {
+    value: 'nearby-coming-up',
+    file: 'app/(main)/nearby/page.tsx',
+    kind: 'live',
+    why: 'The next four gatherings and their dates; masked with its header, whose count reads wider than the list.',
+  },
+  {
+    value: 'nearby-new-circles',
+    file: 'app/(main)/nearby/page.tsx',
+    kind: 'live',
+    why: 'The newest circles by created_at, with a live member count on each row.',
+  },
+  // ── /discover, the public hub (LIVE-301) ────────────────────────────────────────────────
+  // Six boxes across three files, one per live read. `/discover` is prerendered hourly, so each
+  // preview deployment bakes its own snapshot of the database and `pr-compare` compares two
+  // different snapshots — see the `/discover` note on LIVE_DATA_PATHS above for the measurement,
+  // for why this is masked rather than recaptured, and for the heights no mask can hold.
+  {
+    value: 'discover-hero-stats',
+    file: 'app/discover/page.tsx',
+    kind: 'live',
+    why: 'The hero tally line: members, circles and upcoming events, three DB readings.',
+  },
+  {
+    value: 'discover-upcoming-events',
+    file: 'app/discover/page.tsx',
+    kind: 'live',
+    why: 'The four upcoming gatherings; the `starts_at >= now()` window slides continuously.',
+  },
+  {
+    value: 'discover-featured-circles',
+    file: 'app/discover/page.tsx',
+    kind: 'live',
+    why: 'The featured circles grid, ordered by member_count DESC: one join reorders the top six.',
+  },
+  {
+    value: 'discover-community-posts',
+    file: 'app/discover/page.tsx',
+    kind: 'live',
+    why: 'The newest three posts by created_at, each with an author and a relative timestamp.',
+  },
+  {
+    value: 'discover-channel-circle-count',
+    file: 'components/discover/cards.tsx',
+    kind: 'live',
+    why: 'The per-Channel circle tally on ChannelCard, counted off the public_circles read; the card around it is not masked.',
+  },
+  {
+    value: 'discover-locator-cities',
+    file: 'components/discover/discover-locator.tsx',
+    kind: 'live',
+    why: 'The locator city list: a per-city circle tally, re-ranked by the viewer’s IP-approximate location.',
   },
 ]
 

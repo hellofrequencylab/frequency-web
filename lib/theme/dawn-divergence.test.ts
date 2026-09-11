@@ -164,6 +164,64 @@ const DECLARED: Divergence[] = [
     // The dark-mode pairing is untouched: #6FA8DC on #15212E is 6.448 and the two projects still
     // agree on it, which is why only the light row is here.
   },
+  // ── The other three tinted chips, LIVE-300, the same day ──────────────────────────────────
+  // The info row above ended with "it is worth checking the other status tones the same way".
+  // These are that check. Every one of them was chosen against WHITE, where it passes, and never
+  // against its own chip fill, which is how `bg-<tone>-bg text-<tone>` paints it. Each correction
+  // is a deeper step of the SAME hue — saturation and hue carried across unchanged — so the family
+  // still reads as one palette. All three dark-mode pairings clear (8.82 / 7.82 / 8.25) and the
+  // two projects still agree on them, which is why only light rows are here.
+  {
+    token: '--color-broadcast-strong',
+    mode: 'light',
+    dawn: '#0E808D',
+    prod: '#0D737F',
+    // 3.995 on --color-broadcast-bg (#D8F2F5, both projects agree) against a 4.5 bar; 4.751 after.
+    // The -strong step already existed and still missed, so this is a deeper step of it rather
+    // than a different token. Nothing paints a label ON the -strong step, so it has no second
+    // pairing to answer for. HSL 186°, L 30.4% -> 27.4%.
+  },
+  {
+    token: '--color-success',
+    mode: 'light',
+    dawn: '#11827A',
+    prod: '#0F736C',
+    // 3.874 on --color-success-bg (#D7EFEA) -> 4.723. White on the success FILL improves with it
+    // (4.669 -> 5.692), so the solid badge/button gets better, not worse. HSL 176°, L 28.8 -> 25.6.
+    // It also carried `--color-success` on the marketing cream from 4.05/3.80 to 4.936/4.630,
+    // retiring the waiver that called that "the pairing to avoid".
+  },
+  {
+    token: '--color-warning',
+    mode: 'light',
+    dawn: '#B07515',
+    prod: '#8E5F11',
+    // 3.316 on --color-warning-bg (#F6ECD8) -> 4.719, the weakest of the chip set and the biggest
+    // move. HSL 37°, L 38.6% -> 31.2%. It also carried warning-on-surface 3.89 -> 5.533.
+    //
+    // 🔴 READ THE NEXT ROW WITH THIS ONE. They are one change, and applying this without it
+    // reintroduces a sub-AA button label.
+  },
+  {
+    token: '--color-text-on-warning',
+    mode: 'light',
+    dawn: '#1A1206',
+    prod: '#FFFFFF',
+    // NOT a contrast fix — the CONSEQUENCE of the one above, and the reason it is a ledger row
+    // rather than a footnote. `--color-warning` does two jobs in both projects: chip TEXT on
+    // --color-warning-bg, and solid FILL under this label (components/ui/button.tsx `warning`,
+    // components/ui/badge.tsx solid). Ink on the old #B07515 was 4.77 and passed. On the corrected
+    // #8E5F11 it is 3.35 — so fixing the chip alone would have broken the button in the same edit,
+    // trading one invisible barrier for another. White on #8E5F11 is 5.533.
+    //
+    // The rule the --color-text-on-* split encodes is unchanged: each fill takes the label that
+    // passes ON IT. Only the fill moved. Dark mode keeps ink (#1A1206 on #F2B14E, 9.86), so this
+    // is a light-mode flip only.
+    //
+    // It was invisible to `check-contrast.mjs` because the button-label family declared
+    // primary/signal/broadcast/move and none of the three semantic fills. All three are declared
+    // now, which is the durable half of this row.
+  },
 ]
 
 /** Tokens production has and DAWN does not. Sent as ADDITIONS, not as corrections. */

@@ -9,15 +9,26 @@ import { ingestImageBytes } from '@/lib/library/ingest'
 import { readImageDescriptor } from '@/lib/library/image-describe'
 import { classifyLoomUpload, fallbackExtFor, fallbackMimeFor } from '@/lib/library/upload-kinds'
 
+// ── THE LOOM STUDIO DOOR: every action on this route carries the PAGE's gate ─────────────────
+// `requireAdmin('janitor', { staff: 'marketing' })`, the same call `page.tsx` makes, because a
+// Marketer reaches Loom Studio (owner decision, ADR-851) and `marketer` holds marketing:'write',
+// which is requireAdmin's default level. Until 2026-09-10 all 27 actions on this route were bare
+// `requireAdmin('janitor')`, so the page ADMITTED a Marketer and every action DENIED one —
+// `lib/admin/guard.ts` redirects to `/feed`, and `create-studio.tsx` calls `listBrandStyles()` in an
+// on-mount effect, so the browser was thrown off the route seconds after load without a click
+// (LIVE-289). "Studio-gated" below means exactly this call. A genuinely staff-only mutation would
+// carry no `{ staff }` key — but nothing here is one: every action on this route is wired to a
+// control this page renders, so a narrower gate is a button that redirects.
+
 // Upload a file into The Loom: store it in the right bucket (images -> library-media, audio/video ->
 // recordings-media) and write a `library_assets` row (kind resolved from the MIME, scoped to the
-// root/shared library). Janitor-gated. Airwaves P0 (ADR-608) widened the ACCEPTED types to audio +
+// root/shared library). Studio-gated. Airwaves P0 (ADR-608) widened the ACCEPTED types to audio +
 // video via classifyLoomUpload; PROG-D1 routed the write through `insertSpaceLibraryImage` and added
 // ingest, so `duplicateOf` is returned when the bytes are already in this Loom and nothing was stored.
 export async function uploadLibraryImage(
   formData: FormData,
 ): Promise<{ ok: true; duplicateOf?: string } | { error: string }> {
-  await requireAdmin('janitor')
+  await requireAdmin('janitor', { staff: 'marketing' })
 
   const file = formData.get('file')
   const rawTitle = (formData.get('title') as string | null)?.trim()
@@ -89,12 +100,12 @@ export async function uploadLibraryImage(
 
 const dbh = () => createAdminClient()
 
-/** Edit an asset's metadata. Tags arrive as a comma-separated string. Janitor-gated. */
+/** Edit an asset's metadata. Tags arrive as a comma-separated string. Studio-gated. */
 export async function updateLibraryAssetMeta(
   id: string,
   fields: { title?: string; alt?: string; category?: string; tags?: string },
 ): Promise<{ ok: true } | { error: string }> {
-  await requireAdmin('janitor')
+  await requireAdmin('janitor', { staff: 'marketing' })
   if (!id) return { error: 'Missing asset id.' }
 
   const patch: Database['public']['Tables']['library_assets']['Update'] = { updated_at: new Date().toISOString() }
@@ -121,7 +132,7 @@ export async function updateLibraryAssetMeta(
 
 /** Soft-remove: hide from the library without destroying the file or breaking references. */
 export async function archiveLibraryAsset(id: string): Promise<{ ok: true } | { error: string }> {
-  await requireAdmin('janitor')
+  await requireAdmin('janitor', { staff: 'marketing' })
   if (!id) return { error: 'Missing asset id.' }
   const { error } = await dbh()
     .from('library_assets')
@@ -132,9 +143,9 @@ export async function archiveLibraryAsset(id: string): Promise<{ ok: true } | { 
   return { ok: true }
 }
 
-/** Permanently delete: remove the stored file, then the row. Janitor-gated. */
+/** Permanently delete: remove the stored file, then the row. Studio-gated. */
 export async function deleteLibraryAsset(id: string): Promise<{ ok: true } | { error: string }> {
-  await requireAdmin('janitor')
+  await requireAdmin('janitor', { staff: 'marketing' })
   if (!id) return { error: 'Missing asset id.' }
 
   const admin = createAdminClient()
