@@ -49,6 +49,11 @@ function setInputValue(input: HTMLInputElement, value: string) {
 }
 
 const SEGMENTS = [{ id: 'seg-1', name: 'Regulars' }]
+const MEMBER_SEGMENTS = [
+  { key: 'members', label: 'All space members' },
+  { key: 'tier:t1', label: 'Gold members' },
+  { key: 'circle:c1', label: 'Morning crew' },
+]
 
 describe('AudiencePicker edit mode', () => {
   it('shows the selected segment name in a rename field and saves through updateSpaceSegment', async () => {
@@ -89,5 +94,73 @@ describe('AudiencePicker edit mode', () => {
     )
     expect(container!.querySelector('input[aria-label="Segment name"]')).toBeNull()
     expect(container!.textContent).toContain('Save this as a segment')
+  })
+})
+
+// MEMBER SEGMENTS (LIVE-293). The retired Space Message center's one irreplaceable capability. These
+// fail against the pre-change component, which had no member group at all.
+describe('AudiencePicker member segments', () => {
+  it('offers the member group and reports the chosen key as a memberSegment filter', async () => {
+    const changes: unknown[] = []
+    await render(
+      <AudiencePicker
+        spaceId="space-A"
+        slug="river-studio"
+        tags={[]}
+        segments={SEGMENTS}
+        memberSegments={MEMBER_SEGMENTS}
+        filter={{ tag: null }}
+        onFilterChange={(f) => changes.push(f)}
+      />,
+    )
+    const group = [...container!.querySelectorAll('optgroup')].find(
+      (g) => g.label === 'Members, Circles, and events',
+    )
+    expect(group).toBeTruthy()
+    expect([...group!.querySelectorAll('option')].map((o) => o.value)).toEqual([
+      'member:members',
+      'member:tier:t1',
+      'member:circle:c1',
+    ])
+
+    const select = container!.querySelector<HTMLSelectElement>('select')!
+    const setter = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value')!.set!
+    await act(async () => {
+      setter.call(select, 'member:tier:t1')
+      select.dispatchEvent(new Event('change', { bubbles: true }))
+    })
+    expect(changes).toEqual([{ memberSegment: 'tier:t1' }])
+  })
+
+  it('says the send rides Marketing, and hides save-as-segment (a segment stores tags only)', async () => {
+    await render(
+      <AudiencePicker
+        spaceId="space-A"
+        slug="river-studio"
+        tags={[]}
+        segments={SEGMENTS}
+        memberSegments={MEMBER_SEGMENTS}
+        filter={{ memberSegment: 'tier:t1' }}
+        onFilterChange={() => {}}
+      />,
+    )
+    expect(container!.textContent).toContain('goes out as Marketing')
+    expect(container!.textContent).not.toContain('Save this as a segment')
+  })
+
+  it('renders no member group when the Space has no member segments', async () => {
+    await render(
+      <AudiencePicker
+        spaceId="space-A"
+        slug="river-studio"
+        tags={[]}
+        segments={SEGMENTS}
+        filter={{ tag: null }}
+        onFilterChange={() => {}}
+      />,
+    )
+    expect(
+      [...container!.querySelectorAll('optgroup')].some((g) => g.label === 'Members, Circles, and events'),
+    ).toBe(false)
   })
 })

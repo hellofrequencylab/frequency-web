@@ -1,9 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-// The Space broadcast audience (ADR-858): segments the Message center offers and the
+// The Space broadcast audience (ADR-858): the segments a Space's send surface offers and the
 // send-time resolver the action trusts. Locks the ADR-274 posture (server-side re-union),
 // the segment taxonomy (members / tier / circle / event), and the scope-spine derivation
 // ('space' is deliberately NOT a scope_kind — a space-wide send rides the tenancy lane).
+// LIVE-293 retired the Message center these were written for; the segments now feed the Email
+// composer's audience picker, so the taxonomy is load-bearing on a live surface either way.
 
 const SPACE = 'aaaaaaaa-0000-4000-a000-00000000000a'
 const TIER = 'dddddddd-0000-4000-a000-00000000000d'

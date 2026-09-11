@@ -14,9 +14,13 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 
 // ── Mocks ────────────────────────────────────────────────────────────────────────────────────────
 
+// LIVE-293: the cron resolves recipients AND the forced topic in one call (resolveAudiencePlan), so a
+// scheduled member-segment blast cannot ride the softer topic stored on the row. `plannedTopic` stands in
+// for that decision here; the rule itself is pinned in lib/spaces/member-segment-audience.test.ts.
 let audience: { contactId: string; email: string }[] = [{ contactId: 'c1', email: 'a@x.com' }]
+let plannedTopic = 'marketing'
 vi.mock('./audiences', () => ({
-  resolveAudience: async () => audience,
+  resolveAudiencePlan: async () => ({ recipients: audience, topic: plannedTopic }),
   definitionToFilter: (raw: unknown) => (raw && typeof raw === 'object' ? raw : {}),
 }))
 
@@ -25,11 +29,16 @@ let sendResult: { data: { sent: number; suppressed: number; failed: number } } |
 }
 const sendCalls: string[] = []
 const sentRecipients: { contactId: string; email: string }[][] = []
+const sentTopics: (string | undefined)[] = []
 vi.mock('./email', () => ({
   SPACE_UNSUBSCRIBE_PLACEHOLDER: '%%U%%',
-  sendSpaceCampaignSystem: async (spaceId: string, input: { recipients: { contactId: string; email: string }[] }) => {
+  sendSpaceCampaignSystem: async (
+    spaceId: string,
+    input: { recipients: { contactId: string; email: string }[]; topic?: string },
+  ) => {
     sendCalls.push(spaceId)
     sentRecipients.push(input.recipients)
+    sentTopics.push(input.topic)
     return sendResult
   },
 }))
@@ -60,6 +69,8 @@ interface Row {
   audience_filter: unknown
   sending_started_at?: string | null
   send_error?: string | null
+  /** The stored topic. Since LIVE-293 the SEND does not read it: the resolver decides. */
+  topic?: string | null
 }
 interface LedgerRow {
   campaign_id: string
@@ -203,6 +214,8 @@ beforeEach(() => {
   stamps.length = 0
   sendCalls.length = 0
   sentRecipients.length = 0
+  sentTopics.length = 0
+  plannedTopic = 'marketing'
   globalSendCalls.length = 0
   globalSendResult = { data: { recipientCount: 1 } }
   audience = [{ contactId: 'c1', email: 'a@x.com' }]
@@ -232,6 +245,16 @@ describe('sendDueCampaigns', () => {
     expect(res.sent).toBe(1)
     expect(sendCalls).toEqual(['space-A'])
     expect(row.status).toBe('sent')
+  })
+
+  it('sends under the RESOLVER’s topic, not the topic on the row (LIVE-293)', async () => {
+    // A SCHEDULED member-segment blast must not ride the softer topic the row was saved with: the
+    // audience decides the consent bar, and the cron forwards that decision rather than re-deriving one.
+    const row = seed({ topic: 'events', audience_filter: { memberSegment: 'tier:gold' } })
+    plannedTopic = 'marketing'
+    await sendDueCampaigns()
+    expect(row.status).toBe('sent')
+    expect(sentTopics).toEqual(['marketing'])
   })
 
   it('the claim stamps the lease (sending_started_at) and clears send_error', async () => {

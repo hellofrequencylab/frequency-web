@@ -27,7 +27,7 @@ import { getSpaceById } from '@/lib/spaces/store'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { isJanitor } from '@/lib/core/roles'
 import { type ActionResult, ok, fail, isError } from '@/lib/action-result'
-import { resolveAudience, type AudienceFilter } from '@/lib/spaces/audiences'
+import { resolveAudiencePlan, type AudienceFilter } from '@/lib/spaces/audiences'
 import { sendSpaceCampaign as sendViaSeam, SPACE_UNSUBSCRIBE_PLACEHOLDER } from '@/lib/spaces/email'
 import { normalizeEmailTopic } from '@/lib/spaces/email-topics'
 import type { NotificationTopic } from '@/lib/notification-preferences'
@@ -388,8 +388,12 @@ export async function sendSpaceCampaign(
   if (!normalizeSubject(existing.subject)) return fail('Give your campaign a subject before sending.')
   if (!normalizeBody(existing.body).trim()) return fail('Write your campaign before sending.')
 
-  // Resolve the recipients over THIS Space's contacts (the exact shape the send seam consumes).
-  const recipients = await resolveAudience(spaceId, filter)
+  // Resolve the recipients over THIS Space's contacts (the exact shape the send seam consumes), AND
+  // the topic that audience forces. One call, because the two must never drift apart: a MEMBER-SEGMENT
+  // audience (a tier, a circle, an event's RSVPs — LIVE-293) always rides `marketing`, the strictest
+  // consent bar, whatever topic the composer picked. The rule lives in the resolver so no send path can
+  // reach the recipients without it.
+  const { recipients, topic } = await resolveAudiencePlan(spaceId, filter, existing.topic)
   if (recipients.length === 0)
     return fail('No one matched that audience yet. Add contacts or pick a different filter.')
 
@@ -401,7 +405,7 @@ export async function sendSpaceCampaign(
     campaignId: id,
     subject: existing.subject,
     html: renderCampaignHtml(existing.body ?? ''),
-    topic: normalizeEmailTopic(existing.topic),
+    topic,
     recipients,
   })
   if (isError(res)) return res
