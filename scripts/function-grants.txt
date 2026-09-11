@@ -101,6 +101,7 @@ claim_outbox_jobs                    internal
 claim_season_certificate             internal
 claim_space_plan_event               internal
 community_library                    authenticated
+convert_signup_leads_for_me          authenticated
 create_bundle_invite_atomic          internal
 dashboard_health_summary             internal
 dashboard_space_health_summary       internal
