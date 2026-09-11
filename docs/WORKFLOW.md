@@ -60,6 +60,21 @@ drafts** to approve. Docs: https://code.claude.com/docs/en/claude-code-on-the-we
   `docs/DECISIONS.md`); instructional/operator → Notion "Web Platform: Training &
   Strategy" DB. The Stop hook nags on drift.
 - **Container is ephemeral:** only committed + pushed work survives.
+- **`pnpm lint` takes about three minutes cold, and that is normal.** Measured 175 s over
+  4,744 files on a 4-core container, which matches the ~2.5 min the `lint` job in
+  `.github/workflows/ci.yml` is documented at. It is slow, not hung — do not run it under a
+  120-second tool timeout and conclude it crashed. Warm re-runs are seconds: the script passes
+  `--cache --cache-strategy content`, which is also what makes CI's "Restore ESLint cache"
+  step do anything (it cached `.eslintcache` for weeks while the script never wrote one).
+- **A `git worktree` does not inherit `node_modules`, and `pnpm lint` there used to run the
+  machine's global ESLint.** `pnpm run` prepends only the CWD's own relative
+  `./node_modules/.bin`, never an outer package's, so an uninstalled worktree fell through to
+  whatever `eslint` was on PATH — a different major, which crashes inside
+  `eslint-plugin-react` with `contextOrFilename.getFilename is not a function`, a message that
+  names a React rule and nothing about the real cause. Three sessions misread it and the wrong
+  diagnosis ("the repo pins the wrong ESLint") reached a briefing before anyone ran
+  `eslint --version`. `prelint` (`scripts/preflight-lint.mjs`) now refuses first and says to run
+  `pnpm install --frozen-lockfile` **in that worktree**. Run it in every new worktree.
 
 ## Known setup gaps (action needed)
 - **Gmail connector token expired (2026-06-02):** re-authorize before `/support-triage`

@@ -111,12 +111,13 @@
             "LIVE-253",
             "LIVE-254",
             "LIVE-255",
-            "LIVE-257",
             "PROG-R9",
             "LIVE-260",
             "PROG-R10",
             "LIVE-263",
-            "PROG-R11"
+            "PROG-R11",
+            "LIVE-305",
+            "LIVE-306"
           ]
         },
         {
@@ -11154,18 +11155,17 @@
     {
       "id": "LIVE-257",
       "title": "Help articles for anything newly core",
-      "status": "open",
-      "priority": "P2",
+      "status": "done",
       "lane": "live",
       "size": "S",
       "source": {
         "file": "docs/CORE-MODEL.md",
         "ref": "§5"
       },
-      "detail": "content/help/** currently holds 57 markdown files. check:help FAILS CI when a core surface has no article, so this is not optional once the menus change.",
+      "detail": "content/help/** currently holds 57 markdown files. check:help FAILS CI when a core surface has no article, so this is not optional once the menus change.\n\n✅ CLOSED 2026-09-10. The menu reorg (LIVE-291/292) and the Get paid surface (LIVE-294) landed with their help content in the same batch: content/help/spaces/get-paid.md written, and billing.md, plans-and-pricing.md and groups/events.md corrected against the code. 58 articles, 58 published, core coverage 36/36, zero orphan keys.\n\n🔴 THE PROBE COULD NOT MEASURE THIS ROW, AND BOTH ARMS FAILED DIFFERENTLY. The first arm counted files and passed at >57, so it went green the instant ANY 58th article existed - it would have passed on a duplicate of an existing page, which is the shape-not-truth failure four ADRs name. The second arm, `pnpm check:help`, measures the right thing but was ALREADY GREEN before get-paid.md was written, because `billing` is the only key that surface could declare and it is `core: false` in lib/help/feature-keys.ts. So on the day the row's work shipped, neither arm changed state. The count arm is dropped. The probe now calls the GATE'S OWN collect() (scripts/help-coverage.mts exports it) and fails on coreMissing or an orphan key, which is the honest consequence of the row as titled - \"anything newly core\" = no core feature undocumented. Reusing the scorer rather than re-deriving coverage in the probe means the two cannot drift apart, and it runs under node in 0.27s rather than spawning pnpm, so check:backlog can attribute its cost (HYG-062).\n\n✅ AND THE GATE WAS CONTROLLED, not assumed. First control chose badly: deleting content/help/membership/the-vault.md left core coverage at 36/36 and check:help exited 0, because `vault` is covered by more than one article - a passing control that proved nothing. Re-cut to a core key with exactly ONE article (computed from front-matter: 18 of the 36 qualify), and deleting content/help/groups/hubs.md gave exit 1, \"Core coverage: 35/36\", and the key named. The gate looks. Recording the bad control as well as the good one, because \"I ran a control\" is worth nothing without which subject it ran on. The REPLACEMENT probe was then mutation-controlled on both its arms: hiding groups/hubs.md gave exit 1 / \"core coverage: 35/36\" / \"undocumented core: hubs\", and adding a bogus key to that article's front-matter gave exit 1 / \"orphan keys: 1\".\n\n⚠️ WHAT THIS ROW DOES NOT COVER, now filed as LIVE-305: no gate demanded the Get paid article, and none would demand its replacement. That is a hole in the registry, not in this row.",
       "verify": {
         "kind": "cmd",
-        "cmd": "node -e 'const n=require(\"child_process\").execSync(\"find content/help -name \\\"*.md\\\" | wc -l\").toString().trim();console.error(\"help articles: \"+n);process.exit(Number(n)>57?0:1)' && pnpm check:help >/dev/null 2>&1"
+        "cmd": "node --experimental-strip-types --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --input-type=module -e 'const m = await import(\"./scripts/help-coverage.mts\"); const c = await m.collect(); console.error(\"core coverage: \" + c.coreCovered.length + \"/\" + c.core.length + \", orphan keys: \" + c.orphans.size); if (c.coreMissing.length > 0 || c.orphans.size > 0) { console.error(\"undocumented core: \" + c.coreMissing.map((f) => f.key).join(\", \")); process.exit(1) }'"
       }
     },
     {
@@ -11858,6 +11858,31 @@
         "kind": "cmd",
         "cmd": "node -e \"const fs=require('fs');const s=fs.readFileSync('test/e2e/surfaces.ts','utf8');const i=s.indexOf('/nearby');if(i<0)process.exit(79);const row=s.slice(Math.max(0,i-400),i+400);const viewport=/viewportOnly/.test(row);const masked=/data-visual-mask/.test(fs.readFileSync('app/(main)/nearby/page.tsx','utf8')||'');if(!viewport&&!masked){console.error('/nearby is still photographed full-page with no mask, so its baseline keeps measuring when it was taken: 6 pr-compare failures (one per context) at ~1347 drifting pixels. Mark it viewportOnly like /feed, or mask the live dispatch rows (ADR-1277). Recapturing only resets the clock.');process.exit(1)}\"",
         "note": "Measures the CONSEQUENCE - that the surface is no longer photographed full-page unmasked - and accepts EITHER remedy, because both are legitimate and the choice is a design call. Deliberately does not assert a pixel count or a run id: those are the symptom, and a probe pinned to them would pass the day the stream happens to be quiet. Fails today, which is the correct reading while this row is open."
+      }
+    },
+    {
+      "id": "LIVE-306",
+      "title": "An agent worktree starts with no node_modules, so its first pnpm lint runs the wrong ESLint",
+      "status": "open",
+      "priority": "P3",
+      "lane": "live",
+      "detail": "MEASURED 2026-09-10, and it cost three sessions before anyone ran `eslint --version`.\n\n`pnpm run` prepends exactly ONE entry to PATH: the invoking directory's RELATIVE `./node_modules/.bin`. It does NOT add an ancestor package's bin dir (counted: zero occurrences of the parent repo's). A `git worktree` never inherits node_modules, and .claude/hooks/session-start.sh installs only in the root it is invoked at. So a subagent worktree starts uninstalled, `pnpm lint` falls through to the machine global ESLint 10.1.0 against a repo pinning ^9, and it dies inside eslint-plugin-react with \"contextOrFilename.getFilename is not a function\" - a message naming a React rule and nothing about the cause.\n\n🔴 THE COST WAS NOT THE CRASH, IT WAS THE MISATTRIBUTION. Two agents reported \"the repo pins the wrong ESLint\" and it reached a briefing, and a third repeated it three times including in a PR body, before anyone measured. BOTH readings were true of different directories: in the main checkout `pnpm lint` exits 0 on 4,744 files in 175s. Worktrees are this repo's own documented parallel-agent practice, so this is the default path, not an edge.\n\nTHE REPO HALF IS DONE (ADR-1319): `prelint` now refuses first and names the fix, so the failure is legible instead of a React stack trace. THE ENVIRONMENTAL HALF IS NOT, and it is not repo-observable: whether the harness can install per-worktree is a property of the harness. Until it can, every worktree needs a manual `pnpm install --frozen-lockfile` before lint or tests, which docs/WORKFLOW.md now says.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Measured 2026-09-10: `pnpm exec printenv PATH` shows ./node_modules/.bin as pnpm's only prepended entry; a fresh worktree resolves eslint to /opt/node22/bin/eslint v10.1.0 while the repo declares ^9 and the main checkout has v9.39.4. Whether the harness can install per-worktree is not observable from the repo, so this cannot be probed here.",
+        "checked": "2026-09-10"
+      }
+    },
+    {
+      "id": "LIVE-305",
+      "title": "A payouts feature key, so the money surface is gated like a core one",
+      "status": "open",
+      "priority": "P2",
+      "lane": "live",
+      "detail": "lib/help/feature-keys.ts carries NO payout vocabulary. The nearest key is `billing` (\"Plans and billing (Space)\", routes [/spaces], core: false), which is the money the operator PAYS Frequency - the opposite direction from the money a Space RECEIVES. So content/help/spaces/get-paid.md had to declare `featureKeys: [billing]` (an unregistered key fails check:help as an orphan, so there was no third option), and two consequences follow.\n\n1. NOTHING GATES THE ARTICLE. check:help --strict fails only on an undocumented key with `core: true`. `billing` is core: false, so check:help was green before get-paid.md existed and would be green again if it were deleted - on a surface whose whole subject is money. LIVE-257 recorded this when it closed: on the day that work shipped, neither arm of its probe changed state.\n\n2. help:drift ROUTES THE WRONG ARTICLE. lib/help/drift.ts joins a changed file to keys by ROUTE PREFIX, so a change under lib/billing/ or /spaces/<slug>/settings/payments resolves through `billing`'s [/spaces] prefix and flags plans-and-pricing.md. The 2026-09-10 audit watched this happen: the bot flagged billing.md for \"payout setup instructions\" and plans-and-pricing.md for \"payout/revenue split features\", and BOTH were wrong because neither file is about money coming in.\n\nTHE WORK: add a `payouts` row (area operator, core: true, routes pointing at the surfaces that own it - the Space Get paid page and the personal Receive payments card under /settings/billing), repoint get-paid.md at it, and leave billing.md on `billing`. Two things to check rather than assume. (a) feature-keys.test.ts fails any route prefix with no file under app/, and the routes here contain a dynamic segment, which no existing row has - read how drift.ts matches before picking the prefix. (b) core goes 36 -> 37 and coverage must stay 100%, so the article and the key land in the SAME change or the gate fails on an orphan.\n\n⚠️ ALSO OWED, and deliberately NOT folded in here: docs/NAMING.md carries no payout term at all. \"Get paid\" (page title, catalog label, hub run) and \"money paths\" (the page's own section header) are now names rather than descriptions, and three more are in play across the UI - \"payout account\", \"Receive payments\" (the personal settings card), \"Manage payouts\" (the button). Naming is a canon edit, so it is its own row when someone opens one; this line is here so the ask is not lost.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node --experimental-strip-types --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --input-type=module -e 'const m = await import(\"./scripts/help-coverage.mts\"); const c = await m.collect(); const k = c.core.find((f) => f.key === \"payouts\"); if (!k) { console.error(\"no payouts row with core: true in lib/help/feature-keys.ts\"); process.exit(1) } const s = c.statusOf(\"payouts\"); console.error(\"payouts: core, \" + s); if (s !== \"covered\") process.exit(1)'"
       }
     }
   ]

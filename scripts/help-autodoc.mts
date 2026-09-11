@@ -1,6 +1,6 @@
 // AI doc-writer (CI): on a PR, find the help articles the change may have made
-// stale (drift), ask the model what to update, and post ONE advisory comment with
-// a staff checklist. Propose-only — never commits or merges (ADR-041/028).
+// stale (drift), ask the model which of them the DIFF actually falsifies, and post ONE
+// advisory comment with a staff checklist. Propose-only — never commits or merges (ADR-041/028).
 // Runs in .github/workflows/help-autodoc.yml.
 //
 // Reuses only dependency-free lib modules (so Node type-stripping resolves them).
@@ -8,6 +8,24 @@
 // per-call `new Anthropic` and the gateway seam applies here too. It does NOT import
 // lib/ai/complete (whose internal `@/` imports are extensionless and don't resolve
 // under --experimental-strip-types); client.ts only imports the SDK, so it's safe.
+//
+// 🔴 THE SHAPE OF THE REVIEW LOOP, AND WHY (defect class 4, PR #2539). This used to be ONE call
+// for every affected article. The reply is one JSON object per article, so a ~46-article ask spent
+// its output budget linearly and clipped its own array at the same place every run — which is why
+// the SAME two files came back "Not reviewed (the model reply was cut short)" every single time,
+// rendered as a checkbox beside real findings. Three things changed:
+//   1. BATCH. planAutodocBatches bounds what any one call is asked for, so the ceiling is sized
+//      against a known list instead of whatever the drift signal happened to produce.
+//   2. RETRY. Anything a batch still skipped gets one more call of its own. The cause was a budget,
+//      and a smaller ask is a different budget, so the retry is not a hope — it is the fix applied
+//      to the residue.
+//   3. REPORT IT SEPARATELY, NEVER AS A FINDING. What survives both passes leaves on
+//      AutodocReview.unreviewed, which formatAdvisoryComment can only render as a ⚠️ coverage gap.
+// A hard failure was considered and rejected: this workflow is advisory and propose-only by
+// ADR-028/041, so failing the PR on a model hiccup makes a merge blocker out of something the
+// author cannot fix — and per ADR-970 a gate that fires on the wrong person's work gets switched
+// off, which loses the whole signal. The job still shouts in its own log (::warning) so the gap is
+// visible without opening the PR.
 
 import { readFileSync } from 'node:fs'
 import { execSync } from 'node:child_process'
@@ -20,12 +38,20 @@ import {
   buildAutodocMessages,
   parseAutodocResponse,
   fallbackItems,
-  withUnreviewed,
+  groundVerdicts,
+  dedupeItems,
+  splitReview,
+  planAutodocBatches,
+  diffForPrompt,
   autodocMaxTokens,
   formatAdvisoryComment,
   degradedNotice,
   AUTODOC_MARKER,
   type AutodocArticle,
+  type AutodocChange,
+  type AutodocItem,
+  type AutodocUnreviewed,
+  type AutodocUnreviewedReason,
   type AutodocDegradedReason,
 } from '../lib/ai/autodoc.ts'
 
@@ -57,6 +83,41 @@ function changedFiles(): string[] {
   } catch (e) {
     console.warn(`⚠ Could not diff against origin/${base}; the drift signal has no input:`, e)
     return []
+  }
+}
+
+/** The DIFF ITSELF, which is what §6 means by "grounded in the diff" and what this job never had.
+ *  Lockfiles and generated bundles are excluded by pathspec: they are enormous, they crowd out the
+ *  hunks that could actually falsify a help article, and no help article describes them. Binary
+ *  files carry no quotable line, so `--text` is deliberately NOT used.
+ *
+ *  An empty return is honest and handled: buildAutodocMessages tells the model it cannot ground
+ *  anything, and groundVerdicts refuses to grade any claim as grounded. */
+function changedDiff(): string {
+  const exclude = [
+    ':(exclude)pnpm-lock.yaml',
+    ':(exclude)package-lock.json',
+    ':(exclude)*.snap',
+    ':(exclude)public/**',
+    ':(exclude)*.svg',
+    ':(exclude)*.png',
+    ':(exclude)*.jpg',
+    ':(exclude)*.webp',
+  ].join(' ')
+  try {
+    const raw = execSync(
+      `git diff --unified=3 --no-color origin/${base}...HEAD -- . ${exclude}`,
+      { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 },
+    )
+    const budgeted = diffForPrompt(raw)
+    console.log(`Diff: ${raw.length} chars from git, ${budgeted.length} chars sent to the model.`)
+    return budgeted
+  } catch (e) {
+    // Loud, because a review with no diff can produce no findings at all — that is a coverage
+    // hole, and an unnoticed fail-safe is an invisible regression.
+    console.error(`::warning title=help-autodoc: no diff::Could not read the diff against origin/${base}; no article can be graded as inaccurate this run.`)
+    console.error('Diff read failed:', e)
+    return ''
   }
 }
 
@@ -92,6 +153,38 @@ async function upsertComment(pr: number, body: string) {
   }
 }
 
+/** One review call over one batch. Returns the verdicts it could read plus the model's own
+ *  stop_reason, which is the ONLY honest source for "the reply was cut short" — the old code
+ *  inferred truncation from a row count, which cannot tell a clipped array apart from a model that
+ *  simply skipped an article or labelled it unrecognisably. */
+async function reviewBatch(
+  client: NonNullable<ReturnType<typeof getAnthropic>>,
+  change: AutodocChange,
+  batch: AutodocArticle[],
+): Promise<{ items: AutodocItem[]; truncated: boolean }> {
+  const { system, messages } = buildAutodocMessages(change, batch)
+  const res = await client.messages.create({
+    model: MODELS.haiku,
+    max_tokens: autodocMaxTokens(batch.length),
+    system,
+    messages,
+  })
+  const text = res.content.map((b) => (b.type === 'text' ? b.text : '')).join('')
+  const items = parseAutodocResponse(text, batch)
+  const truncated = res.stop_reason === 'max_tokens'
+  // Whether the cached diff prefix engaged. Batching re-sends the diff per call, and the
+  // cache_control block in buildAutodocMessages is what stops that being paid for each time — but
+  // a prefix under the model's minimum silently does not cache, so PRINT it rather than assume.
+  const u = res.usage as { cache_read_input_tokens?: number; cache_creation_input_tokens?: number } | undefined
+  console.log(
+    `  batch of ${batch.length}: ${items.length} verdict(s), stop_reason=${res.stop_reason}, ` +
+      `in=${res.usage?.input_tokens ?? '?'} out=${res.usage?.output_tokens ?? '?'} ` +
+      `cache_read=${u?.cache_read_input_tokens ?? 0} cache_write=${u?.cache_creation_input_tokens ?? 0}`,
+  )
+  if (items.length < batch.length && items.length === 0) console.error('Raw reply:\n', text.slice(0, 2000))
+  return { items, truncated }
+}
+
 async function main() {
   const pr = prNumber()
   if (!pr) {
@@ -118,9 +211,10 @@ async function main() {
   }
 
   const articles: AutodocArticle[] = affected.map((a) => ({ category: a.category, slug: a.slug, title: a.title, body: a.body }))
+  const change: AutodocChange = { files, diff: changedDiff() }
 
   let degraded = preflightDegraded()
-  let items = fallbackItems(articles)
+  let review = splitReview(fallbackItems(articles), articles)
 
   if (!degraded) {
     const client = getAnthropic()
@@ -128,24 +222,67 @@ async function main() {
       degraded = { kind: 'no-key' }
     } else {
       try {
-        const { system, messages } = buildAutodocMessages(files, articles)
-        const res = await client.messages.create({
-          model: MODELS.haiku,
-          max_tokens: autodocMaxTokens(articles.length),
-          system,
-          messages,
-        })
-        const text = res.content.map((b) => (b.type === 'text' ? b.text : '')).join('')
-        const parsed = parseAutodocResponse(text, articles)
-        if (parsed.length === 0) {
+        const batches = planAutodocBatches(articles)
+        console.log(`Reviewing ${articles.length} article(s) in ${batches.length} batch(es).`)
+        const items: AutodocItem[] = []
+        // Cause per still-unreviewed article, so the comment can name it instead of guessing.
+        const cause = new Map<string, AutodocUnreviewedReason>()
+
+        for (const batch of batches) {
+          const { items: got, truncated } = await reviewBatch(client, change, batch)
+          items.push(...got)
+          const seen = new Set(got.map((i) => `${i.category}/${i.slug}`))
+          for (const a of batch) {
+            const key = `${a.category}/${a.slug}`
+            if (!seen.has(key)) cause.set(key, truncated ? 'truncated' : 'omitted')
+          }
+        }
+
+        // RETRY PASS. The root cause of a clipped reply is a budget, so re-asking a SMALLER list is
+        // a materially different call rather than a coin flip. One pass only: a second would spend
+        // tokens on a failure mode that is no longer about size.
+        const missing = articles.filter((a) => cause.has(`${a.category}/${a.slug}`))
+        if (missing.length > 0) {
+          console.log(`Retrying ${missing.length} article(s) that came back without a verdict.`)
+          for (const batch of planAutodocBatches(missing, Math.min(4, missing.length))) {
+            try {
+              const { items: got, truncated } = await reviewBatch(client, change, batch)
+              items.push(...got)
+              for (const i of got) cause.delete(`${i.category}/${i.slug}`)
+              const seen = new Set(got.map((i) => `${i.category}/${i.slug}`))
+              for (const a of batch) {
+                const key = `${a.category}/${a.slug}`
+                if (!seen.has(key)) cause.set(key, truncated ? 'truncated' : 'omitted')
+              }
+            } catch (e) {
+              // A retry that throws leaves the article unreviewed, which is already recorded —
+              // it must not take down the verdicts the first pass earned.
+              console.error('Retry batch failed:', e)
+            }
+          }
+        }
+
+        if (items.length === 0) {
           degraded = { kind: 'unusable-response' }
-          console.error('Model returned no usable verdicts. Raw reply:\n', text.slice(0, 2000))
+          console.error('Model returned no usable verdicts across every batch and retry.')
         } else {
-          // A reply cut short still yields the verdicts it finished; the rest are
-          // listed as unchecked rather than silently dropped.
-          items = withUnreviewed(parsed, articles)
-          if (parsed.length < articles.length) {
-            console.warn(`⚠ Model returned ${parsed.length}/${articles.length} verdicts; the rest are marked unreviewed.`)
+          // THE CONFIDENCE GATE: an "inaccurate" claim only survives if its two quotes are real.
+          // Dedupe first, so a model that answered twice about one article cannot double-list it.
+          const grounded = groundVerdicts(dedupeItems(items), articles, change)
+          const unreviewed: AutodocUnreviewed[] = articles
+            .filter((a) => cause.has(`${a.category}/${a.slug}`))
+            .map((a) => ({ category: a.category, slug: a.slug, reason: cause.get(`${a.category}/${a.slug}`)! }))
+          review = { items: grounded, unreviewed }
+
+          const findings = grounded.filter((i) => i.verdict === 'inaccurate' && i.grounded).length
+          const demoted = grounded.filter((i) => i.demotion).length
+          console.log(
+            `Reviewed ${grounded.length}/${articles.length}: ${findings} grounded finding(s), ${demoted} claim(s) demoted for want of evidence, ${unreviewed.length} unreviewed.`,
+          )
+          if (unreviewed.length > 0) {
+            console.error(
+              `::warning title=help-autodoc: ${unreviewed.length} article(s) unreviewed::${unreviewed.map((u) => `${u.category}/${u.slug} (${u.reason})`).join(', ')}. Reported as a coverage gap in the PR comment, not as findings.`,
+            )
           }
         }
       } catch (e) {
@@ -155,7 +292,7 @@ async function main() {
     }
   }
 
-  await upsertComment(pr, formatAdvisoryComment(items, files, degraded))
+  await upsertComment(pr, formatAdvisoryComment(review, change, degraded))
 
   if (degraded) {
     const { cause, action } = degradedNotice(degraded)
