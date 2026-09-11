@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import type { NextRequest } from 'next/server'
+import { recoveryExcludedSourceFilter } from '@/lib/crm/lead-sources'
 
 // LIVE-170 (ADR-1274). The recovery cron against its real handler and the real runner, with only
 // the database, the outbox and the wrappers mocked. What it pins: the driving query is bounded by
@@ -26,6 +27,10 @@ vi.mock('@/lib/supabase/admin', () => ({
       const read = {
         is: (col: string, v: unknown) => { state.filters.push(`${col} is ${String(v)}`); return read },
         gte: (col: string, v: unknown) => { state.filters.push(`${col} >= ${String(v)}`); return read },
+        // `not` joined the driving query when event-RSVP leads were excluded from recovery: a guest
+        // who completed an RSVP abandoned no signup. The builder had no `not`, so the route threw and
+        // answered 500 rather than failing on the assertion, which is why three cases went red at once.
+        not: (col: string, op: string, v: unknown) => { state.filters.push(`${col} ${op} ${String(v)}`); return read },
         lte: (col: string) => { state.filters.push(`${col} <= cutoff`); return read },
         order: (col: string, opts: { ascending: boolean }) => {
           state.order = `${col}:${opts.ascending ? 'asc' : 'desc'}`
@@ -109,13 +114,22 @@ beforeEach(() => {
 })
 
 describe('GET /api/cron/signup-lead-recovery', () => {
-  it('bounds the driving query by the declared budget, coldest lead first, with the four rule filters', async () => {
+  it('bounds the driving query by the declared budget, coldest lead first, with the five rule filters', async () => {
     state.rows = [lead('a')]
     const res = await GET(req)
     expect(res.status).toBe(200)
     expect(state.limit).toBe(200)
     expect(state.order).toBe('updated_at:asc')
-    expect(state.filters).toEqual(['converted_at is null', 'recovery_sent_at is null', 'step_reached >= 2', 'updated_at <= cutoff'])
+    // Five, not four: the source exclusion joined the rule when event guests stopped being chased
+    // for a signup they never abandoned. Asserted in full rather than by length so that dropping a
+    // filter cannot pass by adding another.
+    expect(state.filters).toEqual([
+      'converted_at is null',
+      'recovery_sent_at is null',
+      `source in ${recoveryExcludedSourceFilter()}`,
+      'step_reached >= 2',
+      'updated_at <= cutoff',
+    ])
     const body = await res.json()
     expect(body).toMatchObject({ ok: true, scanned: 1, due: 1, sent: 1, failed: 0 })
     expect(body.budget).toMatchObject({ processed: 1, remaining: 0, budget_items: 200 })

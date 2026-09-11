@@ -182,9 +182,25 @@ begin
   -- WHO. auth.uid() is null for anon and for any caller without a JWT, so the profile lookup
   -- returns nothing and the function is a no-op for them. There is no argument to spoof here
   -- because there is no argument at all.
+  -- 🔴 ORDERED, because `profiles.auth_user_id` carries only an INDEX and not a unique constraint.
+  -- The sibling `claim_guest_rsvps` (20270303000100) says so in its own comment and takes a
+  -- `limit 1` for the same reason. One auth user really can own more than one profile row: a
+  -- trigger mints one at signup, and anything that inserts a second is not refused by the schema.
+  --
+  -- An unordered `select ... into` takes whatever row the plan reaches first, so the same caller
+  -- could have their lead stamped to a different profile on two different days, and the pgTAP for
+  -- this function caught exactly that. The stamp is a claim about WHICH profile a person's history
+  -- belongs to, so it may not be decided by a physical row order.
+  --
+  -- The EARLIEST profile wins: for a duplicated account that is the one minted at signup, which is
+  -- the row the rest of the platform has been treating as theirs for longest. `id` breaks a tie so
+  -- the result is total rather than merely mostly-ordered, and `nulls last` keeps a row with no
+  -- created_at from sorting ahead of a real one.
   select p.id into v_profile_id
     from public.profiles p
-   where p.auth_user_id = auth.uid();
+   where p.auth_user_id = auth.uid()
+   order by p.created_at asc nulls last, p.id asc
+   limit 1;
 
   if v_profile_id is null then
     return 0;

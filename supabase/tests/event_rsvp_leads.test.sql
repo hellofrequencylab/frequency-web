@@ -133,10 +133,22 @@ select is(
 );
 reset role;
 
+-- Asserts the INVARIANT, not a fixture guess. The first version of this named the profile this
+-- file inserts for caller A and failed: a trigger mints a profile of its own when the auth.users
+-- row lands, so A owns two, and `profiles.auth_user_id` has no unique constraint to stop it. The
+-- hard-coded id was asserting which of the two the plan happened to reach, which is the very thing
+-- the function was then fixed to stop leaving to chance.
+--
+-- What must be true is that the stamped profile BELONGS TO THE CALLER. That holds whichever row the
+-- ordering picks, it keeps this test honest if the signup trigger ever changes, and it is the actual
+-- security property: a lead may never be stamped to somebody else's profile.
 select is(
-  (select converted_profile_id from public.signup_leads where id = (current_setting('erl.lead')::jsonb ->> 'id')::uuid),
-  '00000000-0000-4000-e630-0000000000c1'::uuid,
-  'the lead is stamped to the caller''s own profile'
+  (select p.auth_user_id
+     from public.profiles p
+     join public.signup_leads l on l.converted_profile_id = p.id
+    where l.id = (current_setting('erl.lead')::jsonb ->> 'id')::uuid),
+  '00000000-0000-4000-e630-0000000000a1'::uuid,
+  'the lead is stamped to a profile owned by the caller''s own auth user'
 );
 select isnt(
   (select converted_at from public.signup_leads where id = (current_setting('erl.lead')::jsonb ->> 'id')::uuid),
