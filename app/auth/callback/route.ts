@@ -4,6 +4,10 @@ import { FUNNELS } from '@/lib/funnels/definitions'
 import { createClient } from '@/lib/supabase/server'
 import { track } from '@/lib/analytics/track'
 import { claimGuestSeatsOnSignIn, type SessionClient } from '@/lib/events/guest-seat-claim'
+import {
+  convertLeadsOnSignIn,
+  type SessionClient as LeadSessionClient,
+} from '@/lib/crm/convert-leads-on-sign-in'
 
 // Must match the cookie set in app/sign-in/actions.ts (stashNext).
 const POST_LOGIN_COOKIE = 'fq_post_login'
@@ -103,6 +107,18 @@ export async function GET(request: Request) {
               supabase as unknown as SessionClient,
               profile.id,
             )
+
+            // CONVERT-ON-SIGN-IN, the seat claim's CRM twin and the same seam for the same reason:
+            // auth.uid() is the caller and auth.users.email_confirmed_at was just stamped. It joins
+            // every `signup_leads` row held by this proven address to the member it turned out to
+            // be — including the one the signed-out event RSVP form captured beside the seat.
+            //
+            // SESSION client, like the claim above: the function resolves the profile from
+            // auth.uid(), so under the service-role client it would match nothing and convert
+            // nothing. It returns void ON PURPOSE — unlike the seat claim it may NOT influence the
+            // destination, and it swallows its own failures, so it can never block authentication.
+            // Cast per ADR-246: the RPC postdates the generated types.
+            await convertLeadsOnSignIn(supabase as unknown as LeadSessionClient)
           }
 
           // Read the funnel back through the SAME map that wrote it. `user_metadata` is

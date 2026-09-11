@@ -8,8 +8,18 @@
 //
 // The "recovery job" the table was built for (one transactional "finish setting up your account"
 // note) is NOT here; that is a cron with its own consent rules and lives in a separate change.
+//
+// NOT EVERY LEAD IS AN ABANDONED SIGNUP. This list is presented to the operator as the people who
+// gave an email at /join and never finished, and its whole point is that the operator reaches out
+// to them. A lead from a door where nothing was abandoned (an event RSVP: the guest gave an email,
+// got their RSVP, and finished what they came for) would read here as a person who dropped out,
+// and the operator would chase them about an account they never started. So the same set the
+// recovery note excludes is excluded from this list, from ONE seam: RECOVERY_EXCLUDED_SOURCES in
+// lib/crm/lead-sources.ts. When a door gets its own follow-up, it leaves that list and
+// appears in both places at once.
 
 import { createAdminClient } from '@/lib/supabase/admin'
+import { RECOVERY_EXCLUDED_SOURCES, recoveryExcludedSourceFilter } from '@/lib/crm/lead-sources'
 import type { Json } from '@/lib/database.types'
 
 /** How far the visitor got before they left. `step_reached` is written by the induction:
@@ -114,7 +124,8 @@ export interface ListAbandonedSignupLeadsOptions {
 }
 
 /**
- * Every lead that opened a row and never converted, newest activity first.
+ * Every lead that opened a row and never converted, newest activity first, minus the sources that
+ * were never a signup to abandon (see the header note and RECOVERY_EXCLUDED_SOURCES).
  *
  * Fail-safe: a read error logs (structured, never interpolated) and returns an empty list, so the
  * operator page renders its empty state rather than a 500.
@@ -127,10 +138,13 @@ export async function listAbandonedSignupLeads(
   const now = Date.now()
   const since = new Date(now - sinceDays * DAY_MS).toISOString()
 
-  const { data, error } = await createAdminClient()
+  let query = createAdminClient()
     .from('signup_leads')
     .select(SELECT)
     .is('converted_at', null)
+  // Skipped when the list is empty: `not in ()` is not a filter PostgREST can parse.
+  if (RECOVERY_EXCLUDED_SOURCES.length > 0) query = query.not('source', 'in', recoveryExcludedSourceFilter())
+  const { data, error } = await query
     .gte('created_at', since)
     .order('updated_at', { ascending: false })
     .limit(limit)

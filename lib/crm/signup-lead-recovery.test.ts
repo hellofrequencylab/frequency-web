@@ -24,6 +24,7 @@ vi.mock('@/lib/supabase/admin', () => ({
       if (table !== 'signup_leads') throw new Error(`unexpected table ${table}`)
       const read = {
         is: (col: string, v: unknown) => { state.query.filters.push(`${col} is ${String(v)}`); return read },
+        not: (col: string, op: string, v: unknown) => { state.query.filters.push(`${col} not ${op} ${String(v)}`); return read },
         gte: (col: string, v: unknown) => { state.query.filters.push(`${col} >= ${String(v)}`); return read },
         lte: (col: string, v: unknown) => { state.query.filters.push(`${col} <= ${String(v)}`); return read },
         order: (col: string, opts: { ascending: boolean }) => {
@@ -69,6 +70,7 @@ vi.mock('@/lib/log', () => ({
   },
 }))
 
+import { RECOVERY_EXCLUDED_SOURCES, recoveryExcludedSourceFilter } from './lead-sources'
 import {
   RECOVERY_MIN_STEP,
   RECOVERY_QUIET_HOURS,
@@ -87,6 +89,7 @@ const hoursAgo = (h: number) => new Date(NOW - h * 3_600_000).toISOString()
 function lead(over: Partial<RecoveryCandidate> & { id: string }): RecoveryCandidate {
   return {
     email: `${over.id}@example.com`,
+    source: 'beta_induction',
     step_reached: 2,
     updated_at: hoursAgo(30),
     converted_at: null,
@@ -118,6 +121,23 @@ describe('selectRecoveryLeads (pure)', () => {
   it(`skips a lead touched within the last ${RECOVERY_QUIET_HOURS} hours, and takes one exactly at the line`, () => {
     expect(selectRecoveryLeads([lead({ id: 'warm', updated_at: hoursAgo(23) })], NOW)).toEqual([])
     expect(selectRecoveryLeads([lead({ id: 'edge', updated_at: hoursAgo(24) })], NOW)).toHaveLength(1)
+  })
+
+  it('skips an event RSVP lead: a guest who completed an RSVP abandoned nothing', () => {
+    const guest = lead({ id: 'guest', source: 'event_rsvp' })
+    expect(isRecoveryDue(guest, NOW)).toBe(false)
+    expect(selectRecoveryLeads([guest], NOW)).toEqual([])
+  })
+
+  it('still selects a beta_induction lead, so the exclusion cannot pass by excluding everything', () => {
+    const joiner = lead({ id: 'joiner', source: 'beta_induction' })
+    expect(isRecoveryDue(joiner, NOW)).toBe(true)
+    expect(selectRecoveryLeads([joiner, lead({ id: 'g2', source: 'event_rsvp' })], NOW).map((r) => r.id)).toEqual(['joiner'])
+  })
+
+  it('the query exclusion list is the same list the rule reads', () => {
+    expect(RECOVERY_EXCLUDED_SOURCES).toEqual(['event_rsvp'])
+    expect(recoveryExcludedSourceFilter()).toBe('("event_rsvp")')
   })
 
   it('skips a row whose updated_at does not parse rather than treating it as infinitely old', () => {
@@ -176,12 +196,13 @@ describe('runSignupLeadRecovery (claim, then send)', () => {
     ...over,
   })
 
-  it('asks the database the four things the rule asks, oldest first, bounded by the budget', async () => {
+  it('asks the database the five things the rule asks, oldest first, bounded by the budget', async () => {
     state.rows = [row({ id: 'a' })]
     await runSignupLeadRecovery({ limit: 50, now: () => NOW })
     expect(state.query.filters).toEqual([
       'converted_at is null',
       'recovery_sent_at is null',
+      `source not in ${recoveryExcludedSourceFilter()}`,
       `step_reached >= ${RECOVERY_MIN_STEP}`,
       `updated_at <= ${hoursAgo(24)}`,
     ])
@@ -212,6 +233,14 @@ describe('runSignupLeadRecovery (claim, then send)', () => {
     expect(r).toMatchObject({ scanned: 3, due: 1, sent: 1 })
     expect(state.claims.map((c) => c.id)).toEqual(['ok'])
     expect(state.sent.map((s) => s.to)).toEqual(['ok@example.com'])
+  })
+
+  it('never claims or mails an event lead even if the query hands one back, and still mails the joiner', async () => {
+    state.rows = [row({ id: 'guest', source: 'event_rsvp' }), row({ id: 'joiner', source: 'beta_induction' })]
+    const r = await runSignupLeadRecovery({ limit: 200, now: () => NOW })
+    expect(r).toMatchObject({ scanned: 2, due: 1, sent: 1, failed: 0 })
+    expect(state.claims.map((c) => c.id)).toEqual(['joiner'])
+    expect(state.sent.map((s) => s.to)).toEqual(['joiner@example.com'])
   })
 
   it('a lost claim skips the send and counts as lost, not failed', async () => {
