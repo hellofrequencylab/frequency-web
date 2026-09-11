@@ -12,7 +12,9 @@
 //   - step_reached >= 2         (they gave an email AND went on: a bare address that never took a
 //                                second step is not a half-finished signup, it is a typed address)
 //   - updated_at is at least RECOVERY_QUIET_HOURS old (still mid-funnel an hour ago is not cold)
-// The driving query asks the database the same four things, ordered oldest-first and limited to
+//   - source is not one of RECOVERY_EXCLUDED_SOURCES (see the constant: some doors are not a
+//     half-finished signup at all, so this note would be wrong for them)
+// The driving query asks the database the same five things, ordered oldest-first and limited to
 // the cron's budget, and the runner applies the pure rule again to what comes back. The second
 // pass costs nothing and is the one a test can prove.
 //
@@ -31,6 +33,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { sendSignupRecoveryEmail } from '@/lib/email'
 import { log } from '@/lib/log'
 import type { Json } from '@/lib/database.types'
+import { RECOVERY_EXCLUDED_SOURCES, isRecoveryExcludedSource, recoveryExcludedSourceFilter } from '@/lib/crm/lead-sources'
 
 /** A lead is cold once its last touch is at least this old. */
 export const RECOVERY_QUIET_HOURS = 24
@@ -43,6 +46,8 @@ const HOUR_MS = 60 * 60 * 1000
 export interface RecoveryCandidate {
   id: string
   email: string
+  /** The door the lead came through; see RECOVERY_EXCLUDED_SOURCES. */
+  source: string
   step_reached: number
   updated_at: string
   converted_at: string | null
@@ -57,7 +62,7 @@ export interface RecoveryLeadRow extends RecoveryCandidate {
 }
 
 export const RECOVERY_SELECT =
-  'id, email, first_name, display_name, step_reached, updated_at, converted_at, recovery_sent_at, payload'
+  'id, email, first_name, display_name, source, step_reached, updated_at, converted_at, recovery_sent_at, payload'
 
 /** The newest `updated_at` a lead may have and still be cold, as an ISO string for the query. */
 export function recoveryCutoff(now: number = Date.now()): string {
@@ -68,6 +73,10 @@ export function recoveryCutoff(now: number = Date.now()): string {
 export function isRecoveryDue(lead: RecoveryCandidate, now: number = Date.now()): boolean {
   if (lead.converted_at !== null) return false
   if (lead.recovery_sent_at !== null) return false
+  // Both sides filter on purpose. The query below excludes these sources too, but this guard is
+  // the half that survives a rewrite of the query, and a one-sided exclusion is exactly how a
+  // rule like this stops working without anyone noticing.
+  if (isRecoveryExcludedSource(lead.source)) return false
   if (!(lead.step_reached >= RECOVERY_MIN_STEP)) return false
   const touched = Date.parse(lead.updated_at)
   if (!Number.isFinite(touched)) return false
@@ -133,11 +142,16 @@ export async function runSignupLeadRecovery(opts: RecoveryRunOptions): Promise<R
   const baseUrl = opts.baseUrl ?? process.env.NEXT_PUBLIC_APP_URL ?? 'https://frequencylocal.com'
   const admin = createAdminClient()
 
-  const { data, error } = await admin
+  let query = admin
     .from('signup_leads')
     .select(RECOVERY_SELECT)
     .is('converted_at', null)
     .is('recovery_sent_at', null)
+  // The same exclusion as `isRecoveryDue`, asked of the database so an excluded lead never even
+  // takes a slot in the cron's budget. Skipped when the list is empty, because `not in ()` is not
+  // a filter PostgREST can parse.
+  if (RECOVERY_EXCLUDED_SOURCES.length > 0) query = query.not('source', 'in', recoveryExcludedSourceFilter())
+  const { data, error } = await query
     .gte('step_reached', RECOVERY_MIN_STEP)
     .lte('updated_at', recoveryCutoff(now()))
     .order('updated_at', { ascending: true })

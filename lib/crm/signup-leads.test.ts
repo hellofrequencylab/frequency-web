@@ -1,8 +1,9 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 
 // signup_leads had writers and no reader until scan2 L9-03. These tests pin the reader: the query
-// excludes converted rows and old rows, the row mapping names the beat the visitor stopped at, and
-// the CSV export is RFC 4180 clean. The admin client is a recording stub.
+// excludes converted rows, old rows and the sources that were never a signup to abandon, the row
+// mapping names the beat the visitor stopped at, and the CSV export is RFC 4180 clean. The admin
+// client is a recording stub.
 
 const h = vi.hoisted(() => {
   const state = {
@@ -12,7 +13,7 @@ const h = vi.hoisted(() => {
   }
   const builder = (table: string): unknown => {
     const c: Record<string, unknown> = {}
-    for (const m of ['select', 'is', 'gte', 'order', 'limit']) {
+    for (const m of ['select', 'is', 'not', 'gte', 'order', 'limit']) {
       c[m] = (...args: unknown[]) => {
         state.calls.push([`${table}.${m}`, args])
         return c
@@ -35,6 +36,7 @@ import {
   signupStepLabel,
   type SignupLeadRow,
 } from './signup-leads'
+import { RECOVERY_EXCLUDED_SOURCES, recoveryExcludedSourceFilter } from './lead-sources'
 
 const NOW = Date.parse('2026-09-05T12:00:00.000Z')
 
@@ -81,6 +83,14 @@ describe('listAbandonedSignupLeads', () => {
     expect(order?.[1]).toEqual(['updated_at', { ascending: false }])
     const limit = h.state.calls.find((c) => c[0] === 'signup_leads.limit')
     expect(limit?.[1]).toEqual([50])
+  })
+
+  it('asks the database to leave out the sources that were never a signup to abandon', async () => {
+    h.state.rows = [row()]
+    await listAbandonedSignupLeads()
+    const not = h.state.calls.find((c) => c[0] === 'signup_leads.not')
+    expect(not?.[1]).toEqual(['source', 'in', recoveryExcludedSourceFilter()])
+    expect(RECOVERY_EXCLUDED_SOURCES).toContain('event_rsvp')
   })
 
   it('fails safe to an empty list on a read error', async () => {
