@@ -132,16 +132,44 @@ swap is free). The same model embeds **both** the index and the query (consisten
 ## 6. The living-docs loop (auto-author + staff review)
 
 - **Trigger:** the existing `featureKeys` drift signal — a PR touching a user-facing route whose
-  `featureKeys` map to an article flags that article for review.
-- **Author:** the AI doc-writer drafts/updates the article + a `CHANGELOG.md` line, in member voice,
-  grounded in the diff (member-facing behavior only; pure refactors are skipped per DOCS-PROTOCOL).
-- **Review = PR-based (ADR-067).** The draft lands as a commit on the PR with a **staff checklist**
-  in the PR body (what changed · which articles · claims to verify · screenshots to refresh). Staff
-  approve in GitHub; git stays the source of truth; CI + Vercel preview already gate it. *(An
-  in-product Studio "Docs to review" queue is a deliberate later option if non-engineers need to
-  approve end-to-end — not built first.)*
+  `featureKeys` map to an article flags that article for review. ⚠️ This is deliberately a
+  **candidate** set, not an answer: several keys map to very broad routes (`billing` → `/spaces`),
+  so one touched file can pull in every article under a key. **Narrowing the candidates is the
+  model's job, and it is the job the bot has been worst at.**
+- **Author:** the reviewer runs in `.github/workflows/help-autodoc.yml` →
+  `scripts/help-autodoc.mts` → `lib/ai/autodoc.ts`. It does not draft the article or a
+  `CHANGELOG.md` line; it posts **one advisory PR comment** with a staff checklist of what to fix
+  (member-facing behavior only; pure refactors are skipped per DOCS-PROTOCOL). Drafting the prose is
+  still an open option, not a built one.
+- **🔴 Grounded in the diff, and that is enforced, not requested.** This clause was in the spec
+  from the start and the code did not honour it: the model was handed the changed FILE NAMES and a
+  1,200-character slice of each article, so it inferred behaviour from paths. On PR #2539 that
+  produced three false positives out of three checked, including a typography claim on a diff that
+  moved four colour tokens. What the code does now:
+  - the prompt carries the **actual diff hunks** (`AutodocChange.diff`, budgeted by `diffForPrompt`,
+    with elisions marked so absence is never read as evidence);
+  - a verdict is one of **`inaccurate` / `covers` / `clear`**, so "this article covers a touched
+    area" is sayable without asserting the article is wrong;
+  - an `inaccurate` verdict must carry **two verbatim anchors** — a `quote` from the article and a
+    `diffQuote` from the diff — and `groundVerdicts()` checks both against the real text. A claim
+    that fails is **demoted to `covers` with the reason printed, never deleted.** The bot's job is
+    to say fewer *wrong* things, not fewer things (§8.3 asks exactly this of RAG answers; this
+    surface simply never had it).
+- **A file the model could not review is NOT a checklist item.** Unreviewed articles travel on a
+  separate channel (`AutodocReview.unreviewed`) and render as a ⚠️ coverage gap with its cause,
+  never as a `- [ ]` beside a finding — a checklist that mixes "I found something" with "I failed to
+  look" trains the reader to ignore all of it (ADR-970). The cause is also fixed rather than only
+  reported: `planAutodocBatches` bounds what one call is asked for, since a single call over the
+  whole candidate set spent its output budget linearly and clipped the same tail every run, and
+  whatever a batch still skips gets one retry. Truncation is read from the model's `stop_reason`,
+  not guessed from a row count.
+- **Review = PR-based (ADR-067).** Staff approve in GitHub; git stays the source of truth; CI +
+  Vercel preview already gate it. *(An in-product Studio "Docs to review" queue is a deliberate
+  later option if non-engineers need to approve end-to-end — not built first.)*
 - **Nothing auto-publishes.** AI proposes, a human approves, merge re-embeds. This is the ADR-028
-  copilot-first rule applied to docs.
+  copilot-first rule applied to docs. It is also why the job **does not fail the PR** on a model
+  hiccup: an advisory that can block a merge for something the author cannot fix gets switched off,
+  and then it reads as coverage. It shouts in its own job log (`::warning`) instead.
 
 ## 7. Coverage as a system (so "document everything" is measurable)
 
