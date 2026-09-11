@@ -66,3 +66,8 @@ test/e2e/.auth/
 # deleted by scripts/a11y-baselines.mjs. The merged result (a11y-baselines.json)
 # IS tracked — the raw per-worker capture is not.
 test/e2e/.a11y-observed.jsonl
+
+# ESLint's result cache. Written by `pnpm lint` (--cache --cache-strategy content) and
+# restored in CI by the ci.yml lint job's "Restore ESLint cache" step, keyed on
+# eslint.config.mjs + pnpm-lock.yaml. Machine-local and per-checkout — never committed.
+.eslintcache

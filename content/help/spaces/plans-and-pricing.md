@@ -4,7 +4,7 @@ description: What each Space plan costs, what it includes, and how to pick the o
 category: spaces
 order: 2
 published: 2026-07-27
-updated: 2026-09-09
+updated: 2026-09-10
 audience: member
 featureKeys: [billing]
 status: published
@@ -92,6 +92,9 @@ to 8%. Crew is contribute what you want, from $4.99 a month.
 
 The idea is simple: we earn when the network earns you something, and never on the work you brought
 yourself.
+
+Your own Space shows the rate it is on, in **Manage, then Get paid**, beside the account your money
+lands in. See [Get paid](/help/spaces/get-paid).
 
 ## Picking a plan
 
