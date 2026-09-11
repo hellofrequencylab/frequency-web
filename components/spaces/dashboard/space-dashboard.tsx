@@ -21,6 +21,7 @@ import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Worklist } from '@/components/dashboard/worklist'
+import { SpaceDispatchBand } from './space-dispatch-band'
 import { relativeTime } from '@/lib/utils'
 import { spaceEarningsSummary } from '@/lib/commerce/orders'
 import { getSpaceHealth, getWorklist } from '@/lib/dashboard/scores'
@@ -69,6 +70,14 @@ export async function SpaceDashboard({
       />
 
       <div className="space-y-8">
+        {/* THE POST BOX, space-scoped (LIVE-295). Announcing sits beside the numbers the operator
+            already opens, not inside a separate console. The band self-gates on space-manage and
+            renders nothing for a staff previewer or a non-manager, and its own <Suspense> keeps the
+            stat rows from waiting on that gate. */}
+        <Suspense fallback={null}>
+          <SpaceDispatchBand slug={slug} />
+        </Suspense>
+
         <Suspense fallback={<StatRowSkeleton />}>
           <DashboardStats spaceId={spaceId} slug={slug} />
         </Suspense>

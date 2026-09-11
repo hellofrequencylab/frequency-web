@@ -39601,3 +39601,57 @@ prompt needs work, not the gate. Cache effectiveness is likewise unproven, so th
 **Known gap, deliberately not widened here.** The workflow triggers on `paths: ['app/**']`, so a PR
 touching only `lib/` or `components/` never runs this check. That is a real coverage question and a
 separate change.
+
+## ADR-1321: ACCEPTED — a Space Dispatches from the post box, and the scope comes from the mount or the write refuses (2026-09-11)
+
+**Context.** Retiring the Message center (LIVE-293) takes `composeSpaceDispatch`'s only production
+caller with it. Nothing else in the tree writes an `audience_scope: 'space'` row, while
+`lib/dispatches.ts` keeps querying that scope for the rail and `lib/digest.ts` for the digest — so
+after that retirement no Space could ever publish a Dispatch again, and the surfaces that display
+Space Dispatches would keep rendering an empty lane. Asked whether to accept the loss, the owner
+ruled the opposite: *"Make it possible for the space owner to dispatch from the post box."*
+
+**Decision.** Give `CaptureBox` an optional space scope. Mounted for a viewer who can manage the
+Space, `canAnnounce` derives from the Space manage gate rather than the community role, and the
+Dispatch send writes `audience_scope: 'space'` with `audience_id` set to that Space — the exact shape
+the rail and the digest already read, so both light up with no reader change. It is a better home
+than the console it replaces: announcing sits beside posting instead of inside a separate surface
+nobody opened.
+
+**🔴 The scope comes from the mount, and there is no default.** `lib/events/dispatch.ts` writes
+`audience_scope: 'global'`, which is the entire platform. A Space Dispatch that lands as global is a
+mass-notification incident, not a bug. So in the box the send is guarded on a narrowed, non-null
+`spaceDispatch`, leaving no branch that can call the space action without a scope; and in the action
+every miss **returns an error** rather than falling through — signed out, no slug, no id, Space not
+visible, claimed id ≠ resolved id, not `canManage`, empty or over-long body. The client-supplied
+`spaceId` is an integrity check only; the target is re-derived from the slug under the caller's own
+visibility.
+
+**A space mount offers Dispatch only.** The other four capture modes write to surfaces belonging to
+the *person* — their own wall via `scopeId`, their own journal, their own contact book. Offering them
+inside a Space's box would read as "post as the Space" and silently do something else, which is the
+mis-scoping class this change exists to prevent. When a Space grows a feed of its own, its mode joins
+the list.
+
+**A premise in the row was wrong, and the correction simplified the work.** The row asserted that
+`canAnnounce` is computed in exactly one place, from a community role. It is not:
+`components/widgets/circles/circle-feed.tsx` already passes `canAnnounce={canManage}` — a manage
+gate. So "derive `canAnnounce` from a manage gate" had precedent in the tree while the row claimed it
+did not, and this follows that shape rather than inventing one. The claim holds only when narrowed to
+`CaptureBox`.
+
+**Consequences.** `composeSpaceDispatch` has a second production caller, so LIVE-293 can retire the
+Message center without orphaning the writer, and this must merge first. Six controls were mutated and
+watched fail: scope forced to global, the `canManage` gate deleted, the id-mismatch check deleted,
+the no-slug refusal deleted, and the box's fail-closed render deleted. The test exercises the real
+`composeSpaceDispatch` with only the Supabase client, roster and notification router faked, so it
+asserts the actual insert payload, and it counts its own allowed writes and asserts that count is
+non-zero — a sweep that passes green on a build where nothing writes at all is not a test.
+
+**🔴 A seventh control did NOT fire, and it is the more valuable finding.** Deleting the caller-gate
+outright left `pnpm check:authz` green. `scanActions` skips any `'use server'` file whose own source
+lacks the literal string `createAdminClient`, so an action that reaches the admin client through a
+helper — the normal way to write one — is never scanned. The authorization line here is held by this
+change's own six authz test arms, not by the gate that reports passing. Filed as `LIVE-307` at P1.
+
+**Rows.** LIVE-295 · LIVE-307 (opened).

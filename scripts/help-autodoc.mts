@@ -28,7 +28,7 @@
 // visible without opening the PR.
 
 import { readFileSync } from 'node:fs'
-import { execSync } from 'node:child_process'
+import { execSync, execFileSync } from 'node:child_process'
 import { getAllCategories } from '../lib/help/content.ts'
 import { FEATURE_KEYS } from '../lib/help/feature-keys.ts'
 import { affectedArticles } from '../lib/help/drift.ts'
@@ -72,6 +72,20 @@ function prNumber(): number | null {
   }
 }
 
+/** Pathspecs kept OUT of the diff, as argv entries. Exported so the test can assert they are
+ *  passed as arguments rather than interpolated into a shell string — the defect that made this
+ *  job's first real run send no diff at all. */
+export const EXCLUDE_PATHSPECS = [
+  ':(exclude)pnpm-lock.yaml',
+  ':(exclude)package-lock.json',
+  ':(exclude)*.snap',
+  ':(exclude)public/**',
+  ':(exclude)*.svg',
+  ':(exclude)*.png',
+  ':(exclude)*.jpg',
+  ':(exclude)*.webp',
+]
+
 function changedFiles(): string[] {
   try {
     const out = execSync(`git diff --name-only origin/${base}...HEAD`, { encoding: 'utf8' })
@@ -94,19 +108,20 @@ function changedFiles(): string[] {
  *  An empty return is honest and handled: buildAutodocMessages tells the model it cannot ground
  *  anything, and groundVerdicts refuses to grade any claim as grounded. */
 function changedDiff(): string {
-  const exclude = [
-    ':(exclude)pnpm-lock.yaml',
-    ':(exclude)package-lock.json',
-    ':(exclude)*.snap',
-    ':(exclude)public/**',
-    ':(exclude)*.svg',
-    ':(exclude)*.png',
-    ':(exclude)*.jpg',
-    ':(exclude)*.webp',
-  ].join(' ')
   try {
-    const raw = execSync(
-      `git diff --unified=3 --no-color origin/${base}...HEAD -- . ${exclude}`,
+    // 🔴 execFileSync, NOT execSync, and the pathspecs are ARGV ENTRIES rather than a command
+    // string. execSync runs through `/bin/sh`, which on a GitHub runner is dash, and git's
+    // pathspec magic `:(exclude)…` carries unquoted parentheses that dash rejects outright:
+    //   /bin/sh: 1: Syntax error: "(" unexpected
+    // That is not hypothetical. This function's FIRST real CI run (PR #2547, 2026-09-11) failed
+    // exactly this way, so the grounding this whole job was rebuilt for was inert on arrival —
+    // the model got articles and no diff, and every verdict it returned said "Diff unavailable".
+    // The fail-safe worked (a loud ::warning, and groundVerdicts refused to grade anything), which
+    // is the only reason it produced no false findings rather than a fresh crop of them. An argv
+    // array reaches execve directly, so no shell parses these tokens at all.
+    const raw = execFileSync(
+      'git',
+      ['diff', '--unified=3', '--no-color', `origin/${base}...HEAD`, '--', '.', ...EXCLUDE_PATHSPECS],
       { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 },
     )
     const budgeted = diffForPrompt(raw)
