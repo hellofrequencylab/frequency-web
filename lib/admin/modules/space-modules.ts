@@ -191,11 +191,11 @@ export const SPACE_MODULES: readonly SpaceModule[] = [
   // outreach, and replies as one assignable, status-tracked thread with a per-thread reply address, so a
   // reply comes straight back to it. Same `crm` gate; sits beside Inbox under Resonance.
   { id: 'space.conversations', label: 'Conversations', desc: 'One ticketed inbox for your space: assign a thread, reply as your space, and their reply comes back to the same place.', Icon: MessagesSquare, family: 'audience', hub: 'resonance', slot: 'people', gate: { kind: 'feature', fn: 'crm' }, featureKey: 'crm', render: 'link', deepLink: (s) => `${base(s)}/crm/conversations`, order: 35.6, tier: 'primary', priority: 15.6, access: 'included', parent: 'space.crm' },
-  // Message center (ADR-858): the OUTBOUND twin of Conversations — one composer that reaches members,
-  // a paid tier, one of the space's circles, or an event's RSVPs, over Email / DM / Dispatch (/ Text
-  // when provisioned). Same `crm` gate as its inbound sibling; each delivery lane re-gates itself
-  // (email kill switch, DM caps, SMS refuse-first), so the menu row never over-promises.
-  { id: 'space.messages', label: 'Message center', desc: 'Message your members, a membership tier, a circle, or an event’s guests, by email, DM, or Dispatch.', Icon: MessagesSquare, family: 'audience', hub: 'resonance', slot: 'people', gate: { kind: 'feature', fn: 'crm' }, featureKey: 'crm', render: 'link', deepLink: (s) => `${base(s)}/messages`, order: 35.7, tier: 'primary', priority: 15.7, access: 'included', parent: 'space.crm' },
+  // Message center (ADR-858) is RETIRED (LIVE-293, owner directive 2026-09-10: "Remove the Message
+  // center all together. That is an old idea."). Its DM and Dispatch broadcast lanes were dropped on
+  // purpose; its AUDIENCE PICKER moved to Email (space.comms, /settings/email), because targeting all
+  // members, one membership tier, one circle, or one event's RSVPs is the part Email could not do.
+  // Space Dispatch publishing moved to the post box (LIVE-295), so composeSpaceDispatch keeps a writer.
   // Automation rides the `crm` feature gate; the surface self-gates on the automation ENTITLEMENT (a paid
   // amplifier) and shows an upgrade notice when the plan lacks it. Nested under CRM on the console.
   { id: 'space.automation', label: 'Automation', desc: 'Rules and drip sequences over your own contacts.', Icon: Workflow, family: 'audience', hub: 'resonance', slot: 'people', gate: { kind: 'feature', fn: 'crm' }, featureKey: 'crm', render: 'link', deepLink: (s) => `${base(s)}/settings/automation`, order: 36, tier: 'primary', priority: 16, access: 'premium', parent: 'space.crm', freeNote: 'On Collective, 1,000 runs/mo included' },

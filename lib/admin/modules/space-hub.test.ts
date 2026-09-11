@@ -46,13 +46,14 @@ describe('sectionForModule (the hub IA)', () => {
   })
 
   it('routes the CRM relationship + conversations cluster to Resonance', () => {
-    // space.conversations is the ticketed inbox (the retired space.inbox's successor). Message center and
-    // Automation joined them in ADR-1313: both are owned by the CRM box, and both used to file elsewhere
-    // (Message center in the Offerings catch-all, Automation hard-coded into Marketing).
+    // space.conversations is the ticketed inbox (the retired space.inbox's successor). Automation joined
+    // it in ADR-1313: it is owned by the CRM box and used to be hard-coded into Marketing.
+    // space.messages (Message center) was the third of that cluster and is RETIRED (LIVE-293): its
+    // audience picker moved to Email, its DM and Dispatch lanes were dropped, and its Dispatch
+    // publishing moved to the post box (LIVE-295).
     for (const id of [
       'space.crm',
       'space.conversations',
-      'space.messages',
       'space.automation',
       'space.leads',
       'space.doors',

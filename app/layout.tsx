@@ -81,7 +81,7 @@ export const viewport: Viewport = {
   // (low-vision + older users on mobile could not magnify any page). Zoom stays enabled
   // site-wide; the DAWN base font size already avoids iOS input-focus auto-zoom.
   viewportFit: "cover",
-  // ONE theme-color, light, with NO `media` split (changed 2026-09-11 — see ADR-1322).
+  // ONE theme-color, light, with NO `media` split (changed 2026-09-11 — see ADR-1323).
   //
   // The media-split pair was two bugs at once, and both showed on exactly the surface this pass is
   // about: a phone. `themeColor: [{light}, {dark}]` renders TWO <meta name="theme-color"> tags, and

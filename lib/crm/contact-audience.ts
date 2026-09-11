@@ -20,6 +20,10 @@
 // Shape follows the house convention (lib/comms/send-gate.ts, lib/crm/contact-consent.ts): the
 // decision is a PURE, exhaustively-tested function over explicit state, and the IO that gathers
 // that state lives at the call site. The caller does the two reads; this does the pairing.
+//
+// THE CALLER since LIVE-293 is lib/spaces/member-segment-audience.ts: the Message center retired and
+// its audience targeting moved into the Email composer, which reaches these helpers through that
+// module. The reasoning above is unchanged, which is the point of the move being a port.
 
 /** One row from the ROOT space: the member's platform contact record. `email` may be stored
  *  un-normalized (an OAuth signup / import path), so the pairing lowercases before matching. */

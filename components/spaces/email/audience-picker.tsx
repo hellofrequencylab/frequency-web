@@ -25,6 +25,13 @@ import { isError } from '@/lib/action-result'
 // selected: it shows the segment's name, and Save name calls updateSpaceSegment (the definition is
 // kept server-side). One component, two modes, so a mistyped name is a rename, not a delete + recreate.
 //
+// LIVE-293 adds MEMBER SEGMENTS to the same select: all space members, one membership tier, one of the
+// Space's circles, or one event's RSVPs. This is the one thing the retired Space Message center could do
+// that Email could not, and it is the whole reason the retirement is a port rather than a delete. A
+// member segment is one more filter key (`memberSegment`); the pairing to this Space's own contacts
+// happens server-side, BY EMAIL ADDRESS, and the send is pinned to the Marketing topic there too. The
+// locked Topic row in the composer only REPORTS that pin; the resolver is what enforces it.
+//
 // Copy passes CONTENT-VOICE: plain, concrete, no narrated feelings, no em/en dashes.
 
 export function AudiencePicker({
@@ -32,6 +39,7 @@ export function AudiencePicker({
   slug,
   tags,
   segments = [],
+  memberSegments = [],
   filter,
   onFilterChange,
   onCountChange,
@@ -44,6 +52,9 @@ export function AudiencePicker({
   tags: string[]
   /** The saved segments for this Space (resolved server-side). Empty = no "Saved segments" group. */
   segments?: { id: string; name: string }[]
+  /** MEMBER SEGMENTS (LIVE-293): the Space's members, paid tiers, circles, and upcoming events' RSVPs,
+   *  resolved server-side by lib/spaces/broadcast-audience.ts. Empty = no member group in the select. */
+  memberSegments?: { key: string; label: string }[]
   filter: AudienceFilter
   onFilterChange: (filter: AudienceFilter) => void
   onCountChange?: (count: number) => void
@@ -75,16 +86,24 @@ export function AudiencePicker({
     return () => {
       cancelled = true
     }
-    // onFilterChange/onCountChange are stable enough; we re-run on the filter's tag + segment only.
+    // onFilterChange/onCountChange are stable enough; we re-run on the filter's own facets only.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [spaceId, filter.tag, filter.segmentId])
+  }, [spaceId, filter.tag, filter.segmentId, filter.memberSegment])
 
-  // The select's current value: a segment (segment:<id>), a tag (the tag string), or '' = everyone.
-  const selectValue = filter.segmentId ? `segment:${filter.segmentId}` : (filter.tag ?? '')
+  // The select's current value: a member segment (member:<key>), a saved segment (segment:<id>), a tag
+  // (the tag string), or '' = everyone. The three are mutually exclusive by construction, because each
+  // branch below replaces the whole filter rather than merging into it.
+  const selectValue = filter.memberSegment
+    ? `member:${filter.memberSegment}`
+    : filter.segmentId
+      ? `segment:${filter.segmentId}`
+      : (filter.tag ?? '')
 
   function handleSelect(value: string) {
     setManageError(null)
-    if (value.startsWith('segment:')) {
+    if (value.startsWith('member:')) {
+      onFilterChange({ memberSegment: value.slice('member:'.length) })
+    } else if (value.startsWith('segment:')) {
       onFilterChange({ segmentId: value.slice('segment:'.length) })
     } else {
       onFilterChange({ tag: value || null })
@@ -173,6 +192,15 @@ export function AudiencePicker({
               ))}
             </optgroup>
           )}
+          {memberSegments.length > 0 && (
+            <optgroup label="Members, Circles, and events">
+              {memberSegments.map((m) => (
+                <option key={m.key} value={`member:${m.key}`}>
+                  {m.label}
+                </option>
+              ))}
+            </optgroup>
+          )}
           {segments.length > 0 && (
             <optgroup label="Saved segments">
               {segments.map((s) => (
@@ -197,9 +225,21 @@ export function AudiencePicker({
         )}
       </p>
 
-      {/* Save the current filter as a reusable segment. Hidden in read-only (staff preview). */}
+      {/* A member audience says out loud what the resolver will do to it (LIVE-293): only the members
+          this Space already holds a contact for are emailable, and the send rides Marketing. */}
+      {filter.memberSegment && (
+        <p className="text-meta text-muted">
+          We email the people in this group who are already contacts of this space, with an email on
+          file. This send goes out as Marketing, the strictest consent bar, so anyone who muted it is
+          skipped.
+        </p>
+      )}
+
+      {/* Save the current filter as a reusable segment. Hidden in read-only (staff preview), and hidden
+          for a member audience: a saved segment stores tags, so saving one here would quietly keep a
+          different audience than the one on screen. */}
       {/* 2026-09-05 (scan2 L9-08): with a saved segment selected, this row edits that segment instead. */}
-      {!disabled && (
+      {!disabled && !filter.memberSegment && (
         <div className="space-y-2 border-t border-border pt-3">
           {selectedSegment ? (
             <div className="flex flex-wrap items-end gap-2">

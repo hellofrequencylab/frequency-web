@@ -202,7 +202,7 @@ if you forget either half.** The core (shell, nav, rail) is never edited.
 
 ---
 
-## 6a. The mode law — what `freq-theme` resolves to (ADR-1322)
+## 6a. The mode law — what `freq-theme` resolves to (ADR-1323)
 
 A stored preference is a **choice**, not an outcome. [`lib/theme/mode.ts`](../lib/theme/mode.ts) is
 the single place that turns one into the other, and it is the only file that should ever contain the

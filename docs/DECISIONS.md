@@ -15368,7 +15368,7 @@ The durable rule: **a namespace rename moves before the surface grows, and moves
 
 **Decision.** Five fixes, each closing a specific leak:
 
-1. **The email lane emails Space contacts, not auth accounts.** `broadcast-actions.ts` resolved its recipients through `admin.auth.admin.getUserById`, writing members' *account* emails into the operator-visible send ledger — an identity a member never handed the Space. It now resolves through `resolveContactEmails(spaceId, profileIds)`, a single batched read of the `contacts` table scoped to `space_id` and deduped by `profile_id`. A source-shape guard (`message-center-privacy.test.ts`) fails the build if `getUserById`/`auth.admin` ever reappear in the send path.
+1. **The email lane emails Space contacts, not auth accounts.** `broadcast-actions.ts` resolved its recipients through `admin.auth.admin.getUserById`, writing members' *account* emails into the operator-visible send ledger — an identity a member never handed the Space. It now resolves through `resolveContactEmails(spaceId, profileIds)`, a single batched read of the `contacts` table scoped to `space_id` and deduped by `profile_id`. A source-shape guard fails the build if `getUserById`/`auth.admin` ever reappear in the send path. **Amended 2026-09-11 (LIVE-293):** the Message center is retired and its email lane moved into the Email composer's member-segment audience, so the guard moved with it — `lib/spaces/member-segment-audience.test.ts` now holds all four invariants over `lib/spaces/member-segment-audience.ts` + `lib/spaces/audiences.ts`, with behavioural arms the source-shape version could not have (every fixture seeds `profile_id: null`, the real tenant shape). It was REWRITTEN rather than deleted precisely because deleting it would have retired this ADR's only enforcement by passing rather than failing.
 2. **The circle cap is re-checked on reactivation.** `grantCircleRow`'s reactivation branch (a lapsed membership rejoining a tier's circle) flipped a soft-deleted row back to active without re-counting, so a circle could exceed `member_cap` by readmitting past members. It now reads `circles.member_cap`, counts active memberships, and returns `{granted:false, reason:'circle_full'}` before the UPDATE.
 3. **The person-to-person match RPC stops emitting raw fit terms.** `housing_roommate_matches` returned `budget_fit`, `geo_fit`, and `timing_fit` as continuous scores — enough for a viewer to back out another member's budget band, rough location, and move timing. The migration `20270109000000_housing_roommate_fit_privacy.sql` returns `null::double precision` for those three terms (they still feed the internal composite score) and bands `lifestyle_fit` to {0, 0.5, 1.0}. The listing-candidate RPC `housing_match_candidates` is untouched — a listing is public by design.
 4. **Recipient resolution moved past the cap.** The email lane no longer resolves the full audience up front (one auth call each) before any cap or lane runs; each lane resolves only what it needs, when it needs it.
@@ -27719,7 +27719,7 @@ fails on any stored key the registry retired. The rule stands regardless: **the 
 | Reactions + comments | Circle post reactions + replies | **0 rows** | surface removed |
 | Follower-posting toggle (`communityMemberPosts`) | The Circle **access** axis (ADR-1015) | 0 Spaces ever set it | control removed |
 | Pin / remove moderation | Circle Admin + Steward rungs (ADR-1014) | 0 rows | surface removed |
-| Post once, reach every follower | **Dropped.** The owner's removal ruling absorbs it: 0 posts ever, and `SpaceUpdates` (brand blog), the Message center (`space.messages`), and Dispatch cover "tell my people something." Rebuilding it recreates the third container ADR-1013 retired. | none | none |
+| Post once, reach every follower | **Dropped.** The owner's removal ruling absorbs it: 0 posts ever, and `SpaceUpdates` (brand blog), **a Space Dispatch published from the post box (LIVE-295)**, and **Email with a member audience (LIVE-293: all members, one membership tier, one Circle, or one event's RSVPs)** cover "tell my people something." Rebuilding it recreates the third container ADR-1013 retired. **Amended 2026-09-11:** this row named the Message center, which is retired; its targeting moved into Email and its Dispatch lane moved to the post box. The ruling is unchanged and two of the three paths are now stronger than what August named. | none | none |
 | The rail (About, contact, events, practices, circles, booking) | Every input already exists as a Home block; nothing is rebuilt | none | none |
 | Brand Updates backend (`space_updates`, create/update/delete actions) | **Stays untouched** — it backs the separately-decided `SpaceUpdates` block | keep the table | none |
 | Notification destination `/spaces/<slug>/community` | The Space root `/spaces/<slug>` | 0 legacy rows | none |
@@ -39083,7 +39083,7 @@ remembered to edit a list. Three had:
 
 | Module | `family` | `parent` | Rendered under | Belongs under |
 |---|---|---|---|---|
-| `space.messages` (Message center) | audience | `space.crm` | Offerings & Money | Resonance |
+| `space.messages` (Message center) | audience | `space.crm` | Offerings & Money | Resonance — **retired 2026-09-11 by LIVE-293, one day after this move** |
 | `space.collaborators` (Collaborators) | audience | `space.people` | Offerings & Money | Settings |
 | `space.reachreceipt` (Your reach) | reach | `space.reach` | Offerings & Money | Marketing, by its parent, but see the ruling below |
 
@@ -39656,7 +39656,59 @@ change's own six authz test arms, not by the gate that reports passing. Filed as
 
 **Rows.** LIVE-295 · LIVE-307 (opened).
 
-## ADR-1322: ACCEPTED — light is the default, dark is a thing an account holder opts into, and the mode law stops being written four times (2026-09-11)
+## ADR-1322: ACCEPTED — the Message center retires, and Email inherits the targeting rather than losing it (2026-09-11)
+
+**Context.** Owner directive: *"Remove the Message center all together. That's an old idea."* The
+menu row looked free and the surface did not. `app/(main)/spaces/[slug]/messages` did three things
+Email could not: a DM lane, a Dispatch lane, and an **audience picker** that targets all members, a
+membership tier, a Circle, or one event's guests.
+
+**Decision.** Delete the surface. Drop the DM and Dispatch broadcast lanes deliberately. **Port the
+targeting into Email**, because it is the part Email cannot do and the part a tier or a Circle is
+worth having. The Dispatch lane is not lost either — ADR-1321 moved it to the post box, and that
+landed first so `composeSpaceDispatch` never spent a moment without a production caller.
+
+**🔴 The join is the trap, and it was already broken.** `lib/spaces/audiences.ts` narrows its `place`
+facet with `contacts.profile_id`, which under ADR-624 is NULL by law on every tenant Space — so
+Circle targeting there resolves to **zero recipients, silently, today**. Any port reusing that path
+would have inherited the bug. The member-segment path pairs through `lib/crm/contact-audience.ts`
+**by email address**, exactly as the retiring route did; `profile_id` appears once, on the root lane.
+
+**🔴 The consent bar is forced at the RESOLVER, not in the picker.** A member-segment audience always
+sends under the marketing topic, as the retiring surface hard-coded. The Email composer lets an
+operator pick a topic per campaign, so putting the rule in the UI would let a tier blast ride a
+softer transactional one. `resolveAudiencePlan()` returns `{recipients, topic}` from one pass and is
+now the only resolver both send paths call — the composer and the scheduled cron — each of which
+dropped its own topic normalisation. `topicForAudience` reads the **effective** filter, so a member
+segment hidden inside a saved segment is caught too.
+
+**A judgement call worth recording.** `definitionToFilter` still *reads* `memberSegment`. The
+scheduled-send cron rebuilds a campaign's audience through it, so dropping the key would resolve a
+scheduled tier blast to the Space's **whole contact book**. Widening is worse than refusing, so the
+key survives the round trip and the cron forces the topic too.
+
+**The row's own premise was false, in a way that would have broken the build.** It asserted
+`space.messages` had exactly one reference, at a named line. It had **three** — the catalog row plus
+two tests that enumerate the module set, both added by ADR-1313 *the same day the row was filed*.
+One asserts an exact sorted id array; the other calls `spaceModuleById('space.messages')!` and would
+have thrown on null. A plain delete would have gone red twice. Third row in this batch whose premise
+expired between filing and working it, and the third caught by reading the code the row described
+rather than the row.
+
+**Consequences.** `lib/spaces/message-center-privacy.test.ts` is rewritten as
+`member-segment-audience.test.ts` rather than deleted — deleting it would have retired ADR-863's only
+enforcement **by passing**. Eight controls were mutated and watched fail, including reverting the
+join to `profile_id` (7 red) and re-adding the catalog row (the two ADR-1313 tests, red). Deleting
+`broadcast-actions.ts` also left a dead line in `scripts/admin-client-baseline.txt`, breaking
+`HYG-038`; found and fixed unprompted.
+
+**Still open, deliberately.** "Message center" survives as a `SectionHeader` on the Circle and Event
+manage pages — those are a Circle's and an Event's own broadcast, not this surface. That is a
+`docs/NAMING.md` question, not this decision's.
+
+**Rows.** LIVE-293. Amends ADR-863, ADR-1091 and ADR-1313 in place.
+
+## ADR-1323: ACCEPTED — light is the default, dark is a thing an account holder opts into, and the mode law stops being written four times (2026-09-11)
 
 **Context.** A design + standards pass over the mobile site, from two owner rules: *"Default mode is
 light mode. User cannot change to dark until they have an account"* and *"All public facing community
@@ -39748,3 +39800,4 @@ on Vercel, not in CI — per the rule at the top of AGENTS.md, the reading that 
 real build prints, and it is reported on the PR rather than predicted here.
 
 **Rows.** (none — owner directive, taken directly)
+

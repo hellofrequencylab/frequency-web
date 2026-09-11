@@ -308,11 +308,25 @@ Two honest answers, and this is a **product** call the owner must make, not an i
 
 | Answer | What it means |
 | :-- | :-- |
-| **Drop it.** | Broadcast reach was never used (0 posts). The remaining paths — the `SpaceUpdates` brand block, Dispatch, and the Message center (`space.messages`, already in `SPACE_MODULES:172`) — cover "tell my people something." A Space's *conversation* moves into its Circles. |
+| **Drop it.** | Broadcast reach was never used (0 posts). The remaining paths cover "tell my people something." A Space's *conversation* moves into its Circles. |
 | **Keep it.** | Then it is a new build, not a migration: a Space-scoped announcement surface, distinct from a Circle. That reintroduces the third container ADR-1013 §Context named as the whole problem. |
 
 **Recommendation: drop it,** and say so in the ADR, because it is the direct consequence of ADR-1013's
 own reasoning: *"'where does X live?' must have one answer, and by 2026-08 it had three."*
+
+> ⚠️ **PREMISE CORRECTED 2026-09-10 (LIVE-293).** The "drop it" row above used to name three remaining
+> paths, one of which was **the Message center** (`space.messages`). That surface is retired on an owner
+> directive: *"Remove the Message center all together. That is an old idea."* Its DM and Dispatch
+> broadcast lanes were dropped, and its audience targeting moved into the Email composer
+> (`/spaces/<slug>/settings/email`), where a Space can send to all members, one membership tier, one of
+> its circles, or one event's RSVPs, over its own contacts.
+>
+> **The recommendation still holds, and the reasoning is unchanged**, but it now rests on the paths that
+> actually exist: the `SpaceUpdates` brand block, a **Space Dispatch published from the post box**
+> (LIVE-295, which moved `composeSpaceDispatch`'s entry point rather than losing it), and **Email with a
+> member audience**. Two of those three are stronger than what was named in August: Email can now target
+> a tier or a circle, and Dispatch publishing sits beside posting instead of inside a console nobody
+> opened. Nothing here reopens the question.
 
 ---
 
@@ -512,7 +526,7 @@ now [OWN-034](BUILD-BACKLOG.json), it gates nothing in C3.1–C3.5 (all 7 Space 
 | :-- | :-- | :-- | :-- |
 | 1 | Hard-delete the Community feed code, given 0 live rows? | ✅ **yes** (§5.2). The reversible alternative is one word and costs one release. | ✅ approved (ADR-1091) |
 | 2 | Keep `space_updates` alive for the brand Updates block? | ✅ **yes** (§2.2). | ✅ approved (ADR-1091) |
-| 3 | Is losing "post once, reach every follower" acceptable? | ✅ **yes, drop it** (§4.4). Dispatch and the Message center cover the need; rebuilding it recreates the third container ADR-1013 retired. | ✅ approved (ADR-1091) |
+| 3 | Is losing "post once, reach every follower" acceptable? | ✅ **yes, drop it** (§4.4). Dispatch and Email with a member audience cover the need; rebuilding it recreates the third container ADR-1013 retired. | ✅ approved (ADR-1091) · ⚠️ **premise corrected 2026-09-10** (LIVE-293): this row said "Dispatch and the Message center". The Message center is retired; its targeting moved into Email and its Dispatch lane moved to the post box (LIVE-295). The ruling is unaffected, the paths behind it are named correctly now. See §4.4. |
 | 4 | Fix `access='space_members'` — relabel (A), widen (B), or add a mode (C)? | **B**, shipped separately with its own proof (§4.2). | ✅ **ruled C** (OWN-034, 2026-08-20, [ADR-1092](DECISIONS.md)): `space_members` keeps the staff ladder with honest copy ("Space team only"), and a sixth mode `space_paid_members` admits active paid members. See the §4.2 premise correction. |
 | 5 | Rename the `SpaceCommunity` **block type key**? | 🔴 **no** — label and anchor only (§7.1). | ✅ approved (ADR-1091) |
 | 6 | Narrow the `is_space_update_post` RLS arms? | ✅ **yes, in C3.5**, its own migration, after the delete (§5.2, §7.2). | ✅ approved (ADR-1091) |

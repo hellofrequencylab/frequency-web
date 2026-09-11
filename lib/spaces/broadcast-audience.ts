@@ -8,10 +8,16 @@ import type { BroadcastSegment } from '@/components/comms/broadcast-types'
 import { hostingSpaceId } from '@/lib/events/belonging'
 import { loadRootSpaceId } from '@/lib/spaces/store'
 
-// THE SPACE BROADCAST AUDIENCE (Message center, ADR-858). The segments the Space's message
-// console offers, and the ONE server-side resolver its send action trusts (ADR-274: the
-// client's profileIds exist only for the live count; the action re-resolves from keys).
-// The Space analogue of lib/events/broadcast-audience.ts, with the same posture throughout.
+// THE SPACE BROADCAST AUDIENCE (ADR-858). The segments a Space's send surface offers, and the ONE
+// server-side resolver its send action trusts (ADR-274: the client's profileIds exist only for the
+// live count; the action re-resolves from keys). The Space analogue of
+// lib/events/broadcast-audience.ts, with the same posture throughout.
+//
+// ⚠️ THE SURFACE MOVED (LIVE-293). This was written for the Space Message center, which is retired.
+// The segments now feed the EMAIL composer's audience picker (/spaces/<slug>/settings/email), through
+// lib/spaces/member-segment-audience.ts, which pairs a segment to the Space's own contacts BY EMAIL.
+// The Message center's DM and Dispatch lanes were dropped on purpose; `scopeForSelection` below was
+// the DM lane's spine-coordinate helper and now has no production caller.
 //
 //   members            — every ACTIVE space member plus the owner (the same set the roster
 //                        and resonance surfaces read, via listActiveSpaceMemberIds)
