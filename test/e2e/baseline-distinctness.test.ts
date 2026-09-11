@@ -235,13 +235,56 @@ describe('visual baselines are distinct per surface', () => {
     // the registry import broke, this test would silently check nothing — but the height rule
     // would then hold /feed's 800px baselines to the full-page floor and fail loudly. Neither
     // can go quiet on its own.
+    // ── A SURFACE THAT CANNOT BE DARK (ADR-1323, 2026-09-11) ──────────────────────────────
+    //
+    // Dark now requires an account, so an ANONYMOUS surface has no dark state and no dark
+    // baseline. `header-band` is the only public surface in VIEWPORT_ONLY, and it lost its twin
+    // when the unreachable public dark baselines were deleted. The wall test above simply cannot
+    // run for it: there is no second mode to repaint into.
+    //
+    // 🔴 THE OBVIOUS SUBSTITUTE WAS MEASURED AND DOES NOT WORK. The tempting swap is to compare
+    // the two SKINS instead — dawn-light vs midnight-light — since a wall ignores `data-skin`
+    // exactly as it ignores `.dark`. Measured 2026-09-11 over all 33 committed public pairs with
+    // this file's own fingerprint+similarity: the scores run **96.1% to 100% identical**. Both
+    // skins are light, so at 48x96 greyscale a real page is indistinguishable from itself. That
+    // is far ABOVE the 0.9 bar, so the rule would flag every honest public baseline as a wall.
+    // Skin is not a substitute signal, and the number is recorded here so nobody re-derives it.
+    //
+    // So the arm is SCOPED rather than loosened: a missing dark twin is still an offence for any
+    // surface that is supposed to have one, and is expected only where the mode law says the
+    // surface can never be dark. That keeps the loud failure for every member-shell surface —
+    // which is where #2049's incident actually happened — instead of turning the whole rule into
+    // a skip. If a member surface ever loses its twin, this still fails.
+    //
+    // What protects `header-band` instead: it is one of 33 public baselines, and a wall would
+    // fail the ordinary pr-compare comparison on all of them at once. The gap the wall test
+    // closes is a NEWLY CAPTURED surface with no baseline to compare against, and a new public
+    // surface would now be caught by that same mass failure rather than by this rule.
+    const anonSlugs = new Set(
+      coverageSurfaces({ roomPath: '/room', spaceSlug: 'space' })
+        .filter((s) => s.audience === 'anon')
+        .map((s) => s.slug),
+    )
+
     const offenders: string[] = []
     for (const file of files) {
       const p = parse(file)
       if (!p || !VIEWPORT_ONLY.has(p.slug) || !p.variant.includes('-light-')) continue
       const twin = `${p.slug}--${p.variant.replace('-light-', '-dark-')}.png`
       if (!files.includes(twin)) {
-        offenders.push(`${file}: no dark twin (${twin}) to compare against`)
+        // Expected for an anonymous surface; an offence for anything that can still be dark.
+        if (!anonSlugs.has(p.slug)) {
+          offenders.push(`${file}: no dark twin (${twin}) to compare against`)
+        }
+        continue
+      }
+      // An anon surface must not be carrying a dark baseline at all: it can no longer be
+      // captured, so a lingering one is stale by construction and would weaken the rule above
+      // by being compared against a FRESH light capture.
+      if (anonSlugs.has(p.slug)) {
+        offenders.push(
+          `${twin}: an anonymous surface cannot be dark (ADR-1323) — this baseline is stale`,
+        )
         continue
       }
       const score = similarity(await fingerprint(file), await fingerprint(twin))
