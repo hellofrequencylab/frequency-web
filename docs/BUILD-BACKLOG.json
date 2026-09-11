@@ -57,7 +57,8 @@
             "HYG-075",
             "LIVE-279",
             "LIVE-293",
-            "LIVE-307"
+            "LIVE-307",
+            "LIVE-308"
           ]
         },
         {
@@ -11880,6 +11881,18 @@
       "verify": {
         "kind": "cmd",
         "cmd": "node -e 'const fs = require(\"fs\"); const src = fs.readFileSync(\"scripts/check-authz-guards.mjs\", \"utf8\"); const literalGate = /includes\\(.createAdminClient.\\)\\s*\\)\\s*continue/.test(src.replace(/\\s+/g, \" \")); if (literalGate) { console.error(\"scanActions still skips on a literal createAdminClient substring\"); process.exit(1) } const t = fs.existsSync(\"scripts/check-authz-guards.test.ts\") ? fs.readFileSync(\"scripts/check-authz-guards.test.ts\", \"utf8\") : \"\"; if (!/transitiv/i.test(t)) { console.error(\"no transitive-reach fixture in the guard test\"); process.exit(1) } console.error(\"action scan no longer keys on a literal substring, and a transitive fixture exists\")'"
+      }
+    },
+    {
+      "id": "LIVE-308",
+      "title": "/feed is a live stream photographed with no masks, so its baseline measures the timeline",
+      "status": "open",
+      "priority": "P2",
+      "lane": "live",
+      "detail": "MEASURED 2026-09-11 on the capture PR's own pr-compare (#2548), and the control is clean.\n\nThat run failed SIX tests, all /feed, across dawn-light and dawn-dark on desktop, mobile and narrow - while /settings, /nearby, /discover, /spaces/<slug>/manage, /admin/library and /admin/qr ALL PASSED against freshly captured baselines. 178 passed, 6 failed, down from 21.\n\n🔴 NOT CAUSED BY THE POST BOX CHANGE, and that was checked rather than assumed. LIVE-295 (#2547) edited components/feed/capture-box.tsx, which renders ON /feed, so it was the obvious suspect. It is innocent twice over. (a) Every change in that file is gated on the new optional spaceScope prop, which /feed never passes: the non-space modes filter is BYTE-IDENTICAL, the fail-closed return is spaceScope && !canAnnounce, and the new sent banner is sent && spaceScope. (b) DECISIVELY, the #2548 branch does not contain #2547 at all - grep for spaceScope in its capture-box.tsx returns 0 - so /feed failed on a tree that predates the change entirely.\n\nTHE CAUSE IS THE ONE LIVE-301 ALREADY NAMED, on a surface it did not reach. surfaces.ts:375 declares /feed as viewportOnly with NO mask sites; grep -c \"feed-\" test/e2e/surfaces.ts returns 0. viewportOnly limits the shot to the first screen, which REDUCES drift without removing it: the first screen of a member feed is posts, authors and relative timestamps, all of which move. The capture at 00:43-00:56 wrote no app-feed PNG because the feed still matched then; by 01:03 it had drifted. Same clock this batch masked on /nearby and /discover.\n\nTHE WORK: the LIVE-301 remedy applied to /feed. Stamp data-visual-mask on the live regions of the first screen, register each in VISUAL_MASK_SITES with a reason, then take the one-time baseline move that declaring a mask always costs (ADR-1277). Read the committed PNG first and choose boxes from what actually renders, as the /discover pass did. Leave empty states and any heading without a count UNMASKED - those are design surface.\n\n⚠️ A MASK CANNOT FIX A HEIGHT, and viewportOnly makes that sharper rather than softer: if the first screen holds three posts on one run and four on the next, the framing moves and no mask helps. Expect that limit and write it beside the code, as both earlier passes did.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const s = require(\"fs\").readFileSync(\"test/e2e/surfaces.ts\", \"utf8\"); const n = (s.match(/feed-/g) || []).length; console.error(\"feed mask sites: \" + n); process.exit(n > 0 ? 0 : 1)'"
       }
     },
     {
