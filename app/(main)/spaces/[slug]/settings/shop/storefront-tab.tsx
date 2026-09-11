@@ -77,11 +77,13 @@ export function StorefrontTab({
 
       {/* THE ONE CONNECT PROMPT (LIVE-233). This card used to be a hand-written "Getting paid" panel
           whose only action was a LINK to /settings/billing, one of four such panels in the repo, each
-          with its own sentence. It now renders the shared prompt: nothing at all once the space owner
+          with its own sentence. It now renders the shared prompt, and since LIVE-290 that includes the
+          Express dashboard link once the owner is ready - rendering NOTHING in that case is exactly
+          how the "Getting paid" button disappeared from this tab. Before that: nothing once the owner
           is ready, Stripe's hosted onboarding started inline when they are not, and a line naming the
           owner when the reader is an admin who cannot onboard for them. */}
       <Suspense fallback={null}>
-        <SpacePayoutSetupPromptById spaceId={spaceId} channels={['orders']} />
+        <SpacePayoutSetupPromptById spaceId={spaceId} channels={['orders']} whenReady="status" />
       </Suspense>
     </div>
   )

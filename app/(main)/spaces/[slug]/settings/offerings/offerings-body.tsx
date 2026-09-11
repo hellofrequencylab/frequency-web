@@ -115,13 +115,16 @@ export async function OfferingsBody({ slug }: { slug: string }) {
       {staffViewing && <StaffPreviewBanner spaceName={brandName} />}
 
       {/* THE ONE CONNECT PROMPT (LIVE-233), for whichever money paths this space actually configures
-          here. Renders nothing when the owner's account is ready, and starts Stripe onboarding inline
+          here. Renders the payout ACCOUNT STATE rather than only a nudge (whenReady="status",
+          LIVE-290): on this surface the card IS the payments UI, so an owner whose account already
+          works gets a way back to their Stripe dashboard instead of nothing at all. It starts
+          onboarding inline
           rather than linking to a settings page the operator did not want to be on. An admin who is
           not the OWNER is told who has to act, because the owner is who Stripe pays (ADR-819). */}
       {channels.length > 0 && (
         <div className="mb-8">
           <Suspense fallback={null}>
-            <SpacePayoutSetupPrompt space={space} viewerProfileId={viewerProfileId} channels={channels} />
+            <SpacePayoutSetupPrompt space={space} viewerProfileId={viewerProfileId} channels={channels} whenReady="status" />
           </Suspense>
         </div>
       )}

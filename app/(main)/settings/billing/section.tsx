@@ -11,7 +11,7 @@ import { ENTITLEMENT_LABEL, type EntitlementTier } from '@/lib/core/entitlement'
 import { resolveMemberPaymentState } from '@/lib/pricing/dunning'
 import { PastDueBanner } from '@/components/billing/past-due-banner'
 import { ManageBillingButton } from './manage-button'
-import { StartPayoutButton, ManagePayoutButton } from './payout-controls'
+import { StartPayoutButton, ManagePayoutButton } from '@/components/billing/payout-controls'
 import { BundleSeatsSection } from './bundle-seats-section'
 import { TipsReceivedSection } from './tips-received-section'
 

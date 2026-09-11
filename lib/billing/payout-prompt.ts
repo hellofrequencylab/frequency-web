@@ -102,8 +102,11 @@ export type PayoutPromptState =
 /** Is the person reading this the person Stripe would pay? Only `self` can act. */
 export type PayoutPromptRelation = 'self' | 'other'
 
-/** What the prompt's button does. `none` = there is nothing this reader can press. */
-export type PayoutPromptAction = 'onboard' | 'resume' | 'none'
+/** What the prompt's button does. `none` = there is nothing this reader can press.
+ *  `manage` opens the Express dashboard for an account that is already live — the affordance
+ *  LIVE-233 dropped when it collapsed four hand-written cards into one prompt, because a prompt
+ *  that returns null has no ready state to hang it on. */
+export type PayoutPromptAction = 'onboard' | 'resume' | 'manage' | 'none'
 
 /** The payee's mirrored Stripe capability flags (the shape ConnectStatus already has). */
 export interface PayoutPayeeStatus {
@@ -123,10 +126,20 @@ export interface PayoutPromptInput {
   relation: PayoutPromptRelation
   /** Who gets paid, for the `other` copy. A Space brand name or a display name. */
   payeeName?: string | null
+  /** What to say to a payee who is ALREADY READY. `silent` (the default) keeps the nudge semantics
+   *  every existing caller has: null, nothing rendered. `status` returns the ready prompt, for a
+   *  surface where this card IS the payments UI rather than a banner above other content.
+   *
+   *  🔴 AN OPT-IN, NOT A FLIP, and the distinction is load-bearing. `/market/manage` renders this
+   *  card with NO guard, and a comment there records that losing its standing banner was deliberate.
+   *  Making the ready state unconditional would silently put a "you are fine" banner back on that
+   *  page. Null-when-ready stays right for a nudge; it was only ever wrong as the ONLY state a
+   *  surface has. */
+  whenReady?: 'silent' | 'status'
 }
 
 export interface PayoutPrompt {
-  state: Exclude<PayoutPromptState, 'ready'>
+  state: PayoutPromptState
   relation: PayoutPromptRelation
   channels: PayoutChannel[]
   headline: string
@@ -157,7 +170,35 @@ export function payoutPrompt(input: PayoutPromptInput): PayoutPrompt | null {
   const who = (input.payeeName ?? '').trim()
   const list = channels.length ? listPhrase(channels.map((c) => PAYOUT_CHANNEL_WORDS[c].noun)) : 'payments'
 
-  if (input.status?.ready && input.payoutsLive) return null
+  // READY. Silent by default, so every surface that treats this card as a nudge is unchanged and
+  // `/market/manage` does not grow a standing banner. A surface that opts in gets the one thing the
+  // consolidation dropped: a way back to the Stripe dashboard for an account that already works.
+  // Placed BEFORE the !payoutsLive check on purpose — a ready account on a dark platform must still
+  // read `not_live`, which the truth table already pins.
+  if (input.status?.ready && input.payoutsLive) {
+    if (input.whenReady !== 'status') return null
+    return relation === 'self'
+      ? {
+          state: 'ready',
+          relation,
+          channels,
+          headline: 'Your payout account is set up',
+          body: `Money from ${list} lands in your bank. Open your Stripe dashboard to change your bank details, or to see a payout.`,
+          action: 'manage',
+          actionLabel: 'Manage payouts',
+        }
+      : {
+          state: 'ready',
+          relation,
+          channels,
+          headline: 'This space is set up to get paid',
+          // No button: openPayoutDashboard resolves the CALLER's account, so handing an admin one
+          // would open the wrong Stripe account or fail. Same reason `needs_setup` gives them none.
+          body: `${who || 'The owner'} has a payout account, so your ${list} can take money. Payouts land in their bank.`,
+          action: 'none',
+          actionLabel: null,
+        }
+  }
 
   // The platform switch is off. Say so plainly rather than offering a button that cannot work:
   // createOnboardingLink returns null while payouts are dark, so the button would fail silently.

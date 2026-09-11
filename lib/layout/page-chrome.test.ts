@@ -148,6 +148,10 @@ describe('railFor — the single source of truth for page chrome', () => {
     expect(railFor('/spaces/demo-practitioner/settings/offerings')).toBe('global')
     expect(railFor('/spaces/demo-practitioner/settings/members')).toBe('global')
     expect(railFor('/spaces/demo-practitioner/settings/qr')).toBe('global')
+    // LIVE-294: the Get paid surface needs ZERO page-chrome entries. railFor falls through to
+    // 'global' for /spaces/<slug>/settings/*, and SCOPED_PREFIXES/FOCUS_NONE_PREFIXES are both
+    // empty by owner decision. Asserted so a future 'scoped' entry cannot silently take the rail.
+    expect(railFor('/spaces/demo-practitioner/settings/payments')).toBe('global')
     expect(railFor('/spaces/demo-business/settings/email')).toBe('global')
   })
 
