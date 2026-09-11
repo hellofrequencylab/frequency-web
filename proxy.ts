@@ -13,12 +13,19 @@ import { frontDoorRedirect } from '@/lib/nav/front-door'
 import { referralsEnabled } from '@/lib/platform-flags'
 import { isFunnelSplashPath } from '@/lib/funnels/definitions'
 import { supabaseUrl, supabaseAnonKey } from '@/lib/supabase/env'
+import { ACCOUNT_COOKIE } from '@/lib/theme/mode'
 
 // The referral attribution cookie — the referrer's profile id, consumed once at
 // onboarding by applyReferralAttribution (lib/qr/referral.ts). Name + attributes MUST
 // match the /q resolver (app/q/[slug]/route.ts) so both entry points feed one consumer.
 const REF_COOKIE = 'fq_ref'
 const REF_COOKIE_MAX_AGE = 60 * 60 * 24 * 30 // 30 days
+
+// How long the account marker outlives the session it mirrors. A year: the marker is refreshed on
+// every authed request, so this only governs a browser that stops visiting, and the cost of it
+// lasting too long is that a lapsed member sees their own chosen mode. The cost of it expiring too
+// soon is a member's dark mode silently reverting to light mid-use.
+const ACCOUNT_COOKIE_MAX_AGE = 60 * 60 * 24 * 365
 
 const PROTECTED_PATHS = [
   '/feed',
@@ -90,6 +97,29 @@ export async function proxy(request: NextRequest) {
   // A stray await or early return can silently break session refresh, causing
   // users to appear randomly logged out.
   const { data: { user } } = await supabase.auth.getUser()
+
+  // The ACCOUNT MARKER (owner, 2026-09-11: "user cannot change to dark until they have an account").
+  //
+  // The mode decision has to be made in the pre-paint script in app/layout.tsx — that is the only
+  // place early enough to stop a flash — and that script cannot await an auth round trip. So the one
+  // fact it needs, "does this browser belong to someone with an account", is written here, where
+  // `user` is already resolved and costs nothing extra, as a non-httpOnly cookie the script can read
+  // synchronously. Set on every authed request and DELETED on every anonymous one, so signing out
+  // clears it on the very next response with no sign-out wiring to forget.
+  //
+  // ⚠️ PRESENTATIONAL ONLY — never read for authorization. See ACCOUNT_COOKIE in lib/theme/mode.ts
+  // for why it is this marker rather than a probe of the Supabase cookie (that one has a
+  // `-code-verifier` sibling which exists mid-magic-link, before there is a session).
+  //
+  // Set on `supabaseResponse`, which every redirect branch below already copies its cookies from,
+  // so a member redirected to their feed arrives with the marker in hand.
+  if (user) {
+    supabaseResponse.cookies.set(ACCOUNT_COOKIE, '1', {
+      path: '/', maxAge: ACCOUNT_COOKIE_MAX_AGE, sameSite: 'lax',
+    })
+  } else if (request.cookies.get(ACCOUNT_COOKIE)) {
+    supabaseResponse.cookies.delete(ACCOUNT_COOKIE)
+  }
 
   // First-touch attribution (ADR-095): record HOW an anonymous visitor first
   // arrived — campaign, referrer, landing page — once, immutably, so it survives

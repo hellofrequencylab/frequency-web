@@ -39707,3 +39707,97 @@ manage pages — those are a Circle's and an Event's own broadcast, not this sur
 `docs/NAMING.md` question, not this decision's.
 
 **Rows.** LIVE-293. Amends ADR-863, ADR-1091 and ADR-1313 in place.
+
+## ADR-1323: ACCEPTED — light is the default, dark is a thing an account holder opts into, and the mode law stops being written four times (2026-09-11)
+
+**Context.** A design + standards pass over the mobile site, from two owner rules: *"Default mode is
+light mode. User cannot change to dark until they have an account"* and *"All public facing community
+pages should be light mode on mobile."*
+
+Neither was a toggle-placement problem. Both toggles (the shell's account menu, Settings → Appearance)
+already sit behind the auth wall, so nothing public could *set* dark. What could show it was the
+READ: `freq-theme` defaulted to `'system'`, so a stranger whose phone was in dark mode met Frequency
+dark having never chosen it — and a member who signed out of a shared browser left their dark mode
+behind for whoever picked it up next.
+
+**Decision — the law, in order, each rule able only to answer "light".**
+
+| # | Rule | Applies to |
+|---|---|---|
+| 0 | A light-locked surface (the Funnels induction) is light | every viewer, every width |
+| 1 | `/discover/**` on a phone (≤767px) is light | every viewer, member included |
+| 2 | No account ⇒ light | every signed-out browser |
+| 3 | Otherwise the member's own choice, unset meaning **light** | signed-in |
+
+`/discover/**` is the scope the owner picked for rule 1: it is what `app/discover/layout.tsx` already
+calls "the only indexable community URLs", the tree a stranger meets from a search result. Excluded on
+purpose: `/sites/<slug>` (white-label sites carry an owner-chosen skin — pinning the mode would
+override somebody's branding on their own domain), the `(marketing)` group (public, but marketing, and
+already covered for every signed-out visitor by rule 2), and the member twins.
+
+**Rule 2 is enforced on READ, not on write.** The member's stored preference is never erased — the
+case that actually happens is a shared or borrowed browser, and erasing it would punish the member for
+signing out. Sign back in and dark returns.
+
+**🔴 The real defect was that the law was written four times.** The pre-paint bootstrap, the shell
+hook, the Settings switcher and the induction's `ForceLight` each carried their own copy of
+`mode === 'dark' || (system && sysDark)` and their own `#16130E` / `#FBFAF6` pair. They agreed by
+inspection, and two of them already did not: `app/join/(induction)/force-light.tsx` documented itself
+as the exported source of the theme-color literals *for `app/layout.tsx`*, which in fact re-declared
+them. Drift here is invisible by construction — the bootstrap's answer is overwritten milliseconds
+later by the runtime's, so a disagreement shows up as a FLASH of the wrong theme on first paint and
+nothing else. Nobody files that; they see the site blink.
+
+So `lib/theme/mode.ts` is now the single statement, and it necessarily states the law **twice**: once
+as `resolveDarkMode`, once as `THEME_BOOTSTRAP_SCRIPT`, the ES5 restatement that runs inline in
+`<head>` before any bundle exists and therefore cannot import. That duplication is not left to review.
+`mode.test.ts` **executes the real exported string in a DOM** across the full cartesian product of the
+five inputs — 160 combinations — and asserts it agrees with `resolveDarkMode` on every one, browser
+chrome included. Three mutations were made and watched fail before the wiring was trusted: the account
+gate removed from the bootstrap (13 failures), the mobile lock removed (6), the default flipped back to
+`'system'` (6).
+
+**🔴 The induction lock had to become a RULE, because as an override it was about to break.** It
+worked as a mount/unmount DOM override only while nothing else re-resolved mode after paint. Adding
+`ThemeModeSync` to the root layout would have silently broken it: React runs CHILD effects before
+PARENT ones, so `ForceLight` would strip `.dark` and the sync would put it straight back — handing a
+dark-mode member exactly the broken lighting the override exists to prevent, on a flow they see once.
+Folding it into `resolveDarkMode` (rule 0) deletes the race rather than ordering it. `force-light.tsx`
+and the layout's bespoke inline script are gone; the route scoping is unchanged and now written as a
+path, so `/join/<slug>` splashes still honour the member's mode.
+
+**The account signal is a presentational marker, never a credential.** The bootstrap must decide
+before it can await anything, so `proxy.ts` writes `fq_acct=1` beside the session on every authed
+request and deletes it on every anonymous one — which means sign-out clears it on the next response
+with no sign-out wiring to forget. It is deliberately NOT a probe of the Supabase cookie:
+`sb-<ref>-auth-token` has a `-code-verifier` sibling that exists mid-magic-link, **before** there is a
+session, so that probe would answer "yes" to someone who has not signed in. Anyone can type the marker
+into their own jar; all they win is a colour scheme, which `freq-theme` already granted. It is never
+read for authorization — grep it: the law and the proxy that writes it are the only readers.
+
+**Two bugs fell out that were invisible from the source.** (1) `viewport.themeColor` was a
+`prefers-color-scheme` media PAIR, which renders two `<meta name="theme-color">` tags; the bootstrap
+writes to `querySelector(...)`, the FIRST one — so on a dark-OS phone the second kept winning and the
+status bar stayed ink no matter what was resolved. Now one unconditional light tag, repainted by the
+bootstrap for the one viewer who resolves dark. (2) The shell's applier read the status-bar colour from
+`getComputedStyle(--color-canvas)`, which gives a *different* answer under a skin — `midnight`
+redefines the canvas — so skinned members' chrome drifted from the pre-paint value. One literal pair,
+one answer.
+
+**Consequences.** `test/e2e/surfaces.ts` now seeds the marker for dark render states: without it every
+dark baseline for an `anon` surface would have silently become a duplicate of its light twin, deleting
+a whole axis of visual coverage — the exact failure that harness exists to prevent. Dark baselines
+under `/discover` are desktop-only by design; the mobile dark snapshot of a `/discover` page IS its
+light snapshot, and that is the product being correct. `lib/theme/skin-dom-selectors.test.ts` stopped
+grepping `app/layout.tsx` for a `setAttribute` call and now runs the bootstrap and looks at where the
+attribute landed — shape replaced by truth, which is that file's own stated thesis. `ThemeModeSync`
+sits in `<Suspense>` because `usePathname` suspends on unresolved dynamic params once `cacheComponents`
+is on (`next/dist/docs/.../use-pathname.md`); it is off today, so this costs nothing and stops the flag
+flip from failing the build later.
+
+**Not measured here.** The artifact gates (`check:shell-weight` and the other five) run in `postbuild`
+on Vercel, not in CI — per the rule at the top of AGENTS.md, the reading that matters is the one the
+real build prints, and it is reported on the PR rather than predicted here.
+
+**Rows.** (none — owner directive, taken directly)
+

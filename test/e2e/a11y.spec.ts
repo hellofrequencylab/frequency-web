@@ -74,7 +74,7 @@ import { RECAPTURE, contextKey, judge, resolveBaseline, type A11yBaselinesDoc } 
 import { describeWaived, partitionWaived } from './a11y-waivers'
 import {
   DEFAULT_STATE,
-  RENDER_STATES,
+  PUBLIC_RENDER_STATES,
   SHELL_RENDER_STATES,
   STORAGE_STATE,
   appSurfaces,
@@ -352,7 +352,12 @@ test.describe('a11y', { tag: '@a11y' }, () => {
   }
 })
 
-/* ── Contrast pass in the other three render states ─────────────────────────── */
+/* ── Contrast pass in the other public render state ─────────────────────────── */
+//
+// "Other THREE" until 2026-09-11, when dark stopped being reachable without an account
+// (ADR-1323): a public surface can now only be dawn-light or midnight-light, so the sweep below is
+// midnight-light alone. The dark half did not move to another suite — it stopped existing for these
+// surfaces. Member-shell contrast in dark is covered where dark is real, on a signed-in session.
 
 test.describe('a11y · contrast', { tag: '@a11y' }, () => {
   test.skip(
@@ -360,7 +365,7 @@ test.describe('a11y · contrast', { tag: '@a11y' }, () => {
     'PW_BASE_URL is not set. Point it at a Vercel preview or a running dev server to run the a11y suite.',
   )
 
-  for (const state of RENDER_STATES.filter((s) => s.id !== DEFAULT_STATE.id)) {
+  for (const state of PUBLIC_RENDER_STATES.filter((s) => s.id !== DEFAULT_STATE.id)) {
     test.describe(state.id, () => {
       for (const surface of publicSurfaces()) {
         test(`${surface.path} contrast holds`, async ({ page }, testInfo) => {

@@ -32,13 +32,35 @@ const DAWN_DARK: RenderState = { id: 'dawn-dark', skin: 'default', mode: 'dark' 
 const MIDNIGHT_LIGHT: RenderState = { id: 'midnight-light', skin: 'midnight', mode: 'light' }
 const MIDNIGHT_DARK: RenderState = { id: 'midnight-dark', skin: 'midnight', mode: 'dark' }
 
-/** Every render state the public surfaces are captured in. */
+/** All four combinations the stylesheet can produce. Not every surface can reach all four — see
+ *  PUBLIC_RENDER_STATES and SHELL_RENDER_STATES below, which are what the suites actually iterate. */
 export const RENDER_STATES: readonly RenderState[] = [
   DAWN_LIGHT,
   DAWN_DARK,
   MIDNIGHT_LIGHT,
   MIDNIGHT_DARK,
 ]
+
+/**
+ * The states an ANONYMOUS surface can actually be in — **light only** (ADR-1323, 2026-09-11).
+ *
+ * Dark mode now requires an account: `resolveDarkMode` answers light for any browser with no
+ * session, so a signed-out visitor CANNOT see `/pricing` or `/discover` dark, on any device, ever.
+ * The two dark baselines for every public surface therefore photographed a state that no longer
+ * exists, and they failed the moment the rule shipped — 68 of them, deterministically, which is the
+ * product being right rather than the suite being wrong.
+ *
+ * 🔴 THE TEMPTING FIX IS THE WRONG ONE. The first attempt here seeded the `fq_acct` marker from
+ * `applyRenderState` so the bootstrap would resolve dark anyway. That is forging the one fact the
+ * rule turns on, to keep photographing something a user can never load — and it does not even work,
+ * because the proxy DELETES that cookie on every anonymous response, so the harness would be racing
+ * the server on every navigation. A baseline that can only be produced by lying to the app is not
+ * coverage. It was removed.
+ *
+ * The member shell keeps both modes (SHELL_RENDER_STATES) and is unaffected: those surfaces run on a
+ * real signed-in `storageState`, so their account marker is genuine and dark is genuinely reachable.
+ */
+export const PUBLIC_RENDER_STATES: readonly RenderState[] = [DAWN_LIGHT, MIDNIGHT_LIGHT]
 
 /** The canonical look: what an anonymous visitor sees with no stored preference. */
 export const DEFAULT_STATE: RenderState = DAWN_LIGHT
@@ -53,12 +75,19 @@ export const SHELL_RENDER_STATES: readonly RenderState[] = [DAWN_LIGHT, DAWN_DAR
  * Stamp a render state so it is live on the FIRST paint of the first navigation.
  *
  * We do this THROUGH the app's own pre-paint bootstrap rather than against it. The inline
- * script in app/layout.tsx runs synchronously in <head> on every document and does:
- *   dark  = localStorage['freq-theme'] === 'dark' || (unset/'system' && prefers-color-scheme)
+ * script in app/layout.tsx runs synchronously in <head> on every document and applies the mode law
+ * in lib/theme/mode.ts (see resolveDarkMode there for the full ordering):
+ *   dark  = not light-locked && not (/discover on a phone) && HAS AN ACCOUNT
+ *           && (freq-theme === 'dark' || ('system' && prefers-color-scheme: dark))
  *   skin  = localStorage['freq-skin'] → documentElement[data-skin]
  * An init script that only set the class/attribute would therefore be OVERWRITTEN a few
- * milliseconds later. Seeding the two localStorage keys instead makes the app's own script
- * compute exactly the state we asked for, on every navigation, for free.
+ * milliseconds later. Seeding storage instead makes the app's own script compute exactly the state
+ * we asked for, on every navigation, for free.
+ *
+ * It does NOT seed the account marker, and must not. A dark render state is only meaningful where
+ * the viewer genuinely has an account — the member shell, which supplies a real `storageState`.
+ * For an anonymous surface the honest answer is that dark is unreachable, which is why
+ * PUBLIC_RENDER_STATES is light-only rather than why this function forges a cookie.
  *
  * The direct class/attribute stamp is kept as belt-and-braces: it covers documents that do
  * not ship the bootstrap, and it is a no-op when the bootstrap agrees (it always will).

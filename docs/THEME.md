@@ -28,7 +28,7 @@ value for that subtree, so the axes never need to know about each other.
 
 | Axis | Attribute | What it controls | Who sets it | Status |
 |---|---|---|---|---|
-| **Mode** | `class="dark"` on `<html>` | light vs dark | member toggle (a pre-paint inline script reads `localStorage` `freq-theme`) | ✅ built |
+| **Mode** | `class="dark"` on `<html>` | light vs dark | the mode law in [`lib/theme/mode.ts`](../lib/theme/mode.ts) — a member's `freq-theme` choice, gated by §6a | ✅ built |
 | **Skin** | `data-skin` on shell root | white-label palette + base feel | the active Space (server-resolved); a `freq-skin` preview override exists for design | ✅ built (`default` \| `midnight`) |
 | **Occasion** | `data-occasion` on shell root | a light, time-boxed seasonal accent overlay | the calendar window, or a member pin via cookie | ✅ built end-to-end (DB-scheduled; a pin wins) |
 | **Generation** | `data-generation` on shell root | the "feel": type scale, density, radius, motion, ornament, contrast floor, tap floor | the member's chosen preference, with a Space default | ✅ axis + resolver + member switcher (Settings → Appearance, §7) live; Space-default column shipped |
@@ -202,13 +202,61 @@ if you forget either half.** The core (shell, nav, rail) is never edited.
 
 ---
 
+## 6a. The mode law — what `freq-theme` resolves to (ADR-1323)
+
+A stored preference is a **choice**, not an outcome. [`lib/theme/mode.ts`](../lib/theme/mode.ts) is
+the single place that turns one into the other, and it is the only file that should ever contain the
+expression `mode === 'dark' || (system && sysDark)`. Four copies of it used to exist and two had
+already drifted.
+
+`resolveDarkMode` applies four rules in order. Rules 0–2 can only ever answer *light*, so the whole
+law fails safe toward the canonical DAWN look:
+
+| # | Rule | Applies to |
+|---|---|---|
+| 0 | A **light-locked** surface (`isLightLockedPath` — the Funnels induction: `/join`, `/join/complete`, `/join/preview`) is light | every viewer, every width |
+| 1 | **`/discover/**` on a phone** (≤ 767px, `MOBILE_MAX_WIDTH_PX`) is light | every viewer, member included |
+| 2 | **No account** ⇒ light | every signed-out browser |
+| 3 | Otherwise the member's `freq-theme`, where **unset means `light`** | signed-in |
+
+**Rule 1's scope** is the public community tree — what `app/discover/layout.tsx` calls "the only
+indexable community URLs". Deliberately excluded: `/sites/<slug>` (white-label sites carry an
+owner-chosen skin; pinning the mode would override someone's branding on their own domain), the
+`(marketing)` group, and the member twins (`/spaces/<slug>`, `/events/<slug>`).
+
+**Rules 0 and 1 never write.** They are DOM-level overrides for as long as they apply; leave
+`/discover`, or turn the phone sideways, and the member's own mode returns. Rule 2 likewise does not
+erase a preference — it declines to honour it, so signing back in restores it.
+
+**⚠️ The law is stated TWICE and must stay that way.** `resolveDarkMode` is what the app calls;
+`THEME_BOOTSTRAP_SCRIPT` is the ES5 restatement that runs inline in `<head>` before any bundle
+exists and therefore cannot import it. [`mode.test.ts`](../lib/theme/mode.test.ts) executes the real
+exported string in a DOM across all 160 input combinations and asserts it agrees with
+`resolveDarkMode` on every one. **Change one copy without the other and the build fails** — which is
+the point, because a disagreement is otherwise invisible: the bootstrap's answer is overwritten
+milliseconds later, so it shows up only as a flash of the wrong theme on first paint.
+
+**Who keeps it true after paint.** The bootstrap gets the first frame right and never runs again.
+[`ThemeModeSync`](../components/layout/theme-mode-sync.tsx) in the root layout re-resolves on
+client-side navigation, viewport/rotation changes across the breakpoint, OS changes, and `storage`
+events from another tab. A surface must **not** hand-roll its own override on top of it: React runs
+child effects before parent ones, so a mount/unmount override loses the race. Add the route to rule
+0 or rule 1 instead.
+
+**`fq_acct`.** `proxy.ts` writes it beside the session on every authed request and deletes it on
+every anonymous one, so sign-out clears it with no extra wiring. It is **presentational and carries
+no authority** — anyone can set it in their own jar and win a colour scheme. It is never read for
+authorization. It is deliberately not a probe of `sb-<ref>-auth-token`, whose `-code-verifier`
+sibling exists mid-magic-link before there is a session.
+
 ## 6. The resolver chain and the cookie split
 
 There are **two** cookies, by design, because mode and the new axes have different lifecycles:
 
 | Cookie | Carries | Read where | Why separate |
 |---|---|---|---|
-| `freq-theme` *(localStorage)* | **mode** (light/dark/system) | a pre-paint inline script in `app/layout.tsx` | mode must resolve before first paint to avoid a dark flash; it predates the axes |
+| `freq-theme` *(localStorage)* | the member's **chosen** mode (light/dark/system) | the pre-paint bootstrap; see §6a for what it RESOLVES to | mode must resolve before first paint to avoid a dark flash; it predates the axes |
+| `fq_acct` *(cookie)* | "this browser has an account" | the same bootstrap, synchronously | the mode law needs one auth fact before it can await anything. Presentational only — never read for authorization |
 | `fxtheme` *(cookie)* | the **axes** (`gen` / `skin` / `occ`) | the server resolver, in RSC | server-readable so the axes render with zero flash; validated through the registry guards |
 
 **The server resolver.** [`lib/theme/server/resolve.ts`](../lib/theme/server/resolve.ts) exposes
