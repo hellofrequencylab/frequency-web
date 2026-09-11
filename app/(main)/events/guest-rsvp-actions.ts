@@ -4,6 +4,7 @@ import { headers } from 'next/headers'
 import { rateLimitOk } from '@/lib/rate-limit'
 import { createClient } from '@/lib/supabase/server'
 import { sendGuestRsvpReceipt } from '@/lib/events/guest-rsvp-email'
+import { resolveAcquisition } from '@/lib/attribution/server'
 
 // SIGNED-OUT GUEST RSVP — one field, and a seat that obeys the member rules.
 //
@@ -90,8 +91,13 @@ export async function submitGuestRsvp(input: {
   // gets a useful message instead of a shrug. Echoing back the reader's own input leaks nothing.
   if (!EMAIL_RE.test(email)) return { ok: false, error: 'Please enter a valid email address.' }
 
+  // Declared out here, assigned inside the try, because the lead capture at the bottom of this
+  // function needs the SAME session client and a `const` inside the try would not be in scope for
+  // it. The construction stays inside the try so a throwing createClient() is still a non-write.
+  let supabase: Awaited<ReturnType<typeof createClient>> | null = null
+
   try {
-    const supabase = await createClient()
+    supabase = await createClient()
     // The RECEIPT (`data`) is deliberately DISCARDED. It is an opaque receipt by construction, and
     // branching on it — even to decide a message — is how an anti-enumeration property gets lost
     // one helpful improvement at a time. `error` is a different thing: it means the function did
@@ -135,6 +141,61 @@ export async function submitGuestRsvp(input: {
     // (This block now guards only the receipt email: the seat is already written by the time it
     // runs, so "we could not save your spot" would be false here. The capture RPC's own failure is
     // handled above, where it IS a non-write.)
+  }
+
+  // ── THE LEAD, BESIDE THE SEAT ──────────────────────────────────────────────────────────────────
+  // The event door is a proto-profile door too. `signup_leads` is where an address that is not yet
+  // a member lives (app/join/(induction)/lead-actions.ts is this call's sibling), and until now the
+  // RSVP form wrote a seat and nothing else: the person existed to the event and to nobody else.
+  // `p_source: 'event_rsvp'` is what separates them from an induction lead afterwards.
+  //
+  // BEST-EFFORT, and structurally so. Everything in this block is swallowed: the seat is already
+  // written by the time it runs, the receipt has already been handed off, and no failure here may
+  // change the one identical reply this file exists to give (ADR-1032). It is AWAITED rather than
+  // floated for the same reason the receipt is — a server action's process can be torn down the
+  // moment it returns, and a floated promise is a lead that silently never landed.
+  //
+  // Same SESSION client and the same untyped cast as the capture above (ADR-246). The admin client
+  // is deliberately absent: `capture_signup_lead` is granted to anon and reachable over PostgREST
+  // directly, so this file holds no power the SQL is not already assuming (see the header).
+  try {
+    let attribution: unknown = {}
+    try {
+      // First-touch acquisition from the request's cookies (ADR-095), passed through as-is.
+      attribution = await resolveAcquisition()
+    } catch {
+      // A missing or unreadable cookie jar is not a reason to drop the lead — capture it unattributed.
+      attribution = {}
+    }
+
+    // The RETURN VALUE IS DISCARDED ENTIRELY, including the `claim_token`. A guest's browser has no
+    // continuity with the sign-in that happens days later, often on another device, so a token held
+    // here could never be presented by the person it belongs to — and keeping it would only invite
+    // a future reader to branch on it, which is how the identical reply above gets lost. The
+    // conversion door is `convert_signup_leads_for_me()`, called at sign-in
+    // (lib/crm/convert-leads-on-sign-in.ts), which proves the address through auth.users rather than
+    // through anything this browser carries.
+    //
+    // `error` is read for one reason only: a swallowed failure with no trace is an invisible
+    // regression. It is LOGGED and never branched on — the reply below is GENERIC_OK either way.
+    const { error } = await (supabase as unknown as UntypedRpc).rpc('capture_signup_lead', {
+      p_email: email,
+      p_source: 'event_rsvp',
+      p_step: 0,
+      p_first_name: null,
+      p_last_name: null,
+      p_display_name: name,
+      p_handle: null,
+      // Deliberately minimal. The table's payload is schemaless, which makes it the easiest place in
+      // the repo to accumulate things nobody asked for; the event id is the whole of what is useful.
+      p_payload: { eventId: input.eventId },
+      p_attribution: attribution,
+    })
+    if (error) {
+      console.error('[guest-rsvp] capture_signup_lead failed', { eventId: input.eventId, error: error.message })
+    }
+  } catch (e) {
+    console.error('[guest-rsvp] capture_signup_lead threw', { eventId: input.eventId, error: e instanceof Error ? e.message : String(e) })
   }
 
   return GENERIC_OK
