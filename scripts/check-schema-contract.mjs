@@ -83,6 +83,9 @@ export const ALLOWLIST = [
     column: null,
     added: '2026-09-11',
     reason: 'migration 20270345003300 authored, not yet applied; types regenerate with it',
+    // The artifact that retires this entry, so the reader knows what has to happen rather than who
+    // to chase: applying this migration is what lets lib/database.types.ts learn the function.
+    owner: 'supabase/migrations/20270345003300_event_rsvp_leads.sql',
   },
 ]
 
