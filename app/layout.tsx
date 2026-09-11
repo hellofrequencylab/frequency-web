@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { Suspense } from "react";
 import {
   Nunito,
   Geist_Mono,
@@ -14,6 +15,8 @@ import {
 } from "next/font/google";
 import "./globals.css";
 import { SITE_URL, SITE_NAME, SITE_TAGLINE, SITE_DESCRIPTION, FOUNDING_PLACE, SOCIAL_PROFILES } from "@/lib/site";
+import { THEME_BOOTSTRAP_SCRIPT, THEME_COLOR_LIGHT } from '@/lib/theme/mode'
+import { ThemeModeSync } from '@/components/layout/theme-mode-sync'
 import { JsonLd } from "@/components/json-ld";
 import { organizationSchema, websiteSchema } from "@/lib/jsonld";
 import { GoogleAnalytics } from "@/components/analytics/google-analytics";
@@ -66,12 +69,10 @@ const fredoka = Fredoka({ variable: "--font-fredoka", subsets: ["latin"], displa
 const lexend = Lexend({ variable: "--font-lexend", subsets: ["latin"], display: "swap", preload: false });
 const atkinson = Atkinson_Hyperlegible({ variable: "--font-atkinson", subsets: ["latin"], weight: ["400", "700"], display: "swap", preload: false });
 
-// The first-paint theme-color values, kept in one place so the viewport metadata and the pre-paint
-// themeScript below cannot drift. They mirror --color-canvas (light) and --color-ink (dark) in
-// app/globals.css; the pre-paint script must inline a literal (it runs before CSS loads), so these
-// are the single source for that one literal pair (app-shell reads the live CSS vars at runtime).
-const THEME_COLOR_LIGHT = '#FBFAF6' // token-ok: pre-paint literal (runs before CSS; mirrors --color-canvas)
-const THEME_COLOR_DARK = '#16130E' // token-ok: pre-paint literal (runs before CSS; mirrors --color-ink)
+// The first-paint theme-color values and the pre-paint bootstrap both come from lib/theme/mode.ts,
+// which is the single statement of the light/dark law (see its header). This file used to re-declare
+// the two literals AND hand-roll the script; both are now imported, so the viewport metadata, the
+// bootstrap and the induction's light lock cannot disagree about what "light" is.
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -80,13 +81,21 @@ export const viewport: Viewport = {
   // (low-vision + older users on mobile could not magnify any page). Zoom stays enabled
   // site-wide; the DAWN base font size already avoids iOS input-focus auto-zoom.
   viewportFit: "cover",
-  // Matches the community canvas (--color-canvas). The pre-paint script
-  // below also writes this meta dynamically so it stays correct when the
-  // user toggles modes.
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: THEME_COLOR_LIGHT },
-    { media: "(prefers-color-scheme: dark)",  color: THEME_COLOR_DARK },
-  ],
+  // ONE theme-color, light, with NO `media` split (changed 2026-09-11 — see ADR-1322).
+  //
+  // The media-split pair was two bugs at once, and both showed on exactly the surface this pass is
+  // about: a phone. `themeColor: [{light}, {dark}]` renders TWO <meta name="theme-color"> tags, and
+  //
+  //   1. the pre-paint bootstrap writes to `querySelector('meta[name="theme-color"]')`, which is the
+  //      FIRST of them — so on a device whose OS is in dark mode the second tag kept winning and the
+  //      status bar stayed ink no matter what the script resolved; and
+  //   2. it hands the decision to `prefers-color-scheme` in the first place, which is precisely the
+  //      thing that no longer decides mode here. A signed-out visitor is light now (they have no
+  //      account, so they cannot be in dark), and their status bar has to agree with their page.
+  //
+  // So the static value is the canonical light canvas, unconditionally, and the bootstrap repaints
+  // it to --color-ink for the one viewer who actually resolves dark. One tag, one writer, no race.
+  themeColor: THEME_COLOR_LIGHT,
 };
 
 export const metadata: Metadata = {
@@ -151,19 +160,6 @@ export const metadata: Metadata = {
   },
 };
 
-// Inline script. Runs synchronously before first paint so the .dark class
-// and <meta name="theme-color"> are correct on the first frame (prevents the
-// dark-mode flash). Reads localStorage('freq-theme'): 'light' | 'dark' |
-// 'system' | null; defaults to 'system' per the Dawn spec. We also migrate
-// the legacy 'theme' key one-time so existing users don't get reset.
-//
-// Skin preview override: after resolving dark mode, it also reads
-// localStorage('freq-skin'); if set, it writes that value to `data-skin` on
-// <html> so a skin can be previewed globally (including marketing pages)
-// without a real Space. Real Spaces still render `data-skin` server-side on the
-// shell root (no flash); the skin CSS selectors match both <html> and the shell
-// div. The value is trusted blind — an unknown skin is a harmless CSS no-op.
-const themeScript = `(function(){try{var s=localStorage.getItem('freq-theme');if(!s){var legacy=localStorage.getItem('theme');if(legacy==='dark'||legacy==='light'||legacy==='system'){s=legacy;localStorage.setItem('freq-theme',legacy);}}var sys=window.matchMedia('(prefers-color-scheme:dark)').matches;var dark=s==='dark'||((s==='system'||!s)&&sys);document.documentElement.classList.toggle('dark',dark);var m=document.querySelector('meta[name="theme-color"]');if(!m){m=document.createElement('meta');m.setAttribute('name','theme-color');document.head.appendChild(m);}m.setAttribute('content',dark?'${THEME_COLOR_DARK}':'${THEME_COLOR_LIGHT}');var skin=localStorage.getItem('freq-skin');if(skin){document.documentElement.setAttribute('data-skin',skin);}}catch(e){}})();`;
 
 // The ROOT layout stays STATIC (no per-request cookie/DB reads) so the public marketing +
 // discover pages keep prerendering (static/ISR). All data-driven theming — the personal
@@ -183,7 +179,7 @@ export default function RootLayout({
     >
       <head>
         {/* Theme script must run synchronously before any paint */}
-        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+        <script dangerouslySetInnerHTML={{ __html: THEME_BOOTSTRAP_SCRIPT }} />
         {/* Site-wide structured data for search/answer engines. The Organization
             node carries the founding location (city-level only) so engines can
             resolve Frequency as a real, place-rooted entity. */}
@@ -194,6 +190,14 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col">
         {/* Anonymous Core Web Vitals capture (no cookies, no profile link — keeps the
             root layout static). Member-tied trackers stay in the (main) layout. */}
+        {/* Keeps the resolved mode true after the first paint — client-side navigations into the
+            public community tree, rotation across the mobile breakpoint, OS changes, other tabs.
+            Renders null. In <Suspense> because usePathname suspends on unresolved dynamic params
+            once `cacheComponents` is on (next/dist/docs .../use-pathname.md); it is off today, so
+            this costs nothing and stops the flag flip from failing the build later. */}
+        <Suspense fallback={null}>
+          <ThemeModeSync />
+        </Suspense>
         <WebVitals />
         {/* Vercel Web Analytics (OWN-047). The dashboard toggle only opens the endpoint — this
             script is what sends a pageview, so the project reported zero for as long as it was

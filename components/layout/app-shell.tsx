@@ -23,6 +23,8 @@ import {
   Palette,
 } from 'lucide-react'
 import { getInitials } from '@/lib/utils'
+import { canChooseMode, type ThemeMode } from '@/lib/theme/mode'
+import { hasAccount, readStoredMode, syncMode, writeStoredMode } from '@/lib/theme/apply-mode'
 import { avatarSrc, avatarFocusStyle } from '@/lib/images/avatar-focus'
 import { NotificationBell } from '@/components/layout/notification-bell'
 import { HoverTip } from '@/components/ui/hover-tip'
@@ -342,52 +344,26 @@ function canSeeAccountItem(it: ResolvedItem, viewer: MenuViewer, canReceivePayou
 
 // ── Theme hook ────────────────────────────────────────────────────────────────
 
-type Theme = 'light' | 'dark' | 'system'
-
+// The shell's account-menu toggle. The DECISION (what light/dark resolves to) is not here — it is
+// lib/theme/mode.ts, which app/layout.tsx's pre-paint bootstrap restates in ES5 and mode.test.ts
+// holds the two copies together. This hook only owns the member's CHOICE: read it, write it, and
+// hand the re-resolution back to the shared applier.
+//
+// Two things it deliberately no longer does:
+//   · resolve dark itself (`mode === 'dark' || (system && sysDark)`) — that expression existed in
+//     four files and is now in one;
+//   · own the OS-preference listener. ThemeModeSync in the root layout holds it, so it fires for a
+//     member on a public page too, which is exactly where this one never reached.
 function useTheme() {
-  const [theme, setThemeState] = useState<Theme>(() => {
-    if (typeof window === 'undefined') return 'system'
-    const saved = localStorage.getItem('freq-theme') as Theme | null
-    return saved === 'dark' || saved === 'light' || saved === 'system' ? saved : 'system'
-  })
+  const [theme, setThemeState] = useState<ThemeMode>(() => readStoredMode())
 
-  // Apply (mode → .dark class + meta theme-color). Pulled out so we can also
-  // call it from the OS preference listener below.
-  function apply(mode: Theme) {
-    const sysDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-    const isDark = mode === 'dark' || (mode === 'system' && sysDark)
-    document.documentElement.classList.toggle('dark', isDark)
-    const meta = document.querySelector('meta[name="theme-color"]')
-    if (meta) {
-      // Derive the status-bar color from the live token source so it can't drift
-      // from the design system. We read AFTER toggling .dark, so the computed
-      // value is already the mode-specific token: the page background is
-      // --color-canvas in light, and the deep ink band is --color-ink in dark
-      // (app/globals.css :root / .dark). Trim because getPropertyValue keeps
-      // the declaration's leading whitespace.
-      const token = isDark ? '--color-ink' : '--color-canvas'
-      const color = getComputedStyle(document.documentElement)
-        .getPropertyValue(token)
-        .trim()
-      if (color) meta.setAttribute('content', color)
-    }
-  }
-
-  function setTheme(next: Theme) {
+  function setTheme(next: ThemeMode) {
     setThemeState(next)
-    localStorage.setItem('freq-theme', next)
-    apply(next)
+    writeStoredMode(next)
+    // Re-resolve rather than apply `next` directly: on a surface the public-community lock covers,
+    // the member's choice is stored but not shown, and syncMode is the one thing that knows that.
+    syncMode()
   }
-
-  // Follow OS changes while the user is on 'system'.
-  useEffect(() => {
-    const mq = window.matchMedia('(prefers-color-scheme: dark)')
-    function onChange() {
-      if ((localStorage.getItem('freq-theme') ?? 'system') === 'system') apply('system')
-    }
-    mq.addEventListener('change', onChange)
-    return () => mq.removeEventListener('change', onChange)
-  }, [])
 
   return { theme, setTheme }
 }
@@ -2021,10 +1997,15 @@ export default function AppShell({
   // mounts the bar over its info-rail column instead).
   const isAdminRoute = pathname === '/admin' || pathname.startsWith('/admin/')
 
+  // Light → Dark → System → Light. Gated on having an account (owner, 2026-09-11): the shell only
+  // renders for a signed-in member, so this is belt-and-braces rather than the load-bearing gate —
+  // resolveDarkMode refuses dark without the account marker whatever is stored. It is here so the
+  // control cannot show a member a mode the renderer will then decline to give them.
   function cycleTheme() {
-    if (theme === 'system') setTheme('dark')
-    else if (theme === 'dark') setTheme('light')
-    else setTheme('system')
+    if (!canChooseMode(hasAccount())) return
+    if (theme === 'light') setTheme('dark')
+    else if (theme === 'dark') setTheme('system')
+    else setTheme('light')
   }
 
   const ThemeIcon = theme === 'dark' ? Moon : theme === 'system' ? Monitor : Sun

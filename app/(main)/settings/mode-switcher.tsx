@@ -2,22 +2,26 @@
 
 import { useState } from 'react'
 import { Moon, Sun, Monitor, Check } from 'lucide-react'
+import { type ThemeMode } from '@/lib/theme/mode'
+import { readStoredMode, syncMode, writeStoredMode } from '@/lib/theme/apply-mode'
 
-// The light/dark MODE switcher, extracted from the old Settings home so the unified
-// one-page Settings surface (page.tsx, a Server Component) can compose it inside the
-// Appearance section. Storage + apply logic mirror the in-app account-menu toggle in
-// components/layout/app-shell.tsx (key `freq-theme`, values 'light' | 'dark' |
-// 'system'), so the two toggles and the pre-paint script in app/layout.tsx stay
-// in agreement. Initial state falls back to the legacy `theme` key (the same
-// one-time migration the layout script does) so existing members aren't reset.
+// The light/dark MODE switcher, composed into the unified one-page Settings surface (page.tsx, a
+// Server Component) inside the Appearance section.
+//
+// It used to carry its OWN copy of the storage read, the dark resolution and the theme-color
+// literals — a third copy beside the app shell's and the pre-paint script's, kept in step by a
+// comment asking the reader to check. All three now read lib/theme/mode.ts, whose two statements of
+// the law (the TypeScript one and the ES5 bootstrap) are held together by mode.test.ts.
+//
+// Settings is behind the auth wall, so everyone who can reach this control has an account and may
+// choose any of the three. A signed-out browser cannot honour 'dark' at all — see resolveDarkMode.
 
-type Theme = 'light' | 'dark' | 'system'
-
-const THEME_OPTIONS: { value: Theme; label: string; description: string; Icon: typeof Moon }[] = [
+const THEME_OPTIONS: { value: ThemeMode; label: string; description: string; Icon: typeof Moon }[] = [
   {
     value: 'light',
     label: 'Light',
-    description: 'Always use the light theme',
+    // Named as the default, because it now is one (owner, 2026-09-11).
+    description: 'The default. Always use the light theme',
     Icon: Sun,
   },
   {
@@ -35,22 +39,15 @@ const THEME_OPTIONS: { value: Theme; label: string; description: string; Icon: t
 ]
 
 export function ModeSwitcher() {
-  const [theme, setThemeState] = useState<Theme>(() => {
-    if (typeof window === 'undefined') return 'system'
-    const saved = (localStorage.getItem('freq-theme') ?? localStorage.getItem('theme')) as Theme | null
-    return saved === 'dark' || saved === 'light' || saved === 'system' ? saved : 'system'
-  })
+  const [theme, setThemeState] = useState<ThemeMode>(() => readStoredMode())
 
-  // Apply (mode → .dark class + meta theme-color) and persist to `freq-theme`.
-  function applyTheme(next: Theme) {
+  // Persist the choice, then let the shared applier decide what it RESOLVES to. Not the same thing:
+  // on a surface the public-community lock covers, the stored choice is kept and the shown mode is
+  // light, and syncMode is the only thing that knows the difference.
+  function applyTheme(next: ThemeMode) {
     setThemeState(next)
-    localStorage.setItem('freq-theme', next)
-    const sysDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-    const isDark = next === 'dark' || (next === 'system' && sysDark)
-    document.documentElement.classList.toggle('dark', isDark)
-    const meta = document.querySelector('meta[name="theme-color"]')
-    // token-ok: browser theme-color literal (mirrors --color-ink/--color-canvas; set on <meta>, no CSS var)
-    if (meta) meta.setAttribute('content', isDark ? '#16130E' : '#FBFAF6')
+    writeStoredMode(next)
+    syncMode()
   }
 
   return (

@@ -18,6 +18,7 @@ import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { SKINS, DEFAULT_SKIN } from './skins'
+import { SKIN_STORAGE_KEY, THEME_BOOTSTRAP_SCRIPT } from './mode'
 
 const read = (rel: string) => readFileSync(fileURLToPath(new URL(rel, import.meta.url)), 'utf8')
 
@@ -62,7 +63,27 @@ function skinOnDescendant(id: string): Element {
 
 describe('the premise: data-skin really does land on <html> as well as on a descendant', () => {
   it('the pre-paint script stamps the freq-skin preview onto documentElement', () => {
-    expect(ROOT_LAYOUT).toMatch(/documentElement\.setAttribute\(\s*'data-skin'\s*,\s*skin\s*\)/)
+    // This used to grep app/layout.tsx for the setAttribute call — shape, not truth, which is the
+    // very thing this file was written to stop doing (see its header). The bootstrap moved into
+    // lib/theme/mode.ts on 2026-09-11 and is now an importable string, so the premise can be
+    // MEASURED: run the real script and look at where the attribute landed.
+    window.localStorage.setItem(SKIN_STORAGE_KEY, 'midnight')
+    document.documentElement.removeAttribute('data-skin')
+    Object.defineProperty(window, 'matchMedia', {
+      configurable: true,
+      value: () => ({ matches: false, addEventListener() {}, removeEventListener() {} }),
+    })
+
+    new Function(THEME_BOOTSTRAP_SCRIPT)()
+
+    expect(document.documentElement.getAttribute('data-skin')).toBe('midnight')
+    window.localStorage.removeItem(SKIN_STORAGE_KEY)
+    document.documentElement.removeAttribute('data-skin')
+  })
+
+  it('the root layout actually ships that script', () => {
+    // The measurement above proves the script works; this proves the app still runs it.
+    expect(ROOT_LAYOUT).toMatch(/THEME_BOOTSTRAP_SCRIPT/)
   })
 
   it('the e2e render-state harness stamps the skin onto documentElement too', () => {
