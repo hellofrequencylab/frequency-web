@@ -69,20 +69,24 @@ export const MIN_RPC_CALLS = 60
 /** @type {{ file: string, table: string, column?: string | null, kind?: string | null, added: string, reason: string, owner: string }[]} */
 export const ALLOWLIST = [
   {
-    // `convert_signup_leads_for_me()` is created by supabase/migrations/20270345003300_event_rsvp_leads.sql,
-    // which is authored and NOT YET APPLIED to the shared database. lib/database.types.ts is generated
-    // FROM that database, so the types cannot know the function until the migration is applied and the
-    // types are regenerated. Both halves are one owner action, and this entry is what keeps the guard
-    // honest in the meantime rather than being switched off.
+    // `convert_signup_leads_for_me()` is APPLIED and live (migration 20270345003300, applied
+    // 2026-09-11, ledger row 688). What is still behind is lib/database.types.ts, which is GENERATED
+    // from the database and has not been regenerated since. So the guard is right that the types do
+    // not know this function, and wrong to call it a phantom: it exists, the call site is correct,
+    // and the runtime PGRST204 this guard protects against cannot happen here.
     //
-    // 🔴 REMOVE THIS ENTRY in the same change that regenerates lib/database.types.ts. A stale entry
-    // fails the guard by design, so it cannot outlive the migration being applied.
+    // Regenerating the types is a mechanical follow-up rather than part of this change, and nothing
+    // in CI diffs the generated file against the live schema today (HYG-052), so leaving it is not
+    // hiding a gate that would otherwise fire.
+    //
+    // 🔴 REMOVE THIS ENTRY in the change that regenerates lib/database.types.ts. A stale entry fails
+    // the guard by design, so the moment the types learn the function this line must go with them.
     file: 'lib/crm/convert-leads-on-sign-in.ts',
     kind: 'rpc',
     table: 'convert_signup_leads_for_me',
     column: null,
     added: '2026-09-11',
-    reason: 'migration 20270345003300 authored, not yet applied; types regenerate with it',
+    reason: 'migration 20270345003300 applied 2026-09-11; lib/database.types.ts not yet regenerated',
     // The artifact that retires this entry, so the reader knows what has to happen rather than who
     // to chase: applying this migration is what lets lib/database.types.ts learn the function.
     owner: 'supabase/migrations/20270345003300_event_rsvp_leads.sql',
