@@ -44,7 +44,7 @@
 import { test, expect, type Page } from '@playwright/test'
 import {
   NARROW_PROJECT,
-  RENDER_STATES,
+  PUBLIC_RENDER_STATES,
   SHELL_RENDER_STATES,
   STORAGE_STATE,
   appSurfaces,
@@ -126,7 +126,7 @@ test.describe('visual', { tag: '@visual' }, () => {
     'The narrow project photographs the shell and the header band; the public surfaces are measured at 320 by overflow.spec.ts instead (ADR-1270).',
   )
 
-  for (const state of RENDER_STATES) {
+  for (const state of PUBLIC_RENDER_STATES) {
     test.describe(state.id, () => {
       for (const surface of publicSurfaces()) {
         test(`${surface.path} matches baseline`, async ({ page }) => {
@@ -236,7 +236,7 @@ test.describe('visual · header band', { tag: '@visual' }, () => {
     'The header band is captured at 320 only — at 1280 and 390 the full-page marketing baselines already gate it (ADR-1270).',
   )
 
-  for (const state of RENDER_STATES) {
+  for (const state of PUBLIC_RENDER_STATES) {
     test.describe(state.id, () => {
       for (const surface of headerBandSurfaces()) {
         test(`${surface.path} header band matches baseline`, async ({ page }) => {

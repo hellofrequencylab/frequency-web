@@ -7,7 +7,6 @@
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import type { Locator, Page } from '@playwright/test'
-import { ACCOUNT_COOKIE } from '../../lib/theme/mode'
 
 /* ── The four render states ────────────────────────────────────────────────────
    app/globals.css defines TWO orthogonal axes:
@@ -33,13 +32,35 @@ const DAWN_DARK: RenderState = { id: 'dawn-dark', skin: 'default', mode: 'dark' 
 const MIDNIGHT_LIGHT: RenderState = { id: 'midnight-light', skin: 'midnight', mode: 'light' }
 const MIDNIGHT_DARK: RenderState = { id: 'midnight-dark', skin: 'midnight', mode: 'dark' }
 
-/** Every render state the public surfaces are captured in. */
+/** All four combinations the stylesheet can produce. Not every surface can reach all four — see
+ *  PUBLIC_RENDER_STATES and SHELL_RENDER_STATES below, which are what the suites actually iterate. */
 export const RENDER_STATES: readonly RenderState[] = [
   DAWN_LIGHT,
   DAWN_DARK,
   MIDNIGHT_LIGHT,
   MIDNIGHT_DARK,
 ]
+
+/**
+ * The states an ANONYMOUS surface can actually be in — **light only** (ADR-1323, 2026-09-11).
+ *
+ * Dark mode now requires an account: `resolveDarkMode` answers light for any browser with no
+ * session, so a signed-out visitor CANNOT see `/pricing` or `/discover` dark, on any device, ever.
+ * The two dark baselines for every public surface therefore photographed a state that no longer
+ * exists, and they failed the moment the rule shipped — 68 of them, deterministically, which is the
+ * product being right rather than the suite being wrong.
+ *
+ * 🔴 THE TEMPTING FIX IS THE WRONG ONE. The first attempt here seeded the `fq_acct` marker from
+ * `applyRenderState` so the bootstrap would resolve dark anyway. That is forging the one fact the
+ * rule turns on, to keep photographing something a user can never load — and it does not even work,
+ * because the proxy DELETES that cookie on every anonymous response, so the harness would be racing
+ * the server on every navigation. A baseline that can only be produced by lying to the app is not
+ * coverage. It was removed.
+ *
+ * The member shell keeps both modes (SHELL_RENDER_STATES) and is unaffected: those surfaces run on a
+ * real signed-in `storageState`, so their account marker is genuine and dark is genuinely reachable.
+ */
+export const PUBLIC_RENDER_STATES: readonly RenderState[] = [DAWN_LIGHT, MIDNIGHT_LIGHT]
 
 /** The canonical look: what an anonymous visitor sees with no stored preference. */
 export const DEFAULT_STATE: RenderState = DAWN_LIGHT
@@ -63,23 +84,10 @@ export const SHELL_RENDER_STATES: readonly RenderState[] = [DAWN_LIGHT, DAWN_DAR
  * milliseconds later. Seeding storage instead makes the app's own script compute exactly the state
  * we asked for, on every navigation, for free.
  *
- * ── WHY THIS ALSO SEEDS THE ACCOUNT MARKER (2026-09-11) ──────────────────────────────────────
- * Dark mode now requires an account (owner: "user cannot change to dark until they have an
- * account"), which the bootstrap learns from the `fq_acct` cookie the proxy writes beside the
- * session. Seeding `freq-theme: 'dark'` alone therefore renders LIGHT for an `anon` surface, and
- * every dark baseline in the visual suite would have silently become a duplicate of its light
- * twin — a whole axis of coverage quietly deleted, which is the failure mode this harness exists
- * to prevent.
- *
- * So a dark state seeds the marker too. That is not forging a session: the marker is
- * PRESENTATIONAL, carries no authority, and is never read for authorization (see ACCOUNT_COOKIE in
- * lib/theme/mode.ts). It unlocks a colour scheme and nothing else, so an `anon` surface still
- * renders its true signed-out content — which is what these snapshots are of. The marker is
- * CLEARED for light states so the default baseline keeps measuring a genuinely fresh visitor.
- *
- * ⚠️ Dark baselines for surfaces under /discover are captured at DESKTOP width only, because the
- * mobile project renders that tree light by design. The mobile dark snapshot of a /discover page
- * is its light snapshot, and that is the product being correct, not the harness being wrong.
+ * It does NOT seed the account marker, and must not. A dark render state is only meaningful where
+ * the viewer genuinely has an account — the member shell, which supplies a real `storageState`.
+ * For an anonymous surface the honest answer is that dark is unreachable, which is why
+ * PUBLIC_RENDER_STATES is light-only rather than why this function forges a cookie.
  *
  * The direct class/attribute stamp is kept as belt-and-braces: it covers documents that do
  * not ship the bootstrap, and it is a no-op when the bootstrap agrees (it always will).
@@ -89,7 +97,7 @@ export const SHELL_RENDER_STATES: readonly RenderState[] = [DAWN_LIGHT, DAWN_DAR
 export async function applyRenderState(page: Page, state: RenderState): Promise<void> {
   await page.emulateMedia({ colorScheme: state.mode })
   await page.addInitScript(
-    ({ skin, mode, accountCookie }: { skin: string; mode: string; accountCookie: string }) => {
+    ({ skin, mode }: { skin: string; mode: string }) => {
       try {
         window.localStorage.setItem('freq-theme', mode)
         window.localStorage.setItem('freq-skin', skin)
@@ -97,22 +105,13 @@ export async function applyRenderState(page: Page, state: RenderState): Promise<
         // Opaque origin (about:blank) — localStorage throws. The stamp below still lands,
         // and the real navigation's init-script run seeds the keys properly.
       }
-      try {
-        // The account marker the mode law reads. Set for dark, cleared for light — see the note
-        // above for why this is a colour-scheme unlock and not a session.
-        document.cookie = mode === 'dark'
-          ? `${accountCookie}=1; path=/`
-          : `${accountCookie}=; max-age=0; path=/`
-      } catch {
-        // Some origins refuse document.cookie; the class stamp below still lands.
-      }
       const el = document.documentElement
       if (el) {
         el.classList.toggle('dark', mode === 'dark')
         el.setAttribute('data-skin', skin)
       }
     },
-    { skin: state.skin, mode: state.mode, accountCookie: ACCOUNT_COOKIE },
+    { skin: state.skin, mode: state.mode },
   )
 }
 
