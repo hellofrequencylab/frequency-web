@@ -95,7 +95,7 @@ export function EventCheckInSurface({
        canvas without borders". Every skin redeclares --color-canvas, so naming the token is the
        only correct move (never a hex). */
     <div
-      className="mt-1 flex w-full flex-col items-end gap-1.5 rounded-card bg-canvas px-3 py-2.5 sm:w-auto"
+      className="flex w-full flex-col items-start gap-1.5 rounded-card bg-canvas px-3 py-2.5 sm:w-auto sm:items-end"
       // A live region, because the box changes what it says while a member is looking at it: the
       // handover from countdown to control is the moment worth announcing, and the result of a
       // press is the other one.
@@ -103,7 +103,7 @@ export function EventCheckInSurface({
     >
       {/* THE COUNTER, and whatever it becomes. `items-end` on the parent keeps its right edge flush
           with the rows below it, so the box reads as one block rather than two loose pieces. */}
-      <div className="text-right">
+      <div className="text-left sm:text-right">
         {state.kind === 'countdown' && (
           <>
             {/* `eyebrow`, the ROLE, not `text-meta uppercase tracking-wide` spelled out. Both of

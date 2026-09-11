@@ -93,6 +93,25 @@ export interface EventIdentitySlots {
   credit?: ReactNode
   /** The check-in reward line. Header content, not a floating band. */
   reward?: ReactNode
+  /**
+   * THE COUNTDOWN COLUMN, BESIDE THE INFO RATHER THAN ABOVE IT (owner, 2026-09-11: *"The info area
+   * and the countdown need to be on the same row. On mobile, or smaller screen, the countdown
+   * should be below the info area."*).
+   *
+   * 🔴 THIS IS NOT THE TWO-LANE ARRANGEMENT COMING BACK. That reversal was about the info LINES
+   * splitting into two `md:grid-cols-2` lanes, which made four short facts read as a form. The
+   * lines still render as ONE full-width column; this is a separate OBJECT set beside that column,
+   * and it self-suppresses, so a surface that passes nothing here is byte-identical to before.
+   *
+   * 🔴 AND IT IS WHY THE SLOT EXISTS AT ALL. The check-in surface used to live in
+   * `DetailTemplate`'s `actions` column, stacked under Share | Manage | Edit. That column is
+   * `sm:shrink-0` — it takes whatever its WIDEST child needs and the H1 absorbs the rest — so any
+   * box there wide enough to hold the clock and its two fact lines side by side stole that width
+   * from the title and wrapped it onto two lines. Three passes tried to solve that by resizing the
+   * box; the box was never the problem, its PARENT was. Here the region is already full width, so
+   * the countdown can sit beside the info at its natural size and cost the title nothing.
+   */
+  aside?: ReactNode
 }
 
 export interface EventDetailTemplateProps {
@@ -187,6 +206,31 @@ export function EventDetailTemplate({
   // event has no empty gap where its series lines would have been.
   const hasIdentity = hasGathering || hasSeries || hasRunBy || filled(identity.reward)
 
+  // The info LINES, in the one arrangement every event surface renders them. Hoisted to a const so
+  // the two `meta` shapes below (with a countdown column, and without) render the SAME stack rather
+  // than two copies that can drift apart.
+  const identityStack = (
+    <>
+      {hasGathering && (
+        <div className="space-y-1.5">
+          {identity.when}
+          {identity.where}
+          {identity.hostedBy}
+          {identity.belonging}
+        </div>
+      )}
+      {hasSeries && (
+        <div className="space-y-1.5">
+          {identity.cadence}
+          {identity.nextDate}
+          {identity.seriesRail}
+        </div>
+      )}
+      {hasRunBy && <div className="space-y-1.5">{identity.credit}</div>}
+      {identity.reward}
+    </>
+  )
+
   return (
     <div>
       {structuredData}
@@ -225,29 +269,32 @@ export function EventDetailTemplate({
         // The identity region goes through `meta` (full width), NOT `subtitle` (the narrow column
         // beside the actions). See EventIdentitySlots for the two reports that settled its shape.
         meta={
-          hasIdentity ? (
-            // `space-y-3` between groups against `space-y-1.5` inside one: the whole reorganisation
-            // is carried by that 2:1 ratio, which is what lets a reader see four things instead of
-            // nine lines without a single rule or heading.
-            <div className="space-y-3 text-body-sm text-muted">
-              {hasGathering && (
-                <div className="space-y-1.5">
-                  {identity.when}
-                  {identity.where}
-                  {identity.hostedBy}
-                  {identity.belonging}
-                </div>
-              )}
-              {hasSeries && (
-                <div className="space-y-1.5">
-                  {identity.cadence}
-                  {identity.nextDate}
-                  {identity.seriesRail}
-                </div>
-              )}
-              {hasRunBy && <div className="space-y-1.5">{identity.credit}</div>}
-              {identity.reward}
-            </div>
+          hasIdentity || filled(identity.aside) ? (
+            // 🔴 THE NO-ASIDE PATH IS THE OLD MARKUP, EXACTLY. Every other event surface (the
+            // discover card, the loading skeleton, the public page) passes no `aside`, and
+            // `event-detail-template.equivalence.test.tsx` compares this template's output against a
+            // byte-for-byte mirror of the markup the page produced before the extraction. Wrapping
+            // the stack in a row unconditionally broke that mirror for surfaces that gained nothing
+            // from it — an invisible change to every one of them to serve one. So the row only
+            // exists when there is a second column to put in it.
+            filled(identity.aside) ? (
+              // THE ROW: the info column, and the countdown beside it. `flex-col` on a small screen
+              // puts the info FIRST and the countdown UNDER it (owner, 2026-09-11: *"On mobile, or
+              // smaller screen, the countdown should be below the info area"*); `sm:flex-row` sets
+              // them side by side. `items-start` so the countdown aligns to the TOP of the info
+              // rather than drifting to its vertical centre as the info stack grows.
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
+                {/* `min-w-0` so a long address wraps inside this column instead of shoving the
+                    countdown off the row. */}
+                <div className="min-w-0 flex-1 space-y-3 text-body-sm text-muted">{identityStack}</div>
+                <div className="w-full sm:w-auto sm:shrink-0">{identity.aside}</div>
+              </div>
+            ) : (
+              // `space-y-3` between groups against `space-y-1.5` inside one: the whole reorganisation
+              // is carried by that 2:1 ratio, which is what lets a reader see four things instead of
+              // nine lines without a single rule or heading.
+              <div className="space-y-3 text-body-sm text-muted">{identityStack}</div>
+            )
           ) : undefined
         }
       >

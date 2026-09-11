@@ -1994,14 +1994,17 @@ export default async function EventDetailPage({
       // is ~72 + ~85 + ~62px, which fits that column with room, so every viewer now gets the same
       // three labelled buttons and the duplication is gone with the words that forced it.
       //
-      // ⚠️ THE ROW IS NO LONGER THE WHOLE SLOT (ADR-1315). The check-in surface sits UNDER these
-      // three, in the same column, because the owner asked for it there and because that column is
-      // the only part of the header band with room: `DetailTemplate` lays the band out as
-      // `title (min-w-0) | actions (sm:shrink-0)`, so the actions column takes its natural width and
-      // the H1 absorbs the squeeze. The surface is capped at 16rem and wraps INSIDE itself, so the
-      // column grows in height rather than width and the title keeps what the row above already
-      // left it. That was the owner's explicit constraint: it must not push the left content onto
-      // another line.
+      // 🔴 THE CHECK-IN SURFACE IS NOT IN HERE, AND THAT IS THE WHOLE POINT (owner, 2026-09-11).
+      // It sat under these three buttons for four passes, and every one fought the same losing
+      // battle: `DetailTemplate` lays the band out as `title (min-w-0) | actions (sm:shrink-0)`, so
+      // this column takes whatever its WIDEST child needs and the H1 absorbs the rest. A box here
+      // big enough to hold the clock and its two fact lines on ONE ROW is wider than these three
+      // buttons, so it became the widest child and wrapped the title. Capping the box only traded a
+      // wrapped title for a four-deep stack; the box was never the problem, its PARENT was.
+      //
+      // The surface now goes through `identity.aside`, which renders in the FULL-WIDTH region below
+      // this lockup, beside the info lines. There it sits at its natural width and costs the title
+      // nothing. Do not move it back into this slot to "keep it near the buttons".
       actions={
         <div className="flex w-full flex-col gap-2 sm:w-auto sm:items-end">
         <div className="flex flex-wrap items-center gap-2 sm:justify-end">
@@ -2039,29 +2042,6 @@ export default async function EventDetailPage({
           )}
         </div>
 
-        {/* THE CHECK-IN SURFACE (ADR-1315) — one box that counts down to the doors and then
-            becomes them. It replaces three scattered surfaces: the reward line that used to float
-            in the identity region promising Zaps without ever reading the host's switch, the
-            movable `event-checkin` block that was an empty slot for 99% of an event's life, and
-            the Join box button that was the only thing that could actually check you in and lived
-            below the fold. Every gate below is resolved HERE, on the server; the client half
-            renders a state and owns no rules.
-
-            🔴 `startsAtMs` GOES THROUGH `eventInstant`. `starts_at` carries the host's wall clock
-            in UTC parts, so `new Date(starts_at)` counts down to the wrong moment by the zone's
-            whole offset (ADR-1150). */}
-        <EventCheckInSurface
-          eventId={event.id}
-          cancelled={!!event.is_cancelled}
-          checkInEnabled={checkInEnabled}
-          startsAtMs={eventInstant(event.starts_at, eventTz)?.getTime() ?? null}
-          windowOpen={checkInWindow}
-          signedIn={!!myProfileId}
-          isGoing={isGoing}
-          alreadyCheckedIn={alreadyCheckedIn}
-          zaps={ZAP_AMOUNTS.event_attend}
-          doorNote={readEventSpecialInstructions(extra?.details)}
-        />
         </div>
       }
       // [A2] attendance-mode pill.
@@ -2071,6 +2051,34 @@ export default async function EventDetailPage({
         </span>
       }
       identity={{
+        // THE CHECK-IN SURFACE (ADR-1315) — one box that counts down to the doors and then
+        // becomes them. It replaced three scattered surfaces: the reward line that used to float in
+        // this very region promising Zaps without ever reading the host's switch, the movable
+        // `event-checkin` block that was an empty slot for 99% of an event's life, and the Join box
+        // button that was the only thing that could actually check you in and lived below the fold.
+        // Every gate below is resolved HERE, on the server; the client half renders a state.
+        //
+        // It is the FIRST key so the countdown reads as the region's leading object, but placement
+        // is `aside`'s job, not declaration order's: it renders as the column beside the info lines
+        // (and beneath them on a small screen), never inline with them.
+        //
+        // 🔴 `startsAtMs` GOES THROUGH `eventInstant`. `starts_at` carries the host's wall clock in
+        // UTC parts, so `new Date(starts_at)` counts down to the wrong moment by the zone's whole
+        // offset (ADR-1150).
+        aside: (
+          <EventCheckInSurface
+            eventId={event.id}
+            cancelled={!!event.is_cancelled}
+            checkInEnabled={checkInEnabled}
+            startsAtMs={eventInstant(event.starts_at, eventTz)?.getTime() ?? null}
+            windowOpen={checkInWindow}
+            signedIn={!!myProfileId}
+            isGoing={isGoing}
+            alreadyCheckedIn={alreadyCheckedIn}
+            zaps={ZAP_AMOUNTS.event_attend}
+            doorNote={readEventSpecialInstructions(extra?.details)}
+          />
+        ),
         // The when-line is the key fact under the title — it renders a step stronger
         // (size, weight, and full text color) than the rest of the subtitle stack.
         when: (
