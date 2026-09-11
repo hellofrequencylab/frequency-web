@@ -636,3 +636,52 @@ describe('scripts/help-autodoc.mts keeps the three properties the fix depends on
     expect(code).toContain('article(s) unreviewed::')
   })
 })
+
+// ── The diff actually reaches git (regression: PR #2547, 2026-09-11) ────────────────────────
+//
+// scripts/help-autodoc.mts built its `git diff` as a COMMAND STRING and ran it through execSync,
+// which goes via /bin/sh — dash on a GitHub runner. Git's pathspec magic `:(exclude)…` carries
+// unquoted parentheses, so dash rejected the whole command with `Syntax error: "(" unexpected`
+// and the job reviewed every article with NO DIFF AT ALL. The feature the rebuild existed for was
+// inert on its first real run, and the only reason it produced no false findings is that the
+// fail-safe held: a loud ::warning, and groundVerdicts refusing to grade an ungrounded claim.
+//
+// This repo is unusually exposed to it — Next.js route groups and dynamic segments mean real
+// source paths like `app/(main)/spaces/[slug]/dispatch-actions.ts` carry both parens and brackets.
+//
+// The fix is an argv array through execFileSync, which reaches execve without a shell. These arms
+// pin the shape that makes that true, and the last one proves the failure mode is real rather
+// than remembered.
+describe('the autodoc diff pathspecs survive the shell', () => {
+  const source = readFileSync('scripts/help-autodoc.mts', 'utf8')
+
+  it('runs git for the diff through execFileSync, never a shell command string', () => {
+    // The diff call must not be interpolated into a template literal handed to execSync.
+    expect(source).toMatch(/execFileSync\(\s*'git',/)
+    expect(source).not.toMatch(/execSync\(\s*`git diff --unified/)
+  })
+
+  it('passes every exclude pathspec as its own argv entry, not a joined string', () => {
+    expect(source).toMatch(/\.\.\.EXCLUDE_PATHSPECS/)
+    // `.join(' ')` on the pathspecs is exactly what put them through a shell.
+    expect(source).not.toMatch(/EXCLUDE_PATHSPECS\.join/)
+  })
+
+  it('🔴 the failure is real: a shell rejects these pathspecs, argv does not', async () => {
+    const { execFileSync } = await import('node:child_process')
+    const specs = [':(exclude)pnpm-lock.yaml', ':(exclude)*.png']
+
+    // Shell form — this is what CI ran, and it must still blow up.
+    let shellFailed = false
+    try {
+      execFileSync('/bin/sh', ['-c', `printf '%s' ${specs.join(' ')}`], { encoding: 'utf8' })
+    } catch {
+      shellFailed = true
+    }
+    expect(shellFailed).toBe(true)
+
+    // Argv form — the same tokens reach the program untouched.
+    const out = execFileSync('printf', ['%s|', ...specs], { encoding: 'utf8' })
+    expect(out).toBe(':(exclude)pnpm-lock.yaml|:(exclude)*.png|')
+  })
+})
