@@ -6,6 +6,8 @@ import { updateMyAvatar } from '@/app/(main)/feed/actions'
 import { uploadProfileImageAction } from '@/app/(main)/settings/profile/actions'
 import { prepareImageForUpload } from '@/lib/library/image-shrink'
 import { IconButton } from '@/components/ui/icon-button'
+import { sendSpaceDispatch } from '@/app/(main)/spaces/[slug]/dispatch-actions'
+import { isError } from '@/lib/action-result'
 import { Composer } from './composer'
 import { ContactCaptureForm } from './contact-capture-form'
 
@@ -19,6 +21,27 @@ import { ContactCaptureForm } from './contact-capture-form'
 // reached through the full-screen Capture's camera, not this inline row.)
 
 type Mode = 'post' | 'dispatch' | 'note' | 'photo' | 'contact'
+
+/**
+ * THE SPACE SCOPE (LIVE-295, owner ruling 2026-09-10). Present = this box is mounted FOR a Space
+ * the viewer can manage, and its Dispatch mode announces to that Space's members instead of writing
+ * a pinned community post.
+ *
+ * 🔴 THE SCOPE COMES FROM THE MOUNT. There is no default and no fallback: a box with no
+ * `spaceScope` cannot reach the space send path at all, and the send path itself refuses a scope it
+ * cannot resolve (app/(main)/spaces/[slug]/dispatch-actions.ts). The reason that matters is
+ * lib/events/dispatch.ts, which writes audience_scope 'global' — the whole platform. A space
+ * Dispatch that landed there would be a mass-notification incident, so the target is carried
+ * explicitly, re-derived server-side, and refused on any miss.
+ */
+export interface CaptureSpaceScope {
+  /** The Space id the mount rendered. Sent as an integrity check; the server re-derives from `slug`. */
+  spaceId: string
+  /** The Space slug. The SERVER's source of truth for which Space this Dispatch belongs to. */
+  slug: string
+  /** The Space's display name, for the box's own copy. */
+  name: string
+}
 
 const MODES: { key: Mode; icon: typeof PenLine; label: string; hostOnly?: boolean }[] = [
   { key: 'post', icon: PenLine, label: 'Post' },
@@ -35,6 +58,7 @@ export function CaptureBox({
   canAnnounce = false,
   defaultMode = 'post',
   compactTools = true,
+  spaceScope,
 }: {
   scopeId: string
   visibility?: 'public' | 'region' | 'cluster' | 'group'
@@ -45,9 +69,33 @@ export function CaptureBox({
   /** Fold the composer's formatting tools behind a "Format" toggle (default —
    *  this default must match the Composer's, or it silently overrides it). */
   compactTools?: boolean
+  /** Mount this box FOR a Space (LIVE-295). See CaptureSpaceScope: Dispatch then announces to that
+   *  Space's members, and `canAnnounce` comes from the Space's manage gate rather than the community
+   *  role. Absent = the community box, unchanged. */
+  spaceScope?: CaptureSpaceScope
 }) {
-  const [mode, setMode] = useState<Mode>(defaultMode)
-  const modes = MODES.filter((m) => !m.hostOnly || canAnnounce)
+  // A space mount opens on Dispatch: announcing is what the Space owner came here to do.
+  const [mode, setMode] = useState<Mode>(spaceScope ? 'dispatch' : defaultMode)
+  const [sent, setSent] = useState(false)
+
+  // A SPACE mount carries ONE feature, and that is deliberate rather than a simplification. The other
+  // four capture modes write to surfaces that belong to the PERSON, not the Space: Post and Photo go
+  // to the member's own wall (`scopeId`), Note is their private journal, Connect saves a contact to
+  // their own book. Offering them inside a Space's box would read as "post as the Space" and quietly
+  // do something else, which is the mis-scoping this row was filed to prevent. When a Space grows a
+  // feed of its own, its mode belongs in this list beside Dispatch.
+  const modes = spaceScope
+    ? MODES.filter((m) => m.key === 'dispatch')
+    : MODES.filter((m) => !m.hostOnly || canAnnounce)
+
+  // FAIL-CLOSED RENDER: a space mount whose viewer is not a manager shows nothing. `canAnnounce` on a
+  // space mount comes from that Space's manage gate (resolveSpaceManageAccess), not the community
+  // role, and the send action re-checks it server-side regardless.
+  if (spaceScope && !canAnnounce) return null
+
+  // The single condition that re-points the send. Narrowed so the override below cannot be reached
+  // without a Space in hand — the type system carries the "never a global fallback" rule too.
+  const spaceDispatch = spaceScope != null && mode === 'dispatch' ? spaceScope : null
 
   // One row of selectable capture features — never wraps; scrolls if it must.
   //
@@ -126,9 +174,39 @@ export function CaptureBox({
         autoImage={mode === 'photo'}
         forceAnnouncement={mode === 'dispatch'}
         bottomSlot={featureRow}
-        placeholder={mode === 'note' ? 'Jot a note: what happened, what you noticed…' : placeholder}
-        submitLabel="Capture"
+        placeholder={
+          spaceDispatch
+            ? `What do ${spaceDispatch.name} members need to know?`
+            : mode === 'note'
+              ? 'Jot a note: what happened, what you noticed…'
+              : placeholder
+        }
+        submitLabel={spaceDispatch ? 'Send Dispatch' : 'Capture'}
+        // THE ONE WRITE SEAM. Only a space mount ON the Dispatch mode overrides the send, and the
+        // override names its Space explicitly. Everything else keeps the default createPost path, so
+        // no existing surface changes shape.
+        onSubmit={
+          spaceDispatch
+            ? async ({ body, imageUrl }) => {
+                setSent(false)
+                // A Dispatch is text. Say so rather than uploading a photo nobody will ever see.
+                if (imageUrl) return { error: 'A Dispatch is text only. Remove the photo to send it.' }
+                const res = await sendSpaceDispatch({
+                  spaceId: spaceDispatch.spaceId,
+                  slug: spaceDispatch.slug,
+                  body,
+                })
+                if (isError(res)) return { error: res.error }
+                setSent(true)
+              }
+            : undefined
+        }
       />
+      {sent && spaceScope && (
+        <p className="mt-2 text-meta text-success">
+          Sent. Every member of {spaceScope.name} will see it on their Dispatch rail.
+        </p>
+      )}
     </div>
   )
 }
