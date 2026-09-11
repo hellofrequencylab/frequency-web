@@ -39461,7 +39461,7 @@ production would make `pr-compare` diff every info chip on the way past.
 
 ## ADR-1318: ACCEPTED — the Loom Studio's cause was 27 bare role checks, and ADR-1317's "unknown" expires (2026-09-10)
 
-**Context.** [ADR-1317](docs/DECISIONS.md) filed `/admin/library` with its cause **open** and the
+**Context.** ADR-1317 filed `/admin/library` with its cause **open** and the
 cheap next step named, rather than swapping the route out on a guess. That was the right call at the
 time — `/admin/crm` had been replaced because its cause was *proven*, and doing the same here on an
 inference would have been the same mistake in the opposite direction. This ADR closes the question
@@ -39487,7 +39487,7 @@ fixture control proving the new assertion can fire.
 **Consequences.** `LIVE-289` **stays open**, and deliberately. The cause is fixed; the row closes
 only when a baseline capture produces `admin-library--dawn-light-desktop.png`, and
 `PW_REQUIRE_OPERATOR` stays unset until then. It was specifically **not** closed by dropping the
-route from `OPERATOR_PATHS` — that is the census mistake [ADR-1314](docs/DECISIONS.md) exists to
+route from `OPERATOR_PATHS` — that is the census mistake ADR-1314 exists to
 prevent, and it would have made the gap invisible rather than absent.
 
 **The lesson is ADR-1082's, again.** A blocker phrased as "the cause is unknown" is a claim with an
