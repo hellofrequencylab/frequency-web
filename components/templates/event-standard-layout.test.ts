@@ -72,6 +72,10 @@ describe('the standard exists and is a composition, not a fork', () => {
       'belonging',
       'credit',
       'reward',
+      // The countdown column (owner, 2026-09-11). It is LAST in the declaration because the list
+      // above is the order of the info LINES, and `aside` is not one of them — it renders as the
+      // column beside that stack, so it has no position in the reading order the rest pins.
+      'aside',
     ])
     // A slot added to the type but never rendered would silently swallow a page's content.
     for (const slot of slots) {
