@@ -57,7 +57,8 @@
             "HYG-075",
             "LIVE-320",
             "LIVE-328",
-            "LIVE-329"
+            "LIVE-329",
+            "LIVE-330"
           ]
         },
         {
@@ -75,7 +76,6 @@
         {
           "name": "WR · the core-model rework (ADR-1294), phases 0-11 in order. Three lines, four nouns. Phases 1-3 are one pass over the same files: the feature gates are inert until the grace window ends on 2026-12-01, which makes this the safe window to move paywalls. Phase 5 is the commercial unlock and phase 11 is the only phase that can say whether any of it worked.",
           "ids": [
-            "PROG-R0",
             "HYG-078",
             "HYG-080",
             "HYG-082",
@@ -10237,19 +10237,20 @@
     {
       "id": "PROG-R0",
       "title": "Rework phase 0: record the decision, defuse the gate cliff",
-      "status": "open",
+      "status": "done",
       "priority": "P0",
       "lane": "program",
       "size": "S",
+      "closed": "2026-09-14",
       "source": {
         "file": "docs/CORE-MODEL.md",
         "ref": "§5"
       },
-      "detail": "The core model is ruled (owner, 2026-09-08). Three lines: people join free, businesses host free, you pay when you start charging. Four nouns: Space, Circle, Event, Practice.\n\nP0 WAS THE DATE, and it is closed: pricing_settings.beta_grace read {\"until\":\"2026-10-01\"} on 2026-09-08, and featureGatesLive() short-circuits every gate to GRANT while betaGraceActive() is true. All 18 feature gates were inert, and would have begun enforcing simultaneously on 1 October with no deploy - including seven with zero enforcement call sites and space_whitelabel, which sells the $249 Independent tier whose only public surface renders \"Coming soon\". Moved to 2026-12-01 in production at 23:27Z.\n\nNOTE the code default is deliberately NOT updated to match. lib/pricing/beta.ts documents at length why BETA_GRACE_DEFAULT must stay a window rather than track the live row: following the live value would reverse the module's fail-safe direction, so a failed read would enforce every gate. Read the row, never the constant.",
+      "detail": "The core model is ruled (owner, 2026-09-08). Three lines: people join free, businesses host free, you pay when you start charging. Four nouns: Space, Circle, Event, Practice.\n\nP0 WAS THE DATE, and it is closed: pricing_settings.beta_grace read {\"until\":\"2026-10-01\"} on 2026-09-08, and featureGatesLive() short-circuits every gate to GRANT while betaGraceActive() is true. All 18 feature gates were inert, and would have begun enforcing simultaneously on 1 October with no deploy - including seven with zero enforcement call sites and space_whitelabel, which sells the $249 Independent tier whose only public surface renders \"Coming soon\". Moved to 2026-12-01 in production at 23:27Z.\n\nNOTE the code default is deliberately NOT updated to match. lib/pricing/beta.ts documents at length why BETA_GRACE_DEFAULT must stay a window rather than track the live row: following the live value would reverse the module's fail-safe direction, so a failed read would enforce every gate. Read the row, never the constant.\n\nCLOSED 2026-09-14 (re-tested at the Phase 0 exit, ADR-1329). Both halves of the title hold on production: the decision is recorded (ADR-1294, three lines and four nouns, the six questions ruled) and the cliff is defused (pricing_settings.beta_grace reads {\"until\":\"2026-12-01\"}, written 2026-09-08 23:27:46Z, re-read 2026-09-14 20:16Z; #2559 made the code fallback fail-safe in the granting direction, so a failed read can no longer enforce every gate). The row sat open at P0 with its own detail saying the date was closed: a program row whose children had finished. Phases 1 to 11 of the rework carry on under their own rows.",
       "verify": {
         "kind": "manual",
-        "evidence": "pricing_settings.beta_grace = {\"until\":\"2026-12-01\"}, written 2026-09-08 23:27:46Z. Re-read the row; the code constant is not the answer.",
-        "checked": "2026-09-08"
+        "evidence": "pricing_settings.beta_grace = {\"until\":\"2026-12-01\"} (written 2026-09-08 23:27:46Z, re-read 2026-09-14); ADR-1294 present in docs/DECISIONS.md; lib/pricing/beta.ts fallback grants (#2559). Re-read the row, never the constant.",
+        "checked": "2026-09-14"
       }
     },
     {
@@ -12446,6 +12447,24 @@
         "kind": "cmd",
         "cmd": "node -e \"const s=require('fs').readFileSync('app/sitemap.ts','utf8');const silent=(s.match(/\\\\.catch\\\\(\\\\(\\\\) => \\\\[\\\\]\\\\)/g)||[]).length;if(silent>0){console.error('app/sitemap.ts still has '+silent+' silent .catch(() => []) fail-safe(s): a failed section read is dropped from the sitemap with no log line and no stale-keep');process.exit(1)}\"",
         "note": "Passes when no section read swallows its error into an empty list without saying so. Measures the silence, not the words. Written 2026-09-14."
+      }
+    },
+    {
+      "id": "LIVE-330",
+      "title": "pr-compare cannot be made a required check while ADR-1328 serialises it with a GitHub concurrency group, because a superseded pending capture is cancelled, not queued",
+      "status": "open",
+      "priority": "P2",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": ".github/workflows/e2e.yml",
+        "ref": "pr-compare / lighthouse concurrency (ADR-1328)"
+      },
+      "detail": "FILED 2026-09-14. The Stabilise phase exits on \"pr-compare public tier required\" (meta.slate.phases). ADR-1328 put pr-compare and lighthouse in repository-wide concurrency groups so one preview capture runs at a time, which is what stopped the day's self-inflicted Supabase load. GitHub keeps ONE pending job per concurrency group: when a second PR's capture queues behind a running one, the first pending job is CANCELLED, not delayed. Measured the same hour: #2583's pr-compare read cancelled at 19:56:25Z, one minute after it queued, because #2584's arrived. That is fine for an advisory check (the next push queues again) and fatal for a required one: on any fan-out, older PRs would be blocked by a cancelled required context that only a new push can re-request. So the exit criterion and the serialisation cannot both hold with the current mechanism.\n\nTHE FIX, before the flip: replace the concurrency GROUP on the two jobs with a turnstile WAIT (a step at the top of each job that polls for other in-progress runs of the same job and sleeps until none, bounded by the job timeout), so a queued capture waits in its runner instead of being cancelled; keep the per-PR workflow group (supersede on the same PR is still right). Then prove it: two PRs pushed within a minute both reach a completed pr-compare. Only then can the public tier be required (LIVE-186 and HYG-027 carry the other blockers on that flip). Runner minutes are the cost; a capture is ~15 minutes, so a queue of N waits N x 15 minutes on a hosted runner.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const y=require('fs').readFileSync('.github/workflows/e2e.yml','utf8');const m=y.match(/^  pr-compare:\\n(?:    .*\\n)*?    concurrency:\\n      group: ([^\\n]+)/m);if(m&&!/github\\\\.ref/.test(m[1])){console.error('pr-compare still serialises through a repository-wide concurrency group ('+m[1]+'), which cancels a superseded pending capture; a required check cannot ride it');process.exit(1)}if(!/turnstile|wait-for-capture|waitForOtherRuns/i.test(y)){console.error('e2e.yml has no turnstile wait: captures are either unserialised or cancel each other');process.exit(1)}\"",
+        "note": "Passes when pr-compare no longer serialises through a repo-wide GitHub concurrency group and a turnstile wait exists in the workflow instead. Measures the mechanism the flip needs, not the flip. Written 2026-09-14."
       }
     },
     {

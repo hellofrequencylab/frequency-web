@@ -40219,7 +40219,7 @@ classes, and each class ends in a rule or a row.
   in one round had expired premises; the cheapest tool call of the day was the one that read the
   schema before writing code.
 
-**Rows.** LIVE-329 filed (P2: ten sitemap reads fail-safe silently under a one-hour revalidate;
+**Rows.** PROG-R0 closed (both halves re-tested on production at the exit: ADR-1294 recorded, `beta_grace` at 2026-12-01, the fallback fail-safe since #2559). LIVE-330 filed (P2: pr-compare cannot be required while a GitHub concurrency group serialises it, because a superseded pending capture is cancelled rather than queued; a turnstile wait is the mechanism the flip needs). LIVE-329 filed (P2: ten sitemap reads fail-safe silently under a one-hour revalidate;
 found while reading the sitemap's fail-safes after the windows). LIVE-328 stays open (P2). The
 recapture half of the exit (the /feed baselines after LIVE-308 and the admin-* baselines for
 LIVE-312) is dispatched when the capture queue is empty and recorded in the ledger; the round is
