@@ -40053,3 +40053,82 @@ three tries on either shape rather than one. The menu fallback stays exactly as 
 that can put a wrong header on production without a red anywhere.
 
 **Rows.** LIVE-324 (done), LIVE-325 (open, P1, W0b).
+
+## ADR-1328: ACCEPTED — the preview-backed e2e jobs run one at a time across the repository, because the day's two "Supabase windows" were our own fan-out (2026-09-14)
+
+**Context.** ADR-1325's build loop fanned seven lanes out on 2026-09-14, and each lane's push
+opened a Vercel preview and an `e2e` run against it (pr-compare: smoke, @a11y and the @visual
+compare; lighthouse: the synthetic speed run). The day recorded two "Supabase windows": 16:55Z
+to 17:20Z and 18:00Z to about 19:10Z, in which the Management API answered the ledger read with
+HTTP 544 and 400-wrapped timeouts (LIVE-323, LIVE-324), production prerenders of `/discover`
+failed on `DiscoverReadError`, the menu reader fell back to defaults silently (LIVE-325), six
+members hit errors and the owner was paged. Every one of those was treated as weather.
+
+It was not weather. Read from the project's edge logs (`edge_logs`, 15-minute buckets):
+
+    10:00Z to 12:45Z     33 to 72 requests per bucket        0 x 5xx    (the resting site)
+    16:00Z               67,173                              0
+    16:30Z              118,708                              6
+    16:45Z              149,285                          3,484
+    17:00Z              142,104                         50,016
+    17:15Z              230,511                          1,802
+    17:45Z              289,623                          2,974
+    18:00Z to 19:00Z    166,838 to 215,548     27,923 to 73,755 per bucket
+
+Every 5xx carried user agent `node` and no referer: a Next.js server function, not a browser.
+The top paths were `/auth/v1/user` (24,706 in one bucket) and profile-scoped reads for ONE
+profile, `78d47bae` (`frequency`, the house account the e2e session is minted for): the
+app-shell reads a member page makes (`space_members`, `memberships`, `consent_records`,
+`profiles.home_timezone`, `entitlement_grants`, `stewardships`, `team_members`,
+`profile_personas`, `platform_flags`), 1,200 to 2,900 of each per bucket. Vercel's runtime
+logs for the same half hour put 47,000 of the 47,200 function invocations on PREVIEW
+deployments (`/feed`, `/the-lab`, `/network/friends`, `/circles`, `/events`: the capture
+surfaces), 27 on the production build that had just gone live. The e2e workflow's run
+history closes it: 32 runs today, 30 of them between 16:06Z and 19:05Z, up to six overlapping,
+each with four workers and two retries against a fresh preview whose ISR cache is empty, and
+every page load fanning into 15 to 20 PostgREST reads plus one `/auth/v1/user` from the proxy,
+multiplied by the RSC prefetches a member page issues for its navigation. The 503s then fed
+Playwright's retries, which fed the load. The project's Postgres logs carry no
+connection-limit or lock error in the window: the layer that gave out was the REST edge, one
+shared database behind every preview.
+
+**Decision.**
+
+- **One preview-backed capture at a time, repository-wide.** `pr-compare` and `lighthouse`
+  each declare a job-level `concurrency` group (`e2e-preview-capture`,
+  `e2e-preview-lighthouse`) with `cancel-in-progress: false`. The workflow-level group
+  (`e2e-pr-<ref>`, cancel-in-progress true) stays: it serialises pushes to the SAME PR and
+  supersedes the older one; the job-level groups serialise across PRs and never cancel a
+  running job. GitHub keeps one pending job per group and cancels an older pending job when a
+  newer one arrives, so on a fan-out a superseded push reads "cancelled" on pr-compare, which is
+  the honest word: nothing was measured, the check is advisory, and the PR's next push queues
+  again. Two groups rather than one so the two jobs of a single run still overlap, as they did
+  before (ADR-936 split them for exactly that wall clock).
+- **The three in-progress runs were cancelled at 19:14Z** (#2571, #2569 and #2574's) before the
+  change landed, which is the only lever that acts on the running load; the merge acts on the
+  next one.
+- **The control run** is the PR that carries this change (#2579): its own e2e run queues in the
+  new groups, and the edge-log 5xx count for the half hour after the cancellations is the
+  reading that says the load was ours. The ledger in `scratchpad/build-loop.md` carries both.
+- **Two rows follow, not fixed here.** `LIVE-327` (P1): the discover retry's classifier
+  (`isTransientDiscoverError`, `lib/discover.ts`) does not recognise the REST edge's 503 body
+  (`upstream connect error or disconnect/reset before headers. reset reason: connection
+  timeout`), so every preview build today died on the FIRST answer with both retry delays
+  unused, and the build log carries no `retrying` line to prove it; the fix widens the
+  classifier to that shape and to a 5xx status with no PostgREST code, pinned by a fixture
+  copied from dpl_E8n9LESJ. `LIVE-328` (P2): the capture fixture should refuse RSC prefetch
+  requests (`Next-Router-Prefetch: 1`), so a page view costs one render rather than one plus
+  every link in the shell; the capture does not need them, and the reduction is the larger
+  lever once runs are serial.
+
+**Consequences.** A fan-out of N lanes now costs N preview captures in sequence rather than
+N at once: about 15 minutes each, so seven lanes wait up to an hour and three quarters for the
+advisory row, and nothing waits for it to merge (pr-compare and lighthouse are not required
+contexts, ADR-1325). The database sees one capture's load at a time, which today's history puts
+under the 5xx line (the 13:33Z and 16:06Z runs, alone, produced 0 x 5xx at 95,000 and 67,000
+requests per bucket). The two windows' other mitigations stay because they are right on their
+own terms: the ledger read retries (LIVE-323/324) and the menu build gate (LIVE-325) each
+measure a consequence that a healthy platform can still produce. What changes is the reading of
+the day: three hours of "the platform is flapping" were the loop measuring its own exhaust.
+
+**Rows.** LIVE-326 (done), LIVE-327 (open, P1, W0b), LIVE-328 (open, P2, W0c).
