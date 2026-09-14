@@ -32,6 +32,8 @@ const state = vi.hoisted(() => ({
   approvalReadError: null as { message: string } | null,
   /** Whether the check-in window is open. */
   checkInWindowOpen: true,
+  /** Whether the member holds a succeeded event_tickets row for the event (LIVE-317). */
+  ownsTicket: false,
 }))
 
 const fx = vi.hoisted(() => ({
@@ -118,6 +120,9 @@ vi.mock('@/lib/supabase/admin', () => ({
         }
         if (table === 'profiles') {
           return { data: { display_name: 'Mia', auth_user_id: 'auth-1', home_timezone: null }, error: null }
+        }
+        if (table === 'event_tickets') {
+          return { data: state.ownsTicket ? { id: 'ticket-1' } : null, error: null }
         }
         return { data: null, error: null }
       }
@@ -229,6 +234,7 @@ beforeEach(() => {
   state.requiresApproval = false
   state.approvalReadError = null
   state.checkInWindowOpen = true
+  state.ownsTicket = false
   fx.sessionWrites.length = 0
   fx.adminInserts.length = 0
   fx.awardGems.mockClear()
@@ -440,6 +446,40 @@ describe('L5-21: checkInEvent names the reason it refused', () => {
   it('signed out → reason signed_out', async () => {
     fx.getMyProfileId.mockResolvedValue(null)
     expect(await checkInEvent(EVENT)).toEqual({ ok: false, reason: 'signed_out' })
+  })
+})
+
+// ── LIVE-317: a ticket is a seat ──────────────────────────────────────────────────────────────
+//
+// claim_guest_tickets() sets buyer_profile_id and mints no RSVP row, and a member who pays on a
+// tickets-mode event has no RSVP row either. The action read `event_rsvps` alone and answered
+// `not_going`, so nobody holding a ticket could check in, on the page or through the QR door.
+
+describe('LIVE-317: a succeeded ticket admits a member to check-in', () => {
+  it('a member with a succeeded ticket and NO RSVP row checks in inside the window', async () => {
+    state.existing = null
+    state.ownsTicket = true
+    // recordEngagementEvent is mocked to `recorded: false`, so a clean pass reads as the idempotent
+    // repeat — the point is that the seat check let the member THROUGH to the ledger.
+    expect(await checkInEvent(EVENT)).toEqual({ ok: true, alreadyCheckedIn: true })
+  })
+
+  it('a member with neither a ticket nor a going RSVP is still refused as not_going', async () => {
+    state.existing = null
+    state.ownsTicket = false
+    expect(await checkInEvent(EVENT)).toEqual({ ok: false, reason: 'not_going' })
+  })
+
+  it('the ticket does not reopen a shut window or a cancelled door', async () => {
+    state.ownsTicket = true
+    state.checkInWindowOpen = false
+    expect(await checkInEvent(EVENT)).toEqual({ ok: false, reason: 'window_closed' })
+  })
+
+  it('a pending RSVP with no ticket still reads pending, not not_going', async () => {
+    state.existing = { status: 'going', approval_status: 'pending' }
+    state.ownsTicket = false
+    expect(await checkInEvent(EVENT)).toEqual({ ok: false, reason: 'pending' })
   })
 })
 

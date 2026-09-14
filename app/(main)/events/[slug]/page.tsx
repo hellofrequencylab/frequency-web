@@ -1061,7 +1061,13 @@ export default async function EventDetailPage({
   }
 
   // Practice check-in availability + whether the viewer already checked in.
-  const canCheckIn = !!myProfileId && isGoing && checkInWindow && !event.is_cancelled
+  //
+  // A TICKET IS A SEAT (LIVE-317). `claim_guest_tickets()` sets `buyer_profile_id` and mints no
+  // RSVP row, and a member who pays on a tickets-mode event has no RSVP row either, so reading
+  // `isGoing` alone shut the door on everyone who had actually bought their way in. A succeeded
+  // ticket admits in the same window a going RSVP does; `checkInEvent` applies the same rule
+  // server-side, so the surface and the action agree.
+  const canCheckIn = !!myProfileId && (isGoing || ownsTicket) && checkInWindow && !event.is_cancelled
 
   const [
     ciRes,
@@ -2089,7 +2095,9 @@ export default async function EventDetailPage({
             startsAtMs={eventInstant(event.starts_at, eventTz)?.getTime() ?? null}
             windowOpen={checkInWindow}
             signedIn={!!myProfileId}
-            isGoing={isGoing}
+            // The gate the surface names `isGoing` is "holds a seat", and a succeeded ticket is one
+            // (LIVE-317) — the same admission `canCheckIn` above and `checkInEvent` apply.
+            isGoing={isGoing || ownsTicket}
             alreadyCheckedIn={alreadyCheckedIn}
             zaps={ZAP_AMOUNTS.event_attend}
             doorNote={readEventSpecialInstructions(extra?.details)}
