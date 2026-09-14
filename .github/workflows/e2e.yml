@@ -121,6 +121,20 @@ jobs:
     if: needs.preflight.outputs.ready == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 35
+    # ONE preview-backed capture at a time across the whole repository (ADR-1328). The
+    # workflow-level group above only serialises pushes to the SAME PR. On 2026-09-14 a
+    # seven-lane fan-out put 32 of these runs through in six hours, up to six at once, each
+    # rendering ~160 signed-in routes on a fresh preview with four workers and two retries,
+    # and every render fans out into 15-20 PostgREST reads plus one /auth/v1/user. The REST
+    # edge answered 503 to ~190,000 requests between 16:45Z and 19:10Z, production prerenders
+    # timed out, members saw errors, and the ledger guard read HTTP 544: one shared database
+    # behind every preview. The group is repo-wide and never cancels a running job; GitHub
+    # keeps one pending job per group and cancels an older pending one, so on a fan-out the
+    # newest push waits its turn and a superseded one reads "cancelled" here, which is the
+    # honest word for it (pr-compare is advisory, and the next push on that PR queues again).
+    concurrency:
+      group: e2e-preview-capture
+      cancel-in-progress: false
     # Narrower than the workflow default (which is only `contents: write` for the
     # maintainer-triggered baseline commit). This job never writes.
     permissions:
@@ -486,6 +500,12 @@ jobs:
     if: needs.preflight.outputs.ready == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    # Its own repo-wide lane, for the same reason as pr-compare's (ADR-1328): one synthetic
+    # speed run at a time, so a fan-out never stacks Lighthouse's page loads on top of the
+    # capture's. Separate from the capture group so the two jobs of one run still overlap.
+    concurrency:
+      group: e2e-preview-lighthouse
+      cancel-in-progress: false
     permissions:
       contents: read
       deployments: read

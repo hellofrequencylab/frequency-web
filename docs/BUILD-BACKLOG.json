@@ -49,7 +49,8 @@
             "LIVE-325",
             "LIVE-186",
             "LIVE-213",
-            "LIVE-312"
+            "LIVE-312",
+            "LIVE-327"
           ]
         },
         {
@@ -60,7 +61,8 @@
             "LIVE-316",
             "LIVE-318",
             "LIVE-320",
-            "HYG-087"
+            "HYG-087",
+            "LIVE-328"
           ]
         },
         {
@@ -12367,6 +12369,64 @@
         "kind": "cmd",
         "cmd": "node -e \"const s=require('fs').readFileSync('lib/menus/read.ts','utf8');if(!/if \\\\(isProductionBuild\\\\(\\\\)\\\\) throw/.test(s)){console.error('lib/menus/read.ts never throws on the build phase: a failed menu read still falls back to defaults during next build and ships them');process.exit(1)}\"",
         "note": "Passes once the reader throws when the build-phase detector (isProductionBuild, lib/supabase/public.ts) says so. Measures the throw, not a string. Written 2026-09-14."
+      }
+    },
+    {
+      "id": "LIVE-326",
+      "title": "The preview-backed e2e jobs ran once per push across every PR at once, and a seven-lane fan-out was the day's two \"Supabase windows\"",
+      "status": "done",
+      "priority": "P0",
+      "lane": "live",
+      "size": "S",
+      "closed": "2026-09-14",
+      "source": {
+        "file": ".github/workflows/e2e.yml",
+        "ref": "pr-compare / lighthouse concurrency"
+      },
+      "detail": "MEASURED 2026-09-14 (ADR-1328). Two windows of Supabase 5xx (16:55Z to 17:20Z, 18:00Z to about 19:10Z) had been read all day as platform weather: ledger reads HTTP 544, production prerenders timing out, menus falling back to defaults, six members hitting errors, the owner paged. The edge logs say otherwise. The resting site makes 33 to 72 requests per 15 minutes; between 16:00Z and 19:00Z it made 67,000 to 290,000 per bucket, with 5xx from 3,484 to 73,755 per bucket, every one under user agent node with no referer, the top path /auth/v1/user and the rest the app-shell reads for ONE profile, 78d47bae (the house account the e2e session is minted for). Vercel runtime logs put 47,000 of 47,200 invocations in the half hour on PREVIEW deployments at the capture surfaces. The e2e workflow ran 32 times today, up to six at once, four workers and two retries each, against previews whose ISR caches were empty; every page load fans into 15 to 20 PostgREST reads plus one /auth/v1/user, times the RSC prefetches a member page issues. The 503s fed the retries and the retries fed the load. Postgres logs carry no connection or lock error: the REST edge gave out.\n\nCLOSED 2026-09-14: pr-compare and lighthouse each declare a job-level concurrency group (e2e-preview-capture, e2e-preview-lighthouse) with cancel-in-progress false, so one preview-backed capture runs at a time across the repository; the workflow-level per-PR group stays and still supersedes an older push to the same PR. The three running captures were cancelled at 19:14Z. Control: the PR carrying this change (#2579) queues in the new groups, and the edge-log 5xx count after the cancellations is the reading. Follow-ons: LIVE-327 (the discover classifier misses the 503 body) and LIVE-328 (refuse RSC prefetches in the capture).",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const y=require('fs').readFileSync('.github/workflows/e2e.yml','utf8');const jobs={'pr-compare':/^  pr-compare:\\n(?:    .*\\n)*?    concurrency:\\n      group: ([^\\n]+)\\n      cancel-in-progress: (\\w+)/m,lighthouse:/^  lighthouse:\\n(?:    .*\\n)*?    concurrency:\\n      group: ([^\\n]+)\\n      cancel-in-progress: (\\w+)/m};for(const j of Object.keys(jobs)){const m=y.match(jobs[j]);if(!m){console.error(j+' declares no job-level concurrency group: a fan-out runs it once per PR at once');process.exit(1)}if(/github\\.ref|github\\.head_ref|pull_request/.test(m[1])){console.error(j+' group '+m[1]+' is keyed by the PR, so it serialises nothing across PRs');process.exit(1)}if(m[2]!=='false'){console.error(j+' cancels a running capture from another PR');process.exit(1)}}\"",
+        "note": "Reads the job blocks of e2e.yml: each preview-backed job must declare a concurrency group that is not keyed by the PR ref and does not cancel in progress. Measures the serialisation, not the comment. Written 2026-09-14."
+      }
+    },
+    {
+      "id": "LIVE-327",
+      "title": "The discover retry does not recognise the REST edge's 503 body, so a preview build dies on the first answer with both delays unused",
+      "status": "open",
+      "priority": "P1",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/discover.ts",
+        "ref": "isTransientDiscoverError / TRANSIENT_RE"
+      },
+      "detail": "MEASURED 2026-09-14 in the build log of dpl_E8n9LESJ (#2579's preview, 19:08:55Z) and in every other preview that failed today: the prerender of /discover/circles/[id] threw DiscoverReadError from detailRead with cause.message \"upstream connect error or disconnect/reset before headers. reset reason: connection timeout\", and the log carries NO \"[discover] ... transient failure, retrying\" line, so attempt() returned on the first answer. That message is the Envoy body Supabase's REST edge returns as HTTP 503 when PostgREST does not accept the connection (ADR-1328: the day's own fan-out). supabase-js resolves it as an error with empty code and hint, which the LIVE-084 fix already treats as \"not a database answer\", but TRANSIENT_RE knows errno tokens, \"fetch failed\", \"socket\", \"network\", \"TimeoutError\" and \"aborted due to timeout\", and none of those words is in this body. The classifier has now been dead for three distinct shapes (LIVE-084 the ECONNRESET with an empty code, LIVE-105 the bounded abort, and this one), each found by a killed build.\n\nTHE FIX: widen TRANSIENT_RE to the edge's vocabulary (upstream connect error, reset before headers, connection timeout, and the 502/503/504/522/524 statuses when the resolved result carries a status and no PostgREST code), copy the dpl_E8n9LESJ object into lib/discover.test.ts as a fixture beside PRODUCTION_KILLER and BOUNDED_READ_ABORT, and lengthen the ladder to three delays (250, 1000, 3000 ms) so a build outlasts a moment rather than a packet. A real PostgREST code still refuses the retry: the code guard is untouched.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const s=fs.readFileSync('lib/discover.ts','utf8');const m=s.match(/const TRANSIENT_RE = \\\\/(.*)\\\\/([a-z]*)/);if(!m){console.error('TRANSIENT_RE not found in lib/discover.ts');process.exit(1)}const re=new RegExp(m[1],m[2]);const body='upstream connect error or disconnect/reset before headers. reset reason: connection timeout';if(!re.test(body)){console.error('the discover classifier does not recognise the REST edge 503 body, so a preview build dies on the first answer: '+body);process.exit(1)}const t=fs.readFileSync('lib/discover.test.ts','utf8');if(!t.includes(body)){console.error('lib/discover.test.ts carries no fixture copied from the dpl_E8n9LESJ build log');process.exit(1)}\"",
+        "note": "Rebuilds TRANSIENT_RE from lib/discover.ts and tests it against the verbatim Envoy body from dpl_E8n9LESJ, then requires the same body as a fixture in lib/discover.test.ts. Measures the classification, not a word in a comment. Written 2026-09-14."
+      }
+    },
+    {
+      "id": "LIVE-328",
+      "title": "The e2e capture lets every page view prefetch the whole shell, so one signed-in route costs one render plus every link in the navigation",
+      "status": "open",
+      "priority": "P2",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "test/e2e/surfaces.ts",
+        "ref": "the capture fixture"
+      },
+      "detail": "FILED 2026-09-14 out of ADR-1328. The load that put the REST edge into 503 was not the 160 capture surfaces; it was the RSC prefetches each member page issues for the links in its shell (Next-Router-Prefetch: 1 requests, each a server render with its own /auth/v1/user and 15 to 20 PostgREST reads). LIVE-326 serialised the runs, which halves to a sixth the peak; this row removes the multiplier inside one run. The visual and a11y captures do not need a prefetched router cache: the page under test is fully rendered before either reads it.\n\nTHE FIX: a route interception in the shared capture fixture that aborts requests carrying the Next-Router-Prefetch header (and the _rsc prefetch query on older shapes) for the visual, a11y and smoke projects, with a test that proves the interception fires on a fake prefetch and lets a navigation through. Measure before and after on one preview: the edge-log request count for the house profile during a single run.",
+      "verify": {
+        "kind": "grep-present",
+        "pattern": "Next-Router-Prefetch",
+        "paths": [
+          "test/e2e/surfaces.ts"
+        ],
+        "note": "Passes once the capture fixture names the prefetch header it refuses. Written 2026-09-14; the run-level measurement lives in the closing note."
       }
     },
     {
