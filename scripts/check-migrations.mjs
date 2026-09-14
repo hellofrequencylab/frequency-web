@@ -220,27 +220,61 @@ export function resolveLedgerSource({ env = {}, argv = [] } = {}) {
 export async function loadLedgerPayload(source, io = {}) {
   const readFile = io.readFile ?? ((p) => readFileSync(p, 'utf8'))
   const doFetch = io.fetch ?? globalThis.fetch
+  const sleep = io.sleep ?? ((ms) => new Promise((r) => setTimeout(r, ms)))
+  const attempts = io.attempts ?? LEDGER_READ_ATTEMPTS
 
   if (source.kind === 'file') return JSON.parse(readFile(source.path))
 
   if (typeof doFetch !== 'function') {
     throw new Error('no fetch implementation available to read the migration ledger')
   }
-  const res = await doFetch(QUERY_URL(source.ref), {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${source.token}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ query: LEDGER_QUERY }),
-  })
-  if (!res.ok) {
-    const body = await res.text().catch(() => '')
-    throw new Error(
-      `ledger query HTTP ${res.status} from the Supabase Management API. ${body.slice(0, 300)}`,
-    )
+
+  // The read is retried ONLY for the failures that mean "the platform did not answer": a thrown
+  // fetch (connection refused, reset, DNS) or a 5xx (Supabase's Management API answered HTTP 544
+  // "Connection terminated due to connection timeout" three times on 2026-09-14, on two PRs and a
+  // main push, all inside one twenty-minute window). A 4xx is the CALLER's defect (a bad token, a
+  // wrong ref) and is thrown on the first answer: retrying it would only delay the same message.
+  // The bound is small and the last failure still throws, so a database that is really down still
+  // fails the guard rather than degrading to a skip (see ledgerCheck).
+  let lastError
+  for (let attempt = 1; attempt <= attempts; attempt++) {
+    try {
+      const res = await doFetch(QUERY_URL(source.ref), {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${source.token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ query: LEDGER_QUERY }),
+      })
+      if (res.ok) return await res.json()
+      const body = await res.text().catch(() => '')
+      const err = new Error(
+        `ledger query HTTP ${res.status} from the Supabase Management API. ${body.slice(0, 300)}`,
+      )
+      if (res.status < 500) throw err
+      lastError = err
+    } catch (e) {
+      if (e !== lastError && !isTransportError(e)) throw e
+      lastError = e
+    }
+    if (attempt < attempts) await sleep(LEDGER_READ_BACKOFF_MS[attempt - 1] ?? 0)
   }
-  return await res.json()
+  throw new Error(
+    `${lastError instanceof Error ? lastError.message : String(lastError)} (after ${attempts} attempts)`,
+  )
+}
+
+/** How many times the live ledger read is tried before the guard reports it could not look,
+ *  and the pauses between tries. Three tries over four seconds covers a connection that timed
+ *  out once; it does not cover an outage, and is not meant to. */
+export const LEDGER_READ_ATTEMPTS = 3
+export const LEDGER_READ_BACKOFF_MS = Object.freeze([1000, 3000])
+
+/** A thrown fetch is a transport failure (the request never got an HTTP answer). Anything we
+ *  threw ourselves for a 4xx carries an HTTP status in its message and is not retried. */
+function isTransportError(e) {
+  return !(e instanceof Error && /^ledger query HTTP [1-4]\d\d /.test(e.message))
 }
 
 /** The loud skip. It states what DID pass, so nobody reads it as "the guard is broken", and what
