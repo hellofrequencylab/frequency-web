@@ -120,7 +120,10 @@ jobs:
     needs: preflight
     if: needs.preflight.outputs.ready == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    # 35 is the capture's own budget, unchanged since ADR-936; the 90 on top is the most the
+    # turnstile below may spend waiting (TURNSTILE_MAX_MINUTES), so a full wait still leaves
+    # the suite every minute it had. Raise both together or neither.
+    timeout-minutes: 125
     # ONE preview-backed capture at a time across the whole repository (ADR-1328). The
     # workflow-level group above only serialises pushes to the SAME PR. On 2026-09-14 a
     # seven-lane fan-out put 32 of these runs through in six hours, up to six at once, each
@@ -128,22 +131,125 @@ jobs:
     # and every render fans out into 15-20 PostgREST reads plus one /auth/v1/user. The REST
     # edge answered 503 to ~190,000 requests between 16:45Z and 19:10Z, production prerenders
     # timed out, members saw errors, and the ledger guard read HTTP 544: one shared database
-    # behind every preview. The group is repo-wide and never cancels a running job; GitHub
-    # keeps one pending job per group and cancels an older pending one, so on a fan-out the
-    # newest push waits its turn and a superseded one reads "cancelled" here, which is the
-    # honest word for it (pr-compare is advisory, and the next push on that PR queues again).
-    concurrency:
-      group: e2e-preview-capture
-      cancel-in-progress: false
+    # behind every preview.
+    #
+    # ADR-1328 first did this with a job-level `concurrency` group (`e2e-preview-capture`,
+    # cancel-in-progress false). That serialised the captures, and it also CANCELLED them:
+    # GitHub keeps ONE pending job per group and cancels the older pending job when a newer
+    # one arrives. Measured the same hour: #2583's pr-compare read cancelled at 19:56:25Z,
+    # one minute after it queued, because #2584's had arrived. Fine for an advisory row (the
+    # next push queues again); fatal for a required one, because a cancelled required context
+    # blocks the PR until a new push re-requests it, and the Stabilise phase exits on this
+    # check becoming required (LIVE-330, ADR-1331).
+    #
+    # So the wait moved out of GitHub's queue and into the runner: THE TURNSTILE, the first
+    # step below. It polls the Actions API for other in-progress runs of this workflow whose
+    # `pr-compare` job is ahead of this one and sleeps, 30 s between looks, until none is.
+    # Five rules, each pinned in the script:
+    #   1. it ignores this run's own jobs;
+    #   2. it ignores completed runs and jobs, so a cancelled or finished capture holds nothing;
+    #   3. a run is AHEAD when its job is past its own turnstile (capturing), or when it is
+    #      still waiting and has the LOWER run number, so two waiting runs cannot starve each
+    #      other: the older goes first;
+    #   4. it logs one line per poll naming what it is waiting on;
+    #   5. it never fails the job: a wait that reaches TURNSTILE_MAX_MINUTES proceeds anyway
+    #      and says so, in a warning and the job summary. The load rule is a ceiling, not a
+    #      gate: one overlapping capture costs less than a required check that reads red
+    #      for a queue.
+    # The bound is 90 minutes because the fan-out the loop actually runs is seven lanes and a
+    # capture is ~15 minutes: the last lane waits for six. A bound the routine case reaches is
+    # a gate that gets routed around. `lighthouse` below keeps its own turnstile keyed by its
+    # job name, so one run's two jobs still overlap (ADR-936 split them for that wall clock).
+    #
     # Narrower than the workflow default (which is only `contents: write` for the
-    # maintainer-triggered baseline commit). This job never writes.
+    # maintainer-triggered baseline commit). This job never writes. `actions: read` is the
+    # turnstile's read of this workflow's runs and jobs, and nothing else is widened.
     permissions:
+      actions: read
       contents: read
       deployments: read
       statuses: read
     steps:
       # No gate step here any more. The `preflight` job above decides, and this job's `if:`
       # consumes it — so a missing secret SKIPS this job rather than running it to a vacuous green.
+      - name: Turnstile (wait for other pr-compare captures)
+        id: turnstile
+        uses: actions/github-script@v9
+        env:
+          TURNSTILE_JOB: pr-compare
+          TURNSTILE_WORKFLOW: e2e.yml
+          TURNSTILE_MAX_MINUTES: '90'
+          TURNSTILE_POLL_SECONDS: '30'
+        with:
+          script: |
+            // THE TURNSTILE. Rules 1 to 5 are in the comment block above this job's timeout.
+            const jobName = process.env.TURNSTILE_JOB
+            const workflowFile = process.env.TURNSTILE_WORKFLOW
+            const maxMinutes = Number(process.env.TURNSTILE_MAX_MINUTES)
+            const pollSeconds = Number(process.env.TURNSTILE_POLL_SECONDS)
+            const { owner, repo } = context.repo
+            const started = Date.now()
+            const deadline = started + maxMinutes * 60_000
+            const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+            const elapsed = () => ((Date.now() - started) / 60_000).toFixed(1)
+            // A job is past its turnstile when this step (matched by name, so both jobs share
+            // the one definition) has completed. Before that it is waiting, not capturing.
+            const isTurnstile = (step) => /^Turnstile/.test(step.name || '')
+            let poll = 0
+            for (;;) {
+              poll += 1
+              const ahead = []
+              try {
+                // Only runs still in progress: a completed run (success, failure, CANCELLED)
+                // holds no load, so the workflow-level group's supersede on the same PR and
+                // ADR-1328's cancellations both fall out of the read (rule 2).
+                const runs = await github.paginate(github.rest.actions.listWorkflowRuns, {
+                  owner, repo, workflow_id: workflowFile, status: 'in_progress', per_page: 100,
+                })
+                for (const run of runs) {
+                  if (run.id === context.runId) continue // rule 1: never this run's own jobs
+                  const jobs = await github.paginate(github.rest.actions.listJobsForWorkflowRun, {
+                    owner, repo, run_id: run.id, filter: 'latest', per_page: 100,
+                  })
+                  for (const job of jobs) {
+                    // Same-named job only, so pr-compare and lighthouse take separate turns
+                    // and one run's two jobs still overlap (ADR-936). A completed job, whatever
+                    // its conclusion, holds nothing (rule 2).
+                    if (job.name !== jobName || job.status === 'completed') continue
+                    const gate = (job.steps || []).find(isTurnstile)
+                    const capturing = gate ? gate.status === 'completed' : job.status === 'in_progress'
+                    const older = run.run_number < context.runNumber
+                    // Rule 3: a run is AHEAD when it is already capturing, or when it is still
+                    // waiting and carries the lower run number. Two waiting runs therefore
+                    // never wait on each other: the older proceeds, the newer waits for it.
+                    if (capturing || older) {
+                      ahead.push(`run #${run.run_number} (${run.head_branch}: ${capturing ? 'capturing' : 'waiting, older'})`)
+                    }
+                  }
+                }
+              } catch (error) {
+                // An unreadable API is not a clear road; it is one more thing to wait on,
+                // and the bound below still ends the wait (rule 5).
+                ahead.push(`the Actions API (unreadable: ${error.message})`)
+              }
+              if (ahead.length === 0) {
+                core.info(`turnstile: clear on poll ${poll} after ${elapsed()} min; ${jobName} proceeds`)
+                break
+              }
+              if (Date.now() >= deadline) {
+                // Rule 5: the load rule is a ceiling, not a gate. Say so and go.
+                core.warning(`turnstile: bound of ${maxMinutes} min reached after ${poll} polls, still waiting on ${ahead.join(', ')}; ${jobName} proceeds anyway`)
+                await core.summary
+                  .addRaw(`### Turnstile bound reached\n\nThis \`${jobName}\` waited ${maxMinutes} min for ${ahead.join(', ')} and proceeded anyway: the one-capture-at-a-time rule is a ceiling, not a gate (ADR-1331).\n`)
+                  .write()
+                break
+              }
+              // Rule 4: one line per poll, naming what it waits on.
+              core.info(`turnstile: poll ${poll} (${elapsed()} min): waiting on ${ahead.join(', ')}; next look in ${pollSeconds}s`)
+              await sleep(pollSeconds * 1000)
+            }
+            core.setOutput('waited_minutes', elapsed())
+
       - name: Resolve the PR's Vercel preview URL
         id: preview
         env:
@@ -499,19 +605,100 @@ jobs:
     needs: preflight
     if: needs.preflight.outputs.ready == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 30
-    # Its own repo-wide lane, for the same reason as pr-compare's (ADR-1328): one synthetic
-    # speed run at a time, so a fan-out never stacks Lighthouse's page loads on top of the
-    # capture's. Separate from the capture group so the two jobs of one run still overlap.
-    concurrency:
-      group: e2e-preview-lighthouse
-      cancel-in-progress: false
+    # 30 for the audits themselves (unchanged) plus the 90 the turnstile may wait, as on pr-compare.
+    timeout-minutes: 120
+    # Its own turnstile, for the same reason as pr-compare's (ADR-1328, mechanism changed by
+    # ADR-1331): one synthetic speed run at a time, so a fan-out never stacks Lighthouse's
+    # page loads on top of the capture's. Keyed by THIS job's name so the two jobs of one run
+    # still overlap. ADR-1328's `e2e-preview-lighthouse` concurrency group is gone for the
+    # reason given above pr-compare: a group cancels the older pending job, and a required
+    # check cannot ride a mechanism that cancels it. The script is the one definition,
+    # byte-identical to pr-compare's (scripts/e2e-preview-gate.test.ts pins that).
     permissions:
+      actions: read
       contents: read
       deployments: read
       statuses: read
     steps:
       # No gate step: `preflight` decides and this job's `if:` consumes it.
+      - name: Turnstile (wait for other lighthouse captures)
+        id: turnstile
+        uses: actions/github-script@v9
+        env:
+          TURNSTILE_JOB: lighthouse
+          TURNSTILE_WORKFLOW: e2e.yml
+          TURNSTILE_MAX_MINUTES: '90'
+          TURNSTILE_POLL_SECONDS: '30'
+        with:
+          script: |
+            // THE TURNSTILE. Rules 1 to 5 are in the comment block above this job's timeout.
+            const jobName = process.env.TURNSTILE_JOB
+            const workflowFile = process.env.TURNSTILE_WORKFLOW
+            const maxMinutes = Number(process.env.TURNSTILE_MAX_MINUTES)
+            const pollSeconds = Number(process.env.TURNSTILE_POLL_SECONDS)
+            const { owner, repo } = context.repo
+            const started = Date.now()
+            const deadline = started + maxMinutes * 60_000
+            const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+            const elapsed = () => ((Date.now() - started) / 60_000).toFixed(1)
+            // A job is past its turnstile when this step (matched by name, so both jobs share
+            // the one definition) has completed. Before that it is waiting, not capturing.
+            const isTurnstile = (step) => /^Turnstile/.test(step.name || '')
+            let poll = 0
+            for (;;) {
+              poll += 1
+              const ahead = []
+              try {
+                // Only runs still in progress: a completed run (success, failure, CANCELLED)
+                // holds no load, so the workflow-level group's supersede on the same PR and
+                // ADR-1328's cancellations both fall out of the read (rule 2).
+                const runs = await github.paginate(github.rest.actions.listWorkflowRuns, {
+                  owner, repo, workflow_id: workflowFile, status: 'in_progress', per_page: 100,
+                })
+                for (const run of runs) {
+                  if (run.id === context.runId) continue // rule 1: never this run's own jobs
+                  const jobs = await github.paginate(github.rest.actions.listJobsForWorkflowRun, {
+                    owner, repo, run_id: run.id, filter: 'latest', per_page: 100,
+                  })
+                  for (const job of jobs) {
+                    // Same-named job only, so pr-compare and lighthouse take separate turns
+                    // and one run's two jobs still overlap (ADR-936). A completed job, whatever
+                    // its conclusion, holds nothing (rule 2).
+                    if (job.name !== jobName || job.status === 'completed') continue
+                    const gate = (job.steps || []).find(isTurnstile)
+                    const capturing = gate ? gate.status === 'completed' : job.status === 'in_progress'
+                    const older = run.run_number < context.runNumber
+                    // Rule 3: a run is AHEAD when it is already capturing, or when it is still
+                    // waiting and carries the lower run number. Two waiting runs therefore
+                    // never wait on each other: the older proceeds, the newer waits for it.
+                    if (capturing || older) {
+                      ahead.push(`run #${run.run_number} (${run.head_branch}: ${capturing ? 'capturing' : 'waiting, older'})`)
+                    }
+                  }
+                }
+              } catch (error) {
+                // An unreadable API is not a clear road; it is one more thing to wait on,
+                // and the bound below still ends the wait (rule 5).
+                ahead.push(`the Actions API (unreadable: ${error.message})`)
+              }
+              if (ahead.length === 0) {
+                core.info(`turnstile: clear on poll ${poll} after ${elapsed()} min; ${jobName} proceeds`)
+                break
+              }
+              if (Date.now() >= deadline) {
+                // Rule 5: the load rule is a ceiling, not a gate. Say so and go.
+                core.warning(`turnstile: bound of ${maxMinutes} min reached after ${poll} polls, still waiting on ${ahead.join(', ')}; ${jobName} proceeds anyway`)
+                await core.summary
+                  .addRaw(`### Turnstile bound reached\n\nThis \`${jobName}\` waited ${maxMinutes} min for ${ahead.join(', ')} and proceeded anyway: the one-capture-at-a-time rule is a ceiling, not a gate (ADR-1331).\n`)
+                  .write()
+                break
+              }
+              // Rule 4: one line per poll, naming what it waits on.
+              core.info(`turnstile: poll ${poll} (${elapsed()} min): waiting on ${ahead.join(', ')}; next look in ${pollSeconds}s`)
+              await sleep(pollSeconds * 1000)
+            }
+            core.setOutput('waited_minutes', elapsed())
+
       - name: Resolve the PR's Vercel preview URL
         id: preview
         env:
