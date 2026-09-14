@@ -17,7 +17,8 @@ import { resolveAcquisition } from '@/lib/attribution/server'
 // PostgREST directly, so this action is a convenience wrapper and NOT a security boundary. Nothing
 // below may be the only thing standing between a caller and a bad outcome, because a caller can
 // simply not use it. The SQL re-validates the address, re-checks that the event is real, public,
-// future, un-cancelled and not ticketed, and bounds every field.
+// future, un-cancelled and not ticketed (or ticketed with a FREE tier named, 20270345004000), and
+// bounds every field.
 //
 // It is called through the SESSION client rather than the admin client for the same reason: the
 // admin client would bypass RLS and make the function's own guards the only ones left. Keeping this
@@ -73,6 +74,13 @@ export async function submitGuestRsvp(input: {
   eventId: string
   email: string
   name?: string
+  /** A FREE tier of a tickets-mode event (LIVE-318). Forwarded to the SQL, which is the one that
+   *  decides: capture_guest_rsvp seats a guest on a ticketed event ONLY when this names one of its
+   *  active, ungated, unsold-out free tiers, and ignores it on an RSVP-mode event. The seat it
+   *  writes is the same going RSVP row a free RSVP writes; no ticket row exists for a free claim.
+   *  The ticket door (app/(main)/events/[slug]/ticket-actions.ts startGuestTicket) passes it after
+   *  createTicketCheckout has answered `free`; the RSVP form never sets it. */
+  ticketTypeId?: string | null
   /** Honeypot. A real person never sees this field, so anything in it is a bot. */
   company?: string
 }): Promise<GuestRsvpResult> {
@@ -110,6 +118,7 @@ export async function submitGuestRsvp(input: {
       p_event_id: input.eventId,
       p_email: email,
       p_name: name,
+      p_ticket_type_id: input.ticketTypeId ?? null,
     })
     if (error) {
       console.error('[guest-rsvp] capture_guest_rsvp failed', { eventId: input.eventId, error: error.message })
