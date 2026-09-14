@@ -55,7 +55,8 @@
           "name": "W0c · P2 — small cleanups worth doing whenever a lane is clear, plus the tail of a sequenced repair whose head is higher up the slate (LIVE-293 and LIVE-294 follow LIVE-290 to LIVE-292).",
           "ids": [
             "HYG-075",
-            "LIVE-328"
+            "LIVE-328",
+            "LIVE-331"
           ]
         },
         {
@@ -12466,6 +12467,24 @@
         "note": "Passes when pr-compare no longer serialises through a repo-wide GitHub concurrency group and a turnstile wait exists in the workflow instead. Measures the mechanism the flip needs, not the flip. Written 2026-09-14."
       },
       "closed": "2026-09-14"
+    },
+    {
+      "id": "LIVE-331",
+      "title": "The ten sitemap section readers resolve a transport failure into an empty list inside themselves, so the sitemap's own fail-safes never see it",
+      "status": "open",
+      "priority": "P2",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "lib/partners/read.ts",
+        "ref": "and lib/practices.ts, lib/spaces/discovery.ts, lib/commerce/products.ts, lib/listings/housing.ts, lib/marketplace.ts, lib/analytics/density.ts, app/discover/events/_data.ts"
+      },
+      "detail": "FILED 2026-09-14 from Lane P's LIVE-329 report. LIVE-329 made app/sitemap.ts sort what is THROWN: a deterministic failure logs and yields [] for its section, a transient one logs and rethrows so a regeneration inside a database window fails instead of caching a hollow copy. Measured while building it: none of the ten catches would have fired under the ADR-1328 windows, because every one of the ten section readers already resolves a supabase-js transport error into [] inside itself (the `{ data } = await query` shape, or a try/catch to []). The hole forms one level below the sitemap's sight, and the same readers feed the discover pages, so the sitemap fix is honest but cannot fire until the readers report a failed read as failed.\n\nTHE FIX: give each reader the `{ rows, ok }` shape lib/discover.ts already uses (listRead), or throw a typed error on a transport failure (isTransientDiscoverError / isTransientDiscoverStatus, LIVE-327), and let the sitemap's sectionRead and the discover pages decide. One reader per commit is fine; the probe reads all eight files and fails naming the first that still returns [] on a transport failure. Re-test the premise per file: some callers may rely on [] for an empty-state render and need the ok flag threaded, not a throw.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const fs=require('fs');const files=['lib/partners/read.ts','lib/practices.ts','lib/spaces/discovery.ts','lib/commerce/products.ts','lib/listings/housing.ts','lib/marketplace.ts','lib/analytics/density.ts','app/discover/events/_data.ts'];const bad=files.filter(f=>{const s=fs.readFileSync(f,'utf8');return !/isTransientDiscoverError|isTransientDiscoverStatus|ok: false|ReadError/.test(s)});if(bad.length){console.error('these sitemap section readers still swallow a transport failure into an empty list: '+bad.join(', '));process.exit(1)}\"",
+        "note": "Passes once every listed reader either classifies a transport failure with the discover classifier, returns an { ok: false } shape, or throws a typed ReadError. Measures the reader, not the sitemap. Written 2026-09-14."
+      }
     },
     {
       "id": "HYG-087",
