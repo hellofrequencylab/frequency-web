@@ -58,7 +58,6 @@
           "ids": [
             "HYG-075",
             "LIVE-279",
-            "LIVE-316",
             "LIVE-318",
             "LIVE-320",
             "HYG-087",
@@ -12207,7 +12206,7 @@
     {
       "id": "LIVE-316",
       "title": "No member ticket receipt exists anywhere: a member who pays gets no email, no calendar link and no reminder",
-      "status": "open",
+      "status": "done",
       "priority": "P1",
       "lane": "live",
       "size": "M",
@@ -12215,12 +12214,13 @@
         "file": "lib/email.ts",
         "ref": "sendGuestTicketEmail is the only ticket sender"
       },
-      "detail": "FILED 2026-09-14 from the guest-door handoff. lib/email.ts has exactly one ticket sender, sendGuestTicketEmail, called only on the guest leg (lib/events/guest-ticket-email.ts). A member who pays for a ticket gets no email, no RSVP row, no calendar link and no reminder. Phase 3 gave the guest a better post-purchase experience than the member has, and a guest claimed inside the pre-webhook window inherits the member gap. Zero tickets have ever sold, so this is the cheapest it will be.\n\nTHE WORK: a member ticket receipt on the settle path in lib/billing/tickets.ts, sharing the guest receipt's template family (one message, two identities), with the hidden-venue rule of ADR-854 kept. Golden-string test beside the guest one.",
+      "detail": "FILED 2026-09-14 from the guest-door handoff. lib/email.ts has exactly one ticket sender, sendGuestTicketEmail, called only on the guest leg (lib/events/guest-ticket-email.ts). A member who pays for a ticket gets no email, no RSVP row, no calendar link and no reminder. Phase 3 gave the guest a better post-purchase experience than the member has, and a guest claimed inside the pre-webhook window inherits the member gap. Zero tickets have ever sold, so this is the cheapest it will be.\n\nTHE WORK: a member ticket receipt on the settle path in lib/billing/tickets.ts, sharing the guest receipt's template family (one message, two identities), with the hidden-venue rule of ADR-854 kept. Golden-string test beside the guest one.\n\nCLOSED 2026-09-14: the settle path in lib/billing/tickets.ts now sends a member receipt beside the guest one. lib/events/member-ticket-email.ts (the sibling of guest-ticket-email.ts) quarantines the elevated reads (event, tier name, Circle, profile, account address), runs resolveSendGate with the transactional category so a muted events category cannot silence a payment record, and calls the new sendMemberTicketEmail in lib/email.ts. The guest and member senders render through ONE ticketReceiptHtml/Text pair: same body (event, when, where, host, tier and amount, View event), and the identity decides the greeting, the offer (a member gets the .ics and Google Calendar links, a guest gets the one account offer) and the footer. The hidden-venue rule is held to the guest rule on purpose: a hide_address event prints the city line, drops both calendar links, and says the exact address is on the event page for ticket holders (ADR-825 unlocks it there; a message cannot check who is reading it, ADR-854). Golden-string test lib/events/member-ticket-email.test.ts renders the real sender through the outbox seam and pins that rule by name; guest-ticket-settle.test.ts pins one receipt per identity and one send across two deliveries. No migration.",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e 'const fs=require(\"fs\");const t=fs.readFileSync(\"lib/billing/tickets.ts\",\"utf8\");const n=(t.match(/send\\w*Ticket\\w*(Email|Receipt)\\s*\\(/g)||[]).length;if(n<2){console.error(\"lib/billing/tickets.ts calls \"+n+\" ticket sender(s); a member who pays still gets no receipt\");process.exit(1)}'",
         "note": "Passes when the settle path sends more than the guest receipt. Written 2026-09-14."
-      }
+      },
+      "closed": "2026-09-14"
     },
     {
       "id": "LIVE-317",

@@ -17,8 +17,11 @@ import type Stripe from 'stripe'
 //   3. A REDELIVERY CHANGES NOTHING. Stripe delivers twice as a matter of course. The settle RPC
 //      flips only `pending` rows and returns what it flipped, so the second delivery must mint no
 //      second ticket, stamp no second address and send no second email.
-//   4. A MEMBER SETTLE IS UNTOUCHED. The guest legs are taken on `!buyer_profile_id` before any
-//      query is built, so a member purchase must behave exactly as it did before the guest door.
+//   4. A MEMBER SETTLE TAKES THE MEMBER LEG AND ONLY THAT. The guest legs are taken on
+//      `!buyer_profile_id` before any query is built, so a member purchase stamps no address,
+//      captures no lead and gets no guest email. Since LIVE-316 (2026-09-14) it gets the MEMBER
+//      receipt instead (lib/events/member-ticket-email.ts), keyed on the row's buyer, and a guest
+//      settle never does. Two identities, one receipt each.
 //
 // Plus the loud one: a paid session whose ticket row does not exist AT ALL must say so. That is
 // indistinguishable from a redelivery in the RPC's answer (both flip zero rows) and is the worst
@@ -73,6 +76,9 @@ const ledger = vi.hoisted(() => ({
 const mail = vi.hoisted(() => ({
   sendGuestTicketReceipt: vi.fn(async (_opts: Record<string, unknown>) => {}),
 }))
+const memberMail = vi.hoisted(() => ({
+  sendMemberTicketReceipt: vi.fn(async (_opts: Record<string, unknown>) => {}),
+}))
 
 vi.mock('@/lib/supabase/admin', () => ({
   createAdminClient: () => ({
@@ -112,6 +118,7 @@ vi.mock('@/lib/supabase/admin', () => ({
 }))
 vi.mock('@/lib/finance/record', () => ledger)
 vi.mock('@/lib/events/guest-ticket-email', () => mail)
+vi.mock('@/lib/events/member-ticket-email', () => memberMail)
 
 import { recordTicketFromSession } from './tickets'
 
@@ -221,6 +228,8 @@ describe('a GUEST settle', () => {
       amountCents: 4000,
       currency: 'usd',
     })
+    // One identity, one receipt. There is no profile to address the member one to.
+    expect(memberMail.sendMemberTicketReceipt).not.toHaveBeenCalled()
   })
 
   it('says so LOUDLY when a settled ticket has neither a buyer nor a guest email', async () => {
@@ -266,7 +275,7 @@ describe('a redelivered webhook', () => {
   })
 })
 
-describe('a MEMBER settle is unchanged (regression)', () => {
+describe('a MEMBER settle takes the member leg (regression + LIVE-316)', () => {
   it('stamps no guest_email, sends no guest email, captures no lead, and keeps the buyer on the ledger', async () => {
     state.setSettleQueue([[MEMBER_ROW]])
     await recordTicketFromSession(memberSession())
@@ -280,13 +289,49 @@ describe('a MEMBER settle is unchanged (regression)', () => {
     expect(state.calls.filter((c) => c.op === 'rpc').map((c) => c.table)).toEqual(['rpc:settle_ticket_atomic'])
   })
 
+  it('emails the MEMBER receipt once, keyed on the row buyer, with the tier and the gross off the signed session', async () => {
+    state.setSettleQueue([[MEMBER_ROW]])
+    await recordTicketFromSession(memberSession())
+
+    expect(memberMail.sendMemberTicketReceipt).toHaveBeenCalledTimes(1)
+    expect(memberMail.sendMemberTicketReceipt.mock.calls[0][0]).toEqual({
+      eventId: 'ev1',
+      profileId: 'p-1',
+      ticketTypeId: 'tier1',
+      qty: 2,
+      amountCents: 4000,
+      currency: 'usd',
+    })
+  })
+
+  it('sends the receipt once across two deliveries (the redelivery flips nothing)', async () => {
+    state.setSettleQueue([[MEMBER_ROW], []])
+    state.setTicketLookup({ id: 't-member', status: 'succeeded' })
+
+    await recordTicketFromSession(memberSession())
+    await recordTicketFromSession(memberSession())
+
+    expect(memberMail.sendMemberTicketReceipt).toHaveBeenCalledTimes(1)
+  })
+
+  it('still settles when the member receipt rejects (the money work is already done)', async () => {
+    state.setSettleQueue([[MEMBER_ROW]])
+    memberMail.sendMemberTicketReceipt.mockRejectedValueOnce(new Error('resend down') as never)
+
+    await expect(recordTicketFromSession(memberSession())).resolves.toBeUndefined()
+    expect(ledger.recordFinancialTransaction).toHaveBeenCalledTimes(1)
+  })
+
   it('ignores a guest_email that arrives on a session whose ticket HAS a buyer', async () => {
     // Defence in depth: the contract says a guest session carries no buyer, but if both ever
-    // arrived the row's own identity wins and nothing overwrites it.
+    // arrived the row's own identity wins and nothing overwrites it. The receipt follows the row
+    // too: the member gets theirs, the typed address gets nothing.
     state.setSettleQueue([[MEMBER_ROW]])
     await recordTicketFromSession(guestSession())
 
     expect(ticketUpdates()).toHaveLength(0)
     expect(mail.sendGuestTicketReceipt).not.toHaveBeenCalled()
+    expect(memberMail.sendMemberTicketReceipt).toHaveBeenCalledTimes(1)
+    expect(memberMail.sendMemberTicketReceipt.mock.calls[0][0]).toMatchObject({ profileId: 'p-1' })
   })
 })

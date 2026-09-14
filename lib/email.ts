@@ -683,11 +683,67 @@ export async function sendGuestTicketEmail(params: {
 }) {
   const { to, eventTitle, whenAbsolute, location, hostName, circleName, eventUrl, qty, amountLabel, claimUrl } = params
 
+  const common = { eventTitle, whenAbsolute, location, hostName, circleName, eventUrl, qty, tierName: null, amountLabel }
+  const identity: TicketReceiptIdentity = { kind: 'guest', claimUrl }
   await enqueueEmail({
     to,
     subject: `Your ticket: ${eventTitle}`,
-    html: guestTicketHtml({ eventTitle, whenAbsolute, location, hostName, circleName, eventUrl, qty, amountLabel, claimUrl }),
-    text: guestTicketText({ eventTitle, whenAbsolute, location, hostName, circleName, eventUrl, qty, amountLabel, claimUrl }),
+    html: ticketReceiptHtml(common, identity),
+    text: ticketReceiptText(common, identity),
+  })
+}
+
+
+// ── Member ticket email ───────────────────────────────────────────────────────
+//
+// THE MEMBER HALF OF THE SAME RECEIPT (LIVE-316). One message, two identities: this sender and the
+// guest one above render through the one ticketReceipt pair below, and differ only where the reader
+// differs. A member has a name to greet, an account the ticket already sits in, and a calendar worth
+// offering; a guest has none of those, so the guest variant carries the account offer instead.
+//
+// It is a RECEIPT, not a reminder. The caller runs it through the transactional carve-out of the
+// send gate (lib/comms/send-gate.ts, 'transactional'): a muted events category cannot silence the
+// record of a real payment, and only the hard suppression list can. That is also why there is no
+// List-Unsubscribe header here, unlike the RSVP confirmation pair.
+//
+// 🔴 `location`, `icsUrl` and `googleCalUrl` MUST ARRIVE ALREADY GATED, exactly as in every pair
+// above. This function prints what it is handed. A hidden-address event prints the city line and
+// offers no calendar file, because an .ics carries the address in its own LOCATION field.
+// lib/events/member-ticket-email.ts owns why a signed-in reader is held to the guest rule here.
+export async function sendMemberTicketEmail(params: {
+  to:            string
+  recipientName: string
+  eventTitle:    string
+  whenAbsolute:  string
+  /** Pre-gated. The full location for an open event, the city line for a hidden-address one. */
+  location:      string | null
+  /** True when the exact address was withheld from `location`, so the message can say where it is. */
+  addressHidden: boolean
+  hostName:      string | null
+  circleName:    string | null
+  eventUrl:      string
+  /** How many tickets this purchase covers. */
+  qty:           number
+  /** The tier bought, by name, or null for a flat-price event with no tiers. */
+  tierName:      string | null
+  /** What they paid, already formatted (e.g. "$20"), or null when the amount is unknown. */
+  amountLabel:   string | null
+  /** Pre-gated with `location`: both null on a hidden-address event. */
+  icsUrl:        string | null
+  googleCalUrl:  string | null
+}) {
+  const {
+    to, recipientName, eventTitle, whenAbsolute, location, addressHidden, hostName, circleName,
+    eventUrl, qty, tierName, amountLabel, icsUrl, googleCalUrl,
+  } = params
+
+  const common = { eventTitle, whenAbsolute, location, hostName, circleName, eventUrl, qty, tierName, amountLabel }
+  const identity: TicketReceiptIdentity = { kind: 'member', recipientName, addressHidden, icsUrl, googleCalUrl }
+  await enqueueEmail({
+    to,
+    subject: `Your ticket: ${eventTitle}`,
+    html: ticketReceiptHtml(common, identity),
+    text: ticketReceiptText(common, identity),
   })
 }
 
@@ -1972,38 +2028,58 @@ function guestRsvpConfirmationText({
 }
 
 
-// The guest TICKET pair. Same furniture as the guest RSVP pair above and the same two differences
-// from a member template: nobody here has a name to greet or a preference page to manage, and the
-// address is UNVERIFIED, so it carries the "if this was not you" line. Everything printed was gated
-// by the caller. No em dashes (docs/CONTENT-VOICE.md).
+// The TICKET RECEIPT pair: ONE message, TWO identities (LIVE-316). Same furniture as the RSVP pairs
+// above. The body (title, when, where, host, what was bought, the event button) is shared. Around it,
+// the identity decides three things: the greeting, what the reader is offered (a member gets the
+// calendar, a guest gets the one account offer), and the footer, because a guest's address is
+// UNVERIFIED and so carries the "if this was not you" line while a member's does not. Everything
+// printed was gated by the caller. No em dashes (docs/CONTENT-VOICE.md).
 
-/** The one line that says what was bought. Plural only when it is. */
-function ticketCountLine(qty: number, amountLabel: string | null): string {
-  const n = Number.isFinite(qty) && qty > 0 ? Math.floor(qty) : 1
-  const tickets = n === 1 ? '1 ticket' : `${n} tickets`
-  return amountLabel ? `${tickets}, ${amountLabel}` : tickets
-}
-
-function guestTicketHtml({
-  eventTitle, whenAbsolute, location, hostName, circleName, eventUrl, qty, amountLabel, claimUrl,
-}: {
+type TicketReceiptCommon = {
   eventTitle: string; whenAbsolute: string; location: string | null
   hostName: string | null; circleName: string | null; eventUrl: string
-  qty: number; amountLabel: string | null; claimUrl: string
-}): string {
+  qty: number; tierName: string | null; amountLabel: string | null
+}
+
+type TicketReceiptIdentity =
+  | { kind: 'guest'; claimUrl: string }
+  | { kind: 'member'; recipientName: string; addressHidden: boolean; icsUrl: string | null; googleCalUrl: string | null }
+
+/** The one line that says what was bought. Plural only when it is; the tier named when there is one. */
+function ticketCountLine(qty: number, amountLabel: string | null, tierName: string | null = null): string {
+  const n = Number.isFinite(qty) && qty > 0 ? Math.floor(qty) : 1
+  const tickets = n === 1 ? '1 ticket' : `${n} tickets`
+  const named = tierName ? `${tickets} (${tierName})` : tickets
+  return amountLabel ? `${named}, ${amountLabel}` : named
+}
+
+/** Where the exact address went, said once, only to the reader who can go and get it. */
+const ADDRESS_ON_PAGE_LINE = 'The exact address is on the event page for ticket holders.'
+
+function ticketReceiptHtml(
+  { eventTitle, whenAbsolute, location, hostName, circleName, eventUrl, qty, tierName, amountLabel }: TicketReceiptCommon,
+  who: TicketReceiptIdentity,
+): string {
   const hostLine = rsvpHostLine(hostName, circleName)
-  return emailShell(`
-    <p style="font-size:11px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:#9A5E12;margin:28px 0 8px;">
-      Your ticket
+  const intro = who.kind === 'member'
+    ? `Hi ${escapeHtml(who.recipientName)}, payment received. This ticket is on your account, and this email is your receipt.`
+    : 'Payment received. Keep this email, it is your ticket.'
+
+  const addressLine = who.kind === 'member' && who.addressHidden
+    ? `<p style="${pStyle}">${ADDRESS_ON_PAGE_LINE}</p>`
+    : ''
+
+  const calendarBlock = who.kind === 'member' && (who.icsUrl || who.googleCalUrl) ? `
+    <p style="font-size:13px;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:#8F8675;margin:24px 0 8px;">
+      Add to your calendar
     </p>
-    <h1 style="${h1Style}">${escapeHtml(eventTitle)}</h1>
-    <p style="${pStyle}">Payment received. Keep this email, it is your ticket.</p>
-    <p style="${pStyle}">
-      <strong>${escapeHtml(whenAbsolute)}</strong>${location ? `<br><span style="color:#777;">${escapeHtml(location)}</span>` : ''}
-      ${hostLine ? `<br><span style="color:#777;">${hostLine}</span>` : ''}
-      <br><span style="color:#777;">${escapeHtml(ticketCountLine(qty, amountLabel))}</span>
+    <p style="margin:0 0 8px;">
+      ${who.googleCalUrl ? `<a href="${who.googleCalUrl}" style="display:inline-block;background:#FAF6EC;color:#3D352A;font-size:14px;font-weight:700;text-decoration:none;padding:10px 18px;border-radius:8px;margin:0 8px 8px 0;">Google Calendar</a>` : ''}
+      ${who.icsUrl ? `<a href="${who.icsUrl}" style="display:inline-block;background:#FAF6EC;color:#3D352A;font-size:14px;font-weight:700;text-decoration:none;padding:10px 18px;border-radius:8px;margin:0 8px 8px 0;">Apple / Outlook (.ics)</a>` : ''}
     </p>
-    <a href="${eventUrl}" style="${btnStyle}">View event &rarr;</a>
+  ` : ''
+
+  const accountOffer = who.kind === 'guest' ? `
     <hr style="${dividerStyle}">
     <p style="${pStyle}">
       <strong>Put this ticket in an account.</strong> Tap below and we will email you a sign in link
@@ -2011,23 +2087,40 @@ function guestTicketHtml({
       said yes to.
     </p>
     <p style="margin:0 0 8px;">
-      <a href="${claimUrl}" style="${btnStyle}">Add this ticket to an account &rarr;</a>
+      <a href="${who.claimUrl}" style="${btnStyle}">Add this ticket to an account &rarr;</a>
+    </p>` : ''
+
+  const footer = who.kind === 'guest'
+    ? `You are getting this because this address was used to buy a ticket to ${escapeHtml(eventTitle)}.
+      If that was not you, reply to this email and we will sort it out.`
+    : `You are getting this because you bought a ticket to ${escapeHtml(eventTitle)} on Frequency.
+      Questions about this ticket? Reply to this email.`
+
+  return emailShell(`
+    <p style="font-size:11px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:#9A5E12;margin:28px 0 8px;">
+      Your ticket
     </p>
+    <h1 style="${h1Style}">${escapeHtml(eventTitle)}</h1>
+    <p style="${pStyle}">${intro}</p>
+    <p style="${pStyle}">
+      <strong>${escapeHtml(whenAbsolute)}</strong>${location ? `<br><span style="color:#777;">${escapeHtml(location)}</span>` : ''}
+      ${hostLine ? `<br><span style="color:#777;">${hostLine}</span>` : ''}
+      <br><span style="color:#777;">${escapeHtml(ticketCountLine(qty, amountLabel, tierName))}</span>
+    </p>
+    ${addressLine}
+    <a href="${eventUrl}" style="${btnStyle}">View event &rarr;</a>
+    ${calendarBlock}${accountOffer}
     <hr style="${dividerStyle}">
     <p style="font-size:13px;color:#8F8675;">
-      You are getting this because this address was used to buy a ticket to ${escapeHtml(eventTitle)}.
-      If that was not you, reply to this email and we will sort it out.
+      ${footer}
     </p>
   `)
 }
 
-function guestTicketText({
-  eventTitle, whenAbsolute, location, hostName, circleName, eventUrl, qty, amountLabel, claimUrl,
-}: {
-  eventTitle: string; whenAbsolute: string; location: string | null
-  hostName: string | null; circleName: string | null; eventUrl: string
-  qty: number; amountLabel: string | null; claimUrl: string
-}): string {
+function ticketReceiptText(
+  { eventTitle, whenAbsolute, location, hostName, circleName, eventUrl, qty, tierName, amountLabel }: TicketReceiptCommon,
+  who: TicketReceiptIdentity,
+): string {
   const hostPlain =
     hostName && circleName ? `Hosted by ${hostName} · ${circleName}` :
     circleName             ? `Hosted by ${circleName}` :
@@ -2036,24 +2129,42 @@ function guestTicketText({
   const lines: string[] = [
     `Your ticket: ${eventTitle}`,
     '',
-    'Payment received. Keep this email, it is your ticket.',
+    who.kind === 'member'
+      ? `Hi ${who.recipientName}, payment received. This ticket is on your account, and this email is your receipt.`
+      : 'Payment received. Keep this email, it is your ticket.',
     '',
     `When: ${whenAbsolute}`,
   ]
   if (location)  lines.push(`Where: ${location}`)
   if (hostPlain) lines.push(hostPlain)
-  lines.push(`Ticket: ${ticketCountLine(qty, amountLabel)}`)
+  lines.push(`Ticket: ${ticketCountLine(qty, amountLabel, tierName)}`)
+  if (who.kind === 'member' && who.addressHidden) lines.push('', ADDRESS_ON_PAGE_LINE)
   lines.push('', `View event: ${eventUrl}`)
-  lines.push(
-    '',
-    'Put this ticket in an account. Open the link below and we will email you a sign in link at',
-    'this address. Once you are in, this ticket is on your account with everything else you have',
-    'said yes to.',
-    `Add this ticket to an account: ${claimUrl}`,
-    '',
-    `You are getting this because this address was used to buy a ticket to ${eventTitle}.`,
-    'If that was not you, reply to this email and we will sort it out.',
-  )
+
+  if (who.kind === 'member' && (who.googleCalUrl || who.icsUrl)) {
+    lines.push('', 'Add to your calendar:')
+    if (who.googleCalUrl) lines.push(`  Google Calendar: ${who.googleCalUrl}`)
+    if (who.icsUrl)       lines.push(`  Apple / Outlook (.ics): ${who.icsUrl}`)
+  }
+
+  if (who.kind === 'guest') {
+    lines.push(
+      '',
+      'Put this ticket in an account. Open the link below and we will email you a sign in link at',
+      'this address. Once you are in, this ticket is on your account with everything else you have',
+      'said yes to.',
+      `Add this ticket to an account: ${who.claimUrl}`,
+      '',
+      `You are getting this because this address was used to buy a ticket to ${eventTitle}.`,
+      'If that was not you, reply to this email and we will sort it out.',
+    )
+  } else {
+    lines.push(
+      '',
+      `You are getting this because you bought a ticket to ${eventTitle} on Frequency.`,
+      'Questions about this ticket? Reply to this email.',
+    )
+  }
 
   return lines.join('\n') + '\n'
 }
