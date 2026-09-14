@@ -1,5 +1,6 @@
 // THE shared core-entity /manage console resolution (admin-menu standardization). The one PURE seam the
-// core-entity owner consoles (/{entity}/[id]/manage for circle · hub · nexus · practice) render from, so
+// core-entity owner consoles (/{entity}/[id]/manage for circle · hub · nexus; the practice scope resolves
+// the same set for the rail, its /manage page having retired under LIVE-237) render from, so
 // the two owner surfaces for a core entity can never drift on WHICH modules they show:
 //
 //   • the /manage CONSOLE (a client boundary): EntityManageConsole calls `resolveEntityConsole` and renders

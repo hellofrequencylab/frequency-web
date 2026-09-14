@@ -64,6 +64,7 @@ describe('the Event rail plan', () => {
       'details.rsvpWindow.opensAt',
       'details.rsvpWindow.closesAt',
       'details.sponsors',
+      'journeyId',
       'visibility',
       'capacity',
       'energyTag',
@@ -286,6 +287,9 @@ describe('the Event rail reads its row and writes its FormData through the key m
       'details.rsvpWindow.opensAt': '2026-09-20T09:00',
       'details.rsvpWindow.closesAt': '',
       'details.sponsors': 'Torus Co.',
+      // No Journey on this row: the association reads blank, which the action treats as unchanged
+      // when the row has none and as a detach when it has one (LIVE-237).
+      journeyId: '',
       // circle_only on a non-Circle scope reads as the unlisted the server steps it down to.
       visibility: 'unlisted',
       capacity: '40',

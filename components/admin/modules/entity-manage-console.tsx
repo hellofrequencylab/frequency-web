@@ -11,8 +11,8 @@ import type { Capability } from '@/lib/core/capabilities'
 import type { AppViewer } from '@/lib/apps/types'
 import { isSpineApp } from '@/lib/apps/access'
 
-// The render boundary for EVERY core-entity owner console (/{entity}/[id]/manage — circle · hub · nexus ·
-// practice). The unified replacement for the five near-identical per-entity consoles that each rendered a
+// The render boundary for EVERY core-entity owner console (/{entity}/[id]/manage — circle · hub · nexus;
+// the Practice's went with LIVE-237, its console being the full editor at /practices/[id]/edit). The unified replacement for the five near-identical per-entity consoles that each rendered a
 // thin two-row `ENTITY_SURFACES` registry (Basics + Danger only). It resolves the SAME module set the
 // standardized rail shows for the scope — `resolveEntityConsole` wraps `appsForScope(scope, viewer,
 // 'editor')`, the exact seam settings-panel's `settingsAppsFor` uses — so the console and the rail can

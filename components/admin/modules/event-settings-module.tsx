@@ -10,6 +10,7 @@ import { RailManifestFields, type RailManifestFieldsProps } from '@/components/a
 import { RailManifestRepeat } from '@/components/admin/rail/rail-manifest-repeat'
 import { Radio } from '@/components/ui/radio'
 import { seriesWritePlan, type SeriesScope } from '@/lib/events/series-scope'
+import { ticketSellerVerdict } from '@/lib/events/ticket-eligibility'
 import { createClient } from '@/lib/supabase/client'
 import {
   getEventAdminData,
@@ -174,6 +175,8 @@ function EventSettingsRail({ data, engage }: { data: EventData; engage: EventCor
   // ONE controlled state for every field on the settings form, keyed by manifest path, plus a ref the
   // form's action reads at save time (a debounced save runs after the render that changed the value).
   const [values, setValues] = useState<EventRailValues>(() => eventRailValues(data))
+  // The collections the manifest names by `optionsFrom` and the surface loads (LIVE-237).
+  const loaded = { journeys: data.journeyOptions }
   const valuesRef = useRef(values)
   // Takes a full Record rather than a Partial: every caller sets concrete strings, and a Partial
   // would widen each value to `string | undefined` and carry that into the merged state.
@@ -311,15 +314,29 @@ function EventSettingsRail({ data, engage }: { data: EventData; engage: EventCor
   }
 
   // The one derived field: "My circle" is offered only when the event's home IS a Circle (ADR-883).
+  // The Journey control (LIVE-237) draws only when there is a Journey to pick: the viewer runs one, or
+  // the event is already on one. Its value still rides in every save either way, so the action sees
+  // "unchanged", never "blank", for a host with no Journeys to offer.
   const fieldsFor = (fields: readonly FieldDef[]) =>
-    fields.map((f) => (f.path === 'visibility' ? eventVisibilityField(f, data.scope_type) : f))
+    fields
+      .filter((f) => f.path !== 'journeyId' || data.journeyOptions.length > 0)
+      .map((f) => (f.path === 'visibility' ? eventVisibilityField(f, data.scope_type) : f))
   /** Drop the repeat control when the chosen scope has no authority over the pattern. The server
    *  enforces the same answer from the same function, so the two cannot disagree. */
   const repeatGated = (fields: readonly FieldDef[]) =>
     plan.ruleEditable ? fields : fields.filter((f) => f.path !== 'recurrenceRule')
+  // The price hint carries the seller verdict (LIVE-126): the SAME predicate the buy path refuses on,
+  // so a host is told beside the price what a buyer would otherwise hit at checkout. It sat on the
+  // retired edit page's price control until LIVE-237; a rail hint is a string, so the setup step is
+  // named rather than linked (Settings, then Billing).
+  const verdict = ticketSellerVerdict({ payoutsReady: data.payoutsReady })
+  const priceLine = `Leave blank for a free RSVP event. Set a price in ${(data.currency ?? 'usd').toUpperCase()} to sell tickets.`
   const hints: Record<string, string> = {
     ...HINTS,
-    priceCents: `Leave blank for a free RSVP event. Set a price in ${(data.currency ?? 'usd').toUpperCase()} to sell tickets.`,
+    journeyId: 'Attaching or detaching a Journey never moves the event. Only Journeys you run are offered.',
+    priceCents: verdict.allowed
+      ? `${priceLine} Your payout account is ready, so ticket money lands in your bank.`
+      : `${priceLine} ${verdict.reason} Set that up under Settings, then Billing, before or after you publish.`,
   }
 
   return (
@@ -434,7 +451,7 @@ function EventSettingsRail({ data, engage }: { data: EventData; engage: EventCor
               <p className={labelClasses}>{section.title}</p>
               <p className="mt-0.5 text-2xs text-muted">{section.desc}</p>
             </div>
-            <SettingsFields fields={repeatGated(fieldsFor(fields))} values={values} onChange={update} placeholders={PLACEHOLDERS} hints={hints} />
+            <SettingsFields fields={repeatGated(fieldsFor(fields))} values={values} onChange={update} placeholders={PLACEHOLDERS} hints={hints} loaded={loaded} />
             {/* 🔴 THE REPEAT EDITOR IS REMOVED, NOT DISABLED, UNDER THE NARROW SCOPE — and it says
                 where it went. A control that renders, accepts a change and is then silently
                 refused by the server is the failure ADR-1307 is about. This governs the repeat

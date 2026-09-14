@@ -69,7 +69,7 @@ export default async function SpaceCalendarConsolePage({ params }: { params: Pro
       : new Map()
 
   // Only a manager gets the click-to-edit affordance; a staff preview stays read-only.
-  const editHrefFor = (evSlug: string) => (canManage ? `/events/${evSlug}/edit` : null)
+  const editHrefFor = (evSlug: string) => (canManage ? `/events/${evSlug}/manage?section=settings` : null)
 
   const events: CalendarEvent[] = [
     ...ownedRows.map((ev): CalendarEvent | null => {

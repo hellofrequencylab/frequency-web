@@ -382,10 +382,10 @@ export default async function NewEventPage({
   //
   // Every sibling create route renders its Spark bare — `/circles/new`, `/practices/new`,
   // `/journeys/new`, `/classifieds/new`, `/market/sell` — because the CHROME IS THE MODAL'S JOB
-  // and `SparkShell` already centres itself. `EventEditorWindow` stays on the two EDIT routes
-  // (`/events/[slug]/edit`, `/admin/events/[id]`), which have no interceptor above them and where
-  // it was always correct. That asymmetry is why this went unnoticed: the component was right
-  // twice and wrong once.
+  // and `SparkShell` already centres itself. `EventEditorWindow` stays on the operator editor
+  // (`/admin/events/[id]`), which has no interceptor above it and where it was always correct. (It
+  // also stayed on `/events/[slug]/edit` until LIVE-237 retired that route into the Manage hub.)
+  // That asymmetry is why this went unnoticed: the component was right twice and wrong once.
   return (
     <>
       {(droppedSpaceLink || droppedCircleLink || droppedJourneyLink) && (

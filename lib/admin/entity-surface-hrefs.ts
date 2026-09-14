@@ -88,13 +88,13 @@ export function hrefForEntitySurface(appId: string, scope: EntitySurfaceScope | 
     if (appId === 'channel.edit') return `/channels/${entitySlug}/edit`
     if (appId === 'event.crm') return `/events/${entitySlug}/manage`
     if (appId === 'circle.crm') return `/circles/${entitySlug}/manage`
-    // 2026-09-05 (scan2 L9-11): the two full-page settings editors. circle.settings / event.settings
-    // render INLINE today (their module IS the editor), but each entity also has a standalone
-    // /settings page that nothing linked to. Listing the destination here (the account.profile
-    // precedent above) means a `link` flip or a `placement: 'bank'` tag resolves to the editor page,
-    // not to the manage console the event.* prefix fallback below would otherwise pick.
-    if (appId === 'circle.settings') return `/circles/${entitySlug}/settings`
-    if (appId === 'event.settings') return `/events/${entitySlug}/settings`
+    // circle.settings / event.settings render INLINE today (their module IS the editor). Their
+    // standalone /settings pages retired under LIVE-237 (one editor per entity): the module now has
+    // exactly one page home, the Manage hub's Settings tab. Listing it here (the account.profile
+    // precedent above) means a `link` flip or a `placement: 'bank'` tag lands on that tab rather
+    // than on the hub's Home, which is what the event.* prefix fallback below would pick.
+    if (appId === 'circle.settings') return `/circles/${entitySlug}/manage?section=settings`
+    if (appId === 'event.settings') return `/events/${entitySlug}/manage?section=settings`
     if (appId === 'hub.crm') return `/hubs/${entitySlug}/crm`
     if (appId === 'nexus.crm') return `/nexuses/${entitySlug}/crm`
     if (appId.startsWith('event.')) return `/events/${entitySlug}/manage`

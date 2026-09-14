@@ -5,7 +5,8 @@ import { getPillars } from '@/lib/pillars'
 import { FocusTemplate } from '@/components/templates'
 import { ChannelEditForm } from './channel-edit-form'
 
-// EDIT A CHANNEL (ADR-882) — the dedicated editor, the counterpart to /events/<slug>/edit.
+// EDIT A CHANNEL (ADR-882) — the dedicated editor. (Its model was /events/<slug>/edit, which
+// LIVE-237 has since retired into the event Manage hub's Settings tab.)
 //
 // Channels had two operator surfaces and neither was a real editor: the autosave drawer (good for a
 // quick tweak, but it cannot own the URL, and it renders inside a panel) and the Manage hub (the

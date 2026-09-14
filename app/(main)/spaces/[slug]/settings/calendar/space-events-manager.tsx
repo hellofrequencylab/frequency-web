@@ -87,7 +87,7 @@ export function SpaceEventsManager({ events }: { events: ManagedEvent[] }) {
               context={ev.whenLabel}
               actions={
                 <>
-                  <Link href={`/events/${ev.slug}/edit`} className={btn}>
+                  <Link href={`/events/${ev.slug}/manage?section=settings`} className={btn}>
                     <Pencil className="h-3.5 w-3.5" aria-hidden /> Edit
                   </Link>
                   <Link href={`/events/new?duplicate=${ev.id}`} className={btn}>

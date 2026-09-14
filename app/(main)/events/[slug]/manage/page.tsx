@@ -14,6 +14,7 @@ import { EVENT_HUB_SECTIONS, asEventHubSection, type EventHubSection } from './h
 import { EventMemberViewer } from './event-member-viewer'
 import { EventBroadcastSection } from './broadcast-section'
 import { RefundsOwedNotice } from './refunds-owed'
+import { EventDangerZone } from './event-danger-zone'
 import {
   HomeStatsStrip,
   RsvpBreakdownSection,
@@ -42,7 +43,11 @@ import {
 //   Tickets   → named ticket tiers (only while ticketing is enabled).
 //   Updates   → sent Event Dispatches.
 //   Settings  → the full in-place event editor (the SAME event.settings module the admin rail
-//               mounts — the catalog module, not a parallel form).
+//               mounts — the catalog module, not a parallel form), plus the danger zone: cancel,
+//               delete, and duplicate. This is the ONE event editor since LIVE-237 (ADR-1333):
+//               /events/[slug]/edit (EventForm in edit mode) and /events/[slug]/settings (a Basics
+//               + Danger console over the same module) both retired here, and the Journey picker
+//               the edit page alone carried moved into the manifest (event.ts `journeyId`).
 //
 // Gated to the host/cohost; anyone else gets a 404 (we never confirm a private event exists).
 // Speed is structural (PAGE-FRAMEWORK §5): the shell + nav paint immediately; every section
@@ -97,12 +102,12 @@ export default async function ManageEventPage({
 
   const { data: ev } = await admin
     .from('events')
-    .select('id, title, slug')
+    .select('id, title, slug, is_cancelled')
     .eq('slug', slug)
     .maybeSingle()
   if (!ev) notFound()
 
-  const event = ev as { id: string; title: string; slug: string }
+  const event = ev as { id: string; title: string; slug: string; is_cancelled: boolean | null }
 
   // Gate: only the host, a cohost, or someone who runs the event's circle (the
   // 'event.editSettings' capability) may manage it. 404 (not 403) so a private
@@ -233,6 +238,10 @@ export default async function ManageEventPage({
           <div className="rounded-card border border-border bg-surface p-5 lift-1">
             <EventSettingsModule />
           </div>
+          {/* Beside the rail, not in it (STUDIO: a non-field control goes beside the rail): the
+              duplicate door and the two destructive actions the retired edit and settings pages
+              held. Each action re-checks its own gate server-side. */}
+          <EventDangerZone eventId={event.id} slug={event.slug} title={event.title} isCancelled={!!event.is_cancelled} />
         </section>
       )}
     </DashboardTemplate>

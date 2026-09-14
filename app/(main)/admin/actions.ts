@@ -27,7 +27,6 @@ import { promotionStepsCrossed, ROLE_PROMOTION_SLUG } from '@/lib/walkthroughs/r
 import { authorizeAction } from '@/lib/admin/guard'
 import { logAdminAction } from '@/lib/admin/audit'
 import { getStaffMember } from '@/lib/staff'
-import { asCircleAccess } from '@/lib/circles/visibility'
 import { staffCan, type StaffDomain } from '@/lib/core/staff-roles'
 import {
   getCircleCapabilities,
@@ -330,54 +329,6 @@ export async function updateCircle(id: string, fd: FormData) {
   revalidatePath('/admin/circles')
   revalidatePath('/circles')
   revalidatePath('/circles/[slug]', 'page')
-}
-
-// Host self-service circle settings (the full-page /circles/[slug]/settings editor). Writes only
-// the fields a host owns — identity, cover, location, resonance — and deliberately NOT hub / host
-// / status (those stay admin/structure concerns), so a host form never reassigns or archives.
-export async function updateCircleSettings(id: string, fd: FormData) {
-  const caps = await getCircleCapabilities(id)
-  await requireScopedManage(await getCallerProfile(), caps.has('circle.editSettings'), 'community')
-  const name = (fd.get('name') as string)?.trim()
-  if (!name) throw new Error('Name is required')
-  const admin = createAdminClient()
-  const { error } = await admin
-    .from('circles')
-    .update({
-      name,
-      about: (fd.get('about') as string)?.trim() || null,
-      type: fd.get('type') as Database['public']['Enums']['circle_type'],
-      member_cap: parseInt(fd.get('member_cap') as string) || 12,
-      image_url: (fd.get('image_url') as string)?.trim() || null,
-      city: (fd.get('city') as string)?.trim() || null,
-      neighborhood: (fd.get('neighborhood') as string)?.trim() || null,
-      resonance_public: fd.get('resonance_public') === 'on',
-      // AXIS 1 — discoverability. Unlisted hides the circle from discovery
-      // (index/map/directory/sitemap) while keeping it reachable by direct link and visible to its
-      // members. Only written when the form sends it.
-      ...(fd.has('unlisted') ? { unlisted: fd.get('unlisted') === 'on' } : {}),
-      // AXIS 2 — access (ADR-1015). Independent of axis 1 on purpose: a LISTED circle with a
-      // closed access mode is the lead funnel, found by name and shut on the inside. Narrowed
-      // through asCircleAccess so an unrecognised value shuts the circle rather than opening it.
-      ...(fd.has('access') ? { access: asCircleAccess(fd.get('access')) } : {}),
-    })
-    .eq('id', id)
-  if (error) {
-    // `trg_circles_access_shape` fires on the service role too, so these two reach us even from an
-    // admin-client write. Raw, they surface to an operator as a bare error code.
-    if (error.message.includes('circle_access_needs_space')) {
-      throw new Error(
-        'Space member access and membership tiers are only available to a Circle a Space owns. This is a personal Circle.',
-      )
-    }
-    if (error.message.includes('circle_access_plan_floor')) {
-      throw new Error('Selling access to a Circle comes with the Business plan.')
-    }
-    throw new Error(error.message)
-  }
-  revalidatePath('/circles')
-  revalidatePath('/circles/[slug]', 'page')
-  revalidatePath('/admin/circles')
 }
 
 export async function archiveCircle(id: string) {

@@ -435,6 +435,22 @@ const nextConfig: NextConfig = {
       // is exactly the kind of thing a sweep gets wrong.
       { source: '/circles/:slug/:tab(events|journey|practice)', destination: '/circles/:slug/whats-on', permanent: true },
       { source: '/circles/:slug/leaderboard', destination: '/circles/:slug/stats', permanent: true },
+      // LIVE-237 (ADR-1333): one editor per entity. The three losing editors and the thin Practice
+      // console are deleted, not parked, and their URLs land on the survivor. Permanent (308): each
+      // retired route's job now lives on a route that is not going away, so a cached answer stays
+      // right. Sources are EXACT: nothing lives beneath any of them, and the shadow test would fail a
+      // `:path*` here the moment something did.
+      //   Circle: the hand-written settings form retires into the Manage hub's Settings tab, which
+      //   mounts the circle.settings module (the manifest-derived rail, ADR-1281).
+      //   Event: the EventForm-in-edit-mode page and the Basics + Danger console both retire into the
+      //   Manage hub's Settings tab, which mounts event.settings (the manifest-derived rail) and now
+      //   carries the danger zone (cancel, delete, duplicate) those two pages held.
+      //   Practice: the thin /manage console (the practice.settings module in a page frame) retires
+      //   into the full editor every Practice flow already lands on; the module stays in the rail.
+      { source: '/circles/:slug/settings', destination: '/circles/:slug/manage?section=settings', permanent: true },
+      { source: '/events/:slug/edit', destination: '/events/:slug/manage?section=settings', permanent: true },
+      { source: '/events/:slug/settings', destination: '/events/:slug/manage?section=settings', permanent: true },
+      { source: '/practices/:id/manage', destination: '/practices/:id/edit', permanent: true },
       // crm/ keeps its directory: actions.ts is imported by ../manage/circle-member-viewer.tsx.
       { source: '/circles/:slug/crm', destination: '/circles/:slug/manage', permanent: false },
       // Same shape: crm/actions.ts is imported by ../event-member-viewer.tsx.
