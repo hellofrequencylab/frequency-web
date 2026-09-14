@@ -54,8 +54,12 @@ describe('asBetaGrace (narrowing the beta_grace setting)', () => {
     expect(asBetaGrace({ until: ' 2027-01-15 ' })).toEqual({ until: '2027-01-15' })
   })
 
-  it('the code default is a real window, and stays one now that the live row is explicitly null', () => {
-    expect(BETA_GRACE_DEFAULT.until).toBe('2026-09-01')
+  it('the code default is a real window that cannot lapse, whatever the live row says (LIVE-309)', () => {
+    // Pinning the constant's literal here is what let the 2026-09-01 default sit expired for two
+    // weeks with this file green: the assertion measured the value, not the rule. The rule is that a
+    // failed read grants, today and a decade out; the fuse test asserts it against the clock.
+    expect(betaGraceActive(BETA_GRACE_DEFAULT)).toBe(true)
+    expect(betaGraceEndsAtMs(BETA_GRACE_DEFAULT.until)).not.toBeNull()
   })
 })
 

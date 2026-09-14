@@ -167,12 +167,6 @@ export interface BetaGraceConfig {
 /** The code default when NO `beta_grace` row exists (the settings layer falls back to code defaults for
  *  an absent key, so no migration seeds this — see getBetaGrace in lib/pricing/settings.ts).
  *
- *  It matches the beta pricing cutover DATE above, because the two halves of "the beta runs out" should
- *  land on the same day. Defaulting to a real window rather than to `{ until: null }` is deliberate and
- *  fail-safe in the repo's direction: an operator who flips `billing_live` on before touching this row
- *  gets a SELLABLE checkout with the gates still soft, which is the intended go-live, instead of an
- *  instant lockout of every free Space. Clearing the field (`{ until: null }`) is the explicit opt out.
- *
  *  🔴 THIS CONSTANT DOES NOT TELL YOU WHETHER THE GATES ARE BITING, AND NOTHING IN THIS FILE DOES.
  *  The live answer is the `beta_grace` row in `pricing_settings`, read through `getBetaGrace`
  *  (lib/pricing/settings.ts); this value is only the fallback for an ABSENT or MALFORMED row. A
@@ -181,12 +175,16 @@ export interface BetaGraceConfig {
  *  (ADR-1087, ADR-1195) and was made false the same day it was cited, by #2347 moving the window to
  *  October. It is the third such expiry this module has paid for (ADR-1197). Read the row.
  *
- *  ⚪ WHAT IS DURABLE, and the reason this default is a date rather than `null`: it deliberately stays
- *  a WINDOW no matter what the live row holds. Following the live value to null would reverse the
- *  fail-safe direction of the whole module — a DB hiccup would then enforce every gate on the strength
- *  of a failed read, which is the one outcome this file's never-lock-out posture exists to prevent. A
- *  stale-looking default here is the safe kind of stale. */
-export const BETA_GRACE_DEFAULT: BetaGraceConfig = { until: '2026-09-01' }
+ *  ⚪ THE RULE THIS VALUE OBEYS, and why it is a date nobody will live to see (LIVE-309, ADR-1324):
+ *  the fallback must be a window that CANNOT LAPSE in the product's lifetime. Until 2026-09-14 it was
+ *  `'2026-09-01'`, chosen to match the beta pricing cutover above — and betaGraceActive() is false for
+ *  a past date, so from 1 September a failed read ENFORCED every gate, which is the one outcome this
+ *  file's never-lock-out posture exists to prevent. The fourth expiry, and the last: the fuse test now
+ *  asserts the default is still granting a decade out, and the backlog probe refuses a year before
+ *  2035. Following the live row to `null` would reverse the fail-safe direction just the same, which is
+ *  why this stays a window and never tracks the row. Clearing the field on the ROW (`{ until: null }`)
+ *  is the explicit opt out; the constant is not where that decision lives. */
+export const BETA_GRACE_DEFAULT: BetaGraceConfig = { until: '2099-12-31' }
 
 /** Narrow a raw `beta_grace` jsonb value to a BetaGraceConfig. An absent / malformed value reads as the
  *  DEFAULT window (grace on) rather than as no-grace, so a bad row can never enforce the gates early.
