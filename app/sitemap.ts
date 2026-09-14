@@ -3,6 +3,8 @@ import { SITE_URL } from "@/lib/site";
 import {
   getTopicalChannels,
   getPublicCircles,
+  isTransientDiscoverError,
+  isTransientDiscoverStatus,
 } from "@/lib/discover";
 import {
   listSitemapEventEntries,
@@ -125,6 +127,99 @@ function atCap<T>(rows: T[], cap: number, section: string, reader: string): T[] 
     );
   }
   return rows;
+}
+
+// ── A failed section read TELLS, and a transport failure KEEPS the last good copy (LIVE-329) ──
+//
+// Ten section reads below used to end in a bare catch returning []: a hiccup in one cost that vertical
+// and nothing else, which is the right shape, but it fired in silence. Under a database window
+// like 2026-09-14's (REST edge 503 for an hour, ADR-1328) a regeneration landing inside it
+// shipped a sitemap with those sections EMPTY, `revalidate = 3600` cached it for the hour, and
+// no log line said which section came back empty for a failure rather than for emptiness. That is
+// the invisible-regression shape AGENTS.md names; `atCap` above is the same file doing it right.
+//
+// `sectionRead` is the one seam every fail-safe section goes through now, and it sorts a failure
+// into two classes:
+//   · TRANSIENT (the discover classifier says transport: fetch failed / ECONNRESET / a 5xx with no
+//     PostgREST code, LIVE-327) logs one line and RETHROWS, so this regeneration fails as a whole.
+//     Next keeps serving the last good copy of an ISR route whose regeneration throws (its App
+//     Router ISR guide, "Handling uncaught exceptions": "the last successfully generated data will
+//     continue to be served from the cache", and the response cache re-sets the previous entry
+//     with a 30 s retry; measured against next/dist/server/response-cache in the LIVE-329 PR), so
+//     an hour-long hole becomes a copy that is at worst an hour stale. A hollow 200 is the one
+//     outcome a crawler cannot tell from the truth; a failed regeneration is not.
+//   · DETERMINISTIC (a real PostgREST/Postgres code, a thrown bug) logs one line naming the
+//     section and the error, and fails safe to [] for THAT section only, exactly as before.
+//
+// ⚠️ Measured while closing the row: the classifier can only see what is THROWN. Every one of the
+// ten readers resolves a supabase-js transport error into `[]` inside itself (`const { data } =
+// await q; return data ?? []`, or an internal try/catch), so under the ADR-1328 window none of
+// the ten catches ever fired; the section came back empty one level below this file's sight.
+// This seam is honest about what reaches it; making the readers report a failed read as failed
+// rather than as empty is a reader change, not a sitemap one, and LIVE-329's CLOSED note names
+// it as the follow-up.
+//
+// The TRANSIENT class throws this, so the outer catch around the dynamic block can rethrow it
+// rather than degrade the whole sitemap to its static routes.
+class SitemapTransientReadError extends Error {
+  constructor(section: string, cause: unknown) {
+    super(`sitemap: ${section} read failed on transport; regeneration abandoned`);
+    this.name = "SitemapTransientReadError";
+    this.cause = cause;
+  }
+}
+
+/** The discover classifier, walked down the `cause` chain: a reader that wraps its supabase error
+ *  (DiscoverReadError does) still reads as transport when the wrapped error does. */
+function isTransientRead(err: unknown): boolean {
+  let cur: unknown = err;
+  for (let depth = 0; cur && typeof cur === "object" && depth < 5; depth++) {
+    const e = cur as { status?: unknown; cause?: unknown };
+    if (isTransientDiscoverError(cur) || isTransientDiscoverStatus(e.status, cur)) return true;
+    cur = e.cause;
+  }
+  return false;
+}
+
+function describeError(err: unknown): string {
+  if (err && typeof err === "object") {
+    const e = err as { name?: unknown; code?: unknown; message?: unknown };
+    const code = typeof e.code === "string" && e.code.trim() ? ` code=${e.code}` : "";
+    const message = typeof e.message === "string" ? e.message : String(err);
+    return `${typeof e.name === "string" ? e.name : "Error"}${code}: ${message}`;
+  }
+  return String(err);
+}
+
+/** Sort one section's failure. Logs one line naming the section and the error either way; a
+ *  transient one then rethrows so the regeneration fails and the last good copy stays, a
+ *  deterministic one yields [] for that section. The catch blocks that cannot go through
+ *  `sectionRead` (podcasts, profile tabs) call this directly, so every section speaks one way. */
+function failSection<T>(section: string, err: unknown): T[] {
+  if (isTransientRead(err)) {
+    console.error(
+      `sitemap: ${section} read failed on TRANSPORT (${describeError(err)}); abandoning this ` +
+        `regeneration so the last good copy keeps serving instead of an hour-long hole.`,
+      err,
+    );
+    throw new SitemapTransientReadError(section, err);
+  }
+  console.error(
+    `sitemap: ${section} read failed (${describeError(err)}); emitting that section EMPTY in ` +
+      `this copy and nothing else changes.`,
+    err,
+  );
+  return [];
+}
+
+/** Await one section's read. A healthy read passes through untouched and logs nothing; a failed
+ *  one goes through `failSection`. */
+async function sectionRead<T>(section: string, read: Promise<T[]>): Promise<T[]> {
+  try {
+    return await read;
+  } catch (err) {
+    return failSection<T>(section, err);
+  }
 }
 
 // Dynamic sitemap. Static marketing routes plus every public, redaction-safe
@@ -269,11 +364,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }));
 
     helpRoutes = [...categoryRoutes, ...articleRoutes];
-  } catch {
-    // Fall back gracefully; help content missing shouldn't break the sitemap.
+  } catch (err) {
+    // Fall back gracefully; help content missing shouldn't break the sitemap. Filesystem, never
+    // transport, so this is always the deterministic class: say so and carry on.
+    console.error(
+      `sitemap: help center read failed (${describeError(err)}); emitting that section EMPTY in this copy.`,
+      err,
+    );
   }
 
-  // Best-effort dynamic entries — never let a data hiccup break the sitemap.
+  // Best-effort dynamic entries: a deterministic data failure never breaks the sitemap, and a
+  // transport failure never ships a hollow one (see the LIVE-329 note above `sectionRead`).
   let dynamicRoutes: MetadataRoute.Sitemap = [];
   let organizerRoutes: MetadataRoute.Sitemap = [];
   let spotlightRoutes: MetadataRoute.Sitemap = [];
@@ -302,31 +403,48 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       listPublicJourneys(),
       getOrganizerRoutes(),
       getSpotlightRoutes(),
+      // ⚠️ THE ASYMMETRY ABOVE THIS LINE IS DELIBERATE AND UNCHANGED (LIVE-329). The six reads
+      // above (channels, circles, events, journeys, organizers, spotlights) are NOT wrapped in
+      // `sectionRead`, and the reason is that a throw from them was never possible on a failed
+      // read: each swallows its own failure. listSitemapEventEntries, getOrganizerRoutes and
+      // getSpotlightRoutes carry a try/catch that returns []; getPublicCircles reads through the
+      // discover layer's `listRead`, which retries transport and returns [] with its own log line;
+      // getTopicalChannels and listPublicJourneys destructure `{ data }` and return `data ?? []`.
+      // The row that filed this said they "throw, so a failure there keeps the previous copy";
+      // measured, they do not throw, so nothing about them keeps anything, and wrapping them would
+      // be a no-op that reads as coverage. What a genuine THROW from one of them does (a bug, a
+      // client that cannot be constructed) is reach the catch at the bottom of this block, which
+      // now logs and applies the same transient-or-deterministic rule.
+      //
+      // Every read below goes through `sectionRead`, which logs a failure by section and lets a
+      // transport failure abandon the regeneration (see the note above the helper).
+      //
       // City × category hubs — only pairs that actually have upcoming public
       // events (empty/low-value facets never get a URL, so they stay out of crawl).
-      getCityCategoryHubs().catch(() => []),
-      listActivePartners({ limit: 500 }).catch(() => []),
-      listPublicPractices("top").catch(() => []),
+      sectionRead("city x category event hubs", getCityCategoryHubs()),
+      sectionRead("partners", listActivePartners({ limit: 500 })),
+      sectionRead("practices", listPublicPractices("top")),
       // Networked entity Spaces, via the same redaction-safe reader the directory uses. It returns
       // ONLY visibility='network', status='active' Spaces and excludes the root, so PRIVATE Spaces
-      // are isolated OUT of the sitemap by construction (fail-safe to [] on any error).
-      listNetworkedSpaces().catch(() => []),
+      // are isolated OUT of the sitemap by construction (fail-safe to [] on a deterministic error).
+      sectionRead("networked Spaces", listNetworkedSpaces()),
       // Browse-by-place city hubs — only cities with ≥1 public circle or upcoming event
       // (empty places never get a URL, so low-value facets stay out of crawl).
-      listDiscoverCities().catch(() => []),
+      sectionRead("discover places", listDiscoverCities()),
       // The four commerce verticals are CAPPED, not paged (see the cap note above this function).
-      // Each is fail-safe to [] on any error, so a hiccup in one costs that vertical and nothing else.
+      // Each fails safe to [] on a deterministic error, so a hiccup in one costs that vertical and
+      // nothing else.
       //
       // Frequency Store products — platform-owned, ACTIVE only (the same gate /store/[id] renders on),
       // so a draft/archived item never enters the crawl.
-      listShopProducts({ limit: COMMERCE_SITEMAP_CAP }).catch(() => []),
+      sectionRead("store products", listShopProducts({ limit: COMMERCE_SITEMAP_CAP })),
       // Global Market listings (/market/[id]) — active + market-published maker/Space products only
       // (listMarketListings gates on both), so an unpublished item stays out.
-      listMarketListings({ limit: COMMERCE_SITEMAP_CAP }).catch(() => []),
+      sectionRead("market listings", listMarketListings({ limit: COMMERCE_SITEMAP_CAP })),
       // Housing listings (/housing/[id]) — active only.
-      listHousingListings({ limit: COMMERCE_SITEMAP_CAP }).catch(() => []),
+      sectionRead("housing listings", listHousingListings({ limit: COMMERCE_SITEMAP_CAP })),
       // Classifieds (/classifieds/[id]) — active market_listings only.
-      listClassifieds({ limit: COMMERCE_SITEMAP_CAP }).catch(() => []),
+      sectionRead("classifieds", listClassifieds({ limit: COMMERCE_SITEMAP_CAP })),
     ]);
 
     // ⚠️ Four reads above are CAPPED but were not wrapped in atCap(), so they dropped URLs
@@ -341,8 +459,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
     // Density-gated city landing pages (GE11-2) — ONLY cities above the density
     // threshold (lib/analytics/density) get a per-city landing URL, so thin/empty
-    // city pages never enter the crawl. Fail-safe to [] on any error.
-    const densityCities = await listDensityCities().catch(() => []);
+    // city pages never enter the crawl. Fails safe to [] on a deterministic error.
+    const densityCities = await sectionRead("density cities", listDensityCities());
     const densityCityRoutes: MetadataRoute.Sitemap = densityCities.map((c) => ({
       url: `${SITE_URL}/discover/cities/${c.slug}`,
       changeFrequency: "daily" as const,
@@ -554,8 +672,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         }));
         return [index, ...showEntries];
       });
-    } catch {
-      podcastRoutes = [];
+    } catch (err) {
+      podcastRoutes = failSection("podcasts", err);
     }
 
     // ── The public Space PROFILE TABS (LIVE-184) ────────────────────────────────────────────────
@@ -594,8 +712,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
           priority: 0.5,
         }))
         .filter((e) => !already.has(e.url));
-    } catch {
-      spaceTabRoutes = [];
+    } catch (err) {
+      spaceTabRoutes = failSection("Space profile tabs", err);
     }
 
     dynamicRoutes = [
@@ -617,8 +735,25 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       ...classifiedRoutes,
       ...podcastRoutes,
     ];
-  } catch {
-    // Fall back to static routes only.
+  } catch (err) {
+    // A transport failure must NOT be degraded here: `sectionRead` already logged it by section
+    // and threw so this regeneration fails and the last good copy keeps serving. A raw transient
+    // throw from one of the six unwrapped reads above gets the same treatment. Everything else is
+    // the deterministic class: log it and fall back to the static routes, as this always did.
+    if (isTransientRead(err)) {
+      if (!(err instanceof SitemapTransientReadError)) {
+        console.error(
+          `sitemap: the dynamic block failed on TRANSPORT (${describeError(err)}); abandoning this ` +
+            `regeneration so the last good copy keeps serving.`,
+          err,
+        );
+      }
+      throw err;
+    }
+    console.error(
+      `sitemap: the dynamic block failed (${describeError(err)}); emitting the STATIC routes only in this copy.`,
+      err,
+    );
   }
 
   return [...staticRoutes, ...helpRoutes, ...dynamicRoutes, ...organizerRoutes, ...spotlightRoutes];

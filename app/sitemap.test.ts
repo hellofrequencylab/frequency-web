@@ -109,11 +109,26 @@ vi.mock('@/lib/spaces/discovery', () => ({
 
 // Everything else returns empty, so the assertions below are about the podcast + Space sections and
 // the static block — not about fixture noise from a dozen unrelated verticals.
-vi.mock('@/lib/discover', () => ({ getTopicalChannels: async () => [], getPublicCircles: async () => [] }))
+// The discover module keeps its REAL transient classifier (isTransientDiscoverError /
+// isTransientDiscoverStatus, LIVE-327): the LIVE-329 tests below need the sitemap to sort a
+// failure the way production will, not the way a stub says. Only the two readers are stubbed.
+vi.mock('@/lib/discover', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/discover')>()),
+  getTopicalChannels: async () => [],
+  getPublicCircles: async () => [],
+}))
 vi.mock('@/lib/events/series-seo', () => ({ listSitemapEventEntries: async () => [] }))
 vi.mock('@/lib/events/series-config', () => ({ getSeriesDisplayConfig: async () => ({ indexedOccurrences: 2 }) }))
-vi.mock('@/lib/journey-plans', () => ({ listPublicJourneys: async () => [] }))
-vi.mock('@/lib/partners/read', () => ({ listActivePartners: async () => [] }))
+// Journeys and partners are pointed at mutable readers so the LIVE-329 failure tests can make ONE
+// of them reject: journeys is one of the six reads OUTSIDE the sectionRead chain, partners is one
+// of the ten inside it, and the two classes must behave the same way. Both default to [] (reset in
+// beforeEach), so every other test sees the empty sections it always did.
+const readers = vi.hoisted(() => ({
+  journeys: (async () => []) as () => Promise<unknown[]>,
+  partners: (async () => []) as () => Promise<unknown[]>,
+}))
+vi.mock('@/lib/journey-plans', () => ({ listPublicJourneys: () => readers.journeys() }))
+vi.mock('@/lib/partners/read', () => ({ listActivePartners: () => readers.partners() }))
 // Two practices, one WITH a slug and one without, because the sitemap's job here is to prefer the
 // slug and fall back to the uuid — and for a while it could only ever do the second (see the
 // canonical-key test below).
@@ -171,6 +186,8 @@ import sitemap from './sitemap'
 beforeEach(() => {
   showsBatch.mockClear()
   profileTabs.rows = []
+  readers.journeys = async () => []
+  readers.partners = async () => []
   commerce.shop = []
   commerce.market = []
   commerce.housing = []
@@ -459,5 +476,127 @@ describe('app/sitemap commerce row caps', () => {
     // listShopProducts, listMarketListings, listHousingListings.
     expect(clamps.length).toBeGreaterThanOrEqual(3)
     expect(clamps.every((c) => c === CAP)).toBe(true)
+  })
+})
+
+// ── A failed section read TELLS, and a transport failure KEEPS the last good copy (LIVE-329) ────
+//
+// Ten section reads used to end in `.catch(() => [])`. Under a database window (ADR-1328) a
+// regeneration inside it shipped a sitemap with those sections EMPTY, cached it for the hour, and
+// logged nothing. `sectionRead` now sorts every failure: a DETERMINISTIC one (a real PostgREST
+// code) logs one line naming the section and yields [] for that section only; a TRANSIENT one (the
+// discover classifier says transport) logs and RETHROWS so the regeneration fails and Next keeps
+// serving the last good copy. These tests fire the real route so the wiring, not just the helper,
+// is what is pinned; the classifier is the real one (the discover mock above passes it through).
+const PERMISSION_DENIED = { code: '42501', message: 'permission denied for table partners', details: '', hint: '' }
+// The exact shape supabase-js resolves when the request never reaches PostgREST (LIVE-084): an
+// EMPTY code, and the transport error in message + details.
+const FETCH_FAILED = { message: 'TypeError: fetch failed', details: 'Caused by: Error: read ECONNRESET', hint: '', code: '' }
+
+function sitemapLines(spy: { mock: { calls: unknown[][] } }) {
+  return spy.mock.calls.map((c) => String(c[0])).filter((l) => l.startsWith('sitemap:'))
+}
+
+describe('app/sitemap section read failures', () => {
+  it('a DETERMINISTIC failure logs the section and the error, and empties that section only', async () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+    readers.partners = async () => {
+      throw PERMISSION_DENIED
+    }
+
+    const entries = await sitemap()
+    const urls = entries.map((e) => e.url)
+
+    // The failed section is empty; its neighbours in the same Promise.all are intact.
+    expect(urls.filter((u) => u.includes('/discover/partners/'))).toEqual([])
+    expect(urls).toContain(`${SITE}/discover/practices/box-breathing`)
+    expect(urls).toContain(`${SITE}/spaces/alpha`)
+    expect(urls).toContain(`${SITE}/`)
+
+    // ONE line, naming the section and carrying the error, so a log reader can tell "empty
+    // because it failed" from "empty because there are none".
+    const lines = sitemapLines(error)
+    expect(lines).toHaveLength(1)
+    expect(lines[0]).toContain('partners read failed')
+    expect(lines[0]).toContain('42501')
+    expect(lines[0]).toContain('permission denied')
+    expect(lines[0]).not.toContain('TRANSPORT')
+    error.mockRestore()
+  })
+
+  it('a TRANSIENT failure logs the section and RETHROWS, so the regeneration fails instead of shipping a hole', async () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+    readers.partners = async () => {
+      throw FETCH_FAILED
+    }
+
+    await expect(sitemap()).rejects.toMatchObject({ name: 'SitemapTransientReadError' })
+
+    const lines = sitemapLines(error)
+    expect(lines.some((l) => l.includes('partners read failed on TRANSPORT') && l.includes('fetch failed'))).toBe(true)
+    // The outer catch rethrew the already-logged error rather than logging it twice.
+    expect(lines.filter((l) => l.includes('dynamic block'))).toHaveLength(0)
+    error.mockRestore()
+  })
+
+  it('reads the classifier down the cause chain and off a 5xx status, the way the readers wrap it', async () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    // A reader that wraps its supabase error (DiscoverReadError puts it on `cause`).
+    readers.partners = async () => {
+      throw Object.assign(new Error('discover read failed: partners'), { cause: FETCH_FAILED })
+    }
+    await expect(sitemap()).rejects.toMatchObject({ name: 'SitemapTransientReadError' })
+
+    // A 503 from the edge with NO PostgREST code is transport, whatever the body says.
+    readers.partners = async () => {
+      throw Object.assign(new Error('<html>upstream unavailable</html>'), { status: 503, code: '' })
+    }
+    await expect(sitemap()).rejects.toMatchObject({ name: 'SitemapTransientReadError' })
+
+    // The same 503 WITH a PostgREST code is an answer, so it is the deterministic class.
+    readers.partners = async () => {
+      throw Object.assign(new Error('statement timeout'), { status: 503, code: '57014' })
+    }
+    await expect(sitemap()).resolves.toBeDefined()
+    error.mockRestore()
+  })
+
+  it('applies the same rule to a throw from one of the six reads OUTSIDE the chain', async () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    // Transient: the outer catch must NOT degrade this to static-only; it rethrows.
+    readers.journeys = async () => {
+      throw FETCH_FAILED
+    }
+    await expect(sitemap()).rejects.toMatchObject({ message: 'TypeError: fetch failed' })
+    expect(sitemapLines(error).some((l) => l.includes('dynamic block failed on TRANSPORT'))).toBe(true)
+
+    // Deterministic: the static-only fallback this route always had, now with a line saying so.
+    error.mockClear()
+    readers.journeys = async () => {
+      throw PERMISSION_DENIED
+    }
+    const urls = (await sitemap()).map((e) => e.url)
+    expect(urls).toContain(`${SITE}/`)
+    expect(urls).not.toContain(`${SITE}/spaces/alpha`)
+    expect(sitemapLines(error).some((l) => l.includes('dynamic block failed') && l.includes('42501'))).toBe(true)
+    error.mockRestore()
+  })
+
+  it('a healthy read logs nothing', async () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    await sitemap()
+
+    // The positive controls above prove this silence means "nothing failed", not "never logs".
+    expect(sitemapLines(error)).toEqual([])
+    error.mockRestore()
+  })
+
+  it('no section read swallows its error into an empty list without saying so', () => {
+    // The row's own probe, kept beside the behaviour it measures: the silent form must be gone.
+    const src = readFileSync('app/sitemap.ts', 'utf8')
+    expect(src.match(/\.catch\(\(\) => \[\]\)/g)).toBeNull()
   })
 })
