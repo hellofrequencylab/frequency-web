@@ -12141,8 +12141,8 @@
       "lane": "live",
       "size": "S",
       "source": {
-        "file": "test/e2e/__screenshots__/visual.spec.ts",
-        "ref": "admin-*"
+        "file": "test/e2e/visual.spec.ts",
+        "ref": "the admin-* baselines under test/e2e/__screenshots__/visual.spec.ts/"
       },
       "detail": "FILED 2026-09-14 from the induction-lockout handoff, verified by git ancestry rather than speculated. admin-content-practices was last captured in #2537, which predates #2550 (3de09f6, the mode law: light is the default, dark needs an account). #2552 recaptured the app-* half and one admin-library PNG; no other admin-* file was in scope. #2554 made the @shell tier advisory, so these no longer block a merge, but they are still stale, and they are OPERATOR content, not live member data, so a recapture here would actually hold. That distinction is the reason not to lump them in with the /feed drift (LIVE-308).\n\nTHE WORK: recapture admin-* only, via e2e-manual.yml with update_baselines against a fresh preview, and commit the PNGs in a PR that changes nothing else. The probe: every admin-* PNG's last-captured commit is a descendant of 3de09f6. It reports indeterminate (79) on a shallow checkout, where ancestry cannot be read.",
       "verify": {
