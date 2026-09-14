@@ -187,7 +187,12 @@ select is(public.release_guest_seat((select tok from gd2 where who = 'a')), null
 reset role;
 
 -- ── 5. The token expires with the event, and dies with a draft ──────────────────────────────────
-update public.events set starts_at = now() - interval '3 hours', ends_at = now() - interval '1 hour'
+-- starts_at and ends_at hold the host's WALL CLOCK kept as UTC parts (lib/time/zone.ts), and the
+-- resolver re-reads them through the event's zone; a true instant written here would land seven
+-- hours in the future on a Los Angeles event and still read as live. Write the wall clock.
+update public.events
+   set starts_at = ((now() - interval '3 hours') at time zone 'America/Los_Angeles') at time zone 'UTC',
+       ends_at   = ((now() - interval '1 hour')  at time zone 'America/Los_Angeles') at time zone 'UTC'
  where id = '00000000-0000-4000-e9a0-000000000001';
 set local role anon;
 select is(public.read_guest_seat((select tok from gd2 where who = 'b')), null,
