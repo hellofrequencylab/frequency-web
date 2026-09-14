@@ -47,7 +47,13 @@
           "name": "W0b · P1 — repairs ready to work now, and the instruments that keep the gates honest. This is the wave to pull from when you want the next thing to do.",
           "ids": [
             "LIVE-186",
-            "LIVE-213"
+            "LIVE-213",
+            "LIVE-311",
+            "LIVE-312",
+            "LIVE-314",
+            "LIVE-315",
+            "LIVE-317",
+            "LIVE-322"
           ]
         },
         {
@@ -57,7 +63,13 @@
             "LIVE-279",
             "LIVE-307",
             "LIVE-308",
-            "HYG-086"
+            "HYG-086",
+            "LIVE-316",
+            "LIVE-318",
+            "LIVE-319",
+            "LIVE-320",
+            "HYG-087",
+            "HYG-088"
           ]
         },
         {
@@ -90,6 +102,7 @@
             "LIVE-234",
             "LIVE-235",
             "LIVE-236",
+            "PROG-GD2",
             "PROG-R6",
             "LIVE-237",
             "LIVE-238",
@@ -114,6 +127,7 @@
             "LIVE-260",
             "PROG-R10",
             "LIVE-263",
+            "PROG-GD4",
             "PROG-R11",
             "LIVE-305",
             "LIVE-306"
@@ -131,7 +145,8 @@
             "HYG-070",
             "HYG-071",
             "HYG-072",
-            "HYG-073"
+            "HYG-073",
+            "LIVE-313"
           ]
         },
         {
@@ -181,7 +196,8 @@
           "ids": [
             "PROG-PRAC4",
             "DEF-DOMAIN",
-            "DEF-CODE"
+            "DEF-CODE",
+            "PROG-GD5"
           ]
         },
         {
@@ -211,9 +227,10 @@
           ]
         },
         {
-          "name": "W12 · DEFERRED 4 of 4 — mobile (Expo/RN on the shared contract). Held on the 2026-08-20 ruling; the 2026-09-07 correction did not re-name it.",
+          "name": "W12 · DEFERRED 4 of 4 — mobile (Expo/RN on the shared contract). Held on the 2026-08-20 ruling; the 2026-09-07 correction did not re-name it. Also holds the guest door's phone door (PROG-GD6), parked with texting.",
           "ids": [
-            "DEF-MOBILE"
+            "DEF-MOBILE",
+            "PROG-GD6"
           ]
         },
         {
@@ -237,14 +254,18 @@
             "HYG-068",
             "OWN-066",
             "OWN-067",
-            "OWN-070"
+            "OWN-070",
+            "OWN-072",
+            "OWN-073",
+            "OWN-074"
           ]
         }
       ],
       "deferredByName": [
         "App Platform (PROG-A1, PROG-A3, PROG-A4)",
         "Etsy-grade store (DEF-ETSY)",
-        "Mobile (DEF-MOBILE)"
+        "Mobile (DEF-MOBILE)",
+        "Guest door phone door (PROG-GD6), parked with texting"
       ],
       "decisions": [
         "OWN-035",
@@ -274,6 +295,102 @@
           "P3": "Housekeeping with no member-facing consequence, the perf set (12 visitors / 18 pageviews in 31 days: the funnel is the constraint, not the page), and work gated on something that has to happen first — an owner-dispatched run, a traffic threshold, a bundle that does not exist yet. NOT the deferred programs: those are `parked`, which is a status, not a priority. This line named mobile / texting / Etsy / white-label until 2026-09-07, which confused a hold with a ranking."
         },
         "set": "2026-09-06, the backlog audit (every open row read, the done rows swept for unfiled residue, the docs and code swept for deferred work). Re-rank when a row changes lane or a premise is re-tested; do not let a P0 sit because its wave is later."
+      },
+      "phases": {
+        "note": "THE PHASED PRODUCTION PLAN (ADR-1325, 2026-09-14). Phases are the owner-facing shape of the same sequence the waves encode; a wave is the unit check:backlog proves, a phase is the unit that exits. A phase exits only on all five: every row done with its probe passing; CI green on main at the last merge; the production deploy READY with all six postbuild gates printed; visual baselines recaptured for every surface the phase moved; a round-report ADR naming every CI failure the phase saw and its mitigation. The loop that works each row (pick, branch, build to the probe, validate, push, arm auto-merge, repair on red, verify the deploy, record) is ADR-1325 §\"The loop\". Lanes: two by ruling 4, widened by owner instruction on 2026-09-14 (\"fan way out\") to as many worktree lanes as there are independent rows, one row per PR, merge one at a time when two touch the same surface.",
+        "list": [
+          {
+            "phase": 0,
+            "name": "Stabilise",
+            "waves": [
+              "W0b",
+              "W0c",
+              "W0d"
+            ],
+            "owner": [
+              "SENTRY_DSN in Production",
+              "SUPPORT_CHAT=1 on Preview",
+              "STRIPE_CONNECT_WEBHOOK_SECRET after #2560",
+              "the sites apex",
+              "OWN-072 ruling",
+              "OWN-073 and OWN-074 messages"
+            ],
+            "exit": "P0 lane empty; LIVE-233 shipped and LIVE-234 walked by the owner; LIVE-315, LIVE-316, LIVE-317 and LIVE-322 closed before the first ticket sells; pr-compare public tier required; round-report ADR"
+          },
+          {
+            "phase": 1,
+            "name": "The rework in flight, plus the guest door's key and door",
+            "waves": [
+              "WR"
+            ],
+            "exit": "LIVE-237 and LIVE-246 probes pass; PROG-R6 and R7 close; PROG-GD2 and GD4 close; PROG-R11 can start because attendance has a record"
+          },
+          {
+            "phase": 2,
+            "name": "Editor Foundation E0, gates first, multiplayer deferred; Loom D2 and D3 beside it as E2's prerequisite",
+            "waves": [
+              "W3",
+              "W4 head: PROG-E0"
+            ],
+            "exit": "check:doc-safety green on the real corpus; two text blocks coexist; publish, revert, publish round-trips; old and new markup equal per block"
+          },
+          {
+            "phase": 3,
+            "name": "The contract and the axes: E1, E2 usage index, E3 and Site's four things",
+            "waves": [
+              "W1",
+              "W4: PROG-E1, PROG-E2, PROG-E3"
+            ],
+            "exit": "block-systems ratchet falls; Spotlight, in-app profile, Space profile and Site render off one registry with zero visual diff"
+          },
+          {
+            "phase": 4,
+            "name": "Sites v1 (E10 part one): domains table, host router, renderer on the contract, per-tenant SEO, tag-based publish",
+            "waves": [
+              "W4: PROG-E10, LIVE-310"
+            ],
+            "exit": "a paid Space serves at its subdomain with TLS and no auth cookie; the app domain byte-identical"
+          },
+          {
+            "phase": 5,
+            "name": "The site editor (E10 part two, W3 scope) with E4's canvas essentials and the token-request path",
+            "waves": [
+              "W4: PROG-E10, PROG-E4"
+            ],
+            "exit": "template to three pages to publish to live within one revalidation; RSC and canvas parity"
+          },
+          {
+            "phase": 6,
+            "name": "Custom domains, billing, hardening (E10 part three, W4 and W5 scope)",
+            "waves": [
+              "W4: PROG-E10, LIVE-310"
+            ],
+            "exit": "a gated Space binds a real domain end to end without support; an ungated one cannot"
+          },
+          {
+            "phase": 7,
+            "name": "Depth: the CRDT behind render_path, E5 to E9, W6 and P7, Loom at scale, the re-theme sweeps, feature depth, commerce verticals, the hardening remainder",
+            "waves": [
+              "W4: PROG-E5 to PROG-E9, PROG-W6, PROG-P7",
+              "W5",
+              "W6",
+              "W7",
+              "W8",
+              "W2: DEF-HARDEN"
+            ],
+            "exit": "the authoring path completes on a phone; a member takes a real payment through a placed block; one prompt builds a single-undo page"
+          },
+          {
+            "phase": "deferred",
+            "name": "By owner ruling: the App Platform (W9), the Etsy-grade store (W11), mobile and the phone door (W12)",
+            "waves": [
+              "W9",
+              "W11",
+              "W12"
+            ],
+            "exit": "owner call"
+          }
+        ]
       }
     }
   },
@@ -11958,6 +12075,369 @@
         "kind": "cmd",
         "cmd": "node -e 'const s=require(\"fs\").readFileSync(\"lib/pricing/gates.ts\",\"utf8\");if(!/custom_domain/.test(s)){console.error(\"lib/pricing/gates.ts has no custom_domain gate\");process.exit(1)}const {execSync}=require(\"child_process\");const n=execSync(\"grep -rl custom_domain app lib --include=*.ts --include=*.tsx | grep -v test | wc -l\").toString().trim();if(+n<2){console.error(\"custom_domain is defined but enforced nowhere (\"+n+\" files)\");process.exit(1)}'",
         "note": "Passes when the key exists AND is read outside its own definition; a gate with zero call sites is the decorative shape HYG-079 deleted. Written 2026-09-14."
+      }
+    },
+    {
+      "id": "OWN-072",
+      "title": "Ruling: the admission gate marches members who already have accounts into the /join signup funnel",
+      "status": "open",
+      "priority": "P0",
+      "lane": "owner",
+      "size": "S",
+      "ownerAction": "ruling",
+      "source": {
+        "file": "docs/DECISIONS.md",
+        "ref": "ADR-1324 (the induction resume) and the 2026-09-14 handoff"
+      },
+      "detail": "FILED 2026-09-14 from the induction-lockout handoff (session 01B77Ec3, ADR-1324). app/(main)/layout.tsx redirects any member whose profile lacks onboarding_completed into /join, a SIGNUP funnel, on every request. Nine members with working accounts sat behind it for up to eleven weeks; eight signed in exactly once and never returned. #2553 made the funnel resumable, which shortened the march. It did not answer why someone with a working account is on it at all, and ADR-1324 defers that question deliberately rather than quietly.\n\nTHE SHAPE OF THE ALTERNATIVE: admit them to the app and collect the missing profile fields inline, the way the edit rail already does. It touches admission for the whole product, so it is not a change to make on inference.\n\nWHY P0: a member who cannot stay signed in is a wrong permission answer that is true today for anyone whose profile predates the flag. The nine were admitted by hand (meta.admitted_by_support); the next one will not be.\n\nRULING NEEDED: does an account holder without onboarding_completed get admitted with inline field collection, or stay routed through /join? If admitted, it needs its own ADR and its own PR, not an amendment to #2553.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "2026-09-14: ruling not yet given. Closes when the ruling is recorded as an ADR and the code row it produces is filed.",
+        "checked": "2026-09-14"
+      }
+    },
+    {
+      "id": "OWN-073",
+      "title": "Tell the nine support-admitted members they are in, and offer them a display name",
+      "status": "open",
+      "priority": "P0",
+      "lane": "owner",
+      "size": "XS",
+      "ownerAction": "content",
+      "source": {
+        "file": "docs/DECISIONS.md",
+        "ref": "ADR-1324 (the induction resume) and the 2026-09-14 handoff"
+      },
+      "detail": "FILED 2026-09-14 from the induction-lockout handoff. All nine accounts carrying meta.admitted_by_support (stamped 11 Sep) are admitted, moved free to crew, and verified working. Nothing and nobody has told them. The member who reported it has been locked out since 15 July, last tried on 11 September, and her account has worked since that afternoon.\n\nTWO THINGS, one owner, no code. (1) One message to the reporter, and one to each of the other eight if you choose. (2) Admitting them skipped profile setup, so each appears to the community under the local part of their email and a generated handle until they edit both in settings; an optional nudge. meta.admitted_by_support makes the nine queryable in one line.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "2026-09-14: not yet sent. Closes when the reporter has been told; the identity nudge is optional and does not hold the row.",
+        "checked": "2026-09-14"
+      }
+    },
+    {
+      "id": "LIVE-311",
+      "title": "Nothing measures whether people get THROUGH onboarding, so a scheduled probe counts accounts stuck behind the admission gate",
+      "status": "open",
+      "priority": "P1",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "docs/DECISIONS.md",
+        "ref": "ADR-1324 (the induction resume) and the 2026-09-14 handoff"
+      },
+      "detail": "FILED 2026-09-14 from the induction-lockout handoff, and it is the root cause of the eleven-week delay. Every gate in this repo measures whether it is closed; none measures whether anyone gets past it. Nine people sat behind the admission gate and the only reason it surfaced is that one of them kept texting. This is ADR-1082 from the other side: a blocker phrased as \"nobody reported it\" is a claim with an expiry date.\n\nTHE WORK: a scheduled reading over profiles. Any account with a live session (a sign-in in the window), no onboarding_completed, and an age past a threshold is a person locked out right now. Report the count and the ids into the weekly maintenance run summary the way the cron-heartbeat and design-debt readings do (HYG-070), and feed a non-zero count into the tracking-issue delta so it has an owner. A monitored cron route is the alternative if the reading needs the service role; either way the reading must exist on a schedule, not on a complaint.\n\nThe probe measures the consequence: the maintenance workflow, or a cron route, carries an onboarding-throughput reading by name.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const w=fs.existsSync(\".github/workflows/maintenance.yml\")?fs.readFileSync(\".github/workflows/maintenance.yml\",\"utf8\"):\"\";const cron=fs.existsSync(\"app/api/cron/onboarding-throughput/route.ts\");if(!/onboarding-throughput/.test(w)&&!cron){console.error(\"no scheduled onboarding-throughput reading exists: nothing counts accounts stuck behind the admission gate\");process.exit(1)}'",
+        "note": "Passes when a scheduled reading named onboarding-throughput exists in maintenance.yml or as a cron route. Written 2026-09-14."
+      }
+    },
+    {
+      "id": "LIVE-312",
+      "title": "The admin-* visual baselines predate the mode law, and unlike the member surfaces a recapture there would hold",
+      "status": "open",
+      "priority": "P2",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "test/e2e/visual.spec.ts",
+        "ref": "the admin-* baselines under test/e2e/__screenshots__/visual.spec.ts/"
+      },
+      "detail": "FILED 2026-09-14 from the induction-lockout handoff, verified by git ancestry rather than speculated. admin-content-practices was last captured in #2537, which predates #2550 (3de09f6, the mode law: light is the default, dark needs an account). #2552 recaptured the app-* half and one admin-library PNG; no other admin-* file was in scope. #2554 made the @shell tier advisory, so these no longer block a merge, but they are still stale, and they are OPERATOR content, not live member data, so a recapture here would actually hold. That distinction is the reason not to lump them in with the /feed drift (LIVE-308).\n\nTHE WORK: recapture admin-* only, via e2e-manual.yml with update_baselines against a fresh preview, and commit the PNGs in a PR that changes nothing else. The probe: every admin-* PNG's last-captured commit is a descendant of 3de09f6. It reports indeterminate (79) on a shallow checkout, where ancestry cannot be read.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const {execSync}=require(\"child_process\");const sh=execSync(\"git rev-parse --is-shallow-repository\").toString().trim();if(sh===\"true\")process.exit(79);const dir=\"test/e2e/__screenshots__/visual.spec.ts\";const fs=require(\"fs\");if(!fs.existsSync(dir))process.exit(79);const files=fs.readdirSync(dir).filter(f=>/^admin-.*\\.png$/.test(f));if(!files.length){console.error(\"no admin-* baselines found\");process.exit(1)}const stale=[];for(const f of files){const sha=execSync(`git log -1 --format=%H -- \"${dir}/${f}\"`).toString().trim();try{execSync(`git merge-base --is-ancestor 3de09f6 ${sha}`)}catch{stale.push(f)}}if(stale.length){console.error(\"admin-* baselines captured before the mode law: \"+stale.join(\", \"));process.exit(1)}'",
+        "note": "Measures the consequence per PNG through git ancestry; 79 when the checkout is too shallow to answer. Written 2026-09-14."
+      }
+    },
+    {
+      "id": "LIVE-313",
+      "title": "The shell visual tier is advisory since #2554, and it earns its block back on a seeded, deterministic dataset",
+      "status": "open",
+      "priority": "P3",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": ".github/workflows/e2e.yml",
+        "ref": "the @shell compare step"
+      },
+      "detail": "FILED 2026-09-14 from the induction-lockout handoff. #2554 took the honest trade: the @visual @shell surfaces photograph LIVE production data through a real session, so a diff there cannot tell \"someone moved the header\" from \"the Space gained a member since Tuesday\", and a gate that cannot fire truthfully was made advisory instead of being merged past. That is ADR-970 in the right direction, and it is also a real coverage hole: a genuine shell regression now reads as advice. #2554's own comment names the fix and does not pretend otherwise: point the shell suite at a seeded, deterministic dataset instead of production, and the tier earns its block back and the two compare steps collapse into one.\n\nNot urgent. It is the kind of deferral that reads as coverage a year later, which is why it has a row and a probe rather than a comment.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const s=require(\"fs\").readFileSync(\".github/workflows/e2e.yml\",\"utf8\");const i=s.indexOf(\"member shell + operator\");if(i<0){console.error(\"e2e.yml no longer has a member shell + operator compare step\");process.exit(1)}const step=s.slice(i,i+900);if(/continue-on-error:\\s*true/.test(step)){console.error(\"the member shell + operator visual tier is still continue-on-error: a shell regression cannot fail a PR\");process.exit(1)}'",
+        "note": "Passes when the shell compare step exists and no longer carries continue-on-error. Written 2026-09-14; the first draft looked 1500 chars around the first @shell mention, which is a comment, and read DONE on an open row."
+      }
+    },
+    {
+      "id": "LIVE-314",
+      "title": "A signed-out guest on a priced RSVP-mode event is held to a payment condition a member is not, so the guest door shows \"Sign in to RSVP\" on an event that charges nobody at RSVP time",
+      "status": "open",
+      "priority": "P1",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "components/events/rsvp-payment-flow.tsx",
+        "ref": "line 88"
+      },
+      "detail": "FILED 2026-09-14 from the guest-door handoff, measured on production. rsvp-payment-flow.tsx:88 computes guestDoor = !signedIn && paymentsReady && guestTiers.length > 0, and paymentsReady = TICKETING_ENABLED && hostPayoutReady (page.tsx:1346). For a TICKETS-mode event that is right: buying is attending, and you cannot take money for a host who cannot receive it. For an RSVP-mode event it is a defect: money is paid at the door and nothing goes through Stripe at RSVP time, a signed-in member gets full RSVP controls whether or not payouts are connected (:122-131), and the guest is refused (:138-148). This is the original report (\"I tried to RSVP in an incognito window and it took me to the login page\") and it is still true on an event two days out.\n\nTHE FIX is small and local: in the guestDoor fallback render GuestRsvpForm instead of the sign-in link when the event is RSVP mode. capture_guest_rsvp already accepts RSVP-mode events and refuses tickets-mode ones, so the authority is in place. A test beside the component pins both verdicts: RSVP mode without payouts renders the guest form; tickets mode without payouts still renders the sign-in link.\n\nTwo non-code ways out exist for the one event (clear its two ticket tiers, or the host completes Connect) and neither fixes the rule.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const t=\"components/events/rsvp-payment-flow.guest-door.test.tsx\";if(!fs.existsSync(t)){console.error(\"no test pins the guest door verdicts: a signed-out reader of a priced RSVP-mode event without payouts still gets a sign-in link\");process.exit(1)}const c=fs.readFileSync(\"components/events/rsvp-payment-flow.tsx\",\"utf8\");if(!/GuestRsvpForm/.test(c)){console.error(\"rsvp-payment-flow.tsx never renders GuestRsvpForm, so the RSVP-mode guest door is still the sign-in link\");process.exit(1)}'",
+        "note": "Passes when the component renders the guest RSVP form and a test beside it pins both verdicts (RSVP mode without payouts: guest form; tickets mode without payouts: sign-in). Written 2026-09-14."
+      }
+    },
+    {
+      "id": "LIVE-315",
+      "title": "A guest ticket holder is never told the event was cancelled: the refund runs, the email never sends",
+      "status": "open",
+      "priority": "P1",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "lib/events/cancellation.ts",
+        "ref": "lines 131-185, 231-233"
+      },
+      "detail": "FILED 2026-09-14 from the guest-door handoff, ranked first because it costs a real person the most. cancellation.ts:133 selects id, buyer_profile_id and never guest_email. A guest ticket has a null buyer, so it is enqueued for refund (the money leg is identity blind and works) but the buyer never enters refundedBuyerIds and is never emailed. They get their money back and turn up anyway. Phase 3 created this: the comment at :231-233 licenses the gap by asserting a buyer is a member by construction, which was true until #2556 and is now false. The file was not touched.\n\nTHE WORK: select guest_email beside buyer_profile_id, email the guest through the same sender family the receipt uses, and retire the comment. A test walks a cancellation with one member ticket and one guest ticket and asserts both are told.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const s=require(\"fs\").readFileSync(\"lib/events/cancellation.ts\",\"utf8\");if(/\\.select\\(\\x27id, buyer_profile_id\\x27\\)/.test(s)||!/guest_email/.test(s.slice(0,s.indexOf(\"refundedBuyerIds\")>0?s.indexOf(\"refundedBuyerIds\"):s.length))){console.error(\"cancellation.ts still reads tickets without guest_email, so a guest ticket holder is refunded and never told\");process.exit(1)}'",
+        "note": "Passes when the ticket read carries guest_email before the refund loop. Written 2026-09-14."
+      }
+    },
+    {
+      "id": "LIVE-316",
+      "title": "No member ticket receipt exists anywhere: a member who pays gets no email, no calendar link and no reminder",
+      "status": "open",
+      "priority": "P1",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "lib/email.ts",
+        "ref": "sendGuestTicketEmail is the only ticket sender"
+      },
+      "detail": "FILED 2026-09-14 from the guest-door handoff. lib/email.ts has exactly one ticket sender, sendGuestTicketEmail, called only on the guest leg (lib/events/guest-ticket-email.ts). A member who pays for a ticket gets no email, no RSVP row, no calendar link and no reminder. Phase 3 gave the guest a better post-purchase experience than the member has, and a guest claimed inside the pre-webhook window inherits the member gap. Zero tickets have ever sold, so this is the cheapest it will be.\n\nTHE WORK: a member ticket receipt on the settle path in lib/billing/tickets.ts, sharing the guest receipt's template family (one message, two identities), with the hidden-venue rule of ADR-854 kept. Golden-string test beside the guest one.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const t=fs.readFileSync(\"lib/billing/tickets.ts\",\"utf8\");const n=(t.match(/send\\w*Ticket\\w*(Email|Receipt)\\s*\\(/g)||[]).length;if(n<2){console.error(\"lib/billing/tickets.ts calls \"+n+\" ticket sender(s); a member who pays still gets no receipt\");process.exit(1)}'",
+        "note": "Passes when the settle path sends more than the guest receipt. Written 2026-09-14."
+      }
+    },
+    {
+      "id": "LIVE-317",
+      "title": "Nobody holding a ticket can check in, because canCheckIn reads isGoing rather than ownsTicket",
+      "status": "open",
+      "priority": "P1",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "app/(main)/events/[slug]/page.tsx",
+        "ref": "line 1064"
+      },
+      "detail": "FILED 2026-09-14 from the guest-door handoff. claim_guest_tickets() sets buyer_profile_id and mints no RSVP row, and canCheckIn = !!myProfileId && isGoing && checkInWindow && !event.is_cancelled (page.tsx:1064). So \"sign in and your ticket comes with you\" stops one step short of the door. Already true of every paying member on a tickets-mode event, so a ticketing gap the guest door inherited rather than caused. Fix at the rule: a ticket owner is admitted to check-in in the same window a going RSVP is.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const s=require(\"fs\").readFileSync(\"app/(main)/events/[slug]/page.tsx\",\"utf8\");const m=s.match(/const canCheckIn\\s*=[^\\n]*/);if(!m||!/ownsTicket/.test(m[0])){console.error(\"canCheckIn does not consider ownsTicket: a ticket holder cannot check in\");process.exit(1)}'",
+        "note": "Passes when the check-in rule reads ticket ownership. Written 2026-09-14."
+      }
+    },
+    {
+      "id": "LIVE-318",
+      "title": "A free tier is the one rate a guest cannot take, and requiresAccount is the dead discriminant that says so",
+      "status": "open",
+      "priority": "P2",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "app/(main)/events/[slug]/ticket-actions.ts",
+        "ref": "line 148; guest-ticket-form.tsx:215-222"
+      },
+      "detail": "FILED 2026-09-14 from the guest-door handoff. guest-ticket-form.tsx:215-222 swaps the email field for prose on a free tier and ticket-actions.ts:148 refuses server side, because there is nowhere to record a guest free claim (capture_guest_rsvp refuses tickets-mode events). The free tier is usually the entry-level one. requiresAccount is returned by createTicketCheckout and read by no production caller, only by tests: the shape-not-truth pattern. Member-only and space-members-only tiers are correctly filtered for a guest and stay so.\n\nTHE WORK: a guest free claim on a tickets-mode event (a zero-amount ticket row through reserve_ticket_atomic, no Stripe session), then delete requiresAccount. Owner decision recorded in the #2556 body says whether a free tier SHOULD be guest-claimable is a product call; the default here is yes, because it is the same rule as a free RSVP.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const s=require(\"fs\").readFileSync(\"lib/billing/tickets.ts\",\"utf8\");if(/requiresAccount/.test(s)){console.error(\"lib/billing/tickets.ts still returns requiresAccount, so a free tier still refuses a guest\");process.exit(1)}'",
+        "note": "Passes when the discriminant is gone, which only happens once a guest can take a free tier. Written 2026-09-14."
+      }
+    },
+    {
+      "id": "LIVE-319",
+      "title": "The host cannot see who a guest buyer is: the sales list prints \"A member\" for a null buyer and no surface selects guest_email",
+      "status": "open",
+      "priority": "P2",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "components/widgets/events/event-sales.tsx",
+        "ref": "line 27"
+      },
+      "detail": "FILED 2026-09-14 from the guest-door handoff. event-sales.tsx:27 prints display_name ?? 'A member' for any null buyer, and no operator surface selects event_tickets.guest_email. Refunding, contacting or door-checking a guest buyer is impossible from the product. The Manage participants loader already resolves guestName ?? guestEmail for RSVP rows (manage/load.ts:177); tickets need the same read.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const s=require(\"fs\").readFileSync(\"components/widgets/events/event-sales.tsx\",\"utf8\");if(!/guest_email|guestEmail/.test(s)||/\\?\\?\\s*\\x27A member\\x27/.test(s)){console.error(\"event-sales still hides guest buyers behind A member\");process.exit(1)}'",
+        "note": "Passes when the sales surface reads the guest address and stops labelling a guest a member. Written 2026-09-14."
+      }
+    },
+    {
+      "id": "LIVE-320",
+      "title": "Guest ticket holders get no reminders and no host broadcast",
+      "status": "open",
+      "priority": "P2",
+      "lane": "live",
+      "size": "M",
+      "source": {
+        "file": "app/api/cron/event-reminders/route.ts",
+        "ref": "reads event_rsvps only; lib/events/broadcast-audience.ts:47"
+      },
+      "detail": "FILED 2026-09-14 from the guest-door handoff. The reminder cron reads event_rsvps only, and broadcast-audience.ts:47 drops rows with a null buyer on a comment written when that meant a deleted account. A guest ticket holder is therefore neither reminded nor reachable by the host. Both readers need a guest arm keyed on guest_email, with the reminder stamps carried on the ticket row (event_rsvps.reminder_*_sent_at has no twin on event_tickets; add the columns in the same change, mirrored as a migration).",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const r=fs.readFileSync(\"app/api/cron/event-reminders/route.ts\",\"utf8\");const a=fs.readFileSync(\"lib/events/broadcast-audience.ts\",\"utf8\");if(!/event_tickets/.test(r)||!/guest_email/.test(a)){console.error(\"reminders or broadcasts still cannot reach a guest ticket holder\");process.exit(1)}'",
+        "note": "Passes when the reminder cron reads tickets and the broadcast audience carries the guest address. Written 2026-09-14."
+      }
+    },
+    {
+      "id": "LIVE-322",
+      "title": "A checkout URL unhides a hidden venue to an unauthenticated reader",
+      "status": "open",
+      "priority": "P1",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "app/(main)/events/[slug]/page.tsx",
+        "ref": "line 912, 1233"
+      },
+      "detail": "FILED 2026-09-14 from the guest-door handoff; a security finding, so the safer fix wins. page.tsx:912 sets ownsTicket = true whenever ?ticket=success&session_id= resolves to a priced amount, and ownsTicket unhides the street and pin at :1233-1234 for whoever holds the URL, signed in or not. It contradicts the doctrine written in the same PR two files over: the receipt email deliberately withholds a hidden address (ADR-854: an unverified address may address a delivery, never unlock a capability). Pre-existing mechanism, newly reachable now that guests receive such URLs.\n\nTHE FIX: ownsTicket for a signed-out reader is always false; the session id may confirm the purchase message, never the venue. A test renders the page signed out with a valid session id on a hidden-venue event and asserts the address is absent.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const s=require(\"fs\").readFileSync(\"app/(main)/events/[slug]/page.tsx\",\"utf8\");if(/if \\(ticketedCents !== null\\) ownsTicket = true/.test(s)){console.error(\"page.tsx still derives ownsTicket from the checkout URL alone, so a hidden venue is one link away\");process.exit(1)}'",
+        "note": "Passes when the URL no longer grants ownership. Written 2026-09-14."
+      }
+    },
+    {
+      "id": "HYG-087",
+      "title": "Three check:schema-contract allowlist entries are removable now that both guest-door migrations are applied and the types can be regenerated",
+      "status": "open",
+      "priority": "P2",
+      "lane": "hygiene",
+      "size": "XS",
+      "source": {
+        "file": "scripts/check-schema-contract.mjs",
+        "ref": "lines 95-123"
+      },
+      "detail": "FILED 2026-09-14 from the guest-door handoff. The allowlist carries dated entries for event_tickets.guest_email and claim_guest_tickets marked \"lib/database.types.ts not yet regenerated\". Both migrations (20270345003300, 20270345003400) are applied to production, so regenerate the types (the Supabase MCP or `supabase gen types`), delete the entries, and let the contract read the real column. Cheapest cleanup available.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const s=require(\"fs\").readFileSync(\"scripts/check-schema-contract.mjs\",\"utf8\");if(/not yet regenerated/.test(s)){console.error(\"the schema-contract allowlist still carries entries waiting on a types regeneration\");process.exit(1)}'",
+        "note": "Passes when no allowlist entry waits on a regeneration. Written 2026-09-14."
+      }
+    },
+    {
+      "id": "HYG-088",
+      "title": "The RSVP help article overstates what ships for a guest",
+      "status": "open",
+      "priority": "P2",
+      "lane": "hygiene",
+      "size": "XS",
+      "source": {
+        "file": "content/help/getting-started/how-to-rsvp.md",
+        "ref": "lines 107, 118"
+      },
+      "detail": "FILED 2026-09-14 from the guest-door handoff. how-to-rsvp.md:107 says a guest needs no account \"and that holds for ticketed events too\", which is false for free tiers (LIVE-318), member-only tiers and hosts without payouts; :118 promises reminders and a cancellation notice, which a guest ticket holder does not get (LIVE-315, LIVE-320). Narrow the copy to what is true today, and widen it again in the PRs that close those rows. CONTENT-VOICE §10 checklist applies; check:help and check:canon must stay green.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e 'const s=require(\"fs\").readFileSync(\"content/help/getting-started/how-to-rsvp.md\",\"utf8\");if(/holds for ticketed events too/.test(s)){console.error(\"the help article still promises guest access to every ticketed event\");process.exit(1)}'",
+        "note": "Passes when the overstatement is gone. Written 2026-09-14."
+      }
+    },
+    {
+      "id": "OWN-074",
+      "title": "Two of the four hosts with priced events have no Stripe Connect account, so nobody can buy from them signed in or out",
+      "status": "open",
+      "priority": "P1",
+      "lane": "owner",
+      "size": "XS",
+      "ownerAction": "content",
+      "source": {
+        "file": "docs/DECISIONS.md",
+        "ref": "the guest-door handoff of 2026-09-14 (session 012voDkq), PRs #2552 and #2556"
+      },
+      "detail": "FILED 2026-09-14 from the guest-door handoff, measured on production: ten upcoming events, all priced; hosts able to take money 1 of 3. The host of Returning Home ($55, 23 Oct, tickets mode) has no Connect account, so the event is unsellable to anyone. The host of Meld ($22, 16 Sep, RSVP mode) has none either; a member can still RSVP, the guest door is withheld until LIVE-314 lands. Five Breathe events have no payee row at all, harmless while RSVP mode. No amount of further building changes the first two: it needs two people to finish Connect onboarding at /settings/billing. LIVE-233 (the prompt at the first sell attempt) is the product side of the same fact.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "2026-09-14: 1 of 3 paying hosts connected. Closes when both named hosts read charges and payouts enabled, checked in the Stripe dashboard or profiles.stripe_payouts_enabled.",
+        "checked": "2026-09-14"
+      }
+    },
+    {
+      "id": "PROG-GD2",
+      "title": "Guest door phase 2, the key: a one-seat token in the receipt lets a guest change or release the seat they hold",
+      "status": "open",
+      "priority": "P1",
+      "lane": "program",
+      "size": "M",
+      "source": {
+        "file": "docs/DECISIONS.md",
+        "ref": "the guest-door handoff of 2026-09-14 (session 012voDkq), PRs #2552 and #2556"
+      },
+      "detail": "FILED 2026-09-14 from the guest-door handoff (phases 1 and 3 shipped in #2552 and #2556; this is the next one to build). A one-seat token in the receipt email opens a page where a Guest manages the seat they hold: change it, or release it. Releasing frees capacity and moves the waitlist, which is the host's real win. Also plus-ones and host questions. Mail scanners pre-click links, so the page must render state and wait for a submit, never act on arrival. This is the phase that closes \"a guest can never cancel an RSVP; no action exists, so the seat holds capacity permanently\", which is the strongest argument for building it next. The token addresses a delivery and unlocks only that seat (ADR-854); it never unlocks a hidden venue.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Program phase; proven when a guest can release a held seat from the receipt link and the waitlist moves, with a test that the page does nothing on GET.",
+        "checked": "2026-09-14"
+      }
+    },
+    {
+      "id": "PROG-GD4",
+      "title": "Guest door phase 4, the door: host-attested attendance in its own column, and a signed-out QR scan lands on the guest form",
+      "status": "open",
+      "priority": "P2",
+      "lane": "program",
+      "size": "M",
+      "source": {
+        "file": "docs/DECISIONS.md",
+        "ref": "the guest-door handoff of 2026-09-14 (session 012voDkq), PRs #2552 and #2556"
+      },
+      "detail": "FILED 2026-09-14 from the guest-door handoff. A Guest standing in the room gets counted: host-attested attendance in its own column, separate from the self-logged check-in ledger. Scanning a printed QR while signed out should land on the guest RSVP form with the event chosen, instead of a note explaining that you are signed out. This is also the measurement PROG-R11 is blocked on: event attendance has no independent record today (attendance exists only as an engagement-ledger row written by the path that pays Zaps), so this phase is sequenced before the field test.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Program phase; proven when a checked_in (or attended) column exists on the attendance row, written by the host, and a signed-out scan reaches the guest form.",
+        "checked": "2026-09-14"
+      }
+    },
+    {
+      "id": "PROG-GD5",
+      "title": "Guest door phase 5, the welcome: the account costs one step and opens onto the rest of Frequency",
+      "status": "open",
+      "priority": "P2",
+      "lane": "program",
+      "size": "M",
+      "source": {
+        "file": "docs/DECISIONS.md",
+        "ref": "the guest-door handoff of 2026-09-14 (session 012voDkq), PRs #2552 and #2556"
+      },
+      "detail": "FILED 2026-09-14 from the guest-door handoff. When the account is finally worth having it costs one step, and it opens onto the rest of Frequency rather than onto a form. Progressive profiling spends the lead payload accumulated in signup_leads. The loop outward: the Circle behind the event, the Practice the host runs, the Journey it belongs to. Depends on the rework's phase 9 (first run teaches the model) picking one onboarding engine, and on OWN-072's ruling on the admission gate.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Program phase; proven when a converted guest lands in the app with the lead payload applied and no funnel between them and the Circle behind the event.",
+        "checked": "2026-09-14"
+      }
+    },
+    {
+      "id": "PROG-GD6",
+      "title": "Guest door phase 6, the phone door: a phone number as a second identity on the same seat",
+      "status": "parked",
+      "priority": "P3",
+      "lane": "deferred",
+      "size": "L",
+      "source": {
+        "file": "docs/DECISIONS.md",
+        "ref": "the guest-door handoff of 2026-09-14 (session 012voDkq), PRs #2552 and #2556"
+      },
+      "detail": "FILED 2026-09-14 from the guest-door handoff, parked by its own recommendation. Right for a poster, wrong for a professional calendar, and it carries A2P registration (DEF-A2P), consent records and per-message cost. Worth a decision, not worth a default. If it ships it never replaces the email door.",
+      "verify": {
+        "kind": "manual",
+        "evidence": "Owner-deferred with texting (DEF-A2P).",
+        "checked": "2026-09-14"
       }
     }
   ]
