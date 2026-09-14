@@ -39801,3 +39801,68 @@ real build prints, and it is reported on the PR rather than predicted here.
 
 **Rows.** (none — owner directive, taken directly)
 
+
+## ADR-1324: ACCEPTED — the induction resumes, because a gate that only opens from beat 0 is a lock (2026-09-11)
+
+**Context.** A member wrote in: *"I'm having trouble logging in to Frequency… keeps starting me at
+the beginning."* Her login was never broken. She authenticated successfully (a confirmed address, a
+live session, `last_sign_in_at` stamped that afternoon) and was then thrown straight back out of the
+app, onto Step 1 of 4 of the signup funnel, every single time.
+
+Three pieces, each defensible alone, composed into a lock:
+
+1. **The app-shell gate.** `app/(main)/layout.tsx` redirects anyone `hasEffectivelyOnboarded()`
+   returns false for to `/onboarding`, which (`FUNNEL_INDUCTION_ACTIVE`) forwards to `/join`. Her
+   `profiles.meta` was `{}`, so this fired on every request.
+2. **The induction always restarted.** `initialBeat` existed as a prop and the REAL page never
+   passed it — the only caller was the `/pages/splash` editor's preview. Every arrival mounted at
+   beat 0 no matter how far she had already got. `signup_leads.step_reached` recorded her progress
+   and nothing ever read it back, so the Beat-0 promise, *"Your email saves your spot so you can
+   finish later"*, was never kept by anything.
+3. **The escape hatch led back in.** The induction's own footer offers "Log in to account" →
+   `/sign-in` → `/feed` → the gate → `/join`, beat 0. The way out was the way round.
+
+The only exit was to complete four cinematic beats in one unbroken sitting. **Nine accounts were
+inside this loop**; eight signed in exactly once and never returned. She was the one still trying,
+eight weeks after signing up. This is the ADR-1082 lesson again from the other side: nothing
+measured whether people could get *through* the gate, only whether the gate was closed.
+
+**Decision.**
+
+- **`fq_pending_induction` becomes the resume store, which is what its name always implied.** It
+  held exactly the induction's answers and lived one hour, because its only reader was
+  `/join/complete` and an hour is how long a magic link is worth waiting on. It is now written at
+  **every beat** rather than only in front of auth, and lives **30 days**, matching the
+  `fq_persona` / `fq_interests` / `fq_beta_seq` family that already parks answers for this flow. It
+  stays `httpOnly`, which is what lets it carry a name and a city; the rest of that family is
+  script-readable and could not.
+- **It is cleared on BOTH completion paths.** `finalizePendingInduction` always did.
+  `completeInduction` — the signed-in submit — never touched it, which was harmless for a
+  one-hour cookie only the signed-out flow could write and is not harmless for this one.
+- **The reader is NOT a server action.** `readPendingInduction` and `clearPendingInduction` live in
+  a plain `pending-induction.ts` beside the actions. Exporting the reader from a `'use server'`
+  file would publish it as a callable endpoint and hand an `httpOnly` cookie's contents back to any
+  script that asked, undoing the flag for the sake of co-location. Only the write, which a
+  signed-out client genuinely has to invoke, stays an action.
+- **The beat is restored WITH its answers, never alone.** Dropping someone on "Step in" with empty
+  state would submit a blank display name. The visible city field (`locQuery`) is seeded alongside
+  the confirmed pick (`location`) — restoring only the latter shows an empty box over a chosen
+  city — and the autocomplete's own `term === location` guard then keeps the restored pair from
+  firing a place search on mount. A parked handle counts as **touched**, so editing the name on a
+  resumed run does not re-derive the handle out from under them.
+- **`INDUCTION_BEAT_COUNT` moves to `lib/onboarding/funnel-script.ts`.** The server-side resume
+  clamp needs the same number the component does, and a flow length written down twice is a flow
+  length that drifts.
+
+**What this does NOT do.** It does not change the gate. A signed-in member with an account is still
+force-marched through a signup funnel; resuming it is a much shorter march, not an answer to why
+they are on it at all. That is the larger ruling and it is deliberately not taken here.
+
+**Proof.** `app/join/(induction)/induction.resume.test.tsx`. The component tests measure the
+consequence — a parked run comes back with its name, city and handle; advancing parks one; beat 0
+and preview park nothing. The last test is a **source-shape guard on the page**, because the defect
+was never in the component: `initialBeat` was always accepted and simply never passed. Both halves
+were negative-controlled — reverting the page wiring fails the guard, and removing the state seeding
+fails three others.
+
+**Rows.** (none — support escalation, fixed in the same pass)
