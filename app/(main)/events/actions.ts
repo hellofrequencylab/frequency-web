@@ -1617,8 +1617,9 @@ export interface CheckInResult {
 
 // Verified-practice check-in (the North-Star `practice.verified` event). Server-
 // authoritative: the event must be real, started, not cancelled, and the viewer
-// must have RSVP'd 'going'. Idempotent per (event, profile); the first check-in
-// records the ledger event, awards zaps, and ticks the attendance streak.
+// must hold a seat — an RSVP of 'going' or a succeeded ticket (LIVE-317). Idempotent
+// per (event, profile); the first check-in records the ledger event, awards zaps,
+// and ticks the attendance streak.
 // (RSVP = gems web-action; check-in = zaps verified practice; see ADR-021/024.)
 export async function checkInEvent(eventId: string): Promise<CheckInResult> {
   const myProfileId = await getMyProfileId()
@@ -1665,8 +1666,26 @@ export async function checkInEvent(eventId: string): Promise<CheckInResult> {
     .eq('event_id', eventId)
     .eq('profile_id', myProfileId)
     .maybeSingle()
-  if (rsvp?.status !== 'going') return { ok: false, reason: 'not_going' }
-  if (isPendingApproval(rsvp)) return { ok: false, reason: 'pending' }
+  const seatedByRsvp = rsvp?.status === 'going' && !isPendingApproval(rsvp)
+  if (!seatedByRsvp) {
+    // A TICKET IS A SEAT (LIVE-317). `claim_guest_tickets()` sets `buyer_profile_id` and mints no
+    // RSVP row, and a member who pays on a tickets-mode event has no RSVP row either. Refusing
+    // `not_going` here meant nobody holding a ticket could ever check in, on either door. Same
+    // read as lib/billing/tickets.hasTicket, kept inline so the action does not pull Stripe in:
+    // a succeeded ticket bought by THIS profile for THIS event.
+    const { data: ticket } = await admin
+      .from('event_tickets')
+      .select('id')
+      .eq('event_id', eventId)
+      .eq('buyer_profile_id', myProfileId)
+      .eq('status', 'succeeded')
+      .limit(1)
+      .maybeSingle()
+    if (!ticket) {
+      if (rsvp?.status === 'going' && isPendingApproval(rsvp)) return { ok: false, reason: 'pending' }
+      return { ok: false, reason: 'not_going' }
+    }
+  }
 
   // "Showed up" verification (ADR-420): physically checking in at a real event is the
   // baseline real-person signal. Idempotent (only sets verified_at once) + fail-safe.
