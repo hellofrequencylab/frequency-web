@@ -95,18 +95,11 @@ export function resolveUnitCents(opts: {
 export interface TicketResult {
   url?: string
   error?: string
-  /** True when a `free` tier needs no checkout (the caller records the RSVP-style
-   *  claim instead of redirecting to Stripe). */
+  /** True when a `free` tier needs no checkout. The caller records the claim as a going RSVP
+   *  instead of redirecting to Stripe: `setRsvpStatus` for a member, `submitGuestRsvp` with the
+   *  tier id for a guest (LIVE-318, 20270345004000). The result is the same shape for both; the
+   *  identity the caller holds decides which recorder it uses. */
   free?: boolean
-  /** Set ONLY beside `free` and ONLY for a GUEST (ADR-pending, guest ticket door).
-   *  A free tier moves no money, so there is no Stripe session to discriminate on, and the
-   *  member caller records the claim as a normal "going" RSVP through `setRsvpStatus` — which
-   *  needs a profile. A signed-out guest has none, so this flag says "nothing to charge, and
-   *  this claim needs an identity we were not given". The caller turns it into a refusal that
-   *  names the next step. It is a DISCRIMINATED result rather than an `error` because the two
-   *  are different facts: `error` means the ticket could not be had, this means it is free and
-   *  is waiting on a sign-in. Never set for a member. */
-  requiresAccount?: boolean
 }
 
 interface EventRow {
@@ -343,14 +336,12 @@ export async function createTicketCheckout(opts: {
   }
 
   // ── Free tier: no money moves, no checkout. The caller records the claim. ──
-  // A GUEST cannot take the member claim path (`setRsvpStatus` needs a profile), so the result is
-  // DISCRIMINATED rather than silently identical: `requiresAccount` tells the caller this is a
-  // free claim it has no identity to record, and the caller says so. Nothing is dropped and
-  // nothing is asserted that is not true. Every gate above has already run for the guest, so a
-  // members-only free tier was refused before reaching here, exactly as it is for a member.
-  if (mode === 'free') {
-    return guestEmail ? { free: true, requiresAccount: true } : { free: true }
-  }
+  // The SAME answer for a member and a guest. Every gate above has already run for both, so a
+  // members-only, space-members-only, inactive or sold-out free tier was refused before reaching
+  // here. The caller holds the identity and picks the recorder: a member's claim is a going RSVP
+  // through `setRsvpStatus`; a guest's is the same row through `submitGuestRsvp`, whose SQL takes
+  // a free tier on a tickets-mode event (LIVE-318, 20270345004000) and re-checks these gates.
+  if (mode === 'free') return { free: true }
 
   // ── Resolve the per-ticket charge amount for this mode (floor enforced). ──
   const unit = resolveUnitCents({

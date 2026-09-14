@@ -30,7 +30,7 @@ vi.mock('@/lib/auth', () => ({ getMyProfileId: () => getMyProfileId() }))
 
 const createTicketCheckout = vi.fn(async (_opts: Record<string, unknown>) => ({
   url: 'https://stripe.test/cs_1',
-} as { url?: string; error?: string; free?: boolean; requiresAccount?: boolean }))
+} as { url?: string; error?: string; free?: boolean }))
 const refundTicket = vi.fn(async () => ({}))
 vi.mock('@/lib/billing/tickets', () => ({
   createTicketCheckout: (o: Record<string, unknown>) => createTicketCheckout(o),
@@ -39,6 +39,13 @@ vi.mock('@/lib/billing/tickets', () => ({
 
 const setRsvpStatus = vi.fn(async () => {})
 vi.mock('@/app/(main)/events/actions', () => ({ setRsvpStatus: (...a: unknown[]) => setRsvpStatus(...(a as [])) }))
+
+// The guest free-claim recorder (LIVE-318): the guest RSVP action, which forwards the tier id to
+// capture_guest_rsvp. What the SQL does with it is proven in supabase/tests/guest_free_tier_claim.test.sql.
+const submitGuestRsvp = vi.fn(async (_input: Record<string, unknown>) => ({ ok: true } as { ok: true } | { ok: false; error: string }))
+vi.mock('@/app/(main)/events/guest-rsvp-actions', () => ({
+  submitGuestRsvp: (i: Record<string, unknown>) => submitGuestRsvp(i),
+}))
 vi.mock('@/lib/core/load-capabilities', () => ({ getEventCapabilities: async () => new Set<string>() }))
 
 const ticketing = vi.hoisted(() => ({ on: true }))
@@ -58,6 +65,7 @@ beforeEach(() => {
   rateLimitOk.mockResolvedValue(true)
   getMyProfileId.mockResolvedValue(null)
   createTicketCheckout.mockResolvedValue({ url: 'https://stripe.test/cs_1' })
+  submitGuestRsvp.mockResolvedValue({ ok: true })
   vi.spyOn(console, 'error').mockImplementation(() => {})
 })
 
@@ -143,12 +151,40 @@ describe('startGuestTicket — what it hands the money boundary', () => {
     expect(res).toEqual({ error: 'This ticket is for members only.' })
   })
 
-  it('turns a free tier into a refusal that names the next step, and never claims a ticket', async () => {
-    createTicketCheckout.mockResolvedValue({ free: true, requiresAccount: true })
-    const res = await startGuestTicket({ eventId: EVENT, email: 'sam@example.com', ticketTypeId: 'tt-1' })
-    expect(res).toEqual({ error: 'This ticket is free. Sign in to claim it.' })
+  it('records a free tier as a GUEST RSVP with the tier id, and never through the member recorder (LIVE-318)', async () => {
+    createTicketCheckout.mockResolvedValue({ free: true })
+    const res = await startGuestTicket({
+      eventId: EVENT,
+      email: ' Sam@Example.com ',
+      name: 'Sam',
+      ticketTypeId: 'tt-1',
+    })
+    expect(res).toEqual({ data: { free: true } })
+    // The guest twin of setRsvpStatus: the same going RSVP row, under the typed address. The name
+    // goes along on this path only (it is the host's roster line, not a billing name), and the
+    // tier id is what lets capture_guest_rsvp seat a guest on a tickets-mode event.
+    expect(submitGuestRsvp).toHaveBeenCalledTimes(1)
+    expect(submitGuestRsvp).toHaveBeenCalledWith({
+      eventId: EVENT,
+      email: 'sam@example.com',
+      name: 'Sam',
+      ticketTypeId: 'tt-1',
+    })
     // The member claim recorder needs a profile; it must never be reached from the guest door.
     expect(setRsvpStatus).not.toHaveBeenCalled()
+  })
+
+  it('a free claim the SQL could not write is a refusal, passed through verbatim, never a success', async () => {
+    createTicketCheckout.mockResolvedValue({ free: true })
+    submitGuestRsvp.mockResolvedValue({ ok: false, error: 'We could not save your spot. Please try again.' })
+    const res = await startGuestTicket({ eventId: EVENT, email: 'sam@example.com', ticketTypeId: 'tt-1' })
+    expect(res).toEqual({ error: 'We could not save your spot. Please try again.' })
+  })
+
+  it('a free claim passes a null tier id, not undefined, when the form named none (the flat-price path)', async () => {
+    createTicketCheckout.mockResolvedValue({ free: true })
+    await startGuestTicket({ eventId: EVENT, email: 'sam@example.com' })
+    expect(submitGuestRsvp).toHaveBeenCalledWith(expect.objectContaining({ ticketTypeId: null }))
   })
 
   it('refuses when the boundary returns neither a url nor a free claim', async () => {
@@ -166,7 +202,7 @@ describe('startGuestTicket — what it hands the money boundary', () => {
     lines.push((await startGuestTicket({ eventId: EVENT, email: 'a@b.co' }) as { error: string }).error)
     rateLimitOk.mockResolvedValue(true)
     lines.push((await startGuestTicket({ eventId: EVENT, email: 'nope' }) as { error: string }).error)
-    createTicketCheckout.mockResolvedValue({ free: true, requiresAccount: true })
+    createTicketCheckout.mockResolvedValue({})
     lines.push((await startGuestTicket({ eventId: EVENT, email: 'a@b.co' }) as { error: string }).error)
     for (const l of lines) expect(l).not.toMatch(/[—–]/)
   })
