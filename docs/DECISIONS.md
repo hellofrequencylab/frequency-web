@@ -40292,7 +40292,7 @@ question and not this row's.
 
 **Rows.** LIVE-320 (done). Migration 20270345004100.
 
-## ADR-NNNN: ACCEPTED — the preview-backed e2e jobs serialise through a turnstile that waits, not a concurrency group that cancels, so pr-compare can become a required check (2026-09-14)
+## ADR-1331: ACCEPTED — the preview-backed e2e jobs serialise through a turnstile that waits, not a concurrency group that cancels, so pr-compare can become a required check (2026-09-14)
 
 **Context.** ADR-1328 put `pr-compare` and `lighthouse` in repository-wide job-level
 `concurrency` groups (`e2e-preview-capture`, `e2e-preview-lighthouse`, `cancel-in-progress:

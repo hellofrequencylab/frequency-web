@@ -140,7 +140,7 @@ jobs:
     # one minute after it queued, because #2584's had arrived. Fine for an advisory row (the
     # next push queues again); fatal for a required one, because a cancelled required context
     # blocks the PR until a new push re-requests it, and the Stabilise phase exits on this
-    # check becoming required (LIVE-330, ADR-NNNN).
+    # check becoming required (LIVE-330, ADR-1331).
     #
     # So the wait moved out of GitHub's queue and into the runner: THE TURNSTILE, the first
     # step below. It polls the Actions API for other in-progress runs of this workflow whose
@@ -240,7 +240,7 @@ jobs:
                 // Rule 5: the load rule is a ceiling, not a gate. Say so and go.
                 core.warning(`turnstile: bound of ${maxMinutes} min reached after ${poll} polls, still waiting on ${ahead.join(', ')}; ${jobName} proceeds anyway`)
                 await core.summary
-                  .addRaw(`### Turnstile bound reached\n\nThis \`${jobName}\` waited ${maxMinutes} min for ${ahead.join(', ')} and proceeded anyway: the one-capture-at-a-time rule is a ceiling, not a gate (ADR-NNNN).\n`)
+                  .addRaw(`### Turnstile bound reached\n\nThis \`${jobName}\` waited ${maxMinutes} min for ${ahead.join(', ')} and proceeded anyway: the one-capture-at-a-time rule is a ceiling, not a gate (ADR-1331).\n`)
                   .write()
                 break
               }
@@ -608,7 +608,7 @@ jobs:
     # 30 for the audits themselves (unchanged) plus the 90 the turnstile may wait, as on pr-compare.
     timeout-minutes: 120
     # Its own turnstile, for the same reason as pr-compare's (ADR-1328, mechanism changed by
-    # ADR-NNNN): one synthetic speed run at a time, so a fan-out never stacks Lighthouse's
+    # ADR-1331): one synthetic speed run at a time, so a fan-out never stacks Lighthouse's
     # page loads on top of the capture's. Keyed by THIS job's name so the two jobs of one run
     # still overlap. ADR-1328's `e2e-preview-lighthouse` concurrency group is gone for the
     # reason given above pr-compare: a group cancels the older pending job, and a required
@@ -689,7 +689,7 @@ jobs:
                 // Rule 5: the load rule is a ceiling, not a gate. Say so and go.
                 core.warning(`turnstile: bound of ${maxMinutes} min reached after ${poll} polls, still waiting on ${ahead.join(', ')}; ${jobName} proceeds anyway`)
                 await core.summary
-                  .addRaw(`### Turnstile bound reached\n\nThis \`${jobName}\` waited ${maxMinutes} min for ${ahead.join(', ')} and proceeded anyway: the one-capture-at-a-time rule is a ceiling, not a gate (ADR-NNNN).\n`)
+                  .addRaw(`### Turnstile bound reached\n\nThis \`${jobName}\` waited ${maxMinutes} min for ${ahead.join(', ')} and proceeded anyway: the one-capture-at-a-time rule is a ceiling, not a gate (ADR-1331).\n`)
                   .write()
                 break
               }
