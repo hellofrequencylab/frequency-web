@@ -104,18 +104,20 @@ first; it is almost always less awkward than your head says.
 
 ### Do I need an account to RSVP?
 
-No, and that holds for ticketed events too. Open any public event and there is a
-short form: your email, and your name if you want to give it. That is the whole
-thing. You do not need to sign up first, and it works whether you found the event
-yourself or someone sent you a link.
+No. Open any public event and there is a short form: your email, and your name if
+you want to give it. That is the whole thing. You do not need to sign up first, and
+it works whether you found the event yourself or someone sent you a link.
 
-If the event costs money, the same form takes you to checkout. Pay, and the ticket
-is yours. The receipt lands in your inbox with a link that makes you an account in
-one tap, if you want one. Nobody has to join Frequency to buy a seat.
+Most ticketed events work the same way. If a rate costs money and the Host takes
+payments, the form takes you to checkout. Pay, and the ticket is yours. The receipt
+lands in your inbox with a link that makes you an account in one tap, if you want
+one. Two kinds of rate still ask you to sign in first: rates the Host has set aside
+for members, and free rates on a ticketed event. The event page says which.
 
 We email you to confirm, and that email says whether you got a spot or landed on
-the waitlist. It also carries the calendar link and, closer to the day, you get
-the same reminders anyone else does. If the Host cancels, you get told.
+the waitlist. It also carries the calendar link. If the Host cancels, you get told.
+Reminders closer to the day go to signed-in members for now, so if you want the
+nudge, tap the link in your confirmation and make the account.
 
 Signing in later attaches every RSVP and every ticket you bought with that same
 email to your account, so they are all in one place. That happens on its own
