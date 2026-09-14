@@ -172,7 +172,7 @@ export default async function ManageEventPage({
           <section>
             <SectionHeader title="Roster" />
             <Suspense fallback={<SectionFallback />}>
-              <RosterSection eventId={event.id} />
+              <RosterSection eventId={event.id} slug={event.slug} />
             </Suspense>
           </section>
           <section>

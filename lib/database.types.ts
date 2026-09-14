@@ -4567,6 +4567,8 @@ export type Database = {
       event_rsvps: {
         Row: {
           approval_status: string
+          attended_at: string | null
+          attended_by: string | null
           created_at: string | null
           decline_reason: string | null
           event_id: string
@@ -4586,6 +4588,8 @@ export type Database = {
         }
         Insert: {
           approval_status?: string
+          attended_at?: string | null
+          attended_by?: string | null
           created_at?: string | null
           decline_reason?: string | null
           event_id: string
@@ -4605,6 +4609,8 @@ export type Database = {
         }
         Update: {
           approval_status?: string
+          attended_at?: string | null
+          attended_by?: string | null
           created_at?: string | null
           decline_reason?: string | null
           event_id?: string
@@ -4623,6 +4629,13 @@ export type Database = {
           status?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "event_rsvps_attended_by_fkey"
+            columns: ["attended_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "event_rsvps_event_id_fkey"
             columns: ["event_id"]
@@ -4794,6 +4807,8 @@ export type Database = {
         Row: {
           amount_cents: number
           attribution_ref: string | null
+          attended_at: string | null
+          attended_by: string | null
           buyer_profile_id: string | null
           created_at: string
           currency: string
@@ -4818,6 +4833,8 @@ export type Database = {
         Insert: {
           amount_cents: number
           attribution_ref?: string | null
+          attended_at?: string | null
+          attended_by?: string | null
           buyer_profile_id?: string | null
           created_at?: string
           currency?: string
@@ -4842,6 +4859,8 @@ export type Database = {
         Update: {
           amount_cents?: number
           attribution_ref?: string | null
+          attended_at?: string | null
+          attended_by?: string | null
           buyer_profile_id?: string | null
           created_at?: string
           currency?: string
@@ -4864,6 +4883,13 @@ export type Database = {
           ticket_type_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "event_tickets_attended_by_fkey"
+            columns: ["attended_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "event_tickets_buyer_profile_id_fkey"
             columns: ["buyer_profile_id"]

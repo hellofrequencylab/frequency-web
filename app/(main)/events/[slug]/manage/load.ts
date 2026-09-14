@@ -3,6 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getCapacityInfo, type CapacityInfo } from '@/lib/events/capacity'
 import { listPendingApprovals } from '@/lib/events/rsvp-depth'
 import { listQuestions, listEventAnswers, type EventQuestion } from '@/lib/events/questions'
+import type { SeatRef } from '@/lib/events/attendance'
 
 // Read layer for the host Manage Dashboard (EVENTS-REWORK A2). Pure reads on the
 // admin client; the page already authorized the caller as host/cohost before
@@ -10,9 +11,12 @@ import { listQuestions, listEventAnswers, type EventQuestion } from '@/lib/event
 // behind their own <Suspense> (PAGE-FRAMEWORK §5) and they fetch in parallel.
 
 export interface ManageGuest {
-  /** The RSVP row id. The only identifier EVERY seat has — a guest seat has no profile, so this
-   *  is what a list key and any per-seat host action must be built on. */
-  rsvpId: string
+  /** THE SEAT (PROG-GD4): the row this person holds, an event_rsvps row or a succeeded
+   *  event_tickets row. The only identifier EVERY seat has — a guest seat has no profile, so this
+   *  is what a list key and any per-seat host action must be built on. A ticket seat is listed
+   *  here because a ticket holder on a tickets-mode event has no RSVP row (LIVE-317) and the
+   *  host still has to be able to count them at the door. */
+  seat: SeatRef
   /** Null for a signed-out guest seat (20270303000000). */
   profileId: string | null
   /** For a guest: the address they RSVP'd with. The host's only way to reach them. */
@@ -25,8 +29,10 @@ export interface ManageGuest {
   plusOnes: number
   plusOneNames: string[]
   approvalStatus: 'none' | 'pending' | 'approved'
-  /** Has this guest logged a verified check-in for the event? */
+  /** Has this guest logged a verified check-in for the event? Self-logged, members only. */
   checkedIn: boolean
+  /** When the host marked this seat present (PROG-GD4), or null. Host-attested, every seat kind. */
+  attendedAt: string | null
   createdAt: string
 }
 
@@ -39,24 +45,46 @@ interface RsvpRow {
   plus_ones: number | null
   plus_one_names: string[] | null
   approval_status: ManageGuest['approvalStatus'] | null
+  attended_at: string | null
   created_at: string
   profile: { id: string; display_name: string; handle: string; avatar_url: string | null } | null
+}
+
+interface TicketRow {
+  id: string
+  buyer_profile_id: string | null
+  guest_email: string | null
+  attended_at: string | null
+  created_at: string
+  buyer: { id: string; display_name: string; handle: string; avatar_url: string | null } | null
 }
 
 /** The full RSVP roster with the depth columns the dashboard reads (plus_one_names,
  *  approval_status are newer than the generated types → untyped client). */
 export async function loadRoster(eventId: string): Promise<ManageGuest[]> {
   const admin = createAdminClient()
-  const [rsvpRes, checkedIn] = await Promise.all([
+  const [rsvpRes, ticketRes, checkedIn] = await Promise.all([
     // event_rsvps is typed, but plus_one_names / approval_status are newer than the
     // generated types; the select string is loosely typed and the row payload is
     // cast below (ADR-246: cast the payload, not the client).
     admin
       .from('event_rsvps')
       .select(
-        'id, profile_id, guest_email, guest_name, status, plus_ones, plus_one_names, approval_status, created_at, profile:profiles!profile_id ( id, display_name, handle, avatar_url )',
+        'id, profile_id, guest_email, guest_name, status, plus_ones, plus_one_names, approval_status, attended_at, created_at, profile:profiles!profile_id ( id, display_name, handle, avatar_url )',
       )
       .eq('event_id', eventId)
+      .order('created_at', { ascending: true }),
+    // TICKET SEATS (PROG-GD4). A succeeded, unrefunded ticket is a seat (LIVE-317) and its holder
+    // has no RSVP row on a tickets-mode event, so without this read the host's roster could not
+    // show, or count, anyone who paid. Same predicate the Sales module lists.
+    admin
+      .from('event_tickets')
+      .select(
+        'id, buyer_profile_id, guest_email, attended_at, created_at, buyer:profiles!buyer_profile_id ( id, display_name, handle, avatar_url )',
+      )
+      .eq('event_id', eventId)
+      .eq('status', 'succeeded')
+      .is('refunded_at', null)
       .order('created_at', { ascending: true }),
     loadCheckedInIds(eventId),
   ])
@@ -66,8 +94,8 @@ export async function loadRoster(eventId: string): Promise<ManageGuest[]> {
   // capacity (the trigger is identity-blind) but vanished from the host's roster, so the dashboard
   // showed fewer people than the room actually held and the host had no way to see, or contact,
   // anyone who RSVP'd without an account. Every seat is listed now; the profile is what is optional.
-  return ((rsvpRes.data ?? []) as unknown as RsvpRow[]).map((r) => ({
-    rsvpId: r.id,
+  const rsvpSeats: ManageGuest[] = ((rsvpRes.data ?? []) as unknown as RsvpRow[]).map((r) => ({
+    seat: { kind: 'rsvp', id: r.id },
     profileId: r.profile?.id ?? null,
     guestEmail: r.guest_email ?? null,
     // Best name available, in descending order of what the host can actually act on. The address
@@ -86,8 +114,36 @@ export async function loadRoster(eventId: string): Promise<ManageGuest[]> {
     // profile that CAN be checked in and counted here. A guest who never signs in stays unknowable,
     // because both this count and WAM are defined on profile ids.
     checkedIn: r.profile ? checkedIn.has(r.profile.id) : false,
+    attendedAt: r.attended_at ?? null,
     createdAt: r.created_at,
   }))
+
+  // One row per person: a member who holds BOTH an RSVP row and a ticket (a claimed guest ticket
+  // beside a claimed guest RSVP, or a priced RSVP-mode event) is listed once, on the RSVP row,
+  // which is the row every other host action already keys on. A ticket whose buyer is on no RSVP
+  // row, and every guest ticket (no buyer at all), is its own seat.
+  const rsvpProfiles = new Set(rsvpSeats.map((g) => g.profileId).filter((id): id is string => !!id))
+  const ticketSeats: ManageGuest[] = ((ticketRes.data ?? []) as unknown as TicketRow[])
+    .filter((t) => !(t.buyer?.id && rsvpProfiles.has(t.buyer.id)))
+    .map((t) => ({
+      seat: { kind: 'ticket', id: t.id },
+      profileId: t.buyer?.id ?? null,
+      guestEmail: t.guest_email ?? null,
+      // Tickets carry no guest name column (LIVE-319): the address is the identity, and the only
+      // way the host can reach a guest ticket holder.
+      displayName: t.buyer?.display_name ?? t.guest_email ?? 'Ticket holder',
+      handle: t.buyer?.handle ?? '',
+      avatarUrl: t.buyer?.avatar_url ?? null,
+      status: 'going',
+      plusOnes: 0,
+      plusOneNames: [],
+      approvalStatus: 'none',
+      checkedIn: t.buyer ? checkedIn.has(t.buyer.id) : false,
+      attendedAt: t.attended_at ?? null,
+      createdAt: t.created_at,
+    }))
+
+  return [...rsvpSeats, ...ticketSeats]
 }
 
 /** Profile ids that have logged a verified check-in for this event. Check-in is
@@ -115,8 +171,10 @@ export interface RosterAnalytics {
   waitlist: number
   /** confirmed attendees + the headcount they're each bringing */
   headcount: number
-  /** verified check-ins logged so far */
+  /** verified check-ins logged so far (self-logged, members only) */
   checkedIn: number
+  /** seats the host marked present (PROG-GD4), every seat kind */
+  attended: number
   /** % of capacity filled by confirmed 'going' rows (null = unlimited) */
   utilization: number | null
 }
@@ -133,6 +191,7 @@ export async function loadAnalytics(
   const maybe = roster.filter((g) => g.status === 'maybe').length
   const waitlist = roster.filter((g) => g.status === 'waitlist').length
   const checkedIn = roster.filter((g) => g.checkedIn).length
+  const attended = roster.filter((g) => g.attendedAt != null).length
   const headcount = going + goingGuests.reduce((sum, g) => sum + g.plusOnes, 0)
   // Utilize the fresh roster count (computed above), not capacity.going from the
   // separate capacity read, so the % matches the going number shown beside it.
@@ -140,7 +199,7 @@ export async function loadAnalytics(
     capacity.capacity != null && capacity.capacity > 0
       ? Math.round((going / capacity.capacity) * 100)
       : null
-  return { capacity, going, maybe, waitlist, headcount, checkedIn, utilization }
+  return { capacity, going, maybe, waitlist, headcount, checkedIn, attended, utilization }
 }
 
 export interface PendingGuest {

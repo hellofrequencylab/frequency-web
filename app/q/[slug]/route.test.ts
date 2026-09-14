@@ -145,12 +145,25 @@ describe('the QR door carries its outcome to the event page', () => {
     expect(fx.warn).toHaveBeenCalledWith('qr.door.checkin_threw', expect.objectContaining({ error: 'boom again' }))
   })
 
-  it('an anonymous scan runs neither action and carries no flag', async () => {
+  it('🔴 an anonymous scan runs neither action and lands on the guest form: ?door=guest (PROG-GD4)', async () => {
+    // The event page renders `door=guest` as the guest door line and leads with the guest RSVP
+    // form for this event (app/(main)/events/[slug]/page.tsx, door-note.ts), instead of the note
+    // explaining that checking in needs an account.
     fx.profileId = null
     const url = await scan()
     expect(url.pathname).toBe('/events/moon-circle')
-    expect(url.searchParams.has('door')).toBe(false)
+    expect(url.searchParams.get('door')).toBe('guest')
     expect(fx.setRsvpStatus).not.toHaveBeenCalled()
     expect(fx.checkInEvent).not.toHaveBeenCalled()
+    expect(fx.warn).not.toHaveBeenCalled()
+  })
+
+  it('a signed-in scan is unchanged by the guest door: both actions run and no guest flag rides', async () => {
+    fx.profileId = 'member-1'
+    const url = await scan()
+    expect(url.pathname).toBe('/events/moon-circle')
+    expect(url.searchParams.get('door')).not.toBe('guest')
+    expect(fx.setRsvpStatus).toHaveBeenCalledWith('event-1', 'going')
+    expect(fx.checkInEvent).toHaveBeenCalledWith('event-1')
   })
 })

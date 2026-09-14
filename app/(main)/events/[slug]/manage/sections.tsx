@@ -10,6 +10,8 @@ import {
   Zap,
   Eye,
   Hourglass,
+  UserCheck,
+  Ticket,
 } from 'lucide-react'
 import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -35,6 +37,7 @@ import {
 import { EventCoreStatsCards } from '@/components/events/event-core-stats'
 import { TICKETING_ENABLED } from '@/lib/events/ticketing'
 import { ApproveButton } from './approve-button'
+import { AttendedButton } from './attended-button'
 import { CsvExportButton } from './csv-export-button'
 import { QuestionEditor } from './question-editor'
 import { FollowUpButton } from './follow-up-button'
@@ -86,7 +89,17 @@ function GuestName({ guest }: { guest: ManageGuest }) {
 
 // ── Roster ──────────────────────────────────────────────────────────────────
 
-function RosterGroup({ title, guests }: { title: string; guests: ManageGuest[] }) {
+function RosterGroup({
+  title,
+  guests,
+  eventId,
+  slug,
+}: {
+  title: string
+  guests: ManageGuest[]
+  eventId: string
+  slug: string
+}) {
   if (guests.length === 0) return null
   return (
     <div>
@@ -95,9 +108,10 @@ function RosterGroup({ title, guests }: { title: string; guests: ManageGuest[] }
         {guests.map((g) => {
           const chip = STATUS_CHIP[g.status]
           return (
-            /* Keyed on the RSVP row, not the profile: a guest seat has no profileId, so keying on
-               it would give every guest in the list the same `null` key. */
-            <li key={g.rsvpId} className="flex items-center gap-3 px-4 py-3">
+            /* Keyed on the SEAT, not the profile: a guest seat has no profileId, so keying on it
+               would give every guest in the list the same `null` key, and an RSVP row and a ticket
+               row are two id spaces (PROG-GD4). */
+            <li key={`${g.seat.kind}:${g.seat.id}`} className="flex items-center gap-3 px-4 py-3">
               <span
                 className={`inline-flex shrink-0 items-center gap-1 rounded-pill px-2 py-0.5 text-2xs font-semibold ${chip.cls}`}
               >
@@ -106,6 +120,13 @@ function RosterGroup({ title, guests }: { title: string; guests: ManageGuest[] }
               </span>
               <div className="min-w-0 flex-1">
                 <GuestName guest={g} />
+                {g.seat.kind === 'ticket' && (
+                  /* A ticket holder has no RSVP row (LIVE-317); this is the seat they hold. */
+                  <span className="ml-2 inline-flex items-center gap-1 rounded-pill bg-surface-elevated px-1.5 py-0.5 text-2xs font-semibold text-muted">
+                    <Ticket className="h-3 w-3" />
+                    Ticket
+                  </span>
+                )}
                 {g.plusOnes > 0 && (
                   <span className="ml-2 text-meta text-subtle">
                     +{g.plusOnes} {g.plusOnes === 1 ? 'guest' : 'guests'}
@@ -113,12 +134,23 @@ function RosterGroup({ title, guests }: { title: string; guests: ManageGuest[] }
                   </span>
                 )}
               </div>
+              {/* TWO MARKS, SIDE BY SIDE (PROG-GD4). "Checked in" is the member's own record, the
+                  ledger row that paid their Zaps; only a profile can hold it. "Attended" is the
+                  host's, written to the seat row from the button beside it, and any seat can hold
+                  it: a member, a guest RSVP, a ticket holder. Neither implies the other. */}
               {g.checkedIn && (
                 <span className="inline-flex shrink-0 items-center gap-1 rounded-pill bg-success-bg px-2 py-0.5 text-2xs font-semibold text-success">
                   <Zap className="h-3 w-3" />
                   Checked in
                 </span>
               )}
+              {g.attendedAt && (
+                <span className="inline-flex shrink-0 items-center gap-1 rounded-pill bg-primary-bg px-2 py-0.5 text-2xs font-semibold text-primary-strong">
+                  <UserCheck className="h-3 w-3" />
+                  Attended
+                </span>
+              )}
+              <AttendedButton eventId={eventId} slug={slug} seat={g.seat} attended={g.attendedAt != null} />
               <span className="shrink-0 text-meta text-muted">{fmtDate(g.createdAt)}</span>
             </li>
           )
@@ -128,7 +160,7 @@ function RosterGroup({ title, guests }: { title: string; guests: ManageGuest[] }
   )
 }
 
-export async function RosterSection({ eventId }: { eventId: string }) {
+export async function RosterSection({ eventId, slug }: { eventId: string; slug: string }) {
   const roster = await loadRoster(eventId)
   const going = roster.filter((g) => g.status === 'going')
   const maybe = roster.filter((g) => g.status === 'maybe')
@@ -146,9 +178,9 @@ export async function RosterSection({ eventId }: { eventId: string }) {
 
   return (
     <div className="space-y-6">
-      <RosterGroup title="Going" guests={going} />
-      <RosterGroup title="Interested" guests={maybe} />
-      <RosterGroup title="Waitlist" guests={waitlist} />
+      <RosterGroup title="Going" guests={going} eventId={eventId} slug={slug} />
+      <RosterGroup title="Interested" guests={maybe} eventId={eventId} slug={slug} />
+      <RosterGroup title="Waitlist" guests={waitlist} eventId={eventId} slug={slug} />
     </div>
   )
 }

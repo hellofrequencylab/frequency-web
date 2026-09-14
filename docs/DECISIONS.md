@@ -40381,3 +40381,83 @@ still owed. Until it is read, the flip to required stays where it is.
 
 **Rows.** LIVE-330 (done, this ADR). LIVE-326 (done; probe rewritten to the turnstile).
 LIVE-186, HYG-027 (open; the remaining blockers on requiring the public tier).
+
+---
+
+## ADR-1332: ACCEPTED — attendance is the host's mark on the seat row, independent of the self check-in ledger, and the printed QR is a guest door (2026-09-14)
+
+**Context.** Event attendance had one record: the `practice.verified` row that `checkInEvent`
+(`app/(main)/events/actions.ts`) writes to the engagement ledger when a signed-in member checks
+themselves in. That row is written by the path that pays Zaps, ticks the attendance streak and
+marks the member verified, so there was no way to say "this person was in the room" without
+paying them for saying so, and no way to say it about anyone without a profile. A guest RSVP
+(`event_rsvps.guest_email`, no profile, 20270303000000) and a guest ticket holder
+(`event_tickets.guest_email`, no buyer, 20270345003400) can never appear in a ledger keyed on
+`actor_profile_id`. The host's roster (`manage/load.ts`) read that ledger and showed "Checked
+in" for members and nothing for anyone else; ticket holders were not on the roster at all,
+because `loadRoster` read `event_rsvps` only and a ticket holder on a tickets-mode event has no
+RSVP row (LIVE-317). PROG-R11, the field test, was blocked on exactly this: attendance with an
+independent record (PROG-GD4).
+
+The door half had a premise that was not as the row said. A signed-out scan of a printed event
+code (`app/q/[slug]/route.ts`) landed on the bare event page; at event time that page showed the
+guest RSVP form beside `GuestCheckInPrompt` ("Sign in to check in"), and after the end the
+prompt alone. But `capture_guest_rsvp` refused any event whose start had passed
+(`v_starts <= now()`, since 20270303000100) with the opaque receipt, while the page has rendered
+the form for a LIVE event since ADR-1033 was rescoped. The form the scan would land on was a
+form the SQL silently refused: the guest read "Check your email", no seat was written, no email
+sent, no roster row existed. That is the ADR-1150 failure shape.
+
+**Decision.**
+
+- **The mark lives on the seat, on both seat tables.** `event_rsvps` and `event_tickets` each
+  gain `attended_at timestamptz` and `attended_by uuid` (FK `profiles`, set null), named
+  identically the way the reminder stamps are (20270345004100, ADR-1330), so one app type names
+  a column on both. Migration `20270345004300`. A separate `event_attendance` table was rejected:
+  the seat rows can carry the mark, a table would need its own RLS, grants and a (kind, id) join
+  back to the seat on every roster read, and the twin-column precedent already exists.
+- **The host writes it, and it pays nobody.** `lib/events/attendance.ts` is the write: the two
+  columns on the seat's own table, scoped to the (event, seat) pair, and nothing else. No
+  `engagement_events` row, no Zaps, no streak, no verified standing. The manage action
+  (`manage/attendance-actions.ts`) gates the caller as host, cohost or platform staff through
+  the same seams the dashboard already uses (`lib/events/host-gate`, `lib/events/cohosts`)
+  before handing the module the admin client, and its test tripwires `lib/zaps` and the ledger
+  module so the action cannot grow an import of either unnoticed. `checkInEvent` and its ledger
+  row are untouched.
+- **The roster shows both marks, and lists ticket seats.** `ManageGuest` is keyed on a `seat`
+  (`{ kind: 'rsvp' | 'ticket', id }`), not an RSVP id. `loadRoster` reads succeeded, unrefunded
+  tickets beside the RSVP rows, one row per person (a buyer who also holds an RSVP row is listed
+  once, on the RSVP row). Each row renders "Checked in" (self-logged, members only) and
+  "Attended" (host-attested, every seat kind) side by side with the host's button; neither
+  implies the other, because they answer different questions.
+- **A signed-out scan lands on the guest form.** The QR door sends an anonymous scanner to
+  `/events/<slug>?door=guest` before the signed-in block; nothing runs for them (no RSVP, no
+  check-in, no ledger row). The page renders the flag as the door line (`door-note.ts`,
+  `guest`: not a refusal), leads with the guest RSVP form for that event, and keeps the sign-in
+  note out of the way for that visitor. A signed-in scan is unchanged.
+- **The guest door stays open while the check-in door is.** `capture_guest_rsvp`'s time refusal
+  moves from "has started" to "the door has closed": four hours past the end (`ends_at`, or
+  `starts_at` when the host set none), the same window `checkInWindowOpen` uses. Every other
+  check in the function is byte for byte 20270345004000. The page shows the form through that
+  grace (`guestDoorGrace`, read without the host's check-in switch, which gates Zaps and not the
+  roster). The now-folded "after the end, sign-in door alone" branch is gone.
+
+**Alternatives considered.** *Land the signed-out scan on `/rsvp/<token>`* (the ADR-154 invite
+capture form): rejected, it needs an inviter profile on the code, writes `event_guests` rather
+than a seat, and is not the guest RSVP door LIVE-314 shipped. *Keep the SQL's start gate and
+land on the form anyway*: rejected, that is the silent refusal above made the main path.
+*Write the host's mark as a ledger row under the host's id*: rejected, the ledger is the
+member's own record and the automations read it; a host's observation about a guest is neither.
+
+**Consequences.** PROG-R11 can measure attendance from a column that every seat kind can hold.
+A host can now count a guest in the room without asking them to make an account, in two taps:
+the guest scans and answers, the host marks the seat. The guest RSVP SQL accepts a started event
+for up to four hours past its end, which the page already promised; the pgTAP suites for the
+function use future events and are unchanged. `manage/attendance-actions.ts` joins the
+admin-client baseline with its reason; the QR route's authz verdict is re-read and re-pinned.
+Tests: `lib/events/attendance.test.ts`, `manage/attendance-actions.test.ts`,
+`manage/roster-marks.test.tsx`, `app/q/[slug]/route.test.ts`, `door-note.test.ts`.
+
+The durable rule: **a host's observation is not the member's own record.** The self-logged
+check-in stays the row that pays and verifies; the host-attested mark is a column on the seat
+that pays nobody, and a surface that shows one must never let it stand in for the other.

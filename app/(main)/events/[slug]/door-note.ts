@@ -29,6 +29,7 @@ export const DOOR_REASONS = [
   'pending',
   'rsvp_refused',
   'failed',
+  'guest',
 ] as const
 
 export type DoorReason = (typeof DOOR_REASONS)[number]
@@ -43,6 +44,8 @@ const DOOR_NOTES: Record<DoorReason, string> = {
   pending: 'Your scan did not check you in. The host still has your request to approve.',
   rsvp_refused: 'Your scan did not save an RSVP. Answer below instead.',
   failed: 'Something went wrong at the door. Try scanning again, or answer below.',
+  // PROG-GD4: not a refusal. A signed-out scan of a printed code lands here, on the guest form.
+  guest: 'Your scan found this event. Say you are coming below and the host can count you in. No account needed.',
 }
 
 /** The one line to show for a `?door=` value, or null when there is nothing honest to say. */
