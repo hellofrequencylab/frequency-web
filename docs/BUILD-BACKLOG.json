@@ -49,7 +49,6 @@
             "LIVE-186",
             "LIVE-213",
             "LIVE-312",
-            "LIVE-314",
             "LIVE-322"
           ]
         },
@@ -12168,7 +12167,7 @@
     {
       "id": "LIVE-314",
       "title": "A signed-out guest on a priced RSVP-mode event is held to a payment condition a member is not, so the guest door shows \"Sign in to RSVP\" on an event that charges nobody at RSVP time",
-      "status": "open",
+      "status": "done",
       "priority": "P1",
       "lane": "live",
       "size": "S",
@@ -12176,12 +12175,13 @@
         "file": "components/events/rsvp-payment-flow.tsx",
         "ref": "line 88"
       },
-      "detail": "FILED 2026-09-14 from the guest-door handoff, measured on production. rsvp-payment-flow.tsx:88 computes guestDoor = !signedIn && paymentsReady && guestTiers.length > 0, and paymentsReady = TICKETING_ENABLED && hostPayoutReady (page.tsx:1346). For a TICKETS-mode event that is right: buying is attending, and you cannot take money for a host who cannot receive it. For an RSVP-mode event it is a defect: money is paid at the door and nothing goes through Stripe at RSVP time, a signed-in member gets full RSVP controls whether or not payouts are connected (:122-131), and the guest is refused (:138-148). This is the original report (\"I tried to RSVP in an incognito window and it took me to the login page\") and it is still true on an event two days out.\n\nTHE FIX is small and local: in the guestDoor fallback render GuestRsvpForm instead of the sign-in link when the event is RSVP mode. capture_guest_rsvp already accepts RSVP-mode events and refuses tickets-mode ones, so the authority is in place. A test beside the component pins both verdicts: RSVP mode without payouts renders the guest form; tickets mode without payouts still renders the sign-in link.\n\nTwo non-code ways out exist for the one event (clear its two ticket tiers, or the host completes Connect) and neither fixes the rule.",
+      "detail": "FILED 2026-09-14 from the guest-door handoff, measured on production. rsvp-payment-flow.tsx:88 computes guestDoor = !signedIn && paymentsReady && guestTiers.length > 0, and paymentsReady = TICKETING_ENABLED && hostPayoutReady (page.tsx:1346). For a TICKETS-mode event that is right: buying is attending, and you cannot take money for a host who cannot receive it. For an RSVP-mode event it is a defect: money is paid at the door and nothing goes through Stripe at RSVP time, a signed-in member gets full RSVP controls whether or not payouts are connected (:122-131), and the guest is refused (:138-148). This is the original report (\"I tried to RSVP in an incognito window and it took me to the login page\") and it is still true on an event two days out.\n\nTHE FIX is small and local: in the guestDoor fallback render GuestRsvpForm instead of the sign-in link when the event is RSVP mode. capture_guest_rsvp already accepts RSVP-mode events and refuses tickets-mode ones, so the authority is in place. A test beside the component pins both verdicts: RSVP mode without payouts renders the guest form; tickets mode without payouts still renders the sign-in link.\n\nTwo non-code ways out exist for the one event (clear its two ticket tiers, or the host completes Connect) and neither fixes the rule.\n\n── CLOSED 2026-09-14. THE PREMISE WAS RE-TESTED FIRST: rsvp-payment-flow.tsx:88 still read guestDoor = !signedIn && paymentsReady && guestTiers.length > 0 with \"Sign in to RSVP\" as the fallback, and the page still mounted the flow without telling it the join mode. The fix is the local one the row asked for. The flow takes a mode prop ('rsvp' | 'tickets', threaded from the event page, which only mounts it in RSVP mode), and a signed-out reader on an RSVP-mode event with no purchasable door gets GuestRsvpForm in place of the sign-in link, whatever paymentsReady says. The guest's rate list is the general rates only (a membership is not an offer to someone with no account), the form's \"Free to join.\" line reads \"Pay the $X at the door.\" for a paid rate (a new optional note prop on GuestRsvpForm), and the booking window gates the door the way it gates the free path (rsvpWindowOpen + rsvpWindowLine threaded beside mode), because capture_guest_rsvp refuses outside it and ADR-1150 named a silently failing form as the failure here. Tickets mode without payouts keeps the sign-in link; the purchasable door (paymentsReady + guest tiers) still wins when checkout can charge. No parallel server path: capture_guest_rsvp already accepts RSVP-mode events and refuses tickets-mode ones. Proof: components/events/rsvp-payment-flow.guest-door.test.tsx renders both verdicts (RSVP mode without payouts: the guest form, no sign-in link; tickets mode without payouts: the sign-in link, no guest form), a control that the two fixtures differ only in mode and that mode alone flips the verdict, the window gate, and the purchasable door still winning. pnpm exec vitest run components/events: 12 files, 156 tests green.",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e 'const fs=require(\"fs\");const t=\"components/events/rsvp-payment-flow.guest-door.test.tsx\";if(!fs.existsSync(t)){console.error(\"no test pins the guest door verdicts: a signed-out reader of a priced RSVP-mode event without payouts still gets a sign-in link\");process.exit(1)}const c=fs.readFileSync(\"components/events/rsvp-payment-flow.tsx\",\"utf8\");if(!/GuestRsvpForm/.test(c)){console.error(\"rsvp-payment-flow.tsx never renders GuestRsvpForm, so the RSVP-mode guest door is still the sign-in link\");process.exit(1)}'",
         "note": "Passes when the component renders the guest RSVP form and a test beside it pins both verdicts (RSVP mode without payouts: guest form; tickets mode without payouts: sign-in). Written 2026-09-14."
-      }
+      },
+      "closed": "2026-09-14"
     },
     {
       "id": "LIVE-315",
