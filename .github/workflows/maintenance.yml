@@ -8,6 +8,10 @@
 #     withCronHeartbeat under its own name, and every schedule parses to a real fresh-by window.
 #     Strict about those (they are facts about the tree), advisory about whether a monitor URL is
 #     configured (that lives in Vercel Production, which this runner is not).
+#   - design-debt ratchet on main: pnpm check:adoption against the checked-out main. The per-PR
+#     reader in ci.yml diffs a branch against a frozen baseline and so cannot tell "this PR did
+#     it" from "main already had it" (ADR-1290, HYG-070); this is the reading on a fixed
+#     reference, on a schedule, with the tracking issue as its owner. Advisory, never fails.
 # What runs WHEN the owner adds SUPABASE_ACCESS_TOKEN (arms the DB-credentialed checks):
 #   - fetch Supabase security + performance advisors, diff against the accepted-risk allowlist
 #     (scripts/maintenance/accepted-advisories.json), report only new findings.
@@ -294,6 +298,38 @@ jobs:
           if [ "$CODE" != "0" ]; then printf '```\n%s\n```\n' "$REPORT" > collective.txt; fi
           echo "code=$CODE" >> "$GITHUB_OUTPUT"
 
+      # ── Design-debt ratchet on main (HYG-070, ADR-1290, ADR-1326) ───────────────────────────
+      #
+      # WHY HERE. `check:adoption` is advisory in ci.yml by owner decision (OWN-004), and that
+      # posture is right: a COUNT ratchet fires on legitimate growth, and an advisory finding
+      # forced through a blocking gate teaches everyone to route around it (ADR-970). The defect
+      # ADR-1290 found is in the READER, not the posture. A pull request compares its OWN tree to
+      # the frozen baseline, so once main carries a rise, every later PR inherits it and
+      # re-reports it as pre-existing noise no author can act on. Four classes sat red on main
+      # through five merges that way, and a `--update` run from a branch cut before the rise then
+      # banked numbers main had already exceeded. Nothing measured the ratchet ON main.
+      #
+      # This step is that measurement: the checked-out main, on the weekly schedule, reporting to
+      # the tracking issue below when a class is above its baseline. Same shape as the cron
+      # heartbeat step and for the same reason: a finding no single PR can fix still needs
+      # somewhere to land. It reads the tree only, so it needs no secret and is never skipped.
+      #
+      # ADVISORY on purpose and it never fails the sweep on its own. A held scoreboard is not
+      # news and stays out of the issue; a rise on main, or a dead instrument (any non-zero code),
+      # goes in. Banking a rise is still a human act: `node scripts/check-adoption.mjs --update`
+      # from a branch that carries the fix, never from one cut before it.
+      - name: Design-debt ratchet (main)
+        id: adoption
+        run: |
+          set +e
+          REPORT=$(pnpm check:adoption 2>&1)
+          CODE=$?
+          echo "$REPORT"
+          { echo "## Design-debt ratchet (main)"; echo '```'; echo "$REPORT"; echo '```'; echo ""; } >> "$GITHUB_STEP_SUMMARY"
+          # Only a class above its baseline ON MAIN (or a crashed gate) reaches the tracking issue.
+          if [ "$CODE" != "0" ]; then printf '```\n%s\n```\n' "$REPORT" > adoption.txt; fi
+          echo "code=$CODE" >> "$GITHUB_OUTPUT"
+
       # ── AI triage (Phase 4) — optional, uses the existing ANTHROPIC_API_KEY. Advises only;
       #    never edits code. Non-fatal, so the deterministic report always ships.
       #
@@ -312,8 +348,10 @@ jobs:
       #    `steps.cron.outputs.code != '0'` rather than `== '1'`: that step's script exits 1 for a
       #    broken wiring contract and 0 for the advisory coverage verdict, so any OTHER code means
       #    node itself died and a dead instrument is exactly what this sweep must not swallow.
+      #    `steps.adoption.outputs.code != '0'` for the same reason: 1 is a class above its
+      #    baseline on main, anything else is the ratchet itself failing to read.
       - name: Report to a tracking issue on delta
-        if: steps.audit.outputs.code != '0' || steps.advisors.outputs.code == '1' || steps.ledger.outputs.code == '1' || steps.menudrift.outputs.code == '1' || steps.cron.outputs.code != '0' || steps.collective.outputs.code != '0'
+        if: steps.audit.outputs.code != '0' || steps.advisors.outputs.code == '1' || steps.ledger.outputs.code == '1' || steps.menudrift.outputs.code == '1' || steps.cron.outputs.code != '0' || steps.collective.outputs.code != '0' || steps.adoption.outputs.code != '0'
         uses: actions/github-script@v9
         with:
           script: |
@@ -329,6 +367,7 @@ jobs:
               read('menudrift.txt') && ('### Public header menu drift\n' + read('menudrift.txt')),
               read('cron.txt') && ('### Cron heartbeat coverage\n' + read('cron.txt')),
               read('collective.txt') && ('### Community Collective phase gate\n' + read('collective.txt')),
+              read('adoption.txt') && ('### Design-debt ratchet (main)\n' + read('adoption.txt')),
             ].filter(Boolean).join('\n')
             const title = '🔧 Weekly maintenance sweep'
             const { data: open } = await github.rest.issues.listForRepo({

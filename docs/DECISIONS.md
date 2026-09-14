@@ -39936,3 +39936,66 @@ freezes the planning docs and prose status is forbidden.
   corrections and LIVE-215.
 
 **Rows.** LIVE-309 · HYG-086 · LIVE-310 · OWN-060 (amended) · PROG-E0 (amended) · PROG-E10 (amended)
+
+## ADR-1326: ACCEPTED — the design-debt ratchet gets a reader on main, on the weekly maintenance schedule, with an owner (2026-09-14)
+
+**Status.** Accepted. A CI-rule change under [ADR-1325](DECISIONS.md) ruling 10: it ships with this
+record and a green control run on current `main`. Closes `HYG-070`, the row [ADR-1290](DECISIONS.md)
+filed for exactly this.
+
+**Context.** `check:adoption` is advisory in `ci.yml` by owner decision (`OWN-004`), and the posture is
+right: a count ratchet fires on legitimate growth, and an advisory finding forced through a blocking
+gate teaches everyone to route around it (ADR-970). The workflow comment that records the posture
+names the condition it depends on: the scoreboard is read on every PR, and if it ever stops being
+read, that is an argument for deleting it, not for making it block.
+
+ADR-1290 found that it had stopped being read, and that the cause was structural rather than
+anyone's inattention. The only reader was the per-PR step, and a pull request compares its OWN tree
+against the frozen baseline. Once `main` carries a rise, every later PR inherits it and re-reports
+it, so the finding reads as pre-existing noise no author can act on, and is therefore correctly
+ignored, by each author in turn. Four classes sat red on `main` through five merges that way. Then a
+`--update` run from a branch cut before the rise banked numbers `main` had already exceeded, so
+three of the four risen classes carried a freeze date newer than the debt they were meant to guard.
+A per-PR diff cannot tell "this PR did it" from "`main` already had it". Nothing measured the
+ratchet on `main`, and the closing line of ADR-1290 states the missing half: an advisory gate needs
+a reading on a fixed reference, on a schedule, with an owner, or it is a gate that reports to nobody.
+
+**Decision.**
+
+- **The weekly `sweep` job in `.github/workflows/maintenance.yml` gains a step, "Design-debt ratchet
+  (main)".** It runs `pnpm check:adoption` against the checked-out `main`, writes the full table into
+  the run summary under a "Design-debt ratchet (main)" heading, and emits its exit code as a step
+  output. It is modelled on the "Cron heartbeat coverage" step, which exists for the same reason: a
+  finding no single PR can fix still needs somewhere to land. It reads the tree only, so it needs no
+  secret and is never skipped.
+- **The posture stays advisory.** The step runs under `set +e` and never fails the workflow on its
+  own. The point is a reader with an owner, not a blocker; making it block would re-create the
+  defect ADR-970 describes on a schedule instead of on a PR.
+- **A rise on `main` reaches the existing tracking issue, through the mechanism the job already
+  has.** When the gate exits non-zero the step writes `adoption.txt`, the "Report to a tracking
+  issue on delta" step's `if` gains `steps.adoption.outputs.code != '0'`, and its body gains one
+  more section that reads that file. No second issue writer. The condition is `!= '0'` rather than
+  `== '1'` for the reason the cron step's is: 1 is a class above its baseline, anything else is the
+  ratchet itself failing to read, and a dead instrument is exactly what the sweep must not swallow.
+  A held scoreboard writes nothing and stays out of the issue, so a clean week is still a quiet one.
+- **Banking a rise stays a human act.** `node scripts/check-adoption.mjs --update` is still the way
+  a sweep is frozen, and this record adds one rule to it: run it from a branch that carries the
+  fix, never from one cut before the rise it would bank.
+
+**The control.** On 2026-09-14, on a branch at current `main` (`c22cda4`), `pnpm check:adoption`
+read **18 debt classes held or shrank, 5 shrank (19 sites retired), exit 0**. Four baselines still
+carry the "not bought by a sweep" note from the 2026-08-17 instrument correction, which the gate
+prints and which is unchanged by this decision. The fixed reference this step joins is the weekly
+maintenance workflow, whose last run before this change is run id `34853524542` (run 12, scheduled,
+2026-09-14 14:07Z on `7d902f6`, success). The first scheduled reading with the step in place is the
+post-merge control.
+
+**Consequences.** The ratchet now has two readers that answer different questions: the per-PR step
+says whether a branch moved a class, and the weekly step says whether `main` is above its frozen
+floor. A rise that merges no longer waits for the next `--update` to bank it silently; it lands in
+the tracking issue within a week, with the table beside it. The step adds one `check:adoption` run
+to a job that already installs the tree, so its cost is seconds. `HYG-071` (the `drop-shadow`
+false positive) and `HYG-072` (the PR-size gate counting generated baselines) are untouched and
+stay open.
+
+**Rows.** HYG-070
