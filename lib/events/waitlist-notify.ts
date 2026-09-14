@@ -10,6 +10,7 @@ import { formatEventWhen, resolveZone } from '@/lib/time/zone'
 // the same import lib/events/guest-rsvp-email.ts takes.
 import { buildGoogleCalendarUrl } from '@/components/events/add-to-calendar'
 import { publicVisibleLocation } from '@/lib/events/visible-location'
+import { mintGuestSeatUrl, type SeatRpcClient } from '@/lib/events/guest-seat'
 import type { PromotedSeat } from './capacity'
 
 // ── "A spot opened up and you're in." ────────────────────────────────────────────────────────────
@@ -146,7 +147,7 @@ export async function notifyPromotedSeat(seat: PromotedSeat, eventId: string): P
 
     const guestEmail = seat.guestEmail ?? row.guest_email
     if (!guestEmail) return
-    await notifyGuest({ guestEmail, guestName: row.guest_name, ev, eventUrl, evTz, whenAbsolute, appUrl, admin })
+    await notifyGuest({ guestEmail, guestName: row.guest_name, rsvpId: seat.rsvpId, ev, eventUrl, evTz, whenAbsolute, appUrl, admin })
   } catch (e) {
     console.error('[events waitlist promoted]', e)
   }
@@ -324,13 +325,14 @@ async function notifyGuest(args: {
   admin: ReturnType<typeof createAdminClient>
   guestEmail: string
   guestName: string | null
+  rsvpId: string
   ev: PromotedEvent
   eventUrl: string
   evTz: string
   whenAbsolute: string
   appUrl: string
 }): Promise<void> {
-  const { admin, guestEmail, guestName, ev, eventUrl, evTz, whenAbsolute, appUrl } = args
+  const { admin, guestEmail, guestName, rsvpId, ev, eventUrl, evTz, whenAbsolute, appUrl } = args
   try {
     const circleName = await loadCircleName(admin, ev)
     // The address gate, mirrored from lib/events/guest-rsvp-email.ts: city line and no calendar
@@ -338,6 +340,9 @@ async function notifyGuest(args: {
     const addressHidden = ev.hide_address === true
     const location = publicVisibleLocation(ev)
     const canShareCalendar = !addressHidden
+    // The one-seat link (PROG-GD2). "You're in" is the newest email about this seat, so it carries
+    // the live link; the waitlist receipt's link stops working when this mint rotates the hash.
+    const seatUrl = await mintGuestSeatUrl(admin as unknown as SeatRpcClient, rsvpId, ev.slug, appUrl)
 
     await sendGuestRsvpConfirmationEmail({
       to:           guestEmail,
@@ -356,6 +361,7 @@ async function notifyGuest(args: {
           })
         : null,
       signUpUrl:    `${appUrl}/sign-in?next=${encodeURIComponent(`/events/${ev.slug}`)}&email=${encodeURIComponent(guestEmail)}`,
+      seatUrl,
       status:       'going',
     })
   } catch (e) {

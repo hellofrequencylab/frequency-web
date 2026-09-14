@@ -246,14 +246,19 @@ export interface QuestionnaireData {
   questions: EventQuestion[]
   /** answers grouped by respondent, in roster order, each carrying their name */
   responses: {
-    profileId: string
+    /** One row per respondent: the profile id for a member, `seat:<rsvp id>` for a signed-out
+     *  guest who answered through their seat link (PROG-GD2). Stable across renders. */
+    respondentKey: string
+    profileId: string | null
     displayName: string
     handle: string
     answers: Record<string, string>
   }[]
 }
 
-/** Questions + the answer roster, shaped for the responses table + CSV export. */
+/** Questions + the answer roster, shaped for the responses table + CSV export. A guest's answers
+ *  (rsvp_id set, profile_id null) sit beside the members', named from the seat the way the roster
+ *  names it: the name they gave, else their address, since that is how the host reaches them. */
 export async function loadQuestionnaire(eventId: string): Promise<QuestionnaireData> {
   const [questions, answers] = await Promise.all([
     listQuestions(eventId),
@@ -261,22 +266,43 @@ export async function loadQuestionnaire(eventId: string): Promise<QuestionnaireD
   ])
   if (questions.length === 0) return { questions, responses: [] }
 
-  const respondentIds = Array.from(new Set(answers.map((a) => a.profileId)))
-  const profiles = await profileMap(respondentIds)
+  const respondentIds = Array.from(new Set(answers.flatMap((a) => (a.profileId ? [a.profileId] : []))))
+  const hasGuestAnswers = answers.some((a) => !a.profileId && a.rsvpId)
+  const [profiles, roster] = await Promise.all([
+    profileMap(respondentIds),
+    hasGuestAnswers ? loadRoster(eventId) : Promise.resolve([] as ManageGuest[]),
+  ])
+  // A guest's answers key on the RSVP row (rsvp_id), so only RSVP seats can name them; a ticket
+  // seat (PROG-GD4) has no answers to name.
+  const seatNames = new Map(
+    roster.flatMap((g) => (g.seat.kind === 'rsvp' ? [[g.seat.id, g.displayName] as const] : [])),
+  )
 
-  const byRespondent = new Map<string, Record<string, string>>()
+  const byRespondent = new Map<string, { profileId: string | null; answers: Record<string, string> }>()
   for (const a of answers) {
-    const bucket = byRespondent.get(a.profileId) ?? {}
-    bucket[a.questionId] = a.answer
-    byRespondent.set(a.profileId, bucket)
+    const key = a.profileId ?? (a.rsvpId ? `seat:${a.rsvpId}` : null)
+    if (!key) continue
+    const bucket = byRespondent.get(key) ?? { profileId: a.profileId, answers: {} }
+    bucket.answers[a.questionId] = a.answer
+    byRespondent.set(key, bucket)
   }
 
-  const responses = Array.from(byRespondent.entries()).map(([profileId, answerMap]) => {
-    const prof = profiles.get(profileId)
+  const responses = Array.from(byRespondent.entries()).map(([respondentKey, { profileId, answers: answerMap }]) => {
+    if (profileId) {
+      const prof = profiles.get(profileId)
+      return {
+        respondentKey,
+        profileId,
+        displayName: prof?.displayName ?? 'A member',
+        handle: prof?.handle ?? '',
+        answers: answerMap,
+      }
+    }
     return {
-      profileId,
-      displayName: prof?.displayName ?? 'A member',
-      handle: prof?.handle ?? '',
+      respondentKey,
+      profileId: null,
+      displayName: seatNames.get(respondentKey.slice('seat:'.length)) ?? 'Guest',
+      handle: '',
       answers: answerMap,
     }
   })

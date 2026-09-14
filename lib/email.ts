@@ -625,12 +625,15 @@ export async function sendGuestRsvpConfirmationEmail(params: {
   googleCalUrl: string | null
   /** Sign-in deep link carrying this address, so the seat can become theirs in one step. */
   signUpUrl:    string
+  /** The one-seat link (PROG-GD2, lib/events/guest-seat.ts): change plus-ones, answer the host,
+   *  or give the spot back. Null when the mint did not land; the email still sends without it. */
+  seatUrl:      string | null
   /** 'pending' when the host approves each person: a REQUEST, not a seat. */
   status:       'going' | 'waitlist' | 'pending'
 }) {
   const {
     to, guestName, eventTitle, whenAbsolute, location, hostName, circleName,
-    eventUrl, icsUrl, googleCalUrl, signUpUrl, status,
+    eventUrl, icsUrl, googleCalUrl, signUpUrl, seatUrl, status,
   } = params
 
   await enqueueEmail({
@@ -641,11 +644,11 @@ export async function sendGuestRsvpConfirmationEmail(params: {
                               `Request sent: ${eventTitle}`,
     html: guestRsvpConfirmationHtml({
       guestName, eventTitle, whenAbsolute, location, hostName, circleName,
-      eventUrl, icsUrl, googleCalUrl, signUpUrl, status,
+      eventUrl, icsUrl, googleCalUrl, signUpUrl, seatUrl, status,
     }),
     text: guestRsvpConfirmationText({
       guestName, eventTitle, whenAbsolute, location, hostName, circleName,
-      eventUrl, icsUrl, googleCalUrl, signUpUrl, status,
+      eventUrl, icsUrl, googleCalUrl, signUpUrl, seatUrl, status,
     }),
   })
 }
@@ -2018,11 +2021,11 @@ function guestGreeting(guestName: string | null): string {
 
 function guestRsvpConfirmationHtml({
   guestName, eventTitle, whenAbsolute, location, hostName, circleName,
-  eventUrl, icsUrl, googleCalUrl, signUpUrl, status,
+  eventUrl, icsUrl, googleCalUrl, signUpUrl, seatUrl, status,
 }: {
   guestName: string | null; eventTitle: string; whenAbsolute: string; location: string | null
   hostName: string | null; circleName: string | null; eventUrl: string
-  icsUrl: string | null; googleCalUrl: string | null; signUpUrl: string
+  icsUrl: string | null; googleCalUrl: string | null; signUpUrl: string; seatUrl: string | null
   status: 'going' | 'waitlist' | 'pending'
 }): string {
   const eyebrow =
@@ -2048,6 +2051,20 @@ function guestRsvpConfirmationHtml({
     </p>
   ` : ''
 
+  // The one-seat link (PROG-GD2). The page it opens renders the seat and waits for a tap: nothing
+  // happens on arrival, so a mail scanner that pre-clicks it changes nothing. Plain about what it
+  // does, and honest that it stops working once the gathering ends.
+  const seatBlock = seatUrl ? `
+    <hr style="${dividerStyle}">
+    <p style="${pStyle}">
+      <strong>Plans change?</strong> ${status === 'going' ? 'Add or drop plus-ones, answer the host, or give the spot back so the next person moves in.' : 'Answer the host, or give the spot back so the next person moves in.'}
+      The link works until the gathering ends.
+    </p>
+    <p style="margin:0 0 8px;">
+      <a href="${seatUrl}" style="${btnStyle}">Manage your spot →</a>
+    </p>
+  ` : ''
+
   return emailShell(`
     <p style="font-size:11px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:#9A5E12;margin:28px 0 8px;">
       ${eyebrow}
@@ -2060,9 +2077,10 @@ function guestRsvpConfirmationHtml({
     </p>
     ${calendarBlock}
     <a href="${eventUrl}" style="${btnStyle}">View event →</a>
+    ${seatBlock}
     <hr style="${dividerStyle}">
     <p style="${pStyle}">
-      <strong>Want to change or cancel this later?</strong> Sign up with this same address and this
+      <strong>Want this in one place?</strong> Sign up with this same address and this
       RSVP becomes part of your account, along with anything else you have said yes to.
     </p>
     <p style="margin:0 0 8px;">
@@ -2078,11 +2096,11 @@ function guestRsvpConfirmationHtml({
 
 function guestRsvpConfirmationText({
   guestName, eventTitle, whenAbsolute, location, hostName, circleName,
-  eventUrl, icsUrl, googleCalUrl, signUpUrl, status,
+  eventUrl, icsUrl, googleCalUrl, signUpUrl, seatUrl, status,
 }: {
   guestName: string | null; eventTitle: string; whenAbsolute: string; location: string | null
   hostName: string | null; circleName: string | null; eventUrl: string
-  icsUrl: string | null; googleCalUrl: string | null; signUpUrl: string
+  icsUrl: string | null; googleCalUrl: string | null; signUpUrl: string; seatUrl: string | null
   status: 'going' | 'waitlist' | 'pending'
 }): string {
   const eyebrow =
@@ -2119,9 +2137,20 @@ function guestRsvpConfirmationText({
     if (icsUrl)       lines.push(`  Apple / Outlook (.ics): ${icsUrl}`)
   }
 
+  if (seatUrl) {
+    lines.push(
+      '',
+      status === 'going'
+        ? 'Plans change? Add or drop plus-ones, answer the host, or give the spot back so the next person moves in.'
+        : 'Plans change? Answer the host, or give the spot back so the next person moves in.',
+      'The link works until the gathering ends.',
+      `Manage your spot: ${seatUrl}`,
+    )
+  }
+
   lines.push(
     '',
-    'Want to change or cancel this later? Sign up with this same address and this RSVP becomes',
+    'Want this in one place? Sign up with this same address and this RSVP becomes',
     'part of your account, along with anything else you have said yes to.',
     `Set up your account: ${signUpUrl}`,
     '',

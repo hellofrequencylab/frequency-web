@@ -31,7 +31,11 @@ export interface EventQuestionAnswer {
   id: string
   questionId: string
   eventId: string
-  profileId: string
+  /** The member who answered, or null for an answer a signed-out guest gave through their seat
+   *  link (update_guest_seat, 20270345004200). A claimed guest seat carries both. */
+  profileId: string | null
+  /** The seat a guest answer belongs to; null for a member answer. */
+  rsvpId: string | null
   answer: string
 }
 
@@ -158,7 +162,7 @@ export async function listMyAnswers(
   const admin = createAdminClient()
   const { data } = await admin
     .from('event_question_answers')
-    .select('id, question_id, event_id, profile_id, answer')
+    .select('id, question_id, event_id, profile_id, rsvp_id, answer')
     .eq('event_id', eventId)
     .eq('profile_id', profileId)
   return toAnswers(data)
@@ -170,14 +174,14 @@ export async function listEventAnswers(eventId: string): Promise<EventQuestionAn
   const admin = createAdminClient()
   const { data } = await admin
     .from('event_question_answers')
-    .select('id, question_id, event_id, profile_id, answer')
+    .select('id, question_id, event_id, profile_id, rsvp_id, answer')
     .eq('event_id', eventId)
   return toAnswers(data)
 }
 
 type AnswerRow = Pick<
   Database['public']['Tables']['event_question_answers']['Row'],
-  'id' | 'question_id' | 'event_id' | 'profile_id' | 'answer'
+  'id' | 'question_id' | 'event_id' | 'profile_id' | 'rsvp_id' | 'answer'
 >
 
 function toAnswers(data: AnswerRow[] | null): EventQuestionAnswer[] {
@@ -185,7 +189,8 @@ function toAnswers(data: AnswerRow[] | null): EventQuestionAnswer[] {
     id: r.id,
     questionId: r.question_id,
     eventId: r.event_id,
-    profileId: r.profile_id,
+    profileId: r.profile_id ?? null,
+    rsvpId: r.rsvp_id ?? null,
     answer: r.answer,
   }))
 }

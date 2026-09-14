@@ -87,7 +87,6 @@
             "LIVE-234",
             "LIVE-235",
             "LIVE-236",
-            "PROG-GD2",
             "PROG-R6",
             "LIVE-237",
             "LIVE-238",
@@ -12545,7 +12544,7 @@
     {
       "id": "PROG-GD2",
       "title": "Guest door phase 2, the key: a one-seat token in the receipt lets a guest change or release the seat they hold",
-      "status": "open",
+      "status": "done",
       "priority": "P1",
       "lane": "program",
       "size": "M",
@@ -12553,12 +12552,13 @@
         "file": "docs/DECISIONS.md",
         "ref": "the guest-door handoff of 2026-09-14 (session 012voDkq), PRs #2552 and #2556"
       },
-      "detail": "FILED 2026-09-14 from the guest-door handoff (phases 1 and 3 shipped in #2552 and #2556; this is the next one to build). A one-seat token in the receipt email opens a page where a Guest manages the seat they hold: change it, or release it. Releasing frees capacity and moves the waitlist, which is the host's real win. Also plus-ones and host questions. Mail scanners pre-click links, so the page must render state and wait for a submit, never act on arrival. This is the phase that closes \"a guest can never cancel an RSVP; no action exists, so the seat holds capacity permanently\", which is the strongest argument for building it next. The token addresses a delivery and unlocks only that seat (ADR-854); it never unlocks a hidden venue.",
+      "detail": "FILED 2026-09-14 from the guest-door handoff (phases 1 and 3 shipped in #2552 and #2556; this is the next one to build). A one-seat token in the receipt email opens a page where a Guest manages the seat they hold: change it, or release it. Releasing frees capacity and moves the waitlist, which is the host's real win. Also plus-ones and host questions. Mail scanners pre-click links, so the page must render state and wait for a submit, never act on arrival. This is the phase that closes \"a guest can never cancel an RSVP; no action exists, so the seat holds capacity permanently\", which is the strongest argument for building it next. The token addresses a delivery and unlocks only that seat (ADR-854); it never unlocks a hidden venue.\n\nCLOSED 2026-09-14 (migration 20270345004200, lane R of the Phase 1 build loop). THE KEY: event_rsvps.seat_token_hash carries sha256 of a uuid minted by mint_guest_seat_token (service_role only) every time a guest receipt, approval notice or promotion notice is composed, so the newest email about a seat holds the live link and older ones die on their own (the mint rotates the hash). The token addresses ONE event_rsvps row: the resolver (private.guest_seat_for_token) refuses a member row, a claimed row, a cleared token, and an event that is draft, removed, cancelled or over, so it expires with the event (ends_at, else starts_at, in the event's zone). THE PAGE: app/(main)/events/[slug]/seat/[token]/page.tsx renders through FocusTemplate on GET with no side effect (its only call is read_guest_seat, declared STABLE, which Postgres enforces; the source-shape test pins that no action, mutation or write rpc is imported), never indexed, and waits for a submit. WHAT A GUEST CAN DO from the link: change plus-ones (0 to 5, the member rule: a confirmed going seat only, additions before the start), answer the host's questions (event_question_answers now carries rsvp_id beside a nullable profile_id; claim_guest_rsvps stamps the profile onto those answers and clears the token), and RELEASE the seat, which writes the row a member's Can't go writes (not_going, plus_ones 0), clears the token in the same statement, frees capacity through the same trigger count, and runs the SAME promoteFromWaitlist + notifyPromotedSeat pair (seat-actions.ts), so the next person moves in and is told. WHAT STAYS REFUSED: the read carries no location, venue, street or host (a hidden venue has nothing to leak, ADR-825/854); the token never becomes a session and never moves a seat INTO going (a released guest signs in with the same address and takes a seat as a member; a resubmit through the RSVP form does not resurrect a released seat, by capture_guest_rsvp's standing rule); anon cannot mint. TICKETS: a paid guest ticket is NOT covered, on purpose. Its release is a refund, which is Stripe's and the ticket door's; a free tier claimed as a guest is an event_rsvps row and gets this token like any other seat. PREMISE CORRECTION: the row said plus-ones and host questions ride the same page; a guest could not answer a host question ANYWHERE before this (answers were keyed on a NOT NULL profile_id), so that half needed the schema change above, not only a page. pgTAP: supabase/tests/guest_seat_token.test.sql (28 assertions). Vitest: seat-actions.test.ts (release runs the shared promotion; a dead token promotes nobody), seat-page.test.ts (the GET's source shape), lib/events/guest-seat.test.ts (the parser drops any location key).",
       "verify": {
-        "kind": "manual",
-        "evidence": "Program phase; proven when a guest can release a held seat from the receipt link and the waitlist moves, with a test that the page does nothing on GET.",
-        "checked": "2026-09-14"
-      }
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const d=\"app/(main)/events/[slug]/seat/[token]/\";const strip=(s)=>s.replace(/\\/\\*[\\s\\S]*?\\*\\//g,\"\").replace(/^\\s*\\/\\/.*$/gm,\"\");const page=strip(fs.readFileSync(d+\"page.tsx\",\"utf8\"));const act=strip(fs.readFileSync(d+\"seat-actions.ts\",\"utf8\"));const mig=fs.readFileSync(\"supabase/migrations/20270345004200_guest_seat_token.sql\",\"utf8\");const fail=(m)=>{console.error(m);process.exit(1)};if(!/loadGuestSeat\\(/.test(page)||/\\.rpc\\(|\\.(insert|update|delete|upsert)\\(|seat-actions|use server/.test(page))fail(\"the seat page must read through loadGuestSeat and carry no action, mutation or rpc on GET\");if(!/export const dynamic = .force-dynamic./.test(page)||!/robots:\\s*\\{\\s*index:\\s*false/.test(page))fail(\"the seat page must be dynamic and noindex\");const rel=act.slice(act.indexOf(\"export async function releaseGuestSeat\"));if(rel.indexOf(\"promoteFromWaitlist(\")<0||rel.indexOf(\"notifyPromotedSeat(\")<0||rel.indexOf(\"promoteFromWaitlist(\")<rel.indexOf(\"release_guest_seat\"))fail(\"release must run the shared promoteFromWaitlist + notifyPromotedSeat pair after release_guest_seat\");if(!/create or replace function public\\.read_guest_seat\\([^)]*\\)[\\s\\S]*?\\bstable\\b[\\s\\S]*?as \\$\\$/.test(mig))fail(\"read_guest_seat must be STABLE\");if(!/seat_token_hash = null/.test(mig))fail(\"release must clear the token\")'",
+        "note": "Passes while the seat page reads through the STABLE read door with no side effect on GET, and the release action runs the shared waitlist promotion after release_guest_seat. Written 2026-09-14."
+      },
+      "closed": "2026-09-14"
     },
     {
       "id": "PROG-GD4",
