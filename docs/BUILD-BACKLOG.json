@@ -142,7 +142,6 @@
           "ids": [
             "DEF-HARDEN",
             "SCAN-502",
-            "HYG-070",
             "HYG-071",
             "HYG-072",
             "HYG-073",
@@ -9862,7 +9861,7 @@
     {
       "id": "HYG-070",
       "title": "The design-debt ratchet has no reader on main, so a rise merges and the next freeze banks it",
-      "status": "open",
+      "status": "done",
       "priority": "P2",
       "lane": "hygiene",
       "size": "S",
@@ -9870,12 +9869,13 @@
         "file": ".github/workflows/ci.yml",
         "ref": "Advisory trackers (reported, never blocking)"
       },
-      "detail": "FILED 2026-09-08 by the stabilisation audit (ADR-1290). check:adoption is advisory by owner decision (OWN-004) and that posture is RIGHT: a count ratchet fires on legitimate growth, and an advisory finding forced through a blocking gate teaches everyone to route around it (ADR-970). The workflow comment recording the decision names the condition it depends on -- \"It reports into the run summary on every PR so a rise is visible the day it happens. If it ever stops being read, that is an argument for deleting it, not for making it block again.\"\n\nIT STOPPED BEING READ, and the mechanism is structural rather than anyone's inattention. A PR compares its own tree against the frozen baseline. Once main carries a rise, EVERY subsequent PR inherits it and re-reports it, so the finding reads as pre-existing noise no author can act on -- and is therefore correctly ignored, by each author in turn. #2471 landed five literals across four classes on 2026-09-07; #2473 then ran --update from a branch cut before it and banked numbers main had already exceeded, so three of the four risen classes carry a freeze date NEWER than the debt they guard. literal-type's defended 0 had been 2 for a day, and all nine open PRs re-reported the same four red classes.\n\nTHE WORK is not to make the gate block. It is to give the advisory gate a reading on a FIXED reference, on a schedule, with an owner: a step in .github/workflows/maintenance.yml that runs check:adoption against main and opens/updates the weekly tracking issue when a class is above baseline -- the same shape as the existing \"Cron heartbeat coverage\" step, which exists for the same reason (a finding no PR can fix still needs somewhere to land). ADR-1290 retired the five literals, so the classes are green today; this row is the instrument that notices the next time.\n\nP2 and W2: instrument and record debt goes to the foundation wave, because a guard that cannot fire is what every later wave is measured by.",
+      "detail": "FILED 2026-09-08 by the stabilisation audit (ADR-1290). check:adoption is advisory by owner decision (OWN-004) and that posture is RIGHT: a count ratchet fires on legitimate growth, and an advisory finding forced through a blocking gate teaches everyone to route around it (ADR-970). The workflow comment recording the decision names the condition it depends on -- \"It reports into the run summary on every PR so a rise is visible the day it happens. If it ever stops being read, that is an argument for deleting it, not for making it block again.\"\n\nIT STOPPED BEING READ, and the mechanism is structural rather than anyone's inattention. A PR compares its own tree against the frozen baseline. Once main carries a rise, EVERY subsequent PR inherits it and re-reports it, so the finding reads as pre-existing noise no author can act on -- and is therefore correctly ignored, by each author in turn. #2471 landed five literals across four classes on 2026-09-07; #2473 then ran --update from a branch cut before it and banked numbers main had already exceeded, so three of the four risen classes carry a freeze date NEWER than the debt they guard. literal-type's defended 0 had been 2 for a day, and all nine open PRs re-reported the same four red classes.\n\nTHE WORK is not to make the gate block. It is to give the advisory gate a reading on a FIXED reference, on a schedule, with an owner: a step in .github/workflows/maintenance.yml that runs check:adoption against main and opens/updates the weekly tracking issue when a class is above baseline -- the same shape as the existing \"Cron heartbeat coverage\" step, which exists for the same reason (a finding no PR can fix still needs somewhere to land). ADR-1290 retired the five literals, so the classes are green today; this row is the instrument that notices the next time.\n\nP2 and W2: instrument and record debt goes to the foundation wave, because a guard that cannot fire is what every later wave is measured by.\n\n── CLOSED 2026-09-14 (ADR-1326). The weekly `sweep` job in .github/workflows/maintenance.yml gained a \"Design-debt ratchet (main)\" step: it runs `pnpm check:adoption` against the checked-out main, writes the full table into the run summary, and when a class is above its baseline ON MAIN (or the gate itself dies) it writes adoption.txt and joins the existing \"Report to a tracking issue on delta\" step through its `if` and body, the same path the cron heartbeat step uses. Advisory: it never fails the workflow on its own. Control on current main (c22cda4): 18 classes held or shrank, 5 shrank, exit 0; the last maintenance run before the step is 34853524542.",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e 'const fs=require(\"fs\");const f=\".github/workflows/maintenance.yml\";if(!fs.existsSync(f)){console.error(\"maintenance.yml is gone; the scheduled reading has no home\");process.exit(1)}const s=fs.readFileSync(f,\"utf8\");if(s.indexOf(\"check:adoption\")<0){console.error(\"maintenance.yml does not run check:adoption: the ratchet still has no reader on a fixed reference\");process.exit(1)}process.exit(0)'",
         "note": "Measures the CONSEQUENCE -- that the advisory ratchet is WIRED somewhere it reads a fixed reference on a schedule -- not the row's title. CI's per-PR advisory step is deliberately not what this looks for: that step is the reader that structurally cannot tell a new rise from an inherited one, which is the defect. Pure node, no shell pipeline."
-      }
+      },
+      "closed": "2026-09-14"
     },
     {
       "id": "HYG-071",
