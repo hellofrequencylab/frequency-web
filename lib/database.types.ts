@@ -4799,6 +4799,7 @@ export type Database = {
           currency: string
           entity_id: string
           event_id: string
+          guest_email: string | null
           id: string
           order_source: string | null
           platform_fee_cents: number
@@ -4819,6 +4820,7 @@ export type Database = {
           currency?: string
           entity_id?: string
           event_id: string
+          guest_email?: string | null
           id?: string
           order_source?: string | null
           platform_fee_cents?: number
@@ -4839,6 +4841,7 @@ export type Database = {
           currency?: string
           entity_id?: string
           event_id?: string
+          guest_email?: string | null
           id?: string
           order_source?: string | null
           platform_fee_cents?: number
@@ -9215,6 +9218,51 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      page_settings_events_backup_20260910: {
+        Row: {
+          header_image_focal: string | null
+          header_image_url: string | null
+          layout: Json | null
+          og_image_url: string | null
+          route: string | null
+          seo_description: string | null
+          seo_title: string | null
+          space_id: string | null
+          status: string | null
+          updated_at: string | null
+          updated_by: string | null
+          visibility_role: string | null
+        }
+        Insert: {
+          header_image_focal?: string | null
+          header_image_url?: string | null
+          layout?: Json | null
+          og_image_url?: string | null
+          route?: string | null
+          seo_description?: string | null
+          seo_title?: string | null
+          space_id?: string | null
+          status?: string | null
+          updated_at?: string | null
+          updated_by?: string | null
+          visibility_role?: string | null
+        }
+        Update: {
+          header_image_focal?: string | null
+          header_image_url?: string | null
+          layout?: Json | null
+          og_image_url?: string | null
+          route?: string | null
+          seo_description?: string | null
+          seo_title?: string | null
+          space_id?: string | null
+          status?: string | null
+          updated_at?: string | null
+          updated_by?: string | null
+          visibility_role?: string | null
+        }
+        Relationships: []
       }
       pages: {
         Row: {
@@ -15998,6 +16046,7 @@ export type Database = {
         }[]
       }
       claim_guest_rsvps: { Args: { p_profile_id: string }; Returns: undefined }
+      claim_guest_tickets: { Args: never; Returns: number }
       claim_outbox_jobs: {
         Args: { _limit?: number }
         Returns: {
@@ -16055,6 +16104,7 @@ export type Database = {
           unit_label: string
         }[]
       }
+      convert_signup_leads_for_me: { Args: never; Returns: number }
       create_bundle_invite_atomic: {
         Args: {
           _invitee: string
@@ -16958,6 +17008,7 @@ export type Database = {
           _currency: string
           _event_id: string
           _fee_cents: number
+          _guest_email?: string
           _qty: number
           _session_id: string
           _tier_id: string

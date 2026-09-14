@@ -60,7 +60,6 @@
             "LIVE-279",
             "LIVE-318",
             "LIVE-320",
-            "HYG-087",
             "LIVE-328"
           ]
         },
@@ -12432,7 +12431,7 @@
     {
       "id": "HYG-087",
       "title": "Three check:schema-contract allowlist entries are removable now that both guest-door migrations are applied and the types can be regenerated",
-      "status": "open",
+      "status": "done",
       "priority": "P2",
       "lane": "hygiene",
       "size": "XS",
@@ -12440,12 +12439,13 @@
         "file": "scripts/check-schema-contract.mjs",
         "ref": "lines 95-123"
       },
-      "detail": "FILED 2026-09-14 from the guest-door handoff. The allowlist carries dated entries for event_tickets.guest_email and claim_guest_tickets marked \"lib/database.types.ts not yet regenerated\". Both migrations (20270345003300, 20270345003400) are applied to production, so regenerate the types (the Supabase MCP or `supabase gen types`), delete the entries, and let the contract read the real column. Cheapest cleanup available.",
+      "detail": "FILED 2026-09-14 from the guest-door handoff. The allowlist carries dated entries for event_tickets.guest_email and claim_guest_tickets marked \"lib/database.types.ts not yet regenerated\". Both migrations (20270345003300, 20270345003400) are applied to production, so regenerate the types (the Supabase MCP or `supabase gen types`), delete the entries, and let the contract read the real column. Cheapest cleanup available.\n\nCLOSED 2026-09-14: lib/database.types.ts regenerated from the live project through the Supabase MCP (the Management API refused five reads between 18:00Z and 18:09Z during the day's second Supabase window, then answered at 18:15Z). The diff is 51 added lines and nothing removed: event_tickets.guest_email on Row/Insert/Update, reserve_ticket_atomic's _guest_email arg, claim_guest_tickets and convert_signup_leads_for_me as functions, and the page_settings_events_backup_20260910 snapshot table (HYG-086 retires it). All four allowlist entries deleted; the list is empty with the shape documented. check:schema-contract reads 0 phantoms against 280 tables and 343 functions with no allowlist; its self-test and a whole-tree tsc exit 0.",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e 'const s=require(\"fs\").readFileSync(\"scripts/check-schema-contract.mjs\",\"utf8\");if(/not yet regenerated/.test(s)){console.error(\"the schema-contract allowlist still carries entries waiting on a types regeneration\");process.exit(1)}'",
         "note": "Passes when no allowlist entry waits on a regeneration. Written 2026-09-14."
-      }
+      },
+      "closed": "2026-09-14"
     },
     {
       "id": "HYG-088",
