@@ -31,6 +31,7 @@ import { EventLoomPicker } from '@/components/admin/modules/event-loom-picker'
 import { VenueAutocomplete } from '@/components/admin/venue-autocomplete'
 import { EventHeaderControls } from '@/components/admin/modules/event-header-controls'
 import { EventCohostChooser } from '@/components/admin/modules/event-cohost-chooser'
+import { KeptDatesNotice } from '@/components/admin/modules/event-kept-dates-notice'
 import { EventPlacementField } from '@/components/events/event-placement-field'
 import { EventShareField } from '@/components/events/event-share-field'
 import { readEventHeroHeight } from '@/lib/events/hero-height'
@@ -222,12 +223,21 @@ function EventSettingsRail({ data, engage }: { data: EventData; engage: EventCor
     scope,
   )
 
-  const saveSettings = async () =>
-    updateEventSettings(
+  // WHAT THE SAVE LEFT BEHIND (LIVE-279). A rule change retires the future dates the new rule no
+  // longer produces, except the ones people are attached to, and the action reports that number
+  // as `occurrencesKept`. The autosave form drops an action's result by design (one shared cue for
+  // every rail), so the module keeps this one for itself: the latest save's count, rendered as one
+  // line beside the save cue while it is above zero, and gone the moment a save reports none.
+  const [occurrencesKept, setOccurrencesKept] = useState(0)
+  const saveSettings = async () => {
+    const result = await updateEventSettings(
       eventId,
       eventSlug,
       eventSettingsFormData(valuesRef.current, pinRef.current, repeatsRef.current, scopeRef.current),
     )
+    setOccurrencesKept(result?.occurrencesKept ?? 0)
+    return result
+  }
 
   const [imgErr, setImgErr] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
@@ -472,6 +482,9 @@ function EventSettingsRail({ data, engage }: { data: EventData; engage: EventCor
             )}
           </div>
         ))}
+        {/* The dates a rule change could not retire because people are attached to them, beside
+            the save cue that reported them (LIVE-279). Zero renders nothing. */}
+        <KeptDatesNotice kept={occurrencesKept} />
       </RailAutosaveForm>
 
       {/* Permalink: its own action, a rename redirects the page to the new URL. */}

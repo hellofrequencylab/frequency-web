@@ -11,6 +11,7 @@ import {
   type SeriesCancelSummary,
 } from '@/app/(main)/events/admin-actions'
 import { DangerDelete } from '@/components/admin/danger-delete'
+import { SERIES_CANCEL_ANCHOR_ID } from '@/components/admin/modules/event-kept-dates-notice'
 
 // The event Cancel + Delete box, pulled OUT of EventSettingsModule so the settings panel
 // can render it BELOW the Layout editor (the "layout picker") — the destructive controls
@@ -160,7 +161,13 @@ export function EventDangerZone() {
       </div>
 
       {series?.recurring && series.cancellable >= 2 && (
-        <div className="border-t border-danger/20 pt-4">
+        // Addressable, so the settings rail's "dates still on the calendar" line (LIVE-279) can bring
+        // this one control into view instead of growing a second way to cancel a series.
+        <div
+          id={SERIES_CANCEL_ANCHOR_ID}
+          tabIndex={-1}
+          className="scroll-mt-2 border-t border-danger/20 pt-4 focus:outline-none"
+        >
           <p className="text-body-sm font-semibold text-danger">Cancel the rest of this series</p>
           <p className="mt-0.5 text-meta text-muted">
             Takes all {series.cancellable} dates still to come off the calendar in one go, and refunds every
