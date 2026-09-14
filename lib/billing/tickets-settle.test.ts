@@ -90,6 +90,9 @@ vi.mock('@/lib/supabase/admin', () => ({
   }),
 }))
 vi.mock('@/lib/finance/record', () => ledger)
+// The member receipt (LIVE-316) is owned by ./guest-ticket-settle.test.ts, which holds the identity
+// contract. Here it is stubbed so the fake client's null reads do not read as a settle error.
+vi.mock('@/lib/events/member-ticket-email', () => ({ sendMemberTicketReceipt: async () => {} }))
 
 import { recordTicketFromSession, recordTicketRefund } from './tickets'
 

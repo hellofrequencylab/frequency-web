@@ -43,6 +43,7 @@ import { recordFinancialTransaction } from '@/lib/finance/record'
 import { resolveHostingSpaceId, resolveHostingSpaceIdFromRow } from '@/lib/events/host-space'
 import { feeBearingSpaceId } from '@/lib/events/belonging'
 import { sendGuestTicketReceipt } from '@/lib/events/guest-ticket-email'
+import { sendMemberTicketReceipt } from '@/lib/events/member-ticket-email'
 
 export const TICKET_MAX_QTY = 10
 
@@ -713,6 +714,10 @@ function flippedRows(
  *                                  revenue, which is the one thing this ledger may never do.
  *    • the guest ticket email    — the guest's ONLY record of the purchase (lib/events/
  *                                  guest-ticket-email.ts). It carries the single account offer.
+ *    • the member ticket email   — the MEMBER's receipt (lib/events/member-ticket-email.ts,
+ *                                  LIVE-316): same message family as the guest one, with the
+ *                                  calendar in place of the account offer. Until 2026-09-14 a
+ *                                  member who paid got nothing at all.
  *    • the signup_leads row      — the CRM half, at a HIGHER step than the RSVP door, because
  *                                  somebody who PAID is a stronger signal than somebody who said
  *                                  they might come.
@@ -812,6 +817,22 @@ export async function recordTicketFromSession(session: Stripe.Checkout.Session):
       }).catch(() => {})
       // THE LEAD, BESIDE THE TICKET. See recordGuestBuyerAsLead.
       await recordGuestBuyerAsLead(guestEmail, row.event_id).catch(() => {})
+    }
+
+    if (row.buyer_profile_id) {
+      // THE MEMBER'S RECEIPT (LIVE-316). The member half of the same message: event, when, tier,
+      // amount, and the calendar links a guest is not offered. Best-effort and swallowed inside the
+      // module, which quarantines the elevated reads (event, tier, profile, account address) and
+      // runs the transactional send gate. Sent exactly once because this loop runs exactly once.
+      await sendMemberTicketReceipt({
+        eventId: row.event_id,
+        profileId: row.buyer_profile_id,
+        ticketTypeId: row.ticket_type_id,
+        qty: row.qty,
+        // Gross off the signed session, for the same reason the guest leg reads it there.
+        amountCents: session.amount_total ?? null,
+        currency: row.currency ?? session.currency ?? null,
+      }).catch(() => {})
     }
   }
 }
