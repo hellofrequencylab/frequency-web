@@ -26,6 +26,7 @@ import { TicketButton, type TicketTierView } from './ticket-button'
 import { PosterBand } from '@/components/media/poster-band'
 import { getConnectStatus, payoutsLive } from '@/lib/billing/connect'
 import { hasTicket, recordTicketFromSessionId } from '@/lib/billing/tickets'
+import { deriveTicketOwnership } from '@/lib/events/ticket-ownership'
 import { getCapacityInfo } from '@/lib/events/capacity'
 import { EventDetailTemplate } from '@/components/templates/event-detail-template'
 import { InlineText } from '@/components/admin/inline/inline-text'
@@ -893,7 +894,7 @@ export default async function EventDetailPage({
   // (backward compat — an implicit single fixed tier).
   const isPaidEvent = hasTiers || flatPriceCents > 0
   let hostPayoutReady = false
-  let ownsTicket = false
+  let holdsTicketRow = false
   // PAYEE (ADR-819): a space-hosted event pays the hosting space's owner; a personal event pays
   // the host. Readiness must check the SAME account createTicketCheckout charges into — checking
   // the personal organizer would keep the buy panel hidden after the space owner connects Stripe
@@ -907,9 +908,20 @@ export default async function EventDetailPage({
       myProfileId ? hasTicket(event.id, myProfileId) : Promise.resolve(false),
     ])
     hostPayoutReady = payoutReady
-    ownsTicket = owns
+    holdsTicketRow = owns
   }
-  if (ticketedCents !== null) ownsTicket = true
+  // OWNERSHIP vs CONFIRMATION (LIVE-322; the rule of ADR-854 one gate over). `ownsTicket` comes
+  // from the viewer's OWN ticket row and nothing else; the `?ticket=success&session_id=` redirect
+  // only ever yields `purchaseConfirmed`, which is banner copy. This line used to promote
+  // ownsTicket whenever the reconcile returned a priced amount, for ANY reader, signed in or not,
+  // and ownsTicket unhides a hidden venue below — so a guest's forwarded receipt link disclosed the
+  // address the receipt email withholds on purpose. A signed-in buyer loses nothing: the reconcile
+  // above is awaited before hasTicket runs, so their row is already there.
+  const { ownsTicket, purchaseConfirmed } = deriveTicketOwnership({
+    viewerProfileId: myProfileId,
+    holdsTicketRow,
+    reconciledCents: ticketedCents,
+  })
   const priceLabel = `$${(flatPriceCents / 100).toFixed(2)}`
   // Routed through the shared tier authority rather than re-derived here. The old inline form
   // (`hasTiers && tiers.every((t) => t.soldOut)`) computed exactly this, and it stayed correct —
@@ -1495,7 +1507,9 @@ export default async function EventDetailPage({
         {/* TICKETS mode: the full checkout cascade — buying is how you attend. */}
         {ticketsMode && (
           <div>
-              {ownsTicket ? (
+              {ownsTicket || purchaseConfirmed ? (
+                /* Message-grade only: a guest who just paid sees their confirmation here instead
+                   of a second buy button. purchaseConfirmed grants nothing else on this page. */
                 <p className="inline-flex items-center gap-1.5 text-body-sm font-semibold text-success">
                   <Check className="h-4 w-4" /> Ticket confirmed
                 </p>
