@@ -340,6 +340,15 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
       .eq('id', code.event_id)
       .maybeSingle()
     if (!ev) return unavailable
+    // THE GUEST DOOR (PROG-GD4). A signed-out scan used to land on the bare event page, where a
+    // visitor at event time met a note explaining that checking in needs an account. It now lands
+    // on the guest RSVP form with the event chosen: `?door=guest` is the flag the page renders as
+    // the door line and uses to lead with the form (the sign-in note steps aside). The seat that
+    // form writes is the row the host marks attended from the roster, which is how a guest in the
+    // room gets counted. Nothing runs here for a signed-out scanner: no RSVP, no check-in, no
+    // ledger row. withReferral still drops the channel and first-touch cookies, so a later signup
+    // by this guest is attributed to the poster they scanned.
+    if (!profileId) return withReferral(to(`/events/${ev.slug}?door=guest`))
     if (profileId) {
       // Ensure a 'going' RSVP, then run the verified-practice check-in.
       //
@@ -391,7 +400,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
       }
       return withReferral(to(door ? `/events/${ev.slug}?door=${door}` : `/events/${ev.slug}`))
     }
-    return withReferral(to(`/events/${ev.slug}`))
+    // Unreachable: the signed-out scanner returned to the guest door above.
   }
 
   if (code.destination_type === 'action' && code.owner_profile_id) {
@@ -414,9 +423,10 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
 }
 
 /** The reason the door could not do what the scan asked, or null when both the RSVP and the
- *  check-in went through: checkInEvent's own `CheckInFailReason` values plus two of the door's.
+ *  check-in went through: checkInEvent's own `CheckInFailReason` values plus three of the door's
+ *  (`guest` is not a refusal: it is the signed-out scanner being sent to the guest form, PROG-GD4).
  *  Rides to the event page as `?door=`; not exported, because a route file may only export handlers. */
-type DoorOutcome = CheckInFailReason | 'rsvp_refused' | 'failed'
+type DoorOutcome = CheckInFailReason | 'rsvp_refused' | 'failed' | 'guest'
 
 async function ownerHandle(
   admin: ReturnType<typeof createAdminClient>,

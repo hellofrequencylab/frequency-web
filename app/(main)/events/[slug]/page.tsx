@@ -995,6 +995,14 @@ export default async function EventDetailPage({
   // the end. There used to be no upper bound at all, so every event a member had ever said yes to
   // stayed checkable, and checking in to one that ended in March still paid Zaps (ADR-1175).
   const checkInWindow = checkInEnabled && checkInWindowOpen(event.starts_at, event.ends_at, eventTz)
+  // THE GUEST DOOR'S GRACE (PROG-GD4). capture_guest_rsvp (20270345004300) takes a guest seat until
+  // four hours past the end, the check-in door's own window, so a guest who scans the printed QR in
+  // the room can say they are there and the host can mark the seat attended from the roster. Read
+  // WITHOUT the host's check-in switch: that switch gates Zaps, not whether the roster may grow.
+  const guestDoorGrace = checkInWindowOpen(event.starts_at, event.ends_at, eventTz)
+  // Arrived from the printed QR while signed out (app/q/[slug]/route.ts sends `?door=guest`): the
+  // guest form IS the door, so the sign-in note that used to stand beside it steps aside.
+  const fromGuestDoor = sp.door === 'guest'
 
   // For a recurring anchor whose start has passed, compute the next upcoming date so the
   // page surfaces "Next: ..." instead of looking like a one-off that already happened
@@ -1683,10 +1691,11 @@ export default async function EventDetailPage({
               On waitlist · tap to leave
             </button>
           </form>
-        ) : !myProfileId && !hasEnded && !ticketsMode && !(isPaidEvent && hasTiers) ? (
-          /* Signed-out visitor on a FREE RSVP-mode upcoming event: RSVP is for everyone, so
-             offer the one step that unlocks it. (A priced RSVP event's flow above carries its
-             own sign-in step; tickets-mode events carry theirs in the cascade.) */
+        ) : !myProfileId && (!hasEnded || guestDoorGrace) && !ticketsMode && !(isPaidEvent && hasTiers) ? (
+          /* Signed-out visitor on a FREE RSVP-mode event that has not ended, or has ended within
+             the guest door's grace (PROG-GD4): RSVP is for everyone, so offer the one step that
+             unlocks it. (A priced RSVP event's flow above carries its own sign-in step;
+             tickets-mode events carry theirs in the cascade.) */
           /* One field instead of a detour through /sign-in. Someone who follows a shared link and
              wants to come can say so here; the account is offered afterwards, in the confirmation
              email, once there is a reason to make one. Signing in is still available below for
@@ -1703,8 +1712,10 @@ export default async function EventDetailPage({
             {/* Once it has STARTED, the check-in door sits BESIDE the RSVP form instead of
                 replacing it (ADR-1033 kept, its exclusivity dropped): a guest arriving on a
                 shared link mid-event can still say they are coming. Only when the host has
-                check-in on. */}
-            {isPast && checkInWindow && <GuestCheckInPrompt slug={event.slug} />}
+                check-in on, and not for the scanner the QR door just sent to the form (PROG-GD4):
+                for them the form is the door, and a note about signing in would be the thing
+                standing in front of it. */}
+            {isPast && checkInWindow && !fromGuestDoor && <GuestCheckInPrompt slug={event.slug} />}
             <p className="text-meta text-muted">
               Already a member?{' '}
               <Link
@@ -1716,17 +1727,11 @@ export default async function EventDetailPage({
               to RSVP with your account.
             </p>
           </div>
-        ) : !myProfileId && isPast && !ticketsMode && checkInWindow ? (
-          /* Signed-out visitor after the event ENDED (ADR-1033, rescoped). RSVP is genuinely closed
-             now, so the guest form above is gone and nothing else would replace it. This is the
-             check-in door: a guest seat can only become a counted attendance by becoming a member's
-             seat first, so the honest offer is the sign-in that claims it. While the event is merely
-             LIVE this branch is unreachable — the guest form above carries the same door beside it,
-             because a guest arriving on a shared link mid-event should still be able to say they are
-             coming. Tickets-mode events are excluded because a guest seat cannot exist on one
-             (capture_guest_rsvp refuses join_mode = 'tickets'). */
-          <GuestCheckInPrompt slug={event.slug} />
         ) : null}
+        {/* The branch that stood here, a signed-out visitor after the event ENDED but inside the
+            check-in window (ADR-1033, rescoped) meeting the sign-in door alone, is folded into the
+            branch above as of PROG-GD4: the guest door's grace is the check-in window, so that
+            visitor now gets the guest form with the sign-in door beside it. */}
 
         {/* Who's coming — the avatar pile grows in place as guests answer (warm proof, in-box). */}
         <WarmProof

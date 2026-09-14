@@ -115,6 +115,13 @@
 # to run under, and the gate's inputs (profiles.meta and the economy columns) are needed for EVERY
 # active member, not the caller. It reports profile ids only, never an email or an auth id, and
 # writes nothing.
+# app/(main)/events/[slug]/manage/attendance-actions.ts (added 2026-09-14, PROG-GD4): the host's
+# attendance mark on a seat row (event_rsvps / event_tickets attended_at + attended_by). Same
+# posture as manage/actions.ts directly beside it: the caller is re-gated as host, cohost or staff
+# through lib/events/host-gate + lib/events/cohosts BEFORE the write, and the write is bound to the
+# (event, seat) pair. It cannot converge onto the session client because the seat a host marks is
+# not the host's own row: a guest RSVP and a guest ticket have no profile at all, so no session
+# policy on either table could reach them for an update. Writes the two columns and nothing else.
 app/(main)/admin/actions.ts
 app/(main)/admin/ai/load-ai.ts
 app/(main)/admin/appearance/actions.ts
@@ -233,6 +240,7 @@ app/(main)/entry-points/actions.ts
 app/(main)/entry-points/page.tsx
 app/(main)/events/[slug]/edit/page.tsx
 app/(main)/events/[slug]/manage/actions.ts
+app/(main)/events/[slug]/manage/attendance-actions.ts
 app/(main)/events/[slug]/manage/broadcast-actions.ts
 app/(main)/events/[slug]/manage/broadcast-section.tsx
 app/(main)/events/[slug]/manage/crm/actions.ts

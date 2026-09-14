@@ -112,7 +112,6 @@
             "LIVE-260",
             "PROG-R10",
             "LIVE-263",
-            "PROG-GD4",
             "PROG-R11",
             "LIVE-305",
             "LIVE-306"
@@ -12564,7 +12563,7 @@
     {
       "id": "PROG-GD4",
       "title": "Guest door phase 4, the door: host-attested attendance in its own column, and a signed-out QR scan lands on the guest form",
-      "status": "open",
+      "status": "done",
       "priority": "P2",
       "lane": "program",
       "size": "M",
@@ -12572,12 +12571,13 @@
         "file": "docs/DECISIONS.md",
         "ref": "the guest-door handoff of 2026-09-14 (session 012voDkq), PRs #2552 and #2556"
       },
-      "detail": "FILED 2026-09-14 from the guest-door handoff. A Guest standing in the room gets counted: host-attested attendance in its own column, separate from the self-logged check-in ledger. Scanning a printed QR while signed out should land on the guest RSVP form with the event chosen, instead of a note explaining that you are signed out. This is also the measurement PROG-R11 is blocked on: event attendance has no independent record today (attendance exists only as an engagement-ledger row written by the path that pays Zaps), so this phase is sequenced before the field test.",
+      "detail": "FILED 2026-09-14 from the guest-door handoff. A Guest standing in the room gets counted: host-attested attendance in its own column, separate from the self-logged check-in ledger. Scanning a printed QR while signed out should land on the guest RSVP form with the event chosen, instead of a note explaining that you are signed out. This is also the measurement PROG-R11 is blocked on: event attendance has no independent record today (attendance exists only as an engagement-ledger row written by the path that pays Zaps), so this phase is sequenced before the field test.\n\n── CLOSED 2026-09-14. THE COLUMN: `attended_at timestamptz` + `attended_by uuid` (FK profiles, set null) on BOTH seat tables, event_rsvps and event_tickets, migration 20270345004300 (twin columns, the LIVE-320 precedent), because a ticket holder on a tickets-mode event has no RSVP row (LIVE-317) and a guest ticket has no profile either. WHO WRITES IT: the host, a cohost or platform staff, from the roster on the Manage Dashboard (manage/attendance-actions.ts, gated through lib/events/host-gate + lib/events/cohosts before the admin-client write; lib/events/attendance.ts is the write and takes the client as an argument). WHAT IT DOES NOT TOUCH: no engagement_events row, no Zaps, no streak, no verified standing; checkInEvent and its ledger row are untouched, and the roster shows Checked in (self-logged, members only) and Attended (host-attested, every seat kind) side by side, with the ticket seats now listed on the roster at all. THE SCAN: app/q/[slug]/route.ts sends a signed-out scanner to /events/<slug>?door=guest before the signed-in block; the page renders the guest door line (door-note.ts `guest`), leads with the guest RSVP form for that event, and keeps the sign-in note out of the way; a signed-in scan is unchanged. THE PREMISE THAT WAS NOT AS THE ROW SAID: capture_guest_rsvp refused any event whose start had passed (v_starts <= now()), while the page has rendered the guest form beside the check-in door for a live event since ADR-1033 was rescoped, so the form the scan lands on was a form the SQL silently refused with the opaque receipt. The same migration moves that refusal to \"the door has closed\" (four hours past the end, checkInWindowOpen's window), and the page shows the form through that grace. Tests: lib/events/attendance.test.ts, manage/attendance-actions.test.ts (host marks a guest RSVP and a guest ticket, non-host refused with no write, the ledger and lib/zaps are tripwired), manage/roster-marks.test.tsx (both marks rendered), app/q/[slug]/route.test.ts (signed-out lands on ?door=guest, signed-in unchanged), door-note.test.ts. PROG-R11 can now measure attendance from a column.",
       "verify": {
-        "kind": "manual",
-        "evidence": "Program phase; proven when a checked_in (or attended) column exists on the attendance row, written by the host, and a signed-out scan reaches the guest form.",
-        "checked": "2026-09-14"
-      }
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const fail=(m)=>{console.error(m);process.exit(1)};const dir=\"supabase/migrations\";const mig=fs.readdirSync(dir).filter(f=>f.endsWith(\".sql\")).map(f=>fs.readFileSync(dir+\"/\"+f,\"utf8\")).join(\"\\n\");for(const t of [\"event_rsvps\",\"event_tickets\"]){if(!new RegExp(\"alter table public\\\\.\"+t+\"\\\\s+add column if not exists attended_at timestamptz\").test(mig))fail(t+\" carries no attended_at column in any migration\")}const lib=fs.readFileSync(\"lib/events/attendance.ts\",\"utf8\");if(!/attended_at/.test(lib)||!/attended_by/.test(lib)||/\\.from\\(\"engagement_events\"\\)|awardZapsForAction\\(|recordEngagementEvent\\(/.test(lib))fail(\"lib/events/attendance.ts does not write the two attested columns alone\");const act=fs.readFileSync(\"app/(main)/events/[slug]/manage/attendance-actions.ts\",\"utf8\");if(!/setSeatAttended\\(createAdminClient\\(\\)/.test(act)||!/viewerActsAsEventHost/.test(act))fail(\"the manage action does not write the mark behind the host gate\");const sec=fs.readFileSync(\"app/(main)/events/[slug]/manage/sections.tsx\",\"utf8\");if(!/<AttendedButton/.test(sec)||!/g\\.attendedAt/.test(sec)||!/g\\.checkedIn/.test(sec))fail(\"the roster does not render attended beside checked in with the host button\");const route=fs.readFileSync(\"app/q/[slug]/route.ts\",\"utf8\");if(!/if \\(!profileId\\) return withReferral\\(to\\(`\\/events\\/\\$\\{ev\\.slug\\}\\?door=guest`\\)\\)/.test(route))fail(\"the signed-out scan does not name the guest form\");const note=fs.readFileSync(\"app/(main)/events/[slug]/door-note.ts\",\"utf8\");if(!/\\n\\s*guest: /.test(note))fail(\"the guest door has no line on the event page\")'",
+        "note": "Passes when attended_at exists on both seat tables in a migration, the attendance module writes only the two attested columns behind the host gate, the roster renders Attended beside Checked in with the host button, and the QR door sends a signed-out scanner to the guest form (?door=guest) with a line for it. Written 2026-09-14."
+      },
+      "closed": "2026-09-14"
     },
     {
       "id": "PROG-GD5",

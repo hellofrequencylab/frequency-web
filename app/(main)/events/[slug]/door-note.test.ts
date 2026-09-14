@@ -22,11 +22,12 @@ const route = readFileSync(ROUTE, 'utf8')
 const actions = readFileSync(ACTIONS, 'utf8')
 
 describe('every reason the door can emit has a line', () => {
-  it('covers all eight tokens', () => {
+  it('covers all nine tokens', () => {
     for (const reason of DOOR_REASONS) {
       expect(doorNoteFor(reason), reason).toBeTruthy()
     }
-    expect(DOOR_REASONS).toHaveLength(8)
+    // Eight refusals plus `guest`, the signed-out scanner sent to the guest form (PROG-GD4).
+    expect(DOOR_REASONS).toHaveLength(9)
   })
 
   it('matches the door route and the action, so a new reason cannot ship unspoken', () => {
@@ -43,7 +44,7 @@ describe('every reason the door can emit has a line', () => {
         .matchAll(/'([a-z_]+)'/g),
     ].map((m) => m[1])
     expect(checkInReasons.length).toBeGreaterThan(0)
-    expect(doorExtras).toEqual(['rsvp_refused', 'failed'])
+    expect(doorExtras).toEqual(['rsvp_refused', 'failed', 'guest'])
     expect([...DOOR_REASONS].sort()).toEqual([...checkInReasons, ...doorExtras].sort())
   })
 
@@ -92,6 +93,13 @@ describe('the copy holds the voice canon (docs/CONTENT-VOICE.md §10)', () => {
     // "Going" is the RSVP control's own label (components/events/rsvp-controls.tsx).
     expect(doorNoteFor('not_going')).toContain('Going')
   })
+
+  it('the guest door line points at the form and asks for no account (PROG-GD4)', () => {
+    const line = doorNoteFor('guest')!
+    expect(line).toContain('below')
+    expect(line).toContain('No account needed')
+    expect(line).not.toMatch(/sign in/i)
+  })
 })
 
 describe('the event page reads the parameter and renders the line', () => {
@@ -102,6 +110,14 @@ describe('the event page reads the parameter and renders the line', () => {
   it('resolves the note through the map rather than inlining copy', () => {
     expect(page).not.toMatch(/function doorNoteFor\b/)
     expect(page).toContain('doorNoteFor(sp.door)')
+  })
+
+  it('leads with the guest form for the scanner the door sent (PROG-GD4)', () => {
+    // The page reads the guest flag, and the sign-in note beside the form steps aside for it.
+    expect(page).toContain("sp.door === 'guest'")
+    expect(page).toMatch(/!fromGuestDoor && <GuestCheckInPrompt/)
+    // The route sends exactly that flag for a signed-out scanner.
+    expect(route).toContain('?door=guest')
   })
 
   it('mounts the line in the RSVP box', () => {
