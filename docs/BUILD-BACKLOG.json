@@ -56,7 +56,8 @@
           "ids": [
             "HYG-075",
             "LIVE-320",
-            "LIVE-328"
+            "LIVE-328",
+            "LIVE-329"
           ]
         },
         {
@@ -12427,6 +12428,24 @@
           "test/e2e/surfaces.ts"
         ],
         "note": "Passes once the capture fixture names the prefetch header it refuses. Written 2026-09-14; the run-level measurement lives in the closing note."
+      }
+    },
+    {
+      "id": "LIVE-329",
+      "title": "Ten sitemap reads fail-safe to an empty list silently under revalidate 3600, so a Supabase window ships an hour-long sitemap missing whole sections and nothing notices",
+      "status": "open",
+      "priority": "P2",
+      "lane": "live",
+      "size": "S",
+      "source": {
+        "file": "app/sitemap.ts",
+        "ref": "the .catch(() => []) chain under sitemap()"
+      },
+      "detail": "FILED 2026-09-14 out of the day's Supabase windows (ADR-1328). app/sitemap.ts is a dynamic sitemap with `export const revalidate = 3600`. Ten of its section reads (city x category hubs, partners, practices, networked Spaces, discover cities, the four commerce verticals, and one more the probe counts; the probe reads the file, not this sentence) end in `.catch(() => [])`, by design: a hiccup in one costs that vertical and nothing else. What is missing is the TELLING and the KEEPING. Under a window like today's (REST edge 503 for an hour), a regeneration that lands inside it emits a sitemap with those nine sections empty, caches it for an hour, and serves it to every crawler fetch in that hour; the URLs come back on the next regeneration, but a crawler that read the hollow copy has already seen them vanish. Nothing logs which section came back empty for a failure rather than for emptiness, so the fail-safe fires invisibly, which AGENTS.md names as the invisible-regression shape (`atCap` in the same file is the pattern done right for the cap case). The events, journeys, organizer and spotlight reads are NOT in the catch chain and throw, so a failure there keeps the previous copy; the asymmetry is unexplained in the file.\n\nTHE FIX: (1) every catch logs one line naming the section and the error, the way atCap does; (2) a transport failure (the discover classifier's isTransientDiscoverError / isTransientDiscoverStatus, LIVE-327) rethrows instead of returning [], so Next keeps serving the last good copy through the window rather than regenerating a hollow one; a deterministic read error still fails safe to [] for that section. Measure first whether a thrown regeneration keeps the stale route under Next 16 for a metadata route (it does for ISR pages; prove it for sitemap.ts in a test or the docs under node_modules/next/dist/docs before relying on it). (3) app/sitemap.test.ts pins both branches.",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"const s=require('fs').readFileSync('app/sitemap.ts','utf8');const silent=(s.match(/\\\\.catch\\\\(\\\\(\\\\) => \\\\[\\\\]\\\\)/g)||[]).length;if(silent>0){console.error('app/sitemap.ts still has '+silent+' silent .catch(() => []) fail-safe(s): a failed section read is dropped from the sitemap with no log line and no stale-keep');process.exit(1)}\"",
+        "note": "Passes when no section read swallows its error into an empty list without saying so. Measures the silence, not the words. Written 2026-09-14."
       }
     },
     {

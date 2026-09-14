@@ -40132,3 +40132,101 @@ measure a consequence that a healthy platform can still produce. What changes is
 the day: three hours of "the platform is flapping" were the loop measuring its own exhaust.
 
 **Rows.** LIVE-326 (done), LIVE-327 (open, P1, W0b), LIVE-328 (open, P2, W0c).
+
+## ADR-1329: ACCEPTED — Phase 0 round report, Rounds 1 and 2 of the build loop: 27 merges, every failure the loop saw, and the five rules it left behind (2026-09-14)
+
+**Context.** ADR-1325 ruled that a phase exits only on five things: every row done with its
+probe passing, CI green on main at the last merge, the production deploy READY with all six
+postbuild gates printed, the visual baselines recaptured for every surface the phase moved, and a
+round-report ADR naming every CI failure the phase saw and its mitigation. This is the fifth thing
+for Rounds 1 and 2 (16:00Z to 19:41Z) and the head of Round 3. The ledger it folds is
+`scratchpad/build-loop.md`, kept live through the day; the readings and the rules below are copied
+from it, not recalled.
+
+**What shipped.** 27 pull requests merged by squash auto-merge on green, none by hand: #2557 to
+#2580 in Rounds 1 and 2, then #2583, #2584 and #2585 at the head of Round 3. Rows closed: the
+twelve rulings (ADR-1325), the beta-grace fail-safe, three stale program docs, the second Stripe
+signing secret (LIVE-215), the design-debt ratchet reader on main (HYG-070, ADR-1326), fifteen
+handoff rows filed and the phased plan placed in the slate, the authz import walk (LIVE-307), the
+guest door's P1 set (LIVE-314, 315, 317, 319, 322), the onboarding-throughput cron (LIVE-311), the
+/feed masks (LIVE-308), the Dependabot triage (HYG-073), the RSVP help copy (HYG-088), the types
+regeneration and the empty allowlist (HYG-087), the snapshot table's RLS (HYG-086), the member
+ticket receipt (LIVE-316), the ledger read retries (LIVE-323, LIVE-324), the menu build gate
+(LIVE-325), the capture serialisation (LIVE-326), the discover classifier (LIVE-327), the
+kept-dates line (LIVE-279), the Connect prompt's probe (LIVE-233) and the guest free tier
+(LIVE-318). Production served every merge; the six gates read flat all day: 6.20 to 6.21 GB across
+460 to 461 functions, og-trace 20 rasterising and 65 incidental of 100, cache 1.21 to 1.36 GB
+packed with the estimate within 2% of the upload on every paired reading, shell 1012 KB across 21
+chunks, fan-out closed, one arbitrary-URL route owned.
+
+**Every failure, by class.** The ledger carries 93 Round 2 lines; the failures fall into four
+classes, and each class ends in a rule or a row.
+
+1. *Self-inflicted platform load (the day's two "Supabase windows").* 16:55Z to 17:20Z and
+   18:00Z to about 19:10Z: ledger reads HTTP 544 and 400-wrapped timeouts on #2559, #2561, #2562,
+   #2569, #2570, #2571, #2573, #2574 and main's own push run; three production builds and nine
+   preview builds failed at prerender; the menu reader fell back to defaults silently; six members
+   hit errors; the owner was paged. Read as weather all afternoon. The edge logs said otherwise:
+   32 preview captures in six hours, up to six at once, each rendering ~160 signed-in routes with
+   four workers and two retries, every 5xx under user agent `node` for the one profile the e2e
+   session is minted for, 47,000 of 47,200 function invocations on preview deployments. Fixed by
+   ADR-1328 (one capture at a time, repository-wide); control run 0 to 11 x 5xx alone. The
+   mitigations built while it was still "weather" stay because each measures a consequence a
+   healthy platform can also produce: the ledger read retries (LIVE-323, LIVE-324), the menu build
+   gate (LIVE-325, which fired on its first real artifact), the discover classifier (LIVE-327, the
+   third shape it was dead for). Rule: **before calling a 5xx window environment, read the edge
+   logs by user agent and path; a window that starts when the fan-out starts is the fan-out.**
+
+2. *CI rules that were wrong for the tree.* The typecheck died at node's default 4 GB heap twice
+   on the same tree (#2571); ADR-1327 gave the step 6 GB and the control passed twice. The ledger
+   guard sent one request and charged a re-run for every dropped packet; LIVE-323 and LIVE-324
+   bound the retry. The e2e workflow ran once per push across every PR at once; ADR-1328.
+
+3. *Process failures in the loop itself.* An ADR number minted from a stale main (#2557,
+   renumbered); a scoped local tsc that passed while CI's whole-tree tsc failed (#2565); a lane
+   pushing before its row existed on its branch (#2563); a new admin-client importer without a
+   baseline entry (#2573); `git rebase` piped into `tail`, hiding a conflict exit and letting a push
+   run mid-rebase; `execSync` on the 1 MB backlog hitting ENOBUFS and a close rebasing as empty;
+   a probe that greps a workflow file anchoring on prose rather than the step name; a `cmd` probe
+   not written as a `node -e` body; two lanes writing the same scratch file; four lanes running
+   whole-tree typechecks at once and SIGKILLing each other; seven lanes timing out the
+   backlog-contract test under load. Each has a line in the ledger with its rule.
+
+4. *The one real premise expiry that cost a lane.* LIVE-318 said a zero-amount ticket row;
+   `event_tickets.amount_cents` carries `CHECK (> 0)`. The lane stopped (#2577 recorded the
+   measurement and the mechanism) and the next lane built the member free path's twin (#2585).
+   The same rule found LIVE-233 already shipped six days earlier under a manual probe (#2584), and
+   LIVE-279's "the rail has the save result in hand" false (#2583).
+
+**Decision: the five rules that survive the round, as process.**
+
+- **Merge oldest first, rebase the rest in one sweep after each merge.** Every merge of a W0b or
+  W0c neighbour moved the wave lists under every open PR; the generic `reapply-row.cjs` (take
+  main's copy, copy the branch's row over it, drop the id from the waves the branch dropped it
+  from) replaced hand-written closes and took a five-branch sweep from an hour to six minutes.
+- **Apply a migration as late as possible, and merge its PR before opening the rest.** The
+  bijection in `check:migrations` turns every open PR red from the apply until the file lands on
+  main. HYG-086 taught it; LIVE-318 was applied only after the two neighbouring PRs had passed
+  their ledger reads.
+- **Lane count follows the shared resources, not agent capacity.** One capture at a time on the
+  database (ADR-1328); at most three whole-tree typechecks at once on this container; scratch
+  files prefixed by lane; a lane brief names every gate its change can trip (`check:admin-client`,
+  `check:authz`, whole-tree `tsc` with the 6 GB heap).
+- **A gate proven on a real artifact before it is trusted.** LIVE-325 fired on its first preview;
+  ADR-1327's heap was proven on the tree that died; ADR-1328's groups on a live capture. The
+  AGENTS.md rule held every time it was applied and cost every time it was not.
+- **Re-test the premise before working the row, especially a P0 with a manual probe.** Three rows
+  in one round had expired premises; the cheapest tool call of the day was the one that read the
+  schema before writing code.
+
+**Rows.** LIVE-329 filed (P2: ten sitemap reads fail-safe silently under a one-hour revalidate;
+found while reading the sitemap's fail-safes after the windows). LIVE-328 stays open (P2). The
+recapture half of the exit (the /feed baselines after LIVE-308 and the admin-* baselines for
+LIVE-312) is dispatched when the capture queue is empty and recorded in the ledger; the round is
+closed on this ADR plus that dispatch.
+
+**Owner actions carried forward, unchanged from ADR-1325:** OWN-072 ruling, OWN-073 messages,
+OWN-074 Connect onboarding, `STRIPE_CONNECT_WEBHOOK_SECRET`, `SUPPORT_CHAT=1` on Preview,
+`SENTRY_DSN` on Production, the sites apex, the Healthchecks check for `onboarding-throughput`,
+and one new: the git proxy refuses branch deletes, so the 14 merged lane branches on origin want
+"automatically delete head branches" turned on in the repository settings.
