@@ -25,7 +25,7 @@ const H = vi.hoisted(() => ({
 
 vi.mock('@/lib/billing/stripe', () => ({
   stripe: { webhooks: { constructEvent: () => H.event } },
-  STRIPE_WEBHOOK_SECRET: 'whsec_test',
+  STRIPE_WEBHOOK_SECRETS: ['whsec_test'],
   tierForPrice: () => 'crew',
 }))
 vi.mock('@/lib/billing/space-subscriptions', () => ({

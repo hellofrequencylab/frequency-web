@@ -1,8 +1,12 @@
 // THE Stripe webhook (consolidated — ADR-506). Verifies the signature with the Stripe SDK,
 // claims the event id for idempotency, then routes EVERY Stripe event this platform cares
-// about through one endpoint / one signing secret:
+// about through one endpoint. One URL, up to TWO signing secrets (LIVE-215, 2026-09-14): a
+// Stripe destination scoped "Events from: Your account" and one scoped "Events from: Connected
+// accounts" each carry their own `whsec_`, and a signature that matches either is accepted.
 //  - account.updated (Connect) — mirror a connected host's capability flags onto the
-//    owning profile as they progress through onboarding.
+//    owning profile as they progress through onboarding. This event fires on the CONNECTED
+//    account, so only the Connect-scoped destination delivers it; the platform-scoped one
+//    never will, which is why the second secret exists.
 //  - checkout.session.completed — a single checkout can be a member Crew subscription, a
 //    Space plan/membership, a tip, a ticket, a PWYW Supporter contribution, or a store
 //    order. The member/space branch runs first; the payout-channel recorders run after
@@ -21,10 +25,12 @@
 //    It routes through the same recorders as `completed`, each idempotent on the session id.
 // Unhandled events are acked 200 so Stripe stops retrying.
 //
-// Configure ONE endpoint in the Stripe dashboard pointing at this URL
-// (https://frequencylocal.com/api/webhooks/stripe) and set STRIPE_WEBHOOK_SECRET to that
-// endpoint's "whsec_…" signing secret. The route reads the RAW body (req.text()) because
-// signature verification runs over the exact bytes Stripe signed.
+// Configure the Stripe destinations to point at this ONE URL
+// (https://frequencylocal.com/api/webhooks/stripe): STRIPE_WEBHOOK_SECRET is the "whsec_…" of
+// the platform-scoped destination and STRIPE_CONNECT_WEBHOOK_SECRET (optional) is the
+// "whsec_…" of the Connect-scoped one. The route reads the RAW body (req.text()) because
+// signature verification runs over the exact bytes Stripe signed, then tries each configured
+// secret in order (lib/billing/stripe.ts STRIPE_WEBHOOK_SECRETS).
 //
 // Pricing P2 (ADR-363): subscription/checkout events carrying metadata.kind = 'space_plan' /
 // 'space_membership' route to the Space reconcilers (lib/billing/space-subscriptions.ts) FIRST;
@@ -36,7 +42,7 @@
 
 import { NextResponse } from 'next/server'
 import type Stripe from 'stripe'
-import { stripe, STRIPE_WEBHOOK_SECRET, tierForPrice } from '@/lib/billing/stripe'
+import { stripe, STRIPE_WEBHOOK_SECRETS, tierForPrice } from '@/lib/billing/stripe'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { routeSpaceSubscription } from '@/lib/billing/space-subscriptions'
 import { reconcileBundleSubscription } from '@/lib/billing/bundle-seats'
@@ -65,20 +71,33 @@ import {
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
+/** The event the raw body carries, verified against the first configured signing secret whose
+ *  HMAC matches, or null when none does. Each Stripe destination signs with its own `whsec_`, so
+ *  a platform-scoped and a Connect-scoped destination pointed at this one URL need one try each
+ *  (LIVE-215). A miss on every secret is the same 400 a single wrong secret always was. */
+function verifiedEvent(client: Stripe, body: string, sig: string, secrets: readonly string[]): Stripe.Event | null {
+  for (const secret of secrets) {
+    try {
+      return client.webhooks.constructEvent(body, sig, secret)
+    } catch {
+      // Signed by a different destination (or not by Stripe at all): try the next secret.
+    }
+  }
+  return null
+}
+
 export async function POST(req: Request) {
-  // Billing not configured (no key, or webhook secret missing): 503 so Stripe retries
+  // Billing not configured (no key, or no webhook secret at all): 503 so Stripe retries
   // once it's wired, rather than a silent success that drops the event.
-  if (!stripe || !STRIPE_WEBHOOK_SECRET) {
+  if (!stripe || STRIPE_WEBHOOK_SECRETS.length === 0) {
     return NextResponse.json({ error: 'billing not configured' }, { status: 503 })
   }
   const sig = req.headers.get('stripe-signature')
   if (!sig) return NextResponse.json({ error: 'missing signature' }, { status: 400 })
 
   const body = await req.text()
-  let event: Stripe.Event
-  try {
-    event = stripe.webhooks.constructEvent(body, sig, STRIPE_WEBHOOK_SECRET)
-  } catch {
+  const event = verifiedEvent(stripe, body, sig, STRIPE_WEBHOOK_SECRETS)
+  if (!event) {
     return NextResponse.json({ error: 'invalid signature' }, { status: 400 })
   }
 
