@@ -55,7 +55,6 @@
           "name": "W0c · P2 — small cleanups worth doing whenever a lane is clear, plus the tail of a sequenced repair whose head is higher up the slate (LIVE-293 and LIVE-294 follow LIVE-290 to LIVE-292).",
           "ids": [
             "HYG-075",
-            "LIVE-279",
             "LIVE-318",
             "LIVE-320",
             "LIVE-328"
@@ -11629,7 +11628,7 @@
     },
     {
       "id": "LIVE-279",
-      "status": "open",
+      "status": "done",
       "priority": "P2",
       "lane": "live",
       "size": "S",
@@ -11638,15 +11637,17 @@
         "ref": "retireStaleOccurrences, the `kept` count"
       },
       "title": "A host is never told which dates a rule change left behind because people are attached to them",
-      "detail": "LIVE-278 retires the future dates a changed rule no longer produces, and REFUSES to retire one that somebody has RSVP'd to, bought a ticket for, been invited to, or posted an update on. That refusal is right: removing such a date is a cancellation, with refunds and notifications behind it, and lib/events/cancellation.ts owns that as a deliberate host action.\n\nWhat is missing is the TELLING. The kept dates stay on the page and in the series rail, which is the honest default — the people who signed up still see the gathering they signed up for — but the host who just moved the series from weekly to fortnightly gets no signal that three Wednesdays survived the change and are still taking RSVPs. The count exists (`RetireResult.kept`, logged by the cron as `occurrencesKept`); nothing renders it.\n\nTHE FIX IS A SURFACE, NOT AN ENGINE CHANGE. The settings rail already has the save result in hand, and the Manage hub already lists the series dates. The right shape is probably a line on the rail after a rule change (\"3 dates people already signed up for are still on the calendar. Cancel them?\") linking into the existing series-cancel flow, which re-uses cancelEventSeries rather than inventing a second way to end a date.\n\nP2 rather than P1: the data is correct either way and nobody is stranded. What is at risk is a host's picture of their own calendar.",
+      "detail": "LIVE-278 retires the future dates a changed rule no longer produces, and REFUSES to retire one that somebody has RSVP'd to, bought a ticket for, been invited to, or posted an update on. That refusal is right: removing such a date is a cancellation, with refunds and notifications behind it, and lib/events/cancellation.ts owns that as a deliberate host action.\n\nWhat is missing is the TELLING. The kept dates stay on the page and in the series rail, which is the honest default — the people who signed up still see the gathering they signed up for — but the host who just moved the series from weekly to fortnightly gets no signal that three Wednesdays survived the change and are still taking RSVPs. The count exists (`RetireResult.kept`, logged by the cron as `occurrencesKept`); nothing renders it.\n\nTHE FIX IS A SURFACE, NOT AN ENGINE CHANGE. The settings rail already has the save result in hand, and the Manage hub already lists the series dates. The right shape is probably a line on the rail after a rule change (\"3 dates people already signed up for are still on the calendar. Cancel them?\") linking into the existing series-cancel flow, which re-uses cancelEventSeries rather than inventing a second way to end a date.\n\nP2 rather than P1: the data is correct either way and nobody is stranded. What is at risk is a host's picture of their own calendar.\n\nCLOSED 2026-09-14. The premise was half right: the settings rail did NOT have the count in hand. `updateEventSettings` ran `retireStaleOccurrences` inside a fire-and-forget block AFTER the action had returned, so `kept` was computed once the save had already resolved and reached nothing but the log. The retire is now awaited (a handful of reads and one best-effort delete; minting the new dates and pushing content forward still run behind the return), and the action returns `{ occurrencesKept }`. The Event settings module keeps the latest save's count in state and renders `KeptDatesNotice` (components/admin/modules/event-kept-dates-notice.tsx) as the last child of its autosave form, beside the save cue: a warning Banner, \"3 dates are still on the calendar\", the reason in one sentence, and a \"Cancel the rest of this series\" button that REVEALS the existing series-cancel block in EventDangerZone (now addressable as `#event-series-cancel`: it opens the rail if closed, opens the \"More\" disclosure, scrolls and focuses) rather than owning a cancel of its own. Zero renders nothing. Pinned by event-kept-dates-notice.test.tsx (renders for 1 and 3, nothing for 0, the pointer reveals and never cancels) and by a source-shape case in admin-actions.test.ts (the retire sits before the deferred block and the count is the return value).",
       "verify": {
         "kind": "grep-present",
         "paths": [
-          "components/admin/modules/event-settings-module.tsx"
+          "components/admin/modules/event-settings-module.tsx",
+          "components/admin/modules/event-kept-dates-notice.tsx"
         ],
         "pattern": "occurrencesKept|keptBecauseAttached|still on the calendar",
-        "note": "PRESENT when the rail actually says it, which is what closes this row; absent today, so the probe fails and the row honestly reads open. It measures the consequence — a host being told — not the words in the row's title. A row closed by wiring the count into a different surface should re-point this at that file rather than widen the pattern."
-      }
+        "note": "PRESENT when the rail actually says it, which is what closed this row (2026-09-14): the module carries the `occurrencesKept` state it renders, and the notice file carries the words \"still on the calendar\". It measures the consequence, a host being told, not the words in the row's title."
+      },
+      "closed": "2026-09-14"
     },
     {
       "id": "LIVE-280",

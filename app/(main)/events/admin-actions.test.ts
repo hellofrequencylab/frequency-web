@@ -161,4 +161,18 @@ describe('the repeat rule belongs to the series, not to the date', () => {
     expect(code).toContain('await generateOccurrencesForAnchor(plan.reconcile)')
     expect(code).toContain('if (plan.reconcile) {')
   })
+
+  it('🔴 awaits the retirement BEFORE returning, and returns how many dates it kept (LIVE-279)', () => {
+    // The kept count is only honest if the retire has actually run when the save returns. It used
+    // to sit inside the fire-and-forget block, so `kept` was computed after the action had already
+    // resolved and reached nothing but the log. The retire must come before the deferred block,
+    // and the count must be the return value.
+    const retireAt = code.indexOf('await retireStaleOccurrences(plan.reconcile)')
+    const deferredAt = code.indexOf('void (async () => {')
+    expect(retireAt).toBeGreaterThan(-1)
+    expect(deferredAt).toBeGreaterThan(-1)
+    expect(retireAt, 'the retire is back behind the return').toBeLessThan(deferredAt)
+    expect(code).toContain('occurrencesKept = (await retireStaleOccurrences(plan.reconcile)).kept')
+    expect(code).toContain('return { occurrencesKept }')
+  })
 })

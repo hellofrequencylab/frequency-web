@@ -345,7 +345,19 @@ export async function cancelEventSeries(id: string, slug: string): Promise<Serie
   }
 }
 
-export async function updateEventSettings(id: string, slug: string, fd: FormData) {
+/** What a settings save reports back to the rail (LIVE-279). */
+export type EventSettingsSaveResult = {
+  /** Future dates the (possibly changed) repeat rule no longer produces that were LEFT on the
+   *  calendar because somebody is attached to them: an RSVP, a ticket, an invite, an update. Zero
+   *  whenever the save reconciled nothing (the narrow series scope) or retired everything stale. */
+  occurrencesKept: number
+}
+
+export async function updateEventSettings(
+  id: string,
+  slug: string,
+  fd: FormData,
+): Promise<EventSettingsSaveResult> {
   const caps = await getEventCapabilities(id)
   if (!caps.has('event.editSettings')) throw new Error('Unauthorized')
 
@@ -691,13 +703,27 @@ export async function updateEventSettings(id: string, slug: string, fd: FormData
   // "this and all future" the rule lands on the anchor, the schedule is reconciled against it
   // (ADR-1304), and the content moves FORWARD from the date the host actually edited rather than
   // from the series' beginning, which is what "future" means and what ADR-884 could not say.
+  //
+  // THE RETIREMENT IS AWAITED, THE REST IS NOT (LIVE-279). `retireStaleOccurrences` refuses to
+  // retire a date somebody has RSVP'd to, bought a ticket for, been invited to, or posted on, and
+  // reports how many it left that way as `kept`. Until this line the whole block was fire-and-forget,
+  // so that count was computed AFTER the save had already returned and reached nothing but the log:
+  // a host who moved a series from weekly to fortnightly was never told that three Wednesdays
+  // survived the change and are still taking RSVPs. Awaiting the retire (a handful of reads and one
+  // delete, best-effort by its own contract, never a throw) is what lets the rail say so. Minting the
+  // new rule's dates and pushing content forward still run behind the return, exactly as before.
+  let occurrencesKept = 0
+  try {
+    await rulePush()
+    if (plan.reconcile) {
+      occurrencesKept = (await retireStaleOccurrences(plan.reconcile)).kept
+    }
+  } catch (e) {
+    console.error('[updateEventSettings] occurrence retirement:', e)
+  }
   void (async () => {
     try {
-      await rulePush()
-      if (plan.reconcile) {
-        await retireStaleOccurrences(plan.reconcile)
-        await generateOccurrencesForAnchor(plan.reconcile)
-      }
+      if (plan.reconcile) await generateOccurrencesForAnchor(plan.reconcile)
       if (plan.propagateForward) await propagateEditsForward(id)
     } catch (e) {
       console.error('[updateEventSettings] occurrence reconciliation:', e)
@@ -710,6 +736,8 @@ export async function updateEventSettings(id: string, slug: string, fd: FormData
   revalidatePath(`/events/${slug}/manage`)
   revalidatePath('/events')
   revalidatePath('/feed')
+
+  return { occurrencesKept }
 }
 
 /**
