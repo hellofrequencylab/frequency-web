@@ -52,7 +52,6 @@
             "LIVE-312",
             "LIVE-314",
             "LIVE-315",
-            "LIVE-317",
             "LIVE-322"
           ]
         },
@@ -12226,7 +12225,7 @@
     {
       "id": "LIVE-317",
       "title": "Nobody holding a ticket can check in, because canCheckIn reads isGoing rather than ownsTicket",
-      "status": "open",
+      "status": "done",
       "priority": "P1",
       "lane": "live",
       "size": "S",
@@ -12234,12 +12233,13 @@
         "file": "app/(main)/events/[slug]/page.tsx",
         "ref": "line 1064"
       },
-      "detail": "FILED 2026-09-14 from the guest-door handoff. claim_guest_tickets() sets buyer_profile_id and mints no RSVP row, and canCheckIn = !!myProfileId && isGoing && checkInWindow && !event.is_cancelled (page.tsx:1064). So \"sign in and your ticket comes with you\" stops one step short of the door. Already true of every paying member on a tickets-mode event, so a ticketing gap the guest door inherited rather than caused. Fix at the rule: a ticket owner is admitted to check-in in the same window a going RSVP is.",
+      "detail": "FILED 2026-09-14 from the guest-door handoff. claim_guest_tickets() sets buyer_profile_id and mints no RSVP row, and canCheckIn = !!myProfileId && isGoing && checkInWindow && !event.is_cancelled (page.tsx:1064). So \"sign in and your ticket comes with you\" stops one step short of the door. Already true of every paying member on a tickets-mode event, so a ticketing gap the guest door inherited rather than caused. Fix at the rule: a ticket owner is admitted to check-in in the same window a going RSVP is.\n\n── CLOSED 2026-09-14. Fixed at the rule, on both halves. The page reads canCheckIn = !!myProfileId && (isGoing || ownsTicket) && checkInWindow && !event.is_cancelled and hands the header surface (ADR-1315) the same admission, so the countdown becomes the door for a ticket holder in the window a going RSVP has. checkInEvent kept its RSVP read (status, approval_status; isPendingApproval) and, when that row does not already admit, reads event_tickets for a succeeded ticket bought by this profile for this event (the hasTicket shape, inline so the action does not pull Stripe in); no ticket keeps the old answers, pending or not_going, and the window, the host switch and the cancelled check still run first. rsvp-error-paths.test.ts pins it: a member with a succeeded ticket and no RSVP row checks in inside the window, a member with neither is refused not_going, the ticket reopens neither a shut window nor a cancelled door, a pending seat still reads pending. Line 912 (ownsTicket from the checkout URL) is LIVE-322 and was not touched.",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e 'const s=require(\"fs\").readFileSync(\"app/(main)/events/[slug]/page.tsx\",\"utf8\");const m=s.match(/const canCheckIn\\s*=[^\\n]*/);if(!m||!/ownsTicket/.test(m[0])){console.error(\"canCheckIn does not consider ownsTicket: a ticket holder cannot check in\");process.exit(1)}'",
         "note": "Passes when the check-in rule reads ticket ownership. Written 2026-09-14."
-      }
+      },
+      "closed": "2026-09-14"
     },
     {
       "id": "LIVE-318",
