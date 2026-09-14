@@ -50,7 +50,6 @@
             "LIVE-213",
             "LIVE-312",
             "LIVE-314",
-            "LIVE-315",
             "LIVE-322"
           ]
         },
@@ -12189,7 +12188,7 @@
     {
       "id": "LIVE-315",
       "title": "A guest ticket holder is never told the event was cancelled: the refund runs, the email never sends",
-      "status": "open",
+      "status": "done",
       "priority": "P1",
       "lane": "live",
       "size": "S",
@@ -12197,12 +12196,13 @@
         "file": "lib/events/cancellation.ts",
         "ref": "lines 131-185, 231-233"
       },
-      "detail": "FILED 2026-09-14 from the guest-door handoff, ranked first because it costs a real person the most. cancellation.ts:133 selects id, buyer_profile_id and never guest_email. A guest ticket has a null buyer, so it is enqueued for refund (the money leg is identity blind and works) but the buyer never enters refundedBuyerIds and is never emailed. They get their money back and turn up anyway. Phase 3 created this: the comment at :231-233 licenses the gap by asserting a buyer is a member by construction, which was true until #2556 and is now false. The file was not touched.\n\nTHE WORK: select guest_email beside buyer_profile_id, email the guest through the same sender family the receipt uses, and retire the comment. A test walks a cancellation with one member ticket and one guest ticket and asserts both are told.",
+      "detail": "FILED 2026-09-14 from the guest-door handoff, ranked first because it costs a real person the most. cancellation.ts:133 selects id, buyer_profile_id and never guest_email. A guest ticket has a null buyer, so it is enqueued for refund (the money leg is identity blind and works) but the buyer never enters refundedBuyerIds and is never emailed. They get their money back and turn up anyway. Phase 3 created this: the comment at :231-233 licenses the gap by asserting a buyer is a member by construction, which was true until #2556 and is now false. The file was not touched.\n\nTHE WORK: select guest_email beside buyer_profile_id, email the guest through the same sender family the receipt uses, and retire the comment. A test walks a cancellation with one member ticket and one guest ticket and asserts both are told.\n\n── CLOSED 2026-09-14. cancellation.ts reads guest_email beside buyer_profile_id; a guest ticket address is collected into refundedGuestEmails when its refund job is queued and told through sendGuestEventCancelledEmail with a new refunded flag whose copy says the refund is on its way; the RSVP guest leg dedupes against that set, so a guest holding a ticket and an RSVP row is told once. The comment that said a buyer is a member by construction is retired. cancellation.test.ts walks a member ticket beside a guest ticket (both refunded, both told), a guest with both a ticket and an RSVP (told once), and a refused enqueue (not told).",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e 'const s=require(\"fs\").readFileSync(\"lib/events/cancellation.ts\",\"utf8\");if(/\\.select\\(\\x27id, buyer_profile_id\\x27\\)/.test(s)||!/guest_email/.test(s.slice(0,s.indexOf(\"refundedBuyerIds\")>0?s.indexOf(\"refundedBuyerIds\"):s.length))){console.error(\"cancellation.ts still reads tickets without guest_email, so a guest ticket holder is refunded and never told\");process.exit(1)}'",
         "note": "Passes when the ticket read carries guest_email before the refund loop. Written 2026-09-14."
-      }
+      },
+      "closed": "2026-09-14"
     },
     {
       "id": "LIVE-316",

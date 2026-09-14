@@ -18,6 +18,7 @@ const m = vi.hoisted(() => ({
   ticketsUpdate: vi.fn(async (_patch: Record<string, unknown>) => {}),
   tickets: [] as Record<string, unknown>[],
   ticketById: new Map<string, Record<string, unknown>>(),
+  rsvps: [] as Record<string, unknown>[],
 }))
 
 vi.mock('@/lib/queue/outbox', () => ({ enqueue: (k: string, p: Record<string, unknown>) => m.enqueue(k, p) }))
@@ -109,7 +110,7 @@ vi.mock('@/lib/supabase/admin', () => ({
         }
       }
       if (table === 'event_rsvps') {
-        return { select: () => ({ eq: () => ({ eq: async () => ({ data: [], error: null }) }) }) }
+        return { select: () => ({ eq: () => ({ eq: async () => ({ data: m.rsvps, error: null }) }) }) }
       }
       if (table === 'profiles') {
         return {
@@ -129,12 +130,13 @@ import { refundAndNotifyForCancelledEvent, runTicketRefund, countRefundsOwed, TI
 
 const EVENT = 'ev-1'
 
-function ticket(id: string, status: string, buyer: string, pi: string) {
+function ticket(id: string, status: string, buyer: string | null, pi: string, guestEmail: string | null = null) {
   return {
     id,
     event_id: EVENT,
     status,
     buyer_profile_id: buyer,
+    guest_email: guestEmail,
     stripe_payment_intent_id: pi,
     amount_cents: 2500,
     ticket_type_id: null,
@@ -149,6 +151,7 @@ beforeEach(() => {
   vi.clearAllMocks()
   m.tickets = [ticket('t1', 'succeeded', 'b1', 'pi_1'), ticket('t2', 'succeeded', 'b2', 'pi_2'), ticket('t3', 'succeeded', 'b1', 'pi_3')]
   m.ticketById = new Map(m.tickets.map((t) => [String(t.id), t]))
+  m.rsvps = []
 })
 
 describe('refundAndNotifyForCancelledEvent', () => {
@@ -176,6 +179,55 @@ describe('refundAndNotifyForCancelledEvent', () => {
     // b1 still gets one email via t3; b2 via t2. t1's refusal is logged, not swallowed.
     expect(m.sendEventCancelledEmail).toHaveBeenCalledTimes(2)
     expect(errSpy).toHaveBeenCalled()
+    errSpy.mockRestore()
+  })
+
+  // LIVE-315. A guest ticket (#2556) has a null buyer and carries its address on the row. Before
+  // the read selected `guest_email`, the ticket was enqueued for refund (identity-blind) and then
+  // fell out of every notify leg: the refund ran, the email never sent.
+  it('a guest ticket holder is refunded AND told, beside the member', async () => {
+    m.tickets = [ticket('t1', 'succeeded', 'b1', 'pi_1'), ticket('g1', 'succeeded', null, 'pi_g1', 'Guest@Example.com')]
+    m.ticketById = new Map(m.tickets.map((t) => [String(t.id), t]))
+    await refundAndNotifyForCancelledEvent(EVENT)
+    const refundJobs = m.enqueue.mock.calls.filter(([kind]) => kind === TICKET_REFUND_KIND)
+    expect(refundJobs.map(([, p]) => p)).toEqual([
+      { ticketId: 't1', eventId: EVENT },
+      { ticketId: 'g1', eventId: EVENT },
+    ])
+    // The member goes through the profile leg; the guest through the guest sender, with the refund.
+    expect(m.sendEventCancelledEmail).toHaveBeenCalledTimes(1)
+    expect(m.sendEventCancelledEmail.mock.calls[0][0]).toMatchObject({ recipientProfileId: 'b1', refunded: true })
+    expect(m.sendGuestEventCancelledEmail).toHaveBeenCalledTimes(1)
+    expect(m.sendGuestEventCancelledEmail.mock.calls[0][0]).toMatchObject({
+      to: 'guest@example.com',
+      eventTitle: 'Sound bath',
+      refunded: true,
+    })
+  })
+
+  it('a guest who holds a ticket AND an RSVP row is told once, with the refund', async () => {
+    m.tickets = [ticket('g1', 'succeeded', null, 'pi_g1', 'guest@example.com')]
+    m.ticketById = new Map(m.tickets.map((t) => [String(t.id), t]))
+    m.rsvps = [
+      { profile_id: null, guest_email: 'guest@example.com', guest_name: 'Sam' },
+      { profile_id: null, guest_email: 'other@example.com', guest_name: 'Alex' },
+    ]
+    await refundAndNotifyForCancelledEvent(EVENT)
+    expect(m.sendEventCancelledEmail).not.toHaveBeenCalled()
+    const sent = m.sendGuestEventCancelledEmail.mock.calls.map(([p]) => ({ to: p.to, refunded: p.refunded }))
+    expect(sent).toEqual([
+      { to: 'guest@example.com', refunded: true },
+      { to: 'other@example.com', refunded: undefined },
+    ])
+  })
+
+  it('a guest ticket whose refund enqueue was refused is not told it was refunded', async () => {
+    m.tickets = [ticket('g1', 'succeeded', null, 'pi_g1', 'guest@example.com')]
+    m.ticketById = new Map(m.tickets.map((t) => [String(t.id), t]))
+    m.enqueue.mockRejectedValueOnce(new Error('enqueue(ticket_refund) failed: rls'))
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    await refundAndNotifyForCancelledEvent(EVENT)
+    expect(m.sendGuestEventCancelledEmail).not.toHaveBeenCalled()
     errSpy.mockRestore()
   })
 })

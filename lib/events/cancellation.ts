@@ -60,6 +60,8 @@ export async function countRefundsOwed(eventId: string): Promise<number> {
 interface CancelTicketRow {
   id: string
   buyer_profile_id: string | null
+  /** Set on a GUEST ticket (#2556): a card and an address, no account. Null on a member's ticket. */
+  guest_email: string | null
 }
 
 interface CancelEventMeta {
@@ -128,21 +130,31 @@ export async function refundAndNotifyForCancelledEvent(eventId: string): Promise
   // 2026-09-05 (scan2 L6-04): event_tickets IS in lib/database.types.ts now; the cast below is
   // harmless and left as is. "refund" here now means "enqueue the refund job". The read is
   // checked for its error: a failed read must not look like an event with no tickets.
+  // LIVE-315: `guest_email` is read beside the buyer. A guest ticket has a null buyer, so before
+  // this read carried the address it was enqueued for refund (identity-blind, so that worked) and
+  // then fell out of every notify leg. The refund ran; the email never sent.
   const { data: ticketData, error: ticketErr } = await (admin)
     .from('event_tickets')
-    .select('id, buyer_profile_id')
+    .select('id, buyer_profile_id, guest_email')
     .eq('event_id', eventId)
     .eq('status', 'succeeded')
   if (ticketErr) console.error('[cancelEvent] ticket read failed', { eventId, error: ticketErr.message })
-  const tickets = (ticketData ?? []) as CancelTicketRow[]
+  // Through `unknown`, like the RSVP rows below: lib/database.types.ts is GENERATED and has not
+  // learned `guest_email` yet (the column is live, migration 20270345003400), so the typed builder
+  // infers a SelectQueryError for the row. check:schema-contract carries the dated allowlist entry.
+  const tickets = (ticketData ?? []) as unknown as CancelTicketRow[]
 
   const refundedBuyerIds = new Set<string>()
+  /** Guest ticket addresses whose refund was queued, lower-cased so one address held two ways
+   *  (a ticket and an RSVP row, or two tickets) is told once. */
+  const refundedGuestEmails = new Set<string>()
   const failures: { ticketId: string; error: string }[] = []
 
   for (const ticket of tickets) {
     try {
       await enqueue(TICKET_REFUND_KIND, { ticketId: ticket.id, eventId })
       if (ticket.buyer_profile_id) refundedBuyerIds.add(ticket.buyer_profile_id)
+      else if (ticket.guest_email) refundedGuestEmails.add(ticket.guest_email.trim().toLowerCase())
     } catch (err) {
       // enqueue throws when the outbox insert is refused. The ticket stays `succeeded`, so it
       // still shows on the Manage page as a refund owed; nothing here pretends otherwise.
@@ -181,6 +193,26 @@ export async function refundAndNotifyForCancelledEvent(eventId: string): Promise
       })
     } catch (err) {
       console.error('[cancelEvent] notify (refunded) failed', { eventId, buyerId, err })
+    }
+  }
+
+  // ── 2b. Notify refunded GUEST ticket holders (LIVE-315). No resolveRecipient and no
+  // resolveSendGate: both key on a profile, and a guest has neither a preferences row nor an
+  // auth.users record. The address IS the row, and it is the only way to reach them; suppression
+  // still applies inside sendRawEmail at drain time. No location is rendered in this message, so a
+  // hidden address (ADR-854) cannot leak through it.
+  for (const guestEmail of refundedGuestEmails) {
+    try {
+      await sendGuestEventCancelledEmail({
+        to: guestEmail,
+        guestName: null,
+        eventTitle: event.title,
+        whenAbsolute,
+        eventUrl,
+        refunded: true,
+      })
+    } catch (err) {
+      console.error('[cancelEvent] notify (guest refunded) failed', { eventId, err })
     }
   }
 
@@ -224,16 +256,16 @@ export async function refundAndNotifyForCancelledEvent(eventId: string): Promise
     }
   }
 
-  // ── 4. Notify signed-out guests. No shouldSend and no resolveRecipient: both key on a profile,
-  // and a guest has neither a preferences row nor an auth.users record to read an address from —
-  // the address IS the row. Suppression still applies, inside sendRawEmail at drain time.
+  // ── 4. Notify signed-out guests who RSVP'd. Same carve-out as leg 2b: no shouldSend and no
+  // resolveRecipient, the address IS the row, suppression applies at drain time.
   //
-  // No dedupe against refundedBuyerIds is needed: a buyer is a member by construction (tickets
-  // require an account), and capture_guest_rsvp refuses ticketed events outright, so these two
-  // sets cannot intersect.
+  // Dedupe against refundedGuestEmails, not refundedBuyerIds. Until #2556 a buyer was a member by
+  // construction, so this leg could not overlap with leg 2. A guest can now hold a ticket AND an
+  // RSVP row under one address; leg 2b already told them, with the refund, so they are skipped here.
   for (const row of rsvpRows) {
     const guestEmail = row.guest_email
     if (!guestEmail) continue
+    if (refundedGuestEmails.has(guestEmail.trim().toLowerCase())) continue
     try {
       await sendGuestEventCancelledEmail({
         to: guestEmail,
