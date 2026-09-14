@@ -1417,7 +1417,7 @@ export default async function EventDetailPage({
             guestTiers={tiers}
             mode="rsvp"
             rsvpWindowOpen={rsvpWindowOpen}
-            rsvpWindowLine={rsvpWindowLine}
+            rsvpWindowLine={rsvpWindowLine ?? undefined}
           />
         )}
 
