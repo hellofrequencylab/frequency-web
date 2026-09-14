@@ -99,6 +99,14 @@
 # is one function: it reads a fixed column list for ONE event id the settle already holds, and what
 # it reads reaches the email body only, never an HTTP response. The address it sends to is the one
 # on the session Stripe signed, never one a reader supplied.
+# app/api/cron/onboarding-throughput/route.ts (added 2026-09-14, LIVE-311): the nightly reading of
+# who is stuck BEHIND the admission gate (ADR-1324 found nine accounts there for up to eleven weeks,
+# found only by a member texting). READ-ONLY, and the bypass cannot converge for two reasons. (1)
+# `last_sign_in_at` lives on auth.users, which only the admin auth API reads; there is no column on
+# profiles and no session-readable view of it. (2) The caller is Vercel Cron, so there is no session
+# to run under, and the gate's inputs (profiles.meta and the economy columns) are needed for EVERY
+# active member, not the caller. It reports profile ids only, never an email or an auth id, and
+# writes nothing.
 app/(main)/admin/actions.ts
 app/(main)/admin/ai/load-ai.ts
 app/(main)/admin/appearance/actions.ts
@@ -326,6 +334,7 @@ app/api/cron/billing-renewals/route.ts
 app/api/cron/event-reminders/route.ts
 app/api/cron/journey-prompt/route.ts
 app/api/cron/lifecycle-triggers/route.ts
+app/api/cron/onboarding-throughput/route.ts
 app/api/cron/publish-scheduled/route.ts
 app/api/cron/weekly-digest/route.ts
 app/api/entry-points/[slug]/flyer/route.ts

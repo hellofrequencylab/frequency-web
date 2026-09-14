@@ -112,6 +112,10 @@
     {
       "path": "/api/cron/signup-lead-recovery",
       "schedule": "0 15 * * *"
+    },
+    {
+      "path": "/api/cron/onboarding-throughput",
+      "schedule": "50 4 * * *"
     }
   ]
 }
