@@ -4805,6 +4805,9 @@ export type Database = {
           platform_fee_cents: number
           qty: number
           refunded_at: string | null
+          reminder_24h_sent_at: string | null
+          reminder_2h_sent_at: string | null
+          reminder_7d_sent_at: string | null
           status: string
           stripe_checkout_session_id: string | null
           stripe_payment_intent_id: string | null
@@ -4826,6 +4829,9 @@ export type Database = {
           platform_fee_cents?: number
           qty?: number
           refunded_at?: string | null
+          reminder_24h_sent_at?: string | null
+          reminder_2h_sent_at?: string | null
+          reminder_7d_sent_at?: string | null
           status?: string
           stripe_checkout_session_id?: string | null
           stripe_payment_intent_id?: string | null
@@ -4847,6 +4853,9 @@ export type Database = {
           platform_fee_cents?: number
           qty?: number
           refunded_at?: string | null
+          reminder_24h_sent_at?: string | null
+          reminder_2h_sent_at?: string | null
+          reminder_7d_sent_at?: string | null
           status?: string
           stripe_checkout_session_id?: string | null
           stripe_payment_intent_id?: string | null

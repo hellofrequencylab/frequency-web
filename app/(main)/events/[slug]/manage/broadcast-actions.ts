@@ -8,7 +8,8 @@ import { getEventCapabilities } from '@/lib/core/load-capabilities'
 import { type ActionResult, ok, fail, isError } from '@/lib/action-result'
 import { rateLimitOk } from '@/lib/rate-limit'
 import { resolveSendGate } from '@/lib/comms/send-gate'
-import { sendEventUpdateEmail } from '@/lib/email'
+import { sendEventUpdateEmail, sendGuestEventUpdateEmail } from '@/lib/email'
+import { isSuppressed } from '@/lib/suppression'
 import { composeEventDispatch, describeDispatchOutcome } from '@/lib/events/dispatch'
 import { listEventCrmMemberIds } from '@/lib/events/crm-roster'
 import {
@@ -16,7 +17,7 @@ import {
   resolveReinviteTarget,
   eventCrmLockedError,
 } from '@/lib/events/crm-access'
-import { resolveEventBroadcastAudience } from '@/lib/events/broadcast-audience'
+import { resolveEventBroadcastReach, guestEmailsNotHeldByMembers } from '@/lib/events/broadcast-audience'
 import { sendSpaceCampaignSystem } from '@/lib/spaces/email'
 import { renderCampaignHtml } from '@/lib/spaces/campaigns'
 import { sendBulkDm, resolveDmRecipients } from '@/lib/comms/bulk-dm'
@@ -50,6 +51,15 @@ import type {
 //              on the event page AND in Sent Dispatches exactly like the page composer's.
 //   Text     — no action: SMS is refuse-first until A2P is filed (ADR-256); the chip is
 //              disabled UI only and a smuggled 'sms' key is refused honestly below.
+//
+// GUEST TICKET HOLDERS (LIVE-320) ride the EMAIL channel only, at the address on their ticket:
+// the audience resolver hands them back beside the member ids (resolveEventBroadcastReach), an
+// address a member in the same audience also uses is dropped so nobody is written to twice, and
+// then each lane carries them its own way. The host-Space lane hands them to the campaign seam
+// as plain address recipients, so the same consent bar, suppression, kill switch, cap and
+// per-recipient unsubscribe apply. The platform lane has no profile to gate on, so it checks
+// the address-level suppression list itself and sends the guest half of the event update
+// (sendGuestEventUpdateEmail). No DM (keyed on a profile) and no timeline touch (the same).
 //
 // GATE: 'event.editSettings' (the Manage hub's gate), re-checked here (ADR-274 — never
 // trust the client). The audience is re-resolved server-side from segment keys.
@@ -114,6 +124,9 @@ async function sendEmailChannel(args: {
   segments: string[]
   audience: string[]
   recipients: Map<string, { displayName: string; email: string | null }>
+  /** Guest ticket holders' addresses in the picked segments (LIVE-320), not yet deduped
+   *  against the members' own addresses. */
+  guestEmails: string[]
 }): Promise<BroadcastChannelResult> {
   const { event, actorId, subject, body } = args
   if (!subject) return { channel: 'email', ok: false, detail: 'Add a subject to send email.' }
@@ -121,7 +134,9 @@ async function sendEmailChannel(args: {
   const emailable = args.audience
     .map((id) => ({ profileId: id, ...args.recipients.get(id) }))
     .filter((r): r is { profileId: string; displayName: string; email: string } => !!r.email)
-  if (emailable.length === 0) {
+  // The per-address dedupe: a guest address a member here also uses is reached once, as the member.
+  const guests = guestEmailsNotHeldByMembers(args.guestEmails, emailable.map((r) => r.email))
+  if (emailable.length === 0 && guests.length === 0) {
     return { channel: 'email', ok: false, detail: 'No one in this audience has an email address on file.' }
   }
 
@@ -171,7 +186,7 @@ async function sendEmailChannel(args: {
         .from('contacts')
         .select('id, email')
         .eq('space_id', spaceId)
-        .in('email', emailable.map((r) => r.email))
+        .in('email', [...emailable.map((r) => r.email), ...guests])
       for (const c of (data ?? []) as { id: string; email: string | null }[]) {
         if (c.email) contactIdByEmail.set(c.email.toLowerCase(), c.id)
       }
@@ -191,7 +206,12 @@ async function sendEmailChannel(args: {
       // per-topic 'events' mute, the kill switch, the daily cap and the plan allowance all still
       // apply, and every send still carries a one-click unsubscribe.
       lane: 'event_host',
-      recipients: emailable.map((r) => ({ email: r.email, contactId: contactIdByEmail.get(r.email) })),
+      recipients: [
+        ...emailable.map((r) => ({ email: r.email, contactId: contactIdByEmail.get(r.email) })),
+        // Guest ticket holders (LIVE-320): the address is the whole identity, so they enter the
+        // seam as plain recipients and clear the same bar every member address clears.
+        ...guests.map((email) => ({ email, contactId: contactIdByEmail.get(email) })),
+      ],
     })
     if (isError(res)) return { channel: 'email', ok: false, detail: res.error }
 
@@ -299,6 +319,28 @@ async function sendEmailChannel(args: {
       skipped++
     }
   }
+  // Guest ticket holders (LIVE-320): no profile, so no 'dispatches' preference and no timeline
+  // touch. The address-level suppression list is the one gate a guest has (the same one the
+  // transactional carve-out keeps, lib/comms/send-gate.ts), read here so a suppressed address is
+  // counted as skipped rather than silently dropped at drain.
+  for (const email of guests) {
+    try {
+      if (await isSuppressed(email)) {
+        skipped++
+        continue
+      }
+      await sendGuestEventUpdateEmail({
+        to: email,
+        eventTitle: event.title,
+        updateTitle: subject,
+        body,
+        eventUrl,
+      })
+      sent++
+    } catch {
+      skipped++
+    }
+  }
   let detail = `Sent to ${people(sent)} as an event update email.`
   if (skipped > 0) detail += ` ${skipped} skipped (event emails off, or no deliverable address).`
   return { channel: 'email', ok: sent > 0, detail }
@@ -392,8 +434,11 @@ export async function sendEventBroadcast(
   const segments = Array.isArray(input.segments)
     ? input.segments.filter((s): s is string => typeof s === 'string')
     : []
-  const audience = await resolveEventBroadcastAudience(event.id, segments)
-  if (audience.length === 0) return fail('No one is in that audience yet.')
+  // Members by profile id, guest ticket holders by address (LIVE-320). A guest-only audience is
+  // still an audience: the email lane can reach it.
+  const reach = await resolveEventBroadcastReach(event.id, segments)
+  const audience = reach.profileIds
+  if (audience.length === 0 && reach.guestEmails.length === 0) return fail('No one is in that audience yet.')
 
   // Emails + names are needed by both the email lane and the DM thread keys.
   const needsRecipients = channels.includes('email') || channels.includes('dm')
@@ -403,7 +448,7 @@ export async function sendEventBroadcast(
   let dispatched = false
   for (const channel of channels) {
     if (channel === 'email') {
-      results.push(await sendEmailChannel({ event, actorId, subject, body, segments, audience, recipients }))
+      results.push(await sendEmailChannel({ event, actorId, subject, body, segments, audience, recipients, guestEmails: reach.guestEmails }))
     } else if (channel === 'dm') {
       results.push(await sendDmChannel({ event, actorId, subject, body, audience, recipients }))
     } else if (channel === 'dispatch') {

@@ -55,7 +55,6 @@
           "name": "W0c · P2 — small cleanups worth doing whenever a lane is clear, plus the tail of a sequenced repair whose head is higher up the slate (LIVE-293 and LIVE-294 follow LIVE-290 to LIVE-292).",
           "ids": [
             "HYG-075",
-            "LIVE-320",
             "LIVE-328",
             "LIVE-329",
             "LIVE-330"
@@ -12281,7 +12280,7 @@
     {
       "id": "LIVE-320",
       "title": "Guest ticket holders get no reminders and no host broadcast",
-      "status": "open",
+      "status": "done",
       "priority": "P2",
       "lane": "live",
       "size": "M",
@@ -12289,12 +12288,13 @@
         "file": "app/api/cron/event-reminders/route.ts",
         "ref": "reads event_rsvps only; lib/events/broadcast-audience.ts:47"
       },
-      "detail": "FILED 2026-09-14 from the guest-door handoff. The reminder cron reads event_rsvps only, and broadcast-audience.ts:47 drops rows with a null buyer on a comment written when that meant a deleted account. A guest ticket holder is therefore neither reminded nor reachable by the host. Both readers need a guest arm keyed on guest_email, with the reminder stamps carried on the ticket row (event_rsvps.reminder_*_sent_at has no twin on event_tickets; add the columns in the same change, mirrored as a migration).",
+      "detail": "FILED 2026-09-14 from the guest-door handoff. The reminder cron reads event_rsvps only, and broadcast-audience.ts:47 drops rows with a null buyer on a comment written when that meant a deleted account. A guest ticket holder is therefore neither reminded nor reachable by the host. Both readers need a guest arm keyed on guest_email, with the reminder stamps carried on the ticket row (event_rsvps.reminder_*_sent_at has no twin on event_tickets; add the columns in the same change, mirrored as a migration).\n\nCLOSED 2026-09-14: migration 20270345004100_event_ticket_reminder_stamps.sql adds event_tickets.reminder_7d_sent_at / reminder_24h_sent_at / reminder_2h_sent_at (named as the event_rsvps twins, timestamptz, add column if not exists) with three partial indexes scoped to the guest arm's predicate; no RLS or grant change, the columns are read and written by the cron on the service role only. Two guest arms. (1) The reminder cron: for each event in a touch window, before its RSVPs, remindGuestTicketHolders reads succeeded event_tickets with a null buyer and a guest_email that this touch has not claimed, claims the stamp on the TICKET row (claimTicketReminder, the conditional update-where-null the RSVP claim uses), and emails the ticket's address the guest reminder through sendGuestEventReminderEmail with held: ticket, which renders the reminder body with the receipt's footer and the receipt's one account offer (a /sign-in magic link carrying the address), no preference or unsubscribe link (no profile to key one on), and the venue withheld on a hide_address event exactly as the RSVP guest leg withholds it. The one gate a guest has is the address-level suppression list (the same gate the receipt's transactional carve-out keeps): a suppressed address is claimed and skipped so it is not re-read forever. An address that also holds an admitted guest RSVP row on the event is reminded through the RSVP leg only; the ticket is claimed and not sent. Under the same LIVE-190 budget, at-most-once, a send failure logged at ERROR and the claim never undone. (2) The host broadcast: ticketIdentity in lib/events/broadcast-audience.ts now reads a null buyer with a guest_email as a GUEST, not a deleted account; ticketSegments carries guests in BroadcastSegment.guestEmails beside profileIds (lowercased, deduped, counted for the tier chips and the composer's live count), resolveEventBroadcastReach hands both to the send action, and guestEmailsNotHeldByMembers drops a guest address a member in the same audience also uses so nobody is written to twice. The host-Space lane hands guests to the campaign seam as plain address recipients (same consent bar, suppression, cap and per-recipient unsubscribe); the platform lane checks isSuppressed itself and sends sendGuestEventUpdateEmail, the guest half of the event update. What a guest ticket holder receives: the 7d, 24h and 2h reminder emails, and the host's event broadcast by email. What stays out: nothing for a refunded, pending or failed ticket (the reads filter on succeeded and the pure half refuses a refund on its own), nothing beyond those two messages (no DM, no push, no SMS, no timeline touch, no Dispatch fan-out), and a claimed ticket is the member's row and rides the member paths. Member paths unchanged. Tests: 11 guest-ticket cases in app/api/cron/event-reminders/route.test.ts and 10 in lib/events/broadcast-audience.test.ts. lib/database.types.ts carries the three columns by hand until regenerated.",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e 'const fs=require(\"fs\");const r=fs.readFileSync(\"app/api/cron/event-reminders/route.ts\",\"utf8\");const a=fs.readFileSync(\"lib/events/broadcast-audience.ts\",\"utf8\");if(!/event_tickets/.test(r)||!/guest_email/.test(a)){console.error(\"reminders or broadcasts still cannot reach a guest ticket holder\");process.exit(1)}'",
         "note": "Passes when the reminder cron reads tickets and the broadcast audience carries the guest address. Written 2026-09-14."
-      }
+      },
+      "closed": "2026-09-14"
     },
     {
       "id": "LIVE-322",
