@@ -55,6 +55,10 @@ insert into gd2 (who, rsvp_id)
 select 'a', id from public.event_rsvps where event_id = '00000000-0000-4000-e9a0-000000000001' and guest_email = 'a@example.com';
 insert into gd2 (who, rsvp_id)
 select 'b', id from public.event_rsvps where event_id = '00000000-0000-4000-e9a0-000000000001' and guest_email = 'b@example.com';
+-- The doors below are called AS anon and read their token out of this table, so anon needs to
+-- see it (a temp table is owned by the test role; without this grant the first anon read raised
+-- "permission denied for table gd2" and the plan stopped at 7 of 28).
+grant select on gd2 to anon;
 
 set local role anon;
 select throws_ok(
