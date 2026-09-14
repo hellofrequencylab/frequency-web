@@ -24,6 +24,11 @@ export const BETA_MEMBERS_GET_CREW = true
  *  stamp ever written stays comparable. */
 export const FUNNEL_INDUCTION_VERSION = 1
 
+/** How many beats the cinematic induction has: 0 intro · 1 reel · 2 identity+place · 3 enter.
+ *  Lives here rather than in induction.tsx because the RESUME clamp in the server action needs
+ *  the same number, and a flow length written down twice is a flow length that drifts. */
+export const INDUCTION_BEAT_COUNT = 4
+
 /** "How did you hear about us?" — captured on the intake into meta.beta.heard_about. */
 export const HEARD_ABOUT = [
   'A friend or member',

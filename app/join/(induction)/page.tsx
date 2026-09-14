@@ -10,6 +10,7 @@ import { getReferrer } from '@/lib/qr/referral'
 import { hasEffectivelyOnboarded } from '@/lib/onboarding/onboarded'
 import { isSafeInAppPath, funnelLanding } from '@/lib/funnels/destination'
 import type { FunnelDestination } from '@/lib/funnels/definitions'
+import { readPendingInduction } from './pending-induction'
 import FunnelInduction from './induction'
 import FeatureFunnel from './feature-funnel'
 
@@ -64,8 +65,24 @@ export default async function FunnelInductionPage({
     )
   }
 
+  // RESUME (2026-09-11). Whatever this browser had already answered, and the beat it stopped on.
+  // Without this the induction always restarted at beat 0 — see the note on PENDING_INDUCTION_COOKIE
+  // in ./actions.ts for why that turned the app-shell's onboarding gate into a closed loop.
+  const parked = await readPendingInduction()
+  const resume = parked
+    ? {
+        initialBeat: parked.beat ?? 0,
+        initialDisplayName: parked.displayName,
+        initialLocation: parked.location,
+        initialLat: parked.lat,
+        initialLng: parked.lng,
+        // A parked handle is one they already accepted, so it must not be re-derived from the name.
+        parkedHandle: parked.handle,
+      }
+    : undefined
+
   if (!user) {
-    return <FunnelInduction deferred copy={copy} sequence={seq.slug} persona={persona} inviter={inviter} {...funnel} />
+    return <FunnelInduction deferred copy={copy} sequence={seq.slug} persona={persona} inviter={inviter} {...resume} {...funnel} />
   }
 
   const { data: profile } = await supabase
@@ -117,6 +134,7 @@ export default async function FunnelInductionPage({
       sequence={seq.slug}
       persona={persona}
       inviter={inviter}
+      {...resume}
       {...funnel}
     />
   )
