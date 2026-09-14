@@ -164,6 +164,7 @@ merge_profile_meta_path              authenticated
 merge_practices                      internal
 merge_tags                           internal
 message_peer_profiles                authenticated
+mint_guest_seat_token                internal
 mkt_content_performance              internal
 mkt_geo                              internal
 mkt_growth                           internal
@@ -198,6 +199,7 @@ public_organizer_events              public
 public_organizer_handles             public
 public_posts                         public
 qr_stats_summary                     internal
+read_guest_seat                      public
 recompute_community_level            internal
 record_qr_scan                       internal
 record_streak_tick                   internal
@@ -207,6 +209,7 @@ refresh_resonance_density_cells      internal
 refund_ticket_atomic                 internal
 refuse_self_granted_entitlement      internal
 relationship_timeline                authenticated
+release_guest_seat                   public
 remove_profile_meta_keys             authenticated
 reserve_ticket_atomic                internal
 reset_season                         internal
@@ -237,6 +240,7 @@ trg_increment_member_count           public
 trg_increment_reply_count            internal
 trg_nexus_auto_activate              public
 trg_stewardships_recompute_level     internal
+update_guest_seat                    public
 update_signup_lead                   public
 visible_room_member_profiles         authenticated
 vitals_p75                           internal

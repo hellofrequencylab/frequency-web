@@ -8,6 +8,7 @@ import { resolveSendGate } from '@/lib/comms/send-gate'
 import { buildGoogleCalendarUrl } from '@/components/events/add-to-calendar'
 import { formatEventWhen, resolveZone } from '@/lib/time/zone'
 import { publicVisibleLocation } from '@/lib/events/visible-location'
+import { mintGuestSeatUrl, type SeatRpcClient } from '@/lib/events/guest-seat'
 
 // THE GUEST'S ONLY RECEIPT. A guest RSVP has no account, no notification bell and no "my events"
 // page, so this email is the entire record that anything happened. If it does not send, the guest
@@ -34,6 +35,15 @@ import { publicVisibleLocation } from '@/lib/events/visible-location'
 // carry the address in a LOCATION field and would route around the visible redaction. A typed,
 // unproven address may receive a DELIVERY, but it may not unlock something a member would have to
 // sign in for (ADR-854).
+//
+// ── THE ONE LINK THE RECEIPT NOW CARRIES (PROG-GD2) ─────────────────────────────────────────────
+// Every guest email composed here mints the seat's token (mint_guest_seat_token, service_role
+// only, 20270345004200) and carries /events/<slug>/seat/<token>: the page a guest changes
+// plus-ones, answers the host, or gives the spot back from. The mint ROTATES the hash, so the
+// newest email about a seat holds the live link and an older one dies on its own. The plaintext
+// goes into the email and nowhere else; this function still returns void. The token addresses one
+// seat and never a hidden venue (lib/events/guest-seat.ts), so it changes nothing about the gate
+// above.
 
 /**
  * The untyped table surface (ADR-246), the read-side twin of the `UntypedRpc` handle the guest
@@ -123,13 +133,13 @@ export async function sendGuestRsvpReceipt(eventId: string, guestEmail: string):
     // the types are refreshed and every caller is retyped in one pass.
     const { data: rsvpRaw } = await (admin as unknown as UntypedTable)
       .from('event_rsvps')
-      .select('status, guest_name, approval_status')
+      .select('id, status, guest_name, approval_status')
       .eq('event_id', eventId)
       .eq('guest_email', guestEmail)
       .maybeSingle()
 
     const rsvp = rsvpRaw as {
-      status: string; guest_name: string | null; approval_status: string | null
+      id: string; status: string; guest_name: string | null; approval_status: string | null
     } | null
     // No row at all (the event was private, ticketed, past, cancelled or never existed) gets no
     // email: there is nothing true to say, and the arrival of a message would itself confirm the
@@ -153,6 +163,8 @@ export async function sendGuestRsvpReceipt(eventId: string, guestEmail: string):
     const { location, addressHidden } = guestVisibleLocation(ev)
     // Nothing to add to a calendar until there is actually a spot.
     const canShareCalendar = status === 'going' && !addressHidden
+    // The one-seat link (PROG-GD2). Best-effort: a failed mint sends the receipt without it.
+    const seatUrl = await mintGuestSeatUrl(admin as unknown as SeatRpcClient, rsvp.id, ev.slug, appUrl)
 
     await sendGuestRsvpConfirmationEmail({
       to:           guestEmail,
@@ -175,6 +187,7 @@ export async function sendGuestRsvpReceipt(eventId: string, guestEmail: string):
       // guest retype it is friction with no security value. The link lands in their own mailbox,
       // so their own address in it reveals nothing they do not already have.
       signUpUrl:    `${appUrl}/sign-in?next=${encodeURIComponent(`/events/${ev.slug}`)}&email=${encodeURIComponent(guestEmail)}`,
+      seatUrl,
       status,
     })
   } catch (e) {
@@ -281,6 +294,8 @@ export async function sendRsvpApprovedNotice(eventId: string, rsvpId: string): P
     const { location, addressHidden } = guestVisibleLocation(ev)
     // Nothing to add to a calendar until there is actually a spot.
     const canShareCalendar = status === 'going' && !addressHidden
+    // The one-seat link (PROG-GD2): the approval notice is the newest email about this seat.
+    const seatUrl = await mintGuestSeatUrl(admin as unknown as SeatRpcClient, rsvpId, ev.slug, appUrl)
 
     await sendGuestRsvpConfirmationEmail({
       to:           rsvp.guest_email,
@@ -299,6 +314,7 @@ export async function sendRsvpApprovedNotice(eventId: string, rsvpId: string): P
           })
         : null,
       signUpUrl:    `${appUrl}/sign-in?next=${encodeURIComponent(`/events/${ev.slug}`)}&email=${encodeURIComponent(rsvp.guest_email)}`,
+      seatUrl,
       status,
     })
   } catch (e) {

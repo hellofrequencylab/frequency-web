@@ -116,7 +116,10 @@ the same confirmation email. The one kind of rate that asks you to sign in first
 is a rate the Host has set aside for members. The event page says which.
 
 We email you to confirm, and that email says whether you got a spot or landed on
-the waitlist. It also carries the calendar link. If the Host cancels, you get told.
+the waitlist. It also carries the calendar link, and a "Manage your spot" link that
+lets you add plus-ones, answer the Host's questions, or give the spot back if you
+cannot make it. Giving it back moves the next person in off the waitlist. That link
+works until the gathering ends. If the Host cancels, you get told.
 Reminders closer to the day go to signed-in members for now, so if you want the
 nudge, tap the link in your confirmation and make the account.
 

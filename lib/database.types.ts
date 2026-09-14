@@ -4477,8 +4477,9 @@ export type Database = {
           created_at: string
           event_id: string
           id: string
-          profile_id: string
+          profile_id: string | null
           question_id: string
+          rsvp_id: string | null
           updated_at: string
         }
         Insert: {
@@ -4486,8 +4487,9 @@ export type Database = {
           created_at?: string
           event_id: string
           id?: string
-          profile_id: string
+          profile_id?: string | null
           question_id: string
+          rsvp_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -4495,8 +4497,9 @@ export type Database = {
           created_at?: string
           event_id?: string
           id?: string
-          profile_id?: string
+          profile_id?: string | null
           question_id?: string
+          rsvp_id?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -4519,6 +4522,13 @@ export type Database = {
             columns: ["question_id"]
             isOneToOne: false
             referencedRelation: "event_questions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_question_answers_rsvp_id_fkey"
+            columns: ["rsvp_id"]
+            isOneToOne: false
+            referencedRelation: "event_rsvps"
             referencedColumns: ["id"]
           },
         ]
@@ -4584,6 +4594,7 @@ export type Database = {
           reminder_24h_sent_at: string | null
           reminder_2h_sent_at: string | null
           reminder_7d_sent_at: string | null
+          seat_token_hash: string | null
           status: string
         }
         Insert: {
@@ -4605,6 +4616,7 @@ export type Database = {
           reminder_24h_sent_at?: string | null
           reminder_2h_sent_at?: string | null
           reminder_7d_sent_at?: string | null
+          seat_token_hash?: string | null
           status: string
         }
         Update: {
@@ -4626,6 +4638,7 @@ export type Database = {
           reminder_24h_sent_at?: string | null
           reminder_2h_sent_at?: string | null
           reminder_7d_sent_at?: string | null
+          seat_token_hash?: string | null
           status?: string
         }
         Relationships: [
@@ -16637,6 +16650,7 @@ export type Database = {
           id: string
         }[]
       }
+      mint_guest_seat_token: { Args: { p_rsvp_id: string }; Returns: string }
       mkt_content_performance: {
         Args: { _days?: number; _limit?: number }
         Returns: {
@@ -16989,6 +17003,7 @@ export type Database = {
         }[]
       }
       qr_stats_summary: { Args: { p_days?: number }; Returns: Json }
+      read_guest_seat: { Args: { p_token: string }; Returns: Json }
       recompute_community_level: {
         Args: { p_profile: string }
         Returns: undefined
@@ -17037,6 +17052,7 @@ export type Database = {
           title: string
         }[]
       }
+      release_guest_seat: { Args: { p_token: string }; Returns: string }
       remove_profile_meta_keys: {
         Args: { p_keys: string[]; p_profile_id: string }
         Returns: Json
@@ -17737,6 +17753,10 @@ export type Database = {
         Returns: unknown
       }
       unlockrows: { Args: { "": string }; Returns: number }
+      update_guest_seat: {
+        Args: { p_answers?: Json; p_plus_ones?: number; p_token: string }
+        Returns: boolean
+      }
       update_signup_lead: {
         Args: {
           p_claim_token?: string

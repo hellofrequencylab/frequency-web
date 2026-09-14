@@ -282,7 +282,7 @@ export async function QuestionnaireSection({
                 </thead>
                 <tbody className="divide-y divide-border">
                   {responses.map((r) => (
-                    <tr key={r.profileId} className="align-top">
+                    <tr key={r.respondentKey} className="align-top">
                       <td className="px-4 py-2.5 font-medium text-text">
                         {r.handle ? (
                           <Link href={`/people/${r.handle}`} className="hover:underline">
