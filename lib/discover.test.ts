@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { isTransientDiscoverError, __retryForTest } from './discover'
+import { isTransientDiscoverError, isTransientDiscoverStatus, __retryForTest } from './discover'
 
 // LIVE-039: one dropped TCP connection during prerender killed a whole deploy, because the
 // discover readers never retried. These tests prove the retry FIRES on the exact failure shape
@@ -204,5 +204,66 @@ describe('the error that killed the 2026-08-25 production deploy (the LIVE-105 b
     const out = await __retryForTest.attempt('public_event_by_slug', query, noSleep)
     expect(calls).toBe(1)
     expect(out.error).not.toBeNull()
+  })
+})
+
+// The EXACT error from the preview that could not build on 2026-09-14 (dpl_E8n9LESJ, #2579 @
+// b2277c1, 19:08:55Z), and from every other preview that failed that day (LIVE-327, ADR-1328).
+// Supabase's REST edge answers HTTP 503 with this plain-text body when PostgREST does not accept
+// the connection; supabase-js resolves it with empty `code` and `hint` and the body as `message`.
+// The build log carries NO "[discover] … retrying" line: the classifier knew errno tokens, "fetch
+// failed", "socket", "network" and the bound's own abort, and none of those words is in this
+// sentence, so detailRead threw on the FIRST answer with both delays unused. Third dead shape
+// (LIVE-084, LIVE-105, this one), found the same way each time. The first assertion FAILS on the
+// pre-fix tree.
+const REST_EDGE_503 = {
+  message: 'upstream connect error or disconnect/reset before headers. reset reason: connection timeout',
+  details: '',
+  hint: '',
+  code: '',
+}
+
+describe('the REST edge 503 that killed every preview build on 2026-09-14 (LIVE-327)', () => {
+  it('is classified TRANSIENT by its body: the edge could not reach PostgREST, which is not a database answer', () => {
+    expect(isTransientDiscoverError(REST_EDGE_503)).toBe(true)
+  })
+
+  it('is classified TRANSIENT by its status alone, whatever words the edge chooses next time', () => {
+    const unfamiliar = { message: 'some sentence this file has never seen', details: '', hint: '', code: '' }
+    expect(isTransientDiscoverError(unfamiliar)).toBe(false)
+    expect(isTransientDiscoverStatus(503, unfamiliar)).toBe(true)
+    expect(isTransientDiscoverStatus(502, unfamiliar)).toBe(true)
+    expect(isTransientDiscoverStatus(522, unfamiliar)).toBe(true)
+  })
+
+  it('a 5xx that CARRIES a PostgREST code is still an answer, and a 4xx never counts', () => {
+    expect(isTransientDiscoverStatus(503, { message: 'x', code: 'PGRST301' })).toBe(false)
+    expect(isTransientDiscoverStatus(500, { message: 'x', code: '' })).toBe(false)
+    expect(isTransientDiscoverStatus(404, { message: 'x', code: '' })).toBe(false)
+    expect(isTransientDiscoverStatus(undefined, REST_EDGE_503)).toBe(false)
+  })
+
+  it('is retried, so one busy moment at the edge no longer ends the export', async () => {
+    let calls = 0
+    const query = () => {
+      calls++
+      if (calls <= 2) return Promise.resolve({ data: null, error: REST_EDGE_503, status: 503 })
+      return Promise.resolve({ data: [{ slug: 'meld-royal-temple' }], error: null, status: 200 })
+    }
+    const out = await __retryForTest.attempt('public_circle_by_slug', query, noSleep)
+    expect(calls).toBe(3)
+    expect(out.error).toBeNull()
+  })
+
+  it('the unfamiliar-body 503 is retried on its STATUS, with a ladder of three delays', async () => {
+    let calls = 0
+    const query = () => {
+      calls++
+      return Promise.resolve({ data: null, error: { message: 'new words', hint: '', code: '' }, status: 503 })
+    }
+    const out = await __retryForTest.attempt('public_circle_by_slug', query, noSleep)
+    expect(__retryForTest.RETRY_DELAYS_MS).toEqual([250, 1000, 3000])
+    expect(calls).toBe(4)
+    expect(out.error).toBeTruthy()
   })
 })

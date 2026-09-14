@@ -162,7 +162,31 @@ export type ListRead<T> = { rows: T[]; ok: boolean }
 // it that and says "aborted due to timeout") is transient, but a bare `AbortError`/"aborted"
 // is a CALLER-initiated abort, which buildBoundedFetch explicitly does not claim — retrying one
 // would spend up to another 20s per attempt on a read someone above us already cancelled.
-const TRANSIENT_RE = /fetch failed|ECONNRESET|ECONNREFUSED|ETIMEDOUT|EAI_AGAIN|ENOTFOUND|socket|network|UND_ERR|TimeoutError|aborted due to timeout/i
+//   · the REST EDGE'S OWN 503 (LIVE-327, ADR-1328) → transient. When PostgREST does not accept
+//     the connection, Supabase's edge (Envoy) answers HTTP 503 with a plain-text body,
+//     `upstream connect error or disconnect/reset before headers. reset reason: connection
+//     timeout`, and supabase-js resolves it as an error whose `code` and `hint` are empty and
+//     whose `message` is that body. 🔴 The third shape this classifier was dead for, found the
+//     same way as the first two: by a killed build. Every preview that failed on 2026-09-14
+//     died on the FIRST answer with no "retrying" line in its log, because none of the errno
+//     tokens is in that sentence. The edge's vocabulary is matched below, and `attempt` also
+//     reads the resolved STATUS: a 502/503/504 or a Cloudflare 52x with no PostgREST code is
+//     the edge talking, whatever words it chose.
+const TRANSIENT_RE = /fetch failed|ECONNRESET|ECONNREFUSED|ETIMEDOUT|EAI_AGAIN|ENOTFOUND|socket|network|UND_ERR|TimeoutError|aborted due to timeout|upstream connect error|reset before headers|connection timeout|no healthy upstream/i
+
+/** HTTP statuses that mean "the edge could not reach PostgREST", never a database answer. */
+const TRANSIENT_STATUS = new Set([502, 503, 504, 520, 521, 522, 523, 524])
+
+/**
+ * A resolved supabase-js result carries the HTTP `status`. A 5xx from the edge with NO
+ * PostgREST code is transport, not an answer, even when the body says something this
+ * classifier has never seen. A real PostgREST error keeps its code and is never retried.
+ */
+export function isTransientDiscoverStatus(status: unknown, err: unknown): boolean {
+  if (typeof status !== 'number' || !TRANSIENT_STATUS.has(status)) return false
+  const code = err && typeof err === 'object' ? (err as { code?: unknown }).code : undefined
+  return !(typeof code === 'string' && code.trim() !== '')
+}
 
 export function isTransientDiscoverError(err: unknown): boolean {
   if (!err || typeof err !== 'object') return false
@@ -198,14 +222,18 @@ export function isTransientDiscoverError(err: unknown): boolean {
   return TRANSIENT_RE.test(text)
 }
 
-const RETRY_DELAYS_MS = [250, 500]
+// Three delays, not two (LIVE-327): 750 ms outlasts a dropped packet and not a busy edge. A
+// build that waits 4.25 s on one read still finishes; a build that ships a hole does not.
+const RETRY_DELAYS_MS = [250, 1000, 3000]
+
+type QueryResult = { data: unknown; error: unknown; status?: number }
 
 async function attempt(
   source: string,
-  query: () => PromiseLike<{ data: unknown; error: unknown }>,
+  query: () => PromiseLike<QueryResult>,
   sleep: (ms: number) => Promise<void> = (ms) => new Promise((r) => setTimeout(r, ms)),
-): Promise<{ data: unknown; error: unknown }> {
-  let last: { data: unknown; error: unknown } = { data: null, error: null }
+): Promise<QueryResult> {
+  let last: QueryResult = { data: null, error: null }
   for (let i = 0; i <= RETRY_DELAYS_MS.length; i++) {
     try {
       last = await query()
@@ -215,7 +243,8 @@ async function attempt(
       last = { data: null, error: cause }
     }
     if (!last.error) return last
-    if (i === RETRY_DELAYS_MS.length || !isTransientDiscoverError(last.error)) return last
+    const transient = isTransientDiscoverError(last.error) || isTransientDiscoverStatus(last.status, last.error)
+    if (i === RETRY_DELAYS_MS.length || !transient) return last
     console.error(`[discover] ${source} transient failure, retrying in ${RETRY_DELAYS_MS[i]}ms`, last.error)
     await sleep(RETRY_DELAYS_MS[i])
   }
@@ -227,7 +256,7 @@ export const __retryForTest = { attempt, RETRY_DELAYS_MS }
 
 async function listRead<T>(
   source: string,
-  query: () => PromiseLike<{ data: unknown; error: unknown }>,
+  query: () => PromiseLike<QueryResult>,
 ): Promise<ListRead<T>> {
   const { data, error } = await attempt(source, query)
   if (error) {
@@ -239,7 +268,7 @@ async function listRead<T>(
 
 async function detailRead<T>(
   source: string,
-  query: () => PromiseLike<{ data: unknown; error: unknown }>,
+  query: () => PromiseLike<QueryResult>,
 ): Promise<T[]> {
   const { data, error } = await attempt(source, query)
   if (error) throw new DiscoverReadError(source, error)
