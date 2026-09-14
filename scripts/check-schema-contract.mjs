@@ -108,6 +108,20 @@ export const ALLOWLIST = [
     owner: 'supabase/migrations/20270345003400_guest_ticket_checkout.sql',
   },
   {
+    // The same column, READ by the cancellation fan-out (LIVE-315): a guest ticket holder is told
+    // the event was cancelled only if the ticket read carries their address. A select of a live
+    // column cannot raise PGRST204; the types are what is behind, exactly as the entry above.
+    //
+    // 🔴 REMOVE THIS ENTRY in the change that regenerates lib/database.types.ts.
+    file: 'lib/events/cancellation.ts',
+    kind: 'select',
+    table: 'event_tickets',
+    column: 'guest_email',
+    added: '2026-09-14',
+    reason: 'migration 20270345003400 adds the column; lib/database.types.ts not yet regenerated',
+    owner: 'supabase/migrations/20270345003400_guest_ticket_checkout.sql',
+  },
+  {
     // `claim_guest_tickets()` is created by the same migration, granted to `authenticated` only,
     // and is called on the SESSION client at /auth/callback. Same situation as the
     // `convert_signup_leads_for_me` entry above and the same remedy: the function exists, the call

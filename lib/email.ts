@@ -782,18 +782,33 @@ Unsubscribe from event emails: ${unsubscribeUrl}
 // page they RSVP'd from is a link they may never open again. Somebody drives to a car park.
 //
 // Same transactional carve-out as sendGuestRsvpConfirmationEmail above (no profile id, so no
-// unsubscribe token; suppression still applies at drain time inside sendRawEmail). `refunded` is
-// absent because a guest seat is always a free RSVP — capture_guest_rsvp refuses ticketed events
-// outright, so there is never a charge to reverse.
+// unsubscribe token; suppression still applies at drain time inside sendRawEmail).
+//
+// `refunded` arrived with LIVE-315. Until #2556 a guest seat was always a free RSVP
+// (capture_guest_rsvp refuses ticketed events outright), so there was never a charge to reverse.
+// A guest can now BUY a ticket with a card and an address and no account, and a cancellation
+// queues that ticket's refund like any member's (lib/events/cancellation.ts). The refund is the
+// only thing that changes here: no location is ever rendered in this message, so the hidden-address
+// rule of ADR-854 has nothing to gate.
 export async function sendGuestEventCancelledEmail(params: {
   to:           string
   guestName:    string | null
   eventTitle:   string
   whenAbsolute: string
   eventUrl:     string
+  /** True for a guest TICKET holder: their refund is queued, and the copy says so. Default false. */
+  refunded?:    boolean
 }) {
   const { to, guestName, eventTitle, whenAbsolute, eventUrl } = params
+  const refunded = params.refunded === true
   const greeting = guestGreeting(guestName)
+  const releasedHtml = refunded
+    ? `<p style="${pStyle}"><strong>Your ticket has been refunded in full.</strong> The charge is being reversed, and it can take a few business days to land back on your original payment method.</p>`
+    : ''
+  const releasedText = refunded
+    ? `\nYour ticket has been refunded in full. The charge is being reversed, and it can take a few business days to land back on your original payment method.\n`
+    : ''
+  const reason = refunded ? 'buy a ticket to' : 'RSVP to'
 
   await enqueueEmail({
     to,
@@ -805,24 +820,25 @@ export async function sendGuestEventCancelledEmail(params: {
       <h1 style="${h1Style}">${escapeHtml(eventTitle)}</h1>
       <p style="${pStyle}">
         ${escapeHtml(greeting)}this event has been cancelled and will not be going ahead.
-        Your RSVP has been released, so there is nothing you need to do.
+        ${refunded ? 'Your ticket has been released' : 'Your RSVP has been released'}, so there is nothing you need to do.
       </p>
+      ${releasedHtml}
       <p style="${pStyle}"><strong>${escapeHtml(whenAbsolute)}</strong></p>
       <a href="${eventUrl}" style="${btnStyle}">View event →</a>
       <hr style="${dividerStyle}">
       <p style="font-size:13px;color:#8F8675;">
-        You are getting this because this address was used to RSVP to ${escapeHtml(eventTitle)}.
+        You are getting this because this address was used to ${reason} ${escapeHtml(eventTitle)}.
       </p>
     `),
     text: `Event cancelled: ${eventTitle}
 
-${greeting}this event has been cancelled and will not be going ahead. Your RSVP has been released, so there is nothing you need to do.
-
+${greeting}this event has been cancelled and will not be going ahead. ${refunded ? 'Your ticket has been released' : 'Your RSVP has been released'}, so there is nothing you need to do.
+${releasedText}
 When: ${whenAbsolute}
 
 View event: ${eventUrl}
 
-You are getting this because this address was used to RSVP to ${eventTitle}.
+You are getting this because this address was used to ${reason} ${eventTitle}.
 `,
   })
 }
