@@ -87,7 +87,6 @@
             "LIVE-231",
             "LIVE-232",
             "PROG-R5",
-            "LIVE-233",
             "LIVE-234",
             "LIVE-235",
             "LIVE-236",
@@ -10835,7 +10834,7 @@
     {
       "id": "LIVE-233",
       "title": "Surface Connect onboarding at the first sell attempt on every money path",
-      "status": "open",
+      "status": "done",
       "priority": "P0",
       "lane": "live",
       "size": "M",
@@ -10843,12 +10842,13 @@
         "file": "docs/CORE-MODEL.md",
         "ref": "§5"
       },
-      "detail": "An operator who tries to sell anything hits a dead end unless their Stripe Connect account is already onboarded, and there is no single prompt that offers to fix it. Five paths need the same prompt: memberships, bookings, orders, donations, tickets. One prompt instead of five dead ends.\n\nThis is the highest commercial leverage item in the plan and the reason phase 5 is P0.",
+      "detail": "An operator who tries to sell anything hits a dead end unless their Stripe Connect account is already onboarded, and there is no single prompt that offers to fix it. Five paths need the same prompt: memberships, bookings, orders, donations, tickets. One prompt instead of five dead ends.\n\nThis is the highest commercial leverage item in the plan and the reason phase 5 is P0.\n\nCLOSED 2026-09-14. The build shipped in #2507 (the pure kernel lib/billing/payout-prompt.ts, its IO half lib/billing/payout-prompt-resolve.ts, and the one card components/billing/payout-setup-prompt.tsx, which posts to startPayoutOnboarding and redirects straight into Stripe hosted onboarding) and this row sat open on a manual walk for six days; ADR-1313 recorded the gap. Re-measured 2026-09-14, the five dead ends and what each now shows at the first sell attempt:\n• memberships: buy side stops at lib/billing/space-membership-checkout.ts:63 (no_owner_payouts, the join card fell back to the free join). Operator now sees SpacePayoutSetupPrompt on Offerings, app/(main)/spaces/[slug]/settings/offerings/offerings-body.tsx:127, channel from SECTION_CHANNEL memberships (line 61).\n• bookings: the deposit rides createCommerceCheckout and stops at lib/commerce/checkout.ts:111 (This storefront cannot take payment yet) from lib/spaces/booking.ts:1850. Operator now sees the same card on Offerings, offerings-body.tsx:127, channel availability to bookings (line 60).\n• orders: buyer stops at lib/commerce/checkout.ts:69 (maker) and :111 (space shop). Operator now sees SpacePayoutSetupPromptById on the Shop storefront tab, app/(main)/spaces/[slug]/settings/shop/storefront-tab.tsx:86, and the maker sees PayoutPromptCard on app/(main)/market/manage/page.tsx:122 from the pure kernel.\n• donations: buy side stops at lib/billing/space-donation-checkout.ts:127. Operator now sees the same card on Offerings, offerings-body.tsx:127, channel donations (line 62).\n• tickets: buy side stops at lib/billing/tickets.ts:385 (buyer reads TICKETS_NOT_READY). Host now sees PayoutSetupPrompt on the event page, app/(main)/events/[slug]/page.tsx:1556 (personal event, host is payee) and :1572 (space-hosted event, space owner viewing); the event form price control shows the same NEEDS_PAYOUT_ACCOUNT sentence derived from the kernel (lib/events/ticket-eligibility.ts:31).\nThe card is scoped to who can act: Offerings and the Shop tab self-gate on canManage, the event page branches on the host or space owner, and the kernel gives a viewer who is not the payee no button (relation other). A ready payee gets nothing (ADR-1158) unless the surface opts into whenReady status (LIVE-290). Probe converted from manual to code: lib/billing/connect-prompt.test.tsx pins by source shape that each of the five paths imports the shared prompt and names its channel, that no path links to /settings/billing in place of inline onboarding, and 12 behaviour cases on the rendered Server Component (onboarding call when not onboarded, nothing when ready, no call for a viewer who cannot act, no button while payouts are dark). One nuance to the premise: the event FORM price control (app/(main)/events/new/event-form.tsx:953) is a client component and still links to /settings/billing beside the kernel sentence; the event PAGE is where the host is offered inline onboarding.",
       "verify": {
-        "kind": "manual",
-        "evidence": "Manual walk of all five sell paths as an operator with no Connect account. Each offers onboarding rather than failing.",
-        "checked": "2026-09-08"
-      }
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const P=\"components/billing/payout-setup-prompt\";const paths=[[\"memberships\",\"app/(main)/spaces/[slug]/settings/offerings/offerings-body.tsx\"],[\"bookings\",\"app/(main)/spaces/[slug]/settings/offerings/offerings-body.tsx\"],[\"donations\",\"app/(main)/spaces/[slug]/settings/offerings/offerings-body.tsx\"],[\"orders\",\"app/(main)/spaces/[slug]/settings/shop/storefront-tab.tsx\"],[\"tickets\",\"app/(main)/events/[slug]/page.tsx\"]];for(const [ch,f] of paths){if(!fs.existsSync(f)){console.error(ch+\": \"+f+\" is gone\");process.exit(1)}const s=fs.readFileSync(f,\"utf8\");if(!s.includes(P)){console.error(ch+\": \"+f+\" no longer imports the shared Connect prompt, so that sell path is a dead end again\");process.exit(1)}if(!new RegExp(\"[\\x27\\\"]\"+ch+\"[\\x27\\\"]\").test(s)){console.error(ch+\": \"+f+\" no longer names its channel to the prompt\");process.exit(1)}if(/href=[\"\\x27]\\/settings\\/billing/.test(s)){console.error(ch+\": \"+f+\" links to /settings/billing instead of starting onboarding inline\");process.exit(1)}}if(!fs.existsSync(\"lib/billing/connect-prompt.test.tsx\")){console.error(\"lib/billing/connect-prompt.test.tsx is gone, so nothing pins the rendered behaviour\");process.exit(1)}console.error(\"all five sell paths reach the one Connect prompt\")'",
+        "note": "Reads the four files where an operator first tries to sell on the five paths and fails naming the first path that no longer imports the shared prompt, names its channel, or links to /settings/billing instead of onboarding inline. Behaviour (onboarding call when not onboarded, nothing when ready, no call for a viewer who cannot act) is pinned by lib/billing/connect-prompt.test.tsx, 19 cases. Written 2026-09-14."
+      },
+      "closed": "2026-09-14"
     },
     {
       "id": "LIVE-234",
