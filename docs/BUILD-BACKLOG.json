@@ -63,8 +63,7 @@
             "LIVE-316",
             "LIVE-318",
             "LIVE-320",
-            "HYG-087",
-            "HYG-088"
+            "HYG-087"
           ]
         },
         {
@@ -12353,7 +12352,7 @@
     {
       "id": "HYG-088",
       "title": "The RSVP help article overstates what ships for a guest",
-      "status": "open",
+      "status": "done",
       "priority": "P2",
       "lane": "hygiene",
       "size": "XS",
@@ -12361,12 +12360,13 @@
         "file": "content/help/getting-started/how-to-rsvp.md",
         "ref": "lines 107, 118"
       },
-      "detail": "FILED 2026-09-14 from the guest-door handoff. how-to-rsvp.md:107 says a guest needs no account \"and that holds for ticketed events too\", which is false for free tiers (LIVE-318), member-only tiers and hosts without payouts; :118 promises reminders and a cancellation notice, which a guest ticket holder does not get (LIVE-315, LIVE-320). Narrow the copy to what is true today, and widen it again in the PRs that close those rows. CONTENT-VOICE §10 checklist applies; check:help and check:canon must stay green.",
+      "detail": "FILED 2026-09-14 from the guest-door handoff. how-to-rsvp.md:107 says a guest needs no account \"and that holds for ticketed events too\", which is false for free tiers (LIVE-318), member-only tiers and hosts without payouts; :118 promises reminders and a cancellation notice, which a guest ticket holder does not get (LIVE-315, LIVE-320). Narrow the copy to what is true today, and widen it again in the PRs that close those rows. CONTENT-VOICE §10 checklist applies; check:help and check:canon must stay green.\n\nCLOSED 2026-09-14: the two paragraphs under \"Do I need an account to RSVP?\" now say what ships: the guest form on any public event; checkout on a priced rate where the Host takes payments; member rates and free rates on a ticketed event still ask for sign-in (LIVE-318 widens the copy when the free claim lands); the confirmation email, the calendar link, and a cancellation notice (RSVP guests today, ticket holders through LIVE-315, #2567); reminders named as a signed-in feature until LIVE-320 lands. check:help and check:canon green.",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e 'const s=require(\"fs\").readFileSync(\"content/help/getting-started/how-to-rsvp.md\",\"utf8\");if(/holds for ticketed events too/.test(s)){console.error(\"the help article still promises guest access to every ticketed event\");process.exit(1)}'",
         "note": "Passes when the overstatement is gone. Written 2026-09-14."
-      }
+      },
+      "closed": "2026-09-14"
     },
     {
       "id": "OWN-074",
