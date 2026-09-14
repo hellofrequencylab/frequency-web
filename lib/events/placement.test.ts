@@ -158,10 +158,13 @@ describe('the tie is written and gated through the one rule (source shape)', () 
     expect(src).toMatch(/if \(raw === null\) return NO_JOURNEY_CHANGE/)
   })
 
-  it('both forms offer the Journeys the gate admits, and the create page re-resolves ?journey=', () => {
+  it('both doors offer the Journeys the gate admits, and the create page re-resolves ?journey=', () => {
+    // The edit door is the manage hub's settings rail since LIVE-237 (ADR-1333): its loader in
+    // admin-actions.ts offers the Journeys and its save gates a new id, where the retired
+    // events/[slug]/edit page used to do both.
     const create = read('app/(main)/events/new/page.tsx')
-    const edit = read('app/(main)/events/[slug]/edit/page.tsx')
-    for (const src of [create, edit]) {
+    const settings = read('app/(main)/events/admin-actions.ts')
+    for (const src of [create, settings]) {
       expect(src).toContain('listLinkableJourneys')
       expect(src).toContain('canEditJourney')
     }

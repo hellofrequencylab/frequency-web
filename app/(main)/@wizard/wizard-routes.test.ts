@@ -206,9 +206,11 @@ describe('property 4 — a wizard destination opens no window of its own', () =>
 })
 
 describe('the wrappers stay where they were always correct', () => {
-  // The fix is not "delete EventEditorWindow". It is right on the two EDIT routes, which have no
-  // interceptor above them — and deleting it there would be a second, opposite regression.
-  for (const p of [join('app', '(main)', 'events', '[slug]', 'edit', 'page.tsx'), join('app', '(main)', 'admin', 'events', '[id]', 'page.tsx')]) {
+  // The fix is not "delete EventEditorWindow". It is right on an EDIT route with no interceptor
+  // above it, and deleting it there would be a second, opposite regression. The member edit route
+  // (events/[slug]/edit) retired into the manage hub on LIVE-237 (ADR-1333); the admin page is
+  // the one that still opens the window.
+  for (const p of [join('app', '(main)', 'admin', 'events', '[id]', 'page.tsx')]) {
     it(`${p} still opens the event window`, () => {
       expect(existsSync(p)).toBe(true)
       expect(stripComments(read(p))).toContain('<EventEditorWindow')

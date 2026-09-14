@@ -115,7 +115,7 @@ describe('the repeat rule belongs to the series, not to the date', () => {
   it('🔴 knows whether the row it was handed is an anchor or one date of a series', () => {
     // The read that makes the rest possible. Without `parent_event_id` in the select, every clause
     // below is unwritable and the action is back to guessing.
-    expect(code).toContain("'details, theme, scope_type, parent_event_id, starts_at, recurrence_type'")
+    expect(code).toContain("'details, theme, scope_type, parent_event_id, starts_at, recurrence_type, journey_id'")
     // The plan is the one place the answer lives, so both the control and the action read it rather
     // than agreeing by hand (ADR-1307).
     expect(code).toContain('const plan = seriesWritePlan(')
