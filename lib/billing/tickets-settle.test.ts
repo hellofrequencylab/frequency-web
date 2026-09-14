@@ -100,7 +100,12 @@ const TICKET = {
   qty: 2,
   entity_id: 'ent-1',
   platform_fee_cents: 150,
-  buyer_profile_id: null, // no CRM contact write, keeps the fake small
+  // A MEMBER buyer. It was null here to keep the fake small, and that stopped being a harmless
+  // simplification when the guest door landed: `event_tickets` carries exactly one of
+  // buyer_profile_id / guest_email, so a row with neither is now an impossible row and the settle
+  // says so out loud (see ./guest-ticket-settle.test.ts, which owns the identity contract). The
+  // contact write this re-enables still no-ops, because the fake's `events` read answers null.
+  buyer_profile_id: 'p-1',
   currency: 'usd',
 }
 

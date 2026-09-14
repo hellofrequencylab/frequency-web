@@ -8,6 +8,10 @@ import {
   convertLeadsOnSignIn,
   type SessionClient as LeadSessionClient,
 } from '@/lib/crm/convert-leads-on-sign-in'
+import {
+  claimGuestTicketsOnSignIn,
+  type SessionClient as TicketSessionClient,
+} from '@/lib/events/claim-guest-tickets-on-sign-in'
 
 // Must match the cookie set in app/sign-in/actions.ts (stashNext).
 const POST_LOGIN_COOKIE = 'fq_post_login'
@@ -119,6 +123,20 @@ export async function GET(request: Request) {
             // destination, and it swallows its own failures, so it can never block authentication.
             // Cast per ADR-246: the RPC postdates the generated types.
             await convertLeadsOnSignIn(supabase as unknown as LeadSessionClient)
+
+            // CLAIM-ON-SIGN-IN, THE TICKET LEG. The third member of this set, and the only one
+            // where somebody paid money: a guest ticket (event_tickets with buyer_profile_id NULL
+            // and guest_email set) is a real payment attached to no account, absent from "my
+            // events" and impossible to check in. `claim_guest_tickets()` attaches every unclaimed
+            // ticket matching the address auth.users has just proven.
+            //
+            // SESSION client, for the reason both neighbours above carry: the RPC resolves the
+            // caller with auth.uid(), so under the service-role client it matches nobody and
+            // returns a healthy 0 having attached nothing. Returns void ON PURPOSE — like the lead
+            // conversion and unlike the seat claim, it may not influence the destination; the seat
+            // claim already owns that decision. Swallows its own failures.
+            // Cast per ADR-246: the RPC postdates the generated types.
+            await claimGuestTicketsOnSignIn(supabase as unknown as TicketSessionClient)
           }
 
           // Read the funnel back through the SAME map that wrote it. `user_metadata` is

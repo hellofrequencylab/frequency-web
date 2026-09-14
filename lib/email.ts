@@ -651,6 +651,47 @@ export async function sendGuestRsvpConfirmationEmail(params: {
 }
 
 
+// ── Guest ticket email ────────────────────────────────────────────────────────
+//
+// THE GUEST'S ONLY RECORD THAT THEY HOLD A TICKET. A guest bought with a card and an address and
+// nothing else: no account, no "my events" page, no notification bell. This message is the ticket.
+//
+// It carries ONE account offer, and that offer is a MAGIC LINK rather than a signup form. Stripe
+// COLLECTED this address at checkout; it did not PROVE it. The tap on the link is what proves it,
+// because Supabase mails the link to the address itself. See lib/events/guest-ticket-email.ts for
+// the full reasoning, and do not replace this with a one-click signup anywhere.
+//
+// 🔴 `location` MUST ARRIVE ALREADY GATED, exactly as in the guest RSVP pair above. This function
+// prints what it is handed. An event with `hide_address` set shows the city line and nothing more
+// (ADR-825, lib/events/visible-location.ts): buying a ticket under an unproven address does not
+// unlock what a member would have to sign in for (ADR-854).
+export async function sendGuestTicketEmail(params: {
+  to:           string
+  eventTitle:   string
+  whenAbsolute: string
+  /** Pre-gated. The full location for an open event, the city line for a hidden-address one. */
+  location:     string | null
+  hostName:     string | null
+  circleName:   string | null
+  eventUrl:     string
+  /** How many tickets this purchase covers. */
+  qty:          number
+  /** What they paid, already formatted (e.g. "$20"), or null when the amount is unknown. */
+  amountLabel:  string | null
+  /** Sign-in deep link carrying this address. ONE tap attaches the ticket to a real account. */
+  claimUrl:     string
+}) {
+  const { to, eventTitle, whenAbsolute, location, hostName, circleName, eventUrl, qty, amountLabel, claimUrl } = params
+
+  await enqueueEmail({
+    to,
+    subject: `Your ticket: ${eventTitle}`,
+    html: guestTicketHtml({ eventTitle, whenAbsolute, location, hostName, circleName, eventUrl, qty, amountLabel, claimUrl }),
+    text: guestTicketText({ eventTitle, whenAbsolute, location, hostName, circleName, eventUrl, qty, amountLabel, claimUrl }),
+  })
+}
+
+
 // ── Event cancellation email ──────────────────────────────────────────────────
 // Sent when a host/admin cancels an event. Two variants, gated by `refunded`:
 //   • refunded=true  → the attendee paid; their ticket has been refunded.
@@ -1909,6 +1950,93 @@ function guestRsvpConfirmationText({
     '',
     `You are getting this because this address was used to RSVP to ${eventTitle}.`,
     'If that was not you, ignore this email and nothing further will be sent.',
+  )
+
+  return lines.join('\n') + '\n'
+}
+
+
+// The guest TICKET pair. Same furniture as the guest RSVP pair above and the same two differences
+// from a member template: nobody here has a name to greet or a preference page to manage, and the
+// address is UNVERIFIED, so it carries the "if this was not you" line. Everything printed was gated
+// by the caller. No em dashes (docs/CONTENT-VOICE.md).
+
+/** The one line that says what was bought. Plural only when it is. */
+function ticketCountLine(qty: number, amountLabel: string | null): string {
+  const n = Number.isFinite(qty) && qty > 0 ? Math.floor(qty) : 1
+  const tickets = n === 1 ? '1 ticket' : `${n} tickets`
+  return amountLabel ? `${tickets}, ${amountLabel}` : tickets
+}
+
+function guestTicketHtml({
+  eventTitle, whenAbsolute, location, hostName, circleName, eventUrl, qty, amountLabel, claimUrl,
+}: {
+  eventTitle: string; whenAbsolute: string; location: string | null
+  hostName: string | null; circleName: string | null; eventUrl: string
+  qty: number; amountLabel: string | null; claimUrl: string
+}): string {
+  const hostLine = rsvpHostLine(hostName, circleName)
+  return emailShell(`
+    <p style="font-size:11px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:#9A5E12;margin:28px 0 8px;">
+      Your ticket
+    </p>
+    <h1 style="${h1Style}">${escapeHtml(eventTitle)}</h1>
+    <p style="${pStyle}">Payment received. Keep this email, it is your ticket.</p>
+    <p style="${pStyle}">
+      <strong>${escapeHtml(whenAbsolute)}</strong>${location ? `<br><span style="color:#777;">${escapeHtml(location)}</span>` : ''}
+      ${hostLine ? `<br><span style="color:#777;">${hostLine}</span>` : ''}
+      <br><span style="color:#777;">${escapeHtml(ticketCountLine(qty, amountLabel))}</span>
+    </p>
+    <a href="${eventUrl}" style="${btnStyle}">View event &rarr;</a>
+    <hr style="${dividerStyle}">
+    <p style="${pStyle}">
+      <strong>Put this ticket in an account.</strong> Tap below and we will email you a sign in link
+      at this address. Once you are in, this ticket is on your account with everything else you have
+      said yes to.
+    </p>
+    <p style="margin:0 0 8px;">
+      <a href="${claimUrl}" style="${btnStyle}">Add this ticket to an account &rarr;</a>
+    </p>
+    <hr style="${dividerStyle}">
+    <p style="font-size:13px;color:#8F8675;">
+      You are getting this because this address was used to buy a ticket to ${escapeHtml(eventTitle)}.
+      If that was not you, reply to this email and we will sort it out.
+    </p>
+  `)
+}
+
+function guestTicketText({
+  eventTitle, whenAbsolute, location, hostName, circleName, eventUrl, qty, amountLabel, claimUrl,
+}: {
+  eventTitle: string; whenAbsolute: string; location: string | null
+  hostName: string | null; circleName: string | null; eventUrl: string
+  qty: number; amountLabel: string | null; claimUrl: string
+}): string {
+  const hostPlain =
+    hostName && circleName ? `Hosted by ${hostName} · ${circleName}` :
+    circleName             ? `Hosted by ${circleName}` :
+    hostName               ? `Hosted by ${hostName}` : ''
+
+  const lines: string[] = [
+    `Your ticket: ${eventTitle}`,
+    '',
+    'Payment received. Keep this email, it is your ticket.',
+    '',
+    `When: ${whenAbsolute}`,
+  ]
+  if (location)  lines.push(`Where: ${location}`)
+  if (hostPlain) lines.push(hostPlain)
+  lines.push(`Ticket: ${ticketCountLine(qty, amountLabel)}`)
+  lines.push('', `View event: ${eventUrl}`)
+  lines.push(
+    '',
+    'Put this ticket in an account. Open the link below and we will email you a sign in link at',
+    'this address. Once you are in, this ticket is on your account with everything else you have',
+    'said yes to.',
+    `Add this ticket to an account: ${claimUrl}`,
+    '',
+    `You are getting this because this address was used to buy a ticket to ${eventTitle}.`,
+    'If that was not you, reply to this email and we will sort it out.',
   )
 
   return lines.join('\n') + '\n'

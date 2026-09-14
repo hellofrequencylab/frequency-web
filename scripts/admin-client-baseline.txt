@@ -88,6 +88,17 @@
 # lib/events/tier-prices.ts (added 2026-08-25, SCAN-211): NOT a new RLS bypass, and the same case as going-counts.ts directly above. It is the ticket-tier price read lifted verbatim out of app/(main)/events/index-data.ts AND out of lib/spaces/content-data.ts, which ran a second copy of it -- both already on the service-role client, so the surface SHRANK by one read while the file count moved by one. The bypass is load-bearing: the /events catalog and a Space's card both price events across circles the viewer is not a member of, and event_ticket_types is not readable under RLS to a non-member, so a session-client read returns nothing for exactly the rows the listing exists to merchandise. It reads five price columns for ids the loader already assembled and returns only aggregates -- a count, a floor in cents, a boolean -- never a tier's name, inventory, member-gating or identity.
 # lib/billing/crew-grants.ts (added 2026-09-09, LIVE-223): the Crew entitlement grant engine. Two reasons the bypass is load-bearing. (1) It is called from the Stripe webhook reconcile and from fire-and-forget membership lifecycle paths, where there is no session to run under -- the caller is Stripe. (2) public.entitlement_grants deliberately has NO insert/update/delete policy: a caller-role write to it is a self-grant by definition, which is the exact thing the row exists to prevent. Its one session-shaped read ("do I hold a grant?") is covered by a self-read policy, but the resolver runs inside getViewerHats for a profile id, not an auth.uid(), so it reads on the same handle as the writes.
 # lib/spaces/member-segment-audience.ts (added 2026-09-10, LIVE-293): NOT a new RLS bypass, and NOT a new read. It is the member-audience email pairing lifted out of app/(main)/spaces/[slug]/messages/broadcast-actions.ts (deleted in the same change, and removed from this list two lines of diff away), so the file count is flat and the surface is unchanged. The bypass is load-bearing and cannot converge: the read is CROSS-TENANT BY DESIGN. Resolving a tier / circle / event audience for a TENANT Space needs those members' addresses, and under per-space contact tenancy (ADR-624) those live on the ROOT space's contact rows, which a tenant Space's session client cannot see by construction -- that is the tenancy wall working. It reads exactly two columns (profile_id, email) for profile ids the segment resolver already assembled, behind the caller's canEditProfile gate, and emits an address only when the SENDING Space already holds a contact of its own for it (ADR-863), so nothing new is disclosed to the operator.
+# lib/events/guest-ticket-email.ts (added 2026-09-14): composes the ticket receipt for a SIGNED-OUT
+# guest purchase (20270345003400), and is the exact sibling of lib/events/guest-rsvp-email.ts above
+# with one difference that makes the bypass unavoidable rather than merely load-bearing: the caller
+# is STRIPE. recordTicketFromSession runs inside a webhook, so there is no session client to prefer
+# and no cookie to run under, the same posture as lib/billing/bundle-seats.ts. It reads the event's
+# title, start time and location to put them in the message, and events' SELECT policy does not hand
+# those to anon for an unlisted or circle-scoped event. Quarantined in its own module, exactly as the
+# RSVP mail was, so lib/billing/tickets.ts is not where the elevated read lives and the blast radius
+# is one function: it reads a fixed column list for ONE event id the settle already holds, and what
+# it reads reaches the email body only, never an HTTP response. The address it sends to is the one
+# on the session Stripe signed, never one a reader supplied.
 app/(main)/admin/actions.ts
 app/(main)/admin/ai/load-ai.ts
 app/(main)/admin/appearance/actions.ts
@@ -595,6 +606,7 @@ lib/events/geocode.ts
 lib/events/going-counts.test.ts
 lib/events/going-counts.ts
 lib/events/guest-rsvp-email.ts
+lib/events/guest-ticket-email.ts
 lib/events/guests.ts
 lib/events/host-gate.ts
 lib/events/matching.ts

@@ -97,6 +97,7 @@ circle_momentum                      authenticated
 circle_templates_touch_updated_at    public
 circles_near                         public
 claim_guest_rsvps                    authenticated
+claim_guest_tickets                  authenticated
 claim_outbox_jobs                    internal
 claim_season_certificate             internal
 claim_space_plan_event               internal

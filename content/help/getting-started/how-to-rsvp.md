@@ -4,7 +4,7 @@ description: Open the next gathering, tap RSVP, and add it to your calendar. Tha
 category: getting-started
 order: 6
 published: 2026-06-23
-updated: 2026-07-26
+updated: 2026-09-14
 audience: member
 featureKeys: [events, circles]
 status: published
@@ -83,12 +83,13 @@ actually go.
 
 Most gatherings are free; you just RSVP. Some are ticketed, and Hosts can price
 them as a set amount, pay-what-you-can, a sliding scale, or a donation. If there
-is a cost, it is shown clearly before you commit. A few tickets are reserved for
-members of the Space hosting the event; those show a small lock, and you can join
-the membership right on the event page. Some events also show only the city until
-you RSVP; the exact address appears once you register. On the map those events
-still show up, as a general area rather than a street, so you can tell whether
-something is near you before you commit. The pin is a neighbourhood, not a door.
+is a cost, it is shown clearly before you commit, and you do not need an account
+to pay it. A few tickets are reserved for members of the Space hosting the event;
+those show a small lock, and you can join the membership right on the event page.
+Some events also show only the city until you RSVP; the exact address appears
+once you register. On the map those events still show up, as a general area
+rather than a street, so you can tell whether something is near you before you
+commit. The pin is a neighbourhood, not a door.
 
 You will also see a number on some pins, like **1+**. That means one event that
 runs on more than one date. Open it and the other dates are listed, so a weekly
@@ -103,16 +104,21 @@ first; it is almost always less awkward than your head says.
 
 ### Do I need an account to RSVP?
 
-No. Open any public event and there is a short form: your email, and your name if
-you want to give it. That is the whole thing. You do not need to sign up first,
-and it works whether you found the event yourself or someone sent you a link.
+No, and that holds for ticketed events too. Open any public event and there is a
+short form: your email, and your name if you want to give it. That is the whole
+thing. You do not need to sign up first, and it works whether you found the event
+yourself or someone sent you a link.
+
+If the event costs money, the same form takes you to checkout. Pay, and the ticket
+is yours. The receipt lands in your inbox with a link that makes you an account in
+one tap, if you want one. Nobody has to join Frequency to buy a seat.
 
 We email you to confirm, and that email says whether you got a spot or landed on
 the waitlist. It also carries the calendar link and, closer to the day, you get
 the same reminders anyone else does. If the Host cancels, you get told.
 
-Signing in later attaches every RSVP you made with that same email to your
-account, so you can change or cancel them in one place. That happens on its own
+Signing in later attaches every RSVP and every ticket you bought with that same
+email to your account, so they are all in one place. That happens on its own
 the moment you sign in, and it works whether the account is brand new or one you
 already had and were signed out of. Nothing is lost if you wait.
 
