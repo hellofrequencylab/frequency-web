@@ -68,89 +68,15 @@ export const MIN_RPC_CALLS = 60
  *  `kind` is optional (matches any). An entry that matches nothing fails the guard. */
 /** @type {{ file: string, table: string, column?: string | null, kind?: string | null, added: string, reason: string, owner: string }[]} */
 export const ALLOWLIST = [
-  {
-    // `convert_signup_leads_for_me()` is APPLIED and live (migration 20270345003300, applied
-    // 2026-09-11, ledger row 688). What is still behind is lib/database.types.ts, which is GENERATED
-    // from the database and has not been regenerated since. So the guard is right that the types do
-    // not know this function, and wrong to call it a phantom: it exists, the call site is correct,
-    // and the runtime PGRST204 this guard protects against cannot happen here.
-    //
-    // Regenerating the types is a mechanical follow-up rather than part of this change, and nothing
-    // in CI diffs the generated file against the live schema today (HYG-052), so leaving it is not
-    // hiding a gate that would otherwise fire.
-    //
-    // 🔴 REMOVE THIS ENTRY in the change that regenerates lib/database.types.ts. A stale entry fails
-    // the guard by design, so the moment the types learn the function this line must go with them.
-    file: 'lib/crm/convert-leads-on-sign-in.ts',
-    kind: 'rpc',
-    table: 'convert_signup_leads_for_me',
-    column: null,
-    added: '2026-09-11',
-    reason: 'migration 20270345003300 applied 2026-09-11; lib/database.types.ts not yet regenerated',
-    // The artifact that retires this entry, so the reader knows what has to happen rather than who
-    // to chase: applying this migration is what lets lib/database.types.ts learn the function.
-    owner: 'supabase/migrations/20270345003300_event_rsvp_leads.sql',
-  },
-  {
-    // `event_tickets.guest_email` is real: migration 20270345003400 adds the column, comments it,
-    // indexes it and has `reserve_ticket_atomic` write it. lib/database.types.ts is GENERATED and
-    // has not been regenerated since, so the guard is right that the types do not know the column
-    // and wrong to call it a phantom. The settle re-affirms the value the reserve already wrote, so
-    // the runtime PGRST204 this guard protects against cannot happen here.
-    //
-    // 🔴 REMOVE THIS ENTRY in the change that regenerates lib/database.types.ts.
-    file: 'lib/billing/tickets.ts',
-    kind: 'update',
-    table: 'event_tickets',
-    column: 'guest_email',
-    added: '2026-09-14',
-    reason: 'migration 20270345003400 adds the column; lib/database.types.ts not yet regenerated',
-    owner: 'supabase/migrations/20270345003400_guest_ticket_checkout.sql',
-  },
-  {
-    // The same column, READ by the cancellation fan-out (LIVE-315): a guest ticket holder is told
-    // the event was cancelled only if the ticket read carries their address. A select of a live
-    // column cannot raise PGRST204; the types are what is behind, exactly as the entry above.
-    //
-    // 🔴 REMOVE THIS ENTRY in the change that regenerates lib/database.types.ts.
-    file: 'lib/events/cancellation.ts',
-    kind: 'select',
-    table: 'event_tickets',
-    column: 'guest_email',
-    added: '2026-09-14',
-    reason: 'migration 20270345003400 adds the column; lib/database.types.ts not yet regenerated',
-    owner: 'supabase/migrations/20270345003400_guest_ticket_checkout.sql',
-  },
-  {
-    // The same column, READ this time: the host Sales module selects `event_tickets.guest_email`
-    // beside the buyer join so a guest buyer shows as their address instead of "A member"
-    // (LIVE-319). Same situation as the entry above: the column is applied, the select is correct,
-    // the generated types are what is behind (HYG-087 regenerates them on another lane).
-    //
-    // 🔴 REMOVE THIS ENTRY in the change that regenerates lib/database.types.ts.
-    file: 'app/(main)/events/[slug]/page.tsx',
-    kind: 'select',
-    table: 'event_tickets',
-    column: 'guest_email',
-    added: '2026-09-14',
-    reason: 'migration 20270345003400 adds the column; lib/database.types.ts not yet regenerated',
-    owner: 'supabase/migrations/20270345003400_guest_ticket_checkout.sql',
-  },
-  {
-    // `claim_guest_tickets()` is created by the same migration, granted to `authenticated` only,
-    // and is called on the SESSION client at /auth/callback. Same situation as the
-    // `convert_signup_leads_for_me` entry above and the same remedy: the function exists, the call
-    // site is correct, the generated types are what is behind.
-    //
-    // 🔴 REMOVE THIS ENTRY in the change that regenerates lib/database.types.ts.
-    file: 'lib/events/claim-guest-tickets-on-sign-in.ts',
-    kind: 'rpc',
-    table: 'claim_guest_tickets',
-    column: null,
-    added: '2026-09-14',
-    reason: 'migration 20270345003400 adds the function; lib/database.types.ts not yet regenerated',
-    owner: 'supabase/migrations/20270345003400_guest_ticket_checkout.sql',
-  },
+  // EMPTY on 2026-09-14 (HYG-087). The four entries this carried all said the same thing, "the
+  // migration is applied and lib/database.types.ts has not been regenerated": convert_signup_leads_for_me
+  // (rpc, 20270345003300), event_tickets.guest_email (an update in lib/billing/tickets.ts and a select
+  // in lib/events/cancellation.ts, 20270345003400) and claim_guest_tickets (rpc, same migration). The
+  // types were regenerated from the live project in that change, so the contract reads the real
+  // column and the real functions, and the entries had to go with them: a stale entry fails the guard.
+  //
+  // When you need an entry here, keep the shape below and say which artifact retires it:
+  //   { file, kind: 'select' | 'update' | 'insert' | 'rpc', table, column, added, reason, owner }
 ]
 
 /** Walk `root` against `typesFile` and return the raw report. Pure: no exit, no console. */
