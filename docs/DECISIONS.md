@@ -40291,3 +40291,93 @@ and never RSVP'd still gets no reminder, exactly as before this ADR; that is a m
 question and not this row's.
 
 **Rows.** LIVE-320 (done). Migration 20270345004100.
+
+## ADR-NNNN: ACCEPTED — the preview-backed e2e jobs serialise through a turnstile that waits, not a concurrency group that cancels, so pr-compare can become a required check (2026-09-14)
+
+**Context.** ADR-1328 put `pr-compare` and `lighthouse` in repository-wide job-level
+`concurrency` groups (`e2e-preview-capture`, `e2e-preview-lighthouse`, `cancel-in-progress:
+false`) so one preview-backed capture runs at a time, which is what stopped the day's
+self-inflicted Supabase load. It also wrote down the group's other behaviour and called it the
+honest word: GitHub keeps ONE pending job per concurrency group, and when a newer job arrives it
+CANCELS the older pending one rather than queueing behind it. Measured the same hour: #2583's
+pr-compare read cancelled at 19:56:25Z, one minute after it queued, because #2584's had arrived.
+For an advisory check that is fine; the PR's next push queues again. For a required check it is
+fatal: a cancelled required context is neither pending nor passed, branch protection holds the PR
+on it, and only a new push re-requests it. On any fan-out the older PRs would be blocked by a
+check that nothing but a redundant commit can revive. The Stabilise phase exits on "pr-compare
+public tier required" (`meta.slate.phases`), so the exit criterion and ADR-1328's mechanism
+could not both hold. LIVE-330 filed the conflict; this ADR resolves it under ruling 10 of
+ADR-1325 (a CI rule change, with its ADR and its control run).
+
+Two things about the premise were not as the row said, and are recorded here rather than
+silently worked around. First, the row placed the new step "after checkout"; in both jobs
+checkout comes AFTER the preview resolve and is conditional on it, so the turnstile is the first
+step of each job and runs before any checkout. That is the right place regardless: an inline
+`actions/github-script` step needs no working tree, and waiting before the 12-minute preview poll
+means the preview is built by the time the capture's turn comes. Second, LIVE-326 (done) probed
+for the concurrency group by name, so closing LIVE-330 as written would have regressed a done
+row; its probe now reads the turnstile (the consequence it measured, one capture at a time, is
+unchanged), and its detail says why.
+
+**Decision.**
+
+- **The two job-level concurrency groups are gone.** In their place each job opens with a
+  turnstile step (`id: turnstile`, `actions/github-script@v9`, the tag pin every first-party
+  action in this repo uses; no third-party action was added). It polls the Actions API for other
+  in-progress runs of `e2e.yml` whose same-named job is ahead of this one and sleeps 30 s between
+  looks until none is. Five rules, each pinned by `scripts/e2e-preview-gate.test.ts`:
+  1. it ignores this run's own jobs (`run.id === context.runId` is skipped);
+  2. it ignores completed runs and jobs, whatever their conclusion, so a cancelled or finished
+     capture holds nothing (the workflow-level supersede on the same PR falls out of this rule);
+  3. a run is AHEAD when its job is past its own turnstile (capturing), or when it is still
+     waiting and carries the LOWER run number. Two waiting runs therefore never wait on each
+     other: the older proceeds, the newer waits for it, and a fan-out drains in run-number order;
+  4. it logs one line per poll naming what it waits on, and its elapsed minutes;
+  5. it never fails the job. There is no `setFailed` and no throw on the wait path; an
+     unreadable API is one more thing to wait on. A wait that reaches `TURNSTILE_MAX_MINUTES`
+     proceeds anyway, in a `::warning` and a job-summary paragraph. The load rule is a ceiling,
+     not a gate: one overlapping capture costs less than a required check that reads red for a
+     queue, and ADR-970 says what happens to a gate that cannot fire honestly.
+- **Keyed by job name.** `pr-compare` waits only on other `pr-compare` jobs and `lighthouse`
+  only on other `lighthouse` jobs, so the two jobs of one run still overlap, the wall clock
+  ADR-936 split them for.
+- **The bound is 90 minutes, and the job timeouts rose by exactly that.** The fan-out the loop
+  actually runs is seven lanes and a capture is about 15 minutes, so the last lane waits for six;
+  a bound the routine case reaches is a gate that gets routed around. `pr-compare` is
+  `timeout-minutes: 125` (its own 35, unchanged, plus 90) and `lighthouse` 120 (30 plus 90), so
+  a full wait leaves each suite every minute it had. The test pins `timeout - bound >= 30`.
+- **`permissions:` on both jobs gains `actions: read`** for the runs and jobs reads. Nothing
+  else is widened; the test pins that neither job carries a `write`.
+- **The workflow-level per-PR group stays** (`e2e-pr-<ref>`, `cancel-in-progress: true`).
+  Superseding an older push to the SAME PR is still right: only the newest commit's pixels are
+  interesting, and the turnstile's rule 2 means the cancelled run holds no place in the queue.
+- **The probes.** LIVE-330's requires no repository-wide group on `pr-compare` and a
+  `turnstile` marker in the file; LIVE-326's now requires, per job, a `turnstile` step keyed by
+  that job before the preview resolve, `actions: read`, no job-level group, and the per-PR
+  workflow group. Both were run against main's copy of the workflow and fail there, and pass on
+  this one.
+
+**Consequences.** Runner minutes while waiting: a queued capture now occupies a hosted runner
+for the length of the queue in front of it, N x ~15 minutes on a fan-out of N, up to the
+90-minute bound, where before it occupied nothing and was cancelled. Seven lanes pushed at once
+cost about 5 runner-hours of idling across the two jobs on top of the captures themselves; that
+is the price of a required context that stays pending instead of reading cancelled, and it is
+bounded. The database still sees one capture's load at a time, in run-number order rather than
+in whatever order GitHub's queue kept. A capture that hits the bound overlaps one other capture
+and says so in its summary, which is the gate that notices the fail-safe firing. The mechanism
+reads the Actions API a few times a minute per waiting job, well inside the token's rate limit.
+What does not change: pr-compare and lighthouse are still advisory today. This ADR removes the
+mechanism that made requiring them impossible; LIVE-186 and HYG-027 carry the other blockers on
+the flip.
+
+**The control.** The PR that carries this change is the first run: its own `pr-compare` and
+`lighthouse` take the new turnstile, and their logs must show `turnstile: clear on poll 1` (or a
+wait naming a real run) before the preview resolve. That proves the step runs and the API read
+is permitted. It does not prove the queue. The second control is two PRs pushed within a minute
+of each other both reaching a COMPLETED `pr-compare`, with the newer run's turnstile log naming
+the older run as `capturing` for the length of its capture. The coordinator reads that after
+merge, on the next fan-out, and LIVE-330's CLOSED paragraph says plainly that this reading is
+still owed. Until it is read, the flip to required stays where it is.
+
+**Rows.** LIVE-330 (done, this ADR). LIVE-326 (done; probe rewritten to the turnstile).
+LIVE-186, HYG-027 (open; the remaining blockers on requiring the public tier).

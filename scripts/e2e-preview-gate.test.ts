@@ -116,3 +116,74 @@ describe('🔴 a timed-out poll may not report success while a build is still in
     expect((attempts * 20) / 60).toBeLessThan(budget / 2)
   })
 })
+
+// ── THE TURNSTILE (LIVE-330): captures serialise by WAITING, never by being cancelled ────────────
+//
+// ADR-1328 serialised pr-compare and lighthouse through repository-wide `concurrency` groups.
+// GitHub keeps ONE pending job per group and cancels the older pending job when a newer one
+// arrives (#2583's pr-compare read cancelled at 19:56:25Z, one minute after it queued, because
+// #2584's arrived). An advisory check shrugs that off; a REQUIRED check cannot, because a
+// cancelled required context blocks the PR until a new push re-requests it. The groups were
+// therefore replaced by a turnstile step that waits inside the runner. These assertions pin the
+// mechanism's shape so a well-meant "tidy" cannot put the group back or let the two copies drift.
+
+describe('the turnstile replaces the job-level concurrency groups', () => {
+  /** The job block from its name to its preview resolve, where the turnstile must sit. */
+  function jobHead(job: 'pr-compare' | 'lighthouse'): string {
+    const start = wf.indexOf(`\n  ${job}:\n`)
+    const end = wf.indexOf("      - name: Resolve the PR's Vercel preview URL", start)
+    expect(start).toBeGreaterThan(-1)
+    expect(end).toBeGreaterThan(start)
+    return wf.slice(start, end)
+  }
+
+  it('neither preview-backed job declares a job-level concurrency group', () => {
+    // A group with cancel-in-progress false still cancels a superseded PENDING job. The only
+    // group left is the workflow-level per-PR one, which supersedes pushes to the same PR on
+    // purpose.
+    for (const job of ['pr-compare', 'lighthouse'] as const) {
+      expect(jobHead(job)).not.toMatch(/^\s+concurrency:/m)
+    }
+    expect(wf).toMatch(/^concurrency:\n(?:  #.*\n)*  group: e2e-pr-\$\{\{ github\.ref \}\}\n  cancel-in-progress: true/m)
+  })
+
+  it('each job carries a turnstile keyed by ITS OWN name, before the preview resolve, with the API read it needs', () => {
+    for (const job of ['pr-compare', 'lighthouse'] as const) {
+      const head = jobHead(job)
+      expect(head).toMatch(/^\s+id: turnstile$/m)
+      expect(head).toContain(`TURNSTILE_JOB: ${job}`)
+      // The turnstile reads this workflow's runs and jobs; nothing else on the job is widened.
+      expect(head).toMatch(/^\s+actions: read$/m)
+      expect(head).not.toMatch(/^\s+\w+: write$/m)
+    }
+  })
+
+  it('the two turnstile scripts are byte-identical, and never fail the job on their own', () => {
+    const scripts = [...wf.matchAll(/ {12}\/\/ THE TURNSTILE\.[\s\S]*?core\.setOutput\('waited_minutes'[^\n]*\n/g)].map((m) => m[0])
+    expect(scripts).toHaveLength(2)
+    expect(scripts[0]).toBe(scripts[1])
+    const script = scripts[0]
+    // Rule 1: its own run is skipped. Rule 2: a completed job holds nothing.
+    expect(script).toContain('run.id === context.runId')
+    expect(script).toContain("job.status === 'completed'")
+    // Rule 3: the lower run number goes first, so two waiting runs cannot starve each other.
+    expect(script).toContain('run.run_number < context.runNumber')
+    // Rule 5: the bound proceeds; there is no core.setFailed and no throw on the wait path.
+    expect(script).not.toContain('setFailed')
+    expect(script).not.toMatch(/^\s+throw /m)
+    expect(script).toContain('proceeds anyway')
+  })
+
+  it('the wait bound fits inside the job timeout with the capture budget intact', () => {
+    // timeout-minutes is the capture's own budget PLUS the bound. If someone lowers the timeout
+    // without lowering TURNSTILE_MAX_MINUTES, a full wait leaves the suite no time at all, and
+    // the job fails on the clock rather than on the pixels.
+    for (const job of ['pr-compare', 'lighthouse'] as const) {
+      const head = jobHead(job)
+      const timeout = Number(head.match(/timeout-minutes: (\d+)/)?.[1])
+      const bound = Number(head.match(/TURNSTILE_MAX_MINUTES: '(\d+)'/)?.[1])
+      expect(bound).toBeGreaterThan(0)
+      expect(timeout - bound).toBeGreaterThanOrEqual(30)
+    }
+  })
+})
