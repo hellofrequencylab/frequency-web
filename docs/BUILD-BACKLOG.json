@@ -47,8 +47,7 @@
           "name": "W0b · P1 — repairs ready to work now, and the instruments that keep the gates honest. This is the wave to pull from when you want the next thing to do.",
           "ids": [
             "LIVE-186",
-            "LIVE-213",
-            "LIVE-312"
+            "LIVE-213"
           ]
         },
         {
@@ -12127,7 +12126,7 @@
     {
       "id": "LIVE-312",
       "title": "The admin-* visual baselines predate the mode law, and unlike the member surfaces a recapture there would hold",
-      "status": "open",
+      "status": "done",
       "priority": "P2",
       "lane": "live",
       "size": "S",
@@ -12135,12 +12134,13 @@
         "file": "test/e2e/visual.spec.ts",
         "ref": "the admin-* baselines under test/e2e/__screenshots__/visual.spec.ts/"
       },
-      "detail": "FILED 2026-09-14 from the induction-lockout handoff, verified by git ancestry rather than speculated. admin-content-practices was last captured in #2537, which predates #2550 (3de09f6, the mode law: light is the default, dark needs an account). #2552 recaptured the app-* half and one admin-library PNG; no other admin-* file was in scope. #2554 made the @shell tier advisory, so these no longer block a merge, but they are still stale, and they are OPERATOR content, not live member data, so a recapture here would actually hold. That distinction is the reason not to lump them in with the /feed drift (LIVE-308).\n\nTHE WORK: recapture admin-* only, via e2e-manual.yml with update_baselines against a fresh preview, and commit the PNGs in a PR that changes nothing else. The probe: every admin-* PNG's last-captured commit is a descendant of 3de09f6. It reports indeterminate (79) on a shallow checkout, where ancestry cannot be read.",
+      "detail": "FILED 2026-09-14 from the induction-lockout handoff, verified by git ancestry rather than speculated. admin-content-practices was last captured in #2537, which predates #2550 (3de09f6, the mode law: light is the default, dark needs an account). #2552 recaptured the app-* half and one admin-library PNG; no other admin-* file was in scope. #2554 made the @shell tier advisory, so these no longer block a merge, but they are still stale, and they are OPERATOR content, not live member data, so a recapture here would actually hold. That distinction is the reason not to lump them in with the /feed drift (LIVE-308).\n\nTHE WORK: recapture admin-* only, via e2e-manual.yml with update_baselines against a fresh preview, and commit the PNGs in a PR that changes nothing else. The probe: every admin-* PNG's last-captured commit is a descendant of 3de09f6. It reports indeterminate (79) on a shallow checkout, where ancestry cannot be read.\n\nCLOSED 2026-09-14 (recapture run 34909054841 on a branch cut from main 2b1f35799, base_url production, update_baselines + capture_shell; the first dispatch, run 34904181882 on main itself, captured fine and then had its commit refused by branch protection, so e2e-manual must be dispatched on a branch): 89 PNGs and template-fingerprints.json committed by the runner, 7 admin-* PNGs changed and 21 came back byte-identical, the app-feed PNGs (the /feed drift LIVE-308 left for this capture) recaptured in the same run. PREMISE HALF EXPIRED: \"stale\" was measured by git ancestry, and git cannot tell a recaptured-and-identical PNG from a never-recaptured one; only 7 of the 28 admin baselines had drifted since the mode law. The probe is re-pointed (never deleted) at what the repo records: the capture stamp the same run writes to test/e2e/template-fingerprints.json (capturedIn, 2b1f35799 here) must descend from 3de09f6, and at least one admin-* PNG must have moved in a commit that descends from it, which proves the run covered the operator console. Still 79 on a shallow checkout.",
       "verify": {
         "kind": "cmd",
-        "cmd": "node -e 'const {execSync}=require(\"child_process\");const sh=execSync(\"git rev-parse --is-shallow-repository\").toString().trim();if(sh===\"true\")process.exit(79);const dir=\"test/e2e/__screenshots__/visual.spec.ts\";const fs=require(\"fs\");if(!fs.existsSync(dir))process.exit(79);const files=fs.readdirSync(dir).filter(f=>/^admin-.*\\.png$/.test(f));if(!files.length){console.error(\"no admin-* baselines found\");process.exit(1)}const stale=[];for(const f of files){const sha=execSync(`git log -1 --format=%H -- \"${dir}/${f}\"`).toString().trim();try{execSync(`git merge-base --is-ancestor 3de09f6 ${sha}`)}catch{stale.push(f)}}if(stale.length){console.error(\"admin-* baselines captured before the mode law: \"+stale.join(\", \"));process.exit(1)}'",
-        "note": "Measures the consequence per PNG through git ancestry; 79 when the checkout is too shallow to answer. Written 2026-09-14."
-      }
+        "cmd": "node -e 'const {execSync}=require(\"child_process\");const fs=require(\"fs\");if(execSync(\"git rev-parse --is-shallow-repository\").toString().trim()===\"true\")process.exit(79);const fp=JSON.parse(fs.readFileSync(\"test/e2e/template-fingerprints.json\",\"utf8\"));const stamps=[...new Set(Object.values(fp.surfaces).map(s=>s.capturedIn))];if(stamps.some(s=>!/^[0-9a-f]{7,40}$/.test(s))){console.error(\"template-fingerprints.json carries a non-commit capturedIn: \"+stamps.join(\",\"));process.exit(1)}for(const s of stamps){try{execSync(\"git merge-base --is-ancestor 3de09f6 \"+s)}catch{console.error(\"the last capture stamp \"+s+\" predates the mode law (3de09f6)\");process.exit(1)}}const dir=\"test/e2e/__screenshots__/visual.spec.ts\";const files=fs.readdirSync(dir).filter(f=>/^admin-.*\\.png$/.test(f));if(!files.length){console.error(\"no admin-* baselines found\");process.exit(1)}const fresh=files.filter(f=>{const sha=execSync(\"git log -1 --format=%H -- \\\"\"+dir+\"/\"+f+\"\\\"\").toString().trim();try{execSync(\"git merge-base --is-ancestor 3de09f6 \"+sha);return true}catch{return false}});if(!fresh.length){console.error(\"no admin-* baseline has moved since the mode law: the capture run did not cover the operator console\");process.exit(1)}'",
+        "note": "The capture stamp and at least one moved admin PNG both descend from the mode-law commit: the repo cannot see a byte-identical recapture, so this is what it can prove. 79 on a shallow checkout. Re-pointed 2026-09-14 at close."
+      },
+      "closed": "2026-09-14"
     },
     {
       "id": "LIVE-313",
