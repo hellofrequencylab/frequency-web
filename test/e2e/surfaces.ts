@@ -401,6 +401,23 @@ export function appSurfaces(
 ): readonly Surface[] {
   const { roomPath, spaceSlug } = env
   const surfaces: Surface[] = [
+    // The home feed. `viewportOnly` for the reason on the flag, and since LIVE-308 the first
+    // screen also carries two `data-visual-mask` sites (`feed-*` in VISUAL_MASK_SITES below).
+    // Read the committed PNG before reasoning about this row: at 1280x800 and 390x844 the first
+    // screen of the e2e account is the date eyebrow, the time-of-day greeting, the onboarding
+    // guide and the top of the Capture box. POSTS ARE NOT ON IT. What moves every hour up there
+    // is the heading, which is a clock read in America/Los_Angeles, and the drift LIVE-308
+    // measured appeared between 00:56Z and 01:03Z, across 18:00 Pacific, when "Good afternoon"
+    // becomes "Good evening". So the heading row is masked (`feed-greeting`) and the stream
+    // (`feed-stream`) is masked for the day the first screen reaches it. What stays in the
+    // picture is the design surface: the shell, the Settings divider row, the onboarding guide
+    // (account state, which moves only when the account acts), the Capture box, and the
+    // empty pane if the stream is empty.
+    // ⚠️ Heights this cannot hold, so the next size mismatch is read correctly: the guide gives
+    // way to the JourneyBoard when onboarding completes; the walkthrough, role-promotion, Your
+    // corner, host-prompt and romance cards each mount or not per account and per day; and at
+    // 390 wide the afternoon greeting is a few pixels wider than the title block, so the h1 may
+    // take a third line between 12:00 and 18:00 Pacific. None of those is a mask's to fix.
     { path: '/feed', slug: 'app-feed', audience: 'member', viewportOnly: true },
     { path: '/settings', slug: 'app-settings', audience: 'member' },
     // Around You. Listed KNOWING it will SKIP until the seeded member account and its three repo
@@ -935,6 +952,29 @@ export const VISUAL_MASK_SITES: readonly {
     file: 'components/discover/discover-locator.tsx',
     kind: 'live',
     why: 'The locator city list: a per-city circle tally, re-ranked by the viewer’s IP-approximate location.',
+  },
+  // ── /feed, the home stream (LIVE-308) ───────────────────────────────────────────────────
+  // Two boxes, chosen from the committed first-screen PNGs rather than from the row's premise:
+  // the heading is the clock that actually moved, and the stream is what moves once the first
+  // screen reaches it. See the `/feed` row in appSurfaces() for what stays in the picture and
+  // for the heights no mask can hold.
+  {
+    value: 'feed-greeting',
+    file: 'app/(main)/feed/page.tsx',
+    kind: 'live',
+    why: 'The heading row: the eyebrow is today’s date and the title the time-of-day greeting, both read in America/Los_Angeles at render. The row rather than the h1, because the title block is content-sized and its width follows the words (PageHeading.visualMask).',
+  },
+  {
+    value: 'feed-stream',
+    file: 'components/feed/feed-list.tsx',
+    kind: 'live',
+    why: 'The post stream on both lenses: the latest Dispatch, the nearest event, posts with authors, avatars, reaction counts and relative times, and the people strip. The empty and error panes are not masked.',
+  },
+  {
+    value: 'feed-stream',
+    file: 'app/(main)/feed/page.tsx',
+    kind: 'live',
+    why: 'FeedListSkeleton, so a capture that lands mid-stream paints the same box the list would.',
   },
 ]
 

@@ -420,7 +420,7 @@ export async function FeedList({
       else days.push({ label, items: [it] })
     }
     return (
-      <div className="space-y-6">
+      <div data-visual-mask="feed-stream" className="space-y-6">
         {days.map((day) => (
           <section key={day.label}>
             <h3 className="mb-2 px-1 text-meta font-bold uppercase tracking-wide text-subtle">{day.label}</h3>
@@ -435,8 +435,15 @@ export async function FeedList({
     )
   }
 
+  // THE STREAM IS A READING, on both lenses, so the visual suite paints the list over
+  // (`data-visual-mask`, ADR-1277; registered as `feed-stream` in test/e2e/surfaces.ts with the
+  // page's skeleton). Every card inside is live: the latest Dispatch, the nearest event, the
+  // posts with their authors, avatars, reaction counts and relative times, and the people strip.
+  // The empty and error panes above are NOT masked: they are design surface, and a capture
+  // that shows one is a fact about the account worth seeing. The mask paints a box and moves
+  // nothing, so a list that is one card longer is still a taller page (Surface.viewportOnly).
   return (
-    <div className="space-y-4">
+    <div data-visual-mask="feed-stream" className="space-y-4">
       {latestDispatch && <DispatchFeedCard dispatch={latestDispatch} />}
       {nearestEvent && <EventFeedCard event={nearestEvent} />}
       {pinned.map(post => (

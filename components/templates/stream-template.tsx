@@ -45,6 +45,7 @@ type StreamTemplateProps = StreamTemplateBase &
         back?: never
         sort?: never
         inlineAction?: never
+        visualMask?: never
       }
     | {
         hero?: undefined
@@ -60,6 +61,9 @@ type StreamTemplateProps = StreamTemplateBase &
         sort?: React.ReactNode
         /** Keep a COMPACT action beside the title on mobile (PageHeading.inlineActions). */
         inlineAction?: boolean
+        /** Passed straight to PageHeading.visualMask: paints the heading row over in the visual
+         *  suite. For a Stream whose eyebrow or title is a clock reading (the feed). */
+        visualMask?: string
       }
   )
 
@@ -74,6 +78,7 @@ export function StreamTemplate({
   inlineAction = false,
   headingLead,
   hero,
+  visualMask,
   children,
 }: StreamTemplateProps) {
   if (hero) {
@@ -104,6 +109,7 @@ export function StreamTemplate({
         size="hero"
         divider={false}
         headingLead={headingLead}
+        visualMask={visualMask}
       />
       {composer && <div className="mb-6">{composer}</div>}
       {children}

@@ -21,6 +21,7 @@ export function PageHeading({
   actionsAlign = 'start',
   adminBar = true,
   headingLead,
+  visualMask,
 }: {
   /** Small contextual kicker above the title (date, section, status). */
   eyebrow?: React.ReactNode
@@ -50,6 +51,20 @@ export function PageHeading({
   /** Content for the LEFT of the header's divider row, opposite the Settings control. One short
    *  line: it shares that row and wraps under the controls on a narrow viewport. */
   headingLead?: React.ReactNode
+  /**
+   * Stamps `data-visual-mask` on the HEADING ROW (title block + actions), so the visual suite
+   * paints over it (test/e2e/surfaces.ts, VISUAL_MASK_SITES; same contract as ModuleCard's
+   * `visualMask`). Set it on a page whose eyebrow or title is a READING (the feed's date and
+   * time-of-day greeting); leave it off a page whose heading is design surface.
+   *
+   * The row, not the h1, and the reason is geometry rather than taste: the title block is a
+   * content-sized flex item (`min-w-0` beside a `shrink-0` action), so its width follows the
+   * title text, and a mask on the h1 alone would be a box of a DIFFERENT WIDTH on two honest
+   * captures. The row is column-wide whatever the words are, which is what a mask needs
+   * (ADR-1277 §3: a mask paints a box and moves nothing). The divider row below, with its
+   * operator Settings control, stays in the picture.
+   */
+  visualMask?: string
 }) {
   return (
     <>
@@ -77,6 +92,7 @@ export function PageHeading({
           min-w-0 so a long title WRAPS rather than crushing the action, and the
           action is shrink-0 so it always keeps its place on the right. */}
       <div
+        data-visual-mask={visualMask}
         className={
           inlineActions
             ? 'flex flex-row items-start justify-between gap-3 sm:gap-4'
