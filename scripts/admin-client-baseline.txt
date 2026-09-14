@@ -99,6 +99,14 @@
 # is one function: it reads a fixed column list for ONE event id the settle already holds, and what
 # it reads reaches the email body only, never an HTTP response. The address it sends to is the one
 # on the session Stripe signed, never one a reader supplied.
+# lib/events/member-ticket-email.ts (added 2026-09-14, LIVE-316): the MEMBER half of the ticket receipt,
+# the exact sibling of lib/events/guest-ticket-email.ts directly above and under the same posture: the
+# caller is STRIPE (recordTicketFromSession inside the webhook), so there is no session client and no
+# cookie to run under. It reads the same fixed event columns for the one event id the settle holds,
+# plus the tier name, the Circle name, the buyer's profile and the account address through
+# auth.admin.getUserById (auth.users is not readable any other way). Quarantined in its own module so
+# lib/billing/tickets.ts is not where the elevated read lives; what it reads reaches the email body
+# only, gated by resolveSendGate, and the hidden-venue rule is held to the guest rule.
 # app/api/cron/onboarding-throughput/route.ts (added 2026-09-14, LIVE-311): the nightly reading of
 # who is stuck BEHIND the admission gate (ADR-1324 found nine accounts there for up to eleven weeks,
 # found only by a member texting). READ-ONLY, and the bypass cannot converge for two reasons. (1)
@@ -619,6 +627,7 @@ lib/events/guest-ticket-email.ts
 lib/events/guests.ts
 lib/events/host-gate.ts
 lib/events/matching.ts
+lib/events/member-ticket-email.ts
 lib/events/membership-included.ts
 lib/events/placement.ts
 lib/events/poster-media.ts
