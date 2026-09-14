@@ -11,6 +11,7 @@
 import { cache } from 'react'
 import { menuDb } from './db'
 import { briefError } from '@/lib/log'
+import { isProductionBuild } from '@/lib/supabase/public'
 import { CHROME_CACHE_TAGS, crossRequestCached } from '@/lib/cross-request-cache'
 import { defaultMenu, DEFAULT_MENU_SETTINGS } from './defaults'
 import { applyRegistryGates } from './gates'
@@ -298,6 +299,28 @@ const menuRows = crossRequestCached(readMenuRows, ['menus', 'rows'], {
 
 type MenuRowSource = (surfaceKey: string, spaceId: string | null) => Promise<MenuRowBundle | null>
 
+/**
+ * The fallback is a REQUEST-TIME promise: nav must always render, so a failed read at request time
+ * degrades to the code defaults and says so on stderr. During `next build` that same promise is a
+ * trap. The (marketing) layout reads these menus with no cookies so its pages stay STATIC, which
+ * means a menu read that fails at prerender bakes the default header and footer into the artifact,
+ * and ISR holds them for an hour after the deploy. On 2026-09-14 every build inside a Supabase
+ * connectivity window printed "falling back to defaults" for each surface and carried on; the
+ * discover pages threw and failed those builds, which is the only reason production kept the real
+ * menus. LIVE-325 / ADR-1327: at build time a failed read THROWS, like a discover read does, and the
+ * build fails rather than ships. Exported so a test can pin both branches without a database.
+ */
+export class MenuBuildReadError extends Error {
+  constructor(what: string, cause: unknown) {
+    super(`menu read failed during next build: ${what}. ${briefError(cause)}`)
+    this.name = 'MenuBuildReadError'
+  }
+}
+export function menuReadFailed(what: string, err: unknown): void {
+  if (isProductionBuild()) throw new MenuBuildReadError(what, err)
+  console.error(`[menus] ${what} failed, falling back to defaults`, briefError(err))
+}
+
 /** Rows in, ResolvedMenu out: the defaults fallback, the empty-row rule and the registry gates all
  *  run HERE, after whichever source supplied the rows, so a code change to a default or a gate is
  *  live on the next request whether or not the cache was invalidated. Falls back to
@@ -329,7 +352,7 @@ async function resolveMenu(
     // the code again. Order, grouping, labels, icons and on/off stay the operator's.
     return applyRegistryGates(resolved)
   } catch (err) {
-    console.error('[menus] getMenu failed, falling back to defaults', surfaceKey, briefError(err))
+    menuReadFailed(`getMenu ${surfaceKey}`, err)
     return defaultMenu(surfaceKey)
   }
 }
@@ -434,7 +457,7 @@ export const getMenuSettings = cache(async (): Promise<MenuSettings> => {
       fadeMs: row.fade_ms ?? DEFAULT_MENU_SETTINGS.fadeMs,
     }
   } catch (err) {
-    console.error('[menus] getMenuSettings failed, falling back to defaults', briefError(err))
+    menuReadFailed('getMenuSettings', err)
     return DEFAULT_MENU_SETTINGS
   }
 })

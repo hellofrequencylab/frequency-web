@@ -46,7 +46,6 @@
         {
           "name": "W0b · P1 — repairs ready to work now, and the instruments that keep the gates honest. This is the wave to pull from when you want the next thing to do.",
           "ids": [
-            "LIVE-325",
             "LIVE-186",
             "LIVE-213",
             "LIVE-312",
@@ -12355,7 +12354,7 @@
     {
       "id": "LIVE-325",
       "title": "A menu read that fails during next build falls back to defaults and ships them, with no gate that notices",
-      "status": "open",
+      "status": "done",
       "priority": "P1",
       "lane": "live",
       "size": "S",
@@ -12363,12 +12362,13 @@
         "file": "lib/menus/read.ts",
         "ref": "getMenu / getMenuSettings fallbacks"
       },
-      "detail": "MEASURED 2026-09-14 in the Vercel build logs of the day's second Supabase window (18:00Z to about 18:15Z). Three production builds (3115b4d, f1cdcdc, d6103e6) failed at prerender, correctly: /discover/* throws DiscoverReadError rather than ship an empty page. In the same builds every menu read printed \"[menus] getMenu failed, falling back to defaults\" (header, footer, profile, menu_settings, the child queries) and the build carried on. A preview that survived the window (#2571's, ft7n2hzme) shipped default header and footer menus; pr-compare's ten public-tier visual diffs on /about, /the-lab, /how-to-build-community and /discover were that fallback photographed. Had a production build survived the window, production would have served default menus on the static marketing surfaces (ISR 3600) with no red anywhere. That is the fail-safe-without-a-gate shape AGENTS.md names, and the static marketing layout is exactly where it lands (app/(marketing)/layout.tsx reads the menus with no cookies so the pages stay static).\n\nTHE WORK: in lib/menus/read.ts, when process.env.NEXT_PHASE === 'phase-production-build', a failed menu read THROWS so prerender fails the way a discover read does; at request time the fallback stays, because a member page with a default menu beats an error page. A test pins both branches. Consider the same rule for any other build-time reader that falls back silently (grep \"falling back to defaults\" under lib/). ADR-1327.",
+      "detail": "MEASURED 2026-09-14 in the Vercel build logs of the day's second Supabase window (18:00Z to about 18:15Z). Three production builds (3115b4d, f1cdcdc, d6103e6) failed at prerender, correctly: /discover/* throws DiscoverReadError rather than ship an empty page. In the same builds every menu read printed \"[menus] getMenu failed, falling back to defaults\" (header, footer, profile, menu_settings, the child queries) and the build carried on. A preview that survived the window (#2571's, ft7n2hzme) shipped default header and footer menus; pr-compare's ten public-tier visual diffs on /about, /the-lab, /how-to-build-community and /discover were that fallback photographed. Had a production build survived the window, production would have served default menus on the static marketing surfaces (ISR 3600) with no red anywhere. That is the fail-safe-without-a-gate shape AGENTS.md names, and the static marketing layout is exactly where it lands (app/(marketing)/layout.tsx reads the menus with no cookies so the pages stay static).\n\nTHE WORK: in lib/menus/read.ts, when process.env.NEXT_PHASE === 'phase-production-build', a failed menu read THROWS so prerender fails the way a discover read does; at request time the fallback stays, because a member page with a default menu beats an error page. A test pins both branches. Consider the same rule for any other build-time reader that falls back silently (grep \"falling back to defaults\" under lib/). ADR-1327.\n\nCLOSED 2026-09-14: lib/menus/read.ts routes both catch sites through menuReadFailed(what, err): during next build (isProductionBuild(), the detector lib/supabase/public.ts already uses for its bounded fetch) it throws MenuBuildReadError naming the read, so prerender fails the way a DiscoverReadError does; at request time it logs and the caller falls back as before. lib/menus/read.build-phase.test.ts pins the request-time, build-time and dev-server branches on the helper and pins by source shape that no catch site logs the fallback on its own. No other 'falling back to defaults' string under lib/ sits on a build-time path.",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e \"const s=require('fs').readFileSync('lib/menus/read.ts','utf8');if(!/if \\\\(isProductionBuild\\\\(\\\\)\\\\) throw/.test(s)){console.error('lib/menus/read.ts never throws on the build phase: a failed menu read still falls back to defaults during next build and ships them');process.exit(1)}\"",
         "note": "Passes once the reader throws when the build-phase detector (isProductionBuild, lib/supabase/public.ts) says so. Measures the throw, not a string. Written 2026-09-14."
-      }
+      },
+      "closed": "2026-09-14"
     },
     {
       "id": "LIVE-326",
