@@ -17,6 +17,18 @@
 // send (email_events). Welcome to the embodied-practice retention loop.
 // The stamp is taken BEFORE the send as a conditional claim (claimReminder), so
 // two overlapping runs, or a crash after the send, cannot send twice (L6-17).
+//
+// THE GUEST TICKET ARM (LIVE-320). A guest who bought a ticket through the guest door
+// (20270345003400) holds no RSVP row and no profile, so the RSVP read above never sees them. For
+// each event in a window, before its RSVPs, the cron reads succeeded event_tickets with a null
+// buyer and a guest_email, claims the SAME stamp on the TICKET row (event_tickets.reminder_*_sent_at,
+// 20270345004100, named as the RSVP twins), and emails the ticket's address the guest reminder with
+// the receipt's footer and account offer. Email only, like the RSVP guest leg. The one gate a guest
+// has is the address-level suppression list, the same one the receipt's transactional carve-out
+// keeps; it is read before the send, and a suppressed address is claimed and skipped so it is not
+// re-read forever. A guest who holds BOTH an admitted RSVP row and a ticket under one address is
+// reminded through the RSVP leg only: the ticket is claimed and not sent. A member ticket
+// (buyer set) is never read here; a refunded, failed or pending ticket is never read at all.
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -31,6 +43,7 @@ import {
 } from '@/lib/email'
 import { buildUnsubscribeUrl } from '@/lib/unsubscribe-tokens'
 import { resolveSendGate } from '@/lib/comms/send-gate'
+import { isSuppressed } from '@/lib/suppression'
 import { sendPushToProfile } from '@/lib/push'
 import { sendSms } from '@/lib/comms/sms'
 import { recordContactInteraction } from '@/lib/crm/interactions'
@@ -77,6 +90,13 @@ type RsvpRow = {
   guest_name:  string | null
 }
 
+/** A guest ticket (LIVE-320): a succeeded purchase with no buyer and an address. */
+type TicketRow = {
+  id:          string
+  event_id:    string
+  guest_email: string
+}
+
 function leadOffsetMs(lead: '24h' | '2h'): number {
   return lead === '24h' ? 24 * 60 * 60 * 1000 : 2 * 60 * 60 * 1000
 }
@@ -115,6 +135,24 @@ async function claimReminder(rsvpId: string, sentColumn: SentColumn): Promise<bo
     .select('id')
   if (error) {
     log.error('cron.event_reminders.claim_failed', { rsvpId, sentColumn, error: error.message })
+    return false
+  }
+  return Array.isArray(data) && data.length > 0
+}
+
+/** The ticket twin of claimReminder (LIVE-320): the same conditional claim on event_tickets, on
+ *  the same-named column. Same contract: a claim that fails, errors, or returns no row means do
+ *  not send, and a claim is never undone on a send failure (at-most-once). */
+async function claimTicketReminder(ticketId: string, sentColumn: SentColumn): Promise<boolean> {
+  const db = createAdminClient()
+  const { data, error } = await db
+    .from('event_tickets')
+    .update({ [sentColumn]: new Date().toISOString() } as Database['public']['Tables']['event_tickets']['Update'])
+    .eq('id', ticketId)
+    .is(sentColumn, null)
+    .select('id')
+  if (error) {
+    log.error('cron.event_reminders.claim_failed', { ticketId, sentColumn, error: error.message })
     return false
   }
   return Array.isArray(data) && data.length > 0
@@ -206,6 +244,20 @@ async function processLead(
       remaining += eventBatch.length - evIndex
       break
     }
+
+    // ── The guest TICKET arm (LIVE-320), under the same budget, BEFORE the event's RSVPs: the RSVP
+    // block below `continue`s past an event with no RSVP rows, and a guest-only ticketed event is
+    // exactly that event. A run the tickets exhaust stops here with this event counted as left,
+    // the same way the check above counts an event it never opened.
+    const tickets = await remindGuestTicketHolders(ev, lead, sentColumn, budget, appUrl)
+    sent += tickets.sent
+    remaining += tickets.remaining
+    if (tickets.stoppedOnBudget) {
+      stoppedOnBudget = true
+      remaining += eventBatch.length - evIndex
+      break
+    }
+
     const { data: rsvps } = await admin
       .from('event_rsvps')
       .select('id, event_id, profile_id, guest_email, guest_name')
@@ -413,6 +465,100 @@ async function processLead(
   }
 
   return { events: eventRows.length, sent, remaining, stoppedOnBudget }
+}
+
+/**
+ * Remind every guest ticket holder of ONE event for one touch (LIVE-320). Reads succeeded tickets
+ * with a null buyer and an address that this touch has not yet claimed, claims each on the ticket
+ * row, and emails the ticket's address. Returns what it sent and what the budget left behind.
+ *
+ * Per-address rules, in order:
+ *   · an address that also holds an ADMITTED guest RSVP row on this event is reminded by the RSVP
+ *     leg (its own stamp, its own read); the ticket is claimed so it is not re-read, and not sent;
+ *   · an address on the suppression list is claimed and not sent (the receipt's transactional
+ *     carve-out keeps exactly this one gate, lib/comms/send-gate.ts);
+ *   · one address holding several tickets on one event is told once per run: the first ticket
+ *     sends, the rest are claimed and skipped.
+ */
+async function remindGuestTicketHolders(
+  ev: EventRow,
+  lead: ReminderLead,
+  sentColumn: SentColumn,
+  budget: CronBudget,
+  appUrl: string,
+): Promise<{ sent: number; remaining: number; stoppedOnBudget: boolean }> {
+  const admin = createAdminClient()
+  const { data: ticketData, error: ticketErr } = await admin
+    .from('event_tickets')
+    .select('id, event_id, guest_email')
+    .eq('event_id', ev.id)
+    .eq('status', 'succeeded')
+    .is('buyer_profile_id', null)
+    .not('guest_email', 'is', null)
+    .is(sentColumn, null)
+  if (ticketErr) {
+    // A failed read must not look like an event with no guest tickets; the next run re-reads.
+    log.error('cron.event_reminders.ticket_read_failed', { eventId: ev.id, lead, error: ticketErr.message })
+    return { sent: 0, remaining: 0, stoppedOnBudget: false }
+  }
+  const guestTickets = ((ticketData ?? []) as unknown as TicketRow[]).filter((t) => !!t.guest_email)
+  if (!guestTickets.length) return { sent: 0, remaining: 0, stoppedOnBudget: false }
+
+  const { batch: ticketRows, remaining } = budget.take(
+    [...guestTickets].sort((a, b) => a.id.localeCompare(b.id)),
+  )
+
+  // Addresses the RSVP leg already owns on this event: an admitted guest seat under the same
+  // address. Read once per event, not per ticket. Same predicate as the RSVP read above (going,
+  // not pending), because a pending request is not an admission and would not be reminded there.
+  const rsvpHeld = new Set<string>()
+  const { data: guestRsvps } = await admin
+    .from('event_rsvps')
+    .select('guest_email')
+    .eq('event_id', ev.id)
+    .eq('status', 'going')
+    .neq('approval_status', 'pending')
+  for (const r of (guestRsvps ?? []) as { guest_email: string | null }[]) {
+    if (r.guest_email) rsvpHeld.add(r.guest_email.trim().toLowerCase())
+  }
+
+  // Gated the same way the RSVP guest leg is: a guest is never `viewerRegistered`, so a
+  // hidden-address event gives them no venue line (ADR-825/854).
+  const guestLocation = ev.hide_address === true ? null : ev.location
+  const eventUrl = `${appUrl}/events/${ev.slug}`
+  // The receipt's one account offer, and the same shape: a /sign-in magic link carrying the
+  // address, so the tap is what proves it (lib/events/guest-ticket-email.ts).
+  const claimUrlFor = (email: string) =>
+    `${appUrl}/sign-in?next=${encodeURIComponent(`/events/${ev.slug}`)}&email=${encodeURIComponent(email)}`
+
+  const toldThisRun = new Set<string>()
+  let sent = 0
+  for (const [index, ticket] of ticketRows.entries()) {
+    if (budget.exhausted()) {
+      return { sent, remaining: remaining + ticketRows.length - index, stoppedOnBudget: true }
+    }
+    const email = ticket.guest_email.trim().toLowerCase()
+    // Claimed before anything else, exactly as the RSVP legs: a row this run cannot claim belongs
+    // to another run, and a row that will not be sent is still stamped so it is not re-read.
+    if (!(await claimTicketReminder(ticket.id, sentColumn))) continue
+    if (rsvpHeld.has(email) || toldThisRun.has(email)) continue
+    toldThisRun.add(email)
+    if (await isSuppressed(email)) continue
+
+    const delivered = await deliver('guest_ticket_email', ticket.id, lead, () => sendGuestEventReminderEmail({
+      to:           email,
+      guestName:    null,
+      eventTitle:   ev.title,
+      whenLabel:    formatRelative(lead),
+      whenAbsolute: formatAbsolute(ev.starts_at, ev.time_zone),
+      location:     guestLocation,
+      eventUrl,
+      held:         'ticket',
+      claimUrl:     claimUrlFor(email),
+    }))
+    if (delivered) sent += 1
+  }
+  return { sent, remaining, stoppedOnBudget: false }
 }
 
 // Warm ~1-week-out email. Built here (not via sendEventReminderEmail, whose

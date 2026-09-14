@@ -906,6 +906,16 @@ You are getting this because this address was used to ${reason} ${eventTitle}.
 // (needs a registered device) and SMS (needs a consent record under the A2P track), and a guest has
 // neither, so there is nothing to gate and nothing to send on those.
 //
+// TWO WAYS A GUEST HOLDS A PLACE (LIVE-320). `held` says which row the address came from, and it
+// decides only the intro line, the footer and the one offer:
+//   'rsvp'   (default) an event_rsvps guest seat: "this address was used to RSVP", and plans can
+//            change on the event page. The message this sender always rendered, unchanged.
+//   'ticket' an event_tickets guest purchase: the footer the ticket RECEIPT uses ("this address was
+//            used to buy a ticket", "if that was not you, reply"), plus the receipt's one account
+//            offer, `claimUrl`, which is a magic link at /sign-in and nothing else (the tap is what
+//            proves the address; lib/events/guest-ticket-email.ts owns why). No preference link and
+//            no unsubscribe link, because a guest has no profile for either to key on.
+//
 // 🔴 `location` MUST ARRIVE ALREADY GATED, exactly as in sendGuestRsvpConfirmationEmail: a guest
 // never satisfies the going/waitlist/ticket test that unlocks a withheld address on the event page,
 // so a hidden-address event sends the city line here too. A reminder is the easiest place to leak
@@ -918,9 +928,51 @@ export async function sendGuestEventReminderEmail(params: {
   whenAbsolute: string
   location:     string | null
   eventUrl:     string
+  /** Which row holds this guest's place. Defaults to 'rsvp'. */
+  held?:        'rsvp' | 'ticket'
+  /** The receipt's account offer, for a ticket only: a /sign-in magic link carrying the address. */
+  claimUrl?:    string | null
 }) {
   const { to, guestName, eventTitle, whenLabel, whenAbsolute, location, eventUrl } = params
+  const held = params.held ?? 'rsvp'
+  const claimUrl = held === 'ticket' && params.claimUrl ? params.claimUrl : null
   const greeting = guestGreeting(guestName)
+
+  const intro = held === 'ticket'
+    ? 'a quick reminder that you have a ticket for this one.'
+    : 'a quick reminder that you said you were coming.'
+
+  const accountOfferHtml = claimUrl ? `
+      <hr style="${dividerStyle}">
+      <p style="${pStyle}">
+        <strong>Put this ticket in an account.</strong> Tap below and we will email you a sign in link
+        at this address. Once you are in, this ticket is on your account with everything else you have
+        said yes to.
+      </p>
+      <p style="margin:0 0 8px;">
+        <a href="${claimUrl}" style="${btnStyle}">Add this ticket to an account &rarr;</a>
+      </p>` : ''
+
+  const footerHtml = held === 'ticket'
+    ? `You are getting this because this address was used to buy a ticket to ${escapeHtml(eventTitle)}.
+        If that was not you, reply to this email and we will sort it out.`
+    : `You are getting this because this address was used to RSVP to ${escapeHtml(eventTitle)}.
+        Plans change, and that is okay. You can say so on the event page.`
+
+  const footerText = held === 'ticket'
+    ? `You are getting this because this address was used to buy a ticket to ${eventTitle}.
+If that was not you, reply to this email and we will sort it out.`
+    : `You are getting this because this address was used to RSVP to ${eventTitle}.
+Plans change, and that is okay. You can say so on the event page.`
+
+  const accountOfferText = claimUrl
+    ? `
+Put this ticket in an account. Open the link below and we will email you a sign in link at
+this address. Once you are in, this ticket is on your account with everything else you have
+said yes to.
+Add this ticket to an account: ${claimUrl}
+`
+    : ''
 
   await enqueueEmail({
     to,
@@ -930,27 +982,80 @@ export async function sendGuestEventReminderEmail(params: {
         ${escapeHtml(whenLabel)}
       </p>
       <h1 style="${h1Style}">${escapeHtml(eventTitle)}</h1>
-      <p style="${pStyle}">${escapeHtml(greeting)}a quick reminder that you said you were coming.</p>
+      <p style="${pStyle}">${escapeHtml(greeting)}${intro}</p>
       <p style="${pStyle}">
         <strong>${escapeHtml(whenAbsolute)}</strong>${location ? `<br><span style="color:#777;">${escapeHtml(location)}</span>` : ''}
       </p>
-      <a href="${eventUrl}" style="${btnStyle}">View event →</a>
+      <a href="${eventUrl}" style="${btnStyle}">View event →</a>${accountOfferHtml}
       <hr style="${dividerStyle}">
       <p style="font-size:13px;color:#8F8675;">
-        You are getting this because this address was used to RSVP to ${escapeHtml(eventTitle)}.
-        Plans change, and that is okay. You can say so on the event page.
+        ${footerHtml}
       </p>
     `),
     text: `${whenLabel}: ${eventTitle}
 
-${greeting}a quick reminder that you said you were coming.
+${greeting}${intro}
 
 When: ${whenAbsolute}
 ${location ? `Where: ${location}\n` : ''}
 View event: ${eventUrl}
+${accountOfferText}
+${footerText}
+`,
+  })
+}
 
-You are getting this because this address was used to RSVP to ${eventTitle}.
-Plans change, and that is okay. You can say so on the event page.
+
+// ── Guest event update email (a host broadcast to a guest ticket holder, LIVE-320) ──────
+//
+// The guest half of sendEventUpdateEmail below, for the platform-hosted broadcast lane: the host
+// of an event a GUEST bought a ticket to writes to everyone holding one. A guest has no profile,
+// so there is no 'dispatches' preference to read and no profile-keyed unsubscribe token to mint;
+// the address-level suppression list is the one gate (isSuppressed, checked by the caller and
+// again inside sendRawEmail at drain). The footer therefore says what this is and how to stop it
+// in the only way a guest can: by replying. Under ADR-854 an unproven address may receive a
+// delivery about the thing it bought and nothing else, and a host's update about that very event
+// is that delivery. The host-Space lane does not use this sender: it carries guests through the
+// campaign seam, which mints its own per-recipient unsubscribe.
+export async function sendGuestEventUpdateEmail(params: {
+  to:          string
+  eventTitle:  string
+  updateTitle: string | null
+  body:        string
+  eventUrl:    string
+}) {
+  const { to, eventTitle, updateTitle, body, eventUrl } = params
+
+  await enqueueEmail({
+    to,
+    subject: updateTitle ? `${eventTitle}: ${updateTitle}` : `Update from ${eventTitle}`,
+    html: emailShell(`
+      <p style="font-size:11px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:#8F8675;margin:28px 0 8px;">
+        Event update
+      </p>
+      <h1 style="${h1Style}">${escapeHtml(updateTitle ?? eventTitle)}</h1>
+      ${updateTitle ? `<p style="${pStyle}"><strong>${escapeHtml(eventTitle)}</strong></p>` : ''}
+      <p style="${pStyle}">Hi,</p>
+      <p style="${pStyle}">${escapeHtml(body).replace(/\n/g, '<br>')}</p>
+      <a href="${eventUrl}" style="${btnStyle}">View event →</a>
+      <hr style="${dividerStyle}">
+      <p style="font-size:13px;color:#8F8675;">
+        You are getting this because this address was used to buy a ticket to ${escapeHtml(eventTitle)},
+        and the host sent an update to everyone holding one. If that was not you, or you would rather
+        not hear from this event again, reply to this email and we will sort it out.
+      </p>
+    `),
+    text: `Event update: ${updateTitle ? `${eventTitle}: ${updateTitle}` : eventTitle}
+
+Hi,
+
+${body}
+
+View event: ${eventUrl}
+
+You are getting this because this address was used to buy a ticket to ${eventTitle}, and the host
+sent an update to everyone holding one. If that was not you, or you would rather not hear from this
+event again, reply to this email and we will sort it out.
 `,
   })
 }

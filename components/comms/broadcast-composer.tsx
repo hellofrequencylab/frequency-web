@@ -110,9 +110,14 @@ export function BroadcastComposer({
 
   // The whole list, deduped across segments: the locked state still SHOWS the audience
   // (tracked and visible), it just cannot free-form message it.
+  // A guest ticket holder (LIVE-320) counts by address, in its own namespace so it can never
+  // collide with a profile id; the server dedupes an address a member also uses at send time.
   const listCount = useMemo(() => {
     const ids = new Set<string>()
-    for (const s of segments) for (const id of s.profileIds) ids.add(id)
+    for (const s of segments) {
+      for (const id of s.profileIds) ids.add(id)
+      for (const email of s.guestEmails ?? []) ids.add(`guest:${email}`)
+    }
     return ids.size
   }, [segments])
 
@@ -125,6 +130,7 @@ export function BroadcastComposer({
       if (!pickedSegments.has(s.key)) continue
       labels.push(s.label)
       for (const id of s.profileIds) ids.add(id)
+      for (const email of s.guestEmails ?? []) ids.add(`guest:${email}`)
     }
     return { count: ids.size, summaryLabel: labels.join(' + ') }
   }, [segments, pickedSegments])
@@ -301,7 +307,7 @@ export function BroadcastComposer({
                 className={chipClasses(on)}
               >
                 {s.label}
-                <span className={on ? 'font-semibold' : 'text-subtle'}>{s.profileIds.length}</span>
+                <span className={on ? 'font-semibold' : 'text-subtle'}>{s.profileIds.length + (s.guestEmails?.length ?? 0)}</span>
               </button>
             )
           })}

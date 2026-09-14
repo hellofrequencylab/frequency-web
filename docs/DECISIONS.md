@@ -40230,3 +40230,64 @@ OWN-074 Connect onboarding, `STRIPE_CONNECT_WEBHOOK_SECRET`, `SUPPORT_CHAT=1` on
 `SENTRY_DSN` on Production, the sites apex, the Healthchecks check for `onboarding-throughput`,
 and one new: the git proxy refuses branch deletes, so the 14 merged lane branches on origin want
 "automatically delete head branches" turned on in the repository settings.
+
+## ADR-1330: ACCEPTED — a guest ticket holder is reminded and reachable at the address on the ticket, with the reminder stamps carried on the ticket row (2026-09-14)
+
+**Context.** The guest door (20270345003400, ADR-854's rules) let a signed-out visitor buy a
+ticket under an address: `event_tickets.guest_email` with a null `buyer_profile_id`. Two readers
+predated it and never learned. The reminder cron (`app/api/cron/event-reminders/route.ts`) drove
+its three touches off `event_rsvps` alone, keyed on that table's `reminder_*_sent_at` stamps, and
+a guest ticket has no RSVP row. The host's event broadcast (`lib/events/broadcast-audience.ts`)
+dropped every ticket row with a null buyer on a comment written when null meant a deleted
+account. So a person who paid held a receipt and nothing else: no reminder, and no way for the
+host to reach them (LIVE-320, filed from the guest-door handoff).
+
+**Decision.**
+
+- **The stamp lives on the ticket row.** `event_tickets` gains `reminder_7d_sent_at`,
+  `reminder_24h_sent_at` and `reminder_2h_sent_at` (20270345004100), named as the `event_rsvps`
+  twins so one `SentColumn` type names a column on both tables. The cron's guest arm reads
+  succeeded tickets with a null buyer and an address that the touch has not claimed, takes the
+  same conditional update-where-null claim on the ticket row (at-most-once, the claim never
+  undone on a send failure, L6-17), and emails the ticket's address. It runs before the event's
+  RSVPs, because the RSVP block skips an event with no RSVP rows and a guest-only ticketed event
+  is exactly that event. Same LIVE-190 budget. A member ticket (buyer set, including a claimed
+  guest ticket) is never read there; it is reminded through the member's RSVP row as before.
+- **The gate a guest has is the suppression list, and it is honoured by stamping.** There is no
+  profile, so no preference row and no consent scope. The address-level suppression list is the
+  one gate the receipt's transactional carve-out keeps (`lib/comms/send-gate.ts`), and the cron
+  reads it before the send; a suppressed address is claimed and skipped, so an unreachable row is
+  not re-read every quarter-hour. One address holding an admitted guest RSVP row and a ticket on
+  the same event is reminded through the RSVP leg only; the ticket is claimed and not sent.
+- **The message is the reminder body with the receipt's identity.** `sendGuestEventReminderEmail`
+  takes `held: 'rsvp' | 'ticket'`; the ticket variant carries the receipt's footer ("this
+  address was used to buy a ticket", "if that was not you, reply") and the receipt's one account
+  offer, a `/sign-in` magic link carrying the address (the tap is the proof, ADR-854), and nothing
+  that assumes a session. The venue is withheld on a `hide_address` event as the RSVP guest leg
+  withholds it. The RSVP variant renders as it always did.
+- **A null buyer with an address is a guest, not a deleted account.** `ticketIdentity` decides a
+  ticket row's identity in one place: member (buyer set), guest (buyer null, address set), or
+  nobody (neither, or a refund by status or `refunded_at`). `BroadcastSegment` gains
+  `guestEmails` beside `profileIds`; `ticketSegments` fills it, the composer counts it, and
+  `resolveEventBroadcastReach` hands both lists to the send action. A guest address a member in
+  the same audience also uses is dropped (`guestEmailsNotHeldByMembers`), so one mailbox is
+  written to once. Guests ride the EMAIL channel only: the host-Space lane hands them to the
+  campaign seam as plain address recipients (same consent bar, suppression, cap and per-recipient
+  unsubscribe, ADR-1040), and the platform lane checks `isSuppressed` itself and sends the guest
+  half of the event update (`sendGuestEventUpdateEmail`, footer says how to stop it by replying).
+  No DM (keyed on a profile), no timeline touch, and the Dispatch fan-out stays the page's own.
+
+**What a guest ticket holder now receives, and what stays refused.** The 7d, 24h and 2h reminder
+emails, and the host's event broadcast by email. Nothing for a refunded, pending or failed ticket:
+both reads filter on `succeeded`, and the audience's pure half refuses a refund on its own even
+if handed unfiltered rows. Nothing beyond those two messages. This is the ADR-854 line: an
+unverified address may receive a delivery about the thing it bought and nothing else.
+
+**Consequences.** `lib/database.types.ts` carries the three columns by hand until the next
+regeneration. `event_rsvps` and `event_tickets` now each carry a reminder ledger, and a reader
+that wants "was this person reminded" for a guest has to know which row they hold; the cron's
+dedupe rule (RSVP leg wins) is the one place that reconciles them. A member who bought a ticket
+and never RSVP'd still gets no reminder, exactly as before this ADR; that is a member-path
+question and not this row's.
+
+**Rows.** LIVE-320 (done). Migration 20270345004100.

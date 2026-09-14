@@ -18,11 +18,15 @@ export type BroadcastChannelKey = 'email' | 'dm' | 'dispatch' | 'sms'
 
 /** One selectable slice of the scope's audience. `profileIds` is the deduped member set,
  *  used ONLY for the live recipient count in the summary line; the server action always
- *  re-resolves the audience from the segment keys and never trusts client ids. */
+ *  re-resolves the audience from the segment keys and never trusts client ids.
+ *  `guestEmails` (LIVE-320) is the same for people who hold a place with no account: a guest
+ *  ticket holder, reachable by email at the address on the ticket and by nothing else. Absent
+ *  on scopes that have no such people. Display only, like `profileIds`. */
 export interface BroadcastSegment {
   key: string
   label: string
   profileIds: string[]
+  guestEmails?: string[]
 }
 
 /** How one channel is offered on this surface. A disabled channel renders as an inert
