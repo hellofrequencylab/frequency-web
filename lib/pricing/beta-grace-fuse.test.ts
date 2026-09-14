@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { readFileSync, readdirSync } from 'node:fs'
-import { asBetaGrace, BETA_GRACE_DEFAULT, betaGraceActive } from './beta'
+import { asBetaGrace, BETA_GRACE_DEFAULT, betaGraceActive, betaGraceEndsAtMs } from './beta'
 
 // ── The beta-grace fuse (Phase 0, docs/VALUE-LADDER.md) ─────────────────────────────────────────
 //
@@ -40,13 +40,15 @@ describe('the grace window is a row an operator can see, not a constant nobody k
     expect(seeded, 'no migration seeds pricing_settings.beta_grace').toBe(true)
   })
 
-  it('the FIRST write matched the code default, so seeding changed no behaviour', () => {
+  it('the FIRST write matched the code default AS IT STOOD, so seeding changed no behaviour', () => {
     // The whole point of the seed was to make the EXISTING value visible. A seed that differed from
-    // BETA_GRACE_DEFAULT would silently have moved the enforcement date for every Space on the
-    // platform, which is exactly the class of surprise that phase existed to remove.
+    // the default of the day would silently have moved the enforcement date for every Space on the
+    // platform, which is exactly the class of surprise that phase existed to remove. The default was
+    // '2026-09-01' then; it has since moved (LIVE-309, below), so this pins the seed's LITERAL rather
+    // than the constant — the assertion is about what the seed wrote, not about today's fallback.
     const seed = graceMigrations()[0]
     expect(seed).toBeTruthy()
-    expect(seed!.sql).toContain(String(BETA_GRACE_DEFAULT.until))
+    expect(seed!.sql).toContain('2026-09-01')
   })
 
   it('the seed is insert-if-absent, so an operator edit is never clobbered', () => {
@@ -82,6 +84,26 @@ describe('the grace window was REMOVED, and the migration that removed it says s
     // The gates bite from the moment this lands, at any clock, rather than on some later date.
     expect(betaGraceActive(written, new Date('2026-08-19T17:47:00Z'))).toBe(false)
     expect(betaGraceActive(written, new Date('2030-01-01T00:00:00Z'))).toBe(false)
+  })
+})
+
+describe('the code default is a window that cannot lapse (LIVE-309, ADR-1324)', () => {
+  // Until 2026-09-14 the default was '2026-09-01', matching the pricing cutover. betaGraceActive() is
+  // false for a past date, so from 1 September a failed or malformed read ENFORCED every gate — the
+  // fail-safe pointing the wrong way by calendar, with the live row the only thing masking it. The
+  // rule now: the fallback grants for longer than the product will exist.
+  it('a failed read grants today', () => {
+    expect(betaGraceActive(BETA_GRACE_DEFAULT)).toBe(true)
+  })
+
+  it('and still grants a decade out, so a calendar can never flip the direction again', () => {
+    const tenYears = new Date()
+    tenYears.setUTCFullYear(tenYears.getUTCFullYear() + 10)
+    expect(betaGraceActive(BETA_GRACE_DEFAULT, tenYears)).toBe(true)
+  })
+
+  it('the default is a real, parseable date rather than a garbage string that grants by accident', () => {
+    expect(betaGraceEndsAtMs(BETA_GRACE_DEFAULT.until)).not.toBeNull()
   })
 })
 
