@@ -6,6 +6,7 @@ import {
   ledgerCheck,
   LEDGER_READ_ATTEMPTS,
   LEDGER_READ_BACKOFF_MS,
+  isWrappedTransportFailure,
   menuWritesMissingNote,
   parseArgs,
   resolveLedgerSource,
@@ -401,6 +402,48 @@ describe('a read the platform did not answer is retried, bounded, and still fail
     expect(calls).toBe(1)
     expect(r.status).toBe('error')
     expect(r.lines.join('\n')).toContain('401')
+  })
+
+  it('an HTTP 400 that wraps a refused connection is a transport failure and IS retried', async () => {
+    // 2026-09-14 18:03Z, #2571: `HTTP 400 {"message":"Failed to run sql query: connect ECONNREFUSED
+    // 2600:…:5432"}` from the same window that produced the 544s. The status says caller; the body
+    // says the platform could not reach its own database.
+    const repo = corpus()
+    let calls = 0
+    const r = await run(repo, null, {
+      io: {
+        ...noSleep,
+        repo: { readdir: () => files(repo) },
+        fetch: async () =>
+          ++calls < 2
+            ? { ok: false, status: 400, text: async () => '{"message":"Failed to run sql query: connect ECONNREFUSED 2600:1f13::5432"}' }
+            : { ok: true, json: async () => ({ result: repo }), text: async () => '' },
+      },
+    })
+    expect(calls).toBe(2)
+    expect(r.status).toBe('parity')
+  })
+
+  it('a real HTTP 400 (a malformed query) is still the caller\'s and is NOT retried', async () => {
+    const repo = corpus()
+    let calls = 0
+    const r = await run(repo, null, {
+      io: {
+        ...noSleep,
+        repo: { readdir: () => files(repo) },
+        fetch: async () => (++calls, { ok: false, status: 400, text: async () => '{"message":"syntax error at or near \\"selec\\""}' }),
+      },
+    })
+    expect(calls).toBe(1)
+    expect(r.status).toBe('error')
+  })
+
+  it('the wrapper test reads the body and never the status alone', () => {
+    expect(isWrappedTransportFailure(400, 'connect ECONNREFUSED 1.2.3.4:5432')).toBe(true)
+    expect(isWrappedTransportFailure(400, 'Connection terminated due to connection timeout')).toBe(true)
+    expect(isWrappedTransportFailure(400, 'syntax error')).toBe(false)
+    expect(isWrappedTransportFailure(401, 'connect ECONNREFUSED')).toBe(false)
+    expect(isWrappedTransportFailure(500, 'anything')).toBe(false)
   })
 
   it('the pauses between tries are short and bounded, and the bound is small', () => {
