@@ -39866,3 +39866,73 @@ were negative-controlled — reverting the page wiring fails the guard, and remo
 fails three others.
 
 **Rows.** (none — support escalation, fixed in the same pass)
+
+## ADR-1325: ACCEPTED — the build loop: twelve rulings that sequence the editor and the white-label programs, and the process that ships them (2026-09-14)
+
+**Status:** ✅ **ACCEPTED.** Owner rulings taken 2026-09-14 as twelve multiple-choice answers, after a
+read-only audit of `main` at `7d902f6` (typecheck clean, 46 of 46 source gates green, 15,982 tests
+passing, six artifact gates green on the 13:40Z production build). The audit graded the live product
+B- (74) and the readiness to start the editor and white-label programs D (22): 2 of the 18 E0
+foundation tasks done, none of the five editor gates in the tree, five block systems still live at 289
+types, and the public site renderer a "Coming soon" card. This ADR records what the owner decided to
+do about that, and the process every phase now runs through. Amends [ADR-976](DECISIONS.md) D-2 on
+timing only. Status of the work lives in `BUILD-BACKLOG.json`; this entry is the decision.
+
+### The twelve rulings
+
+| # | Question | Ruling |
+|---|---|---|
+| 1 | Sequence | **Stabilise, then finish the core-model rework (PROG-R4 to R9), then Editor E0.** Sites (E10) start after the block contract (E1) and the axis work (E3), which is what EDITOR-ARCHITECTURE always said. Nothing is pulled forward: no Site v0 on the Puck system, no editor-before-rework. |
+| 2 | Merge authority | **The agent merges everything on green.** Every PR arms squash auto-merge; the six required contexts in the ruleset (`checks`, `analyze`, `lint`, `test`, `Vercel`, `db-tests`) are the reviewer. This is WORKFLOW.md rule 4 as written, now applied to a multi-phase program. |
+| 3 | The Site entitlement key | **Keep `space_full_website` as the pages-quota key; add `custom_domain` for domain binding.** Rework phase 1.3 (CORE-MODEL §5) stops deleting `space_full_website`: it is the live, default-deny lock on multi-page Space profiles (`lib/spaces/entitlements.ts:129`), not a decorative gate. The `space_whitelabel` DB row, whose code paths HYG-079 already deleted, is dropped when `custom_domain` is created. |
+| 4 | Parallelism | **Two lanes.** Lane A on the phase's critical path from the session's designated branch; Lane B in a git worktree on the first row that touches none of Lane A's files. Every worktree runs `pnpm install --frozen-lockfile` first (LIVE-306). |
+| 5 | Owner configs this week | All four: `SENTRY_DSN` in Vercel Production, `SUPPORT_CHAT=1` on Vercel Preview (LIVE-213), the Stripe Connect endpoint signing secret as an env var (LIVE-215), and the sites apex domain purchased (WHITE-LABEL-SITES decision D2). |
+| 6 | Site quota (EDITOR-ARCHITECTURE O-3) | **A subdomain site on any paid plan; the custom domain is the upgrade.** ADR-976 D-7 as written. Free Spaces keep the in-app profile only. |
+| 7 | Token coverage (O-4) | **The agent proposes tokens as PRs each phase; the owner approves.** A tenant's unmet need becomes a backlog row, the token ships under THEME-PROTOCOL within the phase. No SLA is promised to tenants before the first paid Site. |
+| 8 | Proving the money loops (LIVE-234) | **The owner walks the five loops once with a real card; the agent prepares the walk and the SQL that proves each one.** The Connect prompt (LIVE-233) and the second webhook secret (LIVE-215) land first. |
+| 9 | Multiplayer | **Deferred to the depth phase behind `render_path`.** E0 drops from XL to L. Node-id keying, the part ADR-976 §4.1 says cannot be retrofitted, still lands in E0. This amends D-2's timing, not its decision: the document still becomes a CRDT, later. |
+| 10 | CI authority | **The agent may change CI rules on its own, with an ADR per change and a green control run on current `main` cited by run id.** A rule that can fire on legitimate growth lands advisory first and becomes required after two green readings. A gate's own test carries a positive control (ADR-1314). |
+| 11 | Phase exit | **Probes, CI, the production deploy, baselines, and a written round report.** Every row's probe passes under `check:backlog`; CI green on `main`; the production deploy READY with all six postbuild gates printed; visual baselines recaptured for every surface the phase moved; an ADR recording every CI failure the phase saw and its mitigation. |
+| 12 | Automation | **This session drives the loop with hourly self check-ins**, subscribed to every PR it opens. The owner can interrupt at any time. |
+
+### The loop, one round
+
+Pick the next row and re-test its premise first (ADR-1082). Branch: Lane A restarts its branch from
+`main` after each merge; Lane B works on `<designated-branch>-b<n>` in a worktree. Build to the row's
+probe, one row per PR, fifteen files or fewer. Validate locally in order: typecheck, the guards the
+change touches, `check:backlog`, the affected tests, `pnpm lint` warm; a CI-rule change runs its
+control on `main` first. Push, open the PR ready (not draft), arm squash auto-merge, subscribe the
+session. A red check is worked at once; a failure that is red on the base too is ported, never waited
+on; a flake is re-run at most once and only with a written reason; never skip or quarantine a test.
+After merge, read the production build log for the six postbuild readings and restart the lane branch.
+Record every CI failure in the round ledger with cause and mitigation class (code, flake, gate defect,
+environment); the second occurrence of one cause files a hygiene row whose probe is the new gate or
+the changed rule. The ledger becomes the phase's round-report ADR at exit, because `check:one-list`
+freezes the planning docs and prose status is forbidden.
+
+### The phases, as sequenced by the rulings
+
+| Phase | Scope | Exit |
+|---|---|---|
+| 0 | Stabilise: the twelve findings of the 2026-09-14 audit (money loops, the beta-grace default, the authz import walk, the second webhook secret, the sitemap gate, the visual and RLS nets, Dependabot triage, the ratchet readings on `main`, the duplicate doors named, the backup table, the Site key, hygiene) | P0 lane empty; five non-zero money counts; `pr-compare` public tier required |
+| 1 | The core-model rework in flight: PROG-R4 to R9 (pay when you charge, one editor per entity, the five-box console, the story, first run) | LIVE-237 and LIVE-246 probes pass; PROG-R6 and R7 close |
+| 2 | Editor E0, gates first, multiplayer deferred | `check:doc-safety` green on the real corpus; two text blocks coexist; publish → revert → publish round-trips; old ⇄ new markup equal |
+| 3 | E1 block contract + E3 axes, with E2's usage index; Site's four things; the four missing baselines | block-systems ratchet falls; four surfaces render off one registry with zero visual diff |
+| 4 | Sites v1 (E10 part one, absorbs W1 and W2): `space_domains`, `site_templates`, the host router, the renderer on the contract, per-tenant SEO, tag-based publish | a paid Space serves at its subdomain with TLS and no auth cookie; the app domain byte-identical |
+| 5 | The site editor (W3) with E4's canvas essentials; the token-request path | template → three pages → publish → live within one revalidation; RSC ⇄ canvas parity |
+| 6 | Custom domains, billing, hardening (W4 + W5) | a gated Space binds a real domain end-to-end without support; an ungated one cannot |
+| 7 | Depth: the CRDT behind `render_path`, E5 to E9, then W6 and P7 | the authoring path completes on a phone; a member takes a real payment through a placed block |
+
+### Consequences
+
+- `meta.slate` in `BUILD-BACKLOG.json` is re-sequenced to match: white label leaves `deferredByName`,
+  PROG-E10 moves from the deferred wave into the editor sequence after PROG-E3, and PROG-W6 and PROG-P7
+  close the runway after E9. The App Platform and the Etsy-grade store stay deferred; mobile stays held.
+- PROG-E0 reads size L and its detail records the CRDT deferral. PROG-E10 carries rulings 3 and 6.
+- OWN-060 records O-3 and O-4 as ruled; Profile O2 stays open.
+- Three rows are filed: LIVE-309 (the expired beta-grace default), HYG-086 (the RLS-off backup table
+  in production), LIVE-310 (the `custom_domain` key, sequenced with Sites).
+- The first round runs now: Lane A lands this record and LIVE-309; Lane B lands the four stale-doc
+  corrections and LIVE-215.
+
+**Rows.** LIVE-309 · HYG-086 · LIVE-310 · OWN-060 (amended) · PROG-E0 (amended) · PROG-E10 (amended)
