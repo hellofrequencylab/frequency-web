@@ -48,8 +48,7 @@
           "ids": [
             "LIVE-186",
             "LIVE-213",
-            "LIVE-312",
-            "LIVE-327"
+            "LIVE-312"
           ]
         },
         {
@@ -12392,7 +12391,7 @@
     {
       "id": "LIVE-327",
       "title": "The discover retry does not recognise the REST edge's 503 body, so a preview build dies on the first answer with both delays unused",
-      "status": "open",
+      "status": "done",
       "priority": "P1",
       "lane": "live",
       "size": "S",
@@ -12400,12 +12399,13 @@
         "file": "lib/discover.ts",
         "ref": "isTransientDiscoverError / TRANSIENT_RE"
       },
-      "detail": "MEASURED 2026-09-14 in the build log of dpl_E8n9LESJ (#2579's preview, 19:08:55Z) and in every other preview that failed today: the prerender of /discover/circles/[id] threw DiscoverReadError from detailRead with cause.message \"upstream connect error or disconnect/reset before headers. reset reason: connection timeout\", and the log carries NO \"[discover] ... transient failure, retrying\" line, so attempt() returned on the first answer. That message is the Envoy body Supabase's REST edge returns as HTTP 503 when PostgREST does not accept the connection (ADR-1328: the day's own fan-out). supabase-js resolves it as an error with empty code and hint, which the LIVE-084 fix already treats as \"not a database answer\", but TRANSIENT_RE knows errno tokens, \"fetch failed\", \"socket\", \"network\", \"TimeoutError\" and \"aborted due to timeout\", and none of those words is in this body. The classifier has now been dead for three distinct shapes (LIVE-084 the ECONNRESET with an empty code, LIVE-105 the bounded abort, and this one), each found by a killed build.\n\nTHE FIX: widen TRANSIENT_RE to the edge's vocabulary (upstream connect error, reset before headers, connection timeout, and the 502/503/504/522/524 statuses when the resolved result carries a status and no PostgREST code), copy the dpl_E8n9LESJ object into lib/discover.test.ts as a fixture beside PRODUCTION_KILLER and BOUNDED_READ_ABORT, and lengthen the ladder to three delays (250, 1000, 3000 ms) so a build outlasts a moment rather than a packet. A real PostgREST code still refuses the retry: the code guard is untouched.",
+      "detail": "MEASURED 2026-09-14 in the build log of dpl_E8n9LESJ (#2579's preview, 19:08:55Z) and in every other preview that failed today: the prerender of /discover/circles/[id] threw DiscoverReadError from detailRead with cause.message \"upstream connect error or disconnect/reset before headers. reset reason: connection timeout\", and the log carries NO \"[discover] ... transient failure, retrying\" line, so attempt() returned on the first answer. That message is the Envoy body Supabase's REST edge returns as HTTP 503 when PostgREST does not accept the connection (ADR-1328: the day's own fan-out). supabase-js resolves it as an error with empty code and hint, which the LIVE-084 fix already treats as \"not a database answer\", but TRANSIENT_RE knows errno tokens, \"fetch failed\", \"socket\", \"network\", \"TimeoutError\" and \"aborted due to timeout\", and none of those words is in this body. The classifier has now been dead for three distinct shapes (LIVE-084 the ECONNRESET with an empty code, LIVE-105 the bounded abort, and this one), each found by a killed build.\n\nTHE FIX: widen TRANSIENT_RE to the edge's vocabulary (upstream connect error, reset before headers, connection timeout, and the 502/503/504/522/524 statuses when the resolved result carries a status and no PostgREST code), copy the dpl_E8n9LESJ object into lib/discover.test.ts as a fixture beside PRODUCTION_KILLER and BOUNDED_READ_ABORT, and lengthen the ladder to three delays (250, 1000, 3000 ms) so a build outlasts a moment rather than a packet. A real PostgREST code still refuses the retry: the code guard is untouched.\n\nCLOSED 2026-09-14: TRANSIENT_RE learns the edge vocabulary (upstream connect error, reset before headers, connection timeout, no healthy upstream) and attempt() also reads the resolved STATUS through the new isTransientDiscoverStatus: a 502/503/504 or Cloudflare 52x with no PostgREST code is transport, whatever words the edge chooses next time; a 5xx carrying a code is still an answer and a 4xx never counts. The ladder is 250, 1000, 3000 ms (four tries, 4.25 s worst case per read). The dpl_E8n9LESJ object is a fixture (REST_EDGE_503) beside PRODUCTION_KILLER and BOUNDED_READ_ABORT in lib/discover.test.ts, with five cases: classified by body, classified by status alone, refused with a code or a 4xx, retried to success, and the unfamiliar-body 503 retried to the bound.",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e \"const fs=require('fs');const s=fs.readFileSync('lib/discover.ts','utf8');const m=s.match(/const TRANSIENT_RE = \\\\/(.*)\\\\/([a-z]*)/);if(!m){console.error('TRANSIENT_RE not found in lib/discover.ts');process.exit(1)}const re=new RegExp(m[1],m[2]);const body='upstream connect error or disconnect/reset before headers. reset reason: connection timeout';if(!re.test(body)){console.error('the discover classifier does not recognise the REST edge 503 body, so a preview build dies on the first answer: '+body);process.exit(1)}const t=fs.readFileSync('lib/discover.test.ts','utf8');if(!t.includes(body)){console.error('lib/discover.test.ts carries no fixture copied from the dpl_E8n9LESJ build log');process.exit(1)}\"",
         "note": "Rebuilds TRANSIENT_RE from lib/discover.ts and tests it against the verbatim Envoy body from dpl_E8n9LESJ, then requires the same body as a fixture in lib/discover.test.ts. Measures the classification, not a word in a comment. Written 2026-09-14."
-      }
+      },
+      "closed": "2026-09-14"
     },
     {
       "id": "LIVE-328",
