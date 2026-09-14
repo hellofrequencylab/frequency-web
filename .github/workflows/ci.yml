@@ -193,7 +193,15 @@ jobs:
           elif [ "${count}" -gt 15 ]; then
             echo "::warning title=PR size::${count} changed files is past the 15-file guidance (docs/WORKFLOW.md). Fine if it is one honest row; consider splitting otherwise."
           fi
+      # ADR-1327. tsc on this tree peaks above node's default ~4 GB heap: on 2026-09-14 the step died
+      # on #2571 with "Ineffective mark-compacts near heap limit" at 4026 of 4128 MB after 112 s, on a
+      # PR that changed no TypeScript. The lanes had already measured 3.7 GB RSS locally that day.
+      # ubuntu-latest carries 16 GB, so the step gets 6 GB and the whole-tree check keeps being the
+      # reading a PR is merged on. Raise it here rather than in package.json so local runs, which
+      # set it per box, are not pinned to a CI number.
       - name: Typecheck
+        env:
+          NODE_OPTIONS: --max-old-space-size=6144
         run: pnpm exec tsc --noEmit
 
       # One step, every guard, all failures reported. Each is grouped in the log so a red run

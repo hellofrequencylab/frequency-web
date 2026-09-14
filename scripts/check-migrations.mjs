@@ -252,7 +252,7 @@ export async function loadLedgerPayload(source, io = {}) {
       const err = new Error(
         `ledger query HTTP ${res.status} from the Supabase Management API. ${body.slice(0, 300)}`,
       )
-      if (res.status < 500) throw err
+      if (res.status < 500 && !isWrappedTransportFailure(res.status, body)) throw err
       lastError = err
     } catch (e) {
       if (e !== lastError && !isTransportError(e)) throw e
@@ -272,9 +272,23 @@ export const LEDGER_READ_ATTEMPTS = 3
 export const LEDGER_READ_BACKOFF_MS = Object.freeze([1000, 3000])
 
 /** A thrown fetch is a transport failure (the request never got an HTTP answer). Anything we
- *  threw ourselves for a 4xx carries an HTTP status in its message and is not retried. */
+ *  threw ourselves for a 4xx carries an HTTP status in its message and is not retried, unless the
+ *  4xx was one the Management API uses to WRAP a connection failure (see below). */
 function isTransportError(e) {
-  return !(e instanceof Error && /^ledger query HTTP [1-4]\d\d /.test(e.message))
+  if (!(e instanceof Error)) return true
+  const m = /^ledger query HTTP ([1-4]\d\d) from the Supabase Management API\. (.*)$/s.exec(e.message)
+  if (!m) return true
+  return isWrappedTransportFailure(Number(m[1]), m[2])
+}
+
+/** The Management API answers HTTP 400 "Failed to run sql query: connect ECONNREFUSED …:5432" when
+ *  ITS connection to the database is refused (seen 2026-09-14 18:03Z on #2571, in the same window
+ *  that produced the 544s). That is not the caller's defect; it is the same dropped connection wearing
+ *  a 4xx. Retried on the body, never on the status alone, so a real 400 (a malformed query) still
+ *  throws on the first answer. */
+export function isWrappedTransportFailure(status, body) {
+  if (status !== 400) return false
+  return /ECONNREFUSED|ECONNRESET|ETIMEDOUT|connection (terminated|timeout|timed out|refused|reset)/i.test(String(body))
 }
 
 /** The loud skip. It states what DID pass, so nobody reads it as "the guard is broken", and what

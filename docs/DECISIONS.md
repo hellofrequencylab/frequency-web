@@ -39999,3 +39999,57 @@ false positive) and `HYG-072` (the PR-size gate counting generated baselines) ar
 stay open.
 
 **Rows.** HYG-070
+
+## ADR-1327: ACCEPTED — the CI typecheck runs with a 6 GB heap, and the ledger read retries a refused connection the Management API wraps as HTTP 400 (2026-09-14)
+
+**Status.** Accepted. Two CI-rule changes under [ADR-1325](DECISIONS.md) ruling 10, each shipping
+with this record and a green control run on the PR that carries them. Rows: `LIVE-324` (done here),
+`LIVE-325` (filed open, the build-time menu fallback).
+
+**Context.** The day's second Supabase connectivity window (18:00Z to about 18:15Z; the first ran
+16:55Z to 17:20Z) put three findings on the ledger in one CI run, #2571's `checks` job.
+
+1. `pnpm exec tsc --noEmit` died on the runner: `Ineffective mark-compacts near heap limit`, at
+   4026 of a 4128 MB heap, after 112 seconds, on a PR that changed no TypeScript (two lockfile
+   overrides). Node's default old-space ceiling on that runner is about 4 GB. Lanes on the build
+   box had measured 3.7 GB RSS for the same command that afternoon. The step had no heap setting,
+   so the whole-tree typecheck, the one reading a PR is merged on, was one file away from failing
+   on every PR.
+2. The migration-ledger read failed as `HTTP 400 {"message":"Failed to run sql query: connect
+   ECONNREFUSED 2600:…:5432"}`. [ADR-1325](DECISIONS.md)'s failure protocol had already filed
+   `LIVE-323` for the `HTTP 544` shape (#2568, a bounded retry on a thrown fetch or a 5xx), and that
+   retry deliberately excludes a 4xx as the caller's defect. This 400 is the platform's own
+   connection to its database being refused, wearing a 4xx.
+3. Two production builds (`3115b4d`, `f1cdcdc`) and the #2572 production build failed at prerender,
+   correctly: `/discover/*` throws `DiscoverReadError` rather than ship an empty page. But in the
+   same builds every menu read printed `[menus] getMenu failed, falling back to defaults` and the
+   build carried on. A preview built in that window (#2571's) shipped default header and footer
+   menus, and pr-compare's ten public-tier visual diffs on `/about`, `/the-lab`,
+   `/how-to-build-community` and `/discover` were that fallback photographed. Had a production
+   build survived the window, production would have served default menus with no gate noticing.
+   That is the fail-safe-without-a-gate shape `AGENTS.md` names.
+
+**Decision.**
+
+- **Typecheck heap.** `ci.yml`'s Typecheck step sets `NODE_OPTIONS=--max-old-space-size=6144`.
+  `ubuntu-latest` carries 16 GB; 6 GB leaves the rest of the job untouched. The setting lives on
+  the step, not in `package.json`, so local runs keep choosing per box. The control run is the
+  PR that carries this change, green on the same tree that just died.
+- **Wrapped transport failures retry.** `loadLedgerPayload` treats an HTTP 400 whose body names a
+  refused, reset or timed-out connection as a transport failure and retries it inside the same
+  bound as `LIVE-323` (three tries, 1 s then 3 s). The test is on the BODY, never the status: a
+  real 400 (a malformed query) still throws on the first answer. Pinned by three cases in
+  `scripts/check-migrations.test.ts` and exported as `isWrappedTransportFailure`.
+- **The menu fallback becomes a row, not a fix here.** `LIVE-325` (P1): during `next build` a
+  menu read that fails must fail the build the way a discover read does; at request time the
+  fallback stays, because a member page with a default menu beats an error page. The row's probe
+  measures the consequence (the build-phase branch in `lib/menus/read.ts` throws) rather than the
+  words.
+
+**Consequences.** A PR is no longer failed by a typecheck that ran out of memory for reasons its
+diff cannot explain. The ledger guard still exits 1 when the platform is really down, now after
+three tries on either shape rather than one. The menu fallback stays exactly as it is until
+`LIVE-325` lands, and that row is the first thing the next round works, because it is the one
+that can put a wrong header on production without a red anywhere.
+
+**Rows.** LIVE-324 (done), LIVE-325 (open, P1, W0b).
