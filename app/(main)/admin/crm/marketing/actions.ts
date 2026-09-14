@@ -29,22 +29,30 @@ function unwrap(result: ActionResult): void {
 }
 
 /** ARM one campaign: ready to approved. After this, the send gate clears. Approver-gated in the spine. */
+// authz-ok: delegated to approverGate() inside approve() (lib/outbound/approvals.ts), which refuses
+// every caller who is not admin or janitor on the staff axis; a denial throws through unwrap().
 export async function approveCampaignAction(campaignId: string): Promise<void> {
   unwrap(await approve({ type: 'campaign', id: campaignId }))
 }
 
 /** Hold a campaign (to paused). Reversible: it can be approved from the queue or cancelled later. */
+// authz-ok: delegated to approverGate() inside pause() (lib/outbound/approvals.ts), which refuses
+// every caller who is not admin or janitor on the staff axis; a denial throws through unwrap().
 export async function pauseCampaignAction(campaignId: string): Promise<void> {
   unwrap(await pause({ type: 'campaign', id: campaignId }))
 }
 
 /** Kill a campaign (to cancelled, terminal). */
+// authz-ok: delegated to approverGate() inside cancel() (lib/outbound/approvals.ts), which refuses
+// every caller who is not admin or janitor on the staff axis; a denial throws through unwrap().
 export async function cancelCampaignAction(campaignId: string): Promise<void> {
   unwrap(await cancel({ type: 'campaign', id: campaignId }))
 }
 
 /** Put a draft up for review (draft to ready). The smallest honest path for the stranded
  *  phase-filed drafts: review first, then arm or cancel. Approver-gated in the spine. */
+// authz-ok: delegated to approverGate() inside markReady() (lib/outbound/approvals.ts), which
+// refuses every caller who is not admin or janitor on the staff axis; a denial throws through unwrap().
 export async function markReadyCampaignAction(campaignId: string): Promise<void> {
   unwrap(await markReady({ type: 'campaign', id: campaignId }))
 }

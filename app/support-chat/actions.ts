@@ -36,6 +36,9 @@ export async function startSupportChatAction(input: {
   return ok(started)
 }
 
+// authz-ok: scoped by the capability token. postSupportChatMessage (lib/comms/support-chat.ts)
+// verifies (ref, token) with verifyChatToken before touching the thread, so a visitor can only write
+// into the thread they were handed at start; the per-token rate limit sits above it.
 export async function postSupportChatMessageAction(input: {
   ref: string
   token: string
@@ -50,6 +53,9 @@ export async function postSupportChatMessageAction(input: {
   return ok(msg)
 }
 
+// authz-ok: scoped by the capability token. loadSupportChatHistory (lib/comms/support-chat.ts)
+// verifies (ref, token) with verifyChatToken and answers an empty list otherwise, so the read is
+// bound to the visitor's own thread.
 export async function loadSupportChatHistoryAction(input: {
   ref: string
   token: string

@@ -18,6 +18,9 @@ import type { CrmMemberDetail } from '@/components/people/member-viewer'
 //   check, rate limits) -> redirect into the thread.
 
 /** Load one nexus-subtree member's leader-trimmed detail. Gate -> tenancy -> build, verbatim. */
+// authz-ok: delegated to resolveNexusCrm (lib/crm/leader-crm-access.ts), null without the
+// nexus.manage capability and null throws here; the tenancy check below then binds the read to
+// this nexus's subtree members.
 export async function loadNexusCrmDetail(slug: string, profileId: string): Promise<CrmMemberDetail> {
   const nexus = await resolveNexusCrm(slug)
   if (!nexus) throw new Error('You cannot manage this nexus.')
@@ -30,6 +33,9 @@ export async function loadNexusCrmDetail(slug: string, profileId: string): Promi
 /** Open (or reuse) the 1:1 thread with a nexus member, then land in it. A refusal (blocked pair,
  *  rate limit, not-in-scope) returns the ActionResult error for the dm button to render inline —
  *  never a throw into the route error boundary; unstable_rethrow keeps NEXT_REDIRECT flowing. */
+// authz-ok: delegated twice. resolveNexusCrm gates on nexus.manage (null fails here), and
+// openScopedDm re-derives the sender from the session (getMyProfileId) behind its own leadership,
+// subtree-membership, block and rate-limit checks.
 export async function openNexusMemberDm(slug: string, profileId: string): Promise<ActionResult> {
   let conversationId: string
   try {

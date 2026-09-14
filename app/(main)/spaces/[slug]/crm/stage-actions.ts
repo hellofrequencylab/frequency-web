@@ -23,6 +23,9 @@ import type { StageKind } from '@/lib/crm/pipeline'
 import { type ActionResult } from '@/lib/action-result'
 
 /** Create a stage. Gated on canManage + the crm function, space-scoped (see the implementation). */
+// authz-ok: delegated to createStage in lib/crm/stages.ts, which re-resolves the Space by slug and
+// refuses a caller without resolveSpaceManageAccess.canManage and the crm function; the insert is
+// bound to that resolved space id.
 export async function createStage(
   slug: string,
   name: string,
@@ -32,11 +35,15 @@ export async function createStage(
 }
 
 /** Rename a stage. Gated + space-scoped. */
+// authz-ok: delegated to renameStage in lib/crm/stages.ts (canManage + the crm function re-checked,
+// the update bound to the resolved space id).
 export async function renameStage(slug: string, stageId: string, name: string): Promise<ActionResult> {
   return renameStageImpl(slug, stageId, name)
 }
 
 /** Set a stage's kind (open / won / lost). Gated + space-scoped; enforces the Won/Lost invariant. */
+// authz-ok: delegated to setStageKind in lib/crm/stages.ts (canManage + the crm function
+// re-checked, the update bound to the resolved space id).
 export async function setStageKind(
   slug: string,
   stageId: string,
@@ -46,11 +53,15 @@ export async function setStageKind(
 }
 
 /** Reorder the stages. Gated + space-scoped; `orderedIds` must be a permutation of the current ids. */
+// authz-ok: delegated to reorderStages in lib/crm/stages.ts (canManage + the crm function
+// re-checked, every update bound to the resolved space id).
 export async function reorderStages(slug: string, orderedIds: string[]): Promise<ActionResult> {
   return reorderStagesImpl(slug, orderedIds)
 }
 
 /** Delete a stage. Gated + space-scoped; enforces the Won/Lost invariant + reassigns deals off it. */
+// authz-ok: delegated to deleteStage in lib/crm/stages.ts (canManage + the crm function re-checked,
+// the delete and the deal reassignment bound to the resolved space id).
 export async function deleteStage(slug: string, stageId: string): Promise<ActionResult> {
   return deleteStageImpl(slug, stageId)
 }

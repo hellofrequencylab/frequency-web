@@ -24,6 +24,9 @@ import { isPersonaId } from '@/lib/onboarding/personas'
  * Record the visitor's current persona selection (best-effort, anonymous-safe). Called from the picker
  * when a persona is toggled. Never throws; never blocks the UI.
  */
+// authz-ok: anonymous by design. The only write is an actor-less engagement event (track with a
+// null actor), an append-only ledger row keyed by first-touch attribution; no profile is read or
+// written, and the persona value is validated against the registry before it is recorded.
 export async function logPersonaSelection(input: {
   persona: string
   personas: string[]

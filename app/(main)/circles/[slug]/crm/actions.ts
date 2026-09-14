@@ -18,6 +18,9 @@ import type { CrmMemberDetail } from '@/components/people/member-viewer'
 //   rate limits) -> redirect into the thread.
 
 /** Load one circle member's leader-trimmed detail. Gate -> tenancy -> build, verbatim. */
+// authz-ok: delegated to resolveCircleCrm (lib/crm/leader-crm-access.ts), null without the
+// circle.moderate capability and null throws here; the tenancy check below then binds the read to
+// this circle's active members.
 export async function loadCircleCrmDetail(slug: string, profileId: string): Promise<CrmMemberDetail> {
   const circle = await resolveCircleCrm(slug)
   if (!circle) throw new Error('You cannot manage this circle.')
@@ -30,6 +33,9 @@ export async function loadCircleCrmDetail(slug: string, profileId: string): Prom
 /** Open (or reuse) the 1:1 thread with a circle member, then land in it. A refusal (blocked pair,
  *  rate limit, not-in-scope) returns the ActionResult error for the dm button to render inline —
  *  never a throw into the route error boundary; unstable_rethrow keeps NEXT_REDIRECT flowing. */
+// authz-ok: delegated twice. resolveCircleCrm gates on circle.moderate (null fails here), and
+// openScopedDm re-derives the sender from the session (getMyProfileId) behind its own leadership,
+// audience, block and rate-limit checks.
 export async function openCircleMemberDm(slug: string, profileId: string): Promise<ActionResult> {
   let conversationId: string
   try {

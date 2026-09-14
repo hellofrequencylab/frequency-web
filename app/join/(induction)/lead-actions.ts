@@ -133,6 +133,10 @@ function splitName(displayName: string | undefined): { firstName?: string; lastN
  * member — the RPC is built so it cannot, and this action must not undo that by leaking the
  * difference through its own return value or its errors.
  */
+// authz-ok: anonymous by design. The write goes through the SESSION client into capture_signup_lead,
+// a SECURITY DEFINER function granted to anon, and the claim token it mints lands only in this
+// browser's httpOnly cookie. The admin client is reachable here solely through resolveAcquisition's
+// attribution read; no write in this file touches it.
 export async function captureLead(
   input: { email: string; step?: number; source?: LeadSource } & LeadFields,
 ): Promise<LeadResult> {
@@ -180,6 +184,8 @@ export async function captureLead(
  * Silent no-op with no `fq_lead` cookie — a visitor who skipped the email field at beat 2 has told
  * us nothing we could follow up on, so there is nothing to update and nothing to report.
  */
+// authz-ok: scoped by the httpOnly claim token. update_signup_lead (SESSION client, anon-granted)
+// opens only the row whose stored token hash matches the cookie's, and answers false otherwise.
 export async function updateLead(input: { step?: number } & LeadFields): Promise<LeadResult> {
   const claim = readLeadClaim((await cookies()).get(LEAD_COOKIE)?.value)
   if (!claim) return { ok: false }
@@ -212,6 +218,8 @@ export async function updateLead(input: { step?: number } & LeadFields): Promise
  * block a member's profile from being written. The RPC verifies the caller is signed in AS this
  * profile, so a stolen lead id cannot attach itself to someone else's account.
  */
+// authz-ok: scoped by the httpOnly claim token AND the session. mark_signup_lead_converted (SESSION
+// client) answers true only when the signed-in caller owns profileId and the token opens the row.
 export async function markLeadConverted(profileId: string): Promise<LeadResult> {
   const claim = readLeadClaim((await cookies()).get(LEAD_COOKIE)?.value)
   if (!claim || !profileId) return { ok: false }

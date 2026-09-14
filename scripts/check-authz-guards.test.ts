@@ -8,6 +8,11 @@ import {
   ACTION_GATE,
   MIN_ACTION_FILES,
   MIN_ACTION_EXPORTS,
+  ADMIN_MODULE,
+  createAdminReach,
+  adminReach,
+  actionScanMembership,
+  hasUseServerDirective,
   isRouteFile,
   classifyRoute,
   scanRoutes,
@@ -755,5 +760,207 @@ describe('HYG-020 — the real action corpus', () => {
     expect(out.fileCount).toBe(1)
     expect(out.violations).toHaveLength(1)
     expect(out.violations[0].problems[0].method).toBe('promoteMember')
+  })
+})
+
+// ── LIVE-307: the scan reaches by import, not by mention ─────────────────────────────────────
+// The membership test was `src.includes('createAdminClient')` on the file's OWN source, so a
+// `'use server'` file that reaches the admin client through a helper (the normal way to write one)
+// was never scanned, and the success line counted files that mention a string. Found by a control
+// that did NOT fire: LIVE-295's action had its gate deleted outright and this gate printed green.
+// Same discipline as HYG-020 above: every must-fail fixture FIRST proves the old rule passed it.
+
+/** The admin client, at the exact path the reach index is about. */
+const FIXTURE_ADMIN = `import 'server-only'
+export function createAdminClient() {
+  return {} as never
+}
+`
+
+/** A lib helper that opens the client. This is where `createAdminClient` is MENTIONED. */
+const FIXTURE_HELPER = `import { createAdminClient } from '@/lib/supabase/admin'
+
+export type Thing = { id: string }
+
+export async function wipeThing(id: string) {
+  await createAdminClient().from('things').delete().eq('id', id)
+}
+`
+
+/** The action: `'use server'`, reaches the client through the helper, mentions it nowhere, and
+ *  the export is ungated. The exact shape LIVE-295's action had when the gate was deleted. */
+const TRANSITIVE_UNGATED_ACTIONS = `'use server'
+
+import { wipeThing } from '@/lib/things/helper'
+
+export async function wipeThingAction(id: string) {
+  await wipeThing(id)
+}
+`
+
+/** Control: the same shape with a gate. Must pass. */
+const TRANSITIVE_GATED_ACTIONS = `'use server'
+
+import { requireAdmin } from '@/lib/auth'
+import { wipeThing } from '@/lib/things/helper'
+
+export async function wipeThingAction(id: string) {
+  await requireAdmin()
+  await wipeThing(id)
+}
+`
+
+/** Control: the only path to the helper is `import type`, which is erased at compile time and
+ *  carries no call path. Not in the scan. */
+const TYPE_ONLY_ACTIONS = `'use server'
+
+import type { Thing } from '@/lib/things/helper'
+
+export async function describeThing(thing: Thing) {
+  return thing.id
+}
+`
+
+/** Control: a `'use client'` component whose COMMENT quotes the directive. Reading the 21 found
+ *  two of these counted as action modules, with their React components reported as ungated
+ *  endpoints. Its imports reach the client (through the action module), and it is still not in
+ *  the scan, because it carries no `'use server'` directive. */
+const CLIENT_COMPONENT_QUOTING_DIRECTIVE = `'use client'
+
+// Small client wrappers over the 'use server' actions; the reads stay in the server body.
+import { wipeThingAction } from '@/app/(main)/things/actions'
+
+export function WipeButton({ id }: { id: string }) {
+  return <button onClick={() => wipeThingAction(id)}>Wipe</button>
+}
+`
+
+const fixtureTree = (action: string) => ({
+  [ADMIN_MODULE]: FIXTURE_ADMIN,
+  'lib/things/helper.ts': FIXTURE_HELPER,
+  'app/(main)/things/actions.ts': action,
+})
+
+const readFrom = (tree: Record<string, string>) => (f: string) => tree[f]
+
+describe('LIVE-307 — a use-server file that reaches the admin client through a helper is scanned', () => {
+  it('the OLD rule (a createAdminClient substring in the file) skipped the ungated transitive action', () => {
+    // Proof that the fixture is the blind spot and not a re-run of HYG-020: the action module
+    // never mentions the client, so the by-name-only scan (reaches = () => false is exactly what
+    // scanActions used to be) reads ZERO files and reports nothing.
+    expect(TRANSITIVE_UNGATED_ACTIONS.includes('createAdminClient')).toBe(false)
+    const tree = fixtureTree(TRANSITIVE_UNGATED_ACTIONS)
+    const old = scanActions(['app/(main)/things/actions.ts'], readFrom(tree), () => false)
+    expect(old.fileCount).toBe(0)
+    expect(old.violations).toEqual([])
+  })
+
+  it('FAILS the ungated transitive action and names the export', () => {
+    const tree = fixtureTree(TRANSITIVE_UNGATED_ACTIONS)
+    const reach = createAdminReach({ files: Object.keys(tree), read: readFrom(tree) })
+    expect(reach.adminPresent).toBe(true)
+    expect(reach.reaches('app/(main)/things/actions.ts')).toBe(true)
+    const out = scanActions(['app/(main)/things/actions.ts'], readFrom(tree), reach.reaches)
+    expect(out.fileCount).toBe(1)
+    expect(out.byReach).toBe(1)
+    expect(out.byMention).toBe(0)
+    expect(out.violations).toHaveLength(1)
+    expect(out.violations[0].problems.map((p: { method: string; kind: string }) => `${p.method}:${p.kind}`)).toEqual([
+      'wipeThingAction:ungated-export',
+    ])
+  })
+
+  it('passes the same shape when the export carries a gate', () => {
+    const tree = fixtureTree(TRANSITIVE_GATED_ACTIONS)
+    const reach = createAdminReach({ files: Object.keys(tree), read: readFrom(tree) })
+    const out = scanActions(['app/(main)/things/actions.ts'], readFrom(tree), reach.reaches)
+    expect(out.fileCount).toBe(1) // in the scan, by reach
+    expect(out.violations).toEqual([])
+  })
+
+  it('does NOT scan a file whose only path to the helper is `import type`', () => {
+    const tree = fixtureTree(TYPE_ONLY_ACTIONS)
+    const reach = createAdminReach({ files: Object.keys(tree), read: readFrom(tree) })
+    expect(reach.reaches('app/(main)/things/actions.ts')).toBe(false)
+    const out = scanActions(['app/(main)/things/actions.ts'], readFrom(tree), reach.reaches)
+    expect(out.fileCount).toBe(0)
+  })
+
+  it('does NOT scan a use-client component whose comment quotes the directive, even though its imports reach the client', () => {
+    const tree = {
+      ...fixtureTree(TRANSITIVE_GATED_ACTIONS),
+      'app/(main)/things/wipe-button.tsx': CLIENT_COMPONENT_QUOTING_DIRECTIVE,
+    }
+    const reach = createAdminReach({ files: Object.keys(tree), read: readFrom(tree) })
+    expect(reach.reaches('app/(main)/things/wipe-button.tsx')).toBe(true) // the graph is honest
+    expect(hasUseServerDirective(CLIENT_COMPONENT_QUOTING_DIRECTIVE)).toBe(false) // the directive test is too
+    expect(actionScanMembership('app/(main)/things/wipe-button.tsx', CLIENT_COMPONENT_QUOTING_DIRECTIVE, reach.reaches)).toBeNull()
+    const out = scanActions(['app/(main)/things/wipe-button.tsx'], readFrom(tree), reach.reaches)
+    expect(out.fileCount).toBe(0)
+  })
+
+  it('recognises a real directive at the top of a file and at the top of a function body, and nothing else', () => {
+    expect(hasUseServerDirective("'use server'\n\nexport async function x() {}\n")).toBe(true)
+    expect(hasUseServerDirective('"use server"\nexport async function x() {}\n')).toBe(true)
+    expect(hasUseServerDirective("export async function x() {\n  'use server'\n  return 1\n}\n")).toBe(true)
+    expect(hasUseServerDirective("// wrappers over the 'use server' actions\nexport function X() {}\n")).toBe(false)
+    expect(hasUseServerDirective("const note = \"the 'use server' module\"\n")).toBe(false)
+  })
+
+  it('keeps the by-name path identical: a file that mentions the client is in the scan whether or not the graph knows it', () => {
+    // The 135 files the substring rule already covered must keep their verdicts. A predicate that
+    // knows nothing (() => false) still admits a file that names the client.
+    expect(actionScanMembership('app/(main)/x/actions.ts', HALF_GATED_ACTIONS, () => false)).toBe('mention')
+    const out = scanActions(['app/(main)/x/actions.ts'], () => HALF_GATED_ACTIONS, () => false)
+    expect(out.fileCount).toBe(1)
+    expect(out.byMention).toBe(1)
+    expect(out.violations[0].problems[0].method).toBe('promoteMember')
+  })
+
+  it('terminates on an import cycle and still answers correctly on both sides of it', () => {
+    const tree = {
+      [ADMIN_MODULE]: FIXTURE_ADMIN,
+      'lib/a.ts': "import { b } from '@/lib/b'\nimport { createAdminClient } from '@/lib/supabase/admin'\nexport const a = 1\n",
+      'lib/b.ts': "import { a } from '@/lib/a'\nexport const b = 2\n",
+      'lib/c.ts': "import { d } from '@/lib/d'\nexport const c = 3\n",
+      'lib/d.ts': "import { c } from '@/lib/c'\nexport const d = 4\n",
+    }
+    const reach = createAdminReach({ files: Object.keys(tree), read: readFrom(tree) })
+    expect(reach.reaches('lib/a.ts')).toBe(true)
+    expect(reach.reaches('lib/b.ts')).toBe(true) // through the cycle, into a, into admin
+    expect(reach.reaches('lib/c.ts')).toBe(false) // a cycle that never reaches it
+    expect(reach.reaches('lib/d.ts')).toBe(false)
+    expect(reach.reachingCount).toBe(3)
+  })
+
+  it('answers nothing, rather than something wrong, when the admin module is not in the set', () => {
+    const tree = { 'lib/things/helper.ts': FIXTURE_HELPER, 'app/(main)/things/actions.ts': TRANSITIVE_UNGATED_ACTIONS }
+    const reach = createAdminReach({ files: Object.keys(tree), read: readFrom(tree) })
+    expect(reach.adminPresent).toBe(false)
+    expect(reach.reachingCount).toBe(0)
+    // ...and the real tree's floor is what turns "nothing" into a failure rather than a green line.
+    expect(MIN_ACTION_FILES).toBeGreaterThan(135)
+  })
+})
+
+describe('LIVE-307 — the real tree', () => {
+  it('scans at least the new floor, and the reach arm is the reason the count rose past the old by-name reading', () => {
+    const { actions } = runChecks()
+    // 2026-09-14 reading: 235 files (135 by name, 100 by reach), 1000 exports; floors 200 / 800.
+    expect(actions.fileCount).toBeGreaterThanOrEqual(MIN_ACTION_FILES)
+    expect(actions.exportCount).toBeGreaterThanOrEqual(MIN_ACTION_EXPORTS)
+    expect(actions.byReach).toBeGreaterThan(0)
+    expect(actions.byMention + actions.byReach).toBe(actions.fileCount)
+    // The old by-name count alone must sit BELOW the floor, or the floor cannot notice the reach
+    // set going missing.
+    expect(actions.byMention).toBeLessThan(MIN_ACTION_FILES)
+  })
+
+  it('walks a graph large enough to have looked, with the admin module in it', () => {
+    const reach = adminReach()
+    expect(reach.adminPresent).toBe(true)
+    expect(reach.moduleCount).toBeGreaterThan(2400) // check-client-server-boundary's own floor
+    expect(reach.reachingCount).toBeGreaterThan(1000)
+    expect(reach.reachingCount).toBeLessThan(reach.moduleCount)
   })
 })
