@@ -49,8 +49,7 @@
             "LIVE-325",
             "LIVE-186",
             "LIVE-213",
-            "LIVE-312",
-            "LIVE-322"
+            "LIVE-312"
           ]
         },
         {
@@ -12298,7 +12297,7 @@
     {
       "id": "LIVE-322",
       "title": "A checkout URL unhides a hidden venue to an unauthenticated reader",
-      "status": "open",
+      "status": "done",
       "priority": "P1",
       "lane": "live",
       "size": "S",
@@ -12306,12 +12305,13 @@
         "file": "app/(main)/events/[slug]/page.tsx",
         "ref": "line 912, 1233"
       },
-      "detail": "FILED 2026-09-14 from the guest-door handoff; a security finding, so the safer fix wins. page.tsx:912 sets ownsTicket = true whenever ?ticket=success&session_id= resolves to a priced amount, and ownsTicket unhides the street and pin at :1233-1234 for whoever holds the URL, signed in or not. It contradicts the doctrine written in the same PR two files over: the receipt email deliberately withholds a hidden address (ADR-854: an unverified address may address a delivery, never unlock a capability). Pre-existing mechanism, newly reachable now that guests receive such URLs.\n\nTHE FIX: ownsTicket for a signed-out reader is always false; the session id may confirm the purchase message, never the venue. A test renders the page signed out with a valid session id on a hidden-venue event and asserts the address is absent.",
+      "detail": "FILED 2026-09-14 from the guest-door handoff; a security finding, so the safer fix wins. page.tsx:912 sets ownsTicket = true whenever ?ticket=success&session_id= resolves to a priced amount, and ownsTicket unhides the street and pin at :1233-1234 for whoever holds the URL, signed in or not. It contradicts the doctrine written in the same PR two files over: the receipt email deliberately withholds a hidden address (ADR-854: an unverified address may address a delivery, never unlock a capability). Pre-existing mechanism, newly reachable now that guests receive such URLs.\n\nTHE FIX: ownsTicket for a signed-out reader is always false; the session id may confirm the purchase message, never the venue. A test renders the page signed out with a valid session id on a hidden-venue event and asserts the address is absent.\n\n── CLOSED 2026-09-14. Ownership and confirmation are two facts now, derived in lib/events/ticket-ownership.ts (deriveTicketOwnership): ownsTicket is true only for a signed-in viewer whose OWN profile holds the ticket row, and the ?ticket=success&session_id= reconcile yields purchaseConfirmed, which is banner copy and never reaches viewerRegistered. A signed-out reader with a valid session id on a hidden-venue event gets the confirmation message and no address, join link, or RSVP row; a signed-in owner keeps the venue. ticket-ownership.test.ts pins the four viewer cases on the page’s own addressHidden composition and pins, comment-free, that the page derives through the helper and that purchaseConfirmed never joins the venue gate.",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e 'const s=require(\"fs\").readFileSync(\"app/(main)/events/[slug]/page.tsx\",\"utf8\");if(/if \\(ticketedCents !== null\\) ownsTicket = true/.test(s)){console.error(\"page.tsx still derives ownsTicket from the checkout URL alone, so a hidden venue is one link away\");process.exit(1)}'",
         "note": "Passes when the URL no longer grants ownership. Written 2026-09-14."
-      }
+      },
+      "closed": "2026-09-14"
     },
     {
       "id": "LIVE-323",
