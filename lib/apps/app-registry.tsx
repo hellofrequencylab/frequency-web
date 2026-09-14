@@ -11,8 +11,8 @@
 //
 // SERVER-SIDE ONLY for the render path: resolveAppPreview dynamically imports the ElementPreview
 // client wrapper (components/admin/library/element-preview.tsx) to draw a code-drawn element, and
-// otherwise returns a schematic placeholder. It does NOT go through lib/apps/bindings (that module is
-// the general editor/page/element render boundary; the lane's preview only needs the element node).
+// otherwise returns a schematic placeholder. There is no lib/apps/bindings module in the tree and
+// nothing imports one (docs/EDITOR-E0.md records it); the preview reaches the element node directly.
 // Compute previews in a Server Component and pass the resulting nodes to the client lane as props (the
 // RSC "slot" pattern). The pure appsAsLibraryItems() metadata is safe to type-import anywhere.
 

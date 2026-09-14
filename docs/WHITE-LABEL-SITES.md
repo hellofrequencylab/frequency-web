@@ -47,10 +47,10 @@ sites' cookie scope is isolated from the app by construction.
 | --- | --- | --- |
 | Tenant → entity spine | ⚠️ Partial | `resolveSpaceForHost` / `getSpaceByDomain` in `lib/spaces/store.ts` — exact-match on a single `spaces.domain` column, read only in `app/(main)/layout.tsx`. No subdomain parsing, no `x-forwarded-host`. |
 | Edge middleware | ✅ Exists | `proxy.ts` (Next 16 renames middleware). Auth + attribution. **Zero host rewriting** — the router is greenfield. |
-| Page storage | ⚠️ Partial | `pages` table is `space_id`-aware in code (`lib/page-editor/data.ts`); repo migration lacks the column and uses a global-unique `slug`. Authoring gated to a root allowlist (`EDITABLE_PAGES`). |
+| Page storage | ✅ Exists | ⚠️ **This row read "⚠️ Partial: repo migration lacks the column and uses a global-unique `slug`" until 2026-09-14 and was stale.** `pages.space_id` is NOT NULL with an FK to `spaces` (`20260710000000_pages_space_id.sql` added it; `20270341000000_pages_space_id_takes_its_not_null_step.sql` took the NOT NULL step, LIVE-112 / ADR-1160), and `unique nulls not distinct (space_id, slug)` replaced the global `pages_slug_key` (`20270209000000_pages_space_slug_unique.sql`, ADR-927). The `pages.space_id` migration in §10 is shipped. Authoring is still gated to a root allowlist (`EDITABLE_PAGES`). |
 | Visual editor | ✅ Exists | In-house fork — `DesktopEditor` + `BlockRender` + `config.tsx`. `@measured/puck` removed (ADR-493). "Full Puck" = extend this. |
 | Public site render | 🔴 **Build** | ⚠️ **This row read "✅ Exists" until 2026-08-10 and was false.** `app/sites/[slug]/page.tsx` is a 70-line "Coming soon" card with `robots: { index: false }`. Its own header records that the real render — `BlockRender` of the Home doc, filtered for the `website` surface, fail-closed on `preferences.websitePublished` — **lives in git history**; `lib/spaces/surface-visibility.ts` was deleted with it. Rebuilt in **E10** ([ADR-974](DECISIONS.md)), on the block contract rather than on today's three block systems. |
-| Entitlements + billing | ✅ Exists | Default-deny entitlements (`lib/spaces/entitlements.ts`), plan ladder, and full Stripe per-Space subscriptions (`lib/billing/space-subscriptions.ts`). A `space_whitelabel` Branding gate is already defined. |
+| Entitlements + billing | ✅ Exists | Default-deny entitlements (`lib/spaces/entitlements.ts`), plan ladder, and full Stripe per-Space subscriptions (`lib/billing/space-subscriptions.ts`). ⚠️ **Corrected 2026-09-14:** this row said a `space_whitelabel` Branding gate "is already defined". It is a DB gate ROW only (`20260723010000_pricing_foundation.sql`); its code paths in `lib/pricing/gates.ts` and `lib/pricing/feature-meters.ts` were deleted as decorative under HYG-079 (tombstone comments at `gates.ts:135-139`), and the real branding lock is the pure `whitelabel` entitlement key. `custom_domain` does not exist as a key, gate, or column anywhere in `lib/`, `app/`, or `supabase/`; the word appears only in planning docs. |
 | Domains model | 🔴 Build | Single unique `spaces.domain` column. No subdomain / verification / status / multi-domain / domains table. |
 | Domain provisioning | 🔴 Build | No Vercel Domains API calls, no DNS verification, no wildcard config in `vercel.json`. The largest greenfield surface. |
 
@@ -196,8 +196,10 @@ shared DB — see `docs/WORKFLOW.md`).
 | Migration | Shape | Why |
 | --- | --- | --- |
 | `space_domains` (new) | `id, space_id→spaces, host (unique, lower), kind: subdomain\|custom, status: pending\|verifying\|active\|error, verification_token, is_primary, created_at, verified_at` | The real domains model. Multiple domains per Space, each with verification state. Supersedes the overloaded `spaces.domain` (kept + backfilled, then retired). |
-| `pages.space_id` | add `space_id→spaces` (not null, default root); drop global-unique `slug`; add `unique(space_id, slug)` | Un-gates the storage seam the code already assumes so each Space owns its own slugs. |
+| `pages.space_id` | add `space_id→spaces` (not null, default root); drop global-unique `slug`; add `unique(space_id, slug)` | Un-gates the storage seam the code already assumes so each Space owns its own slugs. ✅ **Shipped** (read 2026-09-14): `20260710000000`, `20270209000000`, `20270341000000`. See the §2 Page storage row. |
 | template versioning | `site_templates(id, key, version, doc jsonb, block_preset, status)`; `pages.template_version` | Reproducible template-to-instance; opt-in template revisions per site. |
+
+**Owner ruling 2026-09-14 (recorded in [`DECISIONS.md`](DECISIONS.md) under that date):** `space_full_website` stays the pages-quota key (`SPACE_FULL_WEBSITE_KEY`, `lib/spaces/entitlements.ts`), and domain binding gets its own `custom_domain` entitlement key rather than reusing `space_whitelabel`. That settles the "final call at P3" left open in §8 and §12.
 
 ---
 
