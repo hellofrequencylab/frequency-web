@@ -1,7 +1,9 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { headers } from 'next/headers'
 import { getMyProfileId } from '@/lib/auth'
+import { rateLimitOk } from '@/lib/rate-limit'
 import { createTicketCheckout, refundTicket } from '@/lib/billing/tickets'
 import { getEventCapabilities } from '@/lib/core/load-capabilities'
 import { setRsvpStatus } from '@/app/(main)/events/actions'
@@ -47,6 +49,104 @@ export async function startTicket(
     await setRsvpStatus(eventId, 'going')
     return ok({ free: true })
   }
+  if (!r.url) return fail('Could not start checkout.')
+  return ok({ url: r.url })
+}
+
+// ── THE GUEST DOOR ──────────────────────────────────────────────────────────────────────────────
+// A signed-out person who follows a shared link to a ticketed event used to be handed /sign-in and
+// asked to make an account before they could pay. This is the other door, and it is the ticket
+// sibling of app/(main)/events/guest-rsvp-actions.ts `submitGuestRsvp` — same honeypot, same
+// per-IP limiter, same normalisation, same "the SQL is the one that counts" posture.
+//
+// IT IS A SEPARATE ACTION ON PURPOSE. Widening `startTicket` would have made its
+// `getMyProfileId()` guard conditional, and a conditional auth guard on a money path is the kind
+// of thing that reads as correct for a year. The member path above is untouched: it still refuses
+// anyone without a profile, unambiguously.
+//
+// WHERE THE AUTHORITY IS. Not here. `createTicketCheckout` re-validates everything for a guest
+// exactly as it does for a member (tier active, member_only, space_members_only, inventory, the
+// min_cents floor, the payee's Connect readiness), and `reserve_ticket_atomic` re-checks the
+// identity invariant and the capacity inside the transaction that inserts the row. Nothing in
+// this function is the only thing standing between a caller and a bad outcome.
+
+/** UX-only email shape. The SQL re-validates and is the one that counts; this exists so a typo
+ *  gets a useful line instead of a failed checkout. Same expression `submitGuestRsvp` uses. */
+const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/
+
+export async function startGuestTicket(input: {
+  eventId: string
+  email: string
+  /** Accepted for form parity with the guest RSVP. DELIBERATELY NOT FORWARDED: a pending ticket
+   *  row carries `guest_email` and nothing else, and Stripe collects the billing name itself at
+   *  the card step. Adding an unagreed metadata key across the webhook boundary to carry it would
+   *  be inventing a contract the settle side did not ask for. */
+  name?: string
+  ticketTypeId?: string | null
+  amountCents?: number | null
+  qty?: number
+  /** Honeypot. A real person never sees this field, so anything in it is a bot. */
+  company?: string
+}): Promise<ActionResult<{ url?: string; free?: boolean }>> {
+  // Hard server-side off, FIRST and for the same reason as the member path: a stale link or a
+  // client must never reach Stripe while platform payments are dormant.
+  if (!TICKETING_ENABLED) return fail('Ticket sales are off right now.')
+
+  // Silent success for the honeypot: telling a bot it was caught only teaches it to stop filling
+  // the field. `submitGuestRsvp` returns its full success shape here; this one returns a success
+  // that CLAIMS NOTHING (no url, no free). The difference is deliberate and it is a money
+  // difference: an RSVP is a seat, but "free: true" on a ticket door would tell a human whose
+  // browser autofilled a hidden field that they hold a ticket they do not hold, and they would
+  // travel to a door that has no record of them. No error string is returned either way, so the
+  // bot learns nothing from us.
+  if ((input.company || '').trim() !== '') return ok({})
+
+  const email = (input.email || '').trim().toLowerCase()
+
+  // Throttle this open, unauthenticated endpoint per IP. FAILS CLOSED in production when Upstash
+  // is unconfigured (lib/rate-limit.ts), which is the correct direction for a door that reserves
+  // inventory and creates a Stripe session. Runs BEFORE the signed-in check below so a caller
+  // cannot buy themselves out of the limit by holding a session.
+  const hdrs = await headers()
+  const ip = hdrs.get('x-forwarded-for')?.split(',')[0]?.trim() || hdrs.get('x-real-ip') || 'unknown'
+  if (!(await rateLimitOk('event_guest_ticket', ip, 5, '10 m'))) {
+    return fail('Too many requests. Please try again in a few minutes.')
+  }
+
+  // A SIGNED-IN CALLER GETS THEIR OWN TICKET, NOT A GUEST ROW. If someone has a profile, minting a
+  // guest ticket keyed to a typed address would strand the ticket outside their account: it would
+  // not show in their tickets, would not count as their RSVP, and would need a claim flow to
+  // reunite them with it. So we prefer the identity we can prove (the session) over the one they
+  // typed, and hand off to the member path, which re-reads `getMyProfileId()` itself.
+  const myProfileId = await getMyProfileId()
+  if (myProfileId) {
+    return startTicket(input.eventId, {
+      qty: input.qty,
+      ticketTypeId: input.ticketTypeId ?? null,
+      amountCents: input.amountCents ?? null,
+    })
+  }
+
+  // UX validation only, and it echoes back nothing but the reader's own input.
+  if (!EMAIL_RE.test(email)) return fail('Please enter a valid email address.')
+
+  const r = await createTicketCheckout({
+    guestEmail: email,
+    eventId: input.eventId,
+    qty: input.qty ?? 1,
+    ticketTypeId: input.ticketTypeId ?? null,
+    amountCents: input.amountCents ?? null,
+  })
+  if (r.error) return fail(r.error)
+
+  // A FREE TIER, FOR A GUEST. `createTicketCheckout` says `{ free: true, requiresAccount: true }`
+  // rather than `{ free: true }`, because the member path's claim recorder (`setRsvpStatus`) needs
+  // a profile and the guest RSVP door on the other side (`capture_guest_rsvp`) refuses an event
+  // whose join_mode is 'tickets' by design. So there is no honest place to put this claim yet, and
+  // the claim is NOT dropped: it is refused with the one step that makes it work. When a guest
+  // free-claim path exists, this is the single branch that changes.
+  if (r.free) return fail('This ticket is free. Sign in to claim it.')
+
   if (!r.url) return fail('Could not start checkout.')
   return ok({ url: r.url })
 }
