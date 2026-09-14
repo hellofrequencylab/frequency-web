@@ -20,6 +20,9 @@ const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/
  * email already existed, was suppressed, or had opted out: every non-validation path returns the
  * SAME success so the endpoint cannot be used to enumerate addresses.
  */
+// authz-ok: anonymous by design, a person submitting their own address behind a per-IP rate limit.
+// requestOptin only finds or creates the contact row for that address in the root Space and never
+// flips consent; consent moves only through the HMAC confirm link mailed to that same address.
 export async function requestSubscribe(input: { email: string; name?: string }): Promise<OptinResult> {
   const email = (input.email || '').trim().toLowerCase()
   const name = (input.name || '').trim() || null

@@ -101,6 +101,41 @@
 //     CLOSED there: an export whose body cannot be resolved is a violation, not a pass.
 //   • Anything about the gate's own correctness — that is what lib/**'s own tests are for.
 //
+// ── THE ACTION SCAN REACHES BY IMPORT, NOT BY MENTION (LIVE-307) ────────────────────────
+// For its whole per-export life the action scan admitted a `'use server'` file only if the file's
+// OWN SOURCE contained the string `createAdminClient`. A file that reaches the admin client the
+// normal way, through a lib/ helper that opens it, was never in the scan, and the success line
+// counted files that mention a string, not publicly-reachable actions. Measured 2026-09-14: of
+// 247 `'use server'` files under app/, 135 mentioned the client and were scanned; 102 reached
+// lib/supabase/admin.ts through their imports without mentioning it and were never read; 21 of
+// those 102 carried an export the per-export rule fails. Found by a control that did NOT fire:
+// LIVE-295's new action had its gate deleted outright and this gate printed green.
+//
+// Membership is now "what the file CAN CALL": `createAdminReach` builds the import graph once
+// over app/ + lib/ + components/ (the same resolver and edge kinds as check-client-server-
+// boundary.mjs, walking the other direction), walks BACKWARDS from lib/supabase/admin.ts over
+// reverse edges, and a `'use server'` file is in the scan when it mentions the client OR sits in
+// that reaching set. The substring path is kept as-is so the 135 keep their verdicts; the reach
+// path adds the rest. A reverse walk with a visited set is what makes cycles terminate and one
+// pass answer every file.
+//
+// Two honesties that came out of reading the 21:
+//   • `'use server'` must be a DIRECTIVE. The membership test was a substring, so a `'use client'`
+//     component whose comment says "wrappers over the 'use server' actions" was counted as an
+//     action module and its React components read as ungated endpoints. `hasUseServerDirective`
+//     wants the string on its own line (top of file or top of a function body). No file in the
+//     135 changes hands: every one carries a real top-level directive.
+//   • Two fail-closed caller checks were missing from ACTION_GATE's vocabulary: `requireProfileId`
+//     (redirects when signed out, lib/auth.ts) and `getRealCallerRole` (null when signed out, and
+//     every caller checks it). Naming them is the fix the vocabulary block below already
+//     describes; rewriting four correct actions to use a different helper would not be.
+//
+// STILL NOT MEASURED, in addition to the list above: a `'use server'` file that reaches the admin
+// client only through a specifier the resolver cannot follow (a package re-export, a runtime-built
+// dynamic import) stays out of the scan, exactly as it stays out of check:client-boundary. The
+// floors below (MIN_ACTION_FILES / MIN_ACTION_EXPORTS) are set against the NEW reading so a walk
+// that silently loses the reach set fails rather than reports the old 135 as coverage.
+//
 // Escape hatches keep it honest:
 //   • ALLOWLIST_* below — files that are intentionally public (actions) or intentionally
 //     caller-trusted internal/system helpers (lib). Each MUST carry a reason.
@@ -115,7 +150,7 @@
 
 import { readFileSync, readdirSync, existsSync } from 'node:fs'
 import { createHash } from 'node:crypto'
-import { join } from 'node:path'
+import { join, dirname, normalize } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const APP_DIR = 'app'
@@ -209,7 +244,13 @@ export const ROUTE_GATE = new RegExp(
 // null when signed out, but an action calls the wrapper, and neither a file-level regex nor
 // the file-local helper resolution can see through an IMPORT. Kept separate from GUARD so the
 // lib scan is not loosened. Every entry must FAIL CLOSED on its own.
-export const ACTION_GATE = new RegExp([GUARD.source, 'contactsOwnerId'].join('|'))
+//   • `requireProfileId` (lib/auth.ts) redirects to /sign-in with no user and to /onboarding with no
+//     profile, so nothing after it runs for a stranger. Four actions gate on it and nothing else
+//     (invite-actions, support/chat-actions); the transitive scan (LIVE-307) found them.
+//   • `getRealCallerRole` (lib/auth.ts) is null when signed out and every caller checks it before
+//     acting; it is the caller-establishing read view-as-actions gates on, the same shape as
+//     `contactsOwnerId` returning null.
+export const ACTION_GATE = new RegExp([GUARD.source, 'contactsOwnerId', 'requireProfileId', 'getRealCallerRole'].join('|'))
 
 /** Verdicts a ledger entry may claim. Anything else is a typo or an invented category, and
  *  an unrecognised verdict must FAIL rather than quietly count as coverage. */
@@ -781,6 +822,154 @@ function walk(dir) {
   return out
 }
 
+// ── TRANSITIVE REACH (LIVE-307) ─────────────────────────────────────────────────────────
+// Which files can call the admin client at all? Answered once, over the import graph, by walking
+// BACKWARDS from lib/supabase/admin.ts. See the header block "THE ACTION SCAN REACHES BY IMPORT".
+
+/** The module every reach question is about. Kept as a plain path so the fixture tests can stand
+ *  up a tiny tree that carries a file at this exact path. */
+export const ADMIN_MODULE = 'lib/supabase/admin.ts'
+
+/** The roots the import graph is built over. `components/` is here because a `'use server'` file
+ *  can import a component module that imports a lib helper that opens the client; the reach set is
+ *  about paths, and a root left out is a path not walked. */
+const REACH_ROOTS = ['app', 'lib', 'components']
+
+/** The graph walk: same exclusions as check-client-server-boundary.mjs (node_modules, dot-dirs,
+ *  `.test` and `.spec` files). Distinct from `walk()` above only in the spec/dot-dir exclusions,
+ *  and kept separate so the action-file walk this gate has always used does not move. */
+function walkForGraph(dir) {
+  const out = []
+  let entries
+  try {
+    entries = readdirSync(dir, { withFileTypes: true })
+  } catch {
+    return out
+  }
+  for (const entry of entries) {
+    const p = join(dir, entry.name)
+    if (entry.isDirectory()) {
+      if (entry.name === 'node_modules' || entry.name.startsWith('.')) continue
+      out.push(...walkForGraph(p))
+    } else if (/\.(ts|tsx)$/.test(entry.name) && !/\.(test|spec)\.[tj]sx?$/.test(entry.name)) {
+      out.push(p)
+    }
+  }
+  return out
+}
+
+// The three import forms, matching check-client-server-boundary.mjs: static `from '...'`, a bare
+// side-effect `import '...'`, and the dynamic `import('...')`. A dynamic import is a real call
+// path for a server action (nothing about "separate chunk" applies on the server), so it is an
+// edge here even though the client-boundary gate reports it separately.
+const STATIC_IMPORT_RE = /(?:^|\n)\s*(?:import|export)\s[^;]*?from\s*['"]([^'"]+)['"]/g
+const BARE_IMPORT_RE = /(?:^|\n)\s*import\s*['"]([^'"]+)['"]/g
+const DYNAMIC_IMPORT_RE = /\bimport\s*\(\s*['"]([^'"]+)['"]\s*\)/g
+
+/**
+ * Build the reach index over a file set. `read` is injectable so a fixture tree can be indexed
+ * without touching disk; `files` is the whole set the resolver may land in (a specifier that
+ * resolves outside it is a package, not our source).
+ *
+ * Resolution follows the boundary gate exactly: `@/` and relative specifiers, `.ts` / `.tsx` /
+ * `/index.ts` / `/index.tsx`, and `import type` / `export type` skipped because a type-only edge
+ * is erased at compile time and carries no call path. Anything else (a package, a runtime-built
+ * string) is not an edge, and that blind spot is named in the header.
+ *
+ * The answer is computed ONCE as a set: reverse edges are collected, then a breadth-first walk
+ * from `admin` over "who imports me" marks every file that can reach it. A visited set is what
+ * makes a cycle terminate, and one walk answers every file, so `reaches` is a set lookup.
+ * @returns {{reaches: (file: string) => boolean, moduleCount: number, reachingCount: number, adminPresent: boolean}}
+ */
+export function createAdminReach({ files, read = (f) => readFileSync(f, 'utf8'), admin = ADMIN_MODULE }) {
+  const src = new Map(files.map((f) => [f, read(f)]))
+
+  const resolve = (spec, from) => {
+    let base
+    if (spec.startsWith('@/')) base = spec.slice(2)
+    else if (spec.startsWith('.')) base = normalize(join(dirname(from), spec))
+    else return null
+    for (const c of [`${base}.ts`, `${base}.tsx`, join(base, 'index.ts'), join(base, 'index.tsx')]) {
+      if (src.has(c)) return c
+    }
+    return null
+  }
+
+  const edgesOf = (file) => {
+    const text = src.get(file)
+    const out = new Set()
+    for (const re of [STATIC_IMPORT_RE, BARE_IMPORT_RE, DYNAMIC_IMPORT_RE]) {
+      re.lastIndex = 0
+      let m
+      while ((m = re.exec(text))) {
+        if (/^\s*(?:import|export)\s+type\s/.test(m[0])) continue
+        const r = resolve(m[1], file)
+        if (r) out.add(r)
+      }
+    }
+    return out
+  }
+
+  const importers = new Map(files.map((f) => [f, new Set()]))
+  for (const f of files) {
+    for (const dep of edgesOf(f)) importers.get(dep).add(f)
+  }
+
+  const reaching = new Set()
+  if (src.has(admin)) {
+    reaching.add(admin)
+    const queue = [admin]
+    while (queue.length) {
+      const cur = queue.shift()
+      for (const up of importers.get(cur)) {
+        if (reaching.has(up)) continue
+        reaching.add(up)
+        queue.push(up)
+      }
+    }
+  }
+
+  return {
+    reaches: (file) => reaching.has(file),
+    moduleCount: files.length,
+    reachingCount: reaching.size,
+    adminPresent: src.has(admin),
+  }
+}
+
+/** The real tree's reach index, built on first use and memoised for the process. Lazy so the
+ *  fixture tests (which pass their own predicate) never pay for a walk of the live tree. */
+let realReach = null
+export function adminReach() {
+  if (!realReach) realReach = createAdminReach({ files: REACH_ROOTS.flatMap(walkForGraph) })
+  return realReach
+}
+
+/** Can this file, through any chain of imports, call the admin client? */
+export function reachesAdminClient(file) {
+  return adminReach().reaches(file)
+}
+
+/** A `'use server'` DIRECTIVE: the string on a line of its own, at the top of the file or at the
+ *  top of a function body. A comment that quotes the directive is not one, and neither is a
+ *  `'use client'` component describing the actions it wraps. */
+const USE_SERVER_DIRECTIVE_RE = /(?:^|[\n;{])[ \t]*['"]use server['"][ \t]*(?:;|\r?\n|$)/
+export function hasUseServerDirective(src) {
+  return USE_SERVER_DIRECTIVE_RE.test(src)
+}
+
+/**
+ * Is this file in the ACTION scan? A `'use server'` module that uses the admin client by name OR
+ * can reach it through its imports. The by-name path is unchanged from the file-level scan, so
+ * every file it admitted keeps its verdict; the reach path is the LIVE-307 widening.
+ * @returns {'mention'|'reach'|null} how the file qualified, or null when it is not in the scan.
+ */
+export function actionScanMembership(file, src, reaches = reachesAdminClient) {
+  if (!hasUseServerDirective(src)) return null
+  if (src.includes('createAdminClient')) return 'mention'
+  return reaches(file) ? 'reach' : null
+}
+
 /**
  * Where do this file's `// authz-ok:` annotations point? One in the comment block DIRECTLY
  * ABOVE an export attaches to that export; one anywhere else (a file header, an import block)
@@ -814,9 +1003,8 @@ export function actionAnnotations(src) {
  * is its own public HTTP endpoint.
  * @returns {{file: string, problems: {method: string, kind: string, detail: string}[]}|null} null = clean.
  */
-export function classifyActionFile(file, src) {
-  if (!src.includes("'use server'")) return null
-  if (!src.includes('createAdminClient')) return null // only the RLS-bypassing path
+export function classifyActionFile(file, src, reaches = reachesAdminClient) {
+  if (!actionScanMembership(file, src, reaches)) return null // only the RLS-bypassing path, by name or by reach
   if (ALLOWLIST_ACTIONS.has(file)) return null
   const ann = actionAnnotations(src)
   if (ann.fileLevel) return null
@@ -826,21 +1014,30 @@ export function classifyActionFile(file, src) {
   return remaining.length > 0 ? { file, problems: remaining } : null
 }
 
-/** Scan `'use server'` admin-client files per-export. `read` is injectable for fixtures.
- *  @returns {{violations: {file: string, problems: {method: string, kind: string, detail: string}[]}[], fileCount: number, exportCount: number}} */
-export function scanActions(files, read = (f) => readFileSync(f, 'utf8')) {
+/** Scan `'use server'` admin-client files per-export. `read` is injectable for fixtures, and so is
+ *  `reaches` (LIVE-307): pass `createAdminReach({ files, read }).reaches` to drive the transitive
+ *  arm over a fixture tree, or `() => false` to reproduce the by-name-only scan this used to be.
+ *  `byMention` / `byReach` split `fileCount` by how each file qualified, so the success line can
+ *  say how many the reach arm added rather than fold them into one number.
+ *  @returns {{violations: {file: string, problems: {method: string, kind: string, detail: string}[]}[], fileCount: number, exportCount: number, byMention: number, byReach: number}} */
+export function scanActions(files, read = (f) => readFileSync(f, 'utf8'), reaches = reachesAdminClient) {
   const violations = []
   let fileCount = 0
   let exportCount = 0
+  let byMention = 0
+  let byReach = 0
   for (const file of files) {
     const src = read(file)
-    if (!src.includes("'use server'") || !src.includes('createAdminClient')) continue
+    const how = actionScanMembership(file, src, reaches)
+    if (!how) continue
     fileCount++
+    if (how === 'mention') byMention++
+    else byReach++
     exportCount += actionExports(maskLiterals(src)).length
-    const v = classifyActionFile(file, src)
+    const v = classifyActionFile(file, src, reaches)
     if (v) violations.push(v)
   }
-  return { violations, fileCount, exportCount }
+  return { violations, fileCount, exportCount, byMention, byReach }
 }
 
 /**
@@ -888,10 +1085,14 @@ export const MIN_ROUTE_FILES = 50
 export const MIN_API_ROUTE_FILES = 40
 
 /** Action-scan floors, same principle again (HYG-020). Live on 2026-08-25: 137 `'use server'`
- *  admin-client files carrying 699 exports. If either collapses, the scan stopped seeing the
- *  corpus — the LIVE-022 failure mode, one scan over. */
-export const MIN_ACTION_FILES = 100
-export const MIN_ACTION_EXPORTS = 400
+ *  admin-client files carrying 699 exports, floors 100 / 400. Re-read 2026-09-14 when the scan
+ *  learned to reach by import (LIVE-307): 235 files (135 by name, 100 by reach) carrying 1000
+ *  exports across 3,472 modules walked. The floors moved UP beside that reading, to 200 / 800,
+ *  deliberately above the old by-name count: a walk that silently loses the reach set would read
+ *  135 again, and 135 must FAIL. If either collapses, the scan stopped seeing the corpus, which is
+ *  the LIVE-022 failure mode, one scan over. */
+export const MIN_ACTION_FILES = 200
+export const MIN_ACTION_EXPORTS = 800
 
 export function runChecks() {
   const appFiles = walk(APP_DIR)
@@ -1098,9 +1299,12 @@ function main() {
     console.log(`  note: ${n.file} now calls a real gate — its ${LEDGER_PATH} entry is redundant and can be removed.`)
   }
 
+  const reach = adminReach()
   console.log(
     `✓ Authz-contract check passed across ${appCount} ${APP_DIR}/ + ${libCount} ${LIB_DIR}/ file(s) — ` +
       `all ${actions.exportCount} exports of the\n  ${actions.fileCount} admin-client 'use server' file(s) ` +
+      `(${actions.byMention} name the client, ${actions.byReach} reach it through their imports; ` +
+      `${reach.reachingCount} of\n  ${reach.moduleCount} modules can reach it at all, LIVE-307) ` +
       'reach a gate of their own (R1/R2/R3, per export since\n  HYG-020), and every lib/ admin-client ' +
       'mutation helper self-guards, scopes its write, or is\n  consciously delegated.',
   )

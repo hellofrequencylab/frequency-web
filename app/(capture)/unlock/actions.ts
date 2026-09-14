@@ -15,6 +15,9 @@ const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/
  * magnet come ONLY from the signed token, never the client — so nobody can seal a lead into a Space
  * they weren't handed a link for. Fail-safe: a capture error never blocks the reveal.
  */
+// authz-ok: anonymous by design. The Space and magnet come only from the HMAC-signed lead link
+// (parseLeadLink refuses a bad signature), the honeypot and the per-IP rate limit sit above the
+// write, and captureLeadMagnet only ever inserts a lead into that token's Space.
 export async function captureUnlock(input: {
   token: string
   name: string

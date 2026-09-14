@@ -65,6 +65,10 @@ const GENERIC_OK: GuestRsvpResult = { ok: true }
 /** The reply when the write itself did not happen. Plain, and about us rather than the reader. */
 const WRITE_FAILED: GuestRsvpResult = { ok: false, error: 'We could not save your spot. Please try again.' }
 
+// authz-ok: anonymous by design (the header above). Every write goes through the SESSION client
+// into capture_guest_rsvp and capture_signup_lead, SECURITY DEFINER functions granted to anon that
+// re-validate everything; the one admin read, inside sendGuestRsvpReceipt, is bound to this event
+// id and the submitted address and mails that address alone.
 export async function submitGuestRsvp(input: {
   eventId: string
   email: string

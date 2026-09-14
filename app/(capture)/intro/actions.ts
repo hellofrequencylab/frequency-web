@@ -14,6 +14,9 @@ export type AcceptResult = { ok: true } | { ok: false; error: string }
  * Space + the sealed contact come only from the signed token (minted when the operator ran the intro),
  * so nobody can flip a stranger's consent. Rate-limited; fail-safe.
  */
+// authz-ok: anonymous by design. The Space and the sealed contact id come only from the HMAC-signed
+// lead link (parseLeadLink refuses a bad signature), the per-IP rate limit sits above the write,
+// and acceptWarmIntro flips consent for that one contact only, and only from 'unknown'.
 export async function acceptIntro(token: string): Promise<AcceptResult> {
   const payload = parseLeadLink(token)
   if (!payload || payload.d !== 'warm_intro' || !payload.c) {

@@ -14,6 +14,9 @@ const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/
  * reciprocal card is public info carried in the signed token, so the reveal needs no extra read. Public
  * + unauthenticated: honeypot, rate limit, anti-enumeration.
  */
+// authz-ok: anonymous by design. The Space comes only from the HMAC-signed lead link (parseLeadLink
+// refuses a bad signature), the honeypot and the per-IP rate limit sit above the write, and
+// captureShareBack only ever inserts a sealed, non-mailable lead into that token's Space.
 export async function captureExchange(input: {
   token: string
   name: string

@@ -21,6 +21,9 @@ import { deleteDraft } from '@/app/(main)/events/scan/actions'
 import type { ActionResult } from '@/lib/action-result'
 
 /** Make the thing. The governed layer owns every check; this only refreshes the list after. */
+// authz-ok: delegated to confirmProposalWithRegisteredCommit (lib/ai/vera/create-entity.ts), which
+// re-derives the caller with getCallerProfile, refuses a proposal that is not theirs, re-checks the
+// entity's gate at the write, and claims the audit row with a conditional update.
 export async function confirmDraftAction(
   proposalId: string,
 ): Promise<ActionResult<{ entity: string; href: string | null }>> {
@@ -31,6 +34,8 @@ export async function confirmDraftAction(
 
 /** Throw the draft away. Conditional on it still being open, so a dismissed or already-confirmed
  *  proposal cannot be dismissed twice, and a dismissed one can never afterwards be confirmed. */
+// authz-ok: delegated to dismissCreateProposal (lib/ai/vera/create-entity.ts), which re-derives the
+// caller with getCallerProfile and updates only the caller's own still-open proposal.
 export async function dismissDraftAction(proposalId: string): Promise<ActionResult<void>> {
   const res = await dismissCreateProposal(proposalId)
   revalidatePath('/drafts')
@@ -61,6 +66,8 @@ export async function binUnfinishedDraftAction(scope: string): Promise<boolean> 
  * published, and cleans up the stored poster and its crops. Folding the surface must not fork
  * the rule about who may delete what: the list moved, the gate did not.
  */
+// authz-ok: delegated to deleteDraft (app/(main)/events/scan/actions.ts): requireCaller establishes
+// the member, and the delete is bound to posted_by_profile_id = that member and status = 'draft'.
 export async function binEventDraftAction(id: string): Promise<boolean> {
   if (!id) return false
   const res = await deleteDraft(id)

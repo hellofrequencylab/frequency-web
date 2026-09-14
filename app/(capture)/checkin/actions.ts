@@ -14,6 +14,9 @@ const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/
  * stays sealed 'unknown' (the engine enforces this). Public + unauthenticated: honeypot, rate limit,
  * anti-enumeration. Space + event come only from the signed token.
  */
+// authz-ok: anonymous by design. The Space and event come only from the HMAC-signed lead link
+// (parseLeadLink refuses a bad signature), the honeypot and the per-IP rate limit sit above the
+// write, and captureEventLead only ever inserts a sealed lead into that token's Space.
 export async function captureCheckIn(input: {
   token: string
   name: string
