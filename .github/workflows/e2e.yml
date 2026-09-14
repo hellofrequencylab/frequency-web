@@ -363,9 +363,48 @@ jobs:
           PW_REQUIRE_OPERATOR: ${{ vars.PW_REQUIRE_OPERATOR || secrets.PW_REQUIRE_OPERATOR }}
         run: pnpm test:e2e
 
-      # @visual: needs committed baselines captured against a deployment of the SAME kind.
-      # always() so a smoke/a11y failure above does not hide a pixel regression here.
-      - name: Visual compare
+      # ── THE VISUAL COMPARE, IN TWO TIERS (2026-09-14) ──────────────────────────────────
+      #
+      # It was ONE step, `pnpm test:e2e:visual`, and it failed constantly on diffs no PR had
+      # caused. The reason is not staleness and no recapture fixes it: the @shell surfaces
+      # (/feed, /settings, /nearby, the Space console, the seven /admin routes) are
+      # photographs of LIVE PRODUCTION DATA read through a real signed-in session. Their
+      # content changes on its own between the capture and the next comparison.
+      #
+      # surfaces.ts already records the measurement, on the Space console: "390x3017 at
+      # 16:21Z on 2026-09-07 and 390x2765 at 00:56Z on 2026-09-08 -- 252 px in eight hours,
+      # same production, no deploy touching the route. No recapture cadence holds that."
+      #
+      # 🔴 THE TOLERANCE IS NOT THE ANSWER AND MUST NOT BE RAISED. SCREENSHOT_MAX_DIFF_PIXELS
+      # is 400 because 400 is 59% of the smallest control this design system draws (676 px,
+      # ADR-1258/LIVE-125, pinned by screenshot-tolerance.test.ts). A real shell failure on
+      # 2026-09-11 measured 10,530 differing pixels, 26x the budget. That is content, not
+      # antialiasing. Widening the budget to swallow it would let a whole control appear or
+      # vanish unseen on every other surface too.
+      #
+      # So the tiers split by what can hold a signal, not by what is convenient:
+      #
+      #   PUBLIC (@visual, not @shell) -- marketing, /discover, the header bands. Anonymous,
+      #     content-stable, and green run after run: 105-108 passing across the 2026-09-11
+      #     runs while the shell tier churned. This tier BLOCKS, and it is a real gate.
+      #
+      #   SHELL (@shell) -- member + operator surfaces over live data. Runs, reports, uploads
+      #     its diffs, and does NOT block. A diff here is information for a human, because
+      #     nothing in it can distinguish "someone moved the header" from "the Space gained a
+      #     member since Tuesday".
+      #
+      # This is the ADR-970 trade taken deliberately and in the honest direction: a gate that
+      # cannot fire truthfully gets routed around, and then it reads as coverage. Rather than
+      # leave a red X everyone learns to merge past, the tier that cannot judge says so out
+      # loud and the tier that can judge keeps its teeth.
+      #
+      # THE REAL FIX, when it is worth the work: point the shell suite at a seeded,
+      # deterministic dataset instead of production. Then this tier earns its block back and
+      # these two steps collapse into one again.
+      #
+      # always() on both so a smoke/a11y failure above does not hide a pixel regression here.
+
+      - name: Visual compare -- public surfaces (blocking)
         if: ${{ always() && steps.preview.outputs.ready == 'true' }}
         env:
           PW_BASE_URL: ${{ steps.preview.outputs.url }}
@@ -375,13 +414,47 @@ jobs:
           PW_SPACE_SLUG: ${{ vars.PW_SPACE_SLUG }}
           PW_REQUIRE_SHELL: ${{ vars.PW_REQUIRE_SHELL || secrets.PW_REQUIRE_SHELL }}
           PW_REQUIRE_OPERATOR: ${{ vars.PW_REQUIRE_OPERATOR || secrets.PW_REQUIRE_OPERATOR }}
-        run: pnpm test:e2e:visual
+        run: pnpm test:e2e:visual:stable
+
+      - name: Visual compare -- member shell + operator (advisory)
+        id: shell_visual
+        continue-on-error: true
+        if: ${{ always() && steps.preview.outputs.ready == 'true' }}
+        env:
+          PW_BASE_URL: ${{ steps.preview.outputs.url }}
+          VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+          PW_STORAGE_STATE: ${{ steps.session.outputs.path }}
+          PW_ROOM_PATH: ${{ vars.PW_ROOM_PATH }}
+          PW_SPACE_SLUG: ${{ vars.PW_SPACE_SLUG }}
+          PW_REQUIRE_SHELL: ${{ vars.PW_REQUIRE_SHELL || secrets.PW_REQUIRE_SHELL }}
+          PW_REQUIRE_OPERATOR: ${{ vars.PW_REQUIRE_OPERATOR || secrets.PW_REQUIRE_OPERATOR }}
+        run: pnpm test:e2e:visual:shell
+
+      # An advisory tier that fails silently is the thing it was built to avoid, so say it in
+      # the summary where a reviewer already looks, and name the one question worth asking.
+      - name: Report the advisory tier
+        if: ${{ always() && steps.shell_visual.outcome == 'failure' }}
+        run: |
+          {
+            echo "### ⚠️ Member-shell visual diffs (advisory -- this does not block)"
+            echo
+            echo "The @shell surfaces photograph live production data, so a diff here is usually"
+            echo "the data moving rather than this PR moving anything. See \`Upload report + diffs\`"
+            echo "for the actual pictures."
+            echo
+            echo "**Worth a look if** your change touched the header, the rails, the tab bar, the"
+            echo "dock clearance or a theme token -- those move the shell for real. Otherwise this"
+            echo "is noise, and it is reported rather than enforced on purpose (ADR-970)."
+          } >> "$GITHUB_STEP_SUMMARY"
 
       # The synthetic speed gate used to run here as steps 11-13. It is its own parallel
       # job now (ADR-936) -- see `lighthouse:` below.
 
+      # `failure()` alone stopped being enough when the shell tier became advisory: it does
+      # not fail the job, so its diffs would have been discarded and the advice above would
+      # have pointed at an artifact that was never uploaded. Its outcome is read explicitly.
       - name: Upload report + diffs
-        if: ${{ failure() && steps.preview.outputs.ready == 'true' }}
+        if: ${{ (failure() || steps.shell_visual.outcome == 'failure') && steps.preview.outputs.ready == 'true' }}
         uses: actions/upload-artifact@v7
         with:
           name: playwright-report-pr-compare
