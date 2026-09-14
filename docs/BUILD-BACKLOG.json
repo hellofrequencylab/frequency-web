@@ -48,7 +48,6 @@
           "ids": [
             "LIVE-186",
             "LIVE-213",
-            "LIVE-311",
             "LIVE-312",
             "LIVE-314",
             "LIVE-315",
@@ -12118,7 +12117,7 @@
     {
       "id": "LIVE-311",
       "title": "Nothing measures whether people get THROUGH onboarding, so a scheduled probe counts accounts stuck behind the admission gate",
-      "status": "open",
+      "status": "done",
       "priority": "P1",
       "lane": "live",
       "size": "S",
@@ -12126,12 +12125,13 @@
         "file": "docs/DECISIONS.md",
         "ref": "ADR-1324 (the induction resume) and the 2026-09-14 handoff"
       },
-      "detail": "FILED 2026-09-14 from the induction-lockout handoff, and it is the root cause of the eleven-week delay. Every gate in this repo measures whether it is closed; none measures whether anyone gets past it. Nine people sat behind the admission gate and the only reason it surfaced is that one of them kept texting. This is ADR-1082 from the other side: a blocker phrased as \"nobody reported it\" is a claim with an expiry date.\n\nTHE WORK: a scheduled reading over profiles. Any account with a live session (a sign-in in the window), no onboarding_completed, and an age past a threshold is a person locked out right now. Report the count and the ids into the weekly maintenance run summary the way the cron-heartbeat and design-debt readings do (HYG-070), and feed a non-zero count into the tracking-issue delta so it has an owner. A monitored cron route is the alternative if the reading needs the service role; either way the reading must exist on a schedule, not on a complaint.\n\nThe probe measures the consequence: the maintenance workflow, or a cron route, carries an onboarding-throughput reading by name.",
+      "detail": "FILED 2026-09-14 from the induction-lockout handoff, and it is the root cause of the eleven-week delay. Every gate in this repo measures whether it is closed; none measures whether anyone gets past it. Nine people sat behind the admission gate and the only reason it surfaced is that one of them kept texting. This is ADR-1082 from the other side: a blocker phrased as \"nobody reported it\" is a claim with an expiry date.\n\nTHE WORK: a scheduled reading over profiles. Any account with a live session (a sign-in in the window), no onboarding_completed, and an age past a threshold is a person locked out right now. Report the count and the ids into the weekly maintenance run summary the way the cron-heartbeat and design-debt readings do (HYG-070), and feed a non-zero count into the tracking-issue delta so it has an owner. A monitored cron route is the alternative if the reading needs the service role; either way the reading must exist on a schedule, not on a complaint.\n\nThe probe measures the consequence: the maintenance workflow, or a cron route, carries an onboarding-throughput reading by name.\n\n── CLOSED 2026-09-14. The reading is the nightly cron `app/api/cron/onboarding-throughput` (vercel.json, 04:50 UTC, the 29th job, wrapped in withCronHeartbeat under its own name). It walks every auth user with a sign-in inside the last 30 days, joins them to their profile, and classifies each by the gate's OWN predicate (hasEffectivelyOnboarded over meta and the economy columns, never the raw flag alone, so a seeded member the gate already admits is never reported). An account older than 3 days that is still not admitted and keeps signing in is STUCK; younger is fresh, no recent sign-in is dormant. The classifier is pure (`lib/onboarding/throughput.ts`, three fixtures plus the boundaries in its test). WHERE IT REPORTS: `cron.onboarding_throughput.counts` on every run and, only when the count is non-zero, a WARN line `onboarding.throughput.stuck` carrying the count and the profile ids (never an email or auth id); the JSON response carries the same reading. A non-zero count answers 200 on purpose: the heartbeat fail-ping means the job died, and a switch that fires on a finding is a switch nobody reads on the day the job actually dies. The route test runs the real cron auth and the real heartbeat wrapper: no secret is refused and not pinged; a run pings once; a failed read answers 500 and fail-pings. ⚠️ MONITOR HALF, owner: the job pings `${CRON_HEARTBEAT_BASE_URL}/onboarding-throughput` from its first run, by the allow-list-of-silence design (LIVE-217). The Healthchecks free tier holds 20 checks and this is the 29th job, so until a check named exactly `onboarding-throughput` exists it will log `ping_failed 404` nightly, the same line OWN-070 is chasing for two monitored jobs. Either create the check (a slot must be free) or add the name to CRON_HEARTBEAT_SKIP and redeploy; do not leave it as a fifth 404. The reading itself does not depend on the monitor: the WARN line lands whether or not the ping does.",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e 'const fs=require(\"fs\");const w=fs.existsSync(\".github/workflows/maintenance.yml\")?fs.readFileSync(\".github/workflows/maintenance.yml\",\"utf8\"):\"\";const cron=fs.existsSync(\"app/api/cron/onboarding-throughput/route.ts\");if(!/onboarding-throughput/.test(w)&&!cron){console.error(\"no scheduled onboarding-throughput reading exists: nothing counts accounts stuck behind the admission gate\");process.exit(1)}'",
         "note": "Passes when a scheduled reading named onboarding-throughput exists in maintenance.yml or as a cron route. Written 2026-09-14."
-      }
+      },
+      "closed": "2026-09-14"
     },
     {
       "id": "LIVE-312",
