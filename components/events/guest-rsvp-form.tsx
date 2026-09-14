@@ -33,7 +33,18 @@ const CONFIRMATION = {
   body: 'We sent the details there, including whether the room had space. No account needed.',
 } as const
 
-export function GuestRsvpForm({ eventId, isFull }: { eventId: string; isFull?: boolean }) {
+export function GuestRsvpForm({
+  eventId,
+  isFull,
+  note,
+}: {
+  eventId: string
+  isFull?: boolean
+  /** The sentence after "No account needed." A priced RSVP-mode event passes what is paid at the
+   *  door; the free path leaves it and gets "Free to join." (LIVE-314). Ignored while the room
+   *  is full, because the waitlist line is the one that matters then. */
+  note?: string
+}) {
   const fieldId = useId()
   const [done, setDone] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -118,7 +129,8 @@ export function GuestRsvpForm({ eventId, isFull }: { eventId: string; isFull?: b
           {isFull ? 'Join the waitlist' : "I'm coming"}
         </Button>
         <p className="text-meta text-muted">
-          No account needed. {isFull ? 'The room is full, so this holds your place in line.' : 'Free to join.'}
+          No account needed.{' '}
+          {isFull ? 'The room is full, so this holds your place in line.' : (note ?? 'Free to join.')}
         </p>
       </div>
 

@@ -1415,6 +1415,9 @@ export default async function EventDetailPage({
             signedIn={!!myProfileId}
             signInHref={`/sign-in?next=/events/${event.slug}`}
             guestTiers={tiers}
+            mode="rsvp"
+            rsvpWindowOpen={rsvpWindowOpen}
+            rsvpWindowLine={rsvpWindowLine ?? undefined}
           />
         )}
 

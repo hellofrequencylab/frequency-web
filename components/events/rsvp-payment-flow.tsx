@@ -6,6 +6,7 @@ import { Check, CreditCard, Loader2 } from 'lucide-react'
 import { isError } from '@/lib/action-result'
 import { setRsvpStatus } from '@/app/(main)/events/actions'
 import { startTicket } from '@/app/(main)/events/[slug]/ticket-actions'
+import { GuestRsvpForm } from '@/components/events/guest-rsvp-form'
 import { GuestTicketForm, type GuestTicketTier } from '@/components/events/guest-ticket-form'
 import { RateOptions, type FlowRate } from '@/components/events/rate-options'
 import { RsvpControls } from '@/components/events/rsvp-controls'
@@ -42,6 +43,9 @@ export function RsvpPaymentFlow({
   signedIn,
   signInHref,
   guestTiers,
+  mode,
+  rsvpWindowOpen = true,
+  rsvpWindowLine,
 }: {
   eventId: string
   slug: string
@@ -64,28 +68,56 @@ export function RsvpPaymentFlow({
   signedIn: boolean
   signInHref: string
   /** The event's ticket tiers, for the signed-out guest purchase door. Omit and a signed-out
-   *  viewer gets the sign-in link instead. */
+   *  viewer in tickets mode gets the sign-in link instead. */
   guestTiers?: GuestTicketTier[]
+  /** The event's join mode. In 'rsvp' mode money changes hands at the door, so a signed-out
+   *  reader can RSVP as a guest whether or not checkout can charge (LIVE-314). In 'tickets'
+   *  mode buying IS attending, so without a purchasable door the sign-in link is the honest one. */
+  mode: 'rsvp' | 'tickets'
+  /** The host's booking window. `capture_guest_rsvp` refuses outside it, so the guest RSVP door
+   *  shows the reason instead of a form that would silently do nothing (ADR-1150). */
+  rsvpWindowOpen?: boolean
+  rsvpWindowLine?: string
 }) {
   const isGoing = status === 'going'
+
+  // THE SIGNED-OUT DOORS. Two of them, and they are decided before any state so the rate list
+  // seeded below is the one the reader can actually act on.
+  //
+  // · The PURCHASE door: when there is something a guest can actually buy, the guest ticket form
+  //   takes over phases 1 and 2. It owns the rate list, because the list it shows is the one a
+  //   guest can buy from (a membership rate is not an offer to someone with no account).
+  //   Rendering phase 1 above it as well would put two rate lists on the same card.
+  // · The RSVP door (LIVE-314): an RSVP-mode event collects money at the door, not at RSVP time.
+  //   Nothing goes through checkout here, and a signed-in member gets full RSVP controls whether
+  //   or not the host's payouts are connected. This door used to be closed by `paymentsReady`,
+  //   which refused the guest for a condition that charges nobody. The guest RSVP form stands
+  //   here instead; the same `capture_guest_rsvp` that serves the free path refuses tickets-mode
+  //   events, so a tickets-mode event without a purchasable door keeps the sign-in link.
+  const guestDoor = !signedIn && paymentsReady && !!guestTiers && guestTiers.length > 0
+  const guestRsvpDoor = !signedIn && !guestDoor && mode === 'rsvp'
+
+  // A guest with no account cannot hold a membership, so the RSVP door lists only the general
+  // rates. The selection seeds from the list this reader sees, not from the full one.
+  const rateList = guestRsvpDoor ? rates.filter((r) => r.kind === 'general') : rates
   const [selectedId, setSelectedId] = useState<string>(
-    () => (rates.find((r) => r.covered) ?? rates[0])?.id ?? '',
+    () => (rateList.find((r) => r.covered) ?? rateList[0])?.id ?? '',
   )
   const [payOpen, setPayOpen] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
-  const selected = rates.find((r) => r.id === selectedId) ?? null
+  const selected = rateList.find((r) => r.id === selectedId) ?? null
 
   // Phase 3 applies only when Going costs something: an unpaid general rate, or the membership
   // rate for a non-member. A covered rate records Going directly (no intercept).
   const needsPayment = !!selected && !selected.covered
   const showPayment = payOpen && needsPayment && !isGoing
 
-  // THE SIGNED-OUT DOOR. When there is something a guest can actually buy, the guest form takes
-  // over phases 1 and 2: it owns the rate list, because the list it shows is the one a guest can
-  // buy from (a membership rate is not an offer to someone with no account). Rendering phase 1
-  // above it as well would put two rate lists on the same card.
-  const guestDoor = !signedIn && paymentsReady && !!guestTiers && guestTiers.length > 0
+  // The line under the guest RSVP button. The form's default says "Free to join.", which is true
+  // on the free path and false here: the selected rate is paid, at the door, and the sentence
+  // says so. A covered (free) rate keeps the default.
+  const guestRsvpNote =
+    guestRsvpDoor && selected && !selected.covered ? `Pay the ${selected.priceLabel} at the door.` : undefined
 
   function selectRate(r: FlowRate) {
     setSelectedId(r.id)
@@ -115,8 +147,10 @@ export function RsvpPaymentFlow({
 
   return (
     <div className="space-y-3">
-      {/* Phase 1 — pick your rate. The guest door renders its own list; see `guestDoor`. */}
-      {!guestDoor && <RateOptions rates={rates} selectedId={selectedId} onSelect={selectRate} />}
+      {/* Phase 1 — pick your rate. The purchase door renders its own list; see `guestDoor`. */}
+      {!guestDoor && rateList.length > 0 && (
+        <RateOptions rates={rateList} selectedId={selectedId} onSelect={selectRate} />
+      )}
 
       {/* Phase 2 — your answer. A paid selection intercepts Going into the payment phase;
           Maybe funnels to follow-up; Can't go just files. */}
@@ -136,9 +170,20 @@ export function RsvpPaymentFlow({
            account is offered afterwards, in the ticket email. Members-only rates are not in the
            guest's list, so what they see here is what they can actually buy. */
         <GuestTicketForm eventId={eventId} tiers={guestTiers!} signInHref={signInHref} />
+      ) : guestRsvpDoor ? (
+        /* SIGNED OUT on an RSVP-mode event with nothing to charge online. The seat is the thing
+           being collected and the money is collected at the door, so the guest form that serves
+           the free path serves here too. The booking window gates it the same way the free path
+           is gated: the SQL behind the form refuses outside it. */
+        rsvpWindowOpen ? (
+          <GuestRsvpForm eventId={eventId} isFull={isFull} note={guestRsvpNote} />
+        ) : (
+          <p className="text-body-sm text-muted">{rsvpWindowLine}</p>
+        )
       ) : (
-        /* No guest purchase to offer (payouts not connected, or nothing buyable): the sign-in
-           link is still the honest door, because an account is the only path left. */
+        /* Tickets mode with no guest purchase to offer (payouts not connected, or nothing
+           buyable): the sign-in link is still the honest door, because buying is attending and
+           an account is the only path left. */
         <div className="space-y-2">
           <Link
             href={signInHref}
