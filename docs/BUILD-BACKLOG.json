@@ -55,8 +55,6 @@
           "name": "W0c · P2 — small cleanups worth doing whenever a lane is clear, plus the tail of a sequenced repair whose head is higher up the slate (LIVE-293 and LIVE-294 follow LIVE-290 to LIVE-292).",
           "ids": [
             "HYG-075",
-            "LIVE-279",
-            "LIVE-318",
             "LIVE-320",
             "LIVE-328"
           ]
@@ -87,7 +85,6 @@
             "LIVE-231",
             "LIVE-232",
             "PROG-R5",
-            "LIVE-233",
             "LIVE-234",
             "LIVE-235",
             "LIVE-236",
@@ -10835,7 +10832,7 @@
     {
       "id": "LIVE-233",
       "title": "Surface Connect onboarding at the first sell attempt on every money path",
-      "status": "open",
+      "status": "done",
       "priority": "P0",
       "lane": "live",
       "size": "M",
@@ -10843,12 +10840,13 @@
         "file": "docs/CORE-MODEL.md",
         "ref": "§5"
       },
-      "detail": "An operator who tries to sell anything hits a dead end unless their Stripe Connect account is already onboarded, and there is no single prompt that offers to fix it. Five paths need the same prompt: memberships, bookings, orders, donations, tickets. One prompt instead of five dead ends.\n\nThis is the highest commercial leverage item in the plan and the reason phase 5 is P0.",
+      "detail": "An operator who tries to sell anything hits a dead end unless their Stripe Connect account is already onboarded, and there is no single prompt that offers to fix it. Five paths need the same prompt: memberships, bookings, orders, donations, tickets. One prompt instead of five dead ends.\n\nThis is the highest commercial leverage item in the plan and the reason phase 5 is P0.\n\nCLOSED 2026-09-14. The build shipped in #2507 (the pure kernel lib/billing/payout-prompt.ts, its IO half lib/billing/payout-prompt-resolve.ts, and the one card components/billing/payout-setup-prompt.tsx, which posts to startPayoutOnboarding and redirects straight into Stripe hosted onboarding) and this row sat open on a manual walk for six days; ADR-1313 recorded the gap. Re-measured 2026-09-14, the five dead ends and what each now shows at the first sell attempt:\n• memberships: buy side stops at lib/billing/space-membership-checkout.ts:63 (no_owner_payouts, the join card fell back to the free join). Operator now sees SpacePayoutSetupPrompt on Offerings, app/(main)/spaces/[slug]/settings/offerings/offerings-body.tsx:127, channel from SECTION_CHANNEL memberships (line 61).\n• bookings: the deposit rides createCommerceCheckout and stops at lib/commerce/checkout.ts:111 (This storefront cannot take payment yet) from lib/spaces/booking.ts:1850. Operator now sees the same card on Offerings, offerings-body.tsx:127, channel availability to bookings (line 60).\n• orders: buyer stops at lib/commerce/checkout.ts:69 (maker) and :111 (space shop). Operator now sees SpacePayoutSetupPromptById on the Shop storefront tab, app/(main)/spaces/[slug]/settings/shop/storefront-tab.tsx:86, and the maker sees PayoutPromptCard on app/(main)/market/manage/page.tsx:122 from the pure kernel.\n• donations: buy side stops at lib/billing/space-donation-checkout.ts:127. Operator now sees the same card on Offerings, offerings-body.tsx:127, channel donations (line 62).\n• tickets: buy side stops at lib/billing/tickets.ts:385 (buyer reads TICKETS_NOT_READY). Host now sees PayoutSetupPrompt on the event page, app/(main)/events/[slug]/page.tsx:1556 (personal event, host is payee) and :1572 (space-hosted event, space owner viewing); the event form price control shows the same NEEDS_PAYOUT_ACCOUNT sentence derived from the kernel (lib/events/ticket-eligibility.ts:31).\nThe card is scoped to who can act: Offerings and the Shop tab self-gate on canManage, the event page branches on the host or space owner, and the kernel gives a viewer who is not the payee no button (relation other). A ready payee gets nothing (ADR-1158) unless the surface opts into whenReady status (LIVE-290). Probe converted from manual to code: lib/billing/connect-prompt.test.tsx pins by source shape that each of the five paths imports the shared prompt and names its channel, that no path links to /settings/billing in place of inline onboarding, and 12 behaviour cases on the rendered Server Component (onboarding call when not onboarded, nothing when ready, no call for a viewer who cannot act, no button while payouts are dark). One nuance to the premise: the event FORM price control (app/(main)/events/new/event-form.tsx:953) is a client component and still links to /settings/billing beside the kernel sentence; the event PAGE is where the host is offered inline onboarding.",
       "verify": {
-        "kind": "manual",
-        "evidence": "Manual walk of all five sell paths as an operator with no Connect account. Each offers onboarding rather than failing.",
-        "checked": "2026-09-08"
-      }
+        "kind": "cmd",
+        "cmd": "node -e 'const fs=require(\"fs\");const P=\"components/billing/payout-setup-prompt\";const paths=[[\"memberships\",\"app/(main)/spaces/[slug]/settings/offerings/offerings-body.tsx\"],[\"bookings\",\"app/(main)/spaces/[slug]/settings/offerings/offerings-body.tsx\"],[\"donations\",\"app/(main)/spaces/[slug]/settings/offerings/offerings-body.tsx\"],[\"orders\",\"app/(main)/spaces/[slug]/settings/shop/storefront-tab.tsx\"],[\"tickets\",\"app/(main)/events/[slug]/page.tsx\"]];for(const [ch,f] of paths){if(!fs.existsSync(f)){console.error(ch+\": \"+f+\" is gone\");process.exit(1)}const s=fs.readFileSync(f,\"utf8\");if(!s.includes(P)){console.error(ch+\": \"+f+\" no longer imports the shared Connect prompt, so that sell path is a dead end again\");process.exit(1)}if(!new RegExp(\"[\\x27\\\"]\"+ch+\"[\\x27\\\"]\").test(s)){console.error(ch+\": \"+f+\" no longer names its channel to the prompt\");process.exit(1)}if(/href=[\"\\x27]\\/settings\\/billing/.test(s)){console.error(ch+\": \"+f+\" links to /settings/billing instead of starting onboarding inline\");process.exit(1)}}if(!fs.existsSync(\"lib/billing/connect-prompt.test.tsx\")){console.error(\"lib/billing/connect-prompt.test.tsx is gone, so nothing pins the rendered behaviour\");process.exit(1)}console.error(\"all five sell paths reach the one Connect prompt\")'",
+        "note": "Reads the four files where an operator first tries to sell on the five paths and fails naming the first path that no longer imports the shared prompt, names its channel, or links to /settings/billing instead of onboarding inline. Behaviour (onboarding call when not onboarded, nothing when ready, no call for a viewer who cannot act) is pinned by lib/billing/connect-prompt.test.tsx, 19 cases. Written 2026-09-14."
+      },
+      "closed": "2026-09-14"
     },
     {
       "id": "LIVE-234",
@@ -11629,7 +11627,7 @@
     },
     {
       "id": "LIVE-279",
-      "status": "open",
+      "status": "done",
       "priority": "P2",
       "lane": "live",
       "size": "S",
@@ -11638,15 +11636,17 @@
         "ref": "retireStaleOccurrences, the `kept` count"
       },
       "title": "A host is never told which dates a rule change left behind because people are attached to them",
-      "detail": "LIVE-278 retires the future dates a changed rule no longer produces, and REFUSES to retire one that somebody has RSVP'd to, bought a ticket for, been invited to, or posted an update on. That refusal is right: removing such a date is a cancellation, with refunds and notifications behind it, and lib/events/cancellation.ts owns that as a deliberate host action.\n\nWhat is missing is the TELLING. The kept dates stay on the page and in the series rail, which is the honest default — the people who signed up still see the gathering they signed up for — but the host who just moved the series from weekly to fortnightly gets no signal that three Wednesdays survived the change and are still taking RSVPs. The count exists (`RetireResult.kept`, logged by the cron as `occurrencesKept`); nothing renders it.\n\nTHE FIX IS A SURFACE, NOT AN ENGINE CHANGE. The settings rail already has the save result in hand, and the Manage hub already lists the series dates. The right shape is probably a line on the rail after a rule change (\"3 dates people already signed up for are still on the calendar. Cancel them?\") linking into the existing series-cancel flow, which re-uses cancelEventSeries rather than inventing a second way to end a date.\n\nP2 rather than P1: the data is correct either way and nobody is stranded. What is at risk is a host's picture of their own calendar.",
+      "detail": "LIVE-278 retires the future dates a changed rule no longer produces, and REFUSES to retire one that somebody has RSVP'd to, bought a ticket for, been invited to, or posted an update on. That refusal is right: removing such a date is a cancellation, with refunds and notifications behind it, and lib/events/cancellation.ts owns that as a deliberate host action.\n\nWhat is missing is the TELLING. The kept dates stay on the page and in the series rail, which is the honest default — the people who signed up still see the gathering they signed up for — but the host who just moved the series from weekly to fortnightly gets no signal that three Wednesdays survived the change and are still taking RSVPs. The count exists (`RetireResult.kept`, logged by the cron as `occurrencesKept`); nothing renders it.\n\nTHE FIX IS A SURFACE, NOT AN ENGINE CHANGE. The settings rail already has the save result in hand, and the Manage hub already lists the series dates. The right shape is probably a line on the rail after a rule change (\"3 dates people already signed up for are still on the calendar. Cancel them?\") linking into the existing series-cancel flow, which re-uses cancelEventSeries rather than inventing a second way to end a date.\n\nP2 rather than P1: the data is correct either way and nobody is stranded. What is at risk is a host's picture of their own calendar.\n\nCLOSED 2026-09-14. The premise was half right: the settings rail did NOT have the count in hand. `updateEventSettings` ran `retireStaleOccurrences` inside a fire-and-forget block AFTER the action had returned, so `kept` was computed once the save had already resolved and reached nothing but the log. The retire is now awaited (a handful of reads and one best-effort delete; minting the new dates and pushing content forward still run behind the return), and the action returns `{ occurrencesKept }`. The Event settings module keeps the latest save's count in state and renders `KeptDatesNotice` (components/admin/modules/event-kept-dates-notice.tsx) as the last child of its autosave form, beside the save cue: a warning Banner, \"3 dates are still on the calendar\", the reason in one sentence, and a \"Cancel the rest of this series\" button that REVEALS the existing series-cancel block in EventDangerZone (now addressable as `#event-series-cancel`: it opens the rail if closed, opens the \"More\" disclosure, scrolls and focuses) rather than owning a cancel of its own. Zero renders nothing. Pinned by event-kept-dates-notice.test.tsx (renders for 1 and 3, nothing for 0, the pointer reveals and never cancels) and by a source-shape case in admin-actions.test.ts (the retire sits before the deferred block and the count is the return value).",
       "verify": {
         "kind": "grep-present",
         "paths": [
-          "components/admin/modules/event-settings-module.tsx"
+          "components/admin/modules/event-settings-module.tsx",
+          "components/admin/modules/event-kept-dates-notice.tsx"
         ],
         "pattern": "occurrencesKept|keptBecauseAttached|still on the calendar",
-        "note": "PRESENT when the rail actually says it, which is what closes this row; absent today, so the probe fails and the row honestly reads open. It measures the consequence — a host being told — not the words in the row's title. A row closed by wiring the count into a different surface should re-point this at that file rather than widen the pattern."
-      }
+        "note": "PRESENT when the rail actually says it, which is what closed this row (2026-09-14): the module carries the `occurrencesKept` state it renders, and the notice file carries the words \"still on the calendar\". It measures the consequence, a host being told, not the words in the row's title."
+      },
+      "closed": "2026-09-14"
     },
     {
       "id": "LIVE-280",
@@ -12241,7 +12241,7 @@
     {
       "id": "LIVE-318",
       "title": "A free tier is the one rate a guest cannot take, and requiresAccount is the dead discriminant that says so",
-      "status": "open",
+      "status": "done",
       "priority": "P2",
       "lane": "live",
       "size": "S",
@@ -12249,12 +12249,13 @@
         "file": "app/(main)/events/[slug]/ticket-actions.ts",
         "ref": "line 148; guest-ticket-form.tsx:215-222"
       },
-      "detail": "FILED 2026-09-14 from the guest-door handoff. guest-ticket-form.tsx:215-222 swaps the email field for prose on a free tier and ticket-actions.ts:148 refuses server side, because there is nowhere to record a guest free claim (capture_guest_rsvp refuses tickets-mode events). The free tier is usually the entry-level one. requiresAccount is returned by createTicketCheckout and read by no production caller, only by tests: the shape-not-truth pattern. Member-only and space-members-only tiers are correctly filtered for a guest and stay so.\n\nTHE WORK: a guest free claim on a tickets-mode event (a zero-amount ticket row through reserve_ticket_atomic, no Stripe session), then delete requiresAccount. Owner decision recorded in the #2556 body says whether a free tier SHOULD be guest-claimable is a product call; the default here is yes, because it is the same rule as a free RSVP.\n\nPREMISE RE-TESTED 2026-09-14 (AGENTS.md: re-test a row's premise before you work it). The lane that picked this up measured the live schema before writing code and stopped: event_tickets.amount_cents carries CHECK (amount_cents > 0) since 20260609020000_event_tickets.sql, untouched by every later migration and live on production (event_tickets_amount_cents_check). reserve_ticket_atomic inserts _amount_cents verbatim, so \"a zero-amount ticket row through reserve_ticket_atomic\" raises inside the RPC; capture_guest_rsvp refuses a tickets-mode event by design (20270303000100 and its three rewrites); a direct service-role insert would hand-roll the capacity trigger, approval, dedupe and receipt the RPCs own; a placeholder amount would be a fabricated money record. Deleting requiresAccount alone would pass this row's probe by shape while a guest still could not take a free tier. So the row needs ONE migration, and the brief that forbade one was wrong.\n\nTHE MECHANISM, chosen 2026-09-14 by the loop under the #2556 default (a free tier is guest-claimable): widen capture_guest_rsvp to accept a tickets-mode event when the chosen tier is free, which is the member free path's twin (a member free claim is an event_rsvps 'going' row via setRsvpStatus, never a ticket row) and keeps the guest RSVP receipt, the capacity trigger and the sign-in claim door for free. The alternative, relaxing the CHECK to >= 0 and minting zero-amount ticket rows with a synthetic session id, would start counting free claims toward a tier's sold figure, which the member free path deliberately does not. The migration mirrors as a file, is applied through the MCP before the PR merges, and its ledger row is aligned to the filename version; then requiresAccount goes and the form's free-tier prose becomes the guest form. Owner may overrule the mechanism; the default is recorded here so the next lane does not re-derive it.",
+      "detail": "FILED 2026-09-14 from the guest-door handoff. guest-ticket-form.tsx:215-222 swaps the email field for prose on a free tier and ticket-actions.ts:148 refuses server side, because there is nowhere to record a guest free claim (capture_guest_rsvp refuses tickets-mode events). The free tier is usually the entry-level one. requiresAccount is returned by createTicketCheckout and read by no production caller, only by tests: the shape-not-truth pattern. Member-only and space-members-only tiers are correctly filtered for a guest and stay so.\n\nTHE WORK: a guest free claim on a tickets-mode event (a zero-amount ticket row through reserve_ticket_atomic, no Stripe session), then delete requiresAccount. Owner decision recorded in the #2556 body says whether a free tier SHOULD be guest-claimable is a product call; the default here is yes, because it is the same rule as a free RSVP.\n\nCLOSED 2026-09-14 by the mechanism above. Migration 20270345004000_guest_free_tier_claim.sql drops capture_guest_rsvp(uuid, text, text) and re-creates it as capture_guest_rsvp(uuid, text, text, uuid) with p_ticket_type_id defaulting null (a bare create or replace would have left both overloads live and a named-argument PostgREST call ambiguous); the ACL is restated role-explicit and scripts/function-grants.txt keeps public. The refusal list changes in ONE clause: a tickets-mode event is refused unless the named tier belongs to it and is active, pricing_mode free, not member_only, not space_members_only, space_tier_id null, and not sold out (quantity null or sold < quantity); an RSVP-mode event ignores the argument, as setRsvpStatus does. The claim is the SAME event_rsvps going row a free RSVP writes: the capacity trigger, the host approval setting, the guest receipt email, the signup lead and the sign-in claim door (claim_guest_rsvps, a proven address) all apply unchanged. What the guest does NOT get: no event_tickets row, no bump to the tier's sold figure (same as the member free path), no ticket email, nothing a free RSVP does not grant (ADR-854). App side: createTicketCheckout answers a bare { free: true } for both identities and requiresAccount is deleted; startGuestTicket records a free tier through submitGuestRsvp({ ticketTypeId }), which forwards p_ticket_type_id (null from the RSVP form); guest-ticket-form.tsx asks a free tier for the address like any other rate, sends the tier id, and swaps to the guest RSVP confirmation on a free reply instead of reloading. Pinned by ticket-actions.guest.test.ts, tickets.guest.test.ts, guest-rsvp-actions.test.ts, guest-ticket-form.render.test.tsx and the pgTAP file supabase/tests/guest_free_tier_claim.test.sql (14 assertions, run as anon). The how-to-rsvp help article's account paragraph is widened as HYG-088 said this row would. Applied through the Supabase MCP by the coordinator with the ledger row aligned to the filename version; lib/database.types.ts carries p_ticket_type_id by hand until the next regeneration. Not in scope, noted: the event page shows the guest ticket form only when the Host is payouts-ready, so a free tier on an event whose Host has not connected payouts still shows the payouts sentence to a guest.",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e 'const s=require(\"fs\").readFileSync(\"lib/billing/tickets.ts\",\"utf8\");if(/requiresAccount/.test(s)){console.error(\"lib/billing/tickets.ts still returns requiresAccount, so a free tier still refuses a guest\");process.exit(1)}'",
         "note": "Passes when the discriminant is gone, which only happens once a guest can take a free tier. Written 2026-09-14."
-      }
+      },
+      "closed": "2026-09-14"
     },
     {
       "id": "LIVE-319",

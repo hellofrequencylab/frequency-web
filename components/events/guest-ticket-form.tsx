@@ -2,6 +2,7 @@
 
 import { useId, useMemo, useState, useTransition } from 'react'
 import Link from 'next/link'
+import { Check } from 'lucide-react'
 import { isError } from '@/lib/action-result'
 import { startGuestTicket } from '@/app/(main)/events/[slug]/ticket-actions'
 import { ticketRowToPrice, type Price } from '@/lib/commerce/types'
@@ -25,10 +26,22 @@ import { Input, Label } from '@/components/ui/field'
 // form insists on.
 //
 // ── WHAT THIS FORM MAY SAY ───────────────────────────────────────────────────────────────────────
-// A successful submit sends the browser to hosted Stripe Checkout, so this page is GONE a moment
-// later. On-page copy therefore promises nothing past the start of checkout: no seat, no
-// confirmation, no "you're going". The ticket email is where any of that is stated, because it goes
-// to the address in question rather than to whoever is looking at this screen.
+// A successful submit on a PRICED tier sends the browser to hosted Stripe Checkout, so this page is
+// GONE a moment later. On-page copy therefore promises nothing past the start of checkout: no seat,
+// no confirmation, no "you're going". The ticket email is where any of that is stated, because it
+// goes to the address in question rather than to whoever is looking at this screen.
+//
+// A FREE tier (LIVE-318) is the guest RSVP with a tier attached: the same email form, and the
+// same confirmation `guest-rsvp-form.tsx` shows, for the same reason. The seat is written under an
+// unproven address and the reply is identical on every path, so the screen says only what is true
+// on all of them ("check your email") and the email says whether the room had space.
+
+/** What the reader sees after a free tier is claimed. Same words on every path, by design, and the
+ *  same words the guest RSVP form uses: the claim IS a guest RSVP. */
+const FREE_CONFIRMATION = {
+  heading: 'Check your email',
+  body: 'We sent the details there, including whether the room had space. No account needed.',
+} as const
 
 /** A tier as this form needs it. `TicketTierView` satisfies it; its extra fields are ignored. */
 export type GuestTicketTier = {
@@ -100,6 +113,7 @@ export function GuestTicketForm({
 }) {
   const fieldId = useId()
   const [error, setError] = useState<string | null>(null)
+  const [done, setDone] = useState(false)
   const [selection, setSelection] = useState<PriceSelection | null>(null)
   const [pending, startTransition] = useTransition()
 
@@ -148,6 +162,23 @@ export function GuestTicketForm({
     setSelection(null)
   }
 
+  if (done) {
+    return (
+      <div
+        // Announced rather than silently swapped: the submit button is gone by the time this
+        // renders, so a screen reader user has nothing left to move back to.
+        role="status"
+        className="flex items-start gap-2.5 rounded-card bg-success-bg px-4 py-3 text-success"
+      >
+        <Check className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+        <div className="space-y-1">
+          <p className="text-body-sm font-semibold">{FREE_CONFIRMATION.heading}</p>
+          <p className="text-meta">{FREE_CONFIRMATION.body}</p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <form
       className="space-y-3"
@@ -187,9 +218,11 @@ export function GuestTicketForm({
             // Hosted Stripe Checkout. This page is gone after this line.
             window.location.href = result.data.url
           } else if (result.data.free) {
-            // Only reachable when a session turned up between render and submit: the action then
-            // hands off to the member path, which records the claim. Show it.
-            window.location.reload()
+            // The free tier is claimed: a guest RSVP row under this address, receipt email sent.
+            // The same confirmation the guest RSVP form shows, for the same reason (header). Also
+            // where a session that turned up between render and submit lands: the action then
+            // hands off to the member path, whose recorder sends its own confirmation.
+            setDone(true)
           }
         })
       }}
@@ -208,86 +241,74 @@ export function GuestTicketForm({
         />
       )}
 
-      {/* A FREE tier is the one rate a guest cannot take: `startGuestTicket` refuses it, because
-          there is nowhere to record a free claim without a profile. An email form here would be a
-          button that can only fail, so this names the door that works and leaves the rate list
-          above intact, so a paid rate stays one tap away. */}
-      {isFree ? (
-        <p className="text-body-sm text-muted">
-          This one is free, and a free ticket needs an account.{' '}
-          <Link href={signInHref} className="font-semibold text-text underline underline-offset-2">
-            Sign in
-          </Link>{' '}
-          to claim it.
+      {/* The same fields for every offerable rate. A FREE tier used to swap these for "a free
+          ticket needs an account"; since LIVE-318 the address is the claim (a guest RSVP row), so
+          the form asks for exactly what a free RSVP asks for. */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+        <div className="flex-1 space-y-1">
+          <Label htmlFor={`${fieldId}-email`}>Email</Label>
+          <Input
+            id={`${fieldId}-email`}
+            name="email"
+            type="email"
+            required
+            autoComplete="email"
+            placeholder="you@example.com"
+            // The error is text next to the field, not a colour change alone, and the field
+            // points at it so it is read on focus rather than only seen.
+            aria-invalid={error ? true : undefined}
+            aria-describedby={error ? `${fieldId}-error` : undefined}
+          />
+        </div>
+        <div className="flex-1 space-y-1">
+          <Label htmlFor={`${fieldId}-name`}>
+            Name <span className="font-normal text-subtle">(optional)</span>
+          </Label>
+          <Input
+            id={`${fieldId}-name`}
+            name="name"
+            type="text"
+            autoComplete="name"
+            placeholder="First name"
+          />
+        </div>
+      </div>
+
+      {/* Honeypot. Hidden from sight AND from the accessibility tree AND from tab order, so no
+          real person can reach it by any route — a bot filling it is therefore unambiguous.
+          `aria-hidden` alone would still leave it tabbable, which is how these turn into a trap
+          for keyboard users instead of for bots. It stays a real text Input rather than
+          type="hidden" because a bot that fills forms fills text fields; a hidden input would
+          never be touched and the trap would catch nothing. */}
+      <div aria-hidden="true" className="hidden">
+        <Label htmlFor={`${fieldId}-company`}>Company</Label>
+        <Input
+          id={`${fieldId}-company`}
+          name="company"
+          type="text"
+          tabIndex={-1}
+          autoComplete="off"
+        />
+      </div>
+
+      <div className="flex flex-wrap items-center gap-3">
+        {/* `loading` rather than a label swap: the primitive marks the control aria-busy and
+            disables it while keeping the label the same width, which is the one thing a
+            pending state must not change (INTERACTION-STATES §4 rule 3). */}
+        <Button type="submit" loading={pending} disabled={soldOut}>
+          {soldOut ? 'Sold out' : submitLabel}
+        </Button>
+        <p className="text-meta text-muted">
+          {isFree
+            ? 'No account needed. The details go to this email.'
+            : 'No account needed. Payment happens on the next screen, and your ticket goes to this email.'}
         </p>
-      ) : (
-        <>
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-            <div className="flex-1 space-y-1">
-              <Label htmlFor={`${fieldId}-email`}>Email</Label>
-              <Input
-                id={`${fieldId}-email`}
-                name="email"
-                type="email"
-                required
-                autoComplete="email"
-                placeholder="you@example.com"
-                // The error is text next to the field, not a colour change alone, and the field
-                // points at it so it is read on focus rather than only seen.
-                aria-invalid={error ? true : undefined}
-                aria-describedby={error ? `${fieldId}-error` : undefined}
-              />
-            </div>
-            <div className="flex-1 space-y-1">
-              <Label htmlFor={`${fieldId}-name`}>
-                Name <span className="font-normal text-subtle">(optional)</span>
-              </Label>
-              <Input
-                id={`${fieldId}-name`}
-                name="name"
-                type="text"
-                autoComplete="name"
-                placeholder="First name"
-              />
-            </div>
-          </div>
+      </div>
 
-          {/* Honeypot. Hidden from sight AND from the accessibility tree AND from tab order, so no
-              real person can reach it by any route — a bot filling it is therefore unambiguous.
-              `aria-hidden` alone would still leave it tabbable, which is how these turn into a trap
-              for keyboard users instead of for bots. It stays a real text Input rather than
-              type="hidden" because a bot that fills forms fills text fields; a hidden input would
-              never be touched and the trap would catch nothing. */}
-          <div aria-hidden="true" className="hidden">
-            <Label htmlFor={`${fieldId}-company`}>Company</Label>
-            <Input
-              id={`${fieldId}-company`}
-              name="company"
-              type="text"
-              tabIndex={-1}
-              autoComplete="off"
-            />
-          </div>
-
-          <div className="flex flex-wrap items-center gap-3">
-            {/* `loading` rather than a label swap: the primitive marks the control aria-busy and
-                disables it while keeping the label the same width, which is the one thing a
-                pending state must not change (INTERACTION-STATES §4 rule 3). */}
-            <Button type="submit" loading={pending} disabled={soldOut}>
-              {soldOut ? 'Sold out' : submitLabel}
-            </Button>
-            <p className="text-meta text-muted">
-              No account needed. Payment happens on the next screen, and your ticket goes to this
-              email.
-            </p>
-          </div>
-
-          {error && (
-            <p id={`${fieldId}-error`} role="alert" className="text-meta text-danger">
-              {error}
-            </p>
-          )}
-        </>
+      {error && (
+        <p id={`${fieldId}-error`} role="alert" className="text-meta text-danger">
+          {error}
+        </p>
       )}
     </form>
   )

@@ -111,8 +111,9 @@ it works whether you found the event yourself or someone sent you a link.
 Most ticketed events work the same way. If a rate costs money and the Host takes
 payments, the form takes you to checkout. Pay, and the ticket is yours. The receipt
 lands in your inbox with a link that makes you an account in one tap, if you want
-one. Two kinds of rate still ask you to sign in first: rates the Host has set aside
-for members, and free rates on a ticketed event. The event page says which.
+one. A free rate on a ticketed event takes the same short form as a free RSVP, and
+the same confirmation email. The one kind of rate that asks you to sign in first
+is a rate the Host has set aside for members. The event page says which.
 
 We email you to confirm, and that email says whether you got a spot or landed on
 the waitlist. It also carries the calendar link. If the Host cancels, you get told.

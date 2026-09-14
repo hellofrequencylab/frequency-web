@@ -7,6 +7,7 @@ import { rateLimitOk } from '@/lib/rate-limit'
 import { createTicketCheckout, refundTicket } from '@/lib/billing/tickets'
 import { getEventCapabilities } from '@/lib/core/load-capabilities'
 import { setRsvpStatus } from '@/app/(main)/events/actions'
+import { submitGuestRsvp } from '@/app/(main)/events/guest-rsvp-actions'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import { TICKETING_ENABLED } from '@/lib/events/ticketing'
 
@@ -77,10 +78,12 @@ const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/
 export async function startGuestTicket(input: {
   eventId: string
   email: string
-  /** Accepted for form parity with the guest RSVP. DELIBERATELY NOT FORWARDED: a pending ticket
-   *  row carries `guest_email` and nothing else, and Stripe collects the billing name itself at
-   *  the card step. Adding an unagreed metadata key across the webhook boundary to carry it would
-   *  be inventing a contract the settle side did not ask for. */
+  /** Forwarded on the FREE path only, where the claim is a guest RSVP row and `guest_name` is the
+   *  host's roster line, exactly as the guest RSVP form records it. On a PRICED tier it is
+   *  DELIBERATELY NOT FORWARDED: a pending ticket row carries `guest_email` and nothing else, and
+   *  Stripe collects the billing name itself at the card step. Adding an unagreed metadata key
+   *  across the webhook boundary to carry it would be inventing a contract the settle side did
+   *  not ask for. */
   name?: string
   ticketTypeId?: string | null
   amountCents?: number | null
@@ -139,13 +142,35 @@ export async function startGuestTicket(input: {
   })
   if (r.error) return fail(r.error)
 
-  // A FREE TIER, FOR A GUEST. `createTicketCheckout` says `{ free: true, requiresAccount: true }`
-  // rather than `{ free: true }`, because the member path's claim recorder (`setRsvpStatus`) needs
-  // a profile and the guest RSVP door on the other side (`capture_guest_rsvp`) refuses an event
-  // whose join_mode is 'tickets' by design. So there is no honest place to put this claim yet, and
-  // the claim is NOT dropped: it is refused with the one step that makes it work. When a guest
-  // free-claim path exists, this is the single branch that changes.
-  if (r.free) return fail('This ticket is free. Sign in to claim it.')
+  // A FREE TIER, FOR A GUEST (LIVE-318). No money moves and no checkout is started, exactly as for
+  // a member. The member path records its claim as a going RSVP through `setRsvpStatus`, which
+  // needs a profile; the guest twin is `submitGuestRsvp`, whose SQL (`capture_guest_rsvp`,
+  // 20270345004000) seats a guest on a tickets-mode event when the named tier is one of its free
+  // tiers, and refuses everything else with the same opaque receipt. So a free claim lands as the
+  // same event_rsvps row a free RSVP lands as: it rides event capacity (full means waitlist, via
+  // the capacity trigger), waits on the host's approval setting, gets the guest RSVP receipt
+  // email, and is attached to an account at sign-in through claim_guest_rsvps (a PROVEN address,
+  // ADR-854). No event_tickets row is minted and the tier's `sold` is untouched, which is what
+  // the member free path does too.
+  //
+  // `createTicketCheckout` has already refused a member-only, space-members-only, inactive or
+  // sold-out tier for this guest; the SQL refuses them again because anon reaches it directly.
+  // The name goes along on this path only: here it is the host's roster line, not a billing name.
+  //
+  // `submitGuestRsvp` runs its own honeypot and per-IP limiter (its own bucket) before the write.
+  // The honeypot cannot fire (nothing is passed for it) and the second limiter is the same
+  // 5 per 10 minutes, so a free claim costs one call from each of the two guest buckets; a
+  // refusal from it is the plain "could not save your spot" line and is passed through as-is.
+  if (r.free) {
+    const seat = await submitGuestRsvp({
+      eventId: input.eventId,
+      email,
+      name: input.name,
+      ticketTypeId: input.ticketTypeId ?? null,
+    })
+    if (!seat.ok) return fail(seat.error)
+    return ok({ free: true })
+  }
 
   if (!r.url) return fail('Could not start checkout.')
   return ok({ url: r.url })

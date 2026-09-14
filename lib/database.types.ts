@@ -15990,7 +15990,12 @@ export type Database = {
         Returns: Json
       }
       capture_guest_rsvp: {
-        Args: { p_email: string; p_event_id: string; p_name?: string }
+        Args: {
+          p_email: string
+          p_event_id: string
+          p_name?: string
+          p_ticket_type_id?: string
+        }
         Returns: string
       }
       capture_signup_lead: {

@@ -318,15 +318,18 @@ describe('createTicketCheckout — the guest session and the guest reservation',
   })
 })
 
-describe('createTicketCheckout — a free tier for a guest is discriminated, never dropped', () => {
-  it('returns { free, requiresAccount } for a guest and creates no session', async () => {
+describe('createTicketCheckout: a free tier for a guest is the same answer a member gets (LIVE-318)', () => {
+  it('returns a bare { free: true } for a guest, creates no session and reserves nothing', async () => {
     state.setHandler((t) => {
       if (t === 'events') return { data: EVENT, error: null }
       if (t === 'event_ticket_types') return { data: tier({ pricing_mode: 'free', price_cents: 0 }), error: null }
       return { data: null, error: null }
     })
     const out = await createTicketCheckout({ guestEmail: GUEST, eventId: 'evt-1', ticketTypeId: 'tt-1' })
-    expect(out).toEqual({ free: true, requiresAccount: true })
+    expect(out).toEqual({ free: true })
+    // The discriminant that used to say "sign in to claim it" is gone: the caller holds the
+    // identity and records the claim itself (submitGuestRsvp with the tier id for a guest).
+    expect('requiresAccount' in out).toBe(false)
     expect(stripeFake.checkout.sessions.create).not.toHaveBeenCalled()
     expect(state.rpcCalls).toHaveLength(0)
   })
@@ -367,7 +370,7 @@ describe('createTicketCheckout — THE MEMBER PATH IS UNCHANGED (regression)', (
     )
   })
 
-  it('a free tier for a MEMBER still returns a bare { free: true }, with no requiresAccount', async () => {
+  it('a free tier for a MEMBER still returns a bare { free: true }', async () => {
     state.setHandler((t) => {
       if (t === 'events') return { data: EVENT, error: null }
       if (t === 'event_ticket_types') return { data: tier({ pricing_mode: 'free', price_cents: 0 }), error: null }
@@ -375,7 +378,6 @@ describe('createTicketCheckout — THE MEMBER PATH IS UNCHANGED (regression)', (
     })
     const out = await createTicketCheckout({ buyerProfileId: 'buyer-1', eventId: 'evt-1', ticketTypeId: 'tt-1' })
     expect(out).toEqual({ free: true })
-    expect(out.requiresAccount).toBeUndefined()
   })
 
   it('still refuses the host buying their own ticket', async () => {

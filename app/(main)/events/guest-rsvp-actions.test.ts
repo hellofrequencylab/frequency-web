@@ -61,7 +61,17 @@ describe('submitGuestRsvp, the write result (L5-14)', () => {
       p_event_id: EVENT,
       p_email: 'sam@example.com',
       p_name: 'Sam',
+      // The RSVP form names no tier: a null, never undefined, so the SQL's default is the one
+      // that applies and a tickets-mode event keeps refusing a bare guest RSVP.
+      p_ticket_type_id: null,
     })
+    expect(sendGuestRsvpReceipt).toHaveBeenCalledWith(EVENT, 'sam@example.com')
+  })
+
+  it('forwards a free tier id to the SQL untouched, and still sends the receipt (LIVE-318)', async () => {
+    const res = await submitGuestRsvp({ eventId: EVENT, email: 'sam@example.com', ticketTypeId: 'tt-free' })
+    expect(res).toEqual({ ok: true })
+    expect(rpc).toHaveBeenCalledWith('capture_guest_rsvp', expect.objectContaining({ p_ticket_type_id: 'tt-free' }))
     expect(sendGuestRsvpReceipt).toHaveBeenCalledWith(EVENT, 'sam@example.com')
   })
 

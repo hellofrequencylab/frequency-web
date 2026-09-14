@@ -18,8 +18,9 @@ import { createRoot, type Root } from 'react-dom/client'
 //     cannot be bought is a dead end dressed as a choice,
 //   · the submit reaches the action with a normalised address,
 //   · a refusal comes back as an announced alert rather than a silent no-op, and
-//   · a FREE tier, which `startGuestTicket` refuses for a guest, offers the door that works
-//     instead of a button that can only fail.
+//   · a FREE tier asks for the address like any other rate (LIVE-318: the claim is a guest RSVP
+//     row), sends the tier id, and a `free` reply swaps the form for the guest RSVP confirmation
+//     rather than reloading a page that, for a signed-out viewer, would show the form again.
 
 // React needs to be told this is an act environment, or every state flush warns and some are
 // skipped. Same line the other client-component suites carry.
@@ -142,7 +143,7 @@ describe('the signed-out door on a priced event is a purchase, not a sign-in wal
     expect(el.querySelector(`a[href="${SIGN_IN}"]`)).toBeTruthy()
   })
 
-  it('a free tier points at the account it needs, instead of a button that can only fail', () => {
+  it('a free tier asks for the address like any other rate, and says nothing about payment (LIVE-318)', () => {
     const el = mount(
       <GuestTicketForm
         eventId="e1"
@@ -155,10 +156,39 @@ describe('the signed-out door on a priced event is a purchase, not a sign-in wal
     )
     // Both rates stay listed, so the paid one is one tap away.
     expect(el.querySelectorAll('button[aria-pressed]')).toHaveLength(2)
-    // But the free one asks for nothing it cannot use.
-    expect(el.querySelector('input[name="email"]')).toBeNull()
-    expect(el.querySelector('button[type="submit"]')).toBeNull()
-    expect(el.querySelector(`a[href="${SIGN_IN}"]`)).toBeTruthy()
+    // The free one (selected first) is a real form: the address IS the claim.
+    expect(el.querySelector('input[name="email"]')).toBeTruthy()
+    expect(el.querySelector('button[type="submit"]')).toBeTruthy()
+    expect(el.textContent).toContain('Get ticket · Free')
+    expect(el.textContent).toContain('No account needed.')
+    // And it does not promise a payment screen that will never come.
+    expect(el.textContent).not.toContain('Payment happens on the next screen')
+    // The sign-in wall that stood here is gone.
+    expect(el.textContent).not.toContain('a free ticket needs an account')
+    expect(el.querySelector(`a[href="${SIGN_IN}"]`)).toBeNull()
+  })
+
+  it('a free claim sends the tier id and swaps the form for the guest RSVP confirmation', async () => {
+    startGuestTicket.mockResolvedValue({ data: { free: true } })
+    const el = mount(
+      <GuestTicketForm
+        eventId="ev-77"
+        signInHref={SIGN_IN}
+        tiers={[tier({ id: 't1', name: 'Community ticket', pricingMode: 'free', priceCents: 0 })]}
+      />,
+    )
+    await submit(el, { email: 'ada@example.com', name: 'Ada' })
+    expect(startGuestTicket).toHaveBeenCalledWith(
+      expect.objectContaining({ eventId: 'ev-77', email: 'ada@example.com', name: 'Ada', ticketTypeId: 't1' }),
+    )
+    // The same words the guest RSVP form shows, announced, with the form gone.
+    const status = el.querySelector('[role="status"]')
+    expect(status).toBeTruthy()
+    expect(status!.textContent).toContain('Check your email')
+    expect(status!.textContent).toContain('No account needed.')
+    expect(el.querySelector('form')).toBeNull()
+    // Nothing on screen claims a seat: the room may have been full.
+    expect(el.textContent).not.toMatch(/you're going/i)
   })
 
   it('sends the normalised email and the selected tier to the guest action', async () => {
