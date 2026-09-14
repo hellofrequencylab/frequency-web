@@ -12314,6 +12314,25 @@
       }
     },
     {
+      "id": "LIVE-323",
+      "title": "check:migrations gives up on the first Supabase timeout, so one dropped connection costs a CI cycle",
+      "status": "done",
+      "priority": "P2",
+      "lane": "live",
+      "size": "S",
+      "closed": "2026-09-14",
+      "source": {
+        "file": "scripts/check-migrations.mjs",
+        "ref": "loadLedgerPayload"
+      },
+      "detail": "FILED 2026-09-14 from the build-loop ledger (ADR-1325's failure protocol: the third occurrence of one cause files a row). Between 16:55Z and 17:20Z the Supabase Management API answered HTTP 544 \"Connection terminated due to connection timeout\" to the ledger read on #2562, on #2561 and on the main push run for 756509d; the same window timed out a preview prerender. Each was ONE failed request. The gate is right to exit 1 rather than skip (a read that failed is not a read that agreed), but it sent exactly one request, so a single dropped connection cost a re-run each time, and a re-run was refused once because the workflow was still running.\n\nTHE FIX: loadLedgerPayload retries a thrown fetch or a 5xx answer up to three tries over four seconds (1 s, 3 s), and still throws at the bound naming the attempt count. A 4xx is the caller's defect and is thrown on the first answer. The prerender path stays as it is: a build that ships a broken /discover is worse than a build that fails.\n\nCLOSED 2026-09-14: the retry, LEDGER_READ_ATTEMPTS and LEDGER_READ_BACKOFF_MS exported and pinned by five cases in scripts/check-migrations.test.ts (retry then parity, thrown fetch retried, 5xx at the bound still fails, 4xx not retried, bound stays small).",
+      "verify": {
+        "kind": "cmd",
+        "cmd": "node -e \"import('./scripts/check-migrations.mjs').then(async(m)=>{let n=0;const p=await m.loadLedgerPayload({kind:'api',ref:'r',token:'t'},{sleep:async()=>{},fetch:async()=>(++n<3?{ok:false,status:544,text:async()=>'timeout'}:{ok:true,json:async()=>({result:[1]})})});if(n!==3||!p.result){console.error('ledger read gave up after '+n+' answers');process.exit(1)}let m2=0;await m.loadLedgerPayload({kind:'api',ref:'r',token:'t'},{sleep:async()=>{},fetch:async()=>(++m2,{ok:false,status:401,text:async()=>'bad token'})}).catch(()=>{});if(m2!==1){console.error('a 4xx was retried '+m2+' times');process.exit(1)}})\"",
+        "note": "Drives loadLedgerPayload with a fake fetch: two 544s then a good answer must yield the payload on the third request, and a 401 must be sent exactly once. Written 2026-09-14."
+      }
+    },
+    {
       "id": "HYG-087",
       "title": "Three check:schema-contract allowlist entries are removable now that both guest-door migrations are applied and the types can be regenerated",
       "status": "open",

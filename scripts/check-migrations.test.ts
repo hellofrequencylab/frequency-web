@@ -4,6 +4,8 @@ import { join } from 'node:path'
 import {
   LEDGER_ENV,
   ledgerCheck,
+  LEDGER_READ_ATTEMPTS,
+  LEDGER_READ_BACKOFF_MS,
   menuWritesMissingNote,
   parseArgs,
   resolveLedgerSource,
@@ -324,6 +326,87 @@ describe('every way of not being able to LOOK is a failure, never a skip', () =>
       expect(r.ok).toBe(false)
       expect(['parity', 'skipped']).not.toContain(r.status)
     }
+  })
+})
+
+describe('a read the platform did not answer is retried, bounded, and still fails at the bound', () => {
+  // 2026-09-14: the Supabase Management API answered HTTP 544 "Connection terminated due to
+  // connection timeout" on two PRs and one main push inside twenty minutes. Each was one failed
+  // request; each cost a CI cycle and a re-run. The retry covers exactly that shape and nothing
+  // wider: an outage still fails the guard, and a caller defect fails on the first answer.
+  const noSleep = { sleep: async () => {} }
+
+  it('a 5xx answered twice and then a good answer is a comparison, not an error', async () => {
+    const repo = corpus()
+    let calls = 0
+    const r = await run(repo, null, {
+      io: {
+        ...noSleep,
+        repo: { readdir: () => files(repo) },
+        fetch: async () =>
+          ++calls < 3
+            ? { ok: false, status: 544, text: async () => 'Connection terminated' }
+            : { ok: true, json: async () => ({ result: repo }), text: async () => '' },
+      },
+    })
+    expect(calls).toBe(3)
+    expect(r.status).toBe('parity')
+    expect(r.ok).toBe(true)
+  })
+
+  it('a thrown fetch is retried the same way', async () => {
+    const repo = corpus()
+    let calls = 0
+    const r = await run(repo, null, {
+      io: {
+        ...noSleep,
+        repo: { readdir: () => files(repo) },
+        fetch: async () => {
+          if (++calls < 2) throw new Error('ECONNRESET')
+          return { ok: true, json: async () => ({ result: repo }), text: async () => '' }
+        },
+      },
+    })
+    expect(calls).toBe(2)
+    expect(r.status).toBe('parity')
+  })
+
+  it('a 5xx on every attempt still FAILS, naming the bound', async () => {
+    const repo = corpus()
+    let calls = 0
+    const r = await run(repo, null, {
+      io: {
+        ...noSleep,
+        repo: { readdir: () => files(repo) },
+        fetch: async () => (++calls, { ok: false, status: 544, text: async () => 'timeout' }),
+      },
+    })
+    expect(calls).toBe(LEDGER_READ_ATTEMPTS)
+    expect(r.status).toBe('error')
+    expect(r.ok).toBe(false)
+    expect(r.lines.join('\n')).toContain('544')
+    expect(r.lines.join('\n')).toContain(`after ${LEDGER_READ_ATTEMPTS} attempts`)
+  })
+
+  it('a 4xx is the caller\'s defect and is NOT retried', async () => {
+    const repo = corpus()
+    let calls = 0
+    const r = await run(repo, null, {
+      io: {
+        ...noSleep,
+        repo: { readdir: () => files(repo) },
+        fetch: async () => (++calls, { ok: false, status: 401, text: async () => 'invalid access token' }),
+      },
+    })
+    expect(calls).toBe(1)
+    expect(r.status).toBe('error')
+    expect(r.lines.join('\n')).toContain('401')
+  })
+
+  it('the pauses between tries are short and bounded, and the bound is small', () => {
+    expect(LEDGER_READ_ATTEMPTS).toBeLessThanOrEqual(3)
+    expect(LEDGER_READ_BACKOFF_MS.length).toBe(LEDGER_READ_ATTEMPTS - 1)
+    expect(LEDGER_READ_BACKOFF_MS.reduce((a, b) => a + b, 0)).toBeLessThanOrEqual(5000)
   })
 })
 
