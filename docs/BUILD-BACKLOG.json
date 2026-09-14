@@ -62,7 +62,6 @@
             "HYG-086",
             "LIVE-316",
             "LIVE-318",
-            "LIVE-319",
             "LIVE-320",
             "HYG-087",
             "HYG-088"
@@ -12262,7 +12261,7 @@
     {
       "id": "LIVE-319",
       "title": "The host cannot see who a guest buyer is: the sales list prints \"A member\" for a null buyer and no surface selects guest_email",
-      "status": "open",
+      "status": "done",
       "priority": "P2",
       "lane": "live",
       "size": "S",
@@ -12270,12 +12269,13 @@
         "file": "components/widgets/events/event-sales.tsx",
         "ref": "line 27"
       },
-      "detail": "FILED 2026-09-14 from the guest-door handoff. event-sales.tsx:27 prints display_name ?? 'A member' for any null buyer, and no operator surface selects event_tickets.guest_email. Refunding, contacting or door-checking a guest buyer is impossible from the product. The Manage participants loader already resolves guestName ?? guestEmail for RSVP rows (manage/load.ts:177); tickets need the same read.",
+      "detail": "FILED 2026-09-14 from the guest-door handoff. event-sales.tsx:27 prints display_name ?? 'A member' for any null buyer, and no operator surface selects event_tickets.guest_email. Refunding, contacting or door-checking a guest buyer is impossible from the product. The Manage participants loader already resolves guestName ?? guestEmail for RSVP rows (manage/load.ts:177); tickets need the same read. CLOSED 2026-09-14: the sales loader in app/(main)/events/[slug]/page.tsx selects event_tickets.guest_email beside the buyer join, and event-sales.tsx renders each row through lib/events/sold-ticket-buyer.ts: a member by display name (handle as a fallback), a guest as the address they paid under with a neutral Guest badge, and a null buyer with a null guest_email as a buyer no longer on Frequency, so a deleted account never borrows a member label. Tickets carry no guest name column, so the address is the whole identity. The select is allowlisted in scripts/check-schema-contract.mjs until HYG-087 regenerates the types. Pinned by lib/events/sold-ticket-buyer.test.ts.",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e 'const s=require(\"fs\").readFileSync(\"components/widgets/events/event-sales.tsx\",\"utf8\");if(!/guest_email|guestEmail/.test(s)||/\\?\\?\\s*\\x27A member\\x27/.test(s)){console.error(\"event-sales still hides guest buyers behind A member\");process.exit(1)}'",
         "note": "Passes when the sales surface reads the guest address and stops labelling a guest a member. Written 2026-09-14."
-      }
+      },
+      "closed": "2026-09-14"
     },
     {
       "id": "LIVE-320",

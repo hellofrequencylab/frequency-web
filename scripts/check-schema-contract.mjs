@@ -122,6 +122,21 @@ export const ALLOWLIST = [
     owner: 'supabase/migrations/20270345003400_guest_ticket_checkout.sql',
   },
   {
+    // The same column, READ this time: the host Sales module selects `event_tickets.guest_email`
+    // beside the buyer join so a guest buyer shows as their address instead of "A member"
+    // (LIVE-319). Same situation as the entry above: the column is applied, the select is correct,
+    // the generated types are what is behind (HYG-087 regenerates them on another lane).
+    //
+    // 🔴 REMOVE THIS ENTRY in the change that regenerates lib/database.types.ts.
+    file: 'app/(main)/events/[slug]/page.tsx',
+    kind: 'select',
+    table: 'event_tickets',
+    column: 'guest_email',
+    added: '2026-09-14',
+    reason: 'migration 20270345003400 adds the column; lib/database.types.ts not yet regenerated',
+    owner: 'supabase/migrations/20270345003400_guest_ticket_checkout.sql',
+  },
+  {
     // `claim_guest_tickets()` is created by the same migration, granted to `authenticated` only,
     // and is called on the SESSION client at /auth/callback. Same situation as the
     // `convert_signup_leads_for_me` entry above and the same remedy: the function exists, the call
