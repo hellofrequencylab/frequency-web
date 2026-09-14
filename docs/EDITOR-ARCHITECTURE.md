@@ -73,6 +73,12 @@ with its own renderer map, and both were missed because `ENTITY_BLOCKS`' own hea
 | 🔴 **Spotlight** | `BlockType` union (`lib/spotlight/blocks/schema.ts:28`) | **10** | 11 | `profiles.meta.spotlight.layout.blocks` | `components/spotlight/blocks/render.tsx` |
 | | | **304** | | | |
 
+⚠️ **Re-measured 2026-09-14.** The five systems read **36 / 87 / 144 / 12 / 10 = 289** (was 304). Every
+change is attrition inside a catalog (Puck 88 to 87, layout modules 157 to 144, Space profile 13 to
+12); none is consolidation, and all five are still live (importers 18 / 24 / 5 / 4 / 12, counted the
+same way as the column above). The table keeps the 2026-08-10 reading beside this one, as this doc
+does for every re-measurement; treat this line as current.
+
 ⚠️ **"Live importers" counts non-test files importing the catalog's own module**, and two rows are
 approximate: `lib/widgets/modules` has **5**, and the Puck row depends what you count — **15** files
 reference `ComponentConfig`, **49** import from `lib/page-editor/types`. Treat the column as
