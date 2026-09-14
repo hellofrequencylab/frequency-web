@@ -40489,3 +40489,89 @@ Two halves of the row's premise were not as stated. Plus-ones were reachable in 
 **Alternatives.** *A separate `event_seat_tokens` table*: rejected; the table shape ADR-907 built for this was retired unused, and a column beside the live sibling (`signup_leads.claim_token_hash`) costs no new RLS, grant or deny-all ledger entry. *A stateless HMAC token like the unsubscribe links*: rejected; an HMAC cannot be revoked per seat, and revocation on release is half the point. *Deleting the row on release so the RSVP form works again*: rejected in favour of the member's twin row (`not_going`), which the host's roster can see; the consequence, that a resubmit through the form does not resurrect the seat, is `capture_guest_rsvp`'s standing rule and the page says the honest route back is signing in. *Reading the seat with the admin client on the page*: rejected; the authority would then live in TypeScript behind a bypass, against every other door in this family.
 
 **Consequences.** A guest can now give a seat back from the receipt, and the host's waitlist moves. The premise correction (host questions needed a schema change) is recorded on the row. `check:function-grants` carries four new verdicts; `scripts/admin-client-baseline.txt` is unchanged. pgTAP: `supabase/tests/guest_seat_token.test.sql`, 28 assertions, including that the read door is STABLE in the catalog and carries no address key. Still open: the receipt's older links die when a newer email rotates the hash, which is the accepted cost of storing a hash and not a token.
+
+## ADR-1333: one editor per entity, and the four routes that were not it (2026-09-14)
+
+**Status.** Accepted. Closes `LIVE-237`. Extends [ADR-1281](DECISIONS.md) (the manifest-derived
+Circle and Event rails) and applies [ADR-1199](DECISIONS.md)'s rule (a consolidation is not finished
+until the thing it replaced is deleted) to the editors. Amends the row's own premise, below.
+
+**Context.** `docs/CORE-MODEL.md` §5 counted the editors and found Circles and Events each shipping
+three (`app/(main)/<noun>/[slug]/{edit,manage,settings}`) and Practices two (`{edit,manage}`). The
+row's detail said keep the registry-driven one and named it "settings"; the row's probe said the
+survivors are `circles/[slug]/manage`, `events/[slug]/manage` and `practices/[id]/edit`, so the
+detail and the probe disagreed on every entity. Re-testing the premise route by route settled it:
+
+| Route | Renders | Manifest-derived? | Only it could | Inbound links |
+|---|---|---|---|---|
+| `circles/[slug]/edit` | `CircleBuilder` (the Stage 4 Starter Circle builder: draft fields, Vera panel, publish, generate events) | No (hand controls over `circle_profiles`) | Everything the Circle wizard commits into; publish | 7, every one a CREATION flow (wizard, starter claim, remix, start-chapter, Vera create-commits) |
+| `circles/[slug]/manage` | `DashboardTemplate` hub: Home (stats, message center, placement approvals), Events, Settings (`EntityManageConsole` mounting `circle.settings`) | **Yes**: `circle.settings` renders `CIRCLE_RAIL` (`circle-rail-plan.ts`, ADR-1281) | Message center, events, the rail in a page | Circle layout, rail bank, `circle.crm`, placement actions |
+| `circles/[slug]/settings` | `CircleSettingsForm`, a hand-written 10-control form over `admin/actions.ts` `updateCircleSettings` | No | Host archive (the rail's `status` select already offers Archived); `resonance_public` (still on `/admin/circles`); city and neighborhood (`circle.placeAndTime`) | **0** (only `hrefForEntitySurface`, for a link render no module used) |
+| `events/[slug]/edit` | `EventForm` (the create form) in edit mode inside `EventEditorWindow` | No | The Journey association picker; Duplicate; Cancel | Space calendar (2), two `revalidatePath` calls |
+| `events/[slug]/manage` | `DashboardTemplate` hub: Home, Guests, Questions, Tickets, Updates, Settings (`EventSettingsModule`) | **Yes**: `event.settings` renders `EVENT_RAIL` (`event-rail-plan.ts`, ADR-1281) | Roster, approvals, questionnaire, tiers, dispatches, broadcast, the rail in a page | Event page, rail bank, `event.crm`, `hrefForEntitySurface` prefix, five `revalidatePath` calls |
+| `events/[slug]/settings` | A Basics + Danger console over the same `EventSettingsModule` | Yes, via the same module | `deleteEvent` (`DangerDelete`) | **0** (same as the Circle's) |
+| `practices/[id]/edit` | `PracticeBuilder` + `PracticeComposer` (the guide, cadence, timer, Pillar, tags, rewards, publishing, Vera) | No | Every column outside the rail's seven writes; Vera | 20+: the Spark, create, remix, the admin table, the Space practice row, and `practice.settings`'s own "Open full editor" link |
+| `practices/[id]/manage` | `EntityManageConsole` mounting `practice.settings` in a page frame | Yes, via the module | Nothing: the module renders in the rail on every practice page | **1** (the rail bank) |
+
+The detail's word "settings" was the RAIL, not the route: on Circles and Events the manifest-derived
+rail plan is mounted by the `manage` hub's Settings tab, and the `settings` route was a hand-written
+form (Circle) or a second frame over the same module (Event), each with zero inbound links. On
+Practices the manifest-derived module is the rail itself, rendered on every practice page from the
+Inspector, and the `manage` page was that module in a page frame with one inbound link; the `edit`
+route is where every Practice flow lands and carries the columns no rail writes. So the probe was
+right on all three, with one amendment: `circles/[slug]/edit` is not an editor of a published Circle.
+It is the creation continuation the Circle wizard commits into (EDITING-SYSTEM §2 rule 2, "the only
+separate full screen is first creation"), the Practice `edit` route's analogue, and nothing on a
+published Circle links to it. Retiring it would delete the Circle creation flow that LIVE-266 just
+opened to every member. It stays, the probe no longer names it, and the finding that its eight
+`placement: 'inline'` fields have no inline canvas to land on belongs to the inline-plane work, not
+to this row.
+
+**Decision.**
+
+1. **Four routes are deleted, and their URLs redirect for good.** `circles/[slug]/settings`,
+   `events/[slug]/edit` and `events/[slug]/settings` go to `/<noun>/:slug/manage?section=settings`;
+   `practices/[id]/manage` goes to `/practices/:id/edit`. All four are `next.config.ts` rules
+   (ADR-1199's convention), `permanent: true` because the survivor is not going anywhere, and EXACT
+   sources with nothing live beneath them (`lib/marketing/redirect-shadow.test.ts` holds that).
+   `components/studio/circle/circle-editor-window.tsx` and `admin/actions.ts` `updateCircleSettings`
+   had one caller each, the deleted page, and go with it.
+2. **What only a losing route could do moves into the survivor, by the STUDIO rules.** A field goes
+   into the manifest: the Event's Journey association is now `journeyId` on `EVENT_MANIFEST`
+   (`kind: 'reference'`, `optionsFrom: 'journeys'`, `section: 'settings'`), written by
+   `EVENT_SETTINGS_WRITES` as `journey_id`, offered by `getEventAdminData` (the viewer's editable
+   Journeys plus the one the event is on, the retired page's own rule) and persisted by
+   `updateEventSettings` under the one Journey gate, `canEditJourney`, for a NEW id only: an
+   unchanged id asks no authority, so a host whose event a Journey author linked can save the rest of
+   the form; a blank on a linked row detaches, which needs none. The module hides the control when
+   there is nothing to pick and still sends the value, so the action reads "unchanged" rather than
+   "blank". Non-field controls go beside the rail: the event Manage hub's Settings tab now renders
+   `event-danger-zone.tsx` under the module, carrying Duplicate (`/events/new?duplicate=`), Cancel
+   (`cancel-event-button.tsx`, moved from `edit/`) and Delete (`DangerDelete` over `deleteEvent`,
+   warning text unchanged from the retired console). The edit page's one other affordance, the
+   payout-readiness line at the price control (LIVE-126), moves too: `getEventAdminData` resolves the
+   payee as `lib/billing/tickets.ts` does and returns `payoutsReady`, and the module's price hint is
+   composed from `ticketSellerVerdict`, so the rail and the buy path keep reading one predicate.
+   LIVE-126's probe, which read the prop off the deleted page, is re-pointed at those two lines and
+   its detail says so. The Circle's form moved nothing: archive is the
+   rail's `status`, city and neighborhood are `circle.placeAndTime`, `resonance_public` stays an
+   operator control.
+3. **The catalogs and the bank follow.** `hrefForEntitySurface` resolves `circle.settings` and
+   `event.settings` to the hub's Settings tab; the practice rail bank links "Open full editor" at
+   `/practices/<id>/edit`, the Journey's shape (its console is its builder). The Space calendar's
+   Edit door and the event actions' `revalidatePath` calls point at the hub. No catalog row changed
+   hands: `ADMIN_MODULES` is untouched, and `pnpm check:menu` reads the same 21 frozen rows.
+4. **The probe is re-pointed, not deleted.** It fails while any of the four retired directories
+   exists. `circles/[slug]/edit` is removed from its list for the reason above.
+
+**Consequences.** Nothing about any entity's data changes: no migration, no column, no row.
+`scripts/templates-baseline.txt` shrinks by two and `scripts/admin-client-baseline.txt` by four,
+both ratchets moving the way they may. `check:notfound-routes` reads the route table in `postbuild`
+and cannot run on source; the redirect rules are exact, so the LIVE-208 shape (a rule swallowing a
+live child) is what the shadow test guards, on every PR. A member holding a bookmark to any of the
+four URLs lands on the survivor's Settings tab. The Circle builder remains a second full-page
+surface for a Circle's draft content, which is a true reading of EDITING-SYSTEM §2 rule 2 today and
+a debt against the inline plane; it is named here so the next count of editors starts from the
+right number, three surviving routes plus two creation builders.
+
+**Rows.** LIVE-237 (done, this ADR).

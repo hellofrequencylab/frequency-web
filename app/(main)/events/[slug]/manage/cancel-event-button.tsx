@@ -6,8 +6,10 @@ import { Ban } from 'lucide-react'
 import { DangerModal } from '@/components/admin/danger-modal'
 import { cancelEvent } from '@/app/(main)/events/actions'
 
-// Host self-cancel — the member-facing "cancel my event" the /manage page lacked. Calls the
-// host-gated cancelEvent (RLS: host_id = me) behind a confirm, then returns to the event.
+// Host self-cancel — the member-facing "cancel my event". It sat on /events/[slug]/edit until
+// LIVE-237 retired that route; it now renders in the Manage hub's Settings tab beside the rail
+// (event-danger-zone.tsx). Calls the host-gated cancelEvent (RLS: host_id = me) behind a confirm,
+// then returns to the event.
 export function CancelEventButton({ eventId, slug, title }: { eventId: string; slug: string; title: string }) {
   const [open, setOpen] = useState(false)
   const [pending, start] = useTransition()

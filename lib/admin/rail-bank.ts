@@ -118,11 +118,11 @@ function baseBank(scope: AdminScope | null, viewer: BankViewer, slug: string | n
       return [{ label: 'Manage dashboard', icon: LayoutDashboard, href: `/events/${urlSlug}/manage` }]
     }
     // A core entity with a full owner console: one Manage link into `/{section}/<slug>/manage`. Hub +
-    // nexus + practice consoles are thin, so their bank is just that console (their insights/relevant
-    // hubs live inside it) — 1 link is intentional; the inline body carries the rest.
+    // nexus consoles are thin, so their bank is just that console (their insights/relevant hubs live
+    // inside it) — 1 link is intentional; the inline body carries the rest. (The Practice sat here
+    // until LIVE-237 retired its /manage page; it now takes the Journey's shape below.)
     case 'hub':
-    case 'nexus':
-    case 'practice': {
+    case 'nexus': {
       const section = SECTION_FOR_KIND[scope.kind]
       if (!urlSlug || !section) return []
       return [{ label: 'Manage console', icon: SlidersHorizontal, href: `/${section}/${urlSlug}/manage` }]
@@ -132,9 +132,17 @@ function baseBank(scope: AdminScope | null, viewer: BankViewer, slug: string | n
     // settings live alongside the block tree there). The block tree is data-heavy, so instead of a thin
     // per-entity /manage console the bank links straight into the builder. Slug-keyed (console/edit routes
     // are slug-keyed; the OpenAdminBarButton carries the DB id on scope.id, so we use slug ?? scope.id).
+    // A PRACTICE takes the same shape since LIVE-237: its console IS the full editor at
+    // /practices/<id>/edit (the guide, cadence, timer, Pillar, tags, and Vera). The thin /manage page
+    // rendered the practice.settings module in a page frame, and that module already sits in this
+    // rail, so the page retired and the one link opens the builder. Practices are id-keyed, so the
+    // slug-or-id rule above reads the same. ONE row literal for both kinds on purpose: check:menu
+    // counts these as frozen debt, which may shrink and never grow.
+    case 'practice':
     case 'journey': {
-      if (!urlSlug) return []
-      return [{ label: 'Open builder', icon: PencilRuler, href: `/journeys/${urlSlug}/edit` }]
+      const section = SECTION_FOR_KIND[scope.kind]
+      if (!urlSlug || !section) return []
+      return [{ label: 'Open builder', icon: PencilRuler, href: `/${section}/${urlSlug}/edit` }]
     }
     // A CHANNEL (ADR-515 Phase 5): topical channels are OPERATOR-CURATED (no per-channel owner — the
     // settings module gates on staff), so unlike the owner-console entities the channel has no per-entity

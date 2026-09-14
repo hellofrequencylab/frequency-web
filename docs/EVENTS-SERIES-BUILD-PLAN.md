@@ -104,7 +104,7 @@ authority either way: `collapseSeries` over an already-distinct list is the iden
 |---|---|---|---|
 | D1 | The series home goes `noindex` a week after it starts, while its own children stay indexable. The exact inversion of consolidation. | `app/(main)/events/[slug]/page.tsx:192,200` | 36 |
 | D2 | The sitemap advertises private, `circle_only`, unlisted and draft events whose pages answer `noindex, nofollow`. `public_events` is `SECURITY DEFINER` and filters only `is_cancelled` and `starts_at`. | `supabase/migrations/20260612020000_public_events_price.sql` | 38 (crawl path only) |
-| D3 | The delete warning says "only this occurrence is deleted". For an **anchor** that is false: `ON DELETE CASCADE` removes every date and every RSVP. | `app/(main)/events/[slug]/settings/console.tsx:38` | 45 |
+| D3 | The delete warning says "only this occurrence is deleted". For an **anchor** that is false: `ON DELETE CASCADE` removes every date and every RSVP. | `app/(main)/events/[slug]/manage/event-danger-zone.tsx (the delete warning; it was settings/console.tsx:38 until LIVE-237)` | 45 |
 | D4 | The series home's OG image and JSON-LD publish the anchor's own past date. | `opengraph-image.tsx:63-70`, `page.tsx:1540-1547` | 39 |
 | D5 | `dateRangeWindow` builds the facet window from **server-local** date parts and compares to wall-clock-as-UTC values, so "Today" and "This weekend" drift by a day after UTC midnight. | `app/(main)/events/index-data.ts:147-175` | 14 |
 | D6 | Eight browse reads use `.gte('starts_at', new Date().toISOString())`, which drops tonight's 7pm gathering from ~5pm Pacific. | listed in §4.2 | 15-22 |
@@ -1236,7 +1236,7 @@ top to bottom. **Risk:** 🟢 low · 🟡 medium · 🔴 high.
 | 42 | `components/events/series-dates-preview.tsx` (client) using `wallClockToIso` / `dateToWallClockIso` from `@/lib/events/datetime`; create-form copy C1-C3 + the end-date line; mount the preview; both server pages pass `seriesPreviewCount={railDates}` | 🟡 | `pnpm test lib/events/recurrence`; by hand: pick Weekly, see five dates |
 | 43 | Edit-mode notices: State A gated on the **stored** `initial.recurrenceType`, State B (`parent_event_id` on the edit page select + the anchor lookup + `Open the series` link) | 🟡 | by hand: edit a one-off and switch it to Weekly, confirm no propagation notice |
 | 44 | `components/admin/modules/event-settings-module.tsx`: helper copy C9 + label convergence onto the create form's wording (`One-time`, `Every day`, `Weekly`, `Monthly`, `Ends on`). 🔴 The `value` strings are the enum and must not change | 🟡 | `pnpm build`; by hand in the rail |
-| 45 | 🔴 **Delete warning correction (D3)** in `app/(main)/events/[slug]/settings/console.tsx:38` + cancel copy C10/C11 with the `seriesRole` prop. **Must land before step 30 makes the anchor easier to reach** | 🟡 | by hand on an anchor and on one date |
+| 45 | 🔴 **Delete warning correction (D3)** in `app/(main)/events/[slug]/manage/event-danger-zone.tsx (the delete warning; it was settings/console.tsx:38 until LIVE-237)` + cancel copy C10/C11 with the `seriesRole` prop. **Must land before step 30 makes the anchor easier to reach** | 🟡 | by hand on an anchor and on one date |
 
 ### Phase 6: docs
 

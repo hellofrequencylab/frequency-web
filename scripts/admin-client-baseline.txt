@@ -218,7 +218,6 @@ app/(main)/circles/[slug]/edit/page.tsx
 app/(main)/circles/[slug]/manage/events-actions.ts
 app/(main)/circles/[slug]/manage/events-section.tsx
 app/(main)/circles/[slug]/manage/page.tsx
-app/(main)/circles/[slug]/settings/page.tsx
 app/(main)/circles/actions.ts
 app/(main)/circles/admin-actions.ts
 app/(main)/circles/builder-actions.ts
@@ -238,7 +237,6 @@ app/(main)/crew/store/actions.ts
 app/(main)/edit/actions.ts
 app/(main)/entry-points/actions.ts
 app/(main)/entry-points/page.tsx
-app/(main)/events/[slug]/edit/page.tsx
 app/(main)/events/[slug]/manage/actions.ts
 app/(main)/events/[slug]/manage/attendance-actions.ts
 app/(main)/events/[slug]/manage/broadcast-actions.ts
@@ -249,7 +247,6 @@ app/(main)/events/[slug]/manage/page.tsx
 app/(main)/events/[slug]/manage/questionnaire-actions.ts
 app/(main)/events/[slug]/opengraph-image.tsx
 app/(main)/events/[slug]/page.tsx
-app/(main)/events/[slug]/settings/page.tsx
 app/(main)/events/[slug]/social-actions.ts
 app/(main)/events/actions.ts
 app/(main)/events/admin-actions.ts
@@ -311,7 +308,6 @@ app/(main)/people/[handle]/actions.ts
 app/(main)/people/[handle]/page.tsx
 app/(main)/people/[handle]/vcard/route.ts
 app/(main)/people/friend-actions.ts
-app/(main)/practices/[id]/manage/page.tsx
 app/(main)/practices/admin-actions.ts
 app/(main)/search/page.tsx
 app/(main)/settings/billing/actions.ts

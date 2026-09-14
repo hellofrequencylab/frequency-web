@@ -748,7 +748,7 @@ export async function updateEvent(eventId: string, formData: FormData): Promise<
 
   revalidatePath('/events')
   revalidatePath(`/events/${slug}`)
-  revalidatePath(`/events/${slug}/edit`)
+  revalidatePath(`/events/${slug}/manage`)
   revalidatePath('/feed')
   revalidatePath('/circles', 'layout')
   // A space event surfaces on its Space's Calendar console, public Calendar tab, and .ics
@@ -1870,7 +1870,7 @@ async function writeEventCopy(
   embedEvent(eventId).catch((e) => console.error('[events embed]', e))
   revalidatePath('/events')
   revalidatePath(`/events/${slug}`)
-  revalidatePath(`/events/${slug}/edit`)
+  revalidatePath(`/events/${slug}/manage`)
 }
 
 /** Re-steer an event that already exists: pick a mood, say how to approach it, and draft the

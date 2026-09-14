@@ -5,7 +5,7 @@ import { CIRCLE_ACCESS_LIMIT_NOTE, CIRCLE_ACCESS_MODES } from '@/lib/circles/vis
 //
 // 🔴 WHY THIS TEST EXISTS. Axis 2 shipped fully enforced — the `circles_access_restrictive` policy,
 // `private.can_enter_circle`, and `trg_circles_access_shape` — and fully UNREACHABLE. The only
-// picker for it sat on /circles/[slug]/settings, a page nothing in the repo links to, so every
+// picker for it sat on /circles/[slug]/settings, a page nothing in the repo linked to (retired by LIVE-237), so every
 // circle in production stayed on the backfilled `open` with no way to change it. The control now
 // lives in the admin rail's Circle Settings module, which is the surface hosts actually open.
 //

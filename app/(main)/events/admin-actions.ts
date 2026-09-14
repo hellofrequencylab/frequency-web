@@ -6,6 +6,10 @@ import type { Json } from '@/lib/database.types'
 import { getEventCapabilities } from '@/lib/core/load-capabilities'
 import { loadEventCoreStats, type EventCoreStats } from '@/lib/events/event-stats'
 import { getMyProfileId } from '@/lib/auth'
+import { journeyLinkPatch, listLinkableJourneys, resolveJourneyRef } from '@/lib/events/placement'
+import { canEditJourney } from '@/lib/journeys/authoring'
+import { loadRootSpaceId } from '@/lib/spaces/store'
+import { getConnectStatus } from '@/lib/billing/connect'
 import { cancelAudit, reinstateAudit } from '@/lib/events/event-lifecycle'
 import {
   refundAndNotifyForCancelledEvent,
@@ -114,7 +118,7 @@ export async function getEventAdminData(slug: string) {
   const { data } = await admin
     .from('events')
     .select(
-      'id, slug, title, description, location, starts_at, ends_at, is_cancelled, cover_image_path, poster_path, gallery_image_paths, capacity, attendance_mode, online_url, venue_name, street, city, region, country, postal_code, category, visibility, energy_tag, theme, price_cents, currency, time_zone, recurrence_type, recurrence_until, recurrence_rule, parent_event_id, details, geog, hide_address, join_mode, scope_type, rsvp_requires_approval',
+      'id, slug, title, description, location, starts_at, ends_at, is_cancelled, cover_image_path, poster_path, gallery_image_paths, capacity, attendance_mode, online_url, venue_name, street, city, region, country, postal_code, category, visibility, energy_tag, theme, price_cents, currency, time_zone, recurrence_type, recurrence_until, recurrence_rule, parent_event_id, details, geog, hide_address, join_mode, scope_type, rsvp_requires_approval, journey_id, host_id, host_space_id',
     )
     .eq('slug', slug)
     .maybeSingle()
@@ -158,8 +162,42 @@ export async function getEventAdminData(slug: string) {
   // Booking window rides in events.details.rsvpWindow (no dedicated column).
   const window = readRsvpWindow(event.details)
 
+  // THE JOURNEYS THE RAIL MAY OFFER (LIVE-237; the rule the retired edit page applied). The list is
+  // exactly what `canEditJourney` admits for this viewer (ADR-883 §3: the offer and the gate are one
+  // rule), and the event's CURRENT Journey is added when it is not already there, which happens
+  // whenever a Journey's author linked someone else's event. Without it the control could not show
+  // the link, and a host's very next autosave would carry a blank and silently detach a Journey
+  // the host never chose. The action below refuses to MOVE the event onto a Journey the viewer
+  // does not run; keeping or dropping the one it is on needs no Journey authority.
+  const viewerId = await getMyProfileId().catch(() => null)
+  const journeys = viewerId ? await listLinkableJourneys(viewerId, await loadRootSpaceId()) : []
+  if (event.journey_id && !journeys.some((j) => j.id === event.journey_id)) {
+    const current = await resolveJourneyRef(event.journey_id)
+    if (current) journeys.push(current)
+  }
+  journeys.sort((a, b) => a.title.localeCompare(b.title))
+  const journeyOptions = journeys.map((j) => ({ value: j.id, label: j.title }))
+
+  // PAYOUT READINESS at the price control (LIVE-126; it rode on the retired edit page until
+  // LIVE-237). Resolved the way lib/billing/tickets.ts resolves it before a sale, so the price hint
+  // and the buy path can never tell a host two different stories about the same event: a
+  // space-hosted event pays the space OWNER (ADR-819), a personal one pays the host. No payee reads
+  // as not ready, which is the direction `ticketSellerVerdict` fails.
+  let payeeProfileId: string | null = event.host_id
+  if (event.host_space_id) {
+    const { data: hs } = await admin
+      .from('spaces')
+      .select('owner_profile_id')
+      .eq('id', event.host_space_id)
+      .maybeSingle()
+    payeeProfileId = (hs as { owner_profile_id: string | null } | null)?.owner_profile_id ?? null
+  }
+  const payoutsReady = payeeProfileId ? (await getConnectStatus(payeeProfileId)).ready : false
+
   return {
     ...event,
+    journeyOptions,
+    payoutsReady,
     coverUrl,
     posterUrl,
     galleryPaths,
@@ -212,6 +250,12 @@ type EventAdminRow = {
   hide_address: boolean | null
   /** 20270303000000. Newer than lib/database.types.ts, so it rides the untyped read/write. */
   rsvp_requires_approval: boolean | null
+  /** The Journey ASSOCIATION (journey_plans), or null (LIVE-237). Never a placement. */
+  journey_id: string | null
+  /** Who the ticket money goes to: a SPACE-hosted event pays the space owner, a personal one pays the
+   *  host (ADR-819), the resolution lib/billing/tickets.ts makes before every sale. */
+  host_id: string | null
+  host_space_id: string | null
   /** ADR-826: how people join — auto / rsvp (first come first served) / tickets. */
   join_mode: 'auto' | 'rsvp' | 'tickets' | null
   /** The event's ONE home (ADR-883). The settings module needs it so the "My circle"
@@ -405,9 +449,32 @@ export async function updateEventSettings(
   // (see below), and the answer is a column on this row.
   const { data: currentBags } = await admin
     .from('events')
-    .select('details, theme, scope_type, parent_event_id, starts_at, recurrence_type')
+    .select('details, theme, scope_type, parent_event_id, starts_at, recurrence_type, journey_id')
     .eq('id', id)
     .maybeSingle()
+
+  // THE JOURNEY LINK (events.journey_id; LIVE-237, the rule updateEvent's resolveJourneyLink kept
+  // on the retired edit page). An association, never a placement: this write moves nothing.
+  // Three outcomes: a form that does not SEND `journey_id` leaves the link alone (the rail always
+  // sends it; the poster scanner and Vera's spark never do); a value equal to the row's is not a
+  // change at all, and asks no authority, so a host whose event a Journey author linked can save
+  // the rest of the form without being told they do not run that Journey; a NEW id must pass
+  // `canEditJourney`, the one Journey gate, re-derived here because the rail's list is a
+  // convenience and never an authority. Blank on a row that has one detaches, which needs no
+  // Journey authority: the caller holds event.editSettings, and taking their own event back out
+  // of someone's Journey is their business.
+  const journeyRaw = fd.get('journey_id')
+  let journeyPatch: Record<string, unknown> = {}
+  if (journeyRaw != null) {
+    const nextJourney = (typeof journeyRaw === 'string' ? journeyRaw.trim() : '') || null
+    const currentJourney = (currentBags as { journey_id?: string | null } | null)?.journey_id ?? null
+    if (nextJourney !== currentJourney) {
+      if (nextJourney && !(await canEditJourney(nextJourney, await getMyProfileId().catch(() => null)))) {
+        throw new Error('You can only add an event to a Journey you run.')
+      }
+      journeyPatch = journeyLinkPatch(nextJourney)
+    }
+  }
 
   // 🔴 A MATERIALISED OCCURRENCE MAY NOT ITSELF RECUR, AND THE DATABASE SAYS SO. The CHECK
   // `events_occurrence_not_recurring` (20240208000000) is `parent_event_id IS NULL OR
@@ -631,6 +698,7 @@ export async function updateEventSettings(
         ? { join_mode: fd.get('join_mode') as string }
         : {}),
       ...(nextTheme ? { theme: nextTheme as Json } : {}),
+      ...journeyPatch,
     })
     .eq('id', id)
   if (error) throw new Error(error.message)

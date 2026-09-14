@@ -62,7 +62,7 @@ const ENTITY_PROFILE_ROOT = '/spaces'
 // children that are bespoke Focus/Index surfaces (the create form, the poster scanner, the drafts
 // list) — so the one-deep MODULE_SECTIONS matcher would wrongly offer them a Layout editor. This
 // predicate matches ONLY a real event detail slug (exactly /events/<slug>), excluding those and the
-// grandchildren (/events/<slug>/edit, …/manage).
+// grandchildren (/events/<slug>/manage and its tabs).
 const EVENT_NON_DETAIL = new Set(['new', 'scan', 'drafts'])
 export function isEventDetailRoute(pathname: string): boolean {
   if (!pathname.startsWith('/events/')) return false

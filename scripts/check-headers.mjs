@@ -86,7 +86,7 @@ const MAX_DEPTH = 3
 export const KNOWN_DELEGATED = new Map([
   [
     'app/(main)/events/new/event-form.tsx',
-    'the "Create an event" instructional band hand-rolls the page h1 at text-body; /events/new and /events/[slug]/edit both delegate their header to it. Retire onto PageHeading.',
+    'the "Create an event" instructional band hand-rolls the page h1 at text-body; /events/new delegates its header to it (so did /events/[slug]/edit, until LIVE-237 retired it). Retire onto PageHeading.',
   ],
   [
     'app/(main)/admin/walkthroughs/[id]/editor.tsx',

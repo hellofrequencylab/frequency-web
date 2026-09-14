@@ -26,9 +26,11 @@ describe('bankForScope', () => {
   it('slug-keys the console for event / hub / nexus / practice too (4th-arg slug over scope.id)', () => {
     const dbId = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee'
     const slug = 'gathering'
-    for (const [kind, section] of [['event', 'events'], ['hub', 'hubs'], ['nexus', 'nexuses'], ['practice', 'practices']] as const) {
+    // The practice's console is its full editor since LIVE-237 (/edit, not /manage); the key rule
+    // is the same: the 4th-arg slug wins over scope.id.
+    for (const [kind, section, leaf] of [['event', 'events', 'manage'], ['hub', 'hubs', 'manage'], ['nexus', 'nexuses', 'manage'], ['practice', 'practices', 'edit']] as const) {
       const bank = bankForScope({ kind, id: dbId }, {}, [], slug)
-      expect(hrefs(bank).some((x) => x === `/${section}/${slug}/manage`)).toBe(true)
+      expect(hrefs(bank).some((x) => x === `/${section}/${slug}/${leaf}`)).toBe(true)
       expect(hrefs(bank).some((x) => x.includes(dbId))).toBe(false)
     }
   })
@@ -107,10 +109,13 @@ describe('bankForScope', () => {
     expect(h.filter((x) => x === '/settings#plan')).toHaveLength(1)
   })
 
-  it('hub / nexus / practice → their manage console (1 link)', () => {
+  it('hub / nexus → their manage console (1 link)', () => {
     expect(hrefs(bankForScope({ kind: 'hub', id: 'north' }))).toEqual(['/hubs/north/manage'])
     expect(hrefs(bankForScope({ kind: 'nexus', id: 'core' }))).toEqual(['/nexuses/core/manage'])
-    expect(hrefs(bankForScope({ kind: 'practice', id: 'p1' }))).toEqual(['/practices/p1/manage'])
+  })
+
+  it('practice → the full editor, its /manage console having retired (LIVE-237)', () => {
+    expect(hrefs(bankForScope({ kind: 'practice', id: 'p1' }))).toEqual(['/practices/p1/edit'])
   })
 
   it('circle → manage console + the host create quick-actions (New event · New announcement) (ADR-515 Phase 4)', () => {

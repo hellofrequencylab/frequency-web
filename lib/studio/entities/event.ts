@@ -262,6 +262,13 @@ export const EVENT_MANIFEST: EntityManifest = {
     // which is what `scopeType: 'public'` is derived from) is the collection's own first row,
     // supplied by the page rather than declared here.
     { path: 'scopeId', label: 'Where it lives', kind: 'reference', section: 'settings', optionsFrom: 'circles', veraDrafts: false },
+    // The Journey ASSOCIATION (events.journey_id), an association like space_id and never a
+    // placement: attaching or detaching one never moves the event. Declared here since LIVE-237,
+    // when the EventForm-in-edit-mode page that used to carry the picker retired into the Manage
+    // hub. The surface loads the Journeys this viewer may edit (`canEditJourney`, the one Journey
+    // gate) plus the one the event is already on, so a link a Journey author made can round-trip
+    // through a host's save without the host being able to move it somewhere they do not run.
+    { path: 'journeyId', label: 'Part of a Journey', kind: 'reference', section: 'settings', optionsFrom: 'journeys', veraDrafts: false, omitWhenEmpty: true },
     { path: 'visibility', label: 'Who can see it', kind: 'select', section: 'settings', options: VISIBILITY_OPTIONS, veraDrafts: false, read: (d) => str(d.visibility) || 'circle_only' },
     { path: 'capacity', label: 'Group size', kind: 'number', section: 'settings', omitWhenEmpty: true },
     { path: 'energyTag', label: 'Energy', kind: 'select', section: 'settings', options: ENERGY_OPTIONS, omitWhenEmpty: true },
