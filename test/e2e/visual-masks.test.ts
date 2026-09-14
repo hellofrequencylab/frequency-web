@@ -125,6 +125,22 @@ describe('visual masks (LIVE-213)', () => {
     expect(source).toMatch(/visualMask="rail-panel"/)
   })
 
+  it('PageHeading stamps visualMask on the heading ROW, and StreamTemplate passes it through (LIVE-308)', () => {
+    // The row, not the h1: the title block is a content-sized flex item, so an h1 mask would be
+    // a box of a different width on two honest captures of the feed's greeting. The stamp must
+    // sit on the element that opens the `flex flex-row` / `flex flex-col` row.
+    const heading = readFileSync('components/templates/page-heading.tsx', 'utf8')
+    const stamp = heading.indexOf('data-visual-mask={visualMask}')
+    expect(stamp).toBeGreaterThan(-1)
+    expect(heading.slice(stamp, stamp + 200)).toMatch(/inlineActions\s*\?\s*'flex flex-row/)
+    expect(heading.match(/data-visual-mask=\{visualMask\}/g)).toHaveLength(1)
+    const stream = readFileSync('components/templates/stream-template.tsx', 'utf8')
+    expect(stream).toMatch(/visualMask=\{visualMask\}/)
+    // And the feed is the page that sets it, on the one heading that is a clock.
+    const feed = readFileSync('app/(main)/feed/page.tsx', 'utf8')
+    expect(feed).toMatch(/visualMask="feed-greeting"/)
+  })
+
   it('rail panels take WidgetCard, not ModuleCard, so every one of them carries the mask', () => {
     const source = readFileSync('components/sidebar/rail-panels.tsx', 'utf8')
     expect(source.match(/<WidgetCard\b/g)?.length ?? 0).toBeGreaterThanOrEqual(9)

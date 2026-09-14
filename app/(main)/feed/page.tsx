@@ -206,6 +206,18 @@ export default async function FeedPage({
         action={<CreateMenu role={myRole} />}
         // Create is compact, so it rides beside the greeting on mobile too.
         inlineAction
+        // THE HEADING IS A CLOCK, so the visual suite paints it over (`data-visual-mask`,
+        // ADR-1277; the row is registered as `feed-greeting` in test/e2e/surfaces.ts). `today`
+        // changes at midnight Pacific and `greeting` at noon and 18:00 Pacific, and both sit on
+        // the FIRST SCREEN of every /feed baseline. LIVE-308's drift appeared between 00:56Z and
+        // 01:03Z, and 01:00Z is 18:00 Pacific: the greeting turning from afternoon to evening.
+        // The whole heading row is masked rather than the h1 because the title block is
+        // content-sized and its width follows the greeting (PageHeading.visualMask says why).
+        // ⚠️ A mask cannot fix a height: at 390 wide "Good afternoon," is a few pixels wider than
+        // the title block beside the Create button, so the h1 may take a third line for six hours
+        // a day. If a mobile /feed baseline fails on a SIZE change between 12:00 and 18:00
+        // Pacific with the desktop pair green, that is this, not a layout change.
+        visualMask="feed-greeting"
       >
 
       {/* Hero slot. Onboarding incomplete → the persistent teal guide sits up top and
@@ -381,10 +393,12 @@ export default async function FeedPage({
 }
 
 // Lightweight placeholder while the feed query resolves — a few post-shaped pulses so the
-// stream has visible structure before the real cards stream in.
+// stream has visible structure before the real cards stream in. It carries the stream's
+// `feed-stream` mask (test/e2e/surfaces.ts) for the same reason the rail's PanelSkeleton carries
+// `rail-panel`: a capture that lands mid-stream paints the same box the real list would.
 function FeedListSkeleton() {
   return (
-    <div className="space-y-4" aria-hidden>
+    <div data-visual-mask="feed-stream" className="space-y-4" aria-hidden>
       {[0, 1, 2].map((i) => (
         <div key={i} className="rounded-card border border-border bg-surface p-4">
           <div className="mb-3 flex items-center gap-3">
