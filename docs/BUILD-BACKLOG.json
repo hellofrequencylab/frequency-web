@@ -57,7 +57,6 @@
           "ids": [
             "HYG-075",
             "LIVE-279",
-            "HYG-086",
             "LIVE-316",
             "LIVE-318",
             "LIVE-320",
@@ -12038,7 +12037,7 @@
     {
       "id": "HYG-086",
       "title": "A hand-made snapshot table sits in production with RLS off and no retirement date",
-      "status": "open",
+      "status": "done",
       "priority": "P2",
       "lane": "hygiene",
       "size": "XS",
@@ -12046,12 +12045,13 @@
         "file": "scripts/adr-1316-events-page-settings-cleanup.sql",
         "ref": "line 26"
       },
-      "detail": "MEASURED 2026-09-14 from the Supabase security advisor: page_settings_events_backup_20260910 is the second rls_disabled_in_public ERROR on the project (the first, spatial_ref_sys, is the accepted PostGIS exception). ADR-1316's cleanup script created it deliberately as the only way back for the 21 rows it retired, which was right. It is in no migration and nothing on the list says when it goes, so it reads as an exposure on every advisor run and will until somebody decides.\n\nTHE WORK: one migration, mirrored as a file, that enables row level security on the table if it exists (service-role reads still work; nothing else could read it anyway), and a drop dated 30 days after the ADR-1316 cleanup is confirmed good. Apply through the MCP as the repo does; never by hand.",
+      "detail": "MEASURED 2026-09-14 from the Supabase security advisor: page_settings_events_backup_20260910 is the second rls_disabled_in_public ERROR on the project (the first, spatial_ref_sys, is the accepted PostGIS exception). ADR-1316's cleanup script created it deliberately as the only way back for the 21 rows it retired, which was right. It is in no migration and nothing on the list says when it goes, so it reads as an exposure on every advisor run and will until somebody decides.\n\nTHE WORK: one migration, mirrored as a file, that enables row level security on the table if it exists (service-role reads still work; nothing else could read it anyway), and a drop dated 30 days after the ADR-1316 cleanup is confirmed good. Apply through the MCP as the repo does; never by hand.\n\nCLOSED 2026-09-14: supabase/migrations/20270345003500_page_settings_events_backup_rls.sql enables row level security on the snapshot if it exists (no policy: service-role only, which is the only reader a restore would use) and stamps the table comment with the retirement date. Applied to production through the Supabase MCP and the ledger row aligned to the filename version. THE DROP IS NOT HERE: ADR-1316's cleanup ran 2026-09-10, so the drop is a separate migration on or after 2026-10-10; the table comment carries that date, and the security advisor's rls_disabled_in_public ERROR for this table clears with this change.",
       "verify": {
         "kind": "cmd",
         "cmd": "node -e 'const fs=require(\"fs\");const d=\"supabase/migrations\";const hit=fs.readdirSync(d).filter(f=>f.endsWith(\".sql\")).some(f=>{const s=fs.readFileSync(d+\"/\"+f,\"utf8\");return /page_settings_events_backup_20260910/.test(s)&&/(enable\\s+row\\s+level\\s+security|drop\\s+table)/i.test(s)});if(!hit){console.error(\"no migration secures or drops page_settings_events_backup_20260910\");process.exit(1)}'",
         "note": "Passes when a mirrored migration secures or drops the snapshot table. Written 2026-09-14."
-      }
+      },
+      "closed": "2026-09-14"
     },
     {
       "id": "LIVE-310",
