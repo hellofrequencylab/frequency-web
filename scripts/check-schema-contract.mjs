@@ -91,6 +91,37 @@ export const ALLOWLIST = [
     // to chase: applying this migration is what lets lib/database.types.ts learn the function.
     owner: 'supabase/migrations/20270345003300_event_rsvp_leads.sql',
   },
+  {
+    // `event_tickets.guest_email` is real: migration 20270345003400 adds the column, comments it,
+    // indexes it and has `reserve_ticket_atomic` write it. lib/database.types.ts is GENERATED and
+    // has not been regenerated since, so the guard is right that the types do not know the column
+    // and wrong to call it a phantom. The settle re-affirms the value the reserve already wrote, so
+    // the runtime PGRST204 this guard protects against cannot happen here.
+    //
+    // 🔴 REMOVE THIS ENTRY in the change that regenerates lib/database.types.ts.
+    file: 'lib/billing/tickets.ts',
+    kind: 'update',
+    table: 'event_tickets',
+    column: 'guest_email',
+    added: '2026-09-14',
+    reason: 'migration 20270345003400 adds the column; lib/database.types.ts not yet regenerated',
+    owner: 'supabase/migrations/20270345003400_guest_ticket_checkout.sql',
+  },
+  {
+    // `claim_guest_tickets()` is created by the same migration, granted to `authenticated` only,
+    // and is called on the SESSION client at /auth/callback. Same situation as the
+    // `convert_signup_leads_for_me` entry above and the same remedy: the function exists, the call
+    // site is correct, the generated types are what is behind.
+    //
+    // 🔴 REMOVE THIS ENTRY in the change that regenerates lib/database.types.ts.
+    file: 'lib/events/claim-guest-tickets-on-sign-in.ts',
+    kind: 'rpc',
+    table: 'claim_guest_tickets',
+    column: null,
+    added: '2026-09-14',
+    reason: 'migration 20270345003400 adds the function; lib/database.types.ts not yet regenerated',
+    owner: 'supabase/migrations/20270345003400_guest_ticket_checkout.sql',
+  },
 ]
 
 /** Walk `root` against `typesFile` and return the raw report. Pure: no exit, no console. */

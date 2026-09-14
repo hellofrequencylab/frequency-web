@@ -1,7 +1,14 @@
 // Event tickets — second payout channel (Phase 3, ADR-177). A host prices an event;
-// a signed-in member buys a ticket. Money moves as a Stripe DESTINATION CHARGE to
-// the event host's connected account, minus the platform fee — the same one-off
-// pattern as tips (ADR-176). Server-only.
+// a member, OR a signed-out guest with an email address, buys a ticket. Money moves as a
+// Stripe DESTINATION CHARGE to the event host's connected account, minus the platform
+// fee — the same one-off pattern as tips (ADR-176). Server-only.
+//
+// IDENTITY (the guest door): createTicketCheckout takes EXACTLY ONE of `buyerProfileId` and
+// `guestEmail`, the same either/or `event_tickets` carries in SQL and `reserve_ticket_atomic`
+// refuses on. A guest is treated as a stranger everywhere it matters: every server-side gate
+// (tier active, member_only, space_members_only, inventory, the min_cents floor, the payee's
+// Connect readiness) runs identically, and the two membership gates refuse a guest by
+// construction rather than by a read. A guest reaches no tier a signed-out person should not.
 //
 // Flow mirrors tips: createTicketCheckout validates + records a `pending` ticket +
 // returns the hosted Checkout URL; success is captured idempotently both by the
@@ -35,6 +42,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { recordFinancialTransaction } from '@/lib/finance/record'
 import { resolveHostingSpaceId, resolveHostingSpaceIdFromRow } from '@/lib/events/host-space'
 import { feeBearingSpaceId } from '@/lib/events/belonging'
+import { sendGuestTicketReceipt } from '@/lib/events/guest-ticket-email'
 
 export const TICKET_MAX_QTY = 10
 
@@ -89,6 +97,15 @@ export interface TicketResult {
   /** True when a `free` tier needs no checkout (the caller records the RSVP-style
    *  claim instead of redirecting to Stripe). */
   free?: boolean
+  /** Set ONLY beside `free` and ONLY for a GUEST (ADR-pending, guest ticket door).
+   *  A free tier moves no money, so there is no Stripe session to discriminate on, and the
+   *  member caller records the claim as a normal "going" RSVP through `setRsvpStatus` — which
+   *  needs a profile. A signed-out guest has none, so this flag says "nothing to charge, and
+   *  this claim needs an identity we were not given". The caller turns it into a refusal that
+   *  names the next step. It is a DISCRIMINATED result rather than an `error` because the two
+   *  are different facts: `error` means the ticket could not be had, this means it is free and
+   *  is waiting on a sign-in. Never set for a member. */
+  requiresAccount?: boolean
 }
 
 interface EventRow {
@@ -146,12 +163,18 @@ export function spaceMembershipGateError(
 
 /** Validate, record a pending ticket, and return the hosted Checkout URL.
  *
+ *  Pass EXACTLY ONE of `buyerProfileId` (a member) and `guestEmail` (a signed-out guest).
  *  Pass `ticketTypeId` to buy a specific tier; omit it to buy at the event's flat
  *  `events.price_cents` (backward compat — implicit single fixed tier). For
  *  buyer-chosen tiers (pwyc/sliding_scale/donation) pass `amountCents`; it is
  *  floored at the tier's `min_cents` server-side and rejected below it. */
 export async function createTicketCheckout(opts: {
-  buyerProfileId: string
+  /** The signed-in buyer's profile. EXACTLY ONE of this and `guestEmail`. */
+  buyerProfileId?: string | null
+  /** A signed-out guest's address. EXACTLY ONE of this and `buyerProfileId`.
+   *  Everything below re-validates identically for a guest: a guest reaches no tier a
+   *  stranger could not reach, and every entitlement gate refuses them by construction. */
+  guestEmail?: string | null
   eventId: string
   qty?: number
   /** Buy this specific tier. Omit for the flat-price (legacy) path. */
@@ -159,6 +182,23 @@ export async function createTicketCheckout(opts: {
   /** Buyer's chosen amount (cents) for pwyc/sliding_scale/donation tiers. */
   amountCents?: number | null
 }): Promise<TicketResult> {
+  // ── EXACTLY ONE IDENTITY ────────────────────────────────────────────────────────────────────
+  // A ticket belongs to a profile OR to an address, never to both and never to neither. This is
+  // the same invariant `event_tickets` carries in SQL (buyer_profile_id / guest_email) and that
+  // `reserve_ticket_atomic` refuses on, restated here so a malformed call never reaches Stripe
+  // and creates a session nothing can be reserved against. It is a PROGRAMMING error rather than
+  // a buyer's mistake, so it is logged and answered with the neutral retry line: no reader of
+  // this message could act on "both identities supplied".
+  const buyerProfileId = opts.buyerProfileId || null
+  const guestEmail = (opts.guestEmail || '').trim().toLowerCase() || null
+  if (!!buyerProfileId === !!guestEmail) {
+    console.error(
+      '[tickets] createTicketCheckout needs exactly one identity, got',
+      buyerProfileId ? 'both' : 'neither',
+    )
+    return { error: 'Could not start checkout. Please try again.' }
+  }
+
   if (!(await payoutsLive())) return { error: 'Ticketing isn’t turned on yet.' }
   if (!stripe) return { error: 'Ticketing isn’t turned on yet.' }
   const qty = Math.min(Math.max(Math.floor(opts.qty ?? 1), 1), TICKET_MAX_QTY)
@@ -187,7 +227,11 @@ export async function createTicketCheckout(opts: {
     payeeProfileId = (hs as { owner_profile_id: string | null } | null)?.owner_profile_id ?? null
   }
   if (!payeeProfileId) return { error: 'This event has no host to pay.' }
-  if (payeeProfileId === opts.buyerProfileId) return { error: 'You’re hosting this event.' }
+  // `buyerProfileId &&` guards the GUEST case: both sides are null for a guest, and `null === null`
+  // would refuse every guest on an event whose payee could not be resolved. (It cannot be, today —
+  // the line above returns on a null payee — but the guard is one token and the failure would be a
+  // silent refusal of every guest, so it does not depend on the line above staying there.)
+  if (buyerProfileId && payeeProfileId === buyerProfileId) return { error: 'You’re hosting this event.' }
 
   // ── Resolve the tier (or the implicit flat-price tier) ────────────────────────
   let tier: TicketTypeRow | null = null
@@ -208,6 +252,11 @@ export async function createTicketCheckout(opts: {
   // member_only: only paying members (Crew+). Resolved against the buyer's tier so
   // it's enforced server-side regardless of what the client renders.
   if (tier?.member_only) {
+    // 🔴 A GUEST IS NOT A MEMBER, BY DEFINITION. No read is attempted: there is no profile to
+    // read a `membership_tier` off, and reaching for one would only invite a future reader to
+    // think the refusal came from the database. Same words a signed-in free-tier member gets, so
+    // the gate leaks nothing about who is asking.
+    if (!buyerProfileId) return { error: 'This ticket is for members only.' }
     // DIRECTION — FAIL CLOSED, BUT HONEST (SCAN-539). A PostgREST error arrives in `error`, not as a
     // throw, so an unchecked read defaulted the buyer's tier to 'free' and answered the gate with
     // "This ticket is for members only." — telling a paying Crew member they are not a member and
@@ -218,7 +267,7 @@ export async function createTicketCheckout(opts: {
     const { data, error } = await db()
       .from('profiles')
       .select('membership_tier')
-      .eq('id', opts.buyerProfileId)
+      .eq('id', buyerProfileId)
       .maybeSingle()
     if (error) {
       console.error('[tickets] buyer membership tier unreadable, refusing member-only ticket:', error.message)
@@ -256,14 +305,23 @@ export async function createTicketCheckout(opts: {
         }
       }
     }
+    // 🔴 A GUEST HOLDS NO SPACE MEMBERSHIP, BY DEFINITION, so no membership read is attempted for
+    // one: `member_profile_id = null` is not a query that could ever match, and issuing it would
+    // let a future reader believe the refusal was measured. The gate is answered with a literal
+    // `null` membership, which is the truth, and the SAME pure function turns it into the SAME
+    // space-named refusal a signed-in non-member gets. The space-name read still happens, so the
+    // copy names the Space either way.
+    const membershipRead = buyerProfileId
+      ? mdb
+          .from('space_memberships')
+          .select('tier_id')
+          .eq('space_id', membershipSpaceId)
+          .eq('member_profile_id', buyerProfileId)
+          .eq('status', 'active')
+          .maybeSingle()
+      : Promise.resolve({ data: null as { tier_id: string } | null })
     const [{ data: membership }, { data: hsName }] = await Promise.all([
-      mdb
-        .from('space_memberships')
-        .select('tier_id')
-        .eq('space_id', membershipSpaceId)
-        .eq('member_profile_id', opts.buyerProfileId)
-        .eq('status', 'active')
-        .maybeSingle(),
+      membershipRead,
       db().from('spaces').select('name, brand_name').eq('id', membershipSpaceId).maybeSingle(),
     ])
     const hs = hsName as { name: string | null; brand_name: string | null } | null
@@ -284,8 +342,13 @@ export async function createTicketCheckout(opts: {
   }
 
   // ── Free tier: no money moves, no checkout. The caller records the claim. ──
+  // A GUEST cannot take the member claim path (`setRsvpStatus` needs a profile), so the result is
+  // DISCRIMINATED rather than silently identical: `requiresAccount` tells the caller this is a
+  // free claim it has no identity to record, and the caller says so. Nothing is dropped and
+  // nothing is asserted that is not true. Every gate above has already run for the guest, so a
+  // members-only free tier was refused before reaching here, exactly as it is for a member.
   if (mode === 'free') {
-    return { free: true }
+    return guestEmail ? { free: true, requiresAccount: true } : { free: true }
   }
 
   // ── Resolve the per-ticket charge amount for this mode (floor enforced). ──
@@ -342,8 +405,11 @@ export async function createTicketCheckout(opts: {
   // a platform-hosted event is Frequency's own event and pays the flat platform fee, and
   // collapsing root to null would reprice the platform's own sales as personal ones.
   const feeSpaceId = feeBearingSpaceId(event)
+  // A GUEST passes `null`, which is the honest answer: there is no profile to test the
+  // relationship check ("already your audience") against, so a guest falls through to the cookie
+  // signals and is priced as the stranger they are. Never `self` by accident.
   const { source, attributionRef } = await classifyOrderSource({
-    buyerProfileId: opts.buyerProfileId,
+    buyerProfileId,
     sellerProfileId: payeeProfileId,
     sellerSpaceId: feeSpaceId,
   })
@@ -414,6 +480,17 @@ export async function createTicketCheckout(opts: {
   }
   const tierLabel = tier ? ` (${tier.name})` : ''
 
+  // ── WHO THIS TICKET BELONGS TO, CARRIED ACROSS THE STRIPE BOUNDARY ──────────────────────────
+  // EXACTLY ONE key, mirroring the identity invariant above and the one `event_tickets` holds:
+  // a member's session carries `buyer_profile_id` and NO `guest_email`; a guest's carries
+  // `guest_email` and NO `buyer_profile_id`. The webhook settles off these, so the key names are
+  // a contract with it and must not drift. Written into BOTH blocks because the two are read by
+  // different events: `metadata` by checkout.session.completed, `payment_intent_data.metadata`
+  // by the charge/refund events, which never see the session.
+  const identityMeta: Record<string, string> = buyerProfileId
+    ? { buyer_profile_id: buyerProfileId }
+    : { guest_email: guestEmail as string }
+
   const session = await stripe.checkout.sessions.create({
     mode: 'payment',
     line_items: [
@@ -432,16 +509,23 @@ export async function createTicketCheckout(opts: {
       metadata: {
         kind: 'ticket',
         event_id: event.id,
-        buyer_profile_id: opts.buyerProfileId,
+        ...identityMeta,
         ...(tier ? { ticket_type_id: tier.id } : {}),
       },
     },
     metadata: {
       kind: 'ticket',
       event_id: event.id,
-      buyer_profile_id: opts.buyerProfileId,
+      ...identityMeta,
       ...(tier ? { ticket_type_id: tier.id } : {}),
     },
+    // Prefills Checkout for the guest and, because Stripe echoes it back on the session, gives the
+    // webhook a second reading of the address it is settling against. Absent for a member: their
+    // email is resolved from the profile, and setting it here would let the client's input decide
+    // where a member's receipt goes. GUEST INPUT ONLY, and never authoritative: the address the
+    // ticket is written against is the one in `metadata`/the reservation, not the one Stripe may
+    // have let the buyer edit at the card step.
+    ...(guestEmail ? { customer_email: guestEmail } : {}),
     // Hold the seat for 30 min: the session expires so an abandoned checkout frees its
     // reservation (matches the pending window in reserve_ticket_atomic).
     expires_at: Math.floor(Date.now() / 1000) + 30 * 60,
@@ -459,20 +543,28 @@ export async function createTicketCheckout(opts: {
   const reserveRpc = reserveDb.rpc.bind(reserveDb) as unknown as (
     name: 'reserve_ticket_atomic',
     args: {
-      _tier_id: string | null; _event_id: string; _buyer: string; _qty: number
+      _tier_id: string | null; _event_id: string; _buyer: string | null; _qty: number
       _amount_cents: number; _fee_cents: number; _currency: string; _session_id: string
+      /** Guest door. OMITTED for a member so the function's own default (null) applies and the
+       *  member call is byte-identical to what it has always been. */
+      _guest_email?: string
     },
   ) => Promise<{ data: { reserved?: boolean; reason?: string } | null; error: { message: string } | null }>
 
   const { data: reservation, error: reserveErr } = await reserveRpc('reserve_ticket_atomic', {
     _tier_id: tier?.id ?? null,
     _event_id: event.id,
-    _buyer: opts.buyerProfileId,
+    _buyer: buyerProfileId,
     _qty: qty,
     _amount_cents: gross,
     _fee_cents: fee,
     _currency: 'usd',
     _session_id: session.id,
+    // The KEY IS ABSENT for a member, not null. `reserve_ticket_atomic` defaults it and refuses
+    // when both identity arguments are set or both are null, so the identity invariant is enforced
+    // one more time inside the transaction that actually inserts the row. A spread rather than
+    // `_guest_email: guestEmail ?? undefined` so the member's argument list is unchanged.
+    ...(guestEmail ? { _guest_email: guestEmail } : {}),
   })
   if (reserveErr || !reservation?.reserved) {
     if (reserveErr) console.error('[tickets] reserve_ticket_atomic failed', reserveErr.message)
@@ -605,12 +697,38 @@ function flippedRows(
 
 /** Mark the ticket behind a completed Checkout session as succeeded (idempotent),
  *  and bump the tier's `sold` by the ticket qty IFF this call is the one that
- *  flipped pending → succeeded (so a redelivered webhook never double-counts). */
+ *  flipped pending → succeeded (so a redelivered webhook never double-counts).
+ *
+ *  GUEST TICKETS (the guest door). A guest session carries `metadata.guest_email` and NO
+ *  `buyer_profile_id`, so the settled row has a null buyer. Everything below that does per-BUYER
+ *  work was walked one at a time and given an explicit answer rather than a null:
+ *    • the tier bump + the flip  — identity-blind, keyed on the ticket. Unchanged.
+ *    • recordBuyerAsContact      — SKIPPED. `contacts` is keyed on `profile_id`, so there is no
+ *                                  contact to write for someone who has no profile. The guest
+ *                                  equivalent is the `signup_leads` row below, which is the table
+ *                                  that exists precisely for an address that is not yet a member.
+ *    • recordFinancialTransaction— RUN, with `profileId: null`. financial_transactions.profile_id
+ *                                  is nullable by design and the ENTITY is what partitions the
+ *                                  ledger. Dropping the row to avoid a null would lose real
+ *                                  revenue, which is the one thing this ledger may never do.
+ *    • the guest ticket email    — the guest's ONLY record of the purchase (lib/events/
+ *                                  guest-ticket-email.ts). It carries the single account offer.
+ *    • the signup_leads row      — the CRM half, at a HIGHER step than the RSVP door, because
+ *                                  somebody who PAID is a stronger signal than somebody who said
+ *                                  they might come.
+ *  Nothing here passes a null profile id into a filter. `.eq('id', null)` matches no row and
+ *  `.in('id', [null])` is worse, so every guest branch is taken on `!row.buyer_profile_id`
+ *  BEFORE a query is built, never inside one. */
 export async function recordTicketFromSession(session: Stripe.Checkout.Session): Promise<void> {
   if (session.metadata?.kind !== 'ticket') return
   if (session.payment_status !== 'paid') return
   const paymentIntentId =
     typeof session.payment_intent === 'string' ? session.payment_intent : session.payment_intent?.id ?? null
+  // The guest's address, off the session Stripe SIGNED. Normalised the same way the checkout
+  // normalises it (trim + lowercase) so the value that lands on the row is the value
+  // `claim_guest_tickets()` will later compare against a proven `auth.users` address. Empty for a
+  // member purchase, which is how the guest legs below stay unreachable for one.
+  const guestEmail = (session.metadata?.guest_email || '').trim().toLowerCase() || null
   // Only advance pending → succeeded, and count the sale on the tier in the same transaction.
   // The RPC returns the rows it actually flipped, so a redelivered event (already succeeded)
   // flips nothing, bumps nothing, and lands here with an empty list — idempotent.
@@ -619,7 +737,31 @@ export async function recordTicketFromSession(session: Stripe.Checkout.Session):
   // RPC on an untyped client fails at runtime, not at tsc (ADR-1207).
   const settleArgs = { _session_id: session.id, _payment_intent_id: paymentIntentId }
   const rows = flippedRows('settle_ticket_atomic', settleArgs, await db().rpc('settle_ticket_atomic', settleArgs))
+  // ZERO ROWS IS TWO DIFFERENT FACTS AND ONLY ONE OF THEM IS FINE. A Stripe redelivery flips
+  // nothing because the ticket is already `succeeded`; that is the design. A session whose ticket
+  // row does not exist at all flips nothing for a completely different reason: money moved and
+  // there is nothing to show for it. The two were indistinguishable here, and silence on the
+  // second is the worst outcome this file can produce, so they are now told apart.
+  if (rows.length === 0) {
+    await warnOnPaymentWithoutTicket(session.id, guestEmail)
+    return
+  }
   for (const row of rows) {
+    // ONE identity per row, decided BEFORE any query is built (see the header note). Read off the
+    // ROW rather than off the session, which matters in one real case: `claim_guest_tickets()`
+    // attaches any ticket with a null buyer, `pending` ones included, so a guest who signs in
+    // between checkout and this webhook arrives here already owning the ticket. The row is then a
+    // member's and is treated as one, which is the correct answer.
+    const isGuest = !row.buyer_profile_id
+    // Persist the address on the ticket. `reserve_ticket_atomic` already wrote it at checkout
+    // (migration 20270345003400 normalises and format-checks it there), so this is a RE-AFFIRMATION
+    // from the session Stripe actually signed, and a backstop for any row that reached `pending`
+    // without one. It is what makes the row claimable: `claim_guest_tickets()` matches
+    // `event_tickets.guest_email` against the caller's PROVEN auth.users address, so a settled guest
+    // ticket carrying no address can never be attached to anybody and is a payment with no owner.
+    // Written on the row THIS delivery flipped, so a redelivery neither re-enters this loop nor
+    // rewrites it, and the value written is byte-identical to the one already there.
+    if (isGuest) await persistGuestEmail(row.id, guestEmail, session.id)
     // A BUYER IS A CONTACT (ADR-913). This is what makes "we charge once for the introduction" true:
     // the first sale from someone Frequency sourced is network-rated, this records the relationship,
     // and every later sale to that person resolves to their own audience at 0%.
@@ -629,11 +771,19 @@ export async function recordTicketFromSession(session: Stripe.Checkout.Session):
     // capture — so a repeat buyer looked like a stranger on every visit and would have been charged
     // the network rate forever. It also closes a real CRM gap: people who paid a Space were not in
     // its CRM.
+    //
+    // A GUEST reaches its `if (!buyerProfileId) return` guard and writes nothing, which is correct:
+    // a contact row is keyed on a profile id that does not exist yet. The lead row below is the
+    // guest's half of the same job.
     await recordBuyerAsContact(row.event_id, row.buyer_profile_id).catch(() => {})
     // Record the ENTITY's revenue on the partitioned ledger (ADR-246). A ticket is a
     // Connect destination charge: the gross goes to the host's account; the platform's
     // (entity's) revenue is the application fee. Idempotent per ticket; best-effort so a
     // ledger hiccup never fails the webhook (Stripe would redeliver and we'd dedupe).
+    //
+    // `profileId` is NULL for a guest and that is deliberate, not an oversight: the column is
+    // nullable, the ENTITY is what partitions this ledger, and money that moved is recorded
+    // whether or not we know who moved it.
     await recordFinancialTransaction({
       entityId: row.entity_id,
       revenueType: 'commerce',
@@ -645,6 +795,162 @@ export async function recordTicketFromSession(session: Stripe.Checkout.Session):
       sourceId: row.id,
       idempotencyKey: `ticket:${row.id}`,
     }).catch(() => {})
+
+    if (isGuest && guestEmail) {
+      // THE TICKET ITSELF. Nothing else tells this person they have one: no account, no "my
+      // events", no bell. Best-effort and swallowed inside the module, which also quarantines the
+      // elevated read the message needs. Sent exactly once because this loop runs exactly once.
+      await sendGuestTicketReceipt({
+        eventId: row.event_id,
+        guestEmail,
+        qty: row.qty,
+        // Gross, straight off the session Stripe signed. The ticket row carries the same number,
+        // but the settle RPC does not return it and reading it back would be a round trip for a
+        // value already in hand.
+        amountCents: session.amount_total ?? null,
+        currency: row.currency ?? session.currency ?? null,
+      }).catch(() => {})
+      // THE LEAD, BESIDE THE TICKET. See recordGuestBuyerAsLead.
+      await recordGuestBuyerAsLead(guestEmail, row.event_id).catch(() => {})
+    }
+  }
+}
+
+/** Write the guest's address onto the ticket that just settled.
+ *
+ *  Best-effort on the WRITE and loud on the MISS, which are two different things. The ticket is
+ *  already `succeeded` when this runs, so throwing would fail a webhook whose money work is done
+ *  and make Stripe redeliver an event that can only no-op. But a guest ticket with no address is
+ *  unclaimable forever, so every way of ending up with one is logged at error level.
+ *
+ *  Untyped reach (ADR-246): `guest_email` is a live column that lib/database.types.ts has not been
+ *  regenerated for, and `.update()` is typed from that same generated file. */
+async function persistGuestEmail(ticketId: string, guestEmail: string | null, sessionId: string): Promise<void> {
+  if (!guestEmail) {
+    // Neither identity. `event_tickets` carries exactly one of buyer_profile_id / guest_email, so a
+    // settled row with neither is a ticket nobody can ever hold or claim. Nothing here can invent
+    // the address, so the only honest response is to say so where an operator will find it.
+    console.error(
+      '[tickets] SETTLED TICKET HAS NEITHER A BUYER NOR A GUEST EMAIL; it cannot be claimed or emailed',
+      { ticketId, sessionId },
+    )
+    return
+  }
+  try {
+    const { error } = await (db() as unknown as {
+      from: (t: string) => {
+        update: (v: Record<string, unknown>) => {
+          eq: (c: string, v: string) => Promise<{ error: { message: string } | null }>
+        }
+      }
+    })
+      .from('event_tickets')
+      .update({ guest_email: guestEmail })
+      .eq('id', ticketId)
+    if (error) {
+      console.error('[tickets] could not stamp guest_email on a settled ticket; it is UNCLAIMABLE', {
+        ticketId,
+        sessionId,
+        error: error.message,
+      })
+    }
+  } catch (e) {
+    console.error('[tickets] stamping guest_email on a settled ticket threw; it is UNCLAIMABLE', {
+      ticketId,
+      sessionId,
+      error: e instanceof Error ? e.message : String(e),
+    })
+  }
+}
+
+/** A paid Checkout session that flipped no ticket: say which of the two reasons it was.
+ *
+ *  A redelivery is normal and silent. A session with NO ticket row at all is a payment that bought
+ *  nothing, which is the worst state this build can reach, so it is logged at error level with the
+ *  session id an operator can paste straight into Stripe. Read-only, best-effort, and it never
+ *  changes what the caller returns: this is a smoke alarm, not a recovery. */
+async function warnOnPaymentWithoutTicket(sessionId: string, guestEmail: string | null): Promise<void> {
+  try {
+    const { data, error } = await db()
+      .from('event_tickets')
+      .select('id, status')
+      .eq('stripe_checkout_session_id', sessionId)
+      .limit(1)
+      .maybeSingle()
+    if (error) {
+      console.error('[tickets] settle flipped nothing and the read-back failed; cannot tell a redelivery from a lost ticket', {
+        sessionId,
+        error: error.message,
+      })
+      return
+    }
+    const ticket = data as { id: string; status: string } | null
+    if (!ticket) {
+      console.error(
+        '[tickets] PAID CHECKOUT SESSION WITH NO TICKET ROW. Money moved and no ticket exists. Reconcile by hand.',
+        { sessionId, guest: !!guestEmail },
+      )
+    }
+    // A row that exists and is already `succeeded` (or `refunded`) is the ordinary Stripe
+    // redelivery. Nothing to say.
+  } catch (e) {
+    console.error('[tickets] settle flipped nothing and the read-back threw', {
+      sessionId,
+      error: e instanceof Error ? e.message : String(e),
+    })
+  }
+}
+
+/**
+ * Record a guest BUYER as a `signup_leads` row: the guest half of recordBuyerAsContact.
+ *
+ * A guest who paid is the strongest pre-account signal this platform gets. The RSVP door already
+ * captures a lead beside the seat (app/(main)/events/guest-rsvp-actions.ts) at `p_step: 0`; this one
+ * uses the SAME source so the two land in one funnel, and a HIGHER step, because saying yes and
+ * paying are not the same commitment and the funnel should be able to tell them apart. The source
+ * stays 'event_rsvp' rather than a new value on purpose: `capture_signup_lead` folds any unknown
+ * source back to 'beta_induction', so inventing one here would file every paying guest under
+ * induction.
+ *
+ * Best-effort and fully swallowed. The ticket is already settled and the email already sent by the
+ * time this runs; a CRM row is never worth a 500 that makes Stripe redeliver a settled payment.
+ * Idempotent enough by construction: the function upserts on the address, so a second call raises
+ * `step_reached` to the same value and changes nothing else.
+ *
+ * ADMIN client here, unlike the guest RSVP door's SESSION client, and for a reason rather than
+ * convenience: a webhook has no session. `capture_signup_lead` is granted to service_role
+ * (20270345000610), and the function's own validation runs regardless of who calls it.
+ * The returned `claim_token` is DISCARDED, like at the RSVP door: nothing in this process is the
+ * guest's browser, so a token minted here could never be presented by the person it belongs to.
+ */
+const GUEST_TICKET_LEAD_STEP = 2
+
+async function recordGuestBuyerAsLead(guestEmail: string, eventId: string): Promise<void> {
+  try {
+    // The name is a LITERAL at the call site so check:schema-contract can resolve it against the
+    // generated types (ADR-1207). The name/handle arguments are omitted rather than passed as null:
+    // the SQL defaults them, and a guest checkout collected none of them.
+    const { error } = await db().rpc('capture_signup_lead', {
+      p_email: guestEmail,
+      p_source: 'event_rsvp',
+      p_step: GUEST_TICKET_LEAD_STEP,
+      // Deliberately minimal, the same restraint the RSVP door shows: the payload is schemaless and
+      // is the easiest place in the repo to accumulate things nobody asked for.
+      p_payload: { eventId, paid: true },
+      p_attribution: {},
+    })
+    if (error) {
+      // Logged, never branched on. A swallowed failure with no trace is an invisible regression.
+      console.error('[tickets] capture_signup_lead failed for a guest ticket buyer', {
+        eventId,
+        error: error.message,
+      })
+    }
+  } catch (e) {
+    console.error('[tickets] capture_signup_lead threw for a guest ticket buyer', {
+      eventId,
+      error: e instanceof Error ? e.message : String(e),
+    })
   }
 }
 
