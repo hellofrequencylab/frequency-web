@@ -57,6 +57,8 @@ export interface SoldTicket {
   qty: number
   status: string
   buyer: { display_name: string | null; handle: string | null } | null
+  /** the address a signed-out buyer paid under (LIVE-319); null for a member's own ticket */
+  guest_email: string | null
 }
 
 /** The warm-proof social counts the page already computed, for the `event-warm-proof` module. */

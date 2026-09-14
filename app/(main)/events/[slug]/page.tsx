@@ -936,12 +936,15 @@ export default async function EventDetailPage({
     qty: number
     status: string
     buyer: { display_name: string | null; handle: string | null } | null
+    guest_email: string | null
   }
   let soldTickets: SoldTicketRow[] = []
   if (canManage && isPaidEvent) {
+    // guest_email rides beside the buyer join (LIVE-319): a signed-out buyer has no profile to join,
+    // and the address is the only handle the host has on them for a refund or a door check.
     const { data: rawSold } = await (admin)
       .from('event_tickets')
-      .select('id, amount_cents, qty, status, buyer:profiles!buyer_profile_id ( display_name, handle )')
+      .select('id, amount_cents, qty, status, guest_email, buyer:profiles!buyer_profile_id ( display_name, handle )')
       .eq('event_id', event.id)
       .eq('status', 'succeeded')
       .order('succeeded_at', { ascending: false })
