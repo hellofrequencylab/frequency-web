@@ -2,13 +2,20 @@
 
 import { useState, useTransition } from 'react'
 import Link from 'next/link'
-import { Check, CreditCard, Loader2, Lock } from 'lucide-react'
+import { Check, CreditCard, Loader2 } from 'lucide-react'
 import { isError } from '@/lib/action-result'
 import { setRsvpStatus } from '@/app/(main)/events/actions'
 import { startTicket } from '@/app/(main)/events/[slug]/ticket-actions'
+import { GuestTicketForm, type GuestTicketTier } from '@/components/events/guest-ticket-form'
+import { RateOptions, type FlowRate } from '@/components/events/rate-options'
 import { RsvpControls } from '@/components/events/rsvp-controls'
 import { MembershipJoinCard } from '@/components/spaces/membership-join-card'
 import type { MembershipTier } from '@/lib/spaces/memberships'
+
+// The rate row markup now lives in `rate-options.tsx` so the signed-out ticket door can render the
+// same list instead of redrawing it. `FlowRate` is re-exported here because the event page has
+// imported it from this module since ADR-826.
+export type { FlowRate }
 
 // RSVP + PAYMENT FLOW (ADR-826, owner spec): the PROGRESSIVE join experience for an RSVP-mode
 // priced event (MELD). Three phases, each revealed in turn:
@@ -22,20 +29,6 @@ import type { MembershipTier } from '@/lib/spaces/memberships'
 //      folds the join/checkout cards open. A covered viewer (member on their included rate)
 //      goes straight to Going with no payment phase.
 
-export interface FlowRate {
-  id: string
-  name: string
-  priceLabel: string
-  /** 'general' pays per event (ticket); 'membership' joins the Space membership. */
-  kind: 'general' | 'membership'
-  /** The event_ticket_types id to buy for a general rate (null = the event's flat price). */
-  ticketTypeId: string | null
-  /** True when this rate costs the viewer nothing more (their membership covers it). */
-  covered: boolean
-  /** Tag under the name: 'member' (warm check) or 'membership' (green lock). */
-  tag: 'member' | 'membership' | null
-}
-
 export function RsvpPaymentFlow({
   eventId,
   slug,
@@ -48,6 +41,7 @@ export function RsvpPaymentFlow({
   paymentsReady,
   signedIn,
   signInHref,
+  guestTiers,
 }: {
   eventId: string
   slug: string
@@ -69,6 +63,9 @@ export function RsvpPaymentFlow({
   paymentsReady: boolean
   signedIn: boolean
   signInHref: string
+  /** The event's ticket tiers, for the signed-out guest purchase door. Omit and a signed-out
+   *  viewer gets the sign-in link instead. */
+  guestTiers?: GuestTicketTier[]
 }) {
   const isGoing = status === 'going'
   const [selectedId, setSelectedId] = useState<string>(
@@ -83,6 +80,12 @@ export function RsvpPaymentFlow({
   // rate for a non-member. A covered rate records Going directly (no intercept).
   const needsPayment = !!selected && !selected.covered
   const showPayment = payOpen && needsPayment && !isGoing
+
+  // THE SIGNED-OUT DOOR. When there is something a guest can actually buy, the guest form takes
+  // over phases 1 and 2: it owns the rate list, because the list it shows is the one a guest can
+  // buy from (a membership rate is not an offer to someone with no account). Rendering phase 1
+  // above it as well would put two rate lists on the same card.
+  const guestDoor = !signedIn && paymentsReady && !!guestTiers && guestTiers.length > 0
 
   function selectRate(r: FlowRate) {
     setSelectedId(r.id)
@@ -112,40 +115,8 @@ export function RsvpPaymentFlow({
 
   return (
     <div className="space-y-3">
-      {/* Phase 1 — pick your rate. */}
-      <div className="space-y-2">
-        {rates.map((r) => (
-          <button
-            key={r.id}
-            type="button"
-            onClick={() => selectRate(r)}
-            aria-pressed={r.id === selectedId}
-            className={`flex w-full items-start justify-between gap-3 rounded-card border px-3.5 py-2.5 text-left transition-colors ${
-              r.id === selectedId
-                ? 'border-primary bg-primary-bg/40'
-                : 'border-border hover:border-border-strong'
-            }`}
-          >
-            <div className="min-w-0">
-              <p className="truncate text-body-sm font-semibold text-text">{r.name}</p>
-              {r.tag && (
-                <div className="mt-1">
-                  {r.tag === 'member' ? (
-                    <span className="inline-flex items-center gap-1 rounded-pill bg-primary-bg px-1.5 py-0.5 text-2xs font-medium text-primary-strong">
-                      <Check className="h-2.5 w-2.5" /> Member
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center gap-1 rounded-pill bg-success-bg px-1.5 py-0.5 text-2xs font-medium text-success">
-                      <Lock className="h-2.5 w-2.5" /> Membership
-                    </span>
-                  )}
-                </div>
-              )}
-            </div>
-            <span className="shrink-0 text-body-sm font-semibold text-text">{r.priceLabel}</span>
-          </button>
-        ))}
-      </div>
+      {/* Phase 1 — pick your rate. The guest door renders its own list; see `guestDoor`. */}
+      {!guestDoor && <RateOptions rates={rates} selectedId={selectedId} onSelect={selectRate} />}
 
       {/* Phase 2 — your answer. A paid selection intercepts Going into the payment phase;
           Maybe funnels to follow-up; Can't go just files. */}
@@ -159,7 +130,15 @@ export function RsvpPaymentFlow({
           initialNote={initialNote}
           onGoingIntercept={needsPayment && !isGoing ? () => setPayOpen(true) : null}
         />
+      ) : guestDoor ? (
+        /* SIGNED OUT, and the rates above cost money. A "Sign in to RSVP" link stood here, which
+           asked for an account before the thing the visitor came to do. They buy as a guest; the
+           account is offered afterwards, in the ticket email. Members-only rates are not in the
+           guest's list, so what they see here is what they can actually buy. */
+        <GuestTicketForm eventId={eventId} tiers={guestTiers!} signInHref={signInHref} />
       ) : (
+        /* No guest purchase to offer (payouts not connected, or nothing buyable): the sign-in
+           link is still the honest door, because an account is the only path left. */
         <div className="space-y-2">
           <Link
             href={signInHref}

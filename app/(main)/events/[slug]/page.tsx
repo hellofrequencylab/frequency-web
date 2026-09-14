@@ -40,6 +40,7 @@ import { rsvpWindowStateFromDetails, rsvpWindowNote } from '@/lib/events/rsvp-wi
 import { checkInWindowOpen } from '@/lib/events/checkin-window'
 import { WarmProof } from '@/components/events/warm-proof'
 import { GuestRsvpForm } from '@/components/events/guest-rsvp-form'
+import { GuestTicketForm } from '@/components/events/guest-ticket-form'
 import { GuestCheckInPrompt } from '@/components/events/guest-check-in-prompt'
 import { safeHttpUrl } from '@/lib/safe-url'
 import { MembershipCheckoutFold } from '@/components/events/membership-checkout-fold'
@@ -1404,6 +1405,7 @@ export default async function EventDetailPage({
             paymentsReady={paymentsReady}
             signedIn={!!myProfileId}
             signInHref={`/sign-in?next=/events/${event.slug}`}
+            guestTiers={tiers}
           />
         )}
 
@@ -1490,7 +1492,21 @@ export default async function EventDetailPage({
               ) : allTiersSoldOut ? (
                 <p className="text-body-sm text-muted">Sold out.</p>
               ) : !myProfileId ? (
-                <p className="text-body-sm text-muted">Sign in to get your ticket.</p>
+                /* SIGNED OUT. "Sign in to get your ticket." stood here, which is a wall in front
+                   of the one thing this page exists to do: on 14 of 15 upcoming events it was the
+                   entire signed-out path. A visitor buys as a guest, and the account is offered
+                   afterwards in the ticket email. When there is no payee connected there is still
+                   nothing to sell, so that branch keeps its own sentence. */
+                hostPayoutReady ? (
+                  <GuestTicketForm
+                    eventId={event.id}
+                    priceLabel={priceLabel}
+                    tiers={hasTiers ? tiers : undefined}
+                    signInHref={`/sign-in?next=/events/${event.slug}`}
+                  />
+                ) : (
+                  <p className="text-body-sm text-muted">The host hasn&rsquo;t opened ticket sales yet.</p>
+                )
               ) : isHost && !hostSpaceOwnerId ? (
                 /* PERSONAL event only: the host IS the payee, so "no ticket needed" / "connect
                    YOUR payouts" both address the right person. A SPACE-hosted event's organizer
