@@ -231,7 +231,7 @@ jobs:
     # waiting (TURNSTILE_MAX_MINUTES), exactly as e2e.yml's two jobs carry it. Raise both or neither.
     timeout-minutes: 120
     steps:
-      # ── A DISPATCH THAT CANNOT COMMIT IS REFUSED BEFORE IT SPENDS ANYTHING (HYG-089, ADR-NNNN) ──
+      # ── A DISPATCH THAT CANNOT COMMIT IS REFUSED BEFORE IT SPENDS ANYTHING (HYG-089, ADR-1352) ──
       # 🔴 THE DEFECT, measured. Run 34904181882 (2026-09-14, 22:27:16Z to 22:34:07Z) was dispatched
       # on `main` with update_baselines on. Seven minutes and a 110 MB artifact later that run's commit
       # step died on "Changes must be made through a pull request": `main` is protected, and
@@ -299,7 +299,7 @@ jobs:
       #
       # ⚠️ IT IS NOW THE SECOND STEP: the protected-ref refusal above runs first, on purpose. A
       # dispatch that can never commit must not spend this wait, and must not make every other
-      # capture in both workflows queue behind it while it waits (HYG-089, ADR-NNNN).
+      # capture in both workflows queue behind it while it waits (HYG-089, ADR-1352).
       #
       # It does NOT serialise this run's OWN jobs — rule 1 skips them on purpose, so that
       # e2e.yml's two jobs can still overlap. The needs: chain above does that job here.
@@ -490,7 +490,7 @@ jobs:
     # 45 for the capture (unchanged) plus the turnstile's 90-minute bound.
     timeout-minutes: 135
     steps:
-      # ── A DISPATCH THAT CANNOT COMMIT IS REFUSED BEFORE IT SPENDS ANYTHING (HYG-089, ADR-NNNN) ──
+      # ── A DISPATCH THAT CANNOT COMMIT IS REFUSED BEFORE IT SPENDS ANYTHING (HYG-089, ADR-1352) ──
       # 🔴 THE DEFECT, measured. Run 34904181882 (2026-09-14, 22:27:16Z to 22:34:07Z) was dispatched
       # on `main` with update_baselines on. Seven minutes and a 110 MB artifact later that run's commit
       # step died on "Changes must be made through a pull request": `main` is protected, and
@@ -558,7 +558,7 @@ jobs:
       #
       # ⚠️ IT IS NOW THE SECOND STEP: the protected-ref refusal above runs first, on purpose. A
       # dispatch that can never commit must not spend this wait, and must not make every other
-      # capture in both workflows queue behind it while it waits (HYG-089, ADR-NNNN).
+      # capture in both workflows queue behind it while it waits (HYG-089, ADR-1352).
       #
       # It does NOT serialise this run's OWN jobs — rule 1 skips them on purpose, so that
       # e2e.yml's two jobs can still overlap. The needs: chain above does that job here.
@@ -821,7 +821,7 @@ jobs:
     # 45 for the capture (unchanged) plus the turnstile's 90-minute bound.
     timeout-minutes: 135
     steps:
-      # ── A DISPATCH THAT CANNOT COMMIT IS REFUSED BEFORE IT SPENDS ANYTHING (HYG-089, ADR-NNNN) ──
+      # ── A DISPATCH THAT CANNOT COMMIT IS REFUSED BEFORE IT SPENDS ANYTHING (HYG-089, ADR-1352) ──
       # 🔴 THE DEFECT, measured. Run 34904181882 (2026-09-14, 22:27:16Z to 22:34:07Z) was dispatched
       # on `main` with update_baselines on. Seven minutes and a 110 MB artifact later that run's commit
       # step died on "Changes must be made through a pull request": `main` is protected, and
@@ -889,7 +889,7 @@ jobs:
       #
       # ⚠️ IT IS NOW THE SECOND STEP: the protected-ref refusal above runs first, on purpose. A
       # dispatch that can never commit must not spend this wait, and must not make every other
-      # capture in both workflows queue behind it while it waits (HYG-089, ADR-NNNN).
+      # capture in both workflows queue behind it while it waits (HYG-089, ADR-1352).
       #
       # It does NOT serialise this run's OWN jobs — rule 1 skips them on purpose, so that
       # e2e.yml's two jobs can still overlap. The needs: chain above does that job here.

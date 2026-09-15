@@ -385,7 +385,7 @@ describe('the maintainer capture refuses to commit a degraded run', () => {
   })
 })
 
-// ── 🔴 A DISPATCH THAT CANNOT COMMIT MAY NOT SPEND THE CAPTURE FIRST (HYG-089, ADR-NNNN) ────────
+// ── 🔴 A DISPATCH THAT CANNOT COMMIT MAY NOT SPEND THE CAPTURE FIRST (HYG-089, ADR-1352) ────────
 //
 // Run 34904181882 (2026-09-14, 22:27:16Z to 22:34:07Z) was dispatched on `main` with
 // update_baselines on. Seven minutes and a 110 MB artifact later the commit step failed with

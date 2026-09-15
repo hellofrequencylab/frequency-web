@@ -41997,7 +41997,7 @@ the naming canon wins on names, and that bullet's subject is the plan NAME.
 
 **Rows.** LIVE-253 (done, this ADR).
 
-## ADR-NNNN: a maintainer dispatch is refused for what it would COMMIT, not for the ref it names (2026-09-15)
+## ADR-1352: a maintainer dispatch is refused for what it would COMMIT, not for the ref it names (2026-09-15)
 
 **Context.** `e2e-manual.yml` is dispatch-only, and two of its four jobs end in a `git push` that
 stamps fresh baselines onto the dispatched branch. On 2026-09-14 run `34904181882` was dispatched
