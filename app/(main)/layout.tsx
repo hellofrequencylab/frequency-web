@@ -53,8 +53,6 @@ import { hasConsent } from '@/lib/consent/consent'
 import { demoModeEnabled, demoContentExists } from '@/lib/platform-flags'
 import { viewerHidesDemo } from '@/lib/demo-preference'
 import { getSearchIndex } from '@/lib/help/content'
-import { FUNNEL_INDUCTION_ACTIVE } from '@/lib/onboarding/funnel-script'
-import { hasEffectivelyOnboarded } from '@/lib/onboarding/onboarded'
 import { CaptureLauncher } from '@/components/feed/capture-launcher'
 import { TimezoneSync } from '@/components/layout/timezone-sync'
 import { SupportLauncher } from '@/components/support/support-launcher'
@@ -274,26 +272,26 @@ export default async function MainLayout({
     redirect('/onboarding')
   }
 
-  // During beta, the induction is the mandatory opening sequence: anyone who
-  // hasn't completed it is routed in. `/onboarding` (outside this layout, so no
-  // loop) forwards to /join. Flipping FUNNEL_INDUCTION_ACTIVE off at
-  // launch reverts to the non-blocking model (ADR-047). A public page is exempt so a
-  // not-yet-onboarded session can still read it.
+  // AN ACCOUNT HOLDER IS ADMITTED (ADR-1367, ruling on OWN-072). This gate used to redirect any
+  // member without `onboarding_completed` into /join — a SIGNUP funnel — on EVERY request. /join
+  // is the front door for someone who does not have an account yet; marching someone who already
+  // has a working one back through it answers a question they already answered, forever.
   //
-  // Robust gate (not just meta.onboarding_completed): an EXISTING active member who
-  // has clearly used the app — one seeded before the induction gate, or whose
-  // completion write predates the flag — must never be re-forced through the
-  // Funnel induction on every sign-in. hasEffectivelyOnboarded treats prior app use (a
-  // completed induction, seen tour cues, earned Zaps/Gems) as onboarded, while a
-  // genuinely-new member still gets the full induction.
-  if (FUNNEL_INDUCTION_ACTIVE && !hasEffectivelyOnboarded({
-    meta: profile.meta,
-    currentSeasonZaps: profile.current_season_zaps,
-    lifetimeGems: profile.lifetime_gems,
-  })) {
-    if (isPublicView) return publicChrome()
-    redirect('/onboarding')
-  }
+  // Measured in production on 2026-09-15, the day of the ruling: SEVEN real members were being
+  // re-marched on every request, admitted between 26 June and 3 September, every one of them with
+  // an empty `meta` and a generated handle. The nine hand-admitted accounts of ADR-1324 had
+  // already been carried through by then, so these were seven DIFFERENT people, and the set grows
+  // by one every time somebody signs up and does not finish. #2553 made the funnel resumable,
+  // which shortened the march; it never asked why an account holder was on it.
+  //
+  // So the induction is no longer a wall in the member shell. It remains the signup path — /join
+  // is still where an account is created, and /onboarding still forwards there while
+  // FUNNEL_INDUCTION_ACTIVE is on — but it is reached by SIGNING UP, not by being bounced out of
+  // the app you already belong to. What the induction used to collect is now collected inline, the
+  // way the edit rail does it (the `identity` step of the first-run checklist).
+  //
+  // The `!profile` branch above is a DIFFERENT case and still redirects: no profile row at all
+  // means the creation trigger has not run, so there is no account to admit yet.
 
   // Effective role honours a steward's (host+) "view as" override so the whole shell
   // (nav + capabilities) previews a role under them; realRole is the true role, used
