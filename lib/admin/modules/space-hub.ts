@@ -14,9 +14,10 @@
 //   • Content & Programs — what the space teaches + hosts: Practices, Journeys, Circles, the Program,
 //     Airwaves, Loom Studio, the Calendar, and Your reach.
 //
-// Profile & Settings is NOT a category tab — it is the header-level settings surface (identity/brand/
-// visibility + Team + Reviews + Plan & usage + Mode + Danger). The "Page" layout module is removed from the
-// hub entirely (page editing lives on the admin rail now).
+// Profile & Settings trails them as a real tab (ADR-788 reversed ADR-785's header placement), and since
+// ADR-1336 it is the ONE door to a Space's settings: Team + Reviews + Plan & usage cards, the identity
+// editor (brand, story, location, FAQ, visibility) beneath them, and Danger last. The "Page" layout module
+// is removed from the hub entirely (page editing lives on the admin rail now).
 
 import { SPACE_MODULES, type SpaceModule, type SpaceHubSection } from './space-modules'
 import { panelHrefForModule } from '@/lib/spaces/surface-hrefs'

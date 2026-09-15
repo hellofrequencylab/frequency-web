@@ -2,7 +2,7 @@
 
 import { useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Check, ChevronDown, Loader2, PanelTop, Type } from 'lucide-react'
+import { Check, ChevronDown, Loader2, PanelTop, Sparkles, Type } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { isError, type ActionResult } from '@/lib/action-result'
 import { SectionHeader } from '@/components/ui/section-header'
@@ -13,6 +13,7 @@ import { DEFAULT_OBJECT_POSITION } from '@/lib/images/focal-point'
 import { AccentPicker } from '@/components/spaces/space-form'
 import { updateSpaceProfile } from '@/lib/spaces/profile-settings'
 import { SPACE_THEMES, type SpaceThemeId } from '@/lib/theme/space-themes'
+import { suggestTaglineAction } from '@/app/(main)/spaces/copilot-actions'
 import type { CoverScrim, LogoBackdrop } from '@/app/(main)/spaces/[slug]/manage/layout/preferences'
 import {
   setSpaceImages,
@@ -136,6 +137,25 @@ export function SpaceBrandingForm({
   const saveField = (patch: { brandName?: string | null; tagline?: string | null }) =>
     run(() => updateSpaceProfile(spaceId, patch))
 
+  // SUGGEST WITH VERA for the tagline (the manifest marks it `veraDrafts`; this control used to live only
+  // on the retired /settings/basics form, ADR-1336). The draft fills the field and FOCUSES it, so it is
+  // saved like any typed tagline: the blur handler writes it when the operator clicks away, and nothing
+  // is published until then. A failed draft reports through the form's one error line.
+  const taglineRef = useRef<HTMLTextAreaElement>(null)
+  const [taglineBusy, startTagline] = useTransition()
+  function suggestTagline() {
+    setError(null)
+    startTagline(async () => {
+      const result = await suggestTaglineAction(spaceId)
+      if (isError(result)) {
+        setError(result.error)
+        return
+      }
+      setTagline(result.data)
+      taglineRef.current?.focus()
+    })
+  }
+
   // Track the cover scrim OPTIMISTICALLY: the buttons key off local state, not the server prop (which only
   // updates on router.refresh()). Without this, after picking one scrim the other button stayed "active +
   // disabled" until a reload, so you could not switch back (bug 2). Reflect an external prop change back in
@@ -257,6 +277,7 @@ export function SpaceBrandingForm({
         <div>
           <Label htmlFor="tagline" className="mb-1 block font-semibold">Tagline</Label>
           <Textarea
+            ref={taglineRef}
             id="tagline"
             rows={2}
             value={tagline}
@@ -268,7 +289,21 @@ export function SpaceBrandingForm({
               if (tagline.trim() !== initialTagline.trim()) saveField({ tagline: tagline.trim() || null })
             }}
           />
-          <p className="mt-1 text-meta text-subtle">One plain line that says what you do.</p>
+          <div className="mt-1 flex flex-wrap items-center justify-between gap-2">
+            <p className="text-meta text-subtle">One plain line that says what you do.</p>
+            <button
+              type="button"
+              onClick={suggestTagline}
+              disabled={readOnly || taglineBusy}
+              className="inline-flex items-center gap-1 text-meta font-semibold text-primary-strong transition-colors hover:text-primary disabled:opacity-50"
+            >
+              {taglineBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> : <Sparkles className="h-3.5 w-3.5" aria-hidden />}
+              Suggest with Vera
+            </button>
+          </div>
+          <p className="mt-1 text-meta text-subtle">
+            Vera is AI. Suggest writes a starting point into the field; edit it, then click away to save.
+          </p>
         </div>
       </section>
 

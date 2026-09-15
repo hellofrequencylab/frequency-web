@@ -170,11 +170,12 @@ const base = (slug: string) => `/spaces/${slug}`
 export const SPACE_MODULES: readonly SpaceModule[] = [
   // ── The space itself (shell — always on) ─────────────────────────────────────────────────────────────
   // BOX 1 "Profile and Settings" (ADR-782): the former three shell cards (Identity and Branding · Info
-  // and Connect · Settings) all deep-linked to the SAME /settings/basics editor, which is already one
-  // section-based form (pictures · name & bio · brand · page theme · info & connect · visibility). They
-  // collapse to this single card so the console no longer shows three rows that open the same page.
-  // ADR-846 folds Reviews into it too: the rating and review wall is part of how a space presents itself.
-  { id: 'space.basics', label: 'Profile and Settings', desc: 'Your name, tagline and story, brand and accent, page theme, contact and hours, links, and who can see your space.', Icon: IdCard, family: 'space', hub: 'settings', slot: 'basics', gate: { kind: 'always' }, featureKey: null, render: 'inline', deepLink: (s) => `${base(s)}/settings/basics`, order: 15, tier: 'standard', priority: 15, access: 'included' },
+  // and Connect · Settings) collapsed into this single row. Its deep link is the Manage hub's Profile &
+  // Settings tab, the ONE door to a Space's identity editor since ADR-1336 (LIVE-238): the tab renders
+  // the same forms this row stacks inline on the rail, plus the location and FAQ editors, and the old
+  // /settings/basics URL redirects there. ADR-846 folds Reviews into it too: the rating and review wall
+  // is part of how a space presents itself.
+  { id: 'space.basics', label: 'Profile and Settings', desc: 'Your name, tagline and story, brand and accent, page theme, contact and hours, links, and who can see your space.', Icon: IdCard, family: 'space', hub: 'settings', slot: 'basics', gate: { kind: 'always' }, featureKey: null, render: 'inline', deepLink: (s) => `${base(s)}/manage?section=settings`, order: 15, tier: 'standard', priority: 15, access: 'included' },
   { id: 'space.layout', label: 'Page', desc: 'Arrange the sections of your page into rows and columns.', Icon: LayoutTemplate, family: 'space', hub: 'none', slot: 'layout', gate: { kind: 'always' }, featureKey: null, render: 'inline', deepLink: (s) => `${base(s)}/manage/layout`, order: 20, tier: 'standard', priority: 20, access: 'included' },
 
   // ── Audience & relationships ─────────────────────────────────────────────────────────────────────────

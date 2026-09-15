@@ -116,7 +116,6 @@ describe('the uploadFn branch respects the control\'s mode', () => {
 
   it('the existing URL-mode consumers are unchanged — none of them asks for path mode', () => {
     for (const file of [
-      'app/(main)/spaces/[slug]/settings/settings-form.tsx',
       'components/spaces/space-branding-form.tsx',
       'components/journey/v2/journey-builder.tsx',
     ]) {

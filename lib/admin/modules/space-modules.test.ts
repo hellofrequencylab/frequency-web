@@ -214,7 +214,8 @@ describe('console consolidation metadata (ADR-782)', () => {
     expect(spaceModuleById('space.settings')).toBeNull()
     const basics = spaceModuleById('space.basics')!
     expect(basics.label).toBe('Profile and Settings')
-    expect(basics.deepLink?.('demo')).toBe('/spaces/demo/settings/basics')
+    // The one settings door (ADR-1336): the hub's Profile & Settings tab, not a standalone editor page.
+    expect(basics.deepLink?.('demo')).toBe('/spaces/demo/manage?section=settings')
   })
 
   it('every access badge is one of included / freemium / premium', () => {

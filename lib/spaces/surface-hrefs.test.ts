@@ -19,8 +19,8 @@ describe('panelHrefForSurface (rail-only inline-panel translation)', () => {
   })
 
   it('falls through to the full route for a non-panel surface', () => {
-    // Basics has no panel, so the rail keeps opening its standalone editor.
-    expect(panelHrefForSurface('space.basics', slug)).toBe(`/spaces/${slug}/settings/basics`)
+    // Basics has no panel, so it opens the hub's Profile & Settings tab, the one settings door (ADR-1336).
+    expect(panelHrefForSurface('space.basics', slug)).toBe(`/spaces/${slug}/manage?section=settings`)
     expect(panelHrefForSurface('space.basics', slug)).toBe(hrefForSurface('space.basics', slug))
   })
 

@@ -1112,9 +1112,9 @@ export function SpacePageBuilder({
 /** The admin-area path for a Space DATA block (ADR-529 item 4). Each function-backed block links to its own
  *  manager; a data block with no dedicated manager falls back to the console; a content block gets none. */
 const SPACE_BLOCK_ADMIN_PATH: Record<string, string> = {
-  about: 'settings/basics',
-  contact: 'settings/basics',
-  reviews: 'settings/basics',
+  about: 'manage?section=settings',
+  contact: 'manage?section=settings',
+  reviews: 'manage?section=settings',
   offerings: 'settings/offerings',
   booking: 'settings/offerings#availability',
   team: 'settings/members',

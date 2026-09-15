@@ -23,11 +23,11 @@ import type { SpaceFaqItem } from '@/lib/spaces/content-data'
 // be seeded by the bulk importer and shown to the public, and an operator could never add,
 // edit or remove one.
 //
-// This lives on /spaces/<slug>/settings/basics because the repo had already decided it did:
-// lib/entity-blocks/block-data-sources.ts:344 maps block `faq` to moduleId `space.basics` with
-// createLabel 'Add a question', so the empty-state CTA already pointed here. The page just had
-// no editor to point at. Same shape as the Info & Connect fix recorded in that page's own
-// comment, which was this bug one audit earlier.
+// This lives on the Manage hub's Profile & Settings tab (manage/identity-editor.tsx) because the
+// repo had already decided it did: lib/entity-blocks/block-data-sources.ts maps block `faq` to
+// moduleId `space.basics` with createLabel 'Add a question', and that id resolves to the tab, the
+// one settings door since ADR-1336 (it was /settings/basics until that route retired). Same shape
+// as the Info & Connect fix, which was this bug one audit earlier.
 //
 // Per-row writes rather than a replace-set: each row is an independent entity with its own id,
 // and a replace-set would churn ids the FAQPage schema is built from.

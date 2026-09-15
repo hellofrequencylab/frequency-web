@@ -439,7 +439,7 @@ export default async function SpaceProfileChromeLayout({
     ) : (
       canSeeAsOwner && (
         <Link
-          href={`${base}/settings/basics`}
+          href={`${base}/manage?section=settings`}
           className={cn(
             'inline-block max-w-2xl text-body-sm font-medium underline decoration-dashed underline-offset-4 transition-colors',
             onInk ? 'text-on-ink-muted hover:text-on-ink' : 'text-muted hover:text-text',

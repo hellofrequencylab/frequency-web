@@ -29,8 +29,10 @@ describe('the Space FAQ actions have a real caller', () => {
     }
   })
 
-  it('the basics settings page mounts the editor', () => {
-    const page = readFileSync('app/(main)/spaces/[slug]/settings/basics/page.tsx', 'utf8')
+  it('the Manage hub identity editor mounts the editor', () => {
+    // The one Space-settings door (ADR-1336, LIVE-238): the hub's Profile & Settings tab renders
+    // manage/identity-editor.tsx, where the FAQ editor moved when /settings/basics retired.
+    const page = readFileSync('app/(main)/spaces/[slug]/manage/identity-editor.tsx', 'utf8')
     expect(page).toContain('SpaceFaqEditor')
     expect(page).toContain('getSpaceFaqs')
   })

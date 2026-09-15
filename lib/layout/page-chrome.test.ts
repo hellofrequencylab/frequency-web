@@ -314,7 +314,6 @@ describe('railArchetypeFor — the rail SHAPE axis (ADR-516 Phase B)', () => {
       '/settings/billing',
       '/settings/profile', // the profile editor page — the rail is the Hub, not a second ProfileForm (fix C)
       '/spaces/demo-practitioner/settings',
-      '/spaces/demo-practitioner/settings/basics',
       '/spaces/demo-practitioner/manage',
       '/spaces/demo-practitioner/manage/mode',
       // Generic content pages (not an entity detail) default to the Hub, not the inline personal editor.

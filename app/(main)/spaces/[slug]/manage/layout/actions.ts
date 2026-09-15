@@ -527,7 +527,7 @@ export async function setSpaceLocation(slug: string, input: unknown): Promise<Ac
   // The pin feeds the Around You map, and the address feeds every public profile route's Contact
   // card, so both the community surface and the whole space layout have to be refreshed.
   revalidatePath(`/spaces/${slug}`, 'layout')
-  revalidatePath(`/spaces/${slug}/settings/basics`)
+  revalidatePath(`/spaces/${slug}/manage`)
   revalidatePath('/nearby')
   return ok()
 }
